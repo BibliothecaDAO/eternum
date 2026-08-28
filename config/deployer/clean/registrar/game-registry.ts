@@ -1,5 +1,4 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { shortString } from "starknet";
 
 export interface GameRegistryRow extends Record<string, unknown> {
   gameId: number;
@@ -16,6 +15,21 @@ function resolveToriiSqlUrl(providedUrl?: string): string {
   }
   const normalized = toriiUrl.replace(/\/+$/, "");
   return normalized.endsWith("/sql") ? normalized : `${normalized}/sql`;
+}
+
+interface HeraldDirectoryTarget {
+  chain: string;
+  heraldUrl?: string;
+}
+
+function resolveHeraldDirectoryUrl(target: HeraldDirectoryTarget): string {
+  const baseUrl = target.heraldUrl || process.env.HERALD_URL || process.env.VITE_PUBLIC_HERALD_URL;
+  if (!baseUrl) throw new Error("HERALD_URL is required for GameRegistry checks");
+  const url = new URL(baseUrl);
+  const prefix = url.pathname.replace(/\/+$/, "");
+  url.pathname = `${prefix}/${target.chain}/games`;
+  url.search = "";
+  return url.toString();
 }
 
 function parseInteger(value: unknown): number | undefined {
@@ -51,7 +65,7 @@ function toGameRegistryRow(row: Record<string, unknown>): GameRegistryRow | null
   return gameId ? { ...row, gameId } : null;
 }
 
-async function fetchRows(query: string, toriiSqlUrl?: string): Promise<Record<string, unknown>[]> {
+async function fetchToriiRows(query: string, toriiSqlUrl?: string): Promise<Record<string, unknown>[]> {
   const response = await fetch(`${resolveToriiSqlUrl(toriiSqlUrl)}?query=${encodeURIComponent(query)}`, {
     signal: AbortSignal.timeout(10_000),
   });
@@ -65,24 +79,32 @@ async function fetchRows(query: string, toriiSqlUrl?: string): Promise<Record<st
   return rows as Record<string, unknown>[];
 }
 
-export async function findGameRegistryById(gameId: number, toriiSqlUrl?: string): Promise<GameRegistryRow | null> {
-  const rows = await fetchRows(`SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE game_id = ${gameId} LIMIT 1`, toriiSqlUrl);
-  return rows[0] ? toGameRegistryRow(rows[0]) : null;
+async function fetchGameDirectory(target: HeraldDirectoryTarget): Promise<GameRegistryRow[]> {
+  const response = await fetch(resolveHeraldDirectoryUrl(target), { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error(`Herald directory failed: ${response.status} ${response.statusText}`);
+  const payload = (await response.json()) as { games?: unknown };
+  if (!Array.isArray(payload.games)) throw new Error("Herald directory returned an unexpected payload");
+  return payload.games.flatMap((row) => {
+    if (typeof row !== "object" || row === null || Array.isArray(row)) return [];
+    const parsed = toGameRegistryRow(row as Record<string, unknown>);
+    return parsed ? [parsed] : [];
+  });
 }
 
-export async function findGameRegistryByName(gameName: string, toriiSqlUrl?: string): Promise<GameRegistryRow | null> {
-  const encodedName = shortString.encodeShortString(gameName);
-  const paddedName = `0x${encodedName.slice(2).padStart(64, "0")}`;
-  const rows = await fetchRows(
-    `SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE name = "${paddedName}" LIMIT 1`,
-    toriiSqlUrl,
-  );
-  return rows[0] ? toGameRegistryRow(rows[0]) : null;
-}
+export const findGameRegistryById = async (
+  gameId: number,
+  target: HeraldDirectoryTarget,
+): Promise<GameRegistryRow | null> => (await fetchGameDirectory(target)).find((row) => row.gameId === gameId) ?? null;
+
+export const findGameRegistryByName = async (
+  gameName: string,
+  target: HeraldDirectoryTarget,
+): Promise<GameRegistryRow | null> => (await fetchGameDirectory(target)).find((row) => row.name === gameName) ?? null;
 
 export async function waitForGameRegistryById(params: {
   gameId: number;
-  toriiSqlUrl?: string;
+  chain: string;
+  heraldUrl?: string;
   timeoutMs?: number;
   pollIntervalMs?: number;
   onRetry?: (attempt: number, elapsedMs: number) => void;
@@ -94,21 +116,22 @@ export async function waitForGameRegistryById(params: {
 
   while (Date.now() - startedAt <= timeoutMs) {
     attempt += 1;
-    const row = await findGameRegistryById(params.gameId, params.toriiSqlUrl).catch(() => null);
+    const row = await findGameRegistryById(params.gameId, params).catch(() => null);
     if (row) return row;
     params.onRetry?.(attempt, Date.now() - startedAt);
     await sleep(pollIntervalMs);
   }
 
-  throw new Error(`Timed out waiting for s2-GameRegistry row ${params.gameId}`);
+  throw new Error(`Timed out waiting for Herald GameRegistry row ${params.gameId}`);
 }
 
 export async function isChainConfigInitialized(toriiSqlUrl?: string): Promise<boolean> {
-  return (await fetchRows(`SELECT * FROM ${CHAIN_CONFIG_TABLE} LIMIT 1`, toriiSqlUrl)).length > 0;
+  return (await fetchToriiRows(`SELECT * FROM ${CHAIN_CONFIG_TABLE} LIMIT 1`, toriiSqlUrl)).length > 0;
 }
 
 export async function isPresetRegistered(presetId: number, toriiSqlUrl?: string): Promise<boolean> {
   return (
-    (await fetchRows(`SELECT * FROM ${PRESET_TABLE} WHERE preset_id = ${presetId} LIMIT 1`, toriiSqlUrl)).length > 0
+    (await fetchToriiRows(`SELECT * FROM ${PRESET_TABLE} WHERE preset_id = ${presetId} LIMIT 1`, toriiSqlUrl)).length >
+    0
   );
 }

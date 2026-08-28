@@ -1,5 +1,6 @@
 // @vitest-environment node
 import type { WorldSummary } from "@bibliothecadao/types";
+import type { WorldDeployment } from "@/runtime/world/world-directory";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const reactQueryMocks = vi.hoisted(() => ({
@@ -21,6 +22,23 @@ import {
 } from "./use-player-world-registrations";
 
 const mockFetch = vi.fn<typeof globalThis.fetch>();
+
+const deployment = {
+  id: "blitz",
+  chain: "madara",
+  heraldBaseUrl: "https://herald.example",
+} as WorldDeployment;
+
+const settlementSnapshot = (players: string[]) => ({
+  confirmed_block: 12,
+  game_id: "7",
+  models: [
+    {
+      model: "BlitzSettlement",
+      rows: players.map((player, index) => ({ key: `0x${index + 1}`, value: { game_id: "0x7", player } })),
+    },
+  ],
+});
 
 const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   name: "alpha",
@@ -69,34 +87,31 @@ afterEach(() => {
 
 describe("fetchPlayerRegistration", () => {
   it("returns true when a settlement row exists for the game", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([{ player: "0xplayer" }]), { status: 200 }));
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(settlementSnapshot(["0x123"])), { status: 200 }));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
+    const result = await fetchPlayerRegistration(deployment, "0x123", 7);
     expect(result).toBe(true);
-    // The query is game-scoped — the shared world holds every game's rows.
     const [url] = mockFetch.mock.calls[0]! as [string];
-    expect(decodeURIComponent(url)).toContain("game_id = 7");
+    expect(url).toBe("https://herald.example/madara/games/7/snapshot?models=BlitzSettlement");
   });
 
-  it("returns false when query succeeds but no row is found", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
+  it("returns false when the snapshot has no player settlement", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(settlementSnapshot([])), { status: 200 }));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
+    const result = await fetchPlayerRegistration(deployment, "0x123", 7);
     expect(result).toBe(false);
   });
 
-  it("returns null when the query fails", async () => {
+  it("surfaces a failed Herald response", async () => {
     mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
-    expect(result).toBeNull();
+    await expect(fetchPlayerRegistration(deployment, "0x123", 7)).rejects.toThrow("Herald snapshot");
   });
 
-  it("returns null on fetch error", async () => {
+  it("surfaces a transport error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("boom"));
 
-    const result = await fetchPlayerRegistration("https://torii.example", "0xplayer", 7);
-    expect(result).toBeNull();
+    await expect(fetchPlayerRegistration(deployment, "0x123", 7)).rejects.toThrow("boom");
   });
 });
 

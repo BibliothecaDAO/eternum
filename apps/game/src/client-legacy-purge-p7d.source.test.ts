@@ -27,7 +27,7 @@ describe("P7D push ownership gates", () => {
     const entityWait = source("src/ui/features/landing/components/selected-world-entity-wait.ts");
     const registration = source("src/hooks/use-world-registration.ts");
 
-    expect(entityWait).toContain("client.onEntityUpdated");
+    expect(entityWait).toContain("HeraldGameSyncTransport");
     expect(entityWait).toContain("is still waiting after");
     expect(registration).toContain("const confirmedBalance = await fetchTokenBalance");
     expect(registration).not.toContain("setTimeout(resolve, 2000)");

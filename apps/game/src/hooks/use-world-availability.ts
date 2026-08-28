@@ -2,66 +2,30 @@
  * Per-game availability + metadata for a CHOSEN game, keyed by launch name.
  *
  * Appchain-only (amendment S1): a "world" ref here is a game row inside a
- * directory world — one joined query against that world's torii resolves the
- * game's registry row (clock, dev mode), its per-game WorldConfig
- * (registration + settlement modes) and the chain-global ChainConfig
- * (fee/entry tokens). The entry modal polls this while open; the card grid
- * rides the bulk worlds summary instead.
+ * directory world. Herald's directory resolves registry/config metadata; a
+ * selective snapshot adds the connected player's settlement state. The card
+ * grid rides the same directory through the bulk worlds summary.
  */
 import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
-import { isToriiAvailable } from "@/runtime/world/torii-health";
-import {
-  parseMaybeBooleanFlag,
-  resolveGameModeFromBlitzFlag,
-  type ResolvedGameMode,
-} from "@/config/game-modes/resolved-mode";
-import { appchainModel } from "@/dojo/game-scope";
-import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
-import { nameToPaddedFelt } from "@/runtime/world/normalize";
+import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
+import {
+  feltEquals,
+  fetchHeraldGameDirectory,
+  fetchHeraldGameSnapshot,
+  snapshotModelRows,
+} from "@/runtime/world/herald-http";
+import { createHeraldPreSessionReader } from "@/runtime/world/herald-pre-session-reader";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import type { WorldDeployment } from "@/runtime/world/world-directory";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { useQueries } from "@tanstack/react-query";
-
-const parseMaybeHexToNumber = (v: unknown): number | null => {
-  if (v == null) return null;
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    try {
-      if (v.startsWith("0x") || v.startsWith("0X")) return Number(BigInt(v));
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-};
-
-const parseMaybeHexToBigInt = (v: unknown): bigint | null => {
-  if (v == null) return null;
-  if (typeof v === "bigint") return v;
-  if (typeof v === "number") return BigInt(v);
-  if (typeof v === "string") {
-    try {
-      return BigInt(v);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-};
-
-const parseMaybeHexToAddress = (v: unknown): string | null => {
-  const bigIntVal = parseMaybeHexToBigInt(v);
-  if (bigIntVal == null || bigIntVal === 0n) return null;
-  return `0x${bigIntVal.toString(16)}`;
-};
 
 export interface WorldConfigMeta {
   mode: ResolvedGameMode;
   // The directory world this meta belongs to — downstream flows pick their
-  // deployment (torii, contract map) with it.
+  // deployment (Herald, contract map) with it.
   worldId: string | null;
   // The GameRegistry id this meta describes — the settle flow requires it
   // (registration targets a chosen game, never ambient scope).
@@ -168,101 +132,68 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
  * Blitz settles in one step, so the settlement row itself is the source of truth.
  */
 const fetchPlayerRegistration = async (
-  toriiBaseUrl: string,
+  world: WorldDeployment,
   playerAddress: string,
   gameId: number,
-): Promise<boolean | null> => {
-  try {
-    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress, gameId);
-    const response = await fetch(`${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`);
-    if (!response.ok) return null;
-    const data = (await response.json()) as Record<string, unknown>[];
-    return data.length > 0;
-  } catch {
-    // Silently fail - registration check is best-effort
-  }
-  return null;
+): Promise<boolean> => {
+  const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["BlitzSettlement"]);
+  return snapshotModelRows(snapshot, "BlitzSettlement").some((row) => feltEquals(row.player, playerAddress));
 };
 
-const buildGameMetaQuery = (paddedNameFelt: string) => `
-  SELECT
-    g.game_id AS game_id,
-    g.dev_mode_on AS dev_mode_on,
-    g.start_settling_at AS start_settling_at,
-    g.start_main_at AS start_main_at,
-    g.end_at AS end_at,
-    c.blitz_mode_on AS blitz_mode_on,
-    c."blitz_registration_config.registration_count" AS registration_count,
-    c."blitz_registration_config.registration_count_max" AS registration_count_max,
-    c."blitz_registration_config.registration_start_at" AS registration_start_at,
-    c."blitz_registration_config.fee_amount" AS fee_amount,
-    c."blitz_settlement_config.single_realm_mode" AS single_realm_mode,
-    c."blitz_settlement_config.two_player_mode" AS two_player_mode,
-    c."settlement_config.layer_max" AS settlement_layer_max,
-    c."settlement_config.layers_skipped" AS settlement_layers_skipped,
-    c."settlement_config.base_distance" AS settlement_base_distance,
-    c."settlement_config.spires_max_count" AS spires_max_count,
-    c."settlement_config.spires_settled_count" AS spires_settled_count,
-    c.map_center_offset AS map_center_offset,
-    cc.entry_token_address AS entry_token_address,
-    cc.fee_token AS fee_token
-  FROM "${appchainModel("GameRegistry")}" g
-  JOIN "${appchainModel("WorldConfig")}" c ON c.game_id = g.game_id
-  CROSS JOIN "${appchainModel("ChainConfig")}" cc
-  WHERE g.name = "${paddedNameFelt}"
-  LIMIT 1;
-`;
+const fetchPlayerSettledRealm = async (
+  world: WorldDeployment,
+  playerAddress: string,
+  gameId: number,
+): Promise<boolean> => {
+  const structures = await createHeraldPreSessionReader(world, gameId).fetchPlayerStructures(playerAddress);
+  return structures.some(({ category }) => category === 1);
+};
+
+const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntry): void => {
+  meta.gameId = game.game_id;
+  meta.mode = game.mode ?? "unknown";
+  meta.startSettlingAt = game.clock.start_settling_at;
+  meta.startMainAt = game.clock.start_main_at;
+  meta.endAt = game.clock.end_at;
+  meta.seasonDurationSeconds = Math.max(0, game.clock.end_at - game.clock.start_main_at);
+  meta.devModeOn = game.dev_mode_on;
+  meta.registrationCount = game.registration?.count ?? null;
+  meta.registrationCountMax = game.registration?.max ?? null;
+  meta.registrationStartAt = game.registration?.start_at ?? null;
+  meta.registrationEndAt = game.clock.start_main_at;
+  meta.feeAmount = game.registration ? BigInt(game.registration.fee_amount) : 0n;
+  meta.singleRealmMode = game.settlement?.single_realm_mode ?? false;
+  meta.twoPlayerMode = game.settlement?.two_player_mode ?? false;
+  meta.settlementLayerMax = game.settlement?.layer_max ?? null;
+  meta.settlementLayersSkipped = game.settlement?.layers_skipped ?? null;
+  meta.settlementBaseDistance = game.settlement?.base_distance ?? null;
+  meta.spiresLayerDistance = game.settlement?.spires_layer_distance ?? null;
+  meta.spiresMaxCount = game.settlement?.spires_max_count ?? null;
+  meta.spiresSettledCount = game.settlement?.spires_settled_count ?? null;
+  meta.mapCenterOffset = game.settlement?.map_center_offset ?? null;
+  meta.settledPlayersCount = game.player_count;
+  meta.settledRealmsCount = game.settled_realms_count;
+  meta.settledVillagesCount = game.settled_villages_count;
+};
 
 const fetchGameMeta = async (
-  toriiBaseUrl: string,
+  world: WorldDeployment,
   gameName: string,
   playerAddress?: string | null,
 ): Promise<WorldConfigMeta> => {
   const meta = emptyWorldConfigMeta();
+  const directory = await fetchHeraldGameDirectory(world);
+  const game = directory.games.find((candidate) => candidate.name === gameName);
+  if (!game) return meta;
 
-  try {
-    const query = buildGameMetaQuery(nameToPaddedFelt(gameName));
-    const response = await fetch(`${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`);
-    if (!response.ok) return meta;
-    const [row] = (await response.json()) as Record<string, unknown>[];
-    if (!row) return meta;
-
-    const gameId = parseMaybeHexToNumber(row.game_id);
-    if (gameId == null || gameId <= 0) return meta;
-
-    meta.gameId = gameId;
-    meta.mode = resolveGameModeFromBlitzFlag(row.blitz_mode_on);
-    meta.startSettlingAt = parseMaybeHexToNumber(row.start_settling_at);
-    meta.startMainAt = parseMaybeHexToNumber(row.start_main_at);
-    meta.endAt = parseMaybeHexToNumber(row.end_at);
-    if (meta.startMainAt != null && meta.endAt != null && meta.endAt >= meta.startMainAt) {
-      meta.seasonDurationSeconds = meta.endAt - meta.startMainAt;
-    }
-    meta.devModeOn = (parseMaybeHexToNumber(row.dev_mode_on) ?? 0) !== 0;
-    meta.registrationCount = parseMaybeHexToNumber(row.registration_count);
-    meta.registrationCountMax = parseMaybeHexToNumber(row.registration_count_max);
-    meta.registrationStartAt = parseMaybeHexToNumber(row.registration_start_at);
-    // Registration closes when the main phase opens.
-    meta.registrationEndAt = meta.startMainAt;
-    meta.feeAmount = parseMaybeHexToBigInt(row.fee_amount) ?? 0n;
-    meta.singleRealmMode = parseMaybeBooleanFlag(row.single_realm_mode) ?? false;
-    meta.twoPlayerMode = parseMaybeBooleanFlag(row.two_player_mode) ?? false;
-    meta.entryTokenAddress = parseMaybeHexToAddress(row.entry_token_address);
-    meta.feeTokenAddress = parseMaybeHexToAddress(row.fee_token);
-    // Eternum settlement-planner geometry + spire progress (W3 put these on
-    // the per-game WorldConfig; the planner throws without them).
-    meta.settlementLayerMax = parseMaybeHexToNumber(row.settlement_layer_max);
-    meta.settlementLayersSkipped = parseMaybeHexToNumber(row.settlement_layers_skipped);
-    meta.settlementBaseDistance = parseMaybeHexToNumber(row.settlement_base_distance);
-    meta.spiresMaxCount = parseMaybeHexToNumber(row.spires_max_count);
-    meta.spiresSettledCount = parseMaybeHexToNumber(row.spires_settled_count);
-    meta.mapCenterOffset = parseMaybeHexToNumber(row.map_center_offset);
-
-    if (playerAddress && meta.mode === "blitz") {
-      meta.isPlayerRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress, gameId);
-    }
-  } catch {
-    // Silently fail - metadata fetch is best-effort
+  applyDirectoryGame(meta, game);
+  meta.entryTokenAddress = directory.chain_config?.entry_token_address ?? null;
+  meta.feeTokenAddress = directory.chain_config?.fee_token_address ?? null;
+  meta.mmrEnabled = directory.chain_config?.mmr_enabled ?? false;
+  if (playerAddress && meta.mode === "blitz") {
+    meta.isPlayerRegistered = await fetchPlayerRegistration(world, playerAddress, game.game_id);
+  } else if (playerAddress && meta.mode === "eternum") {
+    meta.hasPlayerSettledRealm = await fetchPlayerSettledRealm(world, playerAddress, game.game_id);
   }
   return meta;
 };
@@ -274,14 +205,9 @@ const checkWorldAvailability = async (
   const worldId = world.worldId ?? (await resolveWorldIdForGame(world.name)) ?? undefined;
   const deployment = getWorldById(worldId) ?? getDefaultWorld();
 
-  const isAvailable = await isToriiAvailable(deployment.toriiBaseUrl);
-  if (!isAvailable) {
-    return { isAvailable: false, meta: null };
-  }
-
-  const meta = await fetchGameMeta(deployment.toriiBaseUrl, world.name, playerAddress);
+  const meta = await fetchGameMeta(deployment, world.name, playerAddress);
   if (meta) meta.worldId = deployment.id;
-  return { isAvailable: true, meta };
+  return { isAvailable: meta.gameId !== null, meta };
 };
 
 /**

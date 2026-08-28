@@ -3,19 +3,16 @@
  * `WorldSummary` payload.
  *
  * The summary intentionally does not include player-specific data (blitz
- * settlement, eternum realm ownership). This hook fires one SQL query per
- * game — but only when a wallet is connected — so the anonymous boot path
- * produces zero of these requests. Queries target the summary row's
- * `(worldId, gameId)` pair explicitly.
+ * settlement, eternum realm ownership). This hook requests one selective
+ * Herald snapshot per game, only when a wallet is connected, so the anonymous
+ * boot path produces zero player-scoped requests.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
-import {
-  buildPlayerBlitzSettlementStatusQuery,
-  buildPlayerOwnedStructureCountQuery,
-} from "@/services/blitz/blitz-settlement-sql";
+import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "@/runtime/world/herald-http";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
+import type { WorldDeployment } from "@/runtime/world/world-directory";
 
 interface PlayerWorldRegistration {
   isPlayerRegistered: boolean | null;
@@ -31,20 +28,12 @@ interface PlayerWorldRegistrationResult {
  * Blitz-only: check whether the player already has a settlement row for this game.
  */
 export const fetchPlayerRegistration = async (
-  toriiBaseUrl: string,
+  world: WorldDeployment,
   playerAddress: string,
   gameId: number,
-): Promise<boolean | null> => {
-  try {
-    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress, gameId);
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data = (await response.json()) as Record<string, unknown>[];
-    return data.length > 0;
-  } catch {
-    return null;
-  }
+): Promise<boolean> => {
+  const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["BlitzSettlement"]);
+  return snapshotModelRows(snapshot, "BlitzSettlement").some((row) => feltEquals(row.player, playerAddress));
 };
 
 /**
@@ -52,21 +41,12 @@ export const fetchPlayerRegistration = async (
  * the settled-realm signal for entry surfaces (dev/free settling per S3).
  */
 const fetchPlayerSettledRealm = async (
-  toriiBaseUrl: string,
+  world: WorldDeployment,
   playerAddress: string,
   gameId: number,
-): Promise<boolean | null> => {
-  try {
-    const query = buildPlayerOwnedStructureCountQuery(playerAddress, gameId);
-    const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const [row] = (await response.json()) as Record<string, unknown>[];
-    const count = Number(row?.owned_count ?? 0);
-    return Number.isFinite(count) ? count > 0 : null;
-  } catch {
-    return null;
-  }
+): Promise<boolean> => {
+  const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["Structure"]);
+  return snapshotModelRows(snapshot, "Structure").some((row) => feltEquals(row.owner, playerAddress));
 };
 
 // Landing identity is (worldId, gameId): two same-named games in different
@@ -104,13 +84,10 @@ export const usePlayerWorldRegistrations = ({
           }
           const deployment = getWorldById(world.worldId) ?? getDefaultWorld();
           if (isBlitz) {
-            const isRegistered = await fetchPlayerRegistration(deployment.toriiBaseUrl, playerAddress, gameId);
-            // A failed check must not clobber the last known registration.
-            if (isRegistered === null) throw new Error("registration check unavailable");
+            const isRegistered = await fetchPlayerRegistration(deployment, playerAddress, gameId);
             return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };
           }
-          const hasSettled = await fetchPlayerSettledRealm(deployment.toriiBaseUrl, playerAddress, gameId);
-          if (hasSettled === null) throw new Error("settled-realm check unavailable");
+          const hasSettled = await fetchPlayerSettledRealm(deployment, playerAddress, gameId);
           return { isPlayerRegistered: null, hasPlayerSettledRealm: hasSettled };
         },
         enabled: Boolean(playerAddress) && world.alive && (isBlitz || isEternum) && gameId > 0,

@@ -1,16 +1,13 @@
-import { hexKey } from "@/dojo/game-scope";
 import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
+import { buildHeraldGameStreamUrl } from "@/sync/herald-game-sync-session";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { buildGameSyncModelKeysClause } from "@bibliothecadao/eternum/game-sync";
-import { createClient } from "@dojoengine/sdk";
-import type { Clause } from "@dojoengine/torii-wasm/types";
+import { HeraldGameSyncTransport } from "@bibliothecadao/eternum/game-sync";
 
 interface EntitySubscriptionTarget {
-  gameId?: number;
-  namespace: string;
-  toriiBaseUrl: string;
-  worldAddress: string;
+  chain: Chain;
+  gameId: number;
+  heraldBaseUrl: string;
 }
 
 interface WaitForEntitySubscriptionStateInput<T> {
@@ -56,21 +53,9 @@ const resolveEntitySubscriptionTarget = async ({
   const world = getWorldById(resolvedWorldId) ?? getDefaultWorld();
   return {
     gameId,
-    namespace: world.namespace,
-    toriiBaseUrl: world.toriiBaseUrl,
-    worldAddress: world.worldAddress,
+    chain,
+    heraldBaseUrl: world.heraldBaseUrl,
   };
-};
-
-const buildSelectedWorldEntityClause = (target: EntitySubscriptionTarget, modelNames: readonly string[]): Clause => {
-  const scopedKey =
-    target.gameId && Number.isInteger(target.gameId) && target.gameId > 0 ? hexKey(target.gameId) : undefined;
-  return buildGameSyncModelKeysClause(
-    modelNames.map((modelName) => ({
-      model: `${target.namespace}-${modelName}`,
-      scopedKey,
-    })),
-  ) as Clause;
 };
 
 export const waitForEntitySubscriptionState = async <T>(input: WaitForEntitySubscriptionStateInput<T>): Promise<T> => {
@@ -173,34 +158,21 @@ export const waitForSelectedWorldEntityState = async <T>(
   input: WaitForSelectedWorldEntityStateInput<T>,
 ): Promise<T> => {
   const target = await resolveEntitySubscriptionTarget(input);
-  const client = await createClient({
-    toriiUrl: target.toriiBaseUrl,
-    worldAddress: target.worldAddress,
+  const transport = new HeraldGameSyncTransport({
+    url: buildHeraldGameStreamUrl(target.heraldBaseUrl, target.chain, target.gameId),
   });
-  const clause = buildSelectedWorldEntityClause(target, input.modelNames);
-  let disposed = false;
-  const disposeClient = () => {
-    if (disposed) return;
-    disposed = true;
-    client.free();
-  };
-
-  try {
-    return await waitForEntitySubscriptionState({
-      ...input,
-      subscribe: async (onChange) => {
-        const subscription = await client.onEntityUpdated(clause, onChange);
-        return () => {
-          try {
-            subscription.cancel();
-          } finally {
-            disposeClient();
-          }
-        };
-      },
-    });
-  } catch (error) {
-    disposeClient();
-    throw error;
-  }
+  const watchedModels = new Set(input.modelNames);
+  return waitForEntitySubscriptionState({
+    ...input,
+    subscribe: async (onChange) => {
+      const subscription = await transport.subscribe({
+        onEntity: (entity) => {
+          if (Object.keys(entity.models).some((model) => watchedModels.has(model))) onChange();
+        },
+        onEvent: () => undefined,
+        onEventGapFill: () => undefined,
+      });
+      return subscription.cancel;
+    },
+  });
 };

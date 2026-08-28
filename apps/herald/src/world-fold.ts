@@ -180,6 +180,12 @@ export class WorldFold {
     }, 0);
   }
 
+  public modelRows(model: string): FoldRow[] {
+    return [...this.materializedRows(model).entries()]
+      .map(([key, row]) => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
+      .sort(compareEntityKeys);
+  }
+
   public gameplayAccounts(gameIdInput: string | number | bigint): ReadonlySet<string> {
     if (!this.rowsByModel.has("BlitzSettlement")) return new Set();
     const gameId = BigInt(gameIdInput);

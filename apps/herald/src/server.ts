@@ -141,7 +141,10 @@ const main = async (): Promise<void> => {
     chain: config.chain,
     confirmedBlock: () => live.confirmedBlock,
     decodedModelCount: registry.bySelector.size,
-    fold: { snapshot: (gameId) => live.snapshot(gameId) },
+    fold: {
+      modelRows: (model) => live.modelRows(model),
+      snapshot: (gameId) => live.snapshot(gameId),
+    },
     metrics: loaded.metrics,
     undecodableEventCount: () => decodeMonitor.failures,
   });

@@ -1,6 +1,6 @@
 export type ResolvedGameMode = "blitz" | "eternum" | "unknown";
 
-export const parseMaybeBooleanFlag = (value: unknown): boolean | null => {
+const parseMaybeBooleanFlag = (value: unknown): boolean | null => {
   if (value == null) return null;
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value !== 0;

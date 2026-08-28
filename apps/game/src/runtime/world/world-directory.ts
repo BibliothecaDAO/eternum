@@ -9,7 +9,7 @@ import { normalizeSelector } from "./normalize";
 /**
  * The world directory — the client's single source of "what worlds exist".
  *
- * A world is one deployed world contract plus its Torii indexer; games (Blitz)
+ * A world is one deployed world contract plus its Herald stream; games (Blitz)
  * and seasons (Eternum) are GameRegistry rows inside a world. Madara exposes
  * the phase-one Blitz world, while appchain may expose both world manifests.
  *
@@ -20,6 +20,7 @@ export interface WorldDeployment {
   id: string;
   chain: Chain;
   rpcUrl: string;
+  heraldBaseUrl: string;
   toriiBaseUrl: string;
   namespace: GameNamespace;
   worldAddress: string;
@@ -40,6 +41,10 @@ const buildWorld = (chain: Chain, id: "blitz" | "eternum", toriiBaseUrl: string)
   return {
     id,
     chain,
+    heraldBaseUrl: resolveEndpoint(env.VITE_PUBLIC_HERALD_URL, {
+      name: "VITE_PUBLIC_HERALD_URL",
+      browserFacing: true,
+    }),
     rpcUrl: resolveEndpoint(env.VITE_PUBLIC_NODE_URL, { name: "VITE_PUBLIC_NODE_URL", browserFacing: true }),
     toriiBaseUrl: resolveEndpoint(toriiBaseUrl, { name: "VITE_PUBLIC_TORII", browserFacing: true }),
     namespace: namespaceForChain(chain),

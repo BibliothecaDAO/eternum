@@ -8,11 +8,11 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("buildWorldProfile load timeline instrumentation", () => {
-  it("records durations for each remote world-profile resolution step", () => {
+  it("records the one remote directory resolution step", () => {
     const source = readSource("src/runtime/world/profile-builder.ts");
 
-    expect(source).toContain('measureAsyncDuration("game-profile-registry-fetch"');
-    expect(source).toContain('measureAsyncDuration("game-profile-chain-config-fetch"');
-    expect(source).toContain('measureAsyncDuration("world-profile-world-address-fetch"');
+    expect(source).toContain('measureAsyncDuration("game-profile-directory-fetch"');
+    expect(source).not.toContain("/sql");
+    expect(source).not.toContain("SqlApi");
   });
 });

@@ -109,6 +109,7 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   spatial("TileOpt", "col", "row"),
   spatial("Structure", "base.coord_x", "base.coord_y"),
   spatial("StructureBuildings", "coord.x", "coord.y"),
+  globalEntity("StructureVillageSlots"),
   spatial("Building", "outer_col", "outer_row"),
   spatial("ExplorerTroops", "coord.x", "coord.y"),
   globalEvent("ExplorerRewardEvent"),

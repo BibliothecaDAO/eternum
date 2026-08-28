@@ -51,7 +51,7 @@ describe("fetchWorldsSummary", () => {
   it("drops a failing world's contribution instead of failing the whole list", async () => {
     directoryMocks.getWorldDirectory.mockReturnValue([blitzWorld, eternumWorld]);
     summaryMocks.fetchAppchainWorldsSummary.mockImplementation(async (world: { id: string }) => {
-      if (world.id === "eternum") throw new Error("torii down");
+      if (world.id === "eternum") throw new Error("herald down");
       return [{ name: "quickblitz", worldId: "blitz", gameId: 7 }];
     });
 
@@ -70,7 +70,7 @@ describe("fetchWorldsSummary", () => {
 });
 
 describe("useWorldsSummary", () => {
-  it("registers a single shared query with the expected staleTime and refetchInterval", () => {
+  it("registers a single shared query without a polling interval", () => {
     reactQueryMocks.useQuery.mockReturnValue({ data: undefined, isPending: true });
 
     useWorldsSummary();
@@ -78,8 +78,7 @@ describe("useWorldsSummary", () => {
     const [opts] = reactQueryMocks.useQuery.mock.calls[0] as [Record<string, unknown>];
     expect(opts.queryKey).toEqual(["worldsSummary"]);
     expect(opts.staleTime).toBe(25_000);
-    expect(opts.refetchInterval).toBe(30_000);
-    expect(opts.refetchIntervalInBackground).toBe(false);
+    expect(opts).not.toHaveProperty("refetchInterval");
   });
 
   it("exposes loading and error state from the underlying query", () => {

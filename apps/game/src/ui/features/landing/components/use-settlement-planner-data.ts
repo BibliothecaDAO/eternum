@@ -1,8 +1,11 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import type { SqlApi } from "@bibliothecadao/torii";
-import type { SettlementPlannerSnapshot, SettlementPlannerTile } from "@bibliothecadao/torii";
+import type {
+  HeraldPreSessionReader,
+  SettlementPlannerSnapshot,
+  SettlementPlannerTile,
+} from "@/runtime/world/herald-pre-session-reader";
 
 import {
   buildSettlementPlannerData,
@@ -24,7 +27,7 @@ interface UseSettlementPlannerDataProps {
   worldName: string;
   /** Per-world, per-game scoped client — never the ambient gameplay singleton
    * (the planner reads a game the player has not bootstrapped into). */
-  sqlApi: SqlApi;
+  reader: HeraldPreSessionReader;
   layerMax: number | null;
   layersSkipped: number | null;
   baseDistance: number | null;
@@ -44,7 +47,7 @@ export const useSettlementPlannerData = ({
   enabled,
   chain,
   worldName,
-  sqlApi,
+  reader,
   layerMax,
   layersSkipped,
   baseDistance,
@@ -54,7 +57,7 @@ export const useSettlementPlannerData = ({
   const snapshotQuery = useQuery({
     queryKey: ["settlementPlannerSnapshot", chain, worldName],
     enabled,
-    queryFn: async () => await sqlApi.fetchSettlementPlannerSnapshot(),
+    queryFn: async () => await reader.fetchSettlementPlannerSnapshot(),
     staleTime: 10_000,
   });
 
@@ -82,7 +85,7 @@ export const useSettlementPlannerData = ({
       fetchBounds?.maxY ?? null,
     ],
     enabled: enabled && fetchBounds != null,
-    queryFn: async () => await sqlApi.fetchExploredTilesInBounds(fetchBounds!),
+    queryFn: async () => await reader.fetchExploredTilesInBounds(fetchBounds!),
     staleTime: 30_000,
   });
 

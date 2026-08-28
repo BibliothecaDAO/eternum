@@ -7,15 +7,15 @@ import { WORLD_SUMMARY_QUERY_KEY } from "./world-list-queries";
 
 /**
  * The landing games list: the union of every directory world's GameRegistry
- * summary. One query per world (two at most — blitz + eternum share the MVP
- * chain); React Query deduplicates across components. A world whose torii is
+ * summary. One request per world (two at most — blitz + eternum share the MVP
+ * chain); React Query deduplicates across components. A world whose herald is
  * unreachable contributes nothing rather than failing the whole list.
  */
 export async function fetchWorldsSummary(): Promise<WorldSummary[]> {
   const perWorld = await Promise.all(
     getWorldDirectory().map((world) =>
       fetchAppchainWorldsSummary(world).catch((error) => {
-        console.error(`[worlds-summary] world "${world.id}" summary failed`, error);
+        console.error(`[worlds-summary] world "${world.id}" Herald directory failed`, error);
         return [] as WorldSummary[];
       }),
     ),

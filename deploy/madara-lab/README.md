@@ -226,12 +226,11 @@ pnpm lab:harness -- --bots 96 --minutes 10
 # equivalent: bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10
 ```
 
-Every transaction records hash submission, the first observed `PRE_CONFIRMED` status, `ACCEPTED_ON_L2`, and the first
-observation of that hash in both Torii's `transactions` and `events` tables. Receipt status is polled every 50 ms, and
-the interval is stored in the report. Pre-confirmed latency is therefore quantized at the poll boundary; it is an
-observed upper bound, not Madara's internal execution time. Every action also records the call count and summed wall
-time for fee estimation, `getBlock`, and status polling. Produce completes only after Torii shows a labor or wood
-production-output delta.
+Every transaction records hash submission, the first observed `PRE_CONFIRMED` status, and `ACCEPTED_ON_L2`. Receipt
+status is polled every 50 ms, and the interval is stored in the report. Pre-confirmed latency is therefore quantized at
+the poll boundary; it is an observed upper bound, not Madara's internal execution time. Setup and action state reads use
+Herald's selective confirmed snapshots; Produce completes only after Herald shows a labor or wood production-output
+delta. Every action also records the call count and summed wall time for `getBlock` and status polling.
 
 The JSON report is written under `deploy/madara-lab/.lab/runs/`. It includes the source revision, image digest, exact
 requested and completed action mixes, latency percentiles, RPC load, host-state snapshots, threshold results, and

@@ -85,7 +85,7 @@ describe("registrar game launch", () => {
     });
   });
 
-  test("reuses an indexed game instead of submitting create_game again", async () => {
+  test("reuses a game in the Herald directory instead of submitting create_game again", async () => {
     existingGame = { gameId: 19, gameName: "bltz-test" };
     const lines: string[] = [];
     const originalWrite = process.stderr.write;
@@ -100,13 +100,13 @@ describe("registrar game launch", () => {
       expect(createRegistrarGameMock).not.toHaveBeenCalled();
       expect(summary.gameId).toBe(19);
       expect(summary.worldAddress).toBe("0xworld");
-      expect(lines.join("")).toContain('Game "bltz-test" is already indexed as 19; skipping create_game');
+      expect(lines.join("")).toContain('Game "bltz-test" already exists as 19; skipping create_game');
     } finally {
       process.stderr.write = originalWrite;
     }
   });
 
-  test("hydrates the indexed wait from the stored launch summary", async () => {
+  test("hydrates the Herald wait from the stored launch summary", async () => {
     loadedSummary = {
       environment: "madara.blitz",
       chain: "madara",
@@ -132,7 +132,7 @@ describe("registrar game launch", () => {
   });
 
   test("refuses to create when duplicate detection cannot be trusted", async () => {
-    findGameError = new Error("Torii unavailable");
+    findGameError = new Error("Herald unavailable");
 
     await expect(runLaunchStep({ ...buildRequest(), stepId: "create-world" })).rejects.toThrow(
       'Cannot verify whether game "bltz-test" already exists',

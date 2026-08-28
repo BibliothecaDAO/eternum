@@ -81,13 +81,12 @@ export interface HarnessReportInput {
   minutes: number;
   rpcUrl: string;
   setupTransactions: TrackedTransaction[];
-  toriiSqlUrl: string;
+  heraldUrl: string;
   workload: WorkloadResult;
 }
 
 interface PercentileSummary {
   acceptedOnL2Ms: LatencyPercentiles;
-  indexedMs: LatencyPercentiles;
   preConfirmedMs: LatencyPercentiles;
   submitDelayMs: LatencyPercentiles;
   submitMs: LatencyPercentiles;
@@ -101,7 +100,6 @@ interface LatencyPercentiles {
 
 const PRECONFIRMED_P95_LIMIT_MS = 1_000;
 const ACCEPTED_ON_L2_P95_LIMIT_MS = 4_000;
-const INDEXED_P95_LIMIT_MS = 6_000;
 const RUNS_DIRECTORY = path.resolve(import.meta.dir, "../.lab/runs");
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 const BLOCK_STATS_SCRIPT = path.resolve(import.meta.dir, "../scripts/block-stats.sh");
@@ -155,13 +153,6 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const blockingReverts = reverts.filter(isThresholdBlockingFailure);
   const tileContentionReverts = reverts.filter((action) => action.revertReason === "tile_contention");
   const thresholdEligibleActions = completedActions.length + tileContentionReverts.length;
-  const indexingLoss = actions.filter(
-    (action) =>
-      action.transactionHash !== undefined &&
-      action.outcome !== "reverted" &&
-      action.outcome !== "rejected" &&
-      (action.transactionIndexedAt === undefined || action.eventIndexedAt === undefined),
-  );
   const setupFailures = input.setupTransactions.filter((transaction) => transaction.outcome !== "completed");
   const percentiles = summarizePercentiles(completedActions);
   const requestedMix = summarizeRequestedMix(actions);
@@ -173,8 +164,6 @@ function analyzeHarnessResult(input: HarnessReportInput) {
   const checks = {
     acceptedOnL2P95: passesLatency(percentiles.acceptedOnL2Ms.p95, ACCEPTED_ON_L2_P95_LIMIT_MS),
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
-    indexedP95: passesLatency(percentiles.indexedMs.p95, INDEXED_P95_LIMIT_MS),
-    indexingLoss: indexingLoss.length === 0,
     preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
     setup: setupFailures.length === 0,
     zeroBlockingFailures: blockingFailures.length === 0,
@@ -190,7 +179,6 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     completedActions,
     failedActions,
     failureClasses,
-    indexingLoss,
     passed: Object.values(checks).every(Boolean),
     percentiles,
     requestedMix,
@@ -210,14 +198,14 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     runId,
     createdAt,
     passed: analysis.passed,
     chain: {
       chainId: input.chainId,
       rpcUrl: input.rpcUrl,
-      toriiSqlUrl: input.toriiSqlUrl,
+      heraldUrl: input.heraldUrl,
       madaraImage: input.evidence.madaraImage,
     },
     source: {
@@ -247,7 +235,6 @@ function buildHarnessManifest(
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,
-      indexingLoss: analysis.indexingLoss.length,
       readiness: {
         condition: "every_bot_has_explorer_stamina_for_first_action",
         requiredStamina: FIRST_ACTION_REQUIRED_STAMINA,
@@ -278,9 +265,7 @@ function buildHarnessManifest(
     thresholds: {
       limits: {
         acceptedOnL2P95Ms: ACCEPTED_ON_L2_P95_LIMIT_MS,
-        indexedP95Ms: INDEXED_P95_LIMIT_MS,
         preConfirmedP95Ms: PRECONFIRMED_P95_LIMIT_MS,
-        indexingTimeoutMs: 30_000,
         minimumThresholdActions: input.minimumThresholdActions,
       },
       checks: analysis.checks,
@@ -422,7 +407,6 @@ function summarizeKinds(actions: readonly Pick<TrackedTransaction, "kind">[]): R
 function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary {
   return {
     acceptedOnL2Ms: latencyPercentiles(actions, "acceptedOnL2Ms"),
-    indexedMs: latencyPercentiles(actions, "indexedMs"),
     preConfirmedMs: latencyPercentiles(actions, "preConfirmedMs"),
     submitDelayMs: latencyPercentiles(actions, "submitDelayMs"),
     submitMs: latencyPercentiles(actions, "submitMs"),
@@ -431,7 +415,7 @@ function summarizePercentiles(actions: TrackedTransaction[]): PercentileSummary 
 
 function latencyPercentiles(
   actions: TrackedTransaction[],
-  field: "acceptedOnL2Ms" | "indexedMs" | "preConfirmedMs" | "submitDelayMs" | "submitMs",
+  field: "acceptedOnL2Ms" | "preConfirmedMs" | "submitDelayMs" | "submitMs",
 ): LatencyPercentiles {
   const values = actions.flatMap((action) => (action[field] === undefined ? [] : [action[field]]));
   return { p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) };

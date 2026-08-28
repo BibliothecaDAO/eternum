@@ -3,7 +3,7 @@ import type {
   SettlementPlannerSnapshot as ApiSettlementPlannerSnapshot,
   SettlementPlannerTile as ApiSettlementPlannerTile,
   SettlementPlannerVillage as ApiSettlementPlannerVillage,
-} from "@bibliothecadao/torii";
+} from "@/runtime/world/herald-pre-session-reader";
 import { Coord, Direction } from "@bibliothecadao/types";
 
 const CONTRACT_MAP_CENTER = 2147483646;

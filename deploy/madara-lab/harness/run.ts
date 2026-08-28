@@ -16,7 +16,7 @@ interface HarnessCliOptions {
   minutes: number;
   rpcUrl: string;
   setupConcurrency: number;
-  toriiSqlUrl: string;
+  heraldUrl: string;
 }
 
 interface GameplayContractsArtifact {
@@ -37,7 +37,7 @@ interface HarnessGame {
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
 const LAB_DIRECTORY = path.resolve(import.meta.dir, "..");
 const DEFAULT_RPC_URL = "http://127.0.0.1:5050/rpc/v0_9_0";
-const DEFAULT_TORII_SQL_URL = "http://127.0.0.1:8090/sql";
+const DEFAULT_HERALD_URL = "http://127.0.0.1:3003";
 const MADARA_ADMIN_ADDRESS = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d";
 const MADARA_ADMIN_PRIVATE_KEY = "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";
 
@@ -72,13 +72,13 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     minutes,
     rpcUrl: values["rpc-url"] ?? process.env.RPC_URL ?? DEFAULT_RPC_URL,
     setupConcurrency,
-    toriiSqlUrl: values["torii-sql-url"] ?? process.env.TORII_SQL_URL ?? DEFAULT_TORII_SQL_URL,
+    heraldUrl: values["herald-url"] ?? process.env.HERALD_URL ?? DEFAULT_HERALD_URL,
   };
 }
 
 async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
-  process.env.TORII_SQL_URL = options.toriiSqlUrl;
+  process.env.HERALD_URL = options.heraldUrl;
 
   const provider = createHarnessProvider(options.rpcUrl);
   const [chainId, gameplayContracts, manifest] = await Promise.all([
@@ -115,7 +115,7 @@ async function main(): Promise<void> {
       setupConcurrency: options.setupConcurrency,
       setupTransactions,
       systems,
-      toriiSqlUrl: options.toriiSqlUrl,
+      heraldUrl: options.heraldUrl,
     });
     gameRuns.push({ accounts, bots, game });
   }
@@ -133,7 +133,7 @@ async function main(): Promise<void> {
     },
     provider,
     systems,
-    toriiSqlUrl: options.toriiSqlUrl,
+    heraldUrl: options.heraldUrl,
   });
 
   const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
@@ -149,7 +149,7 @@ async function main(): Promise<void> {
     minutes: options.minutes,
     rpcUrl: options.rpcUrl,
     setupTransactions,
-    toriiSqlUrl: options.toriiSqlUrl,
+    heraldUrl: options.heraldUrl,
     workload,
   });
 
@@ -254,7 +254,7 @@ Usage: bun deploy/madara-lab/harness/run.ts [options]
   --game-id <id>                 use an existing dev-mode game instead of creating one
   --game-name <name>             name for a new game or report label for --game-id
   --rpc-url <url>                default: ${DEFAULT_RPC_URL}
-  --torii-sql-url <url>          default: ${DEFAULT_TORII_SQL_URL}
+  --herald-url <url>             default: ${DEFAULT_HERALD_URL}
 `);
 }
 

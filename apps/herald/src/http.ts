@@ -1,6 +1,8 @@
-import type { GameSnapshot, ReplayMetrics } from "./types";
+import { buildGameDirectory } from "./game-directory";
+import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 
 interface SnapshotSource {
+  modelRows: (model: string) => FoldRow[];
   snapshot: (gameId: string, confirmedBlock: number) => GameSnapshot;
 }
 
@@ -13,8 +15,14 @@ interface HeraldHttpState {
   undecodableEventCount: () => number;
 }
 
+const PUBLIC_READ_HEADERS = {
+  "access-control-allow-methods": "GET, OPTIONS",
+  "access-control-allow-origin": "*",
+  "cache-control": "no-store",
+} as const;
+
 const jsonResponse = (body: unknown, status = 200): Response =>
-  Response.json(body, { headers: { "cache-control": "no-store" }, status });
+  Response.json(body, { headers: PUBLIC_READ_HEADERS, status });
 
 const selectModels = (snapshot: GameSnapshot, names: string[]): GameSnapshot => {
   if (names.length === 0) return snapshot;
@@ -33,10 +41,12 @@ const requestedModels = (url: URL): string[] =>
 
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Response) => {
   const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const directoryPath = `/${state.chain}/games`;
   const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);
 
   return (request) => {
     const url = new URL(request.url);
+    if (request.method === "OPTIONS") return new Response(null, { headers: PUBLIC_READ_HEADERS, status: 204 });
     if (request.method === "GET" && url.pathname === "/health") {
       return jsonResponse({
         confirmed_block: state.confirmedBlock(),
@@ -46,6 +56,16 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         success: true,
         undecodable_events: state.undecodableEventCount(),
       });
+    }
+
+    if (request.method === "GET" && url.pathname === directoryPath) {
+      return jsonResponse(
+        buildGameDirectory({
+          chain: state.chain,
+          confirmedBlock: state.confirmedBlock(),
+          fold: state.fold,
+        }),
+      );
     }
 
     const match = request.method === "GET" ? snapshotPath.exec(url.pathname) : null;

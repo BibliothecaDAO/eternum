@@ -125,6 +125,11 @@ const ensureFeeTokenBalance = async ({
     chain,
     worldName,
   });
+
+  const confirmedBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
+  if (confirmedBalance < feeAmount) {
+    throw new Error("Fee-token top-up was submitted but the balance did not update.");
+  }
 };
 
 export const useWorldRegistration = ({

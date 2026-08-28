@@ -10,7 +10,9 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
   it("puts all current entity truth in the gamewide channel", () => {
     const names = getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true }).map(({ name }) => name);
 
-    expect(names).toEqual(expect.arrayContaining(["GameRegistry", "Structure", "Resource", "ExplorerTroops"]));
+    expect(names).toEqual(
+      expect.arrayContaining(["GameRegistry", "Structure", "StructureVillageSlots", "Resource", "ExplorerTroops"]),
+    );
     expect(names).not.toEqual(expect.arrayContaining(["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"]));
   });
 

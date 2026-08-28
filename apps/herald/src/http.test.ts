@@ -24,7 +24,43 @@ const handler = createHeraldRequestHandler({
   chain: "madara",
   confirmedBlock: () => 12,
   decodedModelCount: 39,
-  fold: { snapshot: () => snapshot },
+  fold: {
+    modelRows: (model) => {
+      if (model === "GameRegistry") {
+        return [
+          {
+            key: "0x2",
+            value: {
+              game_id: "0x7",
+              name: "0x74657374",
+              preset_id: "0x1",
+              status: "Created",
+              dev_mode_on: false,
+              start_settling_at: "0x1",
+              start_main_at: "0x2",
+              end_at: "0x3",
+              end_grace_seconds: "0x4",
+              registration_grace_seconds: "0x5",
+            },
+          },
+        ];
+      }
+      if (model === "ChainConfig") {
+        return [
+          {
+            key: "0x3",
+            value: {
+              entry_token_address: "0x0",
+              fee_token: "0x123",
+              mmr_config: { enabled: false },
+            },
+          },
+        ];
+      }
+      return [];
+    },
+    snapshot: () => snapshot,
+  },
   metrics,
   undecodableEventCount: () => 2,
 });
@@ -43,6 +79,15 @@ describe("herald HTTP", () => {
     const response = handler(new Request("http://herald/madara/games/7/snapshot?models=Structure"));
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ game_id: "7", models: [{ model: "Structure", rows: [] }] });
+
+    const directoryResponse = handler(new Request("http://herald/madara/games"));
+    expect(directoryResponse.headers.get("access-control-allow-origin")).toBe("*");
+    await expect(directoryResponse.json()).resolves.toMatchObject({
+      chain: "madara",
+      games: [{ game_id: 7, name: "test", status: "Created" }],
+    });
+
+    expect(handler(new Request("http://herald/madara/games", { method: "OPTIONS" })).status).toBe(204);
   });
 
   it("rejects unknown models and routes", async () => {

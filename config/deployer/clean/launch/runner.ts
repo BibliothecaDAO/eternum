@@ -174,7 +174,7 @@ function applyGameIdentity(launch: PreparedLaunch, gameId: number): void {
 
 async function findExistingGame(launch: PreparedLaunch) {
   try {
-    return await findGameRegistryByName(launch.request.gameName);
+    return await findGameRegistryByName(launch.request.gameName, { chain: launch.runtime.environment.chain });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(
@@ -208,7 +208,7 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   if (existingGame) {
     applyGameIdentity(launch, existingGame.gameId);
     launch.runtime.progress.log(
-      `Game "${launch.request.gameName}" is already indexed as ${existingGame.gameId}; skipping create_game`,
+      `Game "${launch.request.gameName}" already exists as ${existingGame.gameId}; skipping create_game`,
     );
     return;
   }
@@ -232,7 +232,7 @@ async function resolveGameId(launch: PreparedLaunch): Promise<number> {
   }
   const existingGame = await findExistingGame(launch);
   if (!existingGame) {
-    throw new Error(`No game id is recorded or indexed for "${launch.request.gameName}"`);
+    throw new Error(`No game id is recorded or present in Herald for "${launch.request.gameName}"`);
   }
   applyGameIdentity(launch, existingGame.gameId);
   return existingGame.gameId;
@@ -247,16 +247,17 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
     () =>
       waitForGameRegistryById({
         gameId,
+        chain: launch.runtime.environment.chain,
         timeoutMs: launch.request.waitForFactoryIndexTimeoutMs ?? DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
         pollIntervalMs: launch.request.waitForFactoryIndexPollMs ?? DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
         onRetry: (attempt, elapsedMs) =>
           launch.runtime.progress.log(
-            `GameRegistry row ${gameId} still pending after ${formatDuration(elapsedMs)} (${attempt} polls)`,
+            `GameRegistry row ${gameId} is not in Herald after ${formatDuration(elapsedMs)} (${attempt} polls)`,
           ),
       }),
     {
       start: `Waiting for GameRegistry row ${gameId}`,
-      success: (_, elapsedMs) => `GameRegistry row ${gameId} indexed in ${formatDuration(elapsedMs)}`,
+      success: (_, elapsedMs) => `GameRegistry row ${gameId} reached Herald in ${formatDuration(elapsedMs)}`,
     },
   );
   applyGameIdentity(launch, row.gameId);

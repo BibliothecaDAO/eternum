@@ -89,6 +89,10 @@ export class LiveWorld {
     return this.confirmedFold.snapshot(gameId, this.confirmedBlockValue);
   }
 
+  public modelRows(model: string) {
+    return this.confirmedFold.modelRows(model);
+  }
+
   public attach(gameId: string, socket: StreamSocket): GameStreamSession {
     this.knownGames.add(gameId);
     return this.hub.attach({

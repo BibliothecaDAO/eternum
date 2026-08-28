@@ -27,12 +27,12 @@ import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availabili
 import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { normalizeSelector } from "@/runtime/world/normalize";
-import { createSqlApi, resolveWorldSqlBaseUrl } from "@/services/api";
 import {
-  buildPlayerBlitzSettlementSnapshotQuery,
-  buildPlayerOwnedStructureCountQuery,
-} from "@/services/blitz/blitz-settlement-sql";
-import { resolveGameId } from "@/runtime/world/game-registry";
+  createHeraldPreSessionReader,
+  type PlayerStructure,
+  type RealmVillageSlot,
+  type SettlementSnapshot,
+} from "@/runtime/world/herald-pre-session-reader";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -40,8 +40,6 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRpcUrlForChain } from "@/runtime/chain-rpc";
 import { BootstrapLoadingPanel } from "@/ui/layouts/bootstrap-loading/bootstrap-loading-panel";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import type { PlayerStructure, RealmVillageSlot } from "@bibliothecadao/torii";
-import { buildUnscopedApiUrl, fetchWithErrorHandling, formatAddressForQuery } from "@bibliothecadao/torii";
 import { getContractByName } from "@dojoengine/core";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { Coord, Direction, DirectionName, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -76,7 +74,7 @@ import {
 } from "./settlement-planner-utils";
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
 import { env } from "../../../../../env";
-import { appchainModel, gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
+import { gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
 
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;
@@ -98,12 +96,6 @@ const debugLog = (_worldName: string | null, ..._args: unknown[]) => {
   if (DEBUG_MODAL) {
     console.log("[GameEntryModal]", ..._args);
   }
-};
-
-type SettlementSnapshot = {
-  hasSettlementRecord: boolean;
-  hasSettledStructure: boolean;
-  settledCount: number;
 };
 
 type SettlementStatus = {
@@ -501,40 +493,12 @@ const mapVillageSettleError = (error: unknown): string => {
   return "Village settlement failed. Please try again.";
 };
 
-type DirectSettlementSnapshotRow = {
-  player?: unknown;
-  structure_ids?: unknown;
-};
-
 type ResolvedWorldSystemAddresses = {
   blitzRealmSystemsAddress: string | null;
   nameSystemsAddress: string | null;
   realmSystemsAddress: string | null;
   spireSystemsAddress: string | null;
   villageSystemsAddress: string | null;
-};
-
-const parseSpanLength = (value: unknown): number => {
-  if (Array.isArray(value)) {
-    return value.length;
-  }
-
-  if (typeof value !== "string") {
-    return 0;
-  }
-
-  const trimmed = value.trim();
-  if (trimmed.length === 0 || trimmed === "[]") {
-    return 0;
-  }
-
-  try {
-    const parsed = JSON.parse(trimmed);
-    return Array.isArray(parsed) ? parsed.length : 0;
-  } catch {
-    const compact = trimmed.replace(/^\[/, "").replace(/\]$/, "");
-    return compact.length === 0 ? 0 : compact.split(",").length;
-  }
 };
 
 const getNormalizedErrorMessage = (error: unknown): string =>
@@ -2427,7 +2391,7 @@ const VillageRevealPhase = ({
         {spinning ? "Revealing Village Resource..." : "Village Resource Revealed"}
       </h2>
       <p className="text-xs text-gold/60 mb-4">
-        {spinning ? "Resolving on-chain assignment from Torii..." : `Your village produces ${displayedResourceLabel}.`}
+        {spinning ? "Resolving on-chain assignment from Herald..." : `Your village produces ${displayedResourceLabel}.`}
       </p>
 
       <motion.div
@@ -2593,19 +2557,9 @@ export const GameEntryModal = ({
 
   const navigationEntryContext = entryContext;
   const selectedWorldRpcUrl = useMemo(() => getRpcUrlForChain(chain), [chain]);
-  const selectedWorldSqlBaseUrl = useMemo(
-    () => resolveWorldSqlBaseUrl({ chain, worldName, worldId: worldMeta?.worldId ?? null }),
-    [chain, worldName, worldMeta?.worldId],
-  );
-  // Explicitly scoped: entry-flow reads target the selected game before any
-  // bootstrap sets the ambient scope (and regardless of a previous game's).
-  const selectedWorldSqlApi = useMemo(
-    () =>
-      createSqlApi(
-        selectedWorldSqlBaseUrl,
-        chain === "appchain" && worldMeta?.gameId ? { namespace: "s2", gameId: worldMeta.gameId } : undefined,
-      ),
-    [chain, selectedWorldSqlBaseUrl, worldMeta?.gameId],
+  const selectedWorldReader = useMemo(
+    () => createHeraldPreSessionReader(getWorldById(worldMeta?.worldId) ?? getDefaultWorld(), worldMeta?.gameId ?? 0),
+    [worldMeta?.gameId, worldMeta?.worldId],
   );
   const seasonAddresses = getSeasonAddresses(chain);
   // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
@@ -2678,11 +2632,11 @@ export const GameEntryModal = ({
     error: ownedStructuresErrorRaw,
     refetch: refetchOwnedStructures,
   } = useQuery({
-    queryKey: ["eternumOwnedStructures", chain, worldName, account?.address],
-    enabled: isOpen && isEternumMode && Boolean(account?.address),
+    queryKey: ["eternumOwnedStructures", chain, worldName, worldMeta?.gameId, account?.address],
+    enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId) && Boolean(account?.address),
     queryFn: async () => {
       if (!account?.address) return [];
-      return await selectedWorldSqlApi.fetchPlayerStructures(account.address);
+      return await selectedWorldReader.fetchPlayerStructures(account.address);
     },
     staleTime: 10_000,
   });
@@ -2691,9 +2645,9 @@ export const GameEntryModal = ({
     error: villageSlotsErrorRaw,
     refetch: refetchRealmVillageSlots,
   } = useQuery({
-    queryKey: ["eternumRealmVillageSlots", chain, worldName],
-    enabled: isOpen && isEternumMode,
-    queryFn: async () => await selectedWorldSqlApi.fetchRealmVillageSlots(),
+    queryKey: ["eternumRealmVillageSlots", chain, worldName, worldMeta?.gameId],
+    enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId),
+    queryFn: async () => await selectedWorldReader.fetchRealmVillageSlots(),
     staleTime: 10_000,
   });
   const {
@@ -2701,14 +2655,15 @@ export const GameEntryModal = ({
     isLoading: isLoadingSeasonOccupiedSlots,
     error: seasonOccupiedSlotsErrorRaw,
   } = useQuery({
-    queryKey: ["seasonPlacementOccupiedSlots", chain, worldName],
+    queryKey: ["seasonPlacementOccupiedSlots", chain, worldName, worldMeta?.gameId],
     enabled:
       isOpen &&
       isEternumMode &&
+      Boolean(worldMeta?.gameId) &&
       (worldMeta?.settlementLayerMax ?? null) != null &&
       (worldMeta?.settlementBaseDistance ?? null) != null,
     queryFn: async () => {
-      const settlements = await selectedWorldSqlApi.fetchRealmSettlements();
+      const settlements = await selectedWorldReader.fetchRealmSettlements();
       const coordKeys = new Set<string>();
       for (const settlement of settlements) {
         coordKeys.add(`${settlement.coord_x}:${settlement.coord_y}`);
@@ -2722,10 +2677,10 @@ export const GameEntryModal = ({
   const ownedStructuresError = ownedStructuresErrorRaw instanceof Error ? ownedStructuresErrorRaw.message : null;
   const villageSlotsError = villageSlotsErrorRaw instanceof Error ? villageSlotsErrorRaw.message : null;
   const settlementPlannerData = useSettlementPlannerData({
-    enabled: isOpen && isEternumMode && unifiedSettlementPlannerEnabled,
+    enabled: isOpen && isEternumMode && Boolean(worldMeta?.gameId) && unifiedSettlementPlannerEnabled,
     chain,
     worldName,
-    sqlApi: selectedWorldSqlApi,
+    reader: selectedWorldReader,
     layerMax: worldMeta?.settlementLayerMax ?? null,
     layersSkipped: worldMeta?.settlementLayersSkipped ?? null,
     baseDistance: worldMeta?.settlementBaseDistance ?? null,
@@ -3281,40 +3236,9 @@ export const GameEntryModal = ({
   }, [phase, unifiedSettlementPlannerEnabled, worldName, chain, entryIntent]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
-    if (!account?.address) return null;
-
-    const playerAddress = formatAddressForQuery(account.address);
-    // The shared world holds every game's rows; these queries target the
-    // CHOSEN game explicitly and bypass the ambient SQL scope (which isn't
-    // set until bootstrap).
-    const settlementGameId = await resolveGameId(worldName);
-    const [settlementRows, ownedRows] = await Promise.all([
-      fetchWithErrorHandling<DirectSettlementSnapshotRow>(
-        buildUnscopedApiUrl(
-          selectedWorldSqlBaseUrl,
-          buildPlayerBlitzSettlementSnapshotQuery(playerAddress, settlementGameId),
-        ),
-        "Failed to fetch blitz settlement state",
-      ),
-      // Owned-structure indexing can lag behind settle-finish rows right after submission.
-      fetchWithErrorHandling<{ owned_count?: unknown }>(
-        buildUnscopedApiUrl(
-          selectedWorldSqlBaseUrl,
-          buildPlayerOwnedStructureCountQuery(playerAddress, settlementGameId),
-        ),
-        "Failed to fetch owned structures",
-      ).catch(() => [] as { owned_count?: unknown }[]),
-    ]);
-    const settlement = settlementRows[0] ?? null;
-    const indexedSettledCount = parseSpanLength(settlement?.structure_ids);
-    const ownedStructureCount = Number(ownedRows[0]?.owned_count ?? 0) || 0;
-
-    return {
-      hasSettlementRecord: settlement != null,
-      hasSettledStructure: ownedStructureCount > 0,
-      settledCount: Math.max(indexedSettledCount, ownedStructureCount),
-    };
-  }, [account, selectedWorldSqlBaseUrl, worldName]);
+    if (!account?.address || !worldMeta?.gameId) return null;
+    return selectedWorldReader.fetchSettlementSnapshot(account.address);
+  }, [account?.address, selectedWorldReader, worldMeta?.gameId]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -3413,24 +3337,8 @@ export const GameEntryModal = ({
   const resolveOptionalPlayerNameForSettlement = useCallback(async (): Promise<string | null> => {
     if (!account?.address) return null;
 
-    const playerAddress = formatAddressForQuery(account.address);
-    // AddressName is chain-global on the appchain worlds; explicit table +
-    // unscoped URL because this runs before any bootstrap scope exists.
-    const rows = await fetchWithErrorHandling<{ name?: unknown }>(
-      buildUnscopedApiUrl(
-        selectedWorldSqlBaseUrl,
-        `
-          SELECT name
-          FROM "${appchainModel("AddressName")}"
-          WHERE address = '${playerAddress}'
-          LIMIT 1;
-        `,
-      ),
-      "Failed to fetch player name",
-    );
-    const addressName = rows[0] ?? null;
-
-    if (hasAddressNameValue(addressName?.name)) {
+    const addressName = await selectedWorldReader.fetchAddressName(account.address);
+    if (hasAddressNameValue(addressName)) {
       return null;
     }
 
@@ -3439,7 +3347,7 @@ export const GameEntryModal = ({
     }
 
     return usernameFelt;
-  }, [account?.address, selectedWorldSqlBaseUrl, usernameFelt]);
+  }, [account?.address, selectedWorldReader, usernameFelt]);
 
   const buildSetAddressNameCall = useCallback(
     (playerName: string): Call => ({
@@ -3515,7 +3423,7 @@ export const GameEntryModal = ({
         modelNames: ["Structure"],
         onSlow: (elapsedMs) => {},
         read: async () => {
-          const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
+          const structures = await selectedWorldReader.fetchPlayerStructures(ownerAddress);
           const newVillage = structures
             .filter(
               (structure) =>
@@ -3545,7 +3453,7 @@ export const GameEntryModal = ({
       }
       return result;
     },
-    [beginEntityWait, chain, selectedWorldSqlApi, worldMeta?.gameId, worldMeta?.worldId, worldName],
+    [beginEntityWait, chain, selectedWorldReader, worldMeta?.gameId, worldMeta?.worldId, worldName],
   );
 
   // Check settlement status after bootstrap completes

@@ -2,6 +2,7 @@ export * from "./entity-ingest-queue";
 export * from "./game-sync-runtime";
 export * from "./game-sync-types";
 export * from "./herald-game-sync-transport";
+export * from "./herald-http-types";
 export * from "./model-manifest";
 export * from "./model-stream-clause";
 export * from "./scheduler";

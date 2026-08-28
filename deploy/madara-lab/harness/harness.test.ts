@@ -29,7 +29,7 @@ import {
 } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
 import { BlockTag } from "starknet";
-import { ToriiObserver } from "./torii-observer";
+import { HeraldObserver } from "./herald-observer";
 
 describe("Madara harness workload", () => {
   it("separates the requested mix from completed outcomes", () => {
@@ -67,7 +67,7 @@ describe("Madara harness workload", () => {
     expect(createHarnessProvider("http://rpc.test").channel.blockIdentifier).toBe(BlockTag.PRE_CONFIRMED);
   });
 
-  it("parses the Torii settlement encodings seen across versions", () => {
+  it("parses historical settlement encodings", () => {
     expect(parseStructureIds("[2,5,8]")).toEqual(["2", "5", "8"]);
     expect(parseStructureIds("0x2, 0x5, 8")).toEqual(["2", "5", "8"]);
   });
@@ -117,10 +117,10 @@ describe("Madara harness workload", () => {
   it("separates game-rule exhaustion from harness pathing", () => {
     expect(classifyWorkloadFailure(new Error("No explorer has 30 stamina for explore"))).toBe("game_rule_limit");
     expect(classifyWorkloadFailure(new Error("one of the tiles in path is occupied"))).toBe("harness_pathing");
-    expect(classifyWorkloadFailure(new Error("indexed production event without a labor or wood output delta"))).toBe(
+    expect(classifyWorkloadFailure(new Error("production completed without a labor or wood output delta"))).toBe(
       "chain_or_driver",
     );
-    expect(classifyWorkloadFailure(new Error("Torii query timed out"))).toBe("chain_or_driver");
+    expect(classifyWorkloadFailure(new Error("Herald snapshot timed out"))).toBe("chain_or_driver");
   });
 
   it("records an action RPC failure instead of rejecting the workload", async () => {
@@ -138,7 +138,7 @@ describe("Madara harness workload", () => {
       minutes: 0.001,
       provider: provider as never,
       systems: { blitzRealm: "0x1", production: "0x2", troopManagement: "0x3", troopMovement: "0x4" },
-      toriiSqlUrl: "http://127.0.0.1:1/sql",
+      heraldUrl: "http://127.0.0.1:1",
     });
 
     expect(workload.actions).toHaveLength(1);
@@ -232,46 +232,53 @@ describe("Madara harness reporting", () => {
   });
 });
 
-describe("Madara harness Torii observer", () => {
-  it("batches concurrent transaction and explorer observations", async () => {
-    let requests = 0;
+describe("Madara harness Herald observer", () => {
+  it("waits for the confirmed fold to contain every setup row", async () => {
+    let reads = 0;
     const server = Bun.serve({
       port: 0,
-      fetch(request) {
-        requests += 1;
-        const query = new URL(request.url).searchParams.get("query") ?? "";
-        if (query.includes("FROM transactions")) {
-          return Response.json([
-            { transaction_hash: "0x1", source: "transactions" },
-            { transaction_hash: "0x1", source: "events" },
-            { transaction_hash: "0x2", source: "transactions" },
-            { transaction_hash: "0x2", source: "events" },
-          ]);
-        }
-        return Response.json([explorerRow("11", "event-11"), explorerRow("12", "event-12")]);
+      fetch() {
+        reads += 1;
+        return heraldSnapshot("Structure", reads === 1 ? [] : [{ entity_id: "11" }]);
       },
     });
 
     try {
-      const observer = new ToriiObserver(`http://127.0.0.1:${server.port}`, 5);
+      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
+      const rows = await observer.waitForModelRows(
+        7,
+        ["Structure"],
+        (models) => models.get("Structure")?.length === 1,
+        1_000,
+      );
+
+      expect(rows.get("Structure")).toEqual([{ entity_id: "11" }]);
+      expect(reads).toBe(2);
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  it("coalesces concurrent explorer snapshot reads", async () => {
+    let requests = 0;
+    const server = Bun.serve({
+      port: 0,
+      fetch() {
+        requests += 1;
+        return heraldSnapshot("ExplorerTroops", [explorerRow("11", 1), explorerRow("12", 1)]);
+      },
+    });
+
+    try {
+      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const observations = await Promise.all([
-        observer.waitForTransaction("0x1", 1_000),
-        observer.waitForTransaction("0x2", 1_000),
-        observer.waitForExplorer(7, "11", "previous-11", 1_000),
-        observer.waitForExplorer(7, "12", "previous-12", 1_000),
+        observer.waitForExplorer(7, "11", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 1_000),
+        observer.waitForExplorer(7, "12", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 1_000),
       ]);
 
-      expect(observations[0]).toMatchObject({
-        eventIndexedAt: expect.any(Number),
-        transactionIndexedAt: expect.any(Number),
-      });
-      expect(observations[1]).toMatchObject({
-        eventIndexedAt: expect.any(Number),
-        transactionIndexedAt: expect.any(Number),
-      });
-      expect(observations[2]).toMatchObject({ explorerId: "11", eventId: "event-11" });
-      expect(observations[3]).toMatchObject({ explorerId: "12", eventId: "event-12" });
-      expect(requests).toBe(2);
+      expect(observations[0]).toMatchObject({ explorerId: "11", x: 1 });
+      expect(observations[1]).toMatchObject({ explorerId: "12", x: 1 });
+      expect(requests).toBe(1);
     } finally {
       server.stop(true);
     }
@@ -283,14 +290,12 @@ describe("Madara harness Torii observer", () => {
       port: 0,
       fetch() {
         resourceReads += 1;
-        return Response.json([
-          resourceRow("11", resourceReads === 1 ? "event-1" : "event-2", "100", resourceReads === 1 ? "4" : "9"),
-        ]);
+        return heraldSnapshot("Resource", [resourceRow("11", "100", resourceReads === 1 ? "4" : "9")]);
       },
     });
 
     try {
-      const observer = new ToriiObserver(`http://127.0.0.1:${server.port}`, 5);
+      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const before = await observer.readResource(7, "11");
       const after = await observer.waitForResource(7, "11", before, 1_000);
       expect(after).toMatchObject({ structureId: "11", laborBalance: 100n, woodOutput: 9n });
@@ -299,22 +304,18 @@ describe("Madara harness Torii observer", () => {
     }
   });
 
-  it("rejects an indexed production event with no resource delta", async () => {
-    let resourceReads = 0;
+  it("rejects a production action with no resource delta", async () => {
     const server = Bun.serve({
       port: 0,
       fetch() {
-        resourceReads += 1;
-        return Response.json([resourceRow("11", resourceReads === 1 ? "event-1" : "event-2", "100", "4")]);
+        return heraldSnapshot("Resource", [resourceRow("11", "100", "4")]);
       },
     });
 
     try {
-      const observer = new ToriiObserver(`http://127.0.0.1:${server.port}`, 5);
+      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const before = await observer.readResource(7, "11");
-      await expect(observer.waitForResource(7, "11", before, 1_000)).rejects.toThrow(
-        "without a labor or wood output delta",
-      );
+      await expect(observer.waitForResource(7, "11", before, 20)).rejects.toThrow("did not show a labor or wood");
     } finally {
       server.stop(true);
     }
@@ -350,24 +351,28 @@ describe("Madara harness CLI and concurrency", () => {
   });
 });
 
-function explorerRow(explorerId: string, eventId: string) {
+function heraldSnapshot(model: string, values: Array<Record<string, unknown>>) {
+  return Response.json({
+    confirmed_block: 12,
+    game_id: "7",
+    models: [{ model, rows: values.map((value, index) => ({ key: `0x${index + 1}`, value })) }],
+  });
+}
+
+function explorerRow(explorerId: string, x: number) {
   return {
-    event_id: eventId,
     explorer_id: explorerId,
     owner: explorerId,
-    stamina: "120",
-    stamina_tick: "1",
-    x: 1,
-    y: 2,
+    troops: { stamina: { amount: "120", updated_tick: "1" } },
+    coord: { x, y: 2 },
   };
 }
 
-function resourceRow(structureId: string, eventId: string, laborBalance: string, woodOutput: string) {
+function resourceRow(structureId: string, laborBalance: string, woodOutput: string) {
   return {
-    event_id: eventId,
-    labor_balance: laborBalance,
-    structure_id: structureId,
-    wood_output: woodOutput,
+    entity_id: structureId,
+    LABOR_BALANCE: laborBalance,
+    WOOD_PRODUCTION: { output_amount_left: woodOutput },
   };
 }
 
@@ -383,7 +388,6 @@ function readyHarnessBot(): HarnessBot {
         coord: { x: 1, y: 1 },
         explorerId: "1",
         lastUsedAt: -1,
-        modelEventId: "event-1",
         outwardDirection: 0,
         pathDirections: [],
         stamina: 30,

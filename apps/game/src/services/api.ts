@@ -1,8 +1,5 @@
 import { SqlApi, type SqlGameScope } from "@bibliothecadao/torii";
 import { getActiveWorld } from "@/runtime/world";
-import { getWorldById } from "@/runtime/world/world-directory";
-import { resolveWorldToriiBaseUrl as resolveSharedWorldToriiBaseUrl } from "@/runtime/world/world-torii";
-import type { GameChain as Chain } from "@realms-world/chain";
 import { env } from "../../env";
 
 const ensureSqlSuffix = (baseUrl: string): string => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
@@ -16,41 +13,6 @@ const cacheBaseUrl = env.VITE_PUBLIC_ENABLE_SQL_CACHE ? env.VITE_PUBLIC_REALTIME
 
 export const createSqlApi = (baseUrl: string, scope?: SqlGameScope): SqlApi =>
   new SqlApi(ensureSqlSuffix(baseUrl), cacheBaseUrl, scope);
-
-const resolveWorldToriiBaseUrl = ({
-  chain,
-  worldName,
-  worldId,
-}: {
-  chain: Chain;
-  worldName: string;
-  worldId?: string | null;
-}): string => {
-  // The world directory is the authority: an eternum game must never read the
-  // blitz world's torii just because that is the env default.
-  const directoryWorld = worldId ? getWorldById(worldId) : null;
-  if (directoryWorld) {
-    return directoryWorld.toriiBaseUrl;
-  }
-
-  const active = getActiveWorld();
-  if (active?.chain === chain && active.name === worldName) {
-    return active.toriiBaseUrl;
-  }
-
-  // Entry flows can hit this before any world profile exists to consult.
-  return resolveSharedWorldToriiBaseUrl(worldName);
-};
-
-export const resolveWorldSqlBaseUrl = ({
-  chain,
-  worldName,
-  worldId,
-}: {
-  chain: Chain;
-  worldName: string;
-  worldId?: string | null;
-}): string => ensureSqlSuffix(resolveWorldToriiBaseUrl({ chain, worldName, worldId }));
 
 export let sqlApi = createSqlApi(currentBaseUrl);
 

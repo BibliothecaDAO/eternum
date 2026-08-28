@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-08-28",
+    title: "Independent Game Entry",
+    description:
+      "Game lists, settlement, and spectating now load directly from Herald, keeping entry available when the legacy indexer is offline.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-28",
     title: "Reliable Realm Building",
     description:
       "Building actions now prevent duplicate placements while one is submitting, and the in-game connection banner follows the active gameplay account.",

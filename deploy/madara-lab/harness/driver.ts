@@ -5,7 +5,7 @@ import { resolveGameTransactionResourceBounds } from "../../../packages/core/src
 import { Biome } from "../../../packages/core/src/utils/biome/biome";
 import { BiomeType } from "../../../packages/types/src/constants/hex";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
-import { queryTorii, ToriiObserver, type IndexedExplorer as ExplorerRow } from "./torii-observer";
+import { HeraldObserver, type HeraldExplorer as ExplorerRow } from "./herald-observer";
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
@@ -18,7 +18,6 @@ export type TransactionOutcome =
   | "rejected"
   | "submit_failed"
   | "confirmation_timeout"
-  | "index_timeout"
   | "driver_failed";
 
 interface RpcMethodMetrics {
@@ -41,13 +40,10 @@ export interface TrackedTransaction {
   actionIndex?: number;
   botId: number;
   error?: string;
-  eventIndexedAt?: string;
   exploreRequested?: boolean;
   finalityStatus?: string;
   failureClass?: WorkloadFailureClass;
   gameId: number;
-  indexedAt?: string;
-  indexedMs?: number;
   kind: string;
   outcome: TransactionOutcome;
   preConfirmedAt?: string;
@@ -63,7 +59,6 @@ export interface TrackedTransaction {
   submitMs?: number;
   tick?: number;
   transactionHash?: string;
-  transactionIndexedAt?: string;
 }
 
 export interface HarnessSystemAddresses {
@@ -99,7 +94,6 @@ interface ExplorerState {
   coord: Coord;
   explorerId: string;
   lastUsedAt: number;
-  modelEventId: string;
   outwardDirection: number;
   pathDirections: number[];
   stamina: number;
@@ -133,7 +127,7 @@ interface PrepareHarnessBotsOptions {
   setupConcurrency?: number;
   setupTransactions: TrackedTransaction[];
   systems: HarnessSystemAddresses;
-  toriiSqlUrl: string;
+  heraldUrl: string;
 }
 
 interface RunWorkloadOptions {
@@ -143,7 +137,7 @@ interface RunWorkloadOptions {
   onTick?: (completedTicks: number, totalTicks: number) => void;
   provider: RpcProvider;
   systems: HarnessSystemAddresses;
-  toriiSqlUrl: string;
+  heraldUrl: string;
 }
 
 interface ExplorerActionPlan {
@@ -172,7 +166,6 @@ interface TrackTransactionOptions {
   scheduledAtMs?: number;
   stage: TransactionStage;
   tick?: number;
-  toriiObserver: ToriiObserver;
 }
 
 const CENTER_COORD = 2_147_483_646;
@@ -282,18 +275,18 @@ export async function prepareHarnessBots({
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
   setupTransactions,
   systems,
-  toriiSqlUrl,
+  heraldUrl,
 }: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
-  const mapCenter = await readMapCenter(toriiSqlUrl, gameId);
-  const toriiObserver = new ToriiObserver(toriiSqlUrl);
+  const heraldObserver = new HeraldObserver(heraldUrl, "madara");
+  const mapCenter = await readMapCenter(heraldObserver, gameId);
 
   return mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const settle = await settleBot({ harnessAccount, gameId, provider, systems, toriiObserver });
+    const settle = await settleBot({ harnessAccount, gameId, provider, systems });
     setupTransactions.push(settle);
     assertCompleted(settle);
 
-    const structureIds = await readSettlementStructureIds(toriiSqlUrl, gameId, harnessAccount.address);
-    const structures = await readStructures(toriiSqlUrl, gameId, structureIds, mapCenter);
+    const structureIds = await readSettlementStructureIds(heraldObserver, gameId, harnessAccount.address);
+    const structures = await readStructures(heraldObserver, gameId, structureIds, mapCenter);
 
     const provision = await provisionBot({
       account: harnessAccount.account,
@@ -302,12 +295,11 @@ export async function prepareHarnessBots({
       provider,
       structureIds,
       systems,
-      toriiObserver,
     });
     setupTransactions.push(provision);
     assertCompleted(provision);
 
-    const troopTypes = await readStartingTroopTypes(toriiSqlUrl, gameId, structureIds);
+    const troopTypes = await readStartingTroopTypes(heraldObserver, gameId, structureIds);
 
     const createExplorers = await createBotExplorers({
       account: harnessAccount.account,
@@ -316,13 +308,12 @@ export async function prepareHarnessBots({
       provider,
       structures,
       systems,
-      toriiObserver,
       troopTypes,
     });
     setupTransactions.push(createExplorers);
     assertCompleted(createExplorers);
 
-    const explorerRows = await readExplorers(toriiSqlUrl, gameId, structureIds);
+    const explorerRows = await readExplorers(heraldObserver, gameId, structureIds);
     const explorers = structures.map((structure) => {
       const troopType = troopTypes.get(structure.structureId);
       if (troopType === undefined)
@@ -349,7 +340,7 @@ export async function runWorkload({
   onTick,
   provider,
   systems,
-  toriiSqlUrl,
+  heraldUrl,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
@@ -360,7 +351,7 @@ export async function runWorkload({
   const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
   const botSpacingMs = (intervalSeconds * 1_000) / bots.length;
   const pathReservations = createPathReservationsByGame(bots);
-  const toriiObserver = new ToriiObserver(toriiSqlUrl);
+  const heraldObserver = new HeraldObserver(heraldUrl, "madara");
 
   for (let tick = 0; tick < ticks; tick += 1) {
     for (const [botIndex, bot] of bots.entries()) {
@@ -383,7 +374,7 @@ export async function runWorkload({
             scheduledAtMs,
             systems,
             tick,
-            toriiObserver,
+            heraldObserver,
           });
           actions.push(action);
         }),
@@ -453,7 +444,7 @@ export function parseStructureIds(value: unknown): string[] {
     const decoded = JSON.parse(value) as unknown;
     if (Array.isArray(decoded)) return decoded.map(parseEntityId);
   } catch {
-    // Torii versions have emitted both JSON arrays and comma-delimited felt lists.
+    // Preserve compatibility with historical string encodings in saved fixtures.
   }
 
   const ids = value.match(/0x[0-9a-f]+|\d+/gi)?.map(parseEntityId) ?? [];
@@ -521,13 +512,11 @@ async function settleBot({
   gameId,
   provider,
   systems,
-  toriiObserver,
 }: {
   harnessAccount: HarnessAccount;
   gameId: number;
   provider: RpcProvider;
   systems: HarnessSystemAddresses;
-  toriiObserver: ToriiObserver;
 }): Promise<TrackedTransaction> {
   const usernameFelt = shortString.encodeShortString(`bot-${harnessAccount.botId.toString().padStart(3, "0")}`);
   const calls = buildBlitzSettleCalls({
@@ -546,7 +535,6 @@ async function settleBot({
     kind: "settle",
     provider,
     stage: "setup",
-    toriiObserver,
   });
 }
 
@@ -557,7 +545,6 @@ async function provisionBot({
   provider,
   structureIds,
   systems,
-  toriiObserver,
 }: {
   account: Account;
   botId: number;
@@ -565,7 +552,6 @@ async function provisionBot({
   provider: RpcProvider;
   structureIds: string[];
   systems: HarnessSystemAddresses;
-  toriiObserver: ToriiObserver;
 }): Promise<TrackedTransaction> {
   return trackTransaction({
     account,
@@ -579,7 +565,6 @@ async function provisionBot({
     kind: "provision",
     provider,
     stage: "setup",
-    toriiObserver,
   });
 }
 
@@ -590,7 +575,6 @@ async function createBotExplorers({
   provider,
   structures,
   systems,
-  toriiObserver,
   troopTypes,
 }: {
   account: Account;
@@ -599,7 +583,6 @@ async function createBotExplorers({
   provider: RpcProvider;
   structures: StructureState[];
   systems: HarnessSystemAddresses;
-  toriiObserver: ToriiObserver;
   troopTypes: Map<string, number>;
 }): Promise<TrackedTransaction> {
   return trackTransaction({
@@ -607,7 +590,7 @@ async function createBotExplorers({
     botId,
     calls: structures.map(({ direction, structureId }) => {
       const troopType = troopTypes.get(structureId);
-      if (troopType === undefined) throw new Error(`No starting troop type is indexed for structure ${structureId}`);
+      if (troopType === undefined) throw new Error(`No starting troop type exists for structure ${structureId}`);
       return {
         contractAddress: systems.troopManagement,
         entrypoint: "explorer_create",
@@ -618,7 +601,6 @@ async function createBotExplorers({
     kind: "create-explorers",
     provider,
     stage: "setup",
-    toriiObserver,
   });
 }
 
@@ -633,7 +615,7 @@ interface RunBotActionOptions {
   scheduledAtMs: number;
   systems: HarnessSystemAddresses;
   tick: number;
-  toriiObserver: ToriiObserver;
+  heraldObserver: HeraldObserver;
 }
 
 type ExecuteBotActionOptions = RunBotActionOptions & { chainTick: number };
@@ -664,11 +646,11 @@ async function runProductionAction({
   scheduledAtMs,
   systems,
   tick,
-  toriiObserver,
+  heraldObserver,
 }: Omit<ExecuteBotActionOptions, "chainTick" | "kind" | "pathReservations">): Promise<TrackedTransaction> {
   const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
   bot.nextProductionStructure += 1;
-  const resourceBefore = await toriiObserver.readResource(gameId, structure.structureId);
+  const resourceBefore = await heraldObserver.readResource(gameId, structure.structureId);
 
   const transaction = await trackTransaction({
     account: bot.account,
@@ -686,14 +668,13 @@ async function runProductionAction({
     scheduledAtMs,
     stage: "workload",
     tick,
-    toriiObserver,
   });
   if (transaction.outcome !== "completed") {
     return transaction;
   }
 
   try {
-    const resourceAfter = await toriiObserver.waitForResource(
+    const resourceAfter = await heraldObserver.waitForResource(
       gameId,
       structure.structureId,
       resourceBefore,
@@ -725,12 +706,11 @@ async function runExplorerAction({
   scheduledAtMs,
   systems,
   tick,
-  toriiObserver,
+  heraldObserver,
 }: ExecuteBotActionOptions & { kind: "move" | "explore" }): Promise<TrackedTransaction> {
   const plan = planExplorerAction(bot, kind, chainTick, gameId, systems.troopMovement, pathReservations);
   const selectedExplorer = plan.explorer;
   const previousCoord = selectedExplorer.coord;
-  const previousEventId = selectedExplorer.modelEventId;
   selectedExplorer.lastUsedAt = actionIndex;
   const reservation = pathReservations.reserve(selectedExplorer, plan.target);
 
@@ -747,7 +727,6 @@ async function runExplorerAction({
     scheduledAtMs,
     stage: "workload",
     tick,
-    toriiObserver,
   });
   if (transaction.outcome !== "completed") {
     pathReservations.cancel(reservation);
@@ -755,10 +734,10 @@ async function runExplorerAction({
   }
 
   try {
-    const updated = await toriiObserver.waitForExplorer(
+    const updated = await heraldObserver.waitForExplorer(
       gameId,
       selectedExplorer.explorerId,
-      previousEventId,
+      selectedExplorer,
       MODEL_UPDATE_TIMEOUT_MS,
     );
     pathReservations.complete(reservation, { x: updated.x, y: updated.y });
@@ -891,7 +870,6 @@ function applyExplorerUpdate(
   if (kind === "move") explorer.atFrontier = !explorer.atFrontier;
 
   explorer.coord = { x: updated.x, y: updated.y };
-  explorer.modelEventId = updated.eventId;
   explorer.stamina = updated.stamina;
   explorer.staminaUpdatedTick = updated.staminaUpdatedTick;
 }
@@ -972,26 +950,10 @@ async function trackTransaction(options: TrackTransactionOptions): Promise<Track
   }
 
   const timeoutMs = transactionTimeoutMs(options.stage);
-  const [receipt, index] = await Promise.all([
-    waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs, rpc),
-    options.toriiObserver.waitForTransaction(transactionHash, timeoutMs),
-  ]);
-
-  Object.assign(record, receipt);
-  if (index.transactionIndexedAt !== undefined) {
-    record.transactionIndexedAt = toIso(index.transactionIndexedAt);
-  }
-  if (index.eventIndexedAt !== undefined) record.eventIndexedAt = toIso(index.eventIndexedAt);
-  if (index.transactionIndexedAt !== undefined && index.eventIndexedAt !== undefined) {
-    const indexedAtMs = Math.max(index.transactionIndexedAt, index.eventIndexedAt);
-    record.indexedAt = toIso(indexedAtMs);
-    record.indexedMs = indexedAtMs - Date.parse(record.submittedAt!);
-  }
-
-  if (record.outcome === "completed" && record.indexedAt === undefined) {
-    record.outcome = "index_timeout";
-    record.error = `Transaction hash did not appear in both Torii transactions and events within ${timeoutMs / 1_000} seconds`;
-  }
+  Object.assign(
+    record,
+    await waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs, rpc),
+  );
   record.rpc = snapshotRpcMetrics(rpc);
   return record;
 }
@@ -1064,25 +1026,29 @@ async function waitForReceiptLifecycle(
   };
 }
 
-async function readMapCenter(toriiSqlUrl: string, gameId: number): Promise<Coord> {
-  const rows = await queryTorii<{ map_center_offset: number }>(
-    toriiSqlUrl,
-    `SELECT map_center_offset FROM "s2-WorldConfig" WHERE game_id = ${sqlInteger(gameId)} LIMIT 1`,
-  );
+async function readMapCenter(observer: HeraldObserver, gameId: number): Promise<Coord> {
+  const rows = (await observer.readModelRows(gameId, ["WorldConfig"])).get("WorldConfig")!;
   const row = rows[0];
-  if (!row) throw new Error(`WorldConfig ${gameId} is not indexed`);
-  const coordinate = CENTER_COORD - Number(row.map_center_offset);
+  if (!row) throw new Error(`WorldConfig ${gameId} is absent from Herald`);
+  const coordinate = CENTER_COORD - asNumber(row.map_center_offset, "WorldConfig.map_center_offset");
   return { x: coordinate, y: coordinate };
 }
 
-async function readSettlementStructureIds(toriiSqlUrl: string, gameId: number, address: string): Promise<string[]> {
-  const player = sqlHex(address);
-  const rows = await queryTorii<{ structure_ids: unknown }>(
-    toriiSqlUrl,
-    `SELECT structure_ids FROM "s2-BlitzSettlement" WHERE game_id = ${sqlInteger(gameId)} AND player = '${player}' LIMIT 1`,
-  );
-  const row = rows[0];
-  if (!row) throw new Error(`Settlement for ${address} in game ${gameId} is not indexed`);
+async function readSettlementStructureIds(
+  observer: HeraldObserver,
+  gameId: number,
+  address: string,
+): Promise<string[]> {
+  const rows = (
+    await observer.waitForModelRows(
+      gameId,
+      ["BlitzSettlement"],
+      (models) => models.get("BlitzSettlement")!.some((candidate) => feltEquals(candidate.player, address)),
+      MODEL_UPDATE_TIMEOUT_MS,
+    )
+  ).get("BlitzSettlement")!;
+  const row = rows.find((candidate) => feltEquals(candidate.player, address));
+  if (!row) throw new Error(`Settlement for ${address} in game ${gameId} is absent from Herald`);
   const structureIds = parseStructureIds(row.structure_ids);
   if (structureIds.length !== EXPLORER_COUNT_PER_BOT) {
     throw new Error(`Expected ${EXPLORER_COUNT_PER_BOT} structures for ${address}, found ${structureIds.length}`);
@@ -1091,71 +1057,82 @@ async function readSettlementStructureIds(toriiSqlUrl: string, gameId: number, a
 }
 
 async function readStructures(
-  toriiSqlUrl: string,
+  observer: HeraldObserver,
   gameId: number,
   structureIds: string[],
   mapCenter: Coord,
 ): Promise<StructureState[]> {
-  const ids = structureIds.map(sqlInteger).join(", ");
-  const rows = await queryTorii<{ entity_id: number | string; x: number; y: number }>(
-    toriiSqlUrl,
-    `SELECT entity_id, "base.coord_x" AS x, "base.coord_y" AS y FROM "s2-Structure" WHERE game_id = ${sqlInteger(gameId)} AND entity_id IN (${ids})`,
-  );
+  const requestedIds = new Set(structureIds);
+  const rows = (
+    await observer.waitForModelRows(
+      gameId,
+      ["Structure"],
+      (models) =>
+        models.get("Structure")!.filter((row) => requestedIds.has(parseEntityId(row.entity_id))).length ===
+        structureIds.length,
+      MODEL_UPDATE_TIMEOUT_MS,
+    )
+  )
+    .get("Structure")!
+    .filter((row) => requestedIds.has(parseEntityId(row.entity_id)));
   if (rows.length !== structureIds.length) {
-    throw new Error(`Expected ${structureIds.length} indexed structures, found ${rows.length}`);
+    throw new Error(`Expected ${structureIds.length} structures in Herald, found ${rows.length}`);
   }
 
-  const byId = new Map(rows.map((row) => [parseEntityId(row.entity_id), row]));
+  const byId = new Map(rows.map((row) => [parseEntityId(row.entity_id), asRecord(row.base, "Structure.base")]));
   return structureIds.map((structureId) => {
-    const row = byId.get(structureId);
-    if (!row) throw new Error(`Structure ${structureId} is not indexed`);
-    const coord = { x: Number(row.x), y: Number(row.y) };
+    const base = byId.get(structureId);
+    if (!base) throw new Error(`Structure ${structureId} is absent from Herald`);
+    const coord = {
+      x: asNumber(base.coord_x, "Structure.base.coord_x"),
+      y: asNumber(base.coord_y, "Structure.base.coord_y"),
+    };
     return { coord, direction: chooseOutwardDirection(coord, mapCenter), structureId };
   });
 }
 
-async function readExplorers(toriiSqlUrl: string, gameId: number, structureIds: string[]): Promise<ExplorerRow[]> {
-  const ids = structureIds.map(sqlInteger).join(", ");
-  const rows = await queryTorii<{
-    event_id: string;
-    explorer_id: number | string;
-    owner: number | string;
-    stamina: number | string;
-    stamina_tick: number | string;
-    x: number;
-    y: number;
-  }>(
-    toriiSqlUrl,
-    `SELECT internal_event_id AS event_id, explorer_id, owner, "troops.stamina.amount" AS stamina, "troops.stamina.updated_tick" AS stamina_tick, "coord.x" AS x, "coord.y" AS y FROM "s2-ExplorerTroops" WHERE game_id = ${sqlInteger(gameId)} AND owner IN (${ids})`,
+async function readExplorers(observer: HeraldObserver, gameId: number, structureIds: string[]): Promise<ExplorerRow[]> {
+  const requestedOwners = new Set(structureIds);
+  await observer.waitForModelRows(
+    gameId,
+    ["ExplorerTroops"],
+    (models) =>
+      models.get("ExplorerTroops")!.filter((row) => requestedOwners.has(parseEntityId(row.owner))).length ===
+      structureIds.length,
+    MODEL_UPDATE_TIMEOUT_MS,
   );
+  const rows = (await observer.readExplorers(gameId)).filter((row) => requestedOwners.has(row.owner));
   if (rows.length !== structureIds.length) {
-    throw new Error(`Expected ${structureIds.length} indexed explorers, found ${rows.length}`);
+    throw new Error(`Expected ${structureIds.length} explorers in Herald, found ${rows.length}`);
   }
-  return rows.map(toExplorerRow);
+  return rows;
 }
 
 async function readStartingTroopTypes(
-  toriiSqlUrl: string,
+  observer: HeraldObserver,
   gameId: number,
   structureIds: string[],
 ): Promise<Map<string, number>> {
-  const ids = structureIds.map(sqlInteger).join(", ");
-  const rows = await queryTorii<{
-    crossbowman: string;
-    entity_id: number | string;
-    knight: string;
-    paladin: string;
-  }>(
-    toriiSqlUrl,
-    `SELECT entity_id, KNIGHT_T1_BALANCE AS knight, PALADIN_T1_BALANCE AS paladin, CROSSBOWMAN_T1_BALANCE AS crossbowman FROM "s2-Resource" WHERE game_id = ${sqlInteger(gameId)} AND entity_id IN (${ids})`,
-  );
+  const requestedIds = new Set(structureIds);
+  const rows = (
+    await observer.waitForModelRows(
+      gameId,
+      ["Resource"],
+      (models) =>
+        models.get("Resource")!.filter((row) => requestedIds.has(parseEntityId(row.entity_id))).length ===
+        structureIds.length,
+      MODEL_UPDATE_TIMEOUT_MS,
+    )
+  )
+    .get("Resource")!
+    .filter((row) => requestedIds.has(parseEntityId(row.entity_id)));
   if (rows.length !== structureIds.length) {
-    throw new Error(`Expected resources for ${structureIds.length} structures, found ${rows.length}`);
+    throw new Error(`Expected resources for ${structureIds.length} structures in Herald, found ${rows.length}`);
   }
 
   return new Map(
     rows.map((row) => {
-      const balances = [row.knight, row.paladin, row.crossbowman];
+      const balances = [row.KNIGHT_T1_BALANCE, row.PALADIN_T1_BALANCE, row.CROSSBOWMAN_T1_BALANCE];
       const troopType = balances.findIndex((balance) => BigInt(balance) >= EXPLORER_TROOP_AMOUNT);
       if (troopType < 0) throw new Error(`Structure ${row.entity_id} has no funded T1 troop type`);
       return [parseEntityId(row.entity_id), troopType];
@@ -1165,14 +1142,13 @@ async function readStartingTroopTypes(
 
 function buildExplorerState(structure: StructureState, rows: ExplorerRow[], troopType: number): ExplorerState {
   const row = rows.find((candidate) => candidate.owner === structure.structureId);
-  if (!row) throw new Error(`Explorer for structure ${structure.structureId} is not indexed`);
+  if (!row) throw new Error(`Explorer for structure ${structure.structureId} is absent from Herald`);
   return {
     atFrontier: true,
     blockedDirections: new Map(),
     coord: { x: row.x, y: row.y },
     explorerId: row.explorerId,
     lastUsedAt: -1,
-    modelEventId: row.eventId,
     outwardDirection: structure.direction,
     pathDirections: [],
     stamina: row.stamina,
@@ -1185,26 +1161,6 @@ function buildExplorerState(structure: StructureState, rows: ExplorerRow[], troo
 function parseCairoTroopType(value: number): CairoTroopType {
   if (value === 0 || value === 1 || value === 2) return value;
   throw new Error(`Unknown Cairo troop type ${value}`);
-}
-
-function toExplorerRow(row: {
-  event_id: string;
-  explorer_id: number | string;
-  owner: number | string;
-  stamina: number | string;
-  stamina_tick: number | string;
-  x: number;
-  y: number;
-}): ExplorerRow {
-  return {
-    eventId: row.event_id,
-    explorerId: parseEntityId(row.explorer_id),
-    owner: parseEntityId(row.owner),
-    stamina: Number(row.stamina),
-    staminaUpdatedTick: Number(row.stamina_tick),
-    x: Number(row.x),
-    y: Number(row.y),
-  };
 }
 
 function assertCompleted(transaction: TrackedTransaction): void {
@@ -1358,16 +1314,6 @@ function normalizeTransactionHash(value: string): string {
   return `0x${digits.padStart(64, "0")}`;
 }
 
-function sqlHex(value: string): string {
-  return normalizeTransactionHash(value);
-}
-
-function sqlInteger(value: number | string): string {
-  const normalized = parseEntityId(value);
-  if (!/^\d+$/.test(normalized)) throw new Error(`Invalid SQL integer ${String(value)}`);
-  return normalized;
-}
-
 function parseEntityId(value: unknown): string {
   if (typeof value !== "string" && typeof value !== "number" && typeof value !== "bigint") {
     throw new Error(`Invalid entity id ${String(value)}`);
@@ -1375,6 +1321,27 @@ function parseEntityId(value: unknown): string {
   const parsed = BigInt(value);
   if (parsed < 0n) throw new Error(`Invalid entity id ${String(value)}`);
   return parsed.toString();
+}
+
+function feltEquals(left: unknown, right: unknown): boolean {
+  try {
+    return BigInt(left as string | number | bigint) === BigInt(right as string | number | bigint);
+  } catch {
+    return false;
+  }
+}
+
+function asRecord(value: unknown, field: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`Herald ${field} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function asNumber(value: unknown, field: string): number {
+  const parsed = Number(BigInt(value as string | number | bigint));
+  if (!Number.isSafeInteger(parsed)) throw new Error(`Herald ${field} must be a safe integer`);
+  return parsed;
 }
 
 function coordKey(coord: Coord): string {

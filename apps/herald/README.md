@@ -23,6 +23,7 @@ upstream subscriptions have reconciled.
 It serves:
 
 - `GET /health`
+- `GET /<chain>/games`
 - `GET /<chain>/games/<game_id>/snapshot`
 - `GET /<chain>/games/<game_id>/snapshot?models=WorldConfig,Structure`
 - `WS /<chain>/games/<game_id>`
