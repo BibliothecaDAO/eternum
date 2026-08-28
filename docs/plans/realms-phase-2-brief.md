@@ -354,23 +354,29 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     `GET /<chain>/games/<id>/snapshot?models=…` (already exists), `profile-builder` and the landing lists read those,
     and the spectator gate is re-run with the container stopped — that rerun is A.4's first checkpoint, before the
     deletions.
-  - _Next steps for Codex, in order (2026-08-28):_
-    1. ~~Stale wiring tests~~ (done, `d38000feea4`): `src/dojo/sync.regression.source.test.ts` (asserts the deleted
-       `connection-health-monitor`), `src/three/scenes/worldmap-arrival-ghost.source.test.ts` (movement ghosts /
-       intents, deleted with optimism), `src/ui/features/world/components/network-status.source.test.ts` (same monitor).
-       Each either pins the new shape or goes; none stays red.
-    2. ~~A.2 follow-up~~ (done, `fefb400fd2f`): an undecodable event logs (model, tx, index) and counts in `/health`;
-       the process keeps serving.
-    3. Findings 2 and 3 above (Build-modal placement — **rework per the review above**; one account truth, done for the
-       banner and the other `useAccount()` readers in play). Finding 4 once the owner reports the console lines.
-    4. ~~Harness nonce reads, `sender` via `subscribeNewTransactions`~~ (done, `ab125610e8c`).
-    5. ~~Latency re-measure~~ (done — see the quiet-box measurement above): now the two client classes it named, explore
-       submit path and pre-confirmed→rendered, and the fog chokepoint.
-    6. **A.4 — start now; Torii is already stopped on the lab and stays stopped. First checkpoint: the boot path
-       (directory + snapshot over HTTP) and the spectator gate green with the container off** — the disposition table
-       below, Torii container + `torii.toml.template` + `packages/torii` + `apps/game/src/dojo` deleted,
-       `VITE_PUBLIC_HERALD_URL` switch gone (herald is the transport, full stop), the manifest carries every row
-       `getConfigFromTorii` used to fetch. Gate unchanged.
+  - _Next steps for Codex, in order (rewritten 2026-08-28 evening; Torii is stopped on the lab and stays stopped):_
+    1. **A.4, the boot path first.** Herald serves `GET /<chain>/games` — the `GameRegistry` fold as a directory
+       (status, clock, player count per game) — next to the existing `GET /<chain>/games/<id>/snapshot?models=…`.
+       `profile-builder.ts` (chain config, world address, registry row), the landing Open/Played lists and the entry
+       modal's pre-session reads move onto those two endpoints; world address comes from the manifest. Checkpoint: a
+       fresh 8-bot game boots, one human settles, and a private-window spectator watches it, all with the container off.
+       Nothing else in this list is worth more than this while no game can boot.
+    2. **The two client latency classes and the fog chokepoint** (measured above): instrument explore's submit path
+       (build → sign → send) and delete what the numbers name; a player's own action renders on arrival (≤ 100 ms
+       pre-confirmed→rendered), not on the ambient lane; every `exploredTiles` write invalidates its fog page, reveal
+       starts on the pre-confirmed diff, animation ≤ 0.3 s. Re-measure the 20-click burst; bar p95 ≤ 250 ms.
+    3. **A.4, the deletions.** Every remaining row of the disposition table below (history sink for story / battle /
+       swaps / review; `LastBattle` aggregate; faith and leaderboard onto the stream), then the Torii container,
+       `torii.toml.template`, `packages/torii`, `apps/game/src/dojo`, the `VITE_PUBLIC_HERALD_URL` switch (herald is the
+       transport, full stop), the harness's `toriiSqlUrl`, and every `getConfigFromTorii` row already in the manifest.
+       Gate unchanged: a full Blitz game end to end with no Torii process anywhere; net deletion in the sync runtime;
+       reconnect resumes by `seq` with zero gaps.
+    4. Housekeeping riding along: the five unreachable chest-opening prototype files knip names are deleted, not
+       ignored; the two per-transaction maps in herald's live world are bounded or expire.
+    - Done since the first list: stale wiring tests (`d38000feea4`), degrade-not-die (`fefb400fd2f`), harness
+      pre-confirmed nonces and stream senders (`ab125610e8c`), one account truth (`8d2b3b0c0e4`), build-modal placement
+      rework (after the review; confirmed by the owner in game 58), automation address equality (`93da2d4592a`),
+      rulebook in the fold (`0f14d1c152`), quiet-box measurement (above), PR #4903 merged.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game
