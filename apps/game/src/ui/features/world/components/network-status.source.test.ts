@@ -16,40 +16,20 @@ describe("network status wiring", () => {
     expect(source).not.toContain('title={connectionStatus === "degraded"');
   });
 
-  it("mounts NetworkStatusBanner and wires onRecovery toast in the world layout", () => {
+  it("mounts NetworkStatusBanner with the same reconnect helper", () => {
     const source = readSource("src/ui/layouts/world.tsx");
 
     expect(source).toContain("NetworkStatusBanner");
     expect(source).toContain("triggerConnectionForceReconnect");
-    expect(source).toContain("onRecovery:");
-    expect(source).toContain('toast.success("Back online"');
   });
 
-  it("lets the active worldmap clear stuck map loading when stream reconnect fails", () => {
-    const source = readSource("src/ui/layouts/world.tsx");
-
-    expect(source).toContain("recoverAfterConnectionFailure");
-    expect(source).toMatch(/getActiveWorldmapRecoveryHandle\(\)\?\.recoverAfterConnectionFailure\(\)/);
-  });
-
-  it("exposes a module-level getConnectionHealthMonitor for UI retry callbacks", () => {
-    const source = readSource("src/dojo/connection-health-monitor.ts");
-
-    expect(source).toContain("export const getConnectionHealthMonitor");
-    expect(source).toContain("forceReconnect");
-    expect(source).toContain('setSpatialStatus("reconnecting")');
-    expect(source).toContain('setGlobalStatus("reconnecting")');
-  });
-
-  it("routes reconnect through the one game sync recovery session", () => {
-    const worldSource = readSource("src/ui/layouts/world.tsx");
+  it("routes retry through the active game sync recovery session", () => {
+    const retrySource = readSource("src/ui/features/world/components/network-status-retry.ts");
     const worldmapSource = readSource("src/three/scenes/worldmap.tsx");
 
-    expect(worldSource).toContain("await recoverGameSyncSession()");
-    expect(worldSource).toContain("await initialSync(setup, state");
+    expect(retrySource).toContain("await recoverGameSyncSession()");
+    expect(retrySource).not.toContain("connection-health-monitor");
     expect(worldmapSource).not.toContain("forceResubscribe()");
     expect(worldmapSource).not.toContain("toriiStreamManager");
-    expect(worldmapSource).not.toContain("SETUP_TIMEOUT_TOAST_THROTTLE_MS");
-    expect(worldmapSource).not.toContain("handleToriiSubscriptionSetupTimeout");
   });
 });

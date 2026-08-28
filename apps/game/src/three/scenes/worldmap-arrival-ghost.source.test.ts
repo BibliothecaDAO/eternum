@@ -6,17 +6,17 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync(new URL("./worldmap.tsx", import.meta.url), "utf8");
 
 describe("Worldmap arrival ghost wiring", () => {
-  it("creates movement ghosts and subscribes them to the movement intent", () => {
+  it("keeps the acting player's click ghost outside authoritative state", () => {
     expect(source).toContain("shouldCreatePredictiveArrivalGhost");
     expect(source).toContain("this.arrivalGhostManager.upsertLocalArrivalGhost");
-    expect(source).toContain("this.installArrivalGhostIntentSubscription(selectedEntityId, movementIntent)");
+    expect(source).toContain("this.installPendingMovementVisualLifecycle({ entityId: selectedEntityId })");
+    expect(source).not.toContain("installArrivalGhostIntentSubscription");
+    expect(source).not.toContain("movementIntent");
   });
 
-  it("settles or fails ghosts only from manager outcomes", () => {
-    expect(source).toContain('outcome === "settled"');
-    expect(source).toContain('resolveArrivalGhost(entityId, "settled")');
-    expect(source).toContain('clearArrivalGhost(entityId, "failed")');
-    expect(source).not.toContain('clearArrivalGhost(entityId, "movement_evicted")');
-    expect(source).not.toContain('clearArrivalGhost(entityId, "arrived")');
+  it("settles from the indexed army lifecycle and clears on submit failure", () => {
+    expect(source).toMatch(/armyManager\.onMovementStart[\s\S]*?resolveArrivalGhost\(entityId, "settled"\)/);
+    expect(source).toMatch(/handlePendingArmyMovementFailure[\s\S]*?clearArrivalGhost\(entityId, "failed"\)/);
+    expect(source).not.toContain("provisional-write-manager");
   });
 });

@@ -43,21 +43,11 @@ describe("network boot-regression guards", () => {
     expect(source).toContain("installActiveWorldSpatialProjection(setup)");
   });
 
-  it("routes stream failures through the connection recovery owner", () => {
+  it("routes reconnects through the active game sync runtime", () => {
     const source = readSource("src/dojo/sync.ts");
 
-    expect(source).toContain("requestConnectionRecovery");
-    expect(source).toContain("onStreamClose: (stream, reason)");
-    expect(source).toContain('kind: "stream_close"');
-    expect(source).not.toContain("onEventStreamLost");
-    expect(source).not.toContain("onEventStreamRestored");
-  });
-
-  it("connection-health-monitor exposes the boot grace gate", () => {
-    const source = readSource("src/dojo/connection-health-monitor.ts");
-
-    expect(source).toContain("hasObservedHealthyStreams");
-    expect(source).toContain("startedAtMs");
-    expect(source).toContain("exitBootGraceForTests");
+    expect(source).toMatch(/recoverGameSyncSession[\s\S]*?requireActiveGameSyncRuntime\(\)\.recover\(\)/);
+    expect(source).not.toContain("connection-health-monitor");
+    expect(source).not.toContain("requestConnectionRecovery");
   });
 });
