@@ -241,6 +241,21 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     in `packages/core/src/sync/herald-game-sync-transport.ts`, RECS wiring, `waitForTransaction` on the tx channel).
     Herald is selected by `VITE_PUBLIC_HERALD_URL`; Torii stays the transport otherwise — a transitional switch that A.4
     deletes together with Torii, never a fallback that survives.
+  - _A.3 human gate, first attempt 2026-08-28 (Claude):_ herald + both dev servers up behind Caddy, an 8-bot game (56)
+    for the human to join. Two classes surfaced before anyone could play, both fixed at their chokepoints:
+    1. **Non-stream consumers lost their wait.** `3d071ee69b` deleted the deploy wait in `ensureGameplayAccount` with
+       the client's polling; starknet.js reads nonces at `latest`, so the harness's settle right after a deploy was
+       rejected (`Account nonce: 1; got: 0`, three times). Restored as one bounded wait to `ACCEPTED_ON_L2` at the only
+       place a gameplay account is created (`2a270f430c`). Harness follow-up: read nonces pre-confirmed
+       (`RpcProvider({ blockIdentifier: PRE_CONFIRMED })`) so setup does not depend on it.
+    2. **Event messages are Cairo serde, store records are Dojo layout.** Herald decoded both with the one-based store
+       rule; the first `StoryEvent` with `owner = Some(...)` (selector `0x0`) was fatal and herald exited, taking the
+       client read path down for two hours; the next start died on a `GuardAddStory` (selector `0xc`, zero-based).
+       Decoder now picks the encoding by event kind (herald README "Herald encodings"), with tests; replay from
+       checkpoint through both blocks and the parity gate pass. **A.2 follow-up (Codex): an undecodable event must not
+       exit the process** — log it with model and transaction, count it in `/health`, keep serving; a client on stale
+       state beats no client, and the log is the loud part. The 8-bot run itself: 799/800 actions, pre-confirmed p95 154
+       ms, L2 p95 1.98 s, one stamina-rule miss; nobody joined — the human gate is still open.
   - _Gates per slice._ **A.1** — snapshot of a lab game matches Torii row-for-row for every decoded component (Torii is
     the oracle until A.4). **A.2** — the forced-replacement transcript from A.0 is handled: after `overlay_reset` the
     client's state equals a fresh snapshot; a killed socket resumes by `seq` with zero gaps; a herald restart mid-game

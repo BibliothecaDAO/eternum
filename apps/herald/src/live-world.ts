@@ -224,7 +224,16 @@ export class LiveWorld {
     const identity = `${normalizeFelt(rawEvent.transaction_hash)}:${rawEvent.event_index}`;
     if (this.overlayEvents.has(identity)) return undefined;
     this.overlayEvents.add(identity);
-    const event = decodeWorldEvent(this.input.registry, rawEvent);
+    let event;
+    try {
+      event = decodeWorldEvent(this.input.registry, rawEvent);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Unable to decode pre-confirmed world event ${identity} (model ${rawEvent.keys[1] ?? "missing"}): ${message}`,
+        { cause: error },
+      );
+    }
     return event ? this.overlayFold.apply(event) : undefined;
   }
 

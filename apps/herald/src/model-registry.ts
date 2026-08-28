@@ -4,7 +4,7 @@ import { GAME_SYNC_MODEL_MANIFEST, type GameSyncModelDefinition } from "@bibliot
 import { CallData, CairoCustomEnum, CairoOption, hash, type Abi } from "starknet";
 
 import type { DecodedRecord, Felt, ManifestMember, ManifestModel, StructAbiEntry, WorldManifest } from "./types";
-import { StoreLayout } from "./store-layout";
+import { StoreLayout, type PayloadEncoding } from "./store-layout";
 
 interface MemberDecoder {
   member: ManifestMember;
@@ -24,8 +24,8 @@ interface PreparedModelCodec {
 export interface ModelCodec {
   definition: GameSyncModelDefinition;
   manifest: ManifestModel;
-  decodeKey: (felts: Felt[]) => DecodedRecord;
-  decodeValue: (felts: Felt[]) => DecodedRecord;
+  decodeKey: (felts: Felt[], encoding: PayloadEncoding) => DecodedRecord;
+  decodeValue: (felts: Felt[], encoding: PayloadEncoding) => DecodedRecord;
   decodeMember: (selector: Felt, felts: Felt[]) => { member: string; value: unknown };
 }
 
@@ -111,14 +111,14 @@ const buildModelCodec = (model: PreparedModelCodec, callData: CallData, storeLay
   return {
     definition,
     manifest,
-    decodeKey: (felts) =>
+    decodeKey: (felts, encoding) =>
       keyMembers.length === 0
         ? {}
-        : decodeRecord(callData, keyFunction, storeLayout.normalizeMembers(keyMembers, felts)),
-    decodeValue: (felts) =>
+        : decodeRecord(callData, keyFunction, storeLayout.normalizeMembers(keyMembers, felts, encoding)),
+    decodeValue: (felts, encoding) =>
       valueMembers.length === 0
         ? {}
-        : decodeRecord(callData, valueFunction, storeLayout.normalizeMembers(valueMembers, felts)),
+        : decodeRecord(callData, valueFunction, storeLayout.normalizeMembers(valueMembers, felts, encoding)),
     decodeMember: (selector, felts) => {
       const decoder = memberDecoders.get(normalizeFelt(selector));
       if (!decoder) {
@@ -127,7 +127,7 @@ const buildModelCodec = (model: PreparedModelCodec, callData: CallData, storeLay
       const decoded = decodeRecord(
         callData,
         decoder.functionName,
-        storeLayout.normalizeMembers([decoder.member], felts),
+        storeLayout.normalizeMembers([decoder.member], felts, "store"),
       );
       return { member: decoder.member.name, value: decoded[decoder.member.name] };
     },

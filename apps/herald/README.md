@@ -39,6 +39,20 @@ rebuilds the overlay from exactly one `getBlockWithReceipts("pre_confirmed")` re
 channel because a reverted transaction has no Store event; the sender is resolved once and matched against the
 `BlitzSettlement` accounts in the fold.
 
+## Herald encodings
+
+Two encodings arrive on the same world event stream, and the decoder picks by event kind:
+
+- **Store records** (`StoreSetRecord`, `StoreUpdateRecord`, `StoreUpdateMember`) carry Dojo's introspect layout: enum
+  selectors are **one-based** (proved by the parity gate row-for-row on 229k rows).
+- **Event messages** (`EventEmitted`, i.e. `world.emit_event`) are plain **Cairo serde**: enum selectors are zero-based
+  and `Option` is `Some = 0, payload` / `None = 1`. Read off the chain on 2026-08-28 from `StoryEvent` at block 117558
+  (`story` selector `0xc` = `GuardAddStory`, keys `owner = [0x0, address]`); the one-based rule there picked
+  `ResourceReceiveArrivalStory` and read a structure id as an array length, and a `RealmCreatedStory` (`0x0`) had no
+  variant at all — both were fatal until this rule.
+
+No persistent sync model carries an `Option`; if one ever does, its store encoding is measured, not assumed.
+
 ## Torii parity gate
 
 Until A.4 deletes Torii, its current model tables are the snapshot oracle:

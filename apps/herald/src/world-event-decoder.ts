@@ -54,10 +54,15 @@ export const decodeWorldEvent = (registry: ModelRegistry, event: RawWorldEvent):
 
   if (eventSelector === WORLD_EVENT_SELECTORS.set) {
     const spans = readKeyAndValueSpans(event);
-    return { ...base, kind: "set", key: codec.decodeKey(spans.keys), value: codec.decodeValue(spans.values) };
+    return {
+      ...base,
+      kind: "set",
+      key: codec.decodeKey(spans.keys, "store"),
+      value: codec.decodeValue(spans.values, "store"),
+    };
   }
   if (eventSelector === WORLD_EVENT_SELECTORS.update) {
-    return { ...base, kind: "update", value: codec.decodeValue(readOnlySpan(event)) };
+    return { ...base, kind: "update", value: codec.decodeValue(readOnlySpan(event), "store") };
   }
   if (eventSelector === WORLD_EVENT_SELECTORS.updateMember) {
     const memberSelector = event.keys[3];
@@ -71,7 +76,13 @@ export const decodeWorldEvent = (registry: ModelRegistry, event: RawWorldEvent):
   }
   if (eventSelector === WORLD_EVENT_SELECTORS.event) {
     const spans = readKeyAndValueSpans(event);
-    return { ...base, kind: "event", key: codec.decodeKey(spans.keys), value: codec.decodeValue(spans.values) };
+    // world.emit_event serializes with Cairo serde, not the store layout (README "herald encodings").
+    return {
+      ...base,
+      kind: "event",
+      key: codec.decodeKey(spans.keys, "serde"),
+      value: codec.decodeValue(spans.values, "serde"),
+    };
   }
   return undefined;
 };
