@@ -69,6 +69,10 @@ const HOT_PATH_NAMES = [
 ] as const;
 const SLOW_CALL_THRESHOLD_MS = 80;
 const SPIKE_FRAME_THRESHOLD_MS = 33;
+// Production sink for spike frames: one digest line per window instead of one line per frame, so a hot laptop
+// does not bury the console under hundreds of 40 ms spikes. Frames this long are always worth their own line.
+const SPIKE_DIGEST_WINDOW_MS = 10_000;
+const SPIKE_PASSTHROUGH_MS = 1_000;
 const TOP_FRAME_HOT_PATH_LIMIT = 8;
 const TOP_TEXTURE_LIMIT = 8;
 const COMPILE_MEASUREMENT_WINDOW_MS = 60_000;
@@ -84,6 +88,25 @@ let hasActiveFrame = false;
 let isPageVisibilityListenerInstalled = false;
 let compiledRenderPipelineCount = 0;
 let gpuBackendAttributionEnabled = false;
+const spikeDigest = { count: 0, maxDurationMs: 0, windowStartedAt: 0, worstReport: "" };
+
+function digestSpikeFrame(durationMs: number, report: string, now: number): void {
+  if (durationMs >= SPIKE_PASSTHROUGH_MS) console.warn(report);
+  if (spikeDigest.count === 0) spikeDigest.windowStartedAt = now;
+  spikeDigest.count += 1;
+  if (durationMs > spikeDigest.maxDurationMs) {
+    spikeDigest.maxDurationMs = durationMs;
+    spikeDigest.worstReport = report;
+  }
+  if (now - spikeDigest.windowStartedAt < SPIKE_DIGEST_WINDOW_MS) return;
+  const windowSeconds = ((now - spikeDigest.windowStartedAt) / 1000).toFixed(1);
+  console.warn(
+    `[FramePerf] ${spikeDigest.count} spike frames in ${windowSeconds}s, worst ${Math.round(spikeDigest.maxDurationMs)}ms — ${spikeDigest.worstReport}`,
+  );
+  spikeDigest.count = 0;
+  spikeDigest.maxDurationMs = 0;
+  spikeDigest.worstReport = "";
+}
 
 export function getCompiledRenderPipelineCount(): number {
   return compiledRenderPipelineCount;
@@ -98,8 +121,7 @@ export function startGpuBackendFrame(options?: StartGpuBackendFrameOptions): voi
   }
 
   const startedAt = options?.startedAt ?? performance.now();
-  const warn = options?.warn ?? console.warn;
-  reportCompletedGpuBackendFrame(startedAt, warn);
+  reportCompletedGpuBackendFrame(startedAt, options?.warn);
   activeFrame.gpuAttributionEnabled = options?.gpuAttributionEnabled ?? gpuBackendAttributionEnabled;
   activeFrame.hotPathStats = null;
   activeFrame.rendererMode = options?.rendererMode ?? getRendererDiagnosticActiveMode() ?? "uninitialized";
@@ -134,10 +156,7 @@ function getPageVisibility(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
 }
 
-function reportCompletedGpuBackendFrame(
-  endedAt: number = performance.now(),
-  warn: (message: string) => void = console.warn,
-): void {
+function reportCompletedGpuBackendFrame(endedAt: number = performance.now(), warn?: (message: string) => void): void {
   const owner = consumeDominantFrameWorkOwner();
   if (!hasActiveFrame) {
     return;
@@ -149,16 +168,16 @@ function reportCompletedGpuBackendFrame(
     return;
   }
 
-  warn(
-    buildGpuBackendSpikeReport(
-      durationMs,
-      owner,
-      activeFrame.rendererMode,
-      activeFrame.gpuAttributionEnabled,
-      activeFrame.hotPathStats,
-      activeFrame.textureStats,
-    ),
+  const report = buildGpuBackendSpikeReport(
+    durationMs,
+    owner,
+    activeFrame.rendererMode,
+    activeFrame.gpuAttributionEnabled,
+    activeFrame.hotPathStats,
+    activeFrame.textureStats,
   );
+  if (warn) warn(report);
+  else digestSpikeFrame(durationMs, report, endedAt);
 }
 
 export function instrumentGpuBackendHotPaths(

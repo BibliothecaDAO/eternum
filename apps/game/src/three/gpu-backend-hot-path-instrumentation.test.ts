@@ -194,6 +194,31 @@ describe("GPU backend hot-path instrumentation", () => {
     expect(warn.mock.calls[0][0]).not.toContain("cpu-bound");
   });
 
+  it("digests production spike frames into one console line per window", () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const frame = (startedAt: number) =>
+      startGpuBackendFrame({ gpuAttributionEnabled: false, pageVisible: true, rendererMode: "webgpu", startedAt });
+
+    frame(0);
+    frame(40);
+    frame(100);
+    expect(consoleWarn).not.toHaveBeenCalled();
+
+    discardGpuBackendFrame();
+    frame(10_000);
+    frame(10_050);
+    expect(consoleWarn).toHaveBeenCalledOnce();
+    expect(consoleWarn.mock.calls[0][0]).toBe(
+      "[FramePerf] 3 spike frames in 10.0s, worst 60ms — [FramePerf] spike renderer_mode=webgpu duration_ms=60 frame_owner=unattributed gpu_attribution=disabled",
+    );
+
+    frame(12_000);
+    expect(consoleWarn).toHaveBeenCalledTimes(2);
+    expect(consoleWarn.mock.calls[1][0]).toContain("duration_ms=1950");
+    consoleWarn.mockRestore();
+    discardGpuBackendFrame();
+  });
+
   it("discards expected animation throttling while the page is hidden", () => {
     const warn = vi.fn();
 
