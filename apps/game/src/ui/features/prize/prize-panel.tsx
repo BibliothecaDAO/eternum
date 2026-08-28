@@ -1,3 +1,4 @@
+import { ContractAddress } from "@bibliothecadao/types";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -95,8 +96,8 @@ export const PrizePanel = () => {
   );
   const myTrial = useMemo(() => {
     if (!account?.address) return undefined;
-    const connectedAddress = String(account.address).toLowerCase();
-    const mine = trials.filter((t) => String(t.owner).toLowerCase() === connectedAddress);
+    const connectedAddress = ContractAddress(account.address);
+    const mine = trials.filter((t) => ContractAddress(t.owner) === connectedAddress);
     if (mine.length === 0) return undefined;
     // pick the latest by trial_id
     return mine.toSorted((a, b) => ((b.nonce as bigint) > (a.nonce as bigint) ? 1 : -1))[0];

@@ -1,12 +1,16 @@
-import { ClientComponents } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { gameEntityKey } from "@/dojo/game-scope";
 
-const normalizeOwnerValue = (owner: unknown): string | null => {
-  if (typeof owner === "string") return owner.trim().toLowerCase();
-  if (typeof owner === "bigint") return `0x${owner.toString(16)}`;
-  if (typeof owner === "number" && Number.isFinite(owner)) return `0x${BigInt(owner).toString(16)}`;
-  return null;
+// Addresses reach this comparison in every felt spelling the stack produces — padded from the gameplay account
+// (`addAddressPadding`), unpadded from herald rows, bigint from RECS — so equality is numeric, never textual.
+const toAddress = (value: unknown): bigint | null => {
+  if (typeof value !== "string" && typeof value !== "bigint" && typeof value !== "number") return null;
+  try {
+    return ContractAddress(typeof value === "number" ? BigInt(value) : value);
+  } catch {
+    return null;
+  }
 };
 
 export const isEntityOwnedByAccount = (
@@ -17,9 +21,9 @@ export const isEntityOwnedByAccount = (
   if (!components || !entityId || !accountAddress) return false;
   try {
     const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(entityId)]));
-    const owner = normalizeOwnerValue(structure?.owner);
-    const accountOwner = normalizeOwnerValue(accountAddress);
-    return Boolean(owner && accountOwner && owner === accountOwner);
+    const owner = toAddress(structure?.owner);
+    const accountOwner = toAddress(accountAddress);
+    return owner !== null && accountOwner !== null && owner === accountOwner;
   } catch {
     return false;
   }

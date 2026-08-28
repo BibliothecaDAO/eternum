@@ -32,6 +32,18 @@ describe("isEntityOwnedByAccount", () => {
     expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(false);
   });
 
+  it("treats padded, unpadded and bigint spellings of one address as equal", () => {
+    const components = makeComponents({
+      "1": { owner: BigInt("0x7ef0bf1e20711c90929db26f509e78c270edf5a1c14b0287d34377bb9825dbf") },
+    });
+    expect(
+      isEntityOwnedByAccount(components, 1, "0x07ef0bf1e20711c90929db26f509e78c270edf5a1c14b0287d34377bb9825dbf"),
+    ).toBe(true);
+    expect(
+      isEntityOwnedByAccount(components, 1, "0x7ef0bf1e20711c90929db26f509e78c270edf5a1c14b0287d34377bb9825dbf"),
+    ).toBe(true);
+  });
+
   it("normalizes bigint owner values to hex", () => {
     const components = makeComponents({ "1": { owner: BigInt("0xabc") } });
     expect(isEntityOwnedByAccount(components, 1, "0xabc")).toBe(true);

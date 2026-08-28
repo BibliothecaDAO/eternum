@@ -277,9 +277,15 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
        `useAccount().isConnected` from the starknet-react connector; play now runs on the identity gameplay account
        (`useDojo().account`), which is where every other consumer already looks. Same class as any remaining
        `useAccount()` reader in play (`use-world-preview-entry`, cosmetics hooks): one account truth. **Codex.**
-    4. **Automation reported "not running".** Not yet diagnosed — the runners read the account from `useDojo()` and tick
-       every 60 s; exploration also gates on stamina, which was zero until fix 1. Needs the `[Automation]` console lines
-       and which runner (production / exploration / transfer). **Open, Codex once the owner reports.**
+    4. **Automation reported "not running" — resolved 2026-08-28 evening.** The persisted store said it all: every realm
+       `skipped: "Realm no longer owned"`. `isEntityOwnedByAccount` compared addresses as strings — a bigint RECS owner
+       rendered unpadded (`0x7ef0b…`) against the gameplay account's `addAddressPadding` form (`0x07ef0b…`). Fixed by
+       comparing through `ContractAddress()` (numeric) like every other site; the same string compare in
+       `prize-panel.tsx` (decimal `String(bigint)` vs hex) went with it. Class: address equality is numeric, never
+       textual — any new `owner === address` / `.toLowerCase() ===` on an address is this bug again. Original text: not
+       yet diagnosed — the runners read the account from `useDojo()` and tick every 60 s; exploration also gates on
+       stamina, which was zero until fix 1. Needs the `[Automation]` console lines and which runner (production /
+       exploration / transfer). **Open, Codex once the owner reports.**
     5. **Latency: p50 812 ms / p95 1441 ms click→rendered (`explore_reveal`, 12 samples) — fails the 250 ms bar, and the
        number is not trusted.** Herald's own share, measured the same hour by timestamping 27 tx hashes on Madara's
        pre-confirmed subscription and on the game-57 stream, is **43 ms p50 / 81 ms p95**. The box was running the
