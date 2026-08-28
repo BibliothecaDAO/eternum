@@ -1,5 +1,5 @@
 import { BuildingType, Direction } from "@bibliothecadao/types";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createBuilding: vi.fn(),
@@ -29,7 +29,12 @@ describe("TileManager building placement", () => {
     mocks.getComponentValue.mockReturnValue(undefined);
   });
 
-  it("allows only one placement per structure until the submit settles", async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("reserves each submitted coordinate until indexed state catches up", async () => {
     const firstSubmit = deferred<{ transaction_hash: string }>();
     mocks.createBuilding.mockReturnValueOnce(firstSubmit.promise);
     const tileManager = new TileManager({ Building: {} } as never, { create_building: mocks.createBuilding } as never, {
@@ -40,7 +45,7 @@ describe("TileManager building placement", () => {
     const first = tileManager.placeBuilding({} as never, 101, BuildingType.WorkersHut, { col: 11, row: 10 }, true);
     await expect(
       tileManager.placeBuilding({} as never, 101, BuildingType.Storehouse, { col: 11, row: 10 }, true),
-    ).rejects.toThrow("building placement is already in progress");
+    ).rejects.toThrow("space is occupied");
     expect(mocks.createBuilding).toHaveBeenCalledTimes(1);
     expect(mocks.createBuilding).toHaveBeenCalledWith({
       signer: {},
@@ -53,6 +58,10 @@ describe("TileManager building placement", () => {
     firstSubmit.resolve({ transaction_hash: "0x1" });
     await expect(first).resolves.toEqual({ transaction_hash: "0x1" });
 
+    await expect(
+      tileManager.placeBuilding({} as never, 101, BuildingType.Storehouse, { col: 11, row: 10 }, true),
+    ).rejects.toThrow("space is occupied");
+
     mocks.createBuilding.mockResolvedValueOnce({ transaction_hash: "0x2" });
     await expect(
       tileManager.placeBuilding({} as never, 101, BuildingType.Storehouse, { col: 11, row: 11 }, true),
@@ -60,5 +69,43 @@ describe("TileManager building placement", () => {
     expect(mocks.createBuilding).toHaveBeenLastCalledWith(
       expect.objectContaining({ directions: [Direction.NORTH_EAST] }),
     );
+  });
+
+  it("releases a coordinate immediately when submission fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.createBuilding.mockRejectedValueOnce(new Error("submit failed"));
+    mocks.createBuilding.mockResolvedValueOnce({ transaction_hash: "0x2" });
+    const tileManager = new TileManager({ Building: {} } as never, { create_building: mocks.createBuilding } as never, {
+      col: 40,
+      row: 50,
+    });
+
+    await expect(
+      tileManager.placeBuilding({} as never, 202, BuildingType.WorkersHut, { col: 11, row: 10 }, true),
+    ).rejects.toThrow("submit failed");
+    await expect(
+      tileManager.placeBuilding({} as never, 202, BuildingType.Storehouse, { col: 11, row: 10 }, true),
+    ).resolves.toEqual({ transaction_hash: "0x2" });
+  });
+
+  it("expires a submitted coordinate when no indexed echo arrives", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-28T12:00:00Z"));
+    mocks.createBuilding.mockResolvedValueOnce({ transaction_hash: "0x1" });
+    mocks.createBuilding.mockResolvedValueOnce({ transaction_hash: "0x2" });
+    const tileManager = new TileManager({ Building: {} } as never, { create_building: mocks.createBuilding } as never, {
+      col: 60,
+      row: 70,
+    });
+
+    await tileManager.placeBuilding({} as never, 303, BuildingType.WorkersHut, { col: 11, row: 10 }, true);
+    await expect(
+      tileManager.placeBuilding({} as never, 303, BuildingType.Storehouse, { col: 11, row: 10 }, true),
+    ).rejects.toThrow("space is occupied");
+
+    vi.advanceTimersByTime(30_001);
+    await expect(
+      tileManager.placeBuilding({} as never, 303, BuildingType.Storehouse, { col: 11, row: 10 }, true),
+    ).resolves.toEqual({ transaction_hash: "0x2" });
   });
 });
