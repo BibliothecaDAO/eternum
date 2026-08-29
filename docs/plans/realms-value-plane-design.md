@@ -224,10 +224,10 @@ loadout page in the web app.
 
 ## 9. Owner decisions (answered 2026-08-29 unless marked open)
 
-- **1 — bridge withdrawals: open, under discussion.** Recommendation on the table: no operator-authorized releases; the
-  vault releases only against the proven L3 burn (settlement on Sepolia, started now with the orchestrator's mock
-  prover), with the delay and daily cap kept as permanent circuit breakers. Eternum's first season runs on E-1 +
-  deposits.
+- **1 — bridge withdrawals: proven only.** No operator-authorized releases ever ship; the vault releases only against
+  the proven L3 burn (settlement on Sepolia — free gas — started now with the orchestrator's `mock` prover, a paid
+  prover chosen later), with the delay and daily cap kept as permanent circuit breakers against a proof bug. Eternum's
+  first season runs on E-1 plus deposits; cash-out arrives with the first real proofs.
 - **2 — passes burned** at registration. Done.
 - **3 — the web app owns L2 actions and is the lobby**; the game client is launched per game and only plays. One web app
   (account, marketplace, lobby, ledger actions, chests, loadout, bridge, swap, betting), one desktop client, mobile
@@ -237,6 +237,8 @@ loadout page in the web app.
   are refused); LORDS payouts, no CTF/ERC1155, no VRF rounding. Simplified from
   `cagecalls/cairo/src/fight_factory.cairo` (its locked-odds mode) — `create / buy / settle / redeem` and the odds math,
   roughly a fifth of it.
+- **4b — swords and shields are flags** on the registration row (`register(game_id, sword, shield)`), consumed by
+  `apply_results`; an ERC1155 item only if chests should drop them later (open, owner torn — start with the flag).
 - **5 — numbers**: one Blitz preset = `official-60` at **cap 96, no registration delay**; a battle-royale preset later
   (same sheet, one realm per player); Eternum. Entry **500 LORDS**, sword **500**, shield **500** — all tunable in the
   preset; the factory stays preset-based and presets are added, never edited.
