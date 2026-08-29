@@ -13,17 +13,6 @@
 use starknet::ContractAddress;
 
 
-#[starknet::interface]
-pub trait IMMRFactoryContract<T> {
-    fn is_factory_mmr_contract(self: @T, addr: ContractAddress) -> bool;
-    fn set_factory_details(ref self: T, addr: ContractAddress, version: felt252);
-}
-
-#[starknet::interface]
-pub trait IWorldFactoryMMR<T> {
-    fn get_factory_mmr_contract_version(self: @T, addr: ContractAddress) -> felt252;
-}
-
 /// MMR-specific interface for the token
 #[starknet::interface]
 pub trait IMMRToken<TContractState> {
@@ -57,6 +46,7 @@ pub trait IERC20View<TContractState> {
 
 // Role constants
 pub const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
+pub const UPDATER_ROLE: felt252 = selector!("UPDATER_ROLE");
 
 // MMR Constants (with 18 decimals like standard ERC20)
 pub const INITIAL_MMR: u256 = 1000_000000000000000000; // 1000e18 - Starting MMR for new players
@@ -72,10 +62,7 @@ pub mod MMRToken {
     use openzeppelin::upgrades::interface::IUpgradeable;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
-    use super::{
-        IERC20View, IMMRFactoryContract, IMMRToken, INITIAL_MMR, IWorldFactoryMMRDispatcher,
-        IWorldFactoryMMRDispatcherTrait, MIN_MMR, UPGRADER_ROLE,
-    };
+    use super::{IERC20View, IMMRToken, INITIAL_MMR, MIN_MMR, UPDATER_ROLE, UPGRADER_ROLE};
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
@@ -93,8 +80,6 @@ pub mod MMRToken {
     struct Storage {
         /// MMR balances (0 means uninitialized, will return INITIAL_MMR)
         balances: Map<ContractAddress, u256>,
-        /// Factory data
-        factory: (ContractAddress, felt252),
         /// Total supply tracking
         total_supply: u256,
         #[substorage(v0)]
@@ -161,85 +146,15 @@ pub mod MMRToken {
         }
 
         fn update_mmr(ref self: ContractState, player: ContractAddress, new_mmr: u256) {
-            // Only game contract can update MMR
-            let caller = starknet::get_caller_address();
-            assert!(self.is_factory_mmr_contract(caller), "MMR: Caller is not authorized game contract");
-
-            // Check if this is first time (before reading balance_of which returns INITIAL_MMR)
-            let stored_before = self.balances.entry(player).read();
-            let was_uninitialized = stored_before.is_zero();
-
-            // Get current MMR (returns INITIAL_MMR if uninitialized)
-            let old_mmr = if was_uninitialized {
-                INITIAL_MMR
-            } else {
-                stored_before
-            };
-
-            // Enforce minimum MMR floor
-            let final_mmr = if new_mmr < MIN_MMR {
-                MIN_MMR
-            } else {
-                new_mmr
-            };
-
-            // Update balance
-            self.balances.entry(player).write(final_mmr);
-
-            // Update total supply
-            let current_total = self.total_supply.read();
-            if was_uninitialized {
-                // First time being set - add full amount to total supply
-                self.total_supply.write(current_total + final_mmr);
-            } else {
-                // Already had balance - adjust total supply by delta
-                if final_mmr > old_mmr {
-                    self.total_supply.write(current_total + (final_mmr - old_mmr));
-                } else if final_mmr < old_mmr {
-                    self.total_supply.write(current_total - (old_mmr - final_mmr));
-                }
-            }
-
-            // Emit event
-            self.emit(MMRUpdated { player, old_mmr, new_mmr: final_mmr, timestamp: starknet::get_block_timestamp() });
+            self.accesscontrol.assert_only_role(UPDATER_ROLE);
+            self.write_player_mmr(player, new_mmr);
         }
 
         fn update_mmr_batch(ref self: ContractState, updates: Array<(ContractAddress, u256)>) {
-            // Only game contract can update MMR
-            let caller = starknet::get_caller_address();
-            assert!(self.is_factory_mmr_contract(caller), "MMR: Caller is not authorized game contract");
+            self.accesscontrol.assert_only_role(UPDATER_ROLE);
 
             for (player, new_mmr) in updates {
-                let old_mmr = self.get_player_mmr(player);
-                let final_mmr = if new_mmr < MIN_MMR {
-                    MIN_MMR
-                } else {
-                    new_mmr
-                };
-
-                // Track if this is first time
-                let stored_before = self.balances.entry(player).read();
-                let was_zero = stored_before.is_zero();
-
-                // Update balance
-                self.balances.entry(player).write(final_mmr);
-
-                // Update total supply
-                if was_zero {
-                    self.total_supply.write(self.total_supply.read() + final_mmr);
-                } else {
-                    let current_total = self.total_supply.read();
-                    if final_mmr > old_mmr {
-                        self.total_supply.write(current_total + (final_mmr - old_mmr));
-                    } else if final_mmr < old_mmr {
-                        self.total_supply.write(current_total - (old_mmr - final_mmr));
-                    }
-                }
-
-                self
-                    .emit(
-                        MMRUpdated { player, old_mmr, new_mmr: final_mmr, timestamp: starknet::get_block_timestamp() },
-                    );
+                self.write_player_mmr(player, new_mmr);
             }
         }
     }
@@ -264,20 +179,35 @@ pub mod MMRToken {
         }
     }
 
-    #[abi(embed_v0)]
-    impl IMMRFactoryContractImpl of IMMRFactoryContract<ContractState> {
-        fn is_factory_mmr_contract(self: @ContractState, addr: ContractAddress) -> bool {
-            let (factory_address, factory_version) = self.factory.read();
-            assert!(factory_address.is_non_zero(), "MMR: Factory address not set");
-            assert!(factory_version.is_non_zero(), "MMR: Factory version not set");
+    #[generate_trait]
+    impl MMRWriterImpl of MMRWriterTrait {
+        fn write_player_mmr(ref self: ContractState, player: ContractAddress, requested_mmr: u256) {
+            let stored_mmr = self.balances.entry(player).read();
+            let old_mmr = if stored_mmr.is_zero() {
+                INITIAL_MMR
+            } else {
+                stored_mmr
+            };
+            let new_mmr = if requested_mmr < MIN_MMR {
+                MIN_MMR
+            } else {
+                requested_mmr
+            };
 
-            factory_version == IWorldFactoryMMRDispatcher { contract_address: factory_address }
-                .get_factory_mmr_contract_version(addr)
+            self.balances.entry(player).write(new_mmr);
+            self.write_total_supply(stored_mmr, old_mmr, new_mmr);
+            self.emit(MMRUpdated { player, old_mmr, new_mmr, timestamp: starknet::get_block_timestamp() });
         }
 
-        fn set_factory_details(ref self: ContractState, addr: ContractAddress, version: felt252) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            self.factory.write((addr, version));
+        fn write_total_supply(ref self: ContractState, stored_mmr: u256, old_mmr: u256, new_mmr: u256) {
+            let total_supply = self.total_supply.read();
+            if stored_mmr.is_zero() {
+                self.total_supply.write(total_supply + new_mmr);
+            } else if new_mmr > old_mmr {
+                self.total_supply.write(total_supply + (new_mmr - old_mmr));
+            } else if new_mmr < old_mmr {
+                self.total_supply.write(total_supply - (old_mmr - new_mmr));
+            }
         }
     }
 }

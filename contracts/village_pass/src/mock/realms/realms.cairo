@@ -1,10 +1,10 @@
 #[starknet::interface]
-trait IRealmMetadataEncoded<TState> {
+pub trait IRealmMetadataEncoded<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
 #[starknet::interface]
-trait IERC721Minter<TState> {
+pub trait IERC721Minter<TState> {
     fn mint(ref self: TState, token_id: u256);
 }
 
@@ -12,11 +12,11 @@ trait IERC721Minter<TState> {
 mod TestRealm {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin::token::erc721::interface::{IERC721Metadata};
+    use openzeppelin::token::erc721::interface::IERC721Metadata;
     use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-
+    use starknet::storage::StoragePointerReadAccess;
     use starknet::{ClassHash, ContractAddress};
     use super::super::metadata::compressed_name_and_attrs;
     use super::{IERC721Minter, IRealmMetadataEncoded};

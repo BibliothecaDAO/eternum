@@ -10,7 +10,6 @@ const { toHex } = num;
  *
  * Constructor parameters:
  * - default_admin: ContractAddress - Admin who can grant/revoke roles
- * - game_contract: ContractAddress - Game contract with GAME_ROLE (can update MMR)
  * - upgrader: ContractAddress - Account with UPGRADER_ROLE (can upgrade contract)
  */
 export const deployMMRToken = async () => {

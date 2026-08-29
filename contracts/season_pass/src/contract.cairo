@@ -5,18 +5,19 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IRealmMetadataEncoded<TState> {
+pub trait IRealmMetadataEncoded<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
 #[starknet::interface]
-trait IERC2981Initializer<TState> {
+pub trait IERC2981Initializer<TState> {
     fn initialize_erc2981(ref self: TState, default_royalty_receiver: ContractAddress, fee_numerator: u128);
 }
 
 #[starknet::interface]
-trait ISeasonPass<TState> {
+pub trait ISeasonPass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
+    fn burn(ref self: TState, token_id: u256);
     // fn attach_lords(ref self: TState, token_id: u256, amount: u256);
 // fn detach_lords(ref self: TState, token_id: u256, amount: u256);
 // fn lords_balance(self: @TState, token_id: u256) -> u256;
@@ -25,26 +26,25 @@ trait ISeasonPass<TState> {
 
 #[starknet::contract]
 mod EternumSeasonPass {
+    use core::num::traits::Zero;
     use esp::utils::make_json_and_base64_encode_metadata;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::common::erc2981::{DefaultConfig, ERC2981Component};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use openzeppelin::token::erc721::ERC721Component;
-    use openzeppelin::token::erc721::ERC721HooksEmptyImpl;
     use openzeppelin::token::erc721::interface::{
         IERC721Dispatcher, IERC721DispatcherTrait, IERC721Metadata, IERC721MetadataCamelOnly, IERC721MetadataDispatcher,
         IERC721MetadataDispatcherTrait,
     };
+    use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-
-
-    use starknet::ClassHash;
-    use starknet::ContractAddress;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-    use super::{IERC2981Initializer};
-    use super::{IRealmMetadataEncoded, IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
+    use starknet::{ClassHash, ContractAddress};
+    use super::{
+        IERC2981Initializer, IRealmMetadataEncoded, IRealmMetadataEncodedDispatcher,
+        IRealmMetadataEncodedDispatcherTrait,
+    };
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -186,6 +186,10 @@ mod EternumSeasonPass {
 
     #[abi(embed_v0)]
     impl SeasonPassImpl of super::ISeasonPass<ContractState> {
+        fn burn(ref self: ContractState, token_id: u256) {
+            self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+
         fn mint(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
             // ensure only caller is the token owner
             let caller = starknet::get_caller_address();

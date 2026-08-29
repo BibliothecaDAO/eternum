@@ -1,20 +1,20 @@
 #[starknet::interface]
-trait ITestLords<TContractState> {
+pub trait ITestLords<TContractState> {
     fn mint(ref self: TContractState, token_id: u256);
     fn mint_test_lords(ref self: TContractState);
     fn set_season_pass(ref self: TContractState, address: starknet::ContractAddress);
 }
 
 #[starknet::interface]
-trait ISeasonPass<TContractState> {
+pub trait ISeasonPass<TContractState> {
     fn attach_lords(ref self: TContractState, token_id: u256, amount: u256);
 }
 
 #[starknet::contract]
 mod TestLords {
+    use core::num::traits::Zero;
     use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin::token::erc20::{ERC20Component};
-    use openzeppelin::token::erc20::{ERC20HooksEmptyImpl};
+    use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
     use super::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait};

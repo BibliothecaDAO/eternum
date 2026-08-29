@@ -33,7 +33,7 @@ export const deployMMRTokenContract = async (defaultAdmin, upgrader) => {
   let contractName = "MMRToken";
   const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
 
-  // Constructor: default_admin, game_contract, upgrader
+  // Constructor: default_admin, upgrader
   let constructorCalldata = [BigInt(defaultAdmin), BigInt(upgrader)];
   let address = await deploy(casualName, class_hash, constructorCalldata);
   await saveContractAddressToCommonFolder("mmrToken", address);

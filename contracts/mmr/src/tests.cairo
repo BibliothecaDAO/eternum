@@ -5,42 +5,12 @@
 // while get_player_mmr returns INITIAL_MMR for uninitialized players.
 
 use mmr::contract::{
-    IERC20ViewDispatcher, IERC20ViewDispatcherTrait, IMMRFactoryContractDispatcher, IMMRFactoryContractDispatcherTrait,
-    IMMRTokenDispatcher, IMMRTokenDispatcherTrait, INITIAL_MMR, MIN_MMR,
+    IERC20ViewDispatcher, IERC20ViewDispatcherTrait, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, INITIAL_MMR,
+    MIN_MMR, UPDATER_ROLE,
 };
+use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
-
-#[starknet::interface]
-pub trait IMockFactory<TContractState> {
-    fn get_factory_mmr_contract_version(self: @TContractState, addr: ContractAddress) -> felt252;
-    fn set_version(ref self: TContractState, addr: ContractAddress, version: felt252);
-}
-
-#[starknet::contract]
-mod MockFactory {
-    use starknet::ContractAddress;
-    use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-
-    #[storage]
-    struct Storage {
-        versions: Map<ContractAddress, felt252>,
-    }
-
-    #[constructor]
-    fn constructor(ref self: ContractState) {}
-
-    #[abi(embed_v0)]
-    impl MockFactoryImpl of super::IMockFactory<ContractState> {
-        fn get_factory_mmr_contract_version(self: @ContractState, addr: ContractAddress) -> felt252 {
-            self.versions.entry(addr).read()
-        }
-
-        fn set_version(ref self: ContractState, addr: ContractAddress, version: felt252) {
-            self.versions.entry(addr).write(version);
-        }
-    }
-}
 
 // ================================
 // TEST HELPERS
@@ -48,8 +18,6 @@ mod MockFactory {
 
 // Helper to scale MMR values to 18 decimals
 const PRECISION: u256 = 1_000000000000000000; // 1e18
-const FACTORY_VERSION: felt252 = 1;
-
 fn e18(val: u256) -> u256 {
     val * PRECISION
 }
@@ -85,25 +53,14 @@ fn deploy_mmr_token() -> ContractAddress {
     contract_address
 }
 
-fn deploy_mock_factory() -> ContractAddress {
-    let contract = snforge_std::declare("MockFactory").unwrap().contract_class();
-    let constructor_calldata = array![];
-    let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap();
-    contract_address
-}
-
 fn setup() -> (IMMRTokenDispatcher, IERC20ViewDispatcher, ContractAddress) {
     let contract_address = deploy_mmr_token();
-    let factory_address = deploy_mock_factory();
     let mmr = IMMRTokenDispatcher { contract_address };
     let erc20 = IERC20ViewDispatcher { contract_address };
-
-    let mmr_factory_admin = IMMRFactoryContractDispatcher { contract_address };
-    let mock_factory = IMockFactoryDispatcher { contract_address: factory_address };
-    mock_factory.set_version(GAME(), FACTORY_VERSION);
+    let access = IAccessControlDispatcher { contract_address };
 
     start_cheat_caller_address(contract_address, ADMIN());
-    mmr_factory_admin.set_factory_details(factory_address, FACTORY_VERSION);
+    access.grant_role(UPDATER_ROLE, GAME());
     stop_cheat_caller_address(contract_address);
 
     (mmr, erc20, contract_address)
@@ -220,7 +177,7 @@ fn test_update_mmr_no_change() {
 }
 
 #[test]
-#[should_panic(expected: "MMR: Caller is not authorized game contract")]
+#[should_panic(expected: 'Caller is missing role')]
 fn test_update_mmr_unauthorized() {
     let (mmr, _, contract_address) = setup();
 
@@ -296,7 +253,7 @@ fn test_update_mmr_batch_empty() {
 }
 
 #[test]
-#[should_panic(expected: "MMR: Caller is not authorized game contract")]
+#[should_panic(expected: 'Caller is missing role')]
 fn test_update_mmr_batch_unauthorized() {
     let (mmr, _, contract_address) = setup();
 

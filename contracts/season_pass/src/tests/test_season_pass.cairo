@@ -1,21 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use esp::contract::{EternumSeasonPass as season_pass_contract, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
+    use core::num::traits::Zero;
+    use esp::contract::{ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
     use esp::mock::lords::{ITestLords, ITestLordsDispatcher, ITestLordsDispatcherTrait};
     use esp::mock::realms::realms::{
-        IERC721MinterDispatcher, IERC721MinterDispatcherTrait, TestRealm as realms_contract,
+        IERC721MinterDispatcher, IERC721MinterDispatcherTrait, IRealmMetadataEncodedDispatcher,
+        IRealmMetadataEncodedDispatcherTrait,
     };
-    use esp::mock::realms::realms::{IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
-
     use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
+    use snforge_std::cheatcodes::l1_handler::L1HandlerTrait;
     use snforge_std::{
-        ContractClass, ContractClassTrait, DeclareResultTrait, cheatcodes::{l1_handler::L1HandlerTrait}, declare,
-        get_class_hash, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
+        ContractClass, ContractClassTrait, DeclareResultTrait, declare, get_class_hash, spy_events,
+        start_cheat_caller_address, stop_cheat_caller_address,
     };
-
     use starknet::{ClassHash, ContractAddress, EthAddress};
 
     fn ADMIN() -> ContractAddress {
@@ -28,6 +28,10 @@ mod tests {
 
     fn BOB() -> ContractAddress {
         starknet::contract_address_const::<'BOB'>()
+    }
+
+    fn LEDGER() -> ContractAddress {
+        starknet::contract_address_const::<'LEDGER'>()
     }
 
     fn ALICE_REALMS_ID() -> u256 {
@@ -103,6 +107,64 @@ mod tests {
         assert!(
             realms_metadata == season_pass_metadata, "expected realms metadata to be equal to season pass metadata",
         );
+    }
+
+    #[test]
+    fn test_owner_can_burn_pass() {
+        let (season_pass, realms, _) = SEASON_PASS();
+        let realms_nft = IERC721MinterDispatcher { contract_address: realms };
+        let pass = ISeasonPassDispatcher { contract_address: season_pass };
+        let erc721 = IERC721Dispatcher { contract_address: season_pass };
+
+        start_cheat_caller_address(realms, ALICE());
+        realms_nft.mint(ALICE_REALMS_ID());
+        stop_cheat_caller_address(realms);
+        start_cheat_caller_address(season_pass, ALICE());
+        pass.mint(ALICE(), ALICE_REALMS_ID());
+        pass.burn(ALICE_REALMS_ID());
+        stop_cheat_caller_address(season_pass);
+
+        assert!(erc721.balance_of(ALICE()).is_zero(), "expected pass to be burned");
+    }
+
+    #[test]
+    fn test_approved_account_can_burn_pass() {
+        let (season_pass, realms, _) = SEASON_PASS();
+        let realms_nft = IERC721MinterDispatcher { contract_address: realms };
+        let pass = ISeasonPassDispatcher { contract_address: season_pass };
+        let erc721 = IERC721Dispatcher { contract_address: season_pass };
+
+        start_cheat_caller_address(realms, ALICE());
+        realms_nft.mint(ALICE_REALMS_ID());
+        stop_cheat_caller_address(realms);
+        start_cheat_caller_address(season_pass, ALICE());
+        pass.mint(ALICE(), ALICE_REALMS_ID());
+        erc721.approve(LEDGER(), ALICE_REALMS_ID());
+        stop_cheat_caller_address(season_pass);
+
+        start_cheat_caller_address(season_pass, LEDGER());
+        pass.burn(ALICE_REALMS_ID());
+        stop_cheat_caller_address(season_pass);
+
+        assert!(erc721.balance_of(ALICE()).is_zero(), "expected approved ledger to burn pass");
+    }
+
+    #[test]
+    #[should_panic(expected: 'ERC721: unauthorized caller')]
+    fn test_unapproved_account_cannot_burn_pass() {
+        let (season_pass, realms, _) = SEASON_PASS();
+        let realms_nft = IERC721MinterDispatcher { contract_address: realms };
+        let pass = ISeasonPassDispatcher { contract_address: season_pass };
+
+        start_cheat_caller_address(realms, ALICE());
+        realms_nft.mint(ALICE_REALMS_ID());
+        stop_cheat_caller_address(realms);
+        start_cheat_caller_address(season_pass, ALICE());
+        pass.mint(ALICE(), ALICE_REALMS_ID());
+        stop_cheat_caller_address(season_pass);
+
+        start_cheat_caller_address(season_pass, BOB());
+        pass.burn(ALICE_REALMS_ID());
     }
 
     // #[test]
