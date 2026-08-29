@@ -36,9 +36,10 @@ So the two rows of the primitive map onto syscalls, not onto a process:
 | entitlement | the ledger/vault calls `piltover.send_message_to_appchain(l3_system, selector, payload)` | an `#[l1_handler]` on the game system, asserting `from_address` is the ledger/vault |
 | outcome     | the ledger/vault calls `piltover.consume_message_from_appchain(l3_system, payload)`      | the game system calls `send_message_to_l1_syscall(ledger_or_vault, payload)`        |
 
-`apps/operator` (phase-2 decision 4) is **not built**. It remains the documented fallback if S.0 fails: the same
-entrypoints behind `assert_only_operator` instead of the message consumption — build every inbound entrypoint with the
-guard as its first line so the swap is one function.
+`apps/operator` (phase-2 decision 4) — see the addendum below: with the measured gas per action it **is built** as stage
+1, and native messaging is stage 3's transport. Original text: the same entrypoints behind `assert_only_operator`
+instead of the message consumption — build every inbound entrypoint with the guard as its first line so the swap is one
+function.
 
 Sepolia gas is free; the prover is the cost. `mock` until the first real season is scheduled; the prover choice is the
 owner's, made with a price.
@@ -207,6 +208,36 @@ Added: `contracts/ledger`, `contracts/vault`, Piltover + orchestrator + MongoDB 
 and its math, the L3 prize transfers and escrow, direct collectible minting, pass custody, `transfer_or_mint` and the
 resource bridge's fee split, `lp_withdraw`, `velords_claim`, the entry-token remnants, the MMR factory hook, and the
 operator process before it existed. Net: two L2 contracts and one settlement stack replace an L3 that moved value.
+
+## Addendum 2026-08-29 (evening) — settlement economics, and what it changes
+
+**The fact:** on the old mainnet games the median action cost **~340M L2 gas**; a 96-player Blitz (~4,000 actions) is
+~1.4T gas, an Eternum season far more. Proving cost is proportional to gas on every path — SNOS through a prover, or
+SNIP-36 chunks (1.1B cap per transaction, 75M gas verification each) — so at the quoted ≈ 10–15 ¢ per 1B gas a Blitz
+game costs ≈ $150–200 to prove, and SNIP-36 would need ~1,300 chunks per game. Validity settlement is not affordable at
+this gas per action; SNIP-36 today proves one Starknet transaction (not an appchain state transition) and does not
+change that.
+
+**What it changes in this brief:**
+
+1. **Stage 1 is operator attestation, not a fallback.** `apply_results` and every other inbound L2 entrypoint ship
+   behind `assert_only_operator` (idempotent by `game_id`, evented, with each game's result commitment posted).
+   `apps/ operator` is built as the phase-2 brief decided (two loops, Postgres cursor). Deposits and registrations may
+   still ride `piltover.send_message_to_appchain` → `#[l1_handler]` — that direction needs no proof — but that is an S.1
+   choice, not a dependency for B.1–B.3.
+2. **S.0 is now the gas-per-action measurement**: the current game contracts deployed on Sepolia, a harness game
+   replayed there, gas per action by system recorded (median, p95, the top offenders). This is the baseline for the Dojo
+   exit and the number that decides when stage 3 is affordable. One week, no infrastructure.
+3. **S.1 (was S.0) — the Piltover/orchestrator shape** moves behind S.0 and behind B.3; it is built with the mock prover
+   for the messaging shape, and validity settlement (stage 3) is scheduled only when S.0's number × a quoted prover
+   price is a small fraction of a game's pool. Aggregation: one `update_state` per day for all finished games (the
+   orchestrator batches; the measured ~242M gas per update amortizes).
+4. **Decision 1 reopened for the owner.** "Proven-only withdrawals" now means no Eternum cash-out until stage 3. The
+   choices are (A) the capped + delayed operator release with a guardian as the stage-1 mechanism, or (B) no withdrawals
+   in season one. B.4 stays last in the order either way; the vault's deposit side is unaffected.
+
+Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR port, presets, collectibles at
+`apply_results`, pools, and account class v2 are needed in every settlement stage.
 
 ## Out of this brief
 

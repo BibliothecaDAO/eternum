@@ -224,10 +224,13 @@ loadout page in the web app.
 
 ## 9. Owner decisions (answered 2026-08-29 unless marked open)
 
-- **1 — bridge withdrawals: proven only.** No operator-authorized releases ever ship; the vault releases only against
-  the proven L3 burn (settlement on Sepolia — free gas — started now with the orchestrator's `mock` prover, a paid
-  prover chosen later), with the delay and daily cap kept as permanent circuit breakers against a proof bug. Eternum's
-  first season runs on E-1 plus deposits; cash-out arrives with the first real proofs.
+- **1 — bridge withdrawals: reopened 2026-08-29 evening** (see the backend brief's addendum: at ~340M L2 gas per action,
+  validity settlement is not affordable yet, so "proven only" means no cash-out until the gas diet lands; options are
+  the capped+delayed operator release as stage 1, or no withdrawals in season one). Earlier text: proven only.\*\* No
+  operator-authorized releases ever ship; the vault releases only against the proven L3 burn (settlement on Sepolia —
+  free gas — started now with the orchestrator's `mock` prover, a paid prover chosen later), with the delay and daily
+  cap kept as permanent circuit breakers against a proof bug. Eternum's first season runs on E-1 plus deposits; cash-out
+  arrives with the first real proofs.
 - **2 — passes burned** at registration. Done.
 - **3 — the web app owns L2 actions and is the lobby**; the game client is launched per game and only plays. One web app
   (account, marketplace, lobby, ledger actions, chests, loadout, bridge, swap, betting), one desktop client, mobile
