@@ -61,8 +61,11 @@ prover is enough for its shape, and every inbound entrypoint already has the one
 | G   | Full gates on Sepolia + lab                               | Owner                | all                            |
 | S.0 | Gas per action measured on Sepolia (for the Dojo exit)    | Claude               | — (runs beside, gates nothing) |
 
-B.1's **interfaces are frozen and deployed on Sepolia in week 1** — ABI, addresses in `deploy/madara-lab/.env` and
-`contracts/common/addresses/sepolia.json` — so the web agent builds against real contracts while the bodies land.
+**Topology (owner, 2026-08-29): everything on Sepolia during the build** — identity (SIWS against a Sepolia node),
+ledger, vault, MMR, test LORDS, test passes and cosmetics minted to the owner's wallets — and the whole value plane
+flips to mainnet at once when G passes. No dual-chain mode. B.1's **interfaces are frozen and deployed on Sepolia in
+week 1** — ABI, addresses in `deploy/madara-lab/.env` and `contracts/common/addresses/sepolia.json` — so the web agent
+builds against real contracts while the bodies land.
 
 ### S.0 — gas per action (Claude, beside the rest, gates nothing)
 

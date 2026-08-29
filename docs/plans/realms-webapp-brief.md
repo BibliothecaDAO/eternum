@@ -33,11 +33,12 @@ refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and
 
 ## Pages (the product, in order of build)
 
-1. **Sign in and account** — SIWS with Ready/Braavos/Controller (the connectors that exist); on first sign-in the
-   **name** step: prefilled from Cartridge for Controller users, typed by everyone else; unique (case-insensitive
-   index), 3–20 chars, changeable in settings. The gameplay account binding (bind/rotate through the existing authority
-   server code) shown as a status, never as a thing the player manages. `owner → name` is served by this app's API to
-   anything that needs it (leaderboards, review, the game client).
+1. **Sign in and account** — SIWS with Ready/Braavos/Controller (the connectors that exist), against **Sepolia** during
+   the build (owner decision 2026-08-29: identity, ledger and test assets all on Sepolia; mainnet at launch, one flip,
+   no dual-chain mode); on first sign-in the **name** step: prefilled from Cartridge for Controller users, typed by
+   everyone else; unique (case-insensitive index), 3–20 chars, changeable in settings. The gameplay account binding
+   (bind/rotate through the existing authority server code) shown as a status, never as a thing the player manages.
+   `owner → name` is served by this app's API to anything that needs it (leaderboards, review, the game client).
 2. **Lobby** — the game list from herald's directory (open, live, finished; player counts; preset; start/end), one game
    page per `game_id` with registration state from the ledger (`registered`, flags, pool, payouts by preset),
    **Register** (`register(game_id, sword, shield)` with the LORDS approval folded into one multicall), **Register with
