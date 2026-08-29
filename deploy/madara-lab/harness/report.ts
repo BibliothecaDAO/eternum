@@ -244,7 +244,8 @@ function buildHarnessManifest(
       endedAt: input.workload.endedAt,
       percentiles: analysis.percentiles,
       measuredRpc: {
-        scope: "estimateInvokeFee, getBlock, and getTransactionStatus calls made by the harness driver",
+        scope:
+          "estimateInvokeFee, getBlock, getTransactionReceipt, and getTransactionStatus calls made by the harness driver",
         ...analysis.rpc,
       },
       perGame: input.games.map((game) => summarizeGameWorkload(game, analysis.actions)),

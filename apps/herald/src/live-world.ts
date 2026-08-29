@@ -251,6 +251,7 @@ export class LiveWorld {
     const changes = new Map<number, FoldChange[]>();
     const historyEvents: DecodedWorldEvent[] = [];
     await replayWorldEvents({
+      applyAtomically: true,
       fold: this.confirmedFold,
       fromBlock: this.confirmedBlockValue + 1,
       onChange: (event, change) => {

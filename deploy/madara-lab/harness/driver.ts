@@ -9,7 +9,7 @@ import { HeraldObserver, type HeraldExplorer as ExplorerRow } from "./herald-obs
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
-export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionStatus";
+export type MeasuredRpcMethod = "estimateInvokeFee" | "getBlock" | "getTransactionReceipt" | "getTransactionStatus";
 export type WorkloadFailureClass = "game_rule_limit" | "harness_pathing" | "chain_or_driver";
 export type WorkloadRevertReason = "tile_contention" | "stamina" | "labor" | "other";
 export type TransactionOutcome =
@@ -36,6 +36,7 @@ export interface ProductionDelta {
 
 export interface TrackedTransaction {
   acceptedOnL2At?: string;
+  acceptedOnL2Block?: number;
   acceptedOnL2Ms?: number;
   actionIndex?: number;
   botId: number;
@@ -253,18 +254,60 @@ class PathReservations {
   }
 }
 
-// Ten actions give the exact requested 50/30/20 mix. Explorers are primed first so a travel action never targets
-// the realm tile behind a freshly spawned troop.
+// The ten-minute acceptance window gives the exact requested 50/30/20 mix. Three explores prime independent travel
+// routes, then later explores are spaced across stamina ticks instead of being re-bursted at each ten-action boundary.
 const ACTION_PATTERN: readonly WorkloadActionKind[] = [
   "explore",
   "explore",
   "explore",
   "move",
+  "produce",
+  "move",
+  "explore",
   "move",
   "produce",
   "move",
+  "explore",
   "move",
   "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "move",
+  "move",
+  "explore",
+  "move",
+];
+const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
+  "move",
+  "produce",
+  "move",
+  "explore",
   "move",
 ];
 
@@ -399,7 +442,8 @@ export async function runWorkload({
 }
 
 export function resolveActionKind(tick: number): WorkloadActionKind {
-  return ACTION_PATTERN[tick % ACTION_PATTERN.length]!;
+  if (tick < ACTION_PATTERN.length) return ACTION_PATTERN[tick]!;
+  return STEADY_ACTION_PATTERN[(tick - ACTION_PATTERN.length) % STEADY_ACTION_PATTERN.length]!;
 }
 
 export function resolveExplorerActionStaminaCost(
@@ -678,6 +722,7 @@ async function runProductionAction({
       gameId,
       structure.structureId,
       resourceBefore,
+      requiredAcceptedBlock(transaction),
       MODEL_UPDATE_TIMEOUT_MS,
     );
     transaction.productionDelta = {
@@ -738,6 +783,7 @@ async function runExplorerAction({
       gameId,
       selectedExplorer.explorerId,
       selectedExplorer,
+      requiredAcceptedBlock(transaction),
       MODEL_UPDATE_TIMEOUT_MS,
     );
     pathReservations.complete(reservation, { x: updated.x, y: updated.y });
@@ -793,7 +839,17 @@ function planExplorerAction(
       `No explorer has enough route-adjusted stamina for ${kind}; minimum route cost is ${minimumRequiredStamina}`,
     );
   }
-  throw new HarnessPathingError(`No collision-free ${kind} route is available for bot ${bot.botId}`);
+  const routeState = bot.explorers
+    .map(
+      (explorer) =>
+        `${explorer.explorerId}@${coordKey(explorer.coord)} path=${explorer.pathDirections.length} blocked=${[
+          ...(explorer.blockedDirections.get(coordKey(explorer.coord)) ?? []),
+        ].join(",")}`,
+    )
+    .join("; ");
+  throw new HarnessPathingError(
+    `No collision-free ${kind} route is available for bot ${bot.botId}: ${routeState}`,
+  );
 }
 
 function chooseExploreDirections(explorer: ExplorerState, structures: StructureState[]): number[] {
@@ -1002,8 +1058,15 @@ async function waitForReceiptLifecycle(
         preConfirmedAtMs = observedAtMs;
       }
       if (["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(status.finality_status ?? "")) {
+        const receipt = (await measureRpc(rpc, "getTransactionReceipt", () =>
+          provider.getTransactionReceipt(transactionHash),
+        )) as { block_number?: number };
+        if (!Number.isSafeInteger(receipt.block_number)) {
+          throw new Error(`Accepted transaction ${transactionHash} has no block number`);
+        }
         return {
           acceptedOnL2At: toIso(observedAtMs),
+          acceptedOnL2Block: receipt.block_number,
           acceptedOnL2Ms: observedAtMs - submittedAtMs,
           finalityStatus: status.finality_status,
           outcome: "completed",
@@ -1171,6 +1234,13 @@ function assertCompleted(transaction: TrackedTransaction): void {
   }
 }
 
+function requiredAcceptedBlock(transaction: TrackedTransaction): number {
+  if (transaction.acceptedOnL2Block === undefined) {
+    throw new Error(`Completed transaction ${transaction.transactionHash ?? "unknown"} has no accepted block`);
+  }
+  return transaction.acceptedOnL2Block;
+}
+
 function driverFailure({
   actionIndex,
   botId,
@@ -1220,7 +1290,7 @@ export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {
   ) {
     return "game_rule_limit";
   }
-  if (/occupied|collision|no .*path|no .*route|unoccupied exploration direction/i.test(message)) {
+  if (/occupied|collision|no .*path|no .*route|path.*not explored|unoccupied exploration direction/i.test(message)) {
     return "harness_pathing";
   }
   return "chain_or_driver";
@@ -1256,6 +1326,7 @@ export function createRpcMetrics(): RpcMetrics {
   return {
     estimateInvokeFee: { calls: 0, wallMs: 0 },
     getBlock: { calls: 0, wallMs: 0 },
+    getTransactionReceipt: { calls: 0, wallMs: 0 },
     getTransactionStatus: { calls: 0, wallMs: 0 },
   };
 }
@@ -1274,6 +1345,7 @@ function snapshotRpcMetrics(rpc: RpcMetrics): RpcMetrics {
   return {
     estimateInvokeFee: snapshotRpcMethod(rpc.estimateInvokeFee),
     getBlock: snapshotRpcMethod(rpc.getBlock),
+    getTransactionReceipt: snapshotRpcMethod(rpc.getTransactionReceipt),
     getTransactionStatus: snapshotRpcMethod(rpc.getTransactionStatus),
   };
 }

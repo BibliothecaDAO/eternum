@@ -43,20 +43,14 @@ describe("Madara harness workload", () => {
   });
 
   it("requests the 50/30/20 acceptance pattern", () => {
-    expect(Array.from({ length: 40 }, (_, tick) => resolveActionKind(tick))).toEqual([
-      ...Array.from({ length: 4 }, () => [
-        "explore",
-        "explore",
-        "explore",
-        "move",
-        "move",
-        "produce",
-        "move",
-        "move",
-        "produce",
-        "move",
-      ]).flat(),
-    ]);
+    const actions = Array.from({ length: 80 }, (_, tick) => ({ kind: resolveActionKind(tick) }));
+
+    expect(actions.slice(0, 3).map(({ kind }) => kind)).toEqual(["explore", "explore", "explore"]);
+    expect(actions.slice(3).some(({ kind }, index, rest) => kind === "explore" && rest[index + 1]?.kind === kind)).toBe(
+      false,
+    );
+    expect(summarizeRequestedMix(actions.slice(0, 40))).toEqual({ explore: 12, move: 20, produce: 8 });
+    expect(summarizeRequestedMix(actions)).toEqual({ explore: 24, move: 40, produce: 16 });
   });
 
   it("polls receipts below the previous 250 ms measurement floor", () => {
@@ -117,6 +111,7 @@ describe("Madara harness workload", () => {
   it("separates game-rule exhaustion from harness pathing", () => {
     expect(classifyWorkloadFailure(new Error("No explorer has 30 stamina for explore"))).toBe("game_rule_limit");
     expect(classifyWorkloadFailure(new Error("one of the tiles in path is occupied"))).toBe("harness_pathing");
+    expect(classifyWorkloadFailure(new Error("one of the tiles in path is not explored"))).toBe("harness_pathing");
     expect(classifyWorkloadFailure(new Error("production completed without a labor or wood output delta"))).toBe(
       "chain_or_driver",
     );
@@ -200,6 +195,7 @@ describe("Madara harness reporting", () => {
       methods: {
         estimateInvokeFee: { calls: 1, wallMs: 12.35 },
         getBlock: { calls: 2, wallMs: 4.57 },
+        getTransactionReceipt: { calls: 0, wallMs: 0 },
         getTransactionStatus: { calls: 3, wallMs: 7.89 },
       },
       total: { calls: 6, wallMs: 24.81 },
@@ -272,13 +268,40 @@ describe("Madara harness Herald observer", () => {
     try {
       const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const observations = await Promise.all([
-        observer.waitForExplorer(7, "11", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 1_000),
-        observer.waitForExplorer(7, "12", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 1_000),
+        observer.waitForExplorer(7, "11", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
+        observer.waitForExplorer(7, "12", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
       ]);
 
       expect(observations[0]).toMatchObject({ explorerId: "11", x: 1 });
       expect(observations[1]).toMatchObject({ explorerId: "12", x: 1 });
       expect(requests).toBe(1);
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  it("waits for Herald to fold the transaction's accepted block", async () => {
+    let requests = 0;
+    const server = Bun.serve({
+      port: 0,
+      fetch() {
+        requests += 1;
+        return heraldSnapshot("ExplorerTroops", [explorerRow("11", requests)], requests === 1 ? 11 : 12);
+      },
+    });
+
+    try {
+      const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
+      const explorer = await observer.waitForExplorer(
+        7,
+        "11",
+        { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 },
+        12,
+        1_000,
+      );
+
+      expect(explorer.x).toBe(2);
+      expect(requests).toBe(2);
     } finally {
       server.stop(true);
     }
@@ -297,7 +320,7 @@ describe("Madara harness Herald observer", () => {
     try {
       const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const before = await observer.readResource(7, "11");
-      const after = await observer.waitForResource(7, "11", before, 1_000);
+      const after = await observer.waitForResource(7, "11", before, 12, 1_000);
       expect(after).toMatchObject({ structureId: "11", laborBalance: 100n, woodOutput: 9n });
     } finally {
       server.stop(true);
@@ -315,7 +338,9 @@ describe("Madara harness Herald observer", () => {
     try {
       const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const before = await observer.readResource(7, "11");
-      await expect(observer.waitForResource(7, "11", before, 20)).rejects.toThrow("did not show a labor or wood");
+      await expect(observer.waitForResource(7, "11", before, 12, 20)).rejects.toThrow(
+        "did not show a labor or wood",
+      );
     } finally {
       server.stop(true);
     }
@@ -351,9 +376,9 @@ describe("Madara harness CLI and concurrency", () => {
   });
 });
 
-function heraldSnapshot(model: string, values: Array<Record<string, unknown>>) {
+function heraldSnapshot(model: string, values: Array<Record<string, unknown>>, confirmedBlock = 12) {
   return Response.json({
-    confirmed_block: 12,
+    confirmed_block: confirmedBlock,
     game_id: "7",
     models: [{ model, rows: values.map((value, index) => ({ key: `0x${index + 1}`, value })) }],
   });

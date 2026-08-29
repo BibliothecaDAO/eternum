@@ -21,6 +21,7 @@ interface SnapshotModel {
 }
 
 interface SnapshotResponse {
+  confirmed_block: number;
   models: SnapshotModel[];
 }
 
@@ -78,13 +79,19 @@ export class HeraldObserver {
     gameId: number,
     explorerId: string,
     previous: Pick<HeraldExplorer, "stamina" | "staminaUpdatedTick" | "x" | "y">,
+    acceptedBlock: number,
     timeoutMs: number,
   ): Promise<HeraldExplorer> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() <= deadline) {
-      const current = (await this.readExplorers(gameId)).find(
-        (candidate) => candidate.explorerId === entityId(explorerId),
-      );
+      const snapshot = await this.readSnapshot(gameId, ["ExplorerTroops"]);
+      const current = rowsForModel(snapshot, "ExplorerTroops")
+        .map(toExplorer)
+        .find((candidate) => candidate.explorerId === entityId(explorerId));
+      if (snapshot.confirmed_block < acceptedBlock) {
+        await sleep(this.pollMs);
+        continue;
+      }
       if (current && explorerChanged(previous, current)) return current;
       await sleep(this.pollMs);
     }
@@ -95,12 +102,21 @@ export class HeraldObserver {
     gameId: number,
     structureId: string,
     previous: HeraldResource,
+    acceptedBlock: number,
     timeoutMs: number,
   ): Promise<HeraldResource> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() <= deadline) {
-      const current = await this.readResource(gameId, structureId);
-      if (resourceChanged(previous, current)) return current;
+      const snapshot = await this.readSnapshot(gameId, ["Resource"]);
+      const row = rowsForModel(snapshot, "Resource").find(
+        (candidate) => entityId(candidate.entity_id) === entityId(structureId),
+      );
+      const current = row ? toResource(row) : undefined;
+      if (snapshot.confirmed_block < acceptedBlock) {
+        await sleep(this.pollMs);
+        continue;
+      }
+      if (current && resourceChanged(previous, current)) return current;
       await sleep(this.pollMs);
     }
     throw new Error(
@@ -136,6 +152,12 @@ export class HeraldObserver {
     return (await response.json()) as SnapshotResponse;
   }
 }
+
+const rowsForModel = (snapshot: SnapshotResponse, model: string): Record<string, unknown>[] => {
+  const rows = snapshot.models.find((candidate) => candidate.model === model)?.rows;
+  if (!rows) throw new Error(`Herald snapshot omitted requested model ${model}`);
+  return rows.map(({ value }) => value);
+};
 
 const entityId = (value: unknown): string => {
   if (typeof value !== "string" && typeof value !== "number" && typeof value !== "bigint") {

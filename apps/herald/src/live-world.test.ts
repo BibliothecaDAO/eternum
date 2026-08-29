@@ -119,7 +119,7 @@ const preconfirmedReceipt = (events: RpcSubscribedEvent[]) => ({
   transaction_hash: events[0]!.transaction_hash,
 });
 
-const liveFixture = (historyStore?: HistoryStore) => {
+const liveFixture = (historyStore?: HistoryStore, rpcOverride?: MadaraRpc) => {
   const confirmedFold = new WorldFold(registry);
   confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x101", "0x111", ["0x1", "0x7", "0x1", "0x1"]))!);
   confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x102", "0x112", ["0x2", "0x7", "0xabc", "0x0"]))!);
@@ -139,12 +139,46 @@ const liveFixture = (historyStore?: HistoryStore) => {
     hub: new GameStreamHub("epoch-a"),
     historyStore,
     registry,
-    rpc,
+    rpc: rpcOverride ?? rpc,
   });
   return { block, live };
 };
 
 describe("LiveWorld", () => {
+  it("keeps confirmed snapshots atomic across getEvents pages", async () => {
+    let markFirstPageConsumed!: () => void;
+    let releaseSecondPage!: () => void;
+    const firstPageConsumed = new Promise<void>((resolve) => {
+      markFirstPageConsumed = resolve;
+    });
+    const secondPageReleased = new Promise<void>((resolve) => {
+      releaseSecondPage = resolve;
+    });
+    const first = { ...setEvent("0x101", "0x201", ["0x1", "0x7", "0x1", "0x2"]), block_number: 13 };
+    const second = { ...setEvent("0x101", "0x202", ["0x1", "0x7", "0x1", "0x3"]), block_number: 13 };
+    const block = replacementBlock();
+    const rpc = {
+      blockNumber: async () => 13,
+      getBlockWithReceipts: async () => ({ ...block, transactions: [] }),
+      getEvents: async function* () {
+        yield { events: [first], page: 1 };
+        markFirstPageConsumed();
+        await secondPageReleased;
+        yield { events: [second], page: 2 };
+      },
+    } as unknown as MadaraRpc;
+    const { live } = liveFixture(undefined, rpc);
+
+    const advancing = live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
+    await firstPageConsumed;
+
+    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x1");
+
+    releaseSecondPage();
+    await advancing;
+    expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x3");
+  });
+
   it("advances history completeness through confirmed blocks without history events", async () => {
     const historyStore = {
       appendEvents: vi.fn(async () => undefined),

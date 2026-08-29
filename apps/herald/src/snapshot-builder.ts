@@ -10,6 +10,7 @@ interface ReplayWorldEventsInput {
   rpc: MadaraRpc;
   fromBlock: number;
   toBlock: number;
+  applyAtomically?: boolean;
   onPage?: (page: { number: number; eventCount: number }) => void;
   onChange?: (event: DecodedWorldEvent, change: FoldChange | undefined) => void;
   decodeMonitor?: WorldEventDecodeMonitor;
@@ -40,6 +41,7 @@ export const replayWorldEvents = async ({
   onPage,
   onChange,
   decodeMonitor = new WorldEventDecodeMonitor(),
+  applyAtomically = false,
 }: ReplayWorldEventsInput): Promise<{ fold: WorldFold; metrics: Omit<ReplayMetrics, "retained_rows"> }> => {
   const fold = existingFold ?? new WorldFold(registry);
   const eventSelectors = Object.values(WORLD_EVENT_SELECTORS);
@@ -49,6 +51,12 @@ export const replayWorldEvents = async ({
   let pages = 0;
   let storeEvents = 0;
   let previousEvent: RawWorldEvent | undefined;
+  const deferredEvents: DecodedWorldEvent[] = [];
+
+  const applyEvent = (event: DecodedWorldEvent): void => {
+    const change = fold.apply(event);
+    onChange?.(event, change);
+  };
 
   if (fromBlock > toBlock) {
     return {
@@ -77,11 +85,13 @@ export const replayWorldEvents = async ({
       decodedEvents += 1;
       if (event.kind === "event") eventMessages += 1;
       else storeEvents += 1;
-      const change = fold.apply(event);
-      onChange?.(event, change);
+      if (applyAtomically) deferredEvents.push(event);
+      else applyEvent(event);
     }
     onPage?.({ number: page.page, eventCount: page.events.length });
   }
+
+  deferredEvents.forEach(applyEvent);
 
   return {
     fold,
