@@ -354,19 +354,32 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     `GET /<chain>/games/<id>/snapshot?models=…` (already exists), `profile-builder` and the landing lists read those,
     and the spectator gate is re-run with the container stopped — that rerun is A.4's first checkpoint, before the
     deletions.
-  - _Next steps for Codex, in order (rewritten 2026-08-28 evening; Torii is stopped on the lab and stays stopped):_
-    1. **A.4, the boot path first.** Herald serves `GET /<chain>/games` — the `GameRegistry` fold as a directory
-       (status, clock, player count per game) — next to the existing `GET /<chain>/games/<id>/snapshot?models=…`.
-       `profile-builder.ts` (chain config, world address, registry row), the landing Open/Played lists and the entry
-       modal's pre-session reads move onto those two endpoints; world address comes from the manifest. Checkpoint: a
-       fresh 8-bot game boots, one human settles, and a private-window spectator watches it, all with the container off.
-       Nothing else in this list is worth more than this while no game can boot.
-    2. **The two client latency classes and the fog chokepoint** (measured above): instrument explore's submit path
-       (build → sign → send) and delete what the numbers name; a player's own action renders on arrival (≤ 100 ms
-       pre-confirmed→rendered), not on the ambient lane; every `exploredTiles` write invalidates its fog page, reveal
-       starts on the pre-confirmed diff, animation ≤ 0.3 s. Re-measure the 20-click burst; bar p95 ≤ 250 ms.
-    3. **A.4, the deletions.** Every remaining row of the disposition table below (history sink for story / battle /
-       swaps / review; `LastBattle` aggregate; faith and leaderboard onto the stream), then the Torii container,
+  - _A.4 first checkpoint, 2026-08-29 (Codex `da607789467` + `c8083f033b3`; herald on that code; Torii container off
+    throughout):_ **pass.** Landing Open/Played lists fill from `GET /madara/games`; the harness waits on herald for the
+    registry row (261 ms); the owner entered game 62, settled, provisioned and explored; a private window spectated the
+    same game. Owner timeline (`__eternumGameEntryTimeline`): directory fetch 354 ms, snapshot receive 207 ms / apply 27
+    ms, initial sync 538 ms, renderer init 406 ms, bootstrap complete at 1.7 s — then `worldmap-first-terrain` 5.2 s and
+    scene-ready at 9.8 s. Explore click→rendered **p50 267 / p95 302 ms** (was 761 / 1051): ~90–120 ms to submit (mostly
+    `submit_guard_released`), 40–65 ms chain, 20–45 ms diff, 3 ms RECS, ~95 ms render. Spectator boot in a private
+    window: `Renderer startup timed out after 15000ms` (the WebGPU adapter probe hangs before the WebGL2 fallback — this
+    laptop has no hardware WebGPU in Brave), then one 12.2 s frame of `createRenderPipeline 91×/10.8 s`, then a 2.9 s
+    ingest spike. The story feed still queries `torii.realms.test/sql` (`s2-StoryEvent`) and fails — a table row,
+    expected until the deletions. Not a bug: the Played column hides dev-mode games the viewer is not registered in
+    (`devModeFilter={false}`), so a wallet-less window lists only the one non-dev game; the directory carries all 62.
+    **Owner decision 2026-08-29: the client is now the bottleneck and gets its own brief after this one; phase 2
+    finishes the rest first.** Parked for that client brief, with their evidence above: first-terrain 5.2 s on boot; the
+    WebGPU probe's 15 s timeout on hosts without adapters; shader-pipeline compile 10.8 s on the WebGL2 fallback in a
+    fresh profile; explore p95 302 vs 250 (submit guard + render); the fog chokepoint and render-on-arrival items from
+    the 2026-08-28 measurement; the Build-modal per-realm lock (review above) stays in this brief because it is a
+    correctness rework of a rejected commit, not tuning.
+  - _Next steps for Codex, in order (rewritten 2026-08-29 after the checkpoint; Torii is stopped on the lab and stays
+    stopped):_
+    1. ~~A.4, the boot path~~ (done — checkpoint above).
+    2. ~~Client latency classes and fog~~ — moved to the client brief (owner decision 2026-08-29); the instrumentation
+       (`__clientActionLatencyMeasurements` per stage, `__eternumGameEntryTimeline`) stays and is the evidence that
+       brief starts from.
+    3. **A.4, the deletions — now.** Every remaining row of the disposition table below (history sink for story / battle
+       / swaps / review; `LastBattle` aggregate; faith and leaderboard onto the stream), then the Torii container,
        `torii.toml.template`, `packages/torii`, `apps/game/src/dojo`, the `VITE_PUBLIC_HERALD_URL` switch (herald is the
        transport, full stop), the harness's `toriiSqlUrl`, and every `getConfigFromTorii` row already in the manifest.
        Gate unchanged: a full Blitz game end to end with no Torii process anywhere; net deletion in the sync runtime;
