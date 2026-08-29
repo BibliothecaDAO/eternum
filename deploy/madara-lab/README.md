@@ -510,6 +510,55 @@ Cost and cadence of settlement (blocks per proof, proof latency, STRK per update
 "sustainable" holds. They are the first thing to measure once the game runs here. Until then this section is a plan,
 not a fact.
 
+## Server profile (rented box, Cloudflare Tunnel) — prepared 2026-08-29
+
+The same compose on a rented box (first: Latitude c3.small.x86, Mexico City, one month from 2026-09-01). Differences
+from the laptop, all of them deletions of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare
+Tunnel** terminates TLS on the owner's zone and the box opens no public port but SSH. Herald and `apps/web` run as
+systemd units on the host (herald is the read path; `apps/web` holds the binding-authority key, so it must run where
+the chain is). The game client is served by Cloudflare Pages and talks to these hosts:
+
+| Host                    | Service                                                             |
+| ----------------------- | ------------------------------------------------------------------- |
+| `rpc.<LAB_DOMAIN>`      | `madara:9944` through the tunnel (paths pass through)               |
+| `herald.<LAB_DOMAIN>`   | herald on the host, `:3003` (HTTP + WebSocket)                      |
+| `app.<LAB_DOMAIN>`      | `apps/web` on the host, `:3000` (SIWS, binding authority)           |
+| identity RPC            | not proxied: the browser calls the public Sepolia node directly     |
+
+Once, on the owner's machine (needs the Cloudflare account): `cloudflared tunnel login`, `cloudflared tunnel create
+realms-lab` (prints the `TUNNEL_ID` and writes `~/.cloudflared/<id>.json`), then one CNAME per host:
+`cloudflared tunnel route dns realms-lab rpc.<LAB_DOMAIN>` (and `herald.`, `app.`). Copy the JSON to the box as
+`/root/credentials.json`.
+
+On the box, as root, fresh Ubuntu 24.04:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/BibliothecaDAO/eternum/feat/madara-lab/deploy/madara-lab/scripts/bootstrap-server.sh
+LAB_DOMAIN=lab.example.com TUNNEL_ID=<uuid> bash bootstrap-server.sh
+```
+
+It installs Docker, node 22 + pnpm, bun and asdf (scarb 2.13.1, sozo 1.8.7) for a `realms` user, checks the repo
+out at `/opt/realms/eternum`, renders `.lab/cloudflared/config.yml` from `cloudflared/config.yml.template`, installs
+the `herald` and `web` units, and closes every port but SSH (`ufw`). Then, as `realms`:
+
+```bash
+cd /opt/realms/eternum
+cp .env.example .env            # DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms, IDENTITY_RPC_URL=<sepolia node>,
+                                # BINDING_AUTHORITY_*: the lab authority pair — never a mainnet key
+pnpm install && pnpm run build:packages
+cd deploy/madara-lab
+docker compose --profile server --profile web up -d --wait madara postgres cloudflared   # never caddy here
+scripts/deploy-world.sh && scripts/bootstrap-game.sh             # as on the laptop; fresh genesis
+sudo systemctl start herald web
+curl -s https://herald.<LAB_DOMAIN>/health
+```
+
+Redeploys are `git pull && pnpm run build:packages && sudo systemctl restart herald` (and `pnpm --dir apps/web build
+&& sudo systemctl restart web`). The harness runs on the box (`pnpm lab:harness`) — driver-on-box for now; the
+driver-off-box variant (E.1) is the laptop against `rpc.<LAB_DOMAIN>` and is a separate measurement. Record the
+`cloudflared` image digest here at first `up` (pin discipline). Cloudflare's proxy has a 100 s per-request limit and
+WebSockets pass through; the herald stream and the RPC are both fine with that.
+
 ## Layout
 
 ```

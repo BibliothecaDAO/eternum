@@ -3,6 +3,7 @@
 #   docker compose up -d                 # madara only
 #   scripts/deploy-world.sh              # sozo build + migrate the s2 world (writes world address to .lab/)
 #   docker compose --profile web up -d   # postgres for apps/web's session store
+#   docker compose --profile server --profile web up -d madara postgres cloudflared   # the rented box (README "Server profile")
 #
 # caddy terminates TLS for every *.realms.test host on 127.0.0.1:443 (see Caddyfile); run
 # scripts/issue-certs.sh once before the first `up`, and map the hosts in /etc/hosts (README "Bring the chain up").
@@ -164,6 +165,23 @@ services:
       - "host.docker.internal:host-gateway"   # the web and game dev servers run on the host
     ports:
       - "127.0.0.1:443:443"
+    restart: unless-stopped
+
+  # Server profile: Cloudflare Tunnel instead of Caddy. Cloudflare terminates TLS for rpc./herald./app.<LAB_DOMAIN>;
+  # the box opens no public port. Ingress lives in cloudflared/config.yml.template, rendered by
+  # scripts/bootstrap-server.sh into .lab/cloudflared/. Pin the image digest in the README at first use.
+  cloudflared:
+    image: ${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:latest}
+    container_name: madara-lab-cloudflared
+    profiles: ["server"]
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+    volumes:
+      - ./.lab/cloudflared:/etc/cloudflared:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # herald and apps/web run on the host as systemd units
+    depends_on:
+      madara:
+        condition: service_healthy
     restart: unless-stopped
 
   # Session store for apps/web (better-auth over Drizzle). DATABASE_URL in README.

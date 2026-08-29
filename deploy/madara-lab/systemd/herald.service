@@ -1,0 +1,23 @@
+# herald: the game's real-time read path (apps/herald), on the host next to the compose stack.
+# Installed by scripts/bootstrap-server.sh into /etc/systemd/system/herald.service.
+# Redeploy: git pull && pnpm run build:packages && sudo systemctl restart herald
+[Unit]
+Description=Realms herald (fold of the Madara sequencer, WS + HTTP on :3003)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+User=realms
+WorkingDirectory=/opt/realms/eternum
+EnvironmentFile=/opt/realms/eternum/.env
+Environment=HERALD_CHAIN=madara
+Environment=HERALD_RPC_URL=http://127.0.0.1:5050/rpc/v0_10_2
+Environment=HERALD_PORT=3003
+Environment=PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/local/bin/pnpm --dir apps/herald start
+Restart=always
+RestartSec=3
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

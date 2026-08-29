@@ -1,0 +1,23 @@
+# Cloudflare Tunnel ingress for the server profile. Rendered by scripts/bootstrap-server.sh into
+# .lab/cloudflared/config.yml (gitignored) with LAB_DOMAIN and TUNNEL_ID substituted; the tunnel credentials
+# JSON sits next to it. Cloudflare terminates TLS; nothing on the box listens on a public port.
+#
+# Hostnames the client and the web app use (all proxied, all on the owner's zone):
+#   rpc.${LAB_DOMAIN}      Starknet JSON-RPC of the sequencer (paths pass through: /rpc/v0_10_2 works)
+#   herald.${LAB_DOMAIN}   herald HTTP + WebSocket (apps/herald, systemd on the host)
+#   app.${LAB_DOMAIN}      apps/web (identity, SIWS, the gameplay-account binding authority; systemd on the host)
+#
+# The identity RPC is not proxied any more: the browser calls the public Sepolia node directly
+# (VITE_PUBLIC_IDENTITY_RPC_URL), which removes one hop and one config value. The admin RPC and the gateway are
+# never exposed.
+tunnel: ${TUNNEL_ID}
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: rpc.${LAB_DOMAIN}
+    service: http://madara:9944
+  - hostname: herald.${LAB_DOMAIN}
+    service: http://host.docker.internal:3003
+  - hostname: app.${LAB_DOMAIN}
+    service: http://host.docker.internal:3000
+  - service: http_status:404
