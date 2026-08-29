@@ -1,3 +1,4 @@
+import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { Account, CallData, type Call } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
@@ -128,8 +129,22 @@ function transactionSucceeded(receipt: unknown): boolean {
   return !helper.execution_status || helper.execution_status === "SUCCEEDED";
 }
 
-async function executeRegistrarCall(account: Account, call: Call): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call);
+export function resolveRegistrarExecutionDetails(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID) {
+  const chain = typeof target === "string" ? resolveDeploymentEnvironment(target).chain : "appchain";
+  const resourceBounds = resolveGameTransactionResourceBounds(chain);
+  return {
+    version: 3 as const,
+    tip: 0,
+    ...(resourceBounds ? { resourceBounds } : {}),
+  };
+}
+
+async function executeRegistrarCall(
+  account: Account,
+  call: Call,
+  target: RegistrarTarget,
+): Promise<RegistrarTransactionResult> {
+  const transaction = await account.execute(call, resolveRegistrarExecutionDetails(target));
   const receipt = await account.waitForTransaction(transaction.transaction_hash);
   if (!transactionSucceeded(receipt)) {
     throw new Error(`${call.entrypoint} failed for transaction ${transaction.transaction_hash}`);
@@ -241,6 +256,7 @@ export async function bootstrapChainConfig(
   return executeRegistrarCall(
     account,
     buildRegistrarCall("bootstrap_chain_config", CallData.compile([chainConfig] as never), target),
+    target,
   );
 }
 
@@ -252,6 +268,7 @@ export async function registerPreset(
   return executeRegistrarCall(
     account,
     buildRegistrarCall("register_preset", buildRegisterPresetCalldata(payload), target),
+    target,
   );
 }
 
@@ -279,6 +296,7 @@ export async function registerSeries(
       ] as never),
       target,
     ),
+    target,
   );
 }
 
@@ -290,6 +308,7 @@ export async function createRegistrarGame(
   const result = await executeRegistrarCall(
     account,
     buildRegistrarCall("create_game", buildCreateGameCalldata(params), target),
+    target,
   );
   return {
     ...result,

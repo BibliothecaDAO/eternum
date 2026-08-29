@@ -11,36 +11,27 @@ import { isComponentUpdate } from "@dojoengine/recs";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-const unwrapToriiField = (value: unknown): unknown =>
-  typeof value === "object" && value !== null && "value" in value ? (value as { value: unknown }).value : value;
-
-const readToriiNumber = (value: unknown): number | null => {
-  const unwrapped = unwrapToriiField(value);
-  if (typeof unwrapped === "number") return Number.isFinite(unwrapped) ? unwrapped : null;
-  if (typeof unwrapped === "bigint") return Number(unwrapped);
-  if (typeof unwrapped !== "string" || unwrapped.length === 0) return null;
-  const parsed = Number(unwrapped);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
 const readChestEvent = (value: unknown) => {
   if (typeof value !== "object" || value === null) return null;
   const event = value as Record<string, unknown>;
-  const rawCoord = unwrapToriiField(event.chest_coord);
+  const rawCoord = event.chest_coord;
   if (typeof rawCoord !== "object" || rawCoord === null) return null;
   const coord = rawCoord as Record<string, unknown>;
-  const rawRelics = unwrapToriiField(event.relics);
+  if (
+    typeof event.explorer_id !== "number" ||
+    typeof coord.x !== "number" ||
+    typeof coord.y !== "number" ||
+    !Array.isArray(event.relics) ||
+    !event.relics.every((relic) => typeof relic === "number")
+  ) {
+    return null;
+  }
 
   return {
-    explorerId: readToriiNumber(event.explorer_id),
-    chestX: readToriiNumber(coord.x),
-    chestY: readToriiNumber(coord.y),
-    relics: Array.isArray(rawRelics)
-      ? rawRelics.flatMap((relic) => {
-          const decoded = readToriiNumber(relic);
-          return decoded === null ? [] : [decoded];
-        })
-      : [],
+    explorerId: event.explorer_id,
+    chestX: coord.x,
+    chestY: coord.y,
+    relics: event.relics as number[],
   };
 };
 

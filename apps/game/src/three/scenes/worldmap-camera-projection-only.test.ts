@@ -14,8 +14,8 @@ const extractMethod = (source: string, signature: string, nextSignature: string)
   return source.slice(start, end);
 };
 
-describe("worldmap camera movement performs zero Torii fetches", () => {
-  it("syncs visible terrain from the in-memory projection", () => {
+describe("worldmap camera movement reads only the in-memory projection", () => {
+  it("syncs visible terrain without network fetches", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
     const projectionSync = extractMethod(
       source,
@@ -30,7 +30,7 @@ describe("worldmap camera movement performs zero Torii fetches", () => {
 
     expect(presentation).toContain("syncProjectionTiles: (targetChunkKey) => this.syncProjectionTilesForChunk");
     expect(projectionSync).toContain("this.worldSpatialProjection.getTilesInBounds");
-    expect(projectionSync).not.toMatch(/toriiClient|getEntities|getMapFromTorii|fetch\s*\(/);
-    expect(source).not.toMatch(/LegacyBounded|toriiStreamManager|updateToriiBoundsSubscription/);
+    expect(projectionSync).not.toMatch(/getEntities|getMapFromIndex|fetch\s*\(/);
+    expect(source).not.toMatch(/LegacyBounded|updateBoundsSubscription/);
   });
 });

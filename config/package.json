@@ -11,6 +11,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:game",

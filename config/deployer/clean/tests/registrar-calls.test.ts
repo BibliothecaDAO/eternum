@@ -3,6 +3,7 @@ import type { RegistrarManifest } from "../registrar/calls";
 
 const {
   assertRegistrarAvailable,
+  resolveRegistrarExecutionDetails,
   resolveRegistrarContractAddress,
   resolveRegistrarWorldAddress,
   resolveCreatedGameId,
@@ -13,6 +14,22 @@ const manifest: RegistrarManifest = {
 };
 
 describe("registrar receipt parsing", () => {
+  test("uses fixed zero-price bounds on the fee-free lab chain", () => {
+    expect(resolveRegistrarExecutionDetails("madara.blitz")).toEqual({
+      version: 3,
+      tip: 0,
+      resourceBounds: {
+        l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
+        l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
+        l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
+      },
+    });
+  });
+
+  test("pins the appchain tip without imposing lab bounds", () => {
+    expect(resolveRegistrarExecutionDetails("appchain.blitz")).toEqual({ version: 3, tip: 0 });
+  });
+
   test("reads a directly emitted GameCreated key", () => {
     const receipt = {
       events: [{ keys: ["0xabc", "0x7"], data: [] }],
