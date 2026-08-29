@@ -400,11 +400,12 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
        brief starts from.
     3. ~~A.4, the deletions~~ (done — gate above).
     4. ~~Build-modal per-realm lock, knip prototype files, bounded herald maps~~ (done, `a1a69cc9518`).
-    5. **A.4 leftovers** (small, before B): `apps/realtime-server`'s `TORII_SQL_URL` gets a disposition (herald HTTP or
-       the dependency goes); `chest-container.tsx`'s Torii-shaped field helpers renamed or deleted; `*torii*` test files
-       renamed to what they pin; the registrar's tip-estimator noise silenced at its source.
-    6. **B — value plane**, per section B below, on the L2 lab chain; the client brief is drafted in parallel by Claude
-       from the A.3/A.4 measurements.
+    5. ~~A.4 leftovers~~ (done, `3a9be00fe19`: realtime-server's Torii SQL/cache/availability subsystem deleted, −2,361
+       lines; chest parser reads herald's decoded shape; camera test renamed to the projection-only invariant it pins;
+       registrar submits `tip: 0` with fixed Madara bounds).
+    6. **B — value plane**, per section B below — the _Decisions unblocking B_ block under its gate answers Codex's four
+       questions (ledger economics, MMR authorization, account v2 targets and upgrade, gate topology); the client brief
+       is drafted in parallel by Claude from the A.3/A.4 measurements.
     - Done since the first list: stale wiring tests (`d38000feea4`), degrade-not-die (`fefb400fd2f`), harness
       pre-confirmed nonces and stream senders (`ab125610e8c`), one account truth (`8d2b3b0c0e4`), automation address
       equality (`93da2d4592a`), rulebook in the fold (`0f14d1c152`), quiet-box measurement (above), PR #4903 merged.
@@ -453,10 +454,10 @@ to its owner when posting results. The ledger accepts a result row only for an o
 Principle (decided): value and reputation live where identity lives (Starknet L2); the gameplay chain stays fee-free and
 disposable. The gameplay burner never holds anything worth stealing.
 
-- **`MMRToken` moves to L2**, keyed by the owner address (the identity wallet). The existing `contracts/mmr` already has
-  the right shape (verified 2026-08-27): `update_mmr_batch(updates: Array<(ContractAddress, u256)>)` behind "Caller is
-  not authorized game contract" — so `blitz_ledger` simply becomes the authorized updater, and no MMR contract change is
-  needed for stage 1. The world's `mmr` system stays on L3 and computes; results are **posted** to L2, not called.
+- **`MMRToken` moves to L2**, keyed by the owner address (the identity wallet). The existing `contracts/mmr` has the
+  right _interface_ (`update_mmr_batch(updates: Array<(ContractAddress, u256)>)`), but its authorization round-trips
+  through the L3 world factory — see decision 2 below (the 2026-08-27 "no MMR change needed" note was wrong). The
+  world's `mmr` system stays on L3 and computes; results are **posted** to L2, not called.
 - **`blitz_ledger` (new, L2):** `register(game_id)` pulls the LORDS entry fee and emits the registration; `buy_sword()`
   / `buy_shield()` pull LORDS and set a one-game modifier flag on the owner's MMR record (double gains / halve losses —
   flags, not NFTs; tradability is a later decision that can be added without redesign);
@@ -501,6 +502,52 @@ disposable. The gameplay burner never holds anything worth stealing.
 (sword/shield modifiers consumed correctly) → prize paid to the owner wallet; a second `apply_results` and a roster that
 differs from the registered set both revert; `cancel_game` refunds; the adversarial rotate-and-steal test passes on
 class v2 and `upgrade` without the authority reverts; the L3 tree no longer contains the entry-token path.
+
+**Decisions unblocking B (2026-08-29, answering Codex's four questions).** Economic numbers below are preset values —
+tuned inside the system, not designed here; everything else is structure and is decided.
+
+1. **Ledger games and economics.** The ledger holds write-once economic presets:
+   `register_preset(preset_id, entry_fee, protocol_cut_bps, payout_bps: Array<u16>, sword_price, shield_price)` by the
+   ledger admin (a cold key); registering an existing id reverts, so a game's economics are immutable the moment it
+   references a preset — the same pattern as the L3 factory's balance presets.
+   `open_game(game_id, preset_id, start_time)` is called by the **operator key** from the same registrar flow that
+   creates the L3 game (`createRegistrarGame` in `config/deployer/clean/registrar` does L3 `create_game` then L2
+   `open_game`; if the L2 call fails the L3 game exists and nobody can register for it, which is the visible failure,
+   not a silent one). Opening moves no funds, so it fits the operator's remit. Initial lab preset: entry 10 LORDS,
+   protocol cut 1000 bps, payouts 5000/3000/2000 bps to ranks 1–3, sword 2 LORDS, shield 2 LORDS. **One bucket per
+   game:** every LORDS the ledger receives for a game — entry and modifier fees alike — goes into that game's `pool`,
+   and `paid[game][owner]` records each owner's total; `cancel_game` refunds `paid` in full to every owner (modifiers
+   included, no special case); `apply_results` sends `pool × protocol_cut_bps / 10_000` plus the integer-floor dust of
+   the payout split to `treasury` — an address set at deploy, changeable only by the ledger admin — so the contract
+   holds zero for that game after finalize (the test asserts it). Modifiers are bought after registration and before
+   `start_time`, at most one of each per owner per game.
+2. **MMR authorization.** `is_factory_mmr_contract` (`contracts/mmr/src/contract.cairo:269`) calls the L3 world
+   factory's `get_factory_mmr_contract_version`, which cannot exist on L2. Change `MMRToken`: delete the factory hook
+   (`IMMRFactoryContract`, `IWorldFactoryMMR`, the `factory` storage tuple, `set_factory_details`) and gate `update_mmr`
+   / `update_mmr_batch` with an `UPDATER_ROLE` on the AccessControl the contract already carries; the admin grants it to
+   `blitz_ledger` at deploy. Net deletion; the L3 world's own `mmr` system is untouched.
+3. **Account class v2.** Allowed targets have one on-chain source: `PlayerRegistry` — already on the account's chain —
+   gains `set_game_system(addr, allowed)` / `is_game_system(addr)`, written under a `DEPLOYER_ROLE` (next to the
+   authority's `bind`) by the key that deploys the world; `deploy-gameplay-contracts.ts` writes the manifest's system
+   addresses right after the world deploy. `__execute__` asserts `is_game_system(call.to)` for every call of the
+   multicall; the registry address is a constructor argument like `binding_authority`. No per-account allowlist (that is
+   N transactions per redeploy). `upgrade(new_class_hash)` is **binding-authority only** — the "owner signature" clause
+   above is dropped: the owner's L2 wallet cannot sign on the L3, and the authority already holds `rotate_public_key`,
+   i.e. full control of the account, so a co-signature adds ceremony, not security. What protects value is the target
+   restriction plus an L3 that holds nothing; say so in the class's doc comment.
+4. **Gate topology.** The lab's L2 for B is **Starknet Sepolia** — no compose change; the lab `.env` points
+   `IDENTITY_RPC_UPSTREAM` at a Sepolia node for the duration so wallet, SIWS and ledger share one chain (mainnet
+   returns at production). LORDS on Sepolia is a lab-deployed mintable test ERC20 built from `contracts/lords`; its
+   address and the ledger's live in `deploy/madara-lab/.env`. Relaying gets its own durable process,
+   **`apps/operator`**, one loop per job (this supersedes "the authority server watches" above): (a) registration relay
+   — watches `Registered(game_id, owner)` on Sepolia, waits `ACCEPTED_ON_L2` plus one block, writes
+   `register_relayed(game_id, owner, account_of(owner))` on L3 with a **relayer key** (a role on that entrypoint; the
+   binding-authority key stays only in `apps/web`); (b) results relay — watches herald for a game's `PlayersRankFinal`,
+   maps accounts to owners through `PlayerRegistry.owner_of`, posts `apply_results` on Sepolia with the **operator
+   key**. Durability is a cursor table in the lab Postgres (own schema beside herald's); correctness never depends on
+   it, because `register_relayed` is idempotent and `apply_results` is once-only. Dev-mode games — `dev_mode_on` already
+   bypasses the registration window (`blitz/contracts.cairo:74`) — also bypass `settle`'s relayed-registration
+   assertion, so the harness and the lab stay fee-free without a new flag.
 
 ## C. Agents (small, mostly product)
 
