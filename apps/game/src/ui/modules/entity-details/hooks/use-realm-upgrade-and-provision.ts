@@ -6,7 +6,7 @@ import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
+import { gameCallArgs, getGameNamespace } from "@/sync/game-scope";
 import { useDojo } from "@bibliothecadao/react";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
@@ -64,7 +64,7 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
     if (!structureEntityId || !canProvision || !provision) return;
 
     // Provision-only (the common fresh-realm case): delegate to the standalone
-    // provision flow. It keeps the button locked through torii sync and absorbs
+    // provision flow. It keeps the button locked through authoritative sync and absorbs
     // the "already provisioned" race, so a second click in the post-confirm /
     // pre-sync window can't fire a duplicate provision_realm that reverts.
     if (!canUpgrade) {

@@ -26,6 +26,9 @@ It serves:
 - `GET /<chain>/games`
 - `GET /<chain>/games/<game_id>/snapshot`
 - `GET /<chain>/games/<game_id>/snapshot?models=WorldConfig,Structure`
+- `GET /<chain>/games/<game_id>/history?model=StoryEvent&limit=50&offset=0`
+- `GET /<chain>/games/<game_id>/review/snapshot`
+- `GET /<chain>/games/<game_id>/transactions/count`
 - `WS /<chain>/games/<game_id>`
 
 The server sends `hello` first. The client answers `resume{epoch,seq}` with its last applied boundary; an empty epoch
@@ -53,21 +56,6 @@ Two encodings arrive on the same world event stream, and the decoder picks by ev
   variant at all — both were fatal until this rule.
 
 No persistent sync model carries an `Option`; if one ever does, its store encoding is measured, not assumed.
-
-## Torii parity gate
-
-Until A.4 deletes Torii, its current model tables are the snapshot oracle:
-
-```sh
-HERALD_GAME_ID=53 \
-HERALD_RPC_URL=https://rpc.realms.test/rpc/v0_10_2 \
-TORII_URL=https://torii.realms.test \
-pnpm --dir apps/herald parity
-```
-
-The gate captures Torii's latest raw world-event block, replays Madara through the same block, compares every persistent
-sync model by entity and field, then verifies that Torii's boundary did not move during comparison. It exits nonzero on
-any mismatch.
 
 ## A.2 lab gate — 2026-08-27
 

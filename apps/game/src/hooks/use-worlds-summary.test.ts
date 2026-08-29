@@ -19,8 +19,8 @@ vi.mock("./appchain-worlds-summary", () => summaryMocks);
 
 import { useWorldsSummary, fetchWorldsSummary } from "./use-worlds-summary";
 
-const blitzWorld = { id: "blitz", toriiBaseUrl: "https://torii.example" };
-const eternumWorld = { id: "eternum", toriiBaseUrl: "https://torii.example" };
+const blitzWorld = { id: "blitz", heraldBaseUrl: "https://herald.example" };
+const eternumWorld = { id: "eternum", heraldBaseUrl: "https://herald.example" };
 
 beforeEach(() => {
   reactQueryMocks.useQuery.mockReset();

@@ -20,13 +20,8 @@ import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
-import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-
-// The SQL aggregate feeding POINTS/RANK must keep pace with the RECS-fed HUD
-// rank pill while the panel stays open — a one-shot fetch froze the columns
-// until a manual refresh.
-const ACTIVITY_REFRESH_WINDOW_SECONDS = 30;
+import { gameEntityKey } from "@/sync/game-scope";
+import { useStoryEventRevision } from "@/hooks/store/use-story-events-store";
 
 const SOCIAL_LEADERBOARD_LIMIT = 1000;
 
@@ -62,6 +57,7 @@ export const PlayersPanel = ({
   );
   const [isActivityBreakdownFetching, setIsActivityBreakdownFetching] = useState(false);
   const mode = useGameModeConfig();
+  const storyEventRevision = useStoryEventRevision();
 
   const refreshActivityBreakdowns = useCallback(async () => {
     setIsActivityBreakdownFetching(true);
@@ -75,10 +71,9 @@ export const PlayersPanel = ({
     }
   }, []);
 
-  const activityRefreshTick = useCoarseCurrentDefaultTick(ACTIVITY_REFRESH_WINDOW_SECONDS);
   useEffect(() => {
     void refreshActivityBreakdowns();
-  }, [refreshActivityBreakdowns, activityRefreshTick]);
+  }, [refreshActivityBreakdowns, storyEventRevision]);
 
   useEffect(() => {
     const handler = setTimeout(() => {

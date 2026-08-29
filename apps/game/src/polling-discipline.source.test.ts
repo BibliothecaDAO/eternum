@@ -12,7 +12,6 @@ interface AllowedTimer {
 }
 
 const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
-  "apps/game/src/dojo/sync-simulator.ts": { class: "debug", reason: "opt-in sync simulator cadence" },
   "apps/game/src/hooks/store/use-chain-time-store.ts": {
     class: "clock",
     reason: "local interpolation between Herald heads",
@@ -37,6 +36,14 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
   "apps/game/src/ui/features/cosmetics/components/cosmetic-model-viewer.tsx": {
     class: "ui",
     reason: "renderer readiness check",
+  },
+  "apps/game/src/ui/features/debug/procedural-terrain-benchmark-view.tsx": {
+    class: "debug",
+    reason: "developer benchmark repaint",
+  },
+  "apps/game/src/ui/features/debug/procedural-terrain-debug-view.tsx": {
+    class: "debug",
+    reason: "developer terrain metrics repaint",
   },
   "apps/game/src/ui/features/economy/resources/resource-chip.tsx": {
     class: "clock",
@@ -163,11 +170,13 @@ const ALLOWED_RECURRING_TIMEOUTS: Record<string, AllowedTimer & { callback: stri
 };
 
 const ALLOWED_TRANSACTION_WAITS: Record<string, string> = {
-  "apps/game/src/dojo/sync.ts": "injects the active Herald transaction channel into the provider",
+  "apps/game/src/sync/game-sync.ts": "injects the active Herald transaction channel into the provider",
   "apps/game/src/observability/observed-client-transaction.ts": "resolves an observed submit from the Herald channel",
   "apps/game/src/three/scenes/worldmap.tsx": "resolves movement from the Herald channel",
   "apps/game/src/ui/utils/transactions.ts": "resolves a submitted hash from the Herald channel",
   "packages/core/src/sync/game-sync-runtime.ts": "owns the Herald transaction-channel waiter",
+  "packages/core/src/account/gameplay-account.ts":
+    "one bounded deployment wait for non-browser callers that do not have a Herald session",
 };
 
 const REPO_ROOT = resolve(process.cwd(), "../..");
@@ -201,15 +210,12 @@ describe("polling discipline", () => {
 
   it("keeps chain facts, health, and transaction status off polling loops", () => {
     expect(source("packages/provider/src/index.ts")).not.toContain("this.provider.waitForTransaction(");
-    expect(source("packages/core/src/account/gameplay-account.ts")).not.toContain("waitForTransaction(");
     expect(source("apps/game/src/ui/shared/components/chain-time-poller.tsx")).not.toContain('getBlock("latest")');
     expect(source("apps/game/src/ui/features/military/components/exploration-automation-dashboard.tsx")).not.toContain(
       "refreshExplorerPositions",
     );
-    expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo/connection-health-monitor.ts"))).toBe(false);
-    expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo/torii-health-probe.ts"))).toBe(false);
+    expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo"))).toBe(false);
     expect(source("apps/game/src/init/bootstrap.tsx")).not.toContain("probeWorldToriiAlive");
-    expect(source("apps/game/src/runtime/world/torii-health.ts")).not.toContain("probeWorldToriiAlive");
   });
 
   it("allows transaction waits only at Herald channel call sites", () => {
@@ -232,7 +238,7 @@ describe("polling discipline", () => {
     }
   });
 
-  it("keeps Torii fact queries one-shot until A.4 removes their transport", () => {
+  it("keeps migrated fact readers off query polling", () => {
     [
       "apps/game/src/hooks/store/use-story-events-store.ts",
       "apps/game/src/hooks/use-player-world-registrations.ts",

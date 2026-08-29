@@ -83,11 +83,17 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("ResourceBridgeWtlConfig", { s2Scope: "chain" }),
   globalEntity("StructureLevelConfig", { s2Scope: "chain" }),
   globalEntity("SeasonPrize"),
+  globalEntity("GameChestReward"),
   globalEvent("SeasonEnded"),
   globalEntity("QuestLevels"),
   globalEntity("QuestTile"),
   globalEntity("AddressName", { s2Scope: "chain" }),
   globalEntity("PlayerRegisteredPoints"),
+  globalEntity("WonderFaith"),
+  globalEntity("FaithfulStructure"),
+  globalEntity("WonderFaithBlacklist"),
+  globalEntity("WonderFaithPrize"),
+  globalEntity("WonderFaithWinners"),
   globalEntity("BlitzSettlement"),
   globalEntity("BlitzEntryTokenRegister"),
   globalEntity("PlayersRankTrial"),
@@ -100,6 +106,7 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("RankPrize"),
   globalEntity("GuildWhitelist"),
   globalEntity("GameRegistry", { availability: "s2-only" }),
+  globalEntity("Series", { availability: "s2-only", s2Scope: "chain" }),
   // The s2 rulebook: config-manager reads every balance number (stamina, capacity, tick, combat...) from the
   // PresetConfig row the game points at, and chain-wide tuning from ChainConfig. Without them in the fold every
   // lookup returns the silent zero default (Aug 2026 human gate: no stamina bar, "need more capacity" at 6/12).
@@ -115,6 +122,7 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEvent("ExplorerRewardEvent"),
   globalEvent("BattleEvent"),
   globalEvent("StoryEvent"),
+  globalEvent("SwapEvent"),
   globalEntity("ProductionBoostBonus"),
   globalEntity("Resource"),
   globalEntity("ResourceArrival"),

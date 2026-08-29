@@ -5,7 +5,6 @@ import {
   getRenderFetchBoundsForArea,
   getRenderFetchBoundsForChunk,
   isHexInsideAnyBounds,
-  resolveToriiSubscriptionSwitchDecision,
 } from "./worldmap-chunk-bounds";
 
 describe("isHexInsideAnyBounds", () => {
@@ -42,7 +41,7 @@ describe("getRenderFetchBoundsForChunk", () => {
 });
 
 describe("getRenderAreaKeyForChunk", () => {
-  it("maps a chunk key to its canonical torii super-area key", () => {
+  it("maps a chunk key to its canonical projection area key", () => {
     expect(getRenderAreaKeyForChunk("48,72", 24, 3)).toBe("0,72");
     expect(getRenderAreaKeyForChunk("72,120", 24, 3)).toBe("72,72");
   });
@@ -107,65 +106,6 @@ describe("getRenderFetchBoundsForArea", () => {
     })();
 
     expect(getRenderFetchBoundsForArea(areaKey, renderSize, chunkSize, superAreaStrides)).toEqual(expected);
-  });
-});
-
-describe("resolveToriiSubscriptionSwitchDecision", () => {
-  type ChunkBounds = { minCol: number; maxCol: number; minRow: number; maxRow: number };
-
-  const subscriptionBounds = new Map<string, ChunkBounds>([
-    ["0,0", { minCol: 0, maxCol: 100, minRow: 0, maxRow: 100 }],
-    ["100,0", { minCol: 100, maxCol: 200, minRow: 0, maxRow: 100 }],
-  ]);
-
-  const renderAreaBounds = new Map<string, ChunkBounds>([
-    ["area-current", { minCol: 20, maxCol: 40, minRow: 20, maxRow: 40 }],
-    ["area-prefetch", { minCol: 70, maxCol: 90, minRow: 20, maxRow: 40 }],
-    ["area-outside", { minCol: 120, maxCol: 140, minRow: 20, maxRow: 40 }],
-  ]);
-
-  const getSubscriptionBoundsForArea = (areaKey: string): ChunkBounds => {
-    const bounds = subscriptionBounds.get(areaKey);
-    if (!bounds) throw new Error(`Missing subscription bounds for ${areaKey}`);
-    return bounds;
-  };
-
-  const getRenderAreaBounds = (areaKey: string): ChunkBounds => {
-    const bounds = renderAreaBounds.get(areaKey);
-    if (!bounds) throw new Error(`Missing render bounds for ${areaKey}`);
-    return bounds;
-  };
-
-  it("keeps the current live subscription while it covers useful render areas", () => {
-    expect(
-      resolveToriiSubscriptionSwitchDecision({
-        currentSubscriptionAreaKey: "0,0",
-        requestedSubscriptionAreaKey: "100,0",
-        requiredRenderAreaKeys: ["area-current", "area-prefetch"],
-        getSubscriptionBoundsForArea,
-        getRenderAreaBounds,
-      }),
-    ).toEqual({
-      action: "keep_current",
-      areaKey: "0,0",
-      reason: "covered_by_current_subscription",
-    });
-  });
-
-  it("switches when any useful render area leaves the current live subscription", () => {
-    expect(
-      resolveToriiSubscriptionSwitchDecision({
-        currentSubscriptionAreaKey: "0,0",
-        requestedSubscriptionAreaKey: "100,0",
-        requiredRenderAreaKeys: ["area-current", "area-outside"],
-        getSubscriptionBoundsForArea,
-        getRenderAreaBounds,
-      }),
-    ).toEqual({
-      action: "switch",
-      areaKey: "100,0",
-      reason: "useful_area_outside_current_subscription",
-    });
   });
 });
 

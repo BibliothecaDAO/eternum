@@ -2,7 +2,6 @@ import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
-import { useSyncMarket } from "@/hooks/helpers/use-sync";
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -60,7 +59,6 @@ const TradeSummaryBar = lazy(() =>
 );
 
 export const MarketModal = () => {
-  const { isSyncing } = useSyncMarket();
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   return (
@@ -71,7 +69,7 @@ export const MarketModal = () => {
       size="xl"
       bodyClassName="overflow-hidden"
     >
-      {isSyncing ? <LoadingAnimation /> : <MarketContent />}
+      <MarketContent />
     </CenteredModalShell>
   );
 };

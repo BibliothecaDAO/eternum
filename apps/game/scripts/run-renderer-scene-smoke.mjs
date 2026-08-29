@@ -17,7 +17,6 @@ const RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS = [
   "Failed to read: Resource temporarily unavailable",
   "daemon may be busy or unresponsive",
 ];
-const WORLD_DISCOVERY_LIMIT = 200;
 const WORLD_DISCOVERY_TIMEOUT_MS = 2500;
 
 export const GLOW_REPRO_SCENES = ["map", "travel"];
@@ -84,28 +83,12 @@ export function decodePaddedWorldName(hex) {
   return output;
 }
 
-// The smoke targets the configured appchain world directly. Games live in
-// that world's GameRegistry; the legacy factory deployment table is not part
-// of the s2 indexer.
-function resolveToriiBaseUrl(env = process.env) {
-  return String(env.TORII_URL || env.VITE_PUBLIC_TORII || "").replace(/\/+$/, "");
+function resolveHeraldBaseUrl(env = process.env) {
+  return String(env.HERALD_URL || env.VITE_PUBLIC_HERALD_URL || "").replace(/\/+$/, "");
 }
 
-function buildGameRegistryQueryUrl(toriiBaseUrl) {
-  const url = new URL(`${toriiBaseUrl}/sql`);
-  url.searchParams.set(
-    "query",
-    `SELECT registry.name
-     FROM [s2-GameRegistry] registry
-     INNER JOIN [s2-WorldConfig] config ON config.game_id = registry.game_id
-     ORDER BY registry.game_id DESC
-     LIMIT ${WORLD_DISCOVERY_LIMIT};`,
-  );
-  return url;
-}
-
-async function fetchGameNames(toriiBaseUrl) {
-  const response = await fetch(buildGameRegistryQueryUrl(toriiBaseUrl), {
+async function fetchGameNames(heraldBaseUrl, chain) {
+  const response = await fetch(`${heraldBaseUrl}/${chain}/games`, {
     signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
   });
 
@@ -113,21 +96,26 @@ async function fetchGameNames(toriiBaseUrl) {
     throw new Error(`Game discovery failed: ${response.status} ${response.statusText}`);
   }
 
-  const rows = await response.json();
-  if (!Array.isArray(rows)) {
+  const directory = await response.json();
+  if (!Array.isArray(directory?.games)) {
     return [];
   }
 
-  return rows.map((row) => decodePaddedWorldName(row?.name)).filter(Boolean);
+  return directory.games
+    .toSorted((left, right) => Number(right.game_id) - Number(left.game_id))
+    .map((game) => String(game.name ?? ""))
+    .filter(Boolean);
 }
 
-async function resolvePersistentWorldGameName() {
-  const toriiBaseUrl = resolveToriiBaseUrl();
-  if (!toriiBaseUrl) {
-    throw new Error("No Torii configured for game discovery: set TORII_URL or VITE_PUBLIC_TORII, or pass --world.");
+async function resolvePersistentWorldGameName(chain) {
+  const heraldBaseUrl = resolveHeraldBaseUrl();
+  if (!heraldBaseUrl) {
+    throw new Error(
+      "No Herald configured for game discovery: set HERALD_URL or VITE_PUBLIC_HERALD_URL, or pass --world.",
+    );
   }
 
-  const [latestConfiguredGame] = await fetchGameNames(toriiBaseUrl);
+  const [latestConfiguredGame] = await fetchGameNames(heraldBaseUrl, chain);
   if (latestConfiguredGame) {
     return latestConfiguredGame;
   }
@@ -140,7 +128,7 @@ export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) 
     return requestedWorldName;
   }
 
-  return resolvePersistentWorldGameName();
+  return resolvePersistentWorldGameName(chain);
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {

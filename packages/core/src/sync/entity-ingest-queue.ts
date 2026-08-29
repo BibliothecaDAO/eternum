@@ -58,7 +58,7 @@ const MAX_ENTITY_CHANGES_PER_STORE_WRITE = 1_000;
 
 const mergeEntityModel = (entities: Map<string, GameSyncEntity>, entityId: string, model: string, value: unknown) => {
   const existing = entities.get(entityId);
-  // Torii deliveries are partial per model member. Coalescing two partials for
+  // StoreUpdateMember deliveries are partial per model member. Coalescing two partials for
   // the same entity+model must union their members — replacing wholesale drops
   // every earlier member of a same-frame burst (e.g. a provision tx) before it
   // ever reaches the store.

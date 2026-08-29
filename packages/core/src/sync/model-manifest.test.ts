@@ -11,7 +11,19 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
     const names = getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true }).map(({ name }) => name);
 
     expect(names).toEqual(
-      expect.arrayContaining(["GameRegistry", "Structure", "StructureVillageSlots", "Resource", "ExplorerTroops"]),
+      expect.arrayContaining([
+        "GameRegistry",
+        "Structure",
+        "StructureVillageSlots",
+        "Resource",
+        "ExplorerTroops",
+        "GameChestReward",
+        "WonderFaith",
+        "FaithfulStructure",
+        "WonderFaithBlacklist",
+        "WonderFaithPrize",
+        "WonderFaithWinners",
+      ]),
     );
     expect(names).not.toEqual(expect.arrayContaining(["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"]));
   });
@@ -29,12 +41,14 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
   });
 
   it("adjudicates manifest event messages as events only", () => {
-    ["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent", "StoryEvent"].forEach((name) => {
-      const event = getGameSyncModel(name);
-      expect(event.channels).toEqual(["global-event"]);
-      expect(event.recovery).toBe("event-deduped");
-      expect(event.deletion).toBe("event-ephemeral");
-    });
+    ["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent", "StoryEvent", "SwapEvent"].forEach(
+      (name) => {
+        const event = getGameSyncModel(name);
+        expect(event.channels).toEqual(["global-event"]);
+        expect(event.recovery).toBe("event-deduped");
+        expect(event.deletion).toBe("event-ephemeral");
+      },
+    );
     expect(getGameSyncModelsForChannel("gamewide-entity").map(({ name }) => name)).not.toEqual(
       expect.arrayContaining([
         "SeasonEnded",
@@ -42,6 +56,7 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
         "BattleEvent",
         "ExplorerRewardEvent",
         "StoryEvent",
+        "SwapEvent",
       ]),
     );
   });

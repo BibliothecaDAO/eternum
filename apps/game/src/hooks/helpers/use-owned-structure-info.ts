@@ -4,7 +4,7 @@ import { ClientComponents, RealmInfo } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const buildOwnedStructureInfos = (
   playerStructures: ReturnType<typeof usePlayerStructures>,

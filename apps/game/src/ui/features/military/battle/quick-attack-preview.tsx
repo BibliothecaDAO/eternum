@@ -32,7 +32,7 @@ import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/de
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 import {
   getDirectionBetweenAdjacentHexes,

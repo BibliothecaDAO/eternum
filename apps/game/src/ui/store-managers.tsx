@@ -1,8 +1,7 @@
 import { POLLING_INTERVALS } from "@/config/polling";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
@@ -37,7 +36,7 @@ import {
   ResourcesIds,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
-import type { PlayerRelicsData } from "@bibliothecadao/torii";
+import type { PlayerRelicsData } from "@/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -570,7 +569,7 @@ const SeasonTimerStoreManager = () => {
 
   useEffect(() => {
     // Per-game clock: on s2 this reads the active game's GameRegistry row via
-    // the scoped config manager — the shared-torii wrong-clock bug dies here.
+    // the scoped config manager so one game's clock cannot leak into another.
     const cfg = ClientConfigManager.instance();
     const season = cfg.getSeasonConfig();
     setGameEndAt(resolveFiniteSeasonEndAt(season.endAt || undefined));

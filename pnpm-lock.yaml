@@ -18,16 +18,7 @@ catalogs:
     '@dojoengine/react':
       specifier: 1.7.0-preview.3
       version: 1.7.0-preview.3
-    '@dojoengine/sdk':
-      specifier: 1.7.0-preview.3
-      version: 1.7.0-preview.3
     '@dojoengine/state':
-      specifier: 1.7.0-preview.3
-      version: 1.7.0-preview.3
-    '@dojoengine/torii-client':
-      specifier: 1.7.0-preview.3
-      version: 1.7.0-preview.3
-    '@dojoengine/torii-wasm':
       specifier: 1.7.0-preview.3
       version: 1.7.0-preview.3
     '@dojoengine/utils':
@@ -133,18 +124,9 @@ importers:
       '@dojoengine/recs':
         specifier: 2.1.0
         version: 2.1.0(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      '@dojoengine/sdk':
-        specifier: catalog:game
-        version: 1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
       '@dojoengine/state':
         specifier: catalog:game
         version: 1.7.0-preview.3(@types/node@20.19.33)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(starknet@8.9.2)(terser@5.46.0)(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      '@dojoengine/torii-client':
-        specifier: catalog:game
-        version: 1.7.0-preview.3
-      '@dojoengine/torii-wasm':
-        specifier: catalog:game
-        version: 1.7.0-preview.3
       '@dojoengine/utils':
         specifier: catalog:game
         version: 1.7.0-preview.3(starknet@8.9.2)(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
@@ -288,33 +270,21 @@ importers:
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../../packages/provider
-      '@bibliothecadao/torii':
-        specifier: workspace:*
-        version: link:../../packages/torii
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../../packages/types
       '@cartridge/connector':
         specifier: catalog:game
-        version: 0.13.16(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 0.13.16(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@cartridge/controller':
         specifier: catalog:game
-        version: 0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/core':
         specifier: catalog:game
         version: 1.7.0-preview.3(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@dojoengine/sdk':
-        specifier: catalog:game
-        version: 1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
       '@dojoengine/state':
         specifier: catalog:game
         version: 1.7.0-preview.3(@types/node@20.19.33)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(starknet@8.9.2)(terser@5.46.0)(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
-      '@dojoengine/torii-client':
-        specifier: catalog:game
-        version: 1.7.0-preview.3
-      '@dojoengine/torii-wasm':
-        specifier: catalog:game
-        version: 1.7.0-preview.3
       '@headlessui/react':
         specifier: ^2.2.0
         version: 2.2.10(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -455,7 +425,7 @@ importers:
         version: 3.25.76
       zustand:
         specifier: ^5.0.5
-        version: 5.0.11(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+        version: 5.0.11(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.2
@@ -513,7 +483,7 @@ importers:
         version: 1.4.7
       eslint-config-love:
         specifier: ^114.0.0
-        version: 114.0.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
+        version: 114.0.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
       eslint-plugin-react-hooks:
         specifier: ^7.0.1
         version: 7.0.1(eslint@9.39.2(jiti@1.21.7))
@@ -618,7 +588,7 @@ importers:
         version: 8.18.0
       starknet:
         specifier: catalog:web
-        version: 9.4.2(typescript@5.9.3)
+        version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
     devDependencies:
       '@types/node':
         specifier: ^22.13.5
@@ -1166,12 +1136,12 @@ importers:
 
   packages/client:
     dependencies:
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../core
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../provider
-      '@bibliothecadao/torii':
-        specifier: workspace:*
-        version: link:../torii
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../types
@@ -1310,9 +1280,6 @@ importers:
       '@dojoengine/recs':
         specifier: 2.1.0
         version: 2.1.0(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      '@dojoengine/sdk':
-        specifier: catalog:game
-        version: 1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
       '@scure/starknet':
         specifier: ^1.1.0
         version: 1.1.2
@@ -1499,55 +1466,6 @@ importers:
         specifier: ^2.12.1
         version: 2.12.1(react@18.3.1)
 
-  packages/torii:
-    dependencies:
-      '@bibliothecadao/types':
-        specifier: workspace:*
-        version: link:../types
-      '@dojoengine/sdk':
-        specifier: catalog:game
-        version: 1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      starknet:
-        specifier: catalog:game
-        version: 8.9.2
-      viem:
-        specifier: catalog:game
-        version: 2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-    devDependencies:
-      '@starknet-react/core':
-        specifier: catalog:game
-        version: 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@types/node':
-        specifier: ^20.11.10
-        version: 20.19.33
-      '@types/react':
-        specifier: catalog:game
-        version: 18.3.28
-      '@types/react-dom':
-        specifier: catalog:game
-        version: 18.3.7(@types/react@18.3.28)
-      react:
-        specifier: catalog:game
-        version: 18.3.1
-      react-dom:
-        specifier: catalog:game
-        version: 18.3.1(react@18.3.1)
-      tsup:
-        specifier: ^8.0.2
-        version: 8.5.1(@swc/core@1.15.11(@swc/helpers@0.5.18))(jiti@2.7.0)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.9.0)
-      typedoc:
-        specifier: ^0.28.15
-        version: 0.28.20(typescript@5.9.3)
-      typedoc-plugin-markdown:
-        specifier: ^4.10.1
-        version: 4.12.0(typedoc@0.28.20(typescript@5.9.3))
-      typescript:
-        specifier: ^5.4.4
-        version: 5.9.3
-      vitest:
-        specifier: ^2.0.5
-        version: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
-
   packages/types:
     dependencies:
       '@dojoengine/core':
@@ -1617,7 +1535,7 @@ importers:
         version: 9.39.2
       eslint-plugin-import:
         specifier: ^2.32.0
-        version: 2.32.0(eslint@9.39.2(jiti@2.7.0))
+        version: 2.32.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.2(jiti@2.7.0))
       eslint-plugin-jsx-a11y:
         specifier: ^6.10.2
         version: 6.10.2(eslint@9.39.2(jiti@2.7.0))
@@ -2784,17 +2702,6 @@ packages:
 
   '@dojoengine/recs@2.1.0':
     resolution: {integrity: sha512-mMrLoZOYjj10S1PFDhNwX0UhAQxz/xfAkKb32UQJtqPmdYgf5HF7YFMAeDY4b3hVM7mwPpOuJaxEWY/0ABb6Mg==}
-
-  '@dojoengine/sdk@1.7.0-preview.3':
-    resolution: {integrity: sha512-5aFKcrp7shHQTEmBTcoz3euQ4apJdGPXJRe5ZeYZDZxI/5Ieqo5aztEsHC6+zGibHKRtDYz/3zZ+HTlcXyitwg==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      '@tanstack/react-query': ^5.62.16
-      '@types/react': ^18.3.1
-      '@types/react-dom': ^18.3.1
-      react: ^18.3.1
-      react-dom: ^18.3.1
-      starknet: ^8.1.2
 
   '@dojoengine/state@1.7.0-preview.3':
     resolution: {integrity: sha512-YVYlaKrbxb5FIfEVrfHYtePoIX2TCfTxWhQcCXpqo1ddywQb647g2gdjYRnI4CqvZzQ/mbFy6O+cnEnE4C+c1w==}
@@ -10196,9 +10103,6 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@3.19.18:
-    resolution: {integrity: sha512-KlbNuYzzwpOpnpshIhjCaqweQkthAT1oVG61Z2wIHqo6Sb6n/+pgzFXyTvsLyxcx5Cg3aWaQXa0XQHMuzdVW4A==}
-
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
     engines: {node: '>=0.10.0'}
@@ -10686,10 +10590,6 @@ packages:
 
   fancy-canvas@2.1.0:
     resolution: {integrity: sha512-nifxXJ95JNLFR2NgRV4/MxVP45G9909wJTEKz5fg/TZS20JJZA6hfgRVh/bC9bwl2zBtBNcYPjiBE4njQHVBwQ==}
-
-  fast-check@3.23.2:
-    resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
-    engines: {node: '>=8.0.0'}
 
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
@@ -12815,10 +12715,6 @@ packages:
     resolution: {integrity: sha512-dBpDMdxv9Irdq66304OLfEmQ9tbNRFnFTuZiLo+bD+r332bBmMJ8GBLXklIXXgxd3+v9+KUnZaUR5PJMa75Gsg==}
     engines: {node: '>= 0.4.0'}
 
-  neverthrow@8.2.0:
-    resolution: {integrity: sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ==}
-    engines: {node: '>=18'}
-
   next-themes@0.4.6:
     resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
     peerDependencies:
@@ -13588,9 +13484,6 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
-
-  pure-rand@6.1.0:
-    resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
 
   pvtsutils@1.3.6:
     resolution: {integrity: sha512-PLgQXQ6H2FWCaeRak8vvk1GW462lMxB5s3Jm673N82zI4vqtVUPuZdffdZbPDFRoU8kAhItWFtPCWiPpp4/EDg==}
@@ -17765,7 +17658,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@base-org/account@2.4.0(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@10.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@base-org/account@2.4.0(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@coinbase/cdp-sdk': 1.44.1(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@noble/hashes': 1.4.0
@@ -17775,7 +17668,7 @@ snapshots:
       ox: 0.6.9(typescript@5.9.3)(zod@3.25.76)
       preact: 10.24.2
       viem: 2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      zustand: 5.0.3(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+      zustand: 5.0.3(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
     transitivePeerDependencies:
       - '@types/react'
       - bufferutil
@@ -17861,9 +17754,9 @@ snapshots:
     dependencies:
       css-tree: 3.1.0
 
-  '@cartridge/connector@0.13.16(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@cartridge/connector@0.13.16(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@cartridge/controller': 0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@cartridge/controller': 0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@starknet-react/core': 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -17900,7 +17793,7 @@ snapshots:
 
   '@cartridge/controller-wasm@0.10.1': {}
 
-  '@cartridge/controller@0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@cartridge/controller@0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@cartridge/controller-wasm': 0.10.1
       '@cartridge/penpal': 6.2.4
@@ -17908,7 +17801,7 @@ snapshots:
       '@starknet-io/types-js': 0.9.1
       '@turnkey/sdk-browser': 5.16.1(bufferutil@4.1.0)(encoding@0.1.13)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@wallet-standard/wallet': 1.1.0
-      '@walletconnect/ethereum-provider': 2.23.6(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/ethereum-provider': 2.23.6(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       bs58: 6.0.0
       cbor-x: 1.6.6
       ethers: 6.16.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -18070,15 +17963,6 @@ snapshots:
       '@leichtgewicht/ip-codec': 2.0.5
       utf8-codec: 1.0.0
 
-  '@dojoengine/core@1.7.0-preview.3(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
-    dependencies:
-      '@dojoengine/recs': 2.1.0(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@3.25.76)
-      starknet: 8.9.2
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - typescript
-      - viem
-
   '@dojoengine/core@1.7.0-preview.3(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
     dependencies:
       '@dojoengine/recs': 2.1.0(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
@@ -18169,17 +18053,6 @@ snapshots:
       - viem
       - zod
 
-  '@dojoengine/recs@2.1.0(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@3.25.76)':
-    dependencies:
-      '@latticexyz/schema-type': 2.2.23(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@3.25.76)
-      '@latticexyz/utils': 2.2.23
-      mobx: 6.15.0
-      rxjs: 7.5.5
-    transitivePeerDependencies:
-      - typescript
-      - viem
-      - zod
-
   '@dojoengine/recs@2.1.0(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
     dependencies:
       '@latticexyz/schema-type': 2.2.23(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
@@ -18221,84 +18094,6 @@ snapshots:
       rxjs: 7.5.5
     transitivePeerDependencies:
       - typescript
-      - viem
-      - zod
-
-  '@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
-    dependencies:
-      '@dojoengine/core': 1.7.0-preview.3(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
-      '@dojoengine/torii-client': 1.7.0-preview.3
-      '@dojoengine/torii-wasm': 1.7.0-preview.3
-      '@dojoengine/utils': 1.7.0-preview.3(starknet@8.9.2)(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      '@starknet-react/chains': 5.0.3
-      '@starknet-react/core': 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@tanstack/react-query': 5.90.21(react@18.3.1)
-      '@types/react': 18.3.28
-      '@types/react-dom': 18.3.7(@types/react@18.3.28)
-      effect: 3.19.18
-      immer: 10.2.0
-      neverthrow: 8.2.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      starknet: 8.9.2
-      zustand: 4.5.7(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)
-    transitivePeerDependencies:
-      - bufferutil
-      - get-starknet-core
-      - typescript
-      - utf-8-validate
-      - viem
-      - zod
-
-  '@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)':
-    dependencies:
-      '@dojoengine/core': 1.7.0-preview.3(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@dojoengine/torii-client': 1.7.0-preview.3
-      '@dojoengine/torii-wasm': 1.7.0-preview.3
-      '@dojoengine/utils': 1.7.0-preview.3(starknet@8.9.2)(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
-      '@starknet-react/chains': 5.0.3
-      '@starknet-react/core': 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@tanstack/react-query': 5.90.21(react@18.3.1)
-      '@types/react': 18.3.28
-      '@types/react-dom': 18.3.7(@types/react@18.3.28)
-      effect: 3.19.18
-      immer: 10.2.0
-      neverthrow: 8.2.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      starknet: 8.9.2
-      zustand: 4.5.7(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)
-    transitivePeerDependencies:
-      - bufferutil
-      - get-starknet-core
-      - typescript
-      - utf-8-validate
-      - viem
-      - zod
-
-  '@dojoengine/sdk@1.7.0-preview.3(@tanstack/react-query@5.90.21(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
-    dependencies:
-      '@dojoengine/core': 1.7.0-preview.3(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
-      '@dojoengine/torii-client': 1.7.0-preview.3
-      '@dojoengine/torii-wasm': 1.7.0-preview.3
-      '@dojoengine/utils': 1.7.0-preview.3(starknet@8.9.2)(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      '@starknet-react/chains': 5.0.3
-      '@starknet-react/core': 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
-      '@tanstack/react-query': 5.90.21(react@18.3.1)
-      '@types/react': 18.3.28
-      '@types/react-dom': 18.3.7(@types/react@18.3.28)
-      effect: 3.19.18
-      immer: 10.2.0
-      neverthrow: 8.2.0
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      starknet: 8.9.2
-      zustand: 4.5.7(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)
-    transitivePeerDependencies:
-      - bufferutil
-      - get-starknet-core
-      - typescript
-      - utf-8-validate
       - viem
       - zod
 
@@ -18386,18 +18181,6 @@ snapshots:
   '@dojoengine/utils@1.7.0-preview.3(starknet@8.9.2)(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
     dependencies:
       '@dojoengine/recs': 2.1.0(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
-      '@latticexyz/utils': 2.2.23
-      mathjs: 12.4.3
-      micro-starknet: 0.2.3
-      starknet: 8.9.2
-    transitivePeerDependencies:
-      - typescript
-      - viem
-      - zod
-
-  '@dojoengine/utils@1.7.0-preview.3(starknet@8.9.2)(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)':
-    dependencies:
-      '@dojoengine/recs': 2.1.0(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
       '@latticexyz/utils': 2.2.23
       mathjs: 12.4.3
       micro-starknet: 0.2.3
@@ -19989,14 +19772,6 @@ snapshots:
   '@js-sdsl/ordered-map@4.4.2': {}
 
   '@kurkle/color@0.3.4': {}
-
-  '@latticexyz/schema-type@2.2.23(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@3.25.76)':
-    dependencies:
-      abitype: 1.1.0(typescript@5.9.3)(zod@3.25.76)
-      viem: 2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-    transitivePeerDependencies:
-      - typescript
-      - zod
 
   '@latticexyz/schema-type@2.2.23(typescript@5.9.3)(viem@2.46.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
     dependencies:
@@ -22462,12 +22237,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-pay@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@reown/appkit-pay@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.8.17-wc-circular-dependencies-fix.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-ui': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-utils': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-utils': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
       lit: 3.3.0
       valtio: 2.1.7(@types/react@18.3.28)(react@18.3.1)
     transitivePeerDependencies:
@@ -22591,13 +22366,13 @@ snapshots:
     dependencies:
       buffer: 6.0.3
 
-  '@reown/appkit-scaffold-ui@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)':
+  '@reown/appkit-scaffold-ui@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.8.17-wc-circular-dependencies-fix.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-pay': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-pay': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-ui': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-utils': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-utils': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
       '@reown/appkit-wallet': 1.8.17-wc-circular-dependencies-fix.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       lit: 3.3.0
     transitivePeerDependencies:
@@ -22827,7 +22602,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-utils@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)':
+  '@reown/appkit-utils@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.8.17-wc-circular-dependencies-fix.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -22839,7 +22614,7 @@ snapshots:
       valtio: 2.1.7(@types/react@18.3.28)(react@18.3.1)
       viem: 2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
     optionalDependencies:
-      '@base-org/account': 2.4.0(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@10.2.0)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@base-org/account': 2.4.0(@types/react@18.3.28)(bufferutil@4.1.0)(encoding@0.1.13)(immer@11.1.4)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@safe-global/safe-apps-provider': 0.18.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@safe-global/safe-apps-sdk': 9.1.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
     transitivePeerDependencies:
@@ -22992,15 +22767,15 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@reown/appkit@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@reown/appkit@1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.8.17-wc-circular-dependencies-fix.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-controllers': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-pay': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-pay': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-polyfills': 1.8.17-wc-circular-dependencies-fix.0
-      '@reown/appkit-scaffold-ui': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-scaffold-ui': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
       '@reown/appkit-ui': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-utils': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-utils': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(valtio@2.1.7(@types/react@18.3.28)(react@18.3.1))(zod@3.25.76)
       '@reown/appkit-wallet': 1.8.17-wc-circular-dependencies-fix.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       '@walletconnect/universal-provider': 2.23.2(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(ioredis@5.9.3)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
       bs58: 6.0.0
@@ -24585,16 +24360,6 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@starknet-io/get-starknet-wallet-standard@5.0.0(typescript@5.9.3)':
-    dependencies:
-      '@starknet-io/types-js': 0.7.10
-      '@wallet-standard/base': 1.1.0
-      '@wallet-standard/features': 1.1.0
-      ox: 0.4.4(typescript@5.9.3)
-    transitivePeerDependencies:
-      - typescript
-      - zod
-
   '@starknet-io/get-starknet-wallet-standard@5.0.0(typescript@5.9.3)(zod@3.25.76)':
     dependencies:
       '@starknet-io/types-js': 0.7.10
@@ -26030,7 +25795,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 1.2.0
-      vitest: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+      vitest: 2.1.9(@types/node@22.20.1)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
 
   '@vitest/utils@1.6.1':
     dependencies:
@@ -26345,9 +26110,9 @@ snapshots:
     dependencies:
       tslib: 1.14.1
 
-  '@walletconnect/ethereum-provider@2.23.6(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/ethereum-provider@2.23.6(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@reown/appkit': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@10.2.0)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit': 1.8.17-wc-circular-dependencies-fix.0(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/jsonrpc-http-connection': 1.0.8(encoding@0.1.13)
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
@@ -28870,11 +28635,6 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@3.19.18:
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      fast-check: 3.23.2
-
   ejs@3.1.10:
     dependencies:
       jake: 10.9.4
@@ -29319,12 +29079,12 @@ snapshots:
       eslint: 9.39.2(jiti@1.21.7)
       semver: 7.8.5
 
-  eslint-config-love@114.0.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3):
+  eslint-config-love@114.0.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3):
     dependencies:
       '@typescript-eslint/utils': 8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
       eslint: 9.39.2(jiti@1.21.7)
       eslint-plugin-eslint-comments: 3.2.0(eslint@9.39.2(jiti@1.21.7))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7))
+      eslint-plugin-import: 2.32.0(eslint@9.39.2(jiti@1.21.7))
       eslint-plugin-n: 17.24.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
       eslint-plugin-promise: 7.2.1(eslint@9.39.2(jiti@1.21.7))
       typescript: 5.9.3
@@ -29343,21 +29103,21 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@1.21.7)):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@2.7.0)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
-      eslint: 9.39.2(jiti@1.21.7)
+      '@typescript-eslint/parser': 8.56.0(eslint@9.39.2(jiti@2.7.0))(typescript@5.9.3)
+      eslint: 9.39.2(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@2.7.0)):
+  eslint-module-utils@2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@1.21.7)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      eslint: 9.39.2(jiti@2.7.0)
+      eslint: 9.39.2(jiti@1.21.7)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
@@ -29375,7 +29135,7 @@ snapshots:
       eslint: 9.39.2(jiti@1.21.7)
       ignore: 5.3.2
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.2(jiti@2.7.0)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -29384,9 +29144,9 @@ snapshots:
       array.prototype.flatmap: 1.3.3
       debug: 3.2.7
       doctrine: 2.1.0
-      eslint: 9.39.2(jiti@1.21.7)
+      eslint: 9.39.2(jiti@2.7.0)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@1.21.7))
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@2.7.0))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@2.7.0))
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -29398,13 +29158,13 @@ snapshots:
       string.prototype.trimend: 1.0.9
       tsconfig-paths: 3.15.0
     optionalDependencies:
-      '@typescript-eslint/parser': 8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
+      '@typescript-eslint/parser': 8.56.0(eslint@9.39.2(jiti@2.7.0))(typescript@5.9.3)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint@9.39.2(jiti@2.7.0)):
+  eslint-plugin-import@2.32.0(eslint@9.39.2(jiti@1.21.7)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -29413,9 +29173,9 @@ snapshots:
       array.prototype.flatmap: 1.3.3
       debug: 3.2.7
       doctrine: 2.1.0
-      eslint: 9.39.2(jiti@2.7.0)
+      eslint: 9.39.2(jiti@1.21.7)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@2.7.0))
+      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.2(jiti@1.21.7))
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -29786,10 +29546,6 @@ snapshots:
     optional: true
 
   fancy-canvas@2.1.0: {}
-
-  fast-check@3.23.2:
-    dependencies:
-      pure-rand: 6.1.0
 
   fast-deep-equal@3.1.3: {}
 
@@ -32387,10 +32143,6 @@ snapshots:
 
   netmask@2.0.2: {}
 
-  neverthrow@8.2.0:
-    optionalDependencies:
-      '@rollup/rollup-linux-x64-gnu': 4.57.1
-
   next-themes@0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
@@ -32703,7 +32455,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
+      abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.9.3
@@ -32745,20 +32497,6 @@ snapshots:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/ciphers': 1.3.0
       '@noble/curves': 1.9.1
-      '@noble/hashes': 1.8.0
-      '@scure/bip32': 1.7.0
-      '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
-      eventemitter3: 5.0.1
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - zod
-
-  ox@0.4.4(typescript@5.9.3):
-    dependencies:
-      '@adraffy/ens-normalize': 1.11.1
-      '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
@@ -33305,8 +33043,6 @@ snapshots:
   punycode.js@2.3.1: {}
 
   punycode@2.3.1: {}
-
-  pure-rand@6.1.0: {}
 
   pvtsutils@1.3.6:
     dependencies:
@@ -34572,23 +34308,6 @@ snapshots:
       pako: 2.1.0
       ts-mixer: 6.0.4
 
-  starknet@9.4.2(typescript@5.9.3):
-    dependencies:
-      '@noble/curves': 1.7.0
-      '@noble/hashes': 1.6.1
-      '@scure/base': 1.2.6
-      '@scure/starknet': 1.1.0
-      '@starknet-io/get-starknet-wallet-standard': 5.0.0(typescript@5.9.3)
-      '@starknet-io/starknet-types-010': '@starknet-io/types-js@0.10.0'
-      '@starknet-io/starknet-types-09': '@starknet-io/types-js@0.9.2'
-      abi-wan-kanabi: 2.2.4
-      lossless-json: 4.3.0
-      pako: 2.1.0
-      ts-mixer: 6.0.4
-    transitivePeerDependencies:
-      - typescript
-      - zod
-
   starknet@9.4.2(typescript@5.9.3)(zod@3.25.76):
     dependencies:
       '@noble/curves': 1.7.0
@@ -35700,7 +35419,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.2.3(typescript@5.9.3)(zod@4.3.6)
+      abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
       isows: 1.0.7(ws@8.21.0)
       ox: 0.14.34(typescript@5.9.3)
       ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -36855,14 +36574,6 @@ snapshots:
     optionalDependencies:
       react: 18.3.1
 
-  zustand@4.5.7(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1):
-    dependencies:
-      use-sync-external-store: 1.6.0(react@18.3.1)
-    optionalDependencies:
-      '@types/react': 18.3.28
-      immer: 10.2.0
-      react: 18.3.1
-
   zustand@4.5.7(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1):
     dependencies:
       use-sync-external-store: 1.6.0(react@18.3.1)
@@ -36886,10 +36597,10 @@ snapshots:
       react: 19.2.8
       use-sync-external-store: 1.4.0(react@19.2.8)
 
-  zustand@5.0.11(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
+  zustand@5.0.11(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
     optionalDependencies:
       '@types/react': 18.3.28
-      immer: 10.2.0
+      immer: 11.1.4
       react: 18.3.1
       use-sync-external-store: 1.6.0(react@18.3.1)
 
@@ -36900,10 +36611,10 @@ snapshots:
       react: 19.2.8
       use-sync-external-store: 1.4.0(react@19.2.8)
 
-  zustand@5.0.3(@types/react@18.3.28)(immer@10.2.0)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
+  zustand@5.0.3(@types/react@18.3.28)(immer@11.1.4)(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1)):
     optionalDependencies:
       '@types/react': 18.3.28
-      immer: 10.2.0
+      immer: 11.1.4
       react: 18.3.1
       use-sync-external-store: 1.6.0(react@18.3.1)
     optional: true

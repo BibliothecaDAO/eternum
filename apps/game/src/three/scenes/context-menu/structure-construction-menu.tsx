@@ -14,7 +14,7 @@ import {
   getBuildingFromResource,
 } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 type Components = SetupResult["components"];
 

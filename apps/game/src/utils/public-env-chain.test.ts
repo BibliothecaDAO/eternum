@@ -10,7 +10,7 @@ const REQUIRED_ENV = {
   VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x4",
   VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x5",
   VITE_PUBLIC_NODE_URL: "https://rpc.realms.test/rpc/v0_9_0",
-  VITE_PUBLIC_TORII: "https://torii.realms.test",
+  VITE_PUBLIC_HERALD_URL: "https://herald.realms.test",
   VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test",
   VITE_PUBLIC_IDENTITY_RPC_URL: "https://identity-rpc.realms.test",
 };

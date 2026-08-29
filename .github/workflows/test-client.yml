@@ -62,7 +62,7 @@ jobs:
       # stay hermetic — external infra (a katana resize mid-run) must not be
       # able to fail it — and "does the built artifact boot" is a question
       # answered where the artifact ships.
-      VITE_PUBLIC_TORII: "https://torii.jcndata.com"
+      VITE_PUBLIC_HERALD_URL: "https://herald.realms.test"
       VITE_PUBLIC_NODE_URL: "https://katana.jcndata.com"
 
     steps:

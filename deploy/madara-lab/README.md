@@ -13,7 +13,7 @@ Branch: `feat/madara-lab`. Brief: `docs/plans/realms-phase-1-brief.md`. Directio
 - `sozo 1.8.7` through asdf (`ASDF_SOZO_VERSION=1.8.7`; the repo's `.tool-versions` pins 1.8.0, which does not
   speak this chain's RPC), `scarb 2.13.1`, `jq`, `bun`, `mkcert`.
 - The lab hosts in `/etc/hosts` (once, with sudo):
-  `127.0.0.1 realms.test play.realms.test rpc.realms.test torii.realms.test identity-rpc.realms.test`.
+  `127.0.0.1 realms.test play.realms.test rpc.realms.test herald.realms.test identity-rpc.realms.test`.
 - Nothing from Cartridge: no Slot, no Controller, no paymaster, no hosted VRF.
 
 ## Bring the chain up
@@ -36,20 +36,19 @@ Endpoints (all bound to localhost only):
 | 5050 | Starknet JSON-RPC. `/` is v0.10.2; `/rpc/v0_9_0`, `/rpc/v0_8_1`, `/rpc/v0_10_0` are pinned routes |
 | 5051 | Madara admin RPC (`madara_*`). Never expose.                                            |
 | 5062 | Feeder gateway + gateway                                                               |
-| 8090 | Torii canary (profile `torii`, see below)                                              |
 | 5432 | Postgres for `apps/web` (profile `web`, see below)                                     |
 
 ### HTTPS: Caddy in front of everything a browser touches
 
 Browsers are the only TLS clients. `sozo`, the deployer, the harness and the probe stay on plain HTTP to
-`127.0.0.1:5050` / `:8090`. Caddy (`Caddyfile`) terminates TLS on `127.0.0.1:443` with one wildcard certificate:
+the host services. Caddy (`Caddyfile`) terminates TLS on `127.0.0.1:443` with one wildcard certificate:
 
 | Host                        | Upstream                                                           |
 | --------------------------- | ------------------------------------------------------------------ |
 | `realms.test`               | `apps/web` dev server on the host, `http://localhost:3000`         |
 | `play.realms.test`          | `apps/game` dev server on the host, `https://localhost:5173`       |
+| `herald.realms.test`        | `apps/herald` on the host, `http://localhost:3003`                 |
 | `rpc.realms.test`           | `madara:9944` (paths pass through: `/rpc/v0_9_0` works)            |
-| `torii.realms.test`         | `torii:8080` over h2c, so native gRPC and gRPC-web both pass       |
 | `identity-rpc.realms.test`  | `IDENTITY_RPC_UPSTREAM` (default `https://rpc.starknet.lava.build`, a public Starknet mainnet node) |
 
 The certificate is issued by `scripts/issue-certs.sh` from the mkcert root the game's Vite plugin keeps in
@@ -81,8 +80,8 @@ From the repository root, the full idempotent path is:
 pnpm contract:start:madara
 ```
 
-It starts Madara and Caddy first, deploys the world, then starts Torii after its generated config exists and bootstraps
-the gameplay contracts and preset. The equivalent individual commands are below.
+It starts Madara and Caddy, deploys the world, then bootstraps the gameplay contracts and preset. The equivalent
+individual commands are below.
 
 ```bash
 deploy/madara-lab/scripts/deploy-world.sh              # sozo build (~40 s) + migrate (measured 22 m 40 s)
@@ -97,15 +96,14 @@ deploy/madara-lab/scripts/bootstrap-game.sh
 deploy/madara-lab/scripts/bootstrap-game.sh
 ```
 
-The world script writes `contracts/game/manifest_madara.json` (gitignored, like the spike manifest), records the world
-address under `.lab/`, and renders `.lab/torii.toml` for the canary. The bootstrap script writes the gameplay contract
-class hashes and registry address to `.lab/gameplay-contracts.json`.
+The world script writes `contracts/game/manifest_madara.json` (gitignored, like the spike manifest) and records the
+world address under `.lab/`. The bootstrap script writes the gameplay contract class hashes and registry address to
+`.lab/gameplay-contracts.json`.
 
-Create a game after Torii is running:
+Create a game after Herald is running:
 
 ```bash
 RPC_URL=http://127.0.0.1:5050/rpc/v0_9_0 \
-TORII_SQL_URL=http://127.0.0.1:8090/sql \
 DOJO_ACCOUNT_ADDRESS=0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d \
 DOJO_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
 bun config/deployer/clean/cli/launch-step.ts \
@@ -174,27 +172,6 @@ DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms
 ```
 
 State lives in the `postgres-data` volume; `down -v` wipes sessions along with the chain.
-
-## Torii compatibility canary
-
-Torii is end-of-life and not a destination dependency. It runs here only so the current client stays playable on the
-lab chain while the owned data plane is built. Stock `ghcr.io/dojoengine/torii:v1.8.16`, single world, no patches.
-
-```bash
-docker compose --profile torii up -d          # after deploy-world.sh; reads .lab/torii.toml
-curl -s 'https://torii.realms.test/sql?query=SELECT%20count(*)%20FROM%20entities'
-```
-
-Findings so far (2026-08-24, torii v1.8.16 against alpha.9):
-
-- Madara rejects `starknet_getEvents` pages of 1024 with `PageSizeTooBig`, and Torii does not shrink its page on that
-  error — it retries five times and the engine stops. `torii.toml.template` sets `events_chunk_size = 100`, which
-  Madara accepts. Torii then indexes the world from genesis and follows the tip (`head` in `contracts` == the chain's
-  block number).
-- Torii "supports v0.9.0" and warns on Madara's default 0.10.2 route; the template points it at `/rpc/v0_9_0`.
-
-If Torii stops following Madara (pre-confirmed semantics, RPC shape), that is a finding, not a blocker: record it here
-and move on — the client's live path is being replaced anyway.
 
 ## Measure
 
@@ -487,7 +464,7 @@ Compose now carries the three E.2 pieces; drills run only between Codex's harnes
 - **Identity gate (proven).** The sequencer's entrypoint refuses to start without `/data/SEQUENCER`; the token is
   seeded on the lab volume and the sequencer restarts fine behind it. `scripts/promote-replica.sh` stops and removes
   the old sequencer, verifies port 5050 is closed, moves the token to the replica's volume, and starts
-  `madara-promoted` (the sequencer command on that volume, network alias `madara` so Torii, Caddy and herald keep
+  `madara-promoted` (the sequencer command on that volume, network alias `madara` so Caddy and herald keep
   resolving). **Not yet drilled end to end** — the drill runs inside a harness game to record RPO/RTO.
 - **Replica (proven to sync).** `docker compose --profile replica up -d madara-replica` follows the sequencer's
   feeder gateway: ~540 blocks/s through empty blocks, ~100 blocks/s through game-heavy ones on the Cairo VM
@@ -505,7 +482,7 @@ Compose now carries the three E.2 pieces; drills run only between Codex's harnes
 ## What Madara does not give you (as of the nightly pin)
 
 - **WebSocket subscriptions are version-scoped.** They exist only on `/rpc/v0_10_2`; the v0.8/v0.9 subscribe methods
-  are removed. Herald subscribes there; sozo, Torii and the harness stay on `/rpc/v0_9_0`.
+  are removed. Herald subscribes there; sozo and the harness stay on `/rpc/v0_9_0`.
 - **No `dev_predeployedAccounts`.** Player accounts do not need it: each key deploys its own account fee-free
   ("Gameplay accounts" above). The deployer and the binding authority use the deterministic genesis accounts.
 - **No embedded VRF, paymaster, or Controller.** The contracts fall back to transaction-hash randomness when the VRF
@@ -537,11 +514,10 @@ not a fact.
 
 ```
 deploy/madara-lab/
-  docker-compose.yml       madara + caddy (+ torii canary and web/postgres profiles), pinned images, localhost ports
-  Caddyfile                TLS front: *.realms.test → dev servers, madara, torii, identity RPC upstream
+  docker-compose.yml       madara + caddy (+ web/postgres profile), pinned images, localhost ports
+  Caddyfile                TLS front: *.realms.test → dev servers, madara, herald, identity RPC upstream
   chain-config.yaml        full chain config (see Pinning)
-  torii.toml.template      rendered to .lab/torii.toml by deploy-world.sh
-  harness/                 account factory, workload driver, Torii observer, and JSON report writer
+  harness/                 account factory, workload driver, Herald observer, and JSON report writer
   scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
   scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
   scripts/bootstrap-game.sh  gameplay contracts + ChainConfig + preset 1
@@ -549,7 +525,7 @@ deploy/madara-lab/
   scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings
   scripts/block-stats.sh   aggregates Madara's per-block JSON log
   scripts/block-stats.py   the aggregation
-  .lab/                    generated: world-address, torii.toml, certs/, runs/ (gitignored)
+  .lab/                    generated: world-address, certs/, runs/ (gitignored)
 contracts/game/dojo_madara.toml   sozo profile for this chain
 contracts/game/Scarb.toml         [profile.madara]
 ```

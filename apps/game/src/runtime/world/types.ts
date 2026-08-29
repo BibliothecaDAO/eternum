@@ -5,7 +5,7 @@ export interface GameProfile {
   chain: Chain;
   worldId?: string; // world-directory key ("blitz" | "eternum") the game lives in
   namespace?: string; // the world's model namespace; absent on stale stored profiles -> derived from chain
-  toriiBaseUrl: string; // shared persistent-world Torii endpoint
+  heraldBaseUrl: string; // shared persistent-world Herald endpoint
   rpcUrl?: string; // configured chain RPC
   worldAddress: string; // persistent s2 world from the manifest
   contractsBySelector: Record<string, string>; // normalized selector -> address (constant per world)

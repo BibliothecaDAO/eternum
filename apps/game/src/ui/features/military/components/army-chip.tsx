@@ -20,7 +20,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArmyManagementCard } from "./army-management-card";
 import { HelpModal } from "./help-modal";
 import { TroopChip } from "./troop-chip";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 export const NavigateToPositionIcon = ({
   position,

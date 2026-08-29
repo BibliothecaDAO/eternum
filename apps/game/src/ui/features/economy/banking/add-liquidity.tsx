@@ -20,7 +20,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {

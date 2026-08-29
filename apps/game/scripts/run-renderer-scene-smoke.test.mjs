@@ -100,17 +100,15 @@ describe("resolveSceneSmokeWorldName", () => {
   });
 
   it("uses the newest indexed Madara game without probing per-world hosts", async () => {
-    vi.stubEnv("TORII_URL", "https://torii.example.test");
+    vi.stubEnv("HERALD_URL", "https://herald.example.test");
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(
-        JSON.stringify([
-          {
-            name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
-          },
-          {
-            name: "0x0000000000000000000000000000000000000000626c747a2d6f6c6465722d373031",
-          },
-        ]),
+        JSON.stringify({
+          games: [
+            { game_id: 702, name: "bltz-spark-702" },
+            { game_id: 701, name: "bltz-older-701" },
+          ],
+        }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
     );
@@ -125,17 +123,13 @@ describe("resolveSceneSmokeWorldName", () => {
   });
 
   it("discovers the newest configured game from the appchain GameRegistry", async () => {
-    vi.stubEnv("TORII_URL", "https://torii.example.test");
+    vi.stubEnv("HERALD_URL", "https://herald.example.test");
 
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(
-        JSON.stringify([
-          {
-            name: "0x0000000000000000000000000000000000000000626c747a2d737061726b2d373032",
-          },
-        ]),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+      new Response(JSON.stringify({ games: [{ game_id: 702, name: "bltz-spark-702" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
     );
 
     await expect(
@@ -146,14 +140,13 @@ describe("resolveSceneSmokeWorldName", () => {
     ).resolves.toBe("bltz-spark-702");
 
     const discoveryUrl = new URL(String(fetchSpy.mock.calls[0][0]));
-    expect(discoveryUrl.host).toBe("torii.example.test");
-    expect(discoveryUrl.searchParams.get("query")).toContain("FROM [s2-GameRegistry]");
-    expect(discoveryUrl.searchParams.get("query")).toContain("INNER JOIN [s2-WorldConfig]");
+    expect(discoveryUrl.host).toBe("herald.example.test");
+    expect(discoveryUrl.pathname).toBe("/appchain/games");
   });
 
-  it("fails loudly when the appchain torii location is not configured", async () => {
-    vi.stubEnv("TORII_URL", "");
-    vi.stubEnv("VITE_PUBLIC_TORII", "");
+  it("fails loudly when Herald is not configured", async () => {
+    vi.stubEnv("HERALD_URL", "");
+    vi.stubEnv("VITE_PUBLIC_HERALD_URL", "");
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await expect(
@@ -161,15 +154,15 @@ describe("resolveSceneSmokeWorldName", () => {
         chain: "appchain",
         requestedWorldName: "",
       }),
-    ).rejects.toThrow(/TORII_URL or VITE_PUBLIC_TORII/);
+    ).rejects.toThrow(/HERALD_URL or VITE_PUBLIC_HERALD_URL/);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("fails loudly instead of falling back to a stale world name when no game is indexed", async () => {
-    vi.stubEnv("TORII_URL", "https://torii.example.test");
+    vi.stubEnv("HERALD_URL", "https://herald.example.test");
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }),
+      new Response(JSON.stringify({ games: [] }), { status: 200, headers: { "Content-Type": "application/json" } }),
     );
 
     await expect(

@@ -71,3 +71,26 @@ export interface HeraldGameSnapshot {
   game_id: string;
   models: HeraldSnapshotModel[];
 }
+
+export interface HeraldHistoryEvent {
+  block_number: number;
+  event_index: number;
+  game_id: string;
+  model: string;
+  transaction_hash: string;
+  transaction_index: number;
+  value: Record<string, unknown>;
+}
+
+export interface HeraldHistoryPage {
+  complete_through_block: number | null;
+  items: HeraldHistoryEvent[];
+  limit: number;
+  offset: number;
+  total: number;
+}
+
+export interface HeraldTransactionCount {
+  count: number;
+  game_id: string;
+}

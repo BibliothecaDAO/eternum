@@ -47,7 +47,7 @@ jobs:
         run: pnpm --dir apps/game build
 
       # Live renderer smokes gate the deploy, not PRs: they exercise the exact
-      # artifact about to ship against the real appchain (torii + katana), so
+      # artifact about to ship against the real appchain (Herald + Katana), so
       # a broken boot never reaches players and PR CI stays hermetic.
       - name: Start game client preview server
         env:
@@ -75,7 +75,7 @@ jobs:
       - name: Run renderer scene smoke
         env:
           GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
-          TORII_URL: "https://torii.jcndata.com"
+          HERALD_URL: "https://herald.jcndata.com"
         run: |
           node ./apps/game/scripts/run-renderer-scene-smoke.mjs \
             --base-url "$GAME_CLIENT_PREVIEW_URL" \

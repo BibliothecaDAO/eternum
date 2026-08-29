@@ -15,15 +15,13 @@ describe("createWorldmapChunkPolicy", () => {
     expect(policy.prefetch.maxAhead).toBe(WORLD_CHUNK_CONFIG.prefetch.maxAhead);
   });
 
-  it("exposes complete torii and directional prefetch fields from one policy contract", () => {
+  it("exposes projection and directional prefetch fields from one policy contract", () => {
     const policy = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
 
     expect(policy).toHaveProperty(
       "projectionSync.superAreaStrides",
       WORLD_CHUNK_CONFIG.projectionSync.superAreaStrides,
     );
-    expect(policy).toHaveProperty("toriiSubscription.superAreaStrides", 48);
-    expect(policy.toriiSubscription.superAreaStrides).toBeGreaterThan(policy.projectionSync.superAreaStrides);
     expect(policy).toHaveProperty("prefetch.forwardDepthStrides", WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides);
     expect(policy).toHaveProperty("prefetch.sideRadiusStrides", WORLD_CHUNK_CONFIG.prefetch.sideRadiusStrides);
     expect(policy).toHaveProperty("prefetch.areaBoundaryLookaheadStrides", 3);

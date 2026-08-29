@@ -17,8 +17,6 @@ import { describe, expect, it } from "vitest";
  */
 const SANCTIONED_CLIENT_FILES = new Set([
   "src/audio/core/AudioManager.ts",
-  "src/dojo/sync-simulator.ts",
-  "src/dojo/sync.ts",
   "src/hooks/shortcuts/useShortcuts.ts",
   "src/hooks/store/use-transaction-store.ts",
   "src/three/cosmetics/attachment-manager.ts",
@@ -52,7 +50,6 @@ const SANCTIONED_CLIENT_FILES = new Set([
 // output at all — errors and warnings only.
 const PACKAGE_SOURCE_ROOTS = [
   "packages/core/src",
-  "packages/torii/src",
   "packages/provider/src",
   "packages/dojo/src",
   "packages/react/src",
@@ -82,9 +79,9 @@ const CAPTURED_WARN_ERROR_SITES = [
     forbidden: 'console.error("Transaction failed:", reason, payload.error ?? payload.message)',
   },
   {
-    path: "src/dojo/gamewide-sync-adapter.ts",
-    required: 'appendConsoleFields("[GameSync] authoritative Torii model did not parse into RECS"',
-    forbidden: 'console.error("[GameSync] authoritative Torii model did not parse into RECS", {',
+    path: "src/sync/recs-game-sync-store.ts",
+    required: 'appendConsoleFields("[GameSync] authoritative model did not parse into RECS"',
+    forbidden: 'console.error("[GameSync] authoritative model did not parse into RECS", {',
   },
   {
     path: "src/three/scenes/worldmap.tsx",
@@ -132,7 +129,7 @@ describe("console discipline", () => {
       );
     }
 
-    const syncSource = readFileSync(join(CLIENT_ROOT, "src/dojo/sync.ts"), "utf8");
+    const syncSource = readFileSync(join(CLIENT_ROOT, "src/sync/game-sync.ts"), "utf8");
     expect(syncSource).not.toContain("[GameSyncMetrics]");
 
     const worldmapSource = readFileSync(join(CLIENT_ROOT, "src/three/scenes/worldmap.tsx"), "utf8");

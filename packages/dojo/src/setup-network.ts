@@ -1,7 +1,5 @@
 import { world } from "@bibliothecadao/types";
-import { DojoConfig } from "@dojoengine/core";
-
-import { createClient } from "@dojoengine/sdk";
+import type { DojoConfig } from "@dojoengine/core";
 
 import { EternumProvider } from "@bibliothecadao/provider";
 import { defineContractComponents } from "@bibliothecadao/types";
@@ -9,7 +7,6 @@ import type { ResourceBoundsBN } from "starknet";
 
 // Define an explicit interface for the return type
 interface SetupNetworkExplicitReturn {
-  toriiClient: Awaited<ReturnType<typeof createClient>>;
   contractComponents: ReturnType<typeof defineContractComponents>;
   provider: EternumProvider;
   world: typeof world;
@@ -26,8 +23,10 @@ export interface SetupNetworkEnvironment {
   vrfProviderAddress: string;
 }
 
+export type DojoSetupConfig = Pick<DojoConfig, "manifest" | "rpcUrl">;
+
 export async function setupNetwork(
-  config: DojoConfig,
+  config: DojoSetupConfig,
   env: SetupNetworkEnvironment,
 ): Promise<SetupNetworkExplicitReturn> {
   const provider = new EternumProvider(config.manifest, config.rpcUrl, env.vrfProviderAddress, undefined, {
@@ -36,14 +35,7 @@ export async function setupNetwork(
     gameId: env.gameId,
   });
 
-  const toriiClient = await createClient({
-    worldAddress: config.manifest.world.address || "",
-    // relayUrl: config.relayUrl,
-    toriiUrl: config.toriiUrl,
-  });
-
   return {
-    toriiClient,
     contractComponents: defineContractComponents(world, env.namespace ?? "s1_eternum"),
     provider,
     world,

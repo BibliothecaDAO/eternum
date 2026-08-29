@@ -4,7 +4,6 @@ import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { toast } from "sonner";
 
-import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
@@ -353,7 +352,7 @@ import {
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
   resolveWorldmapCameraViewProfile,
@@ -1051,8 +1050,6 @@ export default class WorldmapScene extends WarpTravel {
       });
       this.perfSimulation.setupPerformanceSimulationGUI();
     }
-
-    if (import.meta.env.DEV) initializeSyncSimulator(dojoContext);
   }
 
   private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
@@ -4149,18 +4146,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Derive a stable live Torii subscription key for a chunk key.
-   * Subscription areas are intentionally larger than projection-sync areas.
-   */
-  private getToriiSubscriptionAreaKeyForChunk(chunkKey: string): string {
-    return getCanonicalRenderAreaKeyForChunk(
-      chunkKey,
-      this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
-    );
-  }
-
-  /**
    * Compute integer bounds that fully cover all render windows inside a projection-sync area.
    */
   private getRenderFetchBoundsForArea(areaKey: string): {
@@ -4174,23 +4159,6 @@ export default class WorldmapScene extends WarpTravel {
       this.renderChunkSize,
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.projectionSync.superAreaStrides,
-    );
-  }
-
-  /**
-   * Compute integer subscription bounds that cover a live Torii subscription super-area.
-   */
-  private getToriiSubscriptionBoundsForArea(areaKey: string): {
-    minCol: number;
-    maxCol: number;
-    minRow: number;
-    maxRow: number;
-  } {
-    return getCanonicalRenderFetchBoundsForArea(
-      areaKey,
-      this.renderChunkSize,
-      this.chunkSize,
-      WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
     );
   }
 

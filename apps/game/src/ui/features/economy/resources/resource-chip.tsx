@@ -30,7 +30,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 export const ResourceChip = ({
   resourceId,

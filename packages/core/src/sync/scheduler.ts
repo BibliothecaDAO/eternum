@@ -14,13 +14,6 @@ export const createMicrotaskGameSyncScheduler = (): GameSyncScheduler => ({
   },
 });
 
-export const createTimerGameSyncScheduler = (delayMs = 0): GameSyncScheduler => ({
-  schedule(task) {
-    const timeoutId = setTimeout(task, delayMs);
-    return () => clearTimeout(timeoutId);
-  },
-});
-
 interface ManualGameSyncScheduler extends GameSyncScheduler {
   flushNext(): boolean;
   pendingCount(): number;

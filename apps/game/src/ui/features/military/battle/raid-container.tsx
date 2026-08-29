@@ -41,7 +41,7 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 enum RaidOutcome {
   Success = "Success",

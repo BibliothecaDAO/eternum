@@ -35,7 +35,7 @@ import clsx from "clsx";
 import LockIcon from "lucide-react/dist/esm/icons/lock";
 import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;

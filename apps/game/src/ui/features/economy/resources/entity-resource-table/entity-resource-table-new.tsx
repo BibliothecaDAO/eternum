@@ -43,7 +43,7 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import X from "lucide-react/dist/esm/icons/x";
 import Zap from "lucide-react/dist/esm/icons/zap";
 import React, { useCallback, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import {
   ALWAYS_SHOW_RESOURCES,
   formatProductionPerHour,

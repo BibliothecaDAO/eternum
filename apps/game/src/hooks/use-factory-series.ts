@@ -1,11 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import type { GameChain as Chain } from "@realms-world/chain";
+import { fetchHeraldGameDirectory, fetchHeraldGameSnapshot, snapshotModelRows } from "@/runtime/world/herald-http";
 import { getDefaultWorld } from "@/runtime/world/world-directory";
-import { decodePaddedFeltAscii, fetchFactoryRows } from "@/runtime/world/factory-sql";
 import { normalizeHex } from "@/runtime/world/normalize";
-
-const S2_SERIES_BY_OWNER_QUERY = (ownerHex: string) =>
-  `SELECT series_id, game_count FROM [s2-Series] WHERE owner = "${ownerHex}" LIMIT 50;`;
+import type { GameChain as Chain } from "@realms-world/chain";
+import { useQuery } from "@tanstack/react-query";
+import { shortString } from "starknet";
 
 export interface FactorySeries {
   name: string;
@@ -13,42 +11,40 @@ export interface FactorySeries {
   lastGameNumber: bigint | null;
 }
 
-const fetchSeriesOwned = async (worldSqlBaseUrl: string, ownerHex: string): Promise<FactorySeries[]> => {
-  const rows = await fetchFactoryRows(worldSqlBaseUrl, S2_SERIES_BY_OWNER_QUERY(ownerHex));
-
-  const series: FactorySeries[] = [];
-  for (const row of rows) {
-    const paddedName = typeof row.series_id === "string" ? row.series_id : null;
-    if (!paddedName) continue;
-    const name = decodePaddedFeltAscii(paddedName);
-    if (!name) continue;
-
-    const rawCount = row.game_count;
-    const gameCount =
-      typeof rawCount === "number" && Number.isFinite(rawCount)
-        ? BigInt(rawCount)
-        : typeof rawCount === "string" && rawCount.trim()
-          ? BigInt(rawCount)
-          : null;
-
-    series.push({ name, paddedName, lastGameNumber: gameCount && gameCount > 0n ? gameCount : null });
+const decodeSeriesName = (value: unknown): string => {
+  try {
+    return shortString.decodeShortString(BigInt(value as string | number | bigint).toString());
+  } catch {
+    return "";
   }
+};
 
-  return series;
+const fetchSeriesOwned = async (chain: Chain, ownerAddress: string): Promise<FactorySeries[]> => {
+  const world = getDefaultWorld();
+  if (world.chain !== chain) return [];
+
+  const directory = await fetchHeraldGameDirectory(world);
+  const gameId = directory.games.at(-1)?.game_id;
+  if (!gameId) return [];
+
+  const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["Series"]);
+  return snapshotModelRows(snapshot, "Series").flatMap((row) => {
+    if (normalizeHex(String(row.owner)) !== ownerAddress) return [];
+    const seriesId = BigInt(row.series_id as string | number | bigint);
+    const paddedName = `0x${seriesId.toString(16)}`;
+    const name = decodeSeriesName(seriesId);
+    const gameCount = BigInt(row.game_count as string | number | bigint);
+    return name ? [{ name, paddedName, lastGameNumber: gameCount > 0n ? gameCount : null }] : [];
+  });
 };
 
 export const useFactorySeries = (chain: Chain, ownerAddress: string | undefined | null) => {
   const normalizedOwner = ownerAddress ? normalizeHex(ownerAddress) : null;
-  const world = getDefaultWorld();
-  const worldSqlBaseUrl = world.chain === chain ? `${world.toriiBaseUrl}/sql` : null;
 
   return useQuery<FactorySeries[], Error>({
     queryKey: ["factorySeries", chain, normalizedOwner],
-    queryFn: () => {
-      if (!normalizedOwner || !worldSqlBaseUrl) return [];
-      return fetchSeriesOwned(worldSqlBaseUrl, normalizedOwner);
-    },
-    enabled: !!normalizedOwner && !!worldSqlBaseUrl,
+    queryFn: () => (normalizedOwner ? fetchSeriesOwned(chain, normalizedOwner) : Promise.resolve([])),
+    enabled: !!normalizedOwner,
     staleTime: 60_000,
     retry: 1,
   });

@@ -3,7 +3,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
 import { getGameModeConfig } from "./index";
 import { resolveGameModeFromBlitzFlag, type ResolvedGameMode } from "./resolved-mode";
-import { worldConfigKey } from "@/dojo/game-scope";
+import { worldConfigKey } from "@/sync/game-scope";
 
 // Resolved per hook call, not at module level: on the s2 single world the row
 // is keyed by the active game id, which bootstrap sets after modules load.

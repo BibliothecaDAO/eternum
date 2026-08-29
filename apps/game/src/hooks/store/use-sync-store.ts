@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export enum Subscription {
+enum Subscription {
   Market = "market",
   Hyperstructure = "hyperstructure",
   Guild = "guild",

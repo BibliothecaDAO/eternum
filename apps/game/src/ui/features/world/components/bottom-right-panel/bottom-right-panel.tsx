@@ -1,9 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
-import { buildingEntityKey, gameEntityKey, gameModel } from "@/dojo/game-scope";
-import { getStructuresDataFromTorii } from "@/dojo/queries";
-import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
+import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
@@ -53,14 +50,11 @@ import Bot from "lucide-react/dist/esm/icons/bot";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
-import Loader from "lucide-react/dist/esm/icons/loader";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PauseIcon from "lucide-react/dist/esm/icons/pause";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Play from "lucide-react/dist/esm/icons/play";
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import { toast } from "sonner";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
@@ -76,18 +70,6 @@ const formatResourceAmount = (value: number): string => {
     return compactResourceFormatter.format(flooredValue);
   }
   return flooredValue.toLocaleString();
-};
-
-const ENTITY_SYNC_MODEL_NAMES = {
-  explorer: ["ExplorerTroops"],
-  structure: ["Structure"],
-} as const;
-
-type SyncableEntityType = keyof typeof ENTITY_SYNC_MODEL_NAMES;
-
-const ENTITY_TYPE_LABELS: Record<SyncableEntityType, string> = {
-  explorer: "Explorer",
-  structure: "Structure",
 };
 
 interface PanelFrameProps {
@@ -156,10 +138,6 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
 
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
-  const {
-    network: { toriiClient },
-  } = useDojo();
-  const { syncEntity, isSyncing } = useEntityResync();
 
   const tile = useTileAt(selectedHex?.col, selectedHex?.row) ?? null;
 
@@ -205,84 +183,10 @@ const MapTilePanel = () => {
     ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
     : "No Tile Selected";
 
-  const syncableEntityType = useMemo<SyncableEntityType | null>(() => {
-    if (!tile || !hasOccupier || isSpire || isChest || isQuest || isReservedHyperstructure) return null;
-    return isStructure ? "structure" : "explorer";
-  }, [hasOccupier, isChest, isQuest, isReservedHyperstructure, isSpire, isStructure, tile]);
-
-  const syncableEntityId = useMemo<ID | null>(() => {
-    if (!tile || !syncableEntityType) return null;
-    const entityId = Number(tile.occupier_id);
-    if (!Number.isFinite(entityId) || entityId <= 0) return null;
-    return entityId as ID;
-  }, [syncableEntityType, tile]);
-
-  const getEntitySyncKey = useCallback(
-    (entityType: SyncableEntityType, entityId: ID) => `${entityType}:${String(entityId)}`,
-    [],
-  );
-
-  const isSyncingCurrentEntity = useMemo(() => {
-    if (!syncableEntityType || syncableEntityId === null) return false;
-    return isSyncing(getEntitySyncKey(syncableEntityType, syncableEntityId));
-  }, [getEntitySyncKey, isSyncing, syncableEntityId, syncableEntityType]);
-
-  const handleResyncCurrentEntity = useCallback(() => {
-    if (!syncableEntityType || syncableEntityId === null) return;
-
-    if (!toriiClient) {
-      toast.error("Unable to sync right now.");
-      return;
-    }
-
-    const entitySyncKey = getEntitySyncKey(syncableEntityType, syncableEntityId);
-    void syncEntity({
-      syncKey: entitySyncKey,
-      entityLabel: ENTITY_TYPE_LABELS[syncableEntityType],
-      successMessage: `${ENTITY_TYPE_LABELS[syncableEntityType]} #${String(syncableEntityId)} synced.`,
-      runSync: () =>
-        new Promise<void>((resolve, reject) => {
-          let settled = false;
-
-          const complete = () => {
-            if (settled) return;
-            settled = true;
-            resolve();
-          };
-
-          void debouncedGetEntitiesFromTorii(
-            toriiClient,
-            [syncableEntityId],
-            ENTITY_SYNC_MODEL_NAMES[syncableEntityType].map(gameModel),
-            complete,
-          ).catch((error) => {
-            if (settled) return;
-            settled = true;
-            reject(error);
-          });
-        }),
-    });
-  }, [getEntitySyncKey, syncEntity, syncableEntityId, syncableEntityType, toriiClient]);
-
-  const headerAction =
-    syncableEntityType && syncableEntityId !== null ? (
-      <button
-        type="button"
-        onClick={handleResyncCurrentEntity}
-        disabled={isSyncingCurrentEntity}
-        aria-label={`Re-sync ${syncableEntityType} ${String(syncableEntityId)}`}
-        title={isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}
-        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isSyncingCurrentEntity ? <Loader className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-        <span>{isSyncingCurrentEntity ? "Syncing" : "Re-sync"}</span>
-      </button>
-    ) : null;
-
   return (
     <>
       {selectedHex ? (
-        <SelectedWorldmapEntity coordsLabel={panelTitle} headerAction={headerAction} />
+        <SelectedWorldmapEntity coordsLabel={panelTitle} />
       ) : (
         <div className={cn("pointer-events-auto rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
           <p className={HUD_BODY}>Tap any tile on the world map to view its occupants and resources.</p>
@@ -293,12 +197,7 @@ const MapTilePanel = () => {
 };
 
 const LocalTilePanel = () => {
-  const {
-    setup,
-    account,
-    network: { toriiClient },
-  } = useDojo();
-  const { syncEntity, isSyncing } = useEntityResync();
+  const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
@@ -343,23 +242,6 @@ const LocalTilePanel = () => {
 
     return null;
   }, [playerStructures, setup.components.Structure, structureEntityId]);
-
-  const structureSyncTarget = useMemo(() => {
-    const entityId = Number(structureEntityId);
-    if (!Number.isFinite(entityId) || entityId <= 0) return null;
-    const syncPosition = selectedBuildingHex
-      ? { col: selectedBuildingHex.outerCol, row: selectedBuildingHex.outerRow }
-      : selectedStructure
-        ? { col: selectedStructure.outerCol, row: selectedStructure.outerRow }
-        : null;
-    if (!syncPosition) return null;
-    return {
-      entityId: entityId as ID,
-      position: syncPosition,
-    };
-  }, [selectedBuildingHex, selectedStructure, structureEntityId]);
-  const structureSyncKey = structureSyncTarget ? `structure:${String(structureSyncTarget.entityId)}` : null;
-  const isSyncingStructure = isSyncing(structureSyncKey);
 
   useEffect(() => {
     if (!selectedStructure) return;
@@ -513,51 +395,6 @@ const LocalTilePanel = () => {
     ? `${buildingName} · (${selectedBuildingHex.innerCol}, ${selectedBuildingHex.innerRow})`
     : "No Tile Selected";
 
-  const handleResyncStructure = useCallback(() => {
-    if (!structureSyncTarget) return;
-    if (!toriiClient) {
-      toast.error("Unable to sync right now.");
-      return;
-    }
-
-    const { entityId, position } = structureSyncTarget;
-    void syncEntity({
-      syncKey: `structure:${String(entityId)}`,
-      entityLabel: "Structure",
-      successMessage: `Structure #${String(entityId)} synced.`,
-      runSync: () =>
-        new Promise<void>((resolve, reject) => {
-          let settled = false;
-
-          const complete = () => {
-            if (settled) return;
-            settled = true;
-            resolve();
-          };
-
-          void getStructuresDataFromTorii(toriiClient, [{ entityId, position }], complete).catch((error) => {
-            if (settled) return;
-            settled = true;
-            reject(error);
-          });
-        }),
-    });
-  }, [structureSyncTarget, syncEntity, toriiClient]);
-
-  const headerAction = structureSyncTarget ? (
-    <button
-      type="button"
-      onClick={handleResyncStructure}
-      disabled={isSyncingStructure}
-      aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
-      title={isSyncingStructure ? "Syncing..." : "Re-sync"}
-      className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {isSyncingStructure ? <Loader className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-      <span>{isSyncingStructure ? "Syncing" : "Re-sync"}</span>
-    </button>
-  ) : null;
-
   const handleToggleProduction = async () => {
     if (!selectedBuildingHex) return;
     setIsActionLoading(true);
@@ -641,7 +478,7 @@ const LocalTilePanel = () => {
   // resource breakdown.
   if (isCastleTile) {
     return (
-      <InfoBubble title={panelTitle} cue={headerAction} bodyClassName="pt-0">
+      <InfoBubble title={panelTitle} bodyClassName="pt-0">
         <RealmUpgradeCompact />
       </InfoBubble>
     );
@@ -649,7 +486,7 @@ const LocalTilePanel = () => {
 
   if (!hasBuilding) {
     return (
-      <InfoBubble title={panelTitle} cue={headerAction}>
+      <InfoBubble title={panelTitle}>
         <p className={HUD_BODY_MUTED}>Empty tile. Pick a building from the menu to start construction here.</p>
       </InfoBubble>
     );
@@ -725,7 +562,7 @@ const LocalTilePanel = () => {
     <>
       {/* Building bubble — merges the tile header with the type's stats. The
           name + coords + Re-sync live in the bubble's title/cue. */}
-      <InfoBubble title={panelTitle} cue={headerAction} icon={Factory}>
+      <InfoBubble title={panelTitle} icon={Factory}>
         <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
           {isPaused && isOwnedByPlayer && (
             <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">

@@ -24,7 +24,7 @@ vi.mock("@bibliothecadao/react", () => ({
   useDojo: () => ({ setup: { components } }),
 }));
 vi.mock("@dojoengine/react", () => ({ useComponentValue: useComponentValueMock }));
-vi.mock("@/dojo/game-scope", () => ({
+vi.mock("@/sync/game-scope", () => ({
   gameEntityKey: (keys: bigint[]) => `entity:${keys.join(":")}`,
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({

@@ -1,9 +1,9 @@
-import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { displayAddress } from "@/ui/utils/utils";
-import { fetchFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
+import { buildFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
+import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { WonderFaithDetailModal } from "./wonder-faith-detail-panel";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 const formatIntegerWithCommas = (value: number): string => value.toLocaleString("en-US");
 
@@ -32,60 +32,8 @@ const buildOwnerLabel = (entry: FaithLeaderboardEntry): string => {
 
 export const FaithLeaderboardPanel = () => {
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const [entries, setEntries] = useState<FaithLeaderboardEntry[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
-
-  const requestInFlightRef = useRef(false);
-
-  const loadLeaderboard = useCallback(async (mode: "initial" | "refresh") => {
-    if (requestInFlightRef.current) {
-      return;
-    }
-
-    requestInFlightRef.current = true;
-
-    if (mode === "initial") {
-      setIsInitialLoading(true);
-    } else {
-      setIsRefreshing(true);
-    }
-
-    try {
-      const nextEntries = await fetchFaithLeaderboard();
-      setEntries(nextEntries);
-      setError(null);
-      setLastUpdatedAt(Date.now());
-    } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "Failed to load faith leaderboard.";
-      setError(message);
-    } finally {
-      requestInFlightRef.current = false;
-      if (mode === "initial") {
-        setIsInitialLoading(false);
-      } else {
-        setIsRefreshing(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadLeaderboard("initial");
-  }, [loadLeaderboard]);
-
-  const updatedLabel = useMemo(() => {
-    if (!lastUpdatedAt) {
-      return "Not synced yet";
-    }
-
-    return new Date(lastUpdatedAt).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  }, [lastUpdatedAt]);
+  const readModels = useFaithReadModels();
+  const entries = useMemo(() => buildFaithLeaderboard(readModels), [readModels]);
 
   const hasEntries = entries.length > 0;
   const openWonderDetails = useCallback(
@@ -106,25 +54,12 @@ export const FaithLeaderboardPanel = () => {
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-gold">Faith Leaderboard</span>
-          <span className="text-[11px] text-gold/65">Last update: {updatedLabel}</span>
+          <span className="text-[11px] text-gold/65">Live from the game stream</span>
           <span className="text-[10px] text-gold/50">Total FP includes estimated unclaimed points from FP/sec.</span>
         </div>
-        <RefreshButton
-          onClick={() => {
-            void loadLeaderboard("refresh");
-          }}
-          isLoading={isRefreshing}
-          disabled={isInitialLoading || isRefreshing}
-          size="md"
-          aria-label="Refresh faith leaderboard"
-        />
       </div>
 
-      {isInitialLoading ? (
-        <div className="flex h-full items-center justify-center text-xs text-gold/70">Loading faith leaderboard...</div>
-      ) : error ? (
-        <div className="rounded-lg border border-red-400/25 bg-red-950/20 p-3 text-xs text-red-200/90">{error}</div>
-      ) : !hasEntries ? (
+      {!hasEntries ? (
         <div className="flex h-full items-center justify-center text-xs text-gold/70">
           No wonder faith data found for this world.
         </div>

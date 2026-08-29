@@ -113,7 +113,7 @@ import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
-import { gameEntityKey, buildingEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey, buildingEntityKey } from "@/sync/game-scope";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";

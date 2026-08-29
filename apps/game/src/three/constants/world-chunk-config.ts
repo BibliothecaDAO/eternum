@@ -12,14 +12,6 @@ interface WorldChunkConfig {
     /** Number of stride chunks per side in a projection sync area. */
     superAreaStrides: number;
   };
-  /** Live Torii subscription bounds coalescing */
-  toriiSubscription: {
-    /**
-     * Number of stride chunks per side in a subscription "super-area".
-     * This can be larger than projection-sync areas to reduce live stream churn.
-     */
-    superAreaStrides: number;
-  };
   /** Directional prefetch tuning */
   prefetch: {
     /** How many stride steps ahead to prefetch (inclusive) */
@@ -74,10 +66,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   projectionSync: {
     // Coalesce overlapping render windows into larger stable projection areas.
     superAreaStrides: 16,
-  },
-  toriiSubscription: {
-    // Keep live spatial stream bounds stable across multiple fetch areas.
-    superAreaStrides: 48,
   },
   prefetch: {
     forwardDepthStrides: 2,

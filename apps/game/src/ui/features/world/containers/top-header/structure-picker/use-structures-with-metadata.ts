@@ -24,7 +24,7 @@ import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -56,7 +56,7 @@ export const useStructuresWithMetadata = ({
   const { structureGroups } = useStructureGroups();
 
   // Inputs needed to compute `canProvision` per structure cheaply. All values
-  // are already available in store / RECS — no new torii calls.
+  // are already available in RECS — no direct read calls.
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
@@ -155,7 +155,7 @@ export const useStructuresWithMetadata = ({
       };
 
       // canProvision mirrors useBlitzRealmProvision but reads only RECS-cached
-      // state. We don't get the per-structure `isProvisioned` torii lookup, so
+      // state. There is no separate per-structure `isProvisioned` lookup, so
       // approximate via the packed building counts (the same fallback the
       // real hook uses when its provisioning building check is unavailable).
       let canProvision = false;

@@ -200,7 +200,6 @@ interface UIStore {
   setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
   // Bumped whenever a military mutation lands (create / disband) so the deploy
   // map can re-fetch tile occupancy. Plain RECS-side state isn't enough — the
-  // map reads via sqlApi, which doesn't auto-invalidate.
   militaryMapVersion: number;
   bumpMilitaryMapVersion: () => void;
   // labor

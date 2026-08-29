@@ -74,7 +74,7 @@ import {
 } from "./settlement-planner-utils";
 import { useSettlementPlannerData } from "./use-settlement-planner-data";
 import { env } from "../../../../../env";
-import { gameEntityKey, namespaceForChain } from "@/dojo/game-scope";
+import { gameEntityKey, namespaceForChain } from "@/sync/game-scope";
 
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;

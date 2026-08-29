@@ -7,7 +7,7 @@ import { EternumClient } from "../src";
 import { Account, RpcProvider } from "starknet";
 
 const RPC_URL = "http://localhost:5050";
-const TORII_URL = "http://localhost:8080";
+const HERALD_URL = "http://localhost:3003";
 const WORLD_ADDRESS = "0x0";
 const PRIVATE_KEY = "0x0";
 const ACCOUNT_ADDRESS = "0x0";
@@ -15,8 +15,10 @@ const ACCOUNT_ADDRESS = "0x0";
 async function main() {
   // 1. Create the client
   const client = await EternumClient.create({
+    chain: "madara",
+    gameId: 1,
+    heraldUrl: HERALD_URL,
     rpcUrl: RPC_URL,
-    toriiUrl: TORII_URL,
     worldAddress: WORLD_ADDRESS,
     manifest: {
       world: { address: WORLD_ADDRESS },

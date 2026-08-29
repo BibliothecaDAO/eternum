@@ -17,7 +17,7 @@ import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
 import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 interface EntityResourceTableOldProps {
   entityId: ID | undefined;

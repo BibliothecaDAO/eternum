@@ -7,7 +7,6 @@ These packages support client + tooling integration with the Eternum world.
 - `@bibliothecadao/eternum` → [`packages/core`](./core)
 - `@bibliothecadao/provider` → [`packages/provider`](./provider)
 - `@bibliothecadao/react` → [`packages/react`](./react)
-- `@bibliothecadao/torii` → [`packages/torii`](./torii)
 - `@bibliothecadao/types` → [`packages/types`](./types)
 
 ### Development

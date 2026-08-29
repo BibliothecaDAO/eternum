@@ -17,7 +17,7 @@ import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const formatRelativeTime = (timestamp?: number | null): string => {
   if (!timestamp) return "never";

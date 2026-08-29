@@ -4,7 +4,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
-import { EntityWithRelics, PlayerRelicsData } from "@bibliothecadao/torii";
+import type { EntityWithRelics, PlayerRelicsData } from "@/types";
 import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
 import { resolveRelicResourceKey } from "../hooks/use-relic-activation";
 

@@ -2,7 +2,7 @@ import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { resolveEndpoint } from "@realms-world/chain";
 
-import { namespaceForChain, type GameNamespace } from "@/dojo/game-scope";
+import { namespaceForChain, type GameNamespace } from "@/sync/game-scope";
 import { env } from "../../../env";
 import { normalizeSelector } from "./normalize";
 
@@ -10,8 +10,8 @@ import { normalizeSelector } from "./normalize";
  * The world directory — the client's single source of "what worlds exist".
  *
  * A world is one deployed world contract plus its Herald stream; games (Blitz)
- * and seasons (Eternum) are GameRegistry rows inside a world. Madara exposes
- * the phase-one Blitz world, while appchain may expose both world manifests.
+ * and seasons (Eternum) are GameRegistry rows inside a world. Phase two
+ * exposes the one persistent Blitz world indexed by Herald.
  *
  * Both phase-one chains use committed manifests and GameRegistry rows.
  */
@@ -21,7 +21,6 @@ export interface WorldDeployment {
   chain: Chain;
   rpcUrl: string;
   heraldBaseUrl: string;
-  toriiBaseUrl: string;
   namespace: GameNamespace;
   worldAddress: string;
   /** Normalized selector -> address from the world's committed manifest. */
@@ -36,7 +35,7 @@ interface CommittedManifest {
   contracts: { selector: string; address: string }[];
 }
 
-const buildWorld = (chain: Chain, id: "blitz" | "eternum", toriiBaseUrl: string): WorldDeployment => {
+const buildWorld = (chain: Chain, id: "blitz" | "eternum"): WorldDeployment => {
   const manifest = getGameManifest(chain, id) as unknown as CommittedManifest;
   return {
     id,
@@ -46,7 +45,6 @@ const buildWorld = (chain: Chain, id: "blitz" | "eternum", toriiBaseUrl: string)
       browserFacing: true,
     }),
     rpcUrl: resolveEndpoint(env.VITE_PUBLIC_NODE_URL, { name: "VITE_PUBLIC_NODE_URL", browserFacing: true }),
-    toriiBaseUrl: resolveEndpoint(toriiBaseUrl, { name: "VITE_PUBLIC_TORII", browserFacing: true }),
     namespace: namespaceForChain(chain),
     worldAddress: manifest.world.address,
     contractsBySelector: Object.fromEntries(
@@ -62,10 +60,7 @@ let directory: WorldDeployment[] | null = null;
 
 export const getWorldDirectory = (): WorldDeployment[] => {
   if (!directory) {
-    directory = [buildWorld(env.VITE_PUBLIC_CHAIN, "blitz", env.VITE_PUBLIC_TORII)];
-    if (env.VITE_PUBLIC_CHAIN === "appchain" && env.VITE_PUBLIC_TORII_ETERNUM) {
-      directory.push(buildWorld("appchain", "eternum", env.VITE_PUBLIC_TORII_ETERNUM));
-    }
+    directory = [buildWorld(env.VITE_PUBLIC_CHAIN, "blitz")];
   }
   return directory;
 };

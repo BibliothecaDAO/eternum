@@ -2,7 +2,6 @@
 #
 #   docker compose up -d                 # madara only
 #   scripts/deploy-world.sh              # sozo build + migrate the s2 world (writes world address to .lab/)
-#   docker compose --profile torii up -d # torii compatibility canary, after the world exists
 #   docker compose --profile web up -d   # postgres for apps/web's session store
 #
 # caddy terminates TLS for every *.realms.test host on 127.0.0.1:443 (see Caddyfile); run
@@ -104,7 +103,7 @@ services:
     restart: unless-stopped
 
   # The replica promoted to sequencer (E.2): the sequencer command on the replica's volume, reachable as `madara`
-  # on the compose network so Torii, Caddy and herald keep resolving. Started only by promote-replica.sh, which
+  # on the compose network so Caddy and herald keep resolving. Started only by promote-replica.sh, which
   # moves the identity token here first.
   madara-promoted:
     image: ${MADARA_IMAGE:-ghcr.io/madara-alliance/madara@sha256:ec30298d51ce0780e1ad88cc00e1c17bef31530d0e338fe7fcc1d71d1bad31b2}
@@ -153,27 +152,6 @@ services:
       retries: 12
     restart: unless-stopped
 
-  # Torii against Madara: a compatibility canary only. Torii is EOL and not a destination
-  # dependency; this exists to keep the current client playable while the owned data plane is built.
-  torii:
-    image: ${TORII_IMAGE:-ghcr.io/dojoengine/torii:v1.8.16}
-    container_name: madara-lab-torii
-    profiles: ["torii"]
-    depends_on:
-      madara:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - >-
-        exec torii --config /config/torii.toml
-        --http.addr 0.0.0.0 --http.port 8080
-        --http.cors_origins "*"
-    volumes:
-      - ./.lab/torii.toml:/config/torii.toml:ro
-      - torii-data:/data
-    ports:
-      - "127.0.0.1:8090:8080"
-
   caddy:
     image: ${CADDY_IMAGE:-caddy:2-alpine}
     container_name: madara-lab-caddy
@@ -211,5 +189,4 @@ services:
 volumes:
   madara-data:
   madara-replica-data:
-  torii-data:
   postgres-data:

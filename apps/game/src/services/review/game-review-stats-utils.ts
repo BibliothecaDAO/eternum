@@ -1,133 +1,5 @@
-import { appchainModel } from "@/dojo/game-scope";
-import {
-  normalizeNonZeroAddress,
-  parseBigIntValue,
-  parseInteger,
-  parseNumeric,
-  parseScaledAmount,
-  queryToriiSql,
-} from "./sql-parse-utils";
-
-/**
- * Review stat reads on the shared appchain worlds: every per-game model row
- * leads with `game_id`, so each query names the s2 table explicitly and
- * carries the REVIEWED game's id — never the ambient bootstrap scope.
- */
-
-// s2: the game clock lives on the game's GameRegistry row.
-const buildReviewGameStartQuery = (gameId: number) => `
-  SELECT start_main_at
-  FROM "${appchainModel("GameRegistry")}"
-  WHERE game_id = ${gameId}
-  LIMIT 1;
-`;
-
-const buildReviewFirstT3CreationQuery = (gameId: number) => `
-  SELECT
-    timestamp AS first_at,
-    "owner.Some" AS owner_address
-  FROM "${appchainModel("StoryEvent")}"
-  WHERE game_id = ${gameId}
-    AND story = 'ExplorerCreateStory'
-    AND (
-      lower(trim(CAST("story.ExplorerCreateStory.tier" AS TEXT))) = 't3'
-      OR lower(CAST("story.ExplorerCreateStory.tier" AS TEXT)) LIKE '%t3%'
-      OR CAST("story.ExplorerCreateStory.tier" AS INTEGER) = 2
-      OR CAST("story.ExplorerCreateStory.tier" AS INTEGER) = 3
-    )
-    AND "owner.Some" IS NOT NULL
-  ORDER BY timestamp ASC
-  LIMIT 1;
-`;
-
-const buildReviewFirstHyperstructureClaimQuery = (gameId: number) => `
-  SELECT
-    timestamp AS first_at,
-    "story.BattleStory.attacker_owner_address" AS owner_address
-  FROM "${appchainModel("StoryEvent")}"
-  WHERE game_id = ${gameId}
-    AND story = 'BattleStory'
-    AND (
-      CAST("story.BattleStory.defender_structure.structure_taken" AS INTEGER) = 1
-      OR lower(trim(CAST("story.BattleStory.defender_structure.structure_taken" AS TEXT))) = 'true'
-    )
-    AND (
-      CAST("story.BattleStory.defender_structure.structure_category" AS INTEGER) = 2
-      OR lower(trim(CAST("story.BattleStory.defender_structure.structure_category" AS TEXT))) = 'hyperstructure'
-      OR lower(CAST("story.BattleStory.defender_structure.structure_category" AS TEXT)) LIKE '%hyper%'
-    )
-    AND "story.BattleStory.attacker_owner_address" IS NOT NULL
-  ORDER BY timestamp ASC
-  LIMIT 1;
-`;
-
-const buildReviewFirstBloodRealmCaptureQuery = (gameId: number) => `
-  SELECT
-    timestamp AS captured_at,
-    "story.BattleStory.attacker_owner_address" AS attacker_owner_address
-  FROM "${appchainModel("StoryEvent")}"
-  WHERE game_id = ${gameId}
-    AND story = 'BattleStory'
-    AND (
-      CAST("story.BattleStory.defender_structure.structure_taken" AS INTEGER) = 1
-      OR lower(trim(CAST("story.BattleStory.defender_structure.structure_taken" AS TEXT))) = 'true'
-    )
-    AND (
-      CAST("story.BattleStory.defender_structure.structure_category" AS INTEGER) = 1
-      OR lower(trim(CAST("story.BattleStory.defender_structure.structure_category" AS TEXT))) = 'realm'
-      OR lower(CAST("story.BattleStory.defender_structure.structure_category" AS TEXT)) LIKE '%realm%'
-    )
-    AND "story.BattleStory.attacker_owner_address" IS NOT NULL
-    AND "story.BattleStory.defender_owner_address" IS NOT NULL
-    AND ltrim(lower(CAST("story.BattleStory.attacker_owner_address" AS TEXT)), '0x') != ''
-    AND ltrim(lower(CAST("story.BattleStory.defender_owner_address" AS TEXT)), '0x') != ''
-    AND ltrim(lower(CAST("story.BattleStory.attacker_owner_address" AS TEXT)), '0x') != ltrim(lower(CAST("story.BattleStory.defender_owner_address" AS TEXT)), '0x')
-  ORDER BY timestamp ASC
-  LIMIT 1;
-`;
-
-const buildReviewStructureOwnersQuery = (gameId: number) => `
-  SELECT entity_id, owner
-  FROM "${appchainModel("Structure")}"
-  WHERE game_id = ${gameId};
-`;
-
-const buildReviewBattleKillsQuery = (gameId: number) => `
-  SELECT
-    "story.BattleStory.attacker_owner_address" AS attacker_owner_address,
-    "story.BattleStory.defender_owner_address" AS defender_owner_address,
-    "story.BattleStory.attacker_troops_lost" AS attacker_troops_lost,
-    "story.BattleStory.defender_troops_lost" AS defender_troops_lost
-  FROM "${appchainModel("StoryEvent")}"
-  WHERE game_id = ${gameId}
-    AND story = 'BattleStory';
-`;
-
-interface StartMainRow {
-  start_main_at?: unknown;
-}
-
-interface FirstMilestoneRow {
-  first_at?: unknown;
-  owner_address?: unknown;
-}
-
-interface FirstBloodRow {
-  captured_at?: unknown;
-  attacker_owner_address?: unknown;
-}
-
-interface StructureOwnerRow {
-  entity_id?: unknown;
-  owner?: unknown;
-}
-
-interface BattleKillsRow {
-  attacker_owner_address?: unknown;
-  defender_owner_address?: unknown;
-  attacker_troops_lost?: unknown;
-  defender_troops_lost?: unknown;
-}
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 export interface GameReviewValueMetric {
   playerAddress: string;
@@ -135,257 +7,128 @@ export interface GameReviewValueMetric {
   timestamp?: number;
 }
 
-interface GameReviewMilestoneTimings {
+interface GameReviewDerivedMetrics {
   timeToFirstT3Seconds: GameReviewValueMetric | null;
   timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
-}
-
-interface GameReviewCompetitiveMetrics {
+  firstBlood: GameReviewValueMetric | null;
   mostTroopsKilled: GameReviewValueMetric | null;
   biggestStructuresOwned: GameReviewValueMetric | null;
 }
 
-const EMPTY_COMPETITIVE_METRICS: GameReviewCompetitiveMetrics = {
-  mostTroopsKilled: null,
-  biggestStructuresOwned: null,
-};
+type Row = Record<string, unknown>;
 
-const incrementMetric = (metrics: Map<string, number>, key: string, value: number): void => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return;
-  }
+const record = (value: unknown): Row | null =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Row) : null;
 
-  metrics.set(key, (metrics.get(key) ?? 0) + value);
-};
-
-const pickTopMetric = (metrics: Map<string, number>): GameReviewValueMetric | null => {
-  let topPlayerAddress: string | null = null;
-  let topValue = Number.NEGATIVE_INFINITY;
-
-  for (const [playerAddress, value] of metrics.entries()) {
-    if (!Number.isFinite(value) || value <= 0) {
-      continue;
-    }
-
-    if (
-      topPlayerAddress == null ||
-      value > topValue ||
-      (value === topValue && playerAddress.localeCompare(topPlayerAddress) < 0)
-    ) {
-      topPlayerAddress = playerAddress;
-      topValue = value;
-    }
-  }
-
-  if (!topPlayerAddress || !Number.isFinite(topValue) || topValue <= 0) {
-    return null;
-  }
-
-  return {
-    playerAddress: topPlayerAddress,
-    value: topValue,
-    timestamp: undefined,
-  };
-};
-
-const elapsedSecondsSince = (startAt: bigint | null, eventAt: bigint | null): number | null => {
-  if (startAt == null || eventAt == null || startAt <= 0n || eventAt < startAt) {
-    return null;
-  }
-
-  const elapsed = Number(eventAt - startAt);
-  return Number.isFinite(elapsed) ? elapsed : null;
-};
-
-const buildFirstMilestoneMetric = ({
-  gameStartAt,
-  row,
-}: {
-  gameStartAt: bigint | null;
-  row: FirstMilestoneRow | undefined;
-}): GameReviewValueMetric | null => {
-  const milestoneAt = parseBigIntValue(row?.first_at);
-  const ownerAddress = normalizeNonZeroAddress(row?.owner_address);
-  const elapsedSeconds = elapsedSecondsSince(gameStartAt, milestoneAt);
-
-  if (elapsedSeconds == null || !ownerAddress) {
-    return null;
-  }
-
-  const timestamp = milestoneAt == null ? undefined : Number(milestoneAt);
-
-  return {
-    playerAddress: ownerAddress,
-    value: elapsedSeconds,
-    timestamp: Number.isFinite(timestamp) ? timestamp : undefined,
-  };
-};
-
-const buildStructureOwnerLookup = (
-  rows: StructureOwnerRow[],
-): {
-  structureOwnerByEntityId: Map<number, string | null>;
-  ownerStructureCounts: Map<string, number>;
-} => {
-  const structureOwnerByEntityId = new Map<number, string | null>();
-  const ownerStructureCounts = new Map<string, number>();
-
-  for (const row of rows) {
-    const entityId = parseInteger(row.entity_id);
-    if (entityId == null || entityId <= 0) {
-      continue;
-    }
-
-    const ownerAddress = normalizeNonZeroAddress(row.owner);
-    structureOwnerByEntityId.set(entityId, ownerAddress);
-
-    if (ownerAddress) {
-      incrementMetric(ownerStructureCounts, ownerAddress, 1);
-    }
-  }
-
-  return {
-    structureOwnerByEntityId,
-    ownerStructureCounts,
-  };
-};
-
-const computeMostTroopsKilled = (rows: BattleKillsRow[]): GameReviewValueMetric | null => {
-  const killsByPlayer = new Map<string, number>();
-
-  for (const row of rows) {
-    const attackerAddress = normalizeNonZeroAddress(row.attacker_owner_address);
-    const defenderAddress = normalizeNonZeroAddress(row.defender_owner_address);
-
-    const attackerKills = parseScaledAmount(row.defender_troops_lost);
-    const defenderKills = parseScaledAmount(row.attacker_troops_lost);
-
-    if (attackerAddress) {
-      incrementMetric(killsByPlayer, attackerAddress, attackerKills);
-    }
-
-    if (defenderAddress) {
-      incrementMetric(killsByPlayer, defenderAddress, defenderKills);
-    }
-  }
-
-  return pickTopMetric(killsByPlayer);
-};
-
-export const fetchGameReviewMilestoneTimings = async (
-  toriiSqlBaseUrl: string,
-  gameId: number,
-): Promise<GameReviewMilestoneTimings> => {
+const toBigInt = (value: unknown): bigint | null => {
+  if (!["bigint", "number", "string"].includes(typeof value)) return null;
   try {
-    const [startRows, firstT3Rows, firstHyperRows] = await Promise.all([
-      queryToriiSql<StartMainRow>(
-        toriiSqlBaseUrl,
-        buildReviewGameStartQuery(gameId),
-        "Failed to fetch game start timestamp",
-      ),
-      queryToriiSql<FirstMilestoneRow>(
-        toriiSqlBaseUrl,
-        buildReviewFirstT3CreationQuery(gameId),
-        "Failed to fetch first T3 creation timestamp",
-      ),
-      queryToriiSql<FirstMilestoneRow>(
-        toriiSqlBaseUrl,
-        buildReviewFirstHyperstructureClaimQuery(gameId),
-        "Failed to fetch first hyperstructure claim timestamp",
-      ),
-    ]);
-
-    const gameStartAt = parseBigIntValue(startRows[0]?.start_main_at);
-
-    return {
-      timeToFirstT3Seconds: buildFirstMilestoneMetric({
-        gameStartAt,
-        row: firstT3Rows[0],
-      }),
-      timeToFirstHyperstructureSeconds: buildFirstMilestoneMetric({
-        gameStartAt,
-        row: firstHyperRows[0],
-      }),
-    };
-  } catch {
-    return {
-      timeToFirstT3Seconds: null,
-      timeToFirstHyperstructureSeconds: null,
-    };
-  }
-};
-
-export const fetchFirstBloodMetric = async (
-  toriiSqlBaseUrl: string,
-  gameId: number,
-): Promise<GameReviewValueMetric | null> => {
-  try {
-    const [startRows, firstBloodRows] = await Promise.all([
-      queryToriiSql<StartMainRow>(
-        toriiSqlBaseUrl,
-        buildReviewGameStartQuery(gameId),
-        "Failed to fetch game start timestamp",
-      ),
-      queryToriiSql<FirstBloodRow>(
-        toriiSqlBaseUrl,
-        buildReviewFirstBloodRealmCaptureQuery(gameId),
-        "Failed to fetch first blood realm capture",
-      ),
-    ]);
-
-    const gameStartAt = parseBigIntValue(startRows[0]?.start_main_at);
-    const capturedAt = parseBigIntValue(firstBloodRows[0]?.captured_at);
-    const attackerOwnerAddress = normalizeNonZeroAddress(firstBloodRows[0]?.attacker_owner_address);
-    const elapsedSeconds = elapsedSecondsSince(gameStartAt, capturedAt);
-
-    if (elapsedSeconds == null || !attackerOwnerAddress) {
-      return null;
-    }
-
-    const timestamp = capturedAt == null ? undefined : Number(capturedAt);
-
-    return {
-      playerAddress: attackerOwnerAddress,
-      value: elapsedSeconds,
-      timestamp: Number.isFinite(timestamp) ? timestamp : undefined,
-    };
+    return BigInt(value as string | number | bigint);
   } catch {
     return null;
   }
 };
 
-export const fetchGameReviewCompetitiveMetrics = async (
-  toriiSqlBaseUrl: string,
-  gameId: number,
-): Promise<GameReviewCompetitiveMetrics> => {
-  try {
-    const [structureRowsResult, battleKillsRowsResult] = await Promise.allSettled([
-      queryToriiSql<StructureOwnerRow>(
-        toriiSqlBaseUrl,
-        buildReviewStructureOwnersQuery(gameId),
-        "Failed to fetch structures",
-      ),
-      queryToriiSql<BattleKillsRow>(
-        toriiSqlBaseUrl,
-        buildReviewBattleKillsQuery(gameId),
-        "Failed to fetch battle kill metrics",
-      ),
-    ]);
+const address = (value: unknown): string | null => {
+  const parsed = toBigInt(value);
+  return parsed !== null && parsed > 0n ? `0x${parsed.toString(16)}` : null;
+};
 
-    const structureRows = structureRowsResult.status === "fulfilled" ? structureRowsResult.value : [];
-    const battleKillsRows = battleKillsRowsResult.status === "fulfilled" ? battleKillsRowsResult.value : [];
+const number = (value: unknown): number => {
+  const parsed = toBigInt(value);
+  if (parsed === null) return 0;
+  const result = Number(parsed);
+  return Number.isFinite(result) ? result : 0;
+};
 
-    const { ownerStructureCounts } = buildStructureOwnerLookup(structureRows);
-    const biggestStructuresOwned = pickTopMetric(ownerStructureCounts);
-    const mostTroopsKilled = computeMostTroopsKilled(battleKillsRows);
+const scaled = (value: unknown): number => number(value) / RESOURCE_PRECISION;
 
-    return {
-      mostTroopsKilled,
-      biggestStructuresOwned,
-    };
-  } catch {
-    return {
-      ...EMPTY_COMPETITIVE_METRICS,
-    };
+const bool = (value: unknown): boolean => value === true || value === 1n || value === "0x1" || value === 1;
+
+const story = (event: HeraldHistoryEvent, variant: string): Row | null => record(record(event.value.story)?.[variant]);
+
+const firstMetric = (
+  events: readonly HeraldHistoryEvent[],
+  gameStartAt: number,
+  select: (event: HeraldHistoryEvent) => { owner: string; timestamp: number } | null,
+): GameReviewValueMetric | null => {
+  const match = events
+    .flatMap((event) => {
+      const selected = select(event);
+      return selected ? [selected] : [];
+    })
+    .toSorted((left, right) => left.timestamp - right.timestamp)[0];
+  if (!match || match.timestamp < gameStartAt) return null;
+  return { playerAddress: match.owner, timestamp: match.timestamp, value: match.timestamp - gameStartAt };
+};
+
+const topMetric = (values: Map<string, number>): GameReviewValueMetric | null => {
+  const top = [...values.entries()]
+    .filter(([, value]) => value > 0)
+    .toSorted(
+      ([leftAddress, left], [rightAddress, right]) => right - left || leftAddress.localeCompare(rightAddress),
+    )[0];
+  return top ? { playerAddress: top[0], value: top[1] } : null;
+};
+
+const increment = (values: Map<string, number>, owner: string | null, value: number): void => {
+  if (owner && Number.isFinite(value) && value > 0) values.set(owner, (values.get(owner) ?? 0) + value);
+};
+
+export const buildGameReviewDerivedMetrics = (input: {
+  gameStartAt: number;
+  storyEvents: readonly HeraldHistoryEvent[];
+  structures: readonly Row[];
+}): GameReviewDerivedMetrics => {
+  const timeToFirstT3Seconds = firstMetric(input.storyEvents, input.gameStartAt, (event) => {
+    const creation = story(event, "ExplorerCreateStory");
+    const owner = address(event.value.owner);
+    const tier = String(creation?.tier ?? "").toUpperCase();
+    const timestamp = number(event.value.timestamp);
+    return creation && owner && (tier === "T3" || tier === "2" || tier === "3") ? { owner, timestamp } : null;
+  });
+
+  const timeToFirstHyperstructureSeconds = firstMetric(input.storyEvents, input.gameStartAt, (event) => {
+    const battle = story(event, "BattleStory");
+    const defender = record(battle?.defender_structure);
+    const owner = address(battle?.attacker_owner_address);
+    const category = number(defender?.structure_category);
+    const timestamp = number(event.value.timestamp);
+    return battle && owner && bool(defender?.structure_taken) && category === 2 ? { owner, timestamp } : null;
+  });
+
+  const firstBlood = firstMetric(input.storyEvents, input.gameStartAt, (event) => {
+    const battle = story(event, "BattleStory");
+    const defender = record(battle?.defender_structure);
+    const attacker = address(battle?.attacker_owner_address);
+    const defenderOwner = address(battle?.defender_owner_address);
+    const timestamp = number(event.value.timestamp);
+    return battle &&
+      attacker &&
+      defenderOwner &&
+      attacker !== defenderOwner &&
+      bool(defender?.structure_taken) &&
+      number(defender?.structure_category) === 1
+      ? { owner: attacker, timestamp }
+      : null;
+  });
+
+  const kills = new Map<string, number>();
+  for (const event of input.storyEvents) {
+    const battle = story(event, "BattleStory");
+    if (!battle) continue;
+    increment(kills, address(battle.attacker_owner_address), scaled(battle.defender_troops_lost));
+    increment(kills, address(battle.defender_owner_address), scaled(battle.attacker_troops_lost));
   }
+
+  const structures = new Map<string, number>();
+  for (const structure of input.structures) increment(structures, address(structure.owner), 1);
+
+  return {
+    timeToFirstT3Seconds,
+    timeToFirstHyperstructureSeconds,
+    firstBlood,
+    mostTroopsKilled: topMetric(kills),
+    biggestStructuresOwned: topMetric(structures),
+  };
 };

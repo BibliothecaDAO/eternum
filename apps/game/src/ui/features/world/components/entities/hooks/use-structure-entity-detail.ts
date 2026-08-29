@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { displayAddress } from "@/ui/utils/utils";

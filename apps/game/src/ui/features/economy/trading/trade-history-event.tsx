@@ -3,8 +3,21 @@ import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
 import { divideByPrecision, getAddressName } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { TradeEvent } from "@bibliothecadao/torii";
 import { ContractAddress, Resource, ResourcesIds } from "@bibliothecadao/types";
+
+export interface TradeEvent {
+  type: "AMM Swap";
+  event: {
+    takerId: number;
+    makerId: number;
+    makerAddress: string;
+    takerAddress: string;
+    isYours: boolean;
+    resourceGiven: Resource;
+    resourceTaken: Resource;
+    eventTime: Date;
+  };
+}
 
 export const TradeHistoryRowHeader = () => {
   const headers = ["Time", "Type", "Taker", "Trade", "Price"];

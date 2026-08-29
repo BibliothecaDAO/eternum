@@ -5,8 +5,7 @@ import {
   SystemCallAuthHandler,
   SystemCalls,
 } from "@bibliothecadao/types";
-import { DojoConfig } from "@dojoengine/core";
-import { setupNetwork, SetupNetworkResult, type SetupNetworkEnvironment } from "./setup-network";
+import { setupNetwork, SetupNetworkResult, type DojoSetupConfig, type SetupNetworkEnvironment } from "./setup-network";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -17,7 +16,7 @@ export interface SetupReturnValue {
 }
 
 export async function setup(
-  config: DojoConfig,
+  config: DojoSetupConfig,
   env: SetupNetworkEnvironment,
   authHandler?: SystemCallAuthHandler,
 ): Promise<SetupReturnValue> {

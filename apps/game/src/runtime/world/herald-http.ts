@@ -1,4 +1,9 @@
-import type { HeraldGameDirectory, HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
+import type {
+  HeraldGameDirectory,
+  HeraldGameSnapshot,
+  HeraldHistoryPage,
+  HeraldTransactionCount,
+} from "@bibliothecadao/eternum/game-sync";
 
 import type { WorldDeployment } from "./world-directory";
 
@@ -41,6 +46,55 @@ export const fetchHeraldGameSnapshot = async (
   const url = new URL(buildHeraldUrl(world, `/games/${gameId}/snapshot`));
   url.searchParams.set("models", [...new Set(models)].join(","));
   return fetchHeraldJson(url.toString(), `Herald snapshot for ${world.id} game ${gameId}`);
+};
+
+export const fetchHeraldGameReviewSnapshot = async (
+  world: WorldDeployment,
+  gameId: number,
+): Promise<HeraldGameSnapshot> => {
+  if (!Number.isSafeInteger(gameId) || gameId <= 0) {
+    throw new Error(`Herald review snapshot requires a positive game id; received ${gameId}`);
+  }
+  return fetchHeraldJson(
+    buildHeraldUrl(world, `/games/${gameId}/review/snapshot`),
+    `Herald review snapshot for ${world.id} game ${gameId}`,
+  );
+};
+
+export const fetchHeraldGameHistory = async (
+  world: WorldDeployment,
+  gameId: number,
+  input: {
+    entityId?: bigint | number | string;
+    limit?: number;
+    model?: string;
+    offset?: number;
+    owner?: string;
+  } = {},
+): Promise<HeraldHistoryPage> => {
+  if (!Number.isSafeInteger(gameId) || gameId <= 0) {
+    throw new Error(`Herald history requires a positive game id; received ${gameId}`);
+  }
+  const url = new URL(buildHeraldUrl(world, `/games/${gameId}/history`));
+  if (input.entityId !== undefined) url.searchParams.set("entity_id", String(input.entityId));
+  if (input.limit !== undefined) url.searchParams.set("limit", String(input.limit));
+  if (input.model) url.searchParams.set("model", input.model);
+  if (input.offset !== undefined) url.searchParams.set("offset", String(input.offset));
+  if (input.owner) url.searchParams.set("owner", input.owner);
+  return fetchHeraldJson(url.toString(), `Herald history for ${world.id} game ${gameId}`);
+};
+
+export const fetchHeraldTransactionCount = async (
+  world: WorldDeployment,
+  gameId: number,
+): Promise<HeraldTransactionCount> => {
+  if (!Number.isSafeInteger(gameId) || gameId <= 0) {
+    throw new Error(`Herald transaction count requires a positive game id; received ${gameId}`);
+  }
+  return fetchHeraldJson(
+    buildHeraldUrl(world, `/games/${gameId}/transactions/count`),
+    `Herald transaction count for ${world.id} game ${gameId}`,
+  );
 };
 
 export const snapshotModelRows = (snapshot: HeraldGameSnapshot, model: string): Array<Record<string, unknown>> => {

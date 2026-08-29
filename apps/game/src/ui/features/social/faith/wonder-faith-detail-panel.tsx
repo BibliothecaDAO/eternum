@@ -1,9 +1,9 @@
-import { fetchWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
+import { buildWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
+import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import Loader from "lucide-react/dist/esm/icons/loader";
+import { useMemo } from "react";
 
 const formatInt = (value: number): string => value.toLocaleString("en-US");
 
@@ -41,33 +41,8 @@ export const WonderFaithDetailPanel = ({
   compact = false,
   className,
 }: WonderFaithDetailPanelProps) => {
-  const {
-    data: wonderDetail,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["wonder-faith-detail", String(wonderId)],
-    queryFn: () => fetchWonderFaithDetail(wonderId),
-    staleTime: 5_000,
-  });
-
-  if (isLoading) {
-    return (
-      <div className={cn("flex h-full min-h-[140px] items-center justify-center text-xs text-gold/70", className)}>
-        <Loader className="mr-2 h-4 w-4 animate-spin" />
-        Loading wonder faith...
-      </div>
-    );
-  }
-
-  if (error) {
-    const message = error instanceof Error ? error.message : "Failed to load wonder faith details.";
-    return (
-      <div className={cn("rounded-lg border border-red-400/25 bg-red-950/20 p-3 text-xs text-red-200/90", className)}>
-        {message}
-      </div>
-    );
-  }
+  const readModels = useFaithReadModels();
+  const wonderDetail = useMemo(() => buildWonderFaithDetail(readModels, wonderId), [readModels, wonderId]);
 
   if (!wonderDetail) {
     return (

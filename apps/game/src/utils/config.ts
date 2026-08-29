@@ -5,7 +5,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { type GameType, getConfigFromNetwork } from "@config";
 import type { GameChain } from "@realms-world/chain";
 import { env } from "./../../env";
-import { worldConfigKey } from "@/dojo/game-scope";
+import { worldConfigKey } from "@/sync/game-scope";
 
 type ConfigResolutionOptions = {
   chain?: GameChain;

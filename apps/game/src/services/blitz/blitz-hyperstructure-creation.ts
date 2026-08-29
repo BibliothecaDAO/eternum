@@ -1,5 +1,5 @@
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { gameCallArgs, getGameNamespace } from "@/dojo/game-scope";
+import { gameCallArgs, getGameNamespace } from "@/sync/game-scope";
 import { getActiveWorld, type WorldProfile } from "@/runtime/world";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { getGameManifest } from "@contracts";

@@ -29,7 +29,7 @@ import type { ClientComponents } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import type { ComponentValue } from "@dojoengine/recs";
 import Plus from "lucide-react/dist/esm/icons/plus";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 type ProductionItem = StructureProductionSummary["items"][number];
 

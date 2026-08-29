@@ -1,6 +1,6 @@
 import { ClientComponents, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 // Addresses reach this comparison in every felt spelling the stack produces — padded from the gameplay account
 // (`addAddressPadding`), unpadded from herald rows, bigint from RECS — so equality is numeric, never textual.

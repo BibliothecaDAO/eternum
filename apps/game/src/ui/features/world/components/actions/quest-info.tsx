@@ -7,7 +7,7 @@ import { memo, useMemo } from "react";
 
 import { formatAmount } from "./format-amount";
 import { InfoLabel } from "./info-label";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 interface QuestInfoProps {
   selectedEntityId: ID;

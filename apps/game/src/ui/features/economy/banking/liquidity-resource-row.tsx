@@ -17,7 +17,7 @@ import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bi
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import React, { useCallback, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 type LiquidityResourceRowProps = {
   playerStructureIds: ID[];

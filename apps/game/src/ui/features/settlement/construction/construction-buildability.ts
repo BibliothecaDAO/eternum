@@ -16,7 +16,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 type ConstructionSpot = {
   col: number;

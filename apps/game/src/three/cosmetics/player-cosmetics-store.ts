@@ -3,7 +3,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { buildSelectionFromCosmeticIds, resolveEligibleCosmeticIds } from "./ownership";
 import { BlitzGameLoadoutDraft, PlayerCosmeticsSnapshot, PlayerCosmeticSelection } from "./types";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const DEFAULT_VERSION = 1;
 

@@ -6,11 +6,12 @@ export interface ClientLogger {
 }
 
 export interface EternumClientConfig {
+  chain: "madara" | "appchain";
+  gameId: number;
+  heraldUrl: string;
   rpcUrl: string;
-  toriiUrl: string;
   worldAddress: string;
   manifest: Manifest;
-  cacheUrl?: string;
   cacheTtlMs?: number;
   cacheMaxSize?: number;
   vrfProviderAddress?: string;

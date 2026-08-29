@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import { DEFAULT_COORD_ALT, Position, tileOptToTile } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { Tile, TileOpt } from "@bibliothecadao/types";

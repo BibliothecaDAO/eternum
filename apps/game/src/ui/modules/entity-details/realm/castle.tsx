@@ -20,7 +20,7 @@ import CrownIcon from "lucide-react/dist/esm/icons/crown";
 import PlusIcon from "lucide-react/dist/esm/icons/plus";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const WONDER_BONUS_DISTANCE = 12;
 

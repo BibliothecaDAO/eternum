@@ -36,67 +36,11 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage, isInsufficientResourceBalanceRevert } from "@/utils/error-message";
-import { getEntitiesFromTorii } from "@/dojo/queries";
-import { gameModel } from "@/dojo/game-scope";
-import type { ClientComponents } from "@bibliothecadao/types";
-import type { ToriiClient } from "@dojoengine/torii-client";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
   return typeof label === "string" ? label : `Resource ${resourceId}`;
 };
-
-const buildProjectionDivergenceReport = (
-  plan: RealmProductionPlan,
-  preRevertSnapshot: RealmResourceSnapshot,
-  freshSnapshot: RealmResourceSnapshot,
-) =>
-  Object.entries(plan.consumptionByResource).map(([resourceId, plannedSpend]) => {
-    const id = Number(resourceId);
-    const projectedBalance = preRevertSnapshot.get(id)?.balanceHuman;
-    const resyncedBalance = freshSnapshot.get(id)?.balanceHuman;
-    return {
-      resource: resolveResourceLabel(id),
-      plannedSpend,
-      projectedBalance,
-      resyncedBalance,
-      projectionOvershoot:
-        typeof projectedBalance === "number" && typeof resyncedBalance === "number"
-          ? Number((projectedBalance - resyncedBalance).toFixed(2))
-          : undefined,
-    };
-  });
-
-// An Insufficient Balance revert proves the local projection overshot the
-// chain (the Aug 19 playtest showed the gap grows over time with no player
-// transactions — no fixed buffer can absorb it). Refetch the realm's Resource
-// rows into RECS so the next pass plans from fresh stored rows, and log the
-// per-input divergence. Reading the report: a large overshoot names the rate
-// the projection got wrong; ~0 overshoot with reverts persisting means the
-// stored rows were already current and the divergence lives in the projection
-// math itself — the next lane to fix.
-async function resyncRealmAfterInsufficientBalanceRevert(input: {
-  toriiClient: ToriiClient;
-  components: ClientComponents;
-  realmLabel: string;
-  plan: RealmProductionPlan;
-  preRevertSnapshot: RealmResourceSnapshot;
-}): Promise<void> {
-  const { toriiClient, components, realmLabel, plan, preRevertSnapshot } = input;
-
-  await getEntitiesFromTorii(toriiClient, [plan.realmId], [gameModel("Resource")]);
-
-  const { currentDefaultTick } = getAutomationProjectionTick();
-  const freshSnapshot = buildRealmResourceSnapshot({
-    components,
-    realmId: Number(plan.realmId),
-    currentTick: currentDefaultTick,
-  });
-  console.warn(
-    `[Automation] Insufficient-balance revert for ${realmLabel} — Resource rows refetched; next pass plans from the resynced rows. Projection overshoot per input:`,
-    buildProjectionDivergenceReport(plan, preRevertSnapshot, freshSnapshot),
-  );
-}
 
 const labelResourceRecord = (record: Record<number, number>) =>
   Object.entries(record).map(([resourceId, amount]) => ({
@@ -154,7 +98,6 @@ export const useAutomation = () => {
     setup: {
       systemCalls: { execute_realm_production_plan },
       components,
-      network: { toriiClient },
     },
     account: { account: starknetSignerAccount },
   } = useDojo();
@@ -611,18 +554,10 @@ export const useAutomation = () => {
           } else {
             toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
             if (isInsufficientResourceBalanceRevert(errorMessage)) {
-              // Fire-and-forget: the resync only matters for the NEXT pass, so
-              // it must not block the remaining realms in this pass (or wedge
-              // processingRef on a hung fetch).
-              void resyncRealmAfterInsufficientBalanceRevert({
-                toriiClient,
-                components,
-                realmLabel,
-                plan,
-                preRevertSnapshot: snapshot,
-              }).catch((error) => {
-                console.warn(`[Automation] Post-revert resync failed for ${realmLabel}`, error);
-              });
+              console.warn(
+                `[Automation] Insufficient-balance revert for ${realmLabel}; the next Herald Resource diff will reconcile the projection.`,
+                labelResourceRecord(plan.consumptionByResource),
+              );
             }
           }
         }
@@ -646,7 +581,6 @@ export const useAutomation = () => {
     starknetSignerAccount,
     getRealmConfig,
     isGameOver,
-    toriiClient,
   ]);
 
   const runAutomationIfDue = useCallback(async () => {

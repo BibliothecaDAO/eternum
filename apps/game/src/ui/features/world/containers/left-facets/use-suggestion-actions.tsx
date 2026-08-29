@@ -11,7 +11,7 @@ import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/t
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 /**
  * Resolves a suggestion click into the right side-effect: focus the target

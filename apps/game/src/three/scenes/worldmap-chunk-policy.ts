@@ -8,9 +8,6 @@ interface WorldmapChunkPolicy {
   projectionSync: {
     superAreaStrides: number;
   };
-  toriiSubscription: {
-    superAreaStrides: number;
-  };
   pin: {
     rowsAhead: number;
     rowsBehind: number;
@@ -50,9 +47,6 @@ interface WorldChunkPolicyInput {
   projectionSync: {
     superAreaStrides: number;
   };
-  toriiSubscription: {
-    superAreaStrides: number;
-  };
   prefetch: {
     forwardDepthStrides: number;
     sideRadiusStrides: number;
@@ -84,9 +78,6 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
     switchPadding: config.switchPadding,
     projectionSync: {
       superAreaStrides: config.projectionSync.superAreaStrides,
-    },
-    toriiSubscription: {
-      superAreaStrides: config.toriiSubscription.superAreaStrides,
     },
     pin: {
       rowsAhead: config.pinRadius,

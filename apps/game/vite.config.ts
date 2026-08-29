@@ -183,13 +183,9 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
               "@bibliothecadao/dojo",
               "@bibliothecadao/eternum",
               "@bibliothecadao/provider",
-              "@bibliothecadao/torii",
               "@bibliothecadao/types",
               "@dojoengine/core",
-              "@dojoengine/sdk",
               "@dojoengine/state",
-              "@dojoengine/torii-client",
-              "@dojoengine/torii-wasm",
               "starknet",
             ],
 

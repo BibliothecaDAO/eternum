@@ -38,7 +38,7 @@ export const buildWorldProfile = async (chain: GameChain, name: string, worldId?
     chain,
     worldId: world.id,
     namespace: world.namespace,
-    toriiBaseUrl: world.toriiBaseUrl,
+    heraldBaseUrl: world.heraldBaseUrl,
     rpcUrl: normalizeRpcUrl(world.rpcUrl),
     worldAddress: world.worldAddress,
     contractsBySelector: world.contractsBySelector,

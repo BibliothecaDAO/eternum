@@ -1,5 +1,4 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useSyncLeaderboard } from "@/hooks/helpers/use-sync";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   filterPlayersByBlitzSettlement,
@@ -7,7 +6,6 @@ import {
 } from "@/services/blitz/blitz-settlement-players";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { FaithLeaderboardPanel } from "../faith";
@@ -274,8 +272,6 @@ export const Social = () => {
 
   const tabsLength = tabs.length;
   const activeTabIndex = Math.max(0, Math.min(selectedTab, tabsLength - 1));
-  const { isSyncing } = useSyncLeaderboard({ auto: isOpen, skip: !isOpen });
-
   useEffect(() => {
     if (tabsLength > 0 && activeTabIndex !== selectedTab) {
       setSelectedTab(activeTabIndex);
@@ -295,38 +291,34 @@ export const Social = () => {
       bodyClassName="flex overflow-hidden"
     >
       <div className="flex-1 min-w-0 overflow-hidden">
-        {isSyncing ? (
-          <LoadingAnimation />
-        ) : (
-          <Tabs
-            size="small"
-            selectedIndex={activeTabIndex}
-            onChange={(index: number) => {
-              setSelectedTab(index);
-              setIsExpanded(false);
-              setSelectedPlayer(0n);
-            }}
-            className="h-full mt-3"
-          >
-            <div className="flex flex-col h-full">
-              <Tabs.List className="">
-                {tabs.map((tab) => (
-                  <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                    {tab.label}
-                  </Tabs.Tab>
-                ))}
-              </Tabs.List>
+        <Tabs
+          size="small"
+          selectedIndex={activeTabIndex}
+          onChange={(index: number) => {
+            setSelectedTab(index);
+            setIsExpanded(false);
+            setSelectedPlayer(0n);
+          }}
+          className="h-full mt-3"
+        >
+          <div className="flex flex-col h-full">
+            <Tabs.List className="">
+              {tabs.map((tab) => (
+                <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
+                  {tab.label}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
 
-              <Tabs.Panels className="overflow-hidden flex-1">
-                {tabs.map((tab) => (
-                  <Tabs.Panel key={tab.key} className="h-full">
-                    {tab.component}
-                  </Tabs.Panel>
-                ))}
-              </Tabs.Panels>
-            </div>
-          </Tabs>
-        )}
+            <Tabs.Panels className="overflow-hidden flex-1">
+              {tabs.map((tab) => (
+                <Tabs.Panel key={tab.key} className="h-full">
+                  {tab.component}
+                </Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </div>
+        </Tabs>
       </div>
       {isExpanded && (
         <div className="w-[400px] shrink-0 overflow-auto border-l border-gold/15">

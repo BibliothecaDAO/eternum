@@ -33,7 +33,7 @@ export function useLandingDojo(): LandingDojoContextType {
 /**
  * Landing-specific Dojo provider that initializes only system calls for the landing page.
  * This allows using Dojo system calls (like open_loot_chest) on the landing page
- * without requiring the full game bootstrap (no components, no torii client).
+ * without requiring the full game bootstrap (no components or live stream).
  */
 export function LandingDojoProvider({ children, fallback }: LandingDojoProviderProps) {
   const [systemCalls, setSystemCalls] = useState<SystemCalls | null>(null);
@@ -46,9 +46,9 @@ export function LandingDojoProvider({ children, fallback }: LandingDojoProviderP
 
     const initializeSystemCalls = async () => {
       try {
-        // Create only the provider (no torii client, no components)
+        // Create only the provider (no components or live stream).
         const provider = new EternumProvider(
-          dojoConfig.manifest,
+          dojoConfig.manifest as ConstructorParameters<typeof EternumProvider>[0],
           dojoConfig.rpcUrl,
           env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
           undefined,

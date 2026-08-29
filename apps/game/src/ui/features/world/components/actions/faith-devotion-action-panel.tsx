@@ -1,10 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import {
-  fetchFaithLeaderboard,
-  fetchFaithfulStructureStatus,
+  buildFaithLeaderboard,
+  buildFaithfulStructureStatus,
   type FaithLeaderboardEntry,
 } from "@/services/leaderboard/faith-leaderboard-service";
+import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { WonderFaithDetailModal, WonderFaithDetailPanel } from "@/ui/features/social/faith/wonder-faith-detail-panel";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -12,7 +13,6 @@ import { CenteredModalShell } from "@/ui/features/world/containers/centered-moda
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, StructureType } from "@bibliothecadao/types";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -107,23 +107,19 @@ export const FaithDevotionActionPanel = ({
   const resolvedWorldMode = useResolvedWorldGameMode();
   const isEternumMode = resolvedWorldMode === "eternum";
   const { structure, isMine, isLoadingStructure, structureName } = useStructureEntityDetail({ structureEntityId });
+  const faithReadModels = useFaithReadModels();
 
   const structureCategory = structure?.base?.category;
   const eligibleForDevotion = isDevotionEligible(structureCategory);
   const isWonderStructure = Boolean(structure?.metadata?.has_wonder);
 
-  const { data: wonderEntries = [], isLoading: isLoadingWonders } = useQuery({
-    queryKey: ["faith-devotion-wonders"],
-    queryFn: () => fetchFaithLeaderboard(),
-    staleTime: 10_000,
-  });
-
-  const { data: devotionStatus, isLoading: isLoadingDevotionStatus } = useQuery({
-    queryKey: ["faith-devotion-status", String(structureEntityId)],
-    queryFn: () => fetchFaithfulStructureStatus(structureEntityId),
-    enabled: eligibleForDevotion,
-    staleTime: 5_000,
-  });
+  const wonderEntries = useMemo(() => buildFaithLeaderboard(faithReadModels), [faithReadModels]);
+  const devotionStatus = useMemo(
+    () => (eligibleForDevotion ? buildFaithfulStructureStatus(faithReadModels, structureEntityId) : null),
+    [eligibleForDevotion, faithReadModels, structureEntityId],
+  );
+  const isLoadingWonders = false;
+  const isLoadingDevotionStatus = false;
 
   const wonderMap = useMemo(
     () => new Map(wonderEntries.map((entry) => [entry.wonderId.toString(), entry] as const)),
@@ -354,8 +350,8 @@ const DevotionSplitStat = ({ label, value }: { label: string; value: string }) =
 );
 
 const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotionModalProps) => {
-  const queryClient = useQueryClient();
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const faithReadModels = useFaithReadModels();
   const {
     account: { account },
     setup: { systemCalls },
@@ -365,21 +361,13 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedWonderId, setSelectedWonderId] = useState<bigint | null>(null);
 
-  const {
-    data: wonderEntries = [],
-    isLoading: isLoadingWonders,
-    error: wondersError,
-  } = useQuery({
-    queryKey: ["faith-devotion-wonders"],
-    queryFn: () => fetchFaithLeaderboard(),
-    staleTime: 10_000,
-  });
-
-  const { data: devotionStatus } = useQuery({
-    queryKey: ["faith-devotion-status", String(structureEntityId)],
-    queryFn: () => fetchFaithfulStructureStatus(structureEntityId),
-    staleTime: 5_000,
-  });
+  const wonderEntries = useMemo(() => buildFaithLeaderboard(faithReadModels), [faithReadModels]);
+  const devotionStatus = useMemo(
+    () => buildFaithfulStructureStatus(faithReadModels, structureEntityId),
+    [faithReadModels, structureEntityId],
+  );
+  const isLoadingWonders = false;
+  const wondersError = null;
 
   useEffect(() => {
     if (selectedWonderId !== null) {
@@ -446,11 +434,6 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         wonder_id: selectedWonderId,
       });
 
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["faith-devotion-wonders"] }),
-        queryClient.invalidateQueries({ queryKey: ["faith-devotion-status", String(structureEntityId)] }),
-      ]);
-
       toast.success("Devotion updated.");
       closeModal();
     } catch (error) {
@@ -458,7 +441,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
     } finally {
       setIsSubmitting(false);
     }
-  }, [account, closeModal, devotionStatus, faithSystemCalls, queryClient, selectedWonderId, structureEntityId]);
+  }, [account, closeModal, devotionStatus, faithSystemCalls, selectedWonderId, structureEntityId]);
 
   return (
     <CenteredModalShell

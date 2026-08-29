@@ -150,7 +150,7 @@ import {
   scheduleFrameBudgetWork,
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 

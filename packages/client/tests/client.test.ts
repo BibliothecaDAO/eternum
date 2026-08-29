@@ -1,7 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-vi.mock("@bibliothecadao/torii", () => ({
-  SqlApi: vi.fn().mockImplementation(() => ({
+vi.mock("../src/herald/herald-read-api", () => ({
+  HeraldReadApi: vi.fn().mockImplementation(() => ({
+    start: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn(),
     fetchPlayerStructures: vi.fn().mockResolvedValue([]),
     fetchGuardsByStructure: vi.fn().mockResolvedValue([]),
     fetchAllArmiesMapData: vi.fn().mockResolvedValue([]),
@@ -42,11 +44,12 @@ import { GuildTransactions } from "../src/transactions/guild";
 import { RealmTransactions } from "../src/transactions/realm";
 
 const mockConfig = {
+  chain: "madara" as const,
+  gameId: 1,
+  heraldUrl: "http://localhost:3003",
   rpcUrl: "http://localhost:5050",
-  toriiUrl: "http://localhost:8080",
   worldAddress: "0x123",
   manifest: { contracts: [], world: { address: "0x123" } },
-  cacheUrl: "http://localhost:3000",
   cacheTtlMs: 5000,
   vrfProviderAddress: "0xVRF",
 };
@@ -102,10 +105,10 @@ describe("EternumClient", () => {
     expect(client.provider).toBeDefined();
   });
 
-  it("exposes sql", async () => {
+  it("exposes the Herald read API", async () => {
     const client = await EternumClient.create(mockConfig);
 
-    expect(client.sql).toBeDefined();
+    expect(client.read).toBeDefined();
   });
 
   describe("transaction groups", () => {
@@ -226,7 +229,7 @@ describe("EternumClient", () => {
       logger,
     });
 
-    (client.sql.fetchPlayerStructures as any).mockRejectedValueOnce(new Error("boom"));
+    (client.read.fetchPlayerStructures as any).mockRejectedValueOnce(new Error("boom"));
 
     const fallbackRealm = await client.view.realm(42);
 

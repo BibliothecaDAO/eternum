@@ -1,68 +1,16 @@
-import { getActiveWorld } from "@/runtime/world";
 import { estimateClaimableChests } from "@/services/review/chest-reward-estimate";
 import { normalizeNonZeroAddress } from "@/services/review/sql-parse-utils";
 import { displayAddress } from "@/ui/utils/utils";
-import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import { belongsToActiveGame, getAddressName, toHexString, configManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
-import { env } from "../../../../../env";
-import { appchainModel, gameEntityKey } from "@/dojo/game-scope";
+import { useMemo } from "react";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const POINTS_PRECISION = 1_000_000n;
-
-// The shared s2 worlds host many games behind one torii: per-game rows lead
-// with `game_id`, so scope every read to the ACTIVE game explicitly (the
-// winners table only renders in-game, where the active game is the reviewed
-// one). ChainConfig is a chain singleton and carries no game id.
-const activeGameFilter = (gameId: number) => (gameId > 0 ? `game_id = ${gameId}` : "1=1");
-
-const buildGameChestRewardQuery = (gameId: number) => `
-  SELECT
-    allocated_chests,
-    distributed_chests
-  FROM "${appchainModel("GameChestReward")}"
-  WHERE ${activeGameFilter(gameId)}
-  LIMIT 1;
-`;
-const buildSeasonPrizeQuery = (gameId: number) => `
-  SELECT
-    total_registered_points
-  FROM "${appchainModel("SeasonPrize")}"
-  WHERE ${activeGameFilter(gameId)}
-  LIMIT 1;
-`;
-// s2: the loot chest collection moved to the chain-global ChainConfig singleton.
-const REWARD_CHEST_CONFIG_QUERY = `
-  SELECT
-    collectibles_lootchest_address AS loot_chest_address
-  FROM "${appchainModel("ChainConfig")}"
-  LIMIT 1;
-`;
-
-type GameChestRewardRow = {
-  allocated_chests?: unknown;
-  distributed_chests?: unknown;
-};
-type SeasonPrizeRow = {
-  total_registered_points?: unknown;
-};
-type RewardChestConfigRow = {
-  loot_chest_address?: unknown;
-};
-type ChestRewardSnapshot = {
-  gameId: number;
-  lootChestAddress: string | null;
-  allocatedRewardChests: number;
-  distributedRewardChests: number;
-  totalRegisteredPoints: bigint;
-};
-
-let cachedChestRewardSnapshot: ChestRewardSnapshot | null = null;
 
 const toBigIntValue = (value: unknown): bigint | undefined => {
   if (typeof value === "bigint") return value;
@@ -116,6 +64,9 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
 
   // Registered points per player
   const playerRegisteredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);
+  const chestRewardEntities = useEntityQuery([Has(components.GameChestReward)]);
+  const seasonPrizeEntities = useEntityQuery([Has(components.SeasonPrize)]);
+  const chainConfigEntities = useEntityQuery([Has(components.ChainConfig)]);
   const playerPointsByPlayer = useMemo(() => {
     const points = new Map<bigint, bigint>();
     playerRegisteredPointsEntities.forEach((eid) => {
@@ -127,67 +78,19 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
   }, [playerRegisteredPointsEntities, components.PlayerRegisteredPoints]);
 
   const activeGameId = configManager.getActiveGameId();
-  const [chestRewardSnapshot, setChestRewardSnapshot] = useState<ChestRewardSnapshot | null>(() =>
-    cachedChestRewardSnapshot?.gameId === activeGameId ? cachedChestRewardSnapshot : null,
-  );
-  const allocatedRewardChests = chestRewardSnapshot?.allocatedRewardChests ?? 0;
-  const distributedRewardChests = chestRewardSnapshot?.distributedRewardChests ?? 0;
-  const lootChestAddress = chestRewardSnapshot?.lootChestAddress ?? null;
-  const totalRegisteredPoints = chestRewardSnapshot?.totalRegisteredPoints ?? 0n;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadAllocatedRewardChests = async () => {
-      try {
-        const activeWorld = getActiveWorld();
-        const toriiBaseUrl = activeWorld?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII;
-        const sqlBaseUrl = toriiBaseUrl.endsWith("/sql") ? toriiBaseUrl : `${toriiBaseUrl}/sql`;
-
-        const [chestRows, seasonRows, configRows] = await Promise.all([
-          fetchWithErrorHandling<GameChestRewardRow>(
-            buildApiUrl(sqlBaseUrl, buildGameChestRewardQuery(activeGameId)),
-            "Failed to fetch game chest reward state",
-          ),
-          fetchWithErrorHandling<SeasonPrizeRow>(
-            buildApiUrl(sqlBaseUrl, buildSeasonPrizeQuery(activeGameId)),
-            "Failed to fetch season prize state",
-          ),
-          fetchWithErrorHandling<RewardChestConfigRow>(
-            buildApiUrl(sqlBaseUrl, REWARD_CHEST_CONFIG_QUERY),
-            "Failed to fetch reward chest config",
-          ),
-        ]);
-
-        if (cancelled) return;
-
-        const nextAllocatedRewardChests = toChestCount(chestRows[0]?.allocated_chests);
-        const nextDistributedRewardChests = toChestCount(chestRows[0]?.distributed_chests);
-        const nextTotalRegisteredPoints = toBigIntValue(seasonRows[0]?.total_registered_points) ?? 0n;
-        const nextLootChestAddress = normalizeNonZeroAddress(configRows[0]?.loot_chest_address);
-
-        const nextSnapshot: ChestRewardSnapshot = {
-          gameId: activeGameId,
-          lootChestAddress: nextLootChestAddress,
-          allocatedRewardChests: nextAllocatedRewardChests,
-          distributedRewardChests: nextDistributedRewardChests,
-          totalRegisteredPoints: nextTotalRegisteredPoints,
-        };
-        cachedChestRewardSnapshot = nextSnapshot;
-        setChestRewardSnapshot(nextSnapshot);
-      } catch (error) {
-        if (!cancelled) {
-          console.warn("Failed to load game chest reward allocation", error);
-        }
-      }
-    };
-
-    void loadAllocatedRewardChests();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeGameId]);
+  const chestReward = chestRewardEntities
+    .map((entity) => getComponentValue(components.GameChestReward, entity))
+    .find((row) => belongsToActiveGame(row));
+  const seasonPrize = seasonPrizeEntities
+    .map((entity) => getComponentValue(components.SeasonPrize, entity))
+    .find((row) => belongsToActiveGame(row));
+  const chainConfig = chainConfigEntities
+    .map((entity) => getComponentValue(components.ChainConfig, entity))
+    .find(Boolean);
+  const allocatedRewardChests = toChestCount(chestReward?.allocated_chests);
+  const distributedRewardChests = toChestCount(chestReward?.distributed_chests);
+  const lootChestAddress = normalizeNonZeroAddress(chainConfig?.collectibles_lootchest_address);
+  const totalRegisteredPoints = toBigIntValue(seasonPrize?.total_registered_points) ?? 0n;
 
   // Fetch ERC20 decimals for the blitz fee token, fallback to raw units
   const decimals = 18;

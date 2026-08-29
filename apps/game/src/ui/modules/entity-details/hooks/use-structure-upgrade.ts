@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure, useDojo } from "@bibliothecadao/react";

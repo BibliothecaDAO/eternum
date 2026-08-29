@@ -515,8 +515,7 @@ const ModeCoexistenceHero = ({
   }, [modeFilter, setBackgroundId]);
 
   // Eternum seasons open in phase 3: the hero only offers modes whose world
-  // is actually deployed (the eternum entry exists only when
-  // VITE_PUBLIC_TORII_ETERNUM is configured).
+  // is actually deployed in the Herald-backed world directory.
   const availableModes = (Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).filter(
     (mode) => mode !== "season" || getWorldById("eternum") != null,
   );

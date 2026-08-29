@@ -7,7 +7,7 @@ import { getProducedResource, RealmInfo as RealmInfoType, RELICS, ResourcesIds }
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { ProductionWorkflows } from "./production-workflows";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 export const ProductionBody = ({
   realm,

@@ -1,22 +1,35 @@
-import { createSqlApi, sqlApi } from "@/services/api";
-import { SqlApi, type PlayerLeaderboardRow, type SqlGameScope } from "@bibliothecadao/torii";
+import type { WorldDeployment } from "@/runtime/world/world-directory";
+import { fetchHeraldGameHistory, fetchHeraldGameSnapshot } from "@/runtime/world/herald-http";
+import {
+  calculateUnregisteredShareholderPoints,
+  type HeraldGameSnapshot,
+  type HeraldHistoryEvent,
+} from "@bibliothecadao/eternum/game-sync";
 
 const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
 
-interface PlayerLeaderboardData {
+export interface PlayerActivityStat {
+  count: number;
+  points: number;
+}
+
+export interface PlayerActivityBreakdown {
+  exploration: PlayerActivityStat;
+  openRelicChest: PlayerActivityStat;
+  hyperStructureBanditsDefeat: PlayerActivityStat;
+  otherStructureBanditsDefeat: PlayerActivityStat;
+  hyperstructureShare: PlayerActivityStat;
+}
+
+export interface LandingLeaderboardEntry {
   rank: number;
   address: string;
   displayName: string | null;
-  /** Registered + unregistered points combined */
   points: number;
-  /** Latest global MMR (integer value) when available */
   mmr?: number;
-  /** Latest MMR tier label when available */
   mmrTier?: string;
-  /** Raw registered portion if available from the backend */
   registeredPoints?: number;
-  /** Unregistered (shareholder) contribution if available */
   unregisteredPoints?: number;
   prizeClaimed: boolean;
   exploredTiles?: number;
@@ -33,201 +46,147 @@ interface PlayerLeaderboardData {
   hyperstructuresHeldPoints?: number;
 }
 
-export type LandingLeaderboardEntry = PlayerLeaderboardData;
+const rows = (snapshot: HeraldGameSnapshot, model: string): Record<string, unknown>[] =>
+  snapshot.models.find((entry) => entry.model === model)?.rows.map((row) => row.value) ?? [];
 
-type NumericLike = string | number | bigint | null | undefined;
-
-const parseNumeric = (value: NumericLike): number => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "bigint") {
-    return Number(value);
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed.length) {
-      return 0;
-    }
-
-    try {
-      if (/^0x[0-9a-f]+$/i.test(trimmed)) {
-        return Number(BigInt(trimmed));
-      }
-
-      const asNumber = Number(trimmed);
-      return Number.isFinite(asNumber) ? asNumber : 0;
-    } catch {
-      return 0;
-    }
-  }
-
-  return 0;
-};
-
-const normaliseAddress = (value: string | null): string | null => {
-  if (!value) {
+const toBigInt = (value: unknown): bigint | null => {
+  if (!["string", "number", "bigint"].includes(typeof value)) return null;
+  try {
+    return BigInt(value as string | number | bigint);
+  } catch {
     return null;
   }
-
-  const trimmed = value.trim().toLowerCase();
-  if (!trimmed) {
-    return null;
-  }
-
-  return trimmed.startsWith("0x") ? trimmed : `0x${trimmed}`;
 };
 
-const decodePlayerName = (value: string | null): string | null => {
-  if (!value) {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed.length) {
-    return null;
-  }
-
-  if (!trimmed.startsWith("0x")) {
-    return trimmed;
-  }
-
-  const hex = trimmed.slice(2);
-  if (hex.length % 2 !== 0) {
-    return trimmed;
-  }
-
-  let output = "";
-  for (let index = 0; index < hex.length; index += 2) {
-    const chunk = hex.slice(index, index + 2);
-    const charCode = parseInt(chunk, 16);
-
-    if (Number.isInteger(charCode) && charCode > 0 && charCode < 127) {
-      output += String.fromCharCode(charCode);
-    }
-  }
-
-  return output.length ? output : trimmed;
+export const normalizeLeaderboardAddress = (value: unknown): string | null => {
+  const parsed = toBigInt(value);
+  return parsed === null || parsed <= 0n ? null : `0x${parsed.toString(16)}`;
 };
 
-const transformLandingLeaderboardRow = (row: PlayerLeaderboardRow, rank: number): PlayerLeaderboardData | null => {
-  const address = normaliseAddress(row.playerAddress ?? null);
-  if (!address) {
-    return null;
-  }
-
-  const displayName = decodePlayerName(row.playerName ?? null);
-
-  const totalRaw = parseNumeric(row.registeredPoints);
-  const registeredRaw = Math.min(parseNumeric(row.registeredPointsRegistered), totalRaw);
-  const registeredPoints = registeredRaw / REGISTERED_POINTS_PRECISION;
-  const totalPoints = totalRaw / REGISTERED_POINTS_PRECISION;
-  const unregisteredPoints = row.unregisteredPoints ?? Math.max(totalPoints - registeredPoints, 0);
-  const prizeClaimedRaw = Boolean(row.prizeClaimed);
-
-  const activity = row.activityBreakdown;
-  const exploredTiles = activity.exploration.count;
-  const exploredTilePoints = activity.exploration.points;
-  const relicCratesOpened = activity.openRelicChest.count;
-  const relicCratePoints = activity.openRelicChest.points;
-  const structureBattlesCount = activity.otherStructureBanditsDefeat.count;
-  const structureBattlesPoints = activity.otherStructureBanditsDefeat.points;
-  const hyperstructureBattlesCount = activity.hyperStructureBanditsDefeat.count;
-  const hyperstructureBattlesPoints = activity.hyperStructureBanditsDefeat.points;
-  const hyperstructureSharePoints = activity.hyperstructureShare.points;
-  const hyperstructureShareCount = activity.hyperstructureShare.count;
-
-  const riftsTaken = structureBattlesCount;
-  const riftPoints = structureBattlesPoints;
-  const campsTaken = structureBattlesCount;
-  const campPoints = structureBattlesPoints;
-  const hyperstructuresConquered = hyperstructureBattlesCount;
-  const hyperstructurePoints = hyperstructureBattlesPoints;
-  const hyperstructuresHeld = hyperstructureShareCount > 0 ? hyperstructureShareCount : null;
-  const hyperstructuresHeldPoints = hyperstructureSharePoints;
-
-  return {
-    rank,
-    address,
-    displayName: displayName && displayName.length ? displayName : null,
-    points: totalPoints,
-    registeredPoints,
-    unregisteredPoints,
-    prizeClaimed: prizeClaimedRaw,
-    exploredTiles,
-    exploredTilePoints,
-    riftsTaken,
-    riftPoints,
-    hyperstructuresConquered,
-    hyperstructurePoints,
-    relicCratesOpened,
-    relicCratePoints,
-    campsTaken,
-    campPoints,
-    hyperstructuresHeld,
-    hyperstructuresHeldPoints,
-  } satisfies PlayerLeaderboardData;
+const decodePlayerName = (value: unknown): string | null => {
+  if (typeof value === "string" && !value.startsWith("0x")) return value.trim() || null;
+  const parsed = toBigInt(value);
+  if (parsed === null || parsed === 0n) return null;
+  const raw = parsed.toString(16);
+  const hex = raw.length % 2 === 0 ? raw : `0${raw}`;
+  const decoded = String.fromCharCode(...(hex.match(/.{2}/g) ?? []).map((byte) => Number.parseInt(byte, 16)));
+  return decoded.trim() || null;
 };
 
-const buildLeaderboardEntries = (rows: PlayerLeaderboardRow[], safeOffset: number): PlayerLeaderboardData[] => {
-  const entries: PlayerLeaderboardData[] = [];
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
-  rows.forEach((rawRow, index) => {
-    const entry = transformLandingLeaderboardRow(rawRow, safeOffset + index + 1);
-    if (entry) {
-      entries.push(entry);
-    }
-  });
+const emptyActivity = (): PlayerActivityBreakdown => ({
+  exploration: { count: 0, points: 0 },
+  openRelicChest: { count: 0, points: 0 },
+  hyperStructureBanditsDefeat: { count: 0, points: 0 },
+  otherStructureBanditsDefeat: { count: 0, points: 0 },
+  hyperstructureShare: { count: 0, points: 0 },
+});
 
-  return entries.toSorted((a, b) => b.points - a.points).map((entry, index) => ({ ...entry, rank: index + 1 }));
+const activityByPlayer = (events: readonly HeraldHistoryEvent[]): Map<string, PlayerActivityBreakdown> => {
+  const result = new Map<string, PlayerActivityBreakdown>();
+  for (const event of events) {
+    const payload = asRecord(asRecord(event.value.story)?.PointsRegisteredStory);
+    if (!payload) continue;
+    const player = normalizeLeaderboardAddress(payload.owner_address);
+    const activityName = String(payload.activity) as keyof PlayerActivityBreakdown;
+    if (!player || !Object.hasOwn(emptyActivity(), activityName)) continue;
+    const activity = result.get(player) ?? emptyActivity();
+    const points = Number(toBigInt(payload.points) ?? 0n) / REGISTERED_POINTS_PRECISION;
+    activity[activityName].count += 1;
+    activity[activityName].points += points;
+    result.set(player, activity);
+  }
+  return result;
 };
 
-const fetchLeaderboardWithClient = async (
-  client: SqlApi,
-  limit: number = DEFAULT_LIMIT,
-  offset: number = 0,
-): Promise<PlayerLeaderboardData[]> => {
-  const safeLimit = Math.max(0, limit);
-  const safeOffset = Math.max(0, offset);
+export const buildLandingLeaderboard = (
+  snapshot: HeraldGameSnapshot,
+  storyEvents: readonly HeraldHistoryEvent[],
+): LandingLeaderboardEntry[] => {
+  const names = new Map(
+    rows(snapshot, "AddressName").flatMap((row) => {
+      const address = normalizeLeaderboardAddress(row.address);
+      return address ? [[address, decodePlayerName(row.name)] as const] : [];
+    }),
+  );
+  const activities = activityByPlayer(storyEvents);
+  const unregisteredPoints = calculateUnregisteredShareholderPoints(
+    {
+      gameRegistry: rows(snapshot, "GameRegistry"),
+      hyperstructures: rows(snapshot, "Hyperstructure"),
+      presets: rows(snapshot, "PresetConfig"),
+      shareholders: rows(snapshot, "HyperstructureShareholders"),
+    },
+    snapshot.game_id,
+  );
+  return rows(snapshot, "PlayerRegisteredPoints")
+    .flatMap((row) => {
+      const address = normalizeLeaderboardAddress(row.address);
+      if (!address) return [];
+      const registeredPoints = Number(toBigInt(row.registered_points) ?? 0n) / REGISTERED_POINTS_PRECISION;
+      const livePoints = unregisteredPoints.get(address) ?? 0;
+      const activity = activities.get(address) ?? emptyActivity();
+      return [
+        {
+          rank: 0,
+          address,
+          displayName: names.get(address) ?? null,
+          points: registeredPoints + livePoints,
+          registeredPoints,
+          unregisteredPoints: livePoints,
+          prizeClaimed: row.prize_claimed === true || row.prize_claimed === "0x1" || row.prize_claimed === 1n,
+          exploredTiles: activity.exploration.count,
+          exploredTilePoints: activity.exploration.points,
+          riftsTaken: activity.otherStructureBanditsDefeat.count,
+          riftPoints: activity.otherStructureBanditsDefeat.points,
+          hyperstructuresConquered: activity.hyperStructureBanditsDefeat.count,
+          hyperstructurePoints: activity.hyperStructureBanditsDefeat.points,
+          relicCratesOpened: activity.openRelicChest.count,
+          relicCratePoints: activity.openRelicChest.points,
+          campsTaken: activity.otherStructureBanditsDefeat.count,
+          campPoints: activity.otherStructureBanditsDefeat.points,
+          hyperstructuresHeld: null,
+          hyperstructuresHeldPoints: activity.hyperstructureShare.points,
+        },
+      ];
+    })
+    .toSorted((left, right) => right.points - left.points || left.address.localeCompare(right.address))
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
+};
 
-  if (safeLimit === 0) {
-    return [];
-  }
-
-  const rows = await client.fetchPlayerLeaderboard(safeLimit, safeOffset);
-  return buildLeaderboardEntries(rows, safeOffset);
+const fetchLeaderboardSource = async (world: WorldDeployment, gameId: number) => {
+  const [snapshot, history] = await Promise.all([
+    fetchHeraldGameSnapshot(world, gameId, [
+      "PlayerRegisteredPoints",
+      "AddressName",
+      "Hyperstructure",
+      "HyperstructureShareholders",
+      "GameRegistry",
+      "PresetConfig",
+    ]),
+    fetchHeraldGameHistory(world, gameId, { limit: 500, model: "StoryEvent" }),
+  ]);
+  return buildLandingLeaderboard(snapshot, history.items);
 };
 
 export const fetchLandingLeaderboard = async (
+  world: WorldDeployment,
+  gameId: number,
   limit: number = DEFAULT_LIMIT,
-  offset: number = 0,
-  toriiBaseUrl?: string,
-  scope?: SqlGameScope,
-): Promise<PlayerLeaderboardData[]> => {
-  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl, scope) : sqlApi;
-  return fetchLeaderboardWithClient(client, limit, offset);
+  offset = 0,
+): Promise<LandingLeaderboardEntry[]> => {
+  if (limit <= 0) return [];
+  return (await fetchLeaderboardSource(world, gameId)).slice(Math.max(0, offset), Math.max(0, offset) + limit);
 };
 
 export const fetchLandingLeaderboardEntryByAddress = async (
+  world: WorldDeployment,
+  gameId: number,
   playerAddress: string,
-  toriiBaseUrl?: string,
-  scope?: SqlGameScope,
-): Promise<PlayerLeaderboardData | null> => {
-  const normalizedAddress = normaliseAddress(playerAddress);
-  if (!normalizedAddress) {
-    return null;
-  }
-
-  const client = toriiBaseUrl ? createSqlApi(toriiBaseUrl, scope) : sqlApi;
-  const rawRow = await client.fetchPlayerLeaderboardByAddress(normalizedAddress);
-
-  if (!rawRow) {
-    return null;
-  }
-
-  const rank = typeof rawRow.rank === "number" && rawRow.rank > 0 ? Math.floor(rawRow.rank) : 1;
-
-  return transformLandingLeaderboardRow(rawRow, rank);
+): Promise<LandingLeaderboardEntry | null> => {
+  const address = normalizeLeaderboardAddress(playerAddress);
+  if (!address) return null;
+  return (await fetchLeaderboardSource(world, gameId)).find((entry) => entry.address === address) ?? null;
 };

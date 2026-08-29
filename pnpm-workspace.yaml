@@ -30,10 +30,7 @@ catalogs:
     "@dojoengine/core": 1.7.0-preview.3
     "@dojoengine/react": 1.7.0-preview.3
     "@dojoengine/recs": 2.1.0
-    "@dojoengine/sdk": 1.7.0-preview.3
     "@dojoengine/state": 1.7.0-preview.3
-    "@dojoengine/torii-client": 1.7.0-preview.3
-    "@dojoengine/torii-wasm": 1.7.0-preview.3
     "@dojoengine/utils": 1.7.0-preview.3
     "@starknet-react/chains": 5.0.3
     "@starknet-react/core": 5.0.3

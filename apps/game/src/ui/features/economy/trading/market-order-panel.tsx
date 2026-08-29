@@ -18,7 +18,7 @@ import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInte
 import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const ONE_MONTH = 2628000;
 

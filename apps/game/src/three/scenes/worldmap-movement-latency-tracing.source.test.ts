@@ -44,7 +44,7 @@ describe("Worldmap movement latency tracing wiring", () => {
   });
 
   it("does not treat TileOpt delivery as an army movement phase", () => {
-    const syncSource = readRepoSource("apps/game/src/dojo/sync.ts");
+    const syncSource = readRepoSource("apps/game/src/sync/game-sync.ts");
     const listenerSource = readRepoSource("packages/core/src/systems/world-update-listener.ts");
 
     expect(syncSource).not.toContain("recordTileOptStreamTrace");

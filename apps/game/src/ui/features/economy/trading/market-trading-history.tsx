@@ -1,11 +1,16 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { sqlApi } from "@/services/api";
+import { getActiveWorld } from "@/runtime/world";
+import { fetchHeraldGameHistory } from "@/runtime/world/herald-http";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
-import { TradeHistoryEvent, TradeHistoryRowHeader } from "./trade-history-event";
+import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./trade-history-event";
 import { useDojo } from "@bibliothecadao/react";
-import { TradeEvent } from "@bibliothecadao/torii";
+import { configManager } from "@bibliothecadao/eternum";
+import { ResourcesIds } from "@bibliothecadao/types";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 
 const TRADES_PER_PAGE = 25;
@@ -19,6 +24,7 @@ const MarketTradingHistoryContent = memo(() => {
     account: {
       account: { address },
     },
+    setup: { components },
   } = useDojo();
 
   const [tradeEvents, setTradeEvents] = useState<TradeEvent[]>([]);
@@ -26,14 +32,53 @@ const MarketTradingHistoryContent = memo(() => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const structureEntities = useEntityQuery([Has(components.Structure)]);
+  const profile = getActiveWorld();
+  const world = getWorldById(profile?.worldId ?? "blitz") ?? getDefaultWorld();
+  const gameId = configManager.getActiveGameId();
 
   useEffect(() => {
     setIsLoading(true);
-    sqlApi.fetchSwapEvents(playerStructures.map((structure) => structure.entityId)).then((events) => {
-      setTradeEvents(events);
-      setIsLoading(false);
-    });
-  }, [address, playerStructures]);
+    const ownerByEntity = new Map(
+      structureEntities.flatMap((entity) => {
+        const structure = getComponentValue(components.Structure, entity);
+        return structure ? [[String(structure.entity_id), String(structure.owner)] as const] : [];
+      }),
+    );
+    const playerEntityIds = new Set(playerStructures.map((structure) => String(structure.entityId)));
+    void fetchHeraldGameHistory(world, gameId, { limit: 500, model: "SwapEvent" })
+      .then((page) =>
+        page.items.map(({ value }): TradeEvent => {
+          const entityId = Number(BigInt(String(value.entity_id)));
+          const isBuy = value.buy === true || value.buy === "0x1" || value.buy === 1n;
+          const lordsAmount = BigInt(String(value.lords_amount));
+          const resourceAmount = BigInt(String(value.resource_amount));
+          const resourceType = Number(BigInt(String(value.resource_type)));
+          return {
+            type: "AMM Swap",
+            event: {
+              takerId: entityId,
+              makerId: 0,
+              makerAddress: "0x0",
+              takerAddress: ownerByEntity.get(String(value.entity_id)) ?? "0x0",
+              isYours: playerEntityIds.has(String(value.entity_id)),
+              resourceGiven: {
+                resourceId: isBuy ? ResourcesIds.Lords : resourceType,
+                amount: Number(isBuy ? lordsAmount : resourceAmount),
+              },
+              resourceTaken: {
+                resourceId: isBuy ? resourceType : ResourcesIds.Lords,
+                amount: Number(isBuy ? resourceAmount : lordsAmount),
+              },
+              eventTime: new Date(Number(BigInt(String(value.timestamp))) * 1_000),
+            },
+          };
+        }),
+      )
+      .then(setTradeEvents)
+      .catch(() => setTradeEvents([]))
+      .finally(() => setIsLoading(false));
+  }, [address, components.Structure, gameId, playerStructures, structureEntities, world]);
 
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
 

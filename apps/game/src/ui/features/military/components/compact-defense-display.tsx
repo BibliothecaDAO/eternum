@@ -28,7 +28,7 @@ import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { DefenseTroop } from "./structure-defence";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];

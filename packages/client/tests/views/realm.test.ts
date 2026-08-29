@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ViewClient } from "../../src/views";
-import type { SqlApiLike } from "../../src/views";
+import type { GameReadApi as SqlApiLike } from "../../src/views";
 import { ViewCache } from "../../src/cache";
 import type { RealmView } from "../../src/types/views";
 

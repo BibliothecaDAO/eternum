@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
  * before memoization. Import the core re-export instead.
  */
 const CHOKEPOINT = "packages/core/src/managers/game-entity-keys.ts";
-const SCANNED_ROOTS = ["apps/game/src", "packages/core/src", "packages/torii/src", "packages/provider/src"];
+const SCANNED_ROOTS = ["apps/game/src", "packages/core/src", "packages/provider/src"];
 
 const CLIENT_ROOT = process.cwd();
 const REPO_ROOT = resolve(CLIENT_ROOT, "../..");

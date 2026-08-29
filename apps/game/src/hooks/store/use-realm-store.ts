@@ -2,7 +2,7 @@ import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-tar
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
-import { PlayerRelicsData } from "@bibliothecadao/torii";
+import type { PlayerRelicsData } from "@/types";
 import { ID, Structure, StructureType } from "@bibliothecadao/types";
 import { isExplicitSpectateSession, overrideSpectateIntent } from "@/utils/spectator-session";
 

@@ -14,7 +14,7 @@ const createLocation = (pathname: string, search = ""): Location => ({ pathname,
 const FALLBACK_WORLD: WorldProfile = {
   name: "aurora-blitz",
   chain: "appchain",
-  toriiBaseUrl: "https://torii.realms.test",
+  heraldBaseUrl: "https://herald.realms.test",
   worldAddress: "0x1",
   contractsBySelector: {},
   fetchedAt: 0,

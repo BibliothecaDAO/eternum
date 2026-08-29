@@ -95,7 +95,7 @@ import {
 } from "./structure-label-state";
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import {
   isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,

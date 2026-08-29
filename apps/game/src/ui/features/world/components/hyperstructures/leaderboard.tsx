@@ -8,7 +8,7 @@ import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { getAvatarUrl } from "@/hooks/use-player-avatar";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const LEADERBOARD_AUTO_REFRESH_INTERVAL_MS = 30_000;
 

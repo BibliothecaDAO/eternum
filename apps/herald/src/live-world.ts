@@ -5,6 +5,7 @@ import { MadaraRpc } from "./madara-rpc";
 import { replayWorldEvents } from "./snapshot-builder";
 import type { ResumeRequest } from "./stream-protocol";
 import type {
+  DecodedWorldEvent,
   FoldChange,
   FoldDelete,
   FoldSet,
@@ -19,6 +20,7 @@ import type {
 } from "./types";
 import type { WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
+import type { HistoryStore } from "./history-store";
 
 interface LiveWorldInput {
   chain: string;
@@ -31,6 +33,7 @@ interface LiveWorldInput {
   rpc: MadaraRpc;
   hub?: GameStreamHub;
   decodeMonitor: WorldEventDecodeMonitor;
+  historyStore?: HistoryStore;
 }
 
 interface GameChanges {
@@ -92,6 +95,19 @@ export class LiveWorld {
 
   public modelRows(model: string) {
     return this.confirmedFold.modelRows(model);
+  }
+
+  public async freezeEndedReviewSnapshots(): Promise<void> {
+    if (!this.input.historyStore) return;
+    await Promise.all(
+      this.confirmedFold
+        .endedGameIds()
+        .map((gameId) =>
+          this.input.historyStore!.freezeReviewSnapshot(
+            this.confirmedFold.reviewSnapshot(gameId, this.confirmedBlockValue),
+          ),
+        ),
+    );
   }
 
   public attach(gameId: string, socket: StreamSocket): GameStreamSession {
@@ -167,14 +183,20 @@ export class LiveWorld {
   ): void {
     if (sender) {
       const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
-      for (const gameId of this.knownGames) {
+      const gameIds = new Set([...this.knownGames, ...this.confirmedFold.gameIds()]);
+      for (const gameId of gameIds) {
         if (!this.overlayFold.gameplayAccounts(gameId).has(sender)) continue;
-        this.hub.publishTransaction(gameId, {
-          block: receipt.block_number ?? null,
-          hash: transactionHash,
-          revert_reason: receipt.revert_reason,
-          status,
-        });
+        if (this.knownGames.has(gameId)) {
+          this.hub.publishTransaction(gameId, {
+            block: receipt.block_number ?? null,
+            hash: transactionHash,
+            revert_reason: receipt.revert_reason,
+            status,
+          });
+        }
+        if (receipt.finality_status !== "PRE_CONFIRMED") {
+          this.input.historyStore?.recordTransaction(gameId, receipt);
+        }
       }
     }
 
@@ -214,10 +236,12 @@ export class LiveWorld {
   private async applyConfirmedThrough(targetBlock: number): Promise<Map<number, FoldChange[]>> {
     if (targetBlock === this.confirmedBlockValue) return new Map();
     const changes = new Map<number, FoldChange[]>();
+    const historyEvents: DecodedWorldEvent[] = [];
     await replayWorldEvents({
       fold: this.confirmedFold,
       fromBlock: this.confirmedBlockValue + 1,
       onChange: (event, change) => {
+        if (event.kind === "event") historyEvents.push(event);
         if (!change) return;
         const block = event.position.blockNumber;
         if (block === null) throw new Error("Confirmed getEvents result has a null block number");
@@ -230,7 +254,9 @@ export class LiveWorld {
       rpc: this.input.rpc,
       toBlock: targetBlock,
     });
+    await this.input.historyStore?.appendEvents(historyEvents, targetBlock);
     this.confirmedBlockValue = targetBlock;
+    await this.freezeEndedReviewSnapshots();
     return changes;
   }
 

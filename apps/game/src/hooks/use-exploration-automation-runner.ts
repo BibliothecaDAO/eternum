@@ -26,7 +26,7 @@ import {
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import {
   computeEffectiveStaminaCost,
   filterFreshExplorationPaths,

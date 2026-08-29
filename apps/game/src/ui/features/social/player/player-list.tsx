@@ -5,7 +5,7 @@ import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { RegisterPointsButton } from "../components/register-points-button";
-import type { PlayerActivityBreakdown } from "@bibliothecadao/torii";
+import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";

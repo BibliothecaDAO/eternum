@@ -14,7 +14,7 @@ import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/ty
 import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
-import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/dojo/game-scope";
+import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/sync/game-scope";
 import { resolveRealmBootstrapErrorMessage } from "./realm-bootstrap-error";
 
 const REALM_PROVISION_SYNC_TIMEOUT_MS = 30_000;

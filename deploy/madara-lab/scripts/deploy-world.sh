@@ -72,8 +72,7 @@ PYEOF
 
   mkdir -p "$OUT_DIR"
   printf '%s\n' "$world" > "$OUT_DIR/world-address"
-  sed -e "s|{WORLD_ADDRESS}|$world|" "$LAB_DIR/torii.toml.template" > "$OUT_DIR/torii.toml"
-  echo "==> world $world (recorded in $OUT_DIR/world-address, torii config rendered)"
+  echo "==> world $world (recorded in $OUT_DIR/world-address)"
 }
 
 wait_for_chain

@@ -20,7 +20,7 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 export const TopHeader = memo(() => {
   const {
     setup,

@@ -5,20 +5,17 @@ import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
-import { setSqlGameScope } from "@bibliothecadao/torii";
 import { world } from "@bibliothecadao/types";
 import { ReactNode } from "react";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import { applyWorldSelection, patchManifestWithFactory, type WorldProfile } from "@/runtime/world";
-import { setSqlApiBaseUrl } from "@/services/api";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
-import { clearSubscriptionQueue } from "../dojo/debounced-queries";
-import { namespaceForChain, setGameScope, type GameNamespace } from "../dojo/game-scope";
-import { disposeGameSyncSession, initialSync } from "../dojo/sync";
+import { namespaceForChain, setGameScope, type GameNamespace } from "../sync/game-scope";
+import { disposeGameSyncSession, initialSync } from "../sync/game-sync";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
@@ -49,7 +46,6 @@ type BootstrapLifecycle = {
 };
 
 type MutableDojoConfig = typeof dojoConfig & {
-  toriiUrl?: string;
   rpcUrl?: string;
   manifest?: unknown;
 };
@@ -118,7 +114,6 @@ const runBootstrap = async ({
   const worldContext = {
     chain: context.chain,
     profile,
-    toriiUrl: resolveBootstrapToriiUrl(context.chain, profile),
   };
   // World-scoped bootstrap: the profile carries its world's namespace + game
   // id (world directory); scope config reads and sync clauses to that game
@@ -127,14 +122,10 @@ const runBootstrap = async ({
   const worldNamespace = profile.namespace ?? namespaceForChain(context.chain);
   configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
   setGameScope(worldNamespace as GameNamespace, profile.gameId ?? 0);
-  setSqlGameScope(worldNamespace, profile.gameId ?? 0);
   verboseLog("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup(worldContext.chain, worldNamespace, profile.gameId ?? 0);
-  // When the config fast path resolves in the background after boot, re-run
-  // the config snapshot so cost tables don't stay empty for the session.
-  const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
-  await runInitialWorldSync(setupResult, stores, refreshGameSystems);
+  await runInitialWorldSync(setupResult, stores);
   configureGameSystems(setupResult, worldContext.chain);
   // From here on an empty keyed config lookup is a bug, not a boot race —
   // make it loud (guardrail #2, AGENTS.md "No silent defaults").
@@ -203,7 +194,6 @@ type BootstrapStores = {
 type BootstrapWorldContext = {
   chain: Chain;
   profile: WorldProfile;
-  toriiUrl: string;
 };
 
 const resolveBootstrapStores = (): BootstrapStores => ({
@@ -232,21 +222,16 @@ const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   resetBootstrap();
 };
 
-const configureDojoRuntime = ({ chain, profile, toriiUrl }: BootstrapWorldContext) => {
+const configureDojoRuntime = ({ chain, profile }: BootstrapWorldContext) => {
   const mutableDojoConfig = dojoConfig as MutableDojoConfig;
 
-  mutableDojoConfig.toriiUrl = toriiUrl;
   mutableDojoConfig.rpcUrl = resolveBootstrapRpcUrl(chain, profile);
   mutableDojoConfig.manifest = patchManifestWithFactory(
     getGameManifest(chain),
     profile.worldAddress,
     profile.contractsBySelector,
   );
-
-  setSqlApiBaseUrl(`${toriiUrl}/sql`);
 };
-
-const resolveBootstrapToriiUrl = (_chain: Chain, profile: WorldProfile): string => profile.toriiBaseUrl;
 
 const resolveBootstrapRpcUrl = (_chain: Chain, profile: WorldProfile): string =>
   profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
@@ -283,14 +268,10 @@ const runDojoSetup = async (chain: Chain, namespace: string, gameId: number): Pr
   return setupResult;
 };
 
-const runInitialWorldSync = async (
-  setupResult: SetupResult,
-  stores: BootstrapStores,
-  onConfigRefreshed?: () => void,
-) => {
+const runInitialWorldSync = async (setupResult: SetupResult, stores: BootstrapStores) => {
   const initialSyncStartedAt = performance.now();
   markGameEntryMilestone("initial-sync-started");
-  await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress, { onConfigRefreshed });
+  await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress);
   markGameEntryMilestone("initial-sync-completed");
   recordGameEntryDuration("initial-sync", performance.now() - initialSyncStartedAt);
   verboseLog("[INITIAL SYNC COMPLETED]");
@@ -301,7 +282,7 @@ const configureGameSystems = (setupResult: SetupResult, chain: Chain) => {
 };
 
 const startGameRenderer = async (setupResult: SetupResult) => {
-  // Renderer init = Three.js scene/shader/texture compilation + spatial Torii
+  // Renderer init = Three.js scene/shader/texture compilation + spatial
   // bounds subscription. Often the slowest single step on a cold reload, and
   // previously had no breadcrumb between `initial-sync-completed` and
   // `bootstrap-completed`, so a 30s+ hang here looked indistinguishable from
@@ -329,7 +310,6 @@ const clearBootstrapWorldData = () => {
   world.components.length = 0;
   verboseLog(`[BOOTSTRAP] Cleared ${entities.length} entities and component registry from RECS world`);
 
-  clearSubscriptionQueue();
   useSyncStore.getState().resetSubscriptions();
 };
 

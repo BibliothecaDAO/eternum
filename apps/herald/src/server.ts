@@ -10,6 +10,8 @@ import { MadaraSubscriptions } from "./madara-subscriptions";
 import { createModelRegistry, readWorldManifest } from "./model-registry";
 import type { ResumeRequest } from "./stream-protocol";
 import { WorldEventDecodeMonitor } from "./world-event-decoder";
+import { backfillHistory } from "./history-backfill";
+import { HistoryStore } from "./history-store";
 
 const CHECKPOINT_EVERY_BLOCKS = 100;
 
@@ -84,7 +86,9 @@ const main = async (): Promise<void> => {
   const registry = createModelRegistry(manifest);
   const rpc = new MadaraRpc(config.rpcUrl);
   const checkpointStore = new CheckpointStore(config.databaseUrl);
+  const historyStore = new HistoryStore(config.databaseUrl, config.chain, registry.worldAddress);
   const decodeMonitor = new WorldEventDecodeMonitor();
+  await historyStore.initialize();
   const loaded = await loadConfirmedWorld({
     chain: config.chain,
     checkpointStore,
@@ -105,9 +109,11 @@ const main = async (): Promise<void> => {
     confirmedBlock: loaded.confirmedBlock,
     confirmedFold: loaded.fold,
     decodeMonitor,
+    historyStore,
     registry,
     rpc,
   });
+  await live.freezeEndedReviewSnapshots();
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
   let shuttingDown = false;
 
@@ -130,6 +136,7 @@ const main = async (): Promise<void> => {
     server?.stop();
     try {
       await live.checkpoint();
+      await historyStore.close();
       await checkpointStore.close();
     } finally {
       process.exit(exitCode);
@@ -145,6 +152,7 @@ const main = async (): Promise<void> => {
       modelRows: (model) => live.modelRows(model),
       snapshot: (gameId, _confirmedBlock, models) => live.snapshot(gameId, models),
     },
+    history: historyStore,
     metrics: loaded.metrics,
     undecodableEventCount: () => decodeMonitor.failures,
   });
@@ -190,6 +198,20 @@ const main = async (): Promise<void> => {
       wsUrl: config.wsUrl,
     }),
   );
+  void backfillHistory({
+    decodeMonitor,
+    historyStore,
+    registry,
+    rpc,
+    toBlock: loaded.confirmedBlock,
+  }).catch((error) => {
+    console.error(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        event: "herald_history_backfill_failed",
+      }),
+    );
+  });
 };
 
 await main();

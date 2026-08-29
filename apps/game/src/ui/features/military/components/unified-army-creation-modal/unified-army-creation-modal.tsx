@@ -44,7 +44,7 @@ import { RealmHexDeployMap } from "./realm-hex-deploy-map";
 import { TroopCountSelector } from "./troop-count-selector";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 interface UnifiedArmyCreationProps {
   structureId?: number;

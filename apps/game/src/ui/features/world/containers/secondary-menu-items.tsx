@@ -17,7 +17,7 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";

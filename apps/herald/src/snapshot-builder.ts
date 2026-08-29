@@ -121,14 +121,3 @@ export const buildWorldFold = async ({
     metrics: { ...replayed.metrics, retained_rows: replayed.fold.retainedRowCount() },
   };
 };
-
-export const buildGameSnapshot = async (
-  input: BuildWorldFoldInput & { gameId: string | number | bigint },
-): Promise<BuiltGameSnapshot> => {
-  const { gameId, ...worldInput } = input;
-  const built = await buildWorldFold(worldInput);
-  return {
-    snapshot: built.fold.snapshot(gameId, built.confirmedBlock),
-    metrics: built.metrics,
-  };
-};

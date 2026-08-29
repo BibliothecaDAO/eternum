@@ -1,18 +1,8 @@
-import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 const RESOURCE_PRECISION_BIGINT = BigInt(RESOURCE_PRECISION);
 
-export const queryToriiSql = async <TRow extends object>(
-  toriiSqlBaseUrl: string,
-  query: string,
-  errorMessage: string,
-): Promise<TRow[]> => {
-  const url = buildApiUrl(toriiSqlBaseUrl, query);
-  return fetchWithErrorHandling<TRow>(url, errorMessage);
-};
-
-export const parseBigIntValue = (value: unknown): bigint | null => {
+const parseBigIntValue = (value: unknown): bigint | null => {
   if (typeof value === "bigint") {
     return value;
   }
@@ -42,7 +32,7 @@ export const parseBigIntValue = (value: unknown): bigint | null => {
   return null;
 };
 
-export const parseInteger = (value: unknown): number | null => {
+const parseInteger = (value: unknown): number | null => {
   const bigintValue = parseBigIntValue(value);
   if (bigintValue == null) {
     return null;
@@ -52,7 +42,7 @@ export const parseInteger = (value: unknown): number | null => {
   return Number.isFinite(asNumber) ? asNumber : null;
 };
 
-export const parseNumeric = (value: unknown): number => {
+const parseNumeric = (value: unknown): number => {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
   }
@@ -77,7 +67,7 @@ export const parseNumeric = (value: unknown): number => {
   return 0;
 };
 
-export const parseBoolean = (value: unknown): boolean => {
+const parseBoolean = (value: unknown): boolean => {
   if (typeof value === "boolean") {
     return value;
   }
@@ -101,7 +91,7 @@ export const parseBoolean = (value: unknown): boolean => {
   return false;
 };
 
-export const parseScaledAmount = (value: unknown): number => {
+const parseScaledAmount = (value: unknown): number => {
   const bigintValue = parseBigIntValue(value);
   if (bigintValue != null) {
     const whole = bigintValue / RESOURCE_PRECISION_BIGINT;
@@ -118,7 +108,7 @@ export const parseScaledAmount = (value: unknown): number => {
   return parseNumeric(value) / RESOURCE_PRECISION;
 };
 
-export const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 1 | 2 | 3 | null => {
+const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 1 | 2 | 3 | null => {
   if (value == null) return null;
 
   if (typeof value === "object") {
@@ -165,7 +155,7 @@ export const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 
   return null;
 };
 
-export const parseAddress = (value: unknown): string | null => {
+const parseAddress = (value: unknown): string | null => {
   if (value == null) return null;
 
   if (typeof value === "string") {

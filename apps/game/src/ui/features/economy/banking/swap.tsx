@@ -25,7 +25,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const mode = useGameModeConfig();

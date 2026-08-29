@@ -2,6 +2,7 @@ import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-
 import { describe, expect, it, vi } from "vitest";
 
 import { GameStreamHub, type StreamSocket } from "./game-stream";
+import type { HistoryStore } from "./history-store";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import type { ModelCodec, ModelRegistry } from "./model-registry";
@@ -118,7 +119,7 @@ const preconfirmedReceipt = (events: RpcSubscribedEvent[]) => ({
   transaction_hash: events[0]!.transaction_hash,
 });
 
-const liveFixture = () => {
+const liveFixture = (historyStore?: HistoryStore) => {
   const confirmedFold = new WorldFold(registry);
   confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x101", "0x111", ["0x1", "0x7", "0x1", "0x1"]))!);
   confirmedFold.apply(decodeWorldEvent(registry, setEvent("0x102", "0x112", ["0x2", "0x7", "0xabc", "0x0"]))!);
@@ -136,6 +137,7 @@ const liveFixture = () => {
     confirmedFold,
     decodeMonitor: new WorldEventDecodeMonitor(),
     hub: new GameStreamHub("epoch-a"),
+    historyStore,
     registry,
     rpc,
   });
@@ -143,6 +145,18 @@ const liveFixture = () => {
 };
 
 describe("LiveWorld", () => {
+  it("advances history completeness through confirmed blocks without history events", async () => {
+    const historyStore = {
+      appendEvents: vi.fn(async () => undefined),
+      freezeReviewSnapshot: vi.fn(async () => undefined),
+    } as unknown as HistoryStore;
+    const { live } = liveFixture(historyStore);
+
+    await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
+
+    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
+  });
+
   it("deduplicates hints and replaces the overlay from one pre-confirmed block read", async () => {
     const { live } = liveFixture();
     const socket = recordingSocket();

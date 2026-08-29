@@ -33,12 +33,4 @@ describe("worldmap camera movement performs zero Torii fetches", () => {
     expect(projectionSync).not.toMatch(/toriiClient|getEntities|getMapFromTorii|fetch\s*\(/);
     expect(source).not.toMatch(/LegacyBounded|toriiStreamManager|updateToriiBoundsSubscription/);
   });
-
-  it("has no remaining exact spatial query helper for camera-driven reads", () => {
-    const queries = readSource("src/dojo/queries.ts");
-
-    expect(queries).not.toContain("getMapFromTorii");
-    expect(queries).not.toContain("getStructuresFromToriiExact");
-    expect(queries).not.toContain("getTilesForPositionsFromTorii");
-  });
 });

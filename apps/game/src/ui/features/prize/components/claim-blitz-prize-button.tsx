@@ -8,7 +8,7 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { belongsToActiveGame, configManager } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 /**
  * Decode an ERC20 `symbol()` result. Handles the common felt252 short-string

@@ -26,7 +26,7 @@ import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PackageIcon from "lucide-react/dist/esm/icons/package";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import { env } from "../../../../../env";
 
 // ----------------------------------------------------------------------------

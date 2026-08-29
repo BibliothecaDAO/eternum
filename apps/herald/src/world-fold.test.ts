@@ -3,7 +3,7 @@ import { hash } from "starknet";
 import { describe, expect, it } from "vitest";
 
 import { createModelRegistry } from "./model-registry";
-import type { RawWorldEvent, WorldManifest } from "./types";
+import type { DecodedWorldEvent, RawWorldEvent, WorldManifest } from "./types";
 import { WORLD_EVENT_SELECTORS, decodeWorldEvent } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
 
@@ -189,6 +189,46 @@ describe("WorldFold", () => {
     const fold = new WorldFold(registry);
     fold.apply(event);
     expect(fold.retainedRowCount()).toBe(0);
+  });
+
+  it("folds the latest battle for both participants", () => {
+    const fold = new WorldFold(registry);
+    const battle: DecodedWorldEvent = {
+      entityId: "0xba771e",
+      key: { attacker_id: 41n, defender_id: 52n, game_id: 7n },
+      kind: "event",
+      model: { ...eventDefinition, name: "BattleEvent" },
+      position: { blockNumber: 12, eventIndex: 3, transactionHash: "0x456", transactionIndex: 2 },
+      value: { timestamp: 99n },
+    };
+
+    fold.apply(battle);
+
+    expect(fold.snapshot(7, 12, ["LastBattle"]).models).toEqual([
+      {
+        model: "LastBattle",
+        rows: [
+          {
+            key: expect.any(String),
+            value: {
+              entity_id: "0x29",
+              game_id: "0x7",
+              latest_defender_id: "0x34",
+              latest_defense_timestamp: "0x63",
+            },
+          },
+          {
+            key: expect.any(String),
+            value: {
+              entity_id: "0x34",
+              game_id: "0x7",
+              latest_attacker_id: "0x29",
+              latest_attack_timestamp: "0x63",
+            },
+          },
+        ],
+      },
+    ]);
   });
 
   it("restores checkpoints and keeps pre-confirmed overlays replaceable", () => {

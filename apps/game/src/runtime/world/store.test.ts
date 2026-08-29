@@ -55,7 +55,7 @@ describe("world profile store", () => {
       "bltz-riff-363": {
         name: "bltz-riff-363",
         chain: "appchain",
-        toriiBaseUrl: "http://realms-appchain.invalid:8080",
+        heraldBaseUrl: "http://herald.invalid:3003",
         rpcUrl: "http://realms-appchain.invalid",
         worldAddress: "0x00ffc134",
         contractsBySelector: {},
@@ -75,7 +75,7 @@ describe("world profile store", () => {
       "bltz-riff-363": {
         name: "bltz-riff-363",
         chain: "appchain",
-        toriiBaseUrl: "http://realms-appchain.invalid:8080",
+        heraldBaseUrl: "http://herald.invalid:3003",
         rpcUrl: "http://realms-appchain.invalid",
         worldAddress: "0x00ffc134",
         contractsBySelector: {},

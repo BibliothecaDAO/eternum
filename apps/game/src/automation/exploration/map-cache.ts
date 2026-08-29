@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 import { Position } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import type { ClientComponents, HexEntityInfo } from "@bibliothecadao/types";

@@ -22,7 +22,7 @@ import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { useAttackTargetData } from "../hooks/use-attack-target";
 import { AttackTarget } from "../types";
 import type { GuardOption, LiveSnapshot, WorkingArmy } from "./battle-lab.types";
-import { gameEntityKey } from "@/dojo/game-scope";
+import { gameEntityKey } from "@/sync/game-scope";
 
 const toResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
   effects.map((effect) => Number(effect.id)) as ResourcesIds[];

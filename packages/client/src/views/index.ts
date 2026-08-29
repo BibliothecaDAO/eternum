@@ -1,4 +1,4 @@
-import { RESOURCE_BALANCE_COLUMNS } from "@bibliothecadao/torii";
+import { RESOURCE_BALANCE_COLUMNS } from "../herald/resource-balance-columns";
 import { ViewCache } from "../cache";
 import { computeStrength } from "../compute";
 import type { ClientLogger } from "../config";
@@ -33,7 +33,7 @@ import type {
  * Using a structural type avoids importing the concrete SqlApi class and keeps
  * the package decoupled.
  */
-export interface SqlApiLike {
+export interface GameReadApi {
   fetchPlayerStructures(owner: string): Promise<any[]>;
   fetchResourceBalances(entityIds: number[]): Promise<any[]>;
   fetchGuardsByStructure(entityId: ID): Promise<any[]>;
@@ -64,7 +64,7 @@ export interface SqlApiLike {
  */
 export class ViewClient {
   constructor(
-    private sql: SqlApiLike,
+    private readApi: GameReadApi,
     private cache: ViewCache,
     private getAccount: () => ContractAddress | null,
     private currentTimestamp: () => number,
@@ -84,18 +84,18 @@ export class ViewClient {
       const owner = this.getAccount() ?? "0x0";
 
       // Fetch structure details for this owner
-      const structures = await this.sql.fetchPlayerStructures(owner);
+      const structures = await this.readApi.fetchPlayerStructures(owner);
       const structure = structures.find((s: any) => s.entity_id === entityId) ?? structures[0];
 
       // Fetch guards
-      const guards = await this.sql.fetchGuardsByStructure(entityId);
+      const guards = await this.readApi.fetchGuardsByStructure(entityId);
 
       // Fetch resource balances for this specific entity
-      const resourceRows = await this.sql.fetchResourceBalances([entityId]);
+      const resourceRows = await this.readApi.fetchResourceBalances([entityId]);
       const realmResources = this.parseResourceBalanceRows(resourceRows);
 
       // Fetch armies to find explorers for this realm
-      const allArmies = await this.sql.fetchAllArmiesMapData();
+      const allArmies = await this.readApi.fetchAllArmiesMapData();
       const ownedArmies = allArmies.filter(
         (a: any) => a.owner_address !== undefined && this.sameAddress(a.owner_address, owner),
       );
@@ -176,10 +176,10 @@ export class ViewClient {
     if (cached) return cached;
 
     try {
-      const allArmies = await this.sql.fetchAllArmiesMapData();
+      const allArmies = await this.readApi.fetchAllArmiesMapData();
       const army = allArmies.find((a: any) => (a.entity_id ?? a.entityId) === entityId);
 
-      const ownerAddress = (await this.sql.fetchExplorerAddressOwner(entityId)) ?? this.getAccount() ?? "0x0";
+      const ownerAddress = (await this.readApi.fetchExplorerAddressOwner(entityId)) ?? this.getAccount() ?? "0x0";
 
       const troops = this.buildArmyTroops(army);
 
@@ -233,9 +233,9 @@ export class ViewClient {
 
     try {
       const [allStructures, allArmies, allTiles] = await Promise.all([
-        this.sql.fetchAllStructuresMapData(),
-        this.sql.fetchAllArmiesMapData(),
-        this.sql.fetchAllTiles(),
+        this.readApi.fetchAllStructuresMapData(),
+        this.readApi.fetchAllArmiesMapData(),
+        this.readApi.fetchAllTiles(),
       ]);
 
       const inRadius = (x: number, y: number) =>
@@ -310,7 +310,7 @@ export class ViewClient {
     if (cached) return cached;
 
     try {
-      const swapEvents = await this.sql.fetchSwapEvents([]);
+      const swapEvents = await this.readApi.fetchSwapEvents([]);
 
       const recentSwaps: SwapEvent[] = swapEvents.slice(0, 50).map((e: any) => ({
         eventId: Number(e.event?.takerId ?? 0),
@@ -354,10 +354,10 @@ export class ViewClient {
 
     try {
       const [structures, playerStructureRows, allArmies, leaderboardByAddress] = await Promise.all([
-        this.sql.fetchStructuresByOwner(address),
-        this.sql.fetchPlayerStructures(address).catch(() => []),
-        this.sql.fetchAllArmiesMapData(),
-        this.sql.fetchPlayerLeaderboardByAddress?.(address).catch(() => null) ?? Promise.resolve(null),
+        this.readApi.fetchStructuresByOwner(address),
+        this.readApi.fetchPlayerStructures(address).catch(() => []),
+        this.readApi.fetchAllArmiesMapData(),
+        this.readApi.fetchPlayerLeaderboardByAddress?.(address).catch(() => null) ?? Promise.resolve(null),
       ]);
 
       const playerStructures: PlayerStructureSummary[] = structures.map((s: any) => ({
@@ -386,7 +386,7 @@ export class ViewClient {
 
       let leaderboardEntry = leaderboardByAddress;
       if (!leaderboardEntry) {
-        const leaderboard = await this.sql.fetchPlayerLeaderboard(100, 0).catch(() => []);
+        const leaderboard = await this.readApi.fetchPlayerLeaderboard(100, 0).catch(() => []);
         leaderboardEntry = leaderboard.find((row: any) =>
           this.sameAddress(row?.playerAddress ?? row?.address, address),
         );
@@ -394,7 +394,7 @@ export class ViewClient {
 
       // Fetch actual resource balances from the Resource table
       const entityIds = playerStructureRows.map((s: any) => Number(s.entity_id)).filter(Boolean);
-      const resourceRows = entityIds.length > 0 ? await this.sql.fetchResourceBalances(entityIds) : [];
+      const resourceRows = entityIds.length > 0 ? await this.readApi.fetchResourceBalances(entityIds) : [];
       const totalResources = this.aggregateResourceBalancesFromRows(resourceRows);
 
       const result: PlayerView = {
@@ -433,10 +433,10 @@ export class ViewClient {
     if (cached) return cached;
 
     try {
-      const hyperstructures = await this.sql.fetchHyperstructures();
+      const hyperstructures = await this.readApi.fetchHyperstructures();
       const hs = hyperstructures.find((h: any) => Number(h.entity_id ?? h.entityId) === entityId);
 
-      const guards = await this.sql.fetchGuardsByStructure(entityId);
+      const guards = await this.readApi.fetchGuardsByStructure(entityId);
       const guardState = this.buildGuardState(guards);
 
       const result: HyperstructureView = {
@@ -482,7 +482,7 @@ export class ViewClient {
     if (cached) return cached;
 
     try {
-      const rows = await this.sql.fetchPlayerLeaderboard(limit, offset);
+      const rows = await this.readApi.fetchPlayerLeaderboard(limit, offset);
 
       const entries: LeaderboardEntry[] = rows.map((r: any) => ({
         address: String(r.playerAddress ?? r.address ?? "0x0"),
@@ -521,10 +521,10 @@ export class ViewClient {
 
     try {
       // Bank data comes from structure + swap events
-      const allStructures = await this.sql.fetchAllStructuresMapData();
+      const allStructures = await this.readApi.fetchAllStructuresMapData();
       const bankStruct = allStructures.find((s: any) => Number(s.entity_id ?? s.entityId) === bankEntityId);
 
-      const swapEvents = await this.sql.fetchSwapEvents([]);
+      const swapEvents = await this.readApi.fetchSwapEvents([]);
       const recentSwaps: SwapEvent[] = swapEvents.slice(0, 20).map((e: any) => ({
         eventId: Number(e.event?.takerId ?? 0),
         resourceId: Number(e.event?.resourceGiven?.resourceId ?? 0),
@@ -582,14 +582,14 @@ export class ViewClient {
       let rawEvents: any[];
 
       if (opts?.entityId) {
-        rawEvents = await this.sql.fetchStoryEventsByEntity(opts.entityId, limit, offset);
+        rawEvents = await this.readApi.fetchStoryEventsByEntity(opts.entityId, limit, offset);
       } else if (opts?.owner) {
-        rawEvents = await this.sql.fetchStoryEventsByOwner(opts.owner, limit, offset);
+        rawEvents = await this.readApi.fetchStoryEventsByOwner(opts.owner, limit, offset);
       } else {
-        rawEvents = await this.sql.fetchStoryEvents(limit, offset);
+        rawEvents = await this.readApi.fetchStoryEvents(limit, offset);
       }
 
-      const totalCount = await this.sql.fetchStoryEventsCount();
+      const totalCount = await this.readApi.fetchStoryEventsCount();
 
       const events: GameEvent[] = rawEvents.map((e: any) => ({
         eventId: Number(e.event_id ?? e.id ?? 0),

@@ -13,7 +13,8 @@ import {
   GuildTransactions,
   RealmTransactions,
 } from "./transactions";
-import { ViewClient, type SqlApiLike } from "./views";
+import { ViewClient } from "./views";
+import { HeraldReadApi } from "./herald/herald-read-api";
 
 /**
  * Main entry point for the headless Eternum client.
@@ -37,12 +38,12 @@ export class EternumClient {
   private account: Signer | null = null;
   private accountAddress: ContractAddress | null = null;
   private _provider: MinimalProvider;
-  private _sql: SqlApiLike;
+  private _readApi: HeraldReadApi;
   private txClient: TransactionClient;
 
-  private constructor(config: EternumClientConfig, provider: MinimalProvider, sql: SqlApiLike) {
+  private constructor(config: EternumClientConfig, provider: MinimalProvider, readApi: HeraldReadApi) {
     this._provider = provider;
-    this._sql = sql;
+    this._readApi = readApi;
     this.cache = new ViewCache(config.cacheTtlMs, config.cacheMaxSize);
     this.txClient = new TransactionClient(this._provider);
 
@@ -59,7 +60,7 @@ export class EternumClient {
 
     // Wire view client
     this.view = new ViewClient(
-      this._sql,
+      this._readApi,
       this.cache,
       () => this.accountAddress,
       () => Math.floor(Date.now() / 1000),
@@ -70,18 +71,16 @@ export class EternumClient {
   /**
    * Create a new EternumClient instance.
    *
-   * Dynamically imports @bibliothecadao/provider and @bibliothecadao/torii
-   * so the client package has no hard compile-time dependency on their DTS output.
+   * Starts the same Herald snapshot + stream consumer used by the game client.
    */
   static async create(config: EternumClientConfig): Promise<EternumClient> {
     // Dynamic imports to avoid compile-time dependency on unbuilt peer packages
     const providerMod = await import("@bibliothecadao/provider" as string);
-    const toriiMod = await import("@bibliothecadao/torii" as string);
-
     const provider = new providerMod.EternumProvider(config.manifest, config.rpcUrl, config.vrfProviderAddress);
-    const sql = new toriiMod.SqlApi(config.toriiUrl, config.cacheUrl);
+    const readApi = new HeraldReadApi(config.heraldUrl, config.chain, config.gameId);
+    await readApi.start();
 
-    return new EternumClient(config, provider, sql);
+    return new EternumClient(config, provider, readApi);
   }
 
   /**
@@ -109,8 +108,12 @@ export class EternumClient {
     return this._provider;
   }
 
-  get sql(): SqlApiLike {
-    return this._sql;
+  get read(): HeraldReadApi {
+    return this._readApi;
+  }
+
+  dispose(): void {
+    this._readApi.close();
   }
 
   /**

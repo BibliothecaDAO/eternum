@@ -6,11 +6,11 @@ This is the main game application for Eternum, built with React, TypeScript, and
 
 The client targets the self-hosted dev appchain (see `deploy/appchain/README.md`):
 
-1. Copy `.env.appchain.blitz` to `.env.local` — it points at the live dev endpoints (`katana`/`torii`/`.jcndata.com`)
+1. Copy `.env.appchain.blitz` to `.env.local` — it points at the live chain and Herald endpoints
 2. Run `pnpm run dev` to start the development server
 
-`.env.production` is the committed config the `deploy-client.yml` workflow builds tester releases from (blitz-only; add
-`VITE_PUBLIC_TORII_ETERNUM` there to open eternum in phase 3).
+`.env.production` is the committed config the `deploy-client.yml` workflow builds tester releases from (Blitz only in
+phase 2).
 
 ## 🏗️ Architecture of the game
 

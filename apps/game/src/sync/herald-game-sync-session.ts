@@ -7,7 +7,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import type { GameChain } from "@realms-world/chain";
 
-import { createBrowserScheduler, createRecsGameSyncStore } from "@/dojo/gamewide-sync-adapter";
+import { createBrowserScheduler, createRecsGameSyncStore } from "./recs-game-sync-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";

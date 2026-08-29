@@ -20,7 +20,7 @@ const createSession = (context: ResolvedEntryContext): BootstrappedEntrySession 
   profile: {
     name: context.worldName,
     chain: context.chain,
-    toriiBaseUrl: "https://api.realms.world/x/iron-age/torii",
+    heraldBaseUrl: "https://herald.realms.test",
     rpcUrl: "https://api.realms.world/x/iron-age/katana/rpc/v0_9",
     worldAddress: "0x1",
     contractsBySelector: {},

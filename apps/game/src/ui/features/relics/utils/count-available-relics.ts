@@ -1,4 +1,4 @@
-import { PlayerRelicsData } from "@bibliothecadao/torii";
+import type { PlayerRelicsData } from "@/types";
 
 const hasPositiveAmount = (value: unknown): boolean => {
   if (typeof value === "bigint") {

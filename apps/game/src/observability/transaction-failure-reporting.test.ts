@@ -30,7 +30,7 @@ describe("transaction failure reporting", () => {
       name: "alpha-world",
       chain: "appchain",
       worldAddress: "0xabc",
-      toriiBaseUrl: "https://example.test/torii",
+      heraldBaseUrl: "https://example.test/herald",
       contractsBySelector: {},
       fetchedAt: Date.now(),
     });
