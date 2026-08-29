@@ -127,7 +127,10 @@ jobs:
       FACTORY_RUN_STORE_BRANCH: factory-runs
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
-      TORII_SQL_URL: ${{ vars.TORII_SQL_URL }}
+      LEDGER_ADDRESS: ${{ vars.LEDGER_ADDRESS }}
+      LEDGER_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+      LEDGER_OPERATOR_ADDRESS: ${{ vars.LEDGER_OPERATOR_ADDRESS }}
+      LEDGER_OPERATOR_PRIVATE_KEY: ${{ secrets.LEDGER_OPERATOR_PRIVATE_KEY }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout

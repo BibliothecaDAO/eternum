@@ -75,7 +75,7 @@ function buildContractPackage(packageRoot, packageLabel) {
 function installSharedRuntimeDependencies(runtimeRoot) {
   printRuntimeStep("Installing shared deployment runtime dependencies...");
   runRuntimeCommand({
-    args: ["install"],
+    args: ["install", "--frozen-lockfile"],
     command: "bun",
     cwd: runtimeRoot,
     label: "shared deployment runtime install",

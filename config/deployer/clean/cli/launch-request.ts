@@ -529,6 +529,8 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
 
   return {
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
+    ledgerAddress: args.ledger || process.env.LEDGER_ADDRESS,
+    ledgerRpcUrl: args["ledger-rpc-url"] || process.env.LEDGER_RPC_URL || process.env.SEPOLIA_RPC_URL,
     accountAddress: resolveOptionalArg(args, "account-address", ["DOJO_ACCOUNT_ADDRESS", "VITE_PUBLIC_MASTER_ADDRESS"]),
     privateKey: resolveOptionalArg(args, "private-key", ["DOJO_PRIVATE_KEY", "VITE_PUBLIC_MASTER_PRIVATE_KEY"]),
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),

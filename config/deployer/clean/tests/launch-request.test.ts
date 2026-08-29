@@ -44,6 +44,8 @@ describe("launch request helpers", () => {
         environment: "madara.blitz",
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
+        ledger: "0xledger",
+        "ledger-rpc-url": "https://sepolia.example/rpc",
         "two-player-mode": "true",
         "duration-seconds": "3600",
         "map-config-overrides-json": JSON.stringify({
@@ -64,6 +66,8 @@ describe("launch request helpers", () => {
       environmentId: "madara.blitz",
       gameName: "bltz-test-1",
       startTime: "2026-03-18T10:00:00Z",
+      ledgerAddress: "0xledger",
+      ledgerRpcUrl: "https://sepolia.example/rpc",
       twoPlayerMode: true,
       durationSeconds: 3600,
       mapConfigOverrides: {

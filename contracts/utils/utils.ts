@@ -14,9 +14,11 @@ import appchainEternumGameManifest from "../../contracts/game/manifest_appchain_
 export interface SeasonAddresses {
   "Collectibles: Realms: Loot Chest": string;
   "Collectibles: Realms: Cosmetic Items": string;
-  /** New loot chest contract key used on some chains (mainnet). */
+  /** Canonical loot chest contract key. */
   lootChests?: string;
-  /** New cosmetics contract key used on some chains (mainnet). */
+  /** Canonical elite invite contract key. */
+  eliteInvite?: string;
+  /** Canonical cosmetics contract key. */
   cosmetics?: string;
   "Collectibles: Timelock Maker": string;
   "Collectibles: Realms: Elite Invite": string;

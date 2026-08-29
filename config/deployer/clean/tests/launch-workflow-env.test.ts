@@ -52,10 +52,16 @@ describe("launch workflow env", () => {
   });
 
   test("includes only registrar launch settings in replayable launch options", () => {
-    const environment = buildLaunchWorkflowEnvironment(buildSeriesRequest());
+    const environment = buildLaunchWorkflowEnvironment(
+      buildSeriesRequest({ ledgerAddress: "0xledger", ledgerRpcUrl: "https://sepolia.example/rpc" }),
+    );
     const options = JSON.parse(environment.GAME_LAUNCH_OPTIONS_JSON);
 
-    expect(options).toMatchObject({ durationSeconds: 86400 });
+    expect(options).toMatchObject({
+      durationSeconds: 86400,
+      ledgerAddress: "0xledger",
+      ledgerRpcUrl: "https://sepolia.example/rpc",
+    });
     expect(options).not.toHaveProperty("factoryAddress");
     expect(options).not.toHaveProperty("skipIndexer");
   });

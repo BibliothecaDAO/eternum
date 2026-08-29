@@ -3,6 +3,7 @@ import { Account, RpcProvider, shortString } from "starknet";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS, DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
+import { createLedgerOperatorAccount, openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import {
   assertRegistrarAvailable,
   createRegistrarGame,
@@ -111,6 +112,7 @@ function hydrateLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
         gameId: existing.gameId,
         worldAddress: existing.worldAddress,
         createGameTxHash: existing.createGameTxHash,
+        openLedgerTxHash: existing.openLedgerTxHash,
         outputPath: existing.outputPath,
       }
     : summary;
@@ -144,6 +146,35 @@ function createLaunchAccount(launch: PreparedLaunch): Account {
     address: credentials.accountAddress,
     signer: credentials.privateKey,
   });
+}
+
+function requireLedgerTarget(launch: PreparedLaunch): LedgerTarget {
+  if (!launch.request.ledgerAddress || !launch.request.ledgerRpcUrl) {
+    throw new Error("--ledger and --ledger-rpc-url (or LEDGER_ADDRESS and LEDGER_RPC_URL) are required");
+  }
+  return { address: launch.request.ledgerAddress, rpcUrl: launch.request.ledgerRpcUrl };
+}
+
+function createLedgerGameTarget(launch: PreparedLaunch) {
+  const target = requireLedgerTarget(launch);
+  return {
+    account: createLedgerOperatorAccount(target, `ledger game "${launch.request.gameName}"`),
+    target,
+    presetId: launch.runtime.presetId,
+    start: launch.runtime.startTime,
+    end: launch.runtime.startTime + launch.config.season.durationSeconds,
+  };
+}
+
+async function ensureLedgerGameOpen(launch: PreparedLaunch, gameId: number): Promise<void> {
+  const ledger = createLedgerGameTarget(launch);
+  const result = await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end);
+  if (result) launch.summary.openLedgerTxHash = result.transactionHash;
+  launch.runtime.progress.log(
+    result
+      ? `Opened ledger game ${gameId} (${result.transactionHash})`
+      : `Ledger game ${gameId} already exists; skipping`,
+  );
 }
 
 function buildRegistrarGameParams(launch: PreparedLaunch) {
@@ -207,15 +238,17 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   const existingGame = await findExistingGame(launch);
   if (existingGame) {
     applyGameIdentity(launch, existingGame.gameId);
+    await ensureLedgerGameOpen(launch, existingGame.gameId);
     launch.runtime.progress.log(
       `Game "${launch.request.gameName}" already exists as ${existingGame.gameId}; skipping create_game`,
     );
     return;
   }
 
+  const ledger = createLedgerGameTarget(launch);
   const result = await launch.runtime.progress.run(
     "create_game",
-    () => createRegistrarGame(createLaunchAccount(launch), buildRegistrarGameParams(launch), environmentId),
+    () => createRegistrarGame(createLaunchAccount(launch), buildRegistrarGameParams(launch), environmentId, ledger),
     {
       start: `Creating "${launch.request.gameName}" through the persistent registrar`,
       success: (created, elapsedMs) =>
@@ -223,7 +256,10 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
     },
   );
   launch.summary.createGameTxHash = result.transactionHash;
-  applyGameIdentity(launch, await resolveCreatedGameId(launch, result.gameId));
+  launch.summary.openLedgerTxHash = result.openLedgerTxHash;
+  const gameId = await resolveCreatedGameId(launch, result.gameId);
+  applyGameIdentity(launch, gameId);
+  if (!result.gameId) await ensureLedgerGameOpen(launch, gameId);
 }
 
 async function resolveGameId(launch: PreparedLaunch): Promise<number> {

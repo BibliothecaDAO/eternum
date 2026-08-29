@@ -2,16 +2,19 @@ import { Account, RpcProvider } from "starknet";
 import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../source/blitz";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { resolveDeploymentEnvironment } from "../environment";
+import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
+import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { DeploymentEnvironmentId } from "../types";
 import { buildRegisterPresetCalldata, isRegistrarAlreadyRegisteredError, registerPreset } from "./calls";
-import { isPresetRegistered } from "./game-registry";
 import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
 
 interface RegisterPresetOptions {
   presetId: number;
   environmentId: DeploymentEnvironmentId;
   balanceProfile?: BlitzBalanceProfileId;
+  ledgerAddress?: string;
+  ledgerRpcUrl?: string;
   dryRun: boolean;
 }
 
@@ -28,7 +31,7 @@ function parseOptions(): RegisterPresetOptions {
   const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--environment madara.blitz|appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> --ledger <address> --ledger-rpc-url <Sepolia RPC> [--environment madara.blitz|appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--dry-run]",
     );
   }
   if (environmentId !== "madara.blitz" && environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
@@ -42,7 +45,14 @@ function parseOptions(): RegisterPresetOptions {
       throw new Error("--balance-profile only applies to appchain.blitz");
     }
   }
-  return { presetId, environmentId, balanceProfile, dryRun: process.argv.includes("--dry-run") };
+  return {
+    presetId,
+    environmentId,
+    balanceProfile,
+    ledgerAddress: readArgument("--ledger") || process.env.LEDGER_ADDRESS,
+    ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL || process.env.SEPOLIA_RPC_URL,
+    dryRun: process.argv.includes("--dry-run"),
+  };
 }
 
 // The stored environment JSON is the raw base sheet: balance profiles
@@ -66,24 +76,35 @@ export function buildPresetDryRun(
   const config = loadPresetConfiguration(environmentId, balanceProfile);
   const payload = buildPresetRegistration(config, presetId);
   const calldata = buildRegisterPresetCalldata(payload);
+  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(environmentId).gameType);
   return {
     presetId,
     balanceProfile: balanceProfile ?? null,
     calldataLength: calldata.length,
     counts: summarizePresetSideTables(payload),
     calldata,
+    ledgerCalldata: buildRegisterLedgerPresetCalldata(presetId, ledgerPreset),
   };
+}
+
+function requireLedgerTarget(options: RegisterPresetOptions): LedgerTarget {
+  if (!options.ledgerAddress || !options.ledgerRpcUrl) {
+    throw new Error("--ledger and --ledger-rpc-url (or LEDGER_ADDRESS and LEDGER_RPC_URL) are required");
+  }
+  return { address: options.ledgerAddress, rpcUrl: options.ledgerRpcUrl };
 }
 
 export async function registerEnvironmentPreset(options: RegisterPresetOptions): Promise<void> {
   const config = loadPresetConfiguration(options.environmentId, options.balanceProfile);
   const payload = buildPresetRegistration(config, options.presetId);
   const calldata = buildRegisterPresetCalldata(payload);
+  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(options.environmentId).gameType);
   const summary = {
     presetId: options.presetId,
     calldataLength: calldata.length,
     counts: summarizePresetSideTables(payload),
     calldata,
+    ledgerCalldata: buildRegisterLedgerPresetCalldata(options.presetId, ledgerPreset),
   };
 
   if (options.dryRun) {
@@ -91,11 +112,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     return;
   }
 
-  if (await isPresetRegistered(options.presetId).catch(() => false)) {
-    console.log(`Preset ${options.presetId} is already registered; skipping.`);
-    return;
-  }
-
+  const ledgerTarget = requireLedgerTarget(options);
   const environment = resolveDeploymentEnvironment(options.environmentId);
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
@@ -117,6 +134,14 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     }
     console.log(`Preset ${options.presetId} is already registered; skipping.`);
   }
+
+  const ledgerAccount = createLedgerAdminAccount(ledgerTarget, "Sepolia ledger preset registration");
+  const ledgerResult = await registerLedgerPreset(ledgerAccount, ledgerTarget, options.presetId, ledgerPreset);
+  console.log(
+    ledgerResult
+      ? `Registered ledger preset ${options.presetId}: ${ledgerResult.transactionHash}`
+      : `Ledger preset ${options.presetId} is already registered; skipping.`,
+  );
 }
 
 if (import.meta.main) {

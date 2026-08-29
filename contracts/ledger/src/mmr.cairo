@@ -133,6 +133,37 @@ mod tests {
     }
 
     #[test]
+    fn inherited_no_split_fixtures_stay_stable() {
+        let high_winner = MmrCalculatorImpl::calculate_player_mmr(params(), 1500, 1, 1, 6, 1000);
+        let median_winner = MmrCalculatorImpl::calculate_player_mmr(params(), 1000, 1, 1, 6, 1000);
+        assert!(high_winner - 1500 < median_winner - 1000, "expected winners should gain less");
+
+        let middle = MmrCalculatorImpl::calculate_player_mmr(params(), 1000, 3, 1, 6, 1000);
+        assert!(middle - 1000 < 20, "middle rank should move less than twenty points");
+
+        let six_player_winner = MmrCalculatorImpl::calculate_player_mmr(params(), 1000, 1, 1, 6, 1000);
+        let twelve_player_winner = MmrCalculatorImpl::calculate_player_mmr(params(), 1000, 1, 1, 12, 1000);
+        assert!(twelve_player_winner > six_player_winner, "larger lobbies should scale the winner delta");
+
+        let upset_winner = MmrCalculatorImpl::calculate_player_mmr(params(), 800, 1, 1, 6, 1050);
+        let expected_loser = MmrCalculatorImpl::calculate_player_mmr(params(), 1400, 6, 1, 6, 1050);
+        assert!(upset_winner - 800 > 25, "upset winner should gain more than twenty-five points");
+        assert!(expected_loser < 1400, "expected loser should lose MMR");
+    }
+
+    #[test]
+    fn inherited_rank_order_is_monotonic() {
+        let mut previous = MmrCalculatorImpl::calculate_player_mmr(params(), 1000, 1, 1, 6, 1000);
+        let mut rank: u16 = 2;
+        while rank <= 6 {
+            let next = MmrCalculatorImpl::calculate_player_mmr(params(), 1000, rank, 1, 6, 1000);
+            assert!(previous > next, "better rank should produce more MMR");
+            previous = next;
+            rank += 1;
+        }
+    }
+
+    #[test]
     fn sword_and_shield_modify_only_their_direction() {
         assert!(MmrCalculatorImpl::apply_flag_modifier(1000, 1025, true, false) == 1050);
         assert!(MmrCalculatorImpl::apply_flag_modifier(1000, 975, false, true) == 988);

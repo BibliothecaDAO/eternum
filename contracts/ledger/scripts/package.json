@@ -1,0 +1,9 @@
+{
+  "name": "game-ledger-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy:sepolia": "node ./commands/deployment/deploy.js sepolia"
+  }
+}

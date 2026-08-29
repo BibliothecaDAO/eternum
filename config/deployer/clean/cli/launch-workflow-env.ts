@@ -33,6 +33,8 @@ function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, un
   const launchOptions: Record<string, unknown> = {};
 
   assignOptionalLaunchOption(launchOptions, "rpcUrl", request.rpcUrl);
+  assignOptionalLaunchOption(launchOptions, "ledgerAddress", request.ledgerAddress);
+  assignOptionalLaunchOption(launchOptions, "ledgerRpcUrl", request.ledgerRpcUrl);
   assignOptionalLaunchOption(launchOptions, "accountAddress", request.accountAddress);
   assignOptionalLaunchOption(launchOptions, "devModeOn", request.devModeOn);
   assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);

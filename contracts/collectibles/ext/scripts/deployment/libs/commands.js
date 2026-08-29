@@ -270,48 +270,39 @@ export const saveContractAddressToCommonFolder = async (erc721Name, collectibleA
     const network = process.env.STARKNET_NETWORK;
     const fileName = path.join(folderPath, `${network}.json`);
 
-    // Read existing file content as text to preserve formatting
-    let fileContent = "";
+    let existingData = {};
     try {
-      fileContent = await fs.promises.readFile(fileName, "utf8");
+      existingData = JSON.parse(await fs.promises.readFile(fileName, "utf8"));
     } catch (error) {
-      // File doesn't exist, start with empty object
-      fileContent = "{}";
+      if (error.code !== "ENOENT") throw error;
     }
 
-    // Parse to check if key exists
-    const existingData = JSON.parse(fileContent);
-
-    // Convert collectibleAddress to hex string if it's a bigint
     const addressValue =
       typeof collectibleAddress === "bigint" ? "0x" + collectibleAddress.toString(16) : collectibleAddress;
-
-    // Use regex to replace existing key or add new key
-    const keyPattern = new RegExp(`"${erc721Name}"\\s*:\\s*"[^"]*"`);
-
-    if (existingData.hasOwnProperty(erc721Name)) {
-      // Replace existing key-value pair, preserving indentation
-      fileContent = fileContent.replace(keyPattern, `"${erc721Name}": "${addressValue}"`);
-    } else {
-      // Add new key-value pair after the opening brace
-      const firstLineBreak = fileContent.indexOf("\n");
-      if (firstLineBreak > 0) {
-        // Insert after opening brace with proper formatting
-        fileContent = fileContent.replace(/^(\s*\{\s*\n)/, `$1  "${erc721Name}": "${addressValue}",\n`);
-      } else {
-        // Empty or single-line JSON, reformat as multi-line
-        fileContent = `{\n  "${erc721Name}": "${addressValue}"\n}`;
-      }
+    const nextData = { ...existingData };
+    for (const key of resolveCommonAddressKeys(erc721Name)) {
+      nextData[key] = addressValue;
     }
 
     const writeFileAsync = promisify(fs.writeFile);
-    await writeFileAsync(fileName, fileContent);
+    await writeFileAsync(fileName, `${JSON.stringify(nextData, null, 2)}\n`);
     console.log(`"${fileName}" has been saved or overwritten`);
   } catch (err) {
     console.error("Error writing file", err);
     throw err;
   }
 };
+
+const CANONICAL_ADDRESS_KEYS = {
+  "Collectibles: Realms: Loot Chest": "lootChests",
+  "Collectibles: Realms: Elite Invite": "eliteInvite",
+  "Collectibles: Realms: Cosmetic Items": "cosmetics",
+};
+
+export function resolveCommonAddressKeys(collectibleName) {
+  const canonicalKey = CANONICAL_ADDRESS_KEYS[collectibleName];
+  return canonicalKey ? [collectibleName, canonicalKey] : [collectibleName];
+}
 
 export const getContractAddressFromCommonFolder = async (key) => {
   const folderPath = path.join("..", "..", "..", "..", "common", "addresses");

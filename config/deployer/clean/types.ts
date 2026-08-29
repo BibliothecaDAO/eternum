@@ -56,6 +56,8 @@ export interface LaunchGameRequest {
   gameName: string;
   startTime: string | number;
   rpcUrl?: string;
+  ledgerAddress?: string;
+  ledgerRpcUrl?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -94,6 +96,8 @@ export interface LaunchSeriesRequest {
   games: LaunchSeriesGameRequest[];
   targetGameNames?: string[];
   rpcUrl?: string;
+  ledgerAddress?: string;
+  ledgerRpcUrl?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -130,6 +134,8 @@ export interface LaunchRotationRequest {
   evaluationIntervalMinutes: number;
   weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl?: string;
+  ledgerAddress?: string;
+  ledgerRpcUrl?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -176,6 +182,7 @@ export interface LaunchGameSummary {
   gameId?: number;
   worldAddress?: string;
   createGameTxHash?: string;
+  openLedgerTxHash?: string;
   prizeFunding?: PrizeFundingState;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
@@ -201,6 +208,7 @@ export interface SeriesLaunchGameArtifacts {
   gameId?: number;
   worldAddress?: string;
   createGameTxHash?: string;
+  openLedgerTxHash?: string;
   prizeFunding?: PrizeFundingState;
 }
 

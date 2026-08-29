@@ -1,6 +1,7 @@
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { Account, CallData, type Call } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
+import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId, WorldDeployment } from "../types";
 
@@ -40,6 +41,15 @@ export interface RegistrarTransactionResult {
 
 export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
+  openLedgerTxHash?: string;
+}
+
+export interface RegistrarLedgerGameTarget {
+  account: Account;
+  target: LedgerTarget;
+  presetId: number;
+  start: number;
+  end: number;
 }
 
 export type RegistrarEnvironmentId = DeploymentEnvironmentId;
@@ -303,16 +313,22 @@ export async function registerSeries(
 export async function createRegistrarGame(
   account: Account,
   params: unknown,
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
+  target: RegistrarTarget,
+  ledger: RegistrarLedgerGameTarget,
 ): Promise<CreateRegistrarGameResult> {
   const result = await executeRegistrarCall(
     account,
     buildRegistrarCall("create_game", buildCreateGameCalldata(params), target),
     target,
   );
+  const gameId = resolveCreatedGameId(result.receipt, target);
+  const ledgerResult = gameId
+    ? await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end)
+    : null;
   return {
     ...result,
-    gameId: resolveCreatedGameId(result.receipt, target),
+    gameId,
+    openLedgerTxHash: ledgerResult?.transactionHash,
   };
 }
 

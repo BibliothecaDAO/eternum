@@ -377,9 +377,8 @@ fn tie_fixture_one_one_three_splits_positions_once() {
     let first = fixture.ledger.get_player_result(GAME_ID, player(0));
     let second = fixture.ledger.get_player_result(GAME_ID, player(1));
     let third = fixture.ledger.get_player_result(GAME_ID, player(2));
-    assert!(first.payout == second.payout, "tied players should split equally");
-    assert!(first.mmr_after == second.mmr_after, "tied players should receive equal MMR");
-    assert!(third.payout < first.payout, "third place should receive less");
+    assert!((first.payout, second.payout, third.payout) == (407, 407, 383), "1,1,3 payout fixture changed");
+    assert!((first.mmr_after, second.mmr_after, third.mmr_after) == (1016, 1016, 991), "1,1,3 MMR fixture changed");
 }
 
 #[test]
@@ -395,7 +394,27 @@ fn tie_fixture_one_two_two_four_splits_positions_once() {
     let second = fixture.ledger.get_player_result(GAME_ID, player(1));
     let third = fixture.ledger.get_player_result(GAME_ID, player(2));
     let fourth = fixture.ledger.get_player_result(GAME_ID, player(3));
-    assert!(second.payout == third.payout, "tied players should split equally");
-    assert!(second.mmr_after == third.mmr_after, "tied players should receive equal MMR");
-    assert!(first.payout > second.payout && second.payout > fourth.payout, "positions should decay");
+    assert!(
+        (first.payout, second.payout, third.payout, fourth.payout) == (424, 399, 399, 375),
+        "1,2,2,4 payout fixture changed",
+    );
+    assert!(
+        (first.mmr_after, second.mmr_after, third.mmr_after, fourth.mmr_after) == (1026, 1007, 1007, 989),
+        "1,2,2,4 MMR fixture changed",
+    );
+}
+
+#[test]
+fn consumes_paid_flags_when_the_roster_is_below_the_mmr_minimum() {
+    let fixture = deploy_fixture(default_preset());
+    let owner = player(0);
+    fund_and_approve_player(@fixture, owner, 1_000);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register(GAME_ID, true, false);
+    stop_cheat_caller_address(fixture.ledger_address);
+    apply_results(@fixture, array![(owner, 1, 0)]);
+
+    let registration = fixture.ledger.get_registration(GAME_ID, owner);
+    assert!(registration.sword, "sword purchase should be recorded");
+    assert!(registration.flags_consumed, "final results should consume paid flags");
 }

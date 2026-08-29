@@ -24,15 +24,12 @@ const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-run
 const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
 
 const originalFetch = globalThis.fetch;
-const originalToriiSqlUrl = process.env.TORII_SQL_URL;
+const originalHeraldUrl = process.env.HERALD_URL;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
-  if (originalToriiSqlUrl === undefined) {
-    delete process.env.TORII_SQL_URL;
-  } else {
-    process.env.TORII_SQL_URL = originalToriiSqlUrl;
-  }
+  if (originalHeraldUrl === undefined) delete process.env.HERALD_URL;
+  else process.env.HERALD_URL = originalHeraldUrl;
 });
 
 describe("grouped series-like runner", () => {
@@ -61,17 +58,13 @@ describe("grouped series-like runner", () => {
   });
 
   test("skips wait-for-factory-indexes for children whose create-worlds step never succeeded", async () => {
-    process.env.TORII_SQL_URL = "https://torii.example/sql";
+    process.env.HERALD_URL = "https://herald.example";
     const fetchCalls: string[] = [];
     globalThis.fetch = (async (url: Parameters<typeof fetch>[0]) => {
       fetchCalls.push(String(url));
 
-      if (fetchCalls.length === 1) {
-        return Response.json([{ game_id: 7 }]);
-      }
-
-      if (fetchCalls.length === 2) {
-        return Response.json([{ game_id: 7 }]);
+      if (fetchCalls.length <= 2) {
+        return Response.json({ games: [{ game_id: 7, name: "bltz-knicker-06" }] });
       }
 
       throw new Error(`Unexpected fetch call: ${String(url)}`);

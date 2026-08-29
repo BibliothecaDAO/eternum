@@ -20,13 +20,10 @@ export const deployVillagePassContract = async () => {
   let contractName = "EternumVillagePass";
   const class_hash = (await declare(getContractPath(TARGET_PATH, projectName, contractName), casualName)).class_hash;
 
-  let VILLAGE_PASS_ADMIN = BigInt(process.env.SEASON_PASS_ADMIN);
+  let VILLAGE_PASS_ADMIN = requireAddress("SEASON_PASS_ADMIN");
   let VILLAGE_PASS_UPGRADER = VILLAGE_PASS_ADMIN;
-  let VILLAGE_PASS_MINTER = await getContractByNameFromManifest("realm_internal_systems");
-  let VILLAGE_PASS_DISTRIBUTORS = [
-    await getContractByNameFromManifest("village_systems"),
-    BigInt(process.env.VILLAGE_PASS_DISTRIBUTOR),
-  ];
+  let VILLAGE_PASS_MINTER = VILLAGE_PASS_ADMIN;
+  let VILLAGE_PASS_DISTRIBUTORS = [requireAddress("VILLAGE_PASS_DISTRIBUTOR")];
 
   let constructorCalldata = [
     VILLAGE_PASS_ADMIN,
@@ -39,6 +36,12 @@ export const deployVillagePassContract = async () => {
   let address = await deploy(casualName, class_hash, constructorCalldata);
   return address;
 };
+
+function requireAddress(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} environment variable is not set`);
+  return BigInt(value);
+}
 
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
@@ -81,21 +84,4 @@ export const saveVillagePassAddressToCommonFolder = async (villagePassAddress) =
     console.error("Error writing file", err);
     throw err;
   }
-};
-
-export const getContractByNameFromManifest = async (systemName) => {
-  const network = process.env.STARKNET_NETWORK;
-  const folderPath = path.join("..", "..", "..", "..", "game");
-  const fileName = path.join(folderPath, `manifest_${network}.json`);
-
-  // Read file content
-  const fileContent = await fs.promises.readFile(fileName, "utf8");
-  const manifest = JSON.parse(fileContent);
-
-  const contractSystemName = `${process.env.ETERNUM_CONTRACTS_NAMESPACE}-${systemName}`;
-  const contract = manifest.contracts.find((contract) => contract.tag === contractSystemName);
-  if (!contract) {
-    throw new Error(`Contract ${contractSystemName} not found in manifest`);
-  }
-  return contract.address;
 };

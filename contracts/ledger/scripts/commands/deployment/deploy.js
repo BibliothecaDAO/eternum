@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { runContractPackageTask } from "../../../../scripts-runtime/js/contract-package.js";
+
+const networkName = process.argv[2];
+if (networkName !== "sepolia") {
+  throw new Error("The phase-3 ledger deploy target is sepolia");
+}
+
+const commandDirectory = path.dirname(fileURLToPath(import.meta.url));
+await runContractPackageTask({
+  actionName: "deploy",
+  networkName,
+  packageLabel: "Realms game ledger",
+  packageRoot: path.join(commandDirectory, "..", "..", ".."),
+});

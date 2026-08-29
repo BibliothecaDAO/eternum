@@ -10,7 +10,10 @@ const createRegistrarGameMock = mock(async () => ({
   transactionHash: "0xcreate",
   receipt: { execution_status: "SUCCEEDED" },
   gameId: 7,
+  openLedgerTxHash: "0xopen",
 }));
+const createLedgerOperatorAccountMock = mock(() => ({ address: "0xoperator" }));
+const openLedgerGameMock = mock(async () => ({ transactionHash: "0xopen", receipt: {} }));
 const findGameRegistryByNameMock = mock(async () => {
   if (findGameError) {
     throw findGameError;
@@ -34,6 +37,11 @@ mock.module("../registrar/calls", () => ({
   createRegistrarGame: createRegistrarGameMock,
   resolveRegistrarEnvironmentId: (environmentId: string) => environmentId,
   resolveRegistrarWorldAddress: () => "0xworld",
+}));
+
+mock.module("../ledger/calls", () => ({
+  createLedgerOperatorAccount: createLedgerOperatorAccountMock,
+  openLedgerGame: openLedgerGameMock,
 }));
 
 mock.module("../registrar/game-registry", () => ({
@@ -62,6 +70,8 @@ beforeEach(() => {
   findGameError = null;
   assertRegistrarAvailableMock.mockClear();
   createRegistrarGameMock.mockClear();
+  createLedgerOperatorAccountMock.mockClear();
+  openLedgerGameMock.mockClear();
   findGameRegistryByNameMock.mockClear();
   waitForGameRegistryByIdMock.mockClear();
   writeLaunchSummaryMock.mockClear();
@@ -81,6 +91,7 @@ describe("registrar game launch", () => {
       gameId: 7,
       worldAddress: "0xworld",
       createGameTxHash: "0xcreate",
+      openLedgerTxHash: "0xopen",
       outputPath: ".context/game-launch/madara-blitz-bltz-test.json",
     });
   });
@@ -98,6 +109,14 @@ describe("registrar game launch", () => {
       const summary = await runLaunchStep({ ...buildRequest(), stepId: "create-world" });
 
       expect(createRegistrarGameMock).not.toHaveBeenCalled();
+      expect(openLedgerGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "0xoperator" }),
+        { address: "0xledger", rpcUrl: "https://sepolia.example/rpc" },
+        19,
+        1,
+        4_070_908_800,
+        4_070_912_400,
+      );
       expect(summary.gameId).toBe(19);
       expect(summary.worldAddress).toBe("0xworld");
       expect(lines.join("")).toContain('Game "bltz-test" already exists as 19; skipping create_game');
@@ -167,6 +186,8 @@ function buildRequest() {
     gameName: "bltz-test",
     startTime: "2099-01-01T00:00:00Z",
     rpcUrl: "http://127.0.0.1:5050",
+    ledgerAddress: "0xledger",
+    ledgerRpcUrl: "https://sepolia.example/rpc",
     accountAddress: "0x123",
     privateKey: "0x456",
     waitForFactoryIndexTimeoutMs: 10_000,

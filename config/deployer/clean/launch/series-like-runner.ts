@@ -76,6 +76,7 @@ function updateSeriesLikeGameSuccess(
       gameId: gameSummary.gameId ?? game.artifacts.gameId,
       worldAddress: gameSummary.worldAddress || game.artifacts.worldAddress,
       createGameTxHash: gameSummary.createGameTxHash || game.artifacts.createGameTxHash,
+      openLedgerTxHash: gameSummary.openLedgerTxHash || game.artifacts.openLedgerTxHash,
     },
   };
 }
@@ -100,6 +101,8 @@ export function buildSeriesLikeGameLaunchRequest(
     gameName: game.gameName,
     startTime: game.startTime,
     rpcUrl: summary.rpcUrl,
+    ledgerAddress: request.ledgerAddress,
+    ledgerRpcUrl: request.ledgerRpcUrl,
     accountAddress: request.accountAddress,
     privateKey: request.privateKey,
     devModeOn: request.devModeOn,

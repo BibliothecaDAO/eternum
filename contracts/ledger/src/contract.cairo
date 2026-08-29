@@ -632,6 +632,7 @@ pub mod GameLedger {
     impl MmrWriterImpl of MmrWriterTrait {
         fn apply_mmr(ref self: ContractState, game_id: u32, ranked: Span<(ContractAddress, u16, u16)>, preset: Preset) {
             if !preset.mmr.enabled || ranked.len() < preset.mmr.min_players.into() {
+                self.consume_registration_flags(game_id, ranked);
                 return;
             }
 
@@ -671,6 +672,17 @@ pub mod GameLedger {
                 index += 1;
             }
             mmr_token.update_mmr_batch(updates);
+        }
+
+        fn consume_registration_flags(
+            ref self: ContractState, game_id: u32, ranked: Span<(ContractAddress, u16, u16)>,
+        ) {
+            for entry in ranked {
+                let (owner, _, _) = *entry;
+                let mut registration = self.registrations.entry((game_id, owner)).read();
+                registration.flags_consumed = true;
+                self.registrations.entry((game_id, owner)).write(registration);
+            }
         }
 
         fn insert_sorted(ref values: Felt252Dict<u128>, length: u32, value: u128) {
