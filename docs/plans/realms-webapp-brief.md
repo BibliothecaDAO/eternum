@@ -63,7 +63,7 @@ refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and
 
 - Herald HTTP is the only source for live game facts and history; the URL per chain from `packages/chain`.
 - Ledger, vault, MMR, collectibles, ammv2, season pass, village pass: addresses from
-  `contracts/common/addresses/ <chain>.json`, ABIs from the Sepolia deployment (B.1), typed calls in one
+  `contracts/common/addresses/<chain>.json`, ABIs from the Sepolia deployment (B.1), typed calls in one
   `services/contracts/` module — no ad-hoc `callContract` elsewhere. Reads by multicall; writes as single multicalls
   with approvals.
 - Identity API: the existing better-auth routes plus `name` (set/get/lookup by owner) and `owner → name` batch lookup.

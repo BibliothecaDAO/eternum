@@ -13,7 +13,7 @@ change cites the measurement that motivated it and re-measures after.
 ## Half one — deletions (after the web app takes the lobby)
 
 - `src/ui/features/landing/**` (the entry modal, worlds summary, game selector, play view),
-  `src/runtime/world/ world-directory.ts` consumers that choose a game (the directory read stays only to resolve the
+  `src/runtime/world/world-directory.ts` consumers that choose a game (the directory read stays only to resolve the
   `game` query into a world profile), spectator entry UI (spectate is a URL: `/play?game=<id>&spectate=1`,
   `utils/spectator-session.ts` stays the one source).
 - Every L2 signer path: wallet connectors in the client, `VITE_PUBLIC_IDENTITY_RPC_URL` reads, cosmetics registration
@@ -21,7 +21,7 @@ change cites the measurement that motivated it and re-measures after.
 - `src/ui/features/cosmetics/**` UI (gallery, showcase, chest-opening store, dev preview), `services/amm/**`, the
   prediction-market stubs (`MenuEnum.predictionMarket`, `View.PredictionMarket`, the retired buttons and comments),
   `VITE_PUBLIC_MARKETPLACE_URL`, `accountName` in the account store and the `Player-` fallback
-  (`services/identity/ player-name.ts`: the name comes from the identity session).
+  (`services/identity/player-name.ts`: the name comes from the identity session).
 - Whatever knip reports unused after the above. The three.js cosmetics render path (`three/cosmetics/**`) stays — it
   reads the RECS row.
 
