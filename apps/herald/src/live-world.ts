@@ -54,6 +54,19 @@ interface OverlayTransaction {
   transactionHash: string;
 }
 
+const MAX_PENDING_TRANSACTION_ENTRIES = 2_048;
+const MAX_RECEIPTS_PER_TRANSACTION = 4;
+
+const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string, value: Value): void => {
+  map.delete(key);
+  map.set(key, value);
+  while (map.size > MAX_PENDING_TRANSACTION_ENTRIES) {
+    const oldest = map.keys().next().value;
+    if (oldest === undefined) return;
+    map.delete(oldest);
+  }
+};
+
 export class LiveWorld {
   public readonly hub: GameStreamHub;
   private confirmedFold: WorldFold;
@@ -162,7 +175,7 @@ export class LiveWorld {
     if (!this.transactionSenders.has(transactionHash)) {
       const pending = this.pendingReceipts.get(transactionHash) ?? [];
       pending.push(receipt);
-      this.pendingReceipts.set(transactionHash, pending);
+      setBoundedTransactionEntry(this.pendingReceipts, transactionHash, pending.slice(-MAX_RECEIPTS_PER_TRANSACTION));
       return;
     }
 
@@ -409,7 +422,7 @@ export class LiveWorld {
       this.flushCompletePreconfirmedTransaction();
       return;
     }
-    this.preconfirmedReceiptEvents.set(transactionHash, eventIndexes);
+    setBoundedTransactionEntry(this.preconfirmedReceiptEvents, transactionHash, eventIndexes);
   }
 
   private worldEventIndexes(receipt: RpcReceipt): Set<number> {
@@ -438,7 +451,7 @@ export class LiveWorld {
     const transactionHash = normalizeFelt(transactionHashValue);
     const address = transaction.sender_address ?? transaction.contract_address;
     const sender = address ? normalizeFelt(address) : null;
-    this.transactionSenders.set(transactionHash, sender);
+    setBoundedTransactionEntry(this.transactionSenders, transactionHash, sender);
     const pending = this.pendingReceipts.get(transactionHash) ?? [];
     this.pendingReceipts.delete(transactionHash);
     pending.forEach((receipt) => this.publishTransactionReceipt(transactionHash, sender, receipt));

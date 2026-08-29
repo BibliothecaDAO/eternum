@@ -25,14 +25,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
   "apps/game/src/ui/components/world-countdown.tsx": { class: "clock", reason: "countdown interpolation" },
   "apps/game/src/ui/debug/army-movement-latency-overlay.tsx": { class: "debug", reason: "local metrics repaint" },
   "apps/game/src/ui/debug/dev-sync-overlay.tsx": { class: "debug", reason: "local age-label repaint" },
-  "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-content.ts": {
-    class: "external",
-    reason: "marketplace API cannot push",
-  },
-  "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-owned-chests.ts": {
-    class: "external",
-    reason: "marketplace API cannot push",
-  },
   "apps/game/src/ui/features/cosmetics/components/cosmetic-model-viewer.tsx": {
     class: "ui",
     reason: "renderer readiness check",

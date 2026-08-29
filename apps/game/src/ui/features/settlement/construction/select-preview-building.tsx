@@ -145,7 +145,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const [timerTick, setTimerTick] = useState(0);
-  const [pendingAction, setPendingAction] = useState<"build" | "production" | null>(null);
+  const [pendingAction, setPendingAction] = useState<"destroy" | "production" | null>(null);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
@@ -180,7 +180,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         : [],
     [dojo.setup.components, dojo.setup.systemCalls, realm?.position, structureBuildings],
   );
-  const isBuildLocked = pendingAction === "build";
+  const isDestroyLocked = pendingAction === "destroy";
   const isProductionLocked = pendingAction === "production";
   const hasAvailableBuildingTile = useMemo(() => {
     return resolveRealmHasAvailableBuildingTile({
@@ -198,7 +198,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     realm?.position?.x,
     realm?.position?.y,
     structure?.base?.level,
-    isBuildLocked,
     structureBuildings,
   ]);
   const getBuildingCountFor = useCallback(
@@ -216,29 +215,23 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
-      if (isBuildLocked) return;
-      setPendingAction("build");
-      try {
-        await buildRealmBuilding({
-          entityId,
-          realmPosition: realm?.position,
-          realm,
-          mode,
-          target,
-          useSimpleCost,
-          world: {
-            account: dojo.account.account,
-            components: dojo.setup.components,
-            systemCalls: dojo.setup.systemCalls,
-          },
-          onBuildSuccess: (selection) => {
-            setPreviewBuilding(null);
-            setSelectedBuildingHex(selection);
-          },
-        });
-      } finally {
-        setPendingAction(null);
-      }
+      await buildRealmBuilding({
+        entityId,
+        realmPosition: realm?.position,
+        realm,
+        mode,
+        target,
+        useSimpleCost,
+        world: {
+          account: dojo.account.account,
+          components: dojo.setup.components,
+          systemCalls: dojo.setup.systemCalls,
+        },
+        onBuildSuccess: (selection) => {
+          setPreviewBuilding(null);
+          setSelectedBuildingHex(selection);
+        },
+      });
     },
     [
       dojo.account.account,
@@ -251,7 +244,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       setSelectedBuildingHex,
       useSimpleCost,
       mode,
-      isBuildLocked,
     ],
   );
 
@@ -262,7 +254,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
 
-      if (isBuildLocked) return;
+      if (isDestroyLocked) return;
       const outerCol = Number(realm.position.x);
       const outerRow = Number(realm.position.y);
       const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
@@ -275,7 +267,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         toast.error("No building of this type found to destroy.");
         return;
       }
-      setPendingAction("build");
+      setPendingAction("destroy");
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
         if (
@@ -296,7 +288,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       dojo.setup.components,
       dojo.setup.systemCalls,
       entityId,
-      isBuildLocked,
+      isDestroyLocked,
       previewBuilding?.resource,
       previewBuilding?.type,
       realm?.position,
@@ -598,20 +590,19 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       new Map(
         realmBuildingSummary.map((item) => {
           const buildState = getSummaryBuildState(item.buildingId);
-          const isPending = isBuildLocked;
 
           return [
             item.buildingId,
             {
               onBuild: () => void handleAutoBuild({ type: item.buildingId }),
-              disabled: !buildState.canBuild || isPending,
-              loading: isPending,
-              title: isPending ? `Building ${item.label}...` : (buildState.disabledReason ?? `Build ${item.label}`),
+              disabled: !buildState.canBuild,
+              loading: false,
+              title: buildState.disabledReason ?? `Build ${item.label}`,
             },
           ] as const;
         }),
       ),
-    [getSummaryBuildState, handleAutoBuild, isBuildLocked, realmBuildingSummary],
+    [getSummaryBuildState, handleAutoBuild, realmBuildingSummary],
   );
 
   const tabs = useMemo(
@@ -655,9 +646,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         const canBuild = buildability.canSubmit;
                         const disabledReason = buildability.reason;
                         const disabled = !canBuild;
-                        const isPending = isBuildLocked;
                         const count = getBuildingCountFor(building);
-                        const destroyPending = isBuildLocked;
+                        const destroyPending = isDestroyLocked;
                         const destroyDisabled = count <= 0 || destroyPending;
 
                         const pauseResumePending = isProductionLocked;
@@ -701,8 +691,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             disabledReason={disabledReason}
                             count={count}
                             onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                            buildDisabled={!canBuild || isPending}
-                            buildLoading={isPending}
+                            buildDisabled={!canBuild}
                             onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
                             destroyDisabled={destroyDisabled}
                             destroyLoading={destroyPending}
@@ -747,9 +736,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         const canBuild = buildability.canSubmit;
                         const disabledReason = buildability.reason;
                         const disabled = !canBuild;
-                        const isPending = isBuildLocked;
                         const count = getBuildingCountFor(building);
-                        const destroyPending = isBuildLocked;
+                        const destroyPending = isDestroyLocked;
                         const destroyDisabled = count <= 0 || destroyPending;
                         const pauseResumePending = isProductionLocked;
                         const allPausedState = pausedByCategory.get(building);
@@ -786,8 +774,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             disabledReason={disabledReason}
                             count={count}
                             onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                            buildDisabled={!canBuild || isPending}
-                            buildLoading={isPending}
+                            buildDisabled={!canBuild}
                             onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
                             destroyDisabled={destroyDisabled}
                             destroyLoading={destroyPending}
@@ -850,9 +837,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const canBuild = buildability.canSubmit;
                 const disabledReason = buildability.reason;
                 const disabled = !canBuild;
-                const isPending = isBuildLocked;
                 const count = getBuildingCountFor(building);
-                const destroyPending = isBuildLocked;
+                const destroyPending = isDestroyLocked;
                 const destroyDisabled = count <= 0 || destroyPending;
 
                 const isFarm = building === BuildingType.ResourceWheat;
@@ -908,8 +894,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     disabledReason={disabledReason}
                     count={count}
                     onBuild={() => handleAutoBuild({ type: building })}
-                    buildDisabled={!canBuild || isPending}
-                    buildLoading={isPending}
+                    buildDisabled={!canBuild}
                     onDestroy={() => handleDestroyBuilding({ type: building })}
                     destroyDisabled={destroyDisabled}
                     destroyLoading={destroyPending}
@@ -1003,9 +988,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             });
                             const canBuild = buildability.canSubmit;
                             const disabledReason = buildability.reason;
-                            const isPending = isBuildLocked;
                             const count = getBuildingCountFor(building);
-                            const destroyPending = isBuildLocked;
+                            const destroyPending = isDestroyLocked;
                             const destroyDisabled = count <= 0 || destroyPending;
 
                             const pauseResumePending = isProductionLocked;
@@ -1050,8 +1034,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 disabledReason={disabledReason}
                                 count={count}
                                 onBuild={() => handleAutoBuild({ type: building })}
-                                buildDisabled={!canBuild || isPending}
-                                buildLoading={isPending}
+                                buildDisabled={!canBuild}
                                 onDestroy={() => handleDestroyBuilding({ type: building })}
                                 destroyDisabled={destroyDisabled}
                                 destroyLoading={destroyPending}
@@ -1079,7 +1062,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       playResourceSound,
       useSimpleCost,
       armyGroups,
-      isBuildLocked,
+      isDestroyLocked,
       isProductionLocked,
       pausedByCategory,
       mode,

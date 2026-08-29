@@ -332,6 +332,42 @@ describe("LiveWorld", () => {
     expect(socket.messages.at(-1)).toMatchObject({ hash: "0x555", status: "PRE_CONFIRMED", type: "tx" });
   });
 
+  it("bounds transaction state when final receipts never arrive", () => {
+    const { live } = liveFixture();
+    const transactionCount = 2_049;
+
+    for (let index = 0; index < transactionCount; index += 1) {
+      const transactionHash = `0x${(index + 0x1_000).toString(16)}`;
+      live.acceptTransaction({
+        finality_status: "PRE_CONFIRMED",
+        sender_address: "0xabc",
+        transaction_hash: transactionHash,
+        type: "INVOKE",
+      });
+      live.acceptReceipt({
+        events: [
+          {
+            data: ["0x1", "0x7", "0x1", "0x2"],
+            from_address: registry.worldAddress,
+            keys: [WORLD_EVENT_SELECTORS.set, "0x101", "0xabc"],
+          },
+        ],
+        execution_status: "SUCCEEDED",
+        finality_status: "PRE_CONFIRMED",
+        transaction_hash: `0x${(index + 0x10_000).toString(16)}`,
+      });
+    }
+
+    const transactionState = live as unknown as {
+      pendingReceipts: Map<string, unknown>;
+      preconfirmedReceiptEvents: Map<string, unknown>;
+      transactionSenders: Map<string, unknown>;
+    };
+    expect(transactionState.transactionSenders.size).toBe(2_048);
+    expect(transactionState.pendingReceipts.size).toBe(2_048);
+    expect(transactionState.preconfirmedReceiptEvents.size).toBe(2_048);
+  });
+
   it("logs an undecodable event and keeps serving later transactions", async () => {
     const { live } = liveFixture();
     const socket = recordingSocket();

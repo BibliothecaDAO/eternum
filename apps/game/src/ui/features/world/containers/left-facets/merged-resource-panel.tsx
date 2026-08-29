@@ -72,7 +72,6 @@ export const MergedResourcePanel = memo(
     const useSimpleCost = useUIStore((state) => state.useSimpleCost);
 
     const entityId = Number(structureEntityId);
-    const [isBuildLocked, setBuildLocked] = useState(false);
     const realm = useMemo(
       () =>
         Number.isFinite(entityId) && entityId > 0
@@ -147,27 +146,21 @@ export const MergedResourcePanel = memo(
 
     const handleAutoBuild = useCallback(
       async (buildingType: BuildingType, resourceId: ResourcesIds) => {
-        if (isBuildLocked) return;
-        setBuildLocked(true);
-        try {
-          await buildRealmBuilding({
-            entityId,
-            realmPosition: realm?.position,
-            realm,
-            mode,
-            target: { type: buildingType, resource: resourceId },
-            useSimpleCost,
-            world: {
-              account: dojo.account.account,
-              components,
-              systemCalls: dojo.setup.systemCalls,
-            },
-          });
-        } finally {
-          setBuildLocked(false);
-        }
+        await buildRealmBuilding({
+          entityId,
+          realmPosition: realm?.position,
+          realm,
+          mode,
+          target: { type: buildingType, resource: resourceId },
+          useSimpleCost,
+          world: {
+            account: dojo.account.account,
+            components,
+            systemCalls: dojo.setup.systemCalls,
+          },
+        });
       },
-      [dojo.account.account, dojo.setup.systemCalls, components, entityId, isBuildLocked, realm, mode, useSimpleCost],
+      [dojo.account.account, dojo.setup.systemCalls, components, entityId, realm, mode, useSimpleCost],
     );
 
     const renderToken = useCallback(
@@ -205,7 +198,7 @@ export const MergedResourcePanel = memo(
             hasAvailableBuildingTile,
           });
           buildReason = buildability.reason;
-          buildEnabled = buildability.canSubmit && !isBuildLocked;
+          buildEnabled = buildability.canSubmit;
         }
 
         const tooltipParts = [label];
@@ -263,7 +256,6 @@ export const MergedResourcePanel = memo(
         handleAutoBuild,
         hasAvailableBuildingTile,
         mode,
-        isBuildLocked,
         productionMap,
         realm,
         useSimpleCost,

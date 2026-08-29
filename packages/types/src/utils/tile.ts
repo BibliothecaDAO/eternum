@@ -1,7 +1,7 @@
 import { MAX_U32 } from "../constants/market";
 import type { Tile, TileOpt } from "../types/common";
 
-export type TileDataInput = bigint | string | number;
+type TileDataInput = bigint | string | number;
 
 const OCCUPIER_IS_STRUCTURE_SHIFT = 0;
 const OCCUPIER_IS_STRUCTURE_MASK = 0x1n;

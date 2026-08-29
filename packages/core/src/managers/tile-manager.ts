@@ -23,8 +23,6 @@ const BUILDING_SLOT_COORDINATES = [
   ...getHexesWithinRadius(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], RealmLevels.Empire + 1),
 ];
 const OCCUPIED_SPACE_REASON = "space is occupied";
-const BUILDING_PLACEMENT_TTL_MS = 30_000;
-const pendingBuildingPlacements = new Map<string, number>();
 
 const extractErrorMessage = (error: unknown): string => {
   if (typeof error === "string") return error;
@@ -119,17 +117,7 @@ export class TileManager {
     const { col, row } = hexCoords;
     const entity = buildingEntityKey(this.col, this.row, col, row);
     const building = getComponentValue(this.components.Building, entity);
-    if (building !== undefined && building.category !== BuildingType.None) {
-      pendingBuildingPlacements.delete(entity);
-      return true;
-    }
-
-    const pendingUntil = pendingBuildingPlacements.get(entity);
-    if (pendingUntil === undefined) return false;
-    if (pendingUntil > Date.now()) return true;
-
-    pendingBuildingPlacements.delete(entity);
-    return false;
+    return building !== undefined && building.category !== BuildingType.None;
   };
 
   structureType = () => {
@@ -156,8 +144,6 @@ export class TileManager {
       throw new Error(OCCUPIED_SPACE_REASON);
     }
 
-    const entity = buildingEntityKey(this.col, this.row, col, row);
-    pendingBuildingPlacements.set(entity, Date.now() + BUILDING_PLACEMENT_TTL_MS);
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
@@ -170,7 +156,6 @@ export class TileManager {
         use_simple: useSimpleCost,
       });
     } catch (error) {
-      pendingBuildingPlacements.delete(entity);
       console.error(error);
       if (isOccupiedSpaceError(error)) {
         throw new Error(OCCUPIED_SPACE_REASON);

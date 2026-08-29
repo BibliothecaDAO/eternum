@@ -35,7 +35,7 @@ vi.mock("@dojoengine/utils", () => ({ getEntityIdFromKeys: (keys: bigint[]) => k
 const buildableRealm = {
   category: StructureType.Realm,
   level: 1,
-  resources: [ResourcesIds.Wheat],
+  resources: [ResourcesIds.Wheat, ResourcesIds.Wood, ResourcesIds.Coal],
   population: 1,
   capacity: 10,
   hasCapacity: true,
@@ -50,6 +50,14 @@ const buildOptions = () => ({
   useSimpleCost: true,
   world: { account: {}, components: {}, systemCalls: {} },
 });
+
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+};
 
 describe("buildRealmBuilding", () => {
   beforeEach(() => {
@@ -89,5 +97,40 @@ describe("buildRealmBuilding", () => {
       { col: 11, row: 11 },
       true,
     );
+  });
+
+  it("serializes four quick clicks per realm and resolves each slot when its turn starts", async () => {
+    const occupied = new Set<string>();
+    const submissions = Array.from({ length: 4 }, () => deferred<{ transaction_hash: string }>());
+    let submissionIndex = 0;
+    mocks.isHexOccupied.mockImplementation((spot: { col: number; row: number }) =>
+      occupied.has(`${spot.col},${spot.row}`),
+    );
+    mocks.placeBuilding.mockImplementation((_account, _entityId, _buildingType, spot: { col: number; row: number }) => {
+      const submission = submissions[submissionIndex++]!;
+      return submission.promise.then((result) => {
+        occupied.add(`${spot.col},${spot.row}`);
+        return result;
+      });
+    });
+
+    const builds = [
+      BuildingType.WorkersHut,
+      BuildingType.Storehouse,
+      BuildingType.ResourceWheat,
+      BuildingType.ResourceWood,
+    ].map((type) => buildRealmBuilding({ ...buildOptions(), target: { type } }));
+
+    await vi.waitFor(() => expect(mocks.placeBuilding).toHaveBeenCalledTimes(1));
+    for (let index = 0; index < submissions.length; index += 1) {
+      submissions[index]!.resolve({ transaction_hash: `0x${index + 1}` });
+      if (index + 1 < submissions.length) {
+        await vi.waitFor(() => expect(mocks.placeBuilding).toHaveBeenCalledTimes(index + 2));
+      }
+    }
+
+    await expect(Promise.all(builds)).resolves.toEqual([true, true, true, true]);
+    const selectedSpots = mocks.placeBuilding.mock.calls.map((call) => call[3] as { col: number; row: number });
+    expect(new Set(selectedSpots.map(({ col, row }) => `${col},${row}`)).size).toBe(4);
   });
 });

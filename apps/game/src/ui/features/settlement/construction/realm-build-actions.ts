@@ -1,6 +1,7 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
 import { TileManager } from "@bibliothecadao/eternum";
 import { toast } from "sonner";
+import { getScopedGameId } from "@/sync/game-scope";
 import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction-buildability";
 
 type RealmPosition = {
@@ -49,7 +50,27 @@ type RealmAvailableTileOptions = {
 };
 
 const buildablePositionsCache = new Map<number, BuildSpot[]>();
+const realmBuildLocks = new Map<string, Promise<void>>();
 const OCCUPIED_SPACE_REASON = "space is occupied";
+
+const runWithRealmBuildLock = async <Result>(entityId: number, task: () => Promise<Result>): Promise<Result> => {
+  const lockKey = `${getScopedGameId()}:${entityId}`;
+  const previous = realmBuildLocks.get(lockKey) ?? Promise.resolve();
+  let release!: () => void;
+  const turn = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const tail = previous.catch(() => undefined).then(() => turn);
+  realmBuildLocks.set(lockKey, tail);
+
+  await previous.catch(() => undefined);
+  try {
+    return await task();
+  } finally {
+    release();
+    if (realmBuildLocks.get(lockKey) === tail) realmBuildLocks.delete(lockKey);
+  }
+};
 
 const extractErrorMessage = (error: unknown): string => {
   if (typeof error === "string") return error;
@@ -145,7 +166,7 @@ const hasBuildableCandidate = ({ entityId, realmPosition, world }: RealmAvailabl
 export const resolveRealmHasAvailableBuildingTile = (options: RealmAvailableTileOptions) =>
   hasBuildableCandidate(options);
 
-export const buildRealmBuilding = async ({
+const submitRealmBuilding = async ({
   entityId,
   realmPosition,
   realm,
@@ -154,12 +175,7 @@ export const buildRealmBuilding = async ({
   useSimpleCost,
   world,
   onBuildSuccess,
-}: RealmBuildActionOptions) => {
-  if (!realmPosition) {
-    toast.error("Select a realm before building.");
-    return false;
-  }
-
+}: RealmBuildActionOptions & { realmPosition: RealmPosition }) => {
   const baseBuildability = resolveConstructionBuildability({
     entityId,
     buildingType: target.type,
@@ -245,4 +261,14 @@ export const buildRealmBuilding = async ({
     }
     return false;
   }
+};
+
+export const buildRealmBuilding = async (options: RealmBuildActionOptions) => {
+  const realmPosition = options.realmPosition;
+  if (!realmPosition) {
+    toast.error("Select a realm before building.");
+    return false;
+  }
+
+  return runWithRealmBuildLock(options.entityId, () => submitRealmBuilding({ ...options, realmPosition }));
 };
