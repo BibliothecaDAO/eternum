@@ -403,9 +403,11 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     5. ~~A.4 leftovers~~ (done, `3a9be00fe19`: realtime-server's Torii SQL/cache/availability subsystem deleted, −2,361
        lines; chest parser reads herald's decoded shape; camera test renamed to the projection-only invariant it pins;
        registrar submits `tip: 0` with fixed Madara bounds).
-    6. **B — value plane**, per section B below — the _Decisions unblocking B_ block under its gate answers Codex's four
-       questions (ledger economics, MMR authorization, account v2 targets and upgrade, gate topology); the client brief
-       is drafted in parallel by Claude from the A.3/A.4 measurements.
+    6. **B — value plane: superseded 2026-08-29.** Work from `realms-phase-3-backend-brief.md` (one `game_ledger` for
+       both formats, native messaging through Piltover instead of `apps/operator`, proven-only withdrawals, settlement
+       on Sepolia); the design behind it is `realms-value-plane-design.md`. Section B below and its decisions block stay
+       as the record of how we got there; the client brief is drafted in parallel by Claude from the A.3/A.4
+       measurements.
     - Done since the first list: stale wiring tests (`d38000feea4`), degrade-not-die (`fefb400fd2f`), harness
       pre-confirmed nonces and stream senders (`ab125610e8c`), one account truth (`8d2b3b0c0e4`), automation address
       equality (`93da2d4592a`), rulebook in the fold (`0f14d1c152`), quiet-box measurement (above), PR #4903 merged.
@@ -444,6 +446,10 @@ against the new read path; client optimistic-channel code deleted (diff shows ne
 reconnect mid-game resumes by sequence with zero missed diffs.
 
 ## B. Value plane — L2 contracts for entry, MMR, and prizes
+
+> **Superseded 2026-08-29** by `realms-phase-3-backend-brief.md` (backend), `realms-webapp-brief.md` (web app) and
+> `realms-client-brief.md` (client), all derived from `realms-value-plane-design.md`. Kept as the record; do not build
+> from this section.
 
 **Correction (2026-08-27):** identity is the L2 _wallet_; the `PlayerRegistry` that maps wallet ↔ gameplay account lives
 on the **gameplay chain** (`deploy-gameplay-contracts.ts`, read through `GAME_RPC_URL`). An L2 contract cannot call it.
