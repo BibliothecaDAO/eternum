@@ -372,25 +372,39 @@ processes, and republishes. The indexer is the latency budget and the EOL depend
     fresh profile; explore p95 302 vs 250 (submit guard + render); the fog chokepoint and render-on-arrival items from
     the 2026-08-28 measurement; the Build-modal per-realm lock (review above) stays in this brief because it is a
     correctness rework of a rejected commit, not tuning.
-  - _Next steps for Codex, in order (rewritten 2026-08-29 after the checkpoint; Torii is stopped on the lab and stays
-    stopped):_
+  - _A.4 gate, 2026-08-29 (Codex `f5f226cd282` Torii → herald, `a1a69cc9518` per-realm build lock + bounded maps +
+    prototype deletion, `731ce3826ab` atomic confirmed snapshots + receipt-bound harness observations; verified by
+    Claude):_ **pass.** No Torii process, container, template, package or harness URL exists; the compose file and
+    Caddyfile lost their Torii service and route (Codex edited both — in scope for this deletion, noted). Herald serves
+    `/<chain>/games`, `/games/<id>/snapshot`, `/games/<id>/history` (story sink, paginated),
+    `/games/<id>/review/snapshot` and `/games/<id>/transactions/count`; the client's story feed, review, leaderboards,
+    faith and `LastBattle` read those. 96-bot, 10-minute Blitz on herald alone: 3,840/3,840 actions, zero failures, zero
+    reverts, pre-confirmed p50/p95/p99 105/210/476 ms (explore-reveal bar ≤ 250: pass), L2 p95 2.15 s
+    (`.lab/runs/20260829T090319086Z.json`). apps/game tsc clean; herald 27/27; harness 25/25. Caveats carried forward,
+    none blocking A: (1) `closeBlockMs` p95 was **373 ms** (max 613, merklization max 570) — above the D.4.1 300 ms bar
+    — on a host at load1 16–22 with the powersave governor and nothing of ours running in parallel; the D.4.1 number is
+    re-taken on a quiet box (E.1 / the first box), not from this run. (2) Torii names that remain are outside the game's
+    read path: `apps/realtime-server` still requires `TORII_SQL_URL` (chat availability — needs a disposition: herald
+    HTTP or delete the dependency; it was fenced out of A), the marketplace's own Torii in `chest-container.tsx`
+    (EXTERNAL row, by design — but its `unwrapToriiField` helpers should be renamed or deleted now that herald delivers
+    plain values), `config/deployer` Torii tests and `contracts/*/torii-*.toml` (hosted-Cartridge deployment, phase-3
+    exit), CI workflows `game-launch.yml` / `claude.yml`, and test files still named `*torii*` in `apps/game`. (3) The
+    registrar's noisy starknet.js tip-estimator error (registration succeeds) stays on the list. **Section A is
+    closed.** Phase 2 continues with B (value plane); E.1 is now a one-day measurement on the first rented box rather
+    than a gate (owner: one game at a time, well inside one chain's ceiling); the client brief starts from the
+    instrumentation A.3/A.4 left behind.
+  - _Next steps for Codex, in order (rewritten 2026-08-29 evening, after the A.4 gate):_
     1. ~~A.4, the boot path~~ (done — checkpoint above).
     2. ~~Client latency classes and fog~~ — moved to the client brief (owner decision 2026-08-29); the instrumentation
        (`__clientActionLatencyMeasurements` per stage, `__eternumGameEntryTimeline`) stays and is the evidence that
        brief starts from.
-    3. **A.4, the deletions — now.** Every remaining row of the disposition table below (history sink for story / battle
-       / swaps / review; `LastBattle` aggregate; faith and leaderboard onto the stream), then the Torii container,
-       `torii.toml.template`, `packages/torii`, `apps/game/src/dojo`, the `VITE_PUBLIC_HERALD_URL` switch (herald is the
-       transport, full stop), the harness's `toriiSqlUrl`, and every `getConfigFromTorii` row already in the manifest.
-       Gate unchanged: a full Blitz game end to end with no Torii process anywhere; net deletion in the sync runtime;
-       reconnect resumes by `seq` with zero gaps.
-    4. **Build-modal placement, still open** (corrected 2026-08-28 late: the brief briefly listed it as done on the
-       owner's "fixed" report from game 58 — that was the rejected 30 s reservation masking the double-send; no rework
-       commit exists after `1c14be4d50d`). Do it per the review: one build lock per realm held until `placeBuilding`
-       returns, slot resolved at submission time inside the lock, the TTL map and the per-card lock deleted, regression
-       = four quick clicks. Codex sequences it after the boot checkpoint and before declaring the pass complete —
-       accepted. Riding along: the five unreachable chest-opening prototype files knip names are deleted, not ignored;
-       the two per-transaction maps in herald's live world are bounded or expire.
+    3. ~~A.4, the deletions~~ (done — gate above).
+    4. ~~Build-modal per-realm lock, knip prototype files, bounded herald maps~~ (done, `a1a69cc9518`).
+    5. **A.4 leftovers** (small, before B): `apps/realtime-server`'s `TORII_SQL_URL` gets a disposition (herald HTTP or
+       the dependency goes); `chest-container.tsx`'s Torii-shaped field helpers renamed or deleted; `*torii*` test files
+       renamed to what they pin; the registrar's tip-estimator noise silenced at its source.
+    6. **B — value plane**, per section B below, on the L2 lab chain; the client brief is drafted in parallel by Claude
+       from the A.3/A.4 measurements.
     - Done since the first list: stale wiring tests (`d38000feea4`), degrade-not-die (`fefb400fd2f`), harness
       pre-confirmed nonces and stream senders (`ab125610e8c`), one account truth (`8d2b3b0c0e4`), automation address
       equality (`93da2d4592a`), rulebook in the fold (`0f14d1c152`), quiet-box measurement (above), PR #4903 merged.
