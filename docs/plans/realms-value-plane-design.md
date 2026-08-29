@@ -58,7 +58,10 @@ Second rule, new: **the web app owns every L2 action; the game client owns L3 pl
 connectors, SIWS, Postgres, and an L2 indexer; the game client has a gameplay key and a herald socket. So registering,
 locking a pass, depositing, withdrawing, buying a modifier, opening a chest, choosing a loadout, betting, and picking a
 name all happen at realms.world with the identity wallet, and the game client links out. This deletes the client's need
-for an L2 signer, the marketplace-Torii dependency, and the "which address holds the NFT" seam in one move.
+for an L2 signer, the marketplace-Torii dependency, and the "which address holds the NFT" seam in one move. The end
+state (owner, 2026-08-29): **one web app** — account portal, marketplace, ledger actions, chests, bridge, swap — and
+**one desktop game client**; the mobile client (phase x, `apps/mobile` in D) is a second client of the same L3 and the
+same web app, not a third place for value actions.
 
 ## 2. `game_ledger` (L2) — one contract for both formats
 
@@ -71,20 +74,22 @@ The phase-2 `blitz_ledger` becomes `game_ledger`; same entrypoints, format-agnos
   `create_game`.
 - **Entry rows** (entitlements): `register(game_id)` pulls `entry_fee` (Blitz); `register_with_pass(game_id, pass_id)`
   and `register_village(game_id, village_pass_id)` transfer the pass into the ledger and record `pass_owner[game][pass]`
-  (Eternum). Passes are **locked, not burned**: `withdraw_pass(game_id, pass)` by the owner after `end` — a pull, so no
-  loop over players at close. The relay writes `register_relayed(game_id, owner, gameplay_account, realm_id | 0)` on L3;
+  (Eternum). Passes are **burned** — a season pass is season-scoped, and burning needs no storage and no return
+  entrypoint; lock-and-return (`withdraw_pass` after `end`, a pull) only if the owner decides passes keep post-season
+  value (decision 2). The relay writes `register_relayed(game_id, owner, gameplay_account, realm_id | 0)` on L3;
   Eternum's `realm_systems::create` reads the relayed realm id instead of custodying the NFT, and its season-pass
   custody code is deleted.
 - **Pool** — one bucket per game: entry fees, modifier fees and `fund(game_id, amount)` (sponsorship — the dead branch
   of the old curve, alive again for Eternum where the pool is funded, not paid in) all land in `pool[game]`;
   `paid[game][owner]` records each owner's total; `cancel_game` refunds `paid` in full before `start`.
-- **Results** (outcome), paged so a 96-lobby never needs one oversized transaction:
-  `post_results(game_id, page: Array<(owner, rank, chests)>)` accumulates; `finalize(game_id)` reverts unless the posted
-  roster equals the registered set in count and membership, then in one call: MMR deltas computed on-chain from ranks
-  and current MMR with the preset's parameters (modifier flags consumed), payouts by `payout_bps` to the registered
-  owner, protocol cut plus integer dust to `treasury`, loot chests and elite invites **minted by the ledger** (it holds
+- **Results** (outcome): `apply_results(game_id, ranked: Array<(owner, rank, chests)>)` — one call; it reverts unless
+  the roster equals the registered set in count and membership, then: MMR deltas computed on-chain from ranks and
+  current MMR with the preset's parameters (modifier flags consumed), payouts by `payout_bps` to the registered owner,
+  protocol cut plus integer dust to `treasury`, loot chests and elite invites **minted by the ledger** (it holds
   `MINTER_ROLE` on those two ERC721s — the world's direct-mint path and its `0x0` guards are deleted), `finalized` set.
-  A second `finalize` reverts. Stage 2 swaps the operator check for `consume_message_from_l3`; nothing else changes.
+  A second call reverts. Paging (`post_results` + `finalize`) is added only if a 96-roster call _measures_ over the
+  transaction limit on Sepolia — not before. Stage 2 swaps the operator check for `consume_message_from_l3`; nothing
+  else changes.
 - **MMR math in the port**: keep the formula (expected score, tanh-capped delta, mean regression), **delete** the dead
   lobby-split term, and fix ties by using the **average position** of a tied group (competition ranking) over `N − 1`,
   so a full-lobby tie yields zero deltas instead of all-positive ones. `MMRToken` loses its factory hook for an
@@ -109,10 +114,10 @@ fallback go.
 - **Inventory**: the cosmetics ERC721 is `ERC721Enumerable`, so a wallet's items are `balance_of` +
   `token_of_owner_by_index` + `attributes_raw` in one multicall read against the L2 RPC — no indexer, no Torii. The web
   app reads it for the loadout picker and the chest-opening page; the game client never reads L2.
-- **Granting**: chests and elite invites are minted by `game_ledger.finalize` from the posted `(owner, rank, chests)`
-  rows (the L3 allocator still computes the counts; the operator posts them like ranks). Chest opening stays exactly the
-  existing L2 `collectibles_claim` (player-signed, Cartridge VRF) — its VRF dependency is the one Cartridge remnant we
-  keep until the VRF is replaced, and it is behind a claim the player performs at leisure.
+- **Granting**: chests and elite invites are minted by `game_ledger.apply_results` from the posted
+  `(owner, rank, chests)` rows (the L3 allocator still computes the counts; the operator posts them like ranks). Chest
+  opening stays exactly the existing L2 `collectibles_claim` (player-signed, Cartridge VRF) — its VRF dependency is the
+  one Cartridge remnant we keep until the VRF is replaced, and it is behind a claim the player performs at leisure.
 - **Loadout**: chosen in the web app, verified there against the wallet (ownership + timelock to `end`), relayed as an
   entitlement row `set_loadout(game_id, owner, attrs[])` that writes `BlitzCosmeticAttrsRegister`. The L3's ownership
   check against the gameplay account (`utils/collectibles.cairo:18-47`) is deleted — the RECS row and the whole render
@@ -140,21 +145,24 @@ fallback go.
     (`utils/bridge.cairo:232-235`) become **one `bridge_fee_bps` to `treasury`** on the L2 side; the hyperstructure
     inefficiency burn stays on the L3 where it is game balance.
 - **Sequencing** so Eternum can run before the bridge exists: E-1 Eternum on the lab with pass-lock entry, in-game
-  LORDS, win condition set (`points_for_win > 0`), prizes and elite/chests through `finalize` from a funded pool; E-2
-  deposits; E-3 capped withdrawals. A season played on E-1 is a real season — value enters as passes and leaves as
+  LORDS, win condition set (`points_for_win > 0`), prizes and elite/chests through `apply_results` from a funded pool;
+  E-2 deposits; E-3 capped withdrawals. A season played on E-1 is a real season — value enters as passes and leaves as
   prizes.
 
-## 6. Prediction market — rewrite as a parimutuel inside the ledger's world
+## 6. Prediction market — only with evidence, then as a parimutuel in the ledger
 
-Recommendation: **do not port and do not adopt**. Nothing reusable turned up on Starknet (a search finds only
-token-price noise), and the old contract's shape — CTF positions, vault pricing, an oracle that reads the game chain —
-is the wrong shape now that the winner is already known **on L2** at `finalize`. A parimutuel "who wins game X" pool is
-~150 lines:
+First question, unanswered by the repo: **does it earn its place?** No usage data (markets created, bettors, volume)
+exists in the tree; build it only if the old mainnet PM's history shows players used it, otherwise cut it and delete the
+enum stubs in the client. If it stays: **do not port and do not adopt**. Nothing reusable turned up on Starknet (a
+search finds only token-price noise), and the old contract's shape — CTF positions, vault pricing, an oracle that reads
+the game chain — is the wrong shape now that the winner is already known **on L2** at `apply_results`. A parimutuel "who
+wins game X" pool is ~150 lines inside `game_ledger` (a module, not a contract — resolution is internal to
+`apply_results`):
 
 - `bet(game_id, outcome, amount)` before `start` (outcomes = registered owners plus `field`), LORDS into
   `outcome_pool[game][outcome]`, `stake[game][outcome][bettor]`;
-- resolution is `game_ledger.finalize` calling `pools.resolve(game_id, winner)` — no oracle, no cross-chain read, ties
-  resolve to `field`;
+- resolution is `apply_results` calling `resolve_pool(game_id, winner)` in the same contract — no oracle, no cross-chain
+  read, ties resolve to `field`;
 - `claim(game_id)` pays `stake × (total − fee) / outcome_pool[winner]` — pull-based, no loops, unbounded bettors;
   `fee_bps` to `treasury`; a cancelled game refunds stakes.
 
@@ -210,18 +218,19 @@ L3: entry-token path (done), `mmr` system + models + cubit math, ERC20 prize tra
 minting and its `0x0` guards, season-pass and village-pass custody, `transfer_or_mint`, the three-way bridge fee split,
 `lp_withdraw`, the cosmetics ownership check against the gameplay account. L2/off-chain: the factory hook in `MMRToken`,
 the PM world + its Torii + oracle, the marketplace-Torii inventory read, `packages/amm-sdk` (v1, no consumers),
-`services/amm/*` in the game client, the `accountName` store field. Added: `game_ledger`, `vault`, `pools`,
-`apps/operator` (already decided), one name field and one loadout page in the web app.
+`services/amm/*` in the game client, the `accountName` store field. Added: `game_ledger` (pools inside it), `vault`
+(separate only because it has a different key — the guardian), `apps/operator` (already decided), one name field and one
+loadout page in the web app.
 
 ## 9. Owner decisions this design needs
 
 1. **Capped operator bridge** (§5) relaxes the phase-2 line "no operator-run value bridge in the interim" to "bounded by
    cap × delay with a guardian". Accept, or keep withdrawals for phase 3 and ship Eternum on E-1 only.
-2. **Passes are locked and returned**, not burned (§2).
+2. **Passes are burned** at registration (KISS); lock-and-return only if passes keep post-season value (§2).
 3. **The web app owns L2 actions**; the game client links out (§1). This moves chest opening, loadout, bridge, swap, and
    betting UI out of `apps/game`.
-4. **Prediction market: rewrite as a parimutuel** resolved by `finalize` (§6).
+4. **Prediction market: cut unless past usage says otherwise**; if kept, a parimutuel resolved by `apply_results` (§6).
 5. The numbers in §7 — presets, `payout_bps`, protocol cut, MMR parameters, modifier prices, Eternum's season values.
 
 Once 1–4 are answered this becomes section B of the phase-2 brief (B.1 ledger, B.2 Eternum entry, B.3 collectibles, B.4
-bridge, B.5 pools) with a gate each, and the tuning numbers are registered as new preset ids.
+bridge, B.5 pools if kept) with a gate each, and the tuning numbers are registered as new preset ids.
