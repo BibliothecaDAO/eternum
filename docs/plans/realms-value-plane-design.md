@@ -222,7 +222,26 @@ the PM world + its Torii + oracle, the marketplace-Torii inventory read, `packag
 (separate only because it has a different key — the guardian), `apps/operator` (already decided), one name field and one
 loadout page in the web app.
 
-## 9. Owner decisions this design needs
+## 9. Owner decisions (answered 2026-08-29 unless marked open)
+
+- **1 — bridge withdrawals: open, under discussion.** Recommendation on the table: no operator-authorized releases; the
+  vault releases only against the proven L3 burn (settlement on Sepolia, started now with the orchestrator's mock
+  prover), with the delay and daily cap kept as permanent circuit breakers. Eternum's first season runs on E-1 +
+  deposits.
+- **2 — passes burned** at registration. Done.
+- **3 — the web app owns L2 actions and is the lobby**; the game client is launched per game and only plays. One web app
+  (account, marketplace, lobby, ledger actions, chests, loadout, bridge, swap, betting), one desktop client, mobile
+  later as a second client.
+- **4 — prediction market kept, fixed odds, simple**: odds quoted from the pool at buy time and locked per bet; the
+  game's pool pays winners first and the treasury backs any shortfall up to a per-game liability cap (bets over the cap
+  are refused); LORDS payouts, no CTF/ERC1155, no VRF rounding. Simplified from
+  `cagecalls/cairo/src/fight_factory.cairo` (its locked-odds mode) — `create / buy / settle / redeem` and the odds math,
+  roughly a fifth of it.
+- **5 — numbers**: one Blitz preset = `official-60` at **cap 96, no registration delay**; a battle-royale preset later
+  (same sheet, one realm per player); Eternum. Entry **500 LORDS**, sword **500**, shield **500** — all tunable in the
+  preset; the factory stays preset-based and presets are added, never edited.
+
+Original questions, for the record:
 
 1. **Capped operator bridge** (§5) relaxes the phase-2 line "no operator-run value bridge in the interim" to "bounded by
    cap × delay with a guardian". Accept, or keep withdrawals for phase 3 and ship Eternum on E-1 only.
