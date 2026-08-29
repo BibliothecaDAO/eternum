@@ -46,35 +46,30 @@ owner's, made with a price.
 
 ## Order and gates
 
-| #   | Slice                                             | Owner                | Depends on                   |
-| --- | ------------------------------------------------- | -------------------- | ---------------------------- |
-| S.0 | Settlement shape on the lab (spike)               | Claude               | —                            |
-| B.1 | `game_ledger`, `MMRToken`, presets, registrar CLI | Codex                | — (interfaces first, week 1) |
-| B.2 | L3: relayed entry, results message, Eternum entry | Codex                | B.1 interfaces, S.0          |
-| B.3 | Collectibles: grants at `apply_results`, loadout  | Codex                | B.1, B.2                     |
-| B.4 | `vault`: deposits, proven withdrawals             | Codex                | S.0, B.2                     |
-| B.5 | Pools (fixed-odds prediction market)              | Codex                | B.1                          |
-| C   | Account class v2 + adversarial test               | Codex; Claude review | B.1                          |
-| G   | Full gates on Sepolia + lab                       | Owner                | all                          |
+**Settlement is postponed (owner, 2026-08-29 evening).** Stage 1 — operator attestation — is the only transport in this
+brief; nothing below depends on Piltover, the orchestrator, or Sepolia messaging. When settlement returns, the mock
+prover is enough for its shape, and every inbound entrypoint already has the one-line guard to swap.
+
+| #   | Slice                                                     | Owner                | Depends on                     |
+| --- | --------------------------------------------------------- | -------------------- | ------------------------------ |
+| B.1 | `game_ledger`, `MMRToken`, pass upgrades, presets, CLI    | Codex                | — (interfaces first, week 1)   |
+| B.2 | L3: relayed entry, results post, Eternum entry            | Codex                | B.1 interfaces                 |
+| B.3 | Collectibles: grants at `apply_results`, loadout          | Codex                | B.1, B.2                       |
+| B.5 | Pools (fixed-odds prediction market)                      | Codex                | B.1                            |
+| C   | Account class v2 + adversarial test                       | Codex; Claude review | B.1                            |
+| B.4 | `vault`: deposits; withdrawals per the owner's decision 1 | Codex                | B.2, owner's decision 1        |
+| G   | Full gates on Sepolia + lab                               | Owner                | all                            |
+| S.0 | Gas per action measured on Sepolia (for the Dojo exit)    | Claude               | — (runs beside, gates nothing) |
 
 B.1's **interfaces are frozen and deployed on Sepolia in week 1** — ABI, addresses in `deploy/madara-lab/.env` and
 `contracts/common/addresses/sepolia.json` — so the web agent builds against real contracts while the bodies land.
 
-### S.0 — settlement shape (Claude, spike, ≤ 3 days)
+### S.0 — gas per action (Claude, beside the rest, gates nothing)
 
-Piltover deployed on Sepolia with the lab chain's program info; the lab Madara restarted with
-`--settlement-layer STARKNET --l1-endpoint <sepolia>` and `eth_core_contract_address` → Piltover (chain-config); the
-orchestrator in the lab compose with `--prover mock --settle-on-starknet` and its dependencies (MongoDB, localstack for
-SQS/S3/SNS/EventBridge, an RPC with storage proofs for SNOS). **Gate:** one `update_state` for a lab block lands on
-Sepolia; a `send_message_to_appchain` from a Sepolia test contract executes an `#[l1_handler]` on the lab; a
-`send_message_to_l1` from the lab is consumable on Sepolia after the state update. The orchestrator is in-tree in the
-Madara repository (its standalone repo is archived); S.1 records the exact Madara commit behind the pinned image digest
-(`deploy/madara-lab/docker-compose.yml`) and the orchestrator build from the same commit.
-`deploy/madara-lab/README.md:492` ("not wired") stays true until this gate passes. The cost of S (orchestrator + mongo +
-localstack) is recorded with the result; if the shape does not hold on the pinned nightly, the fallback is the operator
-relay and this brief says so in an amendment, not silently.
-
-### B.1 — `game_ledger` (L2), `MMRToken`, presets
+The current game contracts deployed on Sepolia, a harness game replayed there, gas per action by system recorded
+(median, p95, top offenders). It is the Dojo-exit baseline and the number that decides when validity settlement is
+affordable; it does not block any B slice. The settlement shape (Piltover, orchestrator with `--prover mock`, in-tree at
+the Madara commit behind the pinned image digest) is **out of this brief** until the owner brings it back.
 
 - `game_ledger` (`contracts/ledger`, plain Cairo, OZ AccessControl): roles `ADMIN` (cold), `OPERATOR` (opens games,
   cancels unstarted ones), `GUARDIAN` (vault only, below).
@@ -87,45 +82,55 @@ relay and this brief says so in an amendment, not silently.
   - `open_game(game_id, preset_id, start, end)` — operator; called by the registrar CLI right after the L3 `create_game`
     (`config/deployer/clean/registrar/calls.ts`, one flow, L3 first).
   - `register(game_id, sword: bool, shield: bool)` — pulls `entry_fee + sword_price·sword + shield_price·shield` into
-    `pool[game]`, records `paid[game][owner]`, `flags[game][owner]`, sends the entitlement
-    `register_from_l2(game_id, owner, realm_id = 0)` to the L3. `register_with_pass(game_id, pass_id)`: the player has
-    approved the ledger; the ledger asserts `owner_of(pass_id) == caller`, calls `season_pass.burn(pass_id)` and sends
-    `realm_id = pass_id` plus `season_pass.get_encoded_metadata(pass_id)` (three felts) in the payload;
+    `pool[game]`, records `paid[game][owner]`, `flags[game][owner]`, **emits**
+    `Registered(game_id, owner, realm_id, metadata)`; in stage 1 `apps/operator` consumes the event and writes
+    `register_from_l2` on the L3; the ledger calls `piltover.send_message_to_appchain` only when `core_contract != 0`.
+    `register_with_pass(game_id, pass_id)`: the player has approved the ledger; the ledger asserts
+    `owner_of(pass_id) == caller`, calls `season_pass.burn(pass_id)` and sends `realm_id = pass_id` plus
+    `season_pass.get_encoded_metadata(pass_id)` (three felts) in the payload;
     `register_village(game_id, village_pass_id)` likewise without metadata. **Both pass contracts gain
     `burn(token_id)`** — owner or approved, ERC721 `burn` from the component — shipped as an upgrade (both are
-    `UpgradeableComponent`) and deployed fresh on Sepolia in B.1. Before `start`; one registration per owner per game.
+    `UpgradeableComponent`) and deployed fresh on Sepolia in B.1. The Village Pass transfer hook (`before_update`,
+    `village_pass/src/contract.cairo:116`) rejects transfers from non-distributors, and a burn is a transfer to zero, so
+    the deploy grants the ledger `DISTRIBUTOR_ROLE`. Before `start`; one registration per owner per game.
   - `fund(game_id, amount)` — anyone; sponsorship into `pool[game]`, recorded in `paid[game][funder]` so a cancelled
     game refunds it through the same pull as fees.
   - `cancel_game(game_id)` — operator, before `start`; refunds `paid` by pull (`refund(game_id)` per owner), no loop.
   - `apply_results(game_id, ranked: Array<(owner, rank, chests)>)` — stage 1: `assert_only_operator`; stage 3: consumes
-    the outcome message. Reverts unless `!finalized`, roster count and membership equal the registered set, ranks are
-    dense from 1. Money, in this order: `cut = floor(pool × protocol_cut_bps / 10_000)`; `prize_pool = pool − cut`;
-    position allocations `alloc_k = floor(prize_pool × weight_k / Σweight)` for `k ∈ 1..W`; **tied ranks**: the `t`
-    players sharing rank `r` (dense) split `alloc_r + … + alloc_{r+t−1}` equally (floor); `treasury` receives `cut` plus
-    every rounding remainder so the game's balance is exactly zero afterwards (asserted). Then MMR (below), loot chests
-    and elite invites minted (B.3), the bet pool resolved (B.5 — separate money), `finalized`. One call; paging only if
-    a 96-roster call **measures** over the Sepolia limit.
+    the outcome message. Reverts unless `!finalized`, roster count and membership equal the registered set, the array is
+    ordered by rank, and ranks are **competition ranks** (1, 1, 3 — a tied group of `t` at rank `r` is followed by rank
+    `r + t`). Money, in this order: `cut = floor(pool × protocol_cut_bps / 10_000)`; `prize_pool = pool − cut`; position
+    allocations `alloc_k = floor(prize_pool × weight_k / Σweight)` for `k ∈ 1..W`; **tied ranks**: the `t` players
+    sharing competition rank `r` split `alloc_r + … + alloc_{r+t−1}` equally (floor), and the next rank `r + t` starts
+    at position `r + t` — positions are consumed once; `treasury` receives `cut` plus every rounding remainder so the
+    game's balance is exactly zero afterwards (asserted). Then MMR (below), loot chests and elite invites minted (B.3),
+    the bet pool resolved (B.5 — separate money), `finalized`. One call; paging only if a 96-roster call **measures**
+    over the Sepolia limit.
   - MMR: the formula from `contracts/game/src/systems/utils/mmr.cairo` ported with the preset's parameters; the
-    lobby-split term deleted; ties use the tied group's average position over `N − 1`; sword doubles a positive delta,
-    shield halves a negative one, flags consumed. Result written through `MMRToken.update_mmr_batch`.
+    lobby-split term deleted; ties use the tied group's average position `(r + (r + t − 1)) / 2` over `N − 1` — the same
+    competition ranks; sword doubles a positive delta, shield halves a negative one, flags consumed. Result written
+    through `MMRToken.update_mmr_batch`.
 - Constructor:
-  `(admin, operator, guardian, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, elite_invite, cosmetics, core_contract = 0, l3_entry_system = 0)`
-  — the last two are zero in stage 1 and set by the admin (`set_messaging(core_contract, l3_entry_system)`) when S.1
-  lands. Addresses live in `contracts/common/addresses/sepolia.json` under `ledger`, `vault`, `lords` (test LORDS),
-  `mmrToken`, `seasonPass`, `villagePass`, `lootChests`, `eliteInvite`, `cosmetics`, and are exported to
-  `deploy/madara-lab/.env`.
+  `(admin, operator, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, elite_invite, cosmetics)`; the
+  guardian belongs to the vault only. Messaging addresses are not constructor arguments:
+  `set_messaging(core_contract, l3_entry_system)` by the admin exists for the settlement era and is unset in stage 1.
+  Addresses live in `contracts/common/addresses/sepolia.json` under `ledger`, `vault`, `lords` (test LORDS), `mmrToken`,
+  `seasonPass`, `villagePass`, `lootChests`, `eliteInvite`, `cosmetics`, and are exported to `deploy/madara-lab/.env`.
 - `MMRToken`: delete `IMMRFactoryContract`, `IWorldFactoryMMR`, the `factory` storage, `set_factory_details`,
   `is_factory_mmr_contract`; add `UPDATER_ROLE`; admin grants it to the ledger at deploy.
 - Registrar CLI: `createRegistrarGame` gains the L2 `open_game` call with the operator key (`--ledger` target); presets
   registered on both chains by one command (`register-preset` writes the L3 balance preset and the L2 economic preset).
 - Preset values for the lab and Sepolia: Blitz = `official-60` with `registration_count_max = 96`,
-  `registration_delay_seconds = 0`; economics `entry_fee 500e18`, `protocol_cut_bps 2000`, `payout_bps` per the owner's
-  pass (placeholder: top 20 % geometric, rank 1 ≈ 5× entry), `sword_price 500e18`, `shield_price 500e18`, MMR μ 1500 D
-  450 Δmax 45 K 50 λ 150 bps min 6. Eternum preset: `entry_fee 0`, `mmr.enabled false`, `points_for_win` set (owner).
+  `registration_delay_seconds = 0`; economics `entry_fee 500e18`, `protocol_cut_bps 2000`, `paid_fraction_bps 2000`,
+  `decay_bps 9600`, `sword_price 500e18`, `shield_price 500e18`,
+  `pm {fee_bps 500, liability_cap 10_000e18, seed 100e18, claim_window_seconds 604_800}`, MMR μ 1500 D 450 Δmax 45 K 50
+  λ 150 bps min 6. Eternum preset: `entry_fee 0`, `mmr.enabled false`, `points_for_win` set (owner).
 
 **Gate B.1:** Sepolia deployment with frozen ABI; unit tests for every revert path (double registration, register after
-start, second `apply_results`, roster mismatch, `sum(payout_bps) ≠ 10_000`, cancel after start); an `apply_results` with
-a 96-row roster measured for gas on Sepolia; the MMR port reproduces the existing fixtures from
+start, second `apply_results`, roster mismatch or unordered or non-competition ranks, `paid_fraction_bps` or `decay_bps`
+outside `(0, 10_000]`, cancel after start); a **conservation** test — `Σ payouts + cut + dust == pool` and the game's
+balance is zero after `apply_results` — for N ∈ {6, 24, 96}; tie fixtures (1,1,3 and 1,2,2,4) for both prizes and MMR;
+an `apply_results` with a 96-row roster measured for gas on Sepolia; the MMR port reproduces the existing fixtures from
 `systems/utils/mmr.cairo` tests except where the tie rule changes, with the new expectations written down.
 
 ### B.2 — L3: relayed entry, results outcome, Eternum entry
@@ -142,8 +147,12 @@ a 96-row roster measured for gas on Sepolia; the MMR port reproduces the existin
   `resolve_and_consume_entry_token` (`blitz/contracts.cairo:93-147`); deleting it (`obtain_entry_token`, the
   mint/consume internals, the issuance config, the ERC721 wiring) is part of B.2. `realm_systems::create` (Eternum)
   reads `realm_id` from the registration instead of custodying the pass; the pass `transfer_from` and metadata read move
-  to a read of the pass metadata by id (the pass contract stays on L2 — realm traits come with the entitlement payload,
-  sent by the ledger from `season_pass.get_realm_traits(pass_id)` at registration, so the L3 never calls L2).
+  to a read of the pass metadata by id (the pass contract stays on L2 — realm traits come with the entitlement payload
+  as the three felts of `season_pass.get_encoded_metadata(pass_id)`, sent by the ledger at registration, so the L3 never
+  calls L2).
+- Ranking becomes **competition ranking** on the L3 (`prize_distribution/contracts.cairo:442-456` today advances
+  `last_rank` by one on a strict decrease — dense; it advances by the tied count instead), so every consumer — the
+  results post, `RankPrize`, the review — shares one rule.
 - Results: at game end, `prize_distribution_systems` computes ranks and chest allocations as today, then
   `send_message_to_l1_syscall(ledger, [game_id, n, (owner, rank, chests)…])` where
   `owner = PlayerRegistry.owner_of (account)`. Every ERC20 transfer, the escrow fields on `GameRegistry`
@@ -201,17 +210,22 @@ after the delay; a release over the daily cap is refused; the guardian cancels a
 
 **Separate money:** bets never touch `pool[game]`; they live in `bet_pool[game]`, and prizes never touch `bet_pool`.
 `bet(game_id, outcome, amount)` before `start`, outcomes = registered owners plus `field`, any number of bets per
-bettor, each a ticket `(game_id, ticket_id) → {bettor, outcome, locked_payout}`. Odds are quoted **before** the stake is
-added, from seeded pools so the first bet has finite odds: `odds = (bet_pool + O × seed) / (outcome_pool[o] + seed)`
-with `O` outcomes and `pm.seed` a virtual amount (lab: 100 LORDS) that is never paid out;
-`locked_payout = floor(amount × odds)`. Solvency: `liability[game][o] += locked_payout`; the bet is refused if
-`max_o liability[game][o] − bet_pool[game] − amount > pm.liability_cap`, so the treasury's worst-case top-up is bounded
-per game. `apply_results` resolves to the rank-1 owner (ties → `field`). `claim_bet(game_id, ticket_id)` pays
-`locked_payout − floor(locked_payout × pm.fee_bps / 10_000)` from `bet_pool` first, then from `treasury` for the
-shortfall; the fee stays in `bet_pool` and, after every winning ticket is claimable, the remainder of `bet_pool` sweeps
-to `treasury` (`sweep_bets(game_id)` after `end + claim_window`). Cancelled games refund every ticket's stake in full
-(fees are taken only on winnings). Lab values: `fee_bps 500`, `liability_cap 10_000 LORDS`, `seed 100 LORDS`. Reference:
-the locked-odds mode of `cagecalls/cairo/src/fight_factory.cairo`, without CTF, ERC1155, VRF rounding or tickets.
+bettor, each a ticket `(game_id, ticket_id) → {bettor, outcome, stake, locked_payout}`. Odds are quoted **before** the
+stake is added, from seeded pools so the first bet has finite odds:
+`odds = (bet_pool + O × seed) / (outcome_pool[o] + seed)` with `O` outcomes and `pm.seed` a virtual amount (lab: 100
+LORDS) that is never paid out; `locked_payout = floor(amount × odds)`. **Backstop:** the ledger holds a `reserve`
+balance in LORDS funded by the admin (`fund_reserve(amount)`, withdrawable by the admin only above the committed
+liability); `committed` is the sum over unresolved games of `max(0, max_o liability[game][o] − bet_pool[game])`.
+Solvency: `liability[game][o] += locked_payout`; the bet is refused if the game's shortfall after it would exceed
+`pm.liability_cap` **or** `committed` would exceed `reserve`. No transfer from an external treasury is ever needed:
+shortfalls are paid from `reserve`. `apply_results` resolves to the rank-1 owner (ties → `field`).
+`claim_bet(game_id, ticket_id)` pays `locked_payout − floor(locked_payout × pm.fee_bps / 10_000)` from `bet_pool` first,
+then from `reserve` for the shortfall; the fee stays in `bet_pool` and, after every winning ticket is claimable, the
+remainder of `bet_pool` sweeps to `treasury` (`sweep_bets(game_id)` after `end + pm.claim_window_seconds`; unclaimed
+winning tickets sweep too). Cancelled games refund every ticket's stake in full (fees are taken only on winnings). Lab
+values: `fee_bps 500`, `liability_cap 10_000 LORDS`, `seed 100 LORDS`, `claim_window_seconds 604_800`; the lab reserve
+is funded with 50,000 test LORDS. Reference: the locked-odds mode of `cagecalls/cairo/src/fight_factory.cairo`, without
+CTF, ERC1155, VRF rounding or tickets.
 
 **Gate B.5:** bets on a Sepolia game paid at locked odds after `apply_results`; a bet over the liability cap refused; a
 cancelled game refunds.
@@ -228,22 +242,24 @@ gate.
 ### G — full gates (owner)
 
 1. **Blitz on Sepolia + lab:** 96 bots register with 500 test LORDS each on Sepolia, some with swords/shields → play on
-   the lab → results message consumed → MMR moved on Sepolia (modifiers consumed correctly), prizes paid by
-   `payout_bps`, chests and elite invites minted, pools resolved; a second `apply_results` and a roster that differs
-   from the registered set both revert; `cancel_game` refunds.
+   the lab → results message consumed → MMR moved on Sepolia (modifiers consumed correctly), prizes paid by the
+   parametric payouts (conservation asserted), chests and elite invites minted, pools resolved; a second `apply_results`
+   and a roster that differs from the registered set both revert; `cancel_game` refunds.
 2. **Eternum E-1 on the lab:** entry by burned pass, a season with `points_for_win` reached, `season_close`, prizes from
    a funded pool through `apply_results`. E-2 deposits credited. E-3 only with a real prover.
 3. **C** passes on the redeployed lab.
 4. **Deletions verified by the tree:** no `mmr` system, no ERC20 transfer in `prize_distribution`, no collectible
-   interface, no `transfer_or_mint`, no pass custody, no `apps/operator`.
+   interface, no `transfer_or_mint`, no pass custody; `apps/operator` runs the two loops with a Postgres cursor and
+   survives a restart mid-game without a duplicate write.
 
 ## Cost
 
-Added: `contracts/ledger`, `contracts/vault`, Piltover + orchestrator + MongoDB + localstack in the lab compose
-(Claude), Sepolia deployments of ledger, vault, MMR, collectibles, test LORDS, season pass. Deleted: the L3 `mmr` system
-and its math, the L3 prize transfers and escrow, direct collectible minting, pass custody, `transfer_or_mint` and the
-resource bridge's fee split, `lp_withdraw`, `velords_claim`, the entry-token remnants, the MMR factory hook, and the
-operator process before it existed. Net: two L2 contracts and one settlement stack replace an L3 that moved value.
+Added: `contracts/ledger`, `contracts/vault`, `apps/operator` (two loops, one cursor table), `burn` on both passes,
+Sepolia deployments of ledger, vault, MMR, collectibles, test LORDS, passes. Deleted: the L3 `mmr` system and its math,
+the L3 prize transfers and escrow, the entry-token path, direct collectible minting, pass custody, `transfer_or_mint`
+and the resource bridge's fee split, `lp_withdraw`, `velords_claim`, the MMR factory hook. Deferred, not added:
+Piltover, the orchestrator and its MongoDB/localstack. Net: two L2 contracts and one small process replace an L3 that
+moved value.
 
 ## Addendum 2026-08-29 (evening) — settlement economics, and what it changes
 
@@ -259,12 +275,12 @@ change that.
 1. **Stage 1 is operator attestation, not a fallback.** `apply_results` and every other inbound L2 entrypoint ship
    behind `assert_only_operator` (idempotent by `game_id`, evented, with each game's result commitment posted).
    `apps/ operator` is built as the phase-2 brief decided (two loops, Postgres cursor). Deposits and registrations may
-   still ride `piltover.send_message_to_appchain` → `#[l1_handler]` — that direction needs no proof — but that is an S.1
-   choice, not a dependency for B.1–B.3.
+   still ride `piltover.send_message_to_appchain` → `#[l1_handler]` — that direction needs no proof — but that is for
+   the settlement era, not a dependency for anything here.
 2. **S.0 is now the gas-per-action measurement**: the current game contracts deployed on Sepolia, a harness game
    replayed there, gas per action by system recorded (median, p95, the top offenders). This is the baseline for the Dojo
    exit and the number that decides when stage 3 is affordable. One week, no infrastructure.
-3. **S.1 (was S.0) — the Piltover/orchestrator shape** moves behind S.0 and behind B.3; it is built with the mock prover
+3. **The Piltover/orchestrator shape is postponed** (owner, same evening); when it returns, the mock prover is enough
    for the messaging shape, and validity settlement (stage 3) is scheduled only when S.0's number × a quoted prover
    price is a small fraction of a game's pool. Aggregation: one `update_state` per day for all finished games (the
    orchestrator batches; the measured ~242M gas per update amortizes).
@@ -280,7 +296,13 @@ Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR po
 - 2026-08-29, Codex: six findings (pool over-commitment, no `burn` on the passes, contradictory entitlement payload,
   bet-pool solvency, missing structure context in vault messages, stale baseline on the entry token and S.0) — all
   accepted and folded into B.1, B.2, B.4, B.5 and S above; the ledger constructor and address keys added. B.1 can land
-  independently; B.2 and B.4 stay gated on S.0/S.1 only for their stage-3 transport, not for their stage-1 form.
+  independently.
+- 2026-08-29, Codex, second pass: tie double-counting (→ competition ranks, positions consumed once, the L3 ranking rule
+  changed to match), `payout_bps` remnants (→ parametric fields, conservation and tie fixtures in the gate), bet refunds
+  and backstop (→ `stake` on tickets, `claim_window_seconds` in the preset, an admin-funded `reserve` inside the ledger
+  with a committed-liability bound), ledger wiring (→ guardian out of the constructor, `register` emits and calls
+  Piltover only when configured, Village Pass `DISTRIBUTOR_ROLE` granted to the ledger), stale gates (→ table, B.2, G
+  and Cost aligned; settlement postponed). All accepted.
 
 ## Out of this brief
 
