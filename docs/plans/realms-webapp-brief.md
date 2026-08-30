@@ -50,8 +50,9 @@ brief.
 2. **Lobby** — the game list from herald's directory (open, live, finished; player counts; preset; start/end), one game
    page per `game_id` with registration state from the ledger (`registered`, flags, pool, payouts by preset),
    **Register** (`register(game_id, sword, shield)` with the LORDS approval folded into one multicall), **Register with
-   pass** / village pass for Eternum, **Play** (launches `apps/game` at `/play?game=<id>`), **Spectate**, and after the
-   game the results (ranks, prizes, MMR deltas, chests) from the ledger and herald's review snapshot.
+   pass** / village pass for Eternum, **Play** (launches `apps/game` at its entry route — see the launch contract
+   below), **Spectate**, and after the game the results (ranks, prizes, MMR deltas, chests) from the ledger and herald's
+   review snapshot.
 3. **Leaderboards and profile** — MMR from `MMRToken` (tiers as in `apps/game/src/ui/utils/mmr-tiers.ts`), names from
    the API, per-game history from herald's history sink; a player page by owner address.
 4. **Chests and loadout** — inventory by direct enumerable read of the cosmetics and chest collections (`balance_of` +
@@ -78,14 +79,18 @@ brief.
 - Identity API: the existing better-auth routes plus `name` (set/get/lookup by owner) and `owner → name` batch lookup.
 - The app is the **game launcher**: home is news (the scroll posts) plus the next game and the player's standing, and
   every path ends at Launch. The client handoff is one URL — the identity session cookie is set on `.realms.party`, so
-  `play.realms.party/#/play?game=<id>` opens already signed in; the client resolves the gameplay account from the
-  session as today (`gameplay-account-sync.tsx`) and never talks to L2. The desktop client (later, Tauri) registers
-  `realms://play?game=<id>`; the launcher tries the deep link with a one-time code minted by the identity API and falls
-  back to the web client. **Design ownership (2026-08-30):** the owner works on the visual and UX direction directly
-  with the web agent; the two artifacts ("Realms App Architecture", "Realms Launcher" on claude.ai) are starting
-  references, not binding specs — the launcher draft shows the intended shape (game-client DNA: top tab nav with HUD
-  chrome, an anchored oversized Play, the merged REALM portal) and the flow contracts in its UX notes (register
-  multicall, no optimistic UI, the cookie handoff) do bind. Claude reviews each slice; the owner gates.
+  the client opens already signed in. The URL shape is the client's, not this brief's: `apps/game` enters a game at
+  `/enter/<chain>/<launch name>` (`?intent=spectate` to watch) and resolves the name to a `game_id` through herald's
+  directory (`apps/game/src/play/navigation/play-route.ts`, `runtime/world/game-registry.ts`) — an earlier revision
+  wrote `/play?game=<id>` here, a shape the client never had (review, 2026-08-30). The client resolves the gameplay
+  account from the session as today (`gameplay-account-sync.tsx`) and never talks to L2. The desktop client (later,
+  Tauri) registers a `realms://` deep link mirroring the same entry route; the launcher tries the deep link with a
+  one-time code minted by the identity API and falls back to the web client. **Design ownership (2026-08-30):** the
+  owner works on the visual and UX direction directly with the web agent; the two artifacts ("Realms App Architecture",
+  "Realms Launcher" on claude.ai) are starting references, not binding specs — the launcher draft shows the intended
+  shape (game-client DNA: top tab nav with HUD chrome, an anchored oversized Play, the merged REALM portal) and the flow
+  contracts in its UX notes (register multicall, no optimistic UI, the cookie handoff) do bind. Claude reviews each
+  slice; the owner gates.
 
 ## Gates
 
