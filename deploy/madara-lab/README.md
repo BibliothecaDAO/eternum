@@ -512,11 +512,12 @@ not a fact.
 
 ## Server profile (rented box, Cloudflare Tunnel) — prepared 2026-08-29
 
-The same compose on a rented box (first: Latitude c3.small.x86, Mexico City, one month from 2026-09-01). Differences
-from the laptop, all of them deletions of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare
-Tunnel** terminates TLS on the owner's zone and the box opens no public port but SSH. Herald and `apps/web` run as
-systemd units on the host (herald is the read path; `apps/web` holds the binding-authority key, so it must run where
-the chain is). The game client is served by Cloudflare Pages and talks to these hosts:
+The same compose on a rented box (first: Hetzner AX42, Falkenstein, from 2026-08-31; install with `installimage`,
+Ubuntu 24.04, the default RAID1 over the two NVMe drives is fine). Differences from the laptop, all of them deletions
+of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare Tunnel** terminates TLS on the owner's zone
+and the box opens no public port but SSH. Herald and `apps/web` run as systemd units on the host (herald is the read
+path; `apps/web` holds the binding-authority key, so it must run where the chain is). The game client is served by
+Cloudflare Pages and talks to these hosts:
 
 | Host                    | Service                                                             |
 | ----------------------- | ------------------------------------------------------------------- |
