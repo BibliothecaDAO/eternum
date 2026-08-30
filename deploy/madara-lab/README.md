@@ -523,7 +523,7 @@ Cloudflare Pages and talks to these hosts:
 | `rpc.<LAB_DOMAIN>`      | `madara:9944` through the tunnel (paths pass through)               |
 | `herald.<LAB_DOMAIN>`   | herald on the host, `:3003` (HTTP + WebSocket)                      |
 | `app.<LAB_DOMAIN>`      | `apps/web` on the host, `:3000` (SIWS, binding authority)           |
-| identity RPC            | not proxied: the browser calls the public Sepolia node directly     |
+| identity RPC            | not proxied: the browser calls the public mainnet node directly     |
 
 ### Box and region — chosen for action latency (2026-08-30)
 
@@ -564,7 +564,7 @@ the `herald` and `web` units, and closes every port but SSH (`ufw`). Then, as `r
 
 ```bash
 cd /opt/realms/eternum
-cp .env.example .env            # DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms, IDENTITY_RPC_URL=<sepolia node>,
+cp .env.example .env            # DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms, IDENTITY_RPC_URL=<mainnet rpc>,
                                 # BINDING_AUTHORITY_*: the lab authority pair — never a mainnet key
 pnpm install && pnpm run build:packages
 cd deploy/madara-lab

@@ -7,7 +7,7 @@
 #   herald.${LAB_DOMAIN}   herald HTTP + WebSocket (apps/herald, systemd on the host)
 #   app.${LAB_DOMAIN}      apps/web (identity, SIWS, the gameplay-account binding authority; systemd on the host)
 #
-# The identity RPC is not proxied any more: the browser calls the public Sepolia node directly
+# The identity RPC is not proxied any more: the browser calls the public mainnet node directly
 # (VITE_PUBLIC_IDENTITY_RPC_URL), which removes one hop and one config value. The admin RPC and the gateway are
 # never exposed.
 tunnel: ${TUNNEL_ID}

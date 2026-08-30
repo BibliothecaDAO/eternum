@@ -8,7 +8,7 @@ launched from this app and does nothing but play; a mobile client comes later as
 and the same app.
 
 Design source: `realms-value-plane-design.md` (§1 second rule, §3 names, §4 collectibles, §5 bridge/AMM, §6 pools, §9
-decisions). Contracts and addresses: `realms-phase-3-backend-brief.md` B.1 (Sepolia deployment, frozen ABI in week 1).
+decisions). Contracts and addresses: `realms-phase-3-backend-brief.md` B.1 (mainnet deployment, frozen ABI in week 1).
 Read both before writing code; do not reopen their decisions.
 
 Rules: the repo `AGENTS.md` (KISS, systemic, deletion, one truth per fact, wired or deleted, clean-code standard). The
@@ -33,12 +33,13 @@ refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and
 
 ## Pages (the product, in order of build)
 
-1. **Sign in and account** — SIWS with Ready/Braavos/Controller (the connectors that exist), against **Sepolia** during
-   the build (owner decision 2026-08-29: identity, ledger and test assets all on Sepolia; mainnet at launch, one flip,
-   no dual-chain mode); on first sign-in the **name** step: prefilled from Cartridge for Controller users, typed by
-   everyone else; unique (case-insensitive index), 3–20 chars, changeable in settings. The gameplay account binding
-   (bind/rotate through the existing authority server code) shown as a status, never as a thing the player manages.
-   `owner → name` is served by this app's API to anything that needs it (leaderboards, review, the game client).
+1. **Sign in and account** — SIWS with Ready/Braavos/Controller (the connectors that exist), against **mainnet** from
+   the start (owner decision 2026-08-30: Controller cannot sign on Sepolia, so the value plane deploys to mainnet
+   immediately — no chain flip at launch, no dual-chain mode); on first sign-in the **name** step: prefilled from
+   Cartridge for Controller users, typed by everyone else; unique (case-insensitive index), 3–20 chars, changeable in
+   settings. The gameplay account binding (bind/rotate through the existing authority server code) shown as a status,
+   never as a thing the player manages. `owner → name` is served by this app's API to anything that needs it
+   (leaderboards, review, the game client).
 2. **Lobby** — the game list from herald's directory (open, live, finished; player counts; preset; start/end), one game
    page per `game_id` with registration state from the ledger (`registered`, flags, pool, payouts by preset),
    **Register** (`register(game_id, sword, shield)` with the LORDS approval folded into one multicall), **Register with
@@ -64,7 +65,7 @@ refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and
 
 - Herald HTTP is the only source for live game facts and history; the URL per chain from `packages/chain`.
 - Ledger, vault, MMR, collectibles, ammv2, season pass, village pass: addresses from
-  `contracts/common/addresses/<chain>.json`, ABIs from the Sepolia deployment (B.1), typed calls in one
+  `contracts/common/addresses/<chain>.json`, ABIs from the mainnet deployment (B.1), typed calls in one
   `services/contracts/` module — no ad-hoc `callContract` elsewhere. Reads by multicall; writes as single multicalls
   with approvals.
 - Identity API: the existing better-auth routes plus `name` (set/get/lookup by owner) and `owner → name` batch lookup.
@@ -73,7 +74,7 @@ refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and
 
 ## Gates
 
-1. From a fresh wallet on Sepolia: sign in → choose a name → register for a lab game with a sword → Play opens the game
+1. From a fresh wallet on mainnet: sign in → choose a name → register for a lab game with a sword → Play opens the game
    client at the right game with the name showing → after the game, results, MMR delta and a minted chest appear on the
    game page and the profile.
 2. Chest opened and a loadout set from the app render in the lab game.
