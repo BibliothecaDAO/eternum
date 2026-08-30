@@ -27,9 +27,16 @@ already serves.
 | `apps/indexer` (apibara) for L2 history only                                                                                   | `apps/game`'s cosmetics UI, chest-opening store, AMM services, PM stubs                                                                        |
 | herald HTTP: `/<chain>/games`, `/games/<id>/snapshot`, `/games/<id>/history`, `/games/<id>/review/snapshot`                    | any react-query cache that would become a second truth for a live fact                                                                         |
 
-Framework: React 19 and starknet.js 9 stay (phase-2 inherited decision); everything else — router, styling, build — is
-the agent's choice, stated with its cost in the first PR. Ground-up means a new app directory (`apps/realms`), not a
-refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and the deletion is part of this brief.
+Stack (owner, 2026-08-30 — decided, not the agent's choice any more): React 19 and starknet.js 9 stay (phase-2
+inherited); **Effect (Effect-TS) is the backbone of the app** — every service (contract reads/writes, herald client,
+identity API), every async boundary and every decoded payload goes through Effect: services as `Effect.Service` layers,
+external data validated with `effect/Schema`, errors typed in the signature, no bare promises or ad-hoc try/catch in app
+code. Around it: Vite, TanStack Router (type-safe routes/loaders that run Effects), Tailwind v4. The server side stays
+the existing identity service (better-auth + Drizzle/Postgres — the binding authority), extended with the `name` routes;
+the SPA talks to it over one `IdentityApi` Effect service. The design artifact (claude.ai, "Realms App Architecture")
+records the layer graph; deviations from it are named in the PR. Ground-up means a new app directory (`apps/realms`),
+not a refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and the deletion is part of this
+brief.
 
 ## Pages (the product, in order of build)
 
