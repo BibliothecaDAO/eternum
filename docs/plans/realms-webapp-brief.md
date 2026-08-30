@@ -81,8 +81,11 @@ brief.
   `play.realms.party/#/play?game=<id>` opens already signed in; the client resolves the gameplay account from the
   session as today (`gameplay-account-sync.tsx`) and never talks to L2. The desktop client (later, Tauri) registers
   `realms://play?game=<id>`; the launcher tries the deep link with a one-time code minted by the identity API and falls
-  back to the web client. UI/UX source: the "Realms Launcher" artifact (claude.ai) — screens, navigation and flows;
-  deviations are named in the PR.
+  back to the web client. **Design ownership (2026-08-30):** the owner works on the visual and UX direction directly
+  with the web agent; the two artifacts ("Realms App Architecture", "Realms Launcher" on claude.ai) are starting
+  references, not binding specs — the launcher draft shows the intended shape (game-client DNA: top tab nav with HUD
+  chrome, an anchored oversized Play, the merged REALM portal) and the flow contracts in its UX notes (register
+  multicall, no optimistic UI, the cookie handoff) do bind. Claude reviews each slice; the owner gates.
 
 ## Gates
 
