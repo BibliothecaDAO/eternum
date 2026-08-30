@@ -1,6 +1,6 @@
 name: Deploy Client
 
-# Ships the game client to play.jcndata.com as a Cloudflare Pages project
+# Ships the game client to play.realms.party as a Cloudflare Pages project
 # (project name in vars.CLOUDFLARE_PAGES_PROJECT; the custom domain is attached
 # in the Pages dashboard once). Manual dispatch keeps deploys deliberate; the
 # build reads the committed .env.production and stamps the version from the ref.
