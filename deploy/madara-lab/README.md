@@ -512,9 +512,8 @@ not a fact.
 
 ## Server profile (rented box, Cloudflare Tunnel) — prepared 2026-08-29
 
-The same compose on a rented box (first: Hetzner AX42, Falkenstein, from 2026-08-31; install with `installimage`,
-Ubuntu 24.04, the default RAID1 over the two NVMe drives is fine). Differences from the laptop, all of them deletions
-of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare Tunnel** terminates TLS on the owner's zone
+The same compose on a rented box (first: Latitude `f4.metal.small`, Ashburn, from 2026-08-31 — see "Box and region"
+below). Differences from the laptop, all of them deletions of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare Tunnel** terminates TLS on the owner's zone
 and the box opens no public port but SSH. Herald and `apps/web` run as systemd units on the host (herald is the read
 path; `apps/web` holds the binding-authority key, so it must run where the chain is). The game client is served by
 Cloudflare Pages and talks to these hosts:
@@ -525,6 +524,26 @@ Cloudflare Pages and talks to these hosts:
 | `herald.<LAB_DOMAIN>`   | herald on the host, `:3003` (HTTP + WebSocket)                      |
 | `app.<LAB_DOMAIN>`      | `apps/web` on the host, `:3000` (SIWS, binding authority)           |
 | identity RPC            | not proxied: the browser calls the public Sepolia node directly     |
+
+### Box and region — chosen for action latency (2026-08-30)
+
+An action's latency is network RTT to the origin + serial Cairo execution on one sequencer core + herald's fold and
+push. The box and the region are picked for those two terms; nothing else about the profile depends on them.
+
+- **Region: Ashburn (ASH).** One origin for testers in Spain, Brazil, Australia and China; Ashburn is the best
+  single point for that set (≈90 / 115 / 200 / 220 ms) and Cloudflare's largest US PoP, so the tunnel's edge→origin
+  leg is short. Dallas trades ~25 ms better for the Pacific side against ~25 ms worse for the Atlantic side — move
+  only if the per-player `__clientActionLatencySummary` numbers say so.
+- **Box: `f4.metal.small`** (EPYC 4484PX: Zen 4, 12c/24t, 4.4 base / 5.7 GHz boost, 128 MB 3D V-Cache; 96 GB DDR5
+  ECC; 2×960 GB NVMe; 2×10 Gbps; $0.55/h or $398/mo). The sequencer executes one action's Cairo on one core, so the
+  pick is the highest-clocked Zen 4 on the list with the largest cache — not the most cores. `m4.metal.small`
+  (4244P, 6c, 5.1 GHz, $296) is the same core slower; `m4.metal.medium` (9124 Genoa, 3.7 GHz, $456) costs more and
+  is slower on the serial path. Bigger boxes add cores the chain cannot use.
+- **Everything on the one box** (Madara, Postgres, herald, `apps/web`): no cross-host hop anywhere in the action path.
+- **Backups to Cloudflare R2** (S3-compatible, zero egress): one bucket, one `s5cmd` sync of the Madara DB snapshot
+  and the Postgres dump on a cron, token in the root `.env`. Replaces the laptop-local backup path.
+- **Measure both terms separately**: origin-side latency from an SSH session on the box (the client brief's bars, no
+  network), and per-player latency from the client summary; the difference is the network and decides the region.
 
 Once, on the owner's machine (needs the Cloudflare account): `cloudflared tunnel login`, `cloudflared tunnel create
 realms-lab` (prints the `TUNNEL_ID` and writes `~/.cloudflared/<id>.json`), then one CNAME per host:
