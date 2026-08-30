@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
+import type { LedgerHarnessEvidence } from "./ledger-mode";
 import {
   FIRST_ACTION_REQUIRED_STAMINA,
   RECEIPT_POLL_INTERVAL_MS,
@@ -83,6 +84,7 @@ export interface HarnessReportInput {
   setupTransactions: TrackedTransaction[];
   heraldUrl: string;
   workload: WorkloadResult;
+  valuePlane?: LedgerHarnessEvidence;
 }
 
 interface PercentileSummary {
@@ -198,7 +200,7 @@ function buildHarnessManifest(
   createdAt: string,
 ) {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     runId,
     createdAt,
     passed: analysis.passed,
@@ -217,6 +219,7 @@ function buildHarnessManifest(
       executionModel: "single_process",
       instances: input.games,
     },
+    valuePlane: input.valuePlane ?? { mode: "dev" },
     workload: {
       bots: input.botCount,
       minutes: input.minutes,
@@ -252,11 +255,12 @@ function buildHarnessManifest(
       actions: analysis.actions,
     },
     setup: {
-      deployedAccounts: input.accounts.map(({ address, botId, deployedInMs, gameId }) => ({
+      deployedAccounts: input.accounts.map(({ address, botId, deployedInMs, gameId, owner }) => ({
         address,
         botId,
         deployedInMs,
         gameId,
+        owner,
       })),
       transactions: [...input.setupTransactions].sort(
         (left, right) => left.gameId - right.gameId || left.botId - right.botId,

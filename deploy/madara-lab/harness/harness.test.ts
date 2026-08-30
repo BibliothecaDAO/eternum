@@ -28,6 +28,11 @@ import {
   summarizeRpcMetrics,
 } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
+import {
+  parseLedgerBotIdentities,
+  rankPlayersByRegisteredPoints,
+  toHarnessGameplayIdentities,
+} from "./ledger-mode";
 import { BlockTag } from "starknet";
 import { HeraldObserver } from "./herald-observer";
 
@@ -132,7 +137,13 @@ describe("Madara harness workload", () => {
       intervalSeconds: 1,
       minutes: 0.001,
       provider: provider as never,
-      systems: { blitzRealm: "0x1", production: "0x2", troopManagement: "0x3", troopMovement: "0x4" },
+      systems: {
+        blitzRealm: "0x1",
+        prizeDistribution: "0x5",
+        production: "0x2",
+        troopManagement: "0x3",
+        troopMovement: "0x4",
+      },
       heraldUrl: "http://127.0.0.1:1",
     });
 
@@ -359,6 +370,69 @@ describe("Madara harness CLI and concurrency", () => {
     expect(() => parseHarnessArgs(["--games", "2", "--game-id", "9"])).toThrow(
       "--game-id can only be used with --games 1",
     );
+  });
+
+  it("requires an exact persistent identity roster in ledger mode", () => {
+    expect(() => parseHarnessArgs(["--ledger"])).toThrow("--ledger-accounts is required with --ledger");
+    expect(() => parseHarnessArgs(["--ledger", "--ledger-accounts", "bots.json", "--games", "2"])).toThrow(
+      "--ledger supports one game per run",
+    );
+    expect(
+      parseHarnessArgs([
+        "--ledger",
+        "--ledger-accounts",
+        "bots.json",
+        "--bots",
+        "2",
+        "--ledger-start-delay-seconds",
+        "600",
+      ]),
+    ).toMatchObject({
+      bots: 2,
+      ledger: true,
+      ledgerAccountsPath: "bots.json",
+      ledgerStartDelaySeconds: 600,
+    });
+  });
+
+  it("maps validated mainnet owners to persistent gameplay keys without exposing mainnet keys", () => {
+    const identities = parseLedgerBotIdentities(
+      [
+        { mainnetAddress: "0x1", mainnetPrivateKey: "0x11", gameplayPrivateKey: "0x21" },
+        {
+          mainnetAddress: "0x2",
+          mainnetPrivateKey: "0x12",
+          gameplayPrivateKey: "0x22",
+          sword: true,
+        },
+      ],
+      2,
+    );
+
+    expect(identities.map(({ sword, shield }) => ({ sword, shield }))).toEqual([
+      { sword: false, shield: false },
+      { sword: true, shield: false },
+    ]);
+    expect(identities[0]!.mainnetAddress.endsWith("1")).toBe(true);
+    expect(identities[1]!.mainnetAddress.endsWith("2")).toBe(true);
+    expect(toHarnessGameplayIdentities(identities)).toEqual([
+      { owner: identities[0]!.mainnetAddress, privateKey: "0x21" },
+      { owner: identities[1]!.mainnetAddress, privateKey: "0x22" },
+    ]);
+    expect(() => parseLedgerBotIdentities([identities[0]], 2)).toThrow("Expected 2 ledger bot identities");
+  });
+
+  it("submits the full roster by points with deterministic tie ordering", () => {
+    const players = rankPlayersByRegisteredPoints(
+      [{ player: "0x3" }, { player: "0x1" }, { player: "0x2" }, { player: "0x1" }],
+      [
+        { address: "0x1", registered_points: "50" },
+        { address: "0x2", registered_points: "100" },
+        { address: "0x3", registered_points: "100" },
+      ],
+    );
+
+    expect(players.map((address) => BigInt(address))).toEqual([2n, 3n, 1n]);
   });
 
   it("preserves input order while bounding concurrent work", async () => {

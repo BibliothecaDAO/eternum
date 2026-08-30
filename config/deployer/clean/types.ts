@@ -69,6 +69,7 @@ export interface LaunchGameRequest extends LedgerLaunchOptions {
   singleRealmMode?: boolean;
   twoPlayerMode?: boolean;
   durationSeconds?: number;
+  pointRegistrationGraceSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;

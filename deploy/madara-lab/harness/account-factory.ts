@@ -7,8 +7,14 @@ export interface HarnessAccount {
   botId: number;
   deployedInMs: number;
   gameId: number;
+  owner: string;
   privateKey: string;
   publicKey: string;
+}
+
+export interface HarnessGameplayIdentity {
+  owner: string;
+  privateKey: string;
 }
 
 interface CreateHarnessAccountsOptions {
@@ -17,6 +23,7 @@ interface CreateHarnessAccountsOptions {
   concurrency?: number;
   count: number;
   gameId: number;
+  identities?: readonly HarnessGameplayIdentity[];
   botIdOffset?: number;
   provider: RpcProvider;
 }
@@ -29,20 +36,26 @@ export async function createHarnessAccounts({
   concurrency = DEFAULT_DEPLOY_CONCURRENCY,
   count,
   gameId,
+  identities,
   botIdOffset = 0,
   provider,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
+  if (identities && identities.length !== count) {
+    throw new Error(`Expected ${count} gameplay identities, received ${identities.length}`);
+  }
   const botIds = Array.from({ length: count }, (_, botId) => botId + botIdOffset);
 
-  return mapWithConcurrency(botIds, concurrency, async (botId) => {
-    const { privateKey, publicKey } = createHarnessKey();
+  return mapWithConcurrency(botIds, concurrency, async (botId, index) => {
+    const identity = identities?.[index];
+    const { privateKey, publicKey } = identity ? gameplayKey(identity.privateKey) : createHarnessKey();
+    const owner = identity?.owner ?? "0x0";
     const startedAt = performance.now();
 
     try {
       const account = await ensureGameplayAccount({
         authority,
         classHash,
-        owner: 0,
+        owner,
         privateKey,
         provider,
         publicKey,
@@ -54,6 +67,7 @@ export async function createHarnessAccounts({
         botId,
         deployedInMs: elapsedMs(startedAt),
         gameId,
+        owner,
         privateKey,
         publicKey,
       };
@@ -63,9 +77,12 @@ export async function createHarnessAccounts({
   });
 }
 
-function createHarnessKey(): { privateKey: string; publicKey: string } {
-  const privateKey = stark.randomAddress();
+function gameplayKey(privateKey: string): { privateKey: string; publicKey: string } {
   return { privateKey, publicKey: ec.starkCurve.getStarkKey(privateKey) };
+}
+
+function createHarnessKey(): { privateKey: string; publicKey: string } {
+  return gameplayKey(stark.randomAddress());
 }
 
 export async function mapWithConcurrency<T, R>(

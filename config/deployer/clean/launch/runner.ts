@@ -95,6 +95,7 @@ function resolveLaunchConfig(runtime: LaunchRuntime, request: LaunchGameRequest)
     singleRealmMode: request.singleRealmMode,
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
+    pointRegistrationGraceSeconds: request.pointRegistrationGraceSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
     biomeClimateOverrides: request.biomeClimateOverrides,
     blitzRegistrationOverrides: request.blitzRegistrationOverrides,
@@ -176,6 +177,10 @@ function requireLedgerTarget(launch: PreparedLaunch): LedgerTarget {
 }
 
 function createLedgerGameTarget(launch: PreparedLaunch) {
+  const devModeOn = launch.request.devModeOn ?? launch.config.dev.mode.on;
+  if (!launch.request.ledgerAddress && !launch.request.ledgerRpcUrl && devModeOn) {
+    return undefined;
+  }
   const target = requireLedgerTarget(launch);
   return {
     account: createLedgerOperatorAccount(target, `ledger game "${launch.request.gameName}"`),
@@ -188,6 +193,7 @@ function createLedgerGameTarget(launch: PreparedLaunch) {
 
 async function ensureLedgerGameOpen(launch: PreparedLaunch, gameId: number): Promise<void> {
   const ledger = createLedgerGameTarget(launch);
+  if (!ledger) return;
   const result = await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end);
   if (result) launch.summary.openLedgerTxHash = result.transactionHash;
   launch.runtime.progress.log(

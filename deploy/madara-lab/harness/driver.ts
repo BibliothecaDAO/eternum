@@ -64,6 +64,7 @@ export interface TrackedTransaction {
 
 export interface HarnessSystemAddresses {
   blitzRealm: string;
+  prizeDistribution: string;
   production: string;
   troopManagement: string;
   troopMovement: string;
@@ -123,6 +124,7 @@ interface ExplorerPriority {
 
 interface PrepareHarnessBotsOptions {
   accounts: HarnessAccount[];
+  beforeProvision?: () => Promise<void>;
   gameId: number;
   provider: RpcProvider;
   setupConcurrency?: number;
@@ -313,6 +315,7 @@ const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
 
 export async function prepareHarnessBots({
   accounts,
+  beforeProvision,
   gameId,
   provider,
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
@@ -323,11 +326,15 @@ export async function prepareHarnessBots({
   const heraldObserver = new HeraldObserver(heraldUrl, "madara");
   const mapCenter = await readMapCenter(heraldObserver, gameId);
 
-  return mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
+  await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
     const settle = await settleBot({ harnessAccount, gameId, provider, systems });
     setupTransactions.push(settle);
     assertCompleted(settle);
+  });
 
+  await beforeProvision?.();
+
+  return mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
     const structureIds = await readSettlementStructureIds(heraldObserver, gameId, harnessAccount.address);
     const structures = await readStructures(heraldObserver, gameId, structureIds, mapCenter);
 

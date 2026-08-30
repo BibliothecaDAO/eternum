@@ -6,11 +6,11 @@ let loadedSummary: LaunchGameSummary | null = null;
 let findGameError: Error | null = null;
 
 const assertRegistrarAvailableMock = mock(() => undefined);
-const createRegistrarGameMock = mock(async () => ({
+const createRegistrarGameMock = mock(async (...args: unknown[]) => ({
   transactionHash: "0xcreate",
   receipt: { execution_status: "SUCCEEDED" },
   gameId: 7,
-  openLedgerTxHash: "0xopen",
+  openLedgerTxHash: args[3] ? "0xopen" : undefined,
 }));
 const createLedgerOperatorAccountMock = mock(() => ({ address: "0xoperator" }));
 const createLedgerTreasuryAccountMock = mock(() => ({ address: "0xtreasury" }));
@@ -100,6 +100,25 @@ describe("registrar game launch", () => {
       openLedgerTxHash: "0xopen",
       outputPath: ".context/game-launch/madara-blitz-bltz-test.json",
     });
+  });
+
+  test("keeps dev-mode games independent from the value plane", async () => {
+    const summary = await launchGame({
+      ...buildRequest(),
+      devModeOn: true,
+      ledgerAddress: undefined,
+      ledgerRpcUrl: undefined,
+    });
+
+    expect(createRegistrarGameMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      "madara.blitz",
+      undefined,
+    );
+    expect(createLedgerOperatorAccountMock).not.toHaveBeenCalled();
+    expect(openLedgerGameMock).not.toHaveBeenCalled();
+    expect(summary.openLedgerTxHash).toBeUndefined();
   });
 
   test("reuses a game in the Herald directory instead of submitting create_game again", async () => {

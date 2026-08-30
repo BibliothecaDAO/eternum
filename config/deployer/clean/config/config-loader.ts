@@ -21,6 +21,7 @@ interface ConfigOverrides {
   singleRealmMode?: boolean;
   twoPlayerMode?: boolean;
   durationSeconds?: number;
+  pointRegistrationGraceSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
@@ -143,6 +144,14 @@ function resolveDurationSeconds(baseConfig: EternumConfig, overrides: ConfigOver
   return durationSeconds;
 }
 
+function resolvePointRegistrationGraceSeconds(baseConfig: EternumConfig, overrides: ConfigOverrides): number {
+  const seconds = overrides.pointRegistrationGraceSeconds ?? baseConfig.season.pointRegistrationCloseAfterEndSeconds;
+  if (!Number.isInteger(seconds) || seconds < 0 || seconds > U32_MAX) {
+    throw new Error("pointRegistrationGraceSeconds must be an integer between 0 and 4294967295");
+  }
+  return seconds;
+}
+
 function resolveBooleanOverrides(baseConfig: EternumConfig, overrides: ConfigOverrides): ResolvedConfigOverrides {
   const singleRealmMode = overrides.singleRealmMode ?? baseConfig.settlement?.single_realm_mode ?? false;
   const twoPlayerMode = overrides.twoPlayerMode ?? baseConfig.settlement?.two_player_mode ?? false;
@@ -200,6 +209,7 @@ function applyModeOverrides(
     ...(config.season ?? {}),
     startMainAt: overrides.startMainAt,
     ...(resolvedOverrides.durationSeconds !== undefined ? { durationSeconds: resolvedOverrides.durationSeconds } : {}),
+    pointRegistrationCloseAfterEndSeconds: resolvePointRegistrationGraceSeconds(config, overrides),
   };
   config.settlement = {
     ...(config.settlement ?? {}),

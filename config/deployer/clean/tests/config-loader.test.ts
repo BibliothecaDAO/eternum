@@ -29,14 +29,27 @@ describe("applyDeploymentConfigOverrides", () => {
       singleRealmMode: true,
       twoPlayerMode: false,
       durationSeconds: 1_800,
+      pointRegistrationGraceSeconds: 5,
     });
 
     expect(result.season.startMainAt).toBe(1_763_112_600);
     expect(result.season.durationSeconds).toBe(1_800);
+    expect(result.season.pointRegistrationCloseAfterEndSeconds).toBe(5);
     expect((result as ConfigWithFactoryAddress).factory_address).toBe("0xabc");
     expect(result.dev?.mode?.on).toBe(true);
     expect(result.settlement?.single_realm_mode).toBe(true);
     expect(result.settlement?.two_player_mode).toBe(false);
+  });
+
+  test("rejects an invalid point-registration grace override", () => {
+    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    expect(() =>
+      applyDeploymentConfigOverrides(baseConfig, {
+        startMainAt: 1_763_112_600,
+        factoryAddress: "0xabc",
+        pointRegistrationGraceSeconds: -1,
+      }),
+    ).toThrow("pointRegistrationGraceSeconds must be an integer between 0 and 4294967295");
   });
 
   test("applies the inferred official 60-minute blitz profile before launch overrides", () => {

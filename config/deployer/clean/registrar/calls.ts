@@ -314,7 +314,7 @@ export async function createRegistrarGame(
   account: Account,
   params: unknown,
   target: RegistrarTarget,
-  ledger: RegistrarLedgerGameTarget,
+  ledger?: RegistrarLedgerGameTarget,
 ): Promise<CreateRegistrarGameResult> {
   const result = await executeRegistrarCall(
     account,
@@ -322,9 +322,10 @@ export async function createRegistrarGame(
     target,
   );
   const gameId = resolveCreatedGameId(result.receipt, target);
-  const ledgerResult = gameId
-    ? await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end)
-    : null;
+  const ledgerResult =
+    gameId && ledger
+      ? await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end)
+      : null;
   return {
     ...result,
     gameId,

@@ -213,6 +213,39 @@ The JSON report is written under `deploy/madara-lab/.lab/runs/`. It includes the
 requested and completed action mixes, latency percentiles, RPC load, host-state snapshots, threshold results, and
 block statistics restricted to the workload window.
 
+For the B.2 value-plane gate, `--ledger` creates a non-dev game, opens the matching mainnet ledger game, funds each bot
+from the treasury LORDS float, and registers each owner on mainnet. It deploys persistent owner-bound gameplay
+accounts, binds them through `PlayerRegistry`, waits for the operator to relay every `LedgerRegistration`, and only then
+settles on the lab. After the workload it submits the complete points-ordered roster, waits for mainnet
+`apply_results`, and returns each bot's payout to the treasury. The manifest records funding, registration, binding,
+ranking, finalization, and sweep transaction hashes.
+
+The accounts file is a JSON array with exactly `--bots` entries. Keep it outside the repository: it contains mainnet
+and gameplay private keys, and the mainnet accounts must already be deployed and funded with enough STRK for their own
+registration and sweep gas.
+
+```json
+[
+  {
+    "mainnetAddress": "0x...",
+    "mainnetPrivateKey": "0x...",
+    "gameplayPrivateKey": "0x...",
+    "sword": false,
+    "shield": false
+  }
+]
+```
+
+With `apps/operator` running and the root `.env` defining `LEDGER_ADDRESS`, `LEDGER_RPC_URL`, `LORDS_ADDRESS`,
+`LEDGER_TREASURY_ADDRESS`, `LEDGER_TREASURY_PRIVATE_KEY`, and `BINDING_AUTHORITY_PRIVATE_KEY`:
+
+```bash
+pnpm lab:harness -- --ledger --ledger-accounts /secure/path/ledger-bots.json --bots 96 --minutes 10
+```
+
+The default mainnet registration window is 900 seconds. Use `--ledger-start-delay-seconds` only when the RPC or account
+roster needs a larger window. The ordinary command above this section remains dev mode and never requires a ledger.
+
 The corrected acceptance run passed on 2026-08-26 UTC. Its report is
 `.lab/runs/20260826T070408628Z.json` (generated evidence, intentionally gitignored):
 
