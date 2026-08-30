@@ -42,6 +42,7 @@ function resolvePackageTaskContext({ actionName, networkName, packageLabel, pack
   return {
     actionLabel: actionLabelByName[actionName] ?? `Running ${actionName} for`,
     envFilePath: resolveContractsCommonEnvFile(repoRoot, networkName),
+    secretEnvFilePath: path.join(repoRoot, ".env"),
     manifestPath: path.join(absolutePackageRoot, "scripts", "commands", "deployment", "manifest.js"),
     networkName,
     packageLabel,
@@ -82,8 +83,8 @@ function installSharedRuntimeDependencies(runtimeRoot) {
   });
 }
 
-function loadPackageTaskEnvironment(envFilePath, networkName) {
-  loadNetworkEnvironment(envFilePath, networkName);
+function loadPackageTaskEnvironment(envFilePath, secretEnvFilePath, networkName) {
+  loadNetworkEnvironment(envFilePath, networkName, secretEnvFilePath);
 }
 
 async function executeContractPackageAction({ actionName, actionOptions, manifestPath, networkName }) {
@@ -152,7 +153,7 @@ export async function runContractPackageTask({
   printRuntimeBanner(`${context.actionLabel} ${context.packageLabel}`);
   buildContractPackage(context.packageRoot, context.packageLabel);
   installSharedRuntimeDependencies(context.runtimeRoot);
-  loadPackageTaskEnvironment(context.envFilePath, context.networkName);
+  loadPackageTaskEnvironment(context.envFilePath, context.secretEnvFilePath, context.networkName);
   await executeContractPackageAction({
     actionName,
     actionOptions,

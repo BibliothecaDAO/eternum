@@ -20,6 +20,35 @@ The command declares and deploys `GameLedger`, writes `ledger` to `contracts/com
 the public value-plane addresses to the ignored `deploy/madara-lab/.env`. It does not upgrade live dependencies or grant
 roles. The MMRToken, Season Pass, and Village Pass upgrades and their ledger role grants are one ordered B.2 operation.
 
+The shared deployment runtime loads public network defaults from `contracts/common/.env.mainnet`, then overlays secrets
+from the root `.env`. Before upgrading live assets, configure the authorized accounts there:
+
+```text
+MMR_ADMIN_ADDRESS
+MMR_ADMIN_PRIVATE_KEY
+MMR_UPGRADER_ADDRESS
+MMR_UPGRADER_PRIVATE_KEY
+SEASON_PASS_OWNER_ADDRESS
+SEASON_PASS_OWNER_PRIVATE_KEY
+STARKNET_ACCOUNT_ADDRESS
+STARKNET_ACCOUNT_PRIVATE_KEY
+STARKNET_RPC
+VILLAGE_PASS_ADMIN_ADDRESS
+VILLAGE_PASS_ADMIN_PRIVATE_KEY
+VILLAGE_PASS_UPGRADER_ADDRESS
+VILLAGE_PASS_UPGRADER_PRIVATE_KEY
+```
+
+The check builds all three contracts, refuses a non-mainnet RPC, verifies every live address and onchain authority, and
+does not submit a transaction. The execute command declares the three classes, upgrades MMRToken then Season Pass then
+Village Pass, grants the ledger `UPDATER_ROLE` and `DISTRIBUTOR_ROLE`, and verifies class hashes and grants afterwards.
+It is rerunnable after a partial failure.
+
+```sh
+pnpm ledger:check-live-assets:mainnet
+pnpm ledger:upgrade-live-assets:mainnet
+```
+
 ## Sponsored first games
 
 Register a dedicated zero-entry-fee ledger preset, then launch a game with a target sponsored pool. Funding is

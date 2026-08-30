@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "deploy:mainnet": "node ./commands/deployment/deploy.js mainnet"
+    "check-live-assets:mainnet": "node ./commands/upgrades/live-assets.js",
+    "deploy:mainnet": "node ./commands/deployment/deploy.js mainnet",
+    "test": "node --test ./commands/**/*.test.js",
+    "upgrade-live-assets:mainnet": "node ./commands/upgrades/live-assets.js --execute"
   }
 }
