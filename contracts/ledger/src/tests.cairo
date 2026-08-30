@@ -1,4 +1,4 @@
-use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait};
+use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait, result_commitment};
 use game_ledger::types::{MmrParams, PmParams, Preset};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
 use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcherTrait};
@@ -397,6 +397,20 @@ fn ranked_players(count: u16) -> Array<(ContractAddress, u16, u16)> {
         ranked.append((player(index), index + 1, 0));
     }
     ranked
+}
+
+#[test]
+fn result_commitment_binds_game_order_and_chests() {
+    let ranked = array![(player(0), 1, 3), (player(1), 1, 2)];
+    assert!(
+        result_commitment(GAME_ID, ranked.span()) == 0x3c7fe8cc71208719a97530868d02e7dc226bb064a5a01abcc48d964be511342,
+        "result commitment should remain stable",
+    );
+    let reordered = array![(player(1), 1, 2), (player(0), 1, 3)];
+    assert!(
+        result_commitment(GAME_ID, reordered.span()) != result_commitment(GAME_ID, ranked.span()),
+        "result commitment should bind row order",
+    );
 }
 
 fn apply_results_at(fixture: @Fixture, timestamp: u64, ranked: Array<(ContractAddress, u16, u16)>) {

@@ -8,6 +8,7 @@
   "scripts": {
     "start": "pnpm run start:amm-indexer",
     "start:amm-indexer": "pnpm --dir ./apps/amm-indexer start",
+    "start:operator": "pnpm --dir ./apps/operator start",
     "build": "pnpm --dir ./apps/game build",
     "build:docs": "pnpm --dir ./apps/game-docs build",
     "build:packages": "pnpm --dir ./packages/chain build && pnpm --dir ./packages/identity build && pnpm --dir ./packages/types build && pnpm --dir ./packages/amm-sdk build && pnpm --dir ./packages/ammv2-sdk build && pnpm --dir ./packages/provider build && pnpm --dir ./packages/dojo build && pnpm --dir ./packages/core build && pnpm --dir ./packages/react build",

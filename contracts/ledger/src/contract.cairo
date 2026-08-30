@@ -1,3 +1,4 @@
+use core::poseidon::poseidon_hash_span;
 use game_ledger::types::{Game, PlayerResult, Preset, Registration};
 use starknet::ContractAddress;
 
@@ -5,6 +6,16 @@ pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
+
+pub fn result_commitment(game_id: u32, ranked: Span<(ContractAddress, u16, u16)>) -> felt252 {
+    let mut payload = array![game_id.into(), ranked.len().into()];
+    for (owner, rank, chests) in ranked {
+        payload.append((*owner).into());
+        payload.append((*rank).into());
+        payload.append((*chests).into());
+    }
+    poseidon_hash_span(payload.span())
+}
 
 #[starknet::interface]
 pub trait IGameLedger<TState> {
@@ -68,7 +79,7 @@ pub mod GameLedger {
     use super::{
         BPS, IGameLedger, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
         IPiltoverCoreDispatcher, IPiltoverCoreDispatcherTrait, ISeasonPassMetadataDispatcher,
-        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, OPERATOR_ROLE, PAYOUT_WEIGHT_SCALE,
+        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, OPERATOR_ROLE, PAYOUT_WEIGHT_SCALE, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -200,6 +211,7 @@ pub mod GameLedger {
     struct ResultsApplied {
         #[key]
         game_id: u32,
+        result_commitment: felt252,
         pool: u256,
         protocol_cut: u256,
         dust: u256,
@@ -417,7 +429,12 @@ pub mod GameLedger {
             game.protocol_cut = protocol_cut;
             game.dust = dust;
             self.games.entry(game_id).write(game);
-            self.emit(ResultsApplied { game_id, pool, protocol_cut, dust });
+            self
+                .emit(
+                    ResultsApplied {
+                        game_id, result_commitment: result_commitment(game_id, ranked.span()), pool, protocol_cut, dust,
+                    },
+                );
         }
 
         fn get_preset(self: @ContractState, preset_id: u32) -> Preset {

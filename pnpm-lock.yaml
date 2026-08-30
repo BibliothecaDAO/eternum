@@ -682,6 +682,34 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@20.19.33)(@vitest/ui@1.6.1)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
 
+  apps/operator:
+    dependencies:
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
+      pg:
+        specifier: ^8.18.0
+        version: 8.18.0
+      starknet:
+        specifier: catalog:web
+        version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.20.1
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
+      bun-types:
+        specifier: ^1.2.2
+        version: 1.4.0
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.20.1)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+
   apps/realtime-server:
     dependencies:
       '@bibliothecadao/types':
