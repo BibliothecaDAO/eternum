@@ -31,10 +31,13 @@ function lords(amount: bigint) {
   return uint256.bnToUint256(amount * LORDS);
 }
 
-export function buildLedgerEconomicPreset(gameType: DeploymentGameType): LedgerEconomicPreset {
+export function buildLedgerEconomicPreset(
+  gameType: DeploymentGameType,
+  options: { sponsored?: boolean } = {},
+): LedgerEconomicPreset {
   const isBlitz = gameType === "blitz";
   return {
-    entry_fee: lords(isBlitz ? 500n : 0n),
+    entry_fee: lords(isBlitz && !options.sponsored ? 500n : 0n),
     protocol_cut_bps: isBlitz ? 2_000 : 0,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
@@ -60,4 +63,8 @@ export function buildLedgerEconomicPreset(gameType: DeploymentGameType): LedgerE
 
 export function buildRegisterLedgerPresetCalldata(presetId: number, preset: LedgerEconomicPreset): string[] {
   return CallData.compile([presetId, preset] as never);
+}
+
+export function resolveLedgerFundingAmount(currentPool: bigint, targetPool: bigint): bigint {
+  return currentPool < targetPool ? targetPool - currentPool : 0n;
 }

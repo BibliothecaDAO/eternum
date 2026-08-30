@@ -1,7 +1,7 @@
-import { Account, CallData, RpcProvider, type Call } from "starknet";
+import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { LedgerEconomicPreset } from "./economics";
-import { buildRegisterLedgerPresetCalldata } from "./economics";
+import { buildRegisterLedgerPresetCalldata, resolveLedgerFundingAmount } from "./economics";
 
 export interface LedgerTarget {
   address: string;
@@ -55,22 +55,78 @@ export function createLedgerOperatorAccount(target: LedgerTarget, context: strin
   );
 }
 
+export function createLedgerTreasuryAccount(target: LedgerTarget, context: string): Account {
+  return createLedgerAccount(
+    target,
+    context,
+    process.env.LEDGER_TREASURY_ADDRESS,
+    process.env.LEDGER_TREASURY_PRIVATE_KEY,
+  );
+}
+
+async function executeAndWait(account: Account, calls: Call | Call[], label: string): Promise<LedgerTransactionResult> {
+  const transaction = await account.execute(calls);
+  const receipt = await account.waitForTransaction(transaction.transaction_hash);
+  if (!transactionSucceeded(receipt)) {
+    throw new Error(`${label} failed for transaction ${transaction.transaction_hash}`);
+  }
+  return { transactionHash: transaction.transaction_hash, receipt };
+}
+
 async function executeLedgerCall(
   account: Account,
   call: Call,
   alreadyWrittenSubject: "game" | "preset",
 ): Promise<LedgerTransactionResult | null> {
   try {
-    const transaction = await account.execute(call);
-    const receipt = await account.waitForTransaction(transaction.transaction_hash);
-    if (!transactionSucceeded(receipt)) {
-      throw new Error(`${call.entrypoint} failed for transaction ${transaction.transaction_hash}`);
-    }
-    return { transactionHash: transaction.transaction_hash, receipt };
+    return await executeAndWait(account, call, call.entrypoint);
   } catch (error) {
     if (isAlreadyWritten(error, alreadyWrittenSubject)) return null;
     throw error;
   }
+}
+
+async function readLedgerGamePool(target: LedgerTarget, gameId: number): Promise<bigint> {
+  const result = await new RpcProvider({ nodeUrl: target.rpcUrl }).callContract(
+    {
+      contractAddress: target.address,
+      entrypoint: "get_game",
+      calldata: CallData.compile([gameId]),
+    },
+    "latest",
+  );
+  if (BigInt(result[0] ?? 0) === 0n) {
+    throw new Error(`Ledger game ${gameId} does not exist`);
+  }
+  return uint256.uint256ToBN({ low: result[4] ?? "0", high: result[5] ?? "0" });
+}
+
+export async function fundLedgerGameToTargetPool(
+  account: Account,
+  target: LedgerTarget,
+  lordsAddress: string,
+  gameId: number,
+  targetPool: bigint,
+): Promise<LedgerTransactionResult | null> {
+  const amount = resolveLedgerFundingAmount(await readLedgerGamePool(target, gameId), targetPool);
+  if (amount === 0n) return null;
+
+  return executeAndWait(
+    account,
+    [
+      {
+        contractAddress: lordsAddress,
+        entrypoint: "approve",
+        calldata: CallData.compile([target.address, uint256.bnToUint256(amount)]),
+      },
+      {
+        contractAddress: target.address,
+        entrypoint: "fund",
+        calldata: CallData.compile([gameId, uint256.bnToUint256(amount)]),
+      },
+    ],
+    `fund ledger game ${gameId}`,
+  );
 }
 
 export async function registerLedgerPreset(

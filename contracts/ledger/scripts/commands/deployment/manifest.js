@@ -1,9 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { hash } from "starknet";
 import { loadJsonConfigFile, requireAddressConfigValue } from "../../../../scripts-runtime/js/config.js";
 import { mergeEnvironmentFile, mergeJsonFile } from "../../../../scripts-runtime/js/files.js";
-import { executeContractCalls, getSelectedNetworkName } from "../../../../scripts-runtime/js/starknet.js";
+import { getSelectedNetworkName } from "../../../../scripts-runtime/js/starknet.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.join(__dirname, "..", "..", "..");
@@ -27,19 +26,7 @@ function requireNonZeroAddress(value, label) {
   return address;
 }
 
-function assertRoleAdminSigner(accountAddress) {
-  for (const [label, address] of [
-    ["MMR_DEFAULT_ADMIN", requireEnvironmentAddress("MMR_DEFAULT_ADMIN")],
-    ["SEASON_PASS_ADMIN", requireEnvironmentAddress("SEASON_PASS_ADMIN")],
-  ]) {
-    if (BigInt(address) !== BigInt(accountAddress)) {
-      throw new Error(`STARKNET_ACCOUNT_ADDRESS must match ${label} to grant the ledger role`);
-    }
-  }
-}
-
 const deploymentAccountAddress = requireEnvironmentAddress("STARKNET_ACCOUNT_ADDRESS");
-assertRoleAdminSigner(deploymentAccountAddress);
 const constructorAddresses = {
   admin: requireEnvironmentAddress("LEDGER_ADMIN_ADDRESS"),
   operator: requireEnvironmentAddress("LEDGER_OPERATOR_ADDRESS"),
@@ -69,25 +56,6 @@ function buildConstructorCalldata() {
   ];
 }
 
-async function grantLedgerRoles({ deployedAddress, runtimeConfig }) {
-  await executeContractCalls({
-    accountAddress: runtimeConfig.accountAddress,
-    calls: [
-      {
-        calldata: [hash.getSelectorFromName("UPDATER_ROLE"), deployedAddress],
-        contractAddress: constructorAddresses.mmrToken,
-        entrypoint: "grant_role",
-      },
-      {
-        calldata: [hash.getSelectorFromName("DISTRIBUTOR_ROLE"), deployedAddress],
-        contractAddress: constructorAddresses.villagePass,
-        entrypoint: "grant_role",
-      },
-    ],
-    label: "ledger prerequisite roles",
-  });
-}
-
 async function exportLedgerAddresses(deployedAddress) {
   await mergeJsonFile(commonAddressesPath, { ledger: deployedAddress });
   await mergeEnvironmentFile(labEnvironmentPath, {
@@ -102,11 +70,6 @@ async function exportLedgerAddresses(deployedAddress) {
     COSMETICS_ADDRESS: constructorAddresses.cosmetics,
     VAULT_ADDRESS: addresses.vault ?? "",
   });
-}
-
-async function finalizeLedgerDeployment(context) {
-  await grantLedgerRoles(context);
-  await exportLedgerAddresses(context.deployedAddress);
 }
 
 export const contractPackageManifest = {
@@ -125,7 +88,7 @@ export const contractPackageManifest = {
       constructorCalldata: buildConstructorCalldata,
       declarationIds: ["ledger"],
       dependencyIds: [],
-      finalizeDeployment: finalizeLedgerDeployment,
+      finalizeDeployment: ({ deployedAddress }) => exportLedgerAddresses(deployedAddress),
       id: "ledger",
       label: "Realms game ledger",
       stateKey: "ledger",

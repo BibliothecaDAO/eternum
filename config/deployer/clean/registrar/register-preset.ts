@@ -15,6 +15,7 @@ interface RegisterPresetOptions {
   balanceProfile?: BlitzBalanceProfileId;
   ledgerAddress?: string;
   ledgerRpcUrl?: string;
+  sponsored: boolean;
   dryRun: boolean;
 }
 
@@ -31,7 +32,7 @@ function parseOptions(): RegisterPresetOptions {
   const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> --ledger <address> --ledger-rpc-url <Sepolia RPC> [--environment madara.blitz|appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> --ledger <address> --ledger-rpc-url <mainnet RPC> [--environment madara.blitz|appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--sponsored] [--dry-run]",
     );
   }
   if (environmentId !== "madara.blitz" && environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
@@ -50,7 +51,8 @@ function parseOptions(): RegisterPresetOptions {
     environmentId,
     balanceProfile,
     ledgerAddress: readArgument("--ledger") || process.env.LEDGER_ADDRESS,
-    ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL || process.env.SEPOLIA_RPC_URL,
+    ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL,
+    sponsored: process.argv.includes("--sponsored"),
     dryRun: process.argv.includes("--dry-run"),
   };
 }
@@ -72,14 +74,16 @@ export function buildPresetDryRun(
   presetId: number,
   environmentId: DeploymentEnvironmentId = "appchain.blitz",
   balanceProfile?: BlitzBalanceProfileId,
+  sponsored = false,
 ) {
   const config = loadPresetConfiguration(environmentId, balanceProfile);
   const payload = buildPresetRegistration(config, presetId);
   const calldata = buildRegisterPresetCalldata(payload);
-  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(environmentId).gameType);
+  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(environmentId).gameType, { sponsored });
   return {
     presetId,
     balanceProfile: balanceProfile ?? null,
+    sponsored,
     calldataLength: calldata.length,
     counts: summarizePresetSideTables(payload),
     calldata,
@@ -98,11 +102,14 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   const config = loadPresetConfiguration(options.environmentId, options.balanceProfile);
   const payload = buildPresetRegistration(config, options.presetId);
   const calldata = buildRegisterPresetCalldata(payload);
-  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(options.environmentId).gameType);
+  const ledgerPreset = buildLedgerEconomicPreset(resolveDeploymentEnvironment(options.environmentId).gameType, {
+    sponsored: options.sponsored,
+  });
   const summary = {
     presetId: options.presetId,
     calldataLength: calldata.length,
     counts: summarizePresetSideTables(payload),
+    sponsored: options.sponsored,
     calldata,
     ledgerCalldata: buildRegisterLedgerPresetCalldata(options.presetId, ledgerPreset),
   };
@@ -135,7 +142,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     console.log(`Preset ${options.presetId} is already registered; skipping.`);
   }
 
-  const ledgerAccount = createLedgerAdminAccount(ledgerTarget, "Sepolia ledger preset registration");
+  const ledgerAccount = createLedgerAdminAccount(ledgerTarget, "mainnet ledger preset registration");
   const ledgerResult = await registerLedgerPreset(ledgerAccount, ledgerTarget, options.presetId, ledgerPreset);
   console.log(
     ledgerResult

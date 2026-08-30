@@ -6,6 +6,10 @@ import { resolveOptionalArg } from "./args";
 
 const SHARED_STRING_FIELDS = [
   ["rpcUrl", "rpc-url"],
+  ["ledgerAddress", "ledger"],
+  ["ledgerRpcUrl", "ledger-rpc-url"],
+  ["lordsAddress", "lords"],
+  ["sponsoredPoolLords", "sponsored-pool-lords"],
   ["accountAddress", "account-address"],
   ["privateKey", "private-key"],
   ["executionMode", "mode"],

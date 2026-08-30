@@ -13,7 +13,9 @@ const createRegistrarGameMock = mock(async () => ({
   openLedgerTxHash: "0xopen",
 }));
 const createLedgerOperatorAccountMock = mock(() => ({ address: "0xoperator" }));
+const createLedgerTreasuryAccountMock = mock(() => ({ address: "0xtreasury" }));
 const openLedgerGameMock = mock(async () => ({ transactionHash: "0xopen", receipt: {} }));
+const fundLedgerGameToTargetPoolMock = mock(async () => ({ transactionHash: "0xsponsor", receipt: {} }));
 const findGameRegistryByNameMock = mock(async () => {
   if (findGameError) {
     throw findGameError;
@@ -41,6 +43,8 @@ mock.module("../registrar/calls", () => ({
 
 mock.module("../ledger/calls", () => ({
   createLedgerOperatorAccount: createLedgerOperatorAccountMock,
+  createLedgerTreasuryAccount: createLedgerTreasuryAccountMock,
+  fundLedgerGameToTargetPool: fundLedgerGameToTargetPoolMock,
   openLedgerGame: openLedgerGameMock,
 }));
 
@@ -71,6 +75,8 @@ beforeEach(() => {
   assertRegistrarAvailableMock.mockClear();
   createRegistrarGameMock.mockClear();
   createLedgerOperatorAccountMock.mockClear();
+  createLedgerTreasuryAccountMock.mockClear();
+  fundLedgerGameToTargetPoolMock.mockClear();
   openLedgerGameMock.mockClear();
   findGameRegistryByNameMock.mockClear();
   waitForGameRegistryByIdMock.mockClear();
@@ -111,7 +117,7 @@ describe("registrar game launch", () => {
       expect(createRegistrarGameMock).not.toHaveBeenCalled();
       expect(openLedgerGameMock).toHaveBeenCalledWith(
         expect.objectContaining({ address: "0xoperator" }),
-        { address: "0xledger", rpcUrl: "https://sepolia.example/rpc" },
+        { address: "0xledger", rpcUrl: "https://mainnet.example/rpc" },
         19,
         1,
         4_070_908_800,
@@ -170,6 +176,32 @@ describe("registrar game launch", () => {
     expect(createRegistrarGameMock).not.toHaveBeenCalled();
   });
 
+  test("tops a sponsored game up to the requested mainnet pool", async () => {
+    const summary = await launchGame({
+      ...buildRequest(),
+      lordsAddress: "0xlords",
+      sponsoredPoolLords: "48000",
+    });
+
+    expect(createLedgerTreasuryAccountMock).toHaveBeenCalledTimes(1);
+    expect(fundLedgerGameToTargetPoolMock).toHaveBeenCalledWith(
+      { address: "0xtreasury" },
+      { address: "0xledger", rpcUrl: "https://mainnet.example/rpc" },
+      "0xlords",
+      7,
+      48_000n * 10n ** 18n,
+    );
+    expect(summary.sponsorLedgerTxHash).toBe("0xsponsor");
+  });
+
+  test("rejects fractional sponsored LORDS before submitting", async () => {
+    await expect(launchGame({ ...buildRequest(), lordsAddress: "0xlords", sponsoredPoolLords: "1.5" })).rejects.toThrow(
+      "positive whole LORDS",
+    );
+
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
   test("dry runs never call the registrar", async () => {
     const summary = await launchGame({ ...buildRequest(), dryRun: true });
 
@@ -187,7 +219,7 @@ function buildRequest() {
     startTime: "2099-01-01T00:00:00Z",
     rpcUrl: "http://127.0.0.1:5050",
     ledgerAddress: "0xledger",
-    ledgerRpcUrl: "https://sepolia.example/rpc",
+    ledgerRpcUrl: "https://mainnet.example/rpc",
     accountAddress: "0x123",
     privateKey: "0x456",
     waitForFactoryIndexTimeoutMs: 10_000,

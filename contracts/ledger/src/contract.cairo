@@ -8,6 +8,8 @@ const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
 
 #[starknet::interface]
 pub trait IGameLedger<TState> {
+    fn pause(ref self: TState);
+    fn unpause(ref self: TState);
     fn register_preset(ref self: TState, preset_id: u32, preset: Preset);
     fn set_messaging(ref self: TState, core_contract: ContractAddress, l3_entry_system: felt252);
     fn open_game(ref self: TState, game_id: u32, preset_id: u32, start: u64, end: u64);
@@ -23,6 +25,8 @@ pub trait IGameLedger<TState> {
     fn get_registration(self: @TState, game_id: u32, owner: ContractAddress) -> Registration;
     fn get_registered_owner(self: @TState, game_id: u32, index: u16) -> ContractAddress;
     fn get_player_result(self: @TState, game_id: u32, owner: ContractAddress) -> PlayerResult;
+    fn is_pm_enabled(self: @TState) -> bool;
+    fn get_reserve(self: @TState) -> u256;
 }
 
 #[starknet::interface]
@@ -54,10 +58,13 @@ pub mod GameLedger {
     use game_ledger::types::{Game, PlayerResult, Preset, Registration};
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::security::PausableComponent;
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use starknet::ContractAddress;
+    use openzeppelin::upgrades::UpgradeableComponent;
+    use openzeppelin::upgrades::interface::IUpgradeable;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ClassHash, ContractAddress};
     use super::{
         BPS, IGameLedger, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
         IPiltoverCoreDispatcher, IPiltoverCoreDispatcherTrait, ISeasonPassMetadataDispatcher,
@@ -66,10 +73,16 @@ pub mod GameLedger {
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+    component!(path: PausableComponent, storage: pausable, event: PausableEvent);
+    component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
 
     #[abi(embed_v0)]
     impl AccessControlMixinImpl = AccessControlComponent::AccessControlMixinImpl<ContractState>;
     impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl PausableImpl = PausableComponent::PausableImpl<ContractState>;
+    impl PausableInternalImpl = PausableComponent::InternalImpl<ContractState>;
+    impl UpgradeableInternalImpl = UpgradeableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
@@ -83,6 +96,8 @@ pub mod GameLedger {
         cosmetics: ContractAddress,
         core_contract: ContractAddress,
         l3_entry_system: felt252,
+        pm_enabled: bool,
+        reserve: u256,
         presets: Map<u32, Preset>,
         preset_exists: Map<u32, bool>,
         games: Map<u32, Game>,
@@ -94,6 +109,10 @@ pub mod GameLedger {
         src5: SRC5Component::Storage,
         #[substorage(v0)]
         accesscontrol: AccessControlComponent::Storage,
+        #[substorage(v0)]
+        pausable: PausableComponent::Storage,
+        #[substorage(v0)]
+        upgradeable: UpgradeableComponent::Storage,
     }
 
     #[event]
@@ -103,6 +122,10 @@ pub mod GameLedger {
         SRC5Event: SRC5Component::Event,
         #[flat]
         AccessControlEvent: AccessControlComponent::Event,
+        #[flat]
+        PausableEvent: PausableComponent::Event,
+        #[flat]
+        UpgradeableEvent: UpgradeableComponent::Event,
         PresetRegistered: PresetRegistered,
         GameOpened: GameOpened,
         Registered: Registered,
@@ -229,7 +252,25 @@ pub mod GameLedger {
     }
 
     #[abi(embed_v0)]
+    impl UpgradeableImpl of IUpgradeable<ContractState> {
+        fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.upgradeable.upgrade(new_class_hash);
+        }
+    }
+
+    #[abi(embed_v0)]
     impl GameLedgerImpl of IGameLedger<ContractState> {
+        fn pause(ref self: ContractState) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.pausable.pause();
+        }
+
+        fn unpause(ref self: ContractState) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.pausable.unpause();
+        }
+
         fn register_preset(ref self: ContractState, preset_id: u32, preset: Preset) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             assert!(!self.preset_exists.entry(preset_id).read(), "Ledger: preset already registered");
@@ -249,6 +290,7 @@ pub mod GameLedger {
 
         fn open_game(ref self: ContractState, game_id: u32, preset_id: u32, start: u64, end: u64) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
             assert!(!self.games.entry(game_id).read().exists, "Ledger: game already opened");
             assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
             assert!(starknet::get_block_timestamp() < start, "Ledger: start must be in the future");
@@ -287,8 +329,9 @@ pub mod GameLedger {
                 IERC721Dispatcher { contract_address: season_pass }.owner_of(pass_id) == owner,
                 "Ledger: not pass owner",
             );
+            assert!(pass_id <= 0xffff, "Ledger: pass id exceeds u16");
             let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
-                .get_encoded_metadata(pass_id.try_into().expect('Ledger: pass id exceeds u16'));
+                .get_encoded_metadata(pass_id.try_into().unwrap());
 
             self.record_registration(game_id, owner, false, false, 0, pass_id);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
@@ -310,6 +353,7 @@ pub mod GameLedger {
         }
 
         fn fund(ref self: ContractState, game_id: u32, amount: u256) {
+            self.pausable.assert_not_paused();
             let funder = starknet::get_caller_address();
             let game = self.assert_game_open_before_start(game_id);
             assert!(amount > 0, "Ledger: zero funding");
@@ -348,6 +392,7 @@ pub mod GameLedger {
 
         fn apply_results(ref self: ContractState, game_id: u32, ranked: Array<(ContractAddress, u16, u16)>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
             let mut game = self.games.entry(game_id).read();
             self.assert_results_open(game);
             self.validate_and_record_results(game_id, game.registered_count, ranked.span());
@@ -372,7 +417,6 @@ pub mod GameLedger {
             game.protocol_cut = protocol_cut;
             game.dust = dust;
             self.games.entry(game_id).write(game);
-            assert!(total_payout + protocol_cut + dust == pool, "Ledger: pool conservation failed");
             self.emit(ResultsApplied { game_id, pool, protocol_cut, dust });
         }
 
@@ -399,6 +443,14 @@ pub mod GameLedger {
 
         fn get_player_result(self: @ContractState, game_id: u32, owner: ContractAddress) -> PlayerResult {
             self.results.entry((game_id, owner)).read()
+        }
+
+        fn is_pm_enabled(self: @ContractState) -> bool {
+            self.pm_enabled.read()
+        }
+
+        fn get_reserve(self: @ContractState) -> u256 {
+            self.reserve.read()
         }
     }
 
@@ -457,6 +509,7 @@ pub mod GameLedger {
         }
 
         fn assert_registration_open(self: @ContractState, game_id: u32, owner: ContractAddress) -> Game {
+            self.pausable.assert_not_paused();
             let game = self.assert_game_open_before_start(game_id);
             assert!(!self.registrations.entry((game_id, owner)).read().registered, "Ledger: already registered");
             game
@@ -466,7 +519,7 @@ pub mod GameLedger {
             assert!(game.exists, "Ledger: unknown game");
             assert!(!game.cancelled, "Ledger: game cancelled");
             assert!(!game.finalized, "Ledger: results already applied");
-            assert!(starknet::get_block_timestamp() >= game.end, "Ledger: game not ended");
+            assert!(starknet::get_block_timestamp() >= game.start, "Ledger: game not started");
             assert!(game.registered_count > 0, "Ledger: empty roster");
         }
     }
@@ -540,8 +593,7 @@ pub mod GameLedger {
                     if index >= ranked.len() {
                         break;
                     }
-                    let (owner, _, chests) = *ranked.at(index);
-                    let (_, current_rank, _) = *ranked.at(index);
+                    let (owner, current_rank, chests) = *ranked.at(index);
                     if current_rank != rank {
                         break;
                     }

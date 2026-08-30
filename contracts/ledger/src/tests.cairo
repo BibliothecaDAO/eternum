@@ -1,15 +1,181 @@
 use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait};
 use game_ledger::types::{MmrParams, PmParams, Preset};
+use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
+use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcherTrait};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
+use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp, start_cheat_caller_address,
-    stop_cheat_block_timestamp, stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, declare, get_class_hash, start_cheat_block_timestamp,
+    start_cheat_caller_address, stop_cheat_block_timestamp, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 
 #[starknet::interface]
 trait ITestLords<TState> {
     fn mint(ref self: TState, recipient: ContractAddress, amount: u256);
+}
+
+#[starknet::interface]
+trait ITestSeasonPass<TState> {
+    fn set_ledger(ref self: TState, ledger: ContractAddress);
+    fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
+    fn burn(ref self: TState, token_id: u256);
+    fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
+}
+
+#[starknet::interface]
+trait ITestVillagePass<TState> {
+    fn mint(ref self: TState, recipient: ContractAddress) -> u256;
+    fn burn(ref self: TState, token_id: u256);
+}
+
+#[starknet::contract]
+mod TestSeasonPass {
+    use core::num::traits::Zero;
+    use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait};
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
+    use starknet::ContractAddress;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        ledger: ContractAddress,
+        #[substorage(v0)]
+        erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+
+    #[constructor]
+    fn constructor(ref self: ContractState) {
+        self.erc721.initializer("Test Season Pass", "PASS", "");
+    }
+
+    #[abi(embed_v0)]
+    impl TestSeasonPassImpl of super::ITestSeasonPass<ContractState> {
+        fn set_ledger(ref self: ContractState, ledger: ContractAddress) {
+            self.ledger.write(ledger);
+        }
+
+        fn mint(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+            self.erc721.mint(recipient, token_id);
+        }
+
+        fn burn(ref self: ContractState, token_id: u256) {
+            let owner = self.erc721.owner_of(token_id);
+            let ledger = self.ledger.read();
+            assert!(
+                IGameLedgerDispatcher { contract_address: ledger }.get_registration(super::GAME_ID, owner).registered,
+                "registration should be recorded before burn",
+            );
+            self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+
+        fn get_encoded_metadata(self: @ContractState, token_id: u16) -> (felt252, felt252, felt252) {
+            ('realm', token_id.into(), 'metadata')
+        }
+    }
+}
+
+#[starknet::contract]
+mod TestVillagePass {
+    use core::num::traits::Zero;
+    use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc721::ERC721Component;
+    use starknet::ContractAddress;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+
+    const DISTRIBUTOR_ROLE: felt252 = selector!("DISTRIBUTOR_ROLE");
+
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
+
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    #[abi(embed_v0)]
+    impl AccessControlImpl = AccessControlComponent::AccessControlImpl<ContractState>;
+    impl AccessControlInternalImpl = AccessControlComponent::InternalImpl<ContractState>;
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+
+    #[storage]
+    struct Storage {
+        counter: u256,
+        #[substorage(v0)]
+        erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
+        #[substorage(v0)]
+        accesscontrol: AccessControlComponent::Storage,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+        #[flat]
+        AccessControlEvent: AccessControlComponent::Event,
+    }
+
+    #[constructor]
+    fn constructor(ref self: ContractState, admin: ContractAddress) {
+        self.erc721.initializer("Test Village Pass", "VILLAGE", "");
+        self.accesscontrol.initializer();
+        self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin);
+    }
+
+    impl ERC721HooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn before_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress,
+        ) {
+            let contract_state = self.get_contract_mut();
+            let owner = contract_state.erc721._owner_of(token_id);
+            if owner.is_non_zero() {
+                let owner_is_distributor = contract_state.accesscontrol.has_role(DISTRIBUTOR_ROLE, owner);
+                let caller_is_distributor = contract_state.accesscontrol.has_role(DISTRIBUTOR_ROLE, auth);
+                assert!(owner_is_distributor || caller_is_distributor, "EVP: Village token can not be transferred");
+            }
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl TestVillagePassImpl of super::ITestVillagePass<ContractState> {
+        fn mint(ref self: ContractState, recipient: ContractAddress) -> u256 {
+            let token_id = self.counter.read() + 1;
+            self.counter.write(token_id);
+            self.erc721.mint(recipient, token_id);
+            token_id
+        }
+
+        fn burn(ref self: ContractState, token_id: u256) {
+            self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+    }
 }
 
 #[starknet::contract]
@@ -135,7 +301,7 @@ struct Fixture {
     lords_minter: ITestLordsDispatcher,
 }
 
-fn deploy_fixture(preset: Preset) -> Fixture {
+fn deploy_ledger_with_passes(season_pass: ContractAddress, village_pass: ContractAddress) -> Fixture {
     let lords_class = declare("TestLords").unwrap().contract_class();
     let (lords_address, _) = lords_class.deploy(@array![]).unwrap();
     let mmr_class = declare("TestMMR").unwrap().contract_class();
@@ -147,8 +313,6 @@ fn deploy_fixture(preset: Preset) -> Fixture {
     TREASURY().serialize(ref constructor);
     lords_address.serialize(ref constructor);
     mmr_address.serialize(ref constructor);
-    let season_pass: ContractAddress = 'season_pass'.try_into().unwrap();
-    let village_pass: ContractAddress = 'village_pass'.try_into().unwrap();
     let loot_chest: ContractAddress = 'loot_chest'.try_into().unwrap();
     let elite_invite: ContractAddress = 'elite_invite'.try_into().unwrap();
     let cosmetics: ContractAddress = 'cosmetics'.try_into().unwrap();
@@ -160,13 +324,6 @@ fn deploy_fixture(preset: Preset) -> Fixture {
     let (ledger_address, _) = ledger_class.deploy(@constructor).unwrap();
     let ledger = IGameLedgerDispatcher { contract_address: ledger_address };
 
-    start_cheat_caller_address(ledger_address, ADMIN());
-    ledger.register_preset(PRESET_ID, preset);
-    stop_cheat_caller_address(ledger_address);
-    start_cheat_caller_address(ledger_address, OPERATOR());
-    ledger.open_game(GAME_ID, PRESET_ID, START, END);
-    stop_cheat_caller_address(ledger_address);
-
     Fixture {
         ledger_address,
         ledger,
@@ -174,6 +331,47 @@ fn deploy_fixture(preset: Preset) -> Fixture {
         lords: IERC20Dispatcher { contract_address: lords_address },
         lords_minter: ITestLordsDispatcher { contract_address: lords_address },
     }
+}
+
+fn deploy_ledger() -> Fixture {
+    deploy_ledger_with_passes('season_pass'.try_into().unwrap(), 'village_pass'.try_into().unwrap())
+}
+
+fn configure_game(fixture: Fixture, preset: Preset) -> Fixture {
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.register_preset(PRESET_ID, preset);
+    stop_cheat_caller_address(fixture.ledger_address);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(GAME_ID, PRESET_ID, START, END);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    fixture
+}
+
+fn deploy_fixture(preset: Preset) -> Fixture {
+    configure_game(deploy_ledger(), preset)
+}
+
+fn deploy_season_pass_fixture() -> (Fixture, ContractAddress, ITestSeasonPassDispatcher) {
+    let pass_class = declare("TestSeasonPass").unwrap().contract_class();
+    let (pass_address, _) = pass_class.deploy(@array![]).unwrap();
+    let pass = ITestSeasonPassDispatcher { contract_address: pass_address };
+    let fixture = configure_game(
+        deploy_ledger_with_passes(pass_address, 'village_pass'.try_into().unwrap()), default_preset(),
+    );
+    pass.set_ledger(fixture.ledger_address);
+    (fixture, pass_address, pass)
+}
+
+fn deploy_village_pass_fixture() -> (Fixture, ContractAddress, ITestVillagePassDispatcher) {
+    let pass_class = declare("TestVillagePass").unwrap().contract_class();
+    let mut constructor = array![];
+    ADMIN().serialize(ref constructor);
+    let (pass_address, _) = pass_class.deploy(@constructor).unwrap();
+    let fixture = configure_game(
+        deploy_ledger_with_passes('season_pass'.try_into().unwrap(), pass_address), default_preset(),
+    );
+    (fixture, pass_address, ITestVillagePassDispatcher { contract_address: pass_address })
 }
 
 fn fund_and_approve_player(fixture: @Fixture, owner: ContractAddress, amount: u256) {
@@ -201,12 +399,16 @@ fn ranked_players(count: u16) -> Array<(ContractAddress, u16, u16)> {
     ranked
 }
 
-fn apply_results(fixture: @Fixture, ranked: Array<(ContractAddress, u16, u16)>) {
-    start_cheat_block_timestamp(*fixture.ledger_address, END);
+fn apply_results_at(fixture: @Fixture, timestamp: u64, ranked: Array<(ContractAddress, u16, u16)>) {
+    start_cheat_block_timestamp(*fixture.ledger_address, timestamp);
     start_cheat_caller_address(*fixture.ledger_address, OPERATOR());
     fixture.ledger.apply_results(GAME_ID, ranked);
     stop_cheat_caller_address(*fixture.ledger_address);
     stop_cheat_block_timestamp(*fixture.ledger_address);
+}
+
+fn apply_results(fixture: @Fixture, ranked: Array<(ContractAddress, u16, u16)>) {
+    apply_results_at(fixture, START, ranked);
 }
 
 fn assert_conservation(count: u16) {
@@ -224,6 +426,83 @@ fn assert_conservation(count: u16) {
     assert!(payouts + game.protocol_cut + game.dust == initial_pool, "pool should be conserved");
     assert!(fixture.lords.balance_of(fixture.ledger_address) == 0, "ledger token balance should be zero");
     assert!(fixture.lords.balance_of(TREASURY()) == game.protocol_cut + game.dust, "treasury should receive remainder");
+}
+
+#[test]
+fn deploys_with_value_plane_guardrails_engaged() {
+    let fixture = deploy_ledger();
+    let pausable = IPausableDispatcher { contract_address: fixture.ledger_address };
+
+    assert!(!pausable.is_paused(), "ledger should deploy active");
+    assert!(!fixture.ledger.is_pm_enabled(), "prediction markets should deploy disabled");
+    assert!(fixture.ledger.get_reserve() == 0, "prediction-market reserve should deploy empty");
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0, "ledger should deploy without LORDS custody");
+}
+
+#[test]
+fn admin_controls_pause() {
+    let fixture = deploy_ledger();
+    let pausable = IPausableDispatcher { contract_address: fixture.ledger_address };
+
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    assert!(pausable.is_paused(), "admin should be able to pause the ledger");
+    fixture.ledger.unpause();
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    assert!(!pausable.is_paused(), "admin should be able to unpause the ledger");
+}
+
+#[test]
+#[should_panic]
+fn non_admin_cannot_pause() {
+    let fixture = deploy_ledger();
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.pause();
+}
+
+#[test]
+#[should_panic(expected: 'Pausable: paused')]
+fn paused_ledger_rejects_new_sponsorship() {
+    let fixture = deploy_fixture(default_preset());
+    let sponsor = player(0);
+    fund_and_approve_player(@fixture, sponsor, 500);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    start_cheat_caller_address(fixture.ledger_address, sponsor);
+    fixture.ledger.fund(GAME_ID, 500);
+}
+
+#[test]
+fn admin_can_upgrade_without_losing_state() {
+    let fixture = deploy_fixture(default_preset());
+    let upgradeable = IUpgradeableDispatcher { contract_address: fixture.ledger_address };
+    let class_hash = get_class_hash(fixture.ledger_address);
+
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    upgradeable.upgrade(class_hash);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    assert!(fixture.ledger.get_preset(PRESET_ID).entry_fee == 500, "upgrade should preserve ledger storage");
+}
+
+#[test]
+#[should_panic]
+fn non_admin_cannot_upgrade() {
+    let fixture = deploy_ledger();
+    let upgradeable = IUpgradeableDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    upgradeable.upgrade(get_class_hash(fixture.ledger_address));
+}
+
+#[test]
+#[should_panic]
+fn non_admin_cannot_register_preset() {
+    let fixture = deploy_ledger();
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register_preset(PRESET_ID, default_preset());
 }
 
 #[test]
@@ -281,6 +560,90 @@ fn rejects_registration_after_start() {
 }
 
 #[test]
+fn season_pass_registration_records_then_burns_an_approved_pass() {
+    let (fixture, pass_address, pass) = deploy_season_pass_fixture();
+    let owner = player(0);
+    let token_id = 42;
+    pass.mint(owner, token_id);
+    let erc721 = IERC721Dispatcher { contract_address: pass_address };
+    start_cheat_caller_address(pass_address, owner);
+    erc721.approve(fixture.ledger_address, token_id);
+    stop_cheat_caller_address(pass_address);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_with_pass(GAME_ID, token_id);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    let registration = fixture.ledger.get_registration(GAME_ID, owner);
+    assert!(registration.registered && registration.realm_id == token_id, "pass registration should be recorded");
+    assert!(erc721.balance_of(owner) == 0, "the registered season pass should be burned");
+}
+
+#[test]
+#[should_panic(expected: 'ERC721: unauthorized caller')]
+fn season_pass_registration_requires_ledger_approval() {
+    let (fixture, _, pass) = deploy_season_pass_fixture();
+    let owner = player(0);
+    pass.mint(owner, 42);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_with_pass(GAME_ID, 42);
+}
+
+#[test]
+#[should_panic]
+fn season_pass_id_must_fit_metadata_abi() {
+    let (fixture, pass_address, pass) = deploy_season_pass_fixture();
+    let owner = player(0);
+    let token_id = 65_536;
+    pass.mint(owner, token_id);
+    start_cheat_caller_address(pass_address, owner);
+    IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, token_id);
+    stop_cheat_caller_address(pass_address);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_with_pass(GAME_ID, token_id);
+}
+
+#[test]
+fn village_registration_burns_when_ledger_is_a_distributor() {
+    let (fixture, pass_address, pass) = deploy_village_pass_fixture();
+    let owner = player(0);
+    start_cheat_caller_address(pass_address, ADMIN());
+    let token_id = pass.mint(owner);
+    IAccessControlDispatcher { contract_address: pass_address }
+        .grant_role(selector!("DISTRIBUTOR_ROLE"), fixture.ledger_address);
+    stop_cheat_caller_address(pass_address);
+    let erc721 = IERC721Dispatcher { contract_address: pass_address };
+    start_cheat_caller_address(pass_address, owner);
+    erc721.approve(fixture.ledger_address, token_id);
+    stop_cheat_caller_address(pass_address);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_village(GAME_ID, token_id);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    assert!(fixture.ledger.get_registration(GAME_ID, owner).registered, "village registration should be recorded");
+    assert!(erc721.balance_of(owner) == 0, "the registered village pass should be burned");
+}
+
+#[test]
+#[should_panic]
+fn village_registration_requires_distributor_role() {
+    let (fixture, pass_address, pass) = deploy_village_pass_fixture();
+    let owner = player(0);
+    start_cheat_caller_address(pass_address, ADMIN());
+    let token_id = pass.mint(owner);
+    stop_cheat_caller_address(pass_address);
+    start_cheat_caller_address(pass_address, owner);
+    IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, token_id);
+    stop_cheat_caller_address(pass_address);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_village(GAME_ID, token_id);
+}
+
+#[test]
 #[should_panic]
 fn rejects_cancellation_after_start() {
     let fixture = deploy_fixture(default_preset());
@@ -301,6 +664,9 @@ fn cancellation_refunds_registration_and_sponsorship() {
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.cancel_game(GAME_ID);
     stop_cheat_caller_address(fixture.ledger_address);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, owner);
     fixture.ledger.refund(GAME_ID);
     stop_cheat_caller_address(fixture.ledger_address);
@@ -315,6 +681,25 @@ fn rejects_roster_size_mismatch() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 6);
     apply_results(@fixture, ranked_players(5));
+}
+
+#[test]
+#[should_panic]
+fn non_operator_cannot_apply_results() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.apply_results(GAME_ID, ranked_players(1));
+}
+
+#[test]
+fn operator_can_resolve_after_start_before_scheduled_end() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results_at(@fixture, START, ranked_players(1));
+
+    assert!(fixture.ledger.get_game(GAME_ID).finalized, "an ended match should settle before its scheduled deadline");
 }
 
 #[test]

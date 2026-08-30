@@ -38,6 +38,13 @@ export interface DeploymentEnvironment {
   world: WorldDeployment;
 }
 
+export interface LedgerLaunchOptions {
+  ledgerAddress?: string;
+  ledgerRpcUrl?: string;
+  lordsAddress?: string;
+  sponsoredPoolLords?: string;
+}
+
 export interface ExecutedConfigStep {
   id: string;
   description: string;
@@ -50,14 +57,12 @@ export interface LaunchGameResumeStepState {
   latestEvent?: string;
 }
 
-export interface LaunchGameRequest {
+export interface LaunchGameRequest extends LedgerLaunchOptions {
   launchKind?: "game";
   environmentId: DeploymentEnvironmentId;
   gameName: string;
   startTime: string | number;
   rpcUrl?: string;
-  ledgerAddress?: string;
-  ledgerRpcUrl?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -89,15 +94,13 @@ export interface LaunchSeriesGameRequest {
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
 }
 
-export interface LaunchSeriesRequest {
+export interface LaunchSeriesRequest extends LedgerLaunchOptions {
   launchKind?: "series";
   environmentId: DeploymentEnvironmentId;
   seriesName: string;
   games: LaunchSeriesGameRequest[];
   targetGameNames?: string[];
   rpcUrl?: string;
-  ledgerAddress?: string;
-  ledgerRpcUrl?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -122,7 +125,7 @@ export interface LaunchSeriesStepRequest extends LaunchSeriesRequest {
   stepId: SeriesLaunchStepId;
 }
 
-export interface LaunchRotationRequest {
+export interface LaunchRotationRequest extends LedgerLaunchOptions {
   launchKind?: "rotation";
   environmentId: DeploymentEnvironmentId;
   rotationName: string;
@@ -134,8 +137,6 @@ export interface LaunchRotationRequest {
   evaluationIntervalMinutes: number;
   weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl?: string;
-  ledgerAddress?: string;
-  ledgerRpcUrl?: string;
   accountAddress?: string;
   privateKey?: string;
   devModeOn?: boolean;
@@ -183,6 +184,7 @@ export interface LaunchGameSummary {
   worldAddress?: string;
   createGameTxHash?: string;
   openLedgerTxHash?: string;
+  sponsorLedgerTxHash?: string;
   prizeFunding?: PrizeFundingState;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
@@ -209,6 +211,7 @@ export interface SeriesLaunchGameArtifacts {
   worldAddress?: string;
   createGameTxHash?: string;
   openLedgerTxHash?: string;
+  sponsorLedgerTxHash?: string;
   prizeFunding?: PrizeFundingState;
 }
 

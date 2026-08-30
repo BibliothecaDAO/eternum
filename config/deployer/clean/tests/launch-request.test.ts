@@ -45,7 +45,9 @@ describe("launch request helpers", () => {
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
         ledger: "0xledger",
-        "ledger-rpc-url": "https://sepolia.example/rpc",
+        "ledger-rpc-url": "https://mainnet.example/rpc",
+        lords: "0xlords",
+        "sponsored-pool-lords": "48000",
         "two-player-mode": "true",
         "duration-seconds": "3600",
         "map-config-overrides-json": JSON.stringify({
@@ -67,7 +69,9 @@ describe("launch request helpers", () => {
       gameName: "bltz-test-1",
       startTime: "2026-03-18T10:00:00Z",
       ledgerAddress: "0xledger",
-      ledgerRpcUrl: "https://sepolia.example/rpc",
+      ledgerRpcUrl: "https://mainnet.example/rpc",
+      lordsAddress: "0xlords",
+      sponsoredPoolLords: "48000",
       twoPlayerMode: true,
       durationSeconds: 3600,
       mapConfigOverrides: {

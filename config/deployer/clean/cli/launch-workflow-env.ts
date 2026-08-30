@@ -35,6 +35,8 @@ function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, un
   assignOptionalLaunchOption(launchOptions, "rpcUrl", request.rpcUrl);
   assignOptionalLaunchOption(launchOptions, "ledgerAddress", request.ledgerAddress);
   assignOptionalLaunchOption(launchOptions, "ledgerRpcUrl", request.ledgerRpcUrl);
+  assignOptionalLaunchOption(launchOptions, "lordsAddress", request.lordsAddress);
+  assignOptionalLaunchOption(launchOptions, "sponsoredPoolLords", request.sponsoredPoolLords);
   assignOptionalLaunchOption(launchOptions, "accountAddress", request.accountAddress);
   assignOptionalLaunchOption(launchOptions, "devModeOn", request.devModeOn);
   assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);

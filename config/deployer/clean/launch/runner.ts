@@ -3,7 +3,13 @@ import { Account, RpcProvider, shortString } from "starknet";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS, DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
-import { createLedgerOperatorAccount, openLedgerGame, type LedgerTarget } from "../ledger/calls";
+import {
+  createLedgerOperatorAccount,
+  createLedgerTreasuryAccount,
+  fundLedgerGameToTargetPool,
+  openLedgerGame,
+  type LedgerTarget,
+} from "../ledger/calls";
 import {
   assertRegistrarAvailable,
   createRegistrarGame,
@@ -25,6 +31,7 @@ import { createProgressReporter, formatDuration, type ProgressReporter } from ".
 import { parseStartTime, toIsoUtc } from "./time";
 
 type LaunchConfig = ReturnType<typeof applyDeploymentConfigOverrides>;
+const LORDS_UNIT = 10n ** 18n;
 
 interface LaunchRuntime {
   environment: DeploymentEnvironment;
@@ -46,6 +53,17 @@ function validateGameName(gameName: string): void {
     throw new Error("Game name is required");
   }
   shortString.encodeShortString(gameName);
+}
+
+function resolveSponsoredPool(request: LaunchGameRequest): bigint | undefined {
+  if (request.sponsoredPoolLords === undefined) return undefined;
+  if (!/^[1-9][0-9]*$/.test(request.sponsoredPoolLords)) {
+    throw new Error("--sponsored-pool-lords must be a positive whole LORDS amount");
+  }
+  if (!request.lordsAddress) {
+    throw new Error("--lords (or LORDS_ADDRESS) is required with --sponsored-pool-lords");
+  }
+  return BigInt(request.sponsoredPoolLords) * LORDS_UNIT;
 }
 
 function resolvePresetId(version: string | undefined, environment: DeploymentEnvironment): number {
@@ -113,6 +131,7 @@ function hydrateLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
         worldAddress: existing.worldAddress,
         createGameTxHash: existing.createGameTxHash,
         openLedgerTxHash: existing.openLedgerTxHash,
+        sponsorLedgerTxHash: existing.sponsorLedgerTxHash,
         outputPath: existing.outputPath,
       }
     : summary;
@@ -120,6 +139,7 @@ function hydrateLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
 
 function prepareLaunch(request: LaunchGameRequest): PreparedLaunch {
   validateGameName(request.gameName);
+  resolveSponsoredPool(request);
   const runtime = createRuntime(request);
   const config = resolveLaunchConfig(runtime, request);
   runtime.progress.log(
@@ -174,6 +194,26 @@ async function ensureLedgerGameOpen(launch: PreparedLaunch, gameId: number): Pro
     result
       ? `Opened ledger game ${gameId} (${result.transactionHash})`
       : `Ledger game ${gameId} already exists; skipping`,
+  );
+}
+
+async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number): Promise<void> {
+  const targetPool = resolveSponsoredPool(launch.request);
+  if (targetPool === undefined) return;
+
+  const target = requireLedgerTarget(launch);
+  const result = await fundLedgerGameToTargetPool(
+    createLedgerTreasuryAccount(target, `sponsor ledger game "${launch.request.gameName}"`),
+    target,
+    launch.request.lordsAddress!,
+    gameId,
+    targetPool,
+  );
+  if (result) launch.summary.sponsorLedgerTxHash = result.transactionHash;
+  launch.runtime.progress.log(
+    result
+      ? `Sponsored ledger game ${gameId} to ${launch.request.sponsoredPoolLords} LORDS (${result.transactionHash})`
+      : `Ledger game ${gameId} already has the requested sponsored pool; skipping`,
   );
 }
 
@@ -239,6 +279,7 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   if (existingGame) {
     applyGameIdentity(launch, existingGame.gameId);
     await ensureLedgerGameOpen(launch, existingGame.gameId);
+    await ensureSponsoredLedgerPool(launch, existingGame.gameId);
     launch.runtime.progress.log(
       `Game "${launch.request.gameName}" already exists as ${existingGame.gameId}; skipping create_game`,
     );
@@ -260,6 +301,7 @@ async function createGame(launch: PreparedLaunch): Promise<void> {
   const gameId = await resolveCreatedGameId(launch, result.gameId);
   applyGameIdentity(launch, gameId);
   if (!result.gameId) await ensureLedgerGameOpen(launch, gameId);
+  await ensureSponsoredLedgerPool(launch, gameId);
 }
 
 async function resolveGameId(launch: PreparedLaunch): Promise<number> {

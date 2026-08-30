@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "deploy:sepolia": "node ./commands/deployment/deploy.js sepolia"
+    "deploy:mainnet": "node ./commands/deployment/deploy.js mainnet"
   }
 }

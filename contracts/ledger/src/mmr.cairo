@@ -2,6 +2,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use game_ledger::types::MmrParams;
 
 const BPS: u128 = 10_000;
+const MIN_MMR: u128 = 100;
 
 #[generate_trait]
 pub impl MmrCalculatorImpl of MmrCalculatorTrait {
@@ -72,7 +73,7 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
 
     fn apply_delta(current_mmr: u128, delta: Fixed) -> u128 {
         let magnitude = Self::from_fixed(FixedTrait::new(delta.mag, false));
-        if delta.sign {
+        let updated_mmr = if delta.sign {
             if magnitude < current_mmr {
                 current_mmr - magnitude
             } else {
@@ -80,6 +81,11 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
             }
         } else {
             current_mmr + magnitude
+        };
+        if updated_mmr < MIN_MMR {
+            MIN_MMR
+        } else {
+            updated_mmr
         }
     }
 
@@ -169,5 +175,11 @@ mod tests {
         assert!(MmrCalculatorImpl::apply_flag_modifier(1000, 975, false, true) == 988);
         assert!(MmrCalculatorImpl::apply_flag_modifier(1000, 975, true, false) == 975);
         assert!(MmrCalculatorImpl::apply_flag_modifier(1000, 1025, false, true) == 1025);
+    }
+
+    #[test]
+    fn mmr_never_falls_below_the_token_floor() {
+        let loss = FixedTrait::new_unscaled(50, true);
+        assert!(MmrCalculatorImpl::apply_delta(110, loss) == 100, "ledger MMR should match the token floor");
     }
 }

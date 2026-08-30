@@ -91,7 +91,7 @@
     "mmr:grantupdater:local": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:local",
     "mmr:grantupdater:sepolia": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:sepolia",
     "mmr:grantupdater:mainnet": "cd ./contracts/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:mainnet",
-    "ledger:deploy:sepolia": "pnpm --dir ./contracts/ledger/scripts run deploy:sepolia",
+    "ledger:deploy:mainnet": "pnpm --dir ./contracts/ledger/scripts run deploy:mainnet",
     "format": "pnpm prettier --write .",
     "format:check": "pnpm prettier --check .",
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --exclude binaries,dependencies",
