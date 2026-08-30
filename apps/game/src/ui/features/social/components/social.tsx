@@ -7,7 +7,6 @@ import {
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { PrizePanel } from "@/ui/features/prize";
-import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
 import { FaithLeaderboardPanel } from "../faith";
 import { GuildMembers } from "../guilds/guild-members";
 import { Guilds } from "../guilds/guilds";
@@ -19,7 +18,7 @@ import { useDojo, usePlayers } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
-import { Shapes, Sparkles, TrendingUp, Users } from "lucide-react";
+import { Shapes, Sparkles, Users } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
@@ -72,24 +71,6 @@ export const Social = () => {
     () => (isBlitzMode ? filterPlayersByBlitzSettlement(allPlayers, blitzSettlementPlayerAddresses) : allPlayers),
     [allPlayers, blitzSettlementPlayerAddresses, isBlitzMode],
   );
-
-  // Check if MMR is enabled
-  // s2: mmr config lives on the ChainConfig singleton.
-  const chainCfgEntities = useEntityQuery([Has(components.ChainConfig)]);
-  const mmrEnabled = useMemo(() => {
-    const chainCfg = chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined;
-    return Boolean(chainCfg?.mmr_config?.enabled);
-  }, [chainCfgEntities, components.ChainConfig]);
-
-  // The Blitz Prize tab is honest only when the chain actually runs prize
-  // infrastructure: ChainConfig's fee/entry token addresses are zero on chains
-  // without a pot (W6 wires the real appchain prize flow).
-  const hasPrizeInfra = useMemo(() => {
-    const chainCfg = chainCfgEntities[0] ? getComponentValue(components.ChainConfig, chainCfgEntities[0]) : undefined;
-    const feeToken = (chainCfg?.fee_token as unknown as bigint | undefined) ?? 0n;
-    const entryToken = (chainCfg?.entry_token_address as unknown as bigint | undefined) ?? 0n;
-    return feeToken !== 0n || entryToken !== 0n;
-  }, [chainCfgEntities, components.ChainConfig]);
 
   const structureEntities = useEntityQuery([Has(components.Structure)]);
   const playerStructureCountsMap = useMemo(
@@ -218,7 +199,7 @@ export const Social = () => {
       });
     }
 
-    if (isBlitzMode && hasPrizeInfra) {
+    if (isBlitzMode) {
       baseTabs.push({
         key: "Blitz Prize",
         label: (
@@ -231,43 +212,17 @@ export const Social = () => {
       });
     }
 
-    if (isBlitzMode && mmrEnabled) {
-      baseTabs.push({
-        key: "Blitz MMR",
-        label: (
-          <div className="flex items-center gap-2">
-            <TrendingUp size={16} />
-            <span>MMR</span>
-          </div>
-        ),
-        component: (
-          <div className="flex flex-col gap-3 p-5">
-            <div className="rounded-xl border border-gold/15 bg-black/30 p-4">
-              <BlitzMMRTable />
-            </div>
-            <div className="text-xs text-gold/70">
-              Submit rankings from the Blitz Prize tab to trigger MMR updates, and retry there if the first attempt
-              fails.
-            </div>
-          </div>
-        ),
-        expandedContent: null,
-      });
-    }
-
     return baseTabs;
   }, [
     showGuildsTab,
     isEternumMode,
     isBlitzMode,
-    hasPrizeInfra,
     selectedGuild,
     selectedPlayer,
     playerInfo,
     viewPlayerInfo,
     viewGuildMembers,
     setIsExpanded,
-    mmrEnabled,
   ]);
 
   const tabsLength = tabs.length;

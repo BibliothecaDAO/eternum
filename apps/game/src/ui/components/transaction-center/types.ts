@@ -204,8 +204,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Settled realms";
     case TransactionType.ASSIGN_REALM_POSITIONS:
       return "Assigned realm positions";
-    case TransactionType.OBTAIN_ENTRY_TOKEN:
-      return "Obtained entry token";
     case TransactionType.REGISTER:
       return "Registered in the realm";
     case TransactionType.TOKEN_LOCK:
@@ -252,12 +250,8 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Game has ended";
 
     // Blitz
-    case TransactionType.BLITZ_PRIZE_CLAIM:
-      return "Claimed blitz prize";
     case TransactionType.BLITZ_PRIZE_PLAYER_RANK:
       return "Submitted blitz rankings";
-    case TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME:
-      return "Claimed blitz prize (no game)";
 
     // Chests & Relics
     case TransactionType.OPEN_CHEST:
@@ -499,7 +493,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.SETTLE_REALMS:
     case TransactionType.ASSIGN_REALM_POSITIONS:
       return "🏰";
-    case TransactionType.OBTAIN_ENTRY_TOKEN:
     case TransactionType.REGISTER:
     case TransactionType.TOKEN_LOCK:
       return "🎫";
@@ -534,8 +527,6 @@ export const getTxIcon = (type: TransactionType): string => {
       return "🏁";
     case TransactionType.SEASON_PRIZE_CLAIM:
     case TransactionType.CLAIM_LEADERBOARD_REWARDS:
-    case TransactionType.BLITZ_PRIZE_CLAIM:
-    case TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME:
       return "🏆";
 
     // Chests & Relics

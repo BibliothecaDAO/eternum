@@ -10,7 +10,6 @@ import type {
   LaunchSeriesRequest,
   LaunchSeriesStepId,
   LaunchSeriesSummary,
-  PrizeFundingState,
 } from "../types";
 
 export type LaunchWorkflowScope = "full" | LaunchGameStepId;
@@ -88,7 +87,6 @@ export interface FactoryRunArtifacts {
   gameId?: number;
   worldAddress?: string;
   createGameTxHash?: string;
-  prizeFunding?: PrizeFundingState;
 }
 
 export interface FactoryRunStepRecord {

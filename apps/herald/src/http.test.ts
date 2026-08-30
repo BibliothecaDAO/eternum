@@ -45,18 +45,6 @@ const handler = createHeraldRequestHandler({
           },
         ];
       }
-      if (model === "ChainConfig") {
-        return [
-          {
-            key: "0x3",
-            value: {
-              entry_token_address: "0x0",
-              fee_token: "0x123",
-              mmr_config: { enabled: false },
-            },
-          },
-        ];
-      }
       return [];
     },
     snapshot: () => snapshot,

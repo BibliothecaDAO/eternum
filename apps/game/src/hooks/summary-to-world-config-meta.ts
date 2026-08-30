@@ -3,15 +3,11 @@
  * `WorldConfigMeta` shape consumed by the card grid and registration hooks.
  *
  * The server-side `/api/worlds/summary` endpoint now produces all per-world
- * configuration (timing, mode, counters, addresses, prize distribution)
+ * configuration (timing, mode, and counters)
  * in a single call, replacing the legacy per-world fan-out. Player-scoped
  * fields (`isPlayerRegistered`, `hasPlayerSettledRealm`) are not part of the
  * bulk payload — callers layer those in via a separate, gated query.
  *
- * The jackpot balance is resolved server-side (one RPC call per world per
- * poll cycle) and carried on the summary as `winnerJackpotAmount`. When the
- * server hasn't provided it (null), callers fall back to the on-demand
- * `useWorldJackpot` RPC lookup via `prizeDistributionAddress`.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
@@ -28,31 +24,10 @@ const resolveMode = (summaryMode: WorldSummary["mode"]): ResolvedGameMode => {
   return "unknown";
 };
 
-const parseSummaryBigInt = (value: string | null): bigint => {
-  if (!value) return 0n;
-  try {
-    return BigInt(value);
-  } catch {
-    return 0n;
-  }
-};
-
-const parseNullableSummaryBigInt = (value: string | null): bigint | null => {
-  if (value == null) return null;
-  try {
-    return BigInt(value);
-  } catch {
-    return null;
-  }
-};
-
 /**
  * Map a `WorldSummary` payload into the legacy `WorldConfigMeta` shape.
  *
- * Player-specific fields must be passed explicitly; this function does not
- * fetch anything. Jackpot is mapped from the server-resolved summary value;
- * null means the server didn't provide one and callers may fall back to
- * `useWorldJackpot`.
+ * Player-specific fields must be passed explicitly; this function does not fetch anything.
  */
 export const summaryToWorldConfigMeta = (
   summary: WorldSummary,
@@ -86,19 +61,13 @@ export const summaryToWorldConfigMeta = (
     registrationCountMax: summary.registrationCountMax ?? null,
     singleRealmMode: summary.singleRealmMode ?? false,
     twoPlayerMode: summary.twoPlayerMode ?? false,
-    entryTokenAddress: summary.entryTokenAddress ?? null,
-    feeTokenAddress: summary.feeTokenAddress ?? null,
-    feeAmount: parseSummaryBigInt(summary.feeAmount),
     registrationStartAt: summary.registrationStartAt ?? null,
     registrationEndAt: summary.registrationEndAt ?? summary.startMainAt ?? null,
-    mmrEnabled: summary.mmrEnabled ?? false,
     devModeOn: summary.devModeOn ?? false,
     isPlayerRegistered: playerRegistration?.isPlayerRegistered ?? null,
     hasPlayerSettledRealm: playerRegistration?.hasPlayerSettledRealm ?? null,
     settledPlayersCount: summary.settledPlayersCount ?? null,
     settledRealmsCount: summary.settledRealmsCount ?? null,
     settledVillagesCount: summary.settledVillagesCount ?? null,
-    prizeDistributionAddress: summary.prizeDistributionAddress ?? null,
-    winnerJackpotAmount: parseNullableSummaryBigInt(summary.winnerJackpotAmount),
   };
 };

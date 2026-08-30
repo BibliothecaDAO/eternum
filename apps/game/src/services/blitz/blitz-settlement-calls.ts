@@ -1,4 +1,4 @@
-import { CallData, uint256, type Call } from "starknet";
+import { CallData, type Call } from "starknet";
 import { resolveBlitzGrantStartingTroops } from "./blitz-settlement-options";
 
 interface BuildBlitzSettleCallsParams {
@@ -8,43 +8,8 @@ interface BuildBlitzSettleCallsParams {
   /** The chosen game's registry id — settle's first calldata slot on the appchain worlds. */
   gameId?: number | null;
   vrfProviderAddress?: string | null;
-  entryTokenAddress?: string | null;
-  feeTokenAddress?: string | null;
-  feeAmount?: bigint;
   cosmeticTokenIds?: readonly string[];
 }
-
-const buildFeeApprovalCall = ({
-  feeTokenAddress,
-  blitzSystemsAddress,
-  feeAmount,
-}: {
-  feeTokenAddress: string;
-  blitzSystemsAddress: string;
-  feeAmount: bigint;
-}): Call => {
-  const amountUint256 = uint256.bnToUint256(feeAmount);
-
-  return {
-    contractAddress: feeTokenAddress,
-    entrypoint: "approve",
-    calldata: CallData.compile([blitzSystemsAddress, amountUint256.low, amountUint256.high]),
-  };
-};
-
-const buildEntryTokenApprovalCall = ({
-  entryTokenAddress,
-  blitzSystemsAddress,
-  approved,
-}: {
-  entryTokenAddress: string;
-  blitzSystemsAddress: string;
-  approved: boolean;
-}): Call => ({
-  contractAddress: entryTokenAddress,
-  entrypoint: "set_approval_for_all",
-  calldata: CallData.compile([blitzSystemsAddress, approved]),
-});
 
 const hasConfiguredAddress = (value?: string | null): value is string => {
   if (!value) return false;
@@ -106,28 +71,10 @@ export const buildBlitzSettleCalls = ({
   usernameFelt,
   gameId,
   vrfProviderAddress,
-  entryTokenAddress,
-  feeTokenAddress,
-  feeAmount = 0n,
   cosmeticTokenIds = [],
 }: BuildBlitzSettleCallsParams): Call[] => {
   const calls: Call[] = [];
-  const requiresEntryTokenApproval = Boolean(entryTokenAddress && feeAmount > 0n);
   const grantStartingTroops = resolveBlitzGrantStartingTroops();
-
-  if (feeAmount > 0n && !entryTokenAddress) {
-    throw new Error("Blitz worlds with entry fees must define an entry token collection");
-  }
-
-  if (feeTokenAddress && feeAmount > 0n) {
-    calls.push(buildFeeApprovalCall({ feeTokenAddress, blitzSystemsAddress, feeAmount }));
-  }
-
-  if (requiresEntryTokenApproval) {
-    calls.push(
-      buildEntryTokenApprovalCall({ entryTokenAddress: entryTokenAddress!, blitzSystemsAddress, approved: true }),
-    );
-  }
 
   if (hasConfiguredAddress(vrfProviderAddress)) {
     calls.push(buildRequestRandomCall({ vrfProviderAddress, blitzSystemsAddress, signerAddress }));
@@ -142,12 +89,6 @@ export const buildBlitzSettleCalls = ({
       grantStartingTroops,
     }),
   );
-
-  if (requiresEntryTokenApproval) {
-    calls.push(
-      buildEntryTokenApprovalCall({ entryTokenAddress: entryTokenAddress!, blitzSystemsAddress, approved: false }),
-    );
-  }
 
   return calls;
 };

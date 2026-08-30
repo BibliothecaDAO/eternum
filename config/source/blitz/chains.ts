@@ -22,13 +22,8 @@ function resolveBlitzContractAddressConfig(context: EnvironmentContext): ConfigP
   const addresses = context.addresses;
 
   return {
-    mmr: {
-      mmr_token_address: resolveConfiguredAddress(addresses.mmrToken, "mmrToken"),
-    },
     blitz: {
       registration: {
-        fee_token: resolveConfiguredAddress(addresses.lords, "lords"),
-        entry_token_class_hash: resolveConfiguredAddress(addresses.collectiblesClassHash, "collectiblesClassHash"),
         collectible_cosmetics_address: resolveConfiguredAddress(
           addresses["Collectibles: Realms: Cosmetic Items"],
           "Collectibles: Realms: Cosmetic Items",
@@ -74,10 +69,6 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
     blitz: {
       registration: {
         registration_delay_seconds: delaySeconds,
-        // free entry on the dev appchain — also short-circuits the entry
-        // token / cosmetics / timelock paths, so no peripherals are required
-        fee_amount: 0n,
-        fee_token: resolveConfiguredAddress(context.addresses.strk, "strk"),
       },
     },
   };

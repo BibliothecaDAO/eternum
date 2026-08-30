@@ -140,22 +140,6 @@ pub trait IFactoryConfig<T> {
 }
 
 #[starknet::interface]
-pub trait IMMRConfig<T> {
-    fn set_mmr_config(
-        ref self: T,
-        enabled: bool,
-        mmr_token_address: starknet::ContractAddress,
-        distribution_mean: u16,
-        spread_factor: u16,
-        max_delta: u8,
-        k_factor: u8,
-        lobby_split_weight_scaled: u16,
-        mean_regression_scaled: u16,
-        min_players: u8,
-    );
-}
-
-#[starknet::interface]
 pub trait IVillageFoundResourcesConfig<T> {
     fn set_village_found_resources_config(ref self: T, village_found_resources: Span<(u8, u128, u128)>);
 }
@@ -211,14 +195,8 @@ pub trait ISettlementConfig<T> {
     );
     fn set_blitz_registration_config(
         ref self: T,
-        fee_token: starknet::ContractAddress,
-        fee_recipient: starknet::ContractAddress,
-        fee_amount: u256,
         registration_count_max: u16,
         registration_start_at: u32,
-        entry_token_class_hash: felt252,
-        entry_token_deploy_calldata: Span<felt252>,
-        entry_token_ipfs_cid: ByteArray,
         collectibles_cosmetics_max: u8,
         collectibles_cosmetics_address: starknet::ContractAddress,
         collectibles_timelock_address: starknet::ContractAddress,
@@ -279,7 +257,7 @@ pub trait IArtificerConfig<T> {
 
 #[dojo::contract]
 pub mod config_systems {
-    use core::num::traits::{Bounded, Zero};
+    use core::num::traits::Zero;
     use dojo::model::ModelStorage;
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use crate::constants::{DEFAULT_NS, LEGACY_CONFIG_ID, assert_blitz_registration_count_within_cap};
@@ -296,7 +274,6 @@ pub mod config_systems {
         VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
         WorldConfig, WorldConfigUtilImpl,
     };
-    use crate::models::mmr::MMRConfig;
     use crate::models::name::AddressName;
     use crate::models::position::{CENTER_COL, CoordImpl};
     use crate::models::resource::production::building::BuildingCategory;
@@ -919,14 +896,8 @@ pub mod config_systems {
 
         fn set_blitz_registration_config(
             ref self: ContractState,
-            fee_token: starknet::ContractAddress,
-            fee_recipient: starknet::ContractAddress,
-            fee_amount: u256,
             registration_count_max: u16,
             registration_start_at: u32,
-            entry_token_class_hash: felt252,
-            entry_token_deploy_calldata: Span<felt252>,
-            entry_token_ipfs_cid: ByteArray,
             collectibles_cosmetics_max: u8,
             collectibles_cosmetics_address: starknet::ContractAddress,
             collectibles_timelock_address: starknet::ContractAddress,
@@ -942,22 +913,11 @@ pub mod config_systems {
             );
             blitz_registration_config.registration_count_max = registration_count_max;
             blitz_registration_config.registration_start_at = registration_start_at;
-            blitz_registration_config.fee_token = fee_token;
-            blitz_registration_config.fee_recipient = fee_recipient;
-            blitz_registration_config.fee_amount = fee_amount;
             blitz_registration_config.collectibles_cosmetics_max = collectibles_cosmetics_max;
             blitz_registration_config.collectibles_cosmetics_address = collectibles_cosmetics_address;
             blitz_registration_config.collectibles_timelock_address = collectibles_timelock_address;
             blitz_registration_config.collectibles_lootchest_address = collectibles_lootchest_address;
             blitz_registration_config.collectibles_elitenft_address = collectibles_elitenft_address;
-
-            if fee_amount > 0 {
-                let entry_token_address = blitz_registration_config
-                    .deploy_entry_token(entry_token_class_hash, entry_token_deploy_calldata);
-                blitz_registration_config.entry_token_address = entry_token_address;
-                blitz_registration_config.setup_entry_token(entry_token_ipfs_cid);
-                blitz_registration_config.update_entry_token_lock(Bounded::MAX);
-            }
 
             WorldConfigUtilImpl::set_member(
                 ref world, selector!("blitz_registration_config"), blitz_registration_config,
@@ -1024,42 +984,6 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("factory_address"), address);
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl IMMRConfigImpl of super::IMMRConfig<ContractState> {
-        fn set_mmr_config(
-            ref self: ContractState,
-            enabled: bool,
-            mmr_token_address: starknet::ContractAddress,
-            distribution_mean: u16,
-            spread_factor: u16,
-            max_delta: u8,
-            k_factor: u8,
-            lobby_split_weight_scaled: u16,
-            mean_regression_scaled: u16,
-            min_players: u8,
-        ) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            // Validate config to prevent division by zero and overflow issues
-            assert!(spread_factor > 0, "spread_factor must be > 0");
-            assert!(max_delta > 0, "max_delta must be > 0");
-
-            let mmr_config = MMRConfig {
-                enabled,
-                mmr_token_address,
-                distribution_mean,
-                spread_factor,
-                max_delta,
-                k_factor,
-                lobby_split_weight_scaled,
-                mean_regression_scaled,
-                min_players,
-            };
-            WorldConfigUtilImpl::set_member(ref world, selector!("mmr_config"), mmr_config);
         }
     }
 

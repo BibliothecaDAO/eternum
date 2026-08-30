@@ -41,7 +41,7 @@ describe("grouped series-like runner fail-fast behavior", () => {
 
   test("lets child registration overrides replace the series default", () => {
     const request = buildSeriesRequest({
-      blitzRegistrationOverrides: { fee_amount: "500000000000000000000" },
+      blitzRegistrationOverrides: { registration_count_max: 12 },
     });
     const initialSummary = buildInitialSeriesLaunchSummary(request);
     const summary = {
@@ -51,7 +51,7 @@ describe("grouped series-like runner fail-fast behavior", () => {
         initialSummary.games[0]!,
         {
           ...initialSummary.games[1]!,
-          blitzRegistrationOverrides: { fee_amount: "1000000000000000000000" },
+          blitzRegistrationOverrides: { registration_count_max: 24 },
         },
       ],
     };
@@ -59,8 +59,8 @@ describe("grouped series-like runner fail-fast behavior", () => {
     const firstRequest = buildSeriesLikeGameLaunchRequest(request, summary, summary.games[0]);
     const secondRequest = buildSeriesLikeGameLaunchRequest(request, summary, summary.games[1]);
 
-    expect(firstRequest.blitzRegistrationOverrides).toEqual({ fee_amount: "500000000000000000000" });
-    expect(secondRequest.blitzRegistrationOverrides).toEqual({ fee_amount: "1000000000000000000000" });
+    expect(firstRequest.blitzRegistrationOverrides).toEqual({ registration_count_max: 12 });
+    expect(secondRequest.blitzRegistrationOverrides).toEqual({ registration_count_max: 24 });
   });
 });
 

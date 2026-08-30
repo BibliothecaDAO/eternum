@@ -8,7 +8,7 @@ import {
 } from "./finalized-blitz-leaderboard";
 
 describe("finalized blitz leaderboard helpers", () => {
-  it("builds finalized standings from the final trial and registered points only", () => {
+  it("builds finalized standings from the authoritative rank rows and registered points", () => {
     const registeredPointsLookup = buildRegisteredPointsLookup([
       { address: 0x1n, registeredPoints: 12_500_000n },
       { address: 0x2n, registeredPoints: 9_000_000n },
@@ -16,17 +16,14 @@ describe("finalized blitz leaderboard helpers", () => {
 
     const standingLookup = buildFinalizedBlitzStandingLookup(
       [
-        { playerAddress: 0x2n, rank: 2n, trialId: 7n },
-        { playerAddress: 0x1n, rank: 1n, trialId: 7n },
-        { playerAddress: 0x3n, rank: 1n, trialId: 8n },
+        { playerAddress: 0x2n, rank: 2n },
+        { playerAddress: 0x1n, rank: 1n },
       ],
-      7n,
       registeredPointsLookup,
     );
 
     expect(standingLookup.get(normalizeLeaderboardAddress(0x1n))).toEqual({ rank: 1, points: 12 });
     expect(standingLookup.get(normalizeLeaderboardAddress(0x2n))).toEqual({ rank: 2, points: 9 });
-    expect(standingLookup.has(normalizeLeaderboardAddress(0x3n))).toBe(false);
   });
 
   it("marks players outside the finalized trial as unranked when finalized standings are active", () => {

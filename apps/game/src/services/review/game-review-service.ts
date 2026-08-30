@@ -13,23 +13,17 @@ import {
   normalizeLeaderboardAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
-import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getGameManifest } from "@contracts";
 import { getContractByName } from "@dojoengine/core";
 import type { GameChain as Chain } from "@realms-world/chain";
 import type { HeraldGameSnapshot, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, tileDataToTile } from "@bibliothecadao/types";
-import type { Account, AccountInterface, Call } from "starknet";
-
-import { env } from "../../../env";
-import { estimateClaimableChests } from "./chest-reward-estimate";
+import type { Account, AccountInterface } from "starknet";
 import { buildGameReviewDerivedMetrics, type GameReviewValueMetric } from "./game-review-stats-utils";
 
 const RANKING_BATCH_SIZE = 200;
-const CLAIM_ALL_REWARDS_BATCH_SIZE = 200;
 const HISTORY_PAGE_SIZE = 500;
 const MAX_MAP_SNAPSHOT_TILES = 4_200;
-const LORDS_TOKEN_DECIMALS = 18;
 const FNV_OFFSET_BASIS = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
 
@@ -38,14 +32,9 @@ type Row = Record<string, unknown>;
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
   registrationCount: number;
-  lootChestAddress: string | null;
   finalTrialId: bigint | null;
   rankingFinalized: boolean;
   devModeOn: boolean;
-  mmrCommitted: boolean;
-  mmrEnabled: boolean;
-  mmrMinPlayers: number;
-  mmrTokenAddress: string | null;
   seasonEndAt: number | null;
   registrationGraceSeconds: number;
   scoreSubmissionOpensAt: number | null;
@@ -94,14 +83,7 @@ export type GameReviewMapSnapshot =
 export interface GameReviewRewards {
   scoreSubmitted: boolean;
   isRanked: boolean;
-  canProceedWithoutClaim: boolean;
-  canClaimNow: boolean;
-  alreadyClaimed: boolean;
-  claimBlockedReason: string | null;
-  lordsWonRaw: bigint;
-  lordsWonFormatted: string;
-  chestsClaimedEstimate: number;
-  chestsClaimedReason: string;
+  chests: number;
   eliteTicketEarned: boolean;
   eliteTicketReason: string;
 }
@@ -119,14 +101,6 @@ export interface GameReviewData {
   rewards: GameReviewRewards | null;
 }
 
-export interface GameReviewClaimSummary {
-  canClaimNow: boolean;
-  alreadyClaimed: boolean;
-  lordsWonFormatted: string;
-  chestsClaimedEstimate: number;
-  claimBlockedReason: string | null;
-}
-
 interface ReviewSource {
   gameId: number;
   history: HeraldHistoryEvent[];
@@ -137,23 +111,8 @@ interface ReviewSource {
 
 interface FinalizeGameReviewResult {
   rankingSubmitted: boolean;
-  mmrSubmitted: boolean;
   rankingSkipped: boolean;
-  mmrSkipped: boolean;
   totalPlayers: number;
-  mmrError: string | null;
-}
-
-interface ClaimGameReviewRewardsResult {
-  claimed: boolean;
-  playerAddress: string;
-}
-
-interface ClaimGameReviewRewardsForPlayersResult {
-  claimed: boolean;
-  claimedPlayers: number;
-  playerAddresses: string[];
-  batchesSubmitted: number;
 }
 
 const record = (value: unknown): Row =>
@@ -199,13 +158,6 @@ const sameFelt = (left: unknown, right: unknown): boolean => {
 const story = (event: HeraldHistoryEvent, variant: string): Row | null => {
   const payload = record(event.value.story)[variant];
   return typeof payload === "object" && payload !== null && !Array.isArray(payload) ? (payload as Row) : null;
-};
-
-const formatTokenAmount = (amount: bigint, decimals: number): string => {
-  const digits = amount.toString().padStart(decimals + 1, "0");
-  const whole = digits.slice(0, -decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const fraction = digits.slice(-decimals).replace(/0+$/, "");
-  return fraction ? `${whole}.${fraction}` : whole;
 };
 
 const chunk = <T>(items: readonly T[], size: number): T[][] => {
@@ -261,28 +213,19 @@ const loadReviewSource = async (worldName: string): Promise<ReviewSource> => {
 const buildFinalization = (source: ReviewSource): ReviewFinalizationMeta => {
   const registry = modelRows(source.snapshot, "GameRegistry")[0] ?? {};
   const config = modelRows(source.snapshot, "WorldConfig")[0] ?? {};
-  const chainConfig = modelRows(source.snapshot, "ChainConfig")[0] ?? {};
-  const rankFinal = modelRows(source.snapshot, "PlayersRankFinal")[0] ?? {};
-  const mmrMeta = modelRows(source.snapshot, "MMRGameMeta")[0] ?? {};
   const registration = record(config.blitz_registration_config);
-  const mmr = record(chainConfig.mmr_config);
   const registeredPlayers = uniqueAddresses(modelRows(source.snapshot, "BlitzSettlement").map((row) => row.player));
   const configuredRegistrations = Math.max(0, toNumber(registration.registration_count));
-  const finalTrialId = toBigInt(rankFinal.trial_id);
+  const finalTrialId = toBigInt(registry.final_trial_id);
   const seasonEndAtValue = toNumber(registry.end_at);
   const seasonEndAt = seasonEndAtValue > 0 ? seasonEndAtValue : null;
   const registrationGraceSeconds = Math.max(0, toNumber(registry.registration_grace_seconds));
   return {
     registeredPlayers,
     registrationCount: configuredRegistrations || registeredPlayers.length,
-    lootChestAddress: parseAddress(chainConfig.collectibles_lootchest_address),
     finalTrialId,
     rankingFinalized: finalTrialId !== null && finalTrialId > 0n,
     devModeOn: toBoolean(registry.dev_mode_on),
-    mmrCommitted: toNumber(mmrMeta.game_median) > 0,
-    mmrEnabled: toBoolean(mmr.enabled),
-    mmrMinPlayers: Math.max(1, toNumber(mmr.min_players) || 6),
-    mmrTokenAddress: parseAddress(mmr.mmr_token_address),
     seasonEndAt,
     registrationGraceSeconds,
     scoreSubmissionOpensAt: seasonEndAt === null ? null : seasonEndAt + registrationGraceSeconds,
@@ -397,50 +340,22 @@ const buildReviewRewards = (
   finalization: ReviewFinalizationMeta,
   personalScore: LandingLeaderboardEntry | null,
 ): GameReviewRewards => {
-  const playerPoints = modelRows(source.snapshot, "PlayerRegisteredPoints").find((row) =>
-    sameFelt(row.address, playerAddress),
-  );
-  const chest = modelRows(source.snapshot, "GameChestReward")[0] ?? {};
-  const season = modelRows(source.snapshot, "SeasonPrize")[0] ?? {};
-  const chestEstimate = estimateClaimableChests({
-    lootChestAddress: finalization.lootChestAddress,
-    allocatedChests: Math.max(0, toNumber(chest.allocated_chests)),
-    distributedChests: Math.max(0, toNumber(chest.distributed_chests)),
-    playerRegisteredPoints: toBigInt(playerPoints?.registered_points) ?? 0n,
-    totalRegisteredPoints: toBigInt(season.total_registered_points) ?? 0n,
-  });
-  const emptyReward = {
-    lordsWonRaw: 0n,
-    lordsWonFormatted: "0",
-    chestsClaimedEstimate: chestEstimate.count,
-    chestsClaimedReason: chestEstimate.reason,
-  };
   if (!finalization.rankingFinalized || finalization.finalTrialId === null) {
     return {
-      ...emptyReward,
       scoreSubmitted: false,
       isRanked: false,
-      canProceedWithoutClaim: false,
-      canClaimNow: false,
-      alreadyClaimed: false,
-      claimBlockedReason: "Submit score first to unlock rewards.",
+      chests: 0,
       eliteTicketEarned: false,
       eliteTicketReason: "Submit score and finalize rankings to evaluate elite ticket eligibility.",
     };
   }
   const rankRow = modelRows(source.snapshot, "PlayerRank").find((row) => sameFelt(row.player, playerAddress));
   const rank = Math.max(0, toNumber(rankRow?.rank) || personalScore?.rank || 0);
-  const paid =
-    toBoolean(rankRow?.paid) || toBoolean(playerPoints?.prize_claimed) || Boolean(personalScore?.prizeClaimed);
   if (rank <= 0) {
     return {
-      ...emptyReward,
       scoreSubmitted: true,
       isRanked: false,
-      canProceedWithoutClaim: true,
-      canClaimNow: false,
-      alreadyClaimed: paid,
-      claimBlockedReason: "This account is not ranked in the final leaderboard.",
+      chests: 0,
       eliteTicketEarned: false,
       eliteTicketReason: "Player is not ranked in the final results.",
     };
@@ -448,19 +363,11 @@ const buildReviewRewards = (
   const prize = modelRows(source.snapshot, "RankPrize").find((row) => toNumber(row.rank) === rank) ?? {};
   const trial =
     modelRows(source.snapshot, "PlayersRankTrial").find((row) => sameFelt(row.nonce, finalization.finalTrialId)) ?? {};
-  const playersAtRank = Math.max(0, toNumber(prize.total_players_same_rank_count));
-  const lordsWonRaw = playersAtRank > 0 ? (toBigInt(prize.total_prize_amount) ?? 0n) / BigInt(playersAtRank) : 0n;
   const eliteTicketEarned = toBoolean(prize.grant_elite_nft);
   return {
-    ...emptyReward,
     scoreSubmitted: true,
     isRanked: true,
-    canProceedWithoutClaim: false,
-    canClaimNow: !paid,
-    alreadyClaimed: paid,
-    claimBlockedReason: paid ? "Rewards already claimed." : null,
-    lordsWonRaw,
-    lordsWonFormatted: formatTokenAmount(lordsWonRaw, LORDS_TOKEN_DECIMALS),
+    chests: Math.max(0, toNumber(rankRow?.chests)),
     eliteTicketEarned,
     eliteTicketReason: buildEliteTicketReason(eliteTicketEarned, rank, toNumber(trial.total_player_count_committed)),
   };
@@ -509,37 +416,25 @@ export const fetchGameReviewData = async (input: {
   };
 };
 
-export const fetchGameReviewClaimSummary = async (input: {
-  worldName: string;
-  chain: Chain;
-  playerAddress: string;
-}): Promise<GameReviewClaimSummary> => {
-  const playerAddress = parseAddress(input.playerAddress);
-  if (!playerAddress) throw new Error("Missing player address for claim summary.");
-  const source = await loadReviewSource(input.worldName);
-  const finalization = buildFinalization(source);
-  const personalScore =
-    buildLandingLeaderboard(source.snapshot, source.history).find((entry) => entry.address === playerAddress) ?? null;
-  const rewards = buildReviewRewards(source, playerAddress, finalization, personalScore);
-  return {
-    canClaimNow: rewards.canClaimNow,
-    alreadyClaimed: rewards.alreadyClaimed,
-    lordsWonFormatted: rewards.lordsWonFormatted,
-    chestsClaimedEstimate: rewards.chestsClaimedEstimate,
-    claimBlockedReason: rewards.claimBlockedReason,
-  };
+const rankedPlayers = (snapshot: HeraldGameSnapshot): string[] => {
+  const pointsByPlayer = new Map(
+    modelRows(snapshot, "PlayerRegisteredPoints").flatMap((row) => {
+      const address = parseAddress(row.address);
+      return address ? [[address, toBigInt(row.registered_points) ?? 0n] as const] : [];
+    }),
+  );
+  return uniqueAddresses(modelRows(snapshot, "BlitzSettlement").map((row) => row.player))
+    .map((address) => ({ address, points: pointsByPlayer.get(address) ?? 0n }))
+    .toSorted((left, right) => {
+      if (left.points !== right.points) return left.points > right.points ? -1 : 1;
+      const leftAddress = BigInt(left.address);
+      const rightAddress = BigInt(right.address);
+      return leftAddress < rightAddress ? -1 : leftAddress > rightAddress ? 1 : 0;
+    })
+    .map(({ address }) => address);
 };
 
-const rankedPlayers = (snapshot: HeraldGameSnapshot): string[] =>
-  modelRows(snapshot, "PlayerRegisteredPoints")
-    .flatMap((row) => {
-      const address = parseAddress(row.address);
-      return address ? [{ address, points: toBigInt(row.registered_points) ?? 0n }] : [];
-    })
-    .toSorted((left, right) => (left.points === right.points ? 0 : left.points < right.points ? 1 : -1))
-    .map((row) => row.address);
-
-export const finalizeGameRankingAndMMR = async (input: {
+export const finalizeGameRanking = async (input: {
   worldName: string;
   chain: Chain;
   signer: Account | AccountInterface;
@@ -547,9 +442,13 @@ export const finalizeGameRankingAndMMR = async (input: {
   const profile = await buildWorldProfile(input.chain, input.worldName);
   const source = await loadReviewSource(input.worldName);
   const finalization = buildFinalization(source);
-  const players = rankedPlayers(source.snapshot);
-  const playersForSubmission = players.length > 0 ? players : finalization.registeredPlayers;
+  const playersForSubmission = rankedPlayers(source.snapshot);
   if (playersForSubmission.length === 0) throw new Error("No registered players found for this game.");
+  if (playersForSubmission.length !== finalization.registrationCount) {
+    throw new Error(
+      `Result roster has ${playersForSubmission.length} players; the game registered ${finalization.registrationCount}.`,
+    );
+  }
 
   const manifest = patchManifestWithFactory(
     getGameManifest(input.chain, profile.worldId === "eternum" ? "eternum" : "blitz") as unknown as Record<
@@ -563,175 +462,35 @@ export const finalizeGameRankingAndMMR = async (input: {
   const prizeDistributionAddress = getContractByName(manifest, namespace, "prize_distribution_systems").address;
   const gamePrefix = source.gameId > 0 ? [source.gameId] : [];
   let rankingSubmitted = false;
-  let mmrSubmitted = false;
-  let mmrError: string | null = null;
 
   if (!finalization.rankingFinalized) {
-    if (Math.max(finalization.registrationCount, finalization.registeredPlayers.length) === 1) {
-      const onlyPlayer = finalization.registeredPlayers[0] ?? playersForSubmission[0];
+    const trialId = randomTrialId();
+    const batches = chunk(playersForSubmission, RANKING_BATCH_SIZE);
+    for (let index = 0; index < batches.length; index += 1) {
+      const batch = batches[index];
       await executeObservedClientTransaction({
         account: input.signer,
         calls: [
           {
             contractAddress: prizeDistributionAddress,
-            entrypoint: "blitz_prize_claim_no_game",
-            calldata: [...gamePrefix, onlyPlayer],
+            entrypoint: "blitz_prize_player_rank",
+            calldata: [...gamePrefix, trialId, index === 0 ? playersForSubmission.length : 0, batch.length, ...batch],
           },
         ],
         surface: "game_review",
-        operation: "blitz_prize_claim_no_game",
+        operation: "blitz_prize_player_rank",
         chain: input.chain,
         worldName: input.worldName,
         worldAddress: profile.worldAddress,
         waitForConfirmation: false,
       });
-    } else {
-      const batches = chunk(playersForSubmission, RANKING_BATCH_SIZE);
-      for (let index = 0; index < batches.length; index += 1) {
-        const batch = batches[index];
-        await executeObservedClientTransaction({
-          account: input.signer,
-          calls: [
-            {
-              contractAddress: prizeDistributionAddress,
-              entrypoint: "blitz_prize_player_rank",
-              calldata: [
-                ...gamePrefix,
-                randomTrialId(),
-                index === 0 ? playersForSubmission.length : 0,
-                batch.length,
-                ...batch,
-              ],
-            },
-          ],
-          surface: "game_review",
-          operation: "blitz_prize_player_rank",
-          chain: input.chain,
-          worldName: input.worldName,
-          worldAddress: profile.worldAddress,
-          waitForConfirmation: false,
-        });
-      }
     }
     rankingSubmitted = true;
   }
 
-  const canSubmitMmr =
-    finalization.mmrEnabled &&
-    finalization.mmrTokenAddress &&
-    !finalization.mmrCommitted &&
-    playersForSubmission.length >= finalization.mmrMinPlayers;
-  if (canSubmitMmr) {
-    const mmrSystemsAddress = getContractByName(manifest, namespace, "mmr_systems").address;
-    try {
-      await commitAndClaimMMR({
-        registeredPlayers: playersForSubmission.map(BigInt),
-        mmrTokenAddress: finalization.mmrTokenAddress!,
-        rpcUrl: profile.rpcUrl || env.VITE_PUBLIC_NODE_URL,
-        signer: input.signer,
-        commitAndClaimGameMmr: async ({ players: mmrPlayers }) =>
-          executeObservedClientTransaction({
-            account: input.signer,
-            calls: [
-              {
-                contractAddress: mmrSystemsAddress,
-                entrypoint: "commit_game_mmr_meta",
-                calldata: [...gamePrefix, mmrPlayers.length, ...mmrPlayers],
-              },
-              {
-                contractAddress: mmrSystemsAddress,
-                entrypoint: "claim_game_mmr",
-                calldata: [...gamePrefix, mmrPlayers.length, ...mmrPlayers],
-              },
-            ],
-            surface: "game_review",
-            operation: "commit_and_claim_game_mmr",
-            chain: input.chain,
-            worldName: input.worldName,
-            worldAddress: profile.worldAddress,
-            waitForConfirmation: false,
-          }),
-      });
-      mmrSubmitted = true;
-    } catch (error) {
-      mmrError = error instanceof Error ? error.message : String(error);
-    }
-  }
-
   return {
     rankingSubmitted,
-    mmrSubmitted,
     rankingSkipped: !rankingSubmitted,
-    mmrSkipped: !mmrSubmitted,
     totalPlayers: playersForSubmission.length,
-    mmrError,
-  };
-};
-
-export const claimGameReviewRewards = async (input: {
-  worldName: string;
-  chain: Chain;
-  signer: Account | AccountInterface;
-  playerAddress: string;
-}): Promise<ClaimGameReviewRewardsResult> => {
-  const playerAddress = parseAddress(input.playerAddress);
-  if (!playerAddress) throw new Error("Missing player address for reward claim.");
-  await claimGameReviewRewardsForPlayers({ ...input, playerAddresses: [playerAddress] });
-  return { claimed: true, playerAddress };
-};
-
-const claimGameReviewRewardsForPlayers = async (input: {
-  worldName: string;
-  chain: Chain;
-  signer: Account | AccountInterface;
-  playerAddresses: string[];
-}): Promise<ClaimGameReviewRewardsForPlayersResult> => {
-  const playerAddresses = uniqueAddresses(input.playerAddresses);
-  if (playerAddresses.length === 0) {
-    return { claimed: true, claimedPlayers: 0, playerAddresses: [], batchesSubmitted: 0 };
-  }
-  const profile = await buildWorldProfile(input.chain, input.worldName);
-  const manifest = patchManifestWithFactory(
-    getGameManifest(input.chain, profile.worldId === "eternum" ? "eternum" : "blitz") as unknown as Record<
-      string,
-      unknown
-    >,
-    profile.worldAddress,
-    profile.contractsBySelector,
-  );
-  const namespace = profile.namespace ?? namespaceForChain(input.chain);
-  const prizeDistributionAddress = getContractByName(manifest, namespace, "prize_distribution_systems").address;
-  const gamePrefix = profile.gameId && profile.gameId > 0 ? [profile.gameId] : [];
-  const batches = chunk(playerAddresses, CLAIM_ALL_REWARDS_BATCH_SIZE);
-  for (const batch of batches) {
-    const calls: Call[] = [];
-    if (env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS && BigInt(env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS) !== 0n) {
-      calls.push({
-        contractAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-        entrypoint: "request_random",
-        calldata: [prizeDistributionAddress, 0, input.signer.address],
-      });
-    }
-    calls.push({
-      contractAddress: prizeDistributionAddress,
-      entrypoint: "blitz_prize_claim",
-      calldata: [...gamePrefix, batch.length, ...batch],
-    });
-    await executeObservedClientTransaction({
-      account: input.signer,
-      calls,
-      surface: "game_review",
-      operation: "blitz_prize_claim",
-      chain: input.chain,
-      worldName: input.worldName,
-      worldAddress: profile.worldAddress,
-      waitForConfirmation: true,
-    });
-  }
-  return {
-    claimed: true,
-    claimedPlayers: playerAddresses.length,
-    playerAddresses,
-    batchesSubmitted: batches.length,
   };
 };

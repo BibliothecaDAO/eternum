@@ -30,8 +30,6 @@ const BIOME_CLIMATE_OVERRIDE_LIMITS = {
   elevationSeed: 4_294_967_295,
   moistureSeed: 4_294_967_295,
 };
-const GAME_PRIZE_FUNDING_STEP_ID = "wait-for-factory-index";
-const SERIES_LIKE_PRIZE_FUNDING_STEP_ID = "wait-for-factory-indexes";
 const RECOVERABLE_FACTORY_STEP_IDS = new Set(["create-world", "wait-for-factory-index"]);
 const RECOVERABLE_FACTORY_SERIES_STEP_IDS = new Set(["create-series", "create-worlds", "wait-for-factory-indexes"]);
 
@@ -78,11 +76,6 @@ async function handleRequest(request, env) {
         return await handleContinueFactoryRun(request, env, runRoute);
       }
 
-      if (request.method === "POST" && runRoute.action === "fund-prize") {
-        requireFactoryWorkerAdminAuthorization(request, env);
-        return await handleFundFactoryGamePrize(request, env, runRoute);
-      }
-
       if (request.method === "POST" && runRoute.action === "delete") {
         requireFactoryWorkerAdminAuthorization(request, env);
         return await handleDeleteFactoryRun(request, env, runRoute);
@@ -99,11 +92,6 @@ async function handleRequest(request, env) {
 
       if (request.method === "POST" && seriesRunRoute.action === "continue") {
         return await handleContinueFactorySeriesRun(request, env, seriesRunRoute);
-      }
-
-      if (request.method === "POST" && seriesRunRoute.action === "fund-prize") {
-        requireFactoryWorkerAdminAuthorization(request, env);
-        return await handleFundFactorySeriesPrizes(request, env, seriesRunRoute);
       }
 
       if (request.method === "POST" && seriesRunRoute.action === "cancel-auto-retry") {
@@ -131,11 +119,6 @@ async function handleRequest(request, env) {
 
       if (request.method === "POST" && rotationRunRoute.action === "nudge") {
         return await handleNudgeFactoryRotationRun(request, env, rotationRunRoute);
-      }
-
-      if (request.method === "POST" && rotationRunRoute.action === "fund-prize") {
-        requireFactoryWorkerAdminAuthorization(request, env);
-        return await handleFundFactoryRotationPrizes(request, env, rotationRunRoute);
       }
 
       if (request.method === "POST" && rotationRunRoute.action === "cancel-auto-retry") {
@@ -392,47 +375,6 @@ async function handleContinueFactoryRun(request, env, route) {
   );
 }
 
-async function handleFundFactoryGamePrize(request, env, route) {
-  const body = await readJsonBody(request);
-  validateFactoryPrizeFundingBody(body);
-
-  const github = createGitHubClient(env, body.workflowRef);
-  const branch = resolveRunStoreBranch(env);
-  const run = await readFactoryRunIfPresent(github, route.environment, route.gameName, branch);
-
-  if (!run) {
-    return buildJsonResponse(request, env, { error: resolveMissingRunMessage(route.environment, route.gameName) }, 404);
-  }
-
-  assertFactoryGameRunReadyForPrizeFunding(run);
-
-  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
-  if (!inputRecord) {
-    return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
-  }
-
-  const workflowRun = await dispatchFactoryPrizeFundingWorkflow(
-    resolveWorkflowGitHubClient(github, inputRecord, body),
-    {
-      environment: route.environment,
-      runKind: "game",
-      runName: route.gameName,
-      amount: body.amount.trim(),
-      selectedGameNames: [],
-    },
-  );
-
-  return buildJsonResponse(
-    request,
-    env,
-    {
-      accepted: true,
-      workflowRun,
-    },
-    202,
-  );
-}
-
 async function handleReadFactoryRun(request, route, env) {
   const github = createGitHubClient(env);
   const run = await readFactoryRunIfPresent(github, route.environment, route.gameName, resolveRunStoreBranch(env));
@@ -536,102 +478,6 @@ async function handleContinueFactorySeriesRun(request, env, route) {
     env,
     {
       accepted: true,
-      workflowRun,
-    },
-    202,
-  );
-}
-
-async function handleFundFactorySeriesPrizes(request, env, route) {
-  const body = await readJsonBody(request);
-  validateFactorySeriesPrizeFundingBody(body);
-
-  const github = createGitHubClient(env, body.workflowRef);
-  const branch = resolveRunStoreBranch(env);
-  const run = await readFactorySeriesRunIfPresent(github, route.environment, route.seriesName, branch);
-
-  if (!run) {
-    return buildJsonResponse(
-      request,
-      env,
-      { error: resolveMissingSeriesRunMessage(route.environment, route.seriesName) },
-      404,
-    );
-  }
-
-  assertFactorySeriesLikeRunReadyForPrizeFunding(run);
-  const selectedGameNames = resolveSelectedPrizeFundingGameNames(run, body.gameNames);
-  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
-
-  if (!inputRecord) {
-    return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
-  }
-
-  const workflowRun = await dispatchFactoryPrizeFundingWorkflow(
-    resolveWorkflowGitHubClient(github, inputRecord, body),
-    {
-      environment: route.environment,
-      runKind: "series",
-      runName: route.seriesName,
-      amount: body.amount.trim(),
-      selectedGameNames,
-    },
-  );
-
-  return buildJsonResponse(
-    request,
-    env,
-    {
-      accepted: true,
-      selectedGameNames,
-      workflowRun,
-    },
-    202,
-  );
-}
-
-async function handleFundFactoryRotationPrizes(request, env, route) {
-  const body = await readJsonBody(request);
-  validateFactorySeriesPrizeFundingBody(body);
-
-  const github = createGitHubClient(env, body.workflowRef);
-  const branch = resolveRunStoreBranch(env);
-  const run = await readFactoryRotationRunIfPresent(github, route.environment, route.rotationName, branch);
-
-  if (!run) {
-    return buildJsonResponse(
-      request,
-      env,
-      { error: resolveMissingRotationRunMessage(route.environment, route.rotationName) },
-      404,
-    );
-  }
-
-  assertFactorySeriesLikeRunReadyForPrizeFunding(run);
-  const selectedGameNames = resolveSelectedPrizeFundingGameNames(run, body.gameNames);
-  const inputRecord = await readFactoryLaunchInputIfPresent(github, run.inputPath, branch);
-
-  if (!inputRecord) {
-    return buildJsonResponse(request, env, { error: `No launch input exists at ${run.inputPath}` }, 404);
-  }
-
-  const workflowRun = await dispatchFactoryPrizeFundingWorkflow(
-    resolveWorkflowGitHubClient(github, inputRecord, body),
-    {
-      environment: route.environment,
-      runKind: "rotation",
-      runName: route.rotationName,
-      amount: body.amount.trim(),
-      selectedGameNames,
-    },
-  );
-
-  return buildJsonResponse(
-    request,
-    env,
-    {
-      accepted: true,
-      selectedGameNames,
       workflowRun,
     },
     202,
@@ -1050,7 +896,10 @@ function validateContinueTargetGameNames(gameNames) {
     return;
   }
 
-  validatePrizeFundingGameNames(gameNames);
+  validateGameNameList(gameNames, {
+    missingListMessage: "gameNames must be an array",
+    duplicateLabel: "Target game",
+  });
 }
 
 function validateCancelFactoryAutoRetryBody(body) {
@@ -1058,22 +907,6 @@ function validateCancelFactoryAutoRetryBody(body) {
 
   if (body.cancelReason !== undefined && typeof body.cancelReason !== "string") {
     throw new HttpError(400, "cancelReason must be a string");
-  }
-}
-
-function validateFactoryPrizeFundingBody(body) {
-  validateWorkflowRef(body.workflowRef);
-
-  if (typeof body.amount !== "string" || !body.amount.trim()) {
-    throw new HttpError(400, "amount is required");
-  }
-}
-
-function validateFactorySeriesPrizeFundingBody(body) {
-  validateFactoryPrizeFundingBody(body);
-
-  if (body.gameNames !== undefined) {
-    validatePrizeFundingGameNames(body.gameNames);
   }
 }
 
@@ -1304,130 +1137,6 @@ function resolveLaunchInputRequest(inputRecord) {
   return inputRecord;
 }
 
-function resolveGamePrizeFundingReadiness(run) {
-  if (!run.artifacts?.worldAddress) {
-    return {
-      ready: false,
-      reason: `Game "${run.gameName}" is missing a world address`,
-    };
-  }
-
-  if (!hasSucceededRunStep(run.steps, GAME_PRIZE_FUNDING_STEP_ID)) {
-    return {
-      ready: false,
-      reason: `Game "${run.gameName}" must be indexed before prize funding`,
-    };
-  }
-
-  return { ready: true };
-}
-
-function resolveSeriesLikeGamePrizeFundingReadiness(game) {
-  if (!game.artifacts?.worldAddress) {
-    return {
-      ready: false,
-      reason: `Game "${game.gameName}" is missing a world address`,
-    };
-  }
-
-  if (!hasSucceededSeriesLikeGameStep(game.steps, SERIES_LIKE_PRIZE_FUNDING_STEP_ID)) {
-    return {
-      ready: false,
-      reason: `Game "${game.gameName}" must be indexed before prize funding`,
-    };
-  }
-
-  return { ready: true };
-}
-
-function resolveDefaultSeriesLikePrizeFundingGameNames(run) {
-  return run.summary.games
-    .filter((game) => {
-      const readiness = resolveSeriesLikeGamePrizeFundingReadiness(game);
-      return readiness.ready && (game.artifacts?.prizeFunding?.transfers?.length ?? 0) === 0;
-    })
-    .map((game) => game.gameName);
-}
-
-function resolveSelectedSeriesLikePrizeFundingGameNames(run, requestedGameNames) {
-  const selectedGameNames =
-    requestedGameNames.length > 0 ? requestedGameNames : resolveDefaultSeriesLikePrizeFundingGameNames(run);
-
-  if (selectedGameNames.length === 0) {
-    throw new Error(`No eligible unfunded games are ready in "${resolveSeriesLikeRunName(run)}"`);
-  }
-
-  const selectedGameNameSet = new Set(selectedGameNames);
-  const orderedGames = run.summary.games.filter((game) => selectedGameNameSet.has(game.gameName));
-
-  if (orderedGames.length !== selectedGameNameSet.size) {
-    throw new Error(`One or more selected games were not found in "${resolveSeriesLikeRunName(run)}"`);
-  }
-
-  for (const game of orderedGames) {
-    const readiness = resolveSeriesLikeGamePrizeFundingReadiness(game);
-
-    if (!readiness.ready) {
-      throw new Error(readiness.reason ?? `Game "${game.gameName}" is not ready for prize funding`);
-    }
-  }
-
-  return orderedGames.map((game) => game.gameName);
-}
-
-function assertFactoryGameRunReadyForPrizeFunding(run) {
-  const readiness = resolveGamePrizeFundingReadiness(run);
-
-  if (!readiness.ready) {
-    throw new HttpError(409, readiness.reason ?? `Game "${run.gameName}" is not ready for prize funding`);
-  }
-}
-
-function assertFactorySeriesLikeRunReadyForPrizeFunding(run) {
-  if (!Array.isArray(run.summary?.games) || run.summary.games.length === 0) {
-    throw new HttpError(
-      409,
-      `${resolveSeriesLikeRunLabel(run)} "${resolveSeriesLikeRunName(run)}" does not have any games ready for prize funding`,
-    );
-  }
-}
-
-function resolveSelectedPrizeFundingGameNames(run, requestedGameNames) {
-  try {
-    return resolveSelectedSeriesLikePrizeFundingGameNames(
-      run,
-      normalizeRequestedPrizeFundingGameNames(requestedGameNames),
-    );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Prize funding selection is invalid";
-    throw new HttpError(resolvePrizeFundingSelectionErrorStatus(message), message);
-  }
-}
-
-function normalizeRequestedPrizeFundingGameNames(requestedGameNames) {
-  return Array.isArray(requestedGameNames) ? requestedGameNames.map((gameName) => gameName.trim()) : [];
-}
-
-function resolveSeriesLikeRunLabel(run) {
-  return run.kind === "rotation" ? "Rotation" : "Series";
-}
-
-function resolveSeriesLikeRunName(run) {
-  return run.kind === "rotation" ? run.rotationName : run.seriesName;
-}
-
-function resolvePrizeFundingSelectionErrorStatus(message) {
-  return message.includes("not found") || message.includes("were not found") ? 400 : 409;
-}
-
-function hasSucceededRunStep(steps, stepId) {
-  return Array.isArray(steps) && steps.some((step) => step.id === stepId && step.status === "succeeded");
-}
-
-function hasSucceededSeriesLikeGameStep(steps, stepId) {
-  return Array.isArray(steps) && steps.some((step) => step.id === stepId && step.status === "succeeded");
-}
-
 function validateEnvironment(environment) {
   if (!FACTORY_ENVIRONMENTS.includes(environment)) {
     throw new HttpError(400, `Unsupported environment "${environment}"`);
@@ -1500,13 +1209,6 @@ function validateSeriesGames(games) {
 
     validateBiomeClimateOverrides(game.biomeClimateOverrides);
   }
-}
-
-function validatePrizeFundingGameNames(gameNames) {
-  validateGameNameList(gameNames, {
-    missingListMessage: "gameNames must be an array",
-    duplicateLabel: "Prize funding game",
-  });
 }
 
 function validateGameNameList(gameNames, options) {
@@ -1968,20 +1670,6 @@ function matchFactoryRunRoute(pathname) {
     parts[1] === "factory" &&
     parts[2] === "runs" &&
     parts[5] === "actions" &&
-    parts[6] === "fund-prize"
-  ) {
-    const environment = decodeURIComponent(parts[3]);
-    const gameName = decodeURIComponent(parts[4]);
-    validateEnvironment(environment);
-    return { environment, gameName, action: "fund-prize" };
-  }
-
-  if (
-    parts.length === 7 &&
-    parts[0] === "api" &&
-    parts[1] === "factory" &&
-    parts[2] === "runs" &&
-    parts[5] === "actions" &&
     parts[6] === "delete"
   ) {
     const environment = decodeURIComponent(parts[3]);
@@ -2015,20 +1703,6 @@ function matchFactorySeriesRunRoute(pathname) {
     const seriesName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, seriesName, action: "continue" };
-  }
-
-  if (
-    parts.length === 7 &&
-    parts[0] === "api" &&
-    parts[1] === "factory" &&
-    parts[2] === "series-runs" &&
-    parts[5] === "actions" &&
-    parts[6] === "fund-prize"
-  ) {
-    const environment = decodeURIComponent(parts[3]);
-    const seriesName = decodeURIComponent(parts[4]);
-    validateEnvironment(environment);
-    return { environment, seriesName, action: "fund-prize" };
   }
 
   if (
@@ -2098,20 +1772,6 @@ function matchFactoryRotationRunRoute(pathname) {
     const rotationName = decodeURIComponent(parts[4]);
     validateEnvironment(environment);
     return { environment, rotationName, action: "nudge" };
-  }
-
-  if (
-    parts.length === 7 &&
-    parts[0] === "api" &&
-    parts[1] === "factory" &&
-    parts[2] === "rotation-runs" &&
-    parts[5] === "actions" &&
-    parts[6] === "fund-prize"
-  ) {
-    const environment = decodeURIComponent(parts[3]);
-    const rotationName = decodeURIComponent(parts[4]);
-    validateEnvironment(environment);
-    return { environment, rotationName, action: "fund-prize" };
   }
 
   if (
@@ -2590,31 +2250,6 @@ async function dispatchGameLaunchWorkflow(github, request) {
   };
 }
 
-async function dispatchFactoryPrizeFundingWorkflow(github, request) {
-  const workflowFile = "factory-prize-funding.yml";
-  const response = await github.fetch(`/repos/${github.repo}/actions/workflows/${workflowFile}/dispatches`, {
-    method: "POST",
-    body: JSON.stringify({
-      ref: github.workflowRef,
-      inputs: {
-        environment: request.environment,
-        run_kind: request.runKind,
-        run_name: request.runName,
-        prize_amount: request.amount,
-        selected_games_json: request.selectedGameNames.length > 0 ? JSON.stringify(request.selectedGameNames) : "",
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw await toGitHubHttpError(response, "Failed to dispatch factory-prize-funding workflow");
-  }
-
-  return {
-    workflowFile,
-  };
-}
-
 function assignOptionalWorkflowInput(inputs, key, value) {
   if (value === undefined || value === null) {
     return;
@@ -2816,10 +2451,6 @@ function validateBlitzRegistrationOverrideEntry(key, value) {
     case "registration_count_max":
       validateBlitzRegistrationCountMax(value);
       return;
-    case "fee_token":
-    case "fee_amount":
-      validateBlitzRegistrationStringValue(key, value);
-      return;
     default:
       throw new HttpError(400, `Unsupported blitzRegistrationOverrides.${key}`);
   }
@@ -2828,12 +2459,6 @@ function validateBlitzRegistrationOverrideEntry(key, value) {
 function validateBlitzRegistrationCountMax(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new HttpError(400, "blitzRegistrationOverrides.registration_count_max must be a finite number");
-  }
-}
-
-function validateBlitzRegistrationStringValue(key, value) {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new HttpError(400, `blitzRegistrationOverrides.${key} must be a non-empty string`);
   }
 }
 

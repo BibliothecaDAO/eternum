@@ -1,6 +1,5 @@
 import type {
   FactoryAutoRetryState,
-  FactoryPrizeFundingState,
   FactoryRecoveryStepId,
   FactoryRotationEvaluationState,
   FactoryRun,
@@ -15,7 +14,6 @@ import type {
 } from "../types";
 import type {
   FactoryWorkerGameRunRecord,
-  FactoryWorkerPrizeFundingState,
   FactoryWorkerRunRecord,
   FactoryWorkerRunRecovery,
   FactoryWorkerRotationRunRecord,
@@ -64,7 +62,6 @@ function mapFactoryWorkerGameRun(record: FactoryWorkerGameRunRecord): FactoryRun
     worldAddress: record.artifacts.worldAddress,
     gameId: record.artifacts.gameId,
     recovery: mapFactoryRunRecovery(record.recovery),
-    prizeFunding: mapFactoryPrizeFunding(record.artifacts.prizeFunding),
     steps: record.steps.map(mapFactoryWorkerStep),
   };
 }
@@ -188,7 +185,6 @@ function mapFactorySeriesChildRun(game: FactoryWorkerSeriesGameRecord): FactoryS
     steps: (game.steps || []).map(mapFactorySeriesChildStep),
     launchReady: hasSucceededFactorySeriesChildStep(game, "wait-for-factory-indexes"),
     worldAddress: game.artifacts.worldAddress,
-    prizeFunding: mapFactoryPrizeFunding(game.artifacts.prizeFunding),
   };
 }
 
@@ -200,26 +196,6 @@ function mapFactorySeriesChildStep(
     status: resolveFactoryStepStatus(step.status),
     latestEvent: step.latestEvent,
     errorMessage: step.errorMessage,
-  };
-}
-
-function mapFactoryPrizeFunding(
-  prizeFunding: FactoryWorkerPrizeFundingState | undefined,
-): FactoryPrizeFundingState | undefined {
-  if (!prizeFunding) {
-    return undefined;
-  }
-
-  return {
-    transfers: prizeFunding.transfers.map((transfer) => ({
-      id: transfer.id,
-      tokenAddress: transfer.tokenAddress,
-      amountRaw: transfer.amountRaw,
-      amountDisplay: transfer.amountDisplay,
-      decimals: transfer.decimals,
-      transactionHash: transfer.transactionHash,
-      fundedAt: transfer.fundedAt,
-    })),
   };
 }
 

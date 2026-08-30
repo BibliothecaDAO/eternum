@@ -33,7 +33,6 @@ pub struct CreateGameParams {
     pub two_player_mode: bool,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
-    pub fee_amount: u256,
     pub biome_climate_config: crate::models::config::BiomeClimateConfig,
     pub use_map_override: bool,
     pub map_override: MapConfig,
@@ -65,7 +64,6 @@ pub trait IRegistrarSystems<T> {
 #[starknet::interface]
 trait IPrizeLifecycle<T> {
     fn reset_trial(ref self: T, game_id: u32);
-    fn blitz_sweep_remaining_escrow(ref self: T, game_id: u32);
 }
 
 
@@ -226,8 +224,6 @@ pub mod registrar_systems {
                 starknet::get_block_timestamp() > game.end_at + game.end_grace_seconds.into(),
                 "Eternum: game settlement grace period is active",
             );
-            sweep_remaining_escrow(ref world, game_id);
-            game = GameRegistryImpl::get(world, game_id);
             game.status = GameStatus::Settled;
             world.write_model(@game);
         }
@@ -251,14 +247,6 @@ pub mod registrar_systems {
         }
         let max_cap_ratio_bps = (0xffff_u128 * 10_000) / total_chests;
         assert!(cap_ratio_bps <= max_cap_ratio_bps, "Eternum: series chest allocation exceeds u16");
-    }
-
-    fn sweep_remaining_escrow(ref world: WorldStorage, game_id: u32) {
-        let remainder = GameRegistryImpl::available_fees(world, game_id);
-        if remainder.is_zero() {
-            return;
-        }
-        prize_lifecycle_dispatcher(world).blitz_sweep_remaining_escrow(game_id);
     }
 
     fn prize_lifecycle_dispatcher(world: WorldStorage) -> IPrizeLifecycleDispatcher {
@@ -376,8 +364,6 @@ pub mod registrar_systems {
             registration_grace_seconds: params.registration_grace_seconds,
             final_trial_id: 0,
             seed: params.seed,
-            fees_collected: 0,
-            fees_paid_out: 0,
         }
     }
 
@@ -393,9 +379,7 @@ pub mod registrar_systems {
         blitz_settlement.two_player_mode = params.two_player_mode;
 
         let mut registration = preset.blitz_registration_config;
-        registration.fee_amount = params.fee_amount;
         registration.registration_count = 0;
-        registration.issued_count = 0;
         registration.registration_count_max = params.registration_count_max;
         registration.registration_start_at = params.registration_start_at;
 

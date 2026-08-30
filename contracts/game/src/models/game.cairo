@@ -37,8 +37,6 @@ pub struct GameRegistry {
     pub registration_grace_seconds: u32,
     pub final_trial_id: u128,
     pub seed: felt252,
-    pub fees_collected: u256,
-    pub fees_paid_out: u256,
 }
 
 
@@ -80,24 +78,6 @@ pub impl GameRegistryImpl of GameRegistryTrait {
         let game: GameRegistry = world.read_model(game_id);
         assert!(game.creator.is_non_zero(), "Eternum: game does not exist");
         game
-    }
-
-    fn credit_fees(ref world: WorldStorage, game_id: u32, amount: u256) {
-        let mut game = Self::get(world, game_id);
-        game.fees_collected += amount;
-        world.write_model(@game);
-    }
-
-    fn debit_fees(ref world: WorldStorage, game_id: u32, amount: u256) {
-        let mut game = Self::get(world, game_id);
-        assert!(game.fees_paid_out + amount <= game.fees_collected, "Eternum: game escrow exhausted");
-        game.fees_paid_out += amount;
-        world.write_model(@game);
-    }
-
-    fn available_fees(world: WorldStorage, game_id: u32) -> u256 {
-        let game = Self::get(world, game_id);
-        game.fees_collected - game.fees_paid_out
     }
 
     fn assert_same_game(expected_game_id: u32, actual_game_id: u32) {

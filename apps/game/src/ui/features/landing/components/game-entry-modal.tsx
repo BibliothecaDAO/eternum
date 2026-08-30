@@ -4150,9 +4150,6 @@ export const GameEntryModal = ({
           usernameFelt,
           gameId: worldMeta.gameId,
           vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-          entryTokenAddress: worldMeta.entryTokenAddress,
-          feeTokenAddress: worldMeta.feeTokenAddress,
-          feeAmount: worldMeta.feeAmount,
         }),
         operation: "blitz_realm_systems.settle",
       });

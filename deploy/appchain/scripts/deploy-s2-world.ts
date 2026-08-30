@@ -41,25 +41,30 @@ function optionalEnvironmentAddress(name: string): string | undefined {
   return address && BigInt(address) !== 0n ? address : undefined;
 }
 
+function requiredEnvironmentAddress(name: string): string {
+  const address = optionalEnvironmentAddress(name);
+  if (!address) throw new Error(`${name} must be a non-zero contract address`);
+  return address;
+}
+
 async function bootstrapRegistrar(params: {
   environmentId: DeploymentEnvironmentId;
   account: Account;
   adminAddress: string;
-  entryTokenAddress: string;
-  lootChestAddress: string;
+  ledgerOperatorAddress: string;
+  playerRegistryAddress: string;
   dryRun: boolean;
 }): Promise<void> {
   const config = loadEnvironmentConfiguration(params.environmentId);
   const chainConfig = buildChainConfig(config, {
     adminAddress: params.adminAddress,
+    ledgerOperatorAddress: params.ledgerOperatorAddress,
+    playerRegistryAddress: params.playerRegistryAddress,
     vrfProviderAddress: optionalEnvironmentAddress("VRF_PROVIDER_ADDRESS"),
     agentControllerAddress: optionalEnvironmentAddress("AGENT_CONTROLLER_ADDRESS"),
-    feeTokenAddress: optionalEnvironmentAddress("FEE_TOKEN_ADDRESS"),
-    feeRecipientAddress: optionalEnvironmentAddress("FEE_RECIPIENT_ADDRESS"),
-    entryTokenAddress: params.entryTokenAddress,
     cosmeticsAddress: optionalEnvironmentAddress("COSMETICS_ADDRESS"),
     timelockAddress: optionalEnvironmentAddress("TIMELOCK_ADDRESS"),
-    lootChestAddress: params.lootChestAddress,
+    lootChestAddress: optionalEnvironmentAddress("LOOT_CHEST_ADDRESS"),
     eliteNftAddress: optionalEnvironmentAddress("ELITE_NFT_ADDRESS"),
   });
 
@@ -109,17 +114,6 @@ async function deployS2World(): Promise<void> {
     privateKey: process.env.DOJO_PRIVATE_KEY,
     context: `${environmentId} deployment`,
   });
-  // Phase 1 runs the free-entry flow everywhere: no entry token or loot chest exists, and the
-  // collectible role wiring went with it. Refusing a configured address is deliberate — an address
-  // this script would silently ignore is worse than a loud stop (entry fees move to the L2 value
-  // plane in phase 2; see the brief).
-  const entryTokenAddress = optionalEnvironmentAddress("ENTRY_TOKEN_ADDRESS");
-  const lootChestAddress = optionalEnvironmentAddress("LOOT_CHEST_ADDRESS");
-  if (entryTokenAddress || lootChestAddress) {
-    throw new Error(
-      "entry-token / collectible addresses are not supported: phase 1 is fee-free and the collectible role wiring was removed",
-    );
-  }
   const account = new Account({
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     address: credentials.accountAddress,
@@ -130,8 +124,8 @@ async function deployS2World(): Promise<void> {
     environmentId,
     account,
     adminAddress: credentials.accountAddress,
-    entryTokenAddress: entryTokenAddress ?? "0x0",
-    lootChestAddress: lootChestAddress ?? "0x0",
+    ledgerOperatorAddress: requiredEnvironmentAddress("LEDGER_OPERATOR_ADDRESS"),
+    playerRegistryAddress: requiredEnvironmentAddress("PLAYER_REGISTRY_ADDRESS"),
     dryRun,
   });
   await registerEnvironmentPreset({ presetId: resolveDefaultPresetId(environmentId), environmentId, dryRun });

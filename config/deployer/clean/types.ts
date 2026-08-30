@@ -185,25 +185,10 @@ export interface LaunchGameSummary {
   createGameTxHash?: string;
   openLedgerTxHash?: string;
   sponsorLedgerTxHash?: string;
-  prizeFunding?: PrizeFundingState;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
   dryRun: boolean;
   outputPath?: string;
-}
-
-export interface PrizeFundingTransfer {
-  id: string;
-  tokenAddress: string;
-  amountRaw: string;
-  amountDisplay: string;
-  decimals: number;
-  transactionHash: string;
-  fundedAt: string;
-}
-
-export interface PrizeFundingState {
-  transfers: PrizeFundingTransfer[];
 }
 
 export interface SeriesLaunchGameArtifacts {
@@ -212,7 +197,6 @@ export interface SeriesLaunchGameArtifacts {
   createGameTxHash?: string;
   openLedgerTxHash?: string;
   sponsorLedgerTxHash?: string;
-  prizeFunding?: PrizeFundingState;
 }
 
 export interface SeriesLaunchGameStepState {

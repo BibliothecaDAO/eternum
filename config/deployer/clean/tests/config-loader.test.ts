@@ -114,14 +114,10 @@ describe("applyDeploymentConfigOverrides", () => {
       factoryAddress: "0xabc",
       blitzRegistrationOverrides: {
         registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
       },
     });
 
     expect(result.blitz.registration.registration_count_max).toBe(12);
-    expect(result.blitz.registration.fee_token).toBe("0x1234");
-    expect(result.blitz.registration.fee_amount).toBe(40000n);
   });
 
   test("applies validated biome climate overrides", () => {
@@ -184,14 +180,12 @@ describe("applyDeploymentConfigOverrides", () => {
       },
       blitzRegistrationOverrides: {
         registration_count_max: 24,
-        fee_amount: "250000000000000000000",
       },
     });
 
     expect(result.season.durationSeconds).toBe(3_600);
     expect(result.exploration.relicDiscoveryIntervalSeconds).toBe(420);
     expect(result.blitz.registration.registration_count_max).toBe(24);
-    expect(result.blitz.registration.fee_amount).toBe(250000000000000000000n);
   });
 
   test("rejects mutually exclusive settlement modes", () => {
@@ -246,34 +240,6 @@ describe("applyDeploymentConfigOverrides", () => {
         },
       }),
     ).toThrow("blitz registration overrides are not supported when two_player_mode is enabled");
-  });
-
-  test("rejects invalid blitz prize token overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
-
-    expect(() =>
-      applyDeploymentConfigOverrides(baseConfig, {
-        startMainAt: 1_763_112_600,
-        factoryAddress: "0xabc",
-        blitzRegistrationOverrides: {
-          fee_token: "lords",
-        },
-      }),
-    ).toThrow('blitzRegistrationOverrides.fee_token must be a non-empty "0x" address');
-  });
-
-  test("rejects invalid blitz prize amount overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
-
-    expect(() =>
-      applyDeploymentConfigOverrides(baseConfig, {
-        startMainAt: 1_763_112_600,
-        factoryAddress: "0xabc",
-        blitzRegistrationOverrides: {
-          fee_amount: "25.5",
-        },
-      }),
-    ).toThrow("blitzRegistrationOverrides.fee_amount must be a non-negative integer string");
   });
 
   test("ignores duration overrides for eternum environments", () => {

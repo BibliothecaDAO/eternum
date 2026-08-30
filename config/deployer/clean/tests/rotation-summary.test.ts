@@ -118,7 +118,7 @@ describe("rotation launch summary", () => {
           weekday: "saturday",
           utcTime: "12:00",
           blitzRegistrationOverrides: {
-            fee_amount: "1000000000000000000000",
+            registration_count_max: 96,
           },
         },
       ],
@@ -132,7 +132,7 @@ describe("rotation launch summary", () => {
     expect(summary.games[0]).toMatchObject({
       gameName: "weekend-gladiator-25-04-26-1200",
       blitzRegistrationOverrides: {
-        fee_amount: "1000000000000000000000",
+        registration_count_max: 96,
       },
     });
   });

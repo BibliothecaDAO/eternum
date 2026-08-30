@@ -32,11 +32,6 @@ const blitzWorld = {
 
 const gameDirectory = (games: Array<Record<string, unknown>>) => ({
   chain: "madara",
-  chain_config: {
-    entry_token_address: "0xe",
-    fee_token_address: "0xf",
-    mmr_enabled: false,
-  },
   confirmed_block: 12,
   games,
 });
@@ -55,7 +50,7 @@ const quickBlitz = {
     end_grace_seconds: 60,
     registration_grace_seconds: 120,
   },
-  registration: { count: 3, max: 60, start_at: 50, fee_amount: "0x0" },
+  registration: { count: 3, max: 60, start_at: 50 },
   settlement: {
     base_distance: 8,
     layer_max: 6,
@@ -129,8 +124,6 @@ describe("useWorldsAvailability (appchain game meta)", () => {
       // Registration closes when the main phase opens.
       registrationEndAt: 200,
       twoPlayerMode: true,
-      entryTokenAddress: "0xe",
-      feeTokenAddress: "0xf",
     });
 
     const [url] = mockFetch.mock.calls[0]! as [string];

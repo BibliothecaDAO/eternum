@@ -1,16 +1,10 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import {
-  claimGameReviewRewards,
-  finalizeGameRankingAndMMR,
-  type GameReviewClaimSummary,
-  type GameReviewData,
-} from "@/services/review/game-review-service";
+import { finalizeGameRanking, type GameReviewData } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
 import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blitz-map-fingerprint-card";
-import { BlitzRewardsRecapCardWithSelector } from "@/ui/shared/components/blitz-rewards-recap-card";
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
 import { displayAddress } from "@/ui/utils/utils";
@@ -31,14 +25,13 @@ type ReviewStepId =
   | "map-fingerprint"
   | "leaderboard"
   | "submit-score"
-  | "claim-rewards"
+  | "result-outcome"
   | "next-game";
 
 interface GameReviewModalProps {
   isOpen: boolean;
   world: WorldSelection | null;
   nextGame: GameData | null;
-  initialStep?: ReviewStepId;
   showUpcomingGamesStep?: boolean;
   onClose: () => void;
   onRegistrationComplete: () => void;
@@ -60,17 +53,6 @@ const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
 const BLOCK_TIMESTAMP_REFRESH_MS = 10_000;
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
-
-const formatLordsWonDisplay = (value: string): string => {
-  const trimmed = value.trim();
-  if (!trimmed) return "0";
-
-  const [whole, fractional] = trimmed.split(".");
-  if (!fractional) return whole;
-
-  const limitedFractional = fractional.slice(0, 2).replace(/0+$/, "");
-  return limitedFractional ? `${whole}.${limitedFractional}` : whole;
-};
 
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error && error.message) {
@@ -95,34 +77,13 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
   awards: "Blitz Awards",
   "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
-  "submit-score": "Submit Score + MMR",
-  "claim-rewards": "Claim Rewards",
+  "submit-score": "Submit Results",
+  "result-outcome": "Result Outcome",
   "next-game": "Next Deployed Games Calendar",
 };
 
 const isAwardsStep = (step: ReviewStepId): boolean => {
   return step === "awards";
-};
-
-const getMmrStatus = (data: GameReviewData): string => {
-  if (!data.finalization.mmrEnabled) return "MMR is disabled for this world.";
-  if (data.finalization.mmrCommitted) return "MMR has already been committed.";
-  if (!data.finalization.mmrTokenAddress) return "MMR token is not configured.";
-  if (data.finalization.registeredPlayers.length < data.finalization.mmrMinPlayers) {
-    return `MMR unavailable: requires at least ${data.finalization.mmrMinPlayers} players.`;
-  }
-  return "MMR is eligible and will be submitted with score finalization.";
-};
-
-const canRetryMmrUpdate = (data: GameReviewData): boolean => {
-  const finalization = data.finalization;
-  return (
-    finalization.rankingFinalized &&
-    finalization.mmrEnabled &&
-    !finalization.mmrCommitted &&
-    Boolean(finalization.mmrTokenAddress) &&
-    finalization.registeredPlayers.length >= finalization.mmrMinPlayers
-  );
 };
 
 const formatCountdown = (seconds: number): string => {
@@ -139,17 +100,10 @@ const formatCountdown = (seconds: number): string => {
   return `${secs}s`;
 };
 
-const isSingleRegistrantNoGame = (finalization: GameReviewData["finalization"]): boolean =>
-  finalization.registrationCount === 1 && !finalization.rankingFinalized;
-
 const getSecondsUntilScoreSubmissionOpen = (
   finalization: GameReviewData["finalization"],
   nowTs: number,
 ): number | null => {
-  if (isSingleRegistrantNoGame(finalization)) {
-    return 0;
-  }
-
   const opensAt = finalization.scoreSubmissionOpensAt;
   if (finalization.rankingFinalized) {
     return 0;
@@ -244,9 +198,8 @@ const SubmitScoreStep = ({
   const secondsUntilSeasonEnd = getSecondsUntilSeasonEnd(data.finalization, nowTs);
   const submissionWindowOpen = isScoreSubmissionWindowOpen(data.finalization, nowTs);
   const seasonStillRunning = !scoreSubmitted && secondsUntilSeasonEnd != null && secondsUntilSeasonEnd > 0;
-  const canRetryMMR = canRetryMmrUpdate(data);
   const canSubmitScore = !scoreSubmitted && submissionWindowOpen;
-  const canRunPrimaryAction = !isDevModeGame && (canSubmitScore || canRetryMMR);
+  const canRunPrimaryAction = !isDevModeGame && canSubmitScore;
   const seasonEndTime =
     data.finalization.seasonEndAt != null ? new Date((data.finalization.seasonEndAt + 1) * 1000) : null;
   const submissionUnlockTime =
@@ -258,7 +211,7 @@ const SubmitScoreStep = ({
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
         <Shield className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Submit Score (+ MMR if Eligible)</h3>
+        <h3 className="font-serif text-xl">Submit Final Results</h3>
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
@@ -270,8 +223,10 @@ const SubmitScoreStep = ({
           </p>
         </div>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">MMR Status</p>
-          <p className="mt-1 text-sm text-white">{getMmrStatus(data)}</p>
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Value Settlement</p>
+          <p className="mt-1 text-sm text-white">
+            Mainnet payouts and MMR are applied by the game operator after these ordered results finalize.
+          </p>
         </div>
       </div>
 
@@ -312,11 +267,6 @@ const SubmitScoreStep = ({
           Submission opens once the game and registration grace period end.
         </div>
       )}
-      {canRetryMMR && (
-        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
-          Scores are already finalized. Retry MMR update independently if the previous MMR submission failed.
-        </div>
-      )}
       {isSubmitting && (
         <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
           Transaction pending. Confirm in your wallet and wait for onchain confirmation.
@@ -337,130 +287,67 @@ const SubmitScoreStep = ({
         >
           {isSubmitting
             ? "Submitting..."
-            : canRetryMMR
-              ? "Retry MMR update"
-              : scoreSubmitted
-                ? "Score already submitted"
-                : isDevModeGame
-                  ? "Disabled in dev mode"
-                  : !submissionWindowOpen && secondsUntilOpen != null
-                    ? `Opens in ${formatCountdown(secondsUntilOpen)}`
-                    : !submissionWindowOpen
-                      ? "Waiting for window"
-                      : "Submit score now"}
+            : scoreSubmitted
+              ? "Score already submitted"
+              : isDevModeGame
+                ? "Disabled in dev mode"
+                : !submissionWindowOpen && secondsUntilOpen != null
+                  ? `Opens in ${formatCountdown(secondsUntilOpen)}`
+                  : !submissionWindowOpen
+                    ? "Waiting for window"
+                    : "Submit score now"}
         </Button>
       </div>
 
       <div className="rounded-xl border border-gold/20 bg-dark/80 p-3 text-sm text-gold/75">
-        Reward claiming only requires score submission. MMR is only saved if there's a minimum of 6 players.
+        Result submission writes no prizes on this chain. The mainnet ledger is the only value plane.
       </div>
     </div>
   );
 };
 
-const ClaimRewardsStep = ({
+const ResultOutcomeStep = ({
   data,
-  hasSigner,
-  isClaiming,
-  claimError,
-  onClaim,
-  onRequireSignIn,
   captureRef,
 }: {
   data: GameReviewData;
-  hasSigner: boolean;
-  isClaiming: boolean;
-  claimError: string | null;
-  onClaim: () => void;
-  onRequireSignIn: () => void;
   captureRef: MutableRefObject<HTMLDivElement | null>;
 }) => {
   const rewards = data.rewards;
   const scoreSubmitted = rewards?.scoreSubmitted ?? data.finalization.rankingFinalized;
-  const alreadyClaimed = rewards?.alreadyClaimed ?? false;
-  const canClaimNow = rewards?.canClaimNow ?? false;
-  const claimBlockedReason = rewards?.claimBlockedReason;
-  const lordsWon = formatLordsWonDisplay(rewards?.lordsWonFormatted ?? "0");
-  const chestsWon = rewards?.chestsClaimedEstimate ?? 0;
-  const chestsClaimedReason = rewards?.chestsClaimedReason ?? "No chest estimate available.";
-  const cardPlayer = data.personalScore
-    ? {
-        name: data.personalScore.displayName?.trim() || displayAddress(data.personalScore.address),
-        address: displayAddress(data.personalScore.address),
-      }
-    : null;
-  const hasChestReason = chestsClaimedReason.trim().length > 0;
+  const chests = rewards?.chests ?? 0;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-gold">
         <Gift className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Claim Rewards</h3>
+        <h3 className="font-serif text-xl">Result Outcome</h3>
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
 
-      <div ref={captureRef} className="mx-auto w-full" style={CARD_PREVIEW_STYLE}>
-        <BlitzRewardsRecapCardWithSelector
-          worldName={data.worldName}
-          lordsWon={lordsWon}
-          chestsWon={chestsWon}
-          player={cardPlayer}
-        />
-      </div>
-
-      {hasChestReason && (
-        <div className="grid grid-cols-1 gap-3">
-          {hasChestReason && (
-            <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-gold/60">Chests won details</p>
-              <p className="mt-1 text-sm text-gold/75">{chestsClaimedReason}</p>
-            </div>
-          )}
+      <div ref={captureRef} className="mx-auto grid w-full gap-3 sm:grid-cols-2" style={CARD_PREVIEW_STYLE}>
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Rank</p>
+          <p className="mt-1 text-2xl text-white">{rewards?.isRanked ? (data.personalScore?.rank ?? "—") : "—"}</p>
         </div>
-      )}
+        <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-gold/60">Chest entitlement</p>
+          <p className="mt-1 text-2xl text-white">{chests.toLocaleString()}</p>
+        </div>
+      </div>
 
       {!scoreSubmitted && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
-          Submit score first to unlock reward claiming.
+          Submit final results before the operator can settle the mainnet ledger.
         </div>
       )}
 
-      {claimBlockedReason && scoreSubmitted && !alreadyClaimed && (
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3 text-sm text-gold/75">{claimBlockedReason}</div>
-      )}
-
-      {alreadyClaimed && (
+      {scoreSubmitted && (
         <div className="rounded-xl border border-brilliance/40 bg-brilliance/10 p-3 text-sm text-brilliance">
-          Rewards already claimed.
+          The ordered result is ready for the operator relay. LORDS payouts and MMR are read from the mainnet ledger,
+          not this game world.
         </div>
       )}
-
-      {!hasSigner && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
-          Connect a wallet to claim rewards.
-        </div>
-      )}
-      {isClaiming && (
-        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
-          Claim transaction pending. Confirm in your wallet and wait for onchain confirmation.
-        </div>
-      )}
-      {claimError && !isClaiming && (
-        <div className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-lightest">{claimError}</div>
-      )}
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button
-          onClick={hasSigner ? onClaim : onRequireSignIn}
-          variant="gold"
-          className="w-full justify-center !px-4 !py-2.5"
-          forceUppercase={false}
-          isLoading={isClaiming}
-          disabled={isClaiming || alreadyClaimed || !canClaimNow || !hasSigner}
-        >
-          {isClaiming ? "Claiming..." : alreadyClaimed ? "Rewards claimed" : "Claim rewards"}
-        </Button>
-      </div>
     </div>
   );
 };
@@ -500,7 +387,6 @@ export const GameReviewModal = ({
   isOpen,
   world,
   nextGame,
-  initialStep,
   showUpcomingGamesStep = true,
   onClose,
   onRegistrationComplete,
@@ -531,7 +417,6 @@ export const GameReviewModal = ({
   const [mapFingerprintZoom, setMapFingerprintZoom] = useState<number>(MAP_FINGERPRINT_DEFAULT_ZOOM);
   const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
   const [submitTxError, setSubmitTxError] = useState<string | null>(null);
-  const [claimTxError, setClaimTxError] = useState<string | null>(null);
   const currentMapZoomIndex = useMemo(() => {
     const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
       (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
@@ -577,7 +462,7 @@ export const GameReviewModal = ({
       "map-fingerprint",
       "leaderboard",
       "submit-score",
-      "claim-rewards",
+      "result-outcome",
     ];
     if (showUpcomingGamesStep) {
       ordered.push("next-game");
@@ -591,16 +476,12 @@ export const GameReviewModal = ({
     () => ["gameReview", worldChain ?? "unknown", worldName ?? "", reviewPlayerAddress] as const,
     [reviewPlayerAddress, worldChain, worldName],
   );
-  const reviewClaimSummaryQueryKey = useMemo(
-    () => ["gameReviewClaimSummary", worldChain ?? "unknown", worldName ?? "", reviewPlayerAddress] as const,
-    [reviewPlayerAddress, worldChain, worldName],
-  );
   const isStepShareable = useMemo(() => {
     if (isAwardsStep(currentStep) || currentStep === "leaderboard") {
       return true;
     }
 
-    if (currentStep === "claim-rewards") {
+    if (currentStep === "result-outcome") {
       return Boolean(data?.rewards);
     }
 
@@ -635,10 +516,6 @@ export const GameReviewModal = ({
       if (reviewData.finalization.devModeOn) return true;
       return reviewData.finalization.rankingFinalized;
     }
-    if (currentStep === "claim-rewards") {
-      if (!reviewData.rewards) return true;
-      return Boolean(reviewData.rewards.alreadyClaimed) || Boolean(reviewData.rewards.canProceedWithoutClaim);
-    }
     return true;
   }, [currentStep, reviewData]);
 
@@ -651,27 +528,17 @@ export const GameReviewModal = ({
     ) {
       return "Submit score before continuing.";
     }
-    if (
-      currentStep === "claim-rewards" &&
-      reviewData.rewards &&
-      !reviewData.rewards?.alreadyClaimed &&
-      !reviewData.rewards?.canProceedWithoutClaim
-    ) {
-      return "Claim rewards before continuing.";
-    }
     return null;
   }, [currentStep, reviewData]);
 
   useEffect(() => {
     if (!isOpen) return;
-    const initialStepIndex = initialStep ? steps.indexOf(initialStep) : -1;
-    setStepIndex(initialStepIndex >= 0 ? initialStepIndex : 0);
+    setStepIndex(0);
     setFrozenSnapshot(null);
     setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
     setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
     setSubmitTxError(null);
-    setClaimTxError(null);
-  }, [initialStep, isOpen, steps, worldName, worldChain]);
+  }, [isOpen, worldName, worldChain]);
 
   useEffect(() => {
     if (!isOpen || !data) return;
@@ -717,7 +584,7 @@ export const GameReviewModal = ({
         throw new Error("Missing world selection or signer.");
       }
 
-      return finalizeGameRankingAndMMR({
+      return finalizeGameRanking({
         worldName,
         chain: worldChain,
         signer: account,
@@ -728,25 +595,15 @@ export const GameReviewModal = ({
     },
     onSuccess: async (result) => {
       setSubmitTxError(null);
-      if (result.mmrError) {
-        toast("Score submission completed with MMR pending.", {
-          description: `${result.totalPlayers} players processed. Retry MMR independently from this step.`,
-        });
-      } else {
-        toast.success("Score submission completed.", {
-          description: result.mmrSubmitted
-            ? `${result.totalPlayers} players processed. MMR committed.`
-            : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
-        });
-      }
+      toast.success("Result submission completed.", {
+        description: `${result.totalPlayers} players processed and ready for the mainnet relay.`,
+      });
       await queryClient.invalidateQueries({ queryKey: reviewQueryKey });
-      if (!result.mmrError) {
-        setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
-      }
+      setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
     },
     onError: (caughtError) => {
-      console.error("Failed to submit score/MMR", caughtError);
-      const errorMessage = getErrorMessage(caughtError, "Unknown error while submitting score/MMR.");
+      console.error("Failed to submit final results", caughtError);
+      const errorMessage = getErrorMessage(caughtError, "Unknown error while submitting final results.");
       const normalizedErrorMessage = errorMessage.toLowerCase();
       const isSubmissionWindowError =
         normalizedErrorMessage.includes("registration grace period is not over") ||
@@ -762,59 +619,7 @@ export const GameReviewModal = ({
       }
 
       setSubmitTxError(errorMessage);
-      toast.error("Failed to submit score or MMR.", { description: errorMessage });
-    },
-  });
-
-  const claimRewardsMutation = useMutation({
-    mutationFn: async () => {
-      if (!worldName || !worldChain || !account?.address || !account) {
-        throw new Error("Missing world selection or signer.");
-      }
-
-      return claimGameReviewRewards({
-        worldName,
-        chain: worldChain,
-        signer: account,
-        playerAddress: account.address,
-      });
-    },
-    onMutate: () => {
-      setClaimTxError(null);
-    },
-    onSuccess: () => {
-      setClaimTxError(null);
-      queryClient.setQueryData<GameReviewData | undefined>(reviewQueryKey, (previous) => {
-        if (!previous?.rewards) return previous;
-        return {
-          ...previous,
-          rewards: {
-            ...previous.rewards,
-            canClaimNow: false,
-            alreadyClaimed: true,
-            claimBlockedReason: "Rewards already claimed.",
-          },
-        };
-      });
-      queryClient.setQueryData<GameReviewClaimSummary | undefined>(reviewClaimSummaryQueryKey, (previous) => {
-        if (!previous) {
-          return previous;
-        }
-
-        return {
-          ...previous,
-          canClaimNow: false,
-          alreadyClaimed: true,
-          claimBlockedReason: "Rewards already claimed.",
-        };
-      });
-      toast.success("Rewards claimed.");
-    },
-    onError: (caughtError) => {
-      console.error("Failed to claim rewards", caughtError);
-      const errorMessage = getErrorMessage(caughtError, "Unknown error while claiming rewards.");
-      setClaimTxError(errorMessage);
-      toast.error("Failed to claim rewards.", { description: errorMessage });
+      toast.error("Failed to submit final results.", { description: errorMessage });
     },
   });
 
@@ -830,14 +635,9 @@ export const GameReviewModal = ({
         return;
       }
 
-      const retryAvailable = canRetryMmrUpdate(reviewData);
       if (reviewData.finalization.rankingFinalized) {
-        if (!retryAvailable) {
-          toast.error("MMR retry is unavailable.", {
-            description: getMmrStatus(reviewData),
-          });
-          return;
-        }
+        toast.error("Results are already finalized.");
+        return;
       } else {
         const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
         if (secondsUntilOpen == null || secondsUntilOpen > 0) {
@@ -852,14 +652,6 @@ export const GameReviewModal = ({
 
     finalizeMutation.mutate();
   }, [account, finalizeMutation, nowTs, onRequireSignIn, reviewData]);
-
-  const handleClaimRewards = useCallback(() => {
-    if (!account) {
-      onRequireSignIn();
-      return;
-    }
-    claimRewardsMutation.mutate();
-  }, [account, claimRewardsMutation, onRequireSignIn]);
 
   const handleCopyStep = useCallback(async () => {
     if (!isStepShareable || !captureRef.current) return;
@@ -1167,17 +959,7 @@ export const GameReviewModal = ({
                 />
               )}
 
-              {currentStep === "claim-rewards" && (
-                <ClaimRewardsStep
-                  data={reviewData}
-                  hasSigner={Boolean(account)}
-                  isClaiming={claimRewardsMutation.isPending}
-                  claimError={claimTxError}
-                  onClaim={handleClaimRewards}
-                  onRequireSignIn={onRequireSignIn}
-                  captureRef={captureRef}
-                />
-              )}
+              {currentStep === "result-outcome" && <ResultOutcomeStep data={reviewData} captureRef={captureRef} />}
 
               {currentStep === "next-game" && showUpcomingGamesStep && (
                 <UpcomingGamesStep worldName={reviewData.worldName} onRegistrationComplete={onRegistrationComplete} />

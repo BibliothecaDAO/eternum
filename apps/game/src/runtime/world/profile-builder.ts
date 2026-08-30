@@ -31,8 +31,6 @@ export const buildWorldProfile = async (chain: GameChain, name: string, worldId?
   if (!game) {
     throw new Error(`Game "${name}" not found in the ${world.id} world's GameRegistry`);
   }
-  if (!directory.chain_config) throw new Error(`Herald directory for ${world.id} has no ChainConfig`);
-
   const profile: GameProfile = {
     name,
     chain,
@@ -45,8 +43,6 @@ export const buildWorldProfile = async (chain: GameChain, name: string, worldId?
     playerAccountClassHash: world.playerAccountClassHash,
     playerRegistryAddress: world.playerRegistryAddress,
     bindingAuthorityAddress: world.bindingAuthorityAddress,
-    entryTokenAddress: directory.chain_config.entry_token_address ?? undefined,
-    feeTokenAddress: directory.chain_config.fee_token_address ?? undefined,
     gameId: game.game_id,
     presetId: game.preset_id,
     fetchedAt: Date.now(),

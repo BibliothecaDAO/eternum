@@ -42,14 +42,8 @@ export interface WorldConfigMeta {
   registrationCountMax: number | null;
   singleRealmMode: boolean;
   twoPlayerMode: boolean;
-  // Blitz registration config
-  entryTokenAddress: string | null;
-  feeTokenAddress: string | null;
-  feeAmount: bigint;
   registrationStartAt: number | null;
   registrationEndAt: number | null;
-  // MMR
-  mmrEnabled: boolean;
   // Dev mode - allows blitz settlement during ongoing games.
   devModeOn: boolean;
   // Blitz-only: whether the connected player already settled into the game.
@@ -60,10 +54,6 @@ export interface WorldConfigMeta {
   settledPlayersCount: number | null;
   settledRealmsCount: number | null;
   settledVillagesCount: number | null;
-  // Reward distribution contract for this world
-  prizeDistributionAddress: string | null;
-  // Current fee-token balance held by the reward distribution contract.
-  winnerJackpotAmount: bigint | null;
 }
 
 interface WorldRef {
@@ -105,20 +95,14 @@ const emptyWorldConfigMeta = (): WorldConfigMeta => ({
   registrationCountMax: null,
   singleRealmMode: false,
   twoPlayerMode: false,
-  entryTokenAddress: null,
-  feeTokenAddress: null,
-  feeAmount: 0n,
   registrationStartAt: null,
   registrationEndAt: null,
-  mmrEnabled: false,
   devModeOn: false,
   isPlayerRegistered: null,
   hasPlayerSettledRealm: null,
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
-  prizeDistributionAddress: null,
-  winnerJackpotAmount: null,
 });
 
 const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntry): void => {
@@ -133,7 +117,6 @@ const applyDirectoryGame = (meta: WorldConfigMeta, game: HeraldGameDirectoryEntr
   meta.registrationCountMax = game.registration?.max ?? null;
   meta.registrationStartAt = game.registration?.start_at ?? null;
   meta.registrationEndAt = game.clock.start_main_at;
-  meta.feeAmount = game.registration ? BigInt(game.registration.fee_amount) : 0n;
   meta.singleRealmMode = game.settlement?.single_realm_mode ?? false;
   meta.twoPlayerMode = game.settlement?.two_player_mode ?? false;
   meta.settlementLayerMax = game.settlement?.layer_max ?? null;
@@ -159,9 +142,6 @@ const fetchGameMeta = async (
   if (!game) return meta;
 
   applyDirectoryGame(meta, game);
-  meta.entryTokenAddress = directory.chain_config?.entry_token_address ?? null;
-  meta.feeTokenAddress = directory.chain_config?.fee_token_address ?? null;
-  meta.mmrEnabled = directory.chain_config?.mmr_enabled ?? false;
   if (playerAddress && meta.mode === "blitz") {
     meta.isPlayerRegistered = game.player_state?.registered ?? false;
   } else if (playerAddress && meta.mode === "eternum") {

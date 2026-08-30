@@ -25,7 +25,6 @@ import {
   resolveRunPrimaryAction,
   resolveRunProgressMetrics,
 } from "../presenters";
-import { canFundFactoryRunPrize } from "../prize-funding";
 import type {
   FactoryGameMode,
   FactoryLaunchChain,
@@ -37,7 +36,6 @@ import type {
   FactoryWatcherState,
 } from "../types";
 import { FactoryV2DeployerWalletCard } from "./factory-v2-deployer-wallet-card";
-import { FactoryV2PrizeFundingCard } from "./factory-v2-prize-funding-card";
 
 const FIRST_UPDATE_WAIT_MESSAGE = "This run just started. We are waiting for it to appear.";
 const AUTO_UPDATE_LABEL = "Updating automatically";
@@ -47,7 +45,6 @@ const WATCH_SEARCH_DESCRIPTION = "Type the exact game, series, or rotation name 
 const WATCH_EMPTY_DESCRIPTION = "Type a run name and press Enter to check its status.";
 const WATCH_TIMELINE_TITLE = "Setup progress";
 const WATCH_TIMELINE_DESCRIPTION = "See what is done, what is happening now, and what comes next.";
-const PRIZE_FUNDING_SUCCESS_COOLDOWN_MS = 30_000;
 
 type FactoryV2WatchWorkspaceProps = {
   mode: FactoryGameMode;
@@ -68,15 +65,9 @@ type FactoryV2WatchWorkspaceProps = {
   onNudge: () => void;
   onStopAutoRetry: () => void;
   onDeleteRun?: () => void;
-  adminSecret?: string;
   hasAdminSecret?: boolean;
   deployerChain?: FactoryLaunchChain;
   deployerEnvironmentLabel?: string;
-  onFundPrize: (request: {
-    amount: string;
-    adminSecret: string;
-    selectedGameNames: string[];
-  }) => Promise<boolean> | boolean;
 };
 
 type FactoryV2WatchWorkspaceState = {
@@ -120,25 +111,18 @@ export const FactoryV2WatchWorkspace = ({
   onNudge,
   onStopAutoRetry,
   onDeleteRun = () => {},
-  adminSecret = "",
   hasAdminSecret = false,
   deployerChain = "appchain",
   deployerEnvironmentLabel = "Appchain",
-  onFundPrize,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
   const [showAllSteps, setShowAllSteps] = useState(false);
-  const [showsPrizeFunding, setShowsPrizeFunding] = useState(false);
   const [watchGameName, setWatchGameName] = useState(selectedRun?.name ?? "");
   const [isFilteringRuns, setIsFilteringRuns] = useState(false);
 
   useEffect(() => {
     setShowAllSteps(selectedRun?.status === "attention");
   }, [selectedRun?.id, selectedRun?.status]);
-
-  useEffect(() => {
-    setShowsPrizeFunding(false);
-  }, [selectedRun?.id]);
 
   useEffect(() => {
     setWatchGameName(selectedRun?.name ?? activeRunName ?? "");
@@ -222,12 +206,8 @@ export const FactoryV2WatchWorkspace = ({
         pollingState={pollingState}
         notice={notice}
         showAllSteps={showAllSteps}
-        showsPrizeFunding={showsPrizeFunding}
-        adminSecret={adminSecret}
         deployerChain={deployerChain}
         deployerEnvironmentLabel={deployerEnvironmentLabel}
-        onFundPrize={onFundPrize}
-        onTogglePrizeFunding={() => setShowsPrizeFunding((current) => !current)}
         onToggleShowAllSteps={() => setShowAllSteps((open) => !open)}
       />
     </article>
@@ -379,12 +359,8 @@ const FactoryV2WatchWorkspaceContent = ({
   pollingState,
   notice,
   showAllSteps,
-  showsPrizeFunding,
-  adminSecret,
   deployerChain,
   deployerEnvironmentLabel,
-  onFundPrize,
-  onTogglePrizeFunding,
   onToggleShowAllSteps,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
@@ -394,16 +370,8 @@ const FactoryV2WatchWorkspaceContent = ({
   pollingState: FactoryPollingState;
   notice: string | null;
   showAllSteps: boolean;
-  showsPrizeFunding: boolean;
-  adminSecret: string;
   deployerChain: FactoryLaunchChain;
   deployerEnvironmentLabel: string;
-  onFundPrize: (request: {
-    amount: string;
-    adminSecret: string;
-    selectedGameNames: string[];
-  }) => Promise<boolean> | boolean;
-  onTogglePrizeFunding: () => void;
   onToggleShowAllSteps: () => void;
 }) => {
   if (selectedRun) {
@@ -427,12 +395,8 @@ const FactoryV2WatchWorkspaceContent = ({
         showAllSteps={showAllSteps}
         statusMeta={state.statusMeta}
         actionBarProps={state.actionBarProps}
-        showsPrizeFunding={showsPrizeFunding}
-        adminSecret={adminSecret}
         deployerChain={deployerChain}
         deployerEnvironmentLabel={deployerEnvironmentLabel}
-        onFundPrize={onFundPrize}
-        onTogglePrizeFunding={onTogglePrizeFunding}
         onToggleShowAllSteps={onToggleShowAllSteps}
       />
     );
@@ -473,12 +437,8 @@ const FactoryV2WatchRunCard = ({
   showAllSteps,
   statusMeta,
   actionBarProps,
-  showsPrizeFunding,
-  adminSecret,
   deployerChain,
   deployerEnvironmentLabel,
-  onFundPrize,
-  onTogglePrizeFunding,
   onToggleShowAllSteps,
 }: {
   appearance: ReturnType<typeof resolveFactoryModeAppearance>;
@@ -499,16 +459,8 @@ const FactoryV2WatchRunCard = ({
   showAllSteps: boolean;
   statusMeta: ReturnType<typeof getRunStatusMeta> | null;
   actionBarProps: FactoryV2WatchActionBarProps | null;
-  showsPrizeFunding: boolean;
-  adminSecret: string;
   deployerChain: FactoryLaunchChain;
   deployerEnvironmentLabel: string;
-  onFundPrize: (request: {
-    amount: string;
-    adminSecret: string;
-    selectedGameNames: string[];
-  }) => Promise<boolean> | boolean;
-  onTogglePrizeFunding: () => void;
   onToggleShowAllSteps: () => void;
 }) => (
   <FactoryV2WatchSurfaceCard
@@ -577,17 +529,6 @@ const FactoryV2WatchRunCard = ({
         </>
       ) : null}
 
-      {canFundFactoryRunPrize(selectedRun) ? (
-        <FactoryV2PrizeFundingSection
-          run={selectedRun}
-          isBusy={Boolean(actionBarProps?.isWatcherBusy)}
-          showsPrizeFunding={showsPrizeFunding}
-          adminSecret={adminSecret}
-          onSubmit={onFundPrize}
-          onTogglePrizeFunding={onTogglePrizeFunding}
-        />
-      ) : null}
-
       <FactoryV2DeployerWalletCard chain={deployerChain} environmentLabel={deployerEnvironmentLabel} />
 
       <div className="space-y-2.5">
@@ -642,108 +583,6 @@ const FactoryV2WatchRunCard = ({
     </div>
   </FactoryV2WatchSurfaceCard>
 );
-
-const FactoryV2PrizeFundingSection = ({
-  run,
-  isBusy,
-  showsPrizeFunding,
-  adminSecret,
-  onSubmit,
-  onTogglePrizeFunding,
-}: {
-  run: FactoryRun;
-  isBusy: boolean;
-  showsPrizeFunding: boolean;
-  adminSecret: string;
-  onSubmit: (request: {
-    amount: string;
-    adminSecret: string;
-    selectedGameNames: string[];
-  }) => Promise<boolean> | boolean;
-  onTogglePrizeFunding: () => void;
-}) => {
-  const [successfulSubmission, setSuccessfulSubmission] = useState<{
-    message: string;
-    cooldownEndsAt: number;
-  } | null>(null);
-  const [cooldownNow, setCooldownNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    setSuccessfulSubmission(null);
-    setCooldownNow(Date.now());
-  }, [run.id]);
-
-  useEffect(() => {
-    if (!successfulSubmission) {
-      return;
-    }
-
-    const syncCooldown = () => {
-      const now = Date.now();
-      setCooldownNow(now);
-
-      if (now >= successfulSubmission.cooldownEndsAt) {
-        setSuccessfulSubmission(null);
-      }
-    };
-
-    syncCooldown();
-
-    const intervalId = window.setInterval(syncCooldown, 1_000);
-    return () => window.clearInterval(intervalId);
-  }, [successfulSubmission]);
-
-  const cooldownSecondsRemaining = successfulSubmission
-    ? Math.max(0, Math.ceil((successfulSubmission.cooldownEndsAt - cooldownNow) / 1_000))
-    : 0;
-  const successMessage = cooldownSecondsRemaining > 0 ? (successfulSubmission?.message ?? null) : null;
-
-  const submitPrizeFunding = async (request: { amount: string; adminSecret: string; selectedGameNames: string[] }) => {
-    const submitted = await onSubmit(request);
-
-    if (!submitted) {
-      return;
-    }
-
-    setCooldownNow(Date.now());
-    setSuccessfulSubmission({
-      message: buildPrizeFundingSuccessMessage(run, request.selectedGameNames.length),
-      cooldownEndsAt: Date.now() + PRIZE_FUNDING_SUCCESS_COOLDOWN_MS,
-    });
-  };
-
-  return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        data-testid="factory-prize-toggle"
-        onClick={onTogglePrizeFunding}
-        className="inline-flex w-full items-center justify-center rounded-full border border-gold/15 bg-black/20 px-4 py-3 text-sm font-medium text-gold/68 transition-colors hover:bg-gold/10 hover:text-gold"
-      >
-        {showsPrizeFunding ? "Hide prize funding" : "Open prize funding"}
-      </button>
-      {showsPrizeFunding ? (
-        <FactoryV2PrizeFundingCard
-          run={run}
-          isBusy={isBusy}
-          adminSecret={adminSecret}
-          successMessage={successMessage}
-          cooldownSecondsRemaining={cooldownSecondsRemaining}
-          onSubmit={submitPrizeFunding}
-        />
-      ) : null}
-    </div>
-  );
-};
-
-function buildPrizeFundingSuccessMessage(run: FactoryRun, selectedGameCount: number) {
-  if (run.kind === "game") {
-    return `Prize funding sent for ${run.name}. Wait 30 seconds before sending again.`;
-  }
-
-  const fundedGamesLabel = selectedGameCount === 1 ? "1 game" : `${selectedGameCount} games`;
-  return `Prize funding sent for ${fundedGamesLabel}. Wait 30 seconds before sending again.`;
-}
 
 const FactoryV2CurrentStepCard = ({
   appearanceClassName,

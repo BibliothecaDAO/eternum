@@ -26,16 +26,11 @@ export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promis
       startMainAt: game.clock.start_main_at,
       endAt: game.clock.end_at,
       devModeOn: game.dev_mode_on,
-      mmrEnabled: directory.chain_config?.mmr_enabled ?? null,
       singleRealmMode: game.settlement?.single_realm_mode ?? null,
       twoPlayerMode: game.settlement?.two_player_mode ?? null,
       seasonPassAddress: null,
       villagePassAddress: null,
       worldAddress: world.worldAddress,
-      prizeDistributionAddress: null,
-      entryTokenAddress: directory.chain_config?.entry_token_address ?? null,
-      feeTokenAddress: directory.chain_config?.fee_token_address ?? null,
-      feeAmount: game.registration?.fee_amount ?? null,
       registrationCount: game.registration?.count ?? null,
       registrationCountMax: game.registration?.max ?? null,
       registrationStartAt: game.registration?.start_at ?? null,
@@ -43,6 +38,5 @@ export async function fetchAppchainWorldsSummary(world: WorldDeployment): Promis
       settledPlayersCount: game.player_count,
       settledRealmsCount: game.settled_realms_count,
       settledVillagesCount: game.settled_villages_count,
-      winnerJackpotAmount: null,
     }));
 }

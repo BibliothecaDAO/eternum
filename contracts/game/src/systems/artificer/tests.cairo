@@ -166,8 +166,6 @@ mod tests {
                     registration_grace_seconds: season.registration_grace_seconds,
                     final_trial_id: 0,
                     seed: 1,
-                    fees_collected: 0,
-                    fees_paid_out: 0,
                 },
             );
     }

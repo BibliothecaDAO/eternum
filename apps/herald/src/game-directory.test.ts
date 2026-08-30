@@ -23,7 +23,6 @@ const worldConfig = {
   map_center_offset: "0x10",
   blitz_mode_on: true,
   blitz_registration_config: {
-    fee_amount: "0x0",
     registration_count: "0x9",
     registration_count_max: "0x60",
     registration_start_at: "0x63",
@@ -56,16 +55,6 @@ const models = new Map<string, FoldRow[]>([
       row("0x6", { game_id: "0x3a", base: { category: "0x3" }, owner: "0xdef" }),
     ],
   ],
-  [
-    "ChainConfig",
-    [
-      row("0x7", {
-        entry_token_address: "0x0",
-        fee_token: "0x123",
-        mmr_config: { enabled: true },
-      }),
-    ],
-  ],
 ]);
 
 describe("Herald game directory", () => {
@@ -78,11 +67,6 @@ describe("Herald game directory", () => {
 
     expect(directory).toEqual({
       chain: "madara",
-      chain_config: {
-        entry_token_address: null,
-        fee_token_address: "0x123",
-        mmr_enabled: true,
-      },
       confirmed_block: 136_924,
       games: [
         expect.objectContaining({
@@ -97,7 +81,7 @@ describe("Herald game directory", () => {
           mode: "blitz",
           name: "human-gate-3",
           player_count: 2,
-          registration: { count: 9, fee_amount: "0x0", max: 96, start_at: 99 },
+          registration: { count: 9, max: 96, start_at: 99 },
           settled_realms_count: 2,
           settled_villages_count: 1,
           status: "Live",

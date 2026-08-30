@@ -13,7 +13,7 @@ const snapshot: HeraldGameSnapshot = {
       rows: [
         {
           key: "0x1",
-          value: { address: "0xa", prize_claimed: false, registered_points: "0x5f5e100" },
+          value: { address: "0xa", registered_points: "0x5f5e100" },
         },
       ],
     },

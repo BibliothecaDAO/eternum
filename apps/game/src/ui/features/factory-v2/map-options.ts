@@ -1,8 +1,3 @@
-import {
-  DEFAULT_TOKEN_PRECISION,
-  formatIntegerStringTokenAmount,
-  parseTokenAmountToIntegerString,
-} from "@/ui/utils/token-amount";
 import type {
   BlitzExplorationReward,
   Config,
@@ -52,12 +47,9 @@ export type FactoryMoreOptionFieldId =
   | "relicDiscoveryInterval"
   | "relicHexDistance"
   | "relicsPerChest"
-  | "maxPlayers"
-  | "prizeToken"
-  | "prizeAmount"
-  | "prizePrecision";
+  | "maxPlayers";
 
-type FactoryMoreOptionSectionId = "discovery" | "hyperstructure" | "relic" | "players" | "prize" | "explorationRewards";
+type FactoryMoreOptionSectionId = "discovery" | "hyperstructure" | "relic" | "players" | "explorationRewards";
 type FactoryMoreOptionPlacement = "advanced" | "blitz-setup";
 type FactoryMoreOptionsVisibility = {
   twoPlayerMode?: boolean;
@@ -172,10 +164,6 @@ const PERCENTAGE_PAIR_SUM_U16 = 65_535;
 const PERCENTAGE_PAIR_SUM_HYPERSTRUCTURE = 100_000;
 const RELIC_DISCOVERY_INTERVAL_SECONDS_PER_MINUTE = 60;
 const BLITZ_MAX_PLAYERS_MIN = 1;
-const BLITZ_PRIZE_DEFAULT_AMOUNT_LABEL = "Entry cost";
-const BLITZ_PRIZE_DEFAULT_TOKEN_LABEL = "Entry ticket payment token address";
-const BLITZ_PRIZE_DEFAULT_PRECISION_LABEL = "Token decimals";
-const STARKNET_ADDRESS_PATTERN = /^0x[0-9a-fA-F]+$/;
 const EMPTY_MORE_OPTIONS_DRAFT: FactoryMoreOptionsDraft = {
   shards: "",
   camp: "",
@@ -189,9 +177,6 @@ const EMPTY_MORE_OPTIONS_DRAFT: FactoryMoreOptionsDraft = {
   relicHexDistance: "",
   relicsPerChest: "",
   maxPlayers: "",
-  prizeToken: "",
-  prizeAmount: "",
-  prizePrecision: "",
 };
 const SECTION_METADATA: Record<
   FactoryMoreOptionSectionId,
@@ -215,10 +200,6 @@ const SECTION_METADATA: Record<
   players: {
     title: "Players",
     description: "Blitz registration cap",
-  },
-  prize: {
-    title: "Entry Ticket",
-    description: "Token and amount",
   },
   explorationRewards: {
     title: "Exploration rewards",
@@ -414,9 +395,6 @@ const buildEmptyErrors = (): FactoryMoreOptionsErrors => ({
   relicHexDistance: null,
   relicsPerChest: null,
   maxPlayers: null,
-  prizeToken: null,
-  prizeAmount: null,
-  prizePrecision: null,
 });
 
 const resolveFieldLabel = (definition: FactoryMoreOptionDefinition, mode: FactoryGameMode) =>
@@ -456,12 +434,6 @@ const resolveFieldHelperText = (definition: FactoryMoreOptionDefinition, mode: F
       return "How many relics each chest contains.";
     case "maxPlayers":
       return "Caps how many players can register for this Blitz launch.";
-    case "prizeToken":
-      return "Token address used for Blitz prize fees.";
-    case "prizeAmount":
-      return "Human-readable amount, like 500 or 0.00004.";
-    case "prizePrecision":
-      return "Decimals used to convert the displayed amount into the raw onchain value.";
   }
 };
 
@@ -510,151 +482,6 @@ function buildBlitzExplorationRewardRows(
     amountLabel: `${reward.amount.toLocaleString()}`,
     probabilityLabel: formatProbabilityFromBps(reward.probabilityBps),
   }));
-}
-
-function buildBlitzPrizeFields(): FactoryMoreOptionField[] {
-  return [
-    {
-      id: "prizeToken",
-      label: BLITZ_PRIZE_DEFAULT_TOKEN_LABEL,
-      helperText: "Token address used for Blitz prize fees.",
-      inputMode: "text",
-      inputType: "text",
-      placeholder: "0x...",
-    },
-    {
-      id: "prizeAmount",
-      label: BLITZ_PRIZE_DEFAULT_AMOUNT_LABEL,
-      helperText: "Human-readable amount, like 500 or 0.00004.",
-      inputMode: "decimal",
-      inputType: "text",
-      placeholder: "500",
-    },
-    {
-      id: "prizePrecision",
-      label: BLITZ_PRIZE_DEFAULT_PRECISION_LABEL,
-      helperText: "Defaults to 18 unless you change the token address.",
-      inputMode: "numeric",
-      inputType: "number",
-      min: 0,
-      max: 255,
-      step: "1",
-      unitLabel: "dec",
-      placeholder: "18",
-    },
-  ];
-}
-
-function createBlitzPrizeDraft(blitzRegistrationConfig: BlitzRegistrationConfig): Partial<FactoryMoreOptionsDraft> {
-  return {
-    prizeToken: String(blitzRegistrationConfig.fee_token ?? ""),
-    prizeAmount: formatIntegerStringTokenAmount(blitzRegistrationConfig.fee_amount, DEFAULT_TOKEN_PRECISION),
-    prizePrecision: "",
-  };
-}
-
-function normalizeStarknetAddress(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function normalizeIntegerString(value: unknown): string {
-  const digits = String(value ?? "").trim();
-
-  if (!/^\d+$/.test(digits)) {
-    return "";
-  }
-
-  return digits.replace(/^0+(?=\d)/, "") || "0";
-}
-
-function resolvePrizePrecisionValue(
-  draftPrecision: string,
-  requiresExplicitPrecision: boolean,
-): { precision: number | null; error: string | null } {
-  const trimmedPrecision = draftPrecision.trim();
-
-  if (!trimmedPrecision) {
-    return requiresExplicitPrecision
-      ? { precision: null, error: "Token decimals are required when the prize token address changes." }
-      : { precision: DEFAULT_TOKEN_PRECISION, error: null };
-  }
-
-  if (!/^\d+$/.test(trimmedPrecision)) {
-    return { precision: null, error: "Token decimals must be a whole number between 0 and 255." };
-  }
-
-  const precision = Number(trimmedPrecision);
-
-  if (!Number.isInteger(precision) || precision < 0 || precision > 255) {
-    return { precision: null, error: "Token decimals must be a whole number between 0 and 255." };
-  }
-
-  return { precision, error: null };
-}
-
-function validateBlitzPrizeOverrides(
-  draft: FactoryMoreOptionsDraft,
-  blitzRegistrationConfig: BlitzRegistrationConfig,
-): {
-  errors: Pick<FactoryMoreOptionsErrors, "prizeToken" | "prizeAmount" | "prizePrecision">;
-  overrides?: FactoryBlitzRegistrationOverrides;
-  firstError: string | null;
-} {
-  const errors: Pick<FactoryMoreOptionsErrors, "prizeToken" | "prizeAmount" | "prizePrecision"> = {
-    prizeToken: null,
-    prizeAmount: null,
-    prizePrecision: null,
-  };
-
-  const defaultToken = String(blitzRegistrationConfig.fee_token ?? "");
-  const normalizedDefaultToken = normalizeStarknetAddress(defaultToken);
-  const normalizedDraftToken = normalizeStarknetAddress(draft.prizeToken);
-  const tokenChanged = normalizedDraftToken !== normalizedDefaultToken;
-
-  if (!draft.prizeToken.trim()) {
-    errors.prizeToken = "Prize token address is required.";
-  } else if (!STARKNET_ADDRESS_PATTERN.test(draft.prizeToken.trim())) {
-    errors.prizeToken = 'Prize token address must be a valid "0x" address.';
-  }
-
-  const { precision, error: precisionError } = resolvePrizePrecisionValue(draft.prizePrecision, tokenChanged);
-  if (precisionError) {
-    errors.prizePrecision = precisionError;
-  }
-
-  let parsedAmount: string | null = null;
-
-  if (!draft.prizeAmount.trim()) {
-    errors.prizeAmount = "Entry amount is required.";
-  } else if (precision !== null) {
-    try {
-      parsedAmount = parseTokenAmountToIntegerString(draft.prizeAmount, precision, BLITZ_PRIZE_DEFAULT_AMOUNT_LABEL);
-    } catch (error) {
-      errors.prizeAmount = error instanceof Error ? error.message : "Entry amount is invalid.";
-    }
-  }
-
-  const firstError = errors.prizeToken ?? errors.prizePrecision ?? errors.prizeAmount;
-
-  if (firstError || parsedAmount === null) {
-    return { errors, firstError };
-  }
-
-  const defaultAmount = normalizeIntegerString(blitzRegistrationConfig.fee_amount);
-  const amountChanged = parsedAmount !== defaultAmount;
-
-  if (!tokenChanged && !amountChanged) {
-    return { errors, firstError: null };
-  }
-
-  return {
-    errors,
-    overrides: {
-      ...(tokenChanged ? { fee_token: draft.prizeToken.trim() } : {}),
-      fee_amount: parsedAmount,
-    },
-    firstError: null,
-  };
 }
 
 const resolveDecimals = (step: string) => {
@@ -780,22 +607,13 @@ export const createFactoryMoreOptionsDraft = (
 ): FactoryMoreOptionsDraft => {
   const { explorationConfig, blitzRegistrationConfig } = resolveMoreOptionsConfigContext(mode, chain, durationMinutes);
 
-  const numericDraft = FIELD_DEFINITIONS.reduce<FactoryMoreOptionsDraft>(
+  return FIELD_DEFINITIONS.reduce<FactoryMoreOptionsDraft>(
     (draft, definition) => ({
       ...draft,
       [definition.id]: resolveDefaultFieldValue(definition, explorationConfig, blitzRegistrationConfig),
     }),
     EMPTY_MORE_OPTIONS_DRAFT,
   );
-
-  if (mode !== "blitz") {
-    return numericDraft;
-  }
-
-  return {
-    ...numericDraft,
-    ...createBlitzPrizeDraft(blitzRegistrationConfig),
-  };
 };
 
 export const getFactoryMoreOptionSections = (
@@ -823,12 +641,6 @@ export const getFactoryMoreOptionSections = (
     sectionFields.push(nextField);
     sections.set(definition.section, sectionFields);
   });
-
-  // No entry-cost fields on the appchain: ChainConfig has no entry token, so a
-  // non-zero fee_amount would make every settle throw and brick the game.
-  if (mode === "blitz" && !visibility.twoPlayerMode && chain !== "appchain") {
-    sections.set("prize", buildBlitzPrizeFields());
-  }
 
   const advancedSections = Array.from(sections.entries()).map(([id, fields]) => ({
     id,
@@ -858,14 +670,6 @@ export const getFactoryMoreOptionField = (
   fieldId: FactoryMoreOptionFieldId,
   visibility: FactoryMoreOptionsVisibility = {},
 ): FactoryMoreOptionField | null => {
-  if (mode === "blitz" && !visibility.twoPlayerMode) {
-    const blitzPrizeField = buildBlitzPrizeFields().find((field) => field.id === fieldId);
-
-    if (blitzPrizeField) {
-      return blitzPrizeField;
-    }
-  }
-
   const definition = getFieldDefinitionsForPlacement(mode, visibility, "all").find(
     (candidate) => candidate.id === fieldId,
   );
@@ -924,19 +728,6 @@ export const validateFactoryMoreOptions = (
 
     buildRawOverrides(definition, parsedValue, mapConfigOverrides, blitzRegistrationOverrides);
   });
-
-  if (mode === "blitz" && !visibility.twoPlayerMode && chain !== "appchain") {
-    const blitzPrizeValidation = validateBlitzPrizeOverrides(draft, blitzRegistrationConfig);
-
-    errors.prizeToken = blitzPrizeValidation.errors.prizeToken;
-    errors.prizeAmount = blitzPrizeValidation.errors.prizeAmount;
-    errors.prizePrecision = blitzPrizeValidation.errors.prizePrecision;
-    firstError ??= blitzPrizeValidation.firstError;
-
-    if (blitzPrizeValidation.overrides) {
-      Object.assign(blitzRegistrationOverrides, blitzPrizeValidation.overrides);
-    }
-  }
 
   return {
     errors,

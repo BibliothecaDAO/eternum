@@ -672,14 +672,8 @@ export interface Config {
       rewards: BlitzExplorationReward[];
     };
     registration: {
-      fee_token: string;
-      fee_recipient: string;
-      fee_amount: bigint;
       registration_count_max: number;
       registration_delay_seconds: number;
-      entry_token_class_hash: string;
-      entry_token_ipfs_cid: string;
-
       collectible_cosmetics_max_items: number;
       collectible_cosmetics_address: string;
       collectible_timelock_address: string;
@@ -689,17 +683,6 @@ export interface Config {
   };
   factory: {
     address: string;
-  };
-  mmr?: {
-    enabled: boolean;
-    mmr_token_address: string;
-    distribution_mean: number;
-    spread_factor: number;
-    max_delta: number;
-    k_factor: number;
-    lobby_split_weight_scaled: number;
-    mean_regression_scaled: number;
-    min_players: number;
   };
   faith?: {
     enabled: boolean;
@@ -749,8 +732,6 @@ export type FactoryBiomeClimateOverrides = Partial<Config["biomeClimate"]>;
 
 export interface FactoryBlitzRegistrationOverrides {
   registration_count_max?: number;
-  fee_token?: string;
-  fee_amount?: string;
 }
 
 export interface RealmInfo {

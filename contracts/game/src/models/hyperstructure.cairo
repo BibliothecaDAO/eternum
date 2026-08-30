@@ -221,7 +221,6 @@ pub struct PlayerRegisteredPoints {
     #[key]
     pub address: ContractAddress,
     pub registered_points: u128,
-    pub prize_claimed: bool,
 }
 
 #[generate_trait]

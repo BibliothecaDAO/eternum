@@ -263,7 +263,6 @@ const LearnContent = ({
   onAutoSettleGame,
   onSpectate,
   onSeeScore,
-  onClaimRewards,
   onRegistrationComplete,
 }: {
   onPlayGame: (selection: WorldSelection) => void;
@@ -271,7 +270,6 @@ const LearnContent = ({
   onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
-  onClaimRewards: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
 }) => (
   <div className="flex flex-col gap-4">
@@ -326,7 +324,6 @@ const LearnContent = ({
         onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
         onSeeScore={onSeeScore}
-        onClaimRewards={onClaimRewards}
         onRegistrationComplete={onRegistrationComplete}
         devModeFilter={true}
         hideHeader
@@ -675,7 +672,6 @@ const PlayTabContent = ({
   onAutoSettleGame,
   onSpectate,
   onSeeScore,
-  onClaimRewards,
   onRegistrationComplete,
   onRefresh,
   isRefreshing = false,
@@ -688,7 +684,6 @@ const PlayTabContent = ({
   onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
-  onClaimRewards: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
@@ -761,7 +756,6 @@ const PlayTabContent = ({
               onAutoSettleGame={onAutoSettleGame}
               onSpectate={onSpectate}
               onSeeScore={onSeeScore}
-              onClaimRewards={onClaimRewards}
               onRegistrationComplete={onRegistrationComplete}
               modeFilter={resolvedMode}
               devModeFilter={false}
@@ -769,7 +763,6 @@ const PlayTabContent = ({
               hideHeader
               hideLegend
               layout="vertical"
-              sortClaimableRewardsFirst
               sortEndedNewestFirst
             />
           </div>
@@ -796,7 +789,6 @@ export const PlayView = ({
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
-  const [reviewInitialStep, setReviewInitialStep] = useState<"claim-rewards" | undefined>(undefined);
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -943,12 +935,6 @@ export const PlayView = ({
   );
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
-    setReviewInitialStep(undefined);
-    setReviewWorld(selection);
-  }, []);
-
-  const handleClaimRewards = useCallback((selection: WorldSelection) => {
-    setReviewInitialStep("claim-rewards");
     setReviewWorld(selection);
   }, []);
 
@@ -976,7 +962,6 @@ export const PlayView = ({
 
   const handleCloseReviewModal = useCallback(() => {
     dismissReviewForWorld(reviewWorld);
-    setReviewInitialStep(undefined);
     setReviewWorld(null);
   }, [dismissReviewForWorld, reviewWorld]);
 
@@ -994,7 +979,6 @@ export const PlayView = ({
             onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
-            onClaimRewards={handleClaimRewards}
             onRegistrationComplete={handleRegistrationComplete}
           />
         );
@@ -1013,7 +997,6 @@ export const PlayView = ({
             onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
-            onClaimRewards={handleClaimRewards}
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
@@ -1041,7 +1024,6 @@ export const PlayView = ({
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}
           nextGame={null}
-          initialStep={reviewInitialStep}
           showUpcomingGamesStep={true}
           onClose={handleCloseReviewModal}
           onRegistrationComplete={handleRegistrationComplete}

@@ -50,28 +50,18 @@ const model = (name: string, values: Array<Record<string, unknown>>) => ({
   rows: values.map((value, index) => ({ key: `0x${index + 1}`, value })),
 });
 
-const reviewSnapshot = (lootChestAddress: string, distributedChests = 0): HeraldGameSnapshot => ({
+const reviewSnapshot = (): HeraldGameSnapshot => ({
   confirmed_block: REVIEW_BLOCK,
   game_id: String(GAME_ID),
   models: [
-    model("GameRegistry", [{ start_main_at: 10, end_at: 90, registration_grace_seconds: 0, dev_mode_on: false }]),
+    model("GameRegistry", [
+      { start_main_at: 10, end_at: 90, registration_grace_seconds: 0, dev_mode_on: false, final_trial_id: TRIAL_ID },
+    ]),
     model("WorldConfig", [{ blitz_registration_config: { registration_count: 4 } }]),
-    model("ChainConfig", [
-      {
-        collectibles_lootchest_address: lootChestAddress,
-        mmr_config: { enabled: false, min_players: 6, mmr_token_address: "0x0" },
-      },
-    ]),
-    model("PlayersRankFinal", [{ trial_id: TRIAL_ID }]),
-    model("MMRGameMeta", [{ game_median: 0 }]),
     model("BlitzSettlement", [{ player: PLAYER }]),
-    model("PlayerRegisteredPoints", [{ address: PLAYER, registered_points: "0x77359400", prize_claimed: false }]),
-    model("GameChestReward", [{ allocated_chests: 2, distributed_chests: distributedChests }]),
-    model("SeasonPrize", [{ total_registered_points: "0xee6b2800" }]),
-    model("PlayerRank", [{ player: PLAYER, rank: 1, paid: false }]),
-    model("RankPrize", [
-      { rank: 1, total_players_same_rank_count: 1, total_prize_amount: "0x1bc16d674ec80000", grant_elite_nft: false },
-    ]),
+    model("PlayerRegisteredPoints", [{ address: PLAYER, registered_points: "0x77359400" }]),
+    model("PlayerRank", [{ player: PLAYER, rank: 1, chests: 2 }]),
+    model("RankPrize", [{ rank: 1, total_players_same_rank_count: 1, grant_elite_nft: false }]),
     model("PlayersRankTrial", [{ nonce: TRIAL_ID, total_player_count_committed: 4 }]),
     model("AddressName", []),
     model("Structure", []),
@@ -82,7 +72,7 @@ const reviewSnapshot = (lootChestAddress: string, distributedChests = 0): Herald
 describe("game review Herald read model", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    herald.fetchReviewSnapshot.mockResolvedValue(reviewSnapshot("0x123"));
+    herald.fetchReviewSnapshot.mockResolvedValue(reviewSnapshot());
     herald.fetchHistory.mockResolvedValue({
       complete_through_block: REVIEW_BLOCK,
       items: [],
@@ -93,41 +83,15 @@ describe("game review Herald read model", () => {
     herald.fetchTransactionCount.mockResolvedValue({ count: 42, game_id: String(GAME_ID) });
   });
 
-  it("builds finalized rewards and transaction stats without a SQL reader", async () => {
+  it("builds the exact L3 result and transaction stats without a SQL reader", async () => {
     const { fetchGameReviewData } = await import("./game-review-service");
 
     const review = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
 
     expect(review.stats.totalTransactions).toBe(42);
-    expect(review.rewards?.lordsWonRaw).toBe(2_000_000_000_000_000_000n);
-    expect(review.rewards?.lordsWonFormatted).toBe("2");
+    expect(review.rewards?.isRanked).toBe(true);
+    expect(review.rewards?.chests).toBe(2);
     expect(herald.fetchReviewSnapshot).toHaveBeenCalledOnce();
-  });
-
-  it("does not estimate chests when the game disables the collectible", async () => {
-    herald.fetchReviewSnapshot.mockResolvedValue(reviewSnapshot("0x0"));
-    const { fetchGameReviewClaimSummary } = await import("./game-review-service");
-
-    const summary = await fetchGameReviewClaimSummary({
-      worldName: "adam-14",
-      chain: "appchain",
-      playerAddress: PLAYER,
-    });
-
-    expect(summary.chestsClaimedEstimate).toBe(0);
-  });
-
-  it("caps the chest estimate by the remaining frozen pool", async () => {
-    herald.fetchReviewSnapshot.mockResolvedValue(reviewSnapshot("0x123", 2));
-    const { fetchGameReviewClaimSummary } = await import("./game-review-service");
-
-    const summary = await fetchGameReviewClaimSummary({
-      worldName: "adam-14",
-      chain: "appchain",
-      playerAddress: PLAYER,
-    });
-
-    expect(summary.chestsClaimedEstimate).toBe(1);
   });
 
   it("refuses a review until history covers the frozen snapshot block", async () => {

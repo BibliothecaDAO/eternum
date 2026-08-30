@@ -178,10 +178,6 @@ function validateBlitzRegistrationOverrideEntry(key: string, value: unknown): vo
     case "registration_count_max":
       validateBlitzRegistrationCountOverride(value);
       return;
-    case "fee_token":
-    case "fee_amount":
-      validateBlitzRegistrationStringOverride(key, value);
-      return;
     default:
       throw new Error(`Unsupported blitz registration overrides entry "${key}"`);
   }
@@ -190,12 +186,6 @@ function validateBlitzRegistrationOverrideEntry(key: string, value: unknown): vo
 function validateBlitzRegistrationCountOverride(value: unknown): void {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error('blitz registration overrides entry "registration_count_max" must be a finite number');
-  }
-}
-
-function validateBlitzRegistrationStringOverride(key: string, value: unknown): void {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`blitz registration overrides entry "${key}" must be a non-empty string`);
   }
 }
 

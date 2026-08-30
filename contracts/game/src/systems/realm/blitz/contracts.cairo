@@ -2,15 +2,7 @@ use crate::alias::ID;
 
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
-    fn obtain_entry_token(ref self: T, game_id: u32);
-    fn settle(
-        ref self: T,
-        game_id: u32,
-        name: felt252,
-        entry_token_id: Option<u128>,
-        cosmetic_token_ids: Span<u128>,
-        grant_starting_troops: bool,
-    );
+    fn settle(ref self: T, game_id: u32, name: felt252, cosmetic_token_ids: Span<u128>, grant_starting_troops: bool);
     fn provision_realm(ref self: T, game_id: u32, structure_id: ID);
 }
 
@@ -24,26 +16,24 @@ pub mod blitz_realm_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, blitz_produceable_resources, blitz_target_open_settlement_count};
     use crate::models::config::{
-        BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzExplorationConfig, BlitzHypersSettlementConfig,
+        BlitzCosmeticAttrsRegister, BlitzExplorationConfig, BlitzHypersSettlementConfig,
         BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlement,
         BlitzSettlementConfig, BlitzSettlementConfigImpl, BlitzSettlementPosition, RealmCountConfig, SeasonConfigImpl,
         WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use crate::models::game::GameRegistryImpl;
+    use crate::models::ledger::LedgerRegistrationImpl;
     use crate::models::name::AddressName;
     use crate::models::owner::OwnerAddressImpl;
     use crate::models::position::{Coord, CoordImpl};
     use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
-    use crate::systems::prize_distribution::contracts::prize_distribution_systems;
     use crate::systems::realm::utils::contracts::{
-        IERC20Dispatcher, IERC20DispatcherTrait, IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
+        IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::collectibles::iCollectiblesImpl;
-    use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -61,40 +51,10 @@ pub mod blitz_realm_systems {
 
     #[abi(embed_v0)]
     impl BlitzRealmSystemsImpl of super::IBlitzRealmSystems<ContractState> {
-        fn obtain_entry_token(ref self: ContractState, game_id: u32) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let blitz_registration_config = BlitzRegistrationConfigImpl::get(world, game_id);
-            if blitz_registration_config.fee_amount.is_zero() {
-                return;
-            }
-
-            let season_config = SeasonConfigImpl::get(world, game_id);
-            let now = starknet::get_block_timestamp();
-            assert!(
-                season_config.dev_mode_on || now >= blitz_registration_config.registration_start_at.into(),
-                "Eternum: Registration has not started",
-            );
-            assert!(
-                season_config.dev_mode_on || now < season_config.start_main_at, "Eternum: Registration time is over",
-            );
-            assert!(!blitz_registration_config.is_issuance_full(), "Eternum: All entry tokens have been issued");
-
-            let caller: ContractAddress = starknet::get_caller_address();
-            let existing_settlement: BlitzSettlement = world.read_model((game_id, caller));
-            assert!(existing_settlement.structure_ids.len() == 0, "Eternum: Player is already settled");
-
-            ////////////////////////////////////////////////
-            // Mint Entry Token
-            ////////////////////////////////////////////////
-
-            BlitzEntryTokenInternalImpl::mint_entry_token(ref world, game_id, caller, blitz_registration_config);
-        }
-
         fn settle(
             ref self: ContractState,
             game_id: u32,
             name: felt252,
-            entry_token_id: Option<u128>,
             cosmetic_token_ids: Span<u128>,
             grant_starting_troops: bool,
         ) {
@@ -129,6 +89,9 @@ pub mod blitz_realm_systems {
 
             let existing_settlement: BlitzSettlement = world.read_model((game_id, caller));
             assert!(existing_settlement.structure_ids.len() == 0, "Eternum: Player is already settled");
+            if !season_config.dev_mode_on {
+                LedgerRegistrationImpl::for_account(world, game_id, caller);
+            }
 
             ////////////////////////////////////////////////
             // Validate Hyperstructure Reservations
@@ -136,14 +99,6 @@ pub mod blitz_realm_systems {
 
             BlitzHyperstructureReservationGuardInternalImpl::assert_reservations_complete(
                 world, game_id, blitz_registration_config, blitz_settlement_config,
-            );
-
-            ////////////////////////////////////////////////
-            // Prepare Entry Token
-            ////////////////////////////////////////////////
-
-            BlitzEntryTokenInternalImpl::resolve_and_consume_entry_token(
-                ref world, game_id, caller, blitz_registration_config, entry_token_id,
             );
 
             ////////////////////////////////////////////////
@@ -272,91 +227,6 @@ pub mod blitz_realm_systems {
                 !reservation_cursor.is_valid_ring(blitz_settlement_config.two_player_mode),
                 "Eternum: Reserve all hyperstructure tiles before settling realms",
             );
-        }
-    }
-
-    ////////////////////////////////////////////////
-    // Entry Token Helpers
-    ////////////////////////////////////////////////
-
-    #[generate_trait]
-    impl BlitzEntryTokenInternalImpl of BlitzEntryTokenInternalTrait {
-        fn mint_entry_token(
-            ref world: WorldStorage,
-            game_id: u32,
-            owner: ContractAddress,
-            mut blitz_registration_config: BlitzRegistrationConfig,
-        ) -> u128 {
-            assert!(!blitz_registration_config.is_issuance_full(), "Eternum: All entry tokens have been issued");
-            let fee_token_contract: IERC20Dispatcher = IERC20Dispatcher {
-                contract_address: blitz_registration_config.fee_token,
-            };
-            let prize_distribution_systems = prize_distribution_systems::get_dispatcher(@world);
-            assert!(
-                fee_token_contract
-                    .transfer_from(
-                        owner, prize_distribution_systems.contract_address, blitz_registration_config.fee_amount,
-                    ),
-                "Eternum: Fee transfer failed",
-            );
-            GameRegistryImpl::credit_fees(ref world, game_id, blitz_registration_config.fee_amount);
-
-            let entry_token_contract = ICollectibleDispatcher {
-                contract_address: blitz_registration_config.entry_token_address,
-            };
-            entry_token_contract.mint(owner, blitz_registration_config.entry_token_attrs_raw(game_id));
-
-            let owner_entry_token_balance: u128 = entry_token_contract.balance_of(owner).try_into().unwrap();
-            assert!(owner_entry_token_balance.is_non_zero(), "Eternum: Failed to mint entry token");
-
-            let token_id = entry_token_contract
-                .token_of_owner_by_index(owner, (owner_entry_token_balance - 1).into())
-                .try_into()
-                .unwrap();
-            world.write_model(@BlitzEntryTokenRegister { game_id, token_id, issued: true, registered: false });
-            blitz_registration_config.issued_count += 1;
-            WorldConfigUtilImpl::set_member(
-                ref world, game_id, selector!("blitz_registration_config"), blitz_registration_config.game_config(),
-            );
-            token_id
-        }
-
-        fn resolve_and_consume_entry_token(
-            ref world: WorldStorage,
-            game_id: u32,
-            owner: ContractAddress,
-            blitz_registration_config: BlitzRegistrationConfig,
-            entry_token_id: Option<u128>,
-        ) {
-            if blitz_registration_config.fee_amount.is_zero() {
-                return;
-            }
-
-            let token_id = match entry_token_id {
-                Option::Some(token_id) => token_id,
-                Option::None => Self::mint_entry_token(ref world, game_id, owner, blitz_registration_config),
-            };
-
-            let entry_token_contract = ICollectibleDispatcher {
-                contract_address: blitz_registration_config.entry_token_address,
-            };
-            assert!(
-                entry_token_contract.owner_of(token_id.into()) == owner, "Eternum: Entry token is not owned by caller",
-            );
-
-            let entry_token_settlement: BlitzEntryTokenRegister = world.read_model((game_id, token_id));
-            assert!(entry_token_settlement.issued, "Eternum: Entry token belongs to another game");
-            assert!(!entry_token_settlement.registered, "Eternum: Entry token has already been used");
-
-            let expected_lock_id = blitz_registration_config.entry_token_lock_id();
-            let (lock_id, _) = entry_token_contract.token_lock_state(token_id.into());
-            if lock_id.is_zero() {
-                entry_token_contract.token_lock(token_id.into(), expected_lock_id);
-            } else {
-                assert!(lock_id == expected_lock_id, "Eternum: Entry token locked with wrong lock");
-            }
-
-            world.write_model(@BlitzEntryTokenRegister { game_id, token_id, issued: true, registered: true });
         }
     }
 

@@ -9,14 +9,13 @@ import { PLAYER_WORLD_REGISTRATION_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } fro
 import type { HeraldGameDirectory } from "@bibliothecadao/eternum/game-sync";
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { WorldSelectionInput } from "@/runtime/world";
-import { fetchGameReviewClaimSummary, type GameReviewClaimSummary } from "@/services/review/game-review-service";
 import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world-countdown";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
 import type { LandingNetworkChain } from "../../lib/landing-network-state";
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { GameChain as Chain } from "@realms-world/chain";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -45,49 +44,6 @@ const markGameRegistered = (
   };
 };
 
-const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
-  const trimmed = value.trim();
-  if (!trimmed) return "0";
-
-  const normalized = trimmed.replace(/,/g, "");
-  if (!/^-?\d+(\.\d+)?$/.test(normalized)) {
-    return trimmed;
-  }
-
-  const sign = normalized.startsWith("-") ? "-" : "";
-  const unsigned = sign ? normalized.slice(1) : normalized;
-
-  const [wholePart, decimalPart = ""] = unsigned.split(".");
-  const wholeFormatted = `${sign}${wholePart.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
-  if (decimalPart.length === 0) return wholeFormatted;
-
-  const limitedDecimals = decimalPart.slice(0, 2).replace(/0+$/, "");
-  return limitedDecimals.length > 0 ? `${wholeFormatted}.${limitedDecimals}` : wholeFormatted;
-};
-
-const formatClaimableRewardsText = (claimSummary: GameReviewClaimSummary): string => {
-  const lordsAmount = formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted);
-  if (claimSummary.chestsClaimedEstimate <= 0) {
-    return `Claimable: ${lordsAmount} LORDS`;
-  }
-
-  return `Claimable: ${lordsAmount} LORDS + ${claimSummary.chestsClaimedEstimate.toLocaleString()} chests`;
-};
-
-const getErrorMessage = (error: unknown): string | null => {
-  if (error instanceof Error && error.message) return error.message;
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
-  }
-
-  return null;
-};
-
 /**
  * Get stage label for world entry progress.
  */
@@ -104,21 +60,6 @@ const getStageLabel = (stage: EntryStage): string => {
     default:
       return "Settle";
   }
-};
-
-/**
- * Game type badge - Ranked (MMR enabled) or Sandbox
- */
-const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
-  if (mmrEnabled) {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-orange border border-orange/40 bg-orange/15 px-1 py-0.5 rounded">
-        <Trophy className="w-2.5 h-2.5" />
-        Ranked
-      </span>
-    );
-  }
-  return <span className="text-[8px] text-gold/50 border border-gold/20 bg-gold/5 px-1 py-0.5 rounded">Sandbox</span>;
 };
 
 /**
@@ -175,10 +116,8 @@ const buildGameResolutionSignature = (game: GameData): string => {
     game.registrationCount ?? "",
     registrationValue,
     config?.devModeOn ? "1" : "0",
-    config?.mmrEnabled ? "1" : "0",
     config?.registrationCountMax ?? "",
     config?.twoPlayerMode ? "1" : "0",
-    config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
 };
 
@@ -219,8 +158,6 @@ interface GameCardProps {
   onSettle?: () => void;
   onSpectate: () => void;
   onSeeScore?: () => void;
-  onClaimRewards?: () => void;
-  claimSummary?: GameReviewClaimSummary | null;
   onRegistrationComplete?: (game: GameData) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -235,8 +172,6 @@ const GameCard = ({
   onSettle,
   onSpectate,
   onSeeScore,
-  onClaimRewards,
-  claimSummary,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -311,7 +246,6 @@ const GameCard = ({
     unknown: "bg-gray-500/20 text-gray-500 border-gray-500/30",
   };
 
-  const canClaimRewards = isEnded && showRegistered && Boolean(claimSummary?.canClaimNow) && Boolean(onClaimRewards);
   const registrationCount = game.registrationCount ?? 0;
   const registrationCountMax = resolveEffectiveRegistrationCountMax(game.config);
   const registrationLabel =
@@ -352,7 +286,6 @@ const GameCard = ({
           </h3>
           <div className="flex items-center gap-1">
             {showChainBadge && <ChainBadge chain={game.chain} />}
-            {game.config && <GameTypeBadge mmrEnabled={game.config.mmrEnabled} />}
             <span
               className={cn(
                 "flex-shrink-0 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-full border",
@@ -394,12 +327,6 @@ const GameCard = ({
             className="text-xs text-white/70"
           />
         </div>
-
-        {canClaimRewards && claimSummary && (
-          <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
-            {formatClaimableRewardsText(claimSummary)}
-          </div>
-        )}
 
         {/* Action buttons - compact: [Play/Settle] [Spectate] layout */}
         <div className="flex gap-1.5">
@@ -502,19 +429,6 @@ const GameCard = ({
             </button>
           )}
 
-          {canClaimRewards && onClaimRewards && (
-            <button
-              onClick={onClaimRewards}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
-                "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
-              )}
-            >
-              <Trophy className="w-3 h-3" />
-              Claim Rewards
-            </button>
-          )}
-
           {/* Right slot: Spectate (always in same position) */}
           {canSpectate && (
             <button
@@ -547,7 +461,6 @@ interface UnifiedGameGridProps {
   onAutoSettleGame?: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
-  onClaimRewards?: (selection: WorldSelection) => void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by mode */
@@ -566,8 +479,6 @@ interface UnifiedGameGridProps {
   layout?: "horizontal" | "vertical";
   /** Sort games where user is registered first */
   sortRegisteredFirst?: boolean;
-  /** Sort ended games with claimable rewards first */
-  sortClaimableRewardsFirst?: boolean;
   /** Sort ended games by most recently ended first */
   sortEndedNewestFirst?: boolean;
   /** Filter by user registration status. "registered" keeps only games where
@@ -586,7 +497,6 @@ export const UnifiedGameGrid = ({
   onSelectGame,
   onSpectate,
   onSeeScore,
-  onClaimRewards,
   onRegistrationComplete,
   className,
   modeFilter,
@@ -597,7 +507,6 @@ export const UnifiedGameGrid = ({
   hideLegend = false,
   layout = "horizontal",
   sortRegisteredFirst = false,
-  sortClaimableRewardsFirst = false,
   sortEndedNewestFirst = false,
   registeredFilter,
   onGamesResolved,
@@ -728,66 +637,13 @@ export const UnifiedGameGrid = ({
     registeredFilter,
   ]);
 
-  const endedRegisteredGames = useMemo(
-    () => games.filter((game) => game.gameStatus === "ended" && game.isRegistered === true),
-    [games],
-  );
-
-  const claimSummaryQueries = useQueries({
-    queries:
-      !playerAddress || endedRegisteredGames.length === 0
-        ? []
-        : endedRegisteredGames.map((game) => ({
-            queryKey: ["gameReviewClaimSummary", game.chain, game.name, playerAddress],
-            queryFn: () =>
-              fetchGameReviewClaimSummary({
-                worldName: game.name,
-                chain: game.chain,
-                playerAddress,
-              }),
-            staleTime: 60_000,
-            gcTime: 10 * 60_000,
-            retry: 1,
-          })),
-  });
-
-  const claimSummaryByWorldKey = useMemo(() => {
-    const summaryByWorldKey = new Map<
-      string,
-      {
-        data: GameReviewClaimSummary | null;
-        isLoading: boolean;
-        error: string | null;
-      }
-    >();
-
-    endedRegisteredGames.forEach((game, index) => {
-      const queryState = claimSummaryQueries[index];
-      if (!queryState) return;
-
-      summaryByWorldKey.set(game.worldKey, {
-        data: queryState.data ?? null,
-        isLoading: queryState.isLoading,
-        error: getErrorMessage(queryState.error),
-      });
-    });
-
-    return summaryByWorldKey;
-  }, [claimSummaryQueries, endedRegisteredGames]);
-
   const resolvedGames = useMemo(() => {
-    if (!sortClaimableRewardsFirst && !sortEndedNewestFirst) return games;
+    if (!sortEndedNewestFirst) return games;
 
     return games.toSorted((a, b) => {
       const aIsEnded = a.gameStatus === "ended";
       const bIsEnded = b.gameStatus === "ended";
       if (!aIsEnded || !bIsEnded) return 0;
-
-      if (sortClaimableRewardsFirst) {
-        const aCanClaimNow = claimSummaryByWorldKey.get(a.worldKey)?.data?.canClaimNow === true;
-        const bCanClaimNow = claimSummaryByWorldKey.get(b.worldKey)?.data?.canClaimNow === true;
-        if (aCanClaimNow !== bCanClaimNow) return aCanClaimNow ? -1 : 1;
-      }
 
       if (sortRegisteredFirst) {
         const aRegistered = a.isRegistered ? 1 : 0;
@@ -807,7 +663,7 @@ export const UnifiedGameGrid = ({
 
       return 0;
     });
-  }, [claimSummaryByWorldKey, games, sortClaimableRewardsFirst, sortEndedNewestFirst, sortRegisteredFirst]);
+  }, [games, sortEndedNewestFirst, sortRegisteredFirst]);
 
   const handleRefresh = useCallback(async () => {
     await refetchSummary();
@@ -929,13 +785,44 @@ export const UnifiedGameGrid = ({
           <EmptyGameGridState showCreateGameCta={shouldShowCreateGameCta} />
         ) : layout === "vertical" ? (
           <div className="flex flex-col gap-3">
-            {resolvedGames.map((game) => {
-              const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
-              const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
-
-              return (
+            {resolvedGames.map((game) => (
+              <GameCard
+                key={game.worldKey}
+                game={game}
+                onPlay={() =>
+                  (onPlayGame ?? onSelectGame)({
+                    name: game.name,
+                    chain: game.chain,
+                    worldAddress: game.worldAddress ?? undefined,
+                  })
+                }
+                onSettle={() =>
+                  onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                }
+                onSpectate={() =>
+                  onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
+                }
+                onSeeScore={
+                  onSeeScore
+                    ? () =>
+                        onSeeScore({
+                          name: game.name,
+                          chain: game.chain,
+                          worldAddress: game.worldAddress ?? undefined,
+                        })
+                    : undefined
+                }
+                onRegistrationComplete={handleRegistrationComplete}
+                playerAddress={playerAddress}
+                showChainBadge={true}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-3 p-1">
+            {resolvedGames.map((game) => (
+              <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
                 <GameCard
-                  key={game.worldKey}
                   game={game}
                   onPlay={() =>
                     (onPlayGame ?? onSelectGame)({
@@ -960,75 +847,12 @@ export const UnifiedGameGrid = ({
                           })
                       : undefined
                   }
-                  onClaimRewards={
-                    canClaimFromCard
-                      ? () =>
-                          onClaimRewards?.({
-                            name: game.name,
-                            chain: game.chain,
-                            worldAddress: game.worldAddress ?? undefined,
-                          })
-                      : undefined
-                  }
-                  claimSummary={claimSummaryState?.data ?? null}
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}
                 />
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex gap-3 p-1">
-            {resolvedGames.map((game) => {
-              const claimSummaryState = claimSummaryByWorldKey.get(game.worldKey);
-              const canClaimFromCard = Boolean(claimSummaryState?.data?.canClaimNow && onClaimRewards);
-
-              return (
-                <div key={game.worldKey} className="flex-shrink-0 w-[380px]">
-                  <GameCard
-                    game={game}
-                    onPlay={() =>
-                      (onPlayGame ?? onSelectGame)({
-                        name: game.name,
-                        chain: game.chain,
-                        worldAddress: game.worldAddress ?? undefined,
-                      })
-                    }
-                    onSettle={() =>
-                      onSelectGame({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                    }
-                    onSpectate={() =>
-                      onSpectate({ name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined })
-                    }
-                    onSeeScore={
-                      onSeeScore
-                        ? () =>
-                            onSeeScore({
-                              name: game.name,
-                              chain: game.chain,
-                              worldAddress: game.worldAddress ?? undefined,
-                            })
-                        : undefined
-                    }
-                    onClaimRewards={
-                      canClaimFromCard
-                        ? () =>
-                            onClaimRewards?.({
-                              name: game.name,
-                              chain: game.chain,
-                              worldAddress: game.worldAddress ?? undefined,
-                            })
-                        : undefined
-                    }
-                    claimSummary={claimSummaryState?.data ?? null}
-                    onRegistrationComplete={handleRegistrationComplete}
-                    playerAddress={playerAddress}
-                    showChainBadge={true}
-                  />
-                </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>

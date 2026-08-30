@@ -20,16 +20,6 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
 use crate::systems::utils::map::IMapImpl;
 use crate::utils::map::biomes::{Biome, get_biome_from_world};
 
-#[starknet::interface]
-pub trait ISeasonPass<TState> {
-    fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
-    fn transfer_from(self: @TState, from: ContractAddress, to: ContractAddress, token_id: u256);
-    fn approve(self: @TState, to: ContractAddress, token_id: u256);
-    fn lords_balance(self: @TState, token_id: u256) -> u256;
-    fn detach_lords(self: @TState, token_id: u256, amount: u256);
-}
-
-
 #[generate_trait]
 pub impl iRealmImpl of iRealmTrait {
     fn create_realm_structure(
@@ -145,24 +135,6 @@ pub impl iRealmImpl of iRealmTrait {
             );
             IMapImpl::explore(ref world, ref neighbor_tile, biome);
         }
-    }
-
-    fn collect_season_pass(ref world: WorldStorage, season_pass_address: ContractAddress, realm_id: ID) {
-        let caller = starknet::get_caller_address();
-        let this = starknet::get_contract_address();
-        let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
-
-        // transfer season pass from caller to this
-        season_pass.transfer_from(caller, this, realm_id.into());
-    }
-
-
-    fn collect_season_pass_metadata(
-        season_pass_address: ContractAddress, realm_id: ID,
-    ) -> (felt252, u8, u8, u8, u8, u8, u8, Array<u8>) {
-        let season_pass = ISeasonPassDispatcher { contract_address: season_pass_address };
-        let (name_and_attrs, _urla, _urlb) = season_pass.get_encoded_metadata(realm_id.try_into().unwrap());
-        RealmNameAndAttrsDecodingImpl::decode(name_and_attrs)
     }
     // fn collect_lords_from_season_pass(season_pass_address: ContractAddress, realm_id: ID) -> u256 {
 //     // detach lords from season pass

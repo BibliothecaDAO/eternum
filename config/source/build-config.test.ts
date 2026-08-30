@@ -91,11 +91,7 @@ describe("buildConfig", () => {
     expect(appchainEternum.troop.stamina.staminaExploreWheatCost).toBe(0.03);
     expect(appchainEternum.troop.stamina.staminaExploreFishCost).toBe(0.03);
     expect(appchainEternum.hyperstructures.hyperstructureConstructionCost.length).toBeGreaterThan(0);
-    expect(appchainEternum.mmr).toBeUndefined();
-
-    expect(madaraBlitz.blitz.registration.fee_amount).toBe(0n);
     expect(madaraBlitz.blitz.registration.registration_count_max).toBe(96);
-    expect(madaraBlitz.blitz.registration.entry_token_class_hash).toBe("0x0");
     expect(madaraBlitz.blitz.registration.collectible_cosmetics_address).toBe("0x0");
     expect(madaraBlitz.blitz.registration.collectible_timelock_address).toBe("0x0");
     expect(madaraBlitz.blitz.registration.collectibles_lootchest_address).toBe("0x0");

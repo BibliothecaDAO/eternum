@@ -53,35 +53,6 @@ describe("buildBlitzSettleCalls", () => {
     });
   });
 
-  it("prepends fee approval when the world charges a registration token fee", () => {
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0xabc",
-      signerAddress: "0x456",
-      usernameFelt: "0x123",
-      entryTokenAddress: "0xentry",
-      feeTokenAddress: "0xfee",
-      feeAmount: 9n,
-    });
-
-    expect(calls).toHaveLength(4);
-    expect(calls[0]).toMatchObject({
-      contractAddress: "0xfee",
-      entrypoint: "approve",
-    });
-    expect(calls[1]).toMatchObject({
-      contractAddress: "0xentry",
-      entrypoint: "set_approval_for_all",
-    });
-    expect(calls[2]).toMatchObject({
-      contractAddress: "0xabc",
-      entrypoint: "settle",
-    });
-    expect(calls[3]).toMatchObject({
-      contractAddress: "0xentry",
-      entrypoint: "set_approval_for_all",
-    });
-  });
-
   it("serializes selected cosmetic token ids into the settle calldata", () => {
     const calls = buildBlitzSettleCalls({
       blitzSystemsAddress: "0xabc",
@@ -111,17 +82,5 @@ describe("buildBlitzSettleCalls", () => {
       entrypoint: "settle",
       calldata: ["291", "1", "0", "0"],
     });
-  });
-
-  it("fails fast when a fee-gated blitz world is missing its entry token collection", () => {
-    expect(() =>
-      buildBlitzSettleCalls({
-        blitzSystemsAddress: "0xabc",
-        signerAddress: "0x456",
-        usernameFelt: "0x123",
-        feeTokenAddress: "0xfee",
-        feeAmount: 9n,
-      }),
-    ).toThrow("Blitz worlds with entry fees must define an entry token collection");
   });
 });

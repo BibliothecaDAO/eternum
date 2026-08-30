@@ -255,15 +255,11 @@ describe("Factory V2 map options", () => {
       showsDuration: true,
       blitzRegistrationOverrides: {
         registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
       },
     });
 
     expect(request.blitzRegistrationOverrides).toEqual({
       registration_count_max: 12,
-      fee_token: "0x1234",
-      fee_amount: "40000",
     });
   });
 

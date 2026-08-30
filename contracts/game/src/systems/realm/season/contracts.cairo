@@ -29,10 +29,10 @@ pub mod realm_systems {
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{
-        RealmCountConfig, SeasonAddressesConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl,
-        WorldConfigUtilImpl,
+        RealmCountConfig, SeasonConfigImpl, SettlementConfig, SettlementConfigImpl, WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
+    use crate::models::ledger::LedgerRegistrationImpl;
     use crate::models::map::TileImpl;
     use crate::models::position::{Coord, CoordImpl};
     use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
@@ -46,7 +46,6 @@ pub mod realm_systems {
     use crate::systems::realm::utils::contracts::{
         IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
-    use crate::systems::utils::realm::iRealmImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use super::RealmSettlement;
@@ -110,21 +109,17 @@ pub mod realm_systems {
                 "Eternum: All spires must be created before creating new realms",
             );
 
-            // collect season pass
-            let season_addresses_config: SeasonAddressesConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("season_addresses_config"),
-            );
-
             let game = crate::models::game::GameRegistryImpl::get(world, game_id);
-            let (wonder, order, resources) = if game.dev_mode_on {
-                (0, 0, array![])
+            let (realm_id, wonder, order, resources) = if game.dev_mode_on {
+                (realm_id, 0, 0, array![])
             } else {
-                iRealmImpl::collect_season_pass(ref world, season_addresses_config.season_pass_address, realm_id);
+                let registration = LedgerRegistrationImpl::for_account(world, game_id, caller);
+                let (encoded_metadata, _, _) = registration.metadata;
                 let (_realm_name, _regions, _cities, _harbors, _rivers, wonder, order, resources) =
-                    iRealmImpl::collect_season_pass_metadata(
-                    season_addresses_config.season_pass_address, realm_id,
+                    RealmNameAndAttrsDecodingImpl::decode(
+                    encoded_metadata,
                 );
-                (wonder, order, resources)
+                (registration.realm_id.try_into().expect('realm id exceeds felt252'), wonder, order, resources)
             };
 
             // update realm count

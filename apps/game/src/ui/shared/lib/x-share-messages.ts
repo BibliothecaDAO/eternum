@@ -119,24 +119,13 @@ type GameReviewShareStep =
   | "map-fingerprint"
   | "leaderboard"
   | "submit-score"
-  | "claim-rewards"
+  | "result-outcome"
   | "next-game";
 
 const reviewNumberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
 const formatReviewValue = (value: number): string => {
   return reviewNumberFormatter.format(Math.max(0, Math.round(value)));
-};
-
-const formatLordsWonDisplay = (value: string): string => {
-  const trimmed = value.trim();
-  if (!trimmed) return "0";
-
-  const [whole, fractional] = trimmed.split(".");
-  if (!fractional) return whole;
-
-  const limitedFractional = fractional.slice(0, 2).replace(/0+$/, "");
-  return limitedFractional ? `${whole}.${limitedFractional}` : whole;
 };
 
 const isAwardsShareStep = (step: GameReviewShareStep): boolean => step === "awards";
@@ -257,20 +246,19 @@ export const buildGameReviewStepShareMessage = ({
     ].join("\n");
   }
 
-  if (step === "claim-rewards" && data.rewards) {
+  if (step === "result-outcome" && data.rewards) {
     const finalRank =
       typeof data.personalScore?.rank === "number" &&
       Number.isFinite(data.personalScore.rank) &&
       data.personalScore.rank > 0
         ? `#${Math.trunc(data.personalScore.rank)}`
         : "Unranked";
-    const lordsWon = formatLordsWonDisplay(data.rewards.lordsWonFormatted);
 
     return [
-      `${worldLabel} rewards recap on Realms Blitz:`,
+      `${worldLabel} result on Realms Blitz:`,
       `Final rank: ${finalRank}`,
-      `$LORDS won: +${lordsWon}`,
-      `Chests won: +${formatReviewValue(data.rewards.chestsClaimedEstimate)}`,
+      `Chest entitlement: +${formatReviewValue(data.rewards.chests)}`,
+      "Mainnet settlement follows the operator-posted result.",
       "",
       ...tweetFooterLines,
     ].join("\n");

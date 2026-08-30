@@ -65,9 +65,7 @@ describe("Herald RECS adapter", () => {
                   side: "0x0",
                 },
                 blitz_registration_config: {
-                  fee_amount: "0x0",
                   registration_count: "0x0",
-                  issued_count: "0x0",
                   registration_count_max: "0x60",
                   registration_start_at: "0x6a8ddeef",
                 },
@@ -107,7 +105,6 @@ describe("Herald RECS adapter", () => {
       game_id: 1,
       blitz_mode_on: true,
       blitz_registration_config: {
-        fee_amount: 0n,
         registration_count_max: 96,
       },
     });

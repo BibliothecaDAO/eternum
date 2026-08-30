@@ -60,8 +60,6 @@ describe("launch request helpers", () => {
         }),
         "blitz-registration-overrides-json": JSON.stringify({
           registration_count_max: 12,
-          fee_token: "0x1234",
-          fee_amount: "40000",
         }),
       }),
     ).toMatchObject({
@@ -84,8 +82,6 @@ describe("launch request helpers", () => {
       },
       blitzRegistrationOverrides: {
         registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
       },
     });
   });
@@ -269,87 +265,6 @@ games:
         { gameNamePrefix: "eu-gladiator", weekday: "sunday", utcTime: "19:00" },
       ],
     });
-    expect(
-      request.weeklyCadence?.map((entry) => ({
-        gameNamePrefix: entry.gameNamePrefix,
-        weekday: entry.weekday,
-        utcTime: entry.utcTime,
-        feeAmount: entry.blitzRegistrationOverrides?.fee_amount,
-      })),
-    ).toEqual([
-      {
-        gameNamePrefix: "na-gladiator",
-        weekday: "monday",
-        utcTime: "01:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "apac-gladiator",
-        weekday: "tuesday",
-        utcTime: "11:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "na-gladiator",
-        weekday: "wednesday",
-        utcTime: "02:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "eu-gladiator",
-        weekday: "wednesday",
-        utcTime: "19:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "apac-gladiator",
-        weekday: "thursday",
-        utcTime: "10:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "na-gladiator",
-        weekday: "friday",
-        utcTime: "01:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "eu-gladiator",
-        weekday: "friday",
-        utcTime: "18:00",
-        feeAmount: "500000000000000000000",
-      },
-      {
-        gameNamePrefix: "apac-gladiator",
-        weekday: "saturday",
-        utcTime: "12:00",
-        feeAmount: "1000000000000000000000",
-      },
-      {
-        gameNamePrefix: "eu-gladiator",
-        weekday: "saturday",
-        utcTime: "20:00",
-        feeAmount: "1000000000000000000000",
-      },
-      {
-        gameNamePrefix: "na-gladiator",
-        weekday: "sunday",
-        utcTime: "03:00",
-        feeAmount: "1000000000000000000000",
-      },
-      {
-        gameNamePrefix: "apac-gladiator",
-        weekday: "sunday",
-        utcTime: "11:00",
-        feeAmount: "1000000000000000000000",
-      },
-      {
-        gameNamePrefix: "eu-gladiator",
-        weekday: "sunday",
-        utcTime: "19:00",
-        feeAmount: "1000000000000000000000",
-      },
-    ]);
   });
 
   test("lets explicit CLI overrides win over YAML shared launch options", () => {

@@ -31,7 +31,6 @@ export interface LandingLeaderboardEntry {
   mmrTier?: string;
   registeredPoints?: number;
   unregisteredPoints?: number;
-  prizeClaimed: boolean;
   exploredTiles?: number;
   exploredTilePoints?: number;
   riftsTaken?: number;
@@ -136,7 +135,6 @@ export const buildLandingLeaderboard = (
           points: registeredPoints + livePoints,
           registeredPoints,
           unregisteredPoints: livePoints,
-          prizeClaimed: row.prize_claimed === true || row.prize_claimed === "0x1" || row.prize_claimed === 1n,
           exploredTiles: activity.exploration.count,
           exploredTilePoints: activity.exploration.points,
           riftsTaken: activity.otherStructureBanditsDefeat.count,

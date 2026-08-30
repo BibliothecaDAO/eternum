@@ -65,8 +65,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.REGISTER]: TransactionCostCategory.HIGH,
   [TransactionType.SEASON_CLOSE]: TransactionCostCategory.HIGH,
   [TransactionType.END_GAME]: TransactionCostCategory.HIGH,
-  [TransactionType.BLITZ_PRIZE_CLAIM]: TransactionCostCategory.HIGH,
-  [TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME]: TransactionCostCategory.HIGH,
 
   // ============================================
   // MEDIUM COST (5) - State Writes, Transfers
@@ -194,7 +192,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
 
   // Settlement
   [TransactionType.ASSIGN_REALM_POSITIONS]: TransactionCostCategory.LOW,
-  [TransactionType.OBTAIN_ENTRY_TOKEN]: TransactionCostCategory.LOW,
   [TransactionType.TOKEN_LOCK]: TransactionCostCategory.LOW,
 
   // Quests

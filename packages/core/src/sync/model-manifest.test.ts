@@ -18,6 +18,7 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
         "Resource",
         "ExplorerTroops",
         "GameChestReward",
+        "LedgerRegistration",
         "WonderFaith",
         "FaithfulStructure",
         "WonderFaithBlacklist",

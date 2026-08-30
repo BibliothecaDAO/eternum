@@ -45,10 +45,6 @@ describe("hyperstructure realm check radius", () => {
         reward_profile_id: 1,
       },
       blitz_registration_config: {
-        fee_amount: BigInt(0),
-        fee_token: BigInt(0),
-        fee_recipient: BigInt(0),
-        entry_token_address: BigInt(0),
         collectibles_cosmetics_max: BigInt(0),
         collectibles_cosmetics_address: BigInt(0),
         collectibles_timelock_address: BigInt(0),

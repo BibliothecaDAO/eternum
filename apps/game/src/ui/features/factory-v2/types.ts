@@ -117,20 +117,6 @@ export interface FactoryAutoRetryState {
   cancelReason: string | null;
 }
 
-export interface FactoryPrizeFundingTransfer {
-  id: string;
-  tokenAddress: string;
-  amountRaw: string;
-  amountDisplay: string;
-  decimals: number;
-  transactionHash: string;
-  fundedAt: string;
-}
-
-export interface FactoryPrizeFundingState {
-  transfers: FactoryPrizeFundingTransfer[];
-}
-
 export interface FactorySeriesGameDraft {
   id: string;
   gameName: string;
@@ -158,7 +144,6 @@ export interface FactorySeriesChildRun {
   steps: FactorySeriesChildStep[];
   launchReady?: boolean;
   worldAddress?: string;
-  prizeFunding?: FactoryPrizeFundingState;
 }
 
 export interface FactoryRotationEvaluationState {
@@ -202,7 +187,6 @@ export interface FactoryRun {
   gameId?: number;
   recovery?: FactoryRunRecovery;
   autoRetry?: FactoryAutoRetryState;
-  prizeFunding?: FactoryPrizeFundingState;
   evaluation?: FactoryRotationEvaluationState;
   rotation?: FactoryRotationRunState;
   children?: FactorySeriesChildRun[];

@@ -35,8 +35,6 @@ interface ResolvedConfigOverrides {
 
 interface ResolvedBlitzRegistrationOverrides {
   registration_count_max?: number;
-  fee_token?: string;
-  fee_amount?: bigint;
 }
 
 type ConfigWithFactoryAddress = EternumConfig & { factory_address?: string };
@@ -46,8 +44,6 @@ const U32_MAX = 4_294_967_295;
 const U8_MAX = 255;
 const HYPERSTRUCTURE_PAIR_SUM = 100_000;
 const BLITZ_MAX_PLAYERS_MIN = 1;
-const BLITZ_REGISTRATION_AMOUNT_PATTERN = /^\d+$/;
-const STARKNET_ADDRESS_PATTERN = /^0x[0-9a-fA-F]+$/;
 
 const MAP_CONFIG_OVERRIDE_LIMITS = {
   shardsMinesWinProbability: U16_MAX,
@@ -311,18 +307,6 @@ function validateRegistrationCountMaxOverride(value: number): void {
   }
 }
 
-function validateRegistrationFeeTokenOverride(value: string): void {
-  if (!value.trim() || !STARKNET_ADDRESS_PATTERN.test(value)) {
-    throw new Error('blitzRegistrationOverrides.fee_token must be a non-empty "0x" address');
-  }
-}
-
-function validateRegistrationFeeAmountOverride(value: string): void {
-  if (!BLITZ_REGISTRATION_AMOUNT_PATTERN.test(value)) {
-    throw new Error("blitzRegistrationOverrides.fee_amount must be a non-negative integer string");
-  }
-}
-
 function resolveRegistrationCountMaxOverride(
   value: FactoryBlitzRegistrationOverrides["registration_count_max"],
 ): number | undefined {
@@ -338,47 +322,13 @@ function resolveRegistrationCountMaxOverride(
   return value;
 }
 
-function resolveRegistrationFeeTokenOverride(
-  value: FactoryBlitzRegistrationOverrides["fee_token"],
-): string | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value !== "string") {
-    throw new Error("blitzRegistrationOverrides.fee_token must be a string");
-  }
-
-  validateRegistrationFeeTokenOverride(value);
-  return value;
-}
-
-function resolveRegistrationFeeAmountOverride(
-  value: FactoryBlitzRegistrationOverrides["fee_amount"],
-): bigint | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (typeof value !== "string") {
-    throw new Error("blitzRegistrationOverrides.fee_amount must be a string");
-  }
-
-  validateRegistrationFeeAmountOverride(value);
-  return BigInt(value);
-}
-
 function resolveBlitzRegistrationOverrides(
   overrides: FactoryBlitzRegistrationOverrides,
 ): ResolvedBlitzRegistrationOverrides {
   const registrationCountMax = resolveRegistrationCountMaxOverride(overrides.registration_count_max);
-  const feeToken = resolveRegistrationFeeTokenOverride(overrides.fee_token);
-  const feeAmount = resolveRegistrationFeeAmountOverride(overrides.fee_amount);
 
   return {
     ...(registrationCountMax !== undefined ? { registration_count_max: registrationCountMax } : {}),
-    ...(feeToken !== undefined ? { fee_token: feeToken } : {}),
-    ...(feeAmount !== undefined ? { fee_amount: feeAmount } : {}),
   };
 }
 

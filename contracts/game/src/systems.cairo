@@ -63,6 +63,11 @@ pub mod hyperstructure {
     #[cfg(test)]
     mod tests;
 }
+pub mod entry {
+    pub mod contracts;
+    #[cfg(test)]
+    mod tests;
+}
 pub mod production {
     pub mod contracts;
     #[cfg(test)]
@@ -122,8 +127,7 @@ pub mod utils {
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
-    pub mod mmr;
-    pub mod prize;
+    pub mod ranking;
     pub mod realm;
     pub mod relic;
     pub mod resource;
@@ -148,14 +152,6 @@ pub mod points {
 
 pub mod relic {
     pub mod contracts;
-}
-
-pub mod mmr {
-    pub mod contracts;
-    #[cfg(test)]
-    mod tests {
-        mod test_mmr_systems;
-    }
 }
 
 pub mod faith {

@@ -175,7 +175,6 @@ export enum TransactionType {
   // Realms & Settlement
   SETTLE_REALMS = "settle_realms",
   ASSIGN_REALM_POSITIONS = "assign_realm_positions",
-  OBTAIN_ENTRY_TOKEN = "obtain_entry_token",
   REGISTER = "register",
   TOKEN_LOCK = "token_lock",
   MAKE_SPIRES = "make_spires",
@@ -204,12 +203,7 @@ export enum TransactionType {
   END_GAME = "end_game",
 
   // Blitz
-  BLITZ_PRIZE_CLAIM = "blitz_prize_claim",
   BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
-  BLITZ_PRIZE_CLAIM_NO_GAME = "blitz_prize_claim_no_game",
-
-  // MMR
-  COMMIT_AND_CLAIM_MMR = "commit_and_claim_mmr",
 
   // Chests & Relics
   OPEN_CHEST = "open_chest",

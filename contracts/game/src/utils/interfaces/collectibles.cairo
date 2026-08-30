@@ -1,4 +1,3 @@
-// Note: dont include burn as that would affect the total supply check in `obtain_entry_token` function
 use starknet;
 
 #[starknet::interface]

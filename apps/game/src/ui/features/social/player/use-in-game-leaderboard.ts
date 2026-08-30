@@ -26,7 +26,7 @@ interface InGameLeaderboard {
 }
 
 interface FinalizedLeaderboardEntities {
-  finalEntities: Entity[];
+  gameEntities: Entity[];
   playerRankEntities: Entity[];
   registeredPointsEntities: Entity[];
 }
@@ -52,12 +52,10 @@ const buildFinalizedBlitzLeaderboard = (
   components: ClientComponents,
   entities: FinalizedLeaderboardEntities,
 ): InGameLeaderboard | null => {
-  // Multi-game store: another game's finalized trial or rank rows must never
-  // decide (or feed) THIS game's finalized leaderboard.
-  const finalTrial = entities.finalEntities
-    .map((entity) => getComponentValue(components.PlayersRankFinal, entity))
+  const finalizedGame = entities.gameEntities
+    .map((entity) => getComponentValue(components.GameRegistry, entity))
     .find((row) => belongsToActiveGame(row));
-  if (!finalTrial) return null;
+  if (!finalizedGame || BigInt(finalizedGame.final_trial_id) === 0n) return null;
 
   const registeredPointsLookup = buildRegisteredPointsLookup(
     entities.registeredPointsEntities
@@ -75,9 +73,7 @@ const buildFinalizedBlitzLeaderboard = (
       .map((row) => ({
         playerAddress: row.player as unknown as bigint,
         rank: row.rank as bigint | number,
-        trialId: ((row as { trial_id?: bigint }).trial_id ?? 0n) as bigint,
       })),
-    finalTrial.trial_id as bigint,
     registeredPointsLookup,
   );
   if (finalizedStandings.size === 0) return null;
@@ -104,7 +100,7 @@ export const useInGameLeaderboard = (): InGameLeaderboard => {
   } = useDojo();
   const isBlitz = useResolvedWorldGameMode() === "blitz";
   const leaderboardTick = useCoarseCurrentDefaultTick(LEADERBOARD_UPDATE_INTERVAL / 1_000);
-  const finalEntities = useEntityQuery([Has(components.PlayersRankFinal)]);
+  const gameEntities = useEntityQuery([Has(components.GameRegistry)]);
   const playerRankEntities = useEntityQuery([Has(components.PlayerRank)]);
   const registeredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);
   const hyperstructureEntities = useEntityQuery([Has(components.Hyperstructure)]);
@@ -118,7 +114,7 @@ export const useInGameLeaderboard = (): InGameLeaderboard => {
 
     if (isBlitz) {
       const finalizedLeaderboard = buildFinalizedBlitzLeaderboard(components, {
-        finalEntities,
+        gameEntities,
         playerRankEntities,
         registeredPointsEntities,
       });
@@ -128,7 +124,7 @@ export const useInGameLeaderboard = (): InGameLeaderboard => {
     return buildLiveLeaderboard(components);
   }, [
     components,
-    finalEntities,
+    gameEntities,
     hyperstructureEntities,
     isBlitz,
     leaderboardTick,

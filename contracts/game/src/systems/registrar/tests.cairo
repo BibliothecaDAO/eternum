@@ -1,18 +1,16 @@
 #[cfg(test)]
 mod two_games {
-    use core::num::traits::zero::Zero;
     use dojo::model::{ModelStorage, ModelStorageTest};
     use dojo_snf_test::{NamespaceDef, TestResource, spawn_test_world};
     use starknet::ContractAddress;
     use crate::constants::DEFAULT_NS_STR;
     use crate::models::agent::{AgentConfig, AgentCount};
-    use crate::models::config::{BlitzEntryTokenRegister, BlitzSettlement};
+    use crate::models::config::BlitzSettlement;
     use crate::models::game::{GameRegistry, GameRegistryImpl, GameStatus};
     use crate::models::guild::{GuildMember, GuildWhitelist};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
     use crate::models::map::{Tile, TileImpl};
     use crate::models::map2::TileOpt;
-    use crate::models::mmr::{MMRClaimed, MMRGameMeta};
     use crate::models::position::Coord;
     use crate::models::rank::PlayerRank;
     use crate::models::resource::resource::ResourceAllowance;
@@ -31,12 +29,11 @@ mod two_games {
             namespace: DEFAULT_NS_STR(),
             resources: [
                 TestResource::Model("GameRegistry"), TestResource::Model("TileOpt"), TestResource::Model("AgentCount"),
-                TestResource::Model("PlayerRank"), TestResource::Model("MMRGameMeta"),
-                TestResource::Model("MMRClaimed"), TestResource::Model("GuildMember"),
+                TestResource::Model("PlayerRank"), TestResource::Model("GuildMember"),
                 TestResource::Model("GuildWhitelist"), TestResource::Model("StructureOwnerStats"),
                 TestResource::Model("AgentConfig"), TestResource::Model("BlitzSettlement"),
-                TestResource::Model("BlitzEntryTokenRegister"), TestResource::Model("PlayerRegisteredPoints"),
-                TestResource::Model("ResourceAllowance"), TestResource::Model("GameChestReward"),
+                TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("ResourceAllowance"),
+                TestResource::Model("GameChestReward"),
             ]
                 .span(),
         }
@@ -67,8 +64,6 @@ mod two_games {
             registration_grace_seconds: 60,
             final_trial_id: 0,
             seed,
-            fees_collected: 100,
-            fees_paid_out: 0,
         }
     }
 
@@ -117,10 +112,6 @@ mod two_games {
         world.write_model_test(@BlitzSettlement { game_id: GAME_B, player, structure_ids: array![22].span() });
         world
             .write_model_test(
-                @BlitzEntryTokenRegister { game_id: GAME_A, token_id: 7, issued: true, registered: true },
-            );
-        world
-            .write_model_test(
                 @ResourceAllowance {
                     game_id: GAME_A, owner_entity_id: 1, approved_entity_id: 2, resource_type: 3, amount: 50,
                 },
@@ -131,25 +122,12 @@ mod two_games {
                     game_id: GAME_B, owner_entity_id: 1, approved_entity_id: 2, resource_type: 3, amount: 75,
                 },
             );
-        world
-            .write_model_test(
-                @PlayerRegisteredPoints {
-                    game_id: GAME_A, address: player, registered_points: 500, prize_claimed: true,
-                },
-            );
-        world
-            .write_model_test(
-                @PlayerRegisteredPoints {
-                    game_id: GAME_B, address: player, registered_points: 900, prize_claimed: false,
-                },
-            );
+        world.write_model_test(@PlayerRegisteredPoints { game_id: GAME_A, address: player, registered_points: 500 });
+        world.write_model_test(@PlayerRegisteredPoints { game_id: GAME_B, address: player, registered_points: 900 });
         world.write_model_test(@GameChestReward { game_id: GAME_A, allocated_chests: 5, distributed_chests: 2 });
         world.write_model_test(@GameChestReward { game_id: GAME_B, allocated_chests: 8, distributed_chests: 0 });
-        world.write_model_test(@PlayerRank { game_id: GAME_A, player, rank: 1, paid: true });
-        world.write_model_test(@PlayerRank { game_id: GAME_B, player, rank: 5, paid: false });
-        world.write_model_test(@MMRGameMeta { game_id: GAME_A, game_median: 900 });
-        world.write_model_test(@MMRGameMeta { game_id: GAME_B, game_median: 1200 });
-        world.write_model_test(@MMRClaimed { game_id: GAME_A, claimed_at: 500 });
+        world.write_model_test(@PlayerRank { game_id: GAME_A, player, rank: 1, chests: 2 });
+        world.write_model_test(@PlayerRank { game_id: GAME_B, player, rank: 5, chests: 0 });
         world.write_model_test(@GuildMember { game_id: GAME_A, member: player, guild_id: guild });
         world
             .write_model_test(@GuildWhitelist { game_id: GAME_B, guild_id: guild, address: player, whitelisted: true });
@@ -166,8 +144,6 @@ mod two_games {
         let agent_config_b: AgentConfig = world.read_model(GAME_B);
         let settlement_a: BlitzSettlement = world.read_model((GAME_A, player));
         let settlement_b: BlitzSettlement = world.read_model((GAME_B, player));
-        let entry_token_a: BlitzEntryTokenRegister = world.read_model((GAME_A, 7));
-        let entry_token_b: BlitzEntryTokenRegister = world.read_model((GAME_B, 7));
         let allowance_a: ResourceAllowance = world.read_model((GAME_A, 1, 2, 3));
         let allowance_b: ResourceAllowance = world.read_model((GAME_B, 1, 2, 3));
         let points_a: PlayerRegisteredPoints = world.read_model((GAME_A, player));
@@ -176,9 +152,6 @@ mod two_games {
         let chests_b: GameChestReward = world.read_model(GAME_B);
         let rank_a: PlayerRank = world.read_model((GAME_A, player));
         let rank_b: PlayerRank = world.read_model((GAME_B, player));
-        let mmr_a: MMRGameMeta = world.read_model(GAME_A);
-        let mmr_b: MMRGameMeta = world.read_model(GAME_B);
-        let claim_b: MMRClaimed = world.read_model(GAME_B);
         let stats_a: StructureOwnerStats = world.read_model((GAME_A, player));
         let stats_b: StructureOwnerStats = world.read_model((GAME_B, player));
 
@@ -189,15 +162,12 @@ mod two_games {
         assert!(agent_config_b.max_current_count == 8, "game B agent cap changed");
         assert!(*settlement_a.structure_ids.at(0) == 11, "game A settlement changed");
         assert!(*settlement_b.structure_ids.at(0) == 22, "game B settlement changed");
-        assert!(entry_token_a.registered && !entry_token_b.issued, "entry token binding crossed games");
         assert!(allowance_a.amount == 50 && allowance_b.amount == 75, "resource allowances crossed games");
-        assert!(points_a.registered_points == 500 && points_a.prize_claimed, "game A points changed");
-        assert!(points_b.registered_points == 900 && !points_b.prize_claimed, "game B points changed");
+        assert!(points_a.registered_points == 500, "game A points changed");
+        assert!(points_b.registered_points == 900, "game B points changed");
         assert!(chests_a.distributed_chests == 2 && chests_b.distributed_chests == 0, "chests crossed games");
-        assert!(rank_a.rank == 1 && rank_a.paid, "game A rank changed");
-        assert!(rank_b.rank == 5 && !rank_b.paid, "game B rank changed");
-        assert!(mmr_a.game_median == 900 && mmr_b.game_median == 1200, "MMR metadata crossed games");
-        assert!(claim_b.claimed_at.is_zero(), "game A MMR claim marked game B");
+        assert!(rank_a.rank == 1 && rank_a.chests == 2, "game A rank changed");
+        assert!(rank_b.rank == 5 && rank_b.chests == 0, "game B rank changed");
         assert!(stats_a.structures_num == 2 && stats_b.structures_num == 6, "owner stats crossed games");
         assert!(tile_a.to_seed(111) != tile_b.to_seed(111), "game-scoped VRF salts collided");
         assert!(
@@ -210,10 +180,6 @@ mod two_games {
         world.write_model_test(@ended_a);
         let live_b = GameRegistryImpl::get(world, GAME_B);
         assert!(live_b.status == GameStatus::Live, "ending game A ended game B");
-
-        GameRegistryImpl::debit_fees(ref world, GAME_A, 40);
-        assert!(GameRegistryImpl::available_fees(world, GAME_A) == 60, "game A escrow debit failed");
-        assert!(GameRegistryImpl::available_fees(world, GAME_B) == 100, "game A debited game B escrow");
     }
 
     #[test]
@@ -234,8 +200,8 @@ mod dispatcher_lifecycle {
         spawn_test_world,
     };
     use snforge_std::{
-        ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global, start_cheat_caller_address,
-        start_cheat_chain_id_global, stop_cheat_caller_address,
+        start_cheat_block_timestamp_global, start_cheat_caller_address, start_cheat_chain_id_global,
+        stop_cheat_caller_address,
     };
     use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes};
@@ -249,15 +215,9 @@ mod dispatcher_lifecycle {
         VillageTokenConfig, VillageTroopConfig, WeightConfig,
     };
     use crate::models::game::{GameRegistryImpl, GameStatus};
-    use crate::models::mmr::MMRConfigDefaultImpl;
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
     use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
-    use crate::systems::prize_distribution::contracts::prize_distribution_systems::SYSTEM_TRIAL_ID;
-    use crate::systems::prize_distribution::contracts::{
-        IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
-    };
     use crate::systems::realm::blitz::contracts::{IBlitzRealmSystemsDispatcher, IBlitzRealmSystemsDispatcherTrait};
-    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use crate::systems::registrar::contracts::{
         CreateGameParams, IRegistrarSystemsDispatcher, IRegistrarSystemsDispatcherTrait, PresetSideTables,
     };
@@ -272,7 +232,6 @@ mod dispatcher_lifecycle {
     const GAME_A: u32 = 1;
     const GAME_B: u32 = 2;
     const SERIES_ID: felt252 = 'series';
-    const FEE_AMOUNT: u256 = 100;
     const RESOURCE_LIST_ID: u32 = 77;
     const RESOURCE_AMOUNT: u128 = 25;
 
@@ -281,9 +240,7 @@ mod dispatcher_lifecycle {
         world: WorldStorage,
         registrar: IRegistrarSystemsDispatcher,
         blitz: IBlitzRealmSystemsDispatcher,
-        prize: IPrizeDistributionSystemsDispatcher,
         resources: IResourceSystemsDispatcher,
-        fee_token: IERC20Dispatcher,
         player: ContractAddress,
     }
 
@@ -297,18 +254,18 @@ mod dispatcher_lifecycle {
                 TestResource::Model("GameMapConfig"), TestResource::Model("GameRegistry"),
                 TestResource::Model("AgentConfig"), TestResource::Model("TileOpt"),
                 TestResource::Model("BlitzSettlementPosition"), TestResource::Model("BlitzSettlement"),
-                TestResource::Model("BlitzEntryTokenRegister"), TestResource::Model("BlitzCosmeticAttrsRegister"),
-                TestResource::Model("Structure"), TestResource::Model("StructureOwnerStats"),
-                TestResource::Model("Resource"), TestResource::Model("WeightConfig"),
-                TestResource::Model("ResourceMinMaxList"), TestResource::Model("ResourceAllowance"),
-                TestResource::Model("ResourceArrival"), TestResource::Model("Wonder"),
-                TestResource::Model("AddressName"), TestResource::Model("RNG"), TestResource::Model("PlayersRankTrial"),
-                TestResource::Model("PlayerRank"), TestResource::Model("RankPrize"), TestResource::Model("RankList"),
-                TestResource::Model("QuestLevels"), TestResource::Model("QuestGameRegistry"),
-                TestResource::Model("QuestFeatureFlag"), TestResource::Contract("registrar_systems"),
-                TestResource::Contract("hyperstructure_create_systems"), TestResource::Contract("blitz_realm_systems"),
-                TestResource::Contract("realm_systems"), TestResource::Contract("realm_internal_systems"),
-                TestResource::Contract("prize_distribution_systems"), TestResource::Contract("resource_systems"),
+                TestResource::Model("BlitzCosmeticAttrsRegister"), TestResource::Model("Structure"),
+                TestResource::Model("StructureOwnerStats"), TestResource::Model("Resource"),
+                TestResource::Model("WeightConfig"), TestResource::Model("ResourceMinMaxList"),
+                TestResource::Model("ResourceAllowance"), TestResource::Model("ResourceArrival"),
+                TestResource::Model("Wonder"), TestResource::Model("AddressName"), TestResource::Model("RNG"),
+                TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
+                TestResource::Model("RankPrize"), TestResource::Model("RankList"), TestResource::Model("QuestLevels"),
+                TestResource::Model("QuestGameRegistry"), TestResource::Model("QuestFeatureFlag"),
+                TestResource::Contract("registrar_systems"), TestResource::Contract("hyperstructure_create_systems"),
+                TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_systems"),
+                TestResource::Contract("realm_internal_systems"), TestResource::Contract("prize_distribution_systems"),
+                TestResource::Contract("resource_systems"),
                 TestResource::Library(("structure_creation_library", "0_1_18")),
                 TestResource::Library(("rng_library", "0_1_16")), TestResource::Event("GameCreated"),
                 TestResource::Event("BlitzSettlementEvent"), TestResource::Event("StoryEvent"),
@@ -336,17 +293,14 @@ mod dispatcher_lifecycle {
     fn setup_lifecycle() -> LifecycleContext {
         let player = get_default_caller_address();
         let world = spawn_lifecycle_world();
-        let (fee_token_address, entry_token) = deploy_lifecycle_tokens();
         let registrar = registrar_dispatcher(world);
         let blitz = blitz_dispatcher(world);
-        let prize = prize_dispatcher(world);
         let resources = resource_dispatcher(world);
 
-        let fee_token = IERC20Dispatcher { contract_address: fee_token_address };
-        register_lifecycle(registrar, player, fee_token_address, entry_token);
-        enter_lifecycle_games(blitz, fee_token, player);
+        register_lifecycle(registrar, player);
+        enter_lifecycle_games(blitz, player);
 
-        LifecycleContext { world, registrar, blitz, prize, resources, fee_token, player }
+        LifecycleContext { world, registrar, blitz, resources, player }
     }
 
     fn spawn_lifecycle_world() -> WorldStorage {
@@ -356,44 +310,23 @@ mod dispatcher_lifecycle {
         world
     }
 
-    fn deploy_lifecycle_tokens() -> (ContractAddress, ContractAddress) {
-        let fee_token_class = declare("MockERC20").unwrap().contract_class();
-        let (fee_token, _) = fee_token_class.deploy(@array![1_000_000, 0, 18]).unwrap();
-        let entry_token_class = declare("CollectibleMock").unwrap().contract_class();
-        let (entry_token, _) = entry_token_class.deploy(@array![]).unwrap();
-        (fee_token, entry_token)
-    }
-
-    fn register_lifecycle(
-        registrar: IRegistrarSystemsDispatcher,
-        player: ContractAddress,
-        fee_token: ContractAddress,
-        entry_token: ContractAddress,
-    ) {
-        registrar.bootstrap_chain_config(chain_config(player, fee_token, entry_token));
+    fn register_lifecycle(registrar: IRegistrarSystemsDispatcher, player: ContractAddress) {
+        registrar.bootstrap_chain_config(chain_config(player));
         registrar.register_preset(preset_config(), preset_game_config(), preset_side_tables());
         registrar.register_series(SERIES_ID, player, 2, 0, 10_000);
         registrar.create_game(create_game_params(1, 111));
         registrar.create_game(create_game_params(2, 222));
     }
 
-    fn enter_lifecycle_games(
-        blitz: IBlitzRealmSystemsDispatcher, fee_token: IERC20Dispatcher, player: ContractAddress,
-    ) {
-        start_cheat_caller_address(fee_token.contract_address, player);
-        assert!(fee_token.approve(blitz.contract_address, FEE_AMOUNT * 2), "entry fee approval failed");
-        stop_cheat_caller_address(fee_token.contract_address);
-
+    fn enter_lifecycle_games(blitz: IBlitzRealmSystemsDispatcher, player: ContractAddress) {
         start_cheat_caller_address(blitz.contract_address, player);
-        blitz.obtain_entry_token(GAME_A);
-        blitz.obtain_entry_token(GAME_B);
-        blitz.settle(GAME_A, 'player-a', Option::Some(1), [].span(), false);
-        blitz.settle(GAME_B, 'player-b', Option::Some(2), [].span(), false);
+        blitz.settle(GAME_A, 'player-a', [].span(), false);
+        blitz.settle(GAME_B, 'player-b', [].span(), false);
         stop_cheat_caller_address(blitz.contract_address);
     }
 
     #[test]
-    fn two_game_dispatchers_keep_registration_escrow_and_actions_isolated() {
+    fn two_game_dispatchers_keep_registration_and_actions_isolated() {
         let mut context = setup_lifecycle();
         let settlement_a: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
         let settlement_b: crate::models::config::BlitzSettlement = context.world.read_model((GAME_B, context.player));
@@ -415,8 +348,8 @@ mod dispatcher_lifecycle {
 
         let registration_a = BlitzRegistrationConfigImpl::get(context.world, GAME_A);
         let registration_b = BlitzRegistrationConfigImpl::get(context.world, GAME_B);
-        assert!(registration_a.registration_count == 1 && registration_a.issued_count == 1, "game A entry failed");
-        assert!(registration_b.registration_count == 1 && registration_b.issued_count == 1, "game B entry failed");
+        assert!(registration_a.registration_count == 1, "game A entry failed");
+        assert!(registration_b.registration_count == 1, "game B entry failed");
         assert!(owner_a != owner_b, "structure ids crossed games");
         assert!(ResourceImpl::read_balance(ref context.world, GAME_A, owner_a, ResourceTypes::WOOD) == 15);
 
@@ -428,30 +361,6 @@ mod dispatcher_lifecycle {
             .read_model((GAME_B, owner_b, recipient_b, ResourceTypes::WOOD));
         assert!(allowance_a.amount == 0, "game A pickup did not spend allowance");
         assert!(allowance_b.amount == 10, "game A pickup changed game B allowance");
-
-        start_cheat_caller_address(context.prize.contract_address, context.player);
-        context.prize.blitz_prize_claim_no_game(GAME_A, context.player);
-        stop_cheat_caller_address(context.prize.contract_address);
-
-        let game_a = GameRegistryImpl::get(context.world, GAME_A);
-        let game_b = GameRegistryImpl::get(context.world, GAME_B);
-        assert!(game_a.fees_collected == FEE_AMOUNT && game_a.fees_paid_out == FEE_AMOUNT, "game A escrow mismatch");
-        assert!(game_a.final_trial_id == SYSTEM_TRIAL_ID, "game A lone-player trial was not finalized");
-        assert!(game_b.fees_collected == FEE_AMOUNT && game_b.fees_paid_out == 0, "game A debited game B");
-
-        let token_a: crate::models::config::BlitzEntryTokenRegister = context.world.read_model((GAME_A, 1));
-        let token_b: crate::models::config::BlitzEntryTokenRegister = context.world.read_model((GAME_B, 2));
-        assert!(token_a.registered && token_b.registered, "game-scoped entry rows missing");
-    }
-
-    #[test]
-    #[should_panic(expected: "Eternum: rankings already finalized")]
-    fn lone_player_prize_cannot_be_claimed_twice() {
-        let context = setup_lifecycle();
-        start_cheat_caller_address(context.prize.contract_address, context.player);
-
-        context.prize.blitz_prize_claim_no_game(GAME_A, context.player);
-        context.prize.blitz_prize_claim_no_game(GAME_A, context.player);
     }
 
     #[test]
@@ -482,21 +391,6 @@ mod dispatcher_lifecycle {
     }
 
     #[test]
-    #[should_panic(expected: "Eternum: game escrow exhausted")]
-    fn escrow_over_debit_is_rejected() {
-        let mut context = setup_lifecycle();
-        GameRegistryImpl::debit_fees(ref context.world, GAME_A, FEE_AMOUNT + 1);
-    }
-
-    #[test]
-    #[should_panic(expected: "Eternum: All entry tokens have been issued")]
-    fn entry_token_issuance_cannot_exceed_game_capacity() {
-        let context = setup_lifecycle();
-        start_cheat_caller_address(context.blitz.contract_address, context.player);
-        context.blitz.obtain_entry_token(GAME_A);
-    }
-
-    #[test]
     fn chain_admin_can_reset_an_abandoned_unfinalized_trial() {
         let mut context = setup_lifecycle();
         seed_unfinalized_trial(ref context);
@@ -514,7 +408,7 @@ mod dispatcher_lifecycle {
     }
 
     #[test]
-    fn admin_settlement_ends_dev_game_and_sweeps_remaining_escrow() {
+    fn admin_settlement_ends_dev_game() {
         let context = setup_lifecycle();
         start_cheat_block_timestamp_global(311);
 
@@ -522,8 +416,6 @@ mod dispatcher_lifecycle {
 
         let game = GameRegistryImpl::get(context.world, GAME_B);
         assert!(game.status == GameStatus::Settled, "dev game was not settled");
-        assert!(game.fees_paid_out == game.fees_collected, "remaining escrow was not debited");
-        assert!(context.fee_token.balance_of(context.player) == 999_900, "remaining escrow was not transferred");
     }
 
     #[test]
@@ -563,7 +455,7 @@ mod dispatcher_lifecycle {
         let registrar = registrar_dispatcher(world);
         start_cheat_caller_address(registrar.contract_address, attacker);
 
-        registrar.bootstrap_chain_config(chain_config(attacker, Zero::zero(), Zero::zero()));
+        registrar.bootstrap_chain_config(chain_config(attacker));
     }
 
     fn seed_unfinalized_trial(ref context: LifecycleContext) {
@@ -579,21 +471,13 @@ mod dispatcher_lifecycle {
                     total_player_points: 10,
                     total_player_count_committed: 2,
                     total_player_count_revealed: 1,
-                    total_prize_amount: 100,
-                    total_prize_amount_calculated: 50,
                 },
             );
-        context.world.write_model_test(@PlayerRank { game_id: GAME_A, player: context.player, rank: 1, paid: false });
+        context.world.write_model_test(@PlayerRank { game_id: GAME_A, player: context.player, rank: 1, chests: 0 });
         context
             .world
             .write_model_test(
-                @RankPrize {
-                    game_id: GAME_A,
-                    rank: 1,
-                    total_players_same_rank_count: 1,
-                    total_prize_amount: 50,
-                    grant_elite_nft: false,
-                },
+                @RankPrize { game_id: GAME_A, rank: 1, total_players_same_rank_count: 1, grant_elite_nft: false },
             );
         context.world.write_model_test(@RankList { game_id: GAME_A, rank: 1, index: 0, player: context.player });
     }
@@ -608,26 +492,19 @@ mod dispatcher_lifecycle {
         IBlitzRealmSystemsDispatcher { contract_address: address }
     }
 
-    fn prize_dispatcher(world: WorldStorage) -> IPrizeDistributionSystemsDispatcher {
-        let (address, _) = world.dns(@"prize_distribution_systems").unwrap();
-        IPrizeDistributionSystemsDispatcher { contract_address: address }
-    }
-
     fn resource_dispatcher(world: WorldStorage) -> IResourceSystemsDispatcher {
         let (address, _) = world.dns(@"resource_systems").unwrap();
         IResourceSystemsDispatcher { contract_address: address }
     }
 
-    fn chain_config(admin: ContractAddress, fee_token: ContractAddress, entry_token: ContractAddress) -> ChainConfig {
+    fn chain_config(admin: ContractAddress) -> ChainConfig {
         ChainConfig {
             config_id: 0,
             admin_address: admin,
+            ledger_operator_address: admin,
+            player_registry_address: Zero::zero(),
             vrf_provider_address: Zero::zero(),
             agent_controller_config: AgentControllerConfig { address: Zero::zero() },
-            mmr_config: MMRConfigDefaultImpl::default(),
-            fee_token,
-            fee_recipient: admin,
-            entry_token_address: entry_token,
             collectibles_cosmetics_address: Zero::zero(),
             collectibles_timelock_address: Zero::zero(),
             collectibles_lootchest_address: Zero::zero(),
@@ -736,11 +613,7 @@ mod dispatcher_lifecycle {
                 two_player_mode: false,
             },
             blitz_registration_config: BlitzRegistrationGameConfig {
-                fee_amount: 0,
-                registration_count: 0,
-                issued_count: 0,
-                registration_count_max: 1,
-                registration_start_at: 10,
+                registration_count: 0, registration_count_max: 1, registration_start_at: 10,
             },
             agent_max_lifetime_count: 0,
             agent_max_current_count: 0,
@@ -803,7 +676,6 @@ mod dispatcher_lifecycle {
             two_player_mode: false,
             registration_count_max: 1,
             registration_start_at: 10,
-            fee_amount: FEE_AMOUNT,
             biome_climate_config: BiomeClimateConfig {
                 elevation_scale_bps: 10_000,
                 moisture_scale_bps: 10_000,

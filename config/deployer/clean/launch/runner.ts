@@ -218,9 +218,6 @@ async function ensureSponsoredLedgerPool(launch: PreparedLaunch, gameId: number)
 }
 
 function buildRegistrarGameParams(launch: PreparedLaunch) {
-  if (launch.request.blitzRegistrationOverrides?.fee_token) {
-    throw new Error("fee_token is chain-global and cannot be overridden for one game");
-  }
   return buildCreateGameParams(launch.config, {
     gameName: launch.request.gameName,
     presetId: launch.runtime.presetId,

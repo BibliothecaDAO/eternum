@@ -46,19 +46,6 @@ const setInputValue = (input: HTMLInputElement, value: string) => {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
-const openPrizeFundingSection = async (container: HTMLDivElement) => {
-  const toggleButton = container.querySelector('[data-testid="factory-prize-toggle"]') as HTMLButtonElement | null;
-
-  if (!toggleButton) {
-    throw new Error("Expected prize funding toggle to be rendered");
-  }
-
-  await act(async () => {
-    toggleButton.click();
-    await waitForAsyncWork();
-  });
-};
-
 const buildRun = (overrides: Partial<FactoryRun> = {}): FactoryRun => ({
   ...buildRunBase(),
   ...overrides,
@@ -147,7 +134,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -184,78 +170,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
     expect(actionBar?.className).toContain("sticky");
   });
 
-  it("places the deployer wallet under prize funding controls", async () => {
-    const seriesRun = buildRun({
-      kind: "series",
-      mode: "eternum",
-      status: "attention",
-      summary: "Needs attention",
-      name: "bltz-weekend-cup",
-      steps: [
-        {
-          id: "create-series" as const,
-          title: "Create series",
-          summary: "done",
-          workflowName: "create-series",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-      ],
-      children: [
-        {
-          id: "series-child-1",
-          gameName: "bltz-weekend-cup-01",
-          seriesGameNumber: 1,
-          startTimeIso: "2026-03-18T12:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Ready",
-          currentStepId: null,
-          steps: [],
-          launchReady: true,
-          worldAddress: "0x111",
-        },
-      ],
-    });
-
-    await act(async () => {
-      root.render(
-        <FactoryV2WatchWorkspace
-          mode="blitz"
-          runs={[seriesRun]}
-          selectedRun={seriesRun}
-          activeRunName={null}
-          acceptedRunMessage={null}
-          watcher={null}
-          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-          isWatcherBusy={false}
-          isResolvingRunName={false}
-          notice={null}
-          lookupDisabledReason={null}
-          onSelectRun={vi.fn()}
-          onResolveRunByName={vi.fn(async () => false)}
-          onContinue={vi.fn()}
-          onRefresh={vi.fn()}
-          onNudge={vi.fn()}
-          onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn(async () => true)}
-        />,
-      );
-      await waitForAsyncWork();
-    });
-
-    const prizeFundingToggle = container.querySelector(
-      '[data-testid="factory-prize-toggle"]',
-    ) as HTMLButtonElement | null;
-    const walletCard = container.querySelector('[data-testid="factory-deployer-wallet-card"]') as HTMLDivElement | null;
-
-    expect(prizeFundingToggle).not.toBeNull();
-    expect(walletCard).not.toBeNull();
-    expect(prizeFundingToggle?.textContent).toContain("Open prize funding");
-    expect(walletCard?.textContent).toContain("Appchain deployer wallet appchain");
-    expect(prizeFundingToggle!.compareDocumentPosition(walletCard!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
   it("shows recent runs in the picker without auto-selecting one", async () => {
     const recentRun = buildRun({
       id: "recent-run-1",
@@ -284,7 +198,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -337,7 +250,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -418,7 +330,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -493,7 +404,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={onNudge}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -566,7 +476,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onNudge={vi.fn()}
           onStopAutoRetry={onStopAutoRetry}
           hasAdminSecret
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -633,7 +542,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -684,7 +592,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -725,7 +632,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -780,7 +686,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -821,7 +726,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -859,7 +763,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -908,7 +811,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -983,425 +885,12 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
     });
 
     expect(container.querySelector('button[aria-label="Continue"]')).toBeNull();
-  });
-
-  it("defaults series prize funding to ready unfunded games and forwards the secret", async () => {
-    const onFundPrize = vi.fn();
-    const seriesRun = buildRun({
-      kind: "series",
-      mode: "eternum",
-      status: "attention",
-      summary: "Needs attention",
-      name: "bltz-weekend-cup",
-      steps: [
-        {
-          id: "create-series" as const,
-          title: "Create series",
-          summary: "done",
-          workflowName: "create-series",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-      ],
-      children: [
-        {
-          id: "series-child-1",
-          gameName: "bltz-weekend-cup-01",
-          seriesGameNumber: 1,
-          startTimeIso: "2026-03-18T12:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Ready",
-          currentStepId: null,
-          steps: [],
-          launchReady: true,
-          worldAddress: "0x111",
-        },
-        {
-          id: "series-child-2",
-          gameName: "bltz-weekend-cup-02",
-          seriesGameNumber: 2,
-          startTimeIso: "2026-03-18T13:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Ready",
-          currentStepId: null,
-          steps: [],
-          launchReady: true,
-          worldAddress: "0x222",
-          prizeFunding: {
-            transfers: [
-              {
-                id: "0xabc",
-                tokenAddress: "0x123",
-                amountRaw: "100",
-                amountDisplay: "1",
-                decimals: 18,
-                transactionHash: "0xabc",
-                fundedAt: "2026-03-18T11:00:00.000Z",
-              },
-            ],
-          },
-        },
-        {
-          id: "series-child-3",
-          gameName: "bltz-weekend-cup-03",
-          seriesGameNumber: 3,
-          startTimeIso: "2026-03-18T14:00:00.000Z",
-          status: "pending",
-          latestEvent: "Pending",
-          currentStepId: "wait-for-factory-indexes",
-          steps: [],
-          launchReady: false,
-          worldAddress: "0x333",
-        },
-      ],
-    });
-
-    await act(async () => {
-      root.render(
-        <FactoryV2WatchWorkspace
-          mode="blitz"
-          runs={[seriesRun]}
-          selectedRun={seriesRun}
-          activeRunName={null}
-          acceptedRunMessage={null}
-          watcher={null}
-          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-          isWatcherBusy={false}
-          isResolvingRunName={false}
-          notice={null}
-          lookupDisabledReason={null}
-          onSelectRun={vi.fn()}
-          onResolveRunByName={vi.fn(async () => false)}
-          onContinue={vi.fn()}
-          onRefresh={vi.fn()}
-          onNudge={vi.fn()}
-          onStopAutoRetry={vi.fn()}
-          adminSecret="factory-secret"
-          hasAdminSecret
-          onFundPrize={onFundPrize}
-        />,
-      );
-      await waitForAsyncWork();
-    });
-
-    expect(container.textContent).not.toContain("Admin prize funding");
-
-    await openPrizeFundingSection(container);
-
-    const amountInput = container.querySelector('[data-testid="factory-prize-amount"]') as HTMLInputElement | null;
-    const firstGameCheckbox = container.querySelector(
-      '[data-testid="factory-prize-game-bltz-weekend-cup-01"]',
-    ) as HTMLInputElement | null;
-    const secondGameCheckbox = container.querySelector(
-      '[data-testid="factory-prize-game-bltz-weekend-cup-02"]',
-    ) as HTMLInputElement | null;
-    const thirdGameCheckbox = container.querySelector(
-      '[data-testid="factory-prize-game-bltz-weekend-cup-03"]',
-    ) as HTMLInputElement | null;
-    const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
-
-    expect(container.textContent).toContain("Admin prize funding");
-    expect(container.textContent).toContain("trusted prize distribution address");
-    expect(firstGameCheckbox?.checked).toBe(true);
-    expect(secondGameCheckbox?.checked).toBe(false);
-    expect(thirdGameCheckbox?.disabled).toBe(true);
-    expect(container.textContent).toContain("Game not indexed yet");
-
-    await act(async () => {
-      if (!amountInput || !submitButton) {
-        throw new Error("Expected prize funding controls to be rendered");
-      }
-
-      setInputValue(amountInput, "250");
-      submitButton.click();
-      await waitForAsyncWork();
-    });
-
-    expect(onFundPrize).toHaveBeenCalledWith({
-      amount: "250",
-      adminSecret: "factory-secret",
-      selectedGameNames: ["bltz-weekend-cup-01"],
-    });
-  });
-
-  it("shows a resend cooldown after successful series prize funding", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
-
-    const onFundPrize = vi.fn(async () => true);
-    const seriesRun = buildRun({
-      kind: "series",
-      mode: "eternum",
-      status: "attention",
-      summary: "Needs attention",
-      name: "bltz-weekend-cup",
-      steps: [
-        {
-          id: "create-series" as const,
-          title: "Create series",
-          summary: "done",
-          workflowName: "create-series",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-      ],
-      children: [
-        {
-          id: "series-child-1",
-          gameName: "bltz-weekend-cup-01",
-          seriesGameNumber: 1,
-          startTimeIso: "2026-03-18T12:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Ready",
-          currentStepId: null,
-          steps: [],
-          launchReady: true,
-          worldAddress: "0x111",
-        },
-      ],
-    });
-
-    try {
-      await act(async () => {
-        root.render(
-          <FactoryV2WatchWorkspace
-            mode="blitz"
-            runs={[seriesRun]}
-            selectedRun={seriesRun}
-            activeRunName={null}
-            acceptedRunMessage={null}
-            watcher={null}
-            pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-            isWatcherBusy={false}
-            isResolvingRunName={false}
-            notice={null}
-            lookupDisabledReason={null}
-            onSelectRun={vi.fn()}
-            onResolveRunByName={vi.fn(async () => false)}
-            onContinue={vi.fn()}
-            onRefresh={vi.fn()}
-            onNudge={vi.fn()}
-            onStopAutoRetry={vi.fn()}
-            adminSecret="factory-secret"
-            hasAdminSecret
-            onFundPrize={onFundPrize}
-          />,
-        );
-        await waitForAsyncWork();
-      });
-
-      await openPrizeFundingSection(container);
-
-      const amountInput = container.querySelector('[data-testid="factory-prize-amount"]') as HTMLInputElement | null;
-      const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
-
-      await act(async () => {
-        if (!amountInput || !submitButton) {
-          throw new Error("Expected prize funding controls to be rendered");
-        }
-
-        setInputValue(amountInput, "250");
-        submitButton.click();
-        await waitForAsyncWork();
-      });
-
-      expect(onFundPrize).toHaveBeenCalledWith({
-        amount: "250",
-        adminSecret: "factory-secret",
-        selectedGameNames: ["bltz-weekend-cup-01"],
-      });
-      expect(container.textContent).toContain("Prize funding sent for 1 game. Wait 30 seconds before sending again.");
-      expect(submitButton?.disabled).toBe(true);
-      expect(submitButton?.textContent).toContain("Wait 30s");
-
-      await act(async () => {
-        vi.advanceTimersByTime(30_000);
-        await waitForAsyncWork();
-      });
-
-      expect(container.textContent).not.toContain("Prize funding sent for 1 game.");
-      expect(submitButton?.disabled).toBe(false);
-      expect(submitButton?.textContent).toContain("Fund selected games");
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("shows prize funding for an incomplete game once world config has succeeded", async () => {
-    const onFundPrize = vi.fn();
-    const gameRun = buildRun({
-      mode: "eternum",
-      status: "attention",
-      summary: "Indexer failed after setup.",
-      worldAddress: "0xabc",
-      steps: [
-        {
-          id: "create-world" as const,
-          title: "Create world",
-          summary: "done",
-          workflowName: "create-world",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-        {
-          id: "wait-for-factory-index" as const,
-          title: "Configure world",
-          summary: "done",
-          workflowName: "wait-for-factory-index",
-          status: "succeeded" as const,
-          verification: "done",
-          latestEvent: "done",
-        },
-      ],
-    });
-
-    await act(async () => {
-      root.render(
-        <FactoryV2WatchWorkspace
-          mode="eternum"
-          runs={[gameRun]}
-          selectedRun={gameRun}
-          activeRunName={null}
-          acceptedRunMessage={null}
-          watcher={null}
-          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-          isWatcherBusy={false}
-          isResolvingRunName={false}
-          notice={null}
-          lookupDisabledReason={null}
-          onSelectRun={vi.fn()}
-          onResolveRunByName={vi.fn(async () => false)}
-          onContinue={vi.fn()}
-          onRefresh={vi.fn()}
-          onNudge={vi.fn()}
-          onStopAutoRetry={vi.fn()}
-          onFundPrize={onFundPrize}
-        />,
-      );
-      await waitForAsyncWork();
-    });
-
-    await openPrizeFundingSection(container);
-
-    const submitButton = container.querySelector('[data-testid="factory-prize-submit"]') as HTMLButtonElement | null;
-
-    expect(container.textContent).toContain("Admin prize funding");
-    expect(container.textContent).toContain("Fund this game");
-    expect(submitButton?.disabled).toBe(true);
-  });
-
-  it("shows rotation prize funding with only ready unfunded games selected by default", async () => {
-    const onFundPrize = vi.fn();
-    const rotationRun = buildRun({
-      kind: "rotation",
-      status: "attention",
-      summary: "Waiting for the next rotation check.",
-      name: "bltz-ladder-loop",
-      children: [
-        {
-          id: "rotation-child-1",
-          gameName: "bltz-ladder-loop-01",
-          seriesGameNumber: 1,
-          startTimeIso: "2026-03-18T12:00:00.000Z",
-          status: "succeeded",
-          latestEvent: "Ready",
-          currentStepId: null,
-          steps: [],
-          launchReady: true,
-          worldAddress: "0x111",
-        },
-        {
-          id: "rotation-child-2",
-          gameName: "bltz-ladder-loop-02",
-          seriesGameNumber: 2,
-          startTimeIso: "2026-03-18T13:00:00.000Z",
-          status: "failed",
-          latestEvent: "Indexer failed",
-          currentStepId: "wait-for-factory-indexes",
-          steps: [],
-          launchReady: true,
-          worldAddress: "0x222",
-          prizeFunding: {
-            transfers: [
-              {
-                id: "0xpaid",
-                tokenAddress: "0x123",
-                amountRaw: "100",
-                amountDisplay: "1",
-                decimals: 18,
-                transactionHash: "0xpaid",
-                fundedAt: "2026-03-18T11:00:00.000Z",
-              },
-            ],
-          },
-        },
-        {
-          id: "rotation-child-3",
-          gameName: "bltz-ladder-loop-03",
-          seriesGameNumber: 3,
-          startTimeIso: "2026-03-18T14:00:00.000Z",
-          status: "running",
-          latestEvent: "Configuring",
-          currentStepId: "wait-for-factory-indexes",
-          steps: [],
-          launchReady: false,
-          worldAddress: "0x333",
-        },
-      ],
-    });
-
-    await act(async () => {
-      root.render(
-        <FactoryV2WatchWorkspace
-          mode="blitz"
-          runs={[rotationRun]}
-          selectedRun={rotationRun}
-          activeRunName={null}
-          acceptedRunMessage={null}
-          watcher={null}
-          pollingState={{ status: "idle", detail: "Idle", lastCheckedAt: null }}
-          isWatcherBusy={false}
-          isResolvingRunName={false}
-          notice={null}
-          lookupDisabledReason={null}
-          onSelectRun={vi.fn()}
-          onResolveRunByName={vi.fn(async () => false)}
-          onContinue={vi.fn()}
-          onRefresh={vi.fn()}
-          onNudge={vi.fn()}
-          onStopAutoRetry={vi.fn()}
-          onFundPrize={onFundPrize}
-        />,
-      );
-      await waitForAsyncWork();
-    });
-
-    await openPrizeFundingSection(container);
-
-    const firstGameCheckbox = container.querySelector(
-      '[data-testid="factory-prize-game-bltz-ladder-loop-01"]',
-    ) as HTMLInputElement | null;
-    const secondGameCheckbox = container.querySelector(
-      '[data-testid="factory-prize-game-bltz-ladder-loop-02"]',
-    ) as HTMLInputElement | null;
-    const thirdGameCheckbox = container.querySelector(
-      '[data-testid="factory-prize-game-bltz-ladder-loop-03"]',
-    ) as HTMLInputElement | null;
-
-    expect(container.textContent).toContain("Rotation games");
-    expect(firstGameCheckbox?.checked).toBe(true);
-    expect(secondGameCheckbox?.checked).toBe(false);
-    expect(thirdGameCheckbox?.disabled).toBe(true);
   });
 
   it("stops auto retry from the watch action bar for stalled multi-game runs", async () => {
@@ -1454,7 +943,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onNudge={vi.fn()}
           onStopAutoRetry={onStopAutoRetry}
           hasAdminSecret
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -1501,7 +989,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onStopAutoRetry={vi.fn()}
           onDeleteRun={onDeleteRun}
           hasAdminSecret
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -1571,7 +1058,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
           hasAdminSecret
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -1637,7 +1123,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -1709,7 +1194,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();
@@ -1826,7 +1310,6 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           onRefresh={vi.fn()}
           onNudge={vi.fn()}
           onStopAutoRetry={vi.fn()}
-          onFundPrize={vi.fn()}
         />,
       );
       await waitForAsyncWork();

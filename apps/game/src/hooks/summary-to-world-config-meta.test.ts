@@ -14,16 +14,11 @@ const baseSummary: WorldSummary = {
   startMainAt: 200,
   endAt: 1200,
   devModeOn: false,
-  mmrEnabled: true,
   singleRealmMode: false,
   twoPlayerMode: false,
   seasonPassAddress: "0xseason",
   villagePassAddress: "0xvillage",
   worldAddress: "0xworld",
-  prizeDistributionAddress: "0xprize",
-  entryTokenAddress: "0xentry",
-  feeTokenAddress: "0xfee",
-  feeAmount: "255",
   registrationCount: 5,
   registrationCountMax: 100,
   registrationStartAt: 100,
@@ -31,7 +26,6 @@ const baseSummary: WorldSummary = {
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
-  winnerJackpotAmount: "999",
 };
 
 describe("summaryToWorldConfigMeta", () => {
@@ -47,22 +41,9 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.registrationCountMax).toBe(100);
     expect(meta.seasonPassAddress).toBe("0xseason");
     expect(meta.villagePassAddress).toBe("0xvillage");
-    expect(meta.prizeDistributionAddress).toBe("0xprize");
-    expect(meta.entryTokenAddress).toBe("0xentry");
-    expect(meta.feeTokenAddress).toBe("0xfee");
-    expect(meta.feeAmount).toBe(255n);
     expect(meta.registrationStartAt).toBe(100);
     expect(meta.registrationEndAt).toBe(200);
-    expect(meta.mmrEnabled).toBe(true);
     expect(meta.devModeOn).toBe(false);
-  });
-
-  it("maps the server-resolved winnerJackpotAmount through, null when absent", () => {
-    const meta = summaryToWorldConfigMeta(baseSummary, null);
-    expect(meta.winnerJackpotAmount).toBe(999n);
-
-    const withoutJackpot = summaryToWorldConfigMeta({ ...baseSummary, winnerJackpotAmount: null }, null);
-    expect(withoutJackpot.winnerJackpotAmount).toBeNull();
   });
 
   it("resolves eternum mode for eternum summaries", () => {
@@ -98,16 +79,11 @@ describe("summaryToWorldConfigMeta", () => {
       startMainAt: null,
       endAt: null,
       devModeOn: null,
-      mmrEnabled: null,
       singleRealmMode: null,
       twoPlayerMode: null,
       seasonPassAddress: null,
       villagePassAddress: null,
       worldAddress: null,
-      prizeDistributionAddress: null,
-      entryTokenAddress: null,
-      feeTokenAddress: null,
-      feeAmount: null,
       registrationCount: null,
       registrationCountMax: null,
       registrationStartAt: null,
@@ -115,7 +91,6 @@ describe("summaryToWorldConfigMeta", () => {
       settledPlayersCount: null,
       settledRealmsCount: null,
       settledVillagesCount: null,
-      winnerJackpotAmount: null,
     };
 
     const meta = summaryToWorldConfigMeta(summary, null);
@@ -124,17 +99,11 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.startMainAt).toBeNull();
     expect(meta.endAt).toBeNull();
     expect(meta.seasonDurationSeconds).toBeNull();
-    expect(meta.mmrEnabled).toBe(false);
     expect(meta.devModeOn).toBe(false);
     expect(meta.singleRealmMode).toBe(false);
     expect(meta.twoPlayerMode).toBe(false);
-    expect(meta.prizeDistributionAddress).toBeNull();
-    expect(meta.entryTokenAddress).toBeNull();
-    expect(meta.feeTokenAddress).toBeNull();
-    expect(meta.feeAmount).toBe(0n);
     expect(meta.registrationStartAt).toBeNull();
     expect(meta.registrationEndAt).toBeNull();
-    expect(meta.winnerJackpotAmount).toBeNull();
   });
 
   it("threads eternum settlement counts from the summary", () => {

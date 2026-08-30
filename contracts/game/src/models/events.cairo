@@ -52,7 +52,6 @@ pub enum Story {
     GuardExplorerSwapStory: GuardExplorerSwapStory,
     // Prize Distribution
     PrizeDistributionFinalStory: PrizeDistributionFinalStory,
-    PrizeDistributedStory: PrizeDistributedStory,
     // Faith System
     FaithPledgedStory: FaithPledgedStory,
     FaithRemovedStory: FaithRemovedStory,
@@ -328,13 +327,6 @@ pub struct GuardExplorerSwapStory {
 ///  Prize Distribution
 ///
 ///////////////////////////////////////////////
-
-#[derive(Introspect, Copy, Drop, Serde)]
-pub struct PrizeDistributedStory {
-    pub to_player_address: ContractAddress,
-    pub amount: u128,
-    pub decimals: u8,
-}
 
 #[derive(Introspect, Copy, Drop, Serde)]
 pub struct PrizeDistributionFinalStory {

@@ -12,8 +12,6 @@ export interface GameProfile {
   playerAccountClassHash?: string;
   playerRegistryAddress?: string;
   bindingAuthorityAddress?: string;
-  entryTokenAddress?: string; // ChainConfig.entry_token_address (chain-wide shared collection)
-  feeTokenAddress?: string; // ChainConfig.fee_token
   gameId?: number; // s2 single-world: the game's id — key[0] of every per-game model
   presetId?: number; // s2 single-world: rulebook preset the game runs on
   fetchedAt: number; // epoch ms

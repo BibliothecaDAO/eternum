@@ -165,17 +165,6 @@ describe("registrar game launch", () => {
     expect(createRegistrarGameMock).not.toHaveBeenCalled();
   });
 
-  test("rejects per-game fee token overrides", async () => {
-    await expect(
-      runLaunchStep({
-        ...buildRequest(),
-        stepId: "create-world",
-        blitzRegistrationOverrides: { fee_token: "0x123" },
-      }),
-    ).rejects.toThrow("fee_token is chain-global");
-    expect(createRegistrarGameMock).not.toHaveBeenCalled();
-  });
-
   test("tops a sponsored game up to the requested mainnet pool", async () => {
     const summary = await launchGame({
       ...buildRequest(),

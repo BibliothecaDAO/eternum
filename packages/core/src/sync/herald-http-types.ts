@@ -10,7 +10,6 @@ export interface HeraldGameClock {
 
 export interface HeraldGameRegistration {
   count: number;
-  fee_amount: string;
   max: number;
   start_at: number;
 }
@@ -43,15 +42,8 @@ export interface HeraldGameDirectoryEntry {
   status: HeraldGameStatus;
 }
 
-export interface HeraldChainDirectoryConfig {
-  entry_token_address: string | null;
-  fee_token_address: string | null;
-  mmr_enabled: boolean;
-}
-
 export interface HeraldGameDirectory {
   chain: string;
-  chain_config: HeraldChainDirectoryConfig | null;
   confirmed_block: number;
   games: HeraldGameDirectoryEntry[];
 }

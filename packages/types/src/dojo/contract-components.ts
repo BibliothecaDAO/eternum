@@ -271,30 +271,6 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
-    BlitzEntryTokenRegister: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          token_id: RecsType.BigInt,
-          issued: RecsType.Boolean,
-          registered: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "BlitzEntryTokenRegister",
-            types: [
-              "u32", // game_id
-              "u128", // token_id
-              "bool", // issued
-              "bool", // registered
-            ],
-            customTypes: [],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
     BlitzSettlement: (() => {
       return defineComponent(
         world,
@@ -411,22 +387,10 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           config_id: RecsType.Number,
           admin_address: RecsType.BigInt,
+          ledger_operator_address: RecsType.BigInt,
+          player_registry_address: RecsType.BigInt,
           vrf_provider_address: RecsType.BigInt,
           agent_controller_config: { address: RecsType.BigInt },
-          mmr_config: {
-            enabled: RecsType.Boolean,
-            mmr_token_address: RecsType.BigInt,
-            distribution_mean: RecsType.Number,
-            spread_factor: RecsType.Number,
-            max_delta: RecsType.Number,
-            k_factor: RecsType.Number,
-            lobby_split_weight_scaled: RecsType.Number,
-            mean_regression_scaled: RecsType.Number,
-            min_players: RecsType.Number,
-          },
-          fee_token: RecsType.BigInt,
-          fee_recipient: RecsType.BigInt,
-          entry_token_address: RecsType.BigInt,
           collectibles_cosmetics_address: RecsType.BigInt,
           collectibles_timelock_address: RecsType.BigInt,
           collectibles_lootchest_address: RecsType.BigInt,
@@ -439,26 +403,16 @@ export function defineContractComponents(world: World, namespace: string) {
             types: [
               "u32", // config_id
               "ContractAddress", // admin_address
+              "ContractAddress", // ledger_operator_address
+              "ContractAddress", // player_registry_address
               "ContractAddress", // vrf_provider_address
               "ContractAddress", // AgentControllerConfig address
-              "bool", // MMRConfig enabled
-              "ContractAddress", // MMRConfig mmr_token_address
-              "u16", // MMRConfig distribution_mean
-              "u16", // MMRConfig spread_factor
-              "u8", // MMRConfig max_delta
-              "u8", // MMRConfig k_factor
-              "u16", // MMRConfig lobby_split_weight_scaled
-              "u16", // MMRConfig mean_regression_scaled
-              "u8", // MMRConfig min_players
-              "ContractAddress", // fee_token
-              "ContractAddress", // fee_recipient
-              "ContractAddress", // entry_token_address
               "ContractAddress", // collectibles_cosmetics_address
               "ContractAddress", // collectibles_timelock_address
               "ContractAddress", // collectibles_lootchest_address
               "ContractAddress", // collectibles_elitenft_address
             ],
-            customTypes: ["AgentControllerConfig", "MMRConfig"],
+            customTypes: ["AgentControllerConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -696,8 +650,6 @@ export function defineContractComponents(world: World, namespace: string) {
           registration_grace_seconds: RecsType.Number,
           final_trial_id: RecsType.BigInt,
           seed: RecsType.BigInt,
-          fees_collected: RecsType.BigInt,
-          fees_paid_out: RecsType.BigInt,
         },
         {
           metadata: {
@@ -719,8 +671,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // registration_grace_seconds
               "u128", // final_trial_id
               "felt252", // seed
-              "u256", // fees_collected
-              "u256", // fees_paid_out
             ],
             customTypes: ["GameStatus"],
           } satisfies ContractComponentMetadata,
@@ -952,6 +902,26 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
+    LedgerRegistration: (() => {
+      return defineComponent(
+        world,
+        {
+          game_id: RecsType.Number,
+          owner: RecsType.BigInt,
+          realm_id: RecsType.BigInt,
+          metadata: RecsType.BigIntArray,
+          registered: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            namespace,
+            name: "LedgerRegistration",
+            types: ["u32", "ContractAddress", "u256", "(felt252, felt252, felt252)", "bool"],
+            customTypes: [],
+          } satisfies ContractComponentMetadata,
+        },
+      );
+    })(),
     Liquidity: (() => {
       return defineComponent(
         world,
@@ -988,46 +958,6 @@ export function defineContractComponents(world: World, namespace: string) {
             types: ["u32", "u8", "u128", "u128", "u128"],
             customTypes: [],
           },
-        },
-      );
-    })(),
-    MMRClaimed: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          claimed_at: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "MMRClaimed",
-            types: [
-              "u32", // game_id
-              "u64", // claimed_at
-            ],
-            customTypes: [],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    MMRGameMeta: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          game_median: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "MMRGameMeta",
-            types: [
-              "u32", // game_id
-              "u128", // game_median
-            ],
-            customTypes: [],
-          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1116,7 +1046,7 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           player: RecsType.BigInt,
           rank: RecsType.Number,
-          paid: RecsType.Boolean,
+          chests: RecsType.Number,
         },
         {
           metadata: {
@@ -1126,7 +1056,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // game_id
               "ContractAddress", // player
               "u16", // rank
-              "bool", // paid
+              "u16", // chests
             ],
             customTypes: [],
           } satisfies ContractComponentMetadata,
@@ -1140,35 +1070,14 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           address: RecsType.BigInt,
           registered_points: RecsType.BigInt,
-          prize_claimed: RecsType.Boolean,
         },
         {
           metadata: {
             namespace,
             name: "PlayerRegisteredPoints",
-            types: ["u32", "ContractAddress", "u128", "bool"],
+            types: ["u32", "ContractAddress", "u128"],
             customTypes: [],
           },
-        },
-      );
-    })(),
-    PlayersRankFinal: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          trial_id: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "PlayersRankFinal",
-            types: [
-              "u32", // game_id
-              "u128", // trial_id
-            ],
-            customTypes: [],
-          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1184,8 +1093,6 @@ export function defineContractComponents(world: World, namespace: string) {
           total_player_points: RecsType.BigInt,
           total_player_count_committed: RecsType.Number,
           total_player_count_revealed: RecsType.Number,
-          total_prize_amount: RecsType.BigInt,
-          total_prize_amount_calculated: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1200,8 +1107,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // total_player_points
               "u16", // total_player_count_committed
               "u16", // total_player_count_revealed
-              "u128", // total_prize_amount
-              "u128", // total_prize_amount_calculated
             ],
             customTypes: [],
           } satisfies ContractComponentMetadata,
@@ -1596,9 +1501,7 @@ export function defineContractComponents(world: World, namespace: string) {
             two_player_mode: RecsType.Boolean,
           },
           blitz_registration_config: {
-            fee_amount: RecsType.BigInt,
             registration_count: RecsType.Number,
-            issued_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
           },
@@ -1630,9 +1533,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // BlitzSettlementConfig open_settlement_count
               "bool", // BlitzSettlementConfig single_realm_mode
               "bool", // BlitzSettlementConfig two_player_mode
-              "u256", // BlitzRegistrationGameConfig fee_amount
               "u16", // BlitzRegistrationGameConfig registration_count
-              "u16", // BlitzRegistrationGameConfig issued_count
               "u16", // BlitzRegistrationGameConfig registration_count_max
               "u32", // BlitzRegistrationGameConfig registration_start_at
               "u16", // agent_max_lifetime_count
@@ -1884,7 +1785,6 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           rank: RecsType.Number,
           total_players_same_rank_count: RecsType.Number,
-          total_prize_amount: RecsType.BigInt,
           grant_elite_nft: RecsType.Boolean,
         },
         {
@@ -1895,7 +1795,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // game_id
               "u16", // rank
               "u16", // total_players_same_rank_count
-              "u128", // total_prize_amount
               "bool", // grant_elite_nft
             ],
             customTypes: [],
@@ -3445,9 +3344,7 @@ export function defineContractComponents(world: World, namespace: string) {
             side: RecsType.Number,
           },
           blitz_registration_config: {
-            fee_amount: RecsType.BigInt,
             registration_count: RecsType.Number,
-            issued_count: RecsType.Number,
             registration_count_max: RecsType.Number,
             registration_start_at: RecsType.Number,
           },
@@ -3487,9 +3384,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // BlitzHypersSettlementConfig current_ring_count
               "u8", // BlitzHypersSettlementConfig point
               "u32", // BlitzHypersSettlementConfig side
-              "u256", // BlitzRegistrationGameConfig fee_amount
               "u16", // BlitzRegistrationGameConfig registration_count
-              "u16", // BlitzRegistrationGameConfig issued_count
               "u16", // BlitzRegistrationGameConfig registration_count_max
               "u32", // BlitzRegistrationGameConfig registration_start_at
               "u16", // RealmCountConfig count
@@ -4031,36 +3926,6 @@ export function defineContractComponents(world: World, namespace: string) {
               types: ["u32", "u32", "u32", "u32", "Span<u8>", "u64"],
               customTypes: ["Coord"],
             },
-          },
-        );
-      })(),
-      PlayerMMRChanged: (() => {
-        return defineComponent(
-          world,
-          {
-            game_id: RecsType.Number,
-            player: RecsType.BigInt,
-            trial_id: RecsType.BigInt,
-            old_mmr: RecsType.BigInt,
-            new_mmr: RecsType.BigInt,
-            rank: RecsType.Number,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "PlayerMMRChanged",
-              types: [
-                "u32", // game_id
-                "ContractAddress", // player
-                "u128", // trial_id
-                "u128", // old_mmr
-                "u128", // new_mmr
-                "u16", // rank
-                "u64", // timestamp
-              ],
-              customTypes: [],
-            } satisfies ContractComponentMetadata,
           },
         );
       })(),

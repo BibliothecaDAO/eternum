@@ -20,20 +20,6 @@ export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "
 export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 
-export interface FactoryWorkerPrizeFundingTransfer {
-  id: string;
-  tokenAddress: string;
-  amountRaw: string;
-  amountDisplay: string;
-  decimals: number;
-  transactionHash: string;
-  fundedAt: string;
-}
-
-export interface FactoryWorkerPrizeFundingState {
-  transfers: FactoryWorkerPrizeFundingTransfer[];
-}
-
 export interface FactoryWorkerRunRecovery {
   state: FactoryWorkerRunRecoveryState;
   canContinue: boolean;
@@ -57,7 +43,6 @@ interface FactoryWorkerGameArtifacts {
   /** Registrar-assigned game id inside the persistent world. */
   gameId?: number;
   createGameTxHash?: string;
-  prizeFunding?: FactoryWorkerPrizeFundingState;
 }
 
 interface FactoryWorkerRotationEvaluation {
@@ -137,7 +122,6 @@ export interface FactoryWorkerSeriesGameRecord {
   }>;
   artifacts: {
     worldAddress?: string;
-    prizeFunding?: FactoryWorkerPrizeFundingState;
   };
 }
 
@@ -365,29 +349,6 @@ interface DeleteFactorySeriesRunRequest {
 interface DeleteFactoryRotationRunRequest {
   environment: FactoryWorkerEnvironmentId;
   rotationName: string;
-  adminSecret: string;
-}
-
-interface FundFactoryGamePrizeRequest {
-  environment: FactoryWorkerEnvironmentId;
-  gameName: string;
-  amount: string;
-  adminSecret: string;
-}
-
-interface FundFactorySeriesPrizesRequest {
-  environment: FactoryWorkerEnvironmentId;
-  seriesName: string;
-  amount: string;
-  gameNames?: string[];
-  adminSecret: string;
-}
-
-interface FundFactoryRotationPrizesRequest {
-  environment: FactoryWorkerEnvironmentId;
-  rotationName: string;
-  amount: string;
-  gameNames?: string[];
   adminSecret: string;
 }
 
@@ -627,33 +588,6 @@ export async function deleteFactoryRotationRun(request: DeleteFactoryRotationRun
     method: "POST",
     headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
     body: JSON.stringify({}),
-  });
-}
-
-export async function fundFactoryGamePrize(request: FundFactoryGamePrizeRequest): Promise<void> {
-  const { adminSecret, environment, gameName, amount } = request;
-  await fetchFactoryWorkerJson(`${buildFactoryRunPath(environment, gameName)}/actions/fund-prize`, {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify({ amount }),
-  });
-}
-
-export async function fundFactorySeriesPrizes(request: FundFactorySeriesPrizesRequest): Promise<void> {
-  const { adminSecret, environment, seriesName, amount, gameNames } = request;
-  await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/fund-prize`, {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify({ amount, gameNames }),
-  });
-}
-
-export async function fundFactoryRotationPrizes(request: FundFactoryRotationPrizesRequest): Promise<void> {
-  const { adminSecret, environment, rotationName, amount, gameNames } = request;
-  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/fund-prize`, {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify({ amount, gameNames }),
   });
 }
 

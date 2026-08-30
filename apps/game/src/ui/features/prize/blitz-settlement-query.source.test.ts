@@ -6,10 +6,7 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("Blitz prize settlement queries", () => {
   it("uses the typed BlitzSettlement component instead of an empty query fallback", () => {
-    const prizeSources = [
-      readSource("src/ui/features/prize/components/blitz-mmr-table.tsx"),
-      readSource("src/ui/features/prize/prize-panel.tsx"),
-    ];
+    const prizeSources = [readSource("src/ui/features/prize/prize-panel.tsx")];
 
     prizeSources.forEach((source) => {
       expect(source).toContain("useBlitzSettlementPlayerAddresses(components)");

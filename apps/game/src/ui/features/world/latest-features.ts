@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-30",
+    title: "Exact Blitz Results",
+    description:
+      "Blitz reviews now show the exact final rank and chest entitlement recorded by the game, with LORDS and MMR settled safely on Starknet mainnet.",
+    type: "improvement",
+    gameSlug: "blitz",
+  },
+  {
     date: "2026-08-28",
     title: "Clearer World Loading",
     description:

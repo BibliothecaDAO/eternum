@@ -11,17 +11,6 @@ pub struct PlayersRankTrial {
     pub total_player_points: u128,
     pub total_player_count_committed: u16,
     pub total_player_count_revealed: u16,
-    pub total_prize_amount: u128,
-    pub total_prize_amount_calculated: u128,
-}
-
-// Kept for manifest parity with Eternum indexers; GameRegistry.final_trial_id is authoritative (D5).
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
-#[dojo::model]
-pub struct PlayersRankFinal {
-    #[key]
-    pub game_id: u32,
-    pub trial_id: u128,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -32,7 +21,7 @@ pub struct PlayerRank {
     #[key]
     pub player: ContractAddress,
     pub rank: u16,
-    pub paid: bool,
+    pub chests: u16,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
@@ -43,7 +32,6 @@ pub struct RankPrize {
     #[key]
     pub rank: u16,
     pub total_players_same_rank_count: u16,
-    pub total_prize_amount: u128,
     pub grant_elite_nft: bool,
 }
 

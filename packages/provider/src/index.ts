@@ -1217,82 +1217,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
-   * Register a player for Blitz Realm
-   *
-   * @param props - Properties for registration
-   * @param props.entryTokenAddress - Optional ERC721 contract address for entry tokens
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async blitz_realm_obtain_entry_token(props: SystemProps.BlitzRealmObtainEntryTokenProps) {
-    const { signer, feeToken, feeAmount } = props;
-    const blitzRealmSystemsAddress = getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`);
-
-    const calls: Call[] = [];
-
-    if (feeToken && feeAmount !== undefined) {
-      try {
-        const amountBigInt = typeof feeAmount === "bigint" ? feeAmount : BigInt(feeAmount as any);
-        if (amountBigInt > 0n) {
-          const amountUint256 = uint256.bnToUint256(amountBigInt);
-          calls.push({
-            contractAddress: feeToken,
-            entrypoint: "approve",
-            calldata: CallData.compile([blitzRealmSystemsAddress, amountUint256.low, amountUint256.high]),
-          });
-        }
-      } catch (error) {
-        console.error("Failed to prepare approval for entry token fee", error);
-      }
-    }
-
-    calls.push({
-      contractAddress: blitzRealmSystemsAddress,
-      entrypoint: "obtain_entry_token",
-      calldata: [],
-    });
-
-    const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: callArgs,
-      transactionType: TransactionType.OBTAIN_ENTRY_TOKEN,
-    });
-  }
-
-  public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
-    const { signer, name, tokenId, entryTokenAddress, lockId } = props;
-
-    const registerCall: Call = {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`),
-      entrypoint: "register",
-      calldata: [name, tokenId, 0],
-    };
-
-    if (entryTokenAddress) {
-      const tokenIdUint256 = uint256.bnToUint256(tokenId);
-      const entryTokenContractAddress =
-        typeof entryTokenAddress === "string" && entryTokenAddress.startsWith("0x")
-          ? entryTokenAddress
-          : `0x${BigInt(entryTokenAddress as string).toString(16)}`;
-
-      const tokenLockCall: Call = {
-        contractAddress: entryTokenContractAddress,
-        entrypoint: "token_lock",
-        calldata: CallData.compile([tokenIdUint256, lockId ?? 69]),
-      };
-
-      return await this.promiseQueue.enqueue({
-        signer,
-        calls: [tokenLockCall, registerCall],
-        transactionType: TransactionType.REGISTER,
-      });
-    }
-
-    return await this.promiseQueue.enqueue({ signer, calls: registerCall, transactionType: TransactionType.REGISTER });
-  }
-
-  /**
    * Create hyperstructures for Blitz
    *
    * @param props - Properties for registration
@@ -3619,37 +3543,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_mmr_config(props: SystemProps.SetMMRConfigProps) {
-    const {
-      enabled,
-      mmr_token_address,
-      distribution_mean,
-      spread_factor,
-      max_delta,
-      k_factor,
-      lobby_split_weight_scaled,
-      mean_regression_scaled,
-      min_players,
-      signer,
-    } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-config_systems`),
-      entrypoint: "set_mmr_config",
-      calldata: [
-        enabled,
-        mmr_token_address,
-        distribution_mean,
-        spread_factor,
-        max_delta,
-        k_factor,
-        lobby_split_weight_scaled,
-        mean_regression_scaled,
-        min_players,
-      ],
-    });
-  }
-
   public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
     const {
       config_id,
@@ -4177,71 +4070,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async blitz_prize_claim(props: SystemProps.BlitzPrizeClaimProps) {
-    const { players, signer } = props;
-
-    const calls = [];
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`), 0, signer.address],
-      };
-
-      calls.push(requestRandomCall);
-    }
-
-    calls.push({
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`),
-      entrypoint: "blitz_prize_claim",
-      calldata: [players.length, ...players],
-    });
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: calls,
-      transactionType: TransactionType.BLITZ_PRIZE_CLAIM,
-    });
-  }
-
-  // Blitz prize: single-registrant no-game claim
-  public async blitz_prize_claim_no_game(props: SystemProps.BlitzPrizeClaimNoGameProps) {
-    const { registered_player, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`),
-        entrypoint: "blitz_prize_claim_no_game",
-        calldata: [registered_player],
-      },
-      transactionType: TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME,
-    });
-  }
-
-  // MMR system calls - commit and claim in a single transaction
-  public async commit_and_claim_game_mmr(props: SystemProps.CommitGameMMRProps) {
-    const { players, signer } = props;
-
-    const calls = [
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-mmr_systems`),
-        entrypoint: "commit_game_mmr_meta",
-        calldata: [players.length, ...players],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-mmr_systems`),
-        entrypoint: "claim_game_mmr",
-        calldata: [players.length, ...players],
-      },
-    ];
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: calls,
-      transactionType: TransactionType.COMMIT_AND_CLAIM_MMR,
-    });
-  }
-
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
     const { hyperstructure_ids, player, signer } = props;
 
@@ -4322,30 +4150,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async grant_collectible_minter_role(props: {
-    collectible_address: string;
-    minter_address: string;
-    signer: Account | AccountInterface;
-  }) {
-    const { collectible_address, minter_address, signer } = props;
-    const MINTER_ROLE = "0x032df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6";
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: collectible_address,
-      entrypoint: "grant_role",
-      calldata: [MINTER_ROLE, minter_address],
-    });
-  }
-
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
     const {
-      fee_token,
-      fee_recipient,
-      fee_amount,
       registration_count_max,
       registration_start_at,
-      entry_token_class_hash,
-      entry_token_deploy_calldata,
-      entry_token_ipfs_cid,
       collectibles_cosmetics_max,
       collectibles_cosmetics_address,
       collectibles_timelock_address,
@@ -4357,17 +4165,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${this.namespace}-config_systems`),
       entrypoint: "set_blitz_registration_config",
       calldata: [
-        fee_token,
-        fee_recipient,
-        fee_amount,
-        0,
         registration_count_max,
         registration_start_at,
-        entry_token_class_hash,
-        entry_token_deploy_calldata.length,
-        ...entry_token_deploy_calldata,
-        entry_token_ipfs_cid,
-
         collectibles_cosmetics_max,
         collectibles_cosmetics_address,
         collectibles_timelock_address,

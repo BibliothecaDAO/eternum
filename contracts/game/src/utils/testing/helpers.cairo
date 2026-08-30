@@ -760,8 +760,6 @@ fn write_test_game(ref world: WorldStorage) {
                 registration_grace_seconds: 0,
                 final_trial_id: 0,
                 seed: 1,
-                fees_collected: 0,
-                fees_paid_out: 0,
             },
         );
 }

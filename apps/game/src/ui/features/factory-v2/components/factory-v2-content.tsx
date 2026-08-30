@@ -184,11 +184,9 @@ export const FactoryV2Content = () => {
               onDeleteRun={() => {
                 void factory.deleteSelectedRun();
               }}
-              adminSecret={factory.factoryAdminSecret}
               hasAdminSecret={factory.factoryAdminSecret.trim().length > 0}
               deployerChain={factory.selectedEnvironment?.chain ?? "appchain"}
               deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
-              onFundPrize={(request) => factory.fundSelectedRunPrize(request)}
             />
           </div>
         ) : null}

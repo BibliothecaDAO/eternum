@@ -4,7 +4,6 @@ const UNRANKED_LEADERBOARD_POSITION = Number.MAX_SAFE_INTEGER;
 interface FinalizedBlitzPlayerRankSnapshot {
   playerAddress: bigint;
   rank: bigint | number;
-  trialId: bigint;
 }
 
 interface FinalizedBlitzStanding {
@@ -41,16 +40,9 @@ export const buildRegisteredPointsLookup = (
 
 export const buildFinalizedBlitzStandingLookup = (
   rows: ReadonlyArray<FinalizedBlitzPlayerRankSnapshot>,
-  finalTrialId: bigint | undefined,
   registeredPointsLookup: ReadonlyMap<string, number>,
 ): Map<string, FinalizedBlitzStanding> => {
-  if (finalTrialId == null) {
-    return new Map();
-  }
-
-  const finalizedRows = rows
-    .filter((row) => row.trialId === finalTrialId)
-    .toSorted((left, right) => Number(left.rank) - Number(right.rank));
+  const finalizedRows = rows.toSorted((left, right) => Number(left.rank) - Number(right.rank));
 
   const standingLookup = new Map<string, FinalizedBlitzStanding>();
 

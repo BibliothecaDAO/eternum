@@ -1,9 +1,7 @@
 /**
  * Hook to handle world entry from the world selector.
  * Blitz worlds now enter through a single `settle` action.
- * Appchain tops up its fee token from the configured faucet when needed.
  */
-import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { namespaceForChain } from "@/sync/game-scope";
@@ -12,13 +10,11 @@ import { normalizeSelector } from "@/runtime/world/normalize";
 import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
-import { getRpcUrlForChain } from "@/runtime/chain-rpc";
-import { createAppchainFaucetAccount } from "./appchain-faucet-account";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { getContractByName } from "@dojoengine/core";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Account, CallData, RpcProvider, uint256 } from "starknet";
+import { Account } from "starknet";
 import { env } from "../../env";
 import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
 import type { WorldConfigMeta } from "./use-world-availability";
@@ -31,33 +27,6 @@ interface SeasonRegistrationParams {
   layer?: number;
   point?: number;
 }
-
-/**
- * Fetch ERC20 token balance using RPC call
- */
-const fetchTokenBalance = async (
-  rpcProvider: RpcProvider,
-  tokenAddress: string,
-  accountAddress: string,
-): Promise<bigint> => {
-  try {
-    const result = await rpcProvider.callContract({
-      contractAddress: tokenAddress,
-      entrypoint: "balance_of",
-      calldata: [accountAddress],
-    });
-    // Result is [low, high] for Uint256
-    if (result && result.length >= 2) {
-      const low = BigInt(result[0] ?? 0);
-      const high = BigInt(result[1] ?? 0);
-      return low + (high << 128n);
-    }
-    return 0n;
-  } catch (error) {
-    console.error("Failed to fetch token balance:", error);
-    return 0n;
-  }
-};
 
 export type EntryStage = "idle" | "preparing" | "settling" | "done" | "error";
 
@@ -78,59 +47,11 @@ interface UseWorldRegistrationReturn {
   isSettling: boolean;
   /** Error message if world entry failed */
   error: string | null;
-  /** Fee amount in wei */
-  feeAmount: bigint;
   /** Whether world entry is currently possible */
   canSettle: boolean;
   /** Whether registration capacity has been reached */
   isRegistrationFull: boolean;
 }
-
-const ensureFeeTokenBalance = async ({
-  accountAddress,
-  chain,
-  feeAmount,
-  feeTokenAddress,
-  worldName,
-}: {
-  accountAddress: string;
-  chain: Chain;
-  feeAmount: bigint;
-  feeTokenAddress: string;
-  worldName: string;
-}): Promise<void> => {
-  const rpcProvider = getCachedRpcProvider(getRpcUrlForChain(chain));
-  const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
-  if (currentBalance >= feeAmount) return;
-
-  if (chain !== "appchain") {
-    throw new Error("Automatic fee-token top-up is restricted to the appchain.");
-  }
-  const masterAccount = createAppchainFaucetAccount(rpcProvider, {
-    address: env.VITE_PUBLIC_MASTER_ADDRESS,
-    privateKey: env.VITE_PUBLIC_MASTER_PRIVATE_KEY,
-  });
-
-  const shortfall = feeAmount - currentBalance;
-  const amount = uint256.bnToUint256(shortfall);
-  await executeObservedClientTransaction({
-    account: masterAccount,
-    calls: {
-      contractAddress: feeTokenAddress,
-      entrypoint: "transfer",
-      calldata: CallData.compile([accountAddress, amount.low, amount.high]),
-    },
-    surface: "registration",
-    operation: "fee_token.transfer_top_up",
-    chain,
-    worldName,
-  });
-
-  const confirmedBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, accountAddress);
-  if (confirmedBalance < feeAmount) {
-    throw new Error("Fee-token top-up was submitted but the balance did not update.");
-  }
-};
 
 export const useWorldRegistration = ({
   worldName,
@@ -154,7 +75,6 @@ export const useWorldRegistration = ({
   const contractsCacheRef = useRef<Record<string, string> | null>(null);
   const systemManifest = useMemo(() => getGameManifest(chain), [chain]);
 
-  const feeAmount = config?.feeAmount ?? 0n;
   const devModeOn = config?.devModeOn ?? false;
   const registrationCount = config?.registrationCount ?? 0;
   const registrationCountMax = resolveEffectiveRegistrationCountMax(config);
@@ -235,9 +155,6 @@ export const useWorldRegistration = ({
         // Settle targets the chosen game explicitly (meta carries its id).
         gameId: config?.gameId,
         vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-        entryTokenAddress: config?.entryTokenAddress,
-        feeTokenAddress: config?.feeTokenAddress,
-        feeAmount: config?.feeAmount,
       });
     },
     [address, config, usernameFelt],
@@ -268,16 +185,6 @@ export const useWorldRegistration = ({
         }
 
         const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
-        if (chain === "appchain" && feeAmount > 0n && config?.feeTokenAddress) {
-          await ensureFeeTokenBalance({
-            accountAddress: address!,
-            chain,
-            feeAmount,
-            feeTokenAddress: config.feeTokenAddress,
-            worldName,
-          });
-        }
-
         setEntryStage("settling");
         const settleCalls = buildSettleCalls(blitzSystemsAddress);
         await executeObservedClientTransaction({
@@ -296,18 +203,7 @@ export const useWorldRegistration = ({
         setEntryStage("error");
       }
     },
-    [
-      canSettle,
-      account,
-      address,
-      config,
-      worldName,
-      chain,
-      feeAmount,
-      resolveContracts,
-      getWorldSystemAddress,
-      buildSettleCalls,
-    ],
+    [canSettle, account, address, config, worldName, chain, resolveContracts, getWorldSystemAddress, buildSettleCalls],
   );
 
   return {
@@ -315,7 +211,6 @@ export const useWorldRegistration = ({
     entryStage,
     isSettling,
     error,
-    feeAmount,
     canSettle,
     isRegistrationFull,
   };

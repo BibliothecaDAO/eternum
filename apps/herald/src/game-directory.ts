@@ -1,5 +1,4 @@
 import type {
-  HeraldChainDirectoryConfig,
   HeraldGameDirectory,
   HeraldGameDirectoryEntry,
   HeraldGameStatus,
@@ -105,17 +104,6 @@ const gamesRegisteredByPlayer = (rows: FoldRow[], playerAddress: string | undefi
   );
 };
 
-const buildChainConfig = (rows: FoldRow[]): HeraldChainDirectoryConfig | null => {
-  const row = rows[0]?.value;
-  if (!row) return null;
-  const mmr = asRecord(row.mmr_config, "ChainConfig.mmr_config");
-  return {
-    entry_token_address: asAddress(row.entry_token_address, "ChainConfig.entry_token_address"),
-    fee_token_address: asAddress(row.fee_token, "ChainConfig.fee_token"),
-    mmr_enabled: asBoolean(mmr.enabled, "ChainConfig.mmr_config.enabled"),
-  };
-};
-
 const buildGameEntry = (
   registry: Record<string, unknown>,
   worldConfig: Record<string, unknown> | undefined,
@@ -152,7 +140,6 @@ const buildGameEntry = (
     registration: registration
       ? {
           count: asNumber(registration.registration_count, "WorldConfig.registration_count"),
-          fee_amount: String(registration.fee_amount),
           max: asNumber(registration.registration_count_max, "WorldConfig.registration_count_max"),
           start_at: asNumber(registration.registration_start_at, "WorldConfig.registration_start_at"),
         }
@@ -219,7 +206,6 @@ export const buildGameDirectory = (input: {
 
   return {
     chain: input.chain,
-    chain_config: buildChainConfig(input.fold.modelRows("ChainConfig")),
     confirmed_block: input.confirmedBlock,
     games,
   };

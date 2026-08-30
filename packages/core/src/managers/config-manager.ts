@@ -140,7 +140,7 @@ export class ClientConfigManager {
     return (this.getWorldConfig() as unknown as { season_config?: any })?.season_config;
   }
 
-  /** Chain-wide singleton (addresses, mmr, agent controller). */
+  /** Chain-wide singleton (addresses and agent controller). */
   private getChainConfig() {
     return getComponentValue(this.components.ChainConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
   }
@@ -1029,10 +1029,6 @@ export class ClientConfigManager {
             reward_profile_id: Number(this.getRulebook()?.blitz_exploration_config?.reward_profile_id ?? 0),
           },
           blitz_registration_config: {
-            fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
-            fee_token: BigInt(chain?.fee_token ?? 0),
-            fee_recipient: BigInt(chain?.fee_recipient ?? 0),
-            entry_token_address: BigInt(chain?.entry_token_address ?? 0),
             collectibles_cosmetics_max: BigInt(rules?.collectibles_cosmetics_max ?? 0),
             collectibles_cosmetics_address: BigInt(chain?.collectibles_cosmetics_address ?? 0),
             collectibles_timelock_address: BigInt(chain?.collectibles_timelock_address ?? 0),
@@ -1066,10 +1062,6 @@ export class ClientConfigManager {
           reward_profile_id: 0,
         },
         blitz_registration_config: {
-          fee_amount: BigInt(0),
-          fee_token: BigInt(0),
-          fee_recipient: BigInt(0),
-          entry_token_address: BigInt(0),
           collectibles_cosmetics_max: BigInt(0),
           collectibles_cosmetics_address: BigInt(0),
           collectibles_timelock_address: BigInt(0),

@@ -6,14 +6,12 @@ use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::game::{GameRegistry, GameRegistryImpl};
-use crate::models::mmr::MMRConfig;
 use crate::models::position::{Coord, CoordImpl, Direction};
 use crate::models::quest::Level;
 use crate::models::resource::resource::TroopResourceImpl;
 use crate::systems::utils::blitz_profile::{
     OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
 };
-use crate::utils::interfaces::collectibles::{ICollectibleDispatcher, ICollectibleDispatcherTrait};
 use crate::utils::math::PercentageImpl;
 use crate::utils::random::VRFImpl;
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -110,12 +108,10 @@ pub struct ChainConfig {
     #[key]
     pub config_id: ID,
     pub admin_address: ContractAddress,
+    pub ledger_operator_address: ContractAddress,
+    pub player_registry_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
     pub agent_controller_config: AgentControllerConfig,
-    pub mmr_config: MMRConfig,
-    pub fee_token: ContractAddress,
-    pub fee_recipient: ContractAddress,
-    pub entry_token_address: ContractAddress,
     pub collectibles_cosmetics_address: ContractAddress,
     pub collectibles_timelock_address: ContractAddress,
     pub collectibles_lootchest_address: ContractAddress,
@@ -335,12 +331,10 @@ pub impl WorldConfigUtilImpl of WorldConfigTrait {
 
     fn is_chain_member(selector: felt252) -> bool {
         selector == selector!("admin_address")
+            || selector == selector!("ledger_operator_address")
+            || selector == selector!("player_registry_address")
             || selector == selector!("vrf_provider_address")
             || selector == selector!("agent_controller_config")
-            || selector == selector!("mmr_config")
-            || selector == selector!("fee_token")
-            || selector == selector!("fee_recipient")
-            || selector == selector!("entry_token_address")
             || selector == selector!("collectibles_cosmetics_address")
             || selector == selector!("collectibles_timelock_address")
             || selector == selector!("collectibles_lootchest_address")
@@ -1031,26 +1025,19 @@ pub impl Blitz2PlayerHypersSettlementConfigImpl of Blitz2PlayerHypersSettlementC
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzRegistrationConfig {
-    pub fee_amount: u256,
-    pub fee_token: ContractAddress,
-    pub fee_recipient: ContractAddress,
-    pub entry_token_address: ContractAddress,
     pub collectibles_cosmetics_max: u8,
     pub collectibles_cosmetics_address: ContractAddress,
     pub collectibles_timelock_address: ContractAddress,
     pub collectibles_lootchest_address: ContractAddress,
     pub collectibles_elitenft_address: ContractAddress,
     pub registration_count: u16,
-    pub issued_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
 }
 
 #[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
 pub struct BlitzRegistrationGameConfig {
-    pub fee_amount: u256,
     pub registration_count: u16,
-    pub issued_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
 }
@@ -1070,10 +1057,6 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
             world, game_id, selector!("blitz_registration_rules_config"),
         );
         BlitzRegistrationConfig {
-            fee_amount: game_config.fee_amount,
-            fee_token: WorldConfigUtilImpl::get_member(world, game_id, selector!("fee_token")),
-            fee_recipient: WorldConfigUtilImpl::get_member(world, game_id, selector!("fee_recipient")),
-            entry_token_address: WorldConfigUtilImpl::get_member(world, game_id, selector!("entry_token_address")),
             collectibles_cosmetics_max: rules.collectibles_cosmetics_max,
             collectibles_cosmetics_address: WorldConfigUtilImpl::get_member(
                 world, game_id, selector!("collectibles_cosmetics_address"),
@@ -1088,7 +1071,6 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
                 world, game_id, selector!("collectibles_elitenft_address"),
             ),
             registration_count: game_config.registration_count,
-            issued_count: game_config.issued_count,
             registration_count_max: game_config.registration_count_max,
             registration_start_at: game_config.registration_start_at,
         }
@@ -1098,15 +1080,9 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
         self.registration_count >= self.registration_count_max
     }
 
-    fn is_issuance_full(self: BlitzRegistrationConfig) -> bool {
-        self.issued_count >= self.registration_count_max
-    }
-
     fn game_config(self: BlitzRegistrationConfig) -> BlitzRegistrationGameConfig {
         BlitzRegistrationGameConfig {
-            fee_amount: self.fee_amount,
             registration_count: self.registration_count,
-            issued_count: self.issued_count,
             registration_count_max: self.registration_count_max,
             registration_start_at: self.registration_start_at,
         }
@@ -1120,32 +1096,12 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
         now >= self.registration_start_at
     }
 
-    // Per-game UDC deployment retired: D13 uses one chain-wide entry-token collection.
-
-    fn setup_entry_token(self: BlitzRegistrationConfig, ipfs_cid: ByteArray) {
-        let dispatcher = ICollectibleDispatcher { contract_address: self.entry_token_address };
-        dispatcher.set_attrs_raw_to_ipfs_cid(self.entry_token_attrs_raw(0), ipfs_cid, false);
-    }
-
-    fn entry_token_lock_id(self: BlitzRegistrationConfig) -> felt252 {
-        69
-    }
-
-    fn entry_token_attrs_raw(self: BlitzRegistrationConfig, game_id: u32) -> u128 {
-        (game_id.into() * 0x100000000) + 1
-    }
-
     fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
         0x201 // Blitz Rewards (s0) NFTS
     }
 
     fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
         0x10101 // Series 0 Elite Invite NFTs
-    }
-
-    fn update_entry_token_lock(self: BlitzRegistrationConfig, unlock_at: u64) {
-        let dispatcher = ICollectibleDispatcher { contract_address: self.entry_token_address };
-        dispatcher.lock_state_update(self.entry_token_lock_id(), unlock_at);
     }
 }
 
@@ -1492,17 +1448,6 @@ pub struct BlitzSettlement {
     #[key]
     pub player: ContractAddress,
     pub structure_ids: Span<ID>,
-}
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzEntryTokenRegister {
-    #[key]
-    pub game_id: u32,
-    #[key]
-    pub token_id: u128,
-    pub issued: bool,
-    pub registered: bool,
 }
 
 #[derive(Copy, Drop, Serde, Introspect)]

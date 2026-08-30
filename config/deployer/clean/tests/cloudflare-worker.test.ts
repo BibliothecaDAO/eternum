@@ -26,7 +26,7 @@ describe("factory worker registrar workflows", () => {
         gameStartTime: "2099-01-01T00:00:00Z",
         twoPlayerMode: true,
         biomeClimateOverrides: { elevationScaleBps: 12_000, moistureSeed: 991 },
-        blitzRegistrationOverrides: { registration_count_max: 12, fee_amount: "40000" },
+        blitzRegistrationOverrides: { registration_count_max: 12 },
       }),
       buildWorkerEnv(),
     );
@@ -47,7 +47,7 @@ describe("factory worker registrar workflows", () => {
     expect(launchOptions).toMatchObject({
       twoPlayerMode: true,
       biomeClimateOverrides: { elevationScaleBps: 12_000, moistureSeed: 991 },
-      blitzRegistrationOverrides: { registration_count_max: 12, fee_amount: "40000" },
+      blitzRegistrationOverrides: { registration_count_max: 12 },
     });
   });
 
@@ -119,72 +119,6 @@ describe("factory worker registrar workflows", () => {
     expect(response.status).toBe(202);
     expect(dispatchBody.ref).toBe("feat/madara-lab");
     expect(dispatchBody.inputs.launch_step).toBe("wait-for-factory-index");
-  });
-
-  test("funds only games whose GameRegistry wait succeeded", async () => {
-    const calls = installGitHubFetch(({ url }) => {
-      if (url.includes("/contents/runs/madara/blitz/bltz-worker-test.json")) {
-        return buildGitHubContentsResponse(buildGameRun({ waitStatus: "succeeded" }));
-      }
-      if (url.includes("/contents/inputs/madara/blitz/bltz-worker-test/101-1.json")) {
-        return buildGitHubContentsResponse({
-          environment: "madara.blitz",
-          gameName: "bltz-worker-test",
-          request: {
-            environmentId: "madara.blitz",
-            gameName: "bltz-worker-test",
-            startTime: "2099-01-01T00:00:00Z",
-          },
-        });
-      }
-      if (url.includes("/actions/workflows/factory-prize-funding.yml/dispatches")) {
-        return new Response(null, { status: 204 });
-      }
-      throw new Error(`Unexpected fetch call: ${url}`);
-    });
-
-    const response = await worker.fetch(
-      buildJsonRequest(
-        "/api/factory/runs/madara.blitz/bltz-worker-test/actions/fund-prize",
-        { amount: "250" },
-        { "x-factory-admin-secret": "factory-secret" },
-      ),
-      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
-    );
-    const dispatch = calls.find((call) => call.url.includes("factory-prize-funding.yml/dispatches"));
-    const dispatchBody = JSON.parse(String(dispatch?.init?.body)) as { inputs: Record<string, string> };
-
-    expect(response.status).toBe(202);
-    expect(dispatchBody.inputs).toMatchObject({
-      environment: "madara.blitz",
-      run_kind: "game",
-      run_name: "bltz-worker-test",
-      prize_amount: "250",
-    });
-  });
-
-  test("rejects prize funding before GameRegistry indexing", async () => {
-    const calls = installGitHubFetch(({ url }) => {
-      if (url.includes("/contents/runs/madara/blitz/bltz-worker-test.json")) {
-        return buildGitHubContentsResponse(buildGameRun({ waitStatus: "failed" }));
-      }
-      throw new Error(`Unexpected fetch call: ${url}`);
-    });
-
-    const response = await worker.fetch(
-      buildJsonRequest(
-        "/api/factory/runs/madara.blitz/bltz-worker-test/actions/fund-prize",
-        { amount: "250" },
-        { "x-factory-admin-secret": "factory-secret" },
-      ),
-      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
-    );
-
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
-      error: 'Game "bltz-worker-test" must be indexed before prize funding',
-    });
-    expect(calls.some((call) => call.url.includes("factory-prize-funding.yml/dispatches"))).toBe(false);
   });
 });
 
