@@ -36,6 +36,15 @@
     "packages/world"
   ],
   "workspaces": {
+    "apps/realms": {
+      "entry": [
+        "src/main.tsx",
+        "server/main.ts"
+      ],
+      "ignore": [
+        "dist/**"
+      ]
+    },
     "apps/indexer": {
       "drizzle": false,
       "entry": [
