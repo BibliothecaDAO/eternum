@@ -76,8 +76,13 @@ brief.
   `services/contracts/` module — no ad-hoc `callContract` elsewhere. Reads by multicall; writes as single multicalls
   with approvals.
 - Identity API: the existing better-auth routes plus `name` (set/get/lookup by owner) and `owner → name` batch lookup.
-- The game client handoff is one URL: `/play?game=<id>` with the identity session cookie; the client resolves the
-  gameplay account from the session as it does today (`gameplay-account-sync.tsx`) and never talks to L2.
+- The app is the **game launcher**: home is news (the scroll posts) plus the next game and the player's standing, and
+  every path ends at Launch. The client handoff is one URL — the identity session cookie is set on `.realms.party`, so
+  `play.realms.party/#/play?game=<id>` opens already signed in; the client resolves the gameplay account from the
+  session as today (`gameplay-account-sync.tsx`) and never talks to L2. The desktop client (later, Tauri) registers
+  `realms://play?game=<id>`; the launcher tries the deep link with a one-time code minted by the identity API and falls
+  back to the web client. UI/UX source: the "Realms Launcher" artifact (claude.ai) — screens, navigation and flows;
+  deviations are named in the PR.
 
 ## Gates
 
