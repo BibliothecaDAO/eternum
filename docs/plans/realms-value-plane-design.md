@@ -88,8 +88,8 @@ The phase-2 `blitz_ledger` becomes `game_ledger`; same entrypoints, format-agnos
   protocol cut plus integer dust to `treasury`, loot chests and elite invites **minted by the ledger** (it holds
   `MINTER_ROLE` on those two ERC721s — the world's direct-mint path and its `0x0` guards are deleted), `finalized` set.
   A second call reverts. Paging (`post_results` + `finalize`) is added only if a 96-roster call _measures_ over the
-  transaction limit on Sepolia — not before. Stage 2 swaps the operator check for `consume_message_from_l3`; nothing
-  else changes.
+  transaction limit of the value chain — not before. Stage 2 swaps the operator check for `consume_message_from_l3`;
+  nothing else changes.
 - **MMR math in the port**: keep the formula (expected score, tanh-capped delta, mean regression), **delete** the dead
   lobby-split term, and fix ties by using the **average position** of a tied group (competition ranking) over `N − 1`,
   so a full-lobby tie yields zero deltas instead of all-positive ones. `MMRToken` loses its factory hook for an
