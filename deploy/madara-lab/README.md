@@ -512,8 +512,8 @@ not a fact.
 
 ## Server profile (rented box, Cloudflare Tunnel) — prepared 2026-08-29
 
-The same compose on a rented box (first: Latitude `f4.metal.small`, Ashburn, from 2026-08-31 — see "Box and region"
-below). Differences from the laptop, all of them deletions of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare Tunnel** terminates TLS on the owner's zone
+The same compose on a rented box (first: Latitude `f4.metal.small`, New York, from 2026-08-31 — see "Box and
+region" below). Differences from the laptop, all of them deletions of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare Tunnel** terminates TLS on the owner's zone
 and the box opens no public port but SSH. Herald and `apps/web` run as systemd units on the host (herald is the read
 path; `apps/web` holds the binding-authority key, so it must run where the chain is). The game client is served by
 Cloudflare Pages and talks to these hosts:
@@ -530,10 +530,11 @@ Cloudflare Pages and talks to these hosts:
 An action's latency is network RTT to the origin + serial Cairo execution on one sequencer core + herald's fold and
 push. The box and the region are picked for those two terms; nothing else about the profile depends on them.
 
-- **Region: Ashburn (ASH).** One origin for testers in Spain, Brazil, Australia and China; Ashburn is the best
-  single point for that set (≈90 / 115 / 200 / 220 ms) and Cloudflare's largest US PoP, so the tunnel's edge→origin
-  leg is short. Dallas trades ~25 ms better for the Pacific side against ~25 ms worse for the Atlantic side — move
-  only if the per-player `__clientActionLatencySummary` numbers say so.
+- **Region: New York (NYC).** One origin for testers in Spain, Brazil, Australia and China; the US East seaboard is
+  the best single point for that set (≈80 / 110 / 215 / 230 ms) and a major Cloudflare PoP, so the tunnel's
+  edge→origin leg is short (Ashburn was first choice but had no f4 stock on 2026-08-30; NYC is the same Atlantic
+  profile). Dallas trades ~25 ms better for the Pacific side against ~30 ms worse for the Atlantic side — move only
+  if the per-player `__clientActionLatencySummary` numbers say so.
 - **Box: `f4.metal.small`** (EPYC 4484PX: Zen 4, 12c/24t, 4.4 base / 5.7 GHz boost, 128 MB 3D V-Cache; 96 GB DDR5
   ECC; 2×960 GB NVMe; 2×10 Gbps; $0.55/h or $398/mo). The sequencer executes one action's Cairo on one core, so the
   pick is the highest-clocked Zen 4 on the list with the largest cache — not the most cores. `m4.metal.small`
