@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { addAddressPadding, hash, RpcProvider } from "starknet";
+import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
 const LAB_DIRECTORY = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPOSITORY_ROOT = resolve(LAB_DIRECTORY, "../..");
@@ -143,13 +144,15 @@ function writeDeploymentResult(result: GameplayDeploymentResult): void {
 }
 
 async function deployGameplayContracts(): Promise<GameplayDeploymentResult> {
+  const provider = new RpcProvider({ nodeUrl: RPC_URL });
+  await assertProviderChain(provider, "madara", "RPC_URL");
   buildGameplayContracts();
   const playerAccountClassHash = readClassHash(PLAYER_ACCOUNT_ARTIFACT);
   const playerRegistryClassHash = readClassHash(PLAYER_REGISTRY_ARTIFACT);
   const playerRegistryAddress = resolvePlayerRegistryAddress(playerRegistryClassHash);
 
   declareGameplayContracts();
-  await deployPlayerRegistryIfNeeded(new RpcProvider({ nodeUrl: RPC_URL }), playerRegistryClassHash, playerRegistryAddress);
+  await deployPlayerRegistryIfNeeded(provider, playerRegistryClassHash, playerRegistryAddress);
 
   const result = {
     bindingAuthorityAddress: addAddressPadding(BINDING_AUTHORITY_ADDRESS),

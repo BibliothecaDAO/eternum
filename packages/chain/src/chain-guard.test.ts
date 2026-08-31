@@ -12,14 +12,15 @@ describe("chain guard", () => {
     expect(expectedChainId("mainnet")).toBe(
       encodeChainName(CHAIN_NAMES.mainnet),
     );
+    expect(expectedChainId("sepolia")).toBe(
+      encodeChainName(CHAIN_NAMES.sepolia),
+    );
     expect(expectedChainId("appchain")).toBe(
       encodeChainName(CHAIN_NAMES.appchain),
     );
     expect(expectedChainId("madara")).toBe(encodeChainName(CHAIN_NAMES.madara));
     expect(expectedChainId("mainnet")).toBe("0x534e5f4d41494e");
-    expect(expectedChainId("appchain")).toBe(
-      "0x57505f5245414c4d535f444556",
-    );
+    expect(expectedChainId("appchain")).toBe("0x57505f5245414c4d535f444556");
     expect(expectedChainId("madara")).toBe(
       "0x57505f5245414c4d535f4d41444152415f4c4142",
     );

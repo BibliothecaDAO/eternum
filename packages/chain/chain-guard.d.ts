@@ -1,5 +1,6 @@
 export const CHAIN_NAMES: Readonly<{
   mainnet: "SN_MAIN";
+  sepolia: "SN_SEPOLIA";
   appchain: "WP_REALMS_DEV";
   madara: "WP_REALMS_MADARA_LAB";
 }>;
@@ -21,6 +22,12 @@ export function assertChainId(
   actualChainId: string,
   target: ChainTarget,
   environmentName: string,
+): void;
+export function assertExpectedChainId(
+  actualChainId: string,
+  expectedChainId: string,
+  environmentName: string,
+  expectedLabel: string,
 ): void;
 export function assertProviderChain(
   provider: ChainIdProvider,

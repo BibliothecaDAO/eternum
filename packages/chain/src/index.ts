@@ -6,6 +6,7 @@ export * from "./game-chains";
 export * from "./marketplace";
 export {
   assertChainId,
+  assertExpectedChainId,
   assertProviderChain,
   CHAIN_NAMES,
   encodeChainName,

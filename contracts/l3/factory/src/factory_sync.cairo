@@ -6,7 +6,6 @@
 use dojo::model::ModelStorage;
 use dojo::utils::bytearray_hash;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use crate::factory_mmr::FactoryMmrImpl;
 use crate::factory_models::{
     FactoryConfigContract, FactoryConfigEvent, FactoryConfigLibrary, FactoryConfigModel,
     FactoryDeploymentCursor,
@@ -35,7 +34,7 @@ pub impl FactoryConfigSyncImpl of FactoryConfigSyncTrait {
 
     /// Performs the contract phase for the current deployment cursor.
     ///
-    /// For each contract, this does registration, world mapping, optional MMR/series side effects,
+    /// For each contract, this does registration, world mapping, optional series side effects,
     /// and optional default namespace writer grant.
     /// Returns `true` when the action budget is reached and cursor is persisted.
     fn sync_contract_setup(
@@ -71,10 +70,6 @@ pub impl FactoryConfigSyncImpl of FactoryConfigSyncTrait {
                     },
                 );
 
-            // Feature hooks that react to contract registration.
-            FactoryMmrImpl::on_contract_registered(
-                ref factory_world, contract.selector, contract_address, version,
-            );
             FactorySeriesImpl::on_contract_registered(
                 ref factory_world,
                 series_name,

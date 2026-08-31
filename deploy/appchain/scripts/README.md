@@ -41,5 +41,4 @@ the full preset calldata without sending transactions. `APPCHAIN_MANIFEST_PATH` 
 for example `contracts/l3/game/manifest_spike.json` during local verification; the tracked Blitz manifest remains the
 default.
 
-The old `factory-config.ts` and `factory-create-game.ts` scripts are retained only as A2 migration history. They must not
-be used for `s2` launches.
+Retired factory and one-off Blitz scripts were deleted after the registrar launch path replaced them.

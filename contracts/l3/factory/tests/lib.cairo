@@ -8,15 +8,12 @@ use dojo_snf_test::{
 use fake_lib::{IFakeLibDispatcherTrait, IFakeLibLibraryDispatcher};
 use fake_world::{IMyContractDispatcher, IMyContractDispatcherTrait, ModelA};
 use snforge_std::{CheatSpan, DeclareResultTrait, cheat_caller_address, declare};
-use world_factory::constants::MMR_SYSTEMS_SELECTOR;
-use world_factory::factory_mmr::FactoryMmrImpl;
 use world_factory::factory_models::{
     FactoryConfig, FactoryConfigContract, FactoryConfigLibrary, FactoryDeploymentCursor,
 };
 use world_factory::factory_sync::FactoryConfigSyncImpl;
 use world_factory::interface::{
-    IWorldFactoryDispatcher, IWorldFactoryDispatcherTrait, IWorldFactoryMMRDispatcher,
-    IWorldFactoryMMRDispatcherTrait, IWorldFactorySeriesDispatcher,
+    IWorldFactoryDispatcher, IWorldFactoryDispatcherTrait, IWorldFactorySeriesDispatcher,
     IWorldFactorySeriesDispatcherTrait,
 };
 use world_factory::world_models::{WorldContract, WorldDeployed};
@@ -36,8 +33,8 @@ fn deploy_factory() -> (IWorldFactoryDispatcher, WorldStorage) {
             TestResource::Model("FactoryConfigEvent"), TestResource::Model("FactoryConfigLibrary"),
             TestResource::Model("Series"), TestResource::Model("SeriesContract"),
             TestResource::Model("SeriesContractBySelector"), TestResource::Model("SeriesGame"),
-            TestResource::Model("MMRRegistration"), TestResource::Model("WorldContract"),
-            TestResource::Model("WorldDeployed"), TestResource::Contract("factory"),
+            TestResource::Model("WorldContract"), TestResource::Model("WorldDeployed"),
+            TestResource::Contract("factory"),
         ]
             .span(),
     };
@@ -601,18 +598,4 @@ fn test_factory_series_interfaces() {
     assert!(all_by_class_hash.len() == 2);
     assert!(*all_by_class_hash.at(0) == world_1_contract.contract_address);
     assert!(*all_by_class_hash.at(1) == world_2_contract.contract_address);
-}
-
-#[test]
-fn test_factory_mmr_registration_interface() {
-    let (factory, mut factory_world) = deploy_factory();
-    let mmr_factory = IWorldFactoryMMRDispatcher { contract_address: factory.contract_address };
-
-    let registered_contract = factory.contract_address;
-    FactoryMmrImpl::on_contract_registered(
-        ref factory_world, MMR_SYSTEMS_SELECTOR, registered_contract, 7,
-    );
-
-    let mmr_version = mmr_factory.get_factory_mmr_contract_version(registered_contract);
-    assert!(mmr_version == 7);
 }

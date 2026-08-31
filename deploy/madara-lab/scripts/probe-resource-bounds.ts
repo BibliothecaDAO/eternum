@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { CallData, RpcProvider, type Account, type Call, type ResourceBoundsBN } from "starknet";
+import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
 import { createHarnessAccounts } from "../harness/account-factory";
 import { prepareHarnessBots, type HarnessSystemAddresses, type TrackedTransaction } from "../harness/driver";
@@ -51,6 +52,7 @@ async function runProbe(gameId: number): Promise<void> {
 
 async function prepareProbeBot(gameId: number) {
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
+  await assertProviderChain(provider, "madara", "RPC_URL");
   const [gameplayContracts, manifest] = await Promise.all([
     readJson<GameplayContractsArtifact>(path.join(LAB_DIRECTORY, ".lab/gameplay-contracts.json")),
     readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/l3/game/manifest_madara.json")),

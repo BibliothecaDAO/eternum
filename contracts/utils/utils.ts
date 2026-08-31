@@ -34,6 +34,8 @@ export interface SeasonAddresses {
   lords: string;
   /** Address of the STRK token contract */
   strk: string;
+  /** Address whose balance funds factory game deployment. */
+  factoryDeployer?: string;
   /** Map of resource name to [resourceId, contractAddress] */
   resources: {
     [key: string]: (string | number)[];
@@ -56,23 +58,78 @@ export type AppchainGameType = "blitz" | "eternum";
  */
 export function getSeasonAddresses(chain: string): SeasonAddresses {
   try {
+    let addresses: unknown;
     switch (chain) {
       case "sepolia":
-        return sepoliaSeasonAddresses;
+        addresses = sepoliaSeasonAddresses;
+        break;
       case "mainnet":
-        return mainnetSeasonAddresses;
+        addresses = mainnetSeasonAddresses;
+        break;
       case "local":
-        return localSeasonAddresses as any;
+        addresses = localSeasonAddresses;
+        break;
       case "madara":
-        return madaraSeasonAddresses as SeasonAddresses;
+        addresses = madaraSeasonAddresses;
+        break;
       case "appchain":
-        return appchainSeasonAddresses as any;
+        addresses = appchainSeasonAddresses;
+        break;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
+    return requireAddressTable(chain, addresses);
   } catch (error) {
     throw new Error(`Failed to load season addresses for chain ${chain}: ${error}`);
   }
+}
+
+const REQUIRED_ADDRESS_KEYS: Record<string, readonly string[]> = {
+  appchain: ["strk", "factoryDeployer"],
+  local: ["strk"],
+  madara: ["strk", "factoryDeployer"],
+  mainnet: ["strk", "lords", "seasonPass", "villagePass", "realms"],
+  sepolia: ["strk", "lords", "seasonPass", "villagePass", "realms"],
+};
+const KNOWN_ADDRESS_KEYS = new Set([
+  "Collectibles: Realms: Loot Chest",
+  "Collectibles: Realms: Cosmetic Items",
+  "Collectibles: Timelock Maker",
+  "Collectibles: Realms: Elite Invite",
+  "collectiblesClassHash",
+  "villagePass",
+  "seasonPass",
+  "realms",
+  "lords",
+  "strk",
+  "factoryDeployer",
+  "resources",
+  "marketplace",
+  "cosmeticsClaim",
+  "mmrToken",
+  "lootChests",
+  "eliteInvite",
+  "cosmetics",
+]);
+
+function requireAddressTable(chain: string, value: unknown): SeasonAddresses {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${chain} address table is not an object`);
+  }
+  const addresses = value as Record<string, unknown>;
+  for (const key of REQUIRED_ADDRESS_KEYS[chain] ?? []) {
+    if (typeof addresses[key] !== "string" || addresses[key] === "") {
+      throw new Error(`${chain} address table is missing ${key}`);
+    }
+  }
+  return new Proxy(addresses, {
+    get(target, key) {
+      if (typeof key === "string" && KNOWN_ADDRESS_KEYS.has(key) && !(key in target)) {
+        throw new Error(`${chain} address table does not define ${key}`);
+      }
+      return Reflect.get(target, key);
+    },
+  }) as unknown as SeasonAddresses;
 }
 
 /**

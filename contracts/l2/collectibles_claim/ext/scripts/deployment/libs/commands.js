@@ -56,15 +56,13 @@ export const deployCosmeticsClaimContract = async (
 
   let address = await deploy(casualName, class_hash, constructorCalldata);
   await saveContractAddressToCommonFolder("cosmetics_claim", address);
-  console.log(
-    `\n\n 💾 Saved contract address to common folder (contracts/common/collectibles/addresses/${process.env.STARKNET_NETWORK}.json)`,
-  );
+  console.log(`\n\n 💾 Saved contract address to contracts/common/addresses/${process.env.STARKNET_NETWORK}.json`);
   return address;
 };
 
 export const saveContractAddressToCommonFolder = async (contractName, contractAddress) => {
   try {
-    const folderPath = path.join("..", "..", "..", "..", "..", "..", "common", "collectibles_claim", "addresses");
+    const folderPath = path.resolve(__dirname, "..", "..", "..", "..", "..", "..", "common", "addresses");
 
     const mkdirAsync = promisify(fs.mkdir);
     await mkdirAsync(folderPath, { recursive: true });

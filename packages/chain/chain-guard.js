@@ -1,5 +1,6 @@
 export const CHAIN_NAMES = Object.freeze({
   mainnet: "SN_MAIN",
+  sepolia: "SN_SEPOLIA",
   appchain: "WP_REALMS_DEV",
   madara: "WP_REALMS_MADARA_LAB",
 });
@@ -11,6 +12,7 @@ export const GAME_CHAIN_NAMES = Object.freeze({
 
 const CHAIN_LABELS = Object.freeze({
   mainnet: "Starknet mainnet",
+  sepolia: "Starknet Sepolia",
   appchain: "appchain",
   madara: "madara",
 });
@@ -32,9 +34,24 @@ export function expectedChainId(target) {
 
 export function assertChainId(actualChainId, target, environmentName) {
   const expected = expectedChainId(target);
+  assertExpectedChainId(
+    actualChainId,
+    expected,
+    environmentName,
+    CHAIN_LABELS[target],
+  );
+}
+
+export function assertExpectedChainId(
+  actualChainId,
+  expectedChainIdValue,
+  environmentName,
+  expectedLabel,
+) {
+  const expected = `0x${BigInt(expectedChainIdValue).toString(16)}`;
   if (BigInt(actualChainId) !== BigInt(expected)) {
     throw new Error(
-      `${environmentName} is not ${CHAIN_LABELS[target]} (chain id ${actualChainId}, expected ${expected})`,
+      `${environmentName} is not ${expectedLabel} (chain id ${actualChainId}, expected ${expected})`,
     );
   }
 }

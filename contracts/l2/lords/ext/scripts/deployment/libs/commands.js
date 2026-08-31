@@ -40,7 +40,7 @@ export const deployLordsContract = async () => {
 
 export const saveContractAddressToCommonFolder = async (name, addr) => {
   try {
-    const folderPath = path.join("..", "..", "..", "..", "..", "..", "common", "lords", "addresses");
+    const folderPath = path.resolve(__dirname, "..", "..", "..", "..", "..", "..", "common", "addresses");
 
     const mkdirAsync = promisify(fs.mkdir);
     await mkdirAsync(folderPath, { recursive: true });

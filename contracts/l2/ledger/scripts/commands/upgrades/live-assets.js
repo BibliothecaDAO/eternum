@@ -56,7 +56,7 @@ function buildLiveAssetContracts(assets) {
 }
 
 async function verifyMainnetPlan(plan) {
-  const provider = getProvider();
+  const provider = await getProvider();
 
   for (const asset of plan.assets) await provider.getClassHashAt(asset.address);
   await provider.getClassHashAt(plan.ledgerAddress);
@@ -118,7 +118,7 @@ async function configureSeasonPassRestorer(plan) {
 }
 
 async function verifyAppliedPlan(plan, classHashes) {
-  const provider = getProvider();
+  const provider = await getProvider();
   for (const asset of plan.assets) {
     const actualClassHash = await provider.getClassHashAt(asset.address);
     const expectedClassHash = requireClassHash(classHashes, asset.id);

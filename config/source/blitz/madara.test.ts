@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import generatedMadaraBlitzConfig from "../../generated/blitz.madara.json";
+import { getSeasonAddresses } from "@contracts";
 import { resolveConfiguredAddress } from "../common/environment";
 
 describe("generated Madara Blitz config", () => {
@@ -20,5 +21,9 @@ describe("generated Madara Blitz config", () => {
 
   test("rejects a missing configured address instead of writing zero", () => {
     expect(() => resolveConfiguredAddress(undefined, "lords")).toThrow("lords address is not configured");
+  });
+
+  test("rejects an address key that the Madara table does not define", () => {
+    expect(() => getSeasonAddresses("madara").lords).toThrow("madara address table does not define lords");
   });
 });

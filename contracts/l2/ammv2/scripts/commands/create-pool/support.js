@@ -149,7 +149,9 @@ export function printPoolCreationPlan(networkName, poolCreationRequests) {
 }
 
 async function readPairAddress({ factoryAddress, tokenA, tokenB }) {
-  const response = await getProvider().callContract({
+  const response = await (
+    await getProvider()
+  ).callContract({
     calldata: [tokenA, tokenB],
     contractAddress: factoryAddress,
     entrypoint: "get_pair",

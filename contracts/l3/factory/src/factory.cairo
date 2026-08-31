@@ -23,8 +23,7 @@ pub mod factory {
     };
     use crate::factory_series::FactorySeriesImpl;
     use crate::factory_sync::FactoryConfigSyncImpl;
-    use crate::interface::{IWorldFactory, IWorldFactoryMMR, IWorldFactorySeries};
-    use crate::mmr_models::MMRRegistration;
+    use crate::interface::{IWorldFactory, IWorldFactorySeries};
     use crate::series_models::{Series, SeriesContract, SeriesContractBySelector, SeriesGame};
     use crate::world_models::WorldDeployed;
 
@@ -410,17 +409,6 @@ pub mod factory {
         }
     }
 
-
-    #[abi(embed_v0)]
-    impl IWorldFactoryMMRImpl of IWorldFactoryMMR<ContractState> {
-        fn get_factory_mmr_contract_version(
-            self: @ContractState, addr: ContractAddress,
-        ) -> felt252 {
-            let mut factory_world = self.world_default();
-            let mmr_registration: MMRRegistration = factory_world.read_model(addr);
-            return mmr_registration.version;
-        }
-    }
 
     #[generate_trait]
     impl FactoryConfigUtilImpl of FactoryConfigUtilTrait {

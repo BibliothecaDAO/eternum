@@ -13,18 +13,16 @@ interface FactoryDeployerWalletDefinition {
   tokens: FactoryDeployerTokenDefinition[];
 }
 
-const FACTORY_DEPLOYER_ADDRESSES: Record<FactoryLaunchChain, string> = {
-  madara: "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
-  appchain: "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
-};
-
 const TOKEN_DECIMALS = 18;
 const BALANCE_FRACTION_DIGITS = 4;
 
-export const resolveFactoryDeployerWallet = (chain: FactoryLaunchChain): FactoryDeployerWalletDefinition => ({
-  address: FACTORY_DEPLOYER_ADDRESSES[chain],
-  tokens: resolveFactoryDeployerTokens(chain),
-});
+export const resolveFactoryDeployerWallet = (chain: FactoryLaunchChain): FactoryDeployerWalletDefinition => {
+  const seasonAddresses = getSeasonAddresses(chain as Chain);
+  return {
+    address: requireTokenAddress(seasonAddresses.factoryDeployer, chain, "factory deployer"),
+    tokens: resolveFactoryDeployerTokens(chain, seasonAddresses),
+  };
+};
 
 export const formatFactoryDeployerTokenBalance = (value: bigint, decimals: number = TOKEN_DECIMALS) => {
   const divisor = 10n ** BigInt(decimals);
@@ -35,8 +33,10 @@ export const formatFactoryDeployerTokenBalance = (value: bigint, decimals: numbe
   return `${whole.toLocaleString("en-US")}.${fractionText}`;
 };
 
-function resolveFactoryDeployerTokens(chain: FactoryLaunchChain): FactoryDeployerTokenDefinition[] {
-  const seasonAddresses = getSeasonAddresses(chain as Chain);
+function resolveFactoryDeployerTokens(
+  chain: FactoryLaunchChain,
+  seasonAddresses: ReturnType<typeof getSeasonAddresses>,
+): FactoryDeployerTokenDefinition[] {
   const tokens: FactoryDeployerTokenDefinition[] = [
     {
       symbol: "STRK",

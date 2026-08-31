@@ -2,6 +2,7 @@
 import { createRequire } from "node:module";
 import { AndComposeClause, KeysClause, MemberClause } from "@dojoengine/sdk/node";
 import { Account, RpcProvider } from "starknet";
+import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { Clause, Entity, Subscription } from "@dojoengine/torii-wasm/node";
 import {
   formatError,
@@ -197,8 +198,10 @@ async function runMatrix(options: D16Options): Promise<object> {
   const playerIdentity = normalizeAddress(options.accountAddress);
   const clauses = buildD16Clauses(gameOne, playerIdentity);
   const client = await createToriiClient(options.toriiUrl, options.worldAddress);
+  const provider = new RpcProvider({ nodeUrl: options.rpcUrl });
+  await assertProviderChain(provider, "appchain", "--rpc-url");
   const account = new Account({
-    provider: new RpcProvider({ nodeUrl: options.rpcUrl }),
+    provider,
     address: options.accountAddress,
     signer: options.privateKey,
   });
