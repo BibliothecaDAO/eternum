@@ -1,11 +1,6 @@
-import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
-import { Account, RpcProvider, constants, uint256, type Call } from "starknet";
-import type {
-  LedgerRegistrationMessage,
-  LedgerResultsMessage,
-  RegistrationWriter,
-  ResultsWriter,
-} from "./types";
+import { decodeGameLedgerGame, resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
+import { Account, RpcProvider, uint256, type Call } from "starknet";
+import type { LedgerRegistrationMessage, LedgerResultsMessage, RegistrationWriter, ResultsWriter } from "./types";
 
 export function createOperatorAccount(rpcUrl: string, address: string, privateKey: string): Account {
   return new Account({
@@ -61,11 +56,7 @@ export class MainnetResultsWriter implements ResultsWriter {
       { contractAddress: this.ledgerAddress, entrypoint: "get_game", calldata: [gameId.toString()] },
       "latest",
     );
-    const finalized = result[8];
-    if (finalized === undefined || (finalized !== "0x0" && finalized !== "0x1")) {
-      throw new Error(`GameLedger.get_game returned an invalid finalized flag for game ${gameId}`);
-    }
-    return finalized === "0x1";
+    return decodeGameLedgerGame(result).finalized;
   }
 
   public write(message: LedgerResultsMessage): Promise<string> {
@@ -92,9 +83,8 @@ async function executeAndWait(
   const transaction = await account.execute(call, details);
   const receipt = await account.waitForTransaction(transaction.transaction_hash, { retryInterval });
   const status = receipt as { execution_status?: string; isSuccess?: () => boolean };
-  const succeeded = typeof status.isSuccess === "function" ? status.isSuccess() : status.execution_status === "SUCCEEDED";
+  const succeeded =
+    typeof status.isSuccess === "function" ? status.isSuccess() : status.execution_status === "SUCCEEDED";
   if (!succeeded) throw new Error(`${call.entrypoint} failed for transaction ${transaction.transaction_hash}`);
   return transaction.transaction_hash;
 }
-
-export const MAINNET_CHAIN_ID = constants.StarknetChainId.SN_MAIN;

@@ -1,14 +1,16 @@
 import path from "node:path";
+import { assertRelayChainIds, type S2Chain } from "./chains";
 import { PostgresCursorStore } from "./cursor-store";
 import { loadRelayManifest } from "./manifest";
 import { OperatorRelay, runRelayLoop } from "./relay";
 import { StarknetRpc } from "./rpc";
-import { MAINNET_CHAIN_ID, MainnetResultsWriter, S2RegistrationWriter, createOperatorAccount } from "./writers";
+import { MainnetResultsWriter, S2RegistrationWriter, createOperatorAccount } from "./writers";
 
 const config = readConfig();
 const ledgerRpc = new StarknetRpc(config.ledgerRpcUrl);
 const s2Rpc = new StarknetRpc(config.s2RpcUrl);
-assertMainnet(await ledgerRpc.chainId());
+const [ledgerChainId, s2ChainId] = await Promise.all([ledgerRpc.chainId(), s2Rpc.chainId()]);
+assertRelayChainIds(ledgerChainId, s2ChainId, config.s2Chain);
 
 const manifest = loadRelayManifest(config.s2ManifestPath);
 const cursorStore = new PostgresCursorStore(config.databaseUrl);
@@ -21,14 +23,14 @@ const relay = new OperatorRelay({
   ledgerAddress: config.ledgerAddress,
   ledgerSource: ledgerRpc,
   registrationWriter: new S2RegistrationWriter(
-    createOperatorAccount(config.s2RpcUrl, config.operatorAddress, config.operatorPrivateKey),
+    createOperatorAccount(config.s2RpcUrl, config.s2OperatorAddress, config.s2OperatorPrivateKey),
     manifest.entrySystemAddress,
     config.s2Chain,
   ),
   resultReadySelector: manifest.resultReadySelector,
   resultRowSelector: manifest.resultRowSelector,
   resultsWriter: new MainnetResultsWriter(
-    createOperatorAccount(config.ledgerRpcUrl, config.operatorAddress, config.operatorPrivateKey),
+    createOperatorAccount(config.ledgerRpcUrl, config.ledgerOperatorAddress, config.ledgerOperatorPrivateKey),
     config.ledgerAddress,
     config.ledgerRpcUrl,
   ),
@@ -44,7 +46,8 @@ console.info(
     event: "operator_started",
     ledgerAddress: config.ledgerAddress,
     ledgerStartBlock: config.ledgerStartBlock,
-    operatorAddress: config.operatorAddress,
+    ledgerOperatorAddress: config.ledgerOperatorAddress,
+    s2OperatorAddress: config.s2OperatorAddress,
     s2StartBlock: config.s2StartBlock,
     worldAddress: manifest.worldAddress,
   }),
@@ -72,11 +75,13 @@ function readConfig() {
     ledgerAddress: requireAddress("LEDGER_ADDRESS"),
     ledgerRpcUrl: requireEnvironment("LEDGER_RPC_URL"),
     ledgerStartBlock: requireBlock("LEDGER_START_BLOCK"),
-    operatorAddress: requireAddress("LEDGER_OPERATOR_ADDRESS"),
-    operatorPrivateKey: requireEnvironment("LEDGER_OPERATOR_PRIVATE_KEY"),
+    ledgerOperatorAddress: requireAddress("LEDGER_OPERATOR_ADDRESS"),
+    ledgerOperatorPrivateKey: requireEnvironment("LEDGER_OPERATOR_PRIVATE_KEY"),
     pollMs: optionalPositiveInteger("OPERATOR_POLL_MS", 1_000),
     s2Chain: requireS2Chain(),
     s2ManifestPath: path.resolve(requireEnvironment("S2_MANIFEST_PATH")),
+    s2OperatorAddress: requireAddress("S2_OPERATOR_ADDRESS"),
+    s2OperatorPrivateKey: requireEnvironment("S2_OPERATOR_PRIVATE_KEY"),
     s2RpcUrl: requireEnvironment("S2_RPC_URL"),
     s2StartBlock: requireBlock("S2_START_BLOCK"),
   };
@@ -108,14 +113,8 @@ function optionalPositiveInteger(name: string, fallback: number): number {
   return value;
 }
 
-function requireS2Chain(): "madara" | "appchain" {
+function requireS2Chain(): S2Chain {
   const value = requireEnvironment("S2_CHAIN");
   if (value !== "madara" && value !== "appchain") throw new Error("S2_CHAIN must be madara or appchain");
   return value;
-}
-
-function assertMainnet(chainId: string): void {
-  if (BigInt(chainId) !== BigInt(MAINNET_CHAIN_ID)) {
-    throw new Error(`LEDGER_RPC_URL is not Starknet mainnet (chain id ${chainId})`);
-  }
 }

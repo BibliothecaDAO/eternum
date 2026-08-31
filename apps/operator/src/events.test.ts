@@ -62,6 +62,15 @@ describe("operator event decoding", () => {
     ).toThrow("declared 2 rows but received 1");
   });
 
+  it("rejects result rows whose ready marker is absent from the pass", () => {
+    expect(() =>
+      parseLedgerResults([dojoEvent(ROW, ["0x7", "0x9", "0x0"], ["0xaaa", "0x1", "0x3"], 0)], {
+        resultRowSelector: ROW,
+        resultReadySelector: READY,
+      }),
+    ).toThrow("Result rows have no ready marker: 7:9");
+  });
+
   it("matches the ledger result commitment", () => {
     expect(
       resultCommitment({

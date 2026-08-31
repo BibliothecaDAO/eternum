@@ -218,7 +218,8 @@ from the treasury LORDS float, and registers each owner on mainnet. It deploys p
 accounts, binds them through `PlayerRegistry`, waits for the operator to relay every `LedgerRegistration`, and only then
 settles on the lab. After the workload it submits the complete points-ordered roster, waits for mainnet
 `apply_results`, and returns each bot's payout to the treasury. The manifest records funding, registration, binding,
-ranking, finalization, and sweep transaction hashes.
+ranking, finalization, and sweep transaction hashes. Before the first treasury transfer it also writes an immutable
+`.sweep.json` manifest beside the run reports with every owner's LORDS baseline and observed STRK balance.
 
 The accounts file is a JSON array with exactly `--bots` entries. Keep it outside the repository: it contains mainnet
 and gameplay private keys, and the mainnet accounts must already be deployed and funded with enough STRK for their own
@@ -242,6 +243,18 @@ With `apps/operator` running and the root `.env` defining `LEDGER_ADDRESS`, `LED
 ```bash
 pnpm lab:harness -- --ledger --ledger-accounts /secure/path/ledger-bots.json --bots 96 --minutes 10
 ```
+
+If the run stops after treasury funding, recover every LORDS balance above those recorded baselines without starting a
+game or touching the lab:
+
+```bash
+pnpm lab:harness -- --sweep-only deploy/madara-lab/.lab/runs/<run>.sweep.json \
+  --ledger-accounts /secure/path/ledger-bots.json
+```
+
+Sweep-only requires `LEDGER_RPC_URL`, `LORDS_ADDRESS`, and `LEDGER_TREASURY_ADDRESS`. It validates the manifest and
+owner roster, refuses a non-mainnet RPC or a balance below baseline, writes a machine-readable receipt next to the
+manifest, and never reads the gameplay contracts.
 
 The default mainnet registration window is 900 seconds. Use `--ledger-start-delay-seconds` only when the RPC or account
 roster needs a larger window. The ordinary command above this section remains dev mode and never requires a ledger.

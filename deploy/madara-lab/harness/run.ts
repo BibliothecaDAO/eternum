@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { BlockTag, logger, RpcProvider } from "starknet";
+import { Account, BlockTag, constants, logger, RpcProvider } from "starknet";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
 import { prepareHarnessBots, runWorkload, type HarnessSystemAddresses, type TrackedTransaction } from "./driver";
@@ -17,6 +17,11 @@ import {
   type LedgerHarnessEvidence,
   type LedgerRegistrationRuntime,
 } from "./ledger-mode";
+import {
+  readLedgerSweepManifest,
+  sweepLedgerBalances,
+  writeLedgerSweepReceipt,
+} from "./ledger-money";
 import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
 
 interface HarnessCliOptions {
@@ -31,6 +36,7 @@ interface HarnessCliOptions {
   minutes: number;
   rpcUrl: string;
   setupConcurrency: number;
+  sweepOnlyManifestPath?: string;
   heraldUrl: string;
 }
 
@@ -58,6 +64,12 @@ interface LedgerEnvironment {
   mainnetRpcUrl: string;
   treasuryAddress: string;
   treasuryPrivateKey: string;
+}
+
+interface LedgerSweepEnvironment {
+  lordsAddress: string;
+  mainnetRpcUrl: string;
+  treasuryAddress: string;
 }
 
 interface PreparedGameRun {
@@ -94,6 +106,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
   const games = positiveInteger(values.games ?? "1", "games");
   const ledger = values.ledger === "true";
+  const sweepOnlyManifestPath = values["sweep-only"];
   const ledgerStartDelaySeconds = positiveInteger(
     values["ledger-start-delay-seconds"] ?? "900",
     "ledger-start-delay-seconds",
@@ -103,8 +116,13 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   if (gameId !== undefined && games !== 1) throw new Error("--game-id can only be used with --games 1");
   if (ledger && gameId !== undefined) throw new Error("--ledger always creates a fresh game; --game-id is not supported");
   if (ledger && games !== 1) throw new Error("--ledger supports one game per run");
-  if (ledger && !values["ledger-accounts"]) throw new Error("--ledger-accounts is required with --ledger");
-  if (!ledger && values["ledger-accounts"]) throw new Error("--ledger-accounts requires --ledger");
+  if (ledger && sweepOnlyManifestPath) throw new Error("--ledger and --sweep-only are separate modes");
+  if ((ledger || sweepOnlyManifestPath) && !values["ledger-accounts"]) {
+    throw new Error("--ledger-accounts is required with --ledger or --sweep-only");
+  }
+  if (!ledger && !sweepOnlyManifestPath && values["ledger-accounts"]) {
+    throw new Error("--ledger-accounts requires --ledger or --sweep-only");
+  }
   if (!ledger && values["ledger-start-delay-seconds"]) {
     throw new Error("--ledger-start-delay-seconds requires --ledger");
   }
@@ -124,12 +142,17 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     minutes,
     rpcUrl: values["rpc-url"] ?? process.env.RPC_URL ?? DEFAULT_RPC_URL,
     setupConcurrency,
+    sweepOnlyManifestPath,
     heraldUrl: values["herald-url"] ?? process.env.HERALD_URL ?? DEFAULT_HERALD_URL,
   };
 }
 
 async function main(): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
+  if (options.sweepOnlyManifestPath) {
+    await runLedgerSweepOnly(options);
+    return;
+  }
   process.env.HERALD_URL = options.heraldUrl;
 
   const provider = createHarnessProvider(options.rpcUrl);
@@ -383,9 +406,58 @@ async function prepareLedgerRegistrations(
     ledgerAddress: environment.ledgerAddress,
     lordsAddress: environment.lordsAddress,
     mainnetRpcUrl: environment.mainnetRpcUrl,
+    recoveryManifestPath: createLedgerSweepManifestPath(game.gameId),
     treasuryAddress: environment.treasuryAddress,
     treasuryPrivateKey: environment.treasuryPrivateKey,
   });
+}
+
+async function runLedgerSweepOnly(options: HarnessCliOptions): Promise<void> {
+  const manifestPath = path.resolve(REPOSITORY_ROOT, options.sweepOnlyManifestPath!);
+  const manifest = await readLedgerSweepManifest(manifestPath);
+  const environment = resolveLedgerSweepEnvironment();
+  assertSameAddress(manifest.lordsAddress, environment.lordsAddress, "LORDS_ADDRESS");
+  assertSameAddress(manifest.treasuryAddress, environment.treasuryAddress, "LEDGER_TREASURY_ADDRESS");
+
+  const identities = await loadLedgerBotIdentities(
+    path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!),
+    manifest.accounts.length,
+  );
+  const identityByOwner = new Map(identities.map((identity) => [BigInt(identity.mainnetAddress).toString(), identity]));
+  const provider = new RpcProvider({ nodeUrl: environment.mainnetRpcUrl });
+  const chainId = await provider.getChainId();
+  if (BigInt(chainId) !== BigInt(constants.StarknetChainId.SN_MAIN)) {
+    throw new Error(`LEDGER_RPC_URL is not Starknet mainnet (chain id ${chainId})`);
+  }
+
+  const accounts = manifest.accounts.map(({ owner, preFundLordsBalanceBaseUnits }) => {
+    const identity = identityByOwner.get(BigInt(owner).toString());
+    if (!identity) throw new Error(`--ledger-accounts is missing sweep owner ${owner}`);
+    return {
+      account: new Account({ provider, address: identity.mainnetAddress, signer: identity.mainnetPrivateKey }),
+      owner,
+      preFundLordsBalance: BigInt(preFundLordsBalanceBaseUnits),
+    };
+  });
+  if (accounts.length !== identityByOwner.size) {
+    throw new Error("--ledger-accounts contains an owner absent from the sweep manifest");
+  }
+
+  const evidence = await sweepLedgerBalances(
+    provider,
+    accounts,
+    environment.lordsAddress,
+    options.setupConcurrency,
+    environment.treasuryAddress,
+  );
+  const receiptPath = await writeLedgerSweepReceipt(manifestPath, evidence);
+  console.log(
+    JSON.stringify({
+      amountBaseUnits: evidence.amount.toString(),
+      receiptPath,
+      transactionHashes: evidence.transactionHashes,
+    }),
+  );
 }
 
 async function finalizeValuePlaneRun({
@@ -438,10 +510,29 @@ function resolveLedgerEnvironment(): LedgerEnvironment {
   };
 }
 
-function requiredEnvironmentValue(name: string): string {
+function resolveLedgerSweepEnvironment(): LedgerSweepEnvironment {
+  return {
+    lordsAddress: requiredEnvironmentValue("LORDS_ADDRESS", "--sweep-only"),
+    mainnetRpcUrl: requiredEnvironmentValue("LEDGER_RPC_URL", "--sweep-only"),
+    treasuryAddress: requiredEnvironmentValue("LEDGER_TREASURY_ADDRESS", "--sweep-only"),
+  };
+}
+
+function requiredEnvironmentValue(name: string, mode = "--ledger"): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`${name} is required with --ledger`);
+  if (!value) throw new Error(`${name} is required with ${mode}`);
   return value;
+}
+
+function createLedgerSweepManifestPath(gameId: number): string {
+  const runId = new Date().toISOString().replace(/[-:.]/g, "");
+  return path.join(LAB_DIRECTORY, `.lab/runs/${runId}-game-${gameId}.sweep.json`);
+}
+
+function assertSameAddress(actual: string, expected: string, environmentName: string): void {
+  if (BigInt(actual) !== BigInt(expected)) {
+    throw new Error(`${environmentName} ${expected} does not match sweep manifest address ${actual}`);
+  }
 }
 
 function positiveInteger(value: string, name: string): number {
@@ -476,6 +567,7 @@ Usage: bun deploy/madara-lab/harness/run.ts [options]
   --ledger                       use mainnet ledger registration and result settlement
   --ledger-accounts <path>       JSON array of mainnet bot and gameplay keys; required with --ledger
   --ledger-start-delay-seconds   registration window before play; default: 900
+  --sweep-only <manifest>        recover LORDS above the manifest's pre-fund baselines, then exit
 `);
 }
 

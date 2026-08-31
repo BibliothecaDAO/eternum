@@ -44,6 +44,11 @@ does not submit a transaction. The execute command declares the three classes, u
 Village Pass, grants the ledger `UPDATER_ROLE` and `DISTRIBUTOR_ROLE`, and verifies class hashes and grants afterwards.
 It is rerunnable after a partial failure.
 
+Before the first `--execute` against live assets, run the same upgrade plan on a mainnet fork. For both pass contracts,
+read a known token owner before the upgrade, verify the same owner afterwards, approve the ledger, and complete a burn
+round-trip. Class-hash and role checks do not prove storage-layout compatibility; the fork rehearsal is a required
+live-gate artifact.
+
 ```sh
 pnpm ledger:check-live-assets:mainnet
 pnpm ledger:upgrade-live-assets:mainnet

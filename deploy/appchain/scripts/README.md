@@ -12,6 +12,7 @@ mv manifest_appchain-blitz.json manifest_appchain_blitz.json
 cd ../..
 DOJO_ACCOUNT_ADDRESS=0x... \
 DOJO_PRIVATE_KEY=0x... \
+S2_OPERATOR_ADDRESS=0x... \
 ENTRY_TOKEN_ADDRESS=0x... \
 LOOT_CHEST_ADDRESS=0x... \
 bun deploy/appchain/scripts/deploy-s2-world.ts

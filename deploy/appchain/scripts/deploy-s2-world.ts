@@ -124,7 +124,7 @@ async function deployS2World(): Promise<void> {
     environmentId,
     account,
     adminAddress: credentials.accountAddress,
-    ledgerOperatorAddress: requiredEnvironmentAddress("LEDGER_OPERATOR_ADDRESS"),
+    ledgerOperatorAddress: requiredEnvironmentAddress("S2_OPERATOR_ADDRESS"),
     playerRegistryAddress: requiredEnvironmentAddress("PLAYER_REGISTRY_ADDRESS"),
     dryRun,
   });

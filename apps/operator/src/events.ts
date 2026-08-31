@@ -58,6 +58,10 @@ export function parseLedgerResults(
     groups.delete(ready.key);
   }
 
+  if (groups.size > 0) {
+    throw new Error(`Result rows have no ready marker: ${[...groups.keys()].join(", ")}`);
+  }
+
   return completed;
 }
 

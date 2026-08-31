@@ -12,12 +12,22 @@ import {
   type Call,
 } from "starknet";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
+import { decodeGameLedgerGame } from "../../../packages/core/src/data/abi/GameLedger";
 import {
   mapWithConcurrency,
   type HarnessAccount,
   type HarnessGameplayIdentity,
 } from "./account-factory";
 import { HeraldObserver } from "./herald-observer";
+import {
+  assertLedgerRunConservation,
+  executeMainnetAndWait,
+  readLedgerBalanceBaselines,
+  readTokenBalance,
+  sweepLedgerBalances,
+  writeLedgerSweepManifest,
+  type LedgerBalanceBaseline,
+} from "./ledger-money";
 
 export interface LedgerBotIdentity {
   gameplayPrivateKey: string;
@@ -31,7 +41,8 @@ export interface LedgerRegistrationRuntime {
   account: Account;
   identity: LedgerBotIdentity;
   payment: bigint;
-  startingBalance: bigint;
+  preFundLordsBalance: bigint;
+  strkBalance: bigint;
 }
 
 export interface LedgerRegistrationEvidence {
@@ -40,11 +51,14 @@ export interface LedgerRegistrationEvidence {
   registrations: Array<{
     owner: string;
     paymentBaseUnits: string;
+    preFundLordsBalanceBaseUnits: string;
     shield: boolean;
+    strkBalanceBaseUnits: string;
     sword: boolean;
     transactionHash: string;
   }>;
   requiredTreasuryFloatBaseUnits: string;
+  sweepManifestPath: string;
 }
 
 export interface LedgerBindingEvidence {
@@ -54,9 +68,9 @@ export interface LedgerBindingEvidence {
 
 export interface LedgerFinalizationEvidence {
   dustBaseUnits: string;
-  finalizationObserved: boolean;
   protocolCutBaseUnits: string;
   rankingTransactionHash: string;
+  returnedToTreasuryBaseUnits: string;
   sweptLordsBaseUnits: string;
   sweepTransactionHashes: string[];
   trialId: string;
@@ -78,6 +92,7 @@ interface RegisterLedgerBotsOptions {
   ledgerAddress: string;
   lordsAddress: string;
   mainnetRpcUrl: string;
+  recoveryManifestPath: string;
   treasuryAddress: string;
   treasuryPrivateKey: string;
 }
@@ -104,16 +119,6 @@ interface FinalizeLedgerGameOptions {
   treasuryAddress: string;
 }
 
-interface LedgerGame {
-  cancelled: boolean;
-  dust: bigint;
-  finalized: boolean;
-  pool: bigint;
-  presetId: number;
-  protocolCut: bigint;
-  start: number;
-}
-
 interface LedgerPresetCosts {
   entryFee: bigint;
   shieldPrice: bigint;
@@ -121,7 +126,6 @@ interface LedgerPresetCosts {
 }
 
 const MADARA_RESOURCE_BOUNDS = resolveGameTransactionResourceBounds("madara");
-const MAINNET_RECEIPT_POLL_MS = 1_000;
 const MADARA_RECEIPT_POLL_MS = 50;
 const FUNDING_BATCH_SIZE = 12;
 const BINDING_BATCH_SIZE = 24;
@@ -162,7 +166,7 @@ export async function registerLedgerBots(
 ): Promise<{ evidence: LedgerRegistrationEvidence; registrations: LedgerRegistrationRuntime[] }> {
   const provider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
   const mainnetChainId = await provider.getChainId();
-  if (mainnetChainId !== constants.StarknetChainId.SN_MAIN) {
+  if (BigInt(mainnetChainId) !== BigInt(constants.StarknetChainId.SN_MAIN)) {
     throw new Error(`Ledger harness requires Starknet mainnet, received ${mainnetChainId}`);
   }
 
@@ -170,8 +174,23 @@ export async function registerLedgerBots(
   const latestBlock = await provider.getBlock("latest");
   assertGameAcceptsRegistrations(game, options.gameId, Number(latestBlock.timestamp));
   const costs = await readLedgerPresetCosts(provider, options.ledgerAddress, game.presetId);
-  const registrations = await prepareRegistrationAccounts(provider, options, costs);
+  const baselines = await readLedgerBalanceBaselines(
+    provider,
+    options.lordsAddress,
+    options.identities.map(({ mainnetAddress }) => mainnetAddress),
+    options.concurrency,
+  );
+  const registrations = await prepareRegistrationAccounts(provider, options, costs, baselines);
   const requiredTreasuryFloat = registrations.reduce((total, registration) => total + registration.payment, 0n);
+  await writeLedgerSweepManifest(options.recoveryManifestPath, {
+    accounts: baselines,
+    chainId: mainnetChainId,
+    gameId: options.gameId,
+    ledgerAddress: options.ledgerAddress,
+    lordsAddress: options.lordsAddress,
+    treasuryAddress: options.treasuryAddress,
+  });
+  console.log(`Ledger sweep manifest written before treasury funding: ${options.recoveryManifestPath}`);
   const treasury = new Account({
     provider,
     address: options.treasuryAddress,
@@ -198,14 +217,17 @@ export async function registerLedgerBots(
     evidence: {
       fundingTransactionHashes,
       mainnetChainId,
-      registrations: registrations.map(({ identity, payment }, index) => ({
+      registrations: registrations.map(({ identity, payment, preFundLordsBalance, strkBalance }, index) => ({
         owner: identity.mainnetAddress,
         paymentBaseUnits: payment.toString(),
+        preFundLordsBalanceBaseUnits: preFundLordsBalance.toString(),
         shield: identity.shield,
+        strkBalanceBaseUnits: strkBalance.toString(),
         sword: identity.sword,
         transactionHash: registrationTransactionHashes[index]!,
       })),
       requiredTreasuryFloatBaseUnits: requiredTreasuryFloat.toString(),
+      sweepManifestPath: options.recoveryManifestPath,
     },
   };
 }
@@ -316,19 +338,29 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
   );
   const mainnetProvider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
   const finalized = await waitForLedgerFinalization(mainnetProvider, options.ledgerAddress, options.gameId);
-  const sweep = await sweepLedgerPayouts(
+  const sweep = await sweepLedgerBalances(
     mainnetProvider,
-    options.registrations,
+    options.registrations.map(({ account, identity, preFundLordsBalance }) => ({
+      account,
+      owner: identity.mainnetAddress,
+      preFundLordsBalance,
+    })),
     options.lordsAddress,
     options.concurrency,
     options.treasuryAddress,
   );
+  const returnedToTreasury = assertLedgerRunConservation({
+    dust: finalized.dust,
+    funded: options.registrations.reduce((total, registration) => total + registration.payment, 0n),
+    protocolCut: finalized.protocolCut,
+    swept: sweep.amount,
+  });
 
   return {
     dustBaseUnits: finalized.dust.toString(),
-    finalizationObserved: true,
     protocolCutBaseUnits: finalized.protocolCut.toString(),
     rankingTransactionHash,
+    returnedToTreasuryBaseUnits: returnedToTreasury.toString(),
     sweptLordsBaseUnits: sweep.amount.toString(),
     sweepTransactionHashes: sweep.transactionHashes,
     trialId: trialId.toString(),
@@ -395,19 +427,23 @@ async function prepareRegistrationAccounts(
   provider: RpcProvider,
   options: RegisterLedgerBotsOptions,
   costs: LedgerPresetCosts,
+  baselines: readonly LedgerBalanceBaseline[],
 ): Promise<LedgerRegistrationRuntime[]> {
+  const baselineByOwner = new Map(baselines.map((baseline) => [normalizeFelt(baseline.owner), baseline]));
   return mapWithConcurrency(options.identities, options.concurrency, async (identity) => {
     await provider.getClassHashAt(identity.mainnetAddress);
     const registered = await readLedgerRegistration(provider, options.ledgerAddress, options.gameId, identity.mainnetAddress);
     if (registered) throw new Error(`Owner ${identity.mainnetAddress} is already registered for game ${options.gameId}`);
     const payment =
       costs.entryFee + (identity.sword ? costs.swordPrice : 0n) + (identity.shield ? costs.shieldPrice : 0n);
-    const startingBalance = await readTokenBalance(provider, options.lordsAddress, identity.mainnetAddress);
+    const baseline = baselineByOwner.get(normalizeFelt(identity.mainnetAddress));
+    if (!baseline) throw new Error(`Missing balance baseline for owner ${identity.mainnetAddress}`);
     return {
       account: new Account({ provider, address: identity.mainnetAddress, signer: identity.mainnetPrivateKey }),
       identity,
       payment,
-      startingBalance,
+      preFundLordsBalance: baseline.preFundLordsBalance,
+      strkBalance: baseline.strkBalance,
     };
   });
 }
@@ -470,23 +506,19 @@ async function submitRegistrations(
   });
 }
 
-async function readLedgerGame(provider: RpcProvider, ledgerAddress: string, gameId: number): Promise<LedgerGame> {
+async function readLedgerGame(provider: RpcProvider, ledgerAddress: string, gameId: number) {
   const result = await provider.callContract(
     { contractAddress: ledgerAddress, entrypoint: "get_game", calldata: [gameId.toString()] },
     "latest",
   );
-  return {
-    cancelled: truthyFelt(result[7]),
-    dust: readUint256(result, 11),
-    finalized: truthyFelt(result[8]),
-    pool: readUint256(result, 4),
-    presetId: Number(BigInt(result[1]!)),
-    protocolCut: readUint256(result, 9),
-    start: Number(BigInt(result[2]!)),
-  };
+  return decodeGameLedgerGame(result);
 }
 
-function assertGameAcceptsRegistrations(game: LedgerGame, gameId: number, chainTimestamp: number): void {
+function assertGameAcceptsRegistrations(
+  game: ReturnType<typeof decodeGameLedgerGame>,
+  gameId: number,
+  chainTimestamp: number,
+): void {
   if (game.cancelled) throw new Error(`Ledger game ${gameId} is cancelled`);
   if (game.finalized) throw new Error(`Ledger game ${gameId} is already finalized`);
   if (chainTimestamp >= game.start) throw new Error(`Ledger game ${gameId} registration is closed`);
@@ -519,14 +551,6 @@ async function readLedgerRegistration(
     "latest",
   );
   return truthyFelt(result[0]);
-}
-
-async function readTokenBalance(provider: RpcProvider, token: string, owner: string): Promise<bigint> {
-  const result = await provider.callContract(
-    { contractAddress: token, entrypoint: "balance_of", calldata: [owner] },
-    "latest",
-  );
-  return readUint256(result, 0);
 }
 
 async function readRegistryAddress(
@@ -594,43 +618,6 @@ async function waitForLedgerFinalization(
   throw new Error(`Operator did not finalize ledger game ${gameId} within ${FINALIZATION_TIMEOUT_MS / 1_000} seconds`);
 }
 
-async function sweepLedgerPayouts(
-  provider: RpcProvider,
-  registrations: readonly LedgerRegistrationRuntime[],
-  lordsAddress: string,
-  concurrency: number,
-  treasuryAddress: string,
-): Promise<{ amount: bigint; transactionHashes: string[] }> {
-  const payouts = await mapWithConcurrency(registrations, concurrency, async (registration) => {
-    const balance = await readTokenBalance(provider, lordsAddress, registration.identity.mainnetAddress);
-    if (balance < registration.startingBalance) {
-      throw new Error(
-        `Bot ${registration.identity.mainnetAddress} balance fell below its pre-run balance: ${balance} < ${registration.startingBalance}`,
-      );
-    }
-    return { registration, amount: balance - registration.startingBalance };
-  });
-
-  const transactionHashes = await mapWithConcurrency(
-    payouts.filter(({ amount }) => amount > 0n),
-    concurrency,
-    ({ registration, amount }) =>
-      executeMainnetAndWait(
-        registration.account,
-        {
-          contractAddress: lordsAddress,
-          entrypoint: "transfer",
-          calldata: CallData.compile([treasuryAddress, uint256.bnToUint256(amount)]),
-        },
-        `return ledger payout from ${registration.identity.mainnetAddress}`,
-      ),
-  );
-  return {
-    amount: payouts.reduce((total, payout) => total + payout.amount, 0n),
-    transactionHashes,
-  };
-}
-
 async function waitForChainTimestamp(provider: RpcProvider, target: number, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() <= deadline) {
@@ -639,11 +626,6 @@ async function waitForChainTimestamp(provider: RpcProvider, target: number, time
     await sleep(1_000);
   }
   throw new Error(`Chain timestamp did not reach ${target} within ${Math.ceil(timeoutMs / 1_000)} seconds`);
-}
-
-async function executeMainnetAndWait(account: Account, calls: Call | Call[], label: string): Promise<string> {
-  const transaction = await account.execute(calls, { version: 3 as const, tip: 0 });
-  return waitForSuccessfulTransaction(account, transaction.transaction_hash, label, MAINNET_RECEIPT_POLL_MS);
 }
 
 async function executeMadaraAndWait(account: Account, calls: Call | Call[], label: string): Promise<string> {

@@ -1,3 +1,4 @@
+import { decodeGameLedgerGame } from "@bibliothecadao/eternum";
 import { Account, CallData, RpcProvider, uint256, type Call } from "starknet";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { LedgerEconomicPreset } from "./economics";
@@ -95,10 +96,11 @@ async function readLedgerGamePool(target: LedgerTarget, gameId: number): Promise
     },
     "latest",
   );
-  if (BigInt(result[0] ?? 0) === 0n) {
+  const game = decodeGameLedgerGame(result);
+  if (!game.exists) {
     throw new Error(`Ledger game ${gameId} does not exist`);
   }
-  return uint256.uint256ToBN({ low: result[4] ?? "0", high: result[5] ?? "0" });
+  return game.pool;
 }
 
 export async function fundLedgerGameToTargetPool(

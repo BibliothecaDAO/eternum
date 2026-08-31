@@ -373,7 +373,7 @@ describe("Madara harness CLI and concurrency", () => {
   });
 
   it("requires an exact persistent identity roster in ledger mode", () => {
-    expect(() => parseHarnessArgs(["--ledger"])).toThrow("--ledger-accounts is required with --ledger");
+    expect(() => parseHarnessArgs(["--ledger"])).toThrow("--ledger-accounts is required with --ledger or --sweep-only");
     expect(() => parseHarnessArgs(["--ledger", "--ledger-accounts", "bots.json", "--games", "2"])).toThrow(
       "--ledger supports one game per run",
     );
@@ -393,6 +393,16 @@ describe("Madara harness CLI and concurrency", () => {
       ledgerAccountsPath: "bots.json",
       ledgerStartDelaySeconds: 600,
     });
+    expect(
+      parseHarnessArgs(["--sweep-only", ".lab/runs/recovery.json", "--ledger-accounts", "bots.json"]),
+    ).toMatchObject({
+      ledger: false,
+      ledgerAccountsPath: "bots.json",
+      sweepOnlyManifestPath: ".lab/runs/recovery.json",
+    });
+    expect(() =>
+      parseHarnessArgs(["--ledger", "--sweep-only", "recovery.json", "--ledger-accounts", "bots.json"]),
+    ).toThrow("--ledger and --sweep-only are separate modes");
   });
 
   it("maps validated mainnet owners to persistent gameplay keys without exposing mainnet keys", () => {
