@@ -10,15 +10,18 @@
 #   - Madara's chain protocol is 0.14.2, which hashes compiled (CASM) classes with blake2s. sozo 1.8.7 only
 #     auto-selects blake2s when the RPC URL contains "sepolia"/"testnet"; anywhere else it silently uses
 #     poseidon and the world declare fails with CompiledClassHashMismatch. The flag is mandatory here.
-#   - sozo 1.8.7 is built against Starknet RPC 0.9.0. Madara serves 0.10.2 at `/` and every version at
-#     `/rpc/v0_9_0` etc. Both routes work for migrate; dojo_madara.toml pins the versioned one so the
-#     "RPC version mismatch" warning never masks a real failure.
+#   - sozo 1.8.7 is built against Starknet RPC 0.9.0 and warns "version mismatch" against the 0.10.2 route, but
+#     it MUST use v0_10_2 here: on the nightly-e674321 pin, sozo's v0.9 client cannot deserialize a pre-confirmed
+#     block that holds a transaction ("data did not match any variant of untagged enum JsonRpcResponse"), so a
+#     fresh migrate dies at "Deploy the world". The v0.10.2 route serializes pre-confirmed blocks correctly and
+#     sozo parses them despite the warning; the whole 158-declare migrate then completes. (The old v0_9_0 default
+#     only ever worked on the alpha.9 pin, which the laptop world was deployed under before the nightly swap.)
 set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$LAB_DIR/../.." && pwd)"
 GAME_DIR="$REPO_ROOT/contracts/l3/game"
-RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_9_0}"
+RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_10_2}"
 PROFILE="madara"
 OUT_DIR="$LAB_DIR/.lab"
 
