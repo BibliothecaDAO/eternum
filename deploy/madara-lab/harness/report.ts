@@ -67,7 +67,7 @@ interface HarnessEvidenceBeforeRun {
 }
 
 export interface HarnessEvidence extends HarnessEvidenceBeforeRun {
-  blockStats: BlockStats;
+  blockStats: BlockStats | null;
   hostStateEnd: Record<string, unknown>;
 }
 
@@ -430,11 +430,22 @@ function passesLatency(value: number | null, limit: number): boolean {
   return value !== null && value <= limit;
 }
 
-async function captureBlockStats(since: string, until: string): Promise<BlockStats> {
-  const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
-  const summary = JSON.parse(output) as Omit<BlockStats, "window">;
-  if (summary.blocks.count === 0) throw new Error(`Madara emitted no closed blocks between ${since} and ${until}`);
-  return { ...summary, window: { since, until } };
+// Block stats are a secondary per-block metric parsed from Madara's docker logs. A run that completes its workload
+// must still produce a report even when they are unavailable (e.g. docker log rotation, or a --since/--until window
+// that spans a container restart), so treat their absence as null, never as a run failure.
+async function captureBlockStats(since: string, until: string): Promise<BlockStats | null> {
+  try {
+    const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
+    const summary = JSON.parse(output) as Omit<BlockStats, "window">;
+    if (summary.blocks.count === 0) {
+      console.warn(`Block stats: no closed blocks in the Madara log window ${since}..${until}; recording null.`);
+      return null;
+    }
+    return { ...summary, window: { since, until } };
+  } catch (error) {
+    console.warn(`Block stats unavailable (${since}..${until}): ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
 }
 
 async function readMadaraImage(): Promise<HarnessEvidence["madaraImage"]> {
