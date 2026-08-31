@@ -28,7 +28,6 @@
     "packages/db/drizzle.config.ts"
   ],
   "ignoreWorkspaces": [
-    "packages/amm-sdk",
     "packages/ammv2-sdk",
     "packages/client",
     "packages/dojo",

@@ -4,7 +4,6 @@ packages:
   - packages/*
   - tooling/*
   - contracts/season_pass/ext/scripts/deployment
-  - contracts/season_resources/ext/scripts/deployment
   - scripts/lords-distribution
 
 autoInstallPeers: true

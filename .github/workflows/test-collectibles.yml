@@ -5,11 +5,9 @@ on:
     paths-ignore:
       - "contracts/common/**"
       - "contracts/game/**"
-      - "contracts/season_resources/**"
       - "contracts/season_pass/**"
       - "contracts/village_pass/**"
       - "contracts/utils/**"
-      - "contracts/world/**"
       - "client/**"
       - "**/manifest.json"
       - "config/**"

@@ -48,7 +48,6 @@ export default defineConfig({
       "@config": path.resolve(__dirname, "../../config/utils/utils"),
       "@config-deployer": path.resolve(__dirname, "../../config/deployer"),
       "@contracts": path.resolve(__dirname, "../../contracts/utils/utils"),
-      "@bibliothecadao/amm-sdk": path.resolve(__dirname, "../../packages/amm-sdk/src/index.ts"),
       "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../packages/ammv2-sdk/src/index.ts"),
       "@bibliothecadao/client": path.resolve(__dirname, "../../packages/client/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
