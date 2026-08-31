@@ -2,6 +2,8 @@
 // constant on purpose — one environment (dev) for Phase 1, a second block gets
 // added when the Phase 2 settling chain exists.
 
+import { GAME_CHAIN_NAMES } from "../../../../packages/chain/src/game-chains";
+
 export const CONFIG = {
   /** GitHub repo allowed to assume the OIDC roles. */
   githubRepo: "BibliothecaDAO/eternum",
@@ -34,7 +36,7 @@ export const CONFIG = {
      * Bespoke chain id. Never SN_SEPOLIA — the Controller keychain must be
      * able to distinguish this chain (cagecalls lesson; validated in M0).
      */
-    chainId: "WP_REALMS_DEV",
+    chainId: GAME_CHAIN_NAMES.appchain,
 
     /**
      * Sequencer host. m7a vCPUs are full physical Genoa cores (no SMT) with

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",
+    "@realms-world/chain": "workspace:*",
     "pg": "^8.18.0",
     "starknet": "catalog:web"
   },

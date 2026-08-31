@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Account, CallData, constants, uint256, validateAndParseAddress, type Call, type RpcProvider } from "starknet";
+import mainnetAddresses from "../../../contracts/common/addresses/mainnet.json";
 import { mapWithConcurrency } from "./account-factory";
 
 export interface LedgerBalanceBaseline {
@@ -19,16 +20,25 @@ export interface LedgerSweepManifest {
   accounts: Array<{ owner: string; preFundLordsBalanceBaseUnits: string; strkBalanceBaseUnits: string }>;
   chainId: string;
   createdAt: string;
+  estimatedRegisterFeeFri: string;
   gameId: number;
   ledgerAddress: string;
   lordsAddress: string;
-  schemaVersion: 1;
+  requiredStrkFloorFri: string;
+  schemaVersion: 2;
   treasuryAddress: string;
 }
 
 export interface LedgerSweepEvidence {
   amount: bigint;
   transactionHashes: string[];
+}
+
+export interface LedgerRunConservation {
+  dust: bigint;
+  poolBeforeFinalization: bigint;
+  protocolCut: bigint;
+  swept: bigint;
 }
 
 interface TokenBalanceProvider {
@@ -38,13 +48,31 @@ interface TokenBalanceProvider {
   ): Promise<string[]>;
 }
 
-const MAINNET_STRK_ADDRESS = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
+const MAINNET_STRK_ADDRESS = validateAndParseAddress(mainnetAddresses.strk);
 const MAINNET_RECEIPT_POLL_MS = 1_000;
+const REGISTER_AND_SWEEP_FEE_MULTIPLIER_NUMERATOR = 5n;
+const REGISTER_AND_SWEEP_FEE_MULTIPLIER_DENOMINATOR = 2n;
+
+export async function estimateLedgerStrkFeeFloor(
+  account: Pick<Account, "estimateInvokeFee">,
+  registrationCalls: Call[],
+): Promise<{ estimatedRegisterFee: bigint; requiredStrkFloor: bigint }> {
+  const estimate = await account.estimateInvokeFee(registrationCalls, { version: 3 as const, tip: 0 });
+  if (estimate.overall_fee <= 0n) throw new Error("Ledger registration fee estimate must be positive");
+  return {
+    estimatedRegisterFee: estimate.overall_fee,
+    requiredStrkFloor: divideRoundUp(
+      estimate.overall_fee * REGISTER_AND_SWEEP_FEE_MULTIPLIER_NUMERATOR,
+      REGISTER_AND_SWEEP_FEE_MULTIPLIER_DENOMINATOR,
+    ),
+  };
+}
 
 export async function readLedgerBalanceBaselines(
   provider: TokenBalanceProvider,
   lordsAddress: string,
   owners: readonly string[],
+  requiredStrkFloor: bigint,
   concurrency: number,
 ): Promise<LedgerBalanceBaseline[]> {
   return mapWithConcurrency(owners, concurrency, async (owner) => {
@@ -52,8 +80,10 @@ export async function readLedgerBalanceBaselines(
       readTokenBalance(provider, lordsAddress, owner),
       readTokenBalance(provider, MAINNET_STRK_ADDRESS, owner),
     ]);
-    if (strkBalance === 0n) {
-      throw new Error(`Owner ${owner} has no STRK for mainnet registration and sweep gas`);
+    if (strkBalance < requiredStrkFloor) {
+      throw new Error(
+        `Owner ${owner} needs at least ${requiredStrkFloor} STRK fri for registration and sweep gas; balance is ${strkBalance}`,
+      );
     }
     return { owner, preFundLordsBalance, strkBalance };
   });
@@ -66,7 +96,7 @@ export async function writeLedgerSweepManifest(
   },
 ): Promise<LedgerSweepManifest> {
   const manifest: LedgerSweepManifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     createdAt: new Date().toISOString(),
     accounts: input.accounts.map(({ owner, preFundLordsBalance, strkBalance }) => ({
       owner,
@@ -75,8 +105,10 @@ export async function writeLedgerSweepManifest(
     })),
     chainId: input.chainId,
     gameId: input.gameId,
+    estimatedRegisterFeeFri: input.estimatedRegisterFeeFri,
     ledgerAddress: input.ledgerAddress,
     lordsAddress: input.lordsAddress,
+    requiredStrkFloorFri: input.requiredStrkFloorFri,
     treasuryAddress: input.treasuryAddress,
   };
   await mkdir(path.dirname(outputPath), { recursive: true });
@@ -90,7 +122,7 @@ export async function readLedgerSweepManifest(filePath: string): Promise<LedgerS
     throw new Error("Ledger sweep manifest must be a JSON object");
   }
   const record = parsed as Record<string, unknown>;
-  if (record.schemaVersion !== 1) throw new Error("Ledger sweep manifest schemaVersion must be 1");
+  if (record.schemaVersion !== 2) throw new Error("Ledger sweep manifest schemaVersion must be 2");
   if (typeof record.createdAt !== "string") throw new Error("Ledger sweep manifest createdAt must be a string");
   const accounts = parseSweepManifestAccounts(record.accounts);
   const chainId = parseNonZeroFelt(record.chainId, "chainId");
@@ -101,10 +133,12 @@ export async function readLedgerSweepManifest(filePath: string): Promise<LedgerS
     accounts,
     chainId,
     createdAt: record.createdAt,
+    estimatedRegisterFeeFri: parseUnsignedInteger(record.estimatedRegisterFeeFri, "estimatedRegisterFeeFri"),
     gameId: parsePositiveInteger(record.gameId, "gameId"),
     ledgerAddress: parseNonZeroFelt(record.ledgerAddress, "ledgerAddress"),
     lordsAddress: parseNonZeroFelt(record.lordsAddress, "lordsAddress"),
-    schemaVersion: 1,
+    requiredStrkFloorFri: parseUnsignedInteger(record.requiredStrkFloorFri, "requiredStrkFloorFri"),
+    schemaVersion: 2,
     treasuryAddress: parseNonZeroFelt(record.treasuryAddress, "treasuryAddress"),
   };
 }
@@ -152,17 +186,26 @@ export async function buildLedgerSweepPlan(
   return { amount: entries.reduce((total, entry) => total + entry.amount, 0n), entries };
 }
 
-export function assertLedgerRunConservation(input: {
-  dust: bigint;
-  funded: bigint;
-  protocolCut: bigint;
-  swept: bigint;
-}): bigint {
+export function assertLedgerRunConservation(input: LedgerRunConservation): bigint {
   const returned = input.protocolCut + input.dust + input.swept;
-  if (returned !== input.funded) {
-    throw new Error(`Ledger harness conservation failed: funded ${input.funded}, returned ${returned}`);
+  if (returned !== input.poolBeforeFinalization) {
+    throw new Error(
+      `Ledger harness conservation failed: pre-finalize pool ${input.poolBeforeFinalization}, accounted ${returned}`,
+    );
   }
   return returned;
+}
+
+export async function recordLedgerSweepAndAssertConservation(
+  manifestPath: string,
+  evidence: LedgerSweepEvidence,
+  conservation: LedgerRunConservation,
+): Promise<{ returned: bigint; sweepReceiptPath: string }> {
+  const sweepReceiptPath = await writeLedgerSweepReceipt(manifestPath, evidence);
+  return {
+    returned: assertLedgerRunConservation(conservation),
+    sweepReceiptPath,
+  };
 }
 
 export async function writeLedgerSweepReceipt(
@@ -263,4 +306,8 @@ function parsePositiveInteger(value: unknown, label: string): number {
     throw new Error(`Ledger sweep manifest ${label} must be a positive integer`);
   }
   return value;
+}
+
+function divideRoundUp(value: bigint, divisor: bigint): bigint {
+  return (value + divisor - 1n) / divisor;
 }

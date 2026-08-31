@@ -218,12 +218,15 @@ from the treasury LORDS float, and registers each owner on mainnet. It deploys p
 accounts, binds them through `PlayerRegistry`, waits for the operator to relay every `LedgerRegistration`, and only then
 settles on the lab. After the workload it submits the complete points-ordered roster, waits for mainnet
 `apply_results`, and returns each bot's payout to the treasury. The manifest records funding, registration, binding,
-ranking, finalization, and sweep transaction hashes. Before the first treasury transfer it also writes an immutable
-`.sweep.json` manifest beside the run reports with every owner's LORDS baseline and observed STRK balance.
+ranking, finalization, and sweep transaction hashes. Before the first treasury transfer it estimates one worst-case
+approve-and-register multicall and requires every owner to hold 2.5 times that fee in STRK, covering registration,
+sweep, and fee movement. It writes the estimate, required floor, each owner's observed STRK balance, and immutable
+LORDS baseline to a `.sweep.json` manifest beside the run reports. Normal finalization and `--sweep-only` both write a
+sweep receipt before checking run conservation, so the recovery transaction hashes survive an accounting failure.
 
 The accounts file is a JSON array with exactly `--bots` entries. Keep it outside the repository: it contains mainnet
-and gameplay private keys, and the mainnet accounts must already be deployed and funded with enough STRK for their own
-registration and sweep gas.
+and gameplay private keys, and the mainnet accounts must already be deployed. The harness derives and enforces the
+required STRK balance from the current mainnet fee estimate before it moves treasury LORDS.
 
 ```json
 [

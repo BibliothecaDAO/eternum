@@ -487,6 +487,7 @@ async function finalizeValuePlaneRun({
     provider,
     rankingSystemAddress: systems.prizeDistribution,
     registrations: run.ledger.registrations,
+    sweepManifestPath: run.ledger.registration.sweepManifestPath,
     treasuryAddress: ledgerEnvironment.treasuryAddress,
   });
   return {

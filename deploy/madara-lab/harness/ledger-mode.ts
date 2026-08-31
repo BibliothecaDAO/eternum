@@ -20,9 +20,10 @@ import {
 } from "./account-factory";
 import { HeraldObserver } from "./herald-observer";
 import {
-  assertLedgerRunConservation,
+  estimateLedgerStrkFeeFloor,
   executeMainnetAndWait,
   readLedgerBalanceBaselines,
+  recordLedgerSweepAndAssertConservation,
   readTokenBalance,
   sweepLedgerBalances,
   writeLedgerSweepManifest,
@@ -46,6 +47,7 @@ export interface LedgerRegistrationRuntime {
 }
 
 export interface LedgerRegistrationEvidence {
+  estimatedRegisterFeeFri: string;
   fundingTransactionHashes: string[];
   mainnetChainId: string;
   registrations: Array<{
@@ -58,6 +60,7 @@ export interface LedgerRegistrationEvidence {
     transactionHash: string;
   }>;
   requiredTreasuryFloatBaseUnits: string;
+  requiredStrkFloorFri: string;
   sweepManifestPath: string;
 }
 
@@ -68,10 +71,12 @@ export interface LedgerBindingEvidence {
 
 export interface LedgerFinalizationEvidence {
   dustBaseUnits: string;
+  poolBeforeFinalizationBaseUnits: string;
   protocolCutBaseUnits: string;
   rankingTransactionHash: string;
   returnedToTreasuryBaseUnits: string;
   sweptLordsBaseUnits: string;
+  sweepReceiptPath: string;
   sweepTransactionHashes: string[];
   trialId: string;
 }
@@ -114,6 +119,7 @@ interface FinalizeLedgerGameOptions {
   provider: RpcProvider;
   rankingSystemAddress: string;
   registrations: readonly LedgerRegistrationRuntime[];
+  sweepManifestPath: string;
   lordsAddress: string;
   concurrency: number;
   treasuryAddress: string;
@@ -174,10 +180,27 @@ export async function registerLedgerBots(
   const latestBlock = await provider.getBlock("latest");
   assertGameAcceptsRegistrations(game, options.gameId, Number(latestBlock.timestamp));
   const costs = await readLedgerPresetCosts(provider, options.ledgerAddress, game.presetId);
+  const treasury = new Account({
+    provider,
+    address: options.treasuryAddress,
+    signer: options.treasuryPrivateKey,
+  });
+  const feeFloor = await estimateLedgerStrkFeeFloor(
+    treasury,
+    buildRegistrationCalls(
+      options.ledgerAddress,
+      options.lordsAddress,
+      options.gameId,
+      costs.entryFee + costs.swordPrice + costs.shieldPrice,
+      true,
+      true,
+    ),
+  );
   const baselines = await readLedgerBalanceBaselines(
     provider,
     options.lordsAddress,
     options.identities.map(({ mainnetAddress }) => mainnetAddress),
+    feeFloor.requiredStrkFloor,
     options.concurrency,
   );
   const registrations = await prepareRegistrationAccounts(provider, options, costs, baselines);
@@ -185,17 +208,14 @@ export async function registerLedgerBots(
   await writeLedgerSweepManifest(options.recoveryManifestPath, {
     accounts: baselines,
     chainId: mainnetChainId,
+    estimatedRegisterFeeFri: feeFloor.estimatedRegisterFee.toString(),
     gameId: options.gameId,
     ledgerAddress: options.ledgerAddress,
     lordsAddress: options.lordsAddress,
+    requiredStrkFloorFri: feeFloor.requiredStrkFloor.toString(),
     treasuryAddress: options.treasuryAddress,
   });
   console.log(`Ledger sweep manifest written before treasury funding: ${options.recoveryManifestPath}`);
-  const treasury = new Account({
-    provider,
-    address: options.treasuryAddress,
-    signer: options.treasuryPrivateKey,
-  });
 
   const fundingTransactionHashes = await fundRegistrations(
     provider,
@@ -215,6 +235,7 @@ export async function registerLedgerBots(
   return {
     registrations,
     evidence: {
+      estimatedRegisterFeeFri: feeFloor.estimatedRegisterFee.toString(),
       fundingTransactionHashes,
       mainnetChainId,
       registrations: registrations.map(({ identity, payment, preFundLordsBalance, strkBalance }, index) => ({
@@ -227,6 +248,7 @@ export async function registerLedgerBots(
         transactionHash: registrationTransactionHashes[index]!,
       })),
       requiredTreasuryFloatBaseUnits: requiredTreasuryFloat.toString(),
+      requiredStrkFloorFri: feeFloor.requiredStrkFloor.toString(),
       sweepManifestPath: options.recoveryManifestPath,
     },
   };
@@ -300,6 +322,8 @@ export async function waitForGameStart(provider: RpcProvider, startAt: number): 
 
 export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Promise<LedgerFinalizationEvidence> {
   const observer = new HeraldObserver(options.heraldUrl, "madara");
+  const mainnetProvider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
+  const poolBeforeFinalization = (await readLedgerGame(mainnetProvider, options.ledgerAddress, options.gameId)).pool;
   const schedule = await readGameSchedule(observer, options.gameId);
   await waitForChainTimestamp(
     options.provider,
@@ -336,7 +360,6 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
     (models) => models.get("GameRegistry")!.some((row) => BigInt(row.final_trial_id as string) === trialId),
     120_000,
   );
-  const mainnetProvider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
   const finalized = await waitForLedgerFinalization(mainnetProvider, options.ledgerAddress, options.gameId);
   const sweep = await sweepLedgerBalances(
     mainnetProvider,
@@ -349,19 +372,25 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
     options.concurrency,
     options.treasuryAddress,
   );
-  const returnedToTreasury = assertLedgerRunConservation({
-    dust: finalized.dust,
-    funded: options.registrations.reduce((total, registration) => total + registration.payment, 0n),
-    protocolCut: finalized.protocolCut,
-    swept: sweep.amount,
-  });
+  const { returned: returnedToTreasury, sweepReceiptPath } = await recordLedgerSweepAndAssertConservation(
+    options.sweepManifestPath,
+    sweep,
+    {
+      dust: finalized.dust,
+      poolBeforeFinalization,
+      protocolCut: finalized.protocolCut,
+      swept: sweep.amount,
+    },
+  );
 
   return {
     dustBaseUnits: finalized.dust.toString(),
+    poolBeforeFinalizationBaseUnits: poolBeforeFinalization.toString(),
     protocolCutBaseUnits: finalized.protocolCut.toString(),
     rankingTransactionHash,
     returnedToTreasuryBaseUnits: returnedToTreasury.toString(),
     sweptLordsBaseUnits: sweep.amount.toString(),
+    sweepReceiptPath,
     sweepTransactionHashes: sweep.transactionHashes,
     trialId: trialId.toString(),
   };
@@ -489,21 +518,40 @@ async function submitRegistrations(
   concurrency: number,
 ): Promise<string[]> {
   return mapWithConcurrency(registrations, concurrency, async ({ account, identity, payment }) => {
-    const calls: Call[] = [];
-    if (payment > 0n) {
-      calls.push({
-        contractAddress: lordsAddress,
-        entrypoint: "approve",
-        calldata: CallData.compile([ledgerAddress, uint256.bnToUint256(payment)]),
-      });
-    }
-    calls.push({
-      contractAddress: ledgerAddress,
-      entrypoint: "register",
-      calldata: CallData.compile([gameId, identity.sword, identity.shield]),
-    });
+    const calls = buildRegistrationCalls(
+      ledgerAddress,
+      lordsAddress,
+      gameId,
+      payment,
+      identity.sword,
+      identity.shield,
+    );
     return executeMainnetAndWait(account, calls, `register ${identity.mainnetAddress} for ledger game ${gameId}`);
   });
+}
+
+function buildRegistrationCalls(
+  ledgerAddress: string,
+  lordsAddress: string,
+  gameId: number,
+  payment: bigint,
+  sword: boolean,
+  shield: boolean,
+): Call[] {
+  const calls: Call[] = [];
+  if (payment > 0n) {
+    calls.push({
+      contractAddress: lordsAddress,
+      entrypoint: "approve",
+      calldata: CallData.compile([ledgerAddress, uint256.bnToUint256(payment)]),
+    });
+  }
+  calls.push({
+    contractAddress: ledgerAddress,
+    entrypoint: "register",
+    calldata: CallData.compile([gameId, sword, shield]),
+  });
+  return calls;
 }
 
 async function readLedgerGame(provider: RpcProvider, ledgerAddress: string, gameId: number) {

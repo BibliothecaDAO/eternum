@@ -687,6 +687,9 @@ importers:
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       pg:
         specifier: ^8.18.0
         version: 8.18.0
