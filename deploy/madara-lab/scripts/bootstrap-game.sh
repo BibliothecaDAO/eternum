@@ -12,6 +12,10 @@ export RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_10_2}"
 export DOJO_ACCOUNT_ADDRESS="${DOJO_ACCOUNT_ADDRESS:-0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d}"
 export DOJO_PRIVATE_KEY="${DOJO_PRIVATE_KEY:-0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07}"
 export BINDING_AUTHORITY_ADDRESS="${BINDING_AUTHORITY_ADDRESS:-0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4}"
+# Read the registrar address from the freshly migrated manifest, not the hardcoded constants.ts value: the world
+# class hash (and so every contract address) changes whenever the contracts change, so a fresh lab deploy lands at a
+# different registrar than the checked-in constant. GAME_MANIFEST_PATH nulls that stale override (registrar/calls.ts).
+export GAME_MANIFEST_PATH="${GAME_MANIFEST_PATH:-contracts/l3/game/manifest_madara.json}"
 
 echo "==> declare gameplay account and deploy PlayerRegistry"
 bun "$LAB_DIR/scripts/deploy-gameplay-contracts.ts"
