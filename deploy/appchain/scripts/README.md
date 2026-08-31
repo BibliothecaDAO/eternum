@@ -4,7 +4,7 @@ The A2 single-world bootstrap is reviewer-run once per chain. First migrate the 
 collectibles and register the chain configuration and default preset:
 
 ```bash
-cd contracts/game
+cd contracts/l3/game
 sozo build --profile appchain-blitz
 sozo migrate --profile appchain-blitz
 mv manifest_appchain-blitz.json manifest_appchain_blitz.json
@@ -21,7 +21,7 @@ bun deploy/appchain/scripts/deploy-s2-world.ts
 The Eternum world uses the same build with its own seed and manifest:
 
 ```bash
-cd contracts/game
+cd contracts/l3/game
 sozo build --profile appchain-eternum
 sozo migrate --profile appchain-eternum
 mv manifest_appchain-eternum.json manifest_appchain_eternum.json
@@ -38,7 +38,7 @@ Use the same `DOJO_ACCOUNT_ADDRESS` / `DOJO_PRIVATE_KEY` for migration and the s
 `COSMETICS_ADDRESS`, `TIMELOCK_ADDRESS`, and `ELITE_NFT_ADDRESS`. The script safely skips an indexed `ChainConfig` or
 preset and treats their write-once registrar errors as already complete. Use `--dry-run` to prepare role grants and print
 the full preset calldata without sending transactions. `APPCHAIN_MANIFEST_PATH` can select another migrated manifest,
-for example `contracts/game/manifest_spike.json` during local verification; the tracked Blitz manifest remains the
+for example `contracts/l3/game/manifest_spike.json` during local verification; the tracked Blitz manifest remains the
 default.
 
 The old `factory-config.ts` and `factory-create-game.ts` scripts are retained only as A2 migration history. They must not

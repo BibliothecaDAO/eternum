@@ -87,7 +87,7 @@ anything escalated.
   queries across worlds; the gRPC bug was duplicate model JOINs when two worlds shared a namespace. Both need
   single-world DISPROOF, not fixes.
 - Two-game local setup: A2-NOTES documents the exact spike commands; `launch-step.ts` with
-  `APPCHAIN_MANIFEST_PATH=contracts/game/manifest_spike.json` and local RPC/TORII URLs.
+  `APPCHAIN_MANIFEST_PATH=contracts/l3/game/manifest_spike.json` and local RPC/TORII URLs.
 - The client's SDK is 1.7-line (`client/package.json` — read-only) and A4 will use key-prefix subscriptions; if the
   installed torii-client can't express a clause shape, that's a FINDING (record it), not something to work around
   silently.

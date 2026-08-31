@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, realpathSync } from "node:fs";
 import path from "node:path";
 
-const GAME_DIRECTORY = path.resolve(import.meta.dir, "../../../../contracts/game");
+const GAME_DIRECTORY = path.resolve(import.meta.dir, "../../../../contracts/l3/game");
 const BLITZ_PROFILE = path.join(GAME_DIRECTORY, "dojo_appchain_blitz.toml");
 const ETERNUM_PROFILE = path.join(GAME_DIRECTORY, "dojo_appchain_eternum.toml");
 

@@ -34,8 +34,8 @@ if (!VALID_TARGETS.includes(target)) {
 }
 
 // ====== Parameters ======
-const FROM_JSON = "contracts/game/manifest_local.json";
-const TO_JSON = `contracts/game/manifest_${target.replace("-", "_")}.json`;
+const FROM_JSON = "contracts/l3/game/manifest_local.json";
+const TO_JSON = `contracts/l3/game/manifest_${target.replace("-", "_")}.json`;
 const WORLD_ONLY = false; // if true, copy only world.abi
 const CONTRACTS_ONLY = false; // if true, copy only contract ABIs by tag
 const DRY_RUN = false; // if true, do not write file

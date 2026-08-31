@@ -12,7 +12,7 @@ Eternum is a fully onchain strategy game built with Dojo (Cairo). One codebase s
 **Blitz** (short, timed matches) and **Eternum** (long format). Games are rows keyed by `game_id` inside a persistent
 world, created through the factory (GameRegistry) with immutable balance presets — not separate deployments.
 
-The data pipeline, end to end: Cairo contracts (`contracts/game`) define the world (realms, buildings, resources,
+The data pipeline, end to end: Cairo contracts (`contracts/l3/game`) define the world (realms, buildings, resources,
 armies, exploration, battles, relics, hyperstructures, victory points) → transactions execute on a Starknet sequencer →
 Herald folds confirmed blocks, maintains the pre-confirmed overlay, and streams snapshots plus ordered diffs → the
 client's sync runtime ingests updates into RECS, the single authoritative store → three.js scenes (`WorldmapScene`,

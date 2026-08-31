@@ -12,7 +12,7 @@ five. Nothing here is built yet; the owner decisions it needs are listed at the 
   live game is appchain **preset 6** ("Regular Fast", `official-60`, 60 min, cap 24, free entry, STRK fee token —
   `config/deployer/clean/constants.ts:9`, verified live on the appchain Torii). `config/generated/blitz.mainnet.json` is
   a stale artifact of a deleted branch: the historical mainnet _intent_ was **100 LORDS entry**, 30 % protocol cut (15 %
-  creator, 15 % veLORDS to a hardcoded burner marked `todo` — `contracts/game/src/constants.cairo:7`), and a computed
+  creator, 15 % veLORDS to a hardcoded burner marked `todo` — `contracts/l3/game/src/constants.cairo:7`), and a computed
   prize curve (`systems/utils/prize.cairo`) whose sponsorship branch is dead (`prize_distribution/contracts.cairo:374`
   hardcodes 0).
 - **MMR** is one chain-wide singleton in `ChainConfig` (μ 1500, D 450, Δmax 45, K 50, λ 0.015, min 6 players —
@@ -24,10 +24,10 @@ five. Nothing here is built yet; the owner decisions it needs are listed at the 
   deposit and **mints when short** on withdraw (`systems/utils/bridge.cairo:40-48`). Nothing in `contracts/`, `deploy/`,
   `config/` sends or consumes a cross-chain message. The bank AMM is pure Dojo state (`models/bank/market.cairo`) with
   one ERC20 escape hatch (`bank/contracts/liquidity.cairo:255-263`). ammv2 on L2 mainnet is live (35 LORDS pools, 1.5 %
-  fee, `contracts/ammv2/scripts/state/pools/mainnet.json`); the client's `GameAmmClient` is built and unmounted.
+  fee, `contracts/l2/ammv2/scripts/state/pools/mainnet.json`); the client's `GameAmmClient` is built and unmounted.
   Eternum's entry is a Season Pass NFT transferred into the world contract (`systems/utils/realm.cairo:150-158`),
   villages a Village Pass the same way. `pointsForWin = 0` everywhere, so no configured Eternum has a win condition.
-- **Collectibles** are L2 ERC721s (`contracts/collectibles`, one class, one instance per collection) minted **by the
+- **Collectibles** are L2 ERC721s (`contracts/l2/collectibles`, one class, one instance per collection) minted **by the
   world** at prize claim (`prize_distribution/contracts.cairo:255-294`), which is a silent no-op when the address is
   `0x0` — i.e. on every non-mainnet config. Equipped skins are an L3 row (`BlitzCosmeticAttrsRegister`) whose ownership
   check runs against the **gameplay** account (`utils/collectibles.cairo:35-36`), which on the new stack never holds an

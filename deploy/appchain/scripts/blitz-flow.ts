@@ -16,7 +16,7 @@
  * Env (RPC/Torii defaults target the AWS dev appchain; account credentials are required):
  *   RPC_URL, TORII_URL, ACCOUNT_ADDRESS, PRIVATE_KEY, PLAYER_NAME
  */
-import manifest from "../../../contracts/game/manifest_appchain_blitz.json";
+import manifest from "../../../contracts/l3/game/manifest_appchain_blitz.json";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, CallData, RpcProvider, shortString } from "starknet";
 

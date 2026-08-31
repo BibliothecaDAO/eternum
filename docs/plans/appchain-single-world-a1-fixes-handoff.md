@@ -16,10 +16,10 @@ blockers, apply the listed design fixes, and add dispatcher-level two-game tests
 ## Ground rules (unchanged from the A1 handoff)
 
 - Branch: `feat/single-world-blitz`. NEVER commit to `feat/appchain-phase-1`.
-- Cairo only: `contracts/game/` and `docs/plans/A1-NOTES.md`. Do not touch `client/`, config TS, `deploy/`, `.github/`,
-  `contracts/factory`.
+- Cairo only: `contracts/l3/game/` and `docs/plans/A1-NOTES.md`. Do not touch `client/`, config TS, `deploy/`,
+  `.github/`, `contracts/l3/factory`.
 - Comment out removed code (especially asserts) — do not delete. Two past breaches are itemized below for restoration.
-- Toolchain: sozo 1.8.0 / scarb 2.13.1 via asdf; build with `sozo build --profile local` from `contracts/game`; tests
+- Toolchain: sozo 1.8.0 / scarb 2.13.1 via asdf; build with `sozo build --profile local` from `contracts/l3/game`; tests
   via `sozo test`.
 
 ## Owner decisions signed 2026-08-09

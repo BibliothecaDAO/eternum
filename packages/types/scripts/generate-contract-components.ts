@@ -17,7 +17,7 @@ import { $ } from "bun";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dir, "../../..");
-const MANIFEST_PATH = path.join(ROOT, "contracts/game/manifest_appchain_blitz.json");
+const MANIFEST_PATH = path.join(ROOT, "contracts/l3/game/manifest_appchain_blitz.json");
 const TARGET_REL = "packages/types/src/dojo/contract-components.ts";
 const TARGET_PATH = path.join(ROOT, TARGET_REL);
 

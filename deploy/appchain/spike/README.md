@@ -18,7 +18,7 @@ gate all AWS work:
 | katana | v1.8.0-rc.9 | + vrf-server (source build, rev 65d6ff0) + paymaster-service v0.2.4 baked into the image — see `docker/katana/Dockerfile` for why |
 | torii | v1.8.16 | one instance, two `WORLD:` entries |
 | chain id | `WP_REALMS_DEV` | felt `0x57505f5245414c4d535f444556` |
-| accounts | katana dev seed `"0"` | account 0 matches `contracts/game/dojo_local.toml` |
+| accounts | katana dev seed `"0"` | account 0 matches `contracts/l3/game/dojo_local.toml` |
 
 ## Run
 
@@ -30,7 +30,7 @@ docker-compose --profile torii up -d
 scripts/verify.sh                   # automated checks + evidence to eyeball
 ```
 
-`deploy-worlds.sh` clones `contracts/game/dojo_local.toml` to `dojo_spike.toml`
+`deploy-worlds.sh` clones `contracts/l3/game/dojo_local.toml` to `dojo_spike.toml`
 and swaps the world seed between migrations — one build, two worlds, mirroring
 what the world factory does on-chain in production. `dojo_spike.toml` /
 `manifest_spike.json` are gitignored.
@@ -59,7 +59,7 @@ Reset everything: `docker-compose --profile torii down -v`
 ### A. Chain basics (`scripts/verify.sh`) — ✅ all passed 2026-08-03
 
 - [x] `starknet_chainId` returns `WP_REALMS_DEV`
-- [x] UDC predeployed at `0x041a78e7…02bf` (the address `contracts/game/src/constants.cairo` hardcodes)
+- [x] UDC predeployed at `0x041a78e7…02bf` (the address `contracts/l3/game/src/constants.cairo` hardcodes)
 - [x] Heartbeat advances the block height while idle
 - [x] Paymaster v0.2.4 bootstrapped (forwarder `0x11a267ea…baf3`); VRF provider
       (`VrfAccount`) at `0x4da58dd0…7490`, whitelisted on the forwarder —

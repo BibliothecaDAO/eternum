@@ -7,7 +7,7 @@ RPC_URL="${RPC_URL:-http://localhost:5050}"
 TORII_URL="${TORII_URL:-http://localhost:8080}"
 # "WP_REALMS_DEV" as a cairo short string
 EXPECTED_CHAIN_ID="0x57505f5245414c4d535f444556"
-# contracts/game/src/constants.cairo UNIVERSAL_DEPLOYER_ADDRESS
+# contracts/l3/game/src/constants.cairo UNIVERSAL_DEPLOYER_ADDRESS
 UDC_ADDRESS="0x041a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf"
 
 rpc() {

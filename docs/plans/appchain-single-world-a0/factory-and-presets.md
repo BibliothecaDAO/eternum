@@ -9,7 +9,7 @@ GameRegistry: WorldDeployed{name → address, block_number, tx_hash} — THE gam
 launcher/client). REGISTRAR KEEPS: Series{name, owner, game_count} (numbering + sequence validation asserts);
 MMRRegistration{address, version} → collapses to single allowlisted mmr_systems address.
 
-## Player MMR lives in contracts/mmr — plain Starknet soul-bound ERC20 (balances Map<addr,u256>, INITIAL_MMR, MIN_MMR), authorized via is_factory_mmr_contract(caller) → factory version check. Already global. With one world: replace factory-oracle auth with single-address allowlist (set_factory_details-style) or move in-world (loses ERC20 surface).
+## Player MMR lives in contracts/l2/mmr — plain Starknet soul-bound ERC20 (balances Map<addr,u256>, INITIAL_MMR, MIN_MMR), authorized via is_factory_mmr_contract(caller) → factory version check. Already global. With one world: replace factory-oracle auth with single-address allowlist (set_factory_details-style) or move in-world (loses ERC20 surface).
 
 ## create_game flow today (factory.cairo:276-410)
 

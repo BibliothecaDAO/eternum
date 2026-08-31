@@ -1,0 +1,1461 @@
+use core::num::traits::zero::Zero;
+use dojo::model::{Model, ModelStorage};
+use dojo::storage::dojo_store::DojoStore;
+use dojo::world::WorldStorage;
+use starknet::ContractAddress;
+use crate::alias::ID;
+use crate::constants::WORLD_CONFIG_ID;
+use crate::models::game::{GameRegistry, GameRegistryImpl};
+use crate::models::position::{Coord, CoordImpl, Direction};
+use crate::models::quest::Level;
+use crate::models::resource::resource::TroopResourceImpl;
+use crate::systems::utils::blitz_profile::{
+    OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
+};
+use crate::utils::math::PercentageImpl;
+use crate::utils::random::VRFImpl;
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct WorldConfig {
+    #[key]
+    pub game_id: u32,
+    pub map_center_offset: u32,
+    pub biome_climate_config: BiomeClimateConfig,
+    pub settlement_config: SettlementConfig,
+    pub blitz_mode_on: bool,
+    pub blitz_settlement_config: BlitzSettlementConfig,
+    pub blitz_hypers_settlement_config: BlitzHypersSettlementConfig,
+    pub blitz_registration_config: BlitzRegistrationGameConfig,
+    pub realm_count_config: RealmCountConfig,
+    // D11: factory authority is retired; the persistent registrar owns game creation.
+// pub factory_address: ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct GameMapConfig {
+    #[key]
+    pub game_id: u32,
+    pub map_config: MapConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct PresetConfig {
+    #[key]
+    pub preset_id: u32,
+    pub hyperstructure_config: HyperstructureConfig,
+    pub hyperstructure_cost_config: HyperstructureCostConfig,
+    pub speed_config: SpeedConfig,
+    pub map_config: MapConfig,
+    pub tick_config: TickConfig,
+    pub structure_max_level_config: StructureMaxLevelConfig,
+    pub building_config: BuildingConfig,
+    pub troop_damage_config: TroopDamageConfig,
+    pub troop_stamina_config: TroopStaminaConfig,
+    pub troop_limit_config: TroopLimitConfig,
+    pub capacity_config: CapacityConfig,
+    pub battle_config: BattleConfig,
+    pub bank_config: BankConfig,
+    pub trade_config: TradeConfig,
+    pub quest_config: QuestConfig,
+    pub faith_config: FaithConfig,
+    pub bitcoin_mine_config: BitcoinMineConfig,
+    pub resource_bridge_config: ResourceBridgeConfig,
+    pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
+    pub village_token_config: VillageTokenConfig,
+    pub village_troop_config: VillageTroopConfig,
+    pub season_addresses_config: SeasonAddressesConfig,
+    pub quest_games: Span<PresetQuestGame>,
+    pub realm_start_resources_config: StartingResourcesConfig,
+    pub village_start_resources_config: StartingResourcesConfig,
+    pub village_find_resources_config: VillageFoundResourcesConfig,
+    pub structure_capacity_config: StructureCapacityConfig,
+    pub victory_points_grant_config: VictoryPointsGrantConfig,
+    pub victory_points_win_config: VictoryPointsWinConfig,
+    pub blitz_exploration_config: BlitzExplorationConfig,
+    pub artificer_config: ArtificerConfig,
+    pub blitz_registration_rules_config: BlitzRegistrationRulesConfig,
+    pub mercenaries_name: felt252,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct PresetGameConfig {
+    #[key]
+    pub preset_id: u32,
+    pub blitz_mode_on: bool,
+    // M6: biome climate is supplied per game and was never read from the preset.
+    // pub biome_climate_config: BiomeClimateConfig,
+    pub settlement_config: SettlementConfig,
+    pub blitz_settlement_config: BlitzSettlementConfig,
+    pub blitz_registration_config: BlitzRegistrationGameConfig,
+    pub agent_max_lifetime_count: u16,
+    pub agent_max_current_count: u16,
+    pub agent_min_spawn_lords_amount: u8,
+    pub agent_max_spawn_lords_amount: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct PresetQuestGame {
+    pub address: ContractAddress,
+    pub levels: Span<Level>,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+#[dojo::model]
+pub struct ChainConfig {
+    #[key]
+    pub config_id: ID,
+    pub admin_address: ContractAddress,
+    pub ledger_operator_address: ContractAddress,
+    pub player_registry_address: ContractAddress,
+    pub vrf_provider_address: ContractAddress,
+    pub agent_controller_config: AgentControllerConfig,
+    pub collectibles_cosmetics_address: ContractAddress,
+    pub collectibles_timelock_address: ContractAddress,
+    pub collectibles_lootchest_address: ContractAddress,
+    pub collectibles_elitenft_address: ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BiomeClimateConfig {
+    pub elevation_scale_bps: u16,
+    pub moisture_scale_bps: u16,
+    pub elevation_bias_bps: u16,
+    pub moisture_bias_bps: u16,
+    pub elevation_seed: u32,
+    pub moisture_seed: u32,
+}
+
+// WonderProductionBonusConfig retired as dead schema (D15).
+// #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+// pub struct WonderProductionBonusConfig {
+//     pub within_tile_distance: u8,
+//     pub bonus_percent_num: u128,
+// }
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct AgentControllerConfig {
+    pub address: ContractAddress,
+}
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VillageTokenConfig {
+    pub token_address: ContractAddress,
+    pub mint_recipient_address: ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VillageControllerConfig {
+    pub addresses: Span<ContractAddress>,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VillageTroopConfig {
+    pub troop_delay_ticks: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct SeasonConfig {
+    pub dev_mode_on: bool,
+    pub start_settling_at: u64,
+    pub start_main_at: u64,
+    pub end_at: u64,
+    pub end_grace_seconds: u32,
+    pub registration_grace_seconds: u32,
+}
+
+#[generate_trait]
+pub impl SeasonConfigImpl of SeasonConfigTrait {
+    fn get(world: WorldStorage, game_id: u32) -> SeasonConfig {
+        let game = GameRegistryImpl::get(world, game_id);
+        SeasonConfig {
+            dev_mode_on: game.dev_mode_on,
+            start_settling_at: game.start_settling_at,
+            start_main_at: game.start_main_at,
+            end_at: game.end_at,
+            end_grace_seconds: game.end_grace_seconds,
+            registration_grace_seconds: game.registration_grace_seconds,
+        }
+    }
+
+    fn has_ended(self: SeasonConfig) -> bool {
+        if self.dev_mode_on {
+            return false;
+        }
+        let now = starknet::get_block_timestamp();
+        if self.end_at == 0 {
+            return false;
+        }
+        now >= self.end_at
+    }
+
+    fn has_settling_started(self: SeasonConfig) -> bool {
+        if self.dev_mode_on {
+            return true;
+        }
+        let now = starknet::get_block_timestamp();
+        now >= self.start_settling_at
+    }
+
+    fn has_main_started(self: SeasonConfig) -> bool {
+        if self.dev_mode_on {
+            return true;
+        }
+        let now = starknet::get_block_timestamp();
+        now >= self.start_main_at
+    }
+
+
+    fn assert_started_settling(self: SeasonConfig) {
+        let now = starknet::get_block_timestamp();
+        assert!(
+            self.has_settling_started(),
+            "You will be able to settle your realm or village in {} hours {} minutes, {} seconds",
+            (self.start_settling_at - now) / 60 / 60,
+            ((self.start_settling_at - now) / 60) % 60,
+            (self.start_settling_at - now) % 60,
+        );
+    }
+
+
+    fn assert_started_main(self: SeasonConfig) {
+        let now = starknet::get_block_timestamp();
+        assert!(
+            self.has_main_started() && self.has_settling_started(),
+            "The game starts in {} hours {} minutes, {} seconds",
+            (self.start_main_at - now) / 60 / 60,
+            ((self.start_main_at - now) / 60) % 60,
+            (self.start_main_at - now) % 60,
+        );
+    }
+    fn assert_settling_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_settling();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_started_and_not_over(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(!self.has_ended(), "Season is over");
+    }
+
+    fn assert_settling_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_settling();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+    fn assert_main_game_started_and_grace_period_not_elapsed(self: SeasonConfig) {
+        self.assert_started_main();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
+        }
+    }
+    fn assert_main_game_started_and_point_registration_grace_not_elapsed(self: SeasonConfig) {
+        self.assert_started_main();
+        if self.has_ended() {
+            let now = starknet::get_block_timestamp();
+            assert!(
+                now <= self.end_at + self.registration_grace_seconds.into(), "The registration grace period is over",
+            );
+        }
+    }
+
+    fn assert_game_ended_and_points_registration_closed(self: SeasonConfig) {
+        self.assert_started_main();
+        assert!(self.has_ended(), "Season is not over");
+
+        let now = starknet::get_block_timestamp();
+        assert!(
+            now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is not over",
+        );
+    }
+
+    fn end_season(ref world: WorldStorage, game_id: u32) {
+        let mut game: GameRegistry = world.read_model(game_id);
+        let season_config = Self::get(world, game_id);
+        // ensure season is not over
+        assert!(season_config.has_ended() == false, "Season is over");
+        game.end_at = starknet::get_block_timestamp();
+        world.write_model(@game);
+    }
+}
+
+#[generate_trait]
+pub impl WorldConfigUtilImpl of WorldConfigTrait {
+    fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
+        world: WorldStorage, game_id: u32, selector: felt252,
+    ) -> T {
+        let game = GameRegistryImpl::get(world, game_id);
+        if selector == selector!("map_config") {
+            return world.read_member(Model::<GameMapConfig>::ptr_from_keys(game_id), selector);
+        }
+        if Self::is_game_member(selector) {
+            return world.read_member(Model::<WorldConfig>::ptr_from_keys(game_id), selector);
+        }
+        if Self::is_chain_member(selector) {
+            return world.read_member(Model::<ChainConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector);
+        }
+        world.read_member(Model::<PresetConfig>::ptr_from_keys(game.preset_id), selector)
+    }
+    fn set_member<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TDojoStore: DojoStore<T>>(
+        ref world: WorldStorage, scope_id: u32, selector: felt252, value: T,
+    ) {
+        if selector == selector!("map_config") {
+            world.write_member(Model::<GameMapConfig>::ptr_from_keys(scope_id), selector, value);
+            return;
+        }
+        if Self::is_game_member(selector) {
+            world.write_member(Model::<WorldConfig>::ptr_from_keys(scope_id), selector, value);
+            return;
+        }
+        if Self::is_chain_member(selector) {
+            world.write_member(Model::<ChainConfig>::ptr_from_keys(WORLD_CONFIG_ID), selector, value);
+            return;
+        }
+        world.write_member(Model::<PresetConfig>::ptr_from_keys(scope_id), selector, value);
+    }
+
+    fn is_game_member(selector: felt252) -> bool {
+        selector == selector!("map_center_offset")
+            || selector == selector!("biome_climate_config")
+            || selector == selector!("settlement_config")
+            || selector == selector!("blitz_mode_on")
+            || selector == selector!("blitz_settlement_config")
+            || selector == selector!("blitz_hypers_settlement_config")
+            || selector == selector!("blitz_registration_config")
+            || selector == selector!("realm_count_config")
+    }
+
+    fn is_chain_member(selector: felt252) -> bool {
+        selector == selector!("admin_address")
+            || selector == selector!("ledger_operator_address")
+            || selector == selector!("player_registry_address")
+            || selector == selector!("vrf_provider_address")
+            || selector == selector!("agent_controller_config")
+            || selector == selector!("collectibles_cosmetics_address")
+            || selector == selector!("collectibles_timelock_address")
+            || selector == selector!("collectibles_lootchest_address")
+            || selector == selector!("collectibles_elitenft_address")
+    }
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct TradeConfig {
+    pub max_count: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzExplorationConfig {
+    pub reward_profile_id: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct ArtificerConfig {
+    pub research_cost_for_relic: u128 // Amount of research needed to exchange for a relic
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct SeasonAddressesConfig {
+    pub season_pass_address: ContractAddress,
+    pub realms_address: ContractAddress,
+    pub lords_address: ContractAddress,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct HyperstrtConstructConfig {
+    #[key]
+    pub preset_id: u32,
+    #[key]
+    pub resource_type: u8,
+    pub resource_contribution_points: u64,
+    pub min_amount: u32,
+    pub max_amount: u32,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct HyperstructureConfig {
+    pub initialize_shards_amount: u128,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct HyperstructureCostConfig {
+    pub construction_resources_ids: Span<u8>,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct CapacityConfig {
+    pub structure_capacity: u128, // grams // deprecated
+    pub troop_capacity: u32, // grams
+    pub donkey_capacity: u32, // grams
+    pub storehouse_boost_capacity: u32,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct StructureCapacityConfig {
+    pub realm_capacity: u64, // grams
+    pub village_capacity: u64, // grams
+    pub hyperstructure_capacity: u64, // grams
+    pub fragment_mine_capacity: u64, // grams
+    pub bank_structure_capacity: u64,
+    pub holysite_capacity: u64, // grams
+    pub camp_capacity: u64, // grams
+    pub bitcoin_mine_capacity: u64 // grams
+}
+
+// speed
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct SpeedConfig {
+    pub donkey_sec_per_km: u16,
+    pub donkey_sec_per_km_troops: u16,
+}
+
+#[generate_trait]
+pub impl SpeedImpl of SpeedTrait {
+    fn for_donkey(ref world: WorldStorage, game_id: u32, resources: Span<(u8, u128)>) -> u16 {
+        let speed_config: SpeedConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("speed_config"));
+        if TroopResourceImpl::contains_troops(resources) {
+            speed_config.donkey_sec_per_km_troops
+        } else {
+            speed_config.donkey_sec_per_km
+        }
+    }
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct MapConfig {
+    pub reward_resource_amount: u16,
+    pub shards_mines_win_probability: u16,
+    pub shards_mines_fail_probability: u16,
+    pub agent_discovery_prob: u16,
+    pub agent_discovery_fail_prob: u16,
+    pub camp_win_probability: u16,
+    pub camp_fail_probability: u16,
+    pub holysite_win_probability: u16,
+    pub holysite_fail_probability: u16,
+    pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
+    pub bitcoin_mine_fail_probability: u16, // 9800
+    pub hyps_win_prob: u32,
+    pub hyps_fail_prob: u32,
+    // fail probability increase per hex distance from center
+    pub hyps_fail_prob_increase_p_hex: u16,
+    // fail probability increase per hyperstructure found
+    pub hyps_fail_prob_increase_p_fnd: u16,
+    // Relic discovery
+    pub relic_discovery_interval_sec: u16,
+    pub relic_hex_dist_from_center: u8,
+    pub relic_chest_relics_per_chest: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct QuestConfig {
+    pub quest_discovery_prob: u16,
+    pub quest_discovery_fail_prob: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct FaithConfig {
+    pub enabled: bool,
+    pub wonder_base_fp_per_sec: u16,
+    pub holy_site_fp_per_sec: u16,
+    pub realm_fp_per_sec: u16,
+    pub village_fp_per_sec: u16,
+    pub owner_share_percent: u16,
+    pub reward_token: starknet::ContractAddress,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BitcoinMineConfig {
+    pub enabled: bool,
+    pub prize_per_phase: u128, // Amount of SATOSHI awarded per phase
+    pub min_labor_per_contribution: u128 // Minimum labor required per contribution
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct SettlementConfig {
+    pub center: u32,
+    pub base_distance: u8,
+    pub layers_skipped: u8,
+    pub layer_max: u8,
+    pub layer_capacity_increment: u8,
+    pub layer_capacity_bps: u16,
+    pub spires_layer_distance: u8,
+    pub spires_max_count: u16,
+    pub spires_settled_count: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct RealmCountConfig {
+    pub count: u16,
+}
+
+
+#[generate_trait]
+pub impl SettlementConfigImpl of SettlementConfigTrait {
+    fn _num_hex_directions() -> u32 {
+        6
+    }
+
+    // Calculate sum of x*y + x*(y-1) + x*(y-2) + ... + x*0
+    // Formula: x * (y + 1) * y / 2
+    // Used to calculate total capacity up to a certain layer
+    fn _calculate_sum(x: u32, y: u32) -> u32 {
+        (x * (y + 1) * y) / 2
+    }
+
+
+    fn _max_spots(layer_number: u32, layers_skipped: u32) -> u32 {
+        // this gets the max number of points that can fit
+        // in from layer 1 to layer y where each layer
+        // has capacity of _num_hex_directions() * layer_number
+
+        // we also need to account for layers skipped
+
+        assert!(layer_number >= layers_skipped, "Layer number must be greater than or equal to layers skipped");
+        if layer_number == layers_skipped {
+            return 0;
+        }
+        let a = Self::_calculate_sum(Self::_num_hex_directions(), layer_number);
+        let b = Self::_calculate_sum(Self::_num_hex_directions(), layers_skipped);
+        a - b
+    }
+
+    fn _spire_layer_number(layer_number: u32, spires_layer_distance: u8) -> u32 {
+        layer_number / spires_layer_distance.into()
+    }
+
+    fn _spire_center_point_count() -> u32 {
+        1
+    }
+
+    fn _max_spire_spots(layer_number: u32, spires_layer_distance: u8) -> u16 {
+        (Self::_spire_center_point_count()
+            + Self::_max_spots(Self::_spire_layer_number(layer_number, spires_layer_distance), 0))
+            .try_into()
+            .unwrap()
+    }
+
+    fn _max_point_index(layer: u32) -> u32 {
+        layer - 1
+    }
+
+    // todo: test aggresively
+    fn generate_coord(
+        self: SettlementConfig, spire: bool, side: u32, mut layer: u32, point_index: u32, map_center: Coord,
+    ) -> Coord {
+        assert!(side < 6, "Side must be less than 6"); // 0 - 5
+        assert!(layer > 0, "Layer must be greater than 0"); // 1 - layer_max
+
+        let mut base_distance: u32 = self.base_distance.into();
+        if spire {
+            let max_spire_layer = Self::_spire_layer_number(self.layer_max.into(), self.spires_layer_distance);
+            assert!(layer <= max_spire_layer.into(), "Layer must be less than max layer for spires");
+
+            // scale the map such that layer 1 of spires is
+            // like layer 6 (self.spires_layer_distance) for realms
+            // so we scale down the layer number and scale up the base distance.
+            // we basically zoom out and rescale the map for spires.
+            // we expect the layer to be scaled down already
+
+            base_distance = self.base_distance.into() * self.spires_layer_distance.into();
+        } else {
+            assert!(layer <= self.layer_max.into(), "Layer must be less than max layer");
+            assert!(layer > self.layers_skipped.into(), "Layer must be greater than layers skipped");
+        }
+
+        assert!(point_index <= Self::_max_point_index(layer), "Point must be less than max side points");
+
+        let mut start_coord: Coord = map_center;
+
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::SouthWest), (Direction::SouthEast, Direction::West),
+            (Direction::SouthWest, Direction::NorthWest), (Direction::West, Direction::NorthEast),
+            (Direction::NorthWest, Direction::East), (Direction::NorthEast, Direction::SouthEast),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(side);
+
+        // get the coord of the first structure on layer 1 of the selected side
+        let side_first_structure__layer_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, base_distance);
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__layer_x = side_first_structure__layer_one
+            .neighbor_after_distance(start_direction, base_distance * (layer - 1));
+
+        let destination_coord: Coord = side_first_structure__layer_x
+            .neighbor_after_distance(triangle_direction, base_distance * point_index);
+        return destination_coord;
+    }
+
+    fn update_max_layer_and_spires(ref self: SettlementConfig, realm_count: u64) {
+        // max realm spots
+        let mut current_max_realm_spots_capacity = Self::_max_spots(self.layer_max.into(), self.layers_skipped.into())
+            // add back the center spire spot that will be taken in _max_spire_spots
+            // because it is not counted in realms spots
+            + Self::_spire_center_point_count()
+            - Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance).into();
+
+        let capacity_threshold = PercentageImpl::get(
+            current_max_realm_spots_capacity.into(), self.layer_capacity_bps.into(),
+        );
+        if realm_count > capacity_threshold {
+            self.layer_max += self.layer_capacity_increment;
+            self.spires_max_count = Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance);
+        }
+    }
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzSettlementConfig {
+    pub base_distance: u32,
+    pub side: u32,
+    pub step: u32,
+    pub point: u32,
+    pub open_settlement_count: u16,
+    pub single_realm_mode: bool,
+    pub two_player_mode: bool,
+}
+
+#[derive(Copy, Drop)]
+pub struct BlitzMapDistanceProfile {
+    pub base_distance: u32,
+    pub step_tile_distance: u32,
+    pub ring_tile_distance: u32,
+    pub mirror_first_step_tile_distance: u32,
+    pub mirror_second_step_tile_distance: u32,
+    pub realm_tile_radius: u32,
+    pub center_tile_radius: u32,
+}
+
+#[generate_trait]
+pub impl BlitzMapDistanceProfileImpl of BlitzMapDistanceProfileTrait {
+    fn resolve_by_blitz_profile_id(reward_profile_id: u8) -> BlitzMapDistanceProfile {
+        let resolved_reward_profile_id = iBlitzProfileImpl::resolve_blitz_profile_id(reward_profile_id);
+
+        if resolved_reward_profile_id == OFFICIAL_60_BLITZ_PROFILE_ID {
+            return Self::official_60();
+        }
+
+        assert!(resolved_reward_profile_id == OFFICIAL_90_BLITZ_PROFILE_ID, "unknown blitz map distance profile");
+        Self::official_90()
+    }
+
+    fn official_60() -> BlitzMapDistanceProfile {
+        BlitzMapDistanceProfile {
+            base_distance: 6,
+            step_tile_distance: 12,
+            ring_tile_distance: 12,
+            mirror_first_step_tile_distance: 9,
+            mirror_second_step_tile_distance: 3,
+            realm_tile_radius: 3,
+            center_tile_radius: 2,
+        }
+    }
+
+    fn official_90() -> BlitzMapDistanceProfile {
+        BlitzMapDistanceProfile {
+            base_distance: 8,
+            step_tile_distance: 15,
+            ring_tile_distance: 15,
+            mirror_first_step_tile_distance: 11,
+            mirror_second_step_tile_distance: 4,
+            realm_tile_radius: 3,
+            center_tile_radius: 2,
+        }
+    }
+
+    fn hyperstructure_realm_scan_distance(self: BlitzMapDistanceProfile, single_realm_mode: bool) -> u32 {
+        let center_offset = if single_realm_mode {
+            self.center_tile_radius
+        } else {
+            0
+        };
+        self.base_distance + center_offset
+    }
+}
+
+#[generate_trait]
+pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
+    fn new(base_distance: u32, single_realm_mode: bool, two_player_mode: bool) -> BlitzSettlementConfig {
+        assert!(
+            !(single_realm_mode && two_player_mode),
+            "Eternum: single_realm_mode and two_player_mode cannot both be set",
+        );
+        BlitzSettlementConfig {
+            base_distance, single_realm_mode, two_player_mode, side: 0, step: 1, point: 1, open_settlement_count: 0,
+        }
+    }
+
+    fn next(ref self: BlitzSettlementConfig) {
+        if self.two_player_mode {
+            Blitz2PlayerSettlementConfigImpl::next(ref self);
+        } else {
+            BlitzMultplePlayerSettlementConfigImpl::next(ref self);
+        }
+    }
+
+    fn generate_coords(self: BlitzSettlementConfig, map_center: Coord, reward_profile_id: u8) -> Array<Coord> {
+        if self.two_player_mode {
+            return Blitz2PlayerSettlementConfigImpl::generate_coords(self, map_center);
+        } else {
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
+            return BlitzMultplePlayerSettlementConfigImpl::generate_coords(self, map_center, distance_profile);
+        }
+    }
+}
+
+
+#[generate_trait]
+pub impl BlitzMultplePlayerSettlementConfigImpl of BlitzMultplePlayerSettlementConfigTrait {
+    fn next(ref self: BlitzSettlementConfig) {
+        if self.side == 5 {
+            if self.point == self.max_points() {
+                self.step += 1;
+                self.point = 1;
+            } else {
+                self.point += 1;
+            }
+            self.side = 0;
+        } else {
+            self.side += 1;
+        }
+    }
+
+    fn max_points(self: BlitzSettlementConfig) -> u32 {
+        self.step * 2
+    }
+
+    // Html & JS interactive implementation reference: contracts/l3/game/ext/formulas/blitz_hex_map.html
+
+    fn generate_coords(
+        self: BlitzSettlementConfig, map_center: Coord, distance_profile: BlitzMapDistanceProfile,
+    ) -> Array<Coord> {
+        let mut start_coord: Coord = map_center;
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::NorthEast, Direction::West), (Direction::West, Direction::SouthEast),
+            (Direction::SouthEast, Direction::NorthEast), (Direction::NorthWest, Direction::SouthWest),
+            (Direction::SouthWest, Direction::East), (Direction::East, Direction::NorthWest),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(self.side);
+        let base_distance = distance_profile.base_distance;
+        let step_tile_distance = distance_profile.step_tile_distance;
+        let realm_tile_radius = distance_profile.realm_tile_radius;
+        let center_tile_radius = distance_profile.center_tile_radius;
+        assert!(base_distance % 2 == 0, "base distance must be exactly divisble by 2 so the map isnt skewed");
+
+        // get the coord of the first structure on step 1 of the selected side
+        let side_first_structure__step_one: Coord = start_coord
+            .neighbor_after_distance(start_direction, base_distance)
+            .neighbor_after_distance(triangle_direction, base_distance / 2);
+
+        // get the coord of the first structure on selected layer of the selected side
+        let side_first_structure__step_x = side_first_structure__step_one
+            .neighbor_after_distance(start_direction, step_tile_distance * (self.step - 1));
+
+        let is_mirrored = self.point > self.max_points() / 2;
+        if !is_mirrored {
+            let destination_start_coord: Coord = side_first_structure__step_x
+                .neighbor_after_distance(triangle_direction, step_tile_distance * (self.point - 1));
+
+            // coords a, b and c form a triangle
+            let a = destination_start_coord;
+            let b = destination_start_coord.neighbor_after_distance(start_direction, realm_tile_radius);
+            let c = b.neighbor_after_distance(triangle_direction, realm_tile_radius);
+
+            // coord middle is the middle of the triangle
+            let middle = a
+                .neighbor_after_distance(start_direction, center_tile_radius)
+                .neighbor_after_distance(triangle_direction, center_tile_radius / 2);
+
+            if self.single_realm_mode {
+                return array![middle];
+            } else {
+                return array![a, b, c];
+            }
+        } else {
+            let start_point = self.max_points() - self.point + 1;
+            let destination_start_coord: Coord = side_first_structure__step_x
+                .neighbor_after_distance(triangle_direction, step_tile_distance * (start_point - 1));
+
+            // coords a, b and c form a triangle
+            let a = destination_start_coord
+                .neighbor_after_distance(start_direction, distance_profile.mirror_first_step_tile_distance)
+                .neighbor_after_distance(triangle_direction, distance_profile.mirror_second_step_tile_distance);
+            let b = a.neighbor_after_distance(triangle_direction, realm_tile_radius);
+            let c = b.neighbor_after_distance(start_direction, realm_tile_radius);
+
+            // coord middle is the middle of the triangle
+            let middle = a
+                .neighbor_after_distance(triangle_direction, center_tile_radius)
+                .neighbor_after_distance(start_direction, center_tile_radius / 2);
+
+            if self.single_realm_mode {
+                return array![middle];
+            } else {
+                return array![a, b, c];
+            }
+        }
+    }
+}
+
+#[generate_trait]
+pub impl Blitz2PlayerSettlementConfigImpl of Blitz2PlayerSettlementConfigTrait {
+    fn next(ref config: BlitzSettlementConfig) {
+        config.side += 1;
+    }
+    // Html & JS interactive implementation reference: contracts/l3/game/ext/formulas/blitz_hex_map.html
+    fn generate_coords(config: BlitzSettlementConfig, map_center: Coord) -> Array<Coord> {
+        assert!(config.side < 2, "Eternum: 2 players already settled on the map");
+        if config.side == 0 {
+            let a1: Coord = map_center.neighbor_after_distance(Direction::West, 8);
+            let a2: Coord = map_center
+                .neighbor_after_distance(Direction::West, 4)
+                .neighbor_after_distance(Direction::SouthWest, 2);
+            let a3: Coord = map_center
+                .neighbor_after_distance(Direction::West, 4)
+                .neighbor_after_distance(Direction::NorthWest, 2);
+            return (array![a1, a2, a3]);
+        } else {
+            let b1: Coord = map_center.neighbor_after_distance(Direction::East, 8);
+            let b2: Coord = map_center
+                .neighbor_after_distance(Direction::East, 4)
+                .neighbor_after_distance(Direction::SouthEast, 2);
+            let b3: Coord = map_center
+                .neighbor_after_distance(Direction::East, 4)
+                .neighbor_after_distance(Direction::NorthEast, 2);
+            return (array![b1, b2, b3]);
+        }
+    }
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzHypersSettlementConfig {
+    pub max_ring_count: u8,
+    pub current_ring_count: u8,
+    pub point: u8,
+    pub side: u32,
+}
+
+#[generate_trait]
+pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
+    fn new() -> BlitzHypersSettlementConfig {
+        BlitzHypersSettlementConfig { max_ring_count: 0, current_ring_count: 0, side: 5, point: 1 }
+    }
+
+    fn max_ring_count_for_registration_count(registration_count: u128, two_player_mode: bool) -> u8 {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::max_ring_count_for_registration_count(registration_count)
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::max_ring_count_for_registration_count(registration_count)
+        }
+    }
+
+    fn is_valid_ring(self: BlitzHypersSettlementConfig, two_player_mode: bool) -> bool {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::is_valid_ring(self)
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::is_valid_ring(self)
+        }
+    }
+
+    fn next(ref self: BlitzHypersSettlementConfig, two_player_mode: bool) {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::next(ref self);
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::next(ref self);
+        }
+    }
+
+    fn next_coord(
+        self: BlitzHypersSettlementConfig, map_center: Coord, two_player_mode: bool, reward_profile_id: u8,
+    ) -> Coord {
+        if two_player_mode {
+            return Blitz2PlayerHypersSettlementConfigImpl::next_coord(self, map_center);
+        } else {
+            let distance_profile = BlitzMapDistanceProfileImpl::resolve_by_blitz_profile_id(reward_profile_id);
+            return BlitzMultiplePlayerHypersSettlementConfigImpl::next_coord(self, map_center, distance_profile);
+        }
+    }
+
+    fn check_increase_max(ref world: WorldStorage, game_id: u32, registration_count: u128, two_player_mode: bool) {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::check_increase_max(ref world, game_id, registration_count);
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::check_increase_max(ref world, game_id, registration_count);
+        }
+    }
+}
+
+
+#[generate_trait]
+pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHypersSettlementConfigTrait {
+    fn max_ring_count_for_registration_count(registration_count: u128) -> u8 {
+        let mut max_ring_count: u8 = 0;
+        loop {
+            let ring_threshold = 6_u128 * max_ring_count.into() * max_ring_count.into() + 1;
+            if registration_count < ring_threshold {
+                break;
+            }
+            max_ring_count += 1;
+        }
+        max_ring_count
+    }
+
+    fn is_valid_ring(config: BlitzHypersSettlementConfig) -> bool {
+        if config.current_ring_count > config.max_ring_count {
+            return false;
+        }
+        return true;
+    }
+
+    fn next(ref config: BlitzHypersSettlementConfig) {
+        if config.point >= config.current_ring_count {
+            config.point = 1;
+            if config.side == 5 {
+                config.side = 0;
+                config.current_ring_count += 1;
+            } else {
+                config.side += 1;
+            }
+        } else {
+            config.point += 1;
+        }
+    }
+
+    // Html & JS interactive implementation reference: contracts/l3/game/ext/formulas/blitz_hex_map.html
+    fn next_coord(
+        config: BlitzHypersSettlementConfig, map_center: Coord, distance_profile: BlitzMapDistanceProfile,
+    ) -> Coord {
+        let mut start_coord: Coord = map_center;
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::East, Direction::NorthWest), (Direction::SouthEast, Direction::NorthEast),
+            (Direction::SouthWest, Direction::East), (Direction::West, Direction::SouthEast),
+            (Direction::NorthWest, Direction::SouthWest), (Direction::NorthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(config.side);
+        return start_coord
+            .neighbor_after_distance(
+                start_direction, distance_profile.ring_tile_distance * config.current_ring_count.into(),
+            )
+            .neighbor_after_distance(
+                triangle_direction, distance_profile.ring_tile_distance * (config.point.into() - 1),
+            );
+    }
+
+
+    fn check_increase_max(ref world: WorldStorage, game_id: u32, registration_count: u128) {
+        // increase hyperstructure ring count
+        // [when (r_squared <= Math.floor(P/6) && P % 6 != 0) OR (r_squared == 0)]
+        // Where P is num registered players
+        // and R is hyperstructure ring count
+
+        let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
+        let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, blitz_hyperstructure_settlement_config_selector,
+        );
+        let max_ring_count = blitz_hyperstructure_settlement_config.max_ring_count;
+        let max_ring_count_squared: u128 = max_ring_count.into() * max_ring_count.into();
+        if max_ring_count_squared.is_zero()
+            || (max_ring_count_squared <= registration_count / 6 && registration_count % 6 != 0) {
+            blitz_hyperstructure_settlement_config.max_ring_count += 1;
+            WorldConfigUtilImpl::set_member(
+                ref world,
+                game_id,
+                blitz_hyperstructure_settlement_config_selector,
+                blitz_hyperstructure_settlement_config,
+            );
+        }
+    }
+}
+
+#[generate_trait]
+pub impl Blitz2PlayerHypersSettlementConfigImpl of Blitz2PlayerHypersSettlementConfigTrait {
+    fn max_ring_count_for_registration_count(registration_count: u128) -> u8 {
+        2
+    }
+
+    fn is_valid_ring(config: BlitzHypersSettlementConfig) -> bool {
+        if config.current_ring_count > config.max_ring_count {
+            return false;
+        }
+        return true;
+    }
+
+    fn next(ref config: BlitzHypersSettlementConfig) {
+        config.current_ring_count += 1;
+    }
+
+    fn line_tile_distance() -> u32 {
+        6
+    }
+
+    // Html & JS interactive implementation reference: contracts/l3/game/ext/formulas/blitz_hex_map.html
+    fn next_coord(config: BlitzHypersSettlementConfig, map_center: Coord) -> Coord {
+        if config.current_ring_count.is_zero() {
+            return map_center;
+        }
+
+        let start_directions: Array<(Direction, Direction)> = array![
+            (Direction::NorthEast, Direction::West), (Direction::SouthEast, Direction::West),
+        ];
+        let (start_direction, triangle_direction) = *start_directions.at(config.current_ring_count.into() - 1);
+        return map_center
+            .neighbor_after_distance(start_direction, Self::line_tile_distance())
+            .neighbor_after_distance(triangle_direction, Self::line_tile_distance() / 2);
+    }
+
+    fn check_increase_max(ref world: WorldStorage, game_id: u32, registration_count: u128) {
+        let blitz_hyperstructure_settlement_config_selector: felt252 = selector!("blitz_hypers_settlement_config");
+        let mut blitz_hyperstructure_settlement_config: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, blitz_hyperstructure_settlement_config_selector,
+        );
+        blitz_hyperstructure_settlement_config.max_ring_count = 2; // max 3 hypers for 2 player mode [0,1,2]
+        WorldConfigUtilImpl::set_member(
+            ref world, game_id, blitz_hyperstructure_settlement_config_selector, blitz_hyperstructure_settlement_config,
+        );
+    }
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzRegistrationConfig {
+    pub collectibles_cosmetics_max: u8,
+    pub collectibles_cosmetics_address: ContractAddress,
+    pub collectibles_timelock_address: ContractAddress,
+    pub collectibles_lootchest_address: ContractAddress,
+    pub collectibles_elitenft_address: ContractAddress,
+    pub registration_count: u16,
+    pub registration_count_max: u16,
+    pub registration_start_at: u32,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzRegistrationGameConfig {
+    pub registration_count: u16,
+    pub registration_count_max: u16,
+    pub registration_start_at: u32,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, DojoStore)]
+pub struct BlitzRegistrationRulesConfig {
+    pub collectibles_cosmetics_max: u8,
+}
+
+#[generate_trait]
+pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
+    fn get(world: WorldStorage, game_id: u32) -> BlitzRegistrationConfig {
+        let game_config: BlitzRegistrationGameConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("blitz_registration_config"),
+        );
+        let rules: BlitzRegistrationRulesConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("blitz_registration_rules_config"),
+        );
+        BlitzRegistrationConfig {
+            collectibles_cosmetics_max: rules.collectibles_cosmetics_max,
+            collectibles_cosmetics_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_cosmetics_address"),
+            ),
+            collectibles_timelock_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_timelock_address"),
+            ),
+            collectibles_lootchest_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_lootchest_address"),
+            ),
+            collectibles_elitenft_address: WorldConfigUtilImpl::get_member(
+                world, game_id, selector!("collectibles_elitenft_address"),
+            ),
+            registration_count: game_config.registration_count,
+            registration_count_max: game_config.registration_count_max,
+            registration_start_at: game_config.registration_start_at,
+        }
+    }
+
+    fn is_registration_full(self: BlitzRegistrationConfig) -> bool {
+        self.registration_count >= self.registration_count_max
+    }
+
+    fn game_config(self: BlitzRegistrationConfig) -> BlitzRegistrationGameConfig {
+        BlitzRegistrationGameConfig {
+            registration_count: self.registration_count,
+            registration_count_max: self.registration_count_max,
+            registration_start_at: self.registration_start_at,
+        }
+    }
+
+    fn increase_registration_count(ref self: BlitzRegistrationConfig) {
+        self.registration_count += 1;
+    }
+
+    fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
+        now >= self.registration_start_at
+    }
+
+    fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        0x201 // Blitz Rewards (s0) NFTS
+    }
+
+    fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
+        0x10101 // Series 0 Elite Invite NFTs
+    }
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VictoryPointsGrantConfig {
+    pub hyp_points_per_second: u32,
+    // Only granted when claim hyperstructure from bandits
+    pub claim_hyperstructure_points: u32,
+    // Only granted when claim non hyperstructure from bandits
+    pub claim_otherstructure_points: u32,
+    pub explore_tiles_points: u32,
+    pub relic_open_points: u32,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VictoryPointsWinConfig {
+    pub points_for_win: u128,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct TickConfig {
+    pub armies_tick_in_seconds: u64,
+    pub delivery_tick_in_seconds: u64,
+    pub bitcoin_phase_in_seconds: u64 // 600 = 10 minutes
+}
+
+
+// todo: regroup meaningfully to avoid retrieving too many fields
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default, DojoStore)]
+pub struct TroopDamageConfig {
+    pub damage_raid_percent_num: u16,
+    // Combat modifiers. Used for biome damage calculations
+    pub damage_biome_bonus_num: u16,
+    // Used in damage calculations for troop scaling
+    pub damage_beta_small: u64, // Fixed
+    pub damage_beta_large: u64, // Fixed
+    pub damage_scaling_factor: u128,
+    pub damage_c0: u128, // Fixed
+    pub damage_delta: u128, // Fixed
+    pub t1_damage_value: u128,
+    pub t2_damage_multiplier: u128, // Fixed
+    pub t3_damage_multiplier: u128,
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default, DojoStore)]
+pub struct TroopStaminaConfig {
+    // Base stamina settings
+    pub stamina_gain_per_tick: u16, // Stamina gained per tick
+    pub stamina_initial: u16, // Initial stamina for explorers
+    pub stamina_bonus_value: u16, // Used for stamina movement bonuses
+    // Max stamina per troop type
+    pub stamina_knight_max: u16, // Maximum stamina for knights
+    pub stamina_paladin_max: u16, // Maximum stamina for paladins
+    pub stamina_crossbowman_max: u16, // Maximum stamina for crossbowmen
+    // Combat stamina requirements
+    pub stamina_attack_req: u16, // Minimum stamina required to attack
+    pub stamina_defense_req: u16, // Minimum stamina required for effecttive defense
+    // Exploration and travel stamina costs
+    pub stamina_explore_stamina_cost: u16,
+    pub stamina_travel_stamina_cost: u16,
+    // Exploration food costs
+    pub stamina_explore_wheat_cost: u32,
+    pub stamina_explore_fish_cost: u32,
+    // Travel food costs
+    pub stamina_travel_wheat_cost: u32,
+    pub stamina_travel_fish_cost: u32,
+}
+
+
+#[derive(Copy, Drop, Serde, IntrospectPacked, Debug, PartialEq, Default, DojoStore)]
+pub struct TroopLimitConfig {
+    // Guard specific settings
+    pub guard_resurrection_delay: u16,
+    // Mercenary bounds without precision
+    pub mercenaries_troop_lower_bound: u16,
+    // without precision
+    pub mercenaries_troop_upper_bound: u16,
+    // Agents bounds without precision
+    pub agents_troop_lower_bound: u16,
+    // without precision
+    pub agents_troop_upper_bound: u16,
+    // Deployment caps per structure level (without precision)
+    // Max_Army_Size = (Deployment_Cap / Tier_Strength) * Tier_Modifier / 100
+    pub settlement_deployment_cap: u32,
+    pub city_deployment_cap: u32,
+    pub kingdom_deployment_cap: u32,
+    pub empire_deployment_cap: u32,
+    // Tier strength: T1=1, T2=3, T3=9
+    pub t1_tier_strength: u8,
+    pub t2_tier_strength: u8,
+    pub t3_tier_strength: u8,
+    // Tier modifier (x100): T1=50 (0.5), T2=100 (1.0), T3=150 (1.5)
+    pub t1_tier_modifier: u8,
+    pub t2_tier_modifier: u8,
+    pub t3_tier_modifier: u8,
+}
+
+
+#[generate_trait]
+pub impl CombatConfigImpl of CombatConfigTrait {
+    fn troop_damage_config(ref world: WorldStorage, game_id: u32) -> TroopDamageConfig {
+        return WorldConfigUtilImpl::get_member(world, game_id, selector!("troop_damage_config"));
+    }
+
+    fn troop_stamina_config(ref world: WorldStorage, game_id: u32) -> TroopStaminaConfig {
+        return WorldConfigUtilImpl::get_member(world, game_id, selector!("troop_stamina_config"));
+    }
+
+    fn troop_limit_config(ref world: WorldStorage, game_id: u32) -> TroopLimitConfig {
+        return WorldConfigUtilImpl::get_member(world, game_id, selector!("troop_limit_config"));
+    }
+}
+
+
+#[derive(Copy, Drop, Serde, DojoStore)]
+pub struct TickInterval {
+    pub tick_interval: u64,
+}
+
+#[generate_trait]
+pub impl TickImpl of TickTrait {
+    fn _tick_config(ref world: WorldStorage, game_id: u32) -> TickConfig {
+        WorldConfigUtilImpl::get_member(world, game_id, selector!("tick_config"))
+    }
+
+    // get world tick config
+    fn get_tick_interval(ref world: WorldStorage, game_id: u32) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world, game_id);
+        return TickInterval { tick_interval: tick_config.armies_tick_in_seconds };
+    }
+
+    fn get_delivery_tick_interval(ref world: WorldStorage, game_id: u32) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world, game_id);
+        return TickInterval { tick_interval: tick_config.delivery_tick_in_seconds };
+    }
+
+    fn get_bitcoin_phase_interval(ref world: WorldStorage, game_id: u32) -> TickInterval {
+        let tick_config: TickConfig = Self::_tick_config(ref world, game_id);
+        return TickInterval { tick_interval: tick_config.bitcoin_phase_in_seconds };
+    }
+
+    fn interval(self: TickInterval) -> u64 {
+        self.tick_interval
+    }
+
+    fn current(self: TickInterval) -> u64 {
+        let now = starknet::get_block_timestamp();
+        now / self.interval()
+    }
+
+    fn at(self: TickInterval, time: u64) -> u64 {
+        time / self.interval()
+    }
+
+    fn after(self: TickInterval, time_spent: u64) -> u64 {
+        (starknet::get_block_timestamp() + time_spent) / self.interval()
+    }
+
+    fn next_tick_timestamp(self: TickInterval) -> u64 {
+        self.current() + self.interval()
+    }
+
+    fn convert_from_seconds(self: TickInterval, seconds: u64) -> u64 {
+        let mut ticks = seconds / self.interval();
+        let rem = seconds % self.interval();
+        if rem.is_non_zero() {
+            ticks += 1;
+        }
+        ticks
+    }
+
+    fn convert_to_estimated_timestamp(self: TickInterval, tick: u64) -> u64 {
+        tick * self.interval()
+    }
+}
+
+// weight
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct WeightConfig {
+    #[key]
+    pub preset_id: u32,
+    #[key]
+    pub resource_type: u8,
+    pub weight_gram: u128,
+}
+
+
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[dojo::model]
+pub struct ResourceFactoryConfig {
+    #[key]
+    pub preset_id: u32,
+    #[key]
+    pub resource_type: u8,
+    // production machine output per second
+    pub realm_output_per_second: u64,
+    pub village_output_per_second: u64,
+    pub labor_output_per_resource: u64,
+    pub output_per_simple_input: u64, // loinput = labor only input
+    pub output_per_complex_input: u64, // nlinput = non labor input
+    pub simple_input_list_id: ID,
+    pub complex_input_list_id: ID,
+    pub simple_input_list_count: u8,
+    pub complex_input_list_count: u8,
+}
+
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct BuildingCategoryConfig {
+    #[key]
+    pub preset_id: u32,
+    #[key]
+    pub category: u8,
+    pub complex_erection_cost_id: ID,
+    pub complex_erection_cost_count: u8,
+    pub simple_erection_cost_id: ID,
+    pub simple_erection_cost_count: u8,
+    pub population_cost: u8,
+    pub capacity_grant: u8,
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BuildingConfig {
+    pub base_population: u32,
+    pub base_cost_percent_increase: u16,
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BankConfig {
+    pub lp_fee_num: u32,
+    pub lp_fee_denom: u32,
+    pub owner_fee_num: u32,
+    pub owner_fee_denom: u32,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BattleConfig {
+    pub regular_immunity_ticks: u8,
+    pub village_immunity_ticks: u8,
+    pub village_raid_immunity_ticks: u8,
+}
+
+#[generate_trait]
+pub impl BattleConfigImpl of BattleConfigTrait {
+    fn get(ref world: WorldStorage, game_id: u32) -> BattleConfig {
+        WorldConfigUtilImpl::get_member(world, game_id, selector!("battle_config"))
+    }
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct StartingResourcesConfig {
+    pub resources_list_id: ID,
+    pub resources_list_count: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct VillageFoundResourcesConfig {
+    pub resources_mm_list_id: ID,
+    pub resources_mm_list_count: u8,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct ResourceBridgeConfig {
+    pub deposit_paused: bool,
+    pub withdraw_paused: bool,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct ResourceBridgeFeeSplitConfig {
+    // the percentage of the deposit and withdrawal amount that the velords addr will receive
+    pub velords_fee_on_dpt_percent: u16,
+    pub velords_fee_on_wtdr_percent: u16,
+    // the percentage of the deposit and withdrawal amount that the season pool will receive
+    pub season_pool_fee_on_dpt_percent: u16,
+    pub season_pool_fee_on_wtdr_percent: u16,
+    // the percentage of the deposit and withdrawal amount that the frontend provider will receive
+    pub client_fee_on_dpt_percent: u16,
+    pub client_fee_on_wtdr_percent: u16,
+    // max bank fee amount
+    pub realm_fee_dpt_percent: u16,
+    pub realm_fee_wtdr_percent: u16,
+    // the address that will receive the velords fee percentage
+    pub velords_fee_recipient: ContractAddress,
+    // the address that will receive the season pool fee
+    pub season_pool_fee_recipient: ContractAddress,
+}
+
+
+#[dojo::model]
+#[derive(Copy, Drop, Serde)]
+pub struct ResourceBridgeWtlConfig {
+    #[key]
+    pub token: ContractAddress,
+    pub resource_type: u8,
+}
+
+#[dojo::model]
+#[derive(Introspect, Copy, Drop, Serde)]
+pub struct ResourceRevBridgeWtlConfig {
+    #[key]
+    pub resource_type: u8,
+    pub token: ContractAddress,
+}
+
+// speed
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct StructureMaxLevelConfig {
+    pub realm_max: u8,
+    pub village_max: u8,
+}
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[dojo::model]
+pub struct StructureLevelConfig {
+    #[key]
+    pub preset_id: u32,
+    #[key]
+    pub level: u8,
+    pub required_resources_id: ID,
+    pub required_resource_count: u8,
+}
+
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzSettlementPosition {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub settlement_number: u16,
+    pub coords: Span<Coord>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzSettlement {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub player: ContractAddress,
+    pub structure_ids: Span<ID>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct BlitzCosmeticAttrsRegister {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub player: ContractAddress,
+    pub attrs: Span<u128>,
+}

@@ -4,8 +4,8 @@ import localSeasonAddresses from "../../contracts/common/addresses/local.json";
 import madaraSeasonAddresses from "../../contracts/common/addresses/madara.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
-import appchainBlitzGameManifest from "../../contracts/game/manifest_appchain_blitz.json";
-import appchainEternumGameManifest from "../../contracts/game/manifest_appchain_eternum.json";
+import appchainBlitzGameManifest from "../../contracts/l3/game/manifest_appchain_blitz.json";
+import appchainEternumGameManifest from "../../contracts/l3/game/manifest_appchain_eternum.json";
 
 /**
  * Interface representing season contract addresses and resources
@@ -117,5 +117,5 @@ function loadMadaraGameManifest(): GameManifest {
   if (runtimeRequire) {
     return runtimeRequire("../game/manifest_madara.json") as GameManifest;
   }
-  throw new Error("contracts/game/manifest_madara.json does not exist; deploy the Madara world first");
+  throw new Error("contracts/l3/game/manifest_madara.json does not exist; deploy the Madara world first");
 }

@@ -460,7 +460,7 @@ to its owner when posting results. The ledger accepts a result row only for an o
 Principle (decided): value and reputation live where identity lives (Starknet L2); the gameplay chain stays fee-free and
 disposable. The gameplay burner never holds anything worth stealing.
 
-- **`MMRToken` moves to L2**, keyed by the owner address (the identity wallet). The existing `contracts/mmr` has the
+- **`MMRToken` moves to L2**, keyed by the owner address (the identity wallet). The existing `contracts/l2/mmr` has the
   right _interface_ (`update_mmr_batch(updates: Array<(ContractAddress, u256)>)`), but its authorization round-trips
   through the L3 world factory — see decision 2 below (the 2026-08-27 "no MMR change needed" note was wrong). The
   world's `mmr` system stays on L3 and computes; results are **posted** to L2, not called.
@@ -527,7 +527,7 @@ tuned inside the system, not designed here; everything else is structure and is 
    the payout split to `treasury` — an address set at deploy, changeable only by the ledger admin — so the contract
    holds zero for that game after finalize (the test asserts it). Modifiers are bought after registration and before
    `start_time`, at most one of each per owner per game.
-2. **MMR authorization.** `is_factory_mmr_contract` (`contracts/mmr/src/contract.cairo:269`) calls the L3 world
+2. **MMR authorization.** `is_factory_mmr_contract` (`contracts/l2/mmr/src/contract.cairo:269`) calls the L3 world
    factory's `get_factory_mmr_contract_version`, which cannot exist on L2. Change `MMRToken`: delete the factory hook
    (`IMMRFactoryContract`, `IWorldFactoryMMR`, the `factory` storage tuple, `set_factory_details`) and gate `update_mmr`
    / `update_mmr_batch` with an `UPDATER_ROLE` on the AccessControl the contract already carries; the admin grants it to
@@ -543,7 +543,7 @@ tuned inside the system, not designed here; everything else is structure and is 
    restriction plus an L3 that holds nothing; say so in the class's doc comment.
 4. **Gate topology.** The lab's L2 for B is **Starknet Sepolia** — no compose change; the lab `.env` points
    `IDENTITY_RPC_UPSTREAM` at a Sepolia node for the duration so wallet, SIWS and ledger share one chain (mainnet
-   returns at production). LORDS on Sepolia is a lab-deployed mintable test ERC20 built from `contracts/lords`; its
+   returns at production). LORDS on Sepolia is a lab-deployed mintable test ERC20 built from `contracts/l2/lords`; its
    address and the ledger's live in `deploy/madara-lab/.env`. Relaying gets its own durable process,
    **`apps/operator`**, one loop per job (this supersedes "the authority server watches" above): (a) registration relay
    — watches `Registered(game_id, owner)` on Sepolia, waits `ACCEPTED_ON_L2` plus one block, writes

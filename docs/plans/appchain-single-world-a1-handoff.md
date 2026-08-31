@@ -23,14 +23,14 @@ adversarially (audit §6 scenario list). Build clean, tests green.
 - **Comment out, don't delete.** When removing code (asserts, modules, models), comment it out with a one-line reason
   referencing D-numbers from the audit. This is a hard owner preference.
 - Cairo only. Do **not** touch `client/`, `config/` (TypeScript), `deploy/`, `.github/` — those are milestones A2–A4.
-  `contracts/factory` is retired by this work but leave it untouched (it serves the legacy pipeline until A5).
+  `contracts/l3/factory` is retired by this work but leave it untouched (it serves the legacy pipeline until A5).
 - Commit in logical increments with `feat(single-world): …` / `refactor(single-world): …` messages, each ending with the
   co-author trailer already used on this branch (see `git log`).
 - Keep the excluded-systems cuts restorable (they return in the Phase-3 Eternum port).
 
 ## Toolchain (verified working)
 
-- Work from `contracts/game/`. Versions via asdf (`contracts/game/.tool-versions`): **sozo 1.8.0, scarb 2.13.1,
+- Work from `contracts/l3/game/`. Versions via asdf (`contracts/l3/game/.tool-versions`): **sozo 1.8.0, scarb 2.13.1,
   starknet-foundry 0.51.2**.
 - Build: `sozo build --profile local` — baseline (pre-migration) compiles clean in ~40 s.
 - Tests: `sozo test` (snforge under the hood) — existing suites live in `src/systems/*/tests*` and `src/utils/testing/`.
@@ -196,5 +196,5 @@ the compiler/greps surface. Doing this last keeps every earlier diff reviewable.
 3. Every model in the crate compiles under exactly one of: re-keyed per-game, preset-keyed, chain-global, commented-out
    (with D-number). No stragglers keyed by `WORLD_CONFIG_ID` except `ChainConfig`.
 4. `grep -rn "WORLD_CONFIG_ID" src` returns only the chain-global singleton + reserved-band constants.
-5. Factory world (`contracts/factory`) untouched; branch `feat/appchain-phase-1` untouched.
+5. Factory world (`contracts/l3/factory`) untouched; branch `feat/appchain-phase-1` untouched.
 6. A short `A1-NOTES.md` in `docs/plans/` recording anything you had to decide that the audit didn't cover.

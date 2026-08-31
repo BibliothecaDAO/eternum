@@ -36,6 +36,6 @@ Flags:
 6. Trade discovery is table-scan; Market (bank slice) keyed only by resource_type — worst bank collision.
 7. accept_order needs the A1 same-game assert, not just keys.
 8. ptr_from_keys bare-scalar ×23 in slice (Resource ×6, ResourceArrival ×5, Structure ×12) — A1 checklist:
-   `grep -rn "ptr_from_keys" contracts/game/src`.
+   `grep -rn "ptr_from_keys" contracts/l3/game/src`.
 9. Time-derived keys (ResourceArrival.day, \*\_end_tick) need per-game tick config threaded — game_id key alone
    insufficient.

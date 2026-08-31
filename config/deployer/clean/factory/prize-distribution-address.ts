@@ -13,7 +13,7 @@ const isNonZeroAddress = (value: string | undefined): value is string => {
 };
 
 export const resolvePrizeDistributionAddress = (chain: GameChain): string => {
-  const manifestPath = resolveRepoPath(`contracts/game/manifest_${chain}.json`);
+  const manifestPath = resolveRepoPath(`contracts/l3/game/manifest_${chain}.json`);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as GameManifest;
   const contract = manifest.contracts?.find(
     (candidate) => typeof candidate.tag === "string" && candidate.tag.includes("prize_distribution_systems"),

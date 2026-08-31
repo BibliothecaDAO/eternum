@@ -53,7 +53,7 @@ const readConfig = (): HeraldConfig => {
     chain: requireEnvironment("HERALD_CHAIN"),
     databaseUrl: requireEnvironment("DATABASE_URL"),
     manifestPath:
-      process.env.HERALD_MANIFEST_PATH ?? resolve(import.meta.dir, "../../../contracts/game/manifest_madara.json"),
+      process.env.HERALD_MANIFEST_PATH ?? resolve(import.meta.dir, "../../../contracts/l3/game/manifest_madara.json"),
     port: readPort(),
     rpcUrl,
     wsUrl: websocketUrl(rpcUrl),

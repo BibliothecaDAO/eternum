@@ -14,7 +14,7 @@ set -euo pipefail
 
 SPIKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$SPIKE_DIR/../../.." && pwd)"
-GAME_DIR="$REPO_ROOT/contracts/game"
+GAME_DIR="$REPO_ROOT/contracts/l3/game"
 RPC_URL="${RPC_URL:-http://localhost:5050}"
 PROFILE="spike"
 
@@ -23,7 +23,7 @@ command -v jq >/dev/null || { echo "jq not found on PATH" >&2; exit 1; }
 
 # katana rc.9 serves Starknet RPC 0.10.0; the repo-pinned sozo 1.8.0 only
 # speaks 0.9 (and exits 0 on the version error — don't trust its exit code).
-# 1.8.7 speaks 0.10; override here instead of touching contracts/game/.tool-versions.
+# 1.8.7 speaks 0.10; override here instead of touching contracts/l3/game/.tool-versions.
 export ASDF_SOZO_VERSION="${ASDF_SOZO_VERSION:-1.8.7}"
 echo "==> using sozo $(sozo --version | head -1 | awk '{print $2}')"
 

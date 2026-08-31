@@ -11,7 +11,7 @@
       "@config-deployer/*": ["../../config/deployer/*"],
       "@contracts": ["../../contracts/utils/utils"],
       "@realms-world/chain": ["../../packages/chain/src/index.ts"],
-      "@manifests/*": ["../../contracts/game/*"],
+      "@manifests/*": ["../../contracts/l3/game/*"],
       "@pm/*": ["src/pm/*"]
     },
     "target": "ESNext",

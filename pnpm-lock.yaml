@@ -1108,7 +1108,7 @@ importers:
         specifier: latest
         version: 1.4.0
 
-  contracts/season_pass/ext/scripts/deployment: {}
+  contracts/l2/season_pass/ext/scripts/deployment: {}
 
   packages/ammv2-sdk:
     dependencies:

@@ -32,7 +32,7 @@ function findBlitzExplorationReward(
 
 function extractContractRewardRows(functionName: string) {
   const contractSource = readFileSync(
-    new URL("../../contracts/game/src/systems/utils/blitz_exploration.cairo", import.meta.url),
+    new URL("../../contracts/l3/game/src/systems/utils/blitz_exploration.cairo", import.meta.url),
     "utf8",
   );
   const functionMatch = contractSource.match(

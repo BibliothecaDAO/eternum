@@ -17,7 +17,7 @@ set -euo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$LAB_DIR/../.." && pwd)"
-GAME_DIR="$REPO_ROOT/contracts/game"
+GAME_DIR="$REPO_ROOT/contracts/l3/game"
 RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_9_0}"
 PROFILE="madara"
 OUT_DIR="$LAB_DIR/.lab"

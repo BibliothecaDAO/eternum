@@ -6,7 +6,7 @@ import { createModelRegistry, readWorldManifest } from "./model-registry";
 
 describe("createModelRegistry", () => {
   it("builds a decoder for every executable sync model from the Madara manifest", async () => {
-    const manifestPath = resolve(import.meta.dirname, "../../../contracts/game/manifest_madara.json");
+    const manifestPath = resolve(import.meta.dirname, "../../../contracts/l3/game/manifest_madara.json");
     const registry = createModelRegistry(await readWorldManifest(manifestPath));
 
     expect(registry.bySelector.size).toBe(GAME_SYNC_MODEL_MANIFEST.length);

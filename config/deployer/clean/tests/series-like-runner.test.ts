@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
 
-mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
+mock.module("../../../../contracts/l3/game/manifest_appchain_blitz.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [

@@ -3,7 +3,7 @@ name: test ammv2
 on:
   pull_request:
     paths:
-      - "contracts/ammv2/**"
+      - "contracts/l2/ammv2/**"
       - ".github/workflows/test-ammv2.yml"
 
 jobs:
@@ -13,11 +13,11 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: contracts/ammv2/.tool-versions
+          tool-versions: contracts/l2/ammv2/.tool-versions
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          tool-versions: contracts/ammv2/.tool-versions
+          tool-versions: contracts/l2/ammv2/.tool-versions
       - run: scarb build
-        working-directory: contracts/ammv2
+        working-directory: contracts/l2/ammv2
       - run: snforge test
-        working-directory: contracts/ammv2
+        working-directory: contracts/l2/ammv2

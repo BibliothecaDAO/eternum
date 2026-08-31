@@ -96,7 +96,7 @@ deploy/madara-lab/scripts/bootstrap-game.sh
 deploy/madara-lab/scripts/bootstrap-game.sh
 ```
 
-The world script writes `contracts/game/manifest_madara.json` (gitignored, like the spike manifest) and records the
+The world script writes `contracts/l3/game/manifest_madara.json` (gitignored, like the spike manifest) and records the
 world address under `.lab/`. The bootstrap script writes the gameplay contract class hashes and registry address to
 `.lab/gameplay-contracts.json`.
 
@@ -114,7 +114,7 @@ bun config/deployer/clean/cli/launch-step.ts \
 ### Why these flags
 
 Two things make Madara different from Katana for `sozo`, and both are encoded in the script and in
-`contracts/game/dojo_madara.toml`:
+`contracts/l3/game/dojo_madara.toml`:
 
 1. **`--use-blake2s-casm-class-hash` is mandatory.** The chain runs Starknet protocol 0.14.2, which hashes compiled
    (CASM) classes with blake2s. `sozo 1.8.7` only turns blake2s on by itself when the RPC URL contains `sepolia` or
@@ -535,7 +535,7 @@ Compose now carries the three E.2 pieces; drills run only between Codex's harnes
 - **No `dev_predeployedAccounts`.** Player accounts do not need it: each key deploys its own account fee-free
   ("Gameplay accounts" above). The deployer and the binding authority use the deterministic genesis accounts.
 - **No embedded VRF, paymaster, or Controller.** The contracts fall back to transaction-hash randomness when the VRF
-  provider address is `0x0` and the chain is not mainnet/sepolia (`contracts/game/src/utils/random.cairo:15-18`) —
+  provider address is `0x0` and the chain is not mainnet/sepolia (`contracts/l3/game/src/utils/random.cairo:15-18`) —
   fine for the lab, never for a prized game. Fees are disabled with `--no-charge-fee`, so no paymaster is needed.
 
 ## Next: settlement-layer (L3) profile
@@ -645,6 +645,6 @@ deploy/madara-lab/
   scripts/block-stats.sh   aggregates Madara's per-block JSON log
   scripts/block-stats.py   the aggregation
   .lab/                    generated: world-address, certs/, runs/ (gitignored)
-contracts/game/dojo_madara.toml   sozo profile for this chain
-contracts/game/Scarb.toml         [profile.madara]
+contracts/l3/game/dojo_madara.toml   sozo profile for this chain
+contracts/l3/game/Scarb.toml         [profile.madara]
 ```

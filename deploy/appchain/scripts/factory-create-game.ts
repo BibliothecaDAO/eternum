@@ -6,11 +6,11 @@
  *
  * The factory deploys incrementally and keeps a cursor per (version, name), so
  * this calls `create_game` repeatedly until the cursor reports completion —
- * that's the documented pattern (contracts/factory/README.md). Keep
+ * that's the documented pattern (contracts/l3/factory/README.md). Keep
  * max_actions modest: one huge batch can exceed katana's invoke_max_steps and
  * the transaction never gets accepted (it does not revert, it just hangs).
  */
-import factoryManifest from "../../../contracts/factory/manifest_appchain.json";
+import factoryManifest from "../../../contracts/l3/factory/manifest_appchain.json";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { Account, CallData, RpcProvider, shortString } from "starknet";
 

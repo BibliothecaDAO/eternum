@@ -13,7 +13,7 @@ Build a **longbow archer as a new visual `ProceduralUnitKind`**, but **do not ad
 
 The protocol already defines `TroopType.Crossbowman` as the ranged family with attack range 2, while the client already
 names its T1 member “Archer,” T2 “Crossbowman,” and T3 “Beast Hunter”
-([troop.cairo](../../contracts/game/src/models/troop.cairo), [army.ts](../../packages/core/src/utils/army.ts)).
+([troop.cairo](../../contracts/l3/game/src/models/troop.cairo), [army.ts](../../packages/core/src/utils/army.ts)).
 Production presentation should therefore resolve the family by tier:
 
 - `Crossbowman + T1 -> archer` (longbow shot cycle)
@@ -24,8 +24,8 @@ This preserves every existing combat rule and transaction shape while giving the
 needs. A fourth protocol troop category would require contract, resource, balance, UI, indexer, and migration work with
 no gameplay requirement to justify it. The contract currently grants only Crossbowmen range 2 and applies special
 range-2 damage, stamina, counter-damage, and cooldown semantics
-([troop.cairo](../../contracts/game/src/models/troop.cairo),
-[troop_battle.cairo](../../contracts/game/src/systems/combat/contracts/troop_battle.cairo)).
+([troop.cairo](../../contracts/l3/game/src/models/troop.cairo),
+[troop_battle.cairo](../../contracts/l3/game/src/systems/combat/contracts/troop_battle.cairo)).
 
 The system should have three deliberately separate responsibilities:
 
@@ -115,7 +115,7 @@ provisional world-map attack FX:
   [worldmap.tsx](../../client/apps/game/src/three/scenes/worldmap.tsx)).
 - `BattleEvent` contains attacker/defender IDs and owners, winner, coordinate, reward, and timestamp in Cairo; the core
   parser currently omits the coordinate and exposes no damage/category/weapon data
-  ([troop_battle.cairo](../../contracts/game/src/systems/combat/contracts/troop_battle.cairo),
+  ([troop_battle.cairo](../../contracts/l3/game/src/systems/combat/contracts/troop_battle.cairo),
   [world-update-listener.ts](../../packages/core/src/systems/world-update-listener.ts),
   [types.ts](../../packages/core/src/systems/types.ts)).
 - Worldmap consumes the indexed event for combat relationships, direction indicators, camera follow, and notifications,

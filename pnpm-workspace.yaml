@@ -3,7 +3,7 @@ packages:
   - config
   - packages/*
   - tooling/*
-  - contracts/season_pass/ext/scripts/deployment
+  - contracts/l2/season_pass/ext/scripts/deployment
   - scripts/lords-distribution
 
 autoInstallPeers: true

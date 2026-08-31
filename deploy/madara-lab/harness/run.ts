@@ -159,7 +159,7 @@ async function main(): Promise<void> {
   const [chainId, gameplayContracts, manifest] = await Promise.all([
     provider.getChainId(),
     readJson<GameplayContractsArtifact>(path.join(LAB_DIRECTORY, ".lab/gameplay-contracts.json")),
-    readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/game/manifest_madara.json")),
+    readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/l3/game/manifest_madara.json")),
   ]);
   const systems = resolveSystemAddresses(manifest);
   const ledgerEnvironment = options.ledger ? resolveLedgerEnvironment() : undefined;

@@ -7,7 +7,7 @@ import { addAddressPadding, hash, RpcProvider } from "starknet";
 
 const LAB_DIRECTORY = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPOSITORY_ROOT = resolve(LAB_DIRECTORY, "../..");
-const CONTRACT_DIRECTORY = resolve(REPOSITORY_ROOT, "contracts/player-account");
+const CONTRACT_DIRECTORY = resolve(REPOSITORY_ROOT, "contracts/l3/player-account");
 const ARTIFACT_DIRECTORY = resolve(CONTRACT_DIRECTORY, "target/dev");
 const OUTPUT_PATH = resolve(LAB_DIRECTORY, ".lab/gameplay-contracts.json");
 

@@ -12,7 +12,7 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.privateKey).toBeUndefined();
     expect(environment.world).toEqual({
       namespace: "s2",
-      manifestPath: "contracts/game/manifest_appchain_blitz.json",
+      manifestPath: "contracts/l3/game/manifest_appchain_blitz.json",
       registrarAddress: "0x27853c5cafdfb2561e47fc0c250b51bc651cb441a3e3a846c99f29ad752b6f0",
     });
   });
@@ -22,7 +22,7 @@ describe("resolveDeploymentEnvironment", () => {
 
     expect(environment.world).toEqual({
       namespace: "s2",
-      manifestPath: "contracts/game/manifest_appchain_eternum.json",
+      manifestPath: "contracts/l3/game/manifest_appchain_eternum.json",
       registrarAddress: "0x4b10e72d41ffe5edcf9254ab03f4ca58b5863b82bb2e2011ce4fdab849d939b",
     });
   });
@@ -37,7 +37,7 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.privateKey).toBeUndefined();
     expect(environment.world).toEqual({
       namespace: "s2",
-      manifestPath: "contracts/game/manifest_madara.json",
+      manifestPath: "contracts/l3/game/manifest_madara.json",
       registrarAddress: "0x23d89ba402b33599107413ddb0f33f0cc38e57dcff4aa3b1989cba12076e9a5",
     });
   });

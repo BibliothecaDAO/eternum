@@ -20,9 +20,9 @@ s**, while the launch service Lambda and factory-v2 UI keep their exact contract
 
 - Branch: `feat/single-world-blitz`. NEVER commit to `feat/appchain-phase-1`.
 - Scope: `config/` (deployer + source + generated regen), `.github/workflows/game-launch.yml`,
-  `deploy/appchain/scripts/`, `contracts/game/dojo_appchain.toml`. Do NOT touch: `client/` (A4), torii fork (A3),
+  `deploy/appchain/scripts/`, `contracts/l3/game/dojo_appchain.toml`. Do NOT touch: `client/` (A4), torii fork (A3),
   `deploy/appchain/cdk/` (Lambda/CDK are the reviewer's deploy domain — the Lambda contract needs zero changes),
-  `contracts/factory/` (retired in place), `packages/provider` / `packages/types` (build new calls with plain
+  `contracts/l3/factory/` (retired in place), `packages/provider` / `packages/types` (build new calls with plain
   starknet.js + the world manifest ABI inside `config/deployer/clean/`, not by extending published packages).
 - Cairo: A2 should need NO contract changes. If you hit a genuine registrar gap (e.g. `register_preset` calldata
   physically cannot fit one tx), STOP and record it in `docs/plans/A2-NOTES.md` for the reviewer — do not modify
@@ -39,7 +39,7 @@ s**, while the launch service Lambda and factory-v2 UI keep their exact contract
 
 ## The registrar API (already deployed logic — this is what the pipeline calls)
 
-`contracts/game/src/systems/registrar/contracts.cairo:44-63`:
+`contracts/l3/game/src/systems/registrar/contracts.cairo:44-63`:
 
 - `bootstrap_chain_config(chain_config: ChainConfig)` — once per world; caller must be the Dojo owner of
   `s2_blitz-registrar_systems` AND become the configured admin. Write-once.
@@ -54,14 +54,14 @@ s**, while the launch service Lambda and factory-v2 UI keep their exact contract
   (≤24), registration_start_at, fee_amount, biome_climate_config, use_map_override + map_override, seed (non-zero).
   Reserves the full hyperstructure ring inside this tx.
 - The Cairo struct layouts are the calldata contract. The dispatcher test fixture
-  (`contracts/game/src/systems/registrar/tests.cairo`, `dispatcher_lifecycle` mod) shows a complete working
+  (`contracts/l3/game/src/systems/registrar/tests.cairo`, `dispatcher_lifecycle` mod) shows a complete working
   `register_preset` + `create_game` invocation — mirror it.
 
 ## Deliverables
 
 **D1 — registrar call module** (`config/deployer/clean/registrar/` — one file if it fits): plain starknet.js
 `Account.execute` wrappers for the four entrypoints above, ABI/address resolved from
-`contracts/game/manifest_appchain.json` (same pattern as `deploy/appchain/scripts/*.ts`). No batching machinery, no
+`contracts/l3/game/manifest_appchain.json` (same pattern as `deploy/appchain/scripts/*.ts`). No batching machinery, no
 provider-package changes.
 
 **D2 — preset builder**: a function mapping the EXISTING resolved config artifact
@@ -105,7 +105,7 @@ sequential, idempotent-where-possible steps the reviewer runs once per chain:
 `endsWith(inputs.environment, '.blitz')`-style conditions); leave step order, run-record events, artifact upload, and
 the lease helpers as they are. No new steps.
 
-**D6 — appchain profile** (`contracts/game/dojo_appchain.toml`): namespace `default = "s2_blitz"`, new `[world] seed`
+**D6 — appchain profile** (`contracts/l3/game/dojo_appchain.toml`): namespace `default = "s2_blitz"`, new `[world] seed`
 (`"s2_blitz_aws_1"`), writers list = the compiled `s2_blitz-*_systems` (mirror `dojo_local.toml`'s list post-A1, incl.
 `registrar_systems`), `[env]` keeps rpc_url but account/key come from env (delete the hardcoded paymaster credentials).
 `manifest_appchain.json` gets regenerated when the reviewer migrates — code against the manifest structure produced by

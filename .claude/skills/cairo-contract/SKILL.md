@@ -68,14 +68,14 @@ patterns when established ones exist.
 
 ```bash
 # Find similar models
-Grep("similar_concept", "contracts/game/src/models")
+Grep("similar_concept", "contracts/l3/game/src/models")
 
 # Find similar systems
-Grep("similar_action", "contracts/game/src/systems")
+Grep("similar_action", "contracts/l3/game/src/systems")
 
 # Find config patterns (if your feature needs config)
-Grep("set_.*_config", "contracts/game/src/systems/config")
-Grep("Config", "contracts/game/src/models/config.cairo")
+Grep("set_.*_config", "contracts/l3/game/src/systems/config")
+Grep("Config", "contracts/l3/game/src/models/config.cairo")
 
 # Find deployer integration patterns
 Grep("set.*Config", "config/deployer/config.ts")
@@ -105,7 +105,7 @@ TodoWrite([
 ### 2.1 Test File Location
 
 ```
-contracts/game/src/systems/<feature>/tests/<test_name>.cairo
+contracts/l3/game/src/systems/<feature>/tests/<test_name>.cairo
 ```
 
 ### 2.2 Eternum Test Template
@@ -202,7 +202,7 @@ mod tests {
 Run the test to verify it fails:
 
 ```bash
-cd contracts/game
+cd contracts/l3/game
 scarb test test_your_feature
 ```
 
@@ -335,8 +335,8 @@ Check for:
 
 A feature is not complete until the entire stack is wired up. Before marking done, verify:
 
-- [ ] **Models** - Defined in `contracts/game/src/models/`
-- [ ] **Systems** - Implemented in `contracts/game/src/systems/`
+- [ ] **Models** - Defined in `contracts/l3/game/src/models/`
+- [ ] **Systems** - Implemented in `contracts/l3/game/src/systems/`
 - [ ] **Config Model** - If feature has settings, add to `models/config.cairo`
 - [ ] **Config System** - Add `set_<feature>_config()` function (pattern: see `set_world_config`)
 - [ ] **Provider Types** - Add TypeScript types in `packages/provider/src/index.ts`
@@ -348,14 +348,14 @@ A feature is not complete until the entire stack is wired up. Before marking don
 
 ```bash
 # Find existing config patterns
-Grep("set_.*_config", "contracts/game/src/systems")
+Grep("set_.*_config", "contracts/l3/game/src/systems")
 Grep("setWorldConfig", "config/deployer")
 ```
 
 ### 4.4 Run Full Test Suite
 
 ```bash
-cd contracts/game
+cd contracts/l3/game
 scarb test
 ```
 
@@ -473,7 +473,7 @@ Skill("book:dojo-review")
 ### File Locations
 
 ```
-contracts/game/src/
+contracts/l3/game/src/
 ├── models/
 │   └── your_feature.cairo          # Models
 ├── systems/

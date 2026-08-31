@@ -66,8 +66,8 @@ below). `dev_resource_systems` migrates (dev playtests need it) but deploys only
 
 - `scarb fmt` + `scarb build`; both profile builds green.
 - Cairo tests for migrated systems where they exist; `config/` + `packages/types` suites green.
-- Gate: no external function in `contracts/game/src/systems/**` (deployed set) whose first parameter is per-game state
-  without `game_id` leading — list any deliberate exceptions.
+- Gate: no external function in `contracts/l3/game/src/systems/**` (deployed set) whose first parameter is per-game
+  state without `game_id` leading — list any deliberate exceptions.
 
 ## Handoff back
 

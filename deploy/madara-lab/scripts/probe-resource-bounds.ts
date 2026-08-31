@@ -53,7 +53,7 @@ async function prepareProbeBot(gameId: number) {
   const provider = new RpcProvider({ nodeUrl: RPC_URL });
   const [gameplayContracts, manifest] = await Promise.all([
     readJson<GameplayContractsArtifact>(path.join(LAB_DIRECTORY, ".lab/gameplay-contracts.json")),
-    readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/game/manifest_madara.json")),
+    readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/l3/game/manifest_madara.json")),
   ]);
   const systems = resolveSystemAddresses(manifest);
   const [account] = await createHarnessAccounts({

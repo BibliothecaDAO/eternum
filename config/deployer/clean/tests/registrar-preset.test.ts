@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 
-mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
+mock.module("../../../../contracts/l3/game/manifest_appchain_blitz.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [

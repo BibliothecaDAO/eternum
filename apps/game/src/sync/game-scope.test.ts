@@ -17,7 +17,7 @@ import {
 type ManifestEntry = { tag: string; members?: Array<{ name: string; key?: boolean }> };
 
 const manifest = JSON.parse(
-  readFileSync(resolve(process.cwd(), "../../contracts/game/manifest_appchain_blitz.json"), "utf8"),
+  readFileSync(resolve(process.cwd(), "../../contracts/l3/game/manifest_appchain_blitz.json"), "utf8"),
 ) as { models?: ManifestEntry[]; events?: ManifestEntry[] };
 
 const deriveGlobalNames = (entries: ManifestEntry[] = []): string[] =>

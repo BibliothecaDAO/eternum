@@ -3,7 +3,7 @@ name: test factory contracts
 on:
   pull_request:
     paths:
-      - "contracts/factory/**"
+      - "contracts/l3/factory/**"
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,7 +17,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: "2.13.1"
-      - run: cd contracts/factory && scarb fmt --check
+      - run: cd contracts/l3/factory && scarb fmt --check
 
   factory-cairo-test:
     needs: factory-cairo-fmt
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          # Must match snforge_std in contracts/factory/Scarb.toml (and
+          # Must match snforge_std in contracts/l3/factory/Scarb.toml (and
           # .tool-versions); unpinned, this installs latest and a binary/std
           # mismatch fails cheatcode-based tests.
           starknet-foundry-version: "0.51.2"
@@ -34,7 +34,7 @@ jobs:
           scarb-version: "2.13.1"
       - uses: actions/checkout@v3
       - run: |
-          cd contracts/factory && snforge test
+          cd contracts/l3/factory && snforge test
 
   factory-cairo-build:
     needs: factory-cairo-fmt
@@ -45,4 +45,4 @@ jobs:
           scarb-version: "2.13.1"
       - uses: actions/checkout@v3
       - run: |
-          cd contracts/factory && scarb build
+          cd contracts/l3/factory && scarb build

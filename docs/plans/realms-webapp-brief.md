@@ -69,8 +69,8 @@ route has moved, and the deletion is part of this brief.
    caps), and swaps on ammv2 through its SDK. Bridge UI ships with backend B.4; swap can ship earlier.
 6. **Bets** — the fixed-odds pool per game: quoted odds, locked odds on the ticket, liability-cap refusal shown as a
    reason, `claim_bet` after results.
-7. **Marketplace** — the existing order-book contract (`contracts/marketplace`) for realms and cosmetics, folded in as
-   pages; its own Torii dependency replaced by the apibara indexer for listings (L2 history).
+7. **Marketplace** — the existing order-book contract (`contracts/l2/marketplace`) for realms and cosmetics, folded in
+   as pages; its own Torii dependency replaced by the apibara indexer for listings (L2 history).
 8. **Everything else the current realms.world does** (Realms NFT bridge L1↔L2, veLORDS, governance, scroll posts) —
    ported last, page by page, deleting the old route each time.
 

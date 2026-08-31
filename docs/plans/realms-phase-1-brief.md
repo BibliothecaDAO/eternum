@@ -230,7 +230,7 @@ scope in any `package.json` or lockfile, (b) any `cartridge.gg` host literal in 
 JSON, TOML, YAML, shell, env samples, compose and deploy templates included — and (c) any `http://` URL in
 browser-facing configuration only — by path, not by guess: `VITE_PUBLIC_*` values in `apps/game/.env*`, `VITE_*` values
 in `apps/web/.env*`, `packages/chain/src/endpoints.ts`, and the world profiles under `apps/game/src/runtime/world/`.
-Dojo profiles (`contracts/game/dojo_*.toml`), compose files, health checks, tests and scripts are CLI/internal
+Dojo profiles (`contracts/l3/game/dojo_*.toml`), compose files, health checks, tests and scripts are CLI/internal
 configuration and are not scanned (234 files legitimately use plain HTTP internally today). There is no loopback
 exception because there is no HTTP page left: the `local` (Katana) chain kind becomes `madara` in D.1 — Katana is
 Cartridge, and the local chain is Madara behind Caddy. The word itself is not the rule, so the script and this brief do
@@ -263,7 +263,7 @@ and the entry fee is escrowed from the identity side rather than pulled from the
 play and nothing else. The test: from the authority, rotate a key, then attempt `transfer`/`approve` on an ERC20 and an
 ERC721 held by the account — every attempt must revert.
 
-- **`contracts/player-account/`** (pure Cairo, no Dojo, `cairo-contract` TDD): `RealmsPlayerAccount` = OpenZeppelin
+- **`contracts/l3/player-account/`** (pure Cairo, no Dojo, `cairo-contract` TDD): `RealmsPlayerAccount` = OpenZeppelin
   `AccountComponent` + `owner: ContractAddress` set in the constructor and never changed + `rotate_public_key(new_key)`
   callable only by the `binding_authority` given at construction, emitting `KeyRotated(account, by, new_key)`.
   `PlayerRegistry`: `bind(owner, account)` by the authority only, one account per owner forever, `account_of(owner)`,
@@ -317,8 +317,8 @@ in the same commit:
   are deleted), `starknet-provider.tsx`, `signing-policy.ts` (deleted with C.2), `init/bootstrap.tsx`,
   `services/api.ts`, `ui/features/landing/components/{selected-world-entity-wait,game-entry-modal}.ts(x)`,
   `ui/utils/network-switch.ts`, `utils/torii-setting.ts`, and the world directory
-  (`runtime/world/world-directory.ts:31-58`) which gains the `madara` entry from `contracts/game/manifest_madara.json`
-  and loses `sepolia`/`mainnet`.
+  (`runtime/world/world-directory.ts:31-58`) which gains the `madara` entry from
+  `contracts/l3/game/manifest_madara.json` and loses `sepolia`/`mainnet`.
 - Env: `.env.madara.blitz.sample` replaces `.env.local.blitz.sample` with
   `VITE_PUBLIC_NODE_URL=https://rpc.realms.test`, `VITE_PUBLIC_TORII=https://torii.realms.test`,
   `VITE_PUBLIC_VRF_PROVIDER_ADDRESS=0x0` (tx-hash randomness fallback, `utils/random.cairo:15-18` — right for the lab),
@@ -362,7 +362,7 @@ contract-operation tooling listed as untouched is exempt by name); every `*:mada
 ### D.2 Deployer: `madara.blitz` environment and chain bootstrap
 
 Add `madara.blitz` to `DEPLOYMENT_ENVIRONMENTS` (`config/deployer/clean/constants.ts:85-130`): chain `madara`, namespace
-`s2`, manifest `contracts/game/manifest_madara.json`, registrar address from the manifest, config from a new
+`s2`, manifest `contracts/l3/game/manifest_madara.json`, registrar address from the manifest, config from a new
 `config/source/blitz/madara.ts` (base + `registration_count_max: 96`, fee token = devnet STRK `0x04718f5a…938d`, VRF =
 0x0) generating `config/generated/blitz.madara.json`. `deploy-s2-world.ts` accepts `--environment madara.blitz` and
 `RPC_URL`. Collectibles and entry fee — decided: `madara.blitz` sets `fee_amount = 0` and every collectible address
@@ -510,7 +510,7 @@ chain-constant tables, the game's duplicated profile/wallet UI, ~900 lines of Co
 three dependencies, one env value, the Katana Cartridge flags, `onchain-agent`, `heavy-load`, `eternum-mobile`, the
 controller spike, the retired game-environment root wrappers, realtime-server's profile/avatar routes, the `client/`
 directory, the S1 chain kinds and the deployer's `local`/`sepolia`/`mainnet` environments, every hardcoded Cartridge
-host. Added: `packages/identity`, `packages/chain`, `contracts/player-account` (~150 lines), `gameplay-account.ts`
+host. Added: `packages/identity`, `packages/chain`, `contracts/l3/player-account` (~150 lines), `gameplay-account.ts`
 (~100), key store + sync (~80), two server functions (~100), SIWS hardening (~60), `check:forbidden-hosts` (~30), a
 `caddy` block and certs in the lab compose, a `postgres` block in the lab compose, two named catalogs, `tooling/`. Net
 deletion in code; one more service in the lab.

@@ -4,11 +4,11 @@
 amended (entry NFT stays — single shared collection, see D13); unmarked decisions ratified by default. This schema is
 the A1 contract.
 
-Scope: every `#[dojo::model]` and `#[dojo::event]` in `contracts/game` (79 models incl. the inline `AntiBot`, 21 event
-models), all 43 `#[dojo::contract]`s (36 files), the `wf` factory world (13 models), the TS config pipeline (29 steps /
-~146 calls per game), and the client engine's single-game assumptions. Method: nine parallel read-audits; the full
-per-file evidence with `file:line` references lives in [appchain-single-world-a0/](./appchain-single-world-a0/) — this
-document is the decision artifact.
+Scope: every `#[dojo::model]` and `#[dojo::event]` in `contracts/l3/game` (79 models incl. the inline `AntiBot`, 21
+event models), all 43 `#[dojo::contract]`s (36 files), the `wf` factory world (13 models), the TS config pipeline (29
+steps / ~146 calls per game), and the client engine's single-game assumptions. Method: nine parallel read-audits; the
+full per-file evidence with `file:line` references lives in [appchain-single-world-a0/](./appchain-single-world-a0/) —
+this document is the decision artifact.
 
 Parent plan: [appchain-single-world.md](./appchain-single-world.md).
 
@@ -123,15 +123,15 @@ C1).
 
 ### 2.4 Global — must NOT gain `game_id`
 
-| Model                                       | Keys                                        | Why global                                                                             |
-| ------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `AddressName` (player half, after D6 split) | `address`                                   | player identity                                                                        |
-| `BiomeDiscovered`                           | `by_address, biome`                         | trophy dedupe (D9: global-once semantics)                                              |
-| `RNG`                                       | `tx_hash`                                   | tx hashes are chain-unique — **the documented exception**; unbounded growth → A3 prune |
-| `AntiBot`                                   | `caller, tx_hash`                           | replay protection, chain-unique                                                        |
-| `SeriesChestRewardState`                    | `world_id` (=CONST) → `series_id`           | series-scoped aggregate (D10); the factory cross-world chain retires                   |
-| Player MMR                                  | external soul-bound ERC20 (`contracts/mmr`) | already global; only its **auth** changes (factory-oracle → fixed allowlist)           |
-| Achievement/trophy events                   | player-keyed                                | declared once at `dojo_init`                                                           |
+| Model                                       | Keys                                           | Why global                                                                             |
+| ------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `AddressName` (player half, after D6 split) | `address`                                      | player identity                                                                        |
+| `BiomeDiscovered`                           | `by_address, biome`                            | trophy dedupe (D9: global-once semantics)                                              |
+| `RNG`                                       | `tx_hash`                                      | tx hashes are chain-unique — **the documented exception**; unbounded growth → A3 prune |
+| `AntiBot`                                   | `caller, tx_hash`                              | replay protection, chain-unique                                                        |
+| `SeriesChestRewardState`                    | `world_id` (=CONST) → `series_id`              | series-scoped aggregate (D10); the factory cross-world chain retires                   |
+| Player MMR                                  | external soul-bound ERC20 (`contracts/l2/mmr`) | already global; only its **auth** changes (factory-oracle → fixed allowlist)           |
+| Achievement/trophy events                   | player-keyed                                   | declared once at `dojo_init`                                                           |
 
 ### 2.5 Retire
 
@@ -319,7 +319,7 @@ Recommendations included; items marked ⚠ need explicit sign-off, the rest are 
   best-effort — if excluding the season systems from the build costs more than migrating them, A1 may migrate the full
   set (season models re-key per §2's `season` rows) and defer contract exclusion to the deploy manifest at A5. The
   deployed world stays Blitz-core either way. Namespace note: `s2_blitz` does **not** exist yet — it is the working name
-  for the new world's namespace. This is still "improving s1": the same Cairo source in `contracts/game` evolves in
+  for the new world's namespace. This is still "improving s1": the same Cairo source in `contracts/l3/game` evolves in
   place; only the deployed namespace string (`DEFAULT_NS()`) changes. A new namespace/world is forced, not stylistic:
   adding `#[key] game_id` changes every model's storage layout and entity identity (poseidon of keys), which Dojo cannot
   upgrade in place — a fresh world deploy is required regardless; during A5 the new world and the legacy `s1_eternum`
@@ -355,18 +355,18 @@ all gain `game_id = ?`, with JOIN predicates carrying `game_id` on **both** side
 
 ## 10. A1 mechanical checklist (greps)
 
-| Check                          | Command / target                                                                                                                                                                         |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Member-pointer key tuples      | `grep -rn "ptr_from_keys" contracts/game/src` — 29+ bare-scalar sites (Resource ×6, Structure ×12, HyperstructureRequirements ×6, ResourceArrival ×5, WorldConfig/WorldRecord accessors) |
-| Singleton accessors            | `grep -rn "WorldConfigUtilImpl::\|WorldRecordImpl::\|SeasonConfigImpl::get" contracts/game/src` — every caller gains a `game_id` argument                                                |
-| Constant-key stragglers        | `grep -rn "WORLD_CONFIG_ID" contracts/game/src` (~24 files) — must reduce to the chain-global singletons only                                                                            |
-| `world_id`/`config_id` renames | models in §2.2 — rename to `game_id` (MMR pair renames to what it actually holds per D5)                                                                                                 |
-| Coord-tuple reads              | `world.read_model((…col, …row))` sites for `TileOpt`/`Building` — arity +1                                                                                                               |
-| Same-game guards               | every multi-entity entrypoint (§6 list) — new assert; snforge suite §6 is the acceptance test                                                                                            |
-| Seed derivations               | `to_seed\|Source::Salt\|Source::Nonce` — fold per-game seed                                                                                                                              |
-| Event key reorder              | all §2.6 emit sites                                                                                                                                                                      |
-| StoryEvent key[0]              | client `story.ts` queries change with it                                                                                                                                                 |
-| Dead code                      | delete `Quantity`/`QuantityTracker`/`WonderProductionBonusConfig` + manifest entries                                                                                                     |
+| Check                          | Command / target                                                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Member-pointer key tuples      | `grep -rn "ptr_from_keys" contracts/l3/game/src` — 29+ bare-scalar sites (Resource ×6, Structure ×12, HyperstructureRequirements ×6, ResourceArrival ×5, WorldConfig/WorldRecord accessors) |
+| Singleton accessors            | `grep -rn "WorldConfigUtilImpl::\|WorldRecordImpl::\|SeasonConfigImpl::get" contracts/l3/game/src` — every caller gains a `game_id` argument                                                |
+| Constant-key stragglers        | `grep -rn "WORLD_CONFIG_ID" contracts/l3/game/src` (~24 files) — must reduce to the chain-global singletons only                                                                            |
+| `world_id`/`config_id` renames | models in §2.2 — rename to `game_id` (MMR pair renames to what it actually holds per D5)                                                                                                    |
+| Coord-tuple reads              | `world.read_model((…col, …row))` sites for `TileOpt`/`Building` — arity +1                                                                                                                  |
+| Same-game guards               | every multi-entity entrypoint (§6 list) — new assert; snforge suite §6 is the acceptance test                                                                                               |
+| Seed derivations               | `to_seed\|Source::Salt\|Source::Nonce` — fold per-game seed                                                                                                                                 |
+| Event key reorder              | all §2.6 emit sites                                                                                                                                                                         |
+| StoryEvent key[0]              | client `story.ts` queries change with it                                                                                                                                                    |
+| Dead code                      | delete `Quantity`/`QuantityTracker`/`WonderProductionBonusConfig` + manifest entries                                                                                                        |
 
 ## 11. Exit
 

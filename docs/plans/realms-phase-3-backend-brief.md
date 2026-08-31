@@ -84,7 +84,7 @@ The current game contracts deployed on Sepolia, a harness game replayed there, g
 affordable; it does not block any B slice. The settlement shape (Piltover, orchestrator with `--prover mock`, in-tree at
 the Madara commit behind the pinned image digest) is **out of this brief** until the owner brings it back.
 
-- `game_ledger` (`contracts/ledger`, plain Cairo, OZ AccessControl): roles `ADMIN` (cold), `OPERATOR` (opens games,
+- `game_ledger` (`contracts/l2/ledger`, plain Cairo, OZ AccessControl): roles `ADMIN` (cold), `OPERATOR` (opens games,
   cancels unstarted ones), `GUARDIAN` (vault only, below).
   - `register_preset(preset_id, Preset{entry_fee, protocol_cut_bps, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr: MmrParams{enabled, mean, spread, max_delta, k, regression_bps, min_players}, pm: PmParams{fee_bps, liability_cap, seed}})`
     — admin, write-once. Payouts are parametric so one preset serves any roster size:
@@ -105,9 +105,9 @@ the Madara commit behind the pinned image digest) is **out of this brief** until
     `burn(token_id)`** — owner or approved, ERC721 `burn` from the component — shipped as an upgrade (both are
     `UpgradeableComponent`) — on mainnet that upgrades the live passes, so the upgrade ships with B.2 (the Eternum
     slice); B.1 freezes the ledger-side interface against the current pass ABI. The Village Pass transfer hook
-    (`before_update`, `village_pass/src/contract.cairo:116`) rejects transfers from non-distributors, and a burn is a
-    transfer to zero, so the deploy grants the ledger `DISTRIBUTOR_ROLE`. Before `start`; one registration per owner per
-    game.
+    (`before_update`, `contracts/l2/village_pass/src/contract.cairo:116`) rejects transfers from non-distributors, and a
+    burn is a transfer to zero, so the deploy grants the ledger `DISTRIBUTOR_ROLE`. Before `start`; one registration per
+    owner per game.
   - `fund(game_id, amount)` — anyone; sponsorship into `pool[game]`, recorded in `paid[game][funder]` so a cancelled
     game refunds it through the same pull as fees.
   - `cancel_game(game_id)` — operator, before `start`; refunds `paid` by pull (`refund(game_id)` per owner), no loop.
@@ -121,7 +121,7 @@ the Madara commit behind the pinned image digest) is **out of this brief** until
     game's balance is exactly zero afterwards (asserted). Then MMR (below), loot chests and elite invites minted (B.3),
     the bet pool resolved (B.5 — separate money), `finalized`. One call; paging only if a 96-roster call **measures**
     over the chain's execution limit.
-  - MMR: the formula from `contracts/game/src/systems/utils/mmr.cairo` ported with the preset's parameters; the
+  - MMR: the formula from `contracts/l3/game/src/systems/utils/mmr.cairo` ported with the preset's parameters; the
     lobby-split term deleted; ties use the tied group's average position `(r + (r + t − 1)) / 2` over `N − 1` — the same
     competition ranks; sword doubles a positive delta, shield halves a negative one, flags consumed. Result written
     through `MMRToken.update_mmr_batch`.
@@ -158,8 +158,8 @@ changes, with the new expectations written down.
   `entry_systems` contract; writes `LedgerRegistration{game_id, owner, realm_id, metadata}` keyed by `(game_id, owner)`,
   idempotent. No account in the payload: `settle` (called by the gameplay account) resolves
   `owner = PlayerRegistry.owner_of(caller)` and reads `LedgerRegistration(game_id, owner)` — the registry already exists
-  on the L3 (`contracts/player-account/src/player_registry.cairo`). Eternum's `realm_systems::create` reads `realm_id`
-  and decodes `metadata` exactly as `utils/realm.cairo:160-166` decodes the pass today.
+  on the L3 (`contracts/l3/player-account/src/player_registry.cairo`). Eternum's `realm_systems::create` reads
+  `realm_id` and decodes `metadata` exactly as `utils/realm.cairo:160-166` decodes the pass today.
 - `settle` (Blitz) asserts a `LedgerRegistration` for `(game_id, owner_of(caller))` unless `dev_mode_on`. **Correction
   to the baseline:** the entry-token path is _not_ gone — `settle` still takes `entry_token_id` and calls
   `resolve_and_consume_entry_token` (`blitz/contracts.cairo:93-147`); deleting it (`obtain_entry_token`, the
@@ -313,7 +313,7 @@ gate.
 
 ## Cost
 
-Added: `contracts/ledger`, `contracts/vault`, `apps/operator` (two loops, one cursor table), `burn` on both passes,
+Added: `contracts/l2/ledger`, `contracts/vault`, `apps/operator` (two loops, one cursor table), `burn` on both passes,
 mainnet deployments of the ledger and vault; upgrades to the live MMR token and (in B.2) the passes; minter/updater role
 grants on the live collections. Deleted: the L3 `mmr` system and its math, the L3 prize transfers and escrow, the
 entry-token path, direct collectible minting, pass custody, `transfer_or_mint` and the resource bridge's fee split,

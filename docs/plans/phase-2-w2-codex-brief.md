@@ -11,15 +11,15 @@ One Cairo build that deploys as either of two worlds on the shared appchain:
 
 - Namespace **`s2`** (renamed from `s2_blitz`) — shared by both worlds, mode-neutral.
 - `sozo migrate --profile appchain_blitz` → blitz world (seed `s2_blitz_1`) → committed
-  `contracts/game/manifest_appchain_blitz.json`.
+  `contracts/l3/game/manifest_appchain_blitz.json`.
 - `sozo migrate --profile appchain_eternum` → eternum world (seed `s2_eternum_1`) → committed
-  `contracts/game/manifest_appchain_eternum.json` (address placeholders fine until the W4 deploy; the profile + manifest
-  generation path must work).
+  `contracts/l3/game/manifest_appchain_eternum.json` (address placeholders fine until the W4 deploy; the profile +
+  manifest generation path must work).
 
 ## Deliverables
 
 1. **Rename `s2_blitz` → `s2`** in contracts + tooling:
-   - `contracts/game/src/constants.cairo` — `DEFAULT_NS()` / `DEFAULT_NS_STR()` → `"s2"`.
+   - `contracts/l3/game/src/constants.cairo` — `DEFAULT_NS()` / `DEFAULT_NS_STR()` → `"s2"`.
    - Dojo profile config: `[namespace] default`, every `[writers]` key, every `lib_versions` key.
    - `config/deployer/**` — all `s2_blitz-` model/table references (registrar tooling, `game-registry.ts` lookups,
      run-store, launch runner, environments config) and any namespace constants.
