@@ -462,6 +462,34 @@ mod dispatcher_lifecycle {
     }
 
     #[test]
+    #[should_panic(expected: "Eternum: caller is not admin")]
+    fn non_admin_cannot_squat_the_next_game_id() {
+        let context = setup_lifecycle();
+        let attacker: ContractAddress = 'attacker'.try_into().unwrap();
+        let mut params = create_game_params(3, 333);
+        params.series_id = 0;
+        params.game_number_in_series = 0;
+        params.dev_mode_on = false;
+        start_cheat_caller_address(context.registrar.contract_address, attacker);
+
+        context.registrar.create_game(params);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: caller is not admin")]
+    fn caller_cannot_enable_dev_mode_on_a_production_preset() {
+        let context = setup_lifecycle();
+        let attacker: ContractAddress = 'attacker'.try_into().unwrap();
+        let mut params = create_game_params(3, 333);
+        params.series_id = 0;
+        params.game_number_in_series = 0;
+        params.dev_mode_on = true;
+        start_cheat_caller_address(context.registrar.contract_address, attacker);
+
+        context.registrar.create_game(params);
+    }
+
+    #[test]
     #[should_panic(expected: "Eternum: ranked player is not settled")]
     fn zero_point_unsettled_substitution_cannot_finalize_roster() {
         let mut context = setup_lifecycle();

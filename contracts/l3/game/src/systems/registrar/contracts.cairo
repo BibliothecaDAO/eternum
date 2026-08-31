@@ -175,8 +175,8 @@ pub mod registrar_systems {
 
         fn create_game(ref self: ContractState, params: CreateGameParams) -> u32 {
             let mut world = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
             let creator = starknet::get_caller_address();
-            assert!(creator.is_non_zero(), "Eternum: creator address is zero");
             assert_uuid_headroom(ref world);
 
             let (preset_rules, preset_game_config) = validate_game_params(world, params);
@@ -329,7 +329,6 @@ pub mod registrar_systems {
 
         let series: Series = world.read_model(params.series_id);
         assert!(series.owner.is_non_zero(), "Eternum: series is not registered");
-        assert!(starknet::get_caller_address() == series.owner, "Eternum: caller is not series owner");
         assert!(series.game_count.into() < series.num_games, "Eternum: series is full");
         assert!(
             params.game_number_in_series == series.game_count + 1, "Eternum: series games must be created in order",
