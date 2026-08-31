@@ -241,7 +241,7 @@ games:
 
   test("loads the committed blitz rotation as a rolling weekly cadence", () => {
     const request = buildLaunchRotationRequest({
-      "config-path": "config/deployer/clean/examples/blitz-rotation.yaml",
+      "config-path": join(import.meta.dir, "../examples/blitz-rotation.yaml"),
     });
 
     expect(request).toMatchObject({

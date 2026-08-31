@@ -109,7 +109,7 @@ describe("Blitz balance profiles", () => {
     const baseConfig = getConfigFromNetwork("appchain", "blitz");
     const resolvedConfig = resolveBlitzConfigForDuration("appchain", 45);
 
-    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(200);
+    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(1_600);
     expect(resolvedConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
     expect(resolvedConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],
