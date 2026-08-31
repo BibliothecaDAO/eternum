@@ -32,6 +32,7 @@ export class S2RegistrationWriter implements RegistrationWriter {
             realmId.low.toString(),
             realmId.high.toString(),
             ...message.metadata,
+            message.passKind.toString(),
           ],
         },
         this.chain === "madara"

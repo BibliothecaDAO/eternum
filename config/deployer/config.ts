@@ -157,9 +157,6 @@ export class GameConfigDeployer {
     await setAgentConfig(config);
     await this.sleepNonLocal();
 
-    await setVillageControllersConfig(config);
-    await this.sleepNonLocal();
-
     await SetResourceFactoryConfig(config);
     await this.sleepNonLocal();
 
@@ -1132,31 +1129,6 @@ export const setAgentConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Agent Configurations set `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setVillageControllersConfig = async (config: Config) => {
-  const calldata = {
-    signer: config.account,
-    village_pass_nft_address: config.config.village.village_pass_nft_address,
-    village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
-  };
-
-  console.log(
-    chalk.cyan(`
-  📦 Village Token Configuration
-  ═══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Village Token Config")}
-    │  ${chalk.gray("Village Pass Nft Address:")}         ${chalk.white(shortHexAddress(calldata.village_pass_nft_address))}
-    │  ${chalk.gray("Village Pass Initial Mint Recipient:")}         ${chalk.white(shortHexAddress(calldata.village_mint_initial_recipient))}
-    └────────────────────────────────`),
-  );
-
-  const villageTx = await config.provider.set_village_token_config(calldata);
-  console.log(chalk.green(`\n    ✔ Village Controllers configured `) + chalk.gray(villageTx.statusReceipt) + "\n");
-};
-
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -1285,9 +1257,6 @@ export const setSeasonConfig = async (config: Config) => {
   const seasonCalldata = {
     signer: config.account,
     dev_mode_on: config.config.dev.mode.on,
-    season_pass_address: config.config.setup!.addresses.seasonPass,
-    realms_address: config.config.setup!.addresses.realms,
-    lords_address: config.config.setup!.addresses.lords,
     start_settling_at: startSettlingAt,
     start_main_at: startMainAt,
     end_at: 0,
@@ -1315,11 +1284,6 @@ export const setSeasonConfig = async (config: Config) => {
     )} UTC
     │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
     │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
-    │
-    │  ${chalk.yellow("Contract Addresses")}
-    │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
-    │  ${chalk.gray("Realms:")}            ${chalk.white(shortHexAddress(seasonCalldata.realms_address))}
-    │  ${chalk.gray("LORDS:")}             ${chalk.white(shortHexAddress(seasonCalldata.lords_address))}
     └────────────────────────────────`),
   );
 
@@ -1754,9 +1718,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const seasonCalldata = {
     signer: config.account,
     dev_mode_on: config.config.dev.mode.on,
-    season_pass_address: "0x0",
-    realms_address: "0x0",
-    lords_address: config.config.setup!.addresses.lords,
     start_settling_at: registration_start_at,
     start_main_at: registration_end_at,
     end_at: registration_end_at + config.config.season.durationSeconds,
@@ -1784,11 +1745,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     )} UTC
     │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
     │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
-    │
-    │  ${chalk.yellow("Contract Addresses")}
-    │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
-    │  ${chalk.gray("Realms:")}            ${chalk.white(shortHexAddress(seasonCalldata.realms_address))}
-    │  ${chalk.gray("LORDS:")}             ${chalk.white(shortHexAddress(seasonCalldata.lords_address))}
     └────────────────────────────────`),
   );
 

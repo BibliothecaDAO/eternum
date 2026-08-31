@@ -210,9 +210,8 @@ mod dispatcher_lifecycle {
         BlitzExplorationConfig, BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig,
         BlitzSettlementConfig, BuildingConfig, ChainConfig, FaithConfig, HyperstructureConfig, HyperstructureCostConfig,
         PresetConfig, PresetGameConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        SeasonAddressesConfig, SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig,
-        TickConfig, TradeConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig,
-        VillageTokenConfig, VillageTroopConfig, WeightConfig,
+        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTroopConfig, WeightConfig,
     };
     use crate::models::game::{GameRegistryImpl, GameStatus};
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
@@ -611,13 +610,7 @@ mod dispatcher_lifecycle {
                 velords_fee_recipient: Zero::zero(),
                 season_pool_fee_recipient: Zero::zero(),
             },
-            village_token_config: VillageTokenConfig {
-                token_address: Zero::zero(), mint_recipient_address: Zero::zero(),
-            },
             village_troop_config: VillageTroopConfig { troop_delay_ticks: 0 },
-            season_addresses_config: SeasonAddressesConfig {
-                season_pass_address: Zero::zero(), realms_address: Zero::zero(), lords_address: Zero::zero(),
-            },
             quest_games: [].span(),
             realm_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },

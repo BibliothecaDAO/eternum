@@ -8,7 +8,7 @@ mod tests {
     use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, WORLD_CONFIG_ID};
     use crate::models::config::{AgentControllerConfig, ChainConfig};
-    use crate::models::ledger::LedgerRegistration;
+    use crate::models::ledger::{LedgerRegistration, LedgerRegistrationImpl};
     use crate::systems::entry::contracts::{IEntrySystemsDispatcher, IEntrySystemsDispatcherTrait};
 
     const GAME_ID: u32 = 7;
@@ -63,14 +63,15 @@ mod tests {
         let metadata = ('realm', 'url-a', 'url-b');
         start_cheat_caller_address(entry.contract_address, operator);
 
-        entry.register_from_l2(GAME_ID, owner, 42, metadata);
-        entry.register_from_l2(GAME_ID, owner, 42, metadata);
+        entry.register_from_l2(GAME_ID, owner, 42, metadata, 1);
+        entry.register_from_l2(GAME_ID, owner, 42, metadata, 1);
         stop_cheat_caller_address(entry.contract_address);
 
         let registration: LedgerRegistration = world.read_model((GAME_ID, owner));
         assert!(registration.registered, "registration missing");
         assert!(registration.realm_id == 42, "realm id changed");
         assert!(registration.metadata == metadata, "metadata changed");
+        assert!(registration.pass_kind == 1, "pass kind changed");
     }
 
     #[test]
@@ -79,8 +80,29 @@ mod tests {
         let (_, entry, operator) = setup();
         let owner = addr('owner');
         start_cheat_caller_address(entry.contract_address, operator);
-        entry.register_from_l2(GAME_ID, owner, 42, ('realm', 'url-a', 'url-b'));
-        entry.register_from_l2(GAME_ID, owner, 43, ('realm', 'url-a', 'url-b'));
+        entry.register_from_l2(GAME_ID, owner, 42, ('realm', 'url-a', 'url-b'), 1);
+        entry.register_from_l2(GAME_ID, owner, 43, ('realm', 'url-a', 'url-b'), 1);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: conflicting ledger registration")]
+    fn operator_cannot_replace_registration_kind() {
+        let (_, entry, operator) = setup();
+        let owner = addr('owner');
+        start_cheat_caller_address(entry.contract_address, operator);
+        entry.register_from_l2(GAME_ID, owner, 42, ('realm', 'url-a', 'url-b'), 1);
+        entry.register_from_l2(GAME_ID, owner, 42, ('realm', 'url-a', 'url-b'), 2);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: village pass registration is required")]
+    fn season_registration_cannot_authorize_a_village() {
+        let (world, entry, operator) = setup();
+        let owner = addr('owner');
+        start_cheat_caller_address(entry.contract_address, operator);
+        entry.register_from_l2(GAME_ID, owner, 42, ('realm', 'url-a', 'url-b'), 1);
+        let registration: LedgerRegistration = world.read_model((GAME_ID, owner));
+        registration.assert_village(42);
     }
 
     #[test]
@@ -88,6 +110,6 @@ mod tests {
     fn non_operator_cannot_register() {
         let (_, entry, _) = setup();
         start_cheat_caller_address(entry.contract_address, addr('attacker'));
-        entry.register_from_l2(GAME_ID, addr('owner'), 42, ('realm', 'url-a', 'url-b'));
+        entry.register_from_l2(GAME_ID, addr('owner'), 42, ('realm', 'url-a', 'url-b'), 1);
     }
 }

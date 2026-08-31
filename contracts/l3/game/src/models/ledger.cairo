@@ -5,6 +5,10 @@ use starknet::ContractAddress;
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::config::ChainConfig;
 
+pub const CASH_REGISTRATION: u8 = 0;
+pub const SEASON_PASS_REGISTRATION: u8 = 1;
+pub const VILLAGE_PASS_REGISTRATION: u8 = 2;
+
 #[starknet::interface]
 pub trait IPlayerRegistry<TState> {
     fn owner_of(self: @TState, account: ContractAddress) -> ContractAddress;
@@ -19,6 +23,7 @@ pub struct LedgerRegistration {
     pub owner: ContractAddress,
     pub realm_id: u256,
     pub metadata: (felt252, felt252, felt252),
+    pub pass_kind: u8,
     pub registered: bool,
 }
 
@@ -38,5 +43,28 @@ pub impl LedgerRegistrationImpl of LedgerRegistrationTrait {
         let registration: LedgerRegistration = world.read_model((game_id, owner));
         assert!(registration.registered, "Eternum: ledger registration is required");
         registration
+    }
+
+    fn for_season_account(world: WorldStorage, game_id: u32, account: ContractAddress) -> LedgerRegistration {
+        let registration = Self::for_account(world, game_id, account);
+        registration.assert_season();
+        registration
+    }
+
+    fn for_village_account(
+        world: WorldStorage, game_id: u32, account: ContractAddress, village_pass_token_id: u16,
+    ) -> LedgerRegistration {
+        let registration = Self::for_account(world, game_id, account);
+        registration.assert_village(village_pass_token_id);
+        registration
+    }
+
+    fn assert_season(self: LedgerRegistration) {
+        assert!(self.pass_kind == SEASON_PASS_REGISTRATION, "Eternum: season pass registration is required");
+    }
+
+    fn assert_village(self: LedgerRegistration, village_pass_token_id: u16) {
+        assert!(self.pass_kind == VILLAGE_PASS_REGISTRATION, "Eternum: village pass registration is required");
+        assert!(self.realm_id == village_pass_token_id.into(), "Eternum: village pass id mismatch");
     }
 }

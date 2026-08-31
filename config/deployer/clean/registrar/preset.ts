@@ -390,16 +390,6 @@ function buildPresetSideTables(config: Config): {
   };
 }
 
-function buildSeasonAddressesConfig(config: Config) {
-  const addresses = config.setup?.addresses;
-  const enabled = !config.blitz.mode.on;
-  return {
-    season_pass_address: resolveFeatureAddress("season pass", enabled, addresses?.seasonPass),
-    realms_address: resolveFeatureAddress("realms", enabled, addresses?.realms),
-    lords_address: resolveFeatureAddress("lords", enabled, addresses?.lords),
-  };
-}
-
 function buildFaithConfig(config: Config) {
   const enabled = config.faith?.enabled ?? false;
   return {
@@ -499,12 +489,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         velords_fee_recipient: config.bridge.velords_fee_recipient,
         season_pool_fee_recipient: config.bridge.season_pool_fee_recipient,
       },
-      village_token_config: {
-        token_address: config.village.village_pass_nft_address,
-        mint_recipient_address: config.village.village_mint_initial_recipient,
-      },
       village_troop_config: { troop_delay_ticks: config.battle.delaySeconds },
-      season_addresses_config: buildSeasonAddressesConfig(config),
       quest_games: buildQuestGames(config),
       realm_start_resources_config: {
         resources_list_id: realmStart.id,

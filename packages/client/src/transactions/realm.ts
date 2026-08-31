@@ -21,7 +21,6 @@ export class RealmTransactions {
       villagePassTokenId: number;
       connectedRealm: number;
       direction: number;
-      villagePassAddress: string;
     },
   ) {
     return this.provider.create_village({
@@ -29,7 +28,6 @@ export class RealmTransactions {
       village_pass_token_id: props.villagePassTokenId,
       connected_realm: props.connectedRealm,
       direction: props.direction,
-      village_pass_address: props.villagePassAddress,
     });
   }
 

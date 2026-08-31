@@ -2,7 +2,7 @@ use crate::models::config::{
     BattleConfig, BiomeClimateConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig,
     ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, SettlementConfig,
     StructureCapacityConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-    VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
+    VictoryPointsGrantConfig, VictoryPointsWinConfig,
 };
 use crate::models::resource::production::building::BuildingCategory;
 
@@ -30,18 +30,10 @@ pub trait IAgentControllerConfig<T> {
 }
 
 #[starknet::interface]
-pub trait IVillageTokenConfig<T> {
-    fn set_village_token_config(ref self: T, village_token_config: VillageTokenConfig);
-}
-
-#[starknet::interface]
 pub trait ISeasonConfig<T> {
     fn set_season_config(
         ref self: T,
         dev_mode_on: bool,
-        season_pass_address: starknet::ContractAddress,
-        realms_address: starknet::ContractAddress,
-        lords_address: starknet::ContractAddress,
         start_settling_at: u64,
         start_main_at: u64,
         end_at: u64,
@@ -268,11 +260,10 @@ pub mod config_systems {
         BlitzRegistrationConfigImpl, BlitzSettlementConfig, BlitzSettlementConfigImpl, BuildingCategoryConfig,
         BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
         HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonAddressesConfig, SeasonConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig,
-        StructureMaxLevelConfig, TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-        VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTokenConfig, WeightConfig,
-        WorldConfig, WorldConfigUtilImpl,
+        ResourceBridgeWtlConfig, ResourceFactoryConfig, ResourceRevBridgeWtlConfig, SeasonConfig, SettlementConfig,
+        SpeedConfig, StartingResourcesConfig, StructureCapacityConfig, StructureLevelConfig, StructureMaxLevelConfig,
+        TickConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig,
+        VictoryPointsWinConfig, VillageFoundResourcesConfig, WeightConfig, WorldConfig, WorldConfigUtilImpl,
     };
     use crate::models::name::AddressName;
     use crate::models::position::{CENTER_COL, CoordImpl};
@@ -335,17 +326,6 @@ pub mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl VillageTokenConfigImpl of super::IVillageTokenConfig<ContractState> {
-        fn set_village_token_config(ref self: ContractState, village_token_config: VillageTokenConfig) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            assert_caller_is_admin(world);
-
-            WorldConfigUtilImpl::set_member(ref world, selector!("village_pass_config"), village_token_config);
-        }
-    }
-
-
-    #[abi(embed_v0)]
     impl WorldConfigImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(ref self: ContractState, admin_address: starknet::ContractAddress) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -391,9 +371,6 @@ pub mod config_systems {
         fn set_season_config(
             ref self: ContractState,
             dev_mode_on: bool,
-            season_pass_address: starknet::ContractAddress,
-            realms_address: starknet::ContractAddress,
-            lords_address: starknet::ContractAddress,
             start_settling_at: u64,
             start_main_at: u64,
             end_at: u64,
@@ -402,12 +379,6 @@ pub mod config_systems {
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
-
-            WorldConfigUtilImpl::set_member(
-                ref world,
-                selector!("season_addresses_config"),
-                SeasonAddressesConfig { season_pass_address, realms_address, lords_address },
-            );
 
             let mut season_config: SeasonConfig = WorldConfigUtilImpl::get_member(world, selector!("season_config"));
             if season_config.end_at.is_zero() {

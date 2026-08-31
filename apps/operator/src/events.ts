@@ -13,13 +13,14 @@ export function resultCommitment(message: LedgerResultsMessage): string {
 
 export function parseLedgerRegistration(event: ChainEvent): LedgerRegistrationMessage {
   assertSelector(event.keys[0], REGISTERED_SELECTOR, "Registered");
-  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("Malformed ledger Registered event");
+  if (event.keys.length !== 3 || event.data.length !== 6) throw new Error("Malformed ledger Registered event");
 
   return {
     gameId: parseSafeNumber(event.keys[1], "registration game id"),
     owner: normalizeFelt(event.keys[2]!),
     realmId: BigInt(event.data[0]!) + (BigInt(event.data[1]!) << 128n),
     metadata: [normalizeFelt(event.data[2]!), normalizeFelt(event.data[3]!), normalizeFelt(event.data[4]!)],
+    passKind: parseSafeNumber(event.data[5], "registration pass kind"),
   };
 }
 

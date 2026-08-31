@@ -228,7 +228,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_VRF_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_AGENT_CONFIG]: TransactionCostCategory.LOW,
-  [TransactionType.SET_VILLAGE_TOKEN_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_CAPACITY_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_DONKEY_SPEED_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_RESOURCE_WEIGHT_CONFIG]: TransactionCostCategory.LOW,

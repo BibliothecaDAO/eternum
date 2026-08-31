@@ -98,10 +98,6 @@ pub impl iStructureImpl of IStructureTrait {
     //             Direction::SouthEast,
     //         ];
     //         let mut possible_village_slots: Array<Direction> = array![];
-    //         let village_pass_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
-    //             world, selector!("village_pass_config"),
-    //         );
-    //
     //         if (category != StructureCategory::FragmentMine.into() && category != StructureCategory::Village.into())
     //             || explore_village_coord {
     //             for direction in structure_surrounding {
@@ -135,9 +131,6 @@ pub impl iStructureImpl of IStructureTrait {
     //                     // ensure village tile is only useable if no structure is on it and tile is not a quest tile
     //                     if !village_tile.occupier_is_structure && village_tile.occupier_type !=
     //                     TileOccupier::Quest.into() {
-    //                         // mint village nft
-    //                         IVillagePassDispatcher { contract_address: village_pass_config.token_address }
-    //                             .mint(village_pass_config.mint_recipient_address);
     //                         // append village slot
     //                         possible_village_slots.append(direction);
     //                     }

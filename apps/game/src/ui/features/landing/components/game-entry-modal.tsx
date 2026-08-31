@@ -2562,7 +2562,7 @@ export const GameEntryModal = ({
     [worldMeta?.gameId, worldMeta?.worldId],
   );
   const seasonAddresses = getSeasonAddresses(chain);
-  // realm_systems.create reads season_pass_address from world config, so prefer world metadata when available.
+  // Pass addresses belong to the L2 ownership and ledger registration flow.
   const seasonPassAddress = worldMeta?.seasonPassAddress || seasonAddresses.seasonPass || null;
   const villagePassAddress = worldMeta?.villagePassAddress || seasonAddresses.villagePass || null;
   const realmsAddress = seasonAddresses.realms;
@@ -3364,14 +3364,12 @@ export const GameEntryModal = ({
       villagePassTokenId,
       connectedRealmEntityId,
       direction,
-      villagePassAddress,
       optionalPlayerName,
     }: {
       signerAddress: string;
       villagePassTokenId: bigint;
       connectedRealmEntityId: number;
       direction: Direction;
-      villagePassAddress: string;
       optionalPlayerName: string | null;
     }): Call[] => {
       const villageSystemsAddress = resolveWorldSystemAddress("village_systems");
@@ -3380,12 +3378,6 @@ export const GameEntryModal = ({
       if (optionalPlayerName) {
         calls.push(buildSetAddressNameCall(optionalPlayerName));
       }
-
-      calls.push({
-        contractAddress: villagePassAddress,
-        entrypoint: "set_approval_for_all",
-        calldata: CallData.compile([villageSystemsAddress, true]),
-      });
 
       const vrfProviderAddress = env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS;
       if (hasNonZeroNumericValue(vrfProviderAddress)) {
@@ -3767,7 +3759,7 @@ export const GameEntryModal = ({
       seasonPassAddress.toLowerCase() === villagePassAddress.toLowerCase()
     ) {
       setSeasonSettlementError(
-        `World config mismatch: season pass address points to village pass (${seasonPassAddress}). Update season_addresses_config on-chain.`,
+        `Season pass configuration points to the village pass (${seasonPassAddress}). Correct the environment address table.`,
       );
       return;
     }
@@ -3857,21 +3849,10 @@ export const GameEntryModal = ({
 
       const realmId = Number(realmIdBigInt);
       const owner = account.address;
-      const frontend = account.address;
-
       const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
       const settlementCalls: Call[] = [];
       if (optionalPlayerName) {
         settlementCalls.push(buildSetAddressNameCall(optionalPlayerName));
-      }
-      // The contract only collects the pass outside dev mode — approving in
-      // dev mode would target address 0x0 and revert the whole multicall.
-      if (!devModeSeasonSettle && seasonPassAddress) {
-        settlementCalls.push({
-          contractAddress: seasonPassAddress,
-          entrypoint: "approve",
-          calldata: CallData.compile([realmSystemsAddress, uint256.bnToUint256(realmIdBigInt)]),
-        });
       }
       settlementCalls.push({
         contractAddress: realmSystemsAddress,
@@ -3879,7 +3860,6 @@ export const GameEntryModal = ({
         calldata: CallData.compile([
           owner,
           realmId,
-          frontend,
           activeSeasonPlacement.side,
           activeSeasonPlacement.layer,
           activeSeasonPlacement.point,
@@ -4008,7 +3988,6 @@ export const GameEntryModal = ({
         villagePassTokenId: selectedVillagePassTokenId,
         connectedRealmEntityId: activeVillageRealmEntityId,
         direction: activeVillageDirection,
-        villagePassAddress,
         optionalPlayerName,
       });
 

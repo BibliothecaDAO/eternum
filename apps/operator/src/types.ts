@@ -13,6 +13,7 @@ export interface LedgerRegistrationMessage {
   owner: string;
   realmId: bigint;
   metadata: readonly [string, string, string];
+  passKind: number;
 }
 
 export interface LedgerResultRow {

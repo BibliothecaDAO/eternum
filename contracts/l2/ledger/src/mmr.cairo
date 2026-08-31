@@ -34,8 +34,8 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
             return FixedTrait::ZERO();
         }
 
-        let first_position: u128 = (rank - 1).into();
-        let last_position: u128 = (rank + tie_count - 2).into();
+        let first_position: u128 = rank.into() - 1;
+        let last_position: u128 = rank.into() + tie_count.into() - 2;
         let numerator = Self::to_fixed(first_position + last_position);
         let denominator = Self::to_fixed(2 * (player_count - 1).into());
         numerator / denominator

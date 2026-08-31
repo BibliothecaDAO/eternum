@@ -24,8 +24,8 @@ pub fn result_commitment(game_id: u32, ranked: Span<(ContractAddress, u16, u16)>
 pub trait IGameLedger<TState> {
     fn pause(ref self: TState);
     fn unpause(ref self: TState);
+    fn rescue_token(ref self: TState, token: ContractAddress, recipient: ContractAddress, amount: u256);
     fn register_preset(ref self: TState, preset_id: u32, preset: Preset);
-    fn set_messaging(ref self: TState, core_contract: ContractAddress, l3_entry_system: felt252);
     fn open_game(ref self: TState, game_id: u32, preset_id: u32, start: u64, end: u64);
     fn register(ref self: TState, game_id: u32, sword: bool, shield: bool);
     fn register_with_pass(ref self: TState, game_id: u32, pass_id: u256);
@@ -65,11 +65,6 @@ pub trait ISeasonPassMetadata<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
-#[starknet::interface]
-pub trait IPiltoverCore<TState> {
-    fn send_message_to_appchain(ref self: TState, to_address: felt252, selector: felt252, payload: Span<felt252>);
-}
-
 #[starknet::contract]
 pub mod GameLedger {
     use core::dict::Felt252Dict;
@@ -87,9 +82,9 @@ pub mod GameLedger {
     use starknet::{ClassHash, ContractAddress};
     use super::{
         BPS, IGameLedger, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
-        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, IPiltoverCoreDispatcher, IPiltoverCoreDispatcherTrait,
-        ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE,
-        PAYOUT_WEIGHT_SCALE, SEASON_PASS, VILLAGE_PASS, result_commitment,
+        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
+        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS,
+        VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -115,8 +110,6 @@ pub mod GameLedger {
         loot_chest: ContractAddress,
         elite_invite: ContractAddress,
         cosmetics: ContractAddress,
-        core_contract: ContractAddress,
-        l3_entry_system: felt252,
         pm_enabled: bool,
         reserve: u256,
         presets: Map<u32, Preset>,
@@ -156,7 +149,6 @@ pub mod GameLedger {
         Refunded: Refunded,
         PlayerPaid: PlayerPaid,
         ResultsApplied: ResultsApplied,
-        MessagingConfigured: MessagingConfigured,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -182,6 +174,7 @@ pub mod GameLedger {
         owner: ContractAddress,
         realm_id: u256,
         metadata: (felt252, felt252, felt252),
+        pass_kind: u8,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -232,12 +225,6 @@ pub mod GameLedger {
         pool: u256,
         protocol_cut: u256,
         dust: u256,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct MessagingConfigured {
-        core_contract: ContractAddress,
-        l3_entry_system: felt252,
     }
 
     #[constructor]
@@ -300,6 +287,15 @@ pub mod GameLedger {
             self.pausable.unpause();
         }
 
+        fn rescue_token(ref self: ContractState, token: ContractAddress, recipient: ContractAddress, amount: u256) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert!(token != self.lords.read(), "Ledger: LORDS are managed funds");
+            assert!(recipient.is_non_zero(), "Ledger: rescue recipient is zero");
+            assert!(
+                IERC20Dispatcher { contract_address: token }.transfer(recipient, amount), "Ledger: token rescue failed",
+            );
+        }
+
         fn register_preset(ref self: ContractState, preset_id: u32, preset: Preset) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             assert!(!self.preset_exists.entry(preset_id).read(), "Ledger: preset already registered");
@@ -307,14 +303,6 @@ pub mod GameLedger {
             self.presets.entry(preset_id).write(preset);
             self.preset_exists.entry(preset_id).write(true);
             self.emit(PresetRegistered { preset_id });
-        }
-
-        fn set_messaging(ref self: ContractState, core_contract: ContractAddress, l3_entry_system: felt252) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            assert!(core_contract.is_zero() == l3_entry_system.is_zero(), "Ledger: incomplete messaging config");
-            self.core_contract.write(core_contract);
-            self.l3_entry_system.write(l3_entry_system);
-            self.emit(MessagingConfigured { core_contract, l3_entry_system });
         }
 
         fn open_game(ref self: ContractState, game_id: u32, preset_id: u32, start: u64, end: u64) {
@@ -347,7 +335,7 @@ pub mod GameLedger {
 
             self.record_registration(game_id, owner, sword, shield, payment, 0, NO_PASS);
             self.pull_lords(owner, payment);
-            self.emit_registration(game_id, owner, 0, (0, 0, 0));
+            self.emit_registration(game_id, owner, 0, (0, 0, 0), NO_PASS);
         }
 
         fn register_with_pass(ref self: ContractState, game_id: u32, pass_id: u256) {
@@ -364,7 +352,7 @@ pub mod GameLedger {
 
             self.record_registration(game_id, owner, false, false, 0, pass_id, SEASON_PASS);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
-            self.emit_registration(game_id, owner, pass_id, metadata);
+            self.emit_registration(game_id, owner, pass_id, metadata, SEASON_PASS);
         }
 
         fn register_village(ref self: ContractState, game_id: u32, village_pass_id: u256) {
@@ -375,10 +363,11 @@ pub mod GameLedger {
                 IERC721Dispatcher { contract_address: village_pass }.owner_of(village_pass_id) == owner,
                 "Ledger: not village pass owner",
             );
+            assert!(village_pass_id <= 0xffff, "Ledger: village pass id exceeds u16");
 
             self.record_registration(game_id, owner, false, false, 0, village_pass_id, VILLAGE_PASS);
             IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
-            self.emit_registration(game_id, owner, village_pass_id, (0, 0, 0));
+            self.emit_registration(game_id, owner, village_pass_id, (0, 0, 0), VILLAGE_PASS);
         }
 
         fn fund(ref self: ContractState, game_id: u32, amount: u256) {
@@ -618,20 +607,9 @@ pub mod GameLedger {
             owner: ContractAddress,
             realm_id: u256,
             metadata: (felt252, felt252, felt252),
+            pass_kind: u8,
         ) {
-            self.emit(Registered { game_id, owner, realm_id, metadata });
-            let core_contract = self.core_contract.read();
-            if core_contract.is_non_zero() {
-                let mut payload = array![];
-                game_id.serialize(ref payload);
-                owner.serialize(ref payload);
-                realm_id.serialize(ref payload);
-                metadata.serialize(ref payload);
-                IPiltoverCoreDispatcher { contract_address: core_contract }
-                    .send_message_to_appchain(
-                        self.l3_entry_system.read(), selector!("register_from_l2"), payload.span(),
-                    );
-            }
+            self.emit(Registered { game_id, owner, realm_id, metadata, pass_kind });
         }
 
         fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) {
@@ -650,10 +628,10 @@ pub mod GameLedger {
         ) {
             assert!(ranked.len() == registered_count.into(), "Ledger: roster size mismatch");
             let mut index: u32 = 0;
-            let mut expected_rank: u16 = 1;
+            let mut expected_rank: u32 = 1;
             while index < ranked.len() {
                 let (_, rank, _) = *ranked.at(index);
-                assert!(rank == expected_rank, "Ledger: invalid competition rank");
+                assert!(rank.into() == expected_rank, "Ledger: invalid competition rank");
                 let group_start = index;
                 loop {
                     if index >= ranked.len() {
@@ -672,8 +650,7 @@ pub mod GameLedger {
                     self.results.entry((game_id, owner)).write(PlayerResult { rank, chests, ..Default::default() });
                     index += 1;
                 }
-                let group_size: u16 = (index - group_start).try_into().unwrap();
-                expected_rank += group_size;
+                expected_rank += index - group_start;
             }
         }
     }

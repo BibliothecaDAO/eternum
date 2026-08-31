@@ -39,7 +39,7 @@ describe("appchain registrar preset", () => {
       resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_118);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_113);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
     expect(payload.gameConfig.blitz_registration_config).toEqual({
@@ -68,7 +68,6 @@ describe("appchain registrar preset", () => {
     expect(payload.gameConfig).toMatchObject({ preset_id: 10, blitz_mode_on: false });
     expect(payload.presetConfig).toMatchObject({
       preset_id: 10,
-      season_addresses_config: expect.any(Object),
       bank_config: expect.any(Object),
       trade_config: expect.any(Object),
       quest_config: expect.any(Object),
@@ -81,13 +80,7 @@ describe("appchain registrar preset", () => {
     );
   });
 
-  test("requires addresses for enabled season and faith features", () => {
-    const eternumConfig = structuredClone(loadEnvironmentConfiguration("appchain.eternum"));
-    delete (eternumConfig.setup?.addresses as Partial<typeof eternumConfig.setup.addresses>).lords;
-    expect(() => buildPresetRegistration(eternumConfig, 10)).toThrow(
-      "lords address must be explicit when the feature is enabled",
-    );
-
+  test("requires addresses for enabled faith features", () => {
     const faithConfig = structuredClone(loadEnvironmentConfiguration("appchain.eternum"));
     delete (faithConfig.faith as Partial<NonNullable<typeof faithConfig.faith>>).reward_token;
     expect(() => buildPresetRegistration(faithConfig, 10)).toThrow(
@@ -101,14 +94,7 @@ describe("appchain registrar preset", () => {
     delete blitzConfig.faith;
 
     const payload = buildPresetRegistration(blitzConfig, 1);
-    expect(payload.presetConfig).toMatchObject({
-      season_addresses_config: {
-        season_pass_address: "0x0",
-        realms_address: "0x0",
-        lords_address: "0x0",
-      },
-      faith_config: { enabled: false, reward_token: "0x0" },
-    });
+    expect(payload.presetConfig).toMatchObject({ faith_config: { enabled: false, reward_token: "0x0" } });
   });
 
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {

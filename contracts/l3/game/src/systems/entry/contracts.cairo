@@ -3,7 +3,12 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IEntrySystems<TState> {
     fn register_from_l2(
-        ref self: TState, game_id: u32, owner: ContractAddress, realm_id: u256, metadata: (felt252, felt252, felt252),
+        ref self: TState,
+        game_id: u32,
+        owner: ContractAddress,
+        realm_id: u256,
+        metadata: (felt252, felt252, felt252),
+        pass_kind: u8,
     );
 }
 
@@ -26,6 +31,7 @@ pub mod entry_systems {
             owner: ContractAddress,
             realm_id: u256,
             metadata: (felt252, felt252, felt252),
+            pass_kind: u8,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let chain_config: ChainConfig = world.read_model(WORLD_CONFIG_ID);
@@ -39,13 +45,13 @@ pub mod entry_systems {
             let existing: LedgerRegistration = world.read_model((game_id, owner));
             if existing.registered {
                 assert!(
-                    existing.realm_id == realm_id && existing.metadata == metadata,
+                    existing.realm_id == realm_id && existing.metadata == metadata && existing.pass_kind == pass_kind,
                     "Eternum: conflicting ledger registration",
                 );
                 return;
             }
 
-            world.write_model(@LedgerRegistration { game_id, owner, realm_id, metadata, registered: true });
+            world.write_model(@LedgerRegistration { game_id, owner, realm_id, metadata, pass_kind, registered: true });
         }
     }
 }

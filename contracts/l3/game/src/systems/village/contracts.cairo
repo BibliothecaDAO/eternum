@@ -16,10 +16,9 @@ pub mod village_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{
-        SeasonConfigImpl, TickImpl, VillageTokenConfig, VillageTroopConfig, WorldConfigUtilImpl,
-    };
+    use crate::models::config::{SeasonConfigImpl, TickImpl, VillageTroopConfig, WorldConfigUtilImpl};
     use crate::models::game::GameRegistryImpl;
+    use crate::models::ledger::LedgerRegistrationImpl;
     use crate::models::map::TileOccupier;
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::position::{Coord, Direction, NUM_DIRECTIONS};
@@ -36,7 +35,6 @@ pub mod village_systems {
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]
@@ -52,16 +50,10 @@ pub mod village_systems {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
 
-            // recieve the nft from the caller
             let caller = starknet::get_caller_address();
-            let this = starknet::get_contract_address();
-            let village_token_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("village_token_config"),
-            );
             let game = GameRegistryImpl::get(world, game_id);
             if !game.dev_mode_on {
-                IVillagePassDispatcher { contract_address: village_token_config.token_address }
-                    .transfer_from(caller, this, village_pass_token_id.into());
+                LedgerRegistrationImpl::for_village_account(world, game_id, caller, village_pass_token_id);
             }
 
             // ensure connected entity is a realm

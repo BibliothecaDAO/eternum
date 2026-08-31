@@ -228,7 +228,6 @@ export enum TransactionType {
   SET_VRF_CONFIG = "set_vrf_config",
   SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG = "set_resource_bridge_fee_split_config",
   SET_AGENT_CONFIG = "set_agent_config",
-  SET_VILLAGE_TOKEN_CONFIG = "set_village_token_config",
   SET_CAPACITY_CONFIG = "set_capacity_config",
   SET_DONKEY_SPEED_CONFIG = "set_donkey_speed_config",
   SET_RESOURCE_WEIGHT_CONFIG = "set_resource_weight_config",

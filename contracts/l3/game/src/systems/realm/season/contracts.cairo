@@ -1,4 +1,3 @@
-use starknet::ContractAddress;
 use crate::alias::ID;
 
 #[derive(Copy, Drop, Serde)]
@@ -11,12 +10,7 @@ pub struct RealmSettlement {
 #[starknet::interface]
 pub trait IRealmSystems<T> {
     fn create(
-        ref self: T,
-        game_id: u32,
-        owner: starknet::ContractAddress,
-        realm_id: ID,
-        frontend: ContractAddress,
-        settlement: RealmSettlement,
+        ref self: T, game_id: u32, owner: starknet::ContractAddress, realm_id: ID, settlement: RealmSettlement,
     ) -> ID;
 }
 
@@ -77,12 +71,7 @@ pub mod realm_systems {
         /// spend their season pass NFT
         ///
         fn create(
-            ref self: ContractState,
-            game_id: u32,
-            owner: ContractAddress,
-            realm_id: ID,
-            frontend: ContractAddress,
-            settlement: RealmSettlement,
+            ref self: ContractState, game_id: u32, owner: ContractAddress, realm_id: ID, settlement: RealmSettlement,
         ) -> ID {
             // check that season is still active
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -113,7 +102,7 @@ pub mod realm_systems {
             let (realm_id, wonder, order, resources) = if game.dev_mode_on {
                 (realm_id, 0, 0, array![])
             } else {
-                let registration = LedgerRegistrationImpl::for_account(world, game_id, caller);
+                let registration = LedgerRegistrationImpl::for_season_account(world, game_id, caller);
                 let (encoded_metadata, _, _) = registration.metadata;
                 let (_realm_name, _regions, _cities, _harbors, _rivers, wonder, order, resources) =
                     RealmNameAndAttrsDecodingImpl::decode(
@@ -145,20 +134,6 @@ pub mod realm_systems {
             let structure_id = realm_internal_systems
                 .create_internal(game_id, owner, realm_id, resources, order, wonder, coord, true, true);
             realm_internal_systems.provision_internal(game_id, structure_id);
-
-            // collect lords attached to season pass and bridge into the realm
-            // let lords_amount_attached: u256 =
-            // InternalRealmLogicImpl::collect_lords_from_season_pass(
-            //     season_addresses_config.season_pass_address, realm_id,
-            // );
-
-            // // bridge attached lords into the realm
-            // if lords_amount_attached.is_non_zero() {
-            //     InternalRealmLogicImpl::bridge_lords_into_realm(
-            //         ref world, season_addresses_config.lords_address, structure_id,
-            //         lords_amount_attached, frontend,
-            //     );
-            // }
 
             // emit realm settle event
             let now = starknet::get_block_timestamp();

@@ -11,7 +11,6 @@ export interface CreateVillageProps extends SystemSigner {
   village_pass_token_id: BigNumberish;
   connected_realm: BigNumberish;
   direction: BigNumberish;
-  village_pass_address: string;
 }
 
 export interface ReceiveArmyGrantProps extends SystemSigner {
@@ -153,8 +152,6 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
       point: BigNumberish;
     };
   }[];
-  frontend: BigNumberish;
-  season_pass_address: string;
 }
 
 export interface CreateRealmDevProps extends SystemSigner {
@@ -468,11 +465,6 @@ export interface SetAgentConfigProps extends SystemSigner {
   max_spawn_lords_amount: BigNumberish;
 }
 
-export interface SetVillageTokenProps extends SystemSigner {
-  village_pass_nft_address: BigNumberish;
-  village_mint_initial_recipient: BigNumberish;
-}
-
 export interface SetTradeConfigProps extends SystemSigner {
   max_count: BigNumberish;
 }
@@ -624,9 +616,6 @@ export interface SetDonkeySpeedConfigProps extends SystemSigner {
 
 export interface SetSeasonConfigProps extends SystemSigner {
   dev_mode_on: boolean;
-  season_pass_address: BigNumberish;
-  realms_address: BigNumberish;
-  lords_address: BigNumberish;
   start_settling_at: BigNumberish;
   start_main_at: BigNumberish;
   end_at: BigNumberish;

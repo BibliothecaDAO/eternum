@@ -13,7 +13,7 @@ describe("operator relay cursors", () => {
     const write = vi.fn(async () => "0xl3");
     const relay = buildRelay({
       cursor,
-      ledgerEvents: [event({ keys: [REGISTERED_SELECTOR, "0x7", "0xabc"], data: ["0", "0", "0", "0", "0"] })],
+      ledgerEvents: [event({ keys: [REGISTERED_SELECTOR, "0x7", "0xabc"], data: ["0", "0", "0", "0", "0", "0"] })],
       registrationWrite: write,
     });
 
@@ -26,7 +26,7 @@ describe("operator relay cursors", () => {
     const cursor = memoryCursor();
     const relay = buildRelay({
       cursor,
-      ledgerEvents: [event({ keys: [REGISTERED_SELECTOR, "0x7", "0xabc"], data: ["0", "0", "0", "0", "0"] })],
+      ledgerEvents: [event({ keys: [REGISTERED_SELECTOR, "0x7", "0xabc"], data: ["0", "0", "0", "0", "0", "0"] })],
       registrationWrite: vi.fn(async () => {
         throw new Error("write failed");
       }),

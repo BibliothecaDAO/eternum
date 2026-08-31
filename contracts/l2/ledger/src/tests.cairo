@@ -488,6 +488,30 @@ fn non_admin_cannot_pause() {
 }
 
 #[test]
+fn admin_can_rescue_an_unmanaged_token() {
+    let fixture = deploy_ledger();
+    let token_class = declare("TestLords").unwrap().contract_class();
+    let (token_address, _) = token_class.deploy(@array![]).unwrap();
+    let token = IERC20Dispatcher { contract_address: token_address };
+    ITestLordsDispatcher { contract_address: token_address }.mint(fixture.ledger_address, 17);
+
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.rescue_token(token_address, ADMIN(), 17);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    assert!(token.balance_of(ADMIN()) == 17, "rescued token did not reach the admin recipient");
+}
+
+#[test]
+#[should_panic(expected: "Ledger: LORDS are managed funds")]
+fn admin_cannot_rescue_managed_lords() {
+    let fixture = deploy_ledger();
+    fixture.lords_minter.mint(fixture.ledger_address, 17);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.rescue_token(fixture.lords_address, ADMIN(), 17);
+}
+
+#[test]
 #[should_panic(expected: 'Pausable: paused')]
 fn paused_ledger_rejects_new_sponsorship() {
     let fixture = deploy_fixture(default_preset());
@@ -495,7 +519,6 @@ fn paused_ledger_rejects_new_sponsorship() {
     fund_and_approve_player(@fixture, sponsor, 500);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
-    fixture.ledger.unpause();
     stop_cheat_caller_address(fixture.ledger_address);
 
     start_cheat_caller_address(fixture.ledger_address, sponsor);
@@ -690,9 +713,6 @@ fn cancellation_refunds_registration_and_sponsorship() {
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.cancel_game(GAME_ID);
-    stop_cheat_caller_address(fixture.ledger_address);
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.pause();
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, owner);
     fixture.ledger.refund(GAME_ID);

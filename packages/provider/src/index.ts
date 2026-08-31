@@ -1680,15 +1680,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_village(props: SystemProps.CreateVillageProps) {
-    const { village_pass_token_id, connected_realm, direction, village_pass_address, signer } = props;
+    const { village_pass_token_id, connected_realm, direction, signer } = props;
 
     let callData: Call[] = [];
-
-    const approvalForAllCall: Call = {
-      contractAddress: village_pass_address,
-      entrypoint: "set_approval_for_all",
-      calldata: [getContractByName(this.manifest, `${this.namespace}-village_systems`), true],
-    };
 
     if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
       const requestRandomCall: Call = {
@@ -1708,7 +1702,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: [approvalForAllCall, ...callData, createCall],
+      calls: [...callData, createCall],
       transactionType: TransactionType.CREATE,
     });
   }
@@ -1753,41 +1747,21 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realms, owner, frontend, signer, season_pass_address } = props;
+    const { realms, owner, signer } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${this.namespace}-realm_systems`);
-
-    const approvalForAllTx: QueueableTransaction = {
-      signer,
-      calls: {
-        contractAddress: season_pass_address,
-        entrypoint: "set_approval_for_all",
-        calldata: [realmSystemsContractAddress, true],
-      },
-      transactionType: TransactionType.CREATE,
-    };
 
     const createTxs: QueueableTransaction[] = realms.map((realm) => ({
       signer,
       calls: {
         contractAddress: realmSystemsContractAddress,
         entrypoint: "create",
-        calldata: [owner, realm.realm_id, frontend, realm.realm_settlement],
+        calldata: [owner, realm.realm_id, realm.realm_settlement],
       },
       transactionType: TransactionType.CREATE,
     }));
 
-    const approvalCloseForAllTx: QueueableTransaction = {
-      signer,
-      calls: {
-        contractAddress: season_pass_address,
-        entrypoint: "set_approval_for_all",
-        calldata: [realmSystemsContractAddress, false],
-      },
-      transactionType: TransactionType.CREATE,
-    };
-
-    const txs = [approvalForAllTx, ...createTxs, approvalCloseForAllTx];
+    const txs = createTxs;
     return await Promise.all(txs.map((tx) => this.promiseQueue.enqueue(tx)));
   }
 
@@ -3570,9 +3544,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
     const {
       dev_mode_on,
-      season_pass_address,
-      realms_address,
-      lords_address,
       start_settling_at,
       start_main_at,
       end_at,
@@ -3586,9 +3557,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_season_config",
       calldata: [
         dev_mode_on,
-        season_pass_address,
-        realms_address,
-        lords_address,
         start_settling_at,
         start_main_at,
         end_at,
@@ -3661,16 +3629,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         min_spawn_lords_amount,
         max_spawn_lords_amount,
       ],
-    });
-  }
-
-  public async set_village_token_config(props: SystemProps.SetVillageTokenProps) {
-    const { village_mint_initial_recipient, village_pass_nft_address, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-config_systems`),
-      entrypoint: "set_village_token_config",
-      calldata: [village_pass_nft_address, village_mint_initial_recipient],
     });
   }
 

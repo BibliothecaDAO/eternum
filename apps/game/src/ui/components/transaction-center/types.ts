@@ -282,7 +282,6 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.SET_VRF_CONFIG:
     case TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG:
     case TransactionType.SET_AGENT_CONFIG:
-    case TransactionType.SET_VILLAGE_TOKEN_CONFIG:
     case TransactionType.SET_CAPACITY_CONFIG:
     case TransactionType.SET_DONKEY_SPEED_CONFIG:
     case TransactionType.SET_RESOURCE_WEIGHT_CONFIG:
@@ -556,7 +555,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.SET_VRF_CONFIG:
     case TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG:
     case TransactionType.SET_AGENT_CONFIG:
-    case TransactionType.SET_VILLAGE_TOKEN_CONFIG:
     case TransactionType.SET_CAPACITY_CONFIG:
     case TransactionType.SET_DONKEY_SPEED_CONFIG:
     case TransactionType.SET_RESOURCE_WEIGHT_CONFIG:

@@ -53,9 +53,7 @@ pub mod structure_creation_library {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use crate::alias::ID;
     use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
-    use crate::models::config::{
-        StartingResourcesConfig, StructureCapacityConfig, VillageTokenConfig, WorldConfigUtilImpl,
-    };
+    use crate::models::config::{StartingResourcesConfig, StructureCapacityConfig, WorldConfigUtilImpl};
     use crate::models::game::{GameRegistry, GameRegistryImpl};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
@@ -78,7 +76,6 @@ pub mod structure_creation_library {
     use crate::systems::utils::troop::iExplorerImpl;
     use crate::systems::utils::village::iVillageImpl;
     use crate::utils::map::biomes::{Biome, get_biome_from_world};
-    use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
 
     #[abi(embed_v0)]
@@ -313,7 +310,6 @@ pub mod structure_creation_library {
                 continue;
             }
 
-            mint_village_pass_when_required(world, game_id);
             available_directions.append(direction);
         }
         available_directions
@@ -327,17 +323,6 @@ pub mod structure_creation_library {
             world, game_id, village_tile.alt, village_tile.col.into(), village_tile.row.into(),
         );
         IMapImpl::explore(ref world, ref village_tile, village_biome);
-    }
-
-    fn mint_village_pass_when_required(world: WorldStorage, game_id: u32) {
-        if GameRegistryImpl::get(world, game_id).dev_mode_on {
-            return;
-        }
-        let village_token_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
-            world, game_id, selector!("village_token_config"),
-        );
-        IVillagePassDispatcher { contract_address: village_token_config.token_address }
-            .mint(village_token_config.mint_recipient_address);
     }
 
     fn village_directions() -> Array<Direction> {

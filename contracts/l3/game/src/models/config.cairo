@@ -63,9 +63,7 @@ pub struct PresetConfig {
     pub bitcoin_mine_config: BitcoinMineConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
-    pub village_token_config: VillageTokenConfig,
     pub village_troop_config: VillageTroopConfig,
-    pub season_addresses_config: SeasonAddressesConfig,
     pub quest_games: Span<PresetQuestGame>,
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
@@ -139,12 +137,6 @@ pub struct BiomeClimateConfig {
 pub struct AgentControllerConfig {
     pub address: ContractAddress,
 }
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
-pub struct VillageTokenConfig {
-    pub token_address: ContractAddress,
-    pub mint_recipient_address: ContractAddress,
-}
-
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct VillageControllerConfig {
     pub addresses: Span<ContractAddress>,
@@ -357,14 +349,6 @@ pub struct BlitzExplorationConfig {
 pub struct ArtificerConfig {
     pub research_cost_for_relic: u128 // Amount of research needed to exchange for a relic
 }
-
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
-pub struct SeasonAddressesConfig {
-    pub season_pass_address: ContractAddress,
-    pub realms_address: ContractAddress,
-    pub lords_address: ContractAddress,
-}
-
 
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]

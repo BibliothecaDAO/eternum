@@ -16,7 +16,7 @@ describe("operator event decoding", () => {
     const message = parseLedgerRegistration(
       event({
         keys: [REGISTERED_SELECTOR, "0x7", "0xabc"],
-        data: ["0x2", "0x1", "0x3", "0x4", "0x5"],
+        data: ["0x2", "0x1", "0x3", "0x4", "0x5", "0x1"],
       }),
     );
 
@@ -25,6 +25,7 @@ describe("operator event decoding", () => {
       owner: "0xabc",
       realmId: (1n << 128n) + 2n,
       metadata: ["0x3", "0x4", "0x5"],
+      passKind: 1,
     });
   });
 
@@ -33,7 +34,7 @@ describe("operator event decoding", () => {
       parseLedgerRegistration(
         event({
           keys: [REGISTERED_SELECTOR, "0x7", "0xabc", "0xdef"],
-          data: ["0x2", "0x1", "0x3", "0x4", "0x5"],
+          data: ["0x2", "0x1", "0x3", "0x4", "0x5", "0x1"],
         }),
       ),
     ).toThrow("Malformed ledger Registered event");

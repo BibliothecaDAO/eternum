@@ -910,13 +910,14 @@ export function defineContractComponents(world: World, namespace: string) {
           owner: RecsType.BigInt,
           realm_id: RecsType.BigInt,
           metadata: RecsType.BigIntArray,
+          pass_kind: RecsType.Number,
           registered: RecsType.Boolean,
         },
         {
           metadata: {
             namespace,
             name: "LedgerRegistration",
-            types: ["u32", "ContractAddress", "u256", "(felt252, felt252, felt252)", "bool"],
+            types: ["u32", "ContractAddress", "u256", "(felt252, felt252, felt252)", "u8", "bool"],
             customTypes: [],
           } satisfies ContractComponentMetadata,
         },
@@ -1259,13 +1260,7 @@ export function defineContractComponents(world: World, namespace: string) {
             velords_fee_recipient: RecsType.BigInt,
             season_pool_fee_recipient: RecsType.BigInt,
           },
-          village_token_config: { token_address: RecsType.BigInt, mint_recipient_address: RecsType.BigInt },
           village_troop_config: { troop_delay_ticks: RecsType.Number },
-          season_addresses_config: {
-            season_pass_address: RecsType.BigInt,
-            realms_address: RecsType.BigInt,
-            lords_address: RecsType.BigInt,
-          },
           quest_games: RecsType.StringArray,
           realm_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
@@ -1406,12 +1401,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // ResourceBridgeFeeSplitConfig realm_fee_wtdr_percent
               "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
-              "ContractAddress", // VillageTokenConfig token_address
-              "ContractAddress", // VillageTokenConfig mint_recipient_address
               "u8", // VillageTroopConfig troop_delay_ticks
-              "ContractAddress", // SeasonAddressesConfig season_pass_address
-              "ContractAddress", // SeasonAddressesConfig realms_address
-              "ContractAddress", // SeasonAddressesConfig lords_address
               "Span<PresetQuestGame>", // quest_games
               "u32", // StartingResourcesConfig resources_list_id
               "u8", // StartingResourcesConfig resources_list_count
@@ -1458,9 +1448,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "BitcoinMineConfig",
               "ResourceBridgeConfig",
               "ResourceBridgeFeeSplitConfig",
-              "VillageTokenConfig",
               "VillageTroopConfig",
-              "SeasonAddressesConfig",
               "StartingResourcesConfig",
               "VillageFoundResourcesConfig",
               "StructureCapacityConfig",

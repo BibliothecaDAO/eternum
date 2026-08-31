@@ -19,13 +19,12 @@ use snforge_std::{
     stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
-use starknet::syscalls::deploy_syscall;
 use crate::alias::ID;
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
     CapacityConfig, CombatConfigImpl, MapConfig, QuestConfig, ResourceFactoryConfig, SeasonConfig,
     StructureCapacityConfig, TickConfig, TickImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-    VillageTokenConfig, WeightConfig, WorldConfigUtilImpl,
+    WeightConfig, WorldConfigUtilImpl,
 };
 use crate::models::game::{GameRegistry, GameStatus};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
@@ -53,37 +52,14 @@ use crate::systems::combat::contracts::troop_movement::{
 };
 // use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::utils::realm::iRealmImpl;
-use crate::utils::testing::contracts::villagepassmock::EternumVillagePassMock;
 
 pub const TEST_GAME_ID: u32 = 1;
 pub const TEST_PRESET_ID: u32 = 2;
 
 
 // ============================================================================
-// Mock Village Pass Deployment
-// ============================================================================
-
-fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAddress) -> ContractAddress {
-    let mock_calldata: Array<felt252> = array![
-        admin.into(), admin.into(), starknet::get_contract_address().into(), 2, starknet::get_contract_address().into(),
-        admin.into(),
-    ];
-    let salt = core::testing::get_available_gas();
-    let (mock_village_pass_address, _) = deploy_syscall(
-        EternumVillagePassMock::TEST_CLASS_HASH, salt.into(), mock_calldata.span(), false,
-    )
-        .unwrap();
-    mock_village_pass_address
-}
-
-
-// ============================================================================
 // Mock Config Functions
 // ============================================================================
-
-pub fn MOCK_VILLAGE_TOKEN_CONFIG(ref world: WorldStorage, admin: starknet::ContractAddress) -> VillageTokenConfig {
-    VillageTokenConfig { mint_recipient_address: admin, token_address: deploy_mock_village_pass(ref world, admin) }
-}
 
 pub fn MOCK_MAP_CONFIG() -> MapConfig {
     MapConfig {
@@ -200,10 +176,6 @@ pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
 // ============================================================================
 // Config Store Functions (tstore_*)
 // ============================================================================
-
-pub fn tstore_village_token_config(ref world: WorldStorage, config: VillageTokenConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("village_token_config"), config);
-}
 
 pub fn tstore_map_config(ref world: WorldStorage, config: MapConfig) {
     WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("map_config"), config);
@@ -337,9 +309,6 @@ pub fn init_config(ref world: WorldStorage) {
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
     tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
-    tstore_village_token_config(
-        ref world, MOCK_VILLAGE_TOKEN_CONFIG(ref world, starknet::contract_address_const::<'realm_owner'>()),
-    );
 }
 
 /// Initialize only troop-related configs (for guard/explorer tests)
@@ -364,7 +333,7 @@ pub fn init_resource_config(ref world: WorldStorage) {
 }
 
 /// Initialize minimal config for guard tests (most common test type)
-/// Skips: map_config, quest_config, village_token_config
+/// Skips: map_config and quest_config
 pub fn init_guard_test_config(ref world: WorldStorage) {
     init_troop_config(ref world);
     init_resource_config(ref world);
