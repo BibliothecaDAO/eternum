@@ -375,6 +375,14 @@ Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR po
 
 ## Review log
 
+- 2026-08-31, Claude: slice **V landed and independently verified** (7 commits `792d14656a2`..`e181b5a0fbe`). Trio
+  confirmed from source and by exploit regression tests: B1 `zero_point_unsettled_substitution_cannot_finalize_roster`,
+  A1 `non_admin_cannot_squat_the_next_game_id` / `caller_cannot_enable_dev_mode_on_a_production_preset`, F1 `abort_game`
+  (operator + `end`-gated, reuses the `cancelled` refund path). Reviewer runs: L3 game 169/169, L2 ledger 46/46
+  (snforge), operator 17/17. F2/F3, O1–O4, S1–S6 in. M1 kept start-gated (games may resolve before scheduled end); M2
+  kept (mainnet amendment requires PM/reserve disabled; collectible addresses feed B.3). Live gates (operator boot,
+  harness) deferred to the Latitude server — box lab retired.
+
 - 2026-08-31, Claude: full read-only loop audit (four parallel passes, every finding re-verified against source) →
   `value-plane-loop-audit-2026-08-31.md`. One blocker (permissionless L3 ranker locks the pool), access-control and
   ledger-exit should-fixes. Slice **V** added as the fix track; mainnet-blocking trio B1 + A1 + F1 gates real LORDS. Box
