@@ -20,6 +20,7 @@ const relay = new OperatorRelay({
   cursorStore,
   initialLedgerBlock: config.ledgerStartBlock,
   initialS2Block: config.s2StartBlock,
+  ledgerConfirmationDepth: config.ledgerConfirmationDepth,
   ledgerAddress: config.ledgerAddress,
   ledgerSource: ledgerRpc,
   registrationWriter: new S2RegistrationWriter(
@@ -37,6 +38,7 @@ const relay = new OperatorRelay({
   s2Source: s2Rpc,
   worldAddress: manifest.worldAddress,
 });
+await relay.acquireStreamLocks();
 
 const abortController = new AbortController();
 for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => abortController.abort());
@@ -45,6 +47,7 @@ console.info(
   JSON.stringify({
     event: "operator_started",
     ledgerAddress: config.ledgerAddress,
+    ledgerConfirmationDepth: config.ledgerConfirmationDepth,
     ledgerStartBlock: config.ledgerStartBlock,
     ledgerOperatorAddress: config.ledgerOperatorAddress,
     s2OperatorAddress: config.s2OperatorAddress,
@@ -73,6 +76,7 @@ function readConfig() {
   return {
     databaseUrl: requireEnvironment("DATABASE_URL"),
     ledgerAddress: requireAddress("LEDGER_ADDRESS"),
+    ledgerConfirmationDepth: requirePositiveInteger("LEDGER_CONFIRMATION_DEPTH"),
     ledgerRpcUrl: requireEnvironment("LEDGER_RPC_URL"),
     ledgerStartBlock: requireBlock("LEDGER_START_BLOCK"),
     ledgerOperatorAddress: requireAddress("LEDGER_OPERATOR_ADDRESS"),
@@ -102,6 +106,12 @@ function requireAddress(name: string): string {
 function requireBlock(name: string): number {
   const value = Number(requireEnvironment(name));
   if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${name} must be a non-negative integer`);
+  return value;
+}
+
+function requirePositiveInteger(name: string): number {
+  const value = Number(requireEnvironment(name));
+  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer`);
   return value;
 }
 

@@ -5,6 +5,7 @@ import {
   parseLedgerResults,
   resultCommitment,
 } from "./events";
+import { PoisonedRelayMessageError } from "./relay-errors";
 import type { CursorStore, EventSource, RegistrationWriter, ResultsWriter } from "./types";
 
 const MAX_BLOCKS_PER_PASS = 2_000;
@@ -24,6 +25,7 @@ export class OperatorRelay {
       cursorStore: CursorStore;
       initialLedgerBlock: number;
       initialS2Block: number;
+      ledgerConfirmationDepth: number;
       ledgerAddress: string;
       ledgerSource: EventSource;
       registrationWriter: RegistrationWriter;
@@ -35,11 +37,19 @@ export class OperatorRelay {
     },
   ) {}
 
+  public async acquireStreamLocks(): Promise<void> {
+    await Promise.all([
+      this.input.cursorStore.acquire(REGISTRATION_STREAM),
+      this.input.cursorStore.acquire(RESULTS_STREAM),
+    ]);
+  }
+
   public async relayRegistrationsOnce(): Promise<RelayPassResult | null> {
     return this.relayRange({
       address: this.input.ledgerAddress,
       initialBlock: this.input.initialLedgerBlock,
       keys: [[REGISTERED_SELECTOR]],
+      confirmationDepth: this.input.ledgerConfirmationDepth,
       source: this.input.ledgerSource,
       stream: REGISTRATION_STREAM,
       visit: async (events) => {
@@ -58,6 +68,7 @@ export class OperatorRelay {
       address: this.input.worldAddress,
       initialBlock: this.input.initialS2Block,
       keys: [[EVENT_EMITTED_SELECTOR], [this.input.resultRowSelector, this.input.resultReadySelector]],
+      confirmationDepth: 0,
       source: this.input.s2Source,
       stream: RESULTS_STREAM,
       visit: async (events) => {
@@ -84,6 +95,7 @@ export class OperatorRelay {
 
   private async relayRange(input: {
     address: string;
+    confirmationDepth: number;
     initialBlock: number;
     keys: string[][];
     source: EventSource;
@@ -92,9 +104,10 @@ export class OperatorRelay {
   }): Promise<RelayPassResult | null> {
     const fromBlock = await this.input.cursorStore.read(input.stream, input.initialBlock);
     const head = await input.source.blockNumber();
-    if (fromBlock > head) return null;
+    const confirmedHead = head - input.confirmationDepth;
+    if (fromBlock > confirmedHead) return null;
 
-    const toBlock = Math.min(head, fromBlock + MAX_BLOCKS_PER_PASS - 1);
+    const toBlock = Math.min(confirmedHead, fromBlock + MAX_BLOCKS_PER_PASS - 1);
     const events = await input.source.getEvents({
       address: input.address,
       fromBlock,
@@ -118,26 +131,40 @@ export async function runRelayLoop(input: {
       const result = await input.run();
       if (result) log("operator_cursor_advanced", { stream: input.label, ...result });
     } catch (error) {
-      console.error(
-        JSON.stringify({ event: "operator_relay_failed", stream: input.label, error: errorMessage(error) }),
-      );
+      logRelayFailure(input.label, error);
     }
     await abortableDelay(input.pollMs, input.abort);
   }
 }
 
 function abortableDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
   return new Promise((resolve) => {
-    const timeout = setTimeout(resolve, milliseconds);
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timeout);
-        resolve();
-      },
-      { once: true },
-    );
+    let timeout: ReturnType<typeof setTimeout>;
+    const finish = () => {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", finish);
+      resolve();
+    };
+    timeout = setTimeout(finish, milliseconds);
+    signal.addEventListener("abort", finish, { once: true });
   });
+}
+
+function logRelayFailure(stream: string, error: unknown): void {
+  if (error instanceof PoisonedRelayMessageError) {
+    console.error(
+      JSON.stringify({
+        event: "operator_poison_halt",
+        stream,
+        direction: error.direction,
+        gameId: error.gameId,
+        error: error.message,
+      }),
+    );
+    return;
+  }
+  console.error(JSON.stringify({ event: "operator_relay_failed", stream, error: errorMessage(error) }));
 }
 
 function errorMessage(error: unknown): string {

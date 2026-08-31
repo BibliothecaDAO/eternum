@@ -28,6 +28,17 @@ describe("operator event decoding", () => {
     });
   });
 
+  it("rejects a Registered event after its key shape changes", () => {
+    expect(() =>
+      parseLedgerRegistration(
+        event({
+          keys: [REGISTERED_SELECTOR, "0x7", "0xabc", "0xdef"],
+          data: ["0x2", "0x1", "0x3", "0x4", "0x5"],
+        }),
+      ),
+    ).toThrow("Malformed ledger Registered event");
+  });
+
   it("assembles one ordered result after its ready marker", () => {
     const messages = parseLedgerResults(
       [

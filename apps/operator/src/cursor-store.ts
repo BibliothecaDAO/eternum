@@ -1,11 +1,31 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
 import type { CursorStore } from "./types";
 
-export class PostgresCursorStore implements CursorStore {
-  private readonly pool: Pool;
+type DatabaseClient = Pick<PoolClient, "query" | "release">;
+type DatabasePool = Pick<Pool, "connect" | "end" | "query">;
 
-  public constructor(databaseUrl: string) {
-    this.pool = new Pool({ connectionString: databaseUrl, max: 2 });
+export class PostgresCursorStore implements CursorStore {
+  private readonly lockClients = new Map<string, DatabaseClient>();
+  private readonly pool: DatabasePool;
+
+  public constructor(databaseUrl: string, pool?: DatabasePool) {
+    this.pool = pool ?? new Pool({ connectionString: databaseUrl, max: 4 });
+  }
+
+  public async acquire(stream: string): Promise<void> {
+    if (this.lockClients.has(stream)) return;
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query<{ acquired: boolean }>(
+        "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired",
+        [`eternum-operator:${stream}`],
+      );
+      if (!result.rows[0]?.acquired) throw new Error(`Another operator owns stream ${stream}`);
+      this.lockClients.set(stream, client);
+    } catch (error) {
+      client.release();
+      throw error;
+    }
   }
 
   public async initialize(): Promise<void> {
@@ -45,7 +65,20 @@ export class PostgresCursorStore implements CursorStore {
   }
 
   public async close(): Promise<void> {
-    await this.pool.end();
+    try {
+      await Promise.all(
+        [...this.lockClients.entries()].map(async ([stream, client]) => {
+          try {
+            await client.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [`eternum-operator:${stream}`]);
+          } finally {
+            client.release();
+          }
+        }),
+      );
+    } finally {
+      this.lockClients.clear();
+      await this.pool.end();
+    }
   }
 }
 

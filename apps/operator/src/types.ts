@@ -28,6 +28,7 @@ export interface LedgerResultsMessage {
 }
 
 export interface CursorStore {
+  acquire(stream: string): Promise<void>;
   close(): Promise<void>;
   read(stream: string, initialNextBlock: number): Promise<number>;
   advance(stream: string, nextBlock: number): Promise<void>;
@@ -35,12 +36,7 @@ export interface CursorStore {
 
 export interface EventSource {
   blockNumber(): Promise<number>;
-  getEvents(input: {
-    address: string;
-    fromBlock: number;
-    keys: string[][];
-    toBlock: number;
-  }): Promise<ChainEvent[]>;
+  getEvents(input: { address: string; fromBlock: number; keys: string[][]; toBlock: number }): Promise<ChainEvent[]>;
 }
 
 export interface RegistrationWriter {

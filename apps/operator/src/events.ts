@@ -13,7 +13,7 @@ export function resultCommitment(message: LedgerResultsMessage): string {
 
 export function parseLedgerRegistration(event: ChainEvent): LedgerRegistrationMessage {
   assertSelector(event.keys[0], REGISTERED_SELECTOR, "Registered");
-  if (event.keys.length < 3 || event.data.length !== 5) throw new Error("Malformed ledger Registered event");
+  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("Malformed ledger Registered event");
 
   return {
     gameId: parseSafeNumber(event.keys[1], "registration game id"),

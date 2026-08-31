@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { EVENT_EMITTED_SELECTOR, REGISTERED_SELECTOR } from "./events";
-import { OperatorRelay } from "./relay";
+import { PoisonedRelayMessageError } from "./relay-errors";
+import { OperatorRelay, runRelayLoop } from "./relay";
 import type { ChainEvent, CursorStore, EventSource, LedgerResultsMessage } from "./types";
 
 const ROW = "0x111";
@@ -16,9 +17,9 @@ describe("operator relay cursors", () => {
       registrationWrite: write,
     });
 
-    expect(await relay.relayRegistrationsOnce()).toEqual({ fromBlock: 5, toBlock: 9, messages: 1, skipped: 0 });
+    expect(await relay.relayRegistrationsOnce()).toEqual({ fromBlock: 5, toBlock: 7, messages: 1, skipped: 0 });
     expect(write).toHaveBeenCalledTimes(1);
-    expect(cursor.values.get("mainnet-registrations")).toBe(10);
+    expect(cursor.values.get("mainnet-registrations")).toBe(8);
   });
 
   it("does not advance the cursor when a write fails", async () => {
@@ -52,6 +53,35 @@ describe("operator relay cursors", () => {
     expect(write).not.toHaveBeenCalled();
     expect(cursor.values.get("s2-results")).toBe(10);
   });
+
+  it("takes one advisory lock for each relay stream", async () => {
+    const cursor = memoryCursor();
+    const relay = buildRelay({ cursor });
+
+    await relay.acquireStreamLocks();
+
+    expect(cursor.acquire).toHaveBeenCalledWith("mainnet-registrations");
+    expect(cursor.acquire).toHaveBeenCalledWith("s2-results");
+  });
+
+  it("emits a distinct poison-halt alert for a permanent message rejection", async () => {
+    const abort = new AbortController();
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await runRelayLoop({
+      abort: abort.signal,
+      label: "s2-results",
+      pollMs: 1,
+      run: async () => {
+        abort.abort();
+        throw new PoisonedRelayMessageError("results", 7, "Ledger: unregistered result owner");
+      },
+    });
+
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('"event":"operator_poison_halt"'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('"gameId":7'));
+    error.mockRestore();
+  });
 });
 
 function buildRelay(input: {
@@ -66,6 +96,7 @@ function buildRelay(input: {
     cursorStore: input.cursor,
     initialLedgerBlock: 5,
     initialS2Block: 6,
+    ledgerConfirmationDepth: 2,
     ledgerAddress: "0xledger",
     ledgerSource: source(input.ledgerEvents ?? []),
     registrationWriter: { write: input.registrationWrite ?? vi.fn(async () => "0xl3") },
@@ -91,6 +122,7 @@ function memoryCursor(): CursorStore & { values: Map<string, number> } {
   const values = new Map<string, number>();
   return {
     values,
+    acquire: vi.fn(async () => undefined),
     close: vi.fn(async () => undefined),
     read: vi.fn(async (stream, initial) => {
       if (!values.has(stream)) values.set(stream, initial);
