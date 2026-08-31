@@ -7,7 +7,7 @@ import { z } from "zod";
 import { and, eq, gt, verification as verificationTable } from "@realms-world/db";
 import { db } from "@realms-world/db/client";
 import { resolveEndpoint } from "@realms-world/chain";
-import { parseSiwsTypedData } from "@realms-world/identity";
+import { normalizeStarknetAddress, parseSiwsTypedData } from "@realms-world/identity";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
@@ -91,7 +91,7 @@ export const siws = (options: SIWSPluginOptions) =>
           const nonce = randomBytes(32).toString("hex");
           // Store nonce with 15-minute expiration
           await ctx.context.internalAdapter.createVerificationValue({
-            identifier: `siws_${ctx.body.address.toLowerCase()}`,
+            identifier: `siws_${normalizeStarknetAddress(ctx.body.address)}`,
             value: nonce,
             expiresAt: new Date(Date.now() + 15 * 60 * 1000),
           });
@@ -112,13 +112,16 @@ export const siws = (options: SIWSPluginOptions) =>
         },
         async (ctx) => {
           const { message, signature, address } = ctx.body;
+          // One address format everywhere: identity keys (nonce identifier, user
+          // id, address column) use the normalized form — the same derivation as
+          // apps/realms — while the raw address still goes to the chain for
+          // signature verification.
+          const owner = normalizeStarknetAddress(address);
 
           const siwsMessage = parseSiwsTypedData(message);
           try {
             // Find stored nonce to check it's validity
-            const verification = await ctx.context.internalAdapter.findVerificationValue(
-              `siws_${address.toLowerCase()}`,
-            );
+            const verification = await ctx.context.internalAdapter.findVerificationValue(`siws_${owner}`);
             // Ensure nonce is valid and not expired
             if (!verification || new Date() > verification.expiresAt) {
               throw new APIError("UNAUTHORIZED", {
@@ -172,15 +175,16 @@ export const siws = (options: SIWSPluginOptions) =>
               consumeNonce: () => consumeSiwsNonce(verification.id),
             });
 
-            let user = await ctx.context.internalAdapter.findUserById(address);
+            let user = await ctx.context.internalAdapter.findUserById(owner);
 
             if (!user) {
-              const tempEmail = `${address}@${getHostname(options.domain) ?? "realms.world"}`;
+              const tempEmail = `${owner}@${getHostname(options.domain) ?? "realms.world"}`;
 
               user = await ctx.context.internalAdapter.createUser({
-                name: ctx.body.address,
+                name: owner,
                 email: tempEmail,
-                id: ctx.body.address,
+                id: owner,
+                address: owner,
               });
             }
 
