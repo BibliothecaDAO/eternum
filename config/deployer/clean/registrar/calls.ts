@@ -139,6 +139,14 @@ function transactionSucceeded(receipt: unknown): boolean {
   return !helper.execution_status || helper.execution_status === "SUCCEEDED";
 }
 
+// The revert reason must ride in the thrown error: the idempotency matchers (isRegistrarAlreadyInitializedError,
+// isRegistrarAlreadyRegisteredError) test the message, so a bare "failed for transaction 0x…" hides the on-chain
+// assert and turns an expected already-initialized/-registered revert into a hard failure.
+function receiptRevertReason(receipt: unknown): string | undefined {
+  const reason = (receipt as { revert_reason?: unknown }).revert_reason;
+  return typeof reason === "string" && reason.length > 0 ? reason : undefined;
+}
+
 export function resolveRegistrarExecutionDetails(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID) {
   const chain = typeof target === "string" ? resolveDeploymentEnvironment(target).chain : "appchain";
   const resourceBounds = resolveGameTransactionResourceBounds(chain);
@@ -157,7 +165,10 @@ async function executeRegistrarCall(
   const transaction = await account.execute(call, resolveRegistrarExecutionDetails(target));
   const receipt = await account.waitForTransaction(transaction.transaction_hash);
   if (!transactionSucceeded(receipt)) {
-    throw new Error(`${call.entrypoint} failed for transaction ${transaction.transaction_hash}`);
+    const reason = receiptRevertReason(receipt);
+    throw new Error(
+      `${call.entrypoint} failed for transaction ${transaction.transaction_hash}${reason ? `: ${reason}` : ""}`,
+    );
   }
   return { transactionHash: transaction.transaction_hash, receipt };
 }
