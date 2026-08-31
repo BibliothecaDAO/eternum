@@ -106,8 +106,8 @@ export function getGameManifest(chain: GameChain, appchainGameType: AppchainGame
 
 function loadMadaraGameManifest(): GameManifest {
   try {
-    const manifests = import.meta.glob<{ default: GameManifest }>("../game/manifest_madara.json", { eager: true });
-    const manifest = manifests["../game/manifest_madara.json"]?.default;
+    const manifests = import.meta.glob<{ default: GameManifest }>("../l3/game/manifest_madara.json", { eager: true });
+    const manifest = manifests["../l3/game/manifest_madara.json"]?.default;
     if (manifest) return manifest;
   } catch {
     // import.meta.glob is supplied by Vite; Bun uses the runtime path below.
@@ -115,7 +115,7 @@ function loadMadaraGameManifest(): GameManifest {
 
   const runtimeRequire = (import.meta as ImportMeta & { require?: (path: string) => unknown }).require;
   if (runtimeRequire) {
-    return runtimeRequire("../game/manifest_madara.json") as GameManifest;
+    return runtimeRequire("../l3/game/manifest_madara.json") as GameManifest;
   }
   throw new Error("contracts/l3/game/manifest_madara.json does not exist; deploy the Madara world first");
 }
