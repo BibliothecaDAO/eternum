@@ -95,9 +95,12 @@ export function buildPresetDryRun(
   };
 }
 
-function requireLedgerTarget(options: RegisterPresetOptions): LedgerTarget {
+// The ledger is the L2 value plane. A dev-mode lab with L2 deferred registers only the L3 registrar preset;
+// give it both LEDGER_ADDRESS and LEDGER_RPC_URL and the L2 economic preset is registered too. Neither set → skip.
+function resolveOptionalLedgerTarget(options: RegisterPresetOptions): LedgerTarget | undefined {
+  if (!options.ledgerAddress && !options.ledgerRpcUrl) return undefined;
   if (!options.ledgerAddress || !options.ledgerRpcUrl) {
-    throw new Error("--ledger and --ledger-rpc-url (or LEDGER_ADDRESS and LEDGER_RPC_URL) are required");
+    throw new Error("LEDGER_ADDRESS and LEDGER_RPC_URL (--ledger / --ledger-rpc-url) must be set together");
   }
   return { address: options.ledgerAddress, rpcUrl: options.ledgerRpcUrl };
 }
@@ -123,12 +126,14 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     return;
   }
 
-  const ledgerTarget = requireLedgerTarget(options);
+  const ledgerTarget = resolveOptionalLedgerTarget(options);
   const environment = resolveDeploymentEnvironment(options.environmentId);
   const provider = new RpcProvider({ nodeUrl: requireRpcUrl(options.rpcUrl, "--rpc-url or RPC_URL") });
   await Promise.all([
     assertProviderChain(provider, environment.chain, "RPC_URL"),
-    assertProviderChain(new RpcProvider({ nodeUrl: ledgerTarget.rpcUrl }), "mainnet", "LEDGER_RPC_URL"),
+    ...(ledgerTarget
+      ? [assertProviderChain(new RpcProvider({ nodeUrl: ledgerTarget.rpcUrl }), "mainnet", "LEDGER_RPC_URL")]
+      : []),
   ]);
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
@@ -151,6 +156,10 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
     console.log(`Preset ${options.presetId} is already registered; skipping.`);
   }
 
+  if (!ledgerTarget) {
+    console.log(`No ledger configured; skipping ledger preset ${options.presetId} (L2 deferred).`);
+    return;
+  }
   const ledgerAccount = createLedgerAdminAccount(ledgerTarget, "mainnet ledger preset registration");
   const ledgerResult = await registerLedgerPreset(ledgerAccount, ledgerTarget, options.presetId, ledgerPreset);
   console.log(
