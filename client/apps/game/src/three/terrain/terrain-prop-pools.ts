@@ -1,6 +1,30 @@
-import { Box3, Color, DynamicDrawUsage, Group, InstancedMesh, Matrix4, Mesh, Quaternion, Sphere, Vector3 } from "three";
+import {
+  Box3,
+  Color,
+  DynamicDrawUsage,
+  Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  Quaternion,
+  Sphere,
+  Vector3,
+} from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-import { positionGeometry, positionLocal, smoothstep, time, uniform, vec3 } from "three/tsl";
+import {
+  attribute,
+  color,
+  mix,
+  normalGeometry,
+  positionGeometry,
+  positionLocal,
+  smoothstep,
+  time,
+  uniform,
+  vec3,
+  vertexColor,
+} from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 
 import { loadTerrainPropCatalog } from "./terrain-prop-asset-cache";
@@ -14,6 +38,7 @@ import {
 import type { TerrainPropInstance } from "./terrain-types";
 
 export const TERRAIN_PROP_POOL_CAPACITY = 8192;
+const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
 
 export interface TerrainPropPoolStats {
   instances: number;
@@ -22,6 +47,7 @@ export interface TerrainPropPoolStats {
 
 export class TerrainPropPools {
   readonly object3d = new Group();
+  private readonly ecologyAttributes = new Map<TerrainPropArchetypeId, InstancedBufferAttribute>();
   private readonly meshes = new Map<TerrainPropArchetypeId, InstancedMesh>();
   private readonly rigidMaterial = createTerrainPropMaterial(false);
   private readonly windStrength = uniform(1, "float");
@@ -56,6 +82,7 @@ export class TerrainPropPools {
 
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
       const mesh = this.requirePool(archetype);
+      const ecologyAttribute = this.requireEcologyAttribute(archetype);
       const entries = instancesByArchetype.get(archetype) ?? [];
       const source = this.requireCatalogMesh(archetype, this.lod);
       source.updateMatrix();
@@ -73,11 +100,18 @@ export class TerrainPropPools {
         this.matrix.compose(this.position, this.quaternion, this.scale);
         this.matrix.multiply(source.matrix);
         mesh.setMatrixAt(index, this.matrix);
-        this.tint.setRGB(...instance.tint);
+        this.tint.setRGB(...instance.appearance.tint);
         mesh.setColorAt(index, this.tint);
+        ecologyAttribute.setXYZ(
+          index,
+          instance.appearance.windAmplitude,
+          instance.appearance.moss,
+          instance.appearance.snow,
+        );
         maximumInstanceRadius = Math.max(maximumInstanceRadius, catalogRadius * instance.scale);
       });
       mesh.count = entries.length;
+      ecologyAttribute.needsUpdate = entries.length > 0;
       mesh.instanceMatrix.needsUpdate = entries.length > 0;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = entries.length > 0;
       mesh.visible = entries.length > 0;
@@ -113,6 +147,15 @@ export class TerrainPropPools {
   }
 
   dispose(): void {
+    this.ecologyAttributes.forEach((attribute, archetype) => {
+      for (const lod of ["near", "far"] as const) {
+        const geometry = this.requireCatalogMesh(archetype, lod).geometry;
+        if (geometry.getAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE) === attribute) {
+          geometry.deleteAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE);
+        }
+      }
+    });
+    this.ecologyAttributes.clear();
     this.meshes.forEach((mesh) => mesh.dispose());
     this.meshes.clear();
     this.object3d.clear();
@@ -121,6 +164,12 @@ export class TerrainPropPools {
   }
 
   private createPool(archetype: TerrainPropArchetypeId): void {
+    const ecologyAttribute = new InstancedBufferAttribute(new Float32Array(TERRAIN_PROP_POOL_CAPACITY * 3), 3);
+    ecologyAttribute.setUsage(DynamicDrawUsage);
+    for (const lod of ["near", "far"] as const) {
+      this.requireCatalogMesh(archetype, lod).geometry.setAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE, ecologyAttribute);
+    }
+    this.ecologyAttributes.set(archetype, ecologyAttribute);
     const source = this.requireCatalogMesh(archetype, this.lod);
     const material = getTerrainPropRole(archetype) === "rigid" ? this.rigidMaterial : this.windMaterial;
     const mesh = new InstancedMesh(source.geometry, material, TERRAIN_PROP_POOL_CAPACITY);
@@ -142,6 +191,12 @@ export class TerrainPropPools {
     return mesh;
   }
 
+  private requireEcologyAttribute(archetype: TerrainPropArchetypeId): InstancedBufferAttribute {
+    const attribute = this.ecologyAttributes.get(archetype);
+    if (!attribute) throw new Error(`Terrain prop ecology is unavailable: ${archetype}`);
+    return attribute;
+  }
+
   private requireCatalogMesh(archetype: TerrainPropArchetypeId, lod: TerrainPropLod): Mesh {
     const name = getTerrainPropMeshName(archetype, lod);
     const object = this.catalogScene.getObjectByName(name);
@@ -161,14 +216,24 @@ function createTerrainPropMaterial(
   animated: boolean,
   windStrength: UniformNode<"float", number> = uniform(0, "float"),
 ): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1, vertexColors: true });
+  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
+  const foliageWeight = attribute<"float">("_wind_weight", "float").clamp(0, 1);
+  const ecology = attribute<"vec3">("terrainPropEcology", "vec3").clamp(0, 1);
+  const verticality = normalGeometry.y.mul(normalGeometry.y).oneMinus().clamp(0, 1);
+  const snowMask = ecology.z
+    .mul(smoothstep(0.05, 0.85, normalGeometry.y))
+    .mul(foliageWeight.mul(0.45).add(0.55))
+    .clamp(0, 1);
+  const mossMask = ecology.y.mul(verticality.mul(0.5).add(0.35)).mul(snowMask.mul(0.8).oneMinus()).clamp(0, 1);
+  const mossyColor = mix(vertexColor().rgb, color("#627858"), mossMask.mul(0.48));
+  material.colorNode = mix(mossyColor, color("#d8e0df"), snowMask.mul(0.78));
   if (!animated) return material;
 
   const heightMask = smoothstep(0.08, 1.1, positionGeometry.y);
   const phase = time.mul(0.72).add(positionLocal.x.mul(0.41)).add(positionLocal.z.mul(0.57));
   const mainSway = phase.sin().mul(0.018);
   const detailSway = phase.mul(1.73).add(positionGeometry.y.mul(2.4)).sin().mul(0.009);
-  const displacement = heightMask.mul(windStrength);
+  const displacement = heightMask.mul(foliageWeight).mul(ecology.x).mul(windStrength);
   material.positionNode = positionLocal.add(vec3(mainSway.mul(displacement), 0, detailSway.mul(displacement)));
   return material;
 }

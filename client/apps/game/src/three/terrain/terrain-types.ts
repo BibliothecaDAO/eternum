@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 14;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 15;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
@@ -109,14 +109,21 @@ export interface TerrainShroudInstance {
 }
 
 export interface TerrainPropInstance {
+  appearance: TerrainPropAppearance;
   archetype: TerrainPropArchetypeId;
   ownerCol: number;
   ownerRow: number;
   pageKey: string;
   scale: number;
-  tint: readonly [number, number, number];
   worldX: number;
   worldY: number;
   worldZ: number;
   yaw: number;
+}
+
+export interface TerrainPropAppearance {
+  moss: number;
+  snow: number;
+  tint: readonly [number, number, number];
+  windAmplitude: number;
 }

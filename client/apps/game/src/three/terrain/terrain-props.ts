@@ -4,6 +4,7 @@ import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terr
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
+import { TERRAIN_BIOME_DESCRIPTORS } from "./terrain-palette";
 import {
   getTerrainPropCanopyExclusionRadius,
   getTerrainPropPlacementLayer,
@@ -12,7 +13,13 @@ import {
   type TerrainPropArchetypeId,
   type TerrainPropPlacementLayer,
 } from "./terrain-prop-catalog";
-import type { TerrainCellInput, TerrainPageRequest, TerrainPropInstance, TerrainSurfaceSample } from "./terrain-types";
+import type {
+  TerrainCellInput,
+  TerrainPageRequest,
+  TerrainPropAppearance,
+  TerrainPropInstance,
+  TerrainSurfaceSample,
+} from "./terrain-types";
 
 interface WeightedArchetype {
   archetype: TerrainPropArchetypeId;
@@ -255,6 +262,7 @@ function buildTerrainPropCandidate(
   );
   const tintValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-tint-v2`);
   return {
+    appearance: resolveTerrainPropAppearance(archetype, tintValue, accepted.densityContext),
     archetype,
     ownerCol: site.owner.col,
     ownerRow: site.owner.row,
@@ -265,13 +273,44 @@ function buildTerrainPropCandidate(
     layer,
     priority: hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-priority-v2`),
     scale: resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext),
-    tint: resolveTerrainPropTint(archetype, tintValue),
     worldX: site.worldX,
     worldY: accepted.surface.height,
     worldZ: site.worldZ,
     yaw:
       hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-yaw-v2`) * Math.PI * 2,
   };
+}
+
+function resolveTerrainPropAppearance(
+  archetype: TerrainPropArchetypeId,
+  tintVariation: number,
+  context: TerrainPropDensityContext,
+): TerrainPropAppearance {
+  const climate = resolveTerrainPropClimate(context.biomeInfluences);
+  const snow = clampUnit(climate.snow * (0.75 + context.elevation * 0.25));
+  const mossSupport =
+    smoothstep(0.3, 0.8, context.moisture) * (0.25 + context.canopyCover * 0.5 + context.debrisCover * 0.25);
+
+  return {
+    moss: clampUnit(mossSupport * (1 - snow * 0.85)),
+    snow,
+    tint: resolveTerrainPropTint(archetype, tintVariation),
+    windAmplitude: clampUnit(climate.windAmplitude),
+  };
+}
+
+function resolveTerrainPropClimate(
+  biomeInfluences: TerrainPropDensityContext["biomeInfluences"],
+): Pick<TerrainPropAppearance, "snow" | "windAmplitude"> {
+  return biomeInfluences.reduce(
+    (presentation, influence) => {
+      presentation.snow += TERRAIN_BIOME_DESCRIPTORS[influence.biome].snow * influence.weight;
+      presentation.windAmplitude +=
+        TERRAIN_BIOME_ART_DIRECTIONS[influence.biome].motion.windAmplitude * influence.weight;
+      return presentation;
+    },
+    { snow: 0, windAmplitude: 0 },
+  );
 }
 
 function rejectOverlappingCanopies(

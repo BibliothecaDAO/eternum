@@ -110,7 +110,9 @@ describe("terrain prop placement", () => {
     expect(archetypes.has("fallen-log")).toBe(true);
     expect(Math.min(...instances.map(({ scale }) => scale))).toBeGreaterThanOrEqual(0.54);
     expect(Math.max(...instances.map(({ scale }) => scale))).toBeLessThanOrEqual(1.24);
-    expect(instances.every(({ tint }) => tint.every((channel) => channel >= 0.88 && channel <= 1))).toBe(true);
+    expect(
+      instances.every(({ appearance }) => appearance.tint.every((channel) => channel >= 0.88 && channel <= 1)),
+    ).toBe(true);
   });
 
   it("keeps canopy crowns apart without coupling understory or debris to their slots", () => {
@@ -162,6 +164,34 @@ describe("terrain prop placement", () => {
       average(regenerating.map(({ scale }) => scale)) + 0.04,
     );
     expect(fraction(regenerating, "birch")).toBeGreaterThan(fraction(mature, "birch"));
+  });
+
+  it("carries climate-conditioned moss, snow, and wind presentation into the shared prop pools", () => {
+    const snowyCells = Array.from({ length: 100 }, (_, index) =>
+      cell(index % 10, Math.floor(index / 10), BiomeType.Snow),
+    );
+    const rainforestCells = Array.from({ length: 100 }, (_, index) =>
+      cell(index % 10, Math.floor(index / 10), BiomeType.TropicalRainForest),
+    );
+    const snowyRequest = request(snowyCells, "snowy-props");
+    const rainforestRequest = request(rainforestCells, "rainforest-props");
+    const snowy = prepareTerrainPropInstances(snowyRequest, new TerrainField(snowyRequest));
+    const rainforest = prepareTerrainPropInstances(rainforestRequest, new TerrainField(rainforestRequest));
+
+    expect(snowy.length).toBeGreaterThan(0);
+    expect(rainforest.length).toBeGreaterThan(0);
+    expect(average(snowy.map(({ appearance }) => appearance.snow))).toBeGreaterThan(0.55);
+    expect(average(rainforest.map(({ appearance }) => appearance.moss))).toBeGreaterThan(
+      average(snowy.map(({ appearance }) => appearance.moss)) + 0.15,
+    );
+    expect(average(rainforest.map(({ appearance }) => appearance.windAmplitude))).toBeGreaterThan(
+      average(snowy.map(({ appearance }) => appearance.windAmplitude)) + 0.1,
+    );
+    expect(
+      [...snowy, ...rainforest].every(({ appearance }) =>
+        [appearance.moss, appearance.snow, appearance.windAmplitude].every((value) => value >= 0 && value <= 1),
+      ),
+    ).toBe(true);
   });
 });
 
