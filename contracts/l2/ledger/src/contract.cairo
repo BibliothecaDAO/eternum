@@ -6,6 +6,9 @@ pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
+const NO_PASS: u8 = 0;
+const SEASON_PASS: u8 = 1;
+const VILLAGE_PASS: u8 = 2;
 
 pub fn result_commitment(game_id: u32, ranked: Span<(ContractAddress, u16, u16)>) -> felt252 {
     let mut payload = array![game_id.into(), ranked.len().into()];
@@ -53,6 +56,11 @@ pub trait IPassBurn<TState> {
 }
 
 #[starknet::interface]
+pub trait IPassRestore<TState> {
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
+}
+
+#[starknet::interface]
 pub trait ISeasonPassMetadata<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
@@ -79,8 +87,9 @@ pub mod GameLedger {
     use starknet::{ClassHash, ContractAddress};
     use super::{
         BPS, IGameLedger, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
-        IPiltoverCoreDispatcher, IPiltoverCoreDispatcherTrait, ISeasonPassMetadataDispatcher,
-        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, OPERATOR_ROLE, PAYOUT_WEIGHT_SCALE, result_commitment,
+        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, IPiltoverCoreDispatcher, IPiltoverCoreDispatcherTrait,
+        ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE,
+        PAYOUT_WEIGHT_SCALE, SEASON_PASS, VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -336,7 +345,7 @@ pub mod GameLedger {
                     0
                 };
 
-            self.record_registration(game_id, owner, sword, shield, payment, 0);
+            self.record_registration(game_id, owner, sword, shield, payment, 0, NO_PASS);
             self.pull_lords(owner, payment);
             self.emit_registration(game_id, owner, 0, (0, 0, 0));
         }
@@ -353,7 +362,7 @@ pub mod GameLedger {
             let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
                 .get_encoded_metadata(pass_id.try_into().unwrap());
 
-            self.record_registration(game_id, owner, false, false, 0, pass_id);
+            self.record_registration(game_id, owner, false, false, 0, pass_id, SEASON_PASS);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
             self.emit_registration(game_id, owner, pass_id, metadata);
         }
@@ -367,7 +376,7 @@ pub mod GameLedger {
                 "Ledger: not village pass owner",
             );
 
-            self.record_registration(game_id, owner, false, false, 0, village_pass_id);
+            self.record_registration(game_id, owner, false, false, 0, village_pass_id, VILLAGE_PASS);
             IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
             self.emit_registration(game_id, owner, village_pass_id, (0, 0, 0));
         }
@@ -405,18 +414,25 @@ pub mod GameLedger {
         }
 
         fn refund(ref self: ContractState, game_id: u32) {
+            self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let mut game = self.games.entry(game_id).read();
             assert!(game.exists && game.cancelled, "Ledger: game not cancelled");
             let mut registration = self.registrations.entry((game_id, owner)).read();
             let amount = registration.paid;
-            assert!(amount > 0, "Ledger: nothing to refund");
+            let pass_kind = registration.pass_kind;
+            let pass_id = registration.realm_id;
+            assert!(amount > 0 || pass_kind != NO_PASS, "Ledger: nothing to refund");
 
             registration.paid = 0;
+            registration.pass_kind = NO_PASS;
             game.pool -= amount;
             self.registrations.entry((game_id, owner)).write(registration);
             self.games.entry(game_id).write(game);
-            self.send_lords(owner, amount);
+            if amount > 0 {
+                self.send_lords(owner, amount);
+            }
+            self.restore_pass(owner, pass_id, pass_kind);
             self.emit(Refunded { game_id, owner, amount });
         }
 
@@ -574,6 +590,7 @@ pub mod GameLedger {
             shield: bool,
             payment: u256,
             realm_id: u256,
+            pass_kind: u8,
         ) {
             let mut game = self.games.entry(game_id).read();
             let mut registration = self.registrations.entry((game_id, owner)).read();
@@ -582,6 +599,7 @@ pub mod GameLedger {
             registration.shield = shield;
             registration.paid += payment;
             registration.realm_id = realm_id;
+            registration.pass_kind = pass_kind;
             self.registrations.entry((game_id, owner)).write(registration);
             self.registered_owners.entry((game_id, game.registered_count)).write(owner);
             game.registered_count += 1;
@@ -613,6 +631,14 @@ pub mod GameLedger {
                     .send_message_to_appchain(
                         self.l3_entry_system.read(), selector!("register_from_l2"), payload.span(),
                     );
+            }
+        }
+
+        fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) {
+            if pass_kind == SEASON_PASS {
+                IPassRestoreDispatcher { contract_address: self.season_pass.read() }.restore(owner, pass_id);
+            } else if pass_kind == VILLAGE_PASS {
+                IPassRestoreDispatcher { contract_address: self.village_pass.read() }.restore(owner, pass_id);
             }
         }
     }

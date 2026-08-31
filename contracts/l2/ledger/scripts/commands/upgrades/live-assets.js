@@ -41,6 +41,7 @@ export async function runLiveAssetUpgrade({ execute: shouldExecute }) {
 
   const classHashes = await declareLiveAssetClasses(plan);
   await upgradeLiveAssets(plan, classHashes);
+  await configureSeasonPassRestorer(plan);
   await grantLedgerRoles(plan);
   await verifyAppliedPlan(plan, classHashes);
   log("live_asset_upgrade_complete", summarizePlan(plan));
@@ -104,6 +105,18 @@ async function grantLedgerRoles(plan) {
   }
 }
 
+async function configureSeasonPassRestorer(plan) {
+  const { contractAddress, restorer, signer } = plan.seasonPassRestorer;
+  await executeContractCall({
+    accountAddress: signer.address,
+    calldata: [restorer],
+    contractAddress,
+    entrypoint: "set_restorer",
+    label: "Season Pass restorer configuration",
+    privateKey: signer.privateKey,
+  });
+}
+
 async function verifyAppliedPlan(plan, classHashes) {
   const provider = getProvider();
   for (const asset of plan.assets) {
@@ -115,6 +128,17 @@ async function verifyAppliedPlan(plan, classHashes) {
   }
   for (const grant of plan.roleGrants) {
     await assertRole(provider, grant.contractAddress, grant.roleName, grant.grantee);
+  }
+  await assertSeasonPassRestorer(provider, plan.seasonPassRestorer);
+}
+
+async function assertSeasonPassRestorer(provider, config) {
+  const result = await provider.callContract(
+    { contractAddress: config.contractAddress, entrypoint: "get_restorer", calldata: [] },
+    "latest",
+  );
+  if (result.length !== 1 || BigInt(result[0]) !== BigInt(config.restorer)) {
+    throw new Error(`Season Pass restorer is not the ledger`);
   }
 }
 
@@ -170,6 +194,10 @@ function summarizePlan(plan) {
       assetId,
       roleName,
     })),
+    seasonPassRestorer: {
+      contractAddress: plan.seasonPassRestorer.contractAddress,
+      restorer: plan.seasonPassRestorer.restorer,
+    },
   };
 }
 

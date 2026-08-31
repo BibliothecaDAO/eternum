@@ -70,6 +70,11 @@ export function buildLiveAssetPlan(addresses, environment, requirePrivateKeys) {
     ),
     ledgerAddress,
     roleGrants,
+    seasonPassRestorer: {
+      contractAddress: requireAsset(assetById, "season-pass").address,
+      restorer: ledgerAddress,
+      signer: requireAsset(assetById, "season-pass").upgradeSigner,
+    },
   };
 }
 

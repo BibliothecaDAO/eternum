@@ -8,6 +8,7 @@ use starknet::ContractAddress;
 pub trait IVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
     fn burn(ref self: TState, token_id: u256);
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn batch_transfer_from(ref self: TState, from: ContractAddress, to: ContractAddress, amount: u16) -> Span<u256>;
 }
 
@@ -187,6 +188,11 @@ mod EternumVillagePass {
             self.erc721.mint(recipient, token_id.into());
 
             token_id.into()
+        }
+
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+            self.accesscontrol.assert_only_role(DISTRIBUTOR_ROLE);
+            self.erc721.mint(recipient, token_id);
         }
 
         // todo: ensure only authorized callers

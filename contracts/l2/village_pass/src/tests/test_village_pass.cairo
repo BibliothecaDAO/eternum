@@ -150,6 +150,29 @@ mod tests {
         start_cheat_caller_address(village_pass, BOB());
         pass.burn(token_id);
     }
+
+    #[test]
+    fn test_distributor_can_restore_burned_pass() {
+        let village_pass = VILLAGE_PASS();
+        let pass = IVillagePassDispatcher { contract_address: village_pass };
+        let erc721 = IERC721Dispatcher { contract_address: village_pass };
+        let access = IAccessControlDispatcher { contract_address: village_pass };
+        start_cheat_caller_address(village_pass, MINTER());
+        let token_id = pass.mint(ALICE());
+        stop_cheat_caller_address(village_pass);
+        start_cheat_caller_address(village_pass, DEFAULT_ADMIN());
+        access.grant_role(selector!("DISTRIBUTOR_ROLE"), LEDGER());
+        stop_cheat_caller_address(village_pass);
+        start_cheat_caller_address(village_pass, ALICE());
+        erc721.approve(LEDGER(), token_id);
+        stop_cheat_caller_address(village_pass);
+        start_cheat_caller_address(village_pass, LEDGER());
+        pass.burn(token_id);
+        pass.restore(ALICE(), token_id);
+        stop_cheat_caller_address(village_pass);
+
+        assert!(erc721.owner_of(token_id) == ALICE(), "expected distributor to restore burned pass");
+    }
     // #[test]
 // #[should_panic(expected: "evp: Only realm owner can mint season pass")]
 // fn test_only_owner_can_mint_pass() {

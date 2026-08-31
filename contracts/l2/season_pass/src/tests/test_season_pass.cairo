@@ -167,6 +167,38 @@ mod tests {
         pass.burn(ALICE_REALMS_ID());
     }
 
+    #[test]
+    fn test_configured_ledger_can_restore_burned_pass() {
+        let (season_pass, realms, _) = SEASON_PASS();
+        let realms_nft = IERC721MinterDispatcher { contract_address: realms };
+        let pass = ISeasonPassDispatcher { contract_address: season_pass };
+        let erc721 = IERC721Dispatcher { contract_address: season_pass };
+        start_cheat_caller_address(realms, ALICE());
+        realms_nft.mint(ALICE_REALMS_ID());
+        stop_cheat_caller_address(realms);
+        start_cheat_caller_address(season_pass, ALICE());
+        pass.mint(ALICE(), ALICE_REALMS_ID());
+        pass.burn(ALICE_REALMS_ID());
+        stop_cheat_caller_address(season_pass);
+        start_cheat_caller_address(season_pass, ADMIN());
+        pass.set_restorer(LEDGER());
+        stop_cheat_caller_address(season_pass);
+
+        start_cheat_caller_address(season_pass, LEDGER());
+        pass.restore(ALICE(), ALICE_REALMS_ID());
+        stop_cheat_caller_address(season_pass);
+
+        assert!(erc721.owner_of(ALICE_REALMS_ID()) == ALICE(), "expected ledger to restore burned pass");
+    }
+
+    #[test]
+    #[should_panic(expected: "ESP: caller is not restorer")]
+    fn test_unconfigured_account_cannot_restore_burned_pass() {
+        let (season_pass, _, _) = SEASON_PASS();
+        start_cheat_caller_address(season_pass, BOB());
+        ISeasonPassDispatcher { contract_address: season_pass }.restore(ALICE(), ALICE_REALMS_ID());
+    }
+
     // #[test]
     // fn test_attach_lords_to_pass() {
     //     let (season_pass, realms, lords) = SEASON_PASS();

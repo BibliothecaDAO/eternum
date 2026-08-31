@@ -18,6 +18,9 @@ pub trait IERC2981Initializer<TState> {
 pub trait ISeasonPass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn burn(ref self: TState, token_id: u256);
+    fn set_restorer(ref self: TState, restorer: ContractAddress);
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
+    fn get_restorer(self: @TState) -> ContractAddress;
     // fn attach_lords(ref self: TState, token_id: u256, amount: u256);
 // fn detach_lords(ref self: TState, token_id: u256, amount: u256);
 // fn lords_balance(self: @TState, token_id: u256) -> u256;
@@ -80,6 +83,7 @@ mod EternumSeasonPass {
         lords: IERC20Dispatcher,
         lords_balance: Map<u256, u256>,
         erc2981_initialized: bool,
+        restorer: ContractAddress,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -198,6 +202,21 @@ mod EternumSeasonPass {
 
             // mint season pass
             self.erc721.mint(recipient, token_id);
+        }
+
+        fn set_restorer(ref self: ContractState, restorer: ContractAddress) {
+            self.ownable.assert_only_owner();
+            assert!(restorer.is_non_zero(), "ESP: restorer is zero");
+            self.restorer.write(restorer);
+        }
+
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+            assert!(starknet::get_caller_address() == self.restorer.read(), "ESP: caller is not restorer");
+            self.erc721.mint(recipient, token_id);
+        }
+
+        fn get_restorer(self: @ContractState) -> ContractAddress {
+            self.restorer.read()
         }
         // fn attach_lords(ref self: ContractState, token_id: u256, amount: u256) {
     //     // ensure season pass exists

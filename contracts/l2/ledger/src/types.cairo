@@ -53,6 +53,7 @@ pub struct Registration {
     pub flags_consumed: bool,
     pub paid: u256,
     pub realm_id: u256,
+    pub pass_kind: u8,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]

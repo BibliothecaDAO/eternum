@@ -21,6 +21,7 @@ trait ITestSeasonPass<TState> {
     fn set_ledger(ref self: TState, ledger: ContractAddress);
     fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn burn(ref self: TState, token_id: u256);
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
@@ -28,6 +29,7 @@ trait ITestSeasonPass<TState> {
 trait ITestVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
     fn burn(ref self: TState, token_id: u256);
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
 }
 
 #[starknet::contract]
@@ -87,6 +89,11 @@ mod TestSeasonPass {
                 "registration should be recorded before burn",
             );
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+            assert!(starknet::get_caller_address() == self.ledger.read(), "only ledger may restore");
+            self.erc721.mint(recipient, token_id);
         }
 
         fn get_encoded_metadata(self: @ContractState, token_id: u16) -> (felt252, felt252, felt252) {
@@ -174,6 +181,11 @@ mod TestVillagePass {
 
         fn burn(ref self: ContractState, token_id: u256) {
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+            self.accesscontrol.assert_only_role(DISTRIBUTOR_ROLE);
+            self.erc721.mint(recipient, token_id);
         }
     }
 }
@@ -483,6 +495,7 @@ fn paused_ledger_rejects_new_sponsorship() {
     fund_and_approve_player(@fixture, sponsor, 500);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
+    fixture.ledger.unpause();
     stop_cheat_caller_address(fixture.ledger_address);
 
     start_cheat_caller_address(fixture.ledger_address, sponsor);
@@ -687,6 +700,71 @@ fn cancellation_refunds_registration_and_sponsorship() {
 
     assert!(fixture.lords.balance_of(owner) == 700, "owner should recover all payments");
     assert!(fixture.ledger.get_game(GAME_ID).pool == 0, "cancelled pool should be empty");
+}
+
+#[test]
+#[should_panic(expected: 'Pausable: paused')]
+fn paused_ledger_rejects_refunds() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_game(GAME_ID);
+    stop_cheat_caller_address(fixture.ledger_address);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.refund(GAME_ID);
+}
+
+#[test]
+fn cancelled_game_restores_burned_season_pass() {
+    let (fixture, pass_address, pass) = deploy_season_pass_fixture();
+    let owner = player(0);
+    let token_id = 42;
+    pass.mint(owner, token_id);
+    start_cheat_caller_address(pass_address, owner);
+    IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, token_id);
+    stop_cheat_caller_address(pass_address);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_with_pass(GAME_ID, token_id);
+    stop_cheat_caller_address(fixture.ledger_address);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_game(GAME_ID);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.refund(GAME_ID);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    assert!(IERC721Dispatcher { contract_address: pass_address }.owner_of(token_id) == owner, "pass was not restored");
+}
+
+#[test]
+fn cancelled_game_restores_burned_village_pass() {
+    let (fixture, pass_address, pass) = deploy_village_pass_fixture();
+    let owner = player(0);
+    start_cheat_caller_address(pass_address, ADMIN());
+    let token_id = pass.mint(owner);
+    IAccessControlDispatcher { contract_address: pass_address }
+        .grant_role(selector!("DISTRIBUTOR_ROLE"), fixture.ledger_address);
+    stop_cheat_caller_address(pass_address);
+    start_cheat_caller_address(pass_address, owner);
+    IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, token_id);
+    stop_cheat_caller_address(pass_address);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register_village(GAME_ID, token_id);
+    stop_cheat_caller_address(fixture.ledger_address);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_game(GAME_ID);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.refund(GAME_ID);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    assert!(IERC721Dispatcher { contract_address: pass_address }.owner_of(token_id) == owner, "pass was not restored");
 }
 
 #[test]

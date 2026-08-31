@@ -39,6 +39,11 @@ test("orders upgrades before the two ledger role grants", () => {
     ],
   );
   assert.equal(plan.roleGrants[0].grantee, "0x1");
+  assert.deepEqual(plan.seasonPassRestorer, {
+    contractAddress: "0x3",
+    restorer: "0x1",
+    signer: { address: "0x12", privateKey: "0x121" },
+  });
   assert.equal(plan.assets[0].upgradeSigner.privateKey, "0x111");
 });
 
