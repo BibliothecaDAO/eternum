@@ -101,6 +101,7 @@ checkout_repo() {
 render_tunnel_config() {
   log "cloudflared config for $LAB_DOMAIN"
   [ -f "$CREDENTIALS_JSON" ] || { echo "missing tunnel credentials at $CREDENTIALS_JSON" >&2; exit 2; }
+  install -d -o realms -g realms "$LAB_DIR/.lab"
   install -d -o realms -g realms "$LAB_DIR/.lab/cloudflared"
   LAB_DOMAIN="$LAB_DOMAIN" TUNNEL_ID="$TUNNEL_ID" \
     envsubst '${LAB_DOMAIN} ${TUNNEL_ID}' < "$LAB_DIR/cloudflared/config.yml.template" \
