@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
+import { assertProviderChain } from "@realms-world/chain";
 import { resolveDeploymentEnvironment } from "../environment";
 import {
   assertRegistrarAvailable,
@@ -245,8 +246,10 @@ export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends 
     fallbackPrivateKey: environment.privateKey,
     context: `environment "${environment.id}"`,
   });
+  const provider = new RpcProvider({ nodeUrl: summary.rpcUrl });
+  await assertProviderChain(provider, environment.chain, "RPC_URL");
   const account = new Account({
-    provider: new RpcProvider({ nodeUrl: summary.rpcUrl }),
+    provider,
     address: accountAddress,
     signer: privateKey,
   });

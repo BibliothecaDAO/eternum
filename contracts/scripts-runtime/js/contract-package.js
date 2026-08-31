@@ -139,6 +139,7 @@ export async function runContractPackageTask({
   networkName,
   packageLabel,
   packageRoot,
+  validateEnvironment,
 }) {
   const context = resolvePackageTaskContext({
     actionName,
@@ -154,6 +155,7 @@ export async function runContractPackageTask({
   buildContractPackage(context.packageRoot, context.packageLabel);
   installSharedRuntimeDependencies(context.runtimeRoot);
   loadPackageTaskEnvironment(context.envFilePath, context.secretEnvFilePath, context.networkName);
+  if (validateEnvironment) await validateEnvironment();
   await executeContractPackageAction({
     actionName,
     actionOptions,

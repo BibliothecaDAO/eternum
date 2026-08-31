@@ -31,8 +31,7 @@
     "packages/ammv2-sdk",
     "packages/client",
     "packages/dojo",
-    "packages/game-agent",
-    "packages/world"
+    "packages/game-agent"
   ],
   "workspaces": {
     "apps/indexer": {
@@ -47,9 +46,6 @@
       "drizzle": false
     },
     "packages/core": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.ts"
       ],
@@ -61,32 +57,12 @@
         "@bibliothecadao/provider": [
           "../provider/src/index.ts"
         ],
-        "@bibliothecadao/torii": [
-          "../torii/src/index.ts"
-        ],
         "@bibliothecadao/types": [
           "../types/src/index.ts"
         ]
       }
     },
     "packages/provider": {
-      "entry": [
-        "src/index.ts"
-      ],
-      "project": [
-        "src/**/*.ts"
-      ],
-      "includeEntryExports": true,
-      "paths": {
-        "@bibliothecadao/types": [
-          "../types/src/index.ts"
-        ]
-      }
-    },
-    "packages/torii": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.ts"
       ],
@@ -98,9 +74,6 @@
       }
     },
     "packages/react": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.{ts,tsx}"
       ],
@@ -112,18 +85,12 @@
         "@bibliothecadao/eternum": [
           "../core/src/index.ts"
         ],
-        "@bibliothecadao/torii": [
-          "../torii/src/index.ts"
-        ],
         "@bibliothecadao/types": [
           "../types/src/index.ts"
         ]
       }
     },
     "packages/types": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.ts"
       ],
@@ -148,9 +115,6 @@
         ],
         "@bibliothecadao/react": [
           "../../packages/react/src/index.ts"
-        ],
-        "@bibliothecadao/torii": [
-          "../../packages/torii/src/index.ts"
         ],
         "@bibliothecadao/types": [
           "../../packages/types/src/index.ts"
@@ -206,15 +170,6 @@
       "exports"
     ],
     "packages/react/src/hooks/use-entry-token-balance.ts": [
-      "exports"
-    ],
-    "packages/torii/src/queries/sql/resource.ts": [
-      "exports"
-    ],
-    "packages/torii/src/queries/torii-client/army.ts": [
-      "exports"
-    ],
-    "packages/torii/src/queries/torii-client/structure.ts": [
       "exports"
     ],
     "apps/web/src/gql/snapshot/graphql.ts": [
@@ -431,26 +386,6 @@
       "exports"
     ],
     "packages/react/src/hooks/helpers/use-quests.ts": [
-      "exports"
-    ],
-    "packages/torii/src/parser/torii-client/quest.ts": [
-      "exports"
-    ],
-    "packages/torii/src/queries/sql/leaderboard-helpers.ts": [
-      "exports",
-      "types"
-    ],
-    "packages/torii/src/queries/sql/leaderboard.ts": [
-      "exports"
-    ],
-    "packages/torii/src/types/sql.ts": [
-      "enumMembers",
-      "types"
-    ],
-    "packages/torii/src/utils/leaderboard.ts": [
-      "types"
-    ],
-    "packages/torii/src/utils/sql.ts": [
       "exports"
     ],
     "packages/types/src/chat/client.ts": [

@@ -10,6 +10,7 @@ import type {
 import { loadRotationLaunchSummaryIfPresent, writeRotationLaunchSummary } from "./rotation-io";
 import { resolveSeriesLaunchStepIds } from "./series-plan";
 import { parseStartTime, toIsoUtc } from "./time";
+import { requireRpcUrl } from "../shared/rpc";
 
 export const DEFAULT_ROTATION_AUTO_RETRY_INTERVAL_MINUTES = 15;
 export const DEFAULT_ROTATION_ADVANCE_WINDOW_GAMES = 5;
@@ -223,7 +224,7 @@ export function buildInitialRotationLaunchSummary(request: LaunchRotationRequest
     advanceWindowGames: resolveRotationAdvanceWindowGames(request),
     evaluationIntervalMinutes: request.evaluationIntervalMinutes,
     weeklyCadence: request.weeklyCadence,
-    rpcUrl: request.rpcUrl || environment.rpcUrl,
+    rpcUrl: requireRpcUrl(request.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? true,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -239,7 +240,7 @@ function applyRotationRequestSettings(
 ): LaunchRotationSummary {
   return {
     ...summary,
-    rpcUrl: request.rpcUrl || summary.rpcUrl,
+    rpcUrl: requireRpcUrl(request.rpcUrl || summary.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,

@@ -39,7 +39,7 @@ const constructorAddresses = {
   eliteInvite: requireContractAddress("eliteInvite"),
   cosmetics: requireContractAddress("cosmetics"),
 };
-const ledgerRpcUrl = requireAddressConfigValue(process.env.STARKNET_RPC, "STARKNET_RPC");
+const ledgerRpcUrl = requireAddressConfigValue(process.env.LEDGER_RPC_URL, "LEDGER_RPC_URL");
 
 function buildConstructorCalldata() {
   return [

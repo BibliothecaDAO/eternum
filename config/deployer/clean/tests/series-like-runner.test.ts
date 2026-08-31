@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
+import { expectedChainId } from "@realms-world/chain/chain-guard";
+import { RpcProvider } from "starknet";
 import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
 
 mock.module("../../../../contracts/l3/game/manifest_appchain_blitz.json", () => ({
@@ -24,10 +26,12 @@ const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-run
 const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
 
 const originalFetch = globalThis.fetch;
+const originalGetChainId = RpcProvider.prototype.getChainId;
 const originalHeraldUrl = process.env.HERALD_URL;
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  RpcProvider.prototype.getChainId = originalGetChainId;
   if (originalHeraldUrl === undefined) delete process.env.HERALD_URL;
   else process.env.HERALD_URL = originalHeraldUrl;
 });
@@ -58,6 +62,8 @@ describe("grouped series-like runner", () => {
   });
 
   test("skips wait-for-factory-indexes for children whose create-worlds step never succeeded", async () => {
+    RpcProvider.prototype.getChainId = async () =>
+      expectedChainId("appchain") as Awaited<ReturnType<RpcProvider["getChainId"]>>;
     process.env.HERALD_URL = "https://herald.example";
     const fetchCalls: string[] = [];
     globalThis.fetch = (async (url: Parameters<typeof fetch>[0]) => {
@@ -110,6 +116,7 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
   return {
     launchKind: "series",
     environmentId: "appchain.blitz",
+    rpcUrl: "https://rpc.example",
     seriesName: "bltz-knicker",
     games: [
       { gameName: "bltz-knicker-06", startTime: "2099-01-01T06:00:00Z" },

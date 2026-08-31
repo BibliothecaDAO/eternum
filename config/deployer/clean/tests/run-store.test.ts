@@ -32,6 +32,7 @@ const ENV_KEYS = [
   "FACTORY_RUN_STORE_WRITE_RETRY_DELAY_MS",
   "FACTORY_RUN_LEASE_DURATION_SECONDS",
   "FACTORY_ACCOUNT_LEASE_DURATION_SECONDS",
+  "RPC_URL",
 ] as const;
 
 const originalEnv = new Map<string, string | undefined>(ENV_KEYS.map((key) => [key, process.env[key]]));
@@ -55,6 +56,7 @@ beforeEach(() => {
   process.env.GITHUB_SERVER_URL = "https://github.example";
   process.env.GITHUB_REF_NAME = "credence0x/factory-run-store";
   process.env.FACTORY_RUN_STORE_BRANCH = "factory-runs";
+  process.env.RPC_URL = "https://rpc.example";
 });
 
 afterEach(() => {

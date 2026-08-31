@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
+import { assertProviderChain } from "@realms-world/chain";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import { DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS, DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
@@ -19,6 +20,7 @@ import {
 import { findGameRegistryByName, waitForGameRegistryById } from "../registrar/game-registry";
 import { buildCreateGameParams } from "../registrar/preset";
 import { resolveAccountCredentials } from "../shared/credentials";
+import { requireRpcUrl } from "../shared/rpc";
 import type {
   DeploymentEnvironment,
   LaunchGameRequest,
@@ -35,6 +37,7 @@ const LORDS_UNIT = 10n ** 18n;
 
 interface LaunchRuntime {
   environment: DeploymentEnvironment;
+  provider: RpcProvider;
   rpcUrl: string;
   startTime: number;
   presetId: number;
@@ -78,9 +81,11 @@ function resolvePresetId(version: string | undefined, environment: DeploymentEnv
 
 function createRuntime(request: LaunchGameRequest): LaunchRuntime {
   const environment = resolveDeploymentEnvironment(request.environmentId);
+  const rpcUrl = requireRpcUrl(request.rpcUrl, "RPC_URL");
   return {
     environment,
-    rpcUrl: request.rpcUrl || environment.rpcUrl,
+    provider: new RpcProvider({ nodeUrl: rpcUrl }),
+    rpcUrl,
     startTime: parseStartTime(request.startTime),
     presetId: resolvePresetId(request.version, environment),
     progress: createProgressReporter(),
@@ -163,10 +168,16 @@ function createLaunchAccount(launch: PreparedLaunch): Account {
     context: `environment "${launch.runtime.environment.id}"`,
   });
   return new Account({
-    provider: new RpcProvider({ nodeUrl: launch.runtime.rpcUrl }),
+    provider: launch.runtime.provider,
     address: credentials.accountAddress,
     signer: credentials.privateKey,
   });
+}
+
+async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
+  await assertProviderChain(launch.runtime.provider, launch.runtime.environment.chain, "RPC_URL");
+  if (!launch.request.ledgerRpcUrl) return;
+  await assertProviderChain(new RpcProvider({ nodeUrl: launch.request.ledgerRpcUrl }), "mainnet", "LEDGER_RPC_URL");
 }
 
 function requireLedgerTarget(launch: PreparedLaunch): LedgerTarget {
@@ -372,6 +383,7 @@ export async function runLaunchStep(request: LaunchGameStepRequest): Promise<Lau
   if (request.dryRun) {
     return finishDryRun(launch);
   }
+  await assertLaunchChainTargets(launch);
   await executeLaunchStep(launch, request.stepId);
   return finishLaunch(launch);
 }
@@ -381,6 +393,7 @@ export async function launchGame(request: LaunchGameRequest): Promise<LaunchGame
   if (request.dryRun) {
     return finishDryRun(launch);
   }
+  await assertLaunchChainTargets(launch);
   await createGame(launch);
   await waitForGameIndex(launch);
   return finishLaunch(launch);

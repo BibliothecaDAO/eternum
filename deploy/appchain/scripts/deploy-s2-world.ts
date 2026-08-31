@@ -10,7 +10,9 @@ import { isChainConfigInitialized } from "../../../config/deployer/clean/registr
 import { buildChainConfig } from "../../../config/deployer/clean/registrar/preset";
 import { registerEnvironmentPreset } from "../../../config/deployer/clean/registrar/register-preset";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
+import { requireRpcUrl } from "../../../config/deployer/clean/shared/rpc";
 import { Account, RpcProvider } from "starknet";
+import { assertProviderChain } from "@realms-world/chain";
 import {
   DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
   DEFAULT_APPCHAIN_PRESET_ID,
@@ -108,14 +110,18 @@ async function deployS2World(): Promise<void> {
   assertRegistrarAvailable(environmentId);
 
   const environment = resolveDeploymentEnvironment(environmentId);
-  const rpcUrl = process.env.RPC_URL || environment.rpcUrl;
+  const rpcUrl = requireRpcUrl(process.env.RPC_URL, "RPC_URL");
+  const provider = new RpcProvider({ nodeUrl: rpcUrl });
+  if (!dryRun) {
+    await assertProviderChain(provider, environment.chain, "RPC_URL");
+  }
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
     privateKey: process.env.DOJO_PRIVATE_KEY,
     context: `${environmentId} deployment`,
   });
   const account = new Account({
-    provider: new RpcProvider({ nodeUrl: rpcUrl }),
+    provider,
     address: credentials.accountAddress,
     signer: credentials.privateKey,
   });
@@ -128,7 +134,13 @@ async function deployS2World(): Promise<void> {
     playerRegistryAddress: requiredEnvironmentAddress("PLAYER_REGISTRY_ADDRESS"),
     dryRun,
   });
-  await registerEnvironmentPreset({ presetId: resolveDefaultPresetId(environmentId), environmentId, dryRun });
+  await registerEnvironmentPreset({
+    presetId: resolveDefaultPresetId(environmentId),
+    environmentId,
+    rpcUrl,
+    sponsored: false,
+    dryRun,
+  });
 }
 
 deployS2World().catch((error) => {

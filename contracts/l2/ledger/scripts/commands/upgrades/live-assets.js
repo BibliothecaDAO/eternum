@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { constants, hash } from "starknet";
+import { hash } from "starknet";
 import { getContractArtifactPaths } from "../../../../../scripts-runtime/js/artifacts.js";
 import { loadJsonConfigFile } from "../../../../../scripts-runtime/js/config.js";
 import { loadNetworkEnvironment } from "../../../../../scripts-runtime/js/environment.js";
@@ -14,6 +14,7 @@ import {
   upgradeContract,
 } from "../../../../../scripts-runtime/js/starknet.js";
 import { buildLiveAssetPlan } from "./live-assets-plan.js";
+import { assertLedgerRpc } from "../ledger-rpc.js";
 
 const commandDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(commandDirectory, "..", "..", "..", "..", "..", "..");
@@ -27,6 +28,7 @@ export async function runLiveAssetUpgrade({ execute: shouldExecute }) {
     "mainnet",
     path.join(repoRoot, ".env"),
   );
+  await assertLedgerRpc();
   const addresses = loadJsonConfigFile(path.join(repoRoot, "contracts", "common", "addresses", "mainnet.json"));
   const plan = buildLiveAssetPlan(addresses, process.env, shouldExecute);
 
@@ -54,10 +56,6 @@ function buildLiveAssetContracts(assets) {
 
 async function verifyMainnetPlan(plan) {
   const provider = getProvider();
-  const chainId = await provider.getChainId();
-  if (BigInt(chainId) !== BigInt(constants.StarknetChainId.SN_MAIN)) {
-    throw new Error(`STARKNET_RPC is not Starknet mainnet (chain id ${chainId})`);
-  }
 
   for (const asset of plan.assets) await provider.getClassHashAt(asset.address);
   await provider.getClassHashAt(plan.ledgerAddress);

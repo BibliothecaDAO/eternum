@@ -1,6 +1,5 @@
-export const GAME_CHAIN_NAMES = {
-  appchain: "WP_REALMS_DEV",
-  madara: "WP_REALMS_MADARA_LAB",
-} as const;
+import { GAME_CHAIN_NAMES } from "../chain-guard.js";
+
+export { GAME_CHAIN_NAMES } from "../chain-guard.js";
 
 export type GameChain = keyof typeof GAME_CHAIN_NAMES;

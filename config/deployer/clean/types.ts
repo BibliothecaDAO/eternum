@@ -32,7 +32,6 @@ export interface DeploymentEnvironment {
   gameType: DeploymentGameType;
   toriiEnv: DeploymentChain;
   configPath: string;
-  rpcUrl: string;
   accountAddress?: string;
   privateKey?: string;
   world: WorldDeployment;

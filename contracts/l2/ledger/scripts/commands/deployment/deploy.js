@@ -3,6 +3,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runContractPackageTask } from "../../../../../scripts-runtime/js/contract-package.js";
+import { assertLedgerRpc } from "../ledger-rpc.js";
 
 const networkName = process.argv[2];
 if (networkName !== "mainnet") {
@@ -15,4 +16,5 @@ await runContractPackageTask({
   networkName,
   packageLabel: "Realms game ledger",
   packageRoot: path.join(commandDirectory, "..", "..", ".."),
+  validateEnvironment: assertLedgerRpc,
 });

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "dependencies": {
+    "@realms-world/chain": "workspace:*",
+    "starknet": "catalog:game"
+  },
   "scripts": {
     "check-live-assets:mainnet": "node ./commands/upgrades/live-assets.js",
     "deploy:mainnet": "node ./commands/deployment/deploy.js mainnet",

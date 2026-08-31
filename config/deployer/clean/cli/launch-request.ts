@@ -33,6 +33,7 @@ import type {
 } from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
 import { resolveLaunchRequestArgs } from "./launch-config-file";
+import { requireRpcUrl } from "../shared/rpc";
 
 export { parseArgs };
 
@@ -518,7 +519,7 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
   const defaults = resolveSharedLaunchDefaults(environment);
 
   return {
-    rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
+    rpcUrl: requireRpcUrl(args["rpc-url"] || process.env.RPC_URL, "--rpc-url or RPC_URL"),
     ledgerAddress: args.ledger || process.env.LEDGER_ADDRESS,
     ledgerRpcUrl: args["ledger-rpc-url"] || process.env.LEDGER_RPC_URL,
     lordsAddress: args.lords || process.env.LORDS_ADDRESS,

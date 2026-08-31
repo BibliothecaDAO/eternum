@@ -1,11 +1,12 @@
 import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest } from "@contracts";
-import type { GameChain } from "@realms-world/chain";
+import { assertProviderChain, type GameChain } from "@realms-world/chain";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
 import { logNetwork, saveResolvedConfigJson, type GameType } from "../utils/environment";
 import { GameConfigDeployer, nodeReadConfig } from "./config";
 import { withBatching } from "./tx-batcher";
+import { requireRpcUrl } from "./clean/shared/rpc";
 
 const VALID_NETWORKS: GameChain[] = ["madara", "appchain"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
@@ -39,11 +40,13 @@ function resolveDeployerTarget(argv: string[]): { gameType: GameType; network: G
 
 async function createDeployerProvider(network: GameChain, gameType: GameType): Promise<EternumProvider> {
   const manifest = await getGameManifest(network, gameType);
-  return new EternumProvider(
+  const provider = new EternumProvider(
     manifest,
-    process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
+    requireRpcUrl(process.env.RPC_URL, "RPC_URL"),
     process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
   );
+  await assertProviderChain(provider.provider, network, "RPC_URL");
+  return provider;
 }
 
 function createDeployerAccount(provider: EternumProvider): Account {

@@ -17,6 +17,7 @@ import type {
 } from "../types";
 import { resolveDefaultRotationRetryIntervalMinutes } from "../launch/rotation-summary";
 import { resolveDefaultSeriesRetryIntervalMinutes } from "../launch/series-summary";
+import { requireRpcUrl } from "../shared/rpc";
 
 interface SeriesLikeGameDuration {
   durationSeconds?: number;
@@ -102,7 +103,7 @@ function buildPersistedSharedLaunchRequest(
     });
 
   return {
-    rpcUrl: request.rpcUrl || environment.rpcUrl,
+    rpcUrl: requireRpcUrl(request.rpcUrl || process.env.RPC_URL, "RPC_URL"),
     devModeOn: request.devModeOn ?? false,
     singleRealmMode: request.singleRealmMode ?? false,
     twoPlayerMode: request.twoPlayerMode ?? false,

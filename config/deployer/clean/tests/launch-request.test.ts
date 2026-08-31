@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   buildFactoryRunRequestContext,
   buildLaunchGameRequest,
@@ -11,11 +11,14 @@ import {
 } from "../cli/launch-request";
 
 const TEMP_DIRECTORIES: string[] = [];
+const ORIGINAL_RPC_URL = process.env.RPC_URL;
 
 afterEach(() => {
   for (const directory of TEMP_DIRECTORIES.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
   }
+  if (ORIGINAL_RPC_URL === undefined) delete process.env.RPC_URL;
+  else process.env.RPC_URL = ORIGINAL_RPC_URL;
 });
 
 function writeLaunchConfig(contents: string): string {
@@ -29,13 +32,16 @@ function writeLaunchConfig(contents: string): string {
 describe("launch request helpers", () => {
   const ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV = process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON;
 
+  beforeEach(() => {
+    process.env.RPC_URL = "https://rpc.example";
+  });
+
   afterEach(() => {
     if (ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV === undefined) {
       delete process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON;
-      return;
+    } else {
+      process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON = ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV;
     }
-
-    process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON = ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV;
   });
 
   test("builds a launch request from shared CLI args", () => {
@@ -293,5 +299,16 @@ games:
 
   test("rejects unsupported launch step ids", () => {
     expect(() => resolveLaunchGameStepId("full")).toThrow('Unsupported launch step "full"');
+  });
+
+  test("requires an explicit L3 RPC", () => {
+    delete process.env.RPC_URL;
+    expect(() =>
+      buildLaunchGameRequest({
+        environment: "madara.blitz",
+        game: "bltz-test-1",
+        "start-time": "2026-03-18T10:00:00Z",
+      }),
+    ).toThrow("--rpc-url or RPC_URL is required");
   });
 });

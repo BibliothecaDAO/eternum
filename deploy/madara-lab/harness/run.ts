@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { Account, BlockTag, constants, logger, RpcProvider } from "starknet";
+import { Account, BlockTag, logger, RpcProvider } from "starknet";
+import { assertChainId, assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
 import { prepareHarnessBots, runWorkload, type HarnessSystemAddresses, type TrackedTransaction } from "./driver";
@@ -162,6 +163,7 @@ async function main(): Promise<void> {
     readJson<WorldManifest>(path.join(REPOSITORY_ROOT, "contracts/l3/game/manifest_madara.json")),
   ]);
   const systems = resolveSystemAddresses(manifest);
+  assertChainId(chainId, "madara", "RPC_URL");
   const ledgerEnvironment = options.ledger ? resolveLedgerEnvironment() : undefined;
   const ledgerIdentities = options.ledger
     ? await loadLedgerBotIdentities(path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!), options.bots)
@@ -425,10 +427,7 @@ async function runLedgerSweepOnly(options: HarnessCliOptions): Promise<void> {
   );
   const identityByOwner = new Map(identities.map((identity) => [BigInt(identity.mainnetAddress).toString(), identity]));
   const provider = new RpcProvider({ nodeUrl: environment.mainnetRpcUrl });
-  const chainId = await provider.getChainId();
-  if (BigInt(chainId) !== BigInt(constants.StarknetChainId.SN_MAIN)) {
-    throw new Error(`LEDGER_RPC_URL is not Starknet mainnet (chain id ${chainId})`);
-  }
+  await assertProviderChain(provider, "mainnet", "LEDGER_RPC_URL");
 
   const accounts = manifest.accounts.map(({ owner, preFundLordsBalanceBaseUnits }) => {
     const identity = identityByOwner.get(BigInt(owner).toString());

@@ -10,6 +10,7 @@ import type {
 import { loadSeriesLaunchSummaryIfPresent, writeSeriesLaunchSummary } from "./series-io";
 import { resolveSeriesLaunchStepIds } from "./series-plan";
 import { parseStartTime, toIsoUtc } from "./time";
+import { requireRpcUrl } from "../shared/rpc";
 
 export const DEFAULT_SERIES_AUTO_RETRY_INTERVAL_MINUTES = 15;
 
@@ -85,7 +86,7 @@ export function buildInitialSeriesLaunchSummary(request: LaunchSeriesRequest): L
     chain: environment.chain,
     gameType: environment.gameType,
     seriesName: request.seriesName.trim(),
-    rpcUrl: request.rpcUrl || environment.rpcUrl,
+    rpcUrl: requireRpcUrl(request.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? true,
     autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -98,7 +99,7 @@ export function buildInitialSeriesLaunchSummary(request: LaunchSeriesRequest): L
 function applySeriesRequestSettings(summary: LaunchSeriesSummary, request: LaunchSeriesRequest): LaunchSeriesSummary {
   return {
     ...summary,
-    rpcUrl: request.rpcUrl || summary.rpcUrl,
+    rpcUrl: requireRpcUrl(request.rpcUrl || summary.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,

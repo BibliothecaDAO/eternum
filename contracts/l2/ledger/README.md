@@ -9,7 +9,7 @@ Do not run a deployment until the owner has supplied the mainnet RPC and deploye
 constructor addresses in `contracts/common/addresses/mainnet.json` are non-zero. In particular, the live Elite Invite
 address is not recorded yet, so the command currently fails closed before submitting a transaction.
 
-The environment must define `STARKNET_RPC`, `STARKNET_ACCOUNT_ADDRESS`, `STARKNET_ACCOUNT_PRIVATE_KEY`,
+The environment must define `LEDGER_RPC_URL`, `STARKNET_ACCOUNT_ADDRESS`, `STARKNET_ACCOUNT_PRIVATE_KEY`,
 `LEDGER_ADMIN_ADDRESS`, `LEDGER_OPERATOR_ADDRESS`, and `LEDGER_TREASURY_ADDRESS`.
 
 ```sh
@@ -32,7 +32,7 @@ SEASON_PASS_OWNER_ADDRESS
 SEASON_PASS_OWNER_PRIVATE_KEY
 STARKNET_ACCOUNT_ADDRESS
 STARKNET_ACCOUNT_PRIVATE_KEY
-STARKNET_RPC
+LEDGER_RPC_URL
 VILLAGE_PASS_ADMIN_ADDRESS
 VILLAGE_PASS_ADMIN_PRIVATE_KEY
 VILLAGE_PASS_UPGRADER_ADDRESS

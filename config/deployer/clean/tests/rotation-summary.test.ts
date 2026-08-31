@@ -11,6 +11,7 @@ function buildWeeklyRotationRequest(overrides: Partial<LaunchRotationRequest> = 
   return {
     launchKind: "rotation",
     environmentId: "appchain.blitz",
+    rpcUrl: "https://rpc.example",
     rotationName: "blitz-rotation",
     firstGameStartTime: "2026-04-20T01:00:00Z",
     gameIntervalMinutes: 0,

@@ -1,10 +1,12 @@
 import { Account, RpcProvider } from "starknet";
+import { assertProviderChain } from "@realms-world/chain";
 import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../source/blitz";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 import { resolveDeploymentEnvironment } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { resolveAccountCredentials } from "../shared/credentials";
+import { requireRpcUrl } from "../shared/rpc";
 import type { DeploymentEnvironmentId } from "../types";
 import { buildRegisterPresetCalldata, isRegistrarAlreadyRegisteredError, registerPreset } from "./calls";
 import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
@@ -12,6 +14,7 @@ import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
 interface RegisterPresetOptions {
   presetId: number;
   environmentId: DeploymentEnvironmentId;
+  rpcUrl?: string;
   balanceProfile?: BlitzBalanceProfileId;
   ledgerAddress?: string;
   ledgerRpcUrl?: string;
@@ -49,6 +52,7 @@ function parseOptions(): RegisterPresetOptions {
   return {
     presetId,
     environmentId,
+    rpcUrl: readArgument("--rpc-url") || process.env.RPC_URL,
     balanceProfile,
     ledgerAddress: readArgument("--ledger") || process.env.LEDGER_ADDRESS,
     ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL,
@@ -121,13 +125,18 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
 
   const ledgerTarget = requireLedgerTarget(options);
   const environment = resolveDeploymentEnvironment(options.environmentId);
+  const provider = new RpcProvider({ nodeUrl: requireRpcUrl(options.rpcUrl, "--rpc-url or RPC_URL") });
+  await Promise.all([
+    assertProviderChain(provider, environment.chain, "RPC_URL"),
+    assertProviderChain(new RpcProvider({ nodeUrl: ledgerTarget.rpcUrl }), "mainnet", "LEDGER_RPC_URL"),
+  ]);
   const credentials = resolveAccountCredentials({
     accountAddress: process.env.DOJO_ACCOUNT_ADDRESS,
     privateKey: process.env.DOJO_PRIVATE_KEY,
     context: `${options.environmentId} preset registration`,
   });
   const account = new Account({
-    provider: new RpcProvider({ nodeUrl: process.env.RPC_URL || environment.rpcUrl }),
+    provider,
     address: credentials.accountAddress,
     signer: credentials.privateKey,
   });

@@ -1,4 +1,6 @@
 import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
+import { expectedChainId } from "@realms-world/chain/chain-guard";
+import { RpcProvider } from "starknet";
 import type { LaunchGameSummary } from "../types";
 
 let existingGame: { gameId: number; gameName: string } | null = null;
@@ -28,6 +30,7 @@ const waitForGameRegistryByIdMock = mock(async ({ gameId }: { gameId: number }) 
 }));
 const writeLaunchSummaryMock = mock(() => ".context/game-launch/madara-blitz-bltz-test.json");
 const buildCreateGameParamsMock = mock((_: unknown, params: unknown) => params);
+const originalGetChainId = RpcProvider.prototype.getChainId;
 
 mock.module("../config/config-loader", () => ({
   loadEnvironmentConfiguration: () => buildLaunchConfig(),
@@ -65,10 +68,17 @@ mock.module("../launch/io", () => ({
 const { launchGame, runLaunchStep } = await import("../launch/runner");
 
 afterAll(() => {
+  RpcProvider.prototype.getChainId = originalGetChainId;
   mock.restore();
 });
 
 beforeEach(() => {
+  RpcProvider.prototype.getChainId = async function () {
+    const nodeUrl = (this as RpcProvider & { channel: { nodeUrl: string } }).channel.nodeUrl;
+    return expectedChainId(nodeUrl.includes("mainnet.example") ? "mainnet" : "madara") as Awaited<
+      ReturnType<RpcProvider["getChainId"]>
+    >;
+  };
   existingGame = null;
   loadedSummary = null;
   findGameError = null;
@@ -85,6 +95,28 @@ beforeEach(() => {
 });
 
 describe("registrar game launch", () => {
+  test("refuses a mainnet RPC before an L3 command can submit", async () => {
+    await expect(
+      launchGame({
+        ...buildRequest(),
+        rpcUrl: "https://mainnet.example/rpc",
+        ledgerAddress: undefined,
+        ledgerRpcUrl: undefined,
+      }),
+    ).rejects.toThrow("RPC_URL is not madara");
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
+  test("refuses a lab RPC before an L2 command can submit", async () => {
+    await expect(
+      launchGame({
+        ...buildRequest(),
+        ledgerRpcUrl: "http://lab.example/rpc",
+      }),
+    ).rejects.toThrow("LEDGER_RPC_URL is not Starknet mainnet");
+    expect(createRegistrarGameMock).not.toHaveBeenCalled();
+  });
+
   test("creates one game and waits for its GameRegistry row", async () => {
     const summary = await launchGame(buildRequest());
 

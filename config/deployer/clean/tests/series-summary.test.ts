@@ -15,6 +15,7 @@ function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): Launc
   return {
     launchKind: "series",
     environmentId: "appchain.blitz",
+    rpcUrl: "https://rpc.example",
     seriesName: "bltz-weekend-cup",
     games: [
       {

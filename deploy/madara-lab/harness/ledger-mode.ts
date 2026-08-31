@@ -5,12 +5,12 @@ import {
   Account,
   CallData,
   RpcProvider,
-  constants,
   ec,
   uint256,
   validateAndParseAddress,
   type Call,
 } from "starknet";
+import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
 import { decodeGameLedgerGame } from "../../../packages/core/src/data/abi/GameLedger";
 import {
@@ -171,10 +171,7 @@ export async function registerLedgerBots(
   options: RegisterLedgerBotsOptions,
 ): Promise<{ evidence: LedgerRegistrationEvidence; registrations: LedgerRegistrationRuntime[] }> {
   const provider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
-  const mainnetChainId = await provider.getChainId();
-  if (BigInt(mainnetChainId) !== BigInt(constants.StarknetChainId.SN_MAIN)) {
-    throw new Error(`Ledger harness requires Starknet mainnet, received ${mainnetChainId}`);
-  }
+  const mainnetChainId = await assertProviderChain(provider, "mainnet", "LEDGER_RPC_URL");
 
   const game = await readLedgerGame(provider, options.ledgerAddress, options.gameId);
   const latestBlock = await provider.getBlock("latest");
@@ -323,6 +320,7 @@ export async function waitForGameStart(provider: RpcProvider, startAt: number): 
 export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Promise<LedgerFinalizationEvidence> {
   const observer = new HeraldObserver(options.heraldUrl, "madara");
   const mainnetProvider = new RpcProvider({ nodeUrl: options.mainnetRpcUrl });
+  await assertProviderChain(mainnetProvider, "mainnet", "LEDGER_RPC_URL");
   const poolBeforeFinalization = (await readLedgerGame(mainnetProvider, options.ledgerAddress, options.gameId)).pool;
   const schedule = await readGameSchedule(observer, options.gameId);
   await waitForChainTimestamp(

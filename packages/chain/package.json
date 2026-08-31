@@ -6,6 +6,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./chain-guard": {
+      "types": "./chain-guard.d.ts",
+      "import": "./chain-guard.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -14,6 +18,8 @@
   "module": "./dist/index.js",
   "type": "module",
   "files": [
+    "chain-guard.js",
+    "chain-guard.d.ts",
     "dist/**",
     "src/**"
   ],

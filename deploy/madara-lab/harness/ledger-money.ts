@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { Account, CallData, constants, uint256, validateAndParseAddress, type Call, type RpcProvider } from "starknet";
+import { Account, CallData, uint256, validateAndParseAddress, type Call, type RpcProvider } from "starknet";
+import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import mainnetAddresses from "../../../contracts/common/addresses/mainnet.json";
 import { mapWithConcurrency } from "./account-factory";
 
@@ -126,9 +127,7 @@ export async function readLedgerSweepManifest(filePath: string): Promise<LedgerS
   if (typeof record.createdAt !== "string") throw new Error("Ledger sweep manifest createdAt must be a string");
   const accounts = parseSweepManifestAccounts(record.accounts);
   const chainId = parseNonZeroFelt(record.chainId, "chainId");
-  if (BigInt(chainId) !== BigInt(constants.StarknetChainId.SN_MAIN)) {
-    throw new Error(`Ledger sweep manifest is not for Starknet mainnet: ${chainId}`);
-  }
+  assertChainId(chainId, "mainnet", "Ledger sweep manifest");
   return {
     accounts,
     chainId,

@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_APPCHAIN_RPC_URL, DEFAULT_MADARA_RPC_URL } from "../constants";
 import { isEternumDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
 
 describe("resolveDeploymentEnvironment", () => {
@@ -7,7 +6,6 @@ describe("resolveDeploymentEnvironment", () => {
     const environment = resolveDeploymentEnvironment("appchain.blitz");
     expect(environment.chain).toBe("appchain");
     expect(environment.gameType).toBe("blitz");
-    expect(environment.rpcUrl).toBe(DEFAULT_APPCHAIN_RPC_URL);
     expect(environment.accountAddress).toBeUndefined();
     expect(environment.privateKey).toBeUndefined();
     expect(environment.world).toEqual({
@@ -32,7 +30,6 @@ describe("resolveDeploymentEnvironment", () => {
 
     expect(environment.chain).toBe("madara");
     expect(environment.gameType).toBe("blitz");
-    expect(environment.rpcUrl).toBe(DEFAULT_MADARA_RPC_URL);
     expect(environment.accountAddress).toBeUndefined();
     expect(environment.privateKey).toBeUndefined();
     expect(environment.world).toEqual({
