@@ -78,10 +78,12 @@ if [ ! -d "$HOME/.asdf" ]; then
   printf '\n. "$HOME/.asdf/asdf.sh"\nexport PATH="$HOME/.bun/bin:$PATH"\n' >> "$HOME/.bashrc"
 fi
 . "$HOME/.asdf/asdf.sh"
+# deploy-world.sh needs scarb + sozo only (Madara is the docker sequencer, not katana; torii is gone).
+# sozo is its own asdf plugin — the asdf-dojo bundle versions sozo by dojo release and has no 1.8.7.
 asdf plugin add scarb https://github.com/software-mansion/asdf-scarb.git 2>/dev/null || true
-asdf plugin add dojo  https://github.com/dojoengine/asdf-dojo.git 2>/dev/null || true
+asdf plugin add sozo  https://github.com/dojoengine/asdf-sozo.git 2>/dev/null || true
 asdf install scarb 2.13.1
-asdf install dojo 1.8.7
+asdf install sozo 1.8.7
 EOS
 }
 
