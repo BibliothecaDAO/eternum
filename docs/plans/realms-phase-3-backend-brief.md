@@ -55,6 +55,7 @@ prover is enough for its shape, and every inbound entrypoint already has the one
 | B.1 | `game_ledger`, `MMRToken`, pass upgrades, presets, CLI    | Codex                | — (interfaces first, week 1)   |
 | B.2 | L3: relayed entry, results post, Eternum entry            | Codex                | B.1 interfaces                 |
 | T   | The contracts tree by chain (`l2/`, `l3/`), dead packages | Codex                | B.2 landed; before B.3         |
+| V   | Value-plane loop audit fixes (blocker + access control)   | Codex                | B.2 landed; before mainnet     |
 | B.3 | Collectibles: grants at `apply_results`, loadout          | Codex                | B.1, B.2                       |
 | B.5 | Pools (fixed-odds prediction market)                      | Codex                | B.1                            |
 | C   | Account class v2 + adversarial test                       | Codex; Claude review | B.1                            |
@@ -226,6 +227,28 @@ run is unchanged (3,840/3,840) and the operator boots against the lab manifest a
 Sequenced after the B.2 recovery-path fixes land and before B.3 touches Cairo again, because a move conflicts with every
 in-flight contracts file.
 
+### V — value-plane loop audit fixes
+
+The 2026-08-31 loop audit (`value-plane-loop-audit-2026-08-31.md`) found one blocker and a set of access-control and
+exit gaps in the register→settle→results→payout loop. The full evidence, per-finding file:line, and clean areas live in
+that doc; this slice is its fix track. **The mainnet-blocking trio (B1 + A1 + F1) lands before any real LORDS reaches
+the ledger** — the honest harness cannot surface any of them.
+
+- **B1 (blocker)** — L3 `blitz_prize_player_rank` is permissionless and roster-substitutable, so a
+  bound-but-unregistered account can finalize a game and lock the pool on L2. Fix the class: `rank_players` asserts
+  every listed player is a settled participant of the game.
+- **A1** — `create_game`/`dev_mode_on` are permissionless; move game creation and dev mode to the admin/registrar plane
+  so a production preset cannot be run in dev mode and the operator's game-id cannot be squatted.
+- **F1** — the ledger has no fund-release path once a game starts; add an operator-declared, `end`-gated abort→refund so
+  a dead or disputed L3 cannot strand a pool.
+- Then the defense-in-depth should-fixes in the doc (ledger F2/F3, operator O1–O4, seam S1–S6) and the minors, none
+  mainnet-blocking, sequenced after the trio.
+
+**Gate V:** a unit test proves an unregistered/unsettled account cannot be ranked into a finalized roster; a non-admin
+`create_game` and a caller-set `dev_mode_on` on a production preset are both rejected; a started-then-abandoned game
+refunds every entrant after `end`; the operator applies a confirmation depth and asserts its RPC event shape at
+ingestion. Live gates (operator boot, 3,840-action harness) move to the Latitude server — the box lab is retired.
+
 ### B.3 — collectibles
 
 - The ledger holds `MINTER_ROLE` on the loot-chest and elite-invite collections (the live mainnet collections; the admin
@@ -351,6 +374,11 @@ Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR po
 `apply_results`, pools, and account class v2 are needed in every settlement stage.
 
 ## Review log
+
+- 2026-08-31, Claude: full read-only loop audit (four parallel passes, every finding re-verified against source) →
+  `value-plane-loop-audit-2026-08-31.md`. One blocker (permissionless L3 ranker locks the pool), access-control and
+  ledger-exit should-fixes. Slice **V** added as the fix track; mainnet-blocking trio B1 + A1 + F1 gates real LORDS. Box
+  lab retired — live gates move to the Latitude server.
 
 - 2026-08-31, Claude: the contracts tree is still flat and chain-blind after B.2; slice **T** added (dead packages
   deleted, `l2/`/`l3/` split, one chain guard replacing three inline copies, deployer RPC fallback removed), owned by
