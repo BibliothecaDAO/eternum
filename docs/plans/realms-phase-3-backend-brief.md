@@ -354,9 +354,9 @@ Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR po
 
 - 2026-08-31, Claude: the contracts tree is still flat and chain-blind after B.2; slice **T** added (dead packages
   deleted, `l2/`/`l3/` split, one chain guard replacing three inline copies, deployer RPC fallback removed), owned by
-  Codex, sequenced between the B.2 recovery fixes and B.3. Owner question open: whether `ammv2` earns its place on L2
-  against Ekubo/AVNU for resource swaps — if not, it moves from the L2 column to the delete column with
-  `apps/amm-indexer` and `packages/ammv2-sdk`.
+  Codex, sequenced between the B.2 recovery fixes and B.3. `ammv2` stays on L2 for now (owner, 2026-08-31) — it is the
+  out-of-game market for the bridged resource ERC20s; the in-game economy is the bank AMM inside `game` on the L3 and is
+  untouched by the split.
 - 2026-08-30, owner: **the value plane deploys to mainnet immediately** — Controller cannot sign on Sepolia, and stage 1
   is chain-agnostic. Topology rewritten, mainnet guardrails added to Gate B.1 (upgradeable + pausable, PM off, sponsored
   first games, named operator key, trust story disclosed), pass and MMR-token changes become upgrades to the live
