@@ -6,7 +6,6 @@ import {
   isRegistrarAlreadyInitializedError,
   resolveRegistrarContractAddress,
 } from "../../../config/deployer/clean/registrar/calls";
-import { isChainConfigInitialized } from "../../../config/deployer/clean/registrar/game-registry";
 import { buildChainConfig } from "../../../config/deployer/clean/registrar/preset";
 import { registerEnvironmentPreset } from "../../../config/deployer/clean/registrar/register-preset";
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
@@ -77,16 +76,8 @@ async function bootstrapRegistrar(params: {
     console.log("Prepared registrar chain configuration.");
     return;
   }
-  // isChainConfigInitialized reads whichever torii TORII_URL points at, which
-  // is NOT world-scoped: bootstrapping the eternum world with TORII_URL still
-  // aimed at torii-s2 (blitz) would false-skip. Leave TORII_URL unset (or aim
-  // it at this world's torii) — the catch falls through to the on-chain
-  // already-initialized guard, which is the real idempotency check.
-  if (await isChainConfigInitialized().catch(() => false)) {
-    console.log("ChainConfig is already initialized; skipping bootstrap.");
-    return;
-  }
-
+  // Idempotency is the on-chain guard below: bootstrap_chain_config is write-once and reverts with an
+  // already-initialized error on re-run, which we catch. (The former Torii-based pre-check was deleted with Torii.)
   try {
     const result = await bootstrapChainConfig(params.account, chainConfig, params.environmentId);
     console.log(`Bootstrapped ChainConfig: ${result.transactionHash}`);
