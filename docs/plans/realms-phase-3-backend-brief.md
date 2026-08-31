@@ -54,6 +54,7 @@ prover is enough for its shape, and every inbound entrypoint already has the one
 | --- | --------------------------------------------------------- | -------------------- | ------------------------------ |
 | B.1 | `game_ledger`, `MMRToken`, pass upgrades, presets, CLI    | Codex                | — (interfaces first, week 1)   |
 | B.2 | L3: relayed entry, results post, Eternum entry            | Codex                | B.1 interfaces                 |
+| T   | The contracts tree by chain (`l2/`, `l3/`), dead packages | Codex                | B.2 landed; before B.3         |
 | B.3 | Collectibles: grants at `apply_results`, loadout          | Codex                | B.1, B.2                       |
 | B.5 | Pools (fixed-odds prediction market)                      | Codex                | B.1                            |
 | C   | Account class v2 + adversarial test                       | Codex; Claude review | B.1                            |
@@ -186,6 +187,45 @@ changes, with the new expectations written down.
 `apply_results`; a dev-mode harness run unchanged (3,840/3,840); an Eternum lab game settled through a burned pass on
 mainnet; the L3 tree contains no `mmr` system and no ERC20 transfer in `prize_distribution`.
 
+### T — the contracts tree by chain
+
+**Evidence (review, 2026-08-31).** `contracts/` is one flat, chain-blind tree of twenty packages — L3 (`game`,
+`factory`, `player-account`) beside L2 (`ledger`, `mmr`, `lords`, `season_pass`, `village_pass`, `collectibles`,
+`collectibles_claim`, `marketplace`, `ammv2`) beside packages nothing deploys any more (`amm`, `season_resources`,
+`world`, `global`, `ticket-master`). Nothing in the tree or the deployer says which chain a package is for: the deployer
+has no chain-id check at all and `RPC_URL` silently falls back to `VITE_PUBLIC_NODE_URL`
+(`config/deployer/clean/cli/launch-request.ts:521`), while the operator (`apps/operator/src/chains.ts`), the harness
+(`deploy/madara-lab/harness/ledger-mode.ts`, `run.ts`) and the live-assets upgrade (`live-assets.js:59`) each carry
+their own copy of the check with the chain ids as hex literals. That is the class the split closes: a mainnet key or URL
+reaching an L3 command, or the reverse, is caught by convention today and by nothing else.
+
+- **Delete first, own commit:** `contracts/amm`, `season_resources`, `world`, `global` (a Torii toml), `ticket-master`
+  (empty), and `packages/amm-sdk` (v1, no consumers — design §7). With them: their `package.json` scripts (`amm:*`,
+  `seasonresources:*`, `build:packages`'s `amm-sdk` step) and their CI path filters (`test-season-pass.yml`,
+  `test-collectibles.yml`). `apps/amm-indexer` indexes ammv2 and stays.
+- **Then move, one commit, `git mv` only:** `contracts/l3/{game,factory,player-account}` and
+  `contracts/l2/{ledger,mmr,lords,season_pass,village_pass,collectibles,collectibles_claim,marketplace,ammv2}`.
+  `common/` (addresses per chain), `scripts-runtime/` and `utils/` (TypeScript aliased as `@contracts` by the client —
+  not Cairo, moved into `packages/` later) stay at the root. Every path reference follows in the same commit: the
+  deployer (`config/deployer/clean/constants.ts`, its tests), `deploy/appchain/scripts/*`, `deploy/madara-lab/scripts/*`
+  and `harness/run.ts`, the `.github/workflows/test-*.yml` working directories and path filters, `package.json`, the
+  READMEs and the briefs. `ammv2` is L2 by design §5 (the live RealmsSwap on mainnet, 35 LORDS pools); the in-game AMM
+  is the bank inside `game` and needs no move.
+- **Make the split enforce itself:** one chain guard module the deployer, operator, harness and live-assets scripts all
+  import — the expected chain id per target derived from the chain name (`SN_MAIN` for every L2 command, the lab's
+  `WP_REALMS_MADARA_LAB` for every L3 command, `WP_REALMS_DEV` for the appchain), asserted once at the chokepoint where
+  each command builds its provider. The three inline copies are deleted. `RPC_URL` (L3) and `LEDGER_RPC_URL` (L2) are
+  read explicitly with a loud miss; the `VITE_PUBLIC_NODE_URL` fallback goes.
+
+**Gate T:** the tree is exactly `l2/`, `l3/`, `common/`, `scripts-runtime/`, `utils/`; every Scarb workflow is green on
+the new paths and `pnpm run knip` is clean; a test per direction shows an L3 command refusing a mainnet `RPC_URL` and an
+L2 command refusing a lab `LEDGER_RPC_URL`; no `VITE_PUBLIC_NODE_URL` read remains in the deployer; the dev-mode harness
+run is unchanged (3,840/3,840) and the operator boots against the lab manifest at its new path.
+
+**Cost:** path churn in ~20 files and five workflows; nothing new beyond the one guard module, which replaces three.
+Sequenced after the B.2 recovery-path fixes land and before B.3 touches Cairo again, because a move conflicts with every
+in-flight contracts file.
+
 ### B.3 — collectibles
 
 - The ledger holds `MINTER_ROLE` on the loot-chest and elite-invite collections (the live mainnet collections; the admin
@@ -312,6 +352,11 @@ Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR po
 
 ## Review log
 
+- 2026-08-31, Claude: the contracts tree is still flat and chain-blind after B.2; slice **T** added (dead packages
+  deleted, `l2/`/`l3/` split, one chain guard replacing three inline copies, deployer RPC fallback removed), owned by
+  Codex, sequenced between the B.2 recovery fixes and B.3. Owner question open: whether `ammv2` earns its place on L2
+  against Ekubo/AVNU for resource swaps — if not, it moves from the L2 column to the delete column with
+  `apps/amm-indexer` and `packages/ammv2-sdk`.
 - 2026-08-30, owner: **the value plane deploys to mainnet immediately** — Controller cannot sign on Sepolia, and stage 1
   is chain-agnostic. Topology rewritten, mainnet guardrails added to Gate B.1 (upgradeable + pausable, PM off, sponsored
   first games, named operator key, trust story disclosed), pass and MMR-token changes become upgrades to the live
