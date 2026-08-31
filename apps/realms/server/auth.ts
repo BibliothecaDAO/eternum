@@ -19,6 +19,7 @@ const PORTRAIT_PATTERN = /^(0[1-9]|1[0-2])$/;
  * lower(name) remains the race-proof guarantee.
  */
 export const auth = betterAuth({
+  secret: serverEnv.BETTER_AUTH_SECRET,
   baseURL: serverEnv.VITE_BASE_URL,
   basePath: "/api/auth",
   trustedOrigins: [serverEnv.VITE_BASE_URL, serverEnv.VITE_PUBLIC_GAME_ORIGIN],

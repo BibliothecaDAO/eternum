@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Effect } from "effect";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 
-import { HeraldClient, type DirectoryGame } from "@/services/herald";
+import { HeraldClient } from "@/services/herald";
 import { IdentityApi } from "@/services/identity";
 import { Wallet, type DiscoveredWallet } from "@/services/platform/wallet";
 import { formatCountdown, portraitUrl } from "./format";
 import { useMutation, useQuery } from "./hooks";
+import { nextOpenGame } from "./next-game";
 import { useNowSeconds, useSession } from "./session";
 
 const BACKDROPS: Record<string, { src: string; deep?: boolean }> = {
@@ -29,11 +30,6 @@ const backdropFor = (pathname: string) => {
     .sort((a, b) => b.length - a.length)[0];
   return BACKDROPS[key ?? "/"] ?? BACKDROPS["/"]!;
 };
-
-export const nextOpenGame = (games: readonly DirectoryGame[]): DirectoryGame | undefined =>
-  [...games]
-    .filter((game) => game.status === "Created" || game.status === "Registration")
-    .sort((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
 
 function WalletConnect() {
   const { refresh } = useSession();
@@ -108,7 +104,7 @@ function WalletConnect() {
 
 export function Frame() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const { session } = useSession();
+  const { session, status } = useSession();
   const now = useNowSeconds();
 
   // One directory poll owns the chrome facts: the PLAY target and herald health.
@@ -172,8 +168,12 @@ export function Frame() {
                   <small className="font-mono text-[10px] tracking-[0.05em] text-sage">SIGNED IN</small>
                 </span>
               </Link>
-            ) : session === null ? (
+            ) : status === "ok" ? (
               <WalletConnect />
+            ) : status === "unreachable" ? (
+              <span className="border border-line-soft px-3 py-2 font-mono text-[10px] uppercase tracking-[0.1em] text-faint">
+                Identity offline
+              </span>
             ) : null}
           </div>
         </div>

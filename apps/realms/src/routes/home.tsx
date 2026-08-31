@@ -2,7 +2,8 @@ import { Effect } from "effect";
 import { Link } from "@tanstack/react-router";
 
 import { HeraldClient, type DirectoryGame } from "@/services/herald";
-import { nextOpenGame } from "@/ui/frame";
+import { IdentityUnreachable } from "@/services/platform/errors";
+import { nextOpenGame } from "@/ui/next-game";
 import { formatCountdown } from "@/ui/format";
 import { useQuery } from "@/ui/hooks";
 import { ErrorPanel, Flavor, Loading, Panel, PanelTitle, Pill } from "@/ui/kit";
@@ -138,14 +139,21 @@ function Dashboard({ games, owner, now }: { games: readonly DirectoryGame[]; own
 }
 
 export function HomeScreen() {
-  const { session } = useSession();
+  const { session, status } = useSession();
   const now = useNowSeconds();
   const directory = useQuery(() => Effect.flatMap(HeraldClient, (herald) => herald.directory), [], { pollMs: 20_000 });
 
   if (directory.kind === "error") return <ErrorPanel error={directory.error} retry={directory.refresh} />;
   const games = directory.kind === "ok" ? directory.value.games : [];
 
-  if (session === undefined || directory.kind === "loading") return <Loading />;
-  if (!session) return <Landing next={nextOpenGame(games)} now={now} />;
-  return <Dashboard games={games} owner={session.address} now={now} />;
+  if (status === "loading" || directory.kind === "loading") return <Loading />;
+  if (session) return <Dashboard games={games} owner={session.address} now={now} />;
+  return (
+    <>
+      {status === "unreachable" && (
+        <ErrorPanel error={new IdentityUnreachable({ path: "session", cause: "unreachable" })} />
+      )}
+      <Landing next={nextOpenGame(games)} now={now} />
+    </>
+  );
 }

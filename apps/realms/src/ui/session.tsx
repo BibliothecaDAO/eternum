@@ -6,13 +6,16 @@ import { Wallet } from "@/services/platform/wallet";
 import { runtime } from "@/runtime";
 import { useQuery } from "./hooks";
 
+export type SessionStatus = "loading" | "ok" | "unreachable";
+
 interface SessionContextValue {
-  /** undefined while the first fetch is in flight; null when signed out. */
-  session: IdentitySession | null | undefined;
+  /** Meaningful only when status is "ok": the session, or null when signed out. */
+  session: IdentitySession | null;
+  status: SessionStatus;
   refresh: () => void;
 }
 
-const SessionContext = createContext<SessionContextValue>({ session: undefined, refresh: () => {} });
+const SessionContext = createContext<SessionContextValue>({ session: null, status: "loading", refresh: () => {} });
 
 /**
  * One owner for the identity session in the tree. The API stays the truth —
@@ -27,8 +30,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     void runtime.runPromise(Effect.flatMap(Wallet, (wallet) => Effect.ignore(wallet.reconnect)));
   }, []);
 
-  const session = query.kind === "ok" ? query.value : query.kind === "error" ? null : undefined;
-  return <SessionContext.Provider value={{ session, refresh: query.refresh }}>{children}</SessionContext.Provider>;
+  // An unreachable identity service is not "signed out" — the distinction keeps
+  // the landing page from flashing at a signed-in player during an outage.
+  const status: SessionStatus = query.kind === "ok" ? "ok" : query.kind === "error" ? "unreachable" : "loading";
+  const session = query.kind === "ok" ? query.value : null;
+  return (
+    <SessionContext.Provider value={{ session, status, refresh: query.refresh }}>{children}</SessionContext.Provider>
+  );
 }
 
 export const useSession = () => useContext(SessionContext);

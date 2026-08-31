@@ -3,6 +3,7 @@ import { Effect } from "effect";
 
 import { HeraldClient } from "@/services/herald";
 import { IdentityApi } from "@/services/identity";
+import { IdentityUnreachable } from "@/services/platform/errors";
 import { MmrClient, mmrTier, mmrToInteger } from "@/services/mmr";
 import { portraitUrl, shortAddress } from "@/ui/format";
 import { useMutation, useQuery } from "@/ui/hooks";
@@ -191,8 +192,10 @@ function SignedInProfile({ address }: { address: string }) {
 }
 
 export function ProfileScreen() {
-  const { session } = useSession();
-  if (session === undefined) return <Loading />;
+  const { session, status, refresh } = useSession();
+  if (status === "loading") return <Loading />;
+  if (status === "unreachable")
+    return <ErrorPanel error={new IdentityUnreachable({ path: "session", cause: "unreachable" })} retry={refresh} />;
   if (!session) {
     return (
       <Panel className="max-w-lg">

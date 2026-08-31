@@ -1,9 +1,9 @@
 /**
  * The parametric payout curve from the backend brief (B.1): W = ceil(N ×
  * paid_fraction / 10000) winners, weight decay^(k−1), allocations floored over
- * the pool after the protocol cut. Weights use 1e9 fixed point so bigint pools
- * never round through floats. Pure math — the contract runs the same curve and
- * presets are write-once, so screen and payout cannot drift.
+ * the pool after the protocol cut. The weight iteration is the contract's own
+ * bigint recurrence (contracts/ledger), so screen and payout are byte-identical
+ * — presets are write-once, so they cannot drift.
  */
 interface PayoutCurveInput {
   pool: bigint;
@@ -21,13 +21,12 @@ export const computePayouts = (
   const winners = Math.ceil((input.seats * input.paidFractionBps) / 10_000);
   if (winners === 0 || prizePool <= 0n) return { winners: 0, cut, prizePool, allocations: [] };
 
-  const WEIGHT_SCALE = 1_000_000_000;
-  const decay = input.decayBps / 10_000;
+  const WEIGHT_SCALE = 10n ** 18n;
   const weights: bigint[] = [];
-  let weight = 1;
+  let weight = WEIGHT_SCALE;
   for (let position = 0; position < winners; position += 1) {
-    weights.push(BigInt(Math.round(weight * WEIGHT_SCALE)));
-    weight *= decay;
+    weights.push(weight);
+    weight = (weight * BigInt(input.decayBps)) / 10_000n;
   }
   const totalWeight = weights.reduce((sum, value) => sum + value, 0n);
   const allocations = weights.map((value) => (prizePool * value) / totalWeight);

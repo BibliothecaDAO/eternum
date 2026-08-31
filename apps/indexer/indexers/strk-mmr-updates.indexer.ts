@@ -15,10 +15,11 @@ import { getStarknetStreamUrl } from "../streams";
 
 const MMR_UPDATED_SELECTOR = getSelector("MMRUpdated");
 
-// The MMRToken lives on mainnet only (value-plane design §0); scanning starts at
-// its deployment era. Override with MMR_INDEXER_START_BLOCK for a full rescan —
-// rows are keyed by (transaction_hash, event_index), so replays are idempotent.
-const DEFAULT_START_BLOCK = 0n;
+// The MMRToken lives on mainnet only (value-plane design §0); it was deployed at
+// block 7_052_557 (getClassHashAt binary search, 2026-08-31), so scanning starts
+// there. Override with MMR_INDEXER_START_BLOCK for a rescan — rows are keyed by
+// (transaction_hash, event_index), so replays are idempotent.
+const DEFAULT_START_BLOCK = 7_052_557n;
 
 const startingBlock = (): bigint => {
   const raw = process.env.MMR_INDEXER_START_BLOCK;

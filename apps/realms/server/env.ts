@@ -6,6 +6,7 @@ import { Schema } from "effect";
  * service fails at startup, not on the first query.
  */
 const ServerEnv = Schema.Struct({
+  BETTER_AUTH_SECRET: Schema.NonEmptyString,
   DATABASE_URL: Schema.NonEmptyString,
   IDENTITY_RPC_URL: Schema.NonEmptyString,
   IDENTITY_COOKIE_DOMAIN: Schema.NonEmptyString,

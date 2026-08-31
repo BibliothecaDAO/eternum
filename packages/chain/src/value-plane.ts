@@ -36,10 +36,3 @@ export const valuePlaneAddress = (contract: ValuePlaneContract): string => {
   }
   return value;
 };
-
-export const isValuePlaneContractDeployed = (
-  contract: ValuePlaneContract,
-): boolean => {
-  const value = addressBook[contract];
-  return Boolean(value) && BigInt(value as string) !== 0n;
-};

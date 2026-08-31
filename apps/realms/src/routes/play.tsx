@@ -12,7 +12,7 @@ import {
   type GameEconomy,
   type LedgerRegistration,
 } from "@/services/ledger";
-import { nextOpenGame } from "@/ui/frame";
+import { nextOpenGame } from "@/ui/next-game";
 import { formatCountdown, formatLocalTime, formatLords, ordinal } from "@/ui/format";
 import { useMutation, useQuery } from "@/ui/hooks";
 import { ErrorPanel, Flavor, GoldButton, GhostButton, Loading, Panel, Pill, StatBlock, type PillTone } from "@/ui/kit";
@@ -39,8 +39,12 @@ const sortForLobby = (games: readonly DirectoryGame[]): DirectoryGame[] =>
     return phase(a) === 2 ? b.clock.end_at - a.clock.end_at : a.clock.start_main_at - b.clock.start_main_at;
   });
 
-const playUrl = (gameId: number, spectate: boolean) =>
-  `${env.VITE_PUBLIC_GAME_ORIGIN}/play?game=${gameId}${spectate ? "&spectate=true" : ""}`;
+// The client's entry route: /enter/<chain>/<launch name>, ?intent=spectate to
+// watch; it resolves the name to a game through herald's directory.
+const enterUrl = (game: DirectoryGame, spectate: boolean) =>
+  `${env.VITE_PUBLIC_GAME_ORIGIN}/enter/${env.VITE_PUBLIC_HERALD_CHAIN}/${encodeURIComponent(game.name)}${
+    spectate ? "?intent=spectate" : ""
+  }`;
 
 function GameList({
   games,
@@ -170,7 +174,7 @@ function RegisterPanel({
         {registration.sword && <span className="text-[12.5px] text-muted">Sword equipped</span>}
         {registration.shield && <span className="text-[12.5px] text-muted">Shield equipped</span>}
         <span className="ml-auto">
-          <GoldButton onClick={() => window.open(playUrl(game.game_id, false), "_blank")}>
+          <GoldButton onClick={() => window.open(enterUrl(game, false), "_blank")}>
             {game.status === "Live" ? "Launch" : "Launch at start"}
           </GoldButton>
         </span>
@@ -273,7 +277,7 @@ function GameDetail({ game, now }: { game: DirectoryGame; now: number }) {
         <Pill tone={pill.tone}>{pill.label}</Pill>
         {game.status === "Live" && (
           <span className="ml-auto">
-            <GhostButton onClick={() => window.open(playUrl(game.game_id, true), "_blank")}>Spectate</GhostButton>
+            <GhostButton onClick={() => window.open(enterUrl(game, true), "_blank")}>Spectate</GhostButton>
           </span>
         )}
       </div>
