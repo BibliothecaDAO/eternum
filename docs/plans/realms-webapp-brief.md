@@ -31,12 +31,17 @@ Stack (owner, 2026-08-30 — decided, not the agent's choice any more): React 19
 inherited); **Effect (Effect-TS) is the backbone of the app** — every service (contract reads/writes, herald client,
 identity API), every async boundary and every decoded payload goes through Effect: services as `Effect.Service` layers,
 external data validated with `effect/Schema`, errors typed in the signature, no bare promises or ad-hoc try/catch in app
-code. Around it: Vite, TanStack Router (type-safe routes/loaders that run Effects), Tailwind v4. The server side stays
-the existing identity service (better-auth + Drizzle/Postgres — the binding authority), extended with the `name` routes;
-the SPA talks to it over one `IdentityApi` Effect service. The design artifact (claude.ai, "Realms App Architecture")
-records the layer graph; deviations from it are named in the PR. Ground-up means a new app directory (`apps/realms`),
-not a refactor of `apps/web`; `apps/web` is deleted when the last route has moved, and the deletion is part of this
-brief.
+code. Around it: Vite, TanStack Router (type-safe routes/loaders that run Effects), Tailwind v4. The server side is
+`apps/realms/server` — better-auth + Drizzle/Postgres with the SIWS plugin ported from `apps/web` (the first slice built
+it as a new server rather than extending the old one; the owner ratified that in review, 2026-08-31). **It is the only
+sign-in authority**: `apps/web`'s SIWS mount is retired at cutover (the game client's auth URL then points at this
+server; the shared cookie on `.realms.party` and the shared Postgres make its sessions valid everywhere), while
+`apps/web` keeps only the gameplay-account binding routes — which validate the shared sessions — until those routes move
+here too. Both SIWS plugins already derive identity keys through `@realms-world/identity` (`9d2104fa0d2`), so the two
+never disagree on who a wallet is. The SPA talks to the server over one `IdentityApi` Effect service. The design
+artifact (claude.ai, "Realms App Architecture") records the layer graph; deviations from it are named in the PR.
+Ground-up means a new app directory (`apps/realms`), not a refactor of `apps/web`; `apps/web` is deleted when the last
+route has moved, and the deletion is part of this brief.
 
 ## Pages (the product, in order of build)
 
