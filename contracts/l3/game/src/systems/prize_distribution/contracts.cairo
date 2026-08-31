@@ -24,7 +24,7 @@ pub mod prize_distribution_systems {
     use series_chest_reward_calculator::SeriesChestRewardStateTrait;
     use starknet::ContractAddress;
     use crate::constants::DEFAULT_NS;
-    use crate::models::config::{BlitzRegistrationConfigImpl, SeasonConfigImpl, WorldConfigUtilImpl};
+    use crate::models::config::{BlitzRegistrationConfigImpl, BlitzSettlement, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{PrizeDistributionFinalStory, Story, StoryEvent};
     use crate::models::game::{GameRegistryImpl, Series};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
@@ -197,6 +197,9 @@ pub mod prize_distribution_systems {
 
     fn rank_players(ref world: WorldStorage, ref trial: PlayersRankTrial, players: Array<ContractAddress>) {
         for player in players {
+            let settlement: BlitzSettlement = world.read_model((trial.game_id, player));
+            assert!(!settlement.structure_ids.is_empty(), "Eternum: ranked player is not settled");
+
             let player_points: PlayerRegisteredPoints = world.read_model((trial.game_id, player));
             let rank = competition_rank(
                 trial.last_player_points, player_points.registered_points, trial.total_player_count_revealed,

@@ -217,6 +217,9 @@ mod dispatcher_lifecycle {
     use crate::models::game::{GameRegistryImpl, GameStatus};
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
     use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
+    use crate::systems::prize_distribution::contracts::{
+        IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
+    };
     use crate::systems::realm::blitz::contracts::{IBlitzRealmSystemsDispatcher, IBlitzRealmSystemsDispatcherTrait};
     use crate::systems::registrar::contracts::{
         CreateGameParams, IRegistrarSystemsDispatcher, IRegistrarSystemsDispatcherTrait, PresetSideTables,
@@ -458,6 +461,22 @@ mod dispatcher_lifecycle {
         registrar.bootstrap_chain_config(chain_config(attacker));
     }
 
+    #[test]
+    #[should_panic(expected: "Eternum: ranked player is not settled")]
+    fn zero_point_unsettled_substitution_cannot_finalize_roster() {
+        let mut context = setup_lifecycle();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = false;
+        game.end_at = 300;
+        context.world.write_model_test(@game);
+        start_cheat_block_timestamp_global(311);
+
+        let attacker: ContractAddress = 'bound_attacker'.try_into().unwrap();
+        let prize = prize_dispatcher(context.world);
+        start_cheat_caller_address(prize.contract_address, attacker);
+        prize.blitz_prize_player_rank(GAME_A, 88, 1, array![attacker]);
+    }
+
     fn seed_unfinalized_trial(ref context: LifecycleContext) {
         context
             .world
@@ -495,6 +514,11 @@ mod dispatcher_lifecycle {
     fn resource_dispatcher(world: WorldStorage) -> IResourceSystemsDispatcher {
         let (address, _) = world.dns(@"resource_systems").unwrap();
         IResourceSystemsDispatcher { contract_address: address }
+    }
+
+    fn prize_dispatcher(world: WorldStorage) -> IPrizeDistributionSystemsDispatcher {
+        let (address, _) = world.dns(@"prize_distribution_systems").unwrap();
+        IPrizeDistributionSystemsDispatcher { contract_address: address }
     }
 
     fn chain_config(admin: ContractAddress) -> ChainConfig {
