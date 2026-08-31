@@ -69,6 +69,9 @@ install_user_toolchain() {
   log "bun + asdf (scarb, sozo) for the realms user"
   sudo -u realms -H bash -s <<'EOS'
 set -euo pipefail
+# Start in a directory realms owns: sudo keeps the caller's CWD (/root or /home/ubuntu), which realms
+# cannot read, and asdf.sh's cd-back then fails. HOME is realms' own and always accessible.
+cd "$HOME"
 if [ ! -x "$HOME/.bun/bin/bun" ]; then curl -fsSL https://bun.sh/install | bash; fi
 if [ ! -d "$HOME/.asdf" ]; then
   git clone --depth 1 https://github.com/asdf-vm/asdf.git "$HOME/.asdf" --branch v0.15.0
