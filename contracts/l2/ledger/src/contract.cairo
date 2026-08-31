@@ -29,6 +29,7 @@ pub trait IGameLedger<TState> {
     fn register_village(ref self: TState, game_id: u32, village_pass_id: u256);
     fn fund(ref self: TState, game_id: u32, amount: u256);
     fn cancel_game(ref self: TState, game_id: u32);
+    fn abort_game(ref self: TState, game_id: u32);
     fn refund(ref self: TState, game_id: u32);
     fn apply_results(ref self: TState, game_id: u32, ranked: Array<(ContractAddress, u16, u16)>);
     fn get_preset(self: @TState, preset_id: u32) -> Preset;
@@ -142,6 +143,7 @@ pub mod GameLedger {
         Registered: Registered,
         Funded: Funded,
         GameCancelled: GameCancelled,
+        GameAborted: GameAborted,
         Refunded: Refunded,
         PlayerPaid: PlayerPaid,
         ResultsApplied: ResultsApplied,
@@ -184,6 +186,12 @@ pub mod GameLedger {
 
     #[derive(Drop, starknet::Event)]
     struct GameCancelled {
+        #[key]
+        game_id: u32,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct GameAborted {
         #[key]
         game_id: u32,
     }
@@ -380,10 +388,20 @@ pub mod GameLedger {
 
         fn cancel_game(ref self: ContractState, game_id: u32) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let mut game = self.assert_game_open_before_start(game_id);
-            game.cancelled = true;
-            self.games.entry(game_id).write(game);
+            let game = self.assert_game_open_before_start(game_id);
+            self.open_refunds(game_id, game);
             self.emit(GameCancelled { game_id });
+        }
+
+        fn abort_game(ref self: ContractState, game_id: u32) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            let game = self.games.entry(game_id).read();
+            assert!(game.exists, "Ledger: unknown game");
+            assert!(!game.cancelled && !game.finalized, "Ledger: game closed");
+            assert!(starknet::get_block_timestamp() >= game.end, "Ledger: game has not ended");
+
+            self.open_refunds(game_id, game);
+            self.emit(GameAborted { game_id });
         }
 
         fn refund(ref self: ContractState, game_id: u32) {
@@ -543,6 +561,11 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl RegistrationWriterImpl of RegistrationWriterTrait {
+        fn open_refunds(ref self: ContractState, game_id: u32, mut game: Game) {
+            game.cancelled = true;
+            self.games.entry(game_id).write(game);
+        }
+
         fn record_registration(
             ref self: ContractState,
             game_id: u32,

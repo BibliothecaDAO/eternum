@@ -690,6 +690,30 @@ fn cancellation_refunds_registration_and_sponsorship() {
 }
 
 #[test]
+fn started_abandoned_game_refunds_every_entrant_after_end() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.abort_game(GAME_ID);
+    stop_cheat_caller_address(fixture.ledger_address);
+
+    let mut index: u16 = 0;
+    while index < 2 {
+        let owner = player(index);
+        start_cheat_caller_address(fixture.ledger_address, owner);
+        fixture.ledger.refund(GAME_ID);
+        stop_cheat_caller_address(fixture.ledger_address);
+        assert!(fixture.lords.balance_of(owner) == 500, "entrant should recover the registration payment");
+        index += 1;
+    }
+    stop_cheat_block_timestamp(fixture.ledger_address);
+
+    assert!(fixture.ledger.get_game(GAME_ID).pool == 0, "aborted pool should be empty");
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0, "aborted funds should leave the ledger");
+}
+
+#[test]
 #[should_panic]
 fn rejects_roster_size_mismatch() {
     let fixture = deploy_fixture(default_preset());
