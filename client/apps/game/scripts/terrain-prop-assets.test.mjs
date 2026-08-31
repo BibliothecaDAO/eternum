@@ -1,16 +1,26 @@
 // @vitest-environment node
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
+import { NodeIO } from "@gltf-transform/core";
+import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
+import { MeshoptDecoder } from "meshoptimizer";
 import { describe, expect, it } from "vitest";
 
 import {
   ULTIMATE_NATURE_ARCHIVE_URL,
+  ULTIMATE_NATURE_CANOPY_IDS,
   ULTIMATE_NATURE_LICENSE,
   ULTIMATE_NATURE_MAX_GLB_BYTES,
   ULTIMATE_NATURE_PROPS,
   ULTIMATE_NATURE_SOURCE_PAGE,
 } from "./terrain-props/ultimate-nature-catalog.mjs";
+import {
+  CANOPY_SILHOUETTE_MIN_RETENTION,
+  extractCanopyGeometry,
+  measureLodSilhouetteRetention,
+} from "./terrain-props/terrain-prop-silhouette.mjs";
 
 const ASSET_DIRECTORY = new URL("../../../public/models/procedural-terrain/", import.meta.url);
 const MANIFEST_PATH = new URL("ultimate-nature-props.json", ASSET_DIRECTORY);
@@ -44,6 +54,32 @@ describe("generated Ultimate Nature terrain assets", () => {
     expect(gltf.extensionsRequired).toEqual(
       expect.arrayContaining(["EXT_meshopt_compression", "KHR_mesh_quantization"]),
     );
+  });
+
+  it("preserves projected canopy coverage across the far LOD", async () => {
+    await MeshoptDecoder.ready;
+    const document = await new NodeIO()
+      .registerExtensions(ALL_EXTENSIONS)
+      .registerDependencies({ "meshopt.decoder": MeshoptDecoder })
+      .read(fileURLToPath(MODEL_PATH));
+    const meshesByName = new Map(
+      document
+        .getRoot()
+        .listMeshes()
+        .map((mesh) => [mesh.getName(), mesh]),
+    );
+
+    for (const id of ULTIMATE_NATURE_CANOPY_IDS) {
+      const near = meshesByName.get(`${id}-near`);
+      const far = meshesByName.get(`${id}-far`);
+      expect(near, `${id} near LOD`).toBeDefined();
+      expect(far, `${id} far LOD`).toBeDefined();
+      const retention = measureLodSilhouetteRetention(extractCanopyGeometry(near), extractCanopyGeometry(far));
+
+      expect(retention.minimum, `${id} silhouette retention ${JSON.stringify(retention)}`).toBeGreaterThanOrEqual(
+        CANOPY_SILHOUETTE_MIN_RETENTION,
+      );
+    }
   });
 });
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyTerrainGroundSlope,
   applyTerrainGroundStructurePad,
-  applyTerrainGroundVegetation,
+  resolveTerrainGroundEcology,
   resolveTerrainGroundRecipe,
   TERRAIN_GROUND_SURFACE_IDS,
 } from "./terrain-ground-profile";
@@ -39,24 +39,61 @@ describe("terrain ground profiles", () => {
     expect(pad.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 12);
   });
 
-  it("turns grass into litter beneath a closed canopy while preserving normalized weights", () => {
+  it("resolves mature moss, regenerating cover, and wet ground through the existing surface catalog", () => {
     const forest = resolveTerrainGroundRecipe(BiomeType.TemperateDeciduousForest, {
       elevation: 0.45,
       moisture: 0.7,
     });
-    const clearing = applyTerrainGroundVegetation(forest, {
-      canopyCover: 0.08,
-      debrisCover: 0.02,
-      understoryCover: 0.35,
+    const clearing = resolveTerrainGroundEcology(forest, {
+      allowsVegetation: true,
+      moisture: 0.45,
+      shore: 0,
+      vegetation: vegetation({ canopyCover: 0.08, gapStrength: 0.8, successionStrength: 0.7 }),
     });
-    const closedCanopy = applyTerrainGroundVegetation(forest, {
-      canopyCover: 0.92,
-      debrisCover: 0.48,
-      understoryCover: 0.25,
+    const mature = resolveTerrainGroundEcology(forest, {
+      allowsVegetation: true,
+      moisture: 0.9,
+      shore: 0,
+      vegetation: vegetation({ canopyCover: 0.92, debrisCover: 0.48, maturity: 0.9 }),
     });
+    const wetShore = resolveTerrainGroundEcology(
+      resolveTerrainGroundRecipe(BiomeType.Grassland, { elevation: 0.35, moisture: 0.9 }),
+      {
+        allowsVegetation: true,
+        moisture: 0.95,
+        shore: 0.9,
+        vegetation: vegetation({ edgeStrength: 0.7, successionStrength: 0.65, understoryCover: 0.8 }),
+      },
+    );
 
-    expect(closedCanopy[3]).toBeLessThan(clearing[3]);
-    expect(closedCanopy[4]).toBeGreaterThan(clearing[4]);
-    expect(closedCanopy.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 12);
+    expect(mature.weights[3]).toBeLessThan(clearing.weights[3]);
+    expect(mature.weights[4]).toBeGreaterThan(clearing.weights[4]);
+    expect(mature.tint[1]).toBeGreaterThan(mature.tint[0]);
+    expect(wetShore.weights[2]).toBeGreaterThan(0.2);
+    expect(wetShore.roughnessOffset).toBeLessThan(0);
+    expect(mature.weights.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 12);
+
+    expect(
+      resolveTerrainGroundEcology(forest, {
+        allowsVegetation: false,
+        moisture: 0.9,
+        shore: 0.9,
+        vegetation: vegetation({ canopyCover: 1, maturity: 1 }),
+      }),
+    ).toEqual({ roughnessOffset: 0, tint: [1, 1, 1], weights: forest });
+    expect(applyTerrainGroundStructurePad(mature.weights, 1)[4]).toBe(0);
   });
 });
+
+function vegetation(overrides: Partial<Parameters<typeof resolveTerrainGroundEcology>[1]["vegetation"]> = {}) {
+  return {
+    canopyCover: 0.5,
+    debrisCover: 0.2,
+    edgeStrength: 0.2,
+    gapStrength: 0.2,
+    maturity: 0.4,
+    successionStrength: 0.3,
+    understoryCover: 0.5,
+    ...overrides,
+  };
+}

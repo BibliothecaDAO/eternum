@@ -7,9 +7,9 @@ import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./t
 import {
   applyTerrainGroundSlope,
   applyTerrainGroundStructurePad,
-  applyTerrainGroundVegetation,
   blendTerrainGroundWeights,
   normalizeTerrainGroundWeights,
+  resolveTerrainGroundEcology,
   resolveTerrainGroundRecipe,
   type TerrainGroundWeights,
 } from "./terrain-ground-profile";
@@ -205,22 +205,20 @@ export class TerrainField {
     const inverseWeight = 1 / totalWeight;
     const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
     const paddedHeight = this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
-    const vegetation = this.resolveVegetationField(
-      worldX,
-      worldZ,
-      candidates,
-      this.sampleWeightedEnvironment(worldX, worldZ, candidates),
-    );
-    const vegetationGroundWeights = applyTerrainGroundVegetation(
-      normalizeTerrainGroundWeights(groundWeights),
+    const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
+    const vegetation = this.resolveVegetationField(worldX, worldZ, candidates, weightedEnvironment);
+    const shore = this.sampleShoreProximity(worldX, worldZ, candidates);
+    const groundEcology = resolveTerrainGroundEcology(normalizeTerrainGroundWeights(groundWeights), {
+      allowsVegetation: explored === 1 && !isTerrainWaterBiome(strongestBiome),
+      moisture: weightedEnvironment.moisture,
+      shore,
       vegetation,
-    );
+    });
     const paddedGroundWeights = applyTerrainGroundStructurePad(
-      vegetationGroundWeights,
+      groundEcology.weights,
       this.resolveStructurePadWeight(worldX, worldZ, candidates),
     );
 
-    const shore = this.sampleShoreProximity(worldX, worldZ, candidates);
     const macroStrength = macroTintStrength * inverseWeight;
     const wetness = shore * shoreWetness * inverseWeight;
     const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
@@ -230,15 +228,17 @@ export class TerrainField {
       biome: strongestBiome,
       biomeId: strongestBiomeId,
       color: [
-        red * inverseWeight * albedoFactor,
-        green * inverseWeight * albedoFactor,
-        blue * inverseWeight * albedoFactor,
+        red * inverseWeight * albedoFactor * groundEcology.tint[0],
+        green * inverseWeight * albedoFactor * groundEcology.tint[1],
+        blue * inverseWeight * albedoFactor * groundEcology.tint[2],
       ],
       explored,
       groundWeights: paddedGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
-      roughness: clampUnit(roughness * inverseWeight + (macroMaterial - 0.5) * 0.08 - wetness * 0.18),
+      roughness: clampUnit(
+        roughness * inverseWeight + (macroMaterial - 0.5) * 0.08 - wetness * 0.18 + groundEcology.roughnessOffset,
+      ),
       shore,
       uvOffset: [(macroMaterial - 0.5) * macroStrength * 0.42, (0.5 - macroMaterial) * macroStrength * 0.27],
     };

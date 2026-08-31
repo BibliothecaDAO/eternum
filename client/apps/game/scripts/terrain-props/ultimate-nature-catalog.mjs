@@ -5,6 +5,7 @@ export const ULTIMATE_NATURE_ARCHIVE_URL =
   "https://opengameart.org/sites/default/files/ultimate_nature_pack_by_quaternius_1.zip";
 export const ULTIMATE_NATURE_ARCHIVE_ROOT = "Ultimate Nature Pack - Jun 2019";
 export const ULTIMATE_NATURE_MAX_GLB_BYTES = 750 * 1024;
+export const ULTIMATE_NATURE_CANOPY_IDS = Object.freeze(["broadleaf", "birch", "willow", "conifer", "palm"]);
 
 export const ULTIMATE_NATURE_PROPS = Object.freeze([
   defineProp("broadleaf", "CommonTree_3.fbx", 1.25, 700, 160, "green"),
@@ -36,6 +37,10 @@ export function validateUltimateNatureCatalog(props = ULTIMATE_NATURE_PROPS) {
     }
     ids.add(prop.id);
     files.add(prop.sourceFile);
+  }
+
+  for (const canopyId of ULTIMATE_NATURE_CANOPY_IDS) {
+    if (!ids.has(canopyId)) failures.push(`missing canopy prop: ${canopyId}`);
   }
 
   return failures;
