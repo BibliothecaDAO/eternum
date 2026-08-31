@@ -12,7 +12,8 @@ User=realms
 WorkingDirectory=/opt/realms/eternum
 Environment=PORT=3000
 Environment=PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/local/bin/pnpm --dir apps/web start
+# env resolves pnpm from PATH — NodeSource installs it at /usr/bin, not /usr/local/bin.
+ExecStart=/usr/bin/env pnpm --dir apps/web start
 Restart=always
 RestartSec=3
 
