@@ -39,9 +39,14 @@ describe("appchain registrar preset", () => {
       resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_121);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_118);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
+    expect(payload.gameConfig.blitz_registration_config).toEqual({
+      registration_count: 0,
+      registration_count_max: config.blitz.registration.registration_count_max,
+      registration_start_at: 0,
+    });
     expect(buildRegisterPresetCalldata(payload)).toMatchSnapshot();
   });
 
@@ -139,6 +144,7 @@ describe("appchain registrar preset", () => {
         end_grace_seconds: 86_400,
       });
       expect(BigInt(params.seed as string)).not.toBe(0n);
+      expect(params).not.toHaveProperty("fee_amount");
       expect(buildCreateGameCalldata(params)).toMatchSnapshot();
     } finally {
       Date.now = originalDateNow;
