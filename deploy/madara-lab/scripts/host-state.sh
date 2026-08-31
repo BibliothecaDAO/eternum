@@ -7,7 +7,9 @@
 #   deploy/madara-lab/scripts/host-state.sh | jq .
 #
 # No sudo, no mutation. Missing inputs (a governor file on a VM, a stopped container) come back null, never fail.
-set -euo pipefail
+# No pipefail: this is best-effort extraction, and `… | head -1` SIGPIPEs the writer (exit 141) on a many-core
+# host where /proc/cpuinfo is large — pipefail would turn that expected SIGPIPE into a hard failure.
+set -eu
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="$LAB_DIR/chain-config.yaml"
