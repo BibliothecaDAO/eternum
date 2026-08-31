@@ -12,7 +12,10 @@ import { registerEnvironmentPreset } from "../../../config/deployer/clean/regist
 import { resolveAccountCredentials } from "../../../config/deployer/clean/shared/credentials";
 import { requireRpcUrl } from "../../../config/deployer/clean/shared/rpc";
 import { Account, RpcProvider } from "starknet";
-import { assertProviderChain } from "@realms-world/chain";
+// Relative, not the "@realms-world/chain" specifier: deploy/appchain is not a workspace package, so pnpm never
+// links the workspace package here — bun only resolves it inside apps/* and packages/* that declare the dep.
+// chain-guard.js is plain ESM (no build step), matching how the other appchain/madara-lab scripts import shared code.
+import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import {
   DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
   DEFAULT_APPCHAIN_PRESET_ID,
