@@ -154,6 +154,9 @@ async function main(): Promise<void> {
     await runLedgerSweepOnly(options);
     return;
   }
+  // The launch path resolves the registrar from GAME_MANIFEST_PATH (registrar/calls.ts); default it to the madara
+  // manifest so a redeployed lab uses the freshly migrated registrar, not the stale hardcoded constants.ts address.
+  process.env.GAME_MANIFEST_PATH ??= "contracts/l3/game/manifest_madara.json";
   process.env.HERALD_URL = options.heraldUrl;
 
   const provider = createHarnessProvider(options.rpcUrl);
