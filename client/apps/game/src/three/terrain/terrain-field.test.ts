@@ -32,6 +32,9 @@ describe("TerrainField", () => {
     expect(left.samplePropDensityContext(sharedX, sharedZ, owner)).toEqual(
       right.samplePropDensityContext(sharedX, sharedZ, owner),
     );
+    expect(left.sampleVegetationField(sharedX, sharedZ, owner)).toEqual(
+      right.sampleVegetationField(sharedX, sharedZ, owner),
+    );
   });
 
   it("blends climate and biome influence continuously across an edge", () => {
@@ -50,6 +53,55 @@ describe("TerrainField", () => {
     expect(sample.patchiness).toBeLessThanOrEqual(1);
     const groundWeights = field.sampleVertex((left.x + right.x) / 2, (left.z + right.z) / 2).groundWeights;
     expect(groundWeights.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 10);
+  });
+
+  it("derives canopy, understory, debris, and gaps from one deterministic vegetation field", () => {
+    const rainforest = cell(0, 0, BiomeType.TropicalRainForest);
+    const grassland = cell(3, 0, BiomeType.Grassland);
+    const field = new TerrainField(createRequest([rainforest, grassland]));
+    const forestCenter = terrainHexToWorld(rainforest.col, rainforest.row);
+    const grassCenter = terrainHexToWorld(grassland.col, grassland.row);
+    const forest = field.sampleVegetationField(forestCenter.x, forestCenter.z, rainforest);
+    const open = field.sampleVegetationField(grassCenter.x, grassCenter.z, grassland);
+
+    expect(field.sampleVegetationField(forestCenter.x, forestCenter.z, rainforest)).toEqual(forest);
+    expect(forest.canopyCover).toBeGreaterThan(open.canopyCover);
+    expect(forest.debrisCover).toBeGreaterThan(open.debrisCover);
+    expect(Object.values(forest).every((value) => value >= 0 && value <= 1)).toBe(true);
+  });
+
+  it("distinguishes mature forest interiors from regenerating biome edges", () => {
+    const rainforest = cell(0, 0, BiomeType.TropicalRainForest);
+    const grassland = cell(1, 0, BiomeType.Grassland);
+    const forestField = new TerrainField(createRequest([rainforest]));
+    const edgeField = new TerrainField(createRequest([rainforest, grassland]));
+    const forestCenter = terrainHexToWorld(rainforest.col, rainforest.row);
+    const grassCenter = terrainHexToWorld(grassland.col, grassland.row);
+    const edgePoint = {
+      x: (forestCenter.x + grassCenter.x) / 2,
+      z: (forestCenter.z + grassCenter.z) / 2,
+    };
+    const interior = forestField.sampleVegetationField(forestCenter.x, forestCenter.z, rainforest);
+    const edge = edgeField.sampleVegetationField(edgePoint.x, edgePoint.z, rainforest);
+
+    expect(edge.edgeStrength).toBeGreaterThan(interior.edgeStrength);
+    expect(edge.successionStrength).toBeGreaterThan(interior.successionStrength);
+    expect(interior.maturity).toBeGreaterThan(0);
+    expect(Object.values(edge).every((value) => value >= 0 && value <= 1)).toBe(true);
+  });
+
+  it("uses the vegetation field to darken the floor beneath dense forest", () => {
+    const rainforest = cell(0, 0, BiomeType.TropicalRainForest);
+    const grassland = cell(3, 0, BiomeType.Grassland);
+    const forestField = new TerrainField(createRequest([rainforest]));
+    const openField = new TerrainField(createRequest([grassland]));
+    const forestCenter = terrainHexToWorld(rainforest.col, rainforest.row);
+    const grassCenter = terrainHexToWorld(grassland.col, grassland.row);
+    const forestGround = forestField.sampleVertex(forestCenter.x, forestCenter.z).groundWeights;
+    const openGround = openField.sampleVertex(grassCenter.x, grassCenter.z).groundWeights;
+
+    expect(forestGround[4]).toBeGreaterThan(openGround[4]);
+    expect(forestGround[3]).toBeLessThan(openGround[3]);
   });
 
   it("creates a soft prop-clearance falloff around occupied cells", () => {

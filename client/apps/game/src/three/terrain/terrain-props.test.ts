@@ -3,6 +3,7 @@ import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
+import { getTerrainPropCanopyExclusionRadius, getTerrainPropPlacementLayer } from "./terrain-prop-catalog";
 import { prepareTerrainPropInstances, resolveEffectiveTerrainPropDensity } from "./terrain-props";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
@@ -111,7 +112,69 @@ describe("terrain prop placement", () => {
     expect(Math.max(...instances.map(({ scale }) => scale))).toBeLessThanOrEqual(1.24);
     expect(instances.every(({ tint }) => tint.every((channel) => channel >= 0.88 && channel <= 1))).toBe(true);
   });
+
+  it("keeps canopy crowns apart without coupling understory or debris to their slots", () => {
+    const cells = Array.from({ length: 100 }, (_, index) =>
+      cell(index % 10, Math.floor(index / 10), BiomeType.TropicalRainForest),
+    );
+    const page = request(cells, "canopy-spacing");
+    const instances = prepareTerrainPropInstances(page, new TerrainField(page));
+    const canopy = instances.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "canopy");
+    const layers = new Set(instances.map(({ archetype }) => getTerrainPropPlacementLayer(archetype)));
+
+    expect(layers).toEqual(new Set(["canopy", "understory", "debris"]));
+    for (let leftIndex = 0; leftIndex < canopy.length; leftIndex += 1) {
+      const left = canopy[leftIndex]!;
+      for (let rightIndex = leftIndex + 1; rightIndex < canopy.length; rightIndex += 1) {
+        const right = canopy[rightIndex]!;
+        const minimum =
+          getTerrainPropCanopyExclusionRadius(left.archetype) * left.scale +
+          getTerrainPropCanopyExclusionRadius(right.archetype) * right.scale;
+        expect(Math.hypot(left.worldX - right.worldX, left.worldZ - right.worldZ)).toBeGreaterThanOrEqual(minimum);
+      }
+    }
+  });
+
+  it("grows larger mature crowns and biases regenerating gaps toward pioneer trees", () => {
+    const cells = Array.from({ length: 225 }, (_, index) =>
+      cell(index % 15, Math.floor(index / 15), BiomeType.TemperateDeciduousForest),
+    );
+    const page = request(cells, "forest-succession");
+    const field = new TerrainField(page);
+    const canopy = prepareTerrainPropInstances(page, field)
+      .filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "canopy")
+      .map((instance) => ({
+        ...instance,
+        vegetation: field.sampleVegetationField(instance.worldX, instance.worldZ, {
+          col: instance.ownerCol,
+          row: instance.ownerRow,
+        }),
+      }));
+    const sampleCount = Math.max(1, Math.floor(canopy.length * 0.3));
+    const mature = canopy
+      .toSorted((left, right) => right.vegetation.maturity - left.vegetation.maturity)
+      .slice(0, sampleCount);
+    const regenerating = canopy
+      .toSorted((left, right) => right.vegetation.successionStrength - left.vegetation.successionStrength)
+      .slice(0, sampleCount);
+
+    expect(average(mature.map(({ scale }) => scale))).toBeGreaterThan(
+      average(regenerating.map(({ scale }) => scale)) + 0.04,
+    );
+    expect(fraction(regenerating, "birch")).toBeGreaterThan(fraction(mature, "birch"));
+  });
 });
+
+function average(values: readonly number[]): number {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function fraction(
+  instances: readonly ReturnType<typeof prepareTerrainPropInstances>[number][],
+  archetype: ReturnType<typeof prepareTerrainPropInstances>[number]["archetype"],
+): number {
+  return instances.filter((instance) => instance.archetype === archetype).length / instances.length;
+}
 
 function cell(col: number, row: number, biome: BiomeType, occupied = false): TerrainCellInput {
   return { biome, col, explored: true, occupied, previewBiome: biome, row };
@@ -149,6 +212,13 @@ function densityContext(overrides: Partial<TerrainPropDensityContext> & { normal
       elevation: overrides.elevation ?? 0.45,
       moisture: overrides.moisture ?? 0.5,
       patchiness: overrides.patchiness ?? 0.5,
+      canopyCover: overrides.canopyCover ?? 0.7,
+      debrisCover: overrides.debrisCover ?? 0.25,
+      edgeStrength: overrides.edgeStrength ?? 0.2,
+      gapStrength: overrides.gapStrength ?? 0.2,
+      maturity: overrides.maturity ?? 0.45,
+      successionStrength: overrides.successionStrength ?? 0.3,
+      understoryCover: overrides.understoryCover ?? 0.5,
     },
     normalY: overrides.normalY ?? 1,
   };

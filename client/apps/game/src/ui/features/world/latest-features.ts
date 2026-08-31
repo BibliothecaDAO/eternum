@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-08-31",
+    title: "More Natural Forest Landscapes",
+    description:
+      "Improved forests with mature groves, regenerating edges and clearings, layered canopy, understory and deadfall, better-spaced crowns, and ground cover that responds to the canopy above.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-27",
     title: "Aligned Exploration Fog",
     description: "Fixed exploration fog appearing on the wrong hexes by aligning its mask with the world map.",

@@ -74,6 +74,20 @@ export function applyTerrainGroundStructurePad(source: TerrainGroundWeights, pad
   return normalizeWeights(source.map((weight, index) => weight + (compactGround[index] - weight) * blend));
 }
 
+export function applyTerrainGroundVegetation(
+  source: TerrainGroundWeights,
+  vegetation: { canopyCover: number; debrisCover: number; understoryCover: number },
+): TerrainGroundWeights {
+  const result = [...source];
+  const canopy = clampUnit(vegetation.canopyCover);
+  const debris = clampUnit(vegetation.debrisCover);
+  const understory = clampUnit(vegetation.understoryCover);
+  result[GRASS] *= 1 - canopy * 0.62;
+  result[LITTER] += canopy * 0.42 + debris * 0.16;
+  result[SOIL] += canopy * 0.08 + understory * 0.035;
+  return normalizeWeights(result);
+}
+
 export function blendTerrainGroundWeights(target: number[], source: TerrainGroundWeights, influence: number): void {
   source.forEach((weight, index) => {
     target[index] = (target[index] ?? 0) + weight * influence;

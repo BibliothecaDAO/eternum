@@ -4,8 +4,15 @@ import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terr
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
-import { getTerrainPropRole, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
-import type { TerrainCellInput, TerrainPageRequest, TerrainPropInstance } from "./terrain-types";
+import {
+  getTerrainPropCanopyExclusionRadius,
+  getTerrainPropPlacementLayer,
+  getTerrainPropRole,
+  getTerrainPropSuccessionAffinity,
+  type TerrainPropArchetypeId,
+  type TerrainPropPlacementLayer,
+} from "./terrain-prop-catalog";
+import type { TerrainCellInput, TerrainPageRequest, TerrainPropInstance, TerrainSurfaceSample } from "./terrain-types";
 
 interface WeightedArchetype {
   archetype: TerrainPropArchetypeId;
@@ -20,13 +27,46 @@ interface BiomePropProfile {
 interface TerrainPropPreparationContext {
   densityMultiplier: number;
   elevationSeed: number;
+  eligibleByKey: ReadonlyMap<string, TerrainCellInput & { biome: BiomeType }>;
   field: TerrainField;
   moistureSeed: number;
   ownedByKey: ReadonlyMap<string, TerrainCellInput & { biome: BiomeType }>;
   pageKey: string;
 }
 
+interface CandidateBounds {
+  maxX: number;
+  maxZ: number;
+  minX: number;
+  minZ: number;
+}
+
+interface PreparedTerrainPropCandidate extends TerrainPropInstance {
+  latticeX: number;
+  latticeZ: number;
+  layer: TerrainPropPlacementLayer;
+  ownerKey: string;
+  priority: number;
+}
+
+interface TerrainPropCandidateSite {
+  acceptance: number;
+  layerWeights: readonly WeightedArchetype[];
+  owner: TerrainCellInput & { biome: BiomeType };
+  ownerKey: string;
+  worldX: number;
+  worldZ: number;
+}
+
+interface AcceptedTerrainPropSite {
+  densityContext: TerrainPropDensityContext;
+  surface: TerrainSurfaceSample;
+}
+
 const CANDIDATE_SPACING = 1;
+const CANOPY_BUCKET_SIZE = 1.25;
+const CANOPY_HALO_LATTICE_CELLS = 1;
+const TERRAIN_PROP_PLACEMENT_LAYERS = Object.freeze(["canopy", "understory", "debris"] as const);
 export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1.75;
 const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
@@ -61,6 +101,14 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["fallen-log", 1],
   ),
 };
+const MAX_PROFILE_DENSITY_BY_LAYER: Readonly<Record<TerrainPropPlacementLayer, number>> = Object.freeze(
+  Object.fromEntries(
+    TERRAIN_PROP_PLACEMENT_LAYERS.map((layer) => [
+      layer,
+      Math.max(...Object.values(BIOME_PROP_PROFILES).map((profile) => resolveLayerDensity(profile, layer))),
+    ]),
+  ) as Record<TerrainPropPlacementLayer, number>,
+);
 
 export function prepareTerrainPropInstances(request: TerrainPageRequest, field: TerrainField): TerrainPropInstance[] {
   const ownedCells = request.cells.filter(
@@ -68,78 +116,221 @@ export function prepareTerrainPropInstances(request: TerrainPageRequest, field: 
   );
   if (ownedCells.length === 0) return [];
   const ownedByKey = new Map(ownedCells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
+  const eligibleCells = [...request.halo, ...ownedCells].filter(
+    (cell): cell is TerrainCellInput & { biome: BiomeType } => cell.explored && cell.biome !== null,
+  );
+  const eligibleByKey = new Map(eligibleCells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
   const bounds = resolveCandidateBounds(ownedCells);
   const elevationSeed = resolveSeed(request.climate.elevation_seed);
   const moistureSeed = resolveSeed(request.climate.moisture_seed);
   const densityMultiplier = resolveDensityMultiplier(request.propDensityMultiplier);
-  const context = { densityMultiplier, elevationSeed, field, moistureSeed, ownedByKey, pageKey: request.pageKey };
-  const instances: TerrainPropInstance[] = [];
+  const context = {
+    densityMultiplier,
+    elevationSeed,
+    eligibleByKey,
+    field,
+    moistureSeed,
+    ownedByKey,
+    pageKey: request.pageKey,
+  };
+  return TERRAIN_PROP_PLACEMENT_LAYERS.flatMap((layer) => prepareTerrainPropLayer(layer, bounds, context))
+    .map(toTerrainPropInstance)
+    .toSorted(compareTerrainPropInstances);
+}
 
+function prepareTerrainPropLayer(
+  layer: TerrainPropPlacementLayer,
+  ownedBounds: CandidateBounds,
+  context: TerrainPropPreparationContext,
+): PreparedTerrainPropCandidate[] {
+  const bounds = layer === "canopy" ? expandCandidateBounds(ownedBounds, CANOPY_HALO_LATTICE_CELLS) : ownedBounds;
+  const candidates: PreparedTerrainPropCandidate[] = [];
   for (let latticeZ = bounds.minZ; latticeZ <= bounds.maxZ; latticeZ += 1) {
     for (let latticeX = bounds.minX; latticeX <= bounds.maxX; latticeX += 1) {
-      const instance = prepareTerrainPropCandidate(latticeX, latticeZ, context);
-      if (instance) instances.push(instance);
+      const candidate = prepareTerrainPropCandidate(latticeX, latticeZ, layer, context);
+      if (candidate) candidates.push(candidate);
     }
   }
-
-  return instances;
+  const spaced = layer === "canopy" ? rejectOverlappingCanopies(candidates) : candidates;
+  return spaced.filter(({ ownerKey }) => context.ownedByKey.has(ownerKey));
 }
 
 function prepareTerrainPropCandidate(
   latticeX: number,
   latticeZ: number,
+  layer: TerrainPropPlacementLayer,
   context: TerrainPropPreparationContext,
-): TerrainPropInstance | null {
-  const jitterX = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-jitter-x-v1") - 0.5;
-  const jitterZ = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-jitter-z-v1") - 0.5;
-  const worldX = (latticeX + jitterX * 0.72) * CANDIDATE_SPACING;
-  const worldZ = (latticeZ + jitterZ * 0.72) * CANDIDATE_SPACING;
+): PreparedTerrainPropCandidate | null {
+  const site = resolveTerrainPropCandidateSite(latticeX, latticeZ, layer, context);
+  if (!site) return null;
+  const accepted = resolveAcceptedTerrainPropSite(site, layer, context);
+  if (!accepted) return null;
+  return buildTerrainPropCandidate(latticeX, latticeZ, layer, site, accepted, context);
+}
+
+function resolveTerrainPropCandidateSite(
+  latticeX: number,
+  latticeZ: number,
+  layer: TerrainPropPlacementLayer,
+  context: TerrainPropPreparationContext,
+): TerrainPropCandidateSite | null {
+  const acceptance = hashUnit(
+    latticeX,
+    latticeZ,
+    context.elevationSeed,
+    context.moistureSeed,
+    `prop-${layer}-acceptance-v2`,
+  );
+  if (acceptance >= resolveTerrainPropDensityUpperBound(layer, context.densityMultiplier)) return null;
+  const jitterX = hashUnit(
+    latticeX,
+    latticeZ,
+    context.elevationSeed,
+    context.moistureSeed,
+    `prop-${layer}-jitter-x-v2`,
+  );
+  const jitterZ = hashUnit(
+    latticeX,
+    latticeZ,
+    context.elevationSeed,
+    context.moistureSeed,
+    `prop-${layer}-jitter-z-v2`,
+  );
+  const worldX = (latticeX + (jitterX - 0.5) * 0.72) * CANDIDATE_SPACING;
+  const worldZ = (latticeZ + (jitterZ - 0.5) * 0.72) * CANDIDATE_SPACING;
   const ownerCoordinate = findNearestTerrainHex(worldX, worldZ);
-  const owner = context.ownedByKey.get(terrainCellKey(ownerCoordinate.col, ownerCoordinate.row));
+  const ownerKey = terrainCellKey(ownerCoordinate.col, ownerCoordinate.row);
+  const owner = context.eligibleByKey.get(ownerKey);
   if (!owner || owner.occupied) return null;
   const propProfile = BIOME_PROP_PROFILES[owner.biome];
-  if (propProfile.weights.length === 0) return null;
+  const layerWeights = propProfile.weights.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === layer);
+  if (layerWeights.length === 0) return null;
+  return { acceptance, layerWeights, owner, ownerKey, worldX, worldZ };
+}
 
-  const densityContext = context.field.samplePropDensityContext(worldX, worldZ, owner);
-  const acceptance = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-acceptance-v1");
+function resolveAcceptedTerrainPropSite(
+  site: TerrainPropCandidateSite,
+  layer: TerrainPropPlacementLayer,
+  context: TerrainPropPreparationContext,
+): AcceptedTerrainPropSite | null {
+  const densityContext = context.field.samplePropDensityContext(site.worldX, site.worldZ, site.owner);
   const densityUpperBound = resolveEffectiveTerrainPropDensity(
-    owner.biome,
+    site.owner.biome,
     densityContext,
     1,
     context.densityMultiplier,
+    layer,
   );
-  if (acceptance >= densityUpperBound) return null;
-  const surface = context.field.samplePropSurface(worldX, worldZ, owner);
+  if (site.acceptance >= densityUpperBound) return null;
+  const surface = context.field.samplePropSurface(site.worldX, site.worldZ, site.owner);
   const effectiveDensity = resolveEffectiveTerrainPropDensity(
-    owner.biome,
+    site.owner.biome,
     densityContext,
     surface.normal[1],
     context.densityMultiplier,
+    layer,
   );
-  if (acceptance >= effectiveDensity) return null;
+  return site.acceptance < effectiveDensity ? { densityContext, surface } : null;
+}
 
+function buildTerrainPropCandidate(
+  latticeX: number,
+  latticeZ: number,
+  layer: TerrainPropPlacementLayer,
+  site: TerrainPropCandidateSite,
+  accepted: AcceptedTerrainPropSite,
+  context: TerrainPropPreparationContext,
+): PreparedTerrainPropCandidate | null {
   const archetype = chooseArchetype(
-    resolveEcologicalWeights(owner.biome, propProfile.weights),
-    hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-archetype-v1"),
+    resolveEcologicalWeights(site.owner.biome, site.layerWeights, accepted.densityContext),
+    hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-archetype-v2`),
   );
   if (!archetype) return null;
-  const scaleValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-scale-v1");
-  const tintValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-tint-v1");
+  const scaleValue = hashUnit(
+    latticeX,
+    latticeZ,
+    context.elevationSeed,
+    context.moistureSeed,
+    `prop-${layer}-scale-v2`,
+  );
+  const tintValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-tint-v2`);
   return {
     archetype,
-    ownerCol: owner.col,
-    ownerRow: owner.row,
+    ownerCol: site.owner.col,
+    ownerRow: site.owner.row,
+    ownerKey: site.ownerKey,
     pageKey: context.pageKey,
-    scale: resolveTerrainPropScale(archetype, scaleValue),
+    latticeX,
+    latticeZ,
+    layer,
+    priority: hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-priority-v2`),
+    scale: resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext),
     tint: resolveTerrainPropTint(archetype, tintValue),
-    worldX,
-    worldY: surface.height,
-    worldZ,
-    yaw: hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, "prop-yaw-v1") * Math.PI * 2,
+    worldX: site.worldX,
+    worldY: accepted.surface.height,
+    worldZ: site.worldZ,
+    yaw:
+      hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-yaw-v2`) * Math.PI * 2,
   };
 }
 
-function resolveEcologicalWeights(biome: BiomeType, weights: readonly WeightedArchetype[]): WeightedArchetype[] {
+function rejectOverlappingCanopies(
+  candidates: readonly PreparedTerrainPropCandidate[],
+): PreparedTerrainPropCandidate[] {
+  const buckets = bucketCanopyCandidates(candidates);
+  return candidates.filter((candidate) => {
+    const bucketX = Math.floor(candidate.worldX / CANOPY_BUCKET_SIZE);
+    const bucketZ = Math.floor(candidate.worldZ / CANOPY_BUCKET_SIZE);
+    for (let z = bucketZ - 1; z <= bucketZ + 1; z += 1) {
+      for (let x = bucketX - 1; x <= bucketX + 1; x += 1) {
+        const neighbors = buckets.get(`${x}:${z}`) ?? [];
+        if (
+          neighbors.some((neighbor) => hasCanopyPriority(neighbor, candidate) && canopiesOverlap(neighbor, candidate))
+        ) {
+          return false;
+        }
+      }
+    }
+    return true;
+  });
+}
+
+function bucketCanopyCandidates(
+  candidates: readonly PreparedTerrainPropCandidate[],
+): Map<string, PreparedTerrainPropCandidate[]> {
+  const buckets = new Map<string, PreparedTerrainPropCandidate[]>();
+  for (const candidate of candidates) {
+    const key = `${Math.floor(candidate.worldX / CANOPY_BUCKET_SIZE)}:${Math.floor(candidate.worldZ / CANOPY_BUCKET_SIZE)}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(candidate);
+    else buckets.set(key, [candidate]);
+  }
+  return buckets;
+}
+
+function hasCanopyPriority(candidate: PreparedTerrainPropCandidate, other: PreparedTerrainPropCandidate): boolean {
+  if (candidate === other) return false;
+  if (candidate.priority !== other.priority) return candidate.priority > other.priority;
+  return (
+    candidate.latticeZ < other.latticeZ ||
+    (candidate.latticeZ === other.latticeZ && candidate.latticeX < other.latticeX)
+  );
+}
+
+function canopiesOverlap(left: PreparedTerrainPropCandidate, right: PreparedTerrainPropCandidate): boolean {
+  const minimumDistance =
+    getTerrainPropCanopyExclusionRadius(left.archetype) * left.scale +
+    getTerrainPropCanopyExclusionRadius(right.archetype) * right.scale;
+  const deltaX = left.worldX - right.worldX;
+  const deltaZ = left.worldZ - right.worldZ;
+  return deltaX * deltaX + deltaZ * deltaZ < minimumDistance * minimumDistance;
+}
+
+function resolveEcologicalWeights(
+  biome: BiomeType,
+  weights: readonly WeightedArchetype[],
+  vegetation: TerrainPropDensityContext,
+): WeightedArchetype[] {
   const undergrowth = TERRAIN_BIOME_ART_DIRECTIONS[biome].ecology.undergrowth;
   return weights.map((entry) => ({
     ...entry,
@@ -149,14 +340,37 @@ function resolveEcologicalWeights(biome: BiomeType, weights: readonly WeightedAr
         ? 0.72 + undergrowth * 0.72
         : getTerrainPropRole(entry.archetype) === "canopy"
           ? 1.08 - undergrowth * 0.18
-          : 0.86 + undergrowth * 0.28),
+          : 0.86 + undergrowth * 0.28) *
+      resolveTerrainPropSuccessionWeight(entry.archetype, vegetation),
   }));
 }
 
-function resolveTerrainPropScale(archetype: TerrainPropArchetypeId, value: number): number {
-  if (getTerrainPropRole(archetype) === "canopy") return 0.76 + value * 0.48;
-  if (getTerrainPropRole(archetype) === "understory") return 0.54 + value * 0.42;
-  return 0.68 + value * 0.44;
+function resolveTerrainPropSuccessionWeight(
+  archetype: TerrainPropArchetypeId,
+  vegetation: TerrainPropDensityContext,
+): number {
+  const affinity = getTerrainPropSuccessionAffinity(archetype);
+  const succession = 1 + vegetation.successionStrength * (affinity * 1.3 - 0.35);
+  const maturity = 1 + vegetation.maturity * ((1 - affinity) * 0.45 - affinity * 0.1);
+  return succession * maturity;
+}
+
+function resolveTerrainPropScale(
+  archetype: TerrainPropArchetypeId,
+  value: number,
+  vegetation: TerrainPropDensityContext,
+): number {
+  const role = getTerrainPropRole(archetype);
+  const layer = getTerrainPropPlacementLayer(archetype);
+  const shapedValue = clampUnit(
+    value +
+      (layer === "canopy" ? vegetation.maturity * 0.5 - vegetation.successionStrength * 0.36 : 0) +
+      (layer === "understory" ? vegetation.successionStrength * 0.22 - vegetation.maturity * 0.08 : 0) +
+      (layer === "debris" ? vegetation.maturity * 0.18 : 0),
+  );
+  if (role === "canopy") return 0.76 + shapedValue * 0.48;
+  if (role === "understory") return 0.54 + shapedValue * 0.42;
+  return 0.68 + shapedValue * 0.44;
 }
 
 function resolveTerrainPropTint(archetype: TerrainPropArchetypeId, value: number): readonly [number, number, number] {
@@ -175,9 +389,11 @@ export function resolveEffectiveTerrainPropDensity(
   context: TerrainPropDensityContext,
   surfaceNormalY: number,
   densityMultiplier = 1,
+  layer?: TerrainPropPlacementLayer,
 ): number {
   const blendedBiomeDensity = context.biomeInfluences.reduce(
-    (density, influence) => density + BIOME_PROP_PROFILES[influence.biome].density * influence.weight,
+    (density, influence) =>
+      density + resolveLayerDensity(BIOME_PROP_PROFILES[influence.biome], layer) * influence.weight,
     0,
   );
   const ownerInfluence = context.biomeInfluences.find(({ biome }) => biome === ownerBiome)?.weight ?? 0;
@@ -186,6 +402,7 @@ export function resolveEffectiveTerrainPropDensity(
   const slopeResponse = 0.42 + smoothstep(0.94, 0.995, surfaceNormalY) * 0.58;
   const boundaryResponse = 0.86 + ownerInfluence * 0.14;
   const patchResponse = 0.72 + smoothstep(0.15, 0.85, context.patchiness) * 0.53;
+  const layerResponse = resolveLayerCoverageResponse(context, layer);
 
   return clampUnit(
     blendedBiomeDensity *
@@ -194,9 +411,42 @@ export function resolveEffectiveTerrainPropDensity(
       slopeResponse *
       boundaryResponse *
       patchResponse *
+      layerResponse *
       context.clearance *
       densityMultiplier,
   );
+}
+
+function resolveLayerDensity(profile: BiomePropProfile, layer: TerrainPropPlacementLayer | undefined): number {
+  if (!layer) return profile.density;
+  const totalWeight = profile.weights.reduce((total, { weight }) => total + weight, 0);
+  if (totalWeight === 0) return 0;
+  const layerWeight = profile.weights.reduce(
+    (total, entry) => total + (getTerrainPropPlacementLayer(entry.archetype) === layer ? entry.weight : 0),
+    0,
+  );
+  return profile.density * (layerWeight / totalWeight);
+}
+
+function resolveLayerCoverageResponse(
+  context: TerrainPropDensityContext,
+  layer: TerrainPropPlacementLayer | undefined,
+): number {
+  if (!layer) return 1;
+  const coverage =
+    layer === "canopy" ? context.canopyCover : layer === "understory" ? context.understoryCover : context.debrisCover;
+  const ecologyResponse =
+    layer === "understory"
+      ? 0.9 + context.successionStrength * 0.25
+      : layer === "debris"
+        ? 0.8 + context.maturity * 0.35
+        : 1;
+  return (0.48 + coverage * 0.58) * ecologyResponse;
+}
+
+function resolveTerrainPropDensityUpperBound(layer: TerrainPropPlacementLayer, densityMultiplier: number): number {
+  const maximumEnvironmentResponse = 1.18 * 1.25 * 1.06 * 1.15;
+  return clampUnit(MAX_PROFILE_DENSITY_BY_LAYER[layer] * maximumEnvironmentResponse * densityMultiplier);
 }
 
 function resolveDensityMultiplier(value: number | undefined): number {
@@ -207,7 +457,7 @@ function resolveDensityMultiplier(value: number | undefined): number {
   return multiplier;
 }
 
-function resolveCandidateBounds(cells: readonly TerrainCellInput[]) {
+function resolveCandidateBounds(cells: readonly TerrainCellInput[]): CandidateBounds {
   const centers = cells.map((cell) => terrainHexToWorld(cell.col, cell.row));
   return {
     maxX: Math.ceil((Math.max(...centers.map(({ x }) => x)) + 1) / CANDIDATE_SPACING),
@@ -215,6 +465,35 @@ function resolveCandidateBounds(cells: readonly TerrainCellInput[]) {
     minX: Math.floor((Math.min(...centers.map(({ x }) => x)) - 1) / CANDIDATE_SPACING),
     minZ: Math.floor((Math.min(...centers.map(({ z }) => z)) - 1) / CANDIDATE_SPACING),
   };
+}
+
+function expandCandidateBounds(bounds: CandidateBounds, cells: number): CandidateBounds {
+  return {
+    maxX: bounds.maxX + cells,
+    maxZ: bounds.maxZ + cells,
+    minX: bounds.minX - cells,
+    minZ: bounds.minZ - cells,
+  };
+}
+
+function toTerrainPropInstance(candidate: PreparedTerrainPropCandidate): TerrainPropInstance {
+  const { latticeX, latticeZ, layer, ownerKey, priority, ...instance } = candidate;
+  void latticeX;
+  void latticeZ;
+  void layer;
+  void ownerKey;
+  void priority;
+  return instance;
+}
+
+function compareTerrainPropInstances(left: TerrainPropInstance, right: TerrainPropInstance): number {
+  return (
+    left.worldZ - right.worldZ ||
+    left.worldX - right.worldX ||
+    left.archetype.localeCompare(right.archetype) ||
+    left.ownerRow - right.ownerRow ||
+    left.ownerCol - right.ownerCol
+  );
 }
 
 function chooseArchetype(weights: readonly WeightedArchetype[], value: number): TerrainPropArchetypeId | null {

@@ -104,6 +104,15 @@ describe("prepareTerrainPage", () => {
     }
   });
 
+  it("reuses authoritative explored samples across duplicated terrain vertices", () => {
+    const page = prepareTerrainPage(
+      createRequest([cell(0, 0, BiomeType.TemperateRainForest), cell(1, 0, BiomeType.TemperateRainForest)]),
+    );
+
+    expect(page.diagnostics.exploredSurfaceSamples).toBeGreaterThan(0);
+    expect(page.diagnostics.exploredSurfaceSamples).toBeLessThan(page.diagnostics.vertices / 2);
+  });
+
   it("packs every continuous ground recipe into eight normalized bytes", () => {
     const page = prepareTerrainPage(createAllBiomesTerrainRequest());
 

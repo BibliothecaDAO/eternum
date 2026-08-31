@@ -39,4 +39,10 @@ describe("terrain biome art direction", () => {
     );
     expect(anchors).toHaveLength(5);
   });
+
+  it("distinguishes closed-canopy forests from open and marine ground", () => {
+    expect(TERRAIN_BIOME_ART_DIRECTIONS[BiomeType.TropicalRainForest].ecology.canopyCover).toBeGreaterThan(0.8);
+    expect(TERRAIN_BIOME_ART_DIRECTIONS[BiomeType.Grassland].ecology.canopyCover).toBeLessThan(0.25);
+    expect(TERRAIN_BIOME_ART_DIRECTIONS[BiomeType.Ocean].ecology.canopyCover).toBe(0);
+  });
 });

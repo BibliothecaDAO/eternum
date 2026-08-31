@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyTerrainGroundSlope,
   applyTerrainGroundStructurePad,
+  applyTerrainGroundVegetation,
   resolveTerrainGroundRecipe,
   TERRAIN_GROUND_SURFACE_IDS,
 } from "./terrain-ground-profile";
@@ -36,5 +37,26 @@ describe("terrain ground profiles", () => {
     expect(pad[2]).toBeGreaterThan(forest[2]);
     expect(pad[4]).toBe(0);
     expect(pad.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 12);
+  });
+
+  it("turns grass into litter beneath a closed canopy while preserving normalized weights", () => {
+    const forest = resolveTerrainGroundRecipe(BiomeType.TemperateDeciduousForest, {
+      elevation: 0.45,
+      moisture: 0.7,
+    });
+    const clearing = applyTerrainGroundVegetation(forest, {
+      canopyCover: 0.08,
+      debrisCover: 0.02,
+      understoryCover: 0.35,
+    });
+    const closedCanopy = applyTerrainGroundVegetation(forest, {
+      canopyCover: 0.92,
+      debrisCover: 0.48,
+      understoryCover: 0.25,
+    });
+
+    expect(closedCanopy[3]).toBeLessThan(clearing[3]);
+    expect(closedCanopy[4]).toBeGreaterThan(clearing[4]);
+    expect(closedCanopy.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 12);
   });
 });

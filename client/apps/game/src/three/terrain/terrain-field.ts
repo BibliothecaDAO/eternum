@@ -7,6 +7,7 @@ import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./t
 import {
   applyTerrainGroundSlope,
   applyTerrainGroundStructurePad,
+  applyTerrainGroundVegetation,
   blendTerrainGroundWeights,
   normalizeTerrainGroundWeights,
   resolveTerrainGroundRecipe,
@@ -45,7 +46,17 @@ export interface TerrainBiomeInfluence {
   weight: number;
 }
 
-export interface TerrainPropDensityContext {
+export interface TerrainVegetationField {
+  canopyCover: number;
+  debrisCover: number;
+  edgeStrength: number;
+  gapStrength: number;
+  maturity: number;
+  successionStrength: number;
+  understoryCover: number;
+}
+
+export interface TerrainPropDensityContext extends TerrainVegetationField {
   biomeInfluences: readonly TerrainBiomeInfluence[];
   clearance: number;
   elevation: number;
@@ -194,8 +205,18 @@ export class TerrainField {
     const inverseWeight = 1 / totalWeight;
     const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
     const paddedHeight = this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
-    const paddedGroundWeights = applyTerrainGroundStructurePad(
+    const vegetation = this.resolveVegetationField(
+      worldX,
+      worldZ,
+      candidates,
+      this.sampleWeightedEnvironment(worldX, worldZ, candidates),
+    );
+    const vegetationGroundWeights = applyTerrainGroundVegetation(
       normalizeTerrainGroundWeights(groundWeights),
+      vegetation,
+    );
+    const paddedGroundWeights = applyTerrainGroundStructurePad(
+      vegetationGroundWeights,
       this.resolveStructurePadWeight(worldX, worldZ, candidates),
     );
 
@@ -234,26 +255,26 @@ export class TerrainField {
   ): TerrainPropDensityContext {
     const candidates = this.resolveExploredCandidates(owner.col, owner.row);
     const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
-    const ecology = weightedEnvironment.biomeInfluences.reduce(
-      (summary, influence) => {
-        const profile = TERRAIN_BIOME_ART_DIRECTIONS[influence.biome].ecology;
-        summary.clearingStrength += profile.clearingStrength * influence.weight;
-        summary.clusterScale += profile.clusterScale * influence.weight;
-        return summary;
-      },
-      { clearingStrength: 0, clusterScale: 0 },
-    );
-    const clusterNoise = terrainValueNoise(
-      worldX * (ecology.clusterScale || 0.2),
-      worldZ * (ecology.clusterScale || 0.2),
-      this.elevationSeed,
-      this.moistureSeed,
-      "terrain-prop-density-v2",
-    );
+    const vegetation = this.resolveVegetationField(worldX, worldZ, candidates, weightedEnvironment);
     return {
       ...weightedEnvironment,
-      patchiness: clampUnit(0.5 + (clusterNoise - 0.5) * (1 + ecology.clearingStrength * 0.9)),
+      ...vegetation,
+      patchiness: 1 - vegetation.gapStrength,
     };
+  }
+
+  sampleVegetationField(
+    worldX: number,
+    worldZ: number,
+    owner: Pick<TerrainCellInput, "col" | "row">,
+  ): TerrainVegetationField {
+    const candidates = this.resolveExploredCandidates(owner.col, owner.row);
+    return this.resolveVegetationField(
+      worldX,
+      worldZ,
+      candidates,
+      this.sampleWeightedEnvironment(worldX, worldZ, candidates),
+    );
   }
 
   samplePropSurface(
@@ -360,6 +381,96 @@ export class TerrainField {
       clearance,
       elevation: elevation * inverseWeight,
       moisture: moisture * inverseWeight,
+    };
+  }
+
+  private resolveVegetationField(
+    worldX: number,
+    worldZ: number,
+    candidates: readonly CellFieldSample[],
+    environment: Pick<TerrainPropDensityContext, "biomeInfluences" | "elevation" | "moisture">,
+  ): TerrainVegetationField {
+    if (candidates.length === 0 || environment.biomeInfluences.length === 0) {
+      return {
+        canopyCover: 0,
+        debrisCover: 0,
+        edgeStrength: 0,
+        gapStrength: 1,
+        maturity: 0,
+        successionStrength: 0,
+        understoryCover: 0,
+      };
+    }
+
+    const ecology = environment.biomeInfluences.reduce(
+      (summary, influence) => {
+        const profile = TERRAIN_BIOME_ART_DIRECTIONS[influence.biome].ecology;
+        summary.canopyCover += profile.canopyCover * influence.weight;
+        summary.clearingStrength += profile.clearingStrength * influence.weight;
+        summary.clusterScale += profile.clusterScale * influence.weight;
+        summary.undergrowth += profile.undergrowth * influence.weight;
+        return summary;
+      },
+      { canopyCover: 0, clearingStrength: 0, clusterScale: 0, undergrowth: 0 },
+    );
+    const clusterScale = ecology.clusterScale || 0.2;
+    const canopyPatch = terrainValueNoise(
+      worldX * clusterScale,
+      worldZ * clusterScale,
+      this.elevationSeed,
+      this.moistureSeed,
+      "terrain-vegetation-canopy-v1",
+    );
+    const gapNoise = terrainValueNoise(
+      worldX * Math.max(0.05, clusterScale * 0.58),
+      worldZ * Math.max(0.05, clusterScale * 0.58),
+      this.elevationSeed,
+      this.moistureSeed,
+      "terrain-vegetation-gaps-v1",
+    );
+    const debrisPatch = terrainValueNoise(
+      worldX * Math.max(0.08, clusterScale * 1.7),
+      worldZ * Math.max(0.08, clusterScale * 1.7),
+      this.elevationSeed,
+      this.moistureSeed,
+      "terrain-vegetation-debris-v1",
+    );
+    const gapThreshold = 0.7 - ecology.clearingStrength * 0.22;
+    const dominantBiomeInfluence = Math.max(...environment.biomeInfluences.map(({ weight }) => weight));
+    const edgeStrength = clampUnit((1 - dominantBiomeInfluence) * 2);
+    const gapStrength = clampUnit(
+      smoothstep(gapThreshold, gapThreshold + 0.22, gapNoise) * (0.35 + ecology.clearingStrength * 0.65),
+    );
+    const moistureSupport = 0.68 + smoothstep(0.16, 0.84, environment.moisture) * 0.42;
+    const elevationStress = 1 - smoothstep(0.58, 0.92, environment.elevation) * 0.26;
+    const canopyCover = clampUnit(
+      ecology.canopyCover *
+        moistureSupport *
+        elevationStress *
+        (0.58 + smoothstep(0.16, 0.84, canopyPatch) * 0.55) *
+        (1 - gapStrength * 0.78),
+    );
+    const understoryCover = clampUnit(
+      ecology.undergrowth *
+        (0.58 + environment.moisture * 0.42) *
+        (0.72 + (1 - canopyCover) * 0.34) *
+        (0.7 + smoothstep(0.12, 0.88, canopyPatch) * 0.38),
+    );
+    const debrisCover = clampUnit(canopyCover * (0.16 + smoothstep(0.18, 0.82, debrisPatch) * 0.46));
+    const maturity = clampUnit(
+      canopyCover * (0.5 + debrisPatch * 0.5) * (1 - edgeStrength * 0.55) * (1 - gapStrength * 0.6),
+    );
+    const successionStrength = clampUnit(
+      (edgeStrength * 0.72 + gapStrength * 0.35) * (0.45 + ecology.undergrowth * 0.55),
+    );
+    return {
+      canopyCover,
+      debrisCover,
+      edgeStrength,
+      gapStrength,
+      maturity,
+      successionStrength,
+      understoryCover,
     };
   }
 
