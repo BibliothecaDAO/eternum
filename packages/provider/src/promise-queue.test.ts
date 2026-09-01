@@ -442,7 +442,7 @@ describe("Parallel Category Processing", () => {
     expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps batches within a single category sequential", async () => {
+  it("dispatches batches within a category in enqueue order", async () => {
     const callOrder: number[] = [];
     let callIndex = 0;
 
@@ -474,8 +474,56 @@ describe("Parallel Category Processing", () => {
     // Should be 2 batches: 10 + 5
     expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
 
-    // First batch (index 0) should complete before second batch (index 1)
+    // First batch (index 0) is dispatched before second batch (index 1)
     expect(callOrder).toEqual([0, 1]);
+  });
+
+  it("pipelines separate batches without waiting on the previous send", async () => {
+    vi.useFakeTimers();
+    let settled = 0;
+    const executor: TransactionExecutor = {
+      executeAndCheckTransaction: vi.fn().mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => {
+              settled += 1;
+              resolve({ statusReceipt: "PENDING", transaction_hash: `0x${settled}` });
+            }, 150),
+          ),
+      ),
+    };
+    const queue = new PromiseQueue(executor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({ signer, calls: makeCall("explorer_move"), transactionType: TransactionType.EXPLORE });
+    await vi.advanceTimersByTimeAsync(0);
+    const pB = queue.enqueue({ signer, calls: makeCall("explorer_move"), transactionType: TransactionType.EXPLORE });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(executor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    expect(settled).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(150);
+    await expect(Promise.all([pA, pB])).resolves.toHaveLength(2);
+    expect(settled).toBe(2);
+  });
+
+  it("still merges same-signer, same-category items from one tick into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+    const callA = makeCall("attack_a");
+    const callB = makeCall("attack_b");
+
+    await Promise.all([
+      queue.enqueue({ signer, calls: callA, transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER }),
+      queue.enqueue({ signer, calls: callB, transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER }),
+    ]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+    const call = (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[1]).toEqual([callA, callB]);
+    expect(call[2]).toEqual([{ type: TransactionType.ATTACK_EXPLORER_VS_EXPLORER, count: 2 }]);
   });
 
   it("error in one category does not block others", async () => {

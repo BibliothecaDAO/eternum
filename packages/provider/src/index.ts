@@ -1045,6 +1045,9 @@ export class EternumProvider extends EnhancedDojoProvider {
     const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
+      // Explores of the same explorer (and VRF requests from the same source)
+      // serialise here by design: the next explore's calls are built from the
+      // position the previous one leaves behind. Every other action pipelines.
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
       if (txType === TransactionType.EXPLORE) {
         this.emit("transactionProgress", {

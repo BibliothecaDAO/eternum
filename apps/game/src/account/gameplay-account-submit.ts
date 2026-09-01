@@ -18,9 +18,17 @@ interface ConfiguredGameplaySubmit {
   execute: RawExecute;
 }
 
-interface GameplayAccountSubmitState {
+/**
+ * Nonces are dispensed locally so a burst of actions signs and sends in
+ * parallel: waiting for the previous send to return before allocating the
+ * next nonce cost one node round trip per action. `nextNonce` is unknown
+ * before the first read and after any failed send (the failed nonce may be
+ * unconsumed); while it is unknown, every waiting action shares one
+ * pre-confirmed read.
+ */
+interface AccountNonceDispenser {
   nextNonce?: bigint;
-  tail: Promise<void>;
+  nonceRead?: Promise<void>;
 }
 
 interface ExecuteGameplayAccountTransactionOptions {
@@ -30,8 +38,13 @@ interface ExecuteGameplayAccountTransactionOptions {
   details?: UniversalDetails;
 }
 
+interface GameplaySubmit extends ExecuteGameplayAccountTransactionOptions {
+  dispenser: AccountNonceDispenser;
+  execute: RawExecute;
+}
+
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
-const accountSubmitStates = new Map<string, GameplayAccountSubmitState>();
+const accountNonceDispensers = new Map<string, AccountNonceDispenser>();
 
 export function configureGameplayAccountSubmits(account: Account, chain: GameChain): Account {
   const configured = configuredGameplaySubmits.get(account);
@@ -59,9 +72,8 @@ export function executeGameplayAccountTransaction({
   if (configured) assertConfiguredChain(account.address, configured.chain, chain);
 
   const execute = configured?.execute ?? account.execute.bind(account);
-  return runSerializedGameplayAccountSubmit(`${chain}:${account.address.toLowerCase()}`, (state) =>
-    executeWithDispensedNonce({ account, calls, chain, details, execute, state }),
-  );
+  const dispenser = resolveNonceDispenser(`${chain}:${account.address.toLowerCase()}`);
+  return submitWithLocalNonce({ account, calls, chain, details, dispenser, execute });
 }
 
 function assertConfiguredChain(address: string, configuredChain: GameChain, requestedChain: GameChain): void {
@@ -70,65 +82,70 @@ function assertConfiguredChain(address: string, configuredChain: GameChain, requ
   }
 }
 
-function runSerializedGameplayAccountSubmit<T>(
-  key: string,
-  submit: (state: GameplayAccountSubmitState) => Promise<T>,
-): Promise<T> {
-  const state = accountSubmitStates.get(key) ?? { tail: Promise.resolve() };
-  accountSubmitStates.set(key, state);
-  const result = state.tail.then(
-    () => submit(state),
-    () => submit(state),
-  );
-  const tail = result.then(
-    () => undefined,
-    () => undefined,
-  );
-  state.tail = tail;
-  return result;
+function resolveNonceDispenser(key: string): AccountNonceDispenser {
+  const dispenser = accountNonceDispensers.get(key) ?? {};
+  accountNonceDispensers.set(key, dispenser);
+  return dispenser;
 }
 
-async function executeWithDispensedNonce({
-  account,
-  calls,
-  chain,
-  details,
-  execute,
-  state,
-}: ExecuteGameplayAccountTransactionOptions & {
-  execute: RawExecute;
-  state: GameplayAccountSubmitState;
-}): Promise<InvokeFunctionResponse> {
+async function submitWithLocalNonce(submit: GameplaySubmit): Promise<InvokeFunctionResponse> {
   try {
-    return await executeOnceWithDispensedNonce({ account, calls, chain, details, execute, state });
+    return await submitOnce(submit);
   } catch (error) {
     if (!isNonceRejection(error)) throw error;
-    state.nextNonce = undefined;
-    return executeOnceWithDispensedNonce({ account, calls, chain, details, execute, state });
+    return submitOnce(submit);
   }
 }
 
-async function executeOnceWithDispensedNonce({
+async function submitOnce({
   account,
   calls,
   chain,
   details,
+  dispenser,
   execute,
-  state,
-}: ExecuteGameplayAccountTransactionOptions & {
-  execute: RawExecute;
-  state: GameplayAccountSubmitState;
-}): Promise<InvokeFunctionResponse> {
-  const nonce = state.nextNonce ?? BigInt(await account.getNonce(BlockTag.PRE_CONFIRMED));
+}: GameplaySubmit): Promise<InvokeFunctionResponse> {
+  const nonce = await takeNonce(account, dispenser);
   const resourceBounds = resolveGameTransactionResourceBounds(chain);
-  const result = await execute(calls, {
-    ...details,
-    nonce,
-    tip: 0,
-    ...(resourceBounds ? { resourceBounds } : {}),
-  });
-  state.nextNonce = nonce + 1n;
-  return result;
+  try {
+    return await execute(calls, {
+      ...details,
+      nonce,
+      tip: 0,
+      ...(resourceBounds ? { resourceBounds } : {}),
+    });
+  } catch (error) {
+    dispenser.nextNonce = undefined;
+    throw error;
+  }
+}
+
+/**
+ * A known nonce is taken synchronously, so concurrent callers receive
+ * distinct, increasing nonces in call order. Waiters on a shared read re-enter
+ * in registration order once it lands, which keeps that same ordering; if a
+ * failed send marks the dispenser stale again in between, they read anew
+ * instead of reusing anything.
+ */
+function takeNonce(account: GameplaySubmitAccount, dispenser: AccountNonceDispenser): Promise<bigint> {
+  if (dispenser.nextNonce !== undefined) {
+    const nonce = dispenser.nextNonce;
+    dispenser.nextNonce = nonce + 1n;
+    return Promise.resolve(nonce);
+  }
+  dispenser.nonceRead ??= readPreConfirmedNonce(account, dispenser);
+  return dispenser.nonceRead.then(() => takeNonce(account, dispenser));
+}
+
+function readPreConfirmedNonce(account: GameplaySubmitAccount, dispenser: AccountNonceDispenser): Promise<void> {
+  return account
+    .getNonce(BlockTag.PRE_CONFIRMED)
+    .then((nonce) => {
+      dispenser.nextNonce = BigInt(nonce);
+    })
+    .finally(() => {
+      dispenser.nonceRead = undefined;
+    });
 }
 
 function isNonceRejection(error: unknown): boolean {
