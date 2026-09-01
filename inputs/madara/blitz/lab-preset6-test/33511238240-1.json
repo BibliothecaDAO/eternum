@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "madara.blitz:lab-preset6-test",
+  "launchRequestId": "33511238240-1",
+  "environment": "madara.blitz",
+  "chain": "madara",
+  "gameType": "blitz",
+  "gameName": "lab-preset6-test",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-09-01T13:06:14.480Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 33511238240,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33511238240",
+    "ref": "feat/madara-lab",
+    "sha": "179e07728918af42face93a9dcea6a1f4ccc50f1"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "madara.blitz",
+    "gameName": "lab-preset6-test",
+    "startTime": "1788268770",
+    "rpcUrl": "https://rpc.realms.party/rpc/v0_10_2",
+    "ledgerAddress": "",
+    "ledgerRpcUrl": "",
+    "lordsAddress": "",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 5400,
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "6",
+    "waitForFactoryIndexTimeoutMs": 120000,
+    "waitForFactoryIndexPollMs": 2000,
+    "dryRun": false
+  }
+}
