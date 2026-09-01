@@ -156,6 +156,12 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         },
       ],
     },
+    // The procedural-terrain worker (PR #4903) is a `type: "module"` worker whose dependency graph
+    // code-splits; Vite's default worker format is `iife`, which rollup rejects for code-splitting
+    // ("UMD and IIFE output formats are not supported for code-splitting"). Build workers as ES modules.
+    worker: {
+      format: "es",
+    },
     build: {
       target: "esnext",
       sourcemap: sentryUploadEnabled ? "hidden" : true,
