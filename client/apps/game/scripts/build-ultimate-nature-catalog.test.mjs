@@ -11,13 +11,13 @@ import {
 describe("Ultimate Nature terrain prop catalog", () => {
   it("keeps the curated allowlist unique and internally valid", () => {
     expect(validateUltimateNatureCatalog()).toEqual([]);
-    expect(ULTIMATE_NATURE_PROPS).toHaveLength(11);
-    expect(new Set(ULTIMATE_NATURE_PROPS.map((prop) => prop.id)).size).toBe(11);
-    expect(new Set(ULTIMATE_NATURE_PROPS.map((prop) => prop.sourceFile)).size).toBe(11);
+    expect(ULTIMATE_NATURE_PROPS).toHaveLength(15);
+    expect(new Set(ULTIMATE_NATURE_PROPS.map((prop) => prop.id)).size).toBe(15);
+    expect(new Set(ULTIMATE_NATURE_PROPS.map((prop) => prop.sourceFile)).size).toBe(15);
   });
 
   it("stays within the source triangle and transfer budgets from the terrain brief", () => {
-    expect(getUltimateNatureTriangleBudgets()).toEqual({ near: 4_900, far: 1_280 });
+    expect(getUltimateNatureTriangleBudgets()).toEqual({ near: 5_380, far: 1_410 });
     expect(ULTIMATE_NATURE_MAX_GLB_BYTES).toBe(768_000);
   });
 

@@ -1,4 +1,4 @@
-export const ULTIMATE_NATURE_CATALOG_VERSION = 1;
+export const ULTIMATE_NATURE_CATALOG_VERSION = 2;
 export const ULTIMATE_NATURE_LICENSE = "CC0-1.0";
 export const ULTIMATE_NATURE_SOURCE_PAGE = "https://quaternius.com/packs/ultimatenature.html";
 export const ULTIMATE_NATURE_ARCHIVE_URL =
@@ -12,13 +12,17 @@ export const ULTIMATE_NATURE_PROPS = Object.freeze([
   defineProp("birch", "BirchTree_2.fbx", 1.3, 700, 160, "green"),
   defineProp("willow", "Willow_4.fbx", 1.35, 700, 160, "green"),
   defineProp("conifer", "PineTree_5.fbx", 1.35, 600, 140, "green"),
-  defineProp("palm", "PalmTree_3.fbx", 1.45, 600, 140, "green"),
+  defineProp("palm", "PalmTree_3.fbx", 1.45, 600, 150, "green"),
   defineProp("dead-tree", "CommonTree_Dead_3.fbx", 1.2, 450, 120, null),
   defineProp("shrub", "Bush_2.fbx", 0.32, 200, 60, ".*"),
   defineProp("cactus", "Cactus_2.fbx", 0.62, 350, 100, null),
   defineProp("boulder", "Rock_4.fbx", 0.22, 128, 80, null),
   defineProp("stump", "TreeStump.fbx", 0.22, 232, 80, null),
   defineProp("fallen-log", "WoodLog.fbx", 0.18, 240, 80, null),
+  defineProp("grass-tuft", "Grass_Short.fbx", 0.12, 120, 30, ".*"),
+  defineProp("fern", "Plant_4.fbx", 0.18, 120, 30, ".*"),
+  defineProp("reed", "Wheat.fbx", 0.24, 120, 30, ".*"),
+  defineProp("wildflower", "Flowers.fbx", 0.13, 120, 30, ".*"),
 ]);
 
 export function validateUltimateNatureCatalog(props = ULTIMATE_NATURE_PROPS) {

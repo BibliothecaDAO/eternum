@@ -27,6 +27,7 @@ import {
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/terrain-surface";
+import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
 import { ModelType } from "@/three/types/army";
@@ -2168,6 +2169,26 @@ export class ArmyManager {
     return this.visibleArmyOrder.length;
   }
 
+  public collectVisibleTerrainMovementInteractions(target: TerrainMovementInteraction[]): void {
+    let interactionCount = 0;
+    for (const army of this.visibleArmies) {
+      const entityId = this.toNumericId(army.entityId);
+      const instance = this.armyModel.getInstanceData(entityId);
+      if (!instance) continue;
+      const interaction = target[interactionCount] ?? createTerrainMovementInteraction();
+      interaction.entityId = entityId;
+      interaction.isMoving = this.armyModel.isEntityMoving(entityId);
+      interaction.mode = resolveArmyTerrainMovementMode(army, this.armyModel.getAssignedModelType(entityId));
+      interaction.worldX = instance.position.x;
+      interaction.worldY = instance.position.y;
+      interaction.worldZ = instance.position.z;
+      interaction.yaw = instance.rotation?.y ?? 0;
+      target[interactionCount] = interaction;
+      interactionCount += 1;
+    }
+    target.length = interactionCount;
+  }
+
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     refreshVisibleArmyCosmeticsByOwner({
       owner,
@@ -3534,4 +3555,14 @@ ${
 
     // Clean up any other resources...
   }
+}
+
+function createTerrainMovementInteraction(): TerrainMovementInteraction {
+  return { entityId: 0, isMoving: false, mode: "ground", worldX: 0, worldY: 0, worldZ: 0, yaw: 0 };
+}
+
+function resolveArmyTerrainMovementMode(army: ArmyData, modelType: ModelType | undefined): TerrainMovementMode {
+  if (modelType === ModelType.Boat) return "naval";
+  if (army.category === TroopType.Paladin && army.tier === TroopTier.T3) return "airborne";
+  return "ground";
 }

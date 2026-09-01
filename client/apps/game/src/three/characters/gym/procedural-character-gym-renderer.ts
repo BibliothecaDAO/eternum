@@ -7,6 +7,8 @@ import {
 import { ArrowProjectileSystem } from "@/three/projectiles/arrow-projectile-system";
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
+import { TerrainMovementEffects, type TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
+import { BiomeType } from "@bibliothecadao/types";
 import {
   AxesHelper,
   Color,
@@ -86,6 +88,10 @@ export interface ProceduralCharacterGymStats {
   collisionRagdollCount: number;
   collisionScenario: ProceduralCollisionGymConfig["scenario"];
   drawCalls: number;
+  dustActiveParticles: number;
+  dustCapacity: number;
+  dustEmitterCount: number;
+  dustTriangles: number;
   fps: number;
   frameMs: number;
   geometryCount: number;
@@ -186,6 +192,18 @@ class ProceduralCharacterGymRuntime {
   private readonly boatStage: ProceduralBoatGymStage;
   private readonly meleeStage: ProceduralMeleeGymStage;
   private readonly collisionStage: ProceduralCollisionGymStage;
+  private readonly movementEffects = new TerrainMovementEffects(() => BiomeType.Bare);
+  private readonly movementInteraction: TerrainMovementInteraction = {
+    entityId: 1,
+    isMoving: false,
+    mode: "ground",
+    worldX: 0,
+    worldY: 0,
+    worldZ: 0,
+    yaw: 0,
+  };
+  private readonly movementInteractionBuffer = [this.movementInteraction];
+  private readonly movementPosition = new Vector3();
   private projectiles: ArrowProjectileSystem;
   private character: ProceduralUnitActor;
   private config: ProceduralUnitConfig;
@@ -202,6 +220,7 @@ class ProceduralCharacterGymRuntime {
   private readonly targetVelocity = new Vector3();
   private readonly captureCanvas = document.createElement("canvas");
   private captureGeneration = 0;
+  private inspectionSequence: ProceduralAnimationCaptureSequence | null = null;
 
   private constructor(
     input: MountProceduralCharacterGymRendererInput,
@@ -226,12 +245,14 @@ class ProceduralCharacterGymRuntime {
     this.meleeStage = new ProceduralMeleeGymStage(this.config.melee);
     this.projectiles = createArrowProjectileSystem(this.config);
     this.collisionStage = new ProceduralCollisionGymStage(this.unitRuntime, this.config, this.collisionConfig);
+    this.movementEffects.setQuality(0, 1);
     this.stage.add(
       this.archerStage.group,
       this.boatStage.group,
       this.meleeStage.group,
       this.projectiles.group,
       this.collisionStage.group,
+      this.movementEffects.object3d,
     );
     this.connectCharacterRangedRelease();
     this.connectCharacterMeleeContact();
@@ -303,6 +324,7 @@ class ProceduralCharacterGymRuntime {
       this.collisionStage.update(deltaSeconds);
       this.unitRuntime.update(deltaSeconds);
       this.collisionStage.updateProjectiles(deltaSeconds);
+      this.syncMovementEffects(deltaSeconds, false);
       return;
     }
     this.archerStage.update(deltaSeconds);
@@ -312,6 +334,33 @@ class ProceduralCharacterGymRuntime {
     this.unitRuntime.update(deltaSeconds);
     this.projectiles.update(deltaSeconds);
     this.advanceSmoke(deltaSeconds);
+    this.syncMovementEffects(deltaSeconds);
+  }
+
+  private syncMovementEffects(deltaSeconds: number, movingOverride?: boolean): void {
+    const grounded = isGroundedGymCharacter(this.config);
+    const isMoving =
+      movingOverride ??
+      (this.inspectionSequence
+        ? this.inspectionSequence === "locomotion-cycle"
+        : isGymCharacterLocomoting(this.config));
+    if (!grounded) {
+      this.movementEffects.sync([]);
+      this.movementEffects.update(deltaSeconds);
+      return;
+    }
+    this.character.object.getWorldPosition(this.movementPosition);
+    this.movementInteraction.isMoving = isMoving;
+    this.movementInteraction.worldX = this.movementPosition.x;
+    this.movementInteraction.worldY = sampleProceduralHorseTerrain(
+      this.config.horse,
+      this.movementPosition.x,
+      this.movementPosition.z,
+    ).height;
+    this.movementInteraction.worldZ = this.movementPosition.z;
+    this.movementInteraction.yaw = this.character.object.rotation.y;
+    this.movementEffects.sync(this.movementInteractionBuffer);
+    this.movementEffects.update(deltaSeconds);
   }
 
   private advanceSmoke(deltaSeconds: number): void {
@@ -429,6 +478,7 @@ class ProceduralCharacterGymRuntime {
     this.controls.autoRotate = false;
     this.character.object.position.set(0, 0, 0);
     this.resetRuntimeState();
+    this.inspectionSequence = sequence;
     this.inspectionFill.intensity = 2.2;
     this.focusAnimationInspectionCamera();
     this.archerStage.group.visible = false;
@@ -450,6 +500,7 @@ class ProceduralCharacterGymRuntime {
     this.character.object.position.z += rootMotionSpeed * fixedStep;
     this.unitRuntime.stepOnce();
     this.projectiles.stepOnce();
+    this.syncMovementEffects(fixedStep);
   }
 
   private async captureInspectionFrame(
@@ -546,6 +597,7 @@ class ProceduralCharacterGymRuntime {
     this.updateActionStageVisibility();
     if (kindChanged) this.replaceCharacter();
     else this.unitRuntime.updateActorConfig(this.character, normalized);
+    if (kindChanged) this.movementEffects.clear();
     this.collisionStage.updateUnitConfig(normalized);
     this.syncActionTargets();
     if (kindChanged) this.resetCamera();
@@ -563,6 +615,7 @@ class ProceduralCharacterGymRuntime {
   private setPaused(paused: boolean): void {
     this.paused = paused;
     if (!paused) {
+      this.inspectionSequence = null;
       this.inspectionFill.intensity = 0;
       this.controls.autoRotate = this.config.humanoid.autoRotate;
       this.updateActionStageVisibility();
@@ -590,6 +643,7 @@ class ProceduralCharacterGymRuntime {
 
   private reset(): void {
     this.captureGeneration += 1;
+    this.inspectionSequence = null;
     this.resetRuntimeState();
   }
 
@@ -600,6 +654,7 @@ class ProceduralCharacterGymRuntime {
     this.archerStage.reset();
     this.boatStage.reset();
     this.meleeStage.reset();
+    this.movementEffects.clear();
     this.syncActionTargets();
     this.smoke = createIdleCharacterGymSmokeState();
   }
@@ -612,6 +667,7 @@ class ProceduralCharacterGymRuntime {
     const projectiles = this.projectiles.getStats();
     const collision = this.collisionStage.getStats();
     const collisionEvaluation = evaluateProceduralCollisionGym(this.collisionConfig, collision);
+    const dust = this.movementEffects.getStats().dust;
     this.onStats({
       activeBodies: character.activeBodyCount,
       appearanceId: character.appearanceId,
@@ -637,6 +693,10 @@ class ProceduralCharacterGymRuntime {
       collisionRagdollCount: collision.ragdollCount,
       collisionScenario: collision.scenario,
       drawCalls: render.drawCalls ?? render.calls,
+      dustActiveParticles: dust.activeParticles,
+      dustCapacity: dust.capacity,
+      dustEmitterCount: dust.emitters,
+      dustTriangles: dust.triangles,
       fps: Math.round(1 / Math.max(deltaSeconds, 1 / 240)),
       frameMs: Number((deltaSeconds * 1000).toFixed(1)),
       geometryCount: this.renderer.info.memory.geometries,
@@ -755,6 +815,7 @@ class ProceduralCharacterGymRuntime {
     this.archerStage.dispose();
     this.boatStage.dispose();
     this.meleeStage.dispose();
+    this.movementEffects.dispose();
     this.unitRuntime.dispose();
     disposeStage(this.stage);
     this.backend.dispose?.();
@@ -988,6 +1049,16 @@ function resolveExpectedPhysicsCounts(kind: ProceduralUnitConfig["kind"]): { bod
   if (kind === "horse") return { bodies: 17, constraints: 16 };
   if (kind === "paladin") return { bodies: 28, constraints: 26 };
   return { bodies: 11, constraints: 10 };
+}
+
+function isGroundedGymCharacter(config: ProceduralUnitConfig): boolean {
+  return config.kind !== "boat";
+}
+
+function isGymCharacterLocomoting(config: ProceduralUnitConfig): boolean {
+  if (!isGroundedGymCharacter(config)) return false;
+  if (config.kind === "horse" || config.kind === "paladin") return config.horse.gait !== "idle";
+  return config.humanoid.animationMode === "walk" || config.humanoid.animationMode === "run";
 }
 
 function isMeleeKind(kind: ProceduralUnitConfig["kind"]): kind is "knight" | "paladin" {

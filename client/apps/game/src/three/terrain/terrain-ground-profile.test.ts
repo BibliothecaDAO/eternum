@@ -93,8 +93,10 @@ function vegetation(overrides: Partial<Parameters<typeof resolveTerrainGroundEco
     edgeStrength: 0.2,
     gapStrength: 0.2,
     maturity: 0.4,
+    roadEdgeStrength: 0,
     successionStrength: 0.3,
     understoryCover: 0.5,
+    waterEdgeStrength: 0,
     ...overrides,
   };
 }

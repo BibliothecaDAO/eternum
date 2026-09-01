@@ -1,8 +1,8 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 
 import { buildTerrainRoadSegments } from "../terrain-roads";
-import type { TerrainPageRequest, TerrainRoadAnchor } from "../terrain-types";
+import type { TerrainPageRequest, TerrainRoadAnchor, TerrainSettlementAnchor } from "../terrain-types";
 
 export const ALL_BIOMES_FIXTURE_ID = "all-biomes-game-scale-v2";
 export const ALL_BIOMES_COLUMNS = 20;
@@ -39,11 +39,20 @@ export const TERRAIN_SETTLEMENT_REGROWTH_SITES = Object.freeze([
   { col: 10, row: 7 },
   { col: 14, row: 4 },
 ]);
-const SETTLEMENT_REGROWTH_ROAD_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze(
+const TERRAIN_SETTLEMENT_REGROWTH_ANCHORS: readonly TerrainSettlementAnchor[] = Object.freeze(
   TERRAIN_SETTLEMENT_REGROWTH_SITES.map((site, index) => ({
     ...site,
-    owner: "settlement-evaluation-owner",
+    level: [1, 2, 4][index],
     structureId: `settlement-realm-${index + 1}`,
+    structureType: StructureType.Realm,
+  })),
+);
+const SETTLEMENT_REGROWTH_ROAD_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze(
+  TERRAIN_SETTLEMENT_REGROWTH_ANCHORS.map((anchor) => ({
+    col: anchor.col,
+    owner: "settlement-evaluation-owner",
+    row: anchor.row,
+    structureId: anchor.structureId,
   })),
 );
 
@@ -77,6 +86,7 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
     mapCenter: 0,
     pageKey: ALL_BIOMES_FIXTURE_ID,
     roadSegments: [],
+    settlementAnchors: [],
     strictBiomeParity: false,
     subdivisions: 2,
   };
@@ -86,6 +96,7 @@ export function createTerrainVerificationRequest(sceneId: TerrainVerificationSce
   if (sceneId === "all-biomes") return createAllBiomesTerrainRequest();
   if (isFogVerificationScene(sceneId)) return createFogVerificationRequest(sceneId);
   const cells = createAnchorCells(sceneId);
+  const settlementAnchors = createAnchorSettlementAnchors(sceneId, cells);
   return {
     cells,
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
@@ -98,6 +109,7 @@ export function createTerrainVerificationRequest(sceneId: TerrainVerificationSce
         : sceneId === "settlement-regrowth"
           ? buildTerrainRoadSegments({ anchors: SETTLEMENT_REGROWTH_ROAD_ANCHORS, cells })
           : [],
+    settlementAnchors,
     strictBiomeParity: false,
     subdivisions: 3,
   };
@@ -134,16 +146,49 @@ function createFogVerificationRequest(
     sceneId === "fog-frontier"
       ? createShowcaseCells()
       : createAnchorCells(sceneId === "fog-coast" ? "tropical-coast" : "temperate-grove");
+  const cells = source.map((cell) => (isFogCellExplored(sceneId, cell.col, cell.row) ? cell : concealCell(cell)));
   return {
-    cells: source.map((cell) => (isFogCellExplored(sceneId, cell.col, cell.row) ? cell : concealCell(cell))),
+    cells,
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
     roadSegments: [],
+    settlementAnchors: createCellSettlementAnchors(cells),
     strictBiomeParity: false,
     subdivisions: 3,
   };
+}
+
+function createAnchorSettlementAnchors(
+  sceneId: TerrainBiomeAnchorSceneId,
+  cells: ReturnType<typeof createAnchorCells>,
+): readonly TerrainSettlementAnchor[] {
+  if (sceneId === "settlement-regrowth") return TERRAIN_SETTLEMENT_REGROWTH_ANCHORS;
+  if (sceneId === "owned-roads") {
+    return ROAD_VERIFICATION_ANCHORS.map(({ col, row, structureId }) => ({
+      col,
+      level: 1,
+      row,
+      structureId,
+      structureType: StructureType.Realm,
+    }));
+  }
+  return createCellSettlementAnchors(cells);
+}
+
+function createCellSettlementAnchors(
+  cells: readonly { col: number; occupied: boolean; row: number }[],
+): TerrainSettlementAnchor[] {
+  return cells
+    .filter(({ occupied }) => occupied)
+    .map(({ col, row }) => ({
+      col,
+      level: 1,
+      row,
+      structureId: `fixture:${col}:${row}`,
+      structureType: StructureType.Realm,
+    }));
 }
 
 function isFogCellExplored(

@@ -1,8 +1,8 @@
 import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
-import type { BiomeType } from "@bibliothecadao/types";
+import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 17;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 19;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
@@ -26,6 +26,14 @@ export interface TerrainRoadSegment {
   start: readonly [number, number];
 }
 
+export interface TerrainSettlementAnchor {
+  col: number;
+  level: number;
+  row: number;
+  structureId: string;
+  structureType: StructureType;
+}
+
 export interface TerrainPageRequest {
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
@@ -34,6 +42,7 @@ export interface TerrainPageRequest {
   pageKey: string;
   propDensityMultiplier?: number;
   roadSegments: readonly TerrainRoadSegment[];
+  settlementAnchors: readonly TerrainSettlementAnchor[];
   strictBiomeParity?: boolean;
   subdivisions?: number;
 }
@@ -58,6 +67,7 @@ export interface TerrainGeometryBuffers {
   roughness: Float32Array;
   shore: Float32Array;
   uvs: Float32Array;
+  waterDepth: Float32Array;
 }
 
 export interface TerrainGeometryBounds {
@@ -83,6 +93,7 @@ export function getTerrainGeometryBufferViews(
     buffers.roughness,
     buffers.shore,
     buffers.uvs,
+    buffers.waterDepth,
   ];
 }
 

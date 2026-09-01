@@ -1,8 +1,8 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
-import { terrainHexToWorld } from "./terrain-coordinates";
+import { terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
@@ -27,6 +27,22 @@ describe("prepareTerrainPage", () => {
 
     expect(page.diagnostics.frontierEdges).toBe(10);
     expect(page.waterBuffers).toBeNull();
+    expect(Array.from(page.buffers.waterDepth).every((depth) => depth === 0)).toBe(true);
+  });
+
+  it("clips an organic shoreline into the adjacent beach and preserves bathymetry", () => {
+    const ocean = cell(0, 0, BiomeType.Ocean);
+    const beach = cell(1, 0, BiomeType.Beach);
+    const inland = cell(2, 0, BiomeType.Grassland);
+    const page = prepareTerrainPage(createRequest([ocean, beach, inland]));
+    const water = page.waterBuffers!;
+    const oceanEdge = Math.max(...terrainHexCorners(ocean.col, ocean.row).map(({ x }) => x));
+
+    expect(water.waterDepth.length).toBe(water.positions.length / 3);
+    expect(Math.min(...water.waterDepth)).toBeCloseTo(0.002);
+    expect(Math.max(...water.waterDepth)).toBeGreaterThan(0.1);
+    expect(Math.max(...readAxis(water.positions, 0))).toBeGreaterThan(oceanEdge + 0.05);
+    expect(Array.from(water.waterDepth).filter((depth) => depth <= 0.002_001).length).toBeGreaterThan(2);
   });
 
   it("is independent of input traversal order and changes identity with occupancy", () => {
@@ -181,6 +197,12 @@ function readAttribute(buffer: Float32Array | Uint8Array, vertex: number, itemSi
   return Array.from(buffer.subarray(vertex * itemSize, vertex * itemSize + itemSize));
 }
 
+function readAxis(positions: Float32Array, offset: 0 | 1 | 2): number[] {
+  const values: number[] = [];
+  for (let index = offset; index < positions.length; index += 3) values.push(positions[index]);
+  return values;
+}
+
 function cell(col: number, row: number, biome: BiomeType): TerrainCellInput {
   return { biome, col, explored: true, occupied: false, previewBiome: biome, row };
 }
@@ -197,6 +219,15 @@ function createRequest(cells: TerrainCellInput[]): TerrainPageRequest {
     mapCenter: 0,
     pageKey: "builder-fixture",
     roadSegments: [],
+    settlementAnchors: cells
+      .filter(({ occupied }) => occupied)
+      .map(({ col, row }) => ({
+        col,
+        level: 1,
+        row,
+        structureId: `fixture:${col}:${row}`,
+        structureType: StructureType.Realm,
+      })),
     subdivisions: 3,
   };
 }

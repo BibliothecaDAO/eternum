@@ -37,6 +37,7 @@ describe("game-scale all-biomes fixture", () => {
         expect(new Set(first.cells.map(({ biome }) => biome)).size).toBeGreaterThanOrEqual(3);
         const expectedSettlements = sceneId === "owned-roads" ? 4 : sceneId === "settlement-regrowth" ? 3 : 1;
         expect(first.cells.filter(({ occupied }) => occupied)).toHaveLength(expectedSettlements);
+        expect(first.settlementAnchors).toHaveLength(expectedSettlements);
         if (sceneId === "owned-roads" || sceneId === "settlement-regrowth") {
           expect(first.roadSegments.length).toBeGreaterThan(0);
         } else expect(first.roadSegments).toEqual([]);
@@ -64,6 +65,7 @@ describe("game-scale all-biomes fixture", () => {
     const settlement = createTerrainVerificationRequest("settlement-regrowth");
 
     expect(settlement.cells.filter(({ occupied }) => occupied)).toHaveLength(3);
+    expect(settlement.settlementAnchors.map(({ level }) => level)).toEqual([1, 2, 4]);
     expect(settlement.roadSegments.length).toBeGreaterThan(0);
     expect(new Set(settlement.roadSegments.map(({ routeId }) => routeId))).toHaveLength(2);
   });

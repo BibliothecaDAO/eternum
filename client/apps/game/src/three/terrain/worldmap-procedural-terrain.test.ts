@@ -1,5 +1,5 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./procedural-terrain";
@@ -85,6 +85,29 @@ describe("WorldmapProceduralTerrain", () => {
     expect(segmentKeys).toHaveLength(5);
   });
 
+  it("partitions authoritative structure level and category with the pages they influence", () => {
+    const cells = Array.from({ length: 6 }, (_, col) => ({
+      ...worldCell(col, 0, BiomeType.Grassland),
+      occupied: col === 0 || col === 5,
+    }));
+    const requests = buildWorldmapTerrainPageRequests({
+      cells,
+      mapCenter: 0,
+      pageHeight: 1,
+      pageOrigin: { col: 0, row: 0 },
+      pageWidth: 3,
+      settlementAnchors: [
+        { col: 0, level: 1, row: 0, structureId: "west", structureType: StructureType.Village },
+        { col: 5, level: 4, row: 0, structureId: "east", structureType: StructureType.Realm },
+      ],
+    });
+
+    expect(requests.map(({ settlementAnchors }) => settlementAnchors.map(({ structureId }) => structureId))).toEqual([
+      ["west"],
+      ["east"],
+    ]);
+  });
+
   it("reuses unchanged prepared pages and rebuilds only changed occupancy", () => {
     const terrain = new WorldmapProceduralTerrain();
     const input = {
@@ -155,6 +178,7 @@ function emptyPresentationDiagnostics(): TerrainPresentationDiagnostics {
     fogTerrainCells: 0,
     frontierPreviewCells: 0,
     geometryBytes: 0,
+    groundCoverInstances: 0,
     pages: 0,
     propInstances: 0,
     propTriangles: 0,

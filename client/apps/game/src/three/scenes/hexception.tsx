@@ -31,7 +31,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
-import type { TerrainCellInput } from "@/three/terrain/terrain-types";
+import type { TerrainCellInput, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import {
   buildingKey,
   reconcileBuildingUpdate,
@@ -1339,6 +1339,7 @@ export default class HexceptionScene extends HexagonScene {
       mapCenter: 0,
       pageKey: `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
       roadSegments: [],
+      settlementAnchors: createHexceptionSettlementAnchors(cellsByKey.values()),
       strictBiomeParity: false,
       subdivisions: 2,
     });
@@ -1798,6 +1799,18 @@ export default class HexceptionScene extends HexagonScene {
   public hasActiveLabelAnimations(): boolean {
     return this.hoverLabelManager.hasActiveLabel();
   }
+}
+
+function createHexceptionSettlementAnchors(cells: Iterable<TerrainCellInput>): TerrainSettlementAnchor[] {
+  return Array.from(cells)
+    .filter(({ occupied }) => occupied)
+    .map(({ col, row }) => ({
+      col,
+      level: 1,
+      row,
+      structureId: `hexception:${col}:${row}`,
+      structureType: StructureType.Village,
+    }));
 }
 
 function resolveHexceptionBiome(biomeKey: string, fallback: BiomeType): BiomeType {

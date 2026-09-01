@@ -1,5 +1,5 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
@@ -31,6 +31,18 @@ describe("terrain prop placement", () => {
     const page = request(cells);
 
     expect(prepareTerrainPropInstances(page, new TerrainField(page))).toEqual([]);
+  });
+
+  it("derives dense near-view ground cover from the same vegetation field", () => {
+    const cells = Array.from({ length: 100 }, (_, index) =>
+      cell(index % 10, Math.floor(index / 10), BiomeType.Grassland),
+    );
+    const terrainRequest = request(cells, "ground-cover");
+    const instances = prepareTerrainPropInstances(terrainRequest, new TerrainField(terrainRequest));
+    const groundCover = instances.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "groundcover");
+
+    expect(groundCover.length).toBeGreaterThan(4);
+    expect(new Set(groundCover.map(({ archetype }) => archetype)).size).toBeGreaterThan(1);
   });
 
   it("anchors candidates globally so splitting pages does not move accepted instances", () => {
@@ -115,7 +127,7 @@ describe("terrain prop placement", () => {
     expect(Math.min(...instances.map(({ scale }) => scale))).toBeGreaterThanOrEqual(0.54);
     expect(Math.max(...instances.map(({ scale }) => scale))).toBeLessThanOrEqual(1.24);
     expect(
-      instances.every(({ appearance }) => appearance.tint.every((channel) => channel >= 0.88 && channel <= 1)),
+      instances.every(({ appearance }) => appearance.tint.every((channel) => channel >= 0.6 && channel <= 1)),
     ).toBe(true);
   });
 
@@ -128,7 +140,7 @@ describe("terrain prop placement", () => {
     const canopy = instances.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "canopy");
     const layers = new Set(instances.map(({ archetype }) => getTerrainPropPlacementLayer(archetype)));
 
-    expect(layers).toEqual(new Set(["canopy", "understory", "debris"]));
+    expect(layers).toEqual(new Set(["canopy", "understory", "debris", "groundcover"]));
     for (let leftIndex = 0; leftIndex < canopy.length; leftIndex += 1) {
       const left = canopy[leftIndex]!;
       for (let rightIndex = leftIndex + 1; rightIndex < canopy.length; rightIndex += 1) {
@@ -248,6 +260,15 @@ function request(cells: TerrainCellInput[], pageKey = "props", halo: TerrainCell
     mapCenter: 0,
     pageKey,
     roadSegments: [],
+    settlementAnchors: cells
+      .filter(({ occupied }) => occupied)
+      .map(({ col, row }) => ({
+        col,
+        level: 1,
+        row,
+        structureId: `fixture:${col}:${row}`,
+        structureType: StructureType.Realm,
+      })),
     subdivisions: 1,
   };
 }
@@ -279,9 +300,11 @@ function densityContext(overrides: Partial<TerrainPropDensityContext> & { normal
       edgeStrength: overrides.edgeStrength ?? 0.2,
       gapStrength: overrides.gapStrength ?? 0.2,
       maturity: overrides.maturity ?? 0.45,
+      roadEdgeStrength: overrides.roadEdgeStrength ?? 0,
       successionStrength: overrides.successionStrength ?? 0.3,
       understoryCover: overrides.understoryCover ?? 0.5,
       settlementEdgeStrength: overrides.settlementEdgeStrength ?? 0,
+      waterEdgeStrength: overrides.waterEdgeStrength ?? 0,
     },
     normalY: overrides.normalY ?? 1,
   };

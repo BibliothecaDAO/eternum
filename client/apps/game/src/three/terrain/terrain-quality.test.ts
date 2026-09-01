@@ -8,6 +8,14 @@ describe("terrain quality tiers", () => {
     expect(TERRAIN_QUALITY_PROFILES.detail.windStrength).toBe(1);
     expect(TERRAIN_QUALITY_PROFILES.overview.windStrength).toBeLessThan(TERRAIN_QUALITY_PROFILES.balanced.windStrength);
     expect(TERRAIN_QUALITY_PROFILES.overview.waterMotion).toBeLessThan(TERRAIN_QUALITY_PROFILES.balanced.waterMotion);
+    expect(TERRAIN_QUALITY_PROFILES.overview.waterInteractionStrength).toBe(0);
+    expect(TERRAIN_QUALITY_PROFILES.overview.dustInteractionStrength).toBe(0);
+    expect(TERRAIN_QUALITY_PROFILES.balanced.dustInteractionStrength).toBeLessThan(
+      TERRAIN_QUALITY_PROFILES.detail.dustInteractionStrength,
+    );
+    expect(TERRAIN_QUALITY_PROFILES.balanced.waterInteractionStrength).toBeLessThan(
+      TERRAIN_QUALITY_PROFILES.detail.waterInteractionStrength,
+    );
     expect(TERRAIN_QUALITY_PROFILES.overview.fogMotionStrength).toBeLessThan(
       TERRAIN_QUALITY_PROFILES.balanced.fogMotionStrength,
     );

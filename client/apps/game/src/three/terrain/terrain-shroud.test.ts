@@ -81,6 +81,7 @@ function fixture(cells: TerrainCellInput[]): TerrainPageRequest {
     mapCenter: 0,
     pageKey: "shroud-fixture",
     roadSegments: [],
+    settlementAnchors: [],
     subdivisions: 2,
   };
 }

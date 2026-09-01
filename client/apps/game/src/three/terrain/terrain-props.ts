@@ -11,6 +11,7 @@ import {
   getTerrainPropPlacementLayer,
   getTerrainPropRole,
   getTerrainPropSuccessionAffinity,
+  getTerrainPropWetlandAffinity,
   type TerrainPropArchetypeId,
   type TerrainPropPlacementLayer,
 } from "./terrain-prop-catalog";
@@ -71,25 +72,87 @@ interface AcceptedTerrainPropSite {
   surface: TerrainSurfaceSample;
 }
 
-const CANDIDATE_SPACING = 1;
+const CANDIDATE_SPACING: Readonly<Record<TerrainPropPlacementLayer, number>> = Object.freeze({
+  canopy: 1,
+  debris: 1,
+  groundcover: 0.5,
+  understory: 1,
+});
 const CANOPY_BUCKET_SIZE = 1.25;
 const CANOPY_HALO_LATTICE_CELLS = 1;
-const TERRAIN_PROP_PLACEMENT_LAYERS = Object.freeze(["canopy", "understory", "debris"] as const);
+const TERRAIN_PROP_PLACEMENT_LAYERS = Object.freeze(["canopy", "understory", "debris", "groundcover"] as const);
 export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1.75;
+const GROUND_COVER_DENSITY_RATIO = 0.06;
 const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
   [BiomeType.Ocean]: profile(0),
-  [BiomeType.Beach]: profile(0.14, ["palm", 5], ["boulder", 2], ["fallen-log", 1]),
-  [BiomeType.Scorched]: profile(0.14, ["dead-tree", 4], ["boulder", 4], ["cactus", 1]),
-  [BiomeType.Bare]: profile(0.17, ["boulder", 6], ["dead-tree", 2], ["stump", 1]),
-  [BiomeType.Tundra]: profile(0.14, ["boulder", 5], ["conifer", 2], ["dead-tree", 1]),
-  [BiomeType.Snow]: profile(0.12, ["boulder", 6], ["conifer", 2]),
-  [BiomeType.TemperateDesert]: profile(0.18, ["cactus", 5], ["boulder", 3], ["shrub", 1]),
-  [BiomeType.Shrubland]: profile(0.22, ["shrub", 6], ["boulder", 2], ["broadleaf", 1]),
-  [BiomeType.Taiga]: profile(0.29, ["conifer", 6], ["birch", 3], ["dead-tree", 1], ["shrub", 2]),
-  [BiomeType.Grassland]: profile(0.15, ["shrub", 5], ["broadleaf", 2], ["boulder", 1], ["stump", 1]),
-  [BiomeType.TemperateDeciduousForest]: profile(0.31, ["broadleaf", 5], ["birch", 3], ["shrub", 2], ["stump", 1]),
+  [BiomeType.Beach]: profile(0.14, ["palm", 5], ["boulder", 2], ["fallen-log", 1], ["grass-tuft", 8], ["reed", 2]),
+  [BiomeType.Scorched]: profile(
+    0.14,
+    ["dead-tree", 4],
+    ["boulder", 4],
+    ["cactus", 1],
+    ["grass-tuft", 2],
+    ["wildflower", 1],
+  ),
+  [BiomeType.Bare]: profile(0.17, ["boulder", 6], ["dead-tree", 2], ["stump", 1], ["grass-tuft", 2]),
+  [BiomeType.Tundra]: profile(
+    0.14,
+    ["boulder", 5],
+    ["conifer", 2],
+    ["dead-tree", 1],
+    ["grass-tuft", 5],
+    ["wildflower", 1],
+  ),
+  [BiomeType.Snow]: profile(0.12, ["boulder", 6], ["conifer", 2], ["grass-tuft", 1]),
+  [BiomeType.TemperateDesert]: profile(
+    0.18,
+    ["cactus", 5],
+    ["boulder", 3],
+    ["shrub", 1],
+    ["grass-tuft", 4],
+    ["wildflower", 1],
+  ),
+  [BiomeType.Shrubland]: profile(
+    0.22,
+    ["shrub", 6],
+    ["boulder", 2],
+    ["broadleaf", 1],
+    ["grass-tuft", 8],
+    ["wildflower", 3],
+    ["fern", 1],
+  ),
+  [BiomeType.Taiga]: profile(
+    0.29,
+    ["conifer", 6],
+    ["birch", 3],
+    ["dead-tree", 1],
+    ["shrub", 2],
+    ["fern", 5],
+    ["grass-tuft", 4],
+  ),
+  [BiomeType.Grassland]: profile(
+    0.15,
+    ["shrub", 5],
+    ["broadleaf", 2],
+    ["boulder", 1],
+    ["stump", 1],
+    ["grass-tuft", 12],
+    ["wildflower", 4],
+    ["reed", 2],
+  ),
+  [BiomeType.TemperateDeciduousForest]: profile(
+    0.31,
+    ["broadleaf", 5],
+    ["birch", 3],
+    ["shrub", 2],
+    ["stump", 1],
+    ["fern", 7],
+    ["grass-tuft", 3],
+    ["wildflower", 2],
+    ["reed", 1],
+  ),
   [BiomeType.TemperateRainForest]: profile(
     0.32,
     ["willow", 5],
@@ -97,9 +160,22 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["birch", 1],
     ["shrub", 2],
     ["fallen-log", 1],
+    ["fern", 8],
+    ["grass-tuft", 2],
+    ["reed", 3],
   ),
-  [BiomeType.SubtropicalDesert]: profile(0.17, ["cactus", 5], ["shrub", 2], ["boulder", 3]),
-  [BiomeType.TropicalSeasonalForest]: profile(0.3, ["palm", 4], ["broadleaf", 4], ["shrub", 2], ["fallen-log", 1]),
+  [BiomeType.SubtropicalDesert]: profile(0.17, ["cactus", 5], ["shrub", 2], ["boulder", 3], ["grass-tuft", 3]),
+  [BiomeType.TropicalSeasonalForest]: profile(
+    0.3,
+    ["palm", 4],
+    ["broadleaf", 4],
+    ["shrub", 2],
+    ["fallen-log", 1],
+    ["fern", 6],
+    ["grass-tuft", 3],
+    ["wildflower", 1],
+    ["reed", 2],
+  ),
   [BiomeType.TropicalRainForest]: profile(
     0.34,
     ["willow", 4],
@@ -107,6 +183,10 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["broadleaf", 3],
     ["shrub", 2],
     ["fallen-log", 1],
+    ["fern", 8],
+    ["grass-tuft", 2],
+    ["wildflower", 1],
+    ["reed", 3],
   ),
 };
 const MAX_PROFILE_DENSITY_BY_LAYER: Readonly<Record<TerrainPropPlacementLayer, number>> = Object.freeze(
@@ -128,7 +208,6 @@ export function prepareTerrainPropInstances(request: TerrainPageRequest, field: 
     (cell): cell is TerrainCellInput & { biome: BiomeType } => cell.explored && cell.biome !== null,
   );
   const eligibleByKey = new Map(eligibleCells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
-  const bounds = resolveCandidateBounds(ownedCells);
   const elevationSeed = resolveSeed(request.climate.elevation_seed);
   const moistureSeed = resolveSeed(request.climate.moisture_seed);
   const densityMultiplier = resolveDensityMultiplier(request.propDensityMultiplier);
@@ -141,21 +220,22 @@ export function prepareTerrainPropInstances(request: TerrainPageRequest, field: 
     ownedByKey,
     pageKey: request.pageKey,
   };
-  return TERRAIN_PROP_PLACEMENT_LAYERS.flatMap((layer) => prepareTerrainPropLayer(layer, bounds, context))
+  return TERRAIN_PROP_PLACEMENT_LAYERS.flatMap((layer) => prepareTerrainPropLayer(layer, context))
     .map(toTerrainPropInstance)
     .toSorted(compareTerrainPropInstances);
 }
 
 function prepareTerrainPropLayer(
   layer: TerrainPropPlacementLayer,
-  ownedBounds: CandidateBounds,
   context: TerrainPropPreparationContext,
 ): PreparedTerrainPropCandidate[] {
-  const bounds = layer === "canopy" ? expandCandidateBounds(ownedBounds, CANOPY_HALO_LATTICE_CELLS) : ownedBounds;
+  const spacing = CANDIDATE_SPACING[layer];
+  const layerBounds = resolveCandidateBounds(Array.from(context.ownedByKey.values()), spacing);
+  const bounds = layer === "canopy" ? expandCandidateBounds(layerBounds, CANOPY_HALO_LATTICE_CELLS) : layerBounds;
   const candidates: PreparedTerrainPropCandidate[] = [];
   for (let latticeZ = bounds.minZ; latticeZ <= bounds.maxZ; latticeZ += 1) {
     for (let latticeX = bounds.minX; latticeX <= bounds.maxX; latticeX += 1) {
-      const candidate = prepareTerrainPropCandidate(latticeX, latticeZ, layer, context);
+      const candidate = prepareTerrainPropCandidate(latticeX, latticeZ, layer, spacing, context);
       if (candidate) candidates.push(candidate);
     }
   }
@@ -167,9 +247,10 @@ function prepareTerrainPropCandidate(
   latticeX: number,
   latticeZ: number,
   layer: TerrainPropPlacementLayer,
+  spacing: number,
   context: TerrainPropPreparationContext,
 ): PreparedTerrainPropCandidate | null {
-  const site = resolveTerrainPropCandidateSite(latticeX, latticeZ, layer, context);
+  const site = resolveTerrainPropCandidateSite(latticeX, latticeZ, layer, spacing, context);
   if (!site) return null;
   const accepted = resolveAcceptedTerrainPropSite(site, layer, context);
   if (!accepted) return null;
@@ -180,6 +261,7 @@ function resolveTerrainPropCandidateSite(
   latticeX: number,
   latticeZ: number,
   layer: TerrainPropPlacementLayer,
+  spacing: number,
   context: TerrainPropPreparationContext,
 ): TerrainPropCandidateSite | null {
   const acceptance = hashUnit(
@@ -204,8 +286,8 @@ function resolveTerrainPropCandidateSite(
     context.moistureSeed,
     `prop-${layer}-jitter-z-v2`,
   );
-  const worldX = (latticeX + (jitterX - 0.5) * 0.72) * CANDIDATE_SPACING;
-  const worldZ = (latticeZ + (jitterZ - 0.5) * 0.72) * CANDIDATE_SPACING;
+  const worldX = (latticeX + (jitterX - 0.5) * 0.72) * spacing;
+  const worldZ = (latticeZ + (jitterZ - 0.5) * 0.72) * spacing;
   const ownerCoordinate = findNearestTerrainHex(worldX, worldZ);
   const ownerKey = terrainCellKey(ownerCoordinate.col, ownerCoordinate.row);
   const owner = context.eligibleByKey.get(ownerKey);
@@ -295,7 +377,7 @@ function resolveTerrainPropAppearance(
   return {
     moss: clampUnit(mossSupport * (1 - snow * 0.85)),
     snow,
-    tint: resolveTerrainPropTint(archetype, tintVariation),
+    tint: resolveTerrainPropTint(archetype, tintVariation, context),
     windAmplitude: clampUnit(climate.windAmplitude),
   };
 }
@@ -382,8 +464,19 @@ function resolveEcologicalWeights(
           ? 1.08 - undergrowth * 0.18
           : 0.86 + undergrowth * 0.28) *
       resolveTerrainPropSuccessionWeight(entry.archetype, vegetation) *
-      resolveTerrainPropDisturbanceWeight(entry.archetype, vegetation),
+      resolveTerrainPropDisturbanceWeight(entry.archetype, vegetation) *
+      resolveTerrainPropWetlandWeight(entry.archetype, vegetation),
   }));
+}
+
+function resolveTerrainPropWetlandWeight(
+  archetype: TerrainPropArchetypeId,
+  vegetation: TerrainPropDensityContext,
+): number {
+  const affinity = getTerrainPropWetlandAffinity(archetype);
+  const wetland = 1 + vegetation.waterEdgeStrength * (affinity * 1.5 - 0.4);
+  const verge = 1 + vegetation.roadEdgeStrength * (getTerrainPropSuccessionAffinity(archetype) * 0.8 - 0.15);
+  return wetland * verge;
 }
 
 function resolveTerrainPropDisturbanceWeight(
@@ -418,16 +511,29 @@ function resolveTerrainPropScale(
       (layer === "debris" ? vegetation.maturity * 0.18 + vegetation.settlementEdgeStrength * 0.14 : 0),
   );
   if (role === "canopy") return 0.76 + shapedValue * 0.48;
+  if (role === "groundcover") return 0.72 + shapedValue * 0.5;
   if (role === "understory") return 0.54 + shapedValue * 0.42;
   return 0.68 + shapedValue * 0.44;
 }
 
-function resolveTerrainPropTint(archetype: TerrainPropArchetypeId, value: number): readonly [number, number, number] {
+function resolveTerrainPropTint(
+  archetype: TerrainPropArchetypeId,
+  value: number,
+  vegetation: TerrainPropDensityContext,
+): readonly [number, number, number] {
   if (getTerrainPropRole(archetype) === "canopy") {
     return [0.9 + value * 0.08, 0.94 + value * 0.06, 0.88 + value * 0.1];
   }
   if (getTerrainPropRole(archetype) === "understory") {
     return [0.91 + value * 0.07, 0.95 + value * 0.05, 0.89 + value * 0.08];
+  }
+  if (getTerrainPropRole(archetype) === "groundcover") {
+    const dryness = clampUnit(1 - vegetation.moisture + vegetation.disturbanceStrength * 0.35);
+    const wetness = vegetation.waterEdgeStrength;
+    if (archetype === "fern") return [0.72 + value * 0.08, 0.88 + value * 0.08, 0.68 + value * 0.08];
+    if (archetype === "reed") return [0.82 + value * 0.08, 0.9 + value * 0.07, 0.62 + wetness * 0.12];
+    if (archetype === "wildflower") return [0.9 + value * 0.08, 0.94 + value * 0.05, 0.82 + value * 0.12];
+    return [0.8 + dryness * 0.12, 0.9 - dryness * 0.14 + value * 0.05, 0.68 - dryness * 0.08];
   }
   const neutral = 0.9 + value * 0.1;
   return [neutral, neutral, neutral];
@@ -468,9 +574,17 @@ export function resolveEffectiveTerrainPropDensity(
 
 function resolveLayerDensity(profile: BiomePropProfile, layer: TerrainPropPlacementLayer | undefined): number {
   if (!layer) return profile.density;
-  const totalWeight = profile.weights.reduce((total, { weight }) => total + weight, 0);
+  if (layer === "groundcover") {
+    return profile.weights.some(({ archetype }) => getTerrainPropPlacementLayer(archetype) === "groundcover")
+      ? profile.density * GROUND_COVER_DENSITY_RATIO
+      : 0;
+  }
+  const structuralWeights = profile.weights.filter(
+    ({ archetype }) => getTerrainPropPlacementLayer(archetype) !== "groundcover",
+  );
+  const totalWeight = structuralWeights.reduce((total, { weight }) => total + weight, 0);
   if (totalWeight === 0) return 0;
-  const layerWeight = profile.weights.reduce(
+  const layerWeight = structuralWeights.reduce(
     (total, entry) => total + (getTerrainPropPlacementLayer(entry.archetype) === layer ? entry.weight : 0),
     0,
   );
@@ -484,6 +598,15 @@ function resolveLayerCoverageResponse(
   if (!layer) return 1;
   const coverage =
     layer === "canopy" ? context.canopyCover : layer === "understory" ? context.understoryCover : context.debrisCover;
+  if (layer === "groundcover") {
+    return (
+      0.38 +
+      context.understoryCover * 0.34 +
+      context.successionStrength * 0.2 +
+      context.roadEdgeStrength * 0.22 +
+      context.waterEdgeStrength * 0.28
+    );
+  }
   const ecologyResponse =
     layer === "understory"
       ? 0.9 + context.successionStrength * 0.25
@@ -494,7 +617,7 @@ function resolveLayerCoverageResponse(
 }
 
 function resolveTerrainPropDensityUpperBound(layer: TerrainPropPlacementLayer, densityMultiplier: number): number {
-  const maximumEnvironmentResponse = 1.18 * 1.25 * 1.06 * 1.15;
+  const maximumEnvironmentResponse = 2.1;
   return clampUnit(MAX_PROFILE_DENSITY_BY_LAYER[layer] * maximumEnvironmentResponse * densityMultiplier);
 }
 
@@ -506,13 +629,13 @@ function resolveDensityMultiplier(value: number | undefined): number {
   return multiplier;
 }
 
-function resolveCandidateBounds(cells: readonly TerrainCellInput[]): CandidateBounds {
+function resolveCandidateBounds(cells: readonly TerrainCellInput[], spacing = 1): CandidateBounds {
   const centers = cells.map((cell) => terrainHexToWorld(cell.col, cell.row));
   return {
-    maxX: Math.ceil((Math.max(...centers.map(({ x }) => x)) + 1) / CANDIDATE_SPACING),
-    maxZ: Math.ceil((Math.max(...centers.map(({ z }) => z)) + 1) / CANDIDATE_SPACING),
-    minX: Math.floor((Math.min(...centers.map(({ x }) => x)) - 1) / CANDIDATE_SPACING),
-    minZ: Math.floor((Math.min(...centers.map(({ z }) => z)) - 1) / CANDIDATE_SPACING),
+    maxX: Math.ceil((Math.max(...centers.map(({ x }) => x)) + 1) / spacing),
+    maxZ: Math.ceil((Math.max(...centers.map(({ z }) => z)) + 1) / spacing),
+    minX: Math.floor((Math.min(...centers.map(({ x }) => x)) - 1) / spacing),
+    minZ: Math.floor((Math.min(...centers.map(({ z }) => z)) - 1) / spacing),
   };
 }
 

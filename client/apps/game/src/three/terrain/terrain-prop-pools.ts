@@ -32,6 +32,8 @@ import {
   TERRAIN_PROP_ARCHETYPE_IDS,
   getTerrainPropRole,
   getTerrainPropMeshName,
+  isTerrainGroundCover,
+  isTerrainPropVisibleAtLod,
   type TerrainPropArchetypeId,
   type TerrainPropLod,
 } from "./terrain-prop-catalog";
@@ -41,6 +43,7 @@ export const TERRAIN_PROP_POOL_CAPACITY = 8192;
 const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
 
 export interface TerrainPropPoolStats {
+  groundCoverInstances: number;
   instances: number;
   triangles: number;
 }
@@ -114,7 +117,7 @@ export class TerrainPropPools {
       ecologyAttribute.needsUpdate = entries.length > 0;
       mesh.instanceMatrix.needsUpdate = entries.length > 0;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = entries.length > 0;
-      mesh.visible = entries.length > 0;
+      mesh.visible = entries.length > 0 && isTerrainPropVisibleAtLod(archetype, this.lod);
       if (entries.length > 0) {
         mesh.boundingSphere = bounds.getBoundingSphere(new Sphere());
         mesh.boundingSphere.radius += maximumInstanceRadius;
@@ -127,7 +130,9 @@ export class TerrainPropPools {
     this.lod = lod;
     this.windStrength.value = lod === "near" ? 1 : 0.35;
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
-      this.requirePool(archetype).geometry = this.requireCatalogMesh(archetype, lod).geometry;
+      const mesh = this.requirePool(archetype);
+      mesh.geometry = this.requireCatalogMesh(archetype, lod).geometry;
+      mesh.visible = mesh.count > 0 && isTerrainPropVisibleAtLod(archetype, lod);
     }
   }
 
@@ -137,13 +142,16 @@ export class TerrainPropPools {
 
   getStats(): TerrainPropPoolStats {
     let instances = 0;
+    let groundCoverInstances = 0;
     let triangles = 0;
-    this.meshes.forEach((mesh) => {
+    this.meshes.forEach((mesh, archetype) => {
+      if (!mesh.visible) return;
       const sourceTriangles = (mesh.geometry.index?.count ?? mesh.geometry.getAttribute("position").count) / 3;
       instances += mesh.count;
+      if (isTerrainGroundCover(archetype)) groundCoverInstances += mesh.count;
       triangles += sourceTriangles * mesh.count;
     });
-    return { instances, triangles };
+    return { groundCoverInstances, instances, triangles };
   }
 
   dispose(): void {

@@ -7,17 +7,20 @@ import type { TerrainFogMask } from "./terrain-fog-mask";
 import { terrainCellKey } from "./terrain-coordinates";
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { buildTerrainRoadSegments } from "./terrain-roads";
+import { MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS } from "./terrain-settlements";
 import type {
   PreparedTerrainPage,
   TerrainCellInput,
   TerrainPageRequest,
   TerrainRoadAnchor,
   TerrainRoadSegment,
+  TerrainSettlementAnchor,
   TerrainSurfaceSample,
 } from "./terrain-types";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import type { TerrainQualityTier } from "./terrain-quality";
 import type { TerrainFogFieldStats } from "./terrain-fog-field";
+import type { TerrainMovementInteraction } from "./terrain-movement-effects";
 
 interface WorldmapProceduralCell {
   biomeKey: string;
@@ -35,6 +38,7 @@ export interface WorldmapProceduralPresentationInput {
   pageWidth: number;
   propDensityMultiplier?: number;
   roadAnchors?: readonly TerrainRoadAnchor[];
+  settlementAnchors?: readonly TerrainSettlementAnchor[];
   subdivisions?: number;
 }
 
@@ -147,6 +151,10 @@ export class WorldmapProceduralTerrain {
 
   getShroudStats(): TerrainFogFieldStats {
     return this.terrain.getShroudStats();
+  }
+
+  setMovementInteractions(interactions: readonly TerrainMovementInteraction[]): void {
+    this.terrain.setMovementInteractions(interactions);
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
@@ -275,17 +283,39 @@ export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresen
 
   return Array.from(cellsByPage.entries())
     .toSorted(([left], [right]) => left.localeCompare(right, "en", { numeric: true }))
-    .map(([pageKey, pageCells]) => ({
-      cells: canonicalTerrainCells(pageCells),
-      climate,
-      halo: resolvePageHalo(pageCells, cellsByKey),
-      mapCenter: input.mapCenter,
-      pageKey,
-      propDensityMultiplier: input.propDensityMultiplier,
-      roadSegments: resolvePageRoadSegments(pageCells, roadSegments),
-      strictBiomeParity: false,
-      subdivisions: input.subdivisions ?? 2,
-    }));
+    .map(([pageKey, pageCells]) => {
+      const canonicalCells = canonicalTerrainCells(pageCells);
+      const halo = resolvePageHalo(pageCells, cellsByKey);
+      return {
+        cells: canonicalCells,
+        climate,
+        halo,
+        mapCenter: input.mapCenter,
+        pageKey,
+        propDensityMultiplier: input.propDensityMultiplier,
+        roadSegments: resolvePageRoadSegments(pageCells, roadSegments),
+        settlementAnchors: resolvePageSettlementAnchors(canonicalCells, input.settlementAnchors ?? []),
+        strictBiomeParity: false,
+        subdivisions: input.subdivisions ?? 2,
+      };
+    });
+}
+
+function resolvePageSettlementAnchors(
+  pageCells: readonly TerrainCellInput[],
+  anchors: readonly TerrainSettlementAnchor[],
+): TerrainSettlementAnchor[] {
+  const centers = pageCells.map(({ col, row }) => terrainHexToWorld(col, row));
+  const minimumX = Math.min(...centers.map(({ x }) => x)) - MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS;
+  const maximumX = Math.max(...centers.map(({ x }) => x)) + MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS;
+  const minimumZ = Math.min(...centers.map(({ z }) => z)) - MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS;
+  const maximumZ = Math.max(...centers.map(({ z }) => z)) + MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS;
+  return anchors
+    .filter(({ col, row }) => {
+      const center = terrainHexToWorld(col, row);
+      return center.x >= minimumX && center.x <= maximumX && center.z >= minimumZ && center.z <= maximumZ;
+    })
+    .toSorted((left, right) => left.structureId.localeCompare(right.structureId));
 }
 
 function resolvePageRoadSegments(
@@ -367,6 +397,7 @@ function createRequestSignature(request: TerrainPageRequest): string {
     pageKey: request.pageKey,
     propDensityMultiplier: request.propDensityMultiplier,
     roadSegments: request.roadSegments,
+    settlementAnchors: request.settlementAnchors,
     subdivisions: request.subdivisions,
   });
 }

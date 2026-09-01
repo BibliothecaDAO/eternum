@@ -21,6 +21,9 @@ import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
+import type { PreparedTerrainPage } from "@/three/terrain/terrain-types";
+import { TERRAIN_SHALLOW_WATER_DEPTH } from "@/three/terrain/terrain-water";
+import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import {
   createTerrainRevealVerificationRequest,
   createTerrainVerificationRequest,
@@ -29,6 +32,7 @@ import {
   type TerrainVerificationSceneId,
 } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { TERRAIN_FOG_REVEAL_DURATION_SECONDS } from "@/three/terrain/terrain-fog-field";
+import { measureTerrainEcologyTransects } from "@/three/terrain/verification/terrain-ecology-transects";
 import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "@/three/terrain/terrain-fog-style";
 import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/utils";
 
@@ -38,6 +42,10 @@ export interface ProceduralTerrainDebugStats {
   cellCount: number;
   commitMs: number;
   drawCalls: number;
+  dustActiveParticles: number;
+  dustCapacity: number;
+  dustEmitterCount: number;
+  dustTriangles: number;
   fingerprint: string;
   firstRenderMs: number;
   fogMaskBytes: number;
@@ -52,14 +60,22 @@ export interface ProceduralTerrainDebugStats {
   frameSampleCount: number;
   groundTextureBytes: number;
   groundTextureLayers: number;
+  groundCoverInstances: number;
   prepareMs: number;
   propInstances: number;
   qualityTier: TerrainQualityTier;
   realmInstances: number;
   revealProgress: number;
   roadSegments: number;
+  roadCoreDisturbance: number;
+  roadNaturalDisturbance: number;
+  roadVergeSuccession: number;
   sceneId: TerrainVerificationSceneId;
   settlementSites: number;
+  settlementCoreDisturbance: number;
+  settlementEdgeSuccession: number;
+  settlementOuterMaturity: number;
+  settlementTierCount: number;
   shroudActiveReveals: number;
   shroudFrontierInstances: number;
   shroudInstances: number;
@@ -68,6 +84,17 @@ export interface ProceduralTerrainDebugStats {
   triangles: number;
   textures: number;
   vertices: number;
+  waterDepthMax: number;
+  waterDepthMin: number;
+  waterFoamVertices: number;
+  waterInteractionInstances: number;
+  waterInteractionTriangles: number;
+  waterWakeInstances: number;
+  wetlandEdgeStrength: number;
+  wetlandInteriorStrength: number;
+  waterShorelineVertices: number;
+  waterTriangles: number;
+  waterVertices: number;
 }
 
 export interface ProceduralTerrainDebugRendererHandle {
@@ -199,6 +226,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   let commitStartedAt = performance.now();
   terrain.present([prepared], fogMask);
   let commitMs = performance.now() - commitStartedAt;
+  terrain.setMovementInteractions(createMovementInteractionVerification(input.sceneId, terrain));
+  terrain.update(0);
   if (input.sceneId === "fog-reveal" && input.revealProgress > 0) {
     terrain.queueShroudReveal(TERRAIN_REVEAL_TARGET.col, TERRAIN_REVEAL_TARGET.row);
     request = createTerrainRevealVerificationRequest(true);
@@ -214,6 +243,9 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const groundTextureStats = terrain.getGroundTextureStats();
   const realmModel = await createSettlementRealmModel(input.sceneId, terrain);
   const realmGeometry = measureInstancedModelGeometry(realmModel);
+  const ecologyTransects = measureTerrainEcologyTransects(request);
+  const waterGeometry = measureWaterGeometry(prepared.waterBuffers);
+  const movementInteractionStats = terrain.getMovementInteractionStats();
   terrain.object3d.userData.verification = {
     biomeCount: new Set(prepared.request.cells.map(({ biome }) => biome).filter(Boolean)).size,
     cellCount: prepared.request.cells.length,
@@ -227,6 +259,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     fogMaskWidth: shroudStats.maskWidth,
     groundTextureBytes: groundTextureStats.bytes,
     groundTextureLayers: groundTextureStats.layerCount,
+    groundCoverInstances: propStats.groundCoverInstances,
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,
     qualityTier: input.qualityTier,
@@ -239,8 +272,22 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     shroudFrontierInstances: shroudStats.frontierInstances,
     shroudInstances: shroudStats.instances,
     shroudTriangles: shroudStats.triangles,
-    triangles: prepared.diagnostics.triangles + propStats.triangles + shroudStats.triangles + realmGeometry.triangles,
+    triangles:
+      prepared.diagnostics.triangles +
+      propStats.triangles +
+      shroudStats.triangles +
+      realmGeometry.triangles +
+      movementInteractionStats.triangles,
     vertices: prepared.diagnostics.vertices + realmGeometry.vertices,
+    dustActiveParticles: movementInteractionStats.dust.activeParticles,
+    dustCapacity: movementInteractionStats.dust.capacity,
+    dustEmitterCount: movementInteractionStats.dust.emitters,
+    dustTriangles: movementInteractionStats.dust.triangles,
+    waterInteractionInstances: movementInteractionStats.water.instances,
+    waterInteractionTriangles: movementInteractionStats.water.triangles,
+    waterWakeInstances: movementInteractionStats.water.wakes,
+    ...waterGeometry,
+    ...ecologyTransects,
   } satisfies Omit<
     ProceduralTerrainDebugStats,
     | "activeMode"
@@ -262,6 +309,46 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const firstRenderMs = performance.now() - firstRenderStartedAt;
 
   return { camera, cameraFrame, controls, frameSamplesMs: [], realmModel, renderer, scene, terrain, firstRenderMs };
+}
+
+function createMovementInteractionVerification(
+  sceneId: TerrainVerificationSceneId,
+  terrain: ProceduralTerrain,
+): TerrainMovementInteraction[] {
+  if (sceneId === "tropical-coast") {
+    return [
+      createMovementInteraction(101, 1, 3, true, "naval", Math.PI / 5, terrain),
+      createMovementInteraction(202, 3, 6, true, "naval", -Math.PI / 3, terrain),
+      createMovementInteraction(303, 2, 9, false, "naval", 0, terrain),
+    ];
+  }
+  if (sceneId === "settlement-regrowth") {
+    return TERRAIN_SETTLEMENT_REGROWTH_SITES.map(({ col, row }, index) =>
+      createMovementInteraction(401 + index, col, row, true, "ground", (index * Math.PI) / 3, terrain),
+    );
+  }
+  return [];
+}
+
+function createMovementInteraction(
+  entityId: number,
+  col: number,
+  row: number,
+  isMoving: boolean,
+  mode: TerrainMovementInteraction["mode"],
+  yaw: number,
+  terrain: ProceduralTerrain,
+): TerrainMovementInteraction {
+  const center = terrainHexToWorld(col, row);
+  return {
+    entityId,
+    isMoving,
+    mode,
+    worldX: center.x,
+    worldY: terrain.sampleSurface(center.x, center.z).height,
+    worldZ: center.z,
+    yaw,
+  };
 }
 
 async function createSettlementRealmModel(
@@ -300,6 +387,39 @@ function measureInstancedModelGeometry(model: InstancedModel | null): { triangle
     vertices += positionCount * object.count;
   });
   return { triangles, vertices };
+}
+
+function measureWaterGeometry(
+  buffers: PreparedTerrainPage["waterBuffers"],
+): Pick<
+  ProceduralTerrainDebugStats,
+  | "waterDepthMax"
+  | "waterDepthMin"
+  | "waterFoamVertices"
+  | "waterShorelineVertices"
+  | "waterTriangles"
+  | "waterVertices"
+> {
+  if (!buffers || buffers.waterDepth.length === 0) {
+    return {
+      waterDepthMax: 0,
+      waterDepthMin: 0,
+      waterFoamVertices: 0,
+      waterShorelineVertices: 0,
+      waterTriangles: 0,
+      waterVertices: 0,
+    };
+  }
+  return {
+    waterDepthMax: Math.max(...buffers.waterDepth),
+    waterDepthMin: Math.min(...buffers.waterDepth),
+    waterFoamVertices: Array.from(buffers.waterDepth).filter(
+      (depth, index) => depth <= TERRAIN_SHALLOW_WATER_DEPTH && buffers.shore[index] > 0.35,
+    ).length,
+    waterShorelineVertices: Array.from(buffers.waterDepth).filter((depth) => depth <= 0.002_001).length,
+    waterTriangles: buffers.indices.length / 3,
+    waterVertices: buffers.positions.length / 3,
+  };
 }
 
 function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): void {

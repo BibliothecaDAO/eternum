@@ -8,12 +8,15 @@ import {
   getTerrainPropDisturbanceAffinity,
   getTerrainPropRole,
   getTerrainPropMeshName,
+  getTerrainPropWetlandAffinity,
+  isTerrainGroundCover,
+  isTerrainPropVisibleAtLod,
 } from "./terrain-prop-catalog";
 
 describe("terrain prop catalog", () => {
   it("defines one near and far mesh for every approved archetype", () => {
-    expect(TERRAIN_PROP_ARCHETYPE_IDS).toHaveLength(11);
-    expect(getRequiredTerrainPropMeshNames()).toHaveLength(22);
+    expect(TERRAIN_PROP_ARCHETYPE_IDS).toHaveLength(15);
+    expect(getRequiredTerrainPropMeshNames()).toHaveLength(30);
     expect(getTerrainPropMeshName("broadleaf", "near")).toBe("broadleaf-near");
   });
 
@@ -37,6 +40,7 @@ describe("terrain prop catalog", () => {
     expect(getTerrainPropRole("shrub")).toBe("understory");
     expect(getTerrainPropRole("boulder")).toBe("rigid");
     expect(getTerrainPropRole("cactus")).toBe("rigid");
+    expect(getTerrainPropRole("fern")).toBe("groundcover");
   });
 
   it("favors pioneer cover and deadwood at settlement regrowth edges", () => {
@@ -46,5 +50,13 @@ describe("terrain prop catalog", () => {
     expect(getTerrainPropDisturbanceAffinity("fallen-log")).toBeGreaterThan(
       getTerrainPropDisturbanceAffinity("boulder"),
     );
+  });
+
+  it("keeps ground cover near-only and favors wetland species at water edges", () => {
+    expect(isTerrainGroundCover("grass-tuft")).toBe(true);
+    expect(isTerrainPropVisibleAtLod("grass-tuft", "near")).toBe(true);
+    expect(isTerrainPropVisibleAtLod("grass-tuft", "far")).toBe(false);
+    expect(getTerrainPropWetlandAffinity("reed")).toBeGreaterThan(getTerrainPropWetlandAffinity("grass-tuft"));
+    expect(getTerrainPropWetlandAffinity("willow")).toBeGreaterThan(getTerrainPropWetlandAffinity("cactus"));
   });
 });
