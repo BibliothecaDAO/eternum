@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "appchain.blitz:bltz-kick-242",
+  "launchRequestId": "33520208945-1",
+  "environment": "appchain.blitz",
+  "chain": "appchain",
+  "gameType": "blitz",
+  "gameName": "bltz-kick-242",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "createdAt": "2026-09-01T14:34:21.456Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 33520208945,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33520208945",
+    "ref": "feat/single-world-blitz",
+    "sha": "401335a5f2e904399cfda5314b0599dd45b1c07b"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "appchain.blitz",
+    "gameName": "bltz-kick-242",
+    "startTime": "2026-09-01T14:35:00.000Z",
+    "rpcUrl": "http://52.54.98.119",
+    "factoryAddress": "0x4c50ced3c1fd6f2f4cef779e28adafb234ed9773dda3e0e39918f24f2936350",
+    "devModeOn": true,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 432000,
+    "biomeClimateOverrides": {
+      "elevationSeed": 3320841611,
+      "moistureSeed": 2410472047
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "6",
+    "waitForFactoryIndexTimeoutMs": 120000,
+    "waitForFactoryIndexPollMs": 2000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 20
+  }
+}
