@@ -6,14 +6,14 @@
   "chain": "madara",
   "gameType": "blitz",
   "gameName": "lab-preset6-test",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/madara/blitz/lab-preset6-test/33511238240-1.json",
   "latestLaunchRequestId": "33511238240-1",
   "currentStepId": "create-world",
   "createdAt": "2026-09-01T13:06:14.480Z",
-  "updatedAt": "2026-09-01T13:06:21.150Z",
+  "updatedAt": "2026-09-01T13:06:29.992Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-09-01T13:06:21.150Z"
+      "latestEvent": "Creating world failed: \u001b[2m[+8ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing registrar game \"lab-preset6-test\" on madara.blitz with preset 6\nError: Cannot verify whether game \"lab-preset6-test\" already exists; refusing to submit create_game: HERALD_URL is required for GameRegistry checks\n    at findExistingGame (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:276:15)\n    at async createGame (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:303:30)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:371:11)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:398:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:157:25)",
+      "startedAt": "2026-09-01T13:06:21.150Z",
+      "finishedAt": "2026-09-01T13:06:29.992Z",
+      "errorMessage": "\u001b[2m[+8ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing registrar game \"lab-preset6-test\" on madara.blitz with preset 6\nError: Cannot verify whether game \"lab-preset6-test\" already exists; refusing to submit create_game: HERALD_URL is required for GameRegistry checks\n    at findExistingGame (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:276:15)\n    at async createGame (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:303:30)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:371:11)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:398:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:157:25)"
     },
     {
       "id": "wait-for-factory-index",
@@ -42,13 +44,5 @@
   ],
   "artifacts": {
     "scheduledStartTime": "1788268770"
-  },
-  "activeLease": {
-    "launchRequestId": "33511238240-1",
-    "workflowRunId": 33511238240,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-09-01T13:06:21.150Z",
-    "expiresAt": "2026-09-01T13:51:21.150Z"
   }
 }
