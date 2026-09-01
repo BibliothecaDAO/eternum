@@ -266,7 +266,7 @@ async function resolveHarnessGames(
       privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
       rpcUrl: options.rpcUrl,
       startTime: startAt,
-      version: "1",
+      version: "6", // preset 6 (official-60) — the lab default we play; 96-player cap comes from the madara env
     });
     if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
     games.push({ gameId: summary.gameId, gameName, startAt });
