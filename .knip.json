@@ -10,7 +10,6 @@
     "apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
     "scripts/codemod-lucide-imports.mjs",
     "common/factory/endpoints.ts",
-    "deploy/appchain/torii-s2/**",
     "config/**",
     "contracts/**",
     "**/global.d.ts"
@@ -19,11 +18,7 @@
     "apps/amm-indexer/apibara.config.ts",
     "apps/amm-indexer/indexers/ammv2.indexer.ts",
     "apps/amm-indexer/indexers/factory-client.ts",
-    "deploy/appchain/cdk/bin/appchain.ts",
-    "deploy/appchain/cdk/lib/**",
-    "deploy/appchain/cdk/lambda/**",
-    "deploy/appchain/cdk/cdk.out/**",
-    "deploy/appchain/scripts/**",
+    "deploy/madara-lab/scripts/deploy-s2-world.ts",
     "apps/indexer/drizzle.config.ts",
     "packages/db/drizzle.config.ts"
   ],

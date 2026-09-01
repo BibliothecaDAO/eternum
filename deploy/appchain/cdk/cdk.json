@@ -1,8 +1,0 @@
-{
-  "app": "node_modules/.bin/ts-node --prefer-ts-exts bin/appchain.ts",
-  "context": {
-    "@aws-cdk/aws-iam:minimizePolicies": true,
-    "@aws-cdk/core:checkSecretUsage": true,
-    "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": true
-  }
-}

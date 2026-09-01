@@ -17,15 +17,4 @@ describe("game chain names", () => {
       new RegExp(`^chain_id: [\"']${GAME_CHAIN_NAMES.madara}[\"']$`, "m"),
     );
   });
-
-  it("is the source used by the appchain node configuration", async () => {
-    const config = await readFile(
-      path.resolve(
-        import.meta.dirname,
-        "../../../deploy/appchain/cdk/lib/config.ts",
-      ),
-      "utf8",
-    );
-    expect(config).toContain("chainId: GAME_CHAIN_NAMES.appchain");
-  });
 });

@@ -15,6 +15,6 @@ describe("rpc url helpers", () => {
 
   it("accepts explicitly configured RPCs for both game chains", () => {
     expect(isRpcUrlCompatibleForChain("madara", "https://rpc.realms.test/rpc/v0_9_0")).toBe(true);
-    expect(isRpcUrlCompatibleForChain("appchain", "https://rpc.jcndata.com")).toBe(true);
+    expect(isRpcUrlCompatibleForChain("appchain", "https://rpc.realms.test")).toBe(true);
   });
 });
