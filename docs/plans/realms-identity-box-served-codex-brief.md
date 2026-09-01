@@ -67,6 +67,10 @@ IDENTITY_COOKIE_DOMAIN=realms.party
 GAME_RPC_URL=https://rpc.realms.party/rpc/v0_10_2
 PLAYER_REGISTRY_ADDRESS=0x047d5db2930b9a3270d9cb0e31e3eed2645602c5b51419207f730f3a7f8fafe0
 REALMS_SERVER_PORT=3000
+# Binding authority (write path): reuse the committed lab dev pair from apps/web/.env.example — address
+# BINDING_AUTHORITY_ADDRESS=0x008a1719… and BINDING_AUTHORITY_PRIVATE_KEY=<the value in apps/web/.env.example>.
+# The registry trusts this address and the overnight harness already binds bots with it. Not a lab secret;
+# production hardening swaps it for a real key.
 ```
 
 ### 3. Provision the identity schema
@@ -88,13 +92,19 @@ race-proof name guarantee).
 - Redeploy recipe on the box:
   `git pull && pnpm install && pnpm run build:packages && pnpm --filter @realms-world/db push && pnpm --filter @realms-world/realms build && sudo systemctl restart realms-identity`.
 
-### 5. Binding authority (WRITE) — scope + owner gate
+### 5. Binding authority (WRITE) — port the route; the key already exists
 
-`server/binding.ts` only **reads** `PlayerRegistry.account_of` (no key), so sign-in, session, name, and read-only
-binding _status_ all work without any authority key. The actual SIWS → gameplay-account binding **write** (co-signing
-with the binding-authority key) is **not present in `apps/realms/server`** — confirm whether it must be ported from
-`apps/web`, and if so add it as an explicit route that loads the key from the box env only. **Never commit the
-binding-authority private key**; it is the owner's and lives in the box `.env` alone.
+`apps/realms/server/binding.ts` only **reads** `PlayerRegistry.account_of` (no key). The SIWS → gameplay-account binding
+**write** (co-signing with the authority key) is **not yet in `apps/realms/server`** — port it from
+`apps/web/src/lib/gameplay-account.ts` as an explicit route (e.g. `POST /api/bind`) that signs with
+`BINDING_AUTHORITY_PRIVATE_KEY` and loads it from env only.
+
+The key is **not owner-gated on the lab**: it is the committed dev pair in `apps/web/.env.example` (address
+`0x008a1719…`), the registry deployed by `deploy-gameplay-contracts.ts` trusts that address, and the overnight harness
+(`harness/run.ts` → `BINDING_AUTHORITY_PRIVATE_KEY`) already co-signed every bot binding with it. Reuse the same value
+in the box `.env`. It is a public dev key like the deployer key — fine for the fee-free dev-mode lab, where gameplay
+accounts hold no funds; **replacing it with a real secret is a production-hardening item, not a lab task**, and no new
+literal key should be committed anywhere.
 
 ## Verifiable gate
 
@@ -111,7 +121,8 @@ binding-authority private key**; it is the owner's and lives in the box `.env` a
 
 - SPA on Cloudflare Pages (rejected — same-origin code). The 3D game client stays on Pages and is untouched.
 - No CORS, no Pages Function, no `id.realms.party` hostname.
-- Provisioning the binding-authority write key (owner-gated) and retiring the AWS `apps/web` (later pass).
+- Replacing the committed lab binding-authority dev key with a real secret (production hardening), and retiring the AWS
+  `apps/web` (later pass).
 
 ## What I (Claude) will review
 
