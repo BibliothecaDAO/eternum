@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "madara.blitz",
   "kind": "game",
-  "updatedAt": "2026-09-01T13:06:21.150Z",
+  "updatedAt": "2026-09-01T13:06:29.992Z",
   "entries": {
     "lab-preset6-test": {
       "kind": "game",
@@ -10,13 +10,12 @@
       "gameName": "lab-preset6-test",
       "path": "runs/madara/blitz/lab-preset6-test.json",
       "inputPath": "inputs/madara/blitz/lab-preset6-test/33511238240-1.json",
-      "status": "running",
-      "updatedAt": "2026-09-01T13:06:21.150Z",
+      "status": "attention",
+      "updatedAt": "2026-09-01T13:06:29.992Z",
       "workflowRef": "feat/madara-lab",
       "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-09-01T13:51:21.150Z",
-      "hasRunningStep": true,
-      "recoverableFailedStepId": null,
+      "hasRunningStep": false,
+      "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index"
     }
   }
