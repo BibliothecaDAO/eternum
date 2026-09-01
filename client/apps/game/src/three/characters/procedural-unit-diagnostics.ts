@@ -8,6 +8,7 @@ import { resolveProceduralMeleeOffhand } from "./melee/procedural-melee-weapon-c
 import type { ProceduralUnitKind } from "./procedural-unit-config";
 import type { ProceduralCrossbowPoseDiagnostics } from "./procedural-unit-equipment";
 import type { ProceduralBoatBroadsidePhase } from "./boat/procedural-boat-broadside-cycle";
+import type { ProceduralDragonPoseDiagnostics } from "./dragon/procedural-dragon-runtime";
 
 export interface ProceduralBoatPoseDiagnostics {
   broadsidePhase: ProceduralBoatBroadsidePhase;
@@ -47,6 +48,7 @@ export interface ProceduralUnitPoseDiagnostics {
   boat: ProceduralBoatPoseDiagnostics | null;
   bow: ProceduralBowAlignmentDiagnostics | null;
   crossbow: ProceduralCrossbowAlignmentDiagnostics | null;
+  dragon?: ProceduralDragonPoseDiagnostics | null;
   horse: ProceduralHorsePoseDiagnostics | null;
   humanoid: ProceduralCharacterPoseDiagnostics | null;
   issues: readonly string[];
@@ -58,6 +60,7 @@ export function resolveProceduralUnitPoseDiagnostics(input: {
   boat?: ProceduralBoatPoseDiagnostics;
   bow?: ProceduralBowPoseDiagnostics;
   crossbow?: ProceduralCrossbowPoseDiagnostics | null;
+  dragon?: ProceduralDragonPoseDiagnostics;
   horse?: ProceduralHorsePoseDiagnostics;
   humanoid?: ProceduralCharacterPoseDiagnostics;
   kind: ProceduralUnitKind;
@@ -66,7 +69,7 @@ export function resolveProceduralUnitPoseDiagnostics(input: {
   const bow = input.bow && input.humanoid ? resolveBowAlignment(input.bow, input.humanoid) : null;
   const crossbow = input.crossbow ? resolveCrossbowAlignment(input.crossbow, input.humanoid) : null;
   const melee = input.melee ? resolveMeleeAlignment(input.melee, input.humanoid) : null;
-  const issues = [...(input.humanoid?.issues ?? []), ...(input.horse?.issues ?? [])];
+  const issues = [...(input.humanoid?.issues ?? []), ...(input.horse?.issues ?? []), ...(input.dragon?.issues ?? [])];
   if (input.boat) issues.push(...resolveBoatIssues(input.boat));
   if (melee && melee.weaponHeadClearance !== null && melee.weaponHeadClearance < -0.01) {
     issues.push("weapon-intersects-head");
@@ -97,6 +100,7 @@ export function resolveProceduralUnitPoseDiagnostics(input: {
     boat: input.boat ?? null,
     bow,
     crossbow,
+    dragon: input.dragon ?? null,
     horse: input.horse ?? null,
     humanoid: input.humanoid ?? null,
     issues,

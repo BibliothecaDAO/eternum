@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { applyProceduralHorseConfigPatch, createDefaultProceduralHorseConfig } from "./procedural-horse-config";
 
@@ -19,5 +19,16 @@ describe("procedural horse configuration", () => {
     expect(config.secondaryMotion).toBe(1.5);
     expect(config.seed).toBe(0);
     expect(config.terrainResponse).toBe(1);
+  });
+
+  it("normalizes persisted appearance ids at the configuration seam", () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const config = applyProceduralHorseConfigPatch(createDefaultProceduralHorseConfig(), {
+      appearanceId: "missing" as never,
+    });
+
+    expect(config.appearanceId).toBe("quaternius");
+    expect(warning).toHaveBeenCalledOnce();
+    warning.mockRestore();
   });
 });

@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-02",
+    title: "Licensed Icy Sky Dragon",
+    description:
+      "Replaced the temporary Sky Dragon test model with a licensed icy dragon, preserving procedural walking, flight, reactions, and targeted fire breath with clearer textures and a production-safe source.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-09-01",
     title: "Terrain-Aware Movement Trails",
     description:
@@ -78,6 +86,38 @@ const allLatestFeatures: LatestFeature[] = [
     title: "More Natural Forest Landscapes",
     description:
       "Improved forests with mature groves, regenerating edges and clearings, layered canopy, understory and deadfall, better-spaced crowns, and ground cover that responds to the canopy above.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-27",
+    title: "Smooth Sky Dragon Rendering",
+    description:
+      "Improved Sky Dragon frame rates by removing their costly animated real-time shadows while preserving the complete model, textures, and procedural motion.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-27",
+    title: "Opaque Sky Dragon Materials",
+    description:
+      "Fixed Sky Dragon body, limb, eye, and wing materials so their textures render completely instead of appearing patchy or transparent.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-27",
+    title: "Sky Dragon Flight Travel",
+    description:
+      "Improved Sky Dragons so they stand directly on the terrain while resting, take off for army movement, remain airborne along the route, and land at their destination.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-27",
+    title: "Swappable Mount Models",
+    description:
+      "Added mount appearance and rig selection to the animation Gym, with live asset and skeleton diagnostics for reviewing horses, warhorses, and dragons safely.",
     type: "improvement",
     gameSlug: "world",
   },

@@ -20,6 +20,7 @@ export {
 } from "./procedural-unit-config";
 export type { ProceduralArcherConfig } from "./archer/procedural-archer-config";
 export { type ProceduralBoatConfig, type ProceduralBoatMotionMode } from "./boat/procedural-boat-config";
+export { type ProceduralDragonConfig, type ProceduralDragonLocomotionMode } from "./dragon/procedural-dragon-config";
 export {
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,
@@ -33,6 +34,7 @@ export {
   type ProceduralRangedReleaseEvent,
   type ProceduralUnitActor,
 } from "./procedural-unit-runtime";
+export { PROCEDURAL_HORSE_APPEARANCES, type ProceduralHorseAppearanceId } from "./horse/procedural-horse-appearance";
 export {
   type ProceduralHorseConfig,
   type ProceduralHorseGait,

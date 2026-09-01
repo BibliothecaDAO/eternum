@@ -2,8 +2,8 @@ import { Vector3 } from "three";
 
 import type { PersistentWorldFxEmitter, WorldFxImpactCue } from "../fx/world-fx-runtime";
 
-export const WORLD_FX_GYM_COUNTS = [1, 10, 50] as const;
-export const WORLD_FX_GYM_SCENARIOS = ["flame", "impact", "mixed"] as const;
+const WORLD_FX_GYM_COUNTS = [1, 10, 50] as const;
+const WORLD_FX_GYM_SCENARIOS = ["flame", "impact", "mixed"] as const;
 
 export type WorldFxGymCount = (typeof WORLD_FX_GYM_COUNTS)[number];
 export type WorldFxGymScenario = (typeof WORLD_FX_GYM_SCENARIOS)[number];

@@ -50,8 +50,11 @@ export interface ProceduralArmyCharacterPresentation {
   tier: TroopTier;
 }
 
+type ProceduralArmyActorFamily = "boat" | "foot" | "paladin-dragon" | "paladin-horse";
+
 interface ProceduralArmyActorRecord {
   actor: ProceduralUnitActor;
+  actorFamily: ProceduralArmyActorFamily;
   attackAuthority: ProceduralImpactAuthority;
   attackTargetEntityId?: number;
   collisionProfile: ProceduralCollisionProfile;
@@ -335,7 +338,10 @@ export class ProceduralArmyCharacterLayer {
 
   public setCollisionBudget(budget: ProceduralCollisionBudget): void {
     this.collisionBudget = { ...budget };
-    this.separationSimulation.updateConfig({ maxPairResolutions: budget.maxPairResolutions });
+    this.separationSimulation.updateConfig({
+      maxNeighborsPerBody: budget.maxNeighborsPerBody,
+      maxPairResolutions: budget.maxPairResolutions,
+    });
     while (this.defeatedActors.length > Math.max(1, budget.maxActiveRagdolls)) {
       const defeated = this.defeatedActors.shift();
       if (defeated) this.disposeDefeatedActor(defeated);
@@ -424,9 +430,9 @@ export class ProceduralArmyCharacterLayer {
     });
     let remainingCreations = MAX_ACTOR_CREATIONS_PER_SYNC;
     presentations.forEach((presentation) => {
-      const desiredKind = resolveUnitKind(presentation);
+      const desiredActorFamily = resolveActorFamily(presentation);
       const record = this.actors.get(presentation.entityId);
-      if (record && requiresActorRecreation(record.actor.kind, desiredKind)) {
+      if (record && record.actorFamily !== desiredActorFamily) {
         this.disposeActorRecord(record);
         this.actors.delete(presentation.entityId);
       }
@@ -547,6 +553,7 @@ export class ProceduralArmyCharacterLayer {
     const configSignature = resolveConfigSignature(presentation);
     let record = this.actors.get(presentation.entityId);
     const desiredKind = resolveUnitKind(presentation);
+    const desiredActorFamily = resolveActorFamily(presentation);
     if (!record) {
       const actor = runtime.createActor(resolveUnitConfig(characterModule, presentation));
       actor.object.name = `procedural-army-character:${presentation.entityId}`;
@@ -578,6 +585,7 @@ export class ProceduralArmyCharacterLayer {
       this.scene.add(actor.object);
       record = {
         actor,
+        actorFamily: desiredActorFamily,
         attackAuthority: "provisional",
         attackTargetEntityId: undefined,
         collisionProfile: createProceduralCollisionProfile(
@@ -797,6 +805,16 @@ function resolveUnitConfig(
       speed: presentation.isMoving ? 1.6 : 0,
       tier,
     },
+    dragon: {
+      locomotionMode: presentation.isMoving ? "flight" : "idle",
+      primaryColor: presentation.primaryColor,
+      renderDetail: "crowd",
+      seed: resolveCharacterSeed(presentation.entityId),
+      showBones: false,
+      showSockets: false,
+      speed: presentation.isMoving ? 3.2 : 0,
+      tier,
+    },
     horse: {
       gait: presentation.isMoving ? "walk" : "idle",
       primaryColor: presentation.primaryColor,
@@ -884,13 +902,12 @@ function resolveUnitKind(
   return "knight";
 }
 
-function requiresActorRecreation(
-  currentKind: ProceduralUnitActor["kind"],
-  desiredKind: ReturnType<typeof resolveUnitKind>,
-): boolean {
-  return (
-    (currentKind === "boat") !== (desiredKind === "boat") || (currentKind === "paladin") !== (desiredKind === "paladin")
-  );
+function resolveActorFamily(
+  presentation: Pick<ProceduralArmyCharacterPresentation, "category" | "isNaval" | "tier">,
+): ProceduralArmyActorFamily {
+  if (presentation.isNaval) return "boat";
+  if (presentation.category !== TroopType.Paladin) return "foot";
+  return presentation.tier === TroopTier.T3 ? "paladin-dragon" : "paladin-horse";
 }
 
 function resolveWorldCharacterScale(category: TroopType, isNaval: boolean): number {

@@ -25,7 +25,7 @@ export interface ProceduralCharacterBenchmarkConfig {
   simulationSpeed: number;
   stepHeight: number;
   stride: number;
-  unitMix: "archers" | "balanced" | "foot" | "horses" | "melee" | "mounted";
+  unitMix: "archers" | "balanced" | "dragons" | "foot" | "horses" | "melee" | "mounted";
 }
 
 const DEFAULT_CONFIG: ProceduralCharacterBenchmarkConfig = {

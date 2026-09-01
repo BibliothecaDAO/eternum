@@ -27,6 +27,19 @@ describe("procedural unit configuration", () => {
     });
     expect(config.horse.seed).toBe(9_001);
     expect(config.boat.seed).toBe(9_001);
+    expect(config.dragon.seed).toBe(9_001);
+  });
+
+  it("adds a normalized Sky Dragon without coupling it to humanoid locomotion", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), {
+      dragon: { altitude: 20, locomotionMode: "flight", wingBeatHz: 1.4 },
+      kind: "dragon",
+    });
+
+    expect(config.kind).toBe("dragon");
+    expect(config.dragon.altitude).toBe(8);
+    expect(config.dragon.wingBeatHz).toBe(1.4);
+    expect(config.humanoid.animationMode).toBe("walk");
   });
 
   it("adds the normalized naval runtime without changing the character defaults", () => {

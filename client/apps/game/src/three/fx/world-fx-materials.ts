@@ -1,4 +1,5 @@
 import { AdditiveBlending, DoubleSide, NormalBlending } from "three";
+import type { Blending } from "three";
 import * as ThreeWebGPU from "three/webgpu";
 import { attribute, color, mix, smoothstep, time, uv } from "three/tsl";
 import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
@@ -60,7 +61,7 @@ export function createWorldFxRingMaterial(): MeshBasicNodeMaterial {
   return material;
 }
 
-function createTransparentMaterial(name: string, blending: number): MeshBasicNodeMaterial {
+function createTransparentMaterial(name: string, blending: Blending): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterialConstructor();
   material.name = name;
   material.blending = blending;

@@ -395,15 +395,17 @@ export const ProceduralCharacterGymView = () => {
         archer={
           collisionConfig.enabled
             ? collisionConfig.scenario === "arrow-defeat" || collisionConfig.scenario === "arrow-nonlethal"
-            : config.kind === "archer" || config.kind === "boat"
+            : config.kind === "archer" || config.kind === "boat" || config.kind === "dragon"
         }
+        dragon={config.kind === "dragon"}
         naval={config.kind === "boat"}
         collisionEnabled={collisionConfig.enabled}
         locomotion={
-          config.kind !== "horse" &&
-          config.kind !== "paladin" &&
           !collisionConfig.enabled &&
-          (config.humanoid.animationMode === "walk" || config.humanoid.animationMode === "run")
+          (config.kind === "dragon" ||
+            (config.kind !== "horse" &&
+              config.kind !== "paladin" &&
+              (config.humanoid.animationMode === "walk" || config.humanoid.animationMode === "run")))
         }
         melee={!collisionConfig.enabled && (config.kind === "knight" || config.kind === "paladin")}
         paused={paused}
@@ -557,6 +559,7 @@ interface CharacterGymHeaderProps {
   archer: boolean;
   captureBusy: boolean;
   collisionEnabled: boolean;
+  dragon: boolean;
   locomotion: boolean;
   melee: boolean;
   naval: boolean;
@@ -581,6 +584,7 @@ const CharacterGymHeader = ({
   archer,
   captureBusy,
   collisionEnabled,
+  dragon,
   locomotion,
   melee,
   naval,
@@ -613,6 +617,7 @@ const CharacterGymHeader = ({
       </div>
       <RuntimeBadge label={stats.rendererMode} tone={stats.rendererMode === "webgpu" ? "cyan" : "amber"} />
       <RuntimeBadge label={stats.assetLabel} tone="cyan" />
+      <RuntimeBadge label={`Rig ${stats.rigAdapterId}`} tone="slate" />
       <RuntimeBadge label={`Runtime ${stats.mode}`} tone={stats.mode !== "animated" ? "violet" : "slate"} />
       {stats.collisionEvaluationStatus !== "disabled" && (
         <RuntimeBadge
@@ -625,7 +630,7 @@ const CharacterGymHeader = ({
       {archer && (
         <ActionButton
           icon={<Target />}
-          label={naval ? "Broadside" : "Fire"}
+          label={naval ? "Broadside" : dragon ? "Fire breath" : "Fire"}
           onClick={onFireArrow}
           primary
           disabled={!ready}
@@ -634,7 +639,7 @@ const CharacterGymHeader = ({
       {archer && (
         <ActionButton
           icon={<X />}
-          label={naval ? "Cancel guns" : "Cancel draw"}
+          label={naval ? "Cancel guns" : dragon ? "Cancel breath" : "Cancel draw"}
           onClick={onCancelArrow}
           disabled={!ready}
         />
@@ -738,15 +743,11 @@ const CharacterGymViewport = ({
             </>
           ) : (
             <>
-              {stats.appearanceLabel} / {stats.assetLabel} · {config.kind} · T
-              {config.kind === "boat" ? config.boat.tier : config.humanoid.tier} · seed{" "}
-              {config.kind === "boat" ? config.boat.seed : config.humanoid.seed} ·{" "}
-              {config.kind === "boat"
-                ? config.boat.motionMode
-                : config.kind === "horse" || config.kind === "paladin"
-                  ? config.horse.gait
-                  : config.humanoid.animationMode}
-              {config.kind === "archer" || config.kind === "boat" ? ` · ${stats.rangedPhase}` : ""}
+              {stats.appearanceLabel} / {stats.assetLabel} · {stats.rigAdapterId} · {config.kind} · T
+              {resolveScenarioTier(config)} · seed {resolveScenarioSeed(config)} · {resolveScenarioMotion(config)}
+              {config.kind === "archer" || config.kind === "boat" || config.kind === "dragon"
+                ? ` · ${stats.rangedPhase}`
+                : ""}
               {config.kind === "knight" || config.kind === "paladin"
                 ? ` · ${stats.meleeWeaponId} (${stats.meleeWeaponSource}) · ${stats.meleePhase}`
                 : ""}
@@ -780,12 +781,33 @@ const CharacterGymLoadingState = () => (
     <div className="flex flex-col items-center gap-3 text-center">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-300/20 border-t-violet-200" />
       <div>
-        <p className="text-sm font-semibold text-white">Loading renderer, Quaternius riders, horse, and Jolt WASM</p>
-        <p className="mt-1 text-xs text-slate-500">The CC0 mounted-unit assets load only inside character routes.</p>
+        <p className="text-sm font-semibold text-white">
+          Loading renderer, character assets, procedural mounts, and Jolt
+        </p>
+        <p className="mt-1 text-xs text-slate-500">Character and mount resources load only inside the debug routes.</p>
       </div>
     </div>
   </div>
 );
+
+function resolveScenarioTier(config: ProceduralUnitConfig): number {
+  if (config.kind === "boat") return config.boat.tier;
+  if (config.kind === "dragon") return config.dragon.tier;
+  return config.humanoid.tier;
+}
+
+function resolveScenarioSeed(config: ProceduralUnitConfig): number {
+  if (config.kind === "boat") return config.boat.seed;
+  if (config.kind === "dragon") return config.dragon.seed;
+  return config.humanoid.seed;
+}
+
+function resolveScenarioMotion(config: ProceduralUnitConfig): string {
+  if (config.kind === "boat") return config.boat.motionMode;
+  if (config.kind === "dragon") return config.dragon.locomotionMode;
+  if (config.kind === "horse" || config.kind === "paladin") return config.horse.gait;
+  return config.humanoid.animationMode;
+}
 
 const CharacterGymError = ({ message }: { message: string }) => (
   <div className="absolute inset-x-4 bottom-4 border border-red-300/35 bg-red-950/90 p-4 text-sm text-red-100 backdrop-blur">
@@ -920,11 +942,13 @@ function selectDefaultCaptureFrame(
   const preferredPhase =
     result.plan.sequence === "archer-shot"
       ? "aim"
-      : result.plan.sequence === "boat-broadside"
+      : result.plan.sequence === "dragon-fire"
         ? "fire"
-        : result.plan.sequence === "melee-attack"
-          ? "contact"
-          : "gait";
+        : result.plan.sequence === "boat-broadside"
+          ? "fire"
+          : result.plan.sequence === "melee-attack"
+            ? "contact"
+            : "gait";
   const preferredFrames = result.frames.filter(({ runtimePhase }) => runtimePhase === preferredPhase);
   return preferredFrames[Math.floor(preferredFrames.length / 2)] ?? result.frames.at(-1);
 }

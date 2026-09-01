@@ -1,4 +1,4 @@
-import { type Group, Quaternion, Vector3 } from "three";
+import { Group, Quaternion, Vector3 } from "three";
 
 import type { ProceduralCharacterConfig } from "../procedural-character-config";
 import {
@@ -28,7 +28,8 @@ import {
   type ProceduralHorsePose,
 } from "./procedural-horse-pose";
 import { ProceduralHorsePoseFilter } from "./procedural-horse-pose-filter";
-import { QuaterniusHorseLibrary } from "./quaternius-horse-assets";
+import { loadProceduralHorseLibrary, type ProceduralHorseLibrary } from "./procedural-horse-assets";
+import { resolveProceduralHorseAppearanceAssetId } from "./procedural-horse-appearance";
 import {
   HORSE_RAGDOLL_BODY_IDS,
   HORSE_RAGDOLL_PART_IDS,
@@ -63,18 +64,18 @@ export class ProceduralHorseRuntime {
   private disposed = false;
 
   private constructor(
-    private readonly library: QuaterniusHorseLibrary,
+    private readonly library: ProceduralHorseLibrary,
     private readonly physicsWorld?: JoltRagdollWorld,
   ) {}
 
   public static async create(physicsWorld?: JoltRagdollWorld): Promise<ProceduralHorseRuntime> {
-    return new ProceduralHorseRuntime(await QuaterniusHorseLibrary.load(), physicsWorld);
+    return new ProceduralHorseRuntime(await loadProceduralHorseLibrary(), physicsWorld);
   }
 
   public createActor(config: ProceduralHorseConfig, physicsConfig: ProceduralCharacterConfig): ProceduralHorseActor {
     if (this.disposed) throw new Error("Cannot create a horse from a disposed procedural horse runtime");
     const actor = new RuntimeProceduralHorseActor(
-      this.library.instantiate(),
+      this.library,
       config,
       physicsConfig,
       this.physicsWorld,
@@ -96,9 +97,9 @@ export class ProceduralHorseRuntime {
 }
 
 class RuntimeProceduralHorseActor implements ProceduralHorseActor {
-  public readonly object: Group;
+  public readonly object = new Group();
 
-  private readonly avatar: ProceduralHorseAvatar;
+  private avatar: ProceduralHorseAvatar;
   private config: ProceduralHorseConfig;
   private physicsConfig: ProceduralCharacterConfig;
   private pose: ProceduralHorsePose;
@@ -119,7 +120,7 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
   private disposed = false;
 
   public constructor(
-    asset: ConstructorParameters<typeof ProceduralHorseAvatar>[0],
+    private readonly library: ProceduralHorseLibrary,
     config: ProceduralHorseConfig,
     physicsConfig: ProceduralCharacterConfig,
     private readonly physicsWorld: JoltRagdollWorld | undefined,
@@ -128,8 +129,9 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     this.config = applyProceduralHorseConfigPatch(config, {});
     this.phase = resolveInitialHorseGaitPhase(this.config.seed);
     this.physicsConfig = physicsConfig;
-    this.avatar = new ProceduralHorseAvatar(asset, this.config);
-    this.object = this.avatar.group;
+    this.object.name = "procedural-horse-actor";
+    this.avatar = this.createAvatar(this.config);
+    this.object.add(this.avatar.group);
     this.pose = this.poseFilter.apply(
       resolveProceduralHorsePose(
         this.avatar.rig,
@@ -175,8 +177,15 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     const normalized = applyProceduralHorseConfigPatch(this.config, config);
     const gaitChanged = normalized.gait !== this.config.gait;
     const seedChanged = normalized.seed !== this.config.seed;
+    const appearanceChanged = normalized.appearanceId !== this.config.appearanceId;
+    const assetChanged =
+      resolveProceduralHorseAppearanceAssetId(normalized.appearanceId, normalized.tier) !==
+      resolveProceduralHorseAppearanceAssetId(this.config.appearanceId, this.config.tier);
+    const requiresAvatarReplacement = appearanceChanged || assetChanged;
+    const replacement = requiresAvatarReplacement ? this.createAvatar(normalized) : undefined;
     this.config = normalized;
-    if (gaitChanged || seedChanged) {
+    if (replacement) this.replaceAvatar(replacement);
+    if (gaitChanged || seedChanged || requiresAvatarReplacement) {
       this.plantController.reset();
       this.poseFilter.reset();
     }
@@ -282,7 +291,22 @@ class RuntimeProceduralHorseActor implements ProceduralHorseActor {
     this.ragdoll?.dispose();
     this.ragdoll = undefined;
     this.avatar.dispose();
+    this.object.clear();
+    this.object.removeFromParent();
     this.release(this);
+  }
+
+  private createAvatar(config: ProceduralHorseConfig): ProceduralHorseAvatar {
+    return new ProceduralHorseAvatar(this.library.instantiate(config.appearanceId, config.tier), config);
+  }
+
+  private replaceAvatar(replacement: ProceduralHorseAvatar): void {
+    this.ragdoll?.dispose();
+    this.ragdoll = undefined;
+    const previous = this.avatar;
+    this.avatar = replacement;
+    this.object.add(this.avatar.group);
+    previous.dispose();
   }
 
   private applyPose(beginPlantFrame = true, deltaSeconds = 1 / 60): void {

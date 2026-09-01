@@ -15,7 +15,7 @@ export interface WorldFxImpactCue {
 
 export type TransientWorldFxCue = WorldFxImpactCue;
 
-export interface WorldFxFlameEmitter {
+interface WorldFxFlameEmitter {
   id: string;
   intensity?: number;
   kind: "flame";

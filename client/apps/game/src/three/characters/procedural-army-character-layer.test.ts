@@ -15,18 +15,25 @@ const characterMocks = vi.hoisted(() => ({
 
 vi.mock("@/three/characters", () => ({
   applyProceduralUnitConfigPatch: (
-    current: { horse: Record<string, unknown>; humanoid: Record<string, unknown> },
+    current: {
+      dragon: Record<string, unknown>;
+      horse: Record<string, unknown>;
+      humanoid: Record<string, unknown>;
+    },
     patch: Record<string, unknown> & {
+      dragon?: Record<string, unknown>;
       horse?: Record<string, unknown>;
       humanoid?: Record<string, unknown>;
     },
   ) => ({
     ...current,
     ...patch,
+    dragon: { ...current.dragon, ...patch.dragon },
     horse: { ...current.horse, ...patch.horse },
     humanoid: { ...current.humanoid, ...patch.humanoid },
   }),
   createDefaultProceduralUnitConfig: () => ({
+    dragon: { locomotionMode: "idle", primaryColor: "#352a32", speed: 0, tier: 3 },
     kind: "paladin",
     horse: { gait: "idle", primaryColor: "#315f86", tier: 1 },
     humanoid: { animationMode: "mounted", autoRotate: false, primaryColor: "#315f86", seed: 0, tier: 1 },
@@ -455,6 +462,44 @@ describe("ProceduralArmyCharacterLayer", () => {
     expect(boat.dispose).toHaveBeenCalledOnce();
     expect(characterMocks.createActor).toHaveBeenCalledTimes(2);
     expect(characterMocks.createActor).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "knight" }));
+    layer.dispose();
+  });
+
+  it("keeps a tier-three Sky Dragon landed at rest and flies it for authoritative movement", async () => {
+    const paladin = createActorMock("paladin");
+    characterMocks.createActor.mockReturnValue(paladin);
+    characterMocks.createRuntime.mockResolvedValue(createRuntimeMock());
+    const layer = new ProceduralArmyCharacterLayer(new Scene());
+    const presentation = {
+      category: TroopType.Paladin,
+      entityId: 303,
+      isMoving: false,
+      isNaval: false,
+      position: new Vector3(),
+      primaryColor: "#8f5f9f",
+      tier: TroopTier.T3,
+    };
+
+    layer.sync([presentation], 0);
+    await vi.waitFor(() => expect(layer.hasActor(303)).toBe(true));
+    expect(characterMocks.createActor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dragon: expect.objectContaining({ locomotionMode: "idle", primaryColor: "#8f5f9f", tier: 3 }),
+        kind: "paladin",
+      }),
+    );
+
+    layer.sync([{ ...presentation, isMoving: true }], 0.1);
+    expect(characterMocks.updateRuntimeActorConfig).toHaveBeenCalledWith(
+      paladin,
+      expect.objectContaining({ dragon: expect.objectContaining({ locomotionMode: "flight", speed: 3.2 }) }),
+    );
+
+    layer.sync([presentation], 0.1);
+    expect(characterMocks.updateRuntimeActorConfig).toHaveBeenLastCalledWith(
+      paladin,
+      expect.objectContaining({ dragon: expect.objectContaining({ locomotionMode: "idle", speed: 0 }) }),
+    );
     layer.dispose();
   });
 

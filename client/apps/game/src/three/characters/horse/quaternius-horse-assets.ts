@@ -1,59 +1,18 @@
-import { Bone, SkinnedMesh, type Group } from "three";
+import { Bone, SkinnedMesh } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 
-import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "../skinned-asset-resources";
-
-export interface LoadedQuaterniusHorseAsset {
-  gltf: GLTF;
-  label: string;
-  url: string;
-}
+import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
+import { resolveHorseRigRequiredBoneNames } from "./horse-rig-adapter";
+import type { LoadedProceduralHorseAssetTemplate, ProceduralHorseAssetDefinition } from "./procedural-horse-assets";
+import { QUATERNIUS_HORSE_RIG_ADAPTER } from "./quaternius-horse-rig-adapter";
 
 export const QUATERNIUS_HORSE_ASSET = {
+  adapterId: QUATERNIUS_HORSE_RIG_ADAPTER.id,
+  id: "quaternius-horse",
   label: "Quaternius horse",
+  scale: 0.52,
   url: "/models/characters/quaternius-horse/horse.glb",
-} as const;
-
-export const QUATERNIUS_HORSE_BONES = {
-  root: "Body",
-  pelvis: "Back",
-  spine: "Torso",
-  chest: "Torso2",
-  withers: "Torso3",
-  neck1: "Neck1",
-  neck2: "Neck2",
-  neck3: "Neck3",
-  head: "Head",
-  frontShoulderLeft: "FrontShoulderL",
-  frontUpperLeft: "FrontUpperLegL",
-  frontLowerLeft: "FrontLowerLegL",
-  frontTargetLeft: "IKFrontLegL",
-  frontHoofLeft: "FFL",
-  frontShoulderRight: "FrontShoulderR",
-  frontUpperRight: "FrontUpperLegR",
-  frontLowerRight: "FrontLowerLegR",
-  frontTargetRight: "IKFrontLegR",
-  frontHoofRight: "FFR",
-  hindShoulderLeft: "BackShoulderL",
-  hindUpperLeft: "BackLegL",
-  hindMiddleLeft: "BackUpperLegL",
-  hindLowerLeft: "BackLowerLegL",
-  hindTargetLeft: "IKBackLegL",
-  hindHoofLeft: "FFBL",
-  hindShoulderRight: "BackShoulderR",
-  hindUpperRight: "BackLegR",
-  hindMiddleRight: "BackUpperLegR",
-  hindLowerRight: "BackLowerLegR",
-  hindTargetRight: "IKBackLegR",
-  hindHoofRight: "FFBR",
-  tail1: "Tail1",
-  tail2: "Tail2",
-  tail3: "Tail3",
-  tail4: "Tail4",
-  tail5: "Tail5",
-  tail6: "Tail6",
-  tail7: "Tail7",
-} as const;
+} as const satisfies ProceduralHorseAssetDefinition;
 
 export const QUATERNIUS_HORSE_REFERENCE_CLIPS = [
   "Attack_Headbutt",
@@ -71,52 +30,20 @@ export const QUATERNIUS_HORSE_REFERENCE_CLIPS = [
   "Walk",
 ] as const;
 
-const REQUIRED_BONES = Object.values(QUATERNIUS_HORSE_BONES);
-
-export class QuaterniusHorseLibrary {
-  private disposed = false;
-
-  private constructor(private readonly template: LoadedQuaterniusHorseAsset) {}
-
-  public static async load(): Promise<QuaterniusHorseLibrary> {
-    const gltf = await new GLTFLoader().loadAsync(QUATERNIUS_HORSE_ASSET.url);
-    try {
-      validateQuaterniusHorse(gltf);
-      return new QuaterniusHorseLibrary({ ...QUATERNIUS_HORSE_ASSET, gltf });
-    } catch (error) {
-      disposeSkinnedSceneTemplates([gltf.scene]);
-      throw error;
-    }
+export async function loadQuaterniusHorseAssetTemplates(): Promise<LoadedProceduralHorseAssetTemplate[]> {
+  const gltf = await new GLTFLoader().loadAsync(QUATERNIUS_HORSE_ASSET.url);
+  try {
+    validateQuaterniusHorse(gltf);
+    return [{ ...QUATERNIUS_HORSE_ASSET, gltf }];
+  } catch (error) {
+    disposeSkinnedSceneTemplates([gltf.scene]);
+    throw error;
   }
-
-  public instantiate(): LoadedQuaterniusHorseAsset {
-    if (this.disposed) throw new Error("Cannot instantiate a disposed Quaternius horse library");
-    const scene = instantiateSkinnedScene(this.template.gltf.scene);
-    return {
-      ...this.template,
-      gltf: {
-        ...this.template.gltf,
-        scene,
-        scenes: [scene],
-      },
-    };
-  }
-
-  public dispose(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-    disposeSkinnedSceneTemplates([this.template.gltf.scene]);
-  }
-}
-
-export function requireQuaterniusHorseBone(scene: Group, name: string): Bone {
-  const object = scene.getObjectByName(name);
-  if (!(object instanceof Bone)) throw new Error(`Quaternius horse bone ${name} was not found`);
-  return object;
 }
 
 function validateQuaterniusHorse(gltf: GLTF): void {
-  const missingBones = REQUIRED_BONES.filter((name) => !(gltf.scene.getObjectByName(name) instanceof Bone));
+  const requiredBones = resolveHorseRigRequiredBoneNames(QUATERNIUS_HORSE_RIG_ADAPTER);
+  const missingBones = requiredBones.filter((name) => !(gltf.scene.getObjectByName(name) instanceof Bone));
   if (missingBones.length > 0)
     throw new Error(`Quaternius horse is missing required bones: ${missingBones.join(", ")}`);
 

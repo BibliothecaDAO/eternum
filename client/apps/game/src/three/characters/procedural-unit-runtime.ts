@@ -36,6 +36,11 @@ import {
 import { ProceduralHorseRuntime, type ProceduralHorseActor } from "./horse/procedural-horse-runtime";
 import { resolveHorseGaitCadence } from "./horse/procedural-horse-gait";
 import type { HorseGroundSampler } from "./horse/procedural-horse-pose";
+import type { ProceduralMountActor } from "./mount/procedural-mount-actor";
+import { ProceduralHorseMountActor } from "./mount/procedural-horse-mount-actor";
+import { ProceduralDragonRuntime } from "./dragon/procedural-dragon-runtime";
+import type { ProceduralDragonFirePhase } from "./dragon/procedural-dragon-fire-cycle";
+import { ProceduralDragonMountActor } from "./mount/procedural-dragon-mount-actor";
 import { ProceduralBoatRuntime, type ProceduralBoatActor } from "./boat/procedural-boat-runtime";
 import type { ProceduralBoatBroadsidePhase } from "./boat/procedural-boat-broadside-cycle";
 import type { BallisticProjectileKind } from "../projectiles/arrow-projectile-system";
@@ -57,7 +62,7 @@ interface ProceduralUnitActorStats extends Omit<ProceduralCharacterActorStats, "
   meleeWeaponSource: ProceduralMeleeEquipmentSource;
   stanceHoofCount: number;
   mode: ProceduralUnitMode;
-  rangedPhase: ProceduralArcherShotPhase | ProceduralBoatBroadsidePhase;
+  rangedPhase: ProceduralArcherShotPhase | ProceduralBoatBroadsidePhase | ProceduralDragonFirePhase;
   rangedReleaseCount: number;
   previewArrowVisible: boolean;
   stringContinuityError: number;
@@ -128,6 +133,7 @@ export class ProceduralUnitRuntime {
   private constructor(
     private readonly characterRuntime: ProceduralCharacterRuntime,
     private readonly horseRuntime: ProceduralHorseRuntime,
+    private readonly dragonRuntime: ProceduralDragonRuntime,
     private readonly boatRuntime: ProceduralBoatRuntime,
     private readonly physicsWorld: JoltRagdollWorld,
     private readonly meleeLibrary: ProceduralMeleeWeaponLibrary,
@@ -140,22 +146,26 @@ export class ProceduralUnitRuntime {
     const results = await Promise.allSettled([
       ProceduralCharacterRuntime.create({ ...options, physicsWorld }),
       ProceduralHorseRuntime.create(physicsWorld),
+      ProceduralDragonRuntime.create(),
       ProceduralBoatRuntime.create(),
       ProceduralMeleeWeaponLibrary.create(),
     ] as const);
-    const [characterResult, horseResult, boatResult, meleeResult] = results;
+    const [characterResult, horseResult, dragonResult, boatResult, meleeResult] = results;
     if (
       characterResult.status === "rejected" ||
       horseResult.status === "rejected" ||
+      dragonResult.status === "rejected" ||
       boatResult.status === "rejected" ||
       meleeResult.status === "rejected"
     ) {
       if (characterResult.status === "fulfilled") characterResult.value.dispose();
       if (horseResult.status === "fulfilled") horseResult.value.dispose();
+      if (dragonResult.status === "fulfilled") dragonResult.value.dispose();
       if (boatResult.status === "fulfilled") boatResult.value.dispose();
       physicsWorld.dispose();
       if (characterResult.status === "rejected") throw characterResult.reason;
       if (horseResult.status === "rejected") throw horseResult.reason;
+      if (dragonResult.status === "rejected") throw dragonResult.reason;
       if (boatResult.status === "rejected") throw boatResult.reason;
       if (meleeResult.status === "rejected") throw meleeResult.reason;
       throw new Error("Procedural unit runtime initialization failed");
@@ -163,6 +173,7 @@ export class ProceduralUnitRuntime {
     return new ProceduralUnitRuntime(
       characterResult.value,
       horseResult.value,
+      dragonResult.value,
       boatResult.value,
       physicsWorld,
       meleeResult.value,
@@ -179,6 +190,7 @@ export class ProceduralUnitRuntime {
     const actor = createUnitActor(
       this.characterRuntime,
       this.horseRuntime,
+      this.dragonRuntime,
       this.boatRuntime,
       this.meleeLibrary,
       normalized,
@@ -236,6 +248,7 @@ export class ProceduralUnitRuntime {
     this.animationScheduler.clear();
     this.characterRuntime.dispose();
     this.horseRuntime.dispose();
+    this.dragonRuntime.dispose();
     this.boatRuntime.dispose();
     this.physicsWorld.dispose();
   }
@@ -244,6 +257,7 @@ export class ProceduralUnitRuntime {
 function createUnitActor(
   characterRuntime: ProceduralCharacterRuntime,
   horseRuntime: ProceduralHorseRuntime,
+  dragonRuntime: ProceduralDragonRuntime,
   boatRuntime: ProceduralBoatRuntime,
   meleeLibrary: ProceduralMeleeWeaponLibrary,
   config: ProceduralUnitConfig,
@@ -255,9 +269,16 @@ function createUnitActor(
   if (config.kind === "horse") {
     return new HorseUnitActor(horseRuntime.createActor(config.horse, config.humanoid), config, release);
   }
+  if (config.kind === "dragon") {
+    return new DragonUnitActor(
+      new ProceduralDragonMountActor(dragonRuntime.createActor(config.dragon)),
+      config,
+      release,
+    );
+  }
   if (config.kind === "paladin") {
     return new MountedUnitActor(
-      horseRuntime.createActor(config.horse, config.humanoid),
+      createPaladinMount(horseRuntime, dragonRuntime, config),
       characterRuntime.createActor(resolveMountedRiderConfig(config)),
       config,
       meleeLibrary,
@@ -270,6 +291,17 @@ function createUnitActor(
     meleeLibrary,
     release,
   );
+}
+
+function createPaladinMount(
+  horseRuntime: ProceduralHorseRuntime,
+  dragonRuntime: ProceduralDragonRuntime,
+  config: ProceduralUnitConfig,
+): ProceduralMountActor {
+  if (config.dragon.tier === 3) {
+    return new ProceduralDragonMountActor(dragonRuntime.createActor(config.dragon));
+  }
+  return new ProceduralHorseMountActor(horseRuntime.createActor(config.horse, config.humanoid));
 }
 
 class HumanoidUnitActor implements ProceduralUnitActor {
@@ -742,6 +774,155 @@ class BoatUnitActor implements ProceduralUnitActor {
   }
 }
 
+class DragonUnitActor implements ProceduralUnitActor {
+  public readonly object: Group;
+  private readonly rangedReleaseListeners = new Set<(event: ProceduralRangedReleaseEvent) => void>();
+  private readonly unsubscribeFireRelease: () => void;
+  private config: ProceduralUnitConfig;
+  private disposed = false;
+
+  public constructor(
+    private readonly dragon: ProceduralDragonMountActor,
+    config: ProceduralUnitConfig,
+    private readonly release: (actor: ProceduralUnitActor) => void,
+  ) {
+    this.config = config;
+    this.object = dragon.object;
+    this.unsubscribeFireRelease = dragon.onFireRelease((event) => this.emitRangedRelease(event));
+  }
+
+  public get kind(): ProceduralUnitKind {
+    return "dragon";
+  }
+
+  public get mode(): ProceduralCharacterMode {
+    return this.dragon.mode;
+  }
+
+  public update(deltaSeconds: number): void {
+    this.dragon.update(deltaSeconds);
+  }
+
+  public stepOnce(): void {
+    this.dragon.stepOnce();
+  }
+
+  public updateConfig(config: ProceduralUnitConfig): void {
+    this.config = config;
+    this.dragon.updateConfig(config);
+  }
+
+  public fireRangedAttack(targetWorld: Readonly<Vector3>): boolean {
+    return this.mode === "animated" && this.dragon.fireAt(targetWorld);
+  }
+
+  public fireMeleeAttack(): boolean {
+    return false;
+  }
+
+  public attack(targetWorld: Readonly<Vector3>): boolean {
+    return this.fireRangedAttack(targetWorld);
+  }
+
+  public setRangedTarget(targetWorld?: Readonly<Vector3>): void {
+    this.dragon.setFireTarget(targetWorld);
+  }
+
+  public cancelRangedAttack(): void {
+    this.dragon.cancelFire();
+  }
+
+  public setMeleeTarget(): void {}
+
+  public cancelMeleeAttack(): void {}
+
+  public onRangedRelease(listener: (event: ProceduralRangedReleaseEvent) => void): () => void {
+    this.rangedReleaseListeners.add(listener);
+    return () => this.rangedReleaseListeners.delete(listener);
+  }
+
+  public onMeleeContact(): () => void {
+    return () => undefined;
+  }
+
+  public startRagdoll(): Promise<void> {
+    return this.dragon.startRagdoll();
+  }
+
+  public applyReaction(reaction: ProceduralUnitReactionInput): void {
+    this.dragon.applyReaction(reaction);
+  }
+
+  public applyImpact(impact: ProceduralUnitImpact): Promise<void> {
+    return this.dragon.applyImpact({ ...impact, target: "mount" });
+  }
+
+  public applyImpulse(): Promise<void> {
+    return this.dragon.applyImpulse();
+  }
+
+  public setGroundSampler(sampleGround?: HorseGroundSampler): void {
+    this.dragon.setTerrainSampler(sampleGround);
+  }
+
+  public reset(): void {
+    this.dragon.reset();
+  }
+
+  public hasFiniteState(): boolean {
+    return this.dragon.hasFiniteState();
+  }
+
+  public getStats(): ProceduralUnitActorStats {
+    const dragon = this.dragon.getStats();
+    const fire = this.dragon.getFireStats();
+    return {
+      ...EMPTY_UNIT_STATS,
+      ...dragon,
+      kind: "dragon",
+      maximumHorseBoneStretchRatio: dragon.maximumBoneStretchRatio,
+      minimumBendAlignment: dragon.minimumBendAlignment,
+      mode: this.mode,
+      rangedPhase: fire.phase,
+      rangedReleaseCount: fire.releaseCount,
+      stanceHoofCount: dragon.contactCount,
+    };
+  }
+
+  public getPoseDiagnostics(): ProceduralUnitPoseDiagnostics {
+    const diagnostics = this.dragon.getPoseDiagnostics();
+    return resolveProceduralUnitPoseDiagnostics({ dragon: diagnostics.dragon, kind: "dragon" });
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.unsubscribeFireRelease();
+    this.rangedReleaseListeners.clear();
+    this.dragon.dispose();
+    this.release(this);
+  }
+
+  private emitRangedRelease(event: { direction: Vector3; generation: number; origin: Vector3; target: Vector3 }): void {
+    const releaseEvent: ProceduralRangedReleaseEvent = {
+      direction: event.direction.clone(),
+      origin: event.origin.clone(),
+      origins: [event.origin.clone()],
+      projectile: {
+        count: 0,
+        flightSeconds: 0.01,
+        kind: "arrow",
+        spreadDegrees: 0,
+        targetRadius: 0,
+      },
+      seed: (this.config.dragon.seed + event.generation * 0x9e3779b1) >>> 0,
+      shotGeneration: event.generation,
+      target: event.target.clone(),
+    };
+    this.rangedReleaseListeners.forEach((listener) => listener(releaseEvent));
+  }
+}
+
 class HorseUnitActor implements ProceduralUnitActor {
   public readonly object: Group;
   private config: ProceduralUnitConfig;
@@ -839,12 +1020,16 @@ class HorseUnitActor implements ProceduralUnitActor {
     return {
       ...EMPTY_UNIT_STATS,
       ...physics,
+      appearanceId: horse.appearanceId,
+      appearanceLabel: horse.appearanceLabel,
+      assetId: horse.assetId,
       assetLabel: horse.assetLabel,
       authoredClipCount: horse.authoredClipCount,
       boneCount: horse.boneCount,
       kind: this.kind,
       maximumHorseBoneStretchRatio: horse.maximumBoneStretchRatio,
       minimumBendAlignment: horse.minimumBendAlignment,
+      rigAdapterId: horse.rigAdapterId,
       skinnedMeshCount: horse.skinnedMeshCount,
       stanceHoofCount: horse.stanceHoofCount,
     };
@@ -877,7 +1062,7 @@ class MountedUnitActor implements ProceduralUnitActor {
   private readonly meleeTarget = new Vector3();
 
   public constructor(
-    private readonly horse: ProceduralHorseActor,
+    private readonly mount: ProceduralMountActor,
     private readonly rider: ProceduralCharacterActor,
     config: ProceduralUnitConfig,
     meleeLibrary: ProceduralMeleeWeaponLibrary,
@@ -885,7 +1070,7 @@ class MountedUnitActor implements ProceduralUnitActor {
   ) {
     this.config = config;
     this.object.name = "procedural-mounted-unit";
-    this.object.add(horse.object, rider.object);
+    this.object.add(mount.object, rider.object);
     rider.object.scale.setScalar(0.84);
     this.melee = new ProceduralMeleeController(config.melee, true);
     this.equipment = new ProceduralUnitEquipment(
@@ -905,24 +1090,24 @@ class MountedUnitActor implements ProceduralUnitActor {
   }
 
   public get mode(): ProceduralCharacterMode {
-    return this.horse.mode === "ragdoll" || this.rider.mode === "ragdoll" ? "ragdoll" : "animated";
+    return this.mount.mode === "ragdoll" || this.rider.mode === "ragdoll" ? "ragdoll" : "animated";
   }
 
   public update(deltaSeconds: number): void {
-    this.horse.update(deltaSeconds);
+    this.mount.update(deltaSeconds);
     this.syncRiderToSaddle(deltaSeconds);
     this.updateMelee(deltaSeconds);
-    this.rider.update(deltaSeconds, this.horse.getPose().phase);
+    this.rider.update(deltaSeconds, this.mount.getPose().phase);
     this.syncRiderToSaddle(deltaSeconds);
     this.updateEquipment();
     this.emitPendingMeleeContacts();
   }
 
   public stepOnce(): void {
-    this.horse.stepOnce();
+    this.mount.stepOnce();
     this.syncRiderToSaddle(this.config.humanoid.fixedStep);
     this.updateMelee(this.config.humanoid.fixedStep);
-    this.rider.stepOnce(this.horse.getPose().phase);
+    this.rider.stepOnce(this.mount.getPose().phase);
     this.syncRiderToSaddle(this.config.humanoid.fixedStep);
     this.updateEquipment();
     this.emitPendingMeleeContacts();
@@ -931,7 +1116,7 @@ class MountedUnitActor implements ProceduralUnitActor {
   public updateConfig(config: ProceduralUnitConfig): void {
     this.config = config;
     this.melee.updateConfig(config.melee);
-    this.horse.updateConfig(config.horse, config.humanoid);
+    this.mount.updateConfig(config);
     this.rider.updateConfig(resolveMountedRiderConfig(config));
     this.syncRiderToSaddle(config.humanoid.fixedStep);
     this.updateEquipment();
@@ -941,26 +1126,26 @@ class MountedUnitActor implements ProceduralUnitActor {
     this.melee.reset();
     this.meleePose = undefined;
     this.rider.setUpperBodyAction(undefined);
-    await Promise.all([this.horse.startRagdoll(), this.rider.startRagdoll()]);
+    await Promise.all([this.mount.startRagdoll(), this.rider.startRagdoll()]);
   }
 
   public applyReaction(reaction: ProceduralUnitReactionInput): void {
-    this.horse.applyReaction(reaction);
+    this.mount.applyReaction(reaction);
     this.rider.applyReaction(reaction);
   }
 
   public async applyImpact(impact: ProceduralUnitImpact): Promise<void> {
     const passiveImpact = { ...impact, strength: 0 };
     if (impact.target === "mount") {
-      await Promise.all([this.horse.applyImpact(impact), this.rider.applyImpact(passiveImpact)]);
+      await Promise.all([this.mount.applyImpact(impact), this.rider.applyImpact(passiveImpact)]);
       return;
     }
-    await Promise.all([this.horse.applyImpact(passiveImpact), this.rider.applyImpact(impact)]);
+    await Promise.all([this.mount.applyImpact(passiveImpact), this.rider.applyImpact(impact)]);
   }
 
   public async applyImpulse(partId?: CharacterPartId): Promise<void> {
     await this.startRagdoll();
-    await Promise.all([this.horse.applyImpulse(), this.rider.applyImpulse(partId)]);
+    await Promise.all([this.mount.applyImpulse(), this.rider.applyImpulse(partId)]);
   }
 
   public fireRangedAttack(): boolean {
@@ -984,7 +1169,7 @@ class MountedUnitActor implements ProceduralUnitActor {
   }
 
   public setGroundSampler(sampleGround?: HorseGroundSampler): void {
-    this.horse.setGroundSampler(sampleGround);
+    this.mount.setTerrainSampler(sampleGround);
   }
 
   public cancelMeleeAttack(): void {
@@ -1001,7 +1186,7 @@ class MountedUnitActor implements ProceduralUnitActor {
   }
 
   public reset(): void {
-    this.horse.reset();
+    this.mount.reset();
     this.melee.reset();
     this.meleePose = undefined;
     this.rider.reset();
@@ -1010,27 +1195,26 @@ class MountedUnitActor implements ProceduralUnitActor {
   }
 
   public hasFiniteState(): boolean {
-    return this.horse.hasFiniteState() && this.rider.hasFiniteState();
+    return this.mount.hasFiniteState() && this.rider.hasFiniteState();
   }
 
   public getStats(): ProceduralUnitActorStats {
-    const horse = this.horse.getStats();
-    const horsePhysics = this.horse.getPhysicsStats();
+    const mount = this.mount.getStats();
     const rider = this.rider.getStats();
     const melee = this.melee.getStats();
     const meleeEquipment = this.equipment.getMeleeStats();
     return {
       ...EMPTY_BOAT_STATS,
       ...rider,
-      activeBodyCount: horsePhysics.activeBodyCount + rider.activeBodyCount,
-      assetLabel: `${horse.assetLabel} + ${rider.assetLabel}`,
-      authoredClipCount: horse.authoredClipCount + rider.authoredClipCount,
-      boneCount: horse.boneCount + rider.boneCount,
-      bodyCount: horsePhysics.bodyCount + rider.bodyCount,
-      constraintCount: horsePhysics.constraintCount + rider.constraintCount,
+      activeBodyCount: mount.activeBodyCount + rider.activeBodyCount,
+      assetLabel: `${mount.assetLabel} + ${rider.assetLabel}`,
+      authoredClipCount: mount.authoredClipCount + rider.authoredClipCount,
+      boneCount: mount.boneCount + rider.boneCount,
+      bodyCount: mount.bodyCount + rider.bodyCount,
+      constraintCount: mount.constraintCount + rider.constraintCount,
       kind: "paladin",
-      maximumHorseBoneStretchRatio: horse.maximumBoneStretchRatio,
-      minimumBendAlignment: horse.minimumBendAlignment,
+      maximumHorseBoneStretchRatio: mount.maximumBoneStretchRatio,
+      minimumBendAlignment: mount.minimumBendAlignment,
       meleeContactCount: melee.contactCount,
       meleeOffhandId: meleeEquipment.offhandId,
       meleeOffhandSource: meleeEquipment.offhandSource,
@@ -1040,16 +1224,18 @@ class MountedUnitActor implements ProceduralUnitActor {
       previewArrowVisible: false,
       rangedPhase: "idle",
       rangedReleaseCount: 0,
-      skinnedMeshCount: horse.skinnedMeshCount + rider.skinnedMeshCount,
-      stanceHoofCount: horse.stanceHoofCount,
+      skinnedMeshCount: mount.skinnedMeshCount + rider.skinnedMeshCount,
+      stanceHoofCount: mount.contactCount,
       stringContinuityError: 0,
-      wasmHeapBytes: Math.max(horsePhysics.wasmHeapBytes, rider.wasmHeapBytes),
+      wasmHeapBytes: Math.max(mount.wasmHeapBytes, rider.wasmHeapBytes),
     };
   }
 
   public getPoseDiagnostics(): ProceduralUnitPoseDiagnostics {
+    const mount = this.mount.getPoseDiagnostics();
     return resolveProceduralUnitPoseDiagnostics({
-      horse: this.horse.getPoseDiagnostics(),
+      ...(mount.kind === "dragon" && { dragon: mount.dragon }),
+      ...(mount.kind === "horse" && { horse: mount.horse }),
       humanoid: this.rider.getPoseDiagnostics(),
       kind: "paladin",
       melee: this.equipment.getMeleePoseDiagnostics(),
@@ -1061,7 +1247,7 @@ class MountedUnitActor implements ProceduralUnitActor {
     this.disposed = true;
     this.meleeContactListeners.clear();
     this.equipment.dispose();
-    this.horse.dispose();
+    this.mount.dispose();
     this.rider.dispose();
     this.object.clear();
     this.object.removeFromParent();
@@ -1070,7 +1256,7 @@ class MountedUnitActor implements ProceduralUnitActor {
 
   private syncRiderToSaddle(deltaSeconds: number, snap = false): void {
     if (this.mode === "ragdoll") return;
-    const saddle = this.horse.getPose();
+    const saddle = this.mount.getPose();
     this.saddleQuaternion.fromArray(saddle.saddleRotation);
     this.riderPelvisOffset.set(0, 1.12 * this.rider.object.scale.y, -0.04 * this.rider.object.scale.z);
     this.riderPelvisOffset.applyQuaternion(this.saddleQuaternion);
@@ -1146,7 +1332,10 @@ function resolveMountedRiderConfig(config: ProceduralUnitConfig): ProceduralChar
   return {
     ...config.humanoid,
     animationMode: "mounted",
-    animationSpeed: Math.max(0.1, resolveHorseGaitCadence(config.horse)),
+    animationSpeed: Math.max(
+      0.1,
+      config.dragon.tier === 3 ? config.dragon.wingBeatHz : resolveHorseGaitCadence(config.horse),
+    ),
   };
 }
 
@@ -1166,9 +1355,9 @@ function isMeleeUnitKind(kind: ProceduralUnitKind): kind is "knight" | "paladin"
 
 const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {
   activeBodyCount: 0,
-  appearanceId: "horse",
+  appearanceId: "quaternius",
   appearanceLabel: "Horse",
-  assetId: "base",
+  assetId: "quaternius-horse",
   assetLabel: "",
   authoredClipCount: 0,
   bodyCount: 0,

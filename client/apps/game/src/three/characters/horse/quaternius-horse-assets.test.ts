@@ -4,11 +4,9 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  QUATERNIUS_HORSE_ASSET,
-  QUATERNIUS_HORSE_BONES,
-  QUATERNIUS_HORSE_REFERENCE_CLIPS,
-} from "./quaternius-horse-assets";
+import { QUATERNIUS_HORSE_ASSET, QUATERNIUS_HORSE_REFERENCE_CLIPS } from "./quaternius-horse-assets";
+import { resolveHorseRigRequiredBoneNames } from "./horse-rig-adapter";
+import { QUATERNIUS_HORSE_RIG_ADAPTER } from "./quaternius-horse-rig-adapter";
 
 interface HorseGlbJson {
   animations?: Array<{ name?: string }>;
@@ -18,13 +16,23 @@ interface HorseGlbJson {
 }
 
 describe("Quaternius horse asset", () => {
+  it("declares its appearance-facing asset and rig identity", () => {
+    expect(QUATERNIUS_HORSE_ASSET).toMatchObject({
+      adapterId: "quaternius-horse",
+      id: "quaternius-horse",
+      scale: 0.52,
+    });
+  });
+
   it("ships the audited 50-joint skin and every required procedural control bone", () => {
     const glb = readRuntimeGlb();
     const names = new Set(glb.nodes?.map(({ name }) => normalizeThreeNodeName(name ?? "")));
 
     expect(glb.skins).toHaveLength(1);
     expect(glb.skins?.[0].joints).toHaveLength(50);
-    expect(Object.values(QUATERNIUS_HORSE_BONES).filter((name) => !names.has(name))).toEqual([]);
+    expect(resolveHorseRigRequiredBoneNames(QUATERNIUS_HORSE_RIG_ADAPTER).filter((name) => !names.has(name))).toEqual(
+      [],
+    );
   });
 
   it("keeps the authored clips as gym references and flat-color material roles", () => {

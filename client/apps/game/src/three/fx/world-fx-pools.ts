@@ -7,6 +7,7 @@ import {
   PlaneGeometry,
   Quaternion,
   Vector3,
+  type Material,
 } from "three";
 
 import {
@@ -16,7 +17,7 @@ import {
   WORLD_FX_PARTICLE_ATTRIBUTE,
 } from "./world-fx-materials";
 
-export type WorldFxParticleKind = "flame" | "smoke" | "spark";
+type WorldFxParticleKind = "flame" | "smoke" | "spark";
 
 export interface WorldFxParticleSpawn {
   effectId: number;
@@ -177,7 +178,7 @@ export class WorldFxParticlePool {
     this.mesh.removeFromParent();
     this.mesh.dispose();
     this.geometry.dispose();
-    this.mesh.material.dispose();
+    disposeMaterials(this.mesh.material);
   }
 
   private acquireSlot(): ParticleSlot {
@@ -313,7 +314,7 @@ export class WorldFxRingPool {
     this.mesh.removeFromParent();
     this.mesh.dispose();
     this.geometry.dispose();
-    this.mesh.material.dispose();
+    disposeMaterials(this.mesh.material);
   }
 
   private acquireSlot(): RingSlot {
@@ -394,6 +395,10 @@ function advanceParticle(slot: ParticleSlot, deltaSeconds: number): void {
   slot.positionY += slot.velocityY * deltaSeconds;
   slot.positionZ += slot.velocityZ * deltaSeconds;
   slot.rotation += slot.spin * deltaSeconds;
+}
+
+function disposeMaterials(material: Material | Material[]): void {
+  (Array.isArray(material) ? material : [material]).forEach((entry) => entry.dispose());
 }
 
 function resolveParticleOpacity(kind: WorldFxParticleKind, progress: number): number {

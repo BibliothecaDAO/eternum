@@ -23,8 +23,18 @@ import {
   createIdleProceduralBoatBroadsideState,
   startProceduralBoatBroadside,
 } from "../boat/procedural-boat-broadside-cycle";
+import {
+  advanceProceduralDragonFire,
+  createIdleProceduralDragonFireState,
+  startProceduralDragonFire,
+} from "../dragon/procedural-dragon-fire-cycle";
 
-export type ProceduralAnimationCaptureSequence = "archer-shot" | "boat-broadside" | "locomotion-cycle" | "melee-attack";
+export type ProceduralAnimationCaptureSequence =
+  | "archer-shot"
+  | "boat-broadside"
+  | "dragon-fire"
+  | "locomotion-cycle"
+  | "melee-attack";
 export type ProceduralAnimationCaptureSampling = "all-frames" | "key-phases" | "phase-atlas";
 export type ProceduralAnimationCaptureOverlay = "clean" | "diagnostic";
 export type ProceduralAnimationCaptureViewId =
@@ -159,6 +169,7 @@ const PHASE_ATLAS_GRIP_VIEWS: readonly ProceduralAnimationCaptureView[] = [
 export function resolveDefaultAnimationCaptureSequence(kind: ProceduralUnitKind): ProceduralAnimationCaptureSequence {
   if (kind === "archer") return "archer-shot";
   if (kind === "boat") return "boat-broadside";
+  if (kind === "dragon") return "dragon-fire";
   if (kind === "knight" || kind === "paladin") return "melee-attack";
   return "locomotion-cycle";
 }
@@ -197,7 +208,7 @@ export function createProceduralAnimationCapturePlan(
     truncated,
     views:
       sampling === "phase-atlas"
-        ? config.kind === "horse" || config.kind === "boat"
+        ? config.kind === "horse" || config.kind === "boat" || config.kind === "dragon"
           ? PHASE_ATLAS_BODY_VIEWS
           : [...PHASE_ATLAS_BODY_VIEWS, ...PHASE_ATLAS_GRIP_VIEWS]
         : [TIMELINE_CAPTURE_VIEW],
@@ -228,6 +239,13 @@ function resolveActionCapturePhases(
       startProceduralBoatBroadside(createIdleProceduralBoatBroadsideState(), "starboard"),
       (state) => advanceProceduralBoatBroadside(state, config.boat, fixedStepSeconds).state,
       "Boat broadside",
+    );
+  }
+  if (sequence === "dragon-fire") {
+    return traceActionCapturePhases(
+      startProceduralDragonFire(createIdleProceduralDragonFireState()),
+      (state) => advanceProceduralDragonFire(state, config.dragon, fixedStepSeconds, false).state,
+      "Dragon fire breath",
     );
   }
   return undefined;
@@ -345,11 +363,24 @@ function resolveCapturePhaseDurations(
       phase("recover", "Recover", config.boat.recoverSeconds),
     ];
   }
+  if (sequence === "dragon-fire") {
+    return [
+      phase("acquire", "Acquire", config.dragon.acquireSeconds),
+      phase("inhale", "Inhale", config.dragon.inhaleSeconds),
+      phase("fire", "Fire", config.dragon.fireSeconds),
+      phase("recover", "Recover", config.dragon.recoverSeconds),
+    ];
+  }
 
+  const mountedDragon = config.kind === "paladin" && config.dragon.tier === 3;
   const cadence =
-    config.kind === "horse" || config.kind === "paladin"
+    config.kind === "horse" || (config.kind === "paladin" && !mountedDragon)
       ? resolveHorseGaitCadence(config.horse)
-      : resolveHumanoidCapturePhaseRate(config, rootMotionSpeed);
+      : config.kind === "dragon" || mountedDragon
+        ? config.dragon.locomotionMode === "flight"
+          ? config.dragon.wingBeatHz
+          : Math.max(0.1, config.dragon.speed / Math.max(0.4, 2.1 * config.dragon.strideScale))
+        : resolveHumanoidCapturePhaseRate(config, rootMotionSpeed);
   return [phase("gait", "Gait cycle", 1 / Math.max(0.1, cadence))];
 }
 
@@ -360,6 +391,7 @@ function resolveCaptureRootMotionSpeed(
 ): number {
   if (
     sequence !== "locomotion-cycle" ||
+    config.kind === "dragon" ||
     config.kind === "horse" ||
     config.kind === "paladin" ||
     (config.humanoid.animationMode !== "walk" && config.humanoid.animationMode !== "run")
