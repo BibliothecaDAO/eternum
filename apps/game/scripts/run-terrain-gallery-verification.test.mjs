@@ -60,13 +60,108 @@ describe("terrain gallery verification", () => {
     ).toMatchObject({ ok: true, performanceDeltas: [], reasons: [] });
   });
 
+  it("requires deterministic roads in the owned-road gallery scene", () => {
+    const roads = result("webgpu-auto", "webgpu", "textured");
+    roads.sceneId = "owned-roads";
+    roads.snapshot.sceneId = "owned-roads";
+    roads.snapshot.biomeCount = 3;
+    roads.snapshot.roadSegments = 15;
+    const options = {
+      groundModes: ["textured"],
+      rendererModes: ["webgpu-auto"],
+      sceneIds: ["owned-roads"],
+    };
+
+    expect(evaluateTerrainGalleryResults([roads], options)).toMatchObject({ ok: true, reasons: [] });
+    roads.snapshot.roadSegments = 0;
+    expect(evaluateTerrainGalleryResults([roads], options).reasons).toContain(
+      "owned-roads/webgpu-auto/textured: expected deterministic same-owner road segments",
+    );
+  });
+
+  it("requires disturbance sites in the settlement-regrowth gallery scene", () => {
+    const settlement = result("webgpu-auto", "webgpu", "textured");
+    settlement.sceneId = "settlement-regrowth";
+    settlement.snapshot.sceneId = "settlement-regrowth";
+    settlement.snapshot.biomeCount = 3;
+    settlement.snapshot.dustActiveParticles = 3;
+    settlement.snapshot.dustCapacity = 128;
+    settlement.snapshot.dustEmitterCount = 3;
+    settlement.snapshot.dustTriangles = 6;
+    settlement.snapshot.realmInstances = 3;
+    settlement.snapshot.roadCoreDisturbance = 0.95;
+    settlement.snapshot.roadNaturalDisturbance = 0.1;
+    settlement.snapshot.roadVergeSuccession = 0.7;
+    settlement.snapshot.settlementCoreDisturbance = 0.8;
+    settlement.snapshot.settlementEdgeSuccession = 0.75;
+    settlement.snapshot.settlementOuterMaturity = 0.3;
+    settlement.snapshot.settlementSites = 3;
+    settlement.snapshot.settlementTierCount = 3;
+    const options = {
+      groundModes: ["textured"],
+      rendererModes: ["webgpu-auto"],
+      sceneIds: ["settlement-regrowth"],
+    };
+
+    expect(evaluateTerrainGalleryResults([settlement], options)).toMatchObject({ ok: true, reasons: [] });
+    settlement.snapshot.settlementSites = 0;
+    expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
+      "settlement-regrowth/webgpu-auto/textured: expected three deterministic settlement disturbance sites",
+    );
+    settlement.snapshot.settlementSites = 3;
+    settlement.snapshot.realmInstances = 0;
+    expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
+      "settlement-regrowth/webgpu-auto/textured: expected three production Realm instances",
+    );
+    settlement.snapshot.realmInstances = 3;
+    settlement.snapshot.dustActiveParticles = 0;
+    expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
+      "settlement-regrowth/webgpu-auto/textured: expected one deterministic dust puff per moving ground actor",
+    );
+  });
+
+  it("requires a measurable wetland fringe in the tropical-coast scene", () => {
+    const coast = result("webgpu-auto", "webgpu", "textured");
+    coast.sceneId = "tropical-coast";
+    coast.snapshot.sceneId = "tropical-coast";
+    coast.snapshot.biomeCount = 4;
+    coast.snapshot.wetlandEdgeStrength = 1;
+    coast.snapshot.wetlandInteriorStrength = 0.1;
+    coast.snapshot.waterDepthMax = 0.3;
+    coast.snapshot.waterDepthMin = 0.002;
+    coast.snapshot.waterFoamVertices = 30;
+    coast.snapshot.waterInteractionInstances = 3;
+    coast.snapshot.waterInteractionTriangles = 6;
+    coast.snapshot.waterShorelineVertices = 20;
+    coast.snapshot.waterTriangles = 120;
+    coast.snapshot.waterVertices = 180;
+    coast.snapshot.waterWakeInstances = 2;
+    const options = {
+      groundModes: ["textured"],
+      rendererModes: ["webgpu-auto"],
+      sceneIds: ["tropical-coast"],
+    };
+
+    expect(evaluateTerrainGalleryResults([coast], options)).toMatchObject({ ok: true, reasons: [] });
+    coast.snapshot.wetlandEdgeStrength = 0.2;
+    expect(evaluateTerrainGalleryResults([coast], options).reasons).toContain(
+      "tropical-coast/webgpu-auto/textured: shoreline wetland response did not exceed inland response",
+    );
+    coast.snapshot.wetlandEdgeStrength = 1;
+    coast.snapshot.waterInteractionInstances = 0;
+    expect(evaluateTerrainGalleryResults([coast], options).reasons).toContain(
+      "tropical-coast/webgpu-auto/textured: expected 3 quality-gated naval water interactions",
+    );
+  });
+
   it("requires fog preview geometry to match the one-ring frontier", () => {
     const fog = result("webgpu-auto", "webgpu", "textured");
     fog.sceneId = "fog-frontier";
     fog.snapshot.sceneId = "fog-frontier";
     fog.snapshot.biomeCount = 10;
     fog.snapshot.fogMaskBytes = 4_096;
-    fog.snapshot.fogMaskResolution = 64;
+    fog.snapshot.fogMaskHeight = 64;
+    fog.snapshot.fogMaskWidth = 64;
     fog.snapshot.fogTerrainCells = 24;
     fog.snapshot.frontierPreviewCells = 6;
     fog.snapshot.shroudFrontierInstances = 6;
@@ -149,10 +244,15 @@ function result(rendererMode, activeMode, groundMode) {
       cellCount: 320,
       commitMs: 4,
       drawCalls: 22,
+      dustActiveParticles: 0,
+      dustCapacity: 128,
+      dustEmitterCount: 0,
+      dustTriangles: 0,
       fingerprint: "terrain-v1",
       firstRenderMs: 20,
       fogMaskBytes: 0,
-      fogMaskResolution: 0,
+      fogMaskHeight: 0,
+      fogMaskWidth: 0,
       fogOpacity: 0.84,
       fogTerrainCells: 0,
       frontierPreviewCells: 0,
@@ -162,17 +262,39 @@ function result(rendererMode, activeMode, groundMode) {
       frameSampleCount: 72,
       groundTextureBytes: 3_406_477,
       groundTextureLayers: 8,
+      groundCoverInstances: 12,
       prepareMs: 20,
       propInstances: 39,
       qualityTier: "detail",
+      realmInstances: 0,
       revealProgress: 0,
+      roadSegments: 0,
+      roadCoreDisturbance: 0,
+      roadNaturalDisturbance: 0,
+      roadVergeSuccession: 0,
       sceneId: "all-biomes",
+      settlementSites: 0,
+      settlementCoreDisturbance: 0,
+      settlementEdgeSuccession: 0,
+      settlementOuterMaturity: 0,
+      settlementTierCount: 0,
       shroudActiveReveals: 0,
       shroudFrontierInstances: 0,
       shroudInstances: 0,
       shroudTriangles: 0,
       triangles: 18_300,
       textures: 4,
+      wetlandEdgeStrength: 0,
+      wetlandInteriorStrength: 0,
+      waterDepthMax: 0,
+      waterDepthMin: 0,
+      waterFoamVertices: 0,
+      waterInteractionInstances: 0,
+      waterInteractionTriangles: 0,
+      waterShorelineVertices: 0,
+      waterTriangles: 0,
+      waterVertices: 0,
+      waterWakeInstances: 0,
     },
   };
 }

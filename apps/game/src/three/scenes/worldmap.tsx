@@ -109,7 +109,9 @@ import { Account, AccountInterface } from "starknet";
 import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
+import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
+import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
 import { playerCosmeticsStore } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
@@ -692,6 +694,7 @@ export default class WorldmapScene extends WarpTravel {
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
+  private readonly terrainMovementInteractionBuffer: TerrainMovementInteraction[] = [];
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   private pendingExploreLatencyActions: Map<ID, { actionId: string; targetKey: string }> = new Map();
@@ -1241,6 +1244,17 @@ export default class WorldmapScene extends WarpTravel {
         }
       });
       this.reconcileHoverLabels();
+      this.scheduleTerrainEcologyRefresh();
+    });
+    const structureEcologySubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
+      const [current, previous] = value;
+      if (
+        current?.owner !== previous?.owner ||
+        current?.base.category !== previous?.base.category ||
+        current?.base.level !== previous?.base.level
+      ) {
+        this.scheduleTerrainEcologyRefresh();
+      }
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
       this.syncProjectedArmyPathfinding(changes);
@@ -1249,6 +1263,7 @@ export default class WorldmapScene extends WarpTravel {
     this.unsubscribeWorldSpatialProjection = () => {
       unsubscribeTiles();
       unsubscribeStructures();
+      structureEcologySubscription.unsubscribe();
       unsubscribeArmies();
     };
   }
@@ -5580,6 +5595,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
+    const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
     const presentation = this.proceduralTerrain
       .presentAsync({
         cells: composite.cells.map((cell) => {
@@ -5587,7 +5603,7 @@ export default class WorldmapScene extends WarpTravel {
           return {
             biomeKey: cell.biomeKey,
             col,
-            occupied: cell.occupied ?? this.isProjectedStructureHex(col, row),
+            occupied: this.isProjectedStructureHex(col, row),
             row,
           };
         }),
@@ -5596,6 +5612,8 @@ export default class WorldmapScene extends WarpTravel {
         pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
         pageOrigin: this.getVisualTerrainPageOrigin(),
         pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+        roadAnchors,
+        settlementAnchors,
         subdivisions: 2,
       })
       .then((terrainDiagnostics) => {
@@ -5610,6 +5628,7 @@ export default class WorldmapScene extends WarpTravel {
           proceduralPreparedCachePages: terrainDiagnostics.preparedCachePages,
           proceduralPrepareMs: terrainDiagnostics.prepareMs,
           proceduralReusedPages: terrainDiagnostics.reusedPages,
+          proceduralRoadSegments: terrainDiagnostics.roadSegments,
           proceduralTriangles: terrainDiagnostics.triangles + terrainDiagnostics.propTriangles,
           proceduralVertices: terrainDiagnostics.vertices,
           presentationChunkKeys: composite.presentationChunkKeys,
@@ -5623,6 +5642,62 @@ export default class WorldmapScene extends WarpTravel {
       });
     this.terrainPresentationPromise = presentation;
     void presentation.catch(() => undefined);
+  }
+
+  private collectVisibleTerrainEcologyAnchors(cells: readonly { biomeKey: string; hexKey: string }[]): {
+    roadAnchors: TerrainRoadAnchor[];
+    settlementAnchors: TerrainSettlementAnchor[];
+  } {
+    const visibleCells = new Set<string>();
+    const localBounds = {
+      maxCol: Number.NEGATIVE_INFINITY,
+      maxRow: Number.NEGATIVE_INFINITY,
+      minCol: Number.POSITIVE_INFINITY,
+      minRow: Number.POSITIVE_INFINITY,
+    };
+    for (const { biomeKey, hexKey } of cells) {
+      if (biomeKey === "Outline" || biomeKey === "Empty") continue;
+      visibleCells.add(hexKey);
+      const [col, row] = hexKey.split(",").map(Number);
+      localBounds.maxCol = Math.max(localBounds.maxCol, col);
+      localBounds.maxRow = Math.max(localBounds.maxRow, row);
+      localBounds.minCol = Math.min(localBounds.minCol, col);
+      localBounds.minRow = Math.min(localBounds.minRow, row);
+    }
+    if (visibleCells.size === 0) return { roadAnchors: [], settlementAnchors: [] };
+
+    const roadAnchors: TerrainRoadAnchor[] = [];
+    const settlementAnchors: TerrainSettlementAnchor[] = [];
+    for (const structure of this.worldSpatialProjection.getStructuresInBounds(this.toContractBounds(localBounds))) {
+      if (structure.reserved || structure.entityId === null) continue;
+      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+      if (!visibleCells.has(`${normalized.x},${normalized.y}`)) continue;
+      const component = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(structure.entityId)]));
+      if (!component) continue;
+      const structureId = structure.entityId.toString();
+      settlementAnchors.push({
+        col: normalized.x,
+        level: component.base.level,
+        row: normalized.y,
+        structureId,
+        structureType: component.base.category as StructureType,
+      });
+      const owner = ContractAddress(component.owner);
+      if (owner === 0n) continue;
+      roadAnchors.push({
+        col: normalized.x,
+        owner: owner.toString(),
+        row: normalized.y,
+        structureId,
+      });
+    }
+    return { roadAnchors, settlementAnchors };
+  }
+
+  private scheduleTerrainEcologyRefresh(): void {
+    if (this.visualTerrainPresentationState.presentations.length === 0) return;
+    if (this.refreshVisualTerrainWindowThrottled) this.refreshVisualTerrainWindowThrottled();
+    else this.rebuildTerrainPresentationComposite();
   }
 
   private scheduleTerrainPresentationRetentionCleanup(
@@ -7384,8 +7459,9 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
-    this.proceduralTerrain.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
+    this.syncTerrainMovementInteractions();
+    this.proceduralTerrain.update(deltaTime);
     this.combatPresentation?.update(deltaTime);
     this.syncArrivalGhostChunkVisibility();
     this.arrivalGhostManager.update(deltaTime);
@@ -7405,6 +7481,11 @@ export default class WorldmapScene extends WarpTravel {
       this.lowTerrainFrames = 0;
       this.offscreenChunkFrames = 0;
     }
+  }
+
+  private syncTerrainMovementInteractions(): void {
+    this.armyManager.collectVisibleTerrainMovementInteractions(this.terrainMovementInteractionBuffer);
+    this.proceduralTerrain.setMovementInteractions(this.terrainMovementInteractionBuffer);
   }
 
   private syncWorldmapZoomSnapshot(deltaTime: number): void {
@@ -8406,10 +8487,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private updatePlayerStructures(structures: Structure[]) {
+    const previousTerrainOwnership = this.playerStructures
+      .map(({ entityId }) => entityId.toString())
+      .toSorted()
+      .join(":");
     this.playerStructures = structures;
     if (this.structureIndex >= structures.length) {
       this.structureIndex = 0;
     }
+    const nextTerrainOwnership = structures
+      .map(({ entityId }) => entityId.toString())
+      .toSorted()
+      .join(":");
+    if (previousTerrainOwnership !== nextTerrainOwnership) this.scheduleTerrainEcologyRefresh();
   }
 
   private selectNextRealmStructure() {

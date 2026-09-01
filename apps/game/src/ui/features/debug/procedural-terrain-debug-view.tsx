@@ -22,6 +22,10 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   cellCount: 0,
   commitMs: 0,
   drawCalls: 0,
+  dustActiveParticles: 0,
+  dustCapacity: 0,
+  dustEmitterCount: 0,
+  dustTriangles: 0,
   fingerprint: "--------",
   firstRenderMs: 0,
   fogMaskBytes: 0,
@@ -36,11 +40,22 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   frameSampleCount: 0,
   groundTextureBytes: 0,
   groundTextureLayers: 0,
+  groundCoverInstances: 0,
   prepareMs: 0,
   propInstances: 0,
   qualityTier: "detail",
+  realmInstances: 0,
   revealProgress: 0,
+  roadSegments: 0,
+  roadCoreDisturbance: 0,
+  roadNaturalDisturbance: 0,
+  roadVergeSuccession: 0,
   sceneId: "all-biomes",
+  settlementSites: 0,
+  settlementCoreDisturbance: 0,
+  settlementEdgeSuccession: 0,
+  settlementOuterMaturity: 0,
+  settlementTierCount: 0,
   shroudActiveReveals: 0,
   shroudFrontierInstances: 0,
   shroudInstances: 0,
@@ -49,6 +64,17 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   triangles: 0,
   textures: 0,
   vertices: 0,
+  waterDepthMax: 0,
+  waterDepthMin: 0,
+  waterFoamVertices: 0,
+  waterInteractionInstances: 0,
+  waterInteractionTriangles: 0,
+  waterWakeInstances: 0,
+  wetlandEdgeStrength: 0,
+  wetlandInteriorStrength: 0,
+  waterShorelineVertices: 0,
+  waterTriangles: 0,
+  waterVertices: 0,
 };
 
 export const ProceduralTerrainDebugView = () => {
@@ -259,6 +285,27 @@ export const ProceduralTerrainDebugView = () => {
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
             <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
+            <DebugMetric label="Ground cover" value={stats.groundCoverInstances.toLocaleString()} />
+            <DebugMetric label="Realms" value={stats.realmInstances.toLocaleString()} />
+            <DebugMetric label="Roads" value={stats.roadSegments.toLocaleString()} />
+            <DebugMetric label="Settlements" value={stats.settlementSites.toLocaleString()} />
+            <DebugMetric label="Settlement tiers" value={stats.settlementTierCount.toLocaleString()} />
+            <DebugMetric label="Road verge" value={stats.roadVergeSuccession.toFixed(2)} />
+            <DebugMetric label="Wetland edge" value={stats.wetlandEdgeStrength.toFixed(2)} />
+            <DebugMetric label="Water vertices" value={stats.waterVertices.toLocaleString()} />
+            <DebugMetric label="Water contour" value={stats.waterShorelineVertices.toLocaleString()} />
+            <DebugMetric
+              label="Water depth"
+              value={`${stats.waterDepthMin.toFixed(3)}–${stats.waterDepthMax.toFixed(3)}`}
+            />
+            <DebugMetric label="Foam coast" value={stats.waterFoamVertices.toLocaleString()} />
+            <DebugMetric label="Water FX" value={stats.waterInteractionInstances.toLocaleString()} />
+            <DebugMetric label="Boat wakes" value={stats.waterWakeInstances.toLocaleString()} />
+            <DebugMetric
+              label="Dust puffs"
+              value={`${stats.dustActiveParticles.toLocaleString()}/${stats.dustCapacity.toLocaleString()}`}
+            />
+            <DebugMetric label="Dust movers" value={stats.dustEmitterCount.toLocaleString()} />
             <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
             <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />

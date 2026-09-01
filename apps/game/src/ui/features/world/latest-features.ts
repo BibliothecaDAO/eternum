@@ -35,6 +35,54 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-01",
+    title: "Terrain-Aware Movement Trails",
+    description:
+      "Added lightweight dust puffs behind moving ground armies, with stronger trails on dry land, softer trails through grass and forest, and no dust over snow, water, or beneath flying units.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-01",
+    title: "Organic Coastal Water",
+    description:
+      "Improved oceans with sub-hex shorelines, shallow turquoise margins, deeper offshore color, moving wave highlights, beach foam, boat wakes, and idle ripples.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-01",
+    title: "Living Landscape Edges",
+    description:
+      "Added grassy road verges, wetland shoreline growth, close-up ferns, reeds and wildflowers, and settlement footprints that respond to each structure's type and level.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-01",
+    title: "Settlement Regrowth Zones",
+    description:
+      "Improved land around settlements with disturbed soil, cleared mature growth, pioneer shrubs and birch, and natural rings of stumps and fallen timber.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-01",
+    title: "Living Road Networks",
+    description:
+      "Added natural roads between nearby structures under the same owner, with routes that avoid water and clear vegetation while blending into the surrounding landscape.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-08-31",
+    title: "More Natural Forest Landscapes",
+    description:
+      "Improved forests with mature groves, regenerating edges and clearings, layered canopy, understory and deadfall, better-spaced crowns, and ground cover that responds to the canopy above.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-01",
     title: "Secure Match Chat",
     description:
       "Blitz chat now opens only for signed-in match participants, with private presence and protected direct messages.",

@@ -21,6 +21,11 @@ import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pool
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_QUALITY_PROFILES, type TerrainQualityTier } from "./terrain-quality";
 import { TerrainFogField, type TerrainFogFieldStats } from "./terrain-fog-field";
+import {
+  TerrainMovementEffects,
+  type TerrainMovementEffectStats,
+  type TerrainMovementInteraction,
+} from "./terrain-movement-effects";
 import type {
   PreparedTerrainPage,
   TerrainGeometryBuffers,
@@ -40,9 +45,12 @@ export interface TerrainPresentationDiagnostics {
   fogTerrainCells: number;
   frontierPreviewCells: number;
   geometryBytes: number;
+  groundCoverInstances: number;
   pages: number;
   propInstances: number;
   propTriangles: number;
+  roadSegments: number;
+  settlementSites: number;
   shroudInstances: number;
   shroudTriangles: number;
   triangles: number;
@@ -70,13 +78,16 @@ export class ProceduralTerrain {
   private propPoolsPromise: Promise<TerrainPropPools> | null = null;
   private pageWorker: TerrainPageWorkerClient | null = null;
   private readonly fogField = new TerrainFogField();
+  private readonly movementEffects: TerrainMovementEffects;
   private disposed = false;
 
   constructor() {
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
+    this.movementEffects = new TerrainMovementEffects((worldX, worldZ) => this.sampleSurface(worldX, worldZ).biome);
     this.object3d.add(this.presentationGroup);
     this.object3d.add(this.fogField.object3d);
+    this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
     this.setQualityTier(this.qualityTier);
   }
@@ -148,6 +159,7 @@ export class ProceduralTerrain {
     this.setGroundTextureDetailEnabled(profile.groundTextureDetail);
     this.propPools?.setWindStrength(profile.windStrength);
     this.fogField.setQuality(profile.fogMotionStrength, profile.fogMistStrength);
+    this.movementEffects.setQuality(profile.waterInteractionStrength, profile.dustInteractionStrength);
     this.materials.waterMotion.value = profile.waterMotion;
   }
 
@@ -160,7 +172,7 @@ export class ProceduralTerrain {
   }
 
   getPropStats(): TerrainPropPoolStats {
-    return this.propPools?.getStats() ?? { instances: 0, triangles: 0 };
+    return this.propPools?.getStats() ?? { groundCoverInstances: 0, instances: 0, triangles: 0 };
   }
 
   getGroundTextureStats(): TerrainGroundTextureStats {
@@ -175,12 +187,22 @@ export class ProceduralTerrain {
     return this.fogField.getStats();
   }
 
+  setMovementInteractions(interactions: readonly TerrainMovementInteraction[]): void {
+    this.requireActive();
+    this.movementEffects.sync(interactions);
+  }
+
+  getMovementInteractionStats(): TerrainMovementEffectStats {
+    return this.movementEffects.getStats();
+  }
+
   queueShroudReveal(col: number, row: number): void {
     this.fogField.queueReveal(col, row);
   }
 
   update(deltaSeconds: number): void {
     this.fogField.updateAnimation(deltaSeconds);
+    this.movementEffects.update(deltaSeconds);
   }
 
   present(
@@ -228,6 +250,7 @@ export class ProceduralTerrain {
     this.propPools?.dispose();
     this.propPools = null;
     this.fogField.dispose();
+    this.movementEffects.dispose();
     new Set(
       [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
     ).forEach((material) => material!.dispose());
@@ -320,6 +343,7 @@ function createTerrainMesh(
   geometry.setAttribute("terrainGroundWeights0", new BufferAttribute(buffers.groundWeights0, 4, true));
   geometry.setAttribute("terrainGroundWeights1", new BufferAttribute(buffers.groundWeights1, 4, true));
   geometry.setAttribute("terrainHeight", new BufferAttribute(buffers.heights, 1));
+  geometry.setAttribute("terrainWaterDepth", new BufferAttribute(buffers.waterDepth, 1));
   geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));
   geometry.boundingSphere = new Sphere(new Vector3(...buffers.bounds.sphereCenter), buffers.bounds.sphereRadius);
 
@@ -358,8 +382,23 @@ function summarizePresentation(
   propStats: TerrainPropPoolStats,
   shroudStats: TerrainFogFieldStats,
 ): TerrainPresentationDiagnostics {
+  const roadSegments = new Set(
+    pages.flatMap(({ request }) => request.roadSegments.map(({ start, end }) => `${start.join(",")}:${end.join(",")}`)),
+  ).size;
+  const settlementSites = new Set(
+    pages.flatMap(({ request }) => request.settlementAnchors.map(({ structureId }) => structureId)),
+  ).size;
   const terrain = pages.reduce<
-    Omit<TerrainPresentationDiagnostics, "propInstances" | "propTriangles" | "shroudInstances" | "shroudTriangles">
+    Omit<
+      TerrainPresentationDiagnostics,
+      | "groundCoverInstances"
+      | "propInstances"
+      | "propTriangles"
+      | "roadSegments"
+      | "settlementSites"
+      | "shroudInstances"
+      | "shroudTriangles"
+    >
   >(
     (summary, page) => ({
       fogTerrainCells: summary.fogTerrainCells + page.diagnostics.fogTerrainCells,
@@ -369,12 +408,22 @@ function summarizePresentation(
       triangles: summary.triangles + page.diagnostics.triangles,
       vertices: summary.vertices + page.diagnostics.vertices,
     }),
-    { fogTerrainCells: 0, frontierPreviewCells: 0, geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
+    {
+      fogTerrainCells: 0,
+      frontierPreviewCells: 0,
+      geometryBytes: 0,
+      pages: 0,
+      triangles: 0,
+      vertices: 0,
+    },
   );
   return {
     ...terrain,
+    groundCoverInstances: propStats.groundCoverInstances,
     propInstances: propStats.instances,
     propTriangles: propStats.triangles,
+    roadSegments,
+    settlementSites,
     shroudInstances: shroudStats.instances,
     shroudTriangles: shroudStats.triangles,
   };

@@ -1,7 +1,8 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 
-import type { TerrainPageRequest } from "../terrain-types";
+import { buildTerrainRoadSegments } from "../terrain-roads";
+import type { TerrainPageRequest, TerrainRoadAnchor, TerrainSettlementAnchor } from "../terrain-types";
 
 export const ALL_BIOMES_FIXTURE_ID = "all-biomes-game-scale-v2";
 export const ALL_BIOMES_COLUMNS = 20;
@@ -12,6 +13,8 @@ export const TERRAIN_ANCHOR_ROWS = 12;
 export const TERRAIN_VERIFICATION_SCENE_IDS = Object.freeze([
   "all-biomes",
   "temperate-grove",
+  "owned-roads",
+  "settlement-regrowth",
   "tropical-coast",
   "arid-basin",
   "cold-front",
@@ -25,6 +28,33 @@ export const TERRAIN_VERIFICATION_SCENE_IDS = Object.freeze([
 export type TerrainVerificationSceneId = (typeof TERRAIN_VERIFICATION_SCENE_IDS)[number];
 type TerrainBiomeAnchorSceneId = Exclude<TerrainVerificationSceneId, "all-biomes" | `fog-${string}`>;
 export const TERRAIN_REVEAL_TARGET = Object.freeze({ col: 2, row: 4 });
+const ROAD_VERIFICATION_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze([
+  { col: 3, owner: "1", row: 3, structureId: "western-realm" },
+  { col: 9, owner: "1", row: 6, structureId: "central-realm" },
+  { col: 15, owner: "1", row: 3, structureId: "eastern-realm" },
+  { col: 12, owner: "2", row: 9, structureId: "foreign-realm" },
+]);
+export const TERRAIN_SETTLEMENT_REGROWTH_SITES = Object.freeze([
+  { col: 5, row: 4 },
+  { col: 10, row: 7 },
+  { col: 14, row: 4 },
+]);
+const TERRAIN_SETTLEMENT_REGROWTH_ANCHORS: readonly TerrainSettlementAnchor[] = Object.freeze(
+  TERRAIN_SETTLEMENT_REGROWTH_SITES.map((site, index) => ({
+    ...site,
+    level: [1, 2, 4][index],
+    structureId: `settlement-realm-${index + 1}`,
+    structureType: StructureType.Realm,
+  })),
+);
+const SETTLEMENT_REGROWTH_ROAD_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze(
+  TERRAIN_SETTLEMENT_REGROWTH_ANCHORS.map((anchor) => ({
+    col: anchor.col,
+    owner: "settlement-evaluation-owner",
+    row: anchor.row,
+    structureId: anchor.structureId,
+  })),
+);
 
 const BIOME_REGION_COLUMNS = 4;
 const BIOME_REGION_WIDTH = ALL_BIOMES_COLUMNS / BIOME_REGION_COLUMNS;
@@ -55,6 +85,8 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
     halo: [],
     mapCenter: 0,
     pageKey: ALL_BIOMES_FIXTURE_ID,
+    roadSegments: [],
+    settlementAnchors: [],
     strictBiomeParity: false,
     subdivisions: 2,
   };
@@ -63,12 +95,21 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
 export function createTerrainVerificationRequest(sceneId: TerrainVerificationSceneId): TerrainPageRequest {
   if (sceneId === "all-biomes") return createAllBiomesTerrainRequest();
   if (isFogVerificationScene(sceneId)) return createFogVerificationRequest(sceneId);
+  const cells = createAnchorCells(sceneId);
+  const settlementAnchors = createAnchorSettlementAnchors(sceneId, cells);
   return {
-    cells: createAnchorCells(sceneId),
+    cells,
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
+    roadSegments:
+      sceneId === "owned-roads"
+        ? buildTerrainRoadSegments({ anchors: ROAD_VERIFICATION_ANCHORS, cells })
+        : sceneId === "settlement-regrowth"
+          ? buildTerrainRoadSegments({ anchors: SETTLEMENT_REGROWTH_ROAD_ANCHORS, cells })
+          : [],
+    settlementAnchors,
     strictBiomeParity: false,
     subdivisions: 3,
   };
@@ -105,15 +146,49 @@ function createFogVerificationRequest(
     sceneId === "fog-frontier"
       ? createShowcaseCells()
       : createAnchorCells(sceneId === "fog-coast" ? "tropical-coast" : "temperate-grove");
+  const cells = source.map((cell) => (isFogCellExplored(sceneId, cell.col, cell.row) ? cell : concealCell(cell)));
   return {
-    cells: source.map((cell) => (isFogCellExplored(sceneId, cell.col, cell.row) ? cell : concealCell(cell))),
+    cells,
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
+    roadSegments: [],
+    settlementAnchors: createCellSettlementAnchors(cells),
     strictBiomeParity: false,
     subdivisions: 3,
   };
+}
+
+function createAnchorSettlementAnchors(
+  sceneId: TerrainBiomeAnchorSceneId,
+  cells: ReturnType<typeof createAnchorCells>,
+): readonly TerrainSettlementAnchor[] {
+  if (sceneId === "settlement-regrowth") return TERRAIN_SETTLEMENT_REGROWTH_ANCHORS;
+  if (sceneId === "owned-roads") {
+    return ROAD_VERIFICATION_ANCHORS.map(({ col, row, structureId }) => ({
+      col,
+      level: 1,
+      row,
+      structureId,
+      structureType: StructureType.Realm,
+    }));
+  }
+  return createCellSettlementAnchors(cells);
+}
+
+function createCellSettlementAnchors(
+  cells: readonly { col: number; occupied: boolean; row: number }[],
+): TerrainSettlementAnchor[] {
+  return cells
+    .filter(({ occupied }) => occupied)
+    .map(({ col, row }) => ({
+      col,
+      level: 1,
+      row,
+      structureId: `fixture:${col}:${row}`,
+      structureType: StructureType.Realm,
+    }));
 }
 
 function isFogCellExplored(
@@ -170,7 +245,12 @@ function createAnchorCells(sceneId: TerrainBiomeAnchorSceneId) {
       biome,
       col,
       explored: true,
-      occupied: col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
+      occupied:
+        sceneId === "owned-roads"
+          ? ROAD_VERIFICATION_ANCHORS.some((anchor) => anchor.col === col && anchor.row === row)
+          : sceneId === "settlement-regrowth"
+            ? TERRAIN_SETTLEMENT_REGROWTH_SITES.some((site) => site.col === col && site.row === row)
+            : col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
       previewBiome: biome,
       row,
     };
@@ -182,6 +262,14 @@ function resolveAnchorBiome(sceneId: TerrainBiomeAnchorSceneId, col: number, row
   const y = row / (TERRAIN_ANCHOR_ROWS - 1);
   const warp = Math.sin(row * 0.82 + col * 0.21) * 0.045 + Math.sin(col * 0.47) * 0.035;
   switch (sceneId) {
+    case "owned-roads":
+      if (y + warp < 0.22) return BiomeType.Grassland;
+      if (x - warp > 0.72) return BiomeType.TemperateRainForest;
+      return BiomeType.TemperateDeciduousForest;
+    case "settlement-regrowth":
+      if (y + warp < 0.2) return BiomeType.Grassland;
+      if (x - warp > 0.74) return BiomeType.TemperateRainForest;
+      return BiomeType.TemperateDeciduousForest;
     case "temperate-grove":
       if (y + warp < 0.22) return BiomeType.Grassland;
       if (x - warp > 0.68) return BiomeType.TemperateRainForest;

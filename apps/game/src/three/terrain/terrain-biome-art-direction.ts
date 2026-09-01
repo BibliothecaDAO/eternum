@@ -9,6 +9,7 @@ export interface TerrainBiomeArtDirection {
     tint: string;
   };
   ecology: {
+    canopyCover: number;
     clearingStrength: number;
     clusterScale: number;
     undergrowth: number;
@@ -39,51 +40,115 @@ type ArtDirectionOverrides = {
 };
 
 const FAMILY_DEFAULTS: Record<TerrainBiomeFamily, Omit<TerrainBiomeArtDirection, "anchor" | "family">> = {
-  marine: artDefaults(0.03, 0.075, 0.08, 0.6, 0.04, 0.8, 0.34, 0.12, 0, 0.08, 0.3, "#9eb7bd"),
-  coast: artDefaults(0.065, 0.08, 0.12, 0.36, 0.16, 1, 0.24, 0.36, 0.16, 0.28, 0.22, "#d6c294"),
-  arid: artDefaults(0.14, 0.06, 0.42, 0.2, 0.2, 0.2, 0.2, 0.32, 0.12, 0.24, 0.12, "#cda26e"),
-  open: artDefaults(0.1, 0.055, 0.2, 0.3, 0.16, 0.12, 0.18, 0.42, 0.72, 0.52, 0.16, "#aab68a"),
-  temperate: artDefaults(0.13, 0.052, 0.3, 0.24, 0.17, 0.2, 0.13, 0.24, 0.56, 0.42, 0.22, "#819a82"),
-  cold: artDefaults(0.19, 0.045, 0.48, 0.18, 0.15, 0.1, 0.16, 0.34, 0.24, 0.32, 0.32, "#b8c4c1"),
-  volcanic: artDefaults(0.25, 0.04, 0.74, 0.12, 0.24, 0.06, 0.11, 0.2, 0.04, 0.12, 0.26, "#8a756d"),
+  marine: defineFamilyDefaults({
+    atmosphere: { haze: 0.3, tint: "#9eb7bd" },
+    ecology: { canopyCover: 0, clearingStrength: 0.12, clusterScale: 0.34, undergrowth: 0 },
+    landform: { basinStrength: 0.6, macroAmplitude: 0.03, macroFrequency: 0.075, ridgeStrength: 0.08 },
+    material: { macroTintStrength: 0.04, shoreWetness: 0.8 },
+    motion: { windAmplitude: 0.08 },
+  }),
+  coast: defineFamilyDefaults({
+    atmosphere: { haze: 0.22, tint: "#d6c294" },
+    ecology: { canopyCover: 0.2, clearingStrength: 0.36, clusterScale: 0.24, undergrowth: 0.16 },
+    landform: { basinStrength: 0.36, macroAmplitude: 0.065, macroFrequency: 0.08, ridgeStrength: 0.12 },
+    material: { macroTintStrength: 0.16, shoreWetness: 1 },
+    motion: { windAmplitude: 0.28 },
+  }),
+  arid: defineFamilyDefaults({
+    atmosphere: { haze: 0.12, tint: "#cda26e" },
+    ecology: { canopyCover: 0.04, clearingStrength: 0.32, clusterScale: 0.2, undergrowth: 0.12 },
+    landform: { basinStrength: 0.2, macroAmplitude: 0.14, macroFrequency: 0.06, ridgeStrength: 0.42 },
+    material: { macroTintStrength: 0.2, shoreWetness: 0.2 },
+    motion: { windAmplitude: 0.24 },
+  }),
+  open: defineFamilyDefaults({
+    atmosphere: { haze: 0.16, tint: "#aab68a" },
+    ecology: { canopyCover: 0.15, clearingStrength: 0.42, clusterScale: 0.18, undergrowth: 0.72 },
+    landform: { basinStrength: 0.3, macroAmplitude: 0.1, macroFrequency: 0.055, ridgeStrength: 0.2 },
+    material: { macroTintStrength: 0.16, shoreWetness: 0.12 },
+    motion: { windAmplitude: 0.52 },
+  }),
+  temperate: defineFamilyDefaults({
+    atmosphere: { haze: 0.22, tint: "#819a82" },
+    ecology: { canopyCover: 0.8, clearingStrength: 0.24, clusterScale: 0.13, undergrowth: 0.56 },
+    landform: { basinStrength: 0.24, macroAmplitude: 0.13, macroFrequency: 0.052, ridgeStrength: 0.3 },
+    material: { macroTintStrength: 0.17, shoreWetness: 0.2 },
+    motion: { windAmplitude: 0.42 },
+  }),
+  cold: defineFamilyDefaults({
+    atmosphere: { haze: 0.32, tint: "#b8c4c1" },
+    ecology: { canopyCover: 0.4, clearingStrength: 0.34, clusterScale: 0.16, undergrowth: 0.24 },
+    landform: { basinStrength: 0.18, macroAmplitude: 0.19, macroFrequency: 0.045, ridgeStrength: 0.48 },
+    material: { macroTintStrength: 0.15, shoreWetness: 0.1 },
+    motion: { windAmplitude: 0.32 },
+  }),
+  volcanic: defineFamilyDefaults({
+    atmosphere: { haze: 0.26, tint: "#8a756d" },
+    ecology: { canopyCover: 0.03, clearingStrength: 0.2, clusterScale: 0.11, undergrowth: 0.04 },
+    landform: { basinStrength: 0.12, macroAmplitude: 0.25, macroFrequency: 0.04, ridgeStrength: 0.74 },
+    material: { macroTintStrength: 0.24, shoreWetness: 0.06 },
+    motion: { windAmplitude: 0.12 },
+  }),
 };
 
 export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBiomeArtDirection>> = Object.freeze({
   [BiomeType.None]: art("open", {
-    ecology: { clearingStrength: 1, undergrowth: 0 },
+    ecology: { canopyCover: 0, clearingStrength: 1, undergrowth: 0 },
     landform: { macroAmplitude: 0 },
     material: { macroTintStrength: 0, shoreWetness: 0 },
     motion: { windAmplitude: 0 },
   }),
   [BiomeType.DeepOcean]: art("marine", { landform: { basinStrength: 0.8, macroAmplitude: 0.02 } }),
   [BiomeType.Ocean]: art("marine", { landform: { basinStrength: 0.58, macroAmplitude: 0.025 } }),
-  [BiomeType.Beach]: art("coast", { anchor: true }),
-  [BiomeType.Scorched]: art("volcanic", { anchor: true }),
-  [BiomeType.Bare]: art("cold", { ecology: { undergrowth: 0.04 }, landform: { ridgeStrength: 0.58 } }),
-  [BiomeType.Tundra]: art("cold", { ecology: { undergrowth: 0.18 }, landform: { macroAmplitude: 0.14 } }),
-  [BiomeType.Snow]: art("cold", { anchor: true, atmosphere: { haze: 0.38 }, landform: { ridgeStrength: 0.56 } }),
-  [BiomeType.TemperateDesert]: art("arid", { landform: { basinStrength: 0.32, ridgeStrength: 0.3 } }),
-  [BiomeType.Shrubland]: art("open", { ecology: { clusterScale: 0.22, undergrowth: 0.46 } }),
+  [BiomeType.Beach]: art("coast", { anchor: true, ecology: { canopyCover: 0.24 } }),
+  [BiomeType.Scorched]: art("volcanic", { anchor: true, ecology: { canopyCover: 0.01 } }),
+  [BiomeType.Bare]: art("cold", {
+    ecology: { canopyCover: 0.04, undergrowth: 0.04 },
+    landform: { ridgeStrength: 0.58 },
+  }),
+  [BiomeType.Tundra]: art("cold", {
+    ecology: { canopyCover: 0.08, undergrowth: 0.18 },
+    landform: { macroAmplitude: 0.14 },
+  }),
+  [BiomeType.Snow]: art("cold", {
+    anchor: true,
+    atmosphere: { haze: 0.38 },
+    ecology: { canopyCover: 0.08 },
+    landform: { ridgeStrength: 0.56 },
+  }),
+  [BiomeType.TemperateDesert]: art("arid", {
+    ecology: { canopyCover: 0.03 },
+    landform: { basinStrength: 0.32, ridgeStrength: 0.3 },
+  }),
+  [BiomeType.Shrubland]: art("open", { ecology: { canopyCover: 0.12, clusterScale: 0.22, undergrowth: 0.46 } }),
   [BiomeType.Taiga]: art("cold", {
-    ecology: { clusterScale: 0.13, undergrowth: 0.42 },
+    ecology: { canopyCover: 0.7, clusterScale: 0.13, undergrowth: 0.42 },
     motion: { windAmplitude: 0.3 },
   }),
-  [BiomeType.Grassland]: art("open", { anchor: true, ecology: { clearingStrength: 0.5, undergrowth: 0.88 } }),
-  [BiomeType.TemperateDeciduousForest]: art("temperate", { ecology: { clusterScale: 0.12, undergrowth: 0.6 } }),
+  [BiomeType.Grassland]: art("open", {
+    anchor: true,
+    ecology: { canopyCover: 0.16, clearingStrength: 0.5, undergrowth: 0.88 },
+  }),
+  [BiomeType.TemperateDeciduousForest]: art("temperate", {
+    ecology: { canopyCover: 0.84, clusterScale: 0.12, undergrowth: 0.6 },
+  }),
   [BiomeType.TemperateRainForest]: art("temperate", {
     anchor: true,
     atmosphere: { haze: 0.28 },
-    ecology: { clearingStrength: 0.16, clusterScale: 0.11, undergrowth: 0.76 },
+    ecology: { canopyCover: 0.9, clearingStrength: 0.16, clusterScale: 0.11, undergrowth: 0.76 },
   }),
-  [BiomeType.SubtropicalDesert]: art("arid", { landform: { basinStrength: 0.42, ridgeStrength: 0.22 } }),
+  [BiomeType.SubtropicalDesert]: art("arid", {
+    ecology: { canopyCover: 0.03 },
+    landform: { basinStrength: 0.42, ridgeStrength: 0.22 },
+  }),
   [BiomeType.TropicalSeasonalForest]: art("temperate", {
     atmosphere: { haze: 0.24, tint: "#8fa878" },
-    ecology: { clearingStrength: 0.22, clusterScale: 0.12, undergrowth: 0.68 },
+    ecology: { canopyCover: 0.74, clearingStrength: 0.22, clusterScale: 0.12, undergrowth: 0.68 },
     motion: { windAmplitude: 0.48 },
   }),
   [BiomeType.TropicalRainForest]: art("temperate", {
     atmosphere: { haze: 0.32, tint: "#6f9578" },
-    ecology: { clearingStrength: 0.12, clusterScale: 0.1, undergrowth: 0.84 },
+    ecology: { canopyCover: 0.94, clearingStrength: 0.12, clusterScale: 0.1, undergrowth: 0.84 },
     motion: { windAmplitude: 0.52 },
   }),
 });
@@ -101,25 +166,8 @@ function art(family: TerrainBiomeFamily, overrides: ArtDirectionOverrides = {}):
   };
 }
 
-function artDefaults(
-  macroAmplitude: number,
-  macroFrequency: number,
-  ridgeStrength: number,
-  basinStrength: number,
-  macroTintStrength: number,
-  shoreWetness: number,
-  clusterScale: number,
-  clearingStrength: number,
-  undergrowth: number,
-  windAmplitude: number,
-  haze: number,
-  tint: string,
+function defineFamilyDefaults(
+  defaults: Omit<TerrainBiomeArtDirection, "anchor" | "family">,
 ): Omit<TerrainBiomeArtDirection, "anchor" | "family"> {
-  return {
-    atmosphere: { haze, tint },
-    ecology: { clearingStrength, clusterScale, undergrowth },
-    landform: { basinStrength, macroAmplitude, macroFrequency, ridgeStrength },
-    material: { macroTintStrength, shoreWetness },
-    motion: { windAmplitude },
-  };
+  return defaults;
 }

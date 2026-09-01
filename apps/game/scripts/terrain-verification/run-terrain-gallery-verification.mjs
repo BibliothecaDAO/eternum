@@ -14,6 +14,8 @@ const GROUND_MODES = ["flat", "textured"];
 const SCENE_IDS = [
   "all-biomes",
   "temperate-grove",
+  "owned-roads",
+  "settlement-regrowth",
   "tropical-coast",
   "arid-basin",
   "cold-front",
@@ -100,11 +102,97 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: renderer texture count exceeded policy or was unavailable`);
     }
     if (!(result.snapshot?.propInstances > 0)) reasons.push(`${label}: expected deterministic prop instances`);
+    if (result.qualityTier === "detail" && !(result.snapshot?.groundCoverInstances > 0)) {
+      reasons.push(`${label}: expected deterministic near-view ground cover`);
+    }
+    if (result.sceneId === "owned-roads" && !(result.snapshot?.roadSegments > 0)) {
+      reasons.push(`${label}: expected deterministic same-owner road segments`);
+    }
+    if (result.sceneId === "settlement-regrowth" && !(result.snapshot?.settlementSites >= 3)) {
+      reasons.push(`${label}: expected three deterministic settlement disturbance sites`);
+    }
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.realmInstances !== 3) {
+      reasons.push(`${label}: expected three production Realm instances`);
+    }
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.settlementTierCount !== 3) {
+      reasons.push(`${label}: expected three distinct structure-aware settlement tiers`);
+    }
+    const expectedDustInteractions = result.qualityTier === "overview" ? 0 : 3;
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustEmitterCount !== expectedDustInteractions) {
+      reasons.push(`${label}: expected ${expectedDustInteractions} quality-gated ground movement emitters`);
+    }
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustActiveParticles !== expectedDustInteractions) {
+      reasons.push(`${label}: expected one deterministic dust puff per moving ground actor`);
+    }
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.dustCapacity !== 128) {
+      reasons.push(`${label}: expected the bounded 128-particle dust pool`);
+    }
+    if (
+      result.sceneId === "settlement-regrowth" &&
+      !(result.snapshot?.roadCoreDisturbance > result.snapshot?.roadNaturalDisturbance + 0.3)
+    ) {
+      reasons.push(`${label}: road core disturbance did not fall away into natural ground`);
+    }
+    if (result.sceneId === "settlement-regrowth" && !(result.snapshot?.roadVergeSuccession > 0.35)) {
+      reasons.push(`${label}: expected a measurable pioneer road verge`);
+    }
+    if (result.sceneId === "settlement-regrowth" && !(result.snapshot?.settlementCoreDisturbance > 0.7)) {
+      reasons.push(`${label}: expected structure-scaled settlement disturbance`);
+    }
+    if (
+      result.sceneId === "settlement-regrowth" &&
+      !(result.snapshot?.settlementEdgeSuccession > result.snapshot?.settlementOuterMaturity)
+    ) {
+      reasons.push(`${label}: settlement regrowth ring was not stronger than the outer transect`);
+    }
+    if (
+      result.sceneId === "tropical-coast" &&
+      !(result.snapshot?.wetlandEdgeStrength > result.snapshot?.wetlandInteriorStrength + 0.5)
+    ) {
+      reasons.push(`${label}: shoreline wetland response did not exceed inland response`);
+    }
+    if (
+      result.sceneId === "tropical-coast" &&
+      (!(result.snapshot?.waterVertices > 0) || !(result.snapshot?.waterTriangles > 0))
+    ) {
+      reasons.push(`${label}: expected clipped coastal water geometry`);
+    }
+    if (
+      result.sceneId === "tropical-coast" &&
+      !(result.snapshot?.waterDepthMin >= 0.0019 && result.snapshot?.waterDepthMin <= 0.0021)
+    ) {
+      reasons.push(`${label}: rendered shoreline did not terminate at the bathymetry threshold`);
+    }
+    if (result.sceneId === "tropical-coast" && !(result.snapshot?.waterDepthMax > 0.15)) {
+      reasons.push(`${label}: expected a measurable shallow-to-deep water gradient`);
+    }
+    if (result.sceneId === "tropical-coast" && !(result.snapshot?.waterShorelineVertices > 6)) {
+      reasons.push(`${label}: expected a sub-hex shoreline contour`);
+    }
+    if (result.sceneId === "tropical-coast" && !(result.snapshot?.waterFoamVertices > 6)) {
+      reasons.push(`${label}: expected shallow shoreline vertices eligible for animated foam`);
+    }
+    const expectedWaterInteractions = result.qualityTier === "overview" ? 0 : 3;
+    const expectedWaterWakes = result.qualityTier === "overview" ? 0 : 2;
+    if (
+      result.sceneId === "tropical-coast" &&
+      result.snapshot?.waterInteractionInstances !== expectedWaterInteractions
+    ) {
+      reasons.push(`${label}: expected ${expectedWaterInteractions} quality-gated naval water interactions`);
+    }
+    if (result.sceneId === "tropical-coast" && result.snapshot?.waterWakeInstances !== expectedWaterWakes) {
+      reasons.push(`${label}: expected ${expectedWaterWakes} quality-gated moving-boat wakes`);
+    }
     const expectsFog = result.sceneId.startsWith("fog-");
     if (expectsFog && !(result.snapshot?.shroudInstances > 0)) {
       reasons.push(`${label}: expected deterministic exploration fog cells`);
     }
-    if (expectsFog && (result.snapshot?.fogMaskResolution !== 64 || result.snapshot?.fogMaskBytes !== 4_096)) {
+    if (
+      expectsFog &&
+      (result.snapshot?.fogMaskWidth !== 64 ||
+        result.snapshot?.fogMaskHeight !== 64 ||
+        result.snapshot?.fogMaskBytes !== 4_096)
+    ) {
       reasons.push(`${label}: expected one bounded 64-square fog mask`);
     }
     if (result.snapshot?.fogOpacity !== 0.84) {
@@ -133,7 +221,12 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (!expectsFog && result.snapshot?.fogTerrainCells !== 0) {
       reasons.push(`${label}: fully explored scene unexpectedly rendered fog-covered terrain`);
     }
-    if (!expectsFog && (result.snapshot?.fogMaskResolution !== 0 || result.snapshot?.fogMaskBytes !== 0)) {
+    if (
+      !expectsFog &&
+      (result.snapshot?.fogMaskWidth !== 0 ||
+        result.snapshot?.fogMaskHeight !== 0 ||
+        result.snapshot?.fogMaskBytes !== 0)
+    ) {
       reasons.push(`${label}: fully explored scene unexpectedly allocated a fog mask`);
     }
     if (
@@ -182,12 +275,29 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       if (
         metric.biomeCount !== reference.biomeCount ||
         metric.cellCount !== reference.cellCount ||
+        metric.dustActiveParticles !== reference.dustActiveParticles ||
+        metric.dustCapacity !== reference.dustCapacity ||
+        metric.dustEmitterCount !== reference.dustEmitterCount ||
+        metric.dustTriangles !== reference.dustTriangles ||
         metric.fogOpacity !== reference.fogOpacity ||
         metric.fogTerrainCells !== reference.fogTerrainCells ||
         metric.frontierPreviewCells !== reference.frontierPreviewCells ||
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||
-        metric.propInstances !== reference.propInstances
+        metric.groundCoverInstances !== reference.groundCoverInstances ||
+        metric.propInstances !== reference.propInstances ||
+        metric.roadSegments !== reference.roadSegments ||
+        metric.settlementSites !== reference.settlementSites ||
+        metric.realmInstances !== reference.realmInstances ||
+        metric.waterDepthMax !== reference.waterDepthMax ||
+        metric.waterDepthMin !== reference.waterDepthMin ||
+        metric.waterFoamVertices !== reference.waterFoamVertices ||
+        metric.waterInteractionInstances !== reference.waterInteractionInstances ||
+        metric.waterInteractionTriangles !== reference.waterInteractionTriangles ||
+        metric.waterShorelineVertices !== reference.waterShorelineVertices ||
+        metric.waterTriangles !== reference.waterTriangles ||
+        metric.waterVertices !== reference.waterVertices ||
+        metric.waterWakeInstances !== reference.waterWakeInstances
       ) {
         reasons.push(`${sceneId}: renderer backends produced different terrain presentation counts`);
       }

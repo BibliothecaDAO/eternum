@@ -75,6 +75,10 @@ const INITIAL_STATS: ProceduralCharacterGymStats = {
   collisionRagdollCount: 0,
   collisionScenario: "head-on",
   drawCalls: 0,
+  dustActiveParticles: 0,
+  dustCapacity: 0,
+  dustEmitterCount: 0,
+  dustTriangles: 0,
   fps: 0,
   frameMs: 0,
   geometryCount: 0,
@@ -383,6 +387,8 @@ export const ProceduralCharacterGymView = () => {
       data-capture-overlay={captureResult?.plan.overlay ?? "none"}
       data-capture-view-count={captureResult?.plan.views.length ?? 0}
       data-collision-evaluation={stats.collisionEvaluationStatus}
+      data-dust-particles={stats.dustActiveParticles}
+      data-dust-emitters={stats.dustEmitterCount}
     >
       <CharacterGymHeader
         stats={stats}
@@ -815,6 +821,7 @@ const CharacterGymMetrics = ({
     <Metric label="Mount stretch" value={`${stats.maximumHorseBoneStretchRatio}×`} />
     <Metric label="Boat pitch/roll" value={`${stats.boatPitchDegrees}°/${stats.boatRollDegrees}°`} />
     <Metric label="Sink/wake" value={`${stats.boatSinkProgress}/${stats.boatWakeStrength}`} />
+    <Metric label="Dust" value={`${stats.dustActiveParticles}/${stats.dustCapacity || "--"}`} />
     <Metric label="Projectiles" value={`${stats.projectileActiveCount}/${stats.projectileCapacity || "--"}`} />
     <Metric label="Hits" value={stats.projectileHitCount || "--"} />
     <Metric label="Actors" value={stats.collisionActorCount || "--"} />

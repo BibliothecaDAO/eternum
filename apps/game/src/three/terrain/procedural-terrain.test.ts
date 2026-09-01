@@ -1,5 +1,5 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { Group, Mesh } from "three";
 import { describe, expect, it, vi } from "vitest";
 
@@ -67,7 +67,7 @@ describe("ProceduralTerrain", () => {
   it("retains a requested quality tier while the catalog loads", async () => {
     const pools = {
       dispose: vi.fn(),
-      getStats: vi.fn(() => ({ instances: 0, triangles: 0 })),
+      getStats: vi.fn(() => ({ groundCoverInstances: 0, instances: 0, triangles: 0 })),
       object3d: new Group(),
       setLod: vi.fn(),
       setWindStrength: vi.fn(),
@@ -85,6 +85,66 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
     load.mockRestore();
   });
+
+  it("presents bounded movement effects according to the terrain quality tier", () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(request(BiomeType.Bare, false))]);
+    terrain.setMovementInteractions([
+      { entityId: 3, isMoving: true, mode: "naval", worldX: 2, worldY: 0, worldZ: 4, yaw: 0.5 },
+      { entityId: 8, isMoving: false, mode: "naval", worldX: 5, worldY: 0, worldZ: 6, yaw: 0 },
+      { entityId: 13, isMoving: true, mode: "ground", worldX: 0, worldY: 0, worldZ: 0, yaw: 0 },
+    ]);
+    terrain.update(0);
+
+    expect(terrain.getMovementInteractionStats()).toMatchObject({
+      drawCalls: 2,
+      dust: { activeParticles: 1, emitters: 1, triangles: 2 },
+      triangles: 6,
+      water: { instances: 2, triangles: 4, wakes: 1 },
+    });
+    terrain.setQualityTier("overview");
+    expect(terrain.getMovementInteractionStats()).toMatchObject({
+      drawCalls: 0,
+      dust: { activeParticles: 0, emitters: 0 },
+      water: { instances: 0, triangles: 0, wakes: 0 },
+    });
+    terrain.setQualityTier("detail");
+    terrain.update(0);
+    expect(terrain.getMovementInteractionStats()).toMatchObject({
+      drawCalls: 2,
+      dust: { activeParticles: 1, emitters: 1 },
+      water: { instances: 2, triangles: 4, wakes: 1 },
+    });
+    terrain.dispose();
+  });
+
+  it("counts a settlement influence once when it overlaps multiple prepared pages", () => {
+    const terrain = new ProceduralTerrain();
+    const anchor = { col: 0, level: 2, row: 0, structureId: "realm", structureType: StructureType.Realm };
+    const first = terrain.preparePage({
+      ...request(BiomeType.Grassland, true),
+      pageKey: "first",
+      settlementAnchors: [anchor],
+    });
+    const second = terrain.preparePage({
+      ...request(BiomeType.Grassland, false),
+      cells: [
+        {
+          biome: BiomeType.Grassland,
+          col: 1,
+          explored: true,
+          occupied: false,
+          previewBiome: BiomeType.Grassland,
+          row: 0,
+        },
+      ],
+      pageKey: "second",
+      settlementAnchors: [anchor],
+    });
+
+    expect(terrain.present([first, second]).settlementSites).toBe(1);
+    terrain.dispose();
+  });
 });
 
 function request(biome: BiomeType, occupied: boolean) {
@@ -94,6 +154,8 @@ function request(biome: BiomeType, occupied: boolean) {
     halo: [],
     mapCenter: 0,
     pageKey: "page",
+    roadSegments: [],
+    settlementAnchors: [],
     subdivisions: 2,
   };
 }

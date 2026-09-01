@@ -15,7 +15,14 @@ import type {
   TerrainPageRequest,
 } from "./terrain-types";
 import { PROCEDURAL_TERRAIN_STYLE_VERSION, getTerrainGeometryBufferViews } from "./terrain-types";
-import { isTerrainWaterBiome, TERRAIN_WATER_LEVEL } from "./terrain-water";
+import {
+  isTerrainWaterBiome,
+  isTerrainWaterCovered,
+  resolveTerrainWaterCrossing,
+  resolveTerrainWaterDepth,
+  TERRAIN_MIN_RENDERED_WATER_DEPTH,
+  TERRAIN_WATER_LEVEL,
+} from "./terrain-water";
 
 interface GeometryAccumulator {
   biomeIds: number[];
@@ -30,6 +37,31 @@ interface GeometryAccumulator {
   roughness: number[];
   shore: number[];
   uvs: number[];
+  waterDepth: number[];
+}
+
+interface SampledWaterVertex {
+  point: TerrainWorldCoordinate;
+  sample: TerrainVisualSample;
+  waterDepth: number;
+}
+
+class TerrainVertexSampler {
+  exploredSamples = 0;
+  private readonly exploredByCoordinate = new Map<string, TerrainVisualSample>();
+
+  constructor(private readonly field: TerrainField) {}
+
+  sample(cell: TerrainCellInput, point: TerrainWorldCoordinate): TerrainVisualSample {
+    if (!cell.explored) return this.field.sampleFogPreviewVertex(point.x, point.z, cell);
+    const key = `${point.x}:${point.z}`;
+    const retained = this.exploredByCoordinate.get(key);
+    if (retained) return retained;
+    const sample = this.field.sampleVertex(point.x, point.z, cell);
+    this.exploredByCoordinate.set(key, sample);
+    this.exploredSamples += 1;
+    return sample;
+  }
 }
 
 const DEFAULT_SUBDIVISIONS = 3;
@@ -39,6 +71,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const startedAt = performance.now();
   const subdivisions = resolveSubdivisions(request.subdivisions);
   const field = new TerrainField(request);
+  const vertexSampler = new TerrainVertexSampler(field);
   const land = createGeometryAccumulator();
   const water = createGeometryAccumulator();
   let fogTerrainCells = 0;
@@ -47,14 +80,13 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
-      appendCellPatch(land, field, cell, subdivisions);
-      if (isTerrainWaterBiome(cell.biome)) appendWaterCellPatch(water, field, cell, subdivisions);
+      appendCellPatch(land, vertexSampler, cell, subdivisions);
+      if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
       frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
-    appendCellPatch(land, field, cell, subdivisions);
-    const previewBiome = field.getFogPreviewBiome(cell.col, cell.row);
-    if (previewBiome && isTerrainWaterBiome(previewBiome)) appendWaterCellPatch(water, field, cell, subdivisions);
+    appendCellPatch(land, vertexSampler, cell, subdivisions);
+    if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
     fogTerrainCells += 1;
     if (field.isFrontierCell(cell.col, cell.row)) frontierPreviewCells += 1;
   }
@@ -71,11 +103,14 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
     buffers,
     diagnostics: {
       biomeMismatchCount: field.getBiomeMismatchCount(),
+      exploredSurfaceSamples: vertexSampler.exploredSamples,
       fogTerrainCells,
       frontierEdges,
       frontierPreviewCells,
       geometryBytes,
       prepareMs,
+      roadSegments: request.roadSegments.length,
+      settlementSites: request.settlementAnchors.length,
       shroudInstances: shroudInstances.length,
       triangles: (buffers.indices.length + (waterBuffers?.indices.length ?? 0)) / 3,
       vertices: (buffers.positions.length + (waterBuffers?.positions.length ?? 0)) / 3,
@@ -90,26 +125,111 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
 
 function appendWaterCellPatch(
   target: GeometryAccumulator,
-  field: TerrainField,
+  vertexSampler: TerrainVertexSampler,
   cell: TerrainCellInput,
   subdivisions: number,
 ): void {
   const center = terrainHexToWorld(cell.col, cell.row);
   const corners = terrainHexCorners(cell.col, cell.row);
   for (let wedge = 0; wedge < 6; wedge += 1) {
-    appendSubdividedTriangle(target, center, corners[wedge], corners[(wedge + 1) % 6], subdivisions, (point) => ({
-      ...sampleCellVertex(field, cell, point),
+    forEachSubdividedTriangle(center, corners[wedge], corners[(wedge + 1) % 6], subdivisions, (points) => {
+      const polygon = clipTerrainWaterTriangle(
+        points.map((point) => sampleWaterVertex(vertexSampler, cell, point)),
+        vertexSampler,
+        cell,
+      );
+      appendWaterPolygon(target, polygon);
+    });
+  }
+}
+
+function shouldAppendWaterCellPatch(field: TerrainField, cell: TerrainCellInput): boolean {
+  if (isPresentedWaterCell(field, cell.col, cell.row)) return true;
+  return terrainNeighborCoordinates(cell.col, cell.row).some(({ col, row }) => isPresentedWaterCell(field, col, row));
+}
+
+function isPresentedWaterCell(field: TerrainField, col: number, row: number): boolean {
+  const cell = field.getCell(col, row);
+  if (!cell) return false;
+  return isTerrainWaterBiome(cell.explored ? cell.biome : field.getFogPreviewBiome(col, row));
+}
+
+function sampleWaterVertex(
+  vertexSampler: TerrainVertexSampler,
+  cell: TerrainCellInput,
+  point: TerrainWorldCoordinate,
+): SampledWaterVertex {
+  const sample = vertexSampler.sample(cell, point);
+  return { point, sample, waterDepth: resolveTerrainWaterDepth(sample.height) };
+}
+
+function clipTerrainWaterTriangle(
+  triangle: readonly SampledWaterVertex[],
+  vertexSampler: TerrainVertexSampler,
+  cell: TerrainCellInput,
+): SampledWaterVertex[] {
+  const clipped: SampledWaterVertex[] = [];
+  for (let index = 0; index < triangle.length; index += 1) {
+    const current = triangle[index];
+    const next = triangle[(index + 1) % triangle.length];
+    const currentCovered = isTerrainWaterCovered(current.sample.height);
+    const nextCovered = isTerrainWaterCovered(next.sample.height);
+    if (currentCovered && nextCovered) clipped.push(next);
+    else if (currentCovered) clipped.push(interpolateWaterCrossing(current, next, vertexSampler, cell));
+    else if (nextCovered) {
+      clipped.push(interpolateWaterCrossing(current, next, vertexSampler, cell));
+      clipped.push(next);
+    }
+  }
+  return clipped;
+}
+
+function interpolateWaterCrossing(
+  start: SampledWaterVertex,
+  end: SampledWaterVertex,
+  vertexSampler: TerrainVertexSampler,
+  cell: TerrainCellInput,
+): SampledWaterVertex {
+  const progress = resolveTerrainWaterCrossing(start.waterDepth, end.waterDepth);
+  const point = {
+    x: snapTerrainCoordinate(start.point.x + (end.point.x - start.point.x) * progress),
+    z: snapTerrainCoordinate(start.point.z + (end.point.z - start.point.z) * progress),
+  };
+  return {
+    point,
+    sample: vertexSampler.sample(cell, point),
+    waterDepth: TERRAIN_MIN_RENDERED_WATER_DEPTH,
+  };
+}
+
+function appendWaterPolygon(target: GeometryAccumulator, polygon: readonly SampledWaterVertex[]): void {
+  for (let index = 1; index < polygon.length - 1; index += 1) {
+    target.indices.push(
+      appendWaterVertex(target, polygon[0]),
+      appendWaterVertex(target, polygon[index]),
+      appendWaterVertex(target, polygon[index + 1]),
+    );
+  }
+}
+
+function appendWaterVertex(target: GeometryAccumulator, vertex: SampledWaterVertex): number {
+  return appendVertex(
+    target,
+    vertex.point,
+    {
+      ...vertex.sample,
       height: TERRAIN_WATER_LEVEL,
       normal: [0, 1, 0],
       roughness: 0.24,
       uvOffset: [0, 0],
-    }));
-  }
+    },
+    vertex.waterDepth,
+  );
 }
 
 function appendCellPatch(
   target: GeometryAccumulator,
-  field: TerrainField,
+  vertexSampler: TerrainVertexSampler,
   cell: TerrainCellInput,
   subdivisions: number,
 ): void {
@@ -117,19 +237,9 @@ function appendCellPatch(
   const corners = terrainHexCorners(cell.col, cell.row);
   for (let wedge = 0; wedge < 6; wedge += 1) {
     appendSubdividedTriangle(target, center, corners[wedge], corners[(wedge + 1) % 6], subdivisions, (point) =>
-      sampleCellVertex(field, cell, point),
+      vertexSampler.sample(cell, point),
     );
   }
-}
-
-function sampleCellVertex(
-  field: TerrainField,
-  cell: TerrainCellInput,
-  point: TerrainWorldCoordinate,
-): TerrainVisualSample {
-  return cell.explored
-    ? field.sampleVertex(point.x, point.z, cell)
-    : field.sampleFogPreviewVertex(point.x, point.z, cell);
 }
 
 function appendSubdividedTriangle(
@@ -165,6 +275,33 @@ function appendSubdividedTriangle(
         const diagonal = rowStarts[row + 1] + column + 1;
         target.indices.push(towardA, towardB, diagonal);
       }
+    }
+  }
+}
+
+function forEachSubdividedTriangle(
+  center: TerrainWorldCoordinate,
+  cornerA: TerrainWorldCoordinate,
+  cornerB: TerrainWorldCoordinate,
+  subdivisions: number,
+  visit: (triangle: readonly [TerrainWorldCoordinate, TerrainWorldCoordinate, TerrainWorldCoordinate]) => void,
+): void {
+  const pointAt = (row: number, column: number): TerrainWorldCoordinate => {
+    const weightA = row / subdivisions;
+    const weightB = column / subdivisions;
+    return {
+      x: snapTerrainCoordinate(center.x + (cornerA.x - center.x) * weightA + (cornerB.x - center.x) * weightB),
+      z: snapTerrainCoordinate(center.z + (cornerA.z - center.z) * weightA + (cornerB.z - center.z) * weightB),
+    };
+  };
+  for (let row = 0; row < subdivisions; row += 1) {
+    const columns = subdivisions - row;
+    for (let column = 0; column < columns; column += 1) {
+      const centerPoint = pointAt(row, column);
+      const towardA = pointAt(row + 1, column);
+      const towardB = pointAt(row, column + 1);
+      visit([centerPoint, towardB, towardA]);
+      if (column < columns - 1) visit([towardA, towardB, pointAt(row + 1, column + 1)]);
     }
   }
 }
@@ -212,7 +349,12 @@ function appendFrontierVertex(
   });
 }
 
-function appendVertex(target: GeometryAccumulator, point: TerrainWorldCoordinate, sample: TerrainVisualSample): number {
+function appendVertex(
+  target: GeometryAccumulator,
+  point: TerrainWorldCoordinate,
+  sample: TerrainVisualSample,
+  waterDepth = 0,
+): number {
   const index = target.positions.length / 3;
   target.positions.push(point.x, sample.height, point.z);
   target.uvs.push(point.x + sample.uvOffset[0], point.z + sample.uvOffset[1]);
@@ -226,6 +368,7 @@ function appendVertex(target: GeometryAccumulator, point: TerrainWorldCoordinate
   target.groundWeights0.push(...groundWeights.slice(0, 4));
   target.groundWeights1.push(...groundWeights.slice(4, 8));
   target.heights.push(sample.height);
+  target.waterDepth.push(waterDepth);
   return index;
 }
 
@@ -243,6 +386,7 @@ function createGeometryAccumulator(): GeometryAccumulator {
     roughness: [],
     shore: [],
     uvs: [],
+    waterDepth: [],
   };
 }
 
@@ -262,6 +406,7 @@ function finalizeGeometry(source: GeometryAccumulator): TerrainGeometryBuffers {
     roughness: new Float32Array(source.roughness),
     shore: new Float32Array(source.shore),
     uvs: new Float32Array(source.uvs),
+    waterDepth: new Float32Array(source.waterDepth),
   };
 }
 
@@ -346,6 +491,8 @@ function fingerprintPreparedPage(
       pageKey: request.pageKey,
       props,
       propDensityMultiplier: request.propDensityMultiplier ?? PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER,
+      roadSegments: request.roadSegments,
+      settlementAnchors: request.settlementAnchors,
       shroud,
       subdivisions: request.subdivisions ?? DEFAULT_SUBDIVISIONS,
       styleVersion: PROCEDURAL_TERRAIN_STYLE_VERSION,

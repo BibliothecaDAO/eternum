@@ -1,5 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types";
 
+import type { TerrainVegetationField } from "./terrain-field";
+
 export const TERRAIN_GROUND_SURFACE_IDS = Object.freeze([
   "sand",
   "dry-earth",
@@ -20,7 +22,6 @@ const GRASS = 3;
 const LITTER = 4;
 const STONE = 5;
 const SNOW = 6;
-const ASH = 7;
 
 const BIOME_GROUND_RECIPES: Readonly<Record<BiomeType, TerrainGroundWeights>> = Object.freeze({
   [BiomeType.None]: weights(0, 0, 1, 0, 0, 0, 0, 0),
@@ -74,6 +75,70 @@ export function applyTerrainGroundStructurePad(source: TerrainGroundWeights, pad
   return normalizeWeights(source.map((weight, index) => weight + (compactGround[index] - weight) * blend));
 }
 
+export function applyTerrainGroundRoad(source: TerrainGroundWeights, roadWeight: number): TerrainGroundWeights {
+  const compactRoad = weights(0, 0.62, 0.28, 0, 0, 0.1, 0, 0);
+  const blend = smoothstep(0, 1, roadWeight);
+  return normalizeWeights(source.map((weight, index) => weight + (compactRoad[index] - weight) * blend));
+}
+
+export interface TerrainGroundEcology {
+  roughnessOffset: number;
+  tint: readonly [number, number, number];
+  weights: TerrainGroundWeights;
+}
+
+export interface TerrainGroundEcologyContext {
+  allowsVegetation: boolean;
+  moisture: number;
+  shore: number;
+  vegetation: TerrainVegetationField;
+}
+
+export function resolveTerrainGroundEcology(
+  source: TerrainGroundWeights,
+  context: TerrainGroundEcologyContext,
+): TerrainGroundEcology {
+  if (!context.allowsVegetation) return { roughnessOffset: 0, tint: [1, 1, 1], weights: source };
+
+  const result = [...source];
+  const vegetation = context.vegetation;
+  const moisture = clampUnit(context.moisture);
+  const shore = clampUnit(context.shore);
+  const canopy = clampUnit(vegetation.canopyCover);
+  const debris = clampUnit(vegetation.debrisCover);
+  const disturbance = clampUnit(vegetation.disturbanceStrength);
+  const moss = canopy * vegetation.maturity * moisture * (0.65 + debris * 0.35);
+  const regeneratingCover = vegetation.successionStrength * vegetation.understoryCover * moisture * (1 - canopy * 0.35);
+  const wetlandCover = shore * moisture * (1 - canopy * 0.45) * (0.5 + vegetation.edgeStrength * 0.5);
+  const roadVergeCover = vegetation.roadEdgeStrength * vegetation.successionStrength * (0.55 + moisture * 0.45);
+  const dryLitter = canopy * (1 - moisture) * (0.5 + vegetation.maturity * 0.5);
+
+  result[DRY_EARTH] += disturbance * 0.24;
+  result[GRASS] *= (1 - canopy * 0.62) * (1 - disturbance * 0.5);
+  result[GRASS] += regeneratingCover * 0.18 + wetlandCover * 0.22 + roadVergeCover * 0.28;
+  result[LITTER] +=
+    canopy * 0.28 + debris * 0.14 + moss * 0.38 + regeneratingCover * 0.08 + dryLitter * 0.25 + disturbance * 0.08;
+  result[SOIL] += canopy * 0.06 + wetlandCover * 0.22 + disturbance * 0.12 + roadVergeCover * 0.05;
+
+  return {
+    roughnessOffset: clamp(-0.16, 0.08, moss * 0.04 + dryLitter * 0.05 - wetlandCover * 0.14 + disturbance * 0.035),
+    tint: [
+      clamp(
+        0.78,
+        1.12,
+        1 - moss * 0.12 - regeneratingCover * 0.04 - wetlandCover * 0.1 + dryLitter * 0.06 + disturbance * 0.04,
+      ),
+      clamp(0.78, 1.12, 1 - moss * 0.04 + regeneratingCover * 0.04 - wetlandCover * 0.04 - disturbance * 0.025),
+      clamp(
+        0.78,
+        1.12,
+        1 - moss * 0.16 - regeneratingCover * 0.07 - wetlandCover * 0.08 - dryLitter * 0.1 - disturbance * 0.08,
+      ),
+    ],
+    weights: normalizeWeights(result),
+  };
+}
+
 export function blendTerrainGroundWeights(target: number[], source: TerrainGroundWeights, influence: number): void {
   source.forEach((weight, index) => {
     target[index] = (target[index] ?? 0) + weight * influence;
@@ -102,4 +167,8 @@ function smoothstep(edge0: number, edge1: number, value: number): number {
 
 function clampUnit(value: number): number {
   return Math.min(1, Math.max(0, value));
+}
+
+function clamp(minimum: number, maximum: number, value: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
 }

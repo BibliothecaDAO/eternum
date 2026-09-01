@@ -2,7 +2,7 @@
   "contractVersion": 1,
   "catalog": {
     "id": "quaternius-ultimate-nature",
-    "version": 1,
+    "version": 2,
     "importerVersion": 1
   },
   "source": {
@@ -16,13 +16,13 @@
   },
   "output": {
     "file": "ultimate-nature-props.glb",
-    "sha256": "defdf0d84e5d9a6a13159200bc72fca3f6f24ab19ad5837b20f69029ce4d374f",
-    "bytes": 179852,
+    "sha256": "efb60fc1858a2820625b6f75f995f002efbaff20c9f5a08b63043d9b59ea6a76",
+    "bytes": 207636,
     "meshCompression": "EXT_meshopt_compression",
     "textures": 0,
     "triangleBudgets": {
-      "near": 4900,
-      "far": 1280
+      "near": 5380,
+      "far": 1410
     }
   },
   "entries": [
@@ -224,8 +224,8 @@
         },
         "far": {
           "name": "palm-far",
-          "triangles": 140,
-          "vertices": 420,
+          "triangles": 150,
+          "vertices": 450,
           "bounds": {
             "min": [
               -0.5309264063835144,
@@ -494,6 +494,178 @@
               0.07611016184091568,
               0.17819847166538239,
               0.32109683752059937
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "grass-tuft",
+      "sourceFile": "Grass_Short.fbx",
+      "sourceSha256": "7244d7d8a30eb51e11e454083714f39d3b7d1d2512dd395b2acca787c064a7fa",
+      "targetHeight": 0.12,
+      "windMaterialPattern": ".*",
+      "lods": {
+        "near": {
+          "name": "grass-tuft-near",
+          "triangles": 120,
+          "vertices": 360,
+          "bounds": {
+            "min": [
+              -0.04689498245716095,
+              -2.168404344971009e-19,
+              -0.06551093608140945
+            ],
+            "max": [
+              0.04689498245716095,
+              0.11999999731779099,
+              0.06551093608140945
+            ]
+          }
+        },
+        "far": {
+          "name": "grass-tuft-far",
+          "triangles": 30,
+          "vertices": 90,
+          "bounds": {
+            "min": [
+              -0.04689498245716095,
+              1.6817344183905902e-9,
+              -0.06551093608140945
+            ],
+            "max": [
+              0.04689498245716095,
+              0.10117185860872269,
+              0.06551093608140945
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "fern",
+      "sourceFile": "Plant_4.fbx",
+      "sourceSha256": "6495b56100a2e2cc2b87f5f809daf55fe9119ec3af8d613cfd3c7c659c15c7c3",
+      "targetHeight": 0.18,
+      "windMaterialPattern": ".*",
+      "lods": {
+        "near": {
+          "name": "fern-near",
+          "triangles": 112,
+          "vertices": 336,
+          "bounds": {
+            "min": [
+              -0.21253053843975067,
+              3.1828434332581423e-10,
+              -0.23502390086650848
+            ],
+            "max": [
+              0.21253053843975067,
+              0.18000000715255737,
+              0.23502390086650848
+            ]
+          }
+        },
+        "far": {
+          "name": "fern-far",
+          "triangles": 30,
+          "vertices": 90,
+          "bounds": {
+            "min": [
+              -0.21001610159873962,
+              0.02453690394759178,
+              -0.22158105671405792
+            ],
+            "max": [
+              0.2020099014043808,
+              0.179417222738266,
+              0.22170546650886536
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "reed",
+      "sourceFile": "Wheat.fbx",
+      "sourceSha256": "590e4345e08fde9b0a5ba6cba205ecc6c6ba7279734325df9412a47621081f18",
+      "targetHeight": 0.24,
+      "windMaterialPattern": ".*",
+      "lods": {
+        "near": {
+          "name": "reed-near",
+          "triangles": 120,
+          "vertices": 360,
+          "bounds": {
+            "min": [
+              -0.03829322010278702,
+              1.7467687019045997e-10,
+              -0.03881089761853218
+            ],
+            "max": [
+              0.038953885436058044,
+              0.23999999463558197,
+              0.037245817482471466
+            ]
+          }
+        },
+        "far": {
+          "name": "reed-far",
+          "triangles": 28,
+          "vertices": 84,
+          "bounds": {
+            "min": [
+              -0.03140174597501755,
+              0.16202057898044586,
+              -0.03434624895453453
+            ],
+            "max": [
+              0.035890281200408936,
+              0.23176486790180206,
+              0.03616951406002045
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "wildflower",
+      "sourceFile": "Flowers.fbx",
+      "sourceSha256": "ffd9ad6299f0058855a97fcc819640ebed7131796c71a2eacb60b53d0d28d4c7",
+      "targetHeight": 0.13,
+      "windMaterialPattern": ".*",
+      "lods": {
+        "near": {
+          "name": "wildflower-near",
+          "triangles": 120,
+          "vertices": 360,
+          "bounds": {
+            "min": [
+              -0.03776336461305618,
+              0,
+              -0.047998085618019104
+            ],
+            "max": [
+              0.037258945405483246,
+              0.12999999523162842,
+              0.04697243124246597
+            ]
+          }
+        },
+        "far": {
+          "name": "wildflower-far",
+          "triangles": 24,
+          "vertices": 72,
+          "bounds": {
+            "min": [
+              -0.02586251124739647,
+              0.0851740837097168,
+              -0.04030996561050415
+            ],
+            "max": [
+              0.03723827749490738,
+              0.12999999523162842,
+              0.04697243124246597
             ]
           }
         }

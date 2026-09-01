@@ -35,6 +35,7 @@ import { MeshoptEncoder, MeshoptSimplifier } from "meshoptimizer";
 import {
   ULTIMATE_NATURE_ARCHIVE_ROOT,
   ULTIMATE_NATURE_ARCHIVE_URL,
+  ULTIMATE_NATURE_CANOPY_IDS,
   ULTIMATE_NATURE_CATALOG_VERSION,
   ULTIMATE_NATURE_LICENSE,
   ULTIMATE_NATURE_MAX_GLB_BYTES,
@@ -43,6 +44,7 @@ import {
   getUltimateNatureTriangleBudgets,
   validateUltimateNatureCatalog,
 } from "./ultimate-nature-catalog.mjs";
+import { assertCanopySilhouetteRetention, extractCanopyGeometry } from "./terrain-prop-silhouette.mjs";
 
 const DEFAULT_OUTPUT_DIR = fileURLToPath(new URL("../../public/models/procedural-terrain/", import.meta.url));
 const OUTPUT_GLB_NAME = "ultimate-nature-props.glb";
@@ -144,13 +146,20 @@ async function buildPropLods({ convertedDirectory, io, outputDocument, prop, sou
   convertFbxToGlb(sourcePath, convertedPath);
   const sourceHash = sha256File(sourcePath);
   const lods = {};
+  const silhouetteGeometry = {};
 
   for (const lod of ["near", "far"]) {
     const document = await io.read(convertedPath);
     const targetTriangles = lod === "near" ? prop.nearTriangles : prop.farTriangles;
     const result = await preparePropDocument({ document, lod, prop, targetTriangles });
     appendDocument(outputDocument, document);
-    lods[lod] = result;
+    silhouetteGeometry[lod] = result.silhouetteGeometry;
+    const { silhouetteGeometry: _silhouetteGeometry, ...manifestResult } = result;
+    lods[lod] = manifestResult;
+  }
+
+  if (ULTIMATE_NATURE_CANOPY_IDS.includes(prop.id)) {
+    assertCanopySilhouetteRetention(prop.id, silhouetteGeometry.near, silhouetteGeometry.far);
   }
 
   return {
@@ -196,6 +205,7 @@ async function preparePropDocument({ document, lod, prop, targetTriangles }) {
     triangles: actualTriangles,
     vertices: countDocumentVertices(document),
     bounds,
+    silhouetteGeometry: extractCanopyGeometry(document.getRoot().listMeshes()[0]),
   };
 }
 
