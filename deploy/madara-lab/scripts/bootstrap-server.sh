@@ -121,11 +121,16 @@ install_units() {
 }
 
 harden() {
-  log "firewall: ssh only (every service is on localhost or behind the tunnel)"
+  log "firewall: ssh from anywhere; herald/web reachable only from the docker networks (the tunnel), nothing else"
   ufw --force reset >/dev/null
   ufw default deny incoming >/dev/null
   ufw default allow outgoing >/dev/null
   ufw allow OpenSSH >/dev/null
+  # cloudflared runs in a docker network and proxies to herald (:3003) and apps/web (:3000) on the host via
+  # host.docker.internal. That container→host traffic hits the INPUT chain, so allow the docker ranges to those
+  # ports — otherwise the tunnel reaches rpc (container→container) but times out on herald/app (Cloudflare 52x).
+  ufw allow from 172.16.0.0/12 to any port 3003 proto tcp >/dev/null
+  ufw allow from 172.16.0.0/12 to any port 3000 proto tcp >/dev/null
   ufw --force enable >/dev/null
 }
 
