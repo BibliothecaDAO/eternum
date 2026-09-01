@@ -14,66 +14,86 @@ import type {
   LaunchRotationSummary,
   RotationLaunchStepId,
 } from "../types";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 
-async function resolvePlannedRotationSummary(request: LaunchRotationRequest): Promise<LaunchRotationSummary> {
-  const hydratedSummary = await hydrateRotationLaunchSummary(request);
-  return persistRotationLaunchSummary(reconcileRotationLaunchSummary(request, hydratedSummary));
+async function resolvePlannedRotationSummary(
+  request: LaunchRotationRequest,
+  store: LaunchRunStore,
+): Promise<LaunchRotationSummary> {
+  const hydratedSummary = await hydrateRotationLaunchSummary(request, store);
+  return persistRotationLaunchSummary(reconcileRotationLaunchSummary(request, hydratedSummary), store);
 }
 
 async function executeRotationStep(
   request: LaunchRotationStepRequest,
   summary: LaunchRotationSummary,
+  store: LaunchRunStore,
 ): Promise<LaunchRotationSummary> {
+  const persist = (next: LaunchRotationSummary) => persistRotationLaunchSummary(next, store);
   if (request.stepId === "create-series") {
-    return createSeriesIfNeededForSeriesLikeSummary(request, summary, persistRotationLaunchSummary);
+    return createSeriesIfNeededForSeriesLikeSummary(request, summary, persist);
   }
 
   return runGroupedSeriesLikeGameStep({
     request,
     summary,
     stepId: request.stepId,
-    persistSummary: persistRotationLaunchSummary,
+    persistSummary: persist,
+    store,
   });
 }
 
 function buildDryRunRotationSummary(
   request: LaunchRotationRequest,
   summary: LaunchRotationSummary,
-): LaunchRotationSummary {
-  return persistRotationLaunchSummary({
-    ...summary,
-    autoRetryEnabled: request.autoRetryEnabled ?? true,
-    autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
-  });
+  store: LaunchRunStore,
+): Promise<LaunchRotationSummary> {
+  return persistRotationLaunchSummary(
+    {
+      ...summary,
+      autoRetryEnabled: request.autoRetryEnabled ?? true,
+      autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
+    },
+    store,
+  );
 }
 
-export async function runLaunchRotationStep(request: LaunchRotationStepRequest): Promise<LaunchRotationSummary> {
-  const scheduledRequest = resolveRotationRequestWithPersistedSchedule(request);
+export async function runLaunchRotationStep(
+  request: LaunchRotationStepRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchRotationSummary> {
+  const scheduledRequest = await resolveRotationRequestWithPersistedSchedule(request, store);
   validateRotationLaunchRequest(scheduledRequest);
-  const summary = await resolvePlannedRotationSummary(scheduledRequest);
+  const summary = await resolvePlannedRotationSummary(scheduledRequest, store);
 
   if (scheduledRequest.dryRun) {
-    return buildDryRunRotationSummary(scheduledRequest, summary);
+    return buildDryRunRotationSummary(scheduledRequest, summary, store);
   }
 
-  return executeRotationStep(scheduledRequest, summary);
+  return executeRotationStep(scheduledRequest, summary, store);
 }
 
-export async function launchRotation(request: LaunchRotationRequest): Promise<LaunchRotationSummary> {
-  const scheduledRequest = resolveRotationRequestWithPersistedSchedule(request);
+export async function launchRotation(
+  request: LaunchRotationRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchRotationSummary> {
+  const scheduledRequest = await resolveRotationRequestWithPersistedSchedule(request, store);
   validateRotationLaunchRequest(scheduledRequest);
-  let summary = await resolvePlannedRotationSummary(scheduledRequest);
+  let summary = await resolvePlannedRotationSummary(scheduledRequest, store);
 
   if (scheduledRequest.dryRun) {
-    return buildDryRunRotationSummary(scheduledRequest, summary);
+    return buildDryRunRotationSummary(scheduledRequest, summary, store);
   }
 
   for (const stepId of resolveSeriesLaunchStepIds(scheduledRequest.environmentId)) {
-    summary = await runLaunchRotationStep({
-      ...scheduledRequest,
-      stepId: stepId as RotationLaunchStepId,
-      resumeSummary: summary,
-    });
+    summary = await runLaunchRotationStep(
+      {
+        ...scheduledRequest,
+        stepId: stepId as RotationLaunchStepId,
+        resumeSummary: summary,
+      },
+      store,
+    );
   }
 
   return summary;

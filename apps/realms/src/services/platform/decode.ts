@@ -8,8 +8,8 @@ import { BoundaryDecodeError } from "./errors";
  * value into rendering.
  */
 export const decodeBoundary =
-  <A, I>(boundary: string, schema: Schema.Schema<A, I>) =>
+  <A>(boundary: string, schema: Schema.ConstraintDecoder<A, never>) =>
   (value: unknown): Effect.Effect<A, BoundaryDecodeError> =>
-    Schema.decodeUnknown(schema, { onExcessProperty: "ignore" })(value).pipe(
+    Schema.decodeUnknownEffect(schema, { onExcessProperty: "ignore" })(value).pipe(
       Effect.mapError((cause) => new BoundaryDecodeError({ boundary, cause })),
     );

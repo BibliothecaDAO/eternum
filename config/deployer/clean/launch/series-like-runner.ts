@@ -21,6 +21,7 @@ import type {
   SeriesLaunchGameSummary,
 } from "../types";
 import { runLaunchStep } from "./runner";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { SERIES_GAME_STEP_BY_GROUPED_STEP } from "./series-plan";
 
 const DEFAULT_REGISTRAR_STEP_DELAY_MS = 250;
@@ -230,7 +231,7 @@ async function waitBetweenSeriesLikeGameCalls(delayMs: number, isFirstExecution:
 export async function createSeriesIfNeededForSeriesLikeSummary<TSummary extends SeriesLikeSummary>(
   request: SeriesLikeRequest,
   summary: TSummary,
-  persistSummary: (summary: TSummary) => TSummary,
+  persistSummary: (summary: TSummary) => Promise<TSummary>,
 ): Promise<TSummary> {
   if (summary.seriesCreated) {
     return persistSummary(summary);
@@ -284,12 +285,14 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
   summary,
   stepId,
   persistSummary,
+  store = fileLaunchRunStore,
   runGameStep = runLaunchStep,
 }: {
   request: SeriesLikeRequest;
   summary: TSummary;
   stepId: Exclude<LaunchSeriesStepId, "create-series">;
-  persistSummary: (summary: TSummary) => TSummary;
+  persistSummary: (summary: TSummary) => Promise<TSummary>;
+  store?: LaunchRunStore;
   runGameStep?: typeof runLaunchStep;
 }): Promise<TSummary> {
   const mappedGameStepId = SERIES_GAME_STEP_BY_GROUPED_STEP[stepId];
@@ -311,7 +314,7 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
     const runningGame = updateSeriesLikeGameStepState(game, stepId, "running", `Running ${stepId}`);
     nextGames.push(runningGame);
 
-    const inFlightSummary = persistSummary({
+    const inFlightSummary = await persistSummary({
       ...summary,
       games: [...nextGames, ...summary.games.slice(nextGames.length)],
     } as TSummary);
@@ -319,10 +322,13 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
     let shouldStopAfterFailure = false;
 
     try {
-      const gameSummary = await runGameStep({
-        ...buildSeriesLikeGameLaunchRequest(request, inFlightSummary, runningGame),
-        stepId: mappedGameStepId,
-      });
+      const gameSummary = await runGameStep(
+        {
+          ...buildSeriesLikeGameLaunchRequest(request, inFlightSummary, runningGame),
+          stepId: mappedGameStepId,
+        },
+        store,
+      );
       nextGames[nextGames.length - 1] = updateSeriesLikeGameSuccess(runningGame, stepId, gameSummary);
     } catch (error) {
       failureCount += 1;
@@ -330,7 +336,7 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
       shouldStopAfterFailure = requiresContiguousSeriesGameCreation(stepId);
     }
 
-    persistSummary({
+    await persistSummary({
       ...summary,
       games: [...nextGames, ...summary.games.slice(nextGames.length)],
     } as TSummary);
@@ -341,7 +347,7 @@ export async function runGroupedSeriesLikeGameStep<TSummary extends SeriesLikeSu
   }
 
   const finalGames = [...nextGames, ...summary.games.slice(nextGames.length)];
-  const nextSummary = persistSummary({
+  const nextSummary = await persistSummary({
     ...summary,
     games: finalGames,
   } as TSummary);

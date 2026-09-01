@@ -24,7 +24,9 @@ export interface MembershipResolver {
   isMember(playerId: string, channelId: string): Effect.Effect<boolean, HeraldUnavailable | BoundaryDecodeError>;
 }
 
-export class ChannelMembership extends Context.Tag("chat/ChannelMembership")<ChannelMembership, MembershipResolver>() {}
+export class ChannelMembership extends Context.Service<ChannelMembership, MembershipResolver>()(
+  "chat/ChannelMembership",
+) {}
 
 type DirectoryFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
 

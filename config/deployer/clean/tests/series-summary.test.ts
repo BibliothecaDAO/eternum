@@ -60,7 +60,7 @@ describe("series launch summary hydration", () => {
       }),
     });
 
-    persistSeriesLaunchSummary({
+    await persistSeriesLaunchSummary({
       ...initialSummary,
       seriesCreated: true,
       games: initialSummary.games.map((game, index) =>
@@ -90,7 +90,7 @@ describe("series launch summary hydration", () => {
       }),
     });
 
-    persistSeriesLaunchSummary({
+    await persistSeriesLaunchSummary({
       ...initialSummary,
       seriesCreated: true,
       games: initialSummary.games.map((game) => ({

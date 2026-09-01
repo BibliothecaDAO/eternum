@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import { z } from "zod";
-import { Context, Effect, Either } from "effect";
+import { Context, Effect, Result } from "effect";
 
 import { DISPLAY_NAME_MAX_LENGTH, playerIdSchema } from "@bibliothecadao/types";
 import type { BoundaryDecodeError, IdentityUnavailable, PlayerRegistryUnavailable } from "../../effect/errors";
@@ -25,7 +25,7 @@ export interface SessionResolver {
   ): Effect.Effect<PlayerSession | null, IdentityUnavailable | BoundaryDecodeError | PlayerRegistryUnavailable>;
 }
 
-export class VerifiedIdentity extends Context.Tag("chat/VerifiedIdentity")<VerifiedIdentity, SessionResolver>() {}
+export class VerifiedIdentity extends Context.Service<VerifiedIdentity, SessionResolver>()("chat/VerifiedIdentity") {}
 
 type SessionFetch = (input: string | URL, init?: RequestInit) => Promise<Response>;
 type IdentitySession = z.infer<typeof identitySessionSchema>;
@@ -123,8 +123,8 @@ export const createAttachPlayerSession =
   async (c, next) => {
     const cookie = c.req.header("cookie");
     if (cookie) {
-      const result = await Effect.runPromise(Effect.either(resolver.resolve(cookie)));
-      if (Either.isRight(result) && result.right) c.set("playerSession", result.right);
+      const result = await Effect.runPromise(Effect.result(resolver.resolve(cookie)));
+      if (Result.isSuccess(result) && result.success) c.set("playerSession", result.success);
     }
     await next();
   };

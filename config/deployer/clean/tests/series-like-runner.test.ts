@@ -51,7 +51,7 @@ describe("grouped series-like runner", () => {
       request,
       summary,
       stepId: "create-worlds",
-      persistSummary: (next) => next,
+      persistSummary: async (next) => next,
     });
 
     for (const game of nextSummary.games) {
@@ -100,7 +100,7 @@ describe("grouped series-like runner", () => {
       request,
       summary,
       stepId: "wait-for-factory-indexes",
-      persistSummary: (next) => next,
+      persistSummary: async (next) => next,
     });
 
     expect(nextSummary.games[0]?.steps.find((step) => step.id === "wait-for-factory-indexes")?.status).toBe(

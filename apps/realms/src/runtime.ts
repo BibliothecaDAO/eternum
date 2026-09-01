@@ -9,13 +9,13 @@ import { Wallet } from "./services/platform/wallet";
 
 /** One runtime for the whole app; composing this layer is the whole wiring. */
 const MainLayer = Layer.mergeAll(
-  Rpc.Default,
-  Wallet.Default,
-  HeraldClient.Default,
-  LedgerClient.Default,
-  MmrClient.Default,
-  IdentityApi.Default,
+  Rpc.layer,
+  Wallet.layer,
+  HeraldClient.layer,
+  LedgerClient.layer,
+  MmrClient.layer,
+  IdentityApi.layer,
 );
 
 export const runtime = ManagedRuntime.make(MainLayer);
-export type AppServices = Layer.Layer.Success<typeof MainLayer>;
+export type AppServices = Layer.Success<typeof MainLayer>;

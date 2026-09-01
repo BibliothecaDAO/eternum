@@ -12,7 +12,7 @@ interface ChatDatabaseService {
   ) => Effect.Effect<A, DatabaseFailure | DirectMessageRejected>;
 }
 
-class ChatDatabase extends Context.Tag("chat/ChatDatabase")<ChatDatabase, ChatDatabaseService>() {}
+class ChatDatabase extends Context.Service<ChatDatabase, ChatDatabaseService>()("chat/ChatDatabase") {}
 
 const ChatDatabaseLive = Layer.succeed(ChatDatabase, {
   run: (operation, task) =>

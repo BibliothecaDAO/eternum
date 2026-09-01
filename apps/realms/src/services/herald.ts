@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Context, Effect, Layer, Schema } from "effect";
 
 import { env } from "@/env";
 import { decodeBoundary } from "./platform/decode";
@@ -12,7 +12,7 @@ import { requestJson } from "./platform/http";
  * schemas decode exactly the fields this app renders.
  */
 
-const GameStatus = Schema.Literal("Created", "Registration", "Live", "Ended", "Settled");
+const GameStatus = Schema.Literals(["Created", "Registration", "Live", "Ended", "Settled"]);
 type GameStatus = typeof GameStatus.Type;
 
 const GameClock = Schema.Struct({
@@ -31,7 +31,7 @@ export const DirectoryGame = Schema.Struct({
   clock: GameClock,
   dev_mode_on: Schema.Boolean,
   game_id: Schema.Number,
-  mode: Schema.NullOr(Schema.Literal("blitz", "eternum")),
+  mode: Schema.NullOr(Schema.Literals(["blitz", "eternum"])),
   name: Schema.String,
   player_count: Schema.Number,
   preset_id: Schema.Number,
@@ -45,33 +45,37 @@ const Directory = Schema.Struct({
   confirmed_block: Schema.Number,
   games: Schema.Array(DirectoryGame),
 });
-export type Directory = typeof Directory.Type;
+type Directory = typeof Directory.Type;
 
 const Health = Schema.Struct({
   confirmed_block: Schema.Number,
   success: Schema.Boolean,
 });
-export type HeraldHealth = typeof Health.Type;
+type HeraldHealth = typeof Health.Type;
 
-export class HeraldClient extends Effect.Service<HeraldClient>()("HeraldClient", {
-  sync: () => {
-    const heraldGet = <A, I>(path: string, schema: Schema.Schema<A, I>) =>
-      requestJson(`${env.VITE_PUBLIC_HERALD_URL}${path}`).pipe(
-        Effect.mapError((cause) => new HeraldUnreachable({ path, cause })),
-        Effect.filterOrFail(
-          (response) => response.status === 200,
-          (response) => new HeraldUnreachable({ path, cause: `status ${response.status}` }),
-        ),
-        Effect.flatMap((response) => decodeBoundary(`herald:${path}`, schema)(response.body)),
-      );
-
-    const directory: Effect.Effect<Directory, HeraldUnreachable | BoundaryDecodeError> = heraldGet(
-      `/${env.VITE_PUBLIC_HERALD_CHAIN}/games`,
-      Directory,
+const makeHeraldClient = () => {
+  const heraldGet = <A>(path: string, schema: Schema.ConstraintDecoder<A, never>) =>
+    requestJson(`${env.VITE_PUBLIC_HERALD_URL}${path}`).pipe(
+      Effect.mapError((cause) => new HeraldUnreachable({ path, cause })),
+      Effect.filterOrFail(
+        (response) => response.status === 200,
+        (response) => new HeraldUnreachable({ path, cause: `status ${response.status}` }),
+      ),
+      Effect.flatMap((response) => decodeBoundary(`herald:${path}`, schema)(response.body)),
     );
 
-    const health: Effect.Effect<HeraldHealth, HeraldUnreachable | BoundaryDecodeError> = heraldGet("/health", Health);
+  const directory: Effect.Effect<Directory, HeraldUnreachable | BoundaryDecodeError> = heraldGet(
+    `/${env.VITE_PUBLIC_HERALD_CHAIN}/games`,
+    Directory,
+  );
 
-    return { directory, health };
-  },
-}) {}
+  const health: Effect.Effect<HeraldHealth, HeraldUnreachable | BoundaryDecodeError> = heraldGet("/health", Health);
+
+  return { directory, health };
+};
+
+type HeraldClientShape = ReturnType<typeof makeHeraldClient>;
+
+export class HeraldClient extends Context.Service<HeraldClient, HeraldClientShape>()("HeraldClient") {
+  static readonly layer = Layer.succeed(HeraldClient, makeHeraldClient());
+}

@@ -34,8 +34,8 @@ import type {
   LaunchGameStepRequest,
   LaunchGameSummary,
 } from "../types";
-import { loadLaunchSummaryIfPresent, writeLaunchSummary } from "./io";
 import { createProgressReporter, formatDuration, type ProgressReporter } from "./progress";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { parseStartTime, toIsoUtc } from "./time";
 
 type LaunchConfig = ReturnType<typeof applyDeploymentConfigOverrides>;
@@ -55,6 +55,7 @@ interface PreparedLaunch {
   runtime: LaunchRuntime;
   config: LaunchConfig;
   summary: LaunchGameSummary;
+  store: LaunchRunStore;
 }
 
 function validateGameName(gameName: string): void {
@@ -138,8 +139,8 @@ function createLaunchSummary(
   };
 }
 
-function hydrateLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
-  const existing = loadLaunchSummaryIfPresent(summary.environment, summary.gameName);
+async function hydrateLaunchSummary(summary: LaunchGameSummary, store: LaunchRunStore): Promise<LaunchGameSummary> {
+  const existing = await store.loadGame(summary.environment, summary.gameName);
   return existing
     ? {
         ...existing,
@@ -154,7 +155,7 @@ function hydrateLaunchSummary(summary: LaunchGameSummary): LaunchGameSummary {
     : summary;
 }
 
-function prepareLaunch(request: LaunchGameRequest): PreparedLaunch {
+async function prepareLaunch(request: LaunchGameRequest, store: LaunchRunStore): Promise<PreparedLaunch> {
   validateGameName(request.gameName);
   resolveSponsoredPool(request);
   const runtime = createRuntime(request);
@@ -166,7 +167,8 @@ function prepareLaunch(request: LaunchGameRequest): PreparedLaunch {
     request,
     runtime,
     config,
-    summary: hydrateLaunchSummary(createLaunchSummary(runtime, request, config)),
+    summary: await hydrateLaunchSummary(createLaunchSummary(runtime, request, config), store),
+    store,
   };
 }
 
@@ -378,19 +380,22 @@ async function executeLaunchStep(launch: PreparedLaunch, stepId: LaunchGameStepI
   throw new Error(`Launch step "${stepId}" is retired; persistent games are configured by their immutable preset`);
 }
 
-function finishLaunch(launch: PreparedLaunch): LaunchGameSummary {
-  launch.summary.outputPath = writeLaunchSummary(launch.summary);
-  launch.runtime.progress.log(`Launch summary written to ${launch.summary.outputPath}`);
-  return launch.summary;
+async function finishLaunch(launch: PreparedLaunch): Promise<LaunchGameSummary> {
+  const summary = await launch.store.saveGame(launch.summary);
+  launch.runtime.progress.log(`Launch summary written to ${summary.outputPath}`);
+  return summary;
 }
 
-function finishDryRun(launch: PreparedLaunch): LaunchGameSummary {
+async function finishDryRun(launch: PreparedLaunch): Promise<LaunchGameSummary> {
   launch.runtime.progress.log("Dry run enabled; no transactions will be sent");
   return finishLaunch(launch);
 }
 
-export async function runLaunchStep(request: LaunchGameStepRequest): Promise<LaunchGameSummary> {
-  const launch = prepareLaunch(request);
+export async function runLaunchStep(
+  request: LaunchGameStepRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchGameSummary> {
+  const launch = await prepareLaunch(request, store);
   if (request.dryRun) {
     return finishDryRun(launch);
   }
@@ -399,8 +404,11 @@ export async function runLaunchStep(request: LaunchGameStepRequest): Promise<Lau
   return finishLaunch(launch);
 }
 
-export async function launchGame(request: LaunchGameRequest): Promise<LaunchGameSummary> {
-  const launch = prepareLaunch(request);
+export async function launchGame(
+  request: LaunchGameRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchGameSummary> {
+  const launch = await prepareLaunch(request, store);
   if (request.dryRun) {
     return finishDryRun(launch);
   }

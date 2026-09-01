@@ -32,7 +32,7 @@ export const startChatRetention = ({
   intervalMs = Number(process.env.CHAT_RETENTION_INTERVAL_MS ?? 60 * 60 * 1_000),
 } = {}) => {
   const prune = pruneExpiredChatData({ retentionDays }).pipe(
-    Effect.catchAll((error) => Effect.logError("chat_prune_failed", error)),
+    Effect.catch((error) => Effect.logError("chat_prune_failed", error)),
   );
   const fiber = Effect.runFork(prune.pipe(Effect.repeat(Schedule.spaced(Duration.millis(intervalMs)))));
   return () => Effect.runFork(Fiber.interrupt(fiber));

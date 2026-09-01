@@ -7,8 +7,8 @@ import type {
   SeriesLaunchGameStepState,
   SeriesLaunchGameSummary,
 } from "../types";
-import { loadSeriesLaunchSummaryIfPresent, writeSeriesLaunchSummary } from "./series-io";
 import { resolveSeriesLaunchStepIds } from "./series-plan";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { parseStartTime, toIsoUtc } from "./time";
 import { requireRpcUrl } from "../shared/rpc";
 
@@ -204,12 +204,15 @@ export async function assignSeriesGameNumbers(
   };
 }
 
-export async function hydrateSeriesLaunchSummary(request: LaunchSeriesRequest): Promise<LaunchSeriesSummary> {
+export async function hydrateSeriesLaunchSummary(
+  request: LaunchSeriesRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchSeriesSummary> {
   if (request.resumeSummary) {
     return assignSeriesGameNumbers(request, applySeriesRequestSettings(request.resumeSummary, request));
   }
 
-  const existingSummary = loadSeriesLaunchSummaryIfPresent(request.environmentId, request.seriesName.trim());
+  const existingSummary = await store.loadSeries(request.environmentId, request.seriesName.trim());
   if (existingSummary) {
     return assignSeriesGameNumbers(request, appendRequestedSeriesGames(existingSummary, request));
   }
@@ -217,9 +220,7 @@ export async function hydrateSeriesLaunchSummary(request: LaunchSeriesRequest): 
   return assignSeriesGameNumbers(request, buildInitialSeriesLaunchSummary(request));
 }
 
-export function persistSeriesLaunchSummary(summary: LaunchSeriesSummary): LaunchSeriesSummary {
-  return {
-    ...summary,
-    outputPath: writeSeriesLaunchSummary(summary),
-  };
-}
+export const persistSeriesLaunchSummary = (
+  summary: LaunchSeriesSummary,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchSeriesSummary> => store.saveSeries(summary);

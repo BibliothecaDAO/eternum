@@ -14,7 +14,12 @@ const ServerEnv = Schema.Struct({
   VITE_PUBLIC_GAME_ORIGIN: Schema.NonEmptyString,
   GAME_RPC_URL: Schema.NonEmptyString,
   PLAYER_REGISTRY_ADDRESS: Schema.NonEmptyString,
-  REALMS_SERVER_PORT: Schema.optionalWith(Schema.NumberFromString, { default: () => 3001 }),
+  REALMS_SERVER_PORT: Schema.optional(Schema.NumberFromString),
 });
 
-export const serverEnv = Schema.decodeUnknownSync(ServerEnv, { onExcessProperty: "ignore" })(process.env);
+const decodedServerEnv = Schema.decodeUnknownSync(ServerEnv, { onExcessProperty: "ignore" })(process.env);
+
+export const serverEnv = {
+  ...decodedServerEnv,
+  REALMS_SERVER_PORT: decodedServerEnv.REALMS_SERVER_PORT ?? 3001,
+};

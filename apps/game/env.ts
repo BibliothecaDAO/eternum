@@ -31,6 +31,7 @@ const envSchema = z
       .url()
       .optional()
       .default("https://realms-game-launch.zerocredence.workers.dev"),
+    VITE_PUBLIC_LAUNCH_SERVICE_URL: optionalUrlOrEmpty.default(""),
     VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
     // Empty = no realtime-server for this deployment; consumers skip their
     // calls instead of hammering a dead endpoint.

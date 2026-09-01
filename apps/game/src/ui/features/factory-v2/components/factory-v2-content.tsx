@@ -51,7 +51,7 @@ export const FactoryV2Content = () => {
                   canWatch
                   onSelect={selectWorkflow}
                 />
-                {selectedWorkflow !== "start" ? (
+                {selectedWorkflow !== "start" && factory.requiresFactoryAdminSecret ? (
                   <FactoryV2AdminSecretControl
                     appearance={appearance}
                     adminSecret={factory.factoryAdminSecret}

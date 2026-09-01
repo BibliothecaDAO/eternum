@@ -573,6 +573,7 @@ Cloudflare Pages and talks to these hosts:
 | `rpc.<LAB_DOMAIN>`      | `madara:9944` through the tunnel (paths pass through)               |
 | `herald.<LAB_DOMAIN>`   | herald on the host, `:3003` (HTTP + WebSocket)                      |
 | `app.<LAB_DOMAIN>`      | `apps/realms` on the host, `:3000` (SPA, SIWS, binding authority)   |
+| `launch.<LAB_DOMAIN>`   | `apps/launch-service` on the host, `:3006` (authenticated launches) |
 | identity RPC            | not proxied: the browser calls the public mainnet node directly     |
 
 ### Box and region — chosen for action latency (2026-08-30)
@@ -598,7 +599,7 @@ push. The box and the region are picked for those two terms; nothing else about 
 
 Once, on the owner's machine (needs the Cloudflare account): `cloudflared tunnel login`, `cloudflared tunnel create
 realms-lab` (prints the `TUNNEL_ID` and writes `~/.cloudflared/<id>.json`), then one CNAME per host:
-`cloudflared tunnel route dns realms-lab rpc.<LAB_DOMAIN>` (and `herald.`, `app.`). Copy the JSON to the box as
+`cloudflared tunnel route dns realms-lab rpc.<LAB_DOMAIN>` (and `herald.`, `app.`, `launch.`). Copy the JSON to the box as
 `/root/credentials.json`.
 
 On the box, as root, fresh Ubuntu 24.04:
@@ -616,6 +617,8 @@ the `herald` and `realms-identity` units, and closes every port but SSH (`ufw`).
 cd /opt/realms/eternum
 # Create the root .env from the identity brief: local DATABASE_URL with DATABASE_SSL=false,
 # public identity/game/herald URLs, and the lab BINDING_AUTHORITY_* pair — never a mainnet key.
+# The launch service additionally needs RPC_URL, DOJO_ACCOUNT_ADDRESS, DOJO_PRIVATE_KEY,
+# LAUNCHER_ALLOWLIST, and CORS_ORIGIN. Create its isolated `eternum_launch` Postgres database once.
 pnpm install && pnpm run build:packages
 cd deploy/madara-lab
 docker compose --profile server --profile web up -d --wait madara postgres cloudflared   # never caddy here
@@ -624,9 +627,10 @@ cd ../..
 DATABASE_SSL=false pnpm --filter @realms-world/db push
 pnpm --filter @realms-world/realms build
 sudo systemctl disable --now web.service 2>/dev/null || true
-sudo systemctl start herald realms-identity
+sudo systemctl start herald realms-identity realms-launch realms-launch-rotation.timer
 curl -s https://herald.<LAB_DOMAIN>/health
 curl -s https://app.<LAB_DOMAIN>/health
+curl -s https://launch.<LAB_DOMAIN>/health
 ```
 
 Identity redeploys are

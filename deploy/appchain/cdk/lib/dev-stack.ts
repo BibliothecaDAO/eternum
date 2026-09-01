@@ -5,9 +5,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
-import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as ssm from "aws-cdk-lib/aws-ssm";
@@ -388,54 +386,6 @@ export class DevStack extends cdk.Stack {
       description: "CNAME target for the client host (proxied via Cloudflare)",
     });
     new cdk.CfnOutput(this, "ClientUrl", { value: `https://${cfg.publicClientHost}` });
-
-    // --- Launch service ---------------------------------------------------
-    // Phase-1 stand-in for the realms-game-launch worker (plan M4): the
-    // factory UI POSTs launches here; the service dispatches game-launch.yml
-    // with a GitHub token and serves run records from the factory-runs
-    // branch. Fill the secret with a fine-grained PAT (actions: write,
-    // contents: read on the repo) before first use.
-    const launchGithubToken = new secretsmanager.Secret(this, "LaunchServiceGithubToken", {
-      secretName: "/realms-appchain/dev/launch-service-github-token",
-      description: "GitHub PAT used by the launch service to dispatch game-launch.yml",
-    });
-
-    const launchService = new lambda.Function(this, "LaunchService", {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset("lambda/launch-service"),
-      timeout: cdk.Duration.seconds(30),
-      memorySize: 256,
-      environment: {
-        GITHUB_REPO: "BibliothecaDAO/eternum",
-        WORKFLOW_FILE: "game-launch.yml",
-        // The appchain launch steps live on the single-world branch until merged.
-        DEFAULT_WORKFLOW_REF: "feat/single-world-blitz",
-        RUN_STORE_BRANCH: "factory-runs",
-        ALLOWED_ENVIRONMENTS: "appchain.blitz,appchain.eternum",
-        GITHUB_TOKEN_SECRET_ARN: launchGithubToken.secretArn,
-      },
-    });
-    launchGithubToken.grantRead(launchService);
-
-    const launchServiceUrl = launchService.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
-      cors: {
-        allowedOrigins: [
-          `https://${cfg.publicClientHost}`,
-          "https://localhost:5173",
-          "https://127.0.0.1:5173",
-          "http://localhost:5173",
-          "http://127.0.0.1:5173",
-        ],
-        allowedMethods: [lambda.HttpMethod.GET, lambda.HttpMethod.POST],
-        allowedHeaders: ["content-type"],
-      },
-    });
-    new cdk.CfnOutput(this, "LaunchServiceUrl", {
-      value: launchServiceUrl.url,
-      description: "VITE_PUBLIC_FACTORY_WORKER_URL for appchain client builds",
-    });
 
     // --- Outputs ---------------------------------------------------------
     new cdk.CfnOutput(this, "KatanaUrl", { value: `https://${cfg.publicKatanaHost}` });

@@ -8,9 +8,9 @@ afterEach(() => {
 });
 
 describe("factory worker registrar workflows", () => {
-  test("dispatches a Madara game with supported launch options", async () => {
+  test("dispatches an appchain game with supported launch options", async () => {
     const calls = installGitHubFetch(({ url }) => {
-      if (url.includes("/contents/runs/madara/blitz/bltz-worker-test.json")) {
+      if (url.includes("/contents/runs/appchain/blitz/bltz-worker-test.json")) {
         return new Response("Not Found", { status: 404 });
       }
       if (url.includes("/actions/workflows/game-launch.yml/dispatches")) {
@@ -21,7 +21,7 @@ describe("factory worker registrar workflows", () => {
 
     const response = await worker.fetch(
       buildJsonRequest("/api/factory/runs", {
-        environment: "madara.blitz",
+        environment: "appchain.blitz",
         gameName: "bltz-worker-test",
         gameStartTime: "2099-01-01T00:00:00Z",
         twoPlayerMode: true,
@@ -40,7 +40,7 @@ describe("factory worker registrar workflows", () => {
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs).toMatchObject({
       launch_kind: "game",
-      environment: "madara.blitz",
+      environment: "appchain.blitz",
       launch_step: "full",
       game_name: "bltz-worker-test",
     });
@@ -53,7 +53,7 @@ describe("factory worker registrar workflows", () => {
 
   test("echoes one exact allowed origin", async () => {
     installGitHubFetch(({ url }) => {
-      if (url.includes("/contents/runs/madara/blitz/bltz-cors.json")) {
+      if (url.includes("/contents/runs/appchain/blitz/bltz-cors.json")) {
         return new Response("Not Found", { status: 404 });
       }
       if (url.includes("/actions/workflows/game-launch.yml/dispatches")) {
@@ -66,7 +66,7 @@ describe("factory worker registrar workflows", () => {
       buildJsonRequest(
         "/api/factory/runs",
         {
-          environment: "madara.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-cors",
           gameStartTime: "2099-01-01T00:00:00Z",
         },
@@ -90,7 +90,7 @@ describe("factory worker registrar workflows", () => {
       buildJsonRequest(
         "/api/factory/runs",
         {
-          environment: "madara.blitz",
+          environment: "appchain.blitz",
           gameName: "bltz-cors-rejected",
           gameStartTime: "2099-01-01T00:00:00Z",
         },
@@ -115,7 +115,7 @@ describe("factory worker registrar workflows", () => {
       }
       throw new Error(`Unexpected fetch call: ${url}`);
     });
-    const configPath = "config/deployer/clean/launch-configs/madara-blitz-daily.yaml";
+    const configPath = "config/deployer/clean/launch-configs/appchain-blitz-herald.yaml";
 
     await runScheduledWorker(
       buildWorkerEnv({
@@ -129,7 +129,7 @@ describe("factory worker registrar workflows", () => {
       ref: "next",
       inputs: {
         launch_kind: "rotation",
-        environment: "madara.blitz",
+        environment: "appchain.blitz",
         launch_step: "full",
         config_path: configPath,
         auto_retry_enabled: "true",
@@ -156,6 +156,25 @@ describe("factory worker registrar workflows", () => {
     expect(calls).toHaveLength(0);
   });
 
+  test("rejects Madara now that its launches are box-native", async () => {
+    const calls = installGitHubFetch(() => {
+      throw new Error("GitHub should not be called");
+    });
+
+    const response = await worker.fetch(
+      buildJsonRequest("/api/factory/runs", {
+        environment: "madara.blitz",
+        gameName: "bltz-box-only",
+        gameStartTime: "2099-01-01T00:00:00Z",
+      }),
+      buildWorkerEnv(),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Unsupported environment "madara.blitz"' });
+    expect(calls).toHaveLength(0);
+  });
+
   test("does not expose the retired per-game indexer route", async () => {
     const calls = installGitHubFetch(() => {
       throw new Error("GitHub should not be called");
@@ -173,20 +192,20 @@ describe("factory worker registrar workflows", () => {
   test("continues a failed game at its GameRegistry wait", async () => {
     const run = buildGameRun({ waitStatus: "failed" });
     const input = {
-      environment: "madara.blitz",
+      environment: "appchain.blitz",
       gameName: "bltz-worker-test",
       workflow: { ref: "feat/madara-lab" },
       request: {
-        environmentId: "madara.blitz",
+        environmentId: "appchain.blitz",
         gameName: "bltz-worker-test",
         startTime: "2099-01-01T00:00:00Z",
       },
     };
     const calls = installGitHubFetch(({ url }) => {
-      if (url.includes("/contents/runs/madara/blitz/bltz-worker-test.json")) {
+      if (url.includes("/contents/runs/appchain/blitz/bltz-worker-test.json")) {
         return buildGitHubContentsResponse(run);
       }
-      if (url.includes("/contents/inputs/madara/blitz/bltz-worker-test/101-1.json")) {
+      if (url.includes("/contents/inputs/appchain/blitz/bltz-worker-test/101-1.json")) {
         return buildGitHubContentsResponse(input);
       }
       if (url.includes("/actions/workflows/game-launch.yml/dispatches")) {
@@ -196,7 +215,7 @@ describe("factory worker registrar workflows", () => {
     });
 
     const response = await worker.fetch(
-      buildJsonRequest("/api/factory/runs/madara.blitz/bltz-worker-test/actions/continue", {}),
+      buildJsonRequest("/api/factory/runs/appchain.blitz/bltz-worker-test/actions/continue", {}),
       buildWorkerEnv(),
     );
     const dispatch = calls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
@@ -258,10 +277,10 @@ function buildGameRun({ waitStatus }: { waitStatus: "failed" | "succeeded" }) {
   return {
     version: 1,
     kind: "game",
-    environment: "madara.blitz",
+    environment: "appchain.blitz",
     gameName: "bltz-worker-test",
     status: waitStatus === "succeeded" ? "complete" : "attention",
-    inputPath: "inputs/madara/blitz/bltz-worker-test/101-1.json",
+    inputPath: "inputs/appchain/blitz/bltz-worker-test/101-1.json",
     currentStepId: waitStatus === "succeeded" ? null : "wait-for-factory-index",
     updatedAt: "2000-01-01T00:00:00.000Z",
     workflow: { ref: "feat/madara-lab" },

@@ -3,7 +3,7 @@ import "dotenv/config";
 import type { ServerWebSocket } from "bun";
 import { randomUUID } from "crypto";
 import { Hono } from "hono";
-import { Effect, Either } from "effect";
+import { Effect, Result } from "effect";
 import { upgradeWebSocket, websocket } from "hono/bun";
 import type { WSContext } from "hono/ws";
 import { cors } from "hono/cors";
@@ -224,22 +224,22 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
       sendError(socket, "invalid_direct_payload", result.error.issues[0]?.message ?? "Invalid direct message.");
       return;
     }
-    const persisted = await Effect.runPromise(Effect.either(persistDirectMessage(session, result.data)));
-    if (Either.isLeft(persisted)) {
-      if (persisted.left instanceof DirectMessageError) {
-        sendError(socket, persisted.left.code, persisted.left.message);
+    const persisted = await Effect.runPromise(Effect.result(persistDirectMessage(session, result.data)));
+    if (Result.isFailure(persisted)) {
+      if (persisted.failure instanceof DirectMessageError) {
+        sendError(socket, persisted.failure.code, persisted.failure.message);
         return;
       }
-      throw persisted.left;
+      throw persisted.failure;
     }
     const payload = {
       type: "direct:message",
-      message: toDirectMessage(persisted.right.message),
-      thread: toDirectThread(persisted.right.thread, sortParticipants(...persisted.right.participants)),
+      message: toDirectMessage(persisted.success.message),
+      thread: toDirectThread(persisted.success.thread, sortParticipants(...persisted.success.participants)),
       clientMessageId: message.clientMessageId,
     };
     const recipients = new Set(
-      persisted.right.participants.flatMap((participant) => Array.from(presence.socketsFor(participant))),
+      persisted.success.participants.flatMap((participant) => Array.from(presence.socketsFor(participant))),
     );
     await Effect.runPromise(fanOut(recipients, (recipient) => send(recipient, payload)));
   };
