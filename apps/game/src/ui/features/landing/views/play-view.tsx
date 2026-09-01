@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { env } from "@/../env";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
@@ -690,6 +691,10 @@ const PlayTabContent = ({
   disabled?: boolean;
 }) => {
   const resolvedMode: "blitz" | "eternum" = modeFilter === "season" ? "eternum" : "blitz";
+  // The Played column hides dev-mode (practice) games on production so the ladder shows real
+  // matches only. On the madara lab every game is dev-mode, so that rule would hide them all —
+  // show every ended game there, whether or not the viewer took part.
+  const playedDevModeFilter = env.VITE_PUBLIC_CHAIN === "madara" ? undefined : false;
 
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
@@ -758,7 +763,7 @@ const PlayTabContent = ({
               onSeeScore={onSeeScore}
               onRegistrationComplete={onRegistrationComplete}
               modeFilter={resolvedMode}
-              devModeFilter={false}
+              devModeFilter={playedDevModeFilter}
               statusFilter="ended"
               hideHeader
               hideLegend

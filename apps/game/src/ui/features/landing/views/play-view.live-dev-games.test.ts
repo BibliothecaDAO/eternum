@@ -32,4 +32,15 @@ describe("PlayView live games dev visibility", () => {
     expect(source).toContain("await invalidateWorldListQueries(queryClient)");
     expect(source).not.toContain('invalidateQueries({ queryKey: ["worldAvailability"] })');
   });
+  it("shows every ended game on the madara lab, not only the viewer's", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
+    // The lab is all dev-mode games, so the Played column must not hide dev games there;
+    // production keeps hiding practice games.
+    expect(source).toContain('const playedDevModeFilter = env.VITE_PUBLIC_CHAIN === "madara" ? undefined : false;');
+    const playedStart = source.indexOf("{/* Played Column (ended games) */}");
+    const playedBlock = source.slice(playedStart);
+    expect(playedStart).toBeGreaterThan(-1);
+    expect(playedBlock).toContain("devModeFilter={playedDevModeFilter}");
+    expect(playedBlock).not.toContain("devModeFilter={false}");
+  });
 });
