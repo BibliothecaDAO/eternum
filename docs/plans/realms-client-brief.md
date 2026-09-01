@@ -235,3 +235,39 @@ PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads)
 The remaining cost class the PRs leave is L5 item 1. `worldmap-initial-refresh.source.test.ts` fails on
 `feat/madara-lab` before the merge (it expects `return completeWorldmapInteractiveRefresh` where the branch has `await`)
 — the branch's own refresh change, to be fixed by its author.
+
+## Addendum — owner captures, 2026-09-01 pm
+
+First real 96-player client sample (owner's GPU, 77 s stats recording, live game): fps min 2.7 / avg 45.8 / max 66.6;
+draw calls 106–200 (avg 162); triangles ~1.16 M avg; +32 geometries, +19 textures, 0 new programs. Draw calls and
+triangle counts are nowhere near a budget — the dips to 2.7 fps with an idle GPU confirm the bottleneck is main-thread
+work (ingest, composite, fan-out), not rendering volume. These columns join the half-two table as the 96-player
+baseline.
+
+New classes the captures exposed, folded into the halves above:
+
+- **L5 item 0 — far-LOD terrain.** Fully zoomed out, biomes end at a hard edge: terrain exists only inside the 48×48
+  render window (`three/constants/world-chunk-config.ts:60`, 24×24 visual pages, `maxCompositePages: 12`). A 96-player
+  map is several windows wide. Fix: one whole-world biome surface painted from `TileOpt` (already in RECS) — a single
+  instanced flat-hex mesh or texture, unexplored shroud included — with the detailed procedural pages composited on top
+  near the camera. Gate: no visible terrain edge at any zoom; ≤ 2 extra draw calls.
+- **Continuous zoom.** The wheel sets exact camera height in world and local view. The CLOSE/MEDIUM/FAR presets and the
+  "Enable Map Zoom" setting are deleted; zoom bands select content (far band = far-LOD + icons, near band = procedural
+  pages, props, characters). The fixed-zoom assumption existed to bound terrain cost; the far-LOD removes the need.
+- **Label ladder** (extends L5 item 6): far band zero text labels (ownership tint + icons for hyperstructures / own /
+  under-attack); mid band names for own, allied, selected, top-10 only, armies as colour + tier glyph; near band full
+  labels under a ~30 budget; selected/hovered/under-attack always. Same ladder gates the procedural-character handoff to
+  instanced markers (L5 item 4's budget). One glyph/digit atlas, no DOM.
+- **Transfers are invisible** (owner: "transfers dont seem to show up in the ui currently"). Logistics fires the tx and
+  toasts "Sent resources", then nothing until arrival. Half four's event feed gains a gate: a started transfer is a feed
+  row with a countdown and a caravan on the map within one frame of pre-confirm; arrival flips the row and credits the
+  ledger.
+- **Action-mode conventions.** Today: every owned army ringed at once, "Right-click to confirm / Esc to exit". Redo:
+  left-click selects, right-click is the smart action on the target, Esc cancels; only the selection and legal targets
+  are emphasised; ownership is tint. The ghost pattern already shipped (move preview, ghost building) — it becomes the
+  single pending-state pattern for build / deploy / transfer / attack.
+- **Confirmed in prod:** the sync-status overlay (DevSyncOverlay) renders in the owner's production build, bottom-left —
+  the L3 mount-gate fix is not hypothetical.
+- **To verify while in a live game:** bot armies render as unequipped bodies with player-colour-tinted mounts at world
+  zoom — check whether procedural equipment/mount resolution is failing for some troop types or whether the
+  player-colour tint is applied to whole materials instead of accents.
