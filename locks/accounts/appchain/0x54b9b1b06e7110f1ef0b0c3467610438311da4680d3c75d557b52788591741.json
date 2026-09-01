@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "blitz-herald",
-    "launchRequestId": "33523265547-1",
+    "gameName": "blitz-nightwatch",
+    "launchRequestId": "33523268922-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 33523265547,
+    "workflowRunId": 33523268922,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "3dcdf8fd-d965-4603-ba43-19ef1a271580"
+    "leaseId": "9efa4ad5-c3d9-43b3-bc53-3ec1ece949b5"
   },
-  "acquiredAt": "2026-09-01T15:03:44.351Z",
-  "heartbeatAt": "2026-09-01T15:04:04.445Z",
-  "expiresAt": "2026-09-01T15:04:04.445Z",
-  "releasedAt": "2026-09-01T15:04:04.445Z"
+  "acquiredAt": "2026-09-01T15:04:15.510Z",
+  "heartbeatAt": "2026-09-01T15:04:15.510Z",
+  "expiresAt": "2026-09-01T15:14:15.510Z"
 }
