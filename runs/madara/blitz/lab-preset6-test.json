@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "madara.blitz:lab-preset6-test",
+  "environment": "madara.blitz",
+  "chain": "madara",
+  "gameType": "blitz",
+  "gameName": "lab-preset6-test",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/madara/blitz/lab-preset6-test/33511238240-1.json",
+  "latestLaunchRequestId": "33511238240-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-09-01T13:06:14.480Z",
+  "updatedAt": "2026-09-01T13:06:14.480Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 33511238240,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33511238240",
+    "ref": "feat/madara-lab",
+    "sha": "179e07728918af42face93a9dcea6a1f4ccc50f1"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "1788268770"
+  }
+}
