@@ -221,6 +221,16 @@ on a GPU the render is a few ms and CPU owners dominate the same digest. Still u
 boot classes: the pre-scene boot window (module load and the first React mount, worst ~0.8 s in one 10 s window) runs
 outside any scene owner.
 
+Reviewed 2026-09-01 (Claude, independent reproduction on the same setup): gating verified both ways (`?dev=0` → both
+globals absent, `?dev=1` → present); snapshot 7,217 rows / 3 batches / max batch 102 ms, receive 903 / apply 219 ms;
+`frameBudgetLongTasks` 3 at boot, +0 over 65 s; heap flat (GC'd 406 → 323 MB); 93 spike digests: 91 `render:backend`
+(`attribution=cpu-bound`, `gpu_backend_ms` ~1.7), 2 unattributed in the pre-scene boot window as stated. Terrain tests
+(144), core sync tests (57) and the apps/game typecheck reproduce clean. **Phase M approved.** Review notes carried
+forward: `requireSettlementLevel` silently clamps values above `RealmLevels.Empire` — fine today (only a future contract
+change can produce one), add a loud dev warn if that ever changes; the deployed-build reachability was proven via the
+runtime flag on the dev server — sanity-check `?dev` once on the next real deploy; M.3's live ratio stays owed to Phase
+1's measurement game.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
