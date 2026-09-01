@@ -82,6 +82,8 @@ export interface GameSyncRuntimeMetrics {
   snapshotEntityCount: number;
   snapshotPageCount: number;
   totalLiveEntityUpdates: number;
+  /** Component writes the store performed for live rows (replay + running); with totalLiveEntityUpdates it is the L1 amplification ratio. */
+  totalLiveEntityOperationsApplied: number;
   totalLiveEventUpdates: number;
   totalReplayedEventUpdates: number;
 }

@@ -4,8 +4,9 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { publishSyncMetrics } from "@/observability/sync-metrics";
 import { createHeraldGameSyncSession } from "@/sync/herald-game-sync-session";
-import { verboseLog } from "@/utils/dev-mode";
+import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import {
   disposeActiveGameSyncRuntime,
   getActiveGameSyncRuntime,
@@ -67,6 +68,7 @@ const createActiveGamewideSyncSession = (input: {
     logging: input.logging,
     onSubscriptionActive: recordGamewideSubscriptionActive,
     onLiveUpdate: recordGamewideLiveUpdate,
+    onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
     onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
     setup: input.setup,
   });

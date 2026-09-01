@@ -1,5 +1,6 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import type { Camera, Scene } from "three";
+import { runWithFrameWorkOwner } from "./frame-work-owner";
 import { renderRendererBackendFrame } from "./renderer-backend-compat";
 import { setRendererDiagnosticSceneName } from "./renderer-diagnostics";
 import type { RendererBackendV2, RendererOverlayPass } from "./renderer-backend-v2";
@@ -239,12 +240,14 @@ function renderResolvedRendererFrame(input: {
     input.labelRuntime.render(input.resolvedFrame.scene, input.camera);
   }
 
-  renderRendererBackendFrame(input.backend, {
-    mainCamera: input.camera,
-    mainScene: input.resolvedFrame.scene,
-    overlayPasses: input.resolvedFrame.overlayPasses,
-    sceneName: input.resolvedFrame.sceneName,
-  });
+  runWithFrameWorkOwner("render:backend", () =>
+    renderRendererBackendFrame(input.backend, {
+      mainCamera: input.camera,
+      mainScene: input.resolvedFrame.scene,
+      overlayPasses: input.resolvedFrame.overlayPasses,
+      sceneName: input.resolvedFrame.sceneName,
+    }),
+  );
   setRendererDiagnosticSceneName(input.resolvedFrame.sceneName);
 
   if (input.shouldRenderLabels) {

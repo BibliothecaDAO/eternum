@@ -51,6 +51,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   snapshotEntityCount: 0,
   snapshotPageCount: 0,
   totalLiveEntityUpdates: 0,
+  totalLiveEntityOperationsApplied: 0,
   totalLiveEventUpdates: 0,
   totalReplayedEventUpdates: 0,
 });
@@ -372,6 +373,9 @@ export class GameSyncRuntime {
   private recordAppliedBatch(info: EntityIngestBatchInfo): void {
     this.metrics.appliedBatchCount += 1;
     this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
+    if (this.status === "replaying" || this.status === "running") {
+      this.metrics.totalLiveEntityOperationsApplied += info.operationCount;
+    }
     if (this.status === "snapshotting" && this.snapshotExpectedOperations > 0) {
       this.snapshotAppliedOperations += info.operationCount;
       this.session?.onSnapshotProgress?.({
@@ -380,6 +384,7 @@ export class GameSyncRuntime {
         total: this.snapshotExpectedOperations,
       });
     }
+    this.publishMetrics();
   }
 
   private recordLiveUpdate(kind: "entity" | "event"): void {

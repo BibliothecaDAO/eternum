@@ -194,6 +194,33 @@ outside chunk switches, terrain draws ≤ 40, `frameBudgetLongTasks` = 0 over 60
    React commits/s, p95 frame, long tasks, heap slope — before and after each layer. Those columns go into the table in
    half two.
 
+Recorded, phase M (2026-09-01, branch `client-scale-96p`): dev server, headless Brave 1600×900 on software WebGL2,
+spectating game 11 (`lab-mthy45g3`, 96/96, finished, so live churn is 0). "Before" is the branch with only the
+settlement-level fix: before that fix the branch could not set up the worldmap scene against any real game, because
+`Structure.base.level` is the 0-based `RealmLevels` enum (every fresh realm is 0) and PR #4905's settlement footprint
+threw on 0. Items 1 and 2 landed; item 3 still needs a live 96-bot game from the owner.
+
+| Measurement (game 11, spectate, software WebGL2)     | Before (settlement fix only)                    | After phase M                                    |
+| ---------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------ |
+| snapshot receive / apply                             | 905 / 162 ms                                    | 878 / 154 ms                                     |
+| snapshot rows, batches, max batch apply              | not exposed                                     | 7,217 rows, 3 batches, 91 ms                     |
+| bootstrap done / terrain visible / world interactive | 6.0 / 16.2 / 16.3 s                             | 5.0 / 15.1 / 15.1 s                              |
+| `frameBudgetLongTasks` at boot, then over 60 s       | 3 (max 48 ms), +0                               | 3 (max 47 ms), +0                                |
+| steady-state spike digests over 60 s (~0.8 fps here) | ~10 / 10 s, worst 1.3–1.6 s, all `unattributed` | ~9 / 10 s, worst 1.3–1.5 s, all `render:backend` |
+| heap over the 60 s window                            | 371 → 373 MB                                    | 376 → 378 MB                                     |
+| live rows received / component writes applied        | not exposed                                     | 0 / 0 (finished game)                            |
+
+What is exposed: `window.__eternumSyncMetrics` (the runtime's counters, now with `totalLiveEntityOperationsApplied` so
+the L1 ratio is `totalLiveEntityOperationsApplied / totalLiveEntityUpdates`) and the existing
+`getWorldmapRenderDiagnostics()` family, both gated on `DEV_MODE_ENABLED` (`?dev`) instead of `import.meta.env.DEV`, so
+deployed builds have them. One accessor keeps its one name: `__eternumRenderDiagnostics` was not added as a second
+alias. Owners added: `terrain:composite` (cell mapping + anchors + page requests), `terrain:present` (the main-thread
+pool/fog commit after the worker), `hover:reconcile`, `labels:css2d`, and `render:backend`. The last one is not in the
+list above: on software GL every frame _is_ the render pass, so without it no headless measurement could name any owner;
+on a GPU the render is a few ms and CPU owners dominate the same digest. Still unattributed and left for the half-two
+boot classes: the pre-scene boot window (module load and the first React mount, worst ~0.8 s in one 10 s window) runs
+outside any scene owner.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

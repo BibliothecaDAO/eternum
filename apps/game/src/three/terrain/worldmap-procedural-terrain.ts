@@ -2,6 +2,7 @@ import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
 
+import { runWithFrameWorkOwner } from "../frame-work-owner";
 import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./procedural-terrain";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { terrainCellKey } from "./terrain-coordinates";
@@ -187,7 +188,9 @@ export class WorldmapProceduralTerrain {
     preparedFogMask?: TerrainFogMask | null,
   ): WorldmapProceduralPresentationDiagnostics {
     const commitStartedAt = performance.now();
-    const presentation = this.terrain.present(preparedPages, preparedFogMask);
+    const presentation = runWithFrameWorkOwner("terrain:present", () =>
+      this.terrain.present(preparedPages, preparedFogMask),
+    );
     const commitMs = performance.now() - commitStartedAt;
     this.visibleCellCount = input.cells.filter((cell) => resolveBiomeKey(cell.biomeKey) !== null).length;
     const diagnostics = preparedPages.reduce(

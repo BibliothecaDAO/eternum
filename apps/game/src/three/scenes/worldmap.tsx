@@ -1,6 +1,6 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
-import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
+import { DEV_MODE_ENABLED, VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import { toast } from "sonner";
 
@@ -2262,7 +2262,8 @@ export default class WorldmapScene extends WarpTravel {
       return null;
     }
 
-    const result = this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
+    const hoverHex = this.currentHoverLabelHex;
+    const result = runWithFrameWorkOwner("hover:reconcile", () => this.hoverLabelManager.reconcileHexHover(hoverHex));
     this.applyHoverLabelRecoveryResult(result, reason);
     this.traceHoverLabelRecovery("reconcile", {
       reason,
@@ -5595,9 +5596,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
-    const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
-    const presentation = this.proceduralTerrain
-      .presentAsync({
+    const presentation = runWithFrameWorkOwner("terrain:composite", () => {
+      const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
+      return this.proceduralTerrain.presentAsync({
         cells: composite.cells.map((cell) => {
           const [col, row] = cell.hexKey.split(",").map(Number);
           return {
@@ -5615,7 +5616,8 @@ export default class WorldmapScene extends WarpTravel {
         roadAnchors,
         settlementAnchors,
         subdivisions: 2,
-      })
+      });
+    })
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
         recordWorldmapRenderDuration("terrainPreparedMs", terrainDiagnostics.prepareMs);
@@ -7700,7 +7702,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private installChunkDiagnosticsDebugHooks(): void {
-    if (!import.meta.env.DEV) {
+    if (!DEV_MODE_ENABLED) {
       return;
     }
 
@@ -7726,7 +7728,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private removeChunkDiagnosticsDebugHooks(): void {
-    if (!import.meta.env.DEV) {
+    if (!DEV_MODE_ENABLED) {
       return;
     }
 
