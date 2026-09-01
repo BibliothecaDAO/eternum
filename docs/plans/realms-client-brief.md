@@ -70,3 +70,168 @@ in the brief next to the old one.
 Half two, classes 3 and 4 first (they are gameplay-visible and independent of the web app), then 1, 2, 5; half one when
 the web app's lobby gate passes. Owner runs the human gate on the quiet box. Codex or a third agent, the owner's call on
 capacity; Claude reviews.
+
+## Half three — 96 players: the client as layers (audit 2026-09-01)
+
+Evidence: the deployed build (`madara-lab-99ada3d5b74`, `eternum-game.pages.dev`) spectating game 11 (`lab-mthy45g3`,
+96/96 players, 288 realms) from a headless WebGL2 browser: snapshot receive 910 ms + apply 373 ms, bootstrap done at 3.8
+s, first terrain at 12.7 s, 82 `[FramePerf]` spikes in 16 s (worst 6.7 s) every one `frame_owner=unattributed`. Plus
+four read-only code audits (sync, render, React, measurement) and the chain-side 96-bot runs
+(`deploy/madara-lab/.lab/runs`, 3,840/3,840 actions, pre-confirmed p95 ≤ 105 ms). No client number at 24 or 96
+concurrent players existed before this; every earlier client figure was taken with ≤ 8 bots.
+
+The client is six layers. Each layer below names the class that makes update count turn into CPU, the one fix, what the
+fix deletes, and the gate. Layers are ordered by the data path; the order of work is at the end.
+
+### L0 — Herald stream (client-facing edge of the server)
+
+- Class: per-block write amplification. `apps/herald/src/live-world.ts:242-244` sends the confirmed diff, an
+  `overlay_reset`, then re-publishes every pre-confirmed transaction as a fresh diff; a row touched by one action
+  reaches the client 3–4× per block. `game-stream.ts:132-134,181-183` re-`JSON.stringify`s the same message once per
+  subscriber (96×).
+- Fix: `rebuildOverlay` publishes the delta against the previous overlay; `publish` stringifies once and fans out the
+  string.
+- Gate: rows received per confirmed head / rows changed on chain ≤ 1.1 (recorded with `pnpm lab:probe-herald`).
+
+### L1 — Transport (`packages/core/src/sync/herald-game-sync-transport.ts`)
+
+- Class: unchanged rows re-emitted. `acceptSet` with `preconfirmed:false` never clears `pendingRows` (`:311-315`), so
+  `resetOverlay` (`:332-335`) re-emits every already-confirmed row, one `onEntity` each. `reconcileSnapshot`
+  (`:358-364`) re-emits the whole world through single `onEntity` calls on any reconnect where resume fails (reconnect
+  cadence 200 ms, `:80`). Per row: `Array.find` over the 49-model manifest (`model-manifest.ts:137`); per snapshot chunk
+  a full `TextEncoder.encode` only to count bytes (`:200`).
+- Fix: clear the pending identity on confirm; reset emits only where `currentRows` ≠ `confirmedRows`; reconcile goes
+  through `onEntityBatch` diffed against `currentRows`; a manifest `Map` at module scope; byte count from
+  `serialized.length`.
+- Gate: rows applied to RECS / rows received = 1.0 at steady state (the `GameSyncRuntimeMetrics` counter, see M).
+
+### L2 — Ingest (`entity-ingest-queue.ts`, `apps/game/src/dojo/recs-game-sync-store.ts`)
+
+- Class: a layer that exists only to be undone. Every row is wrapped into Torii's typed-value envelope
+  (`recs-game-sync-store.ts:99-173`) so `@dojoengine/state.setEntities` can unwrap it, which then resolves the component
+  by string-building `${ns}-${name}` across all 113 components per row and `await`s once per entity.
+  `takeNextApplyBatch` spreads the whole pending Map to slice 1,000 (`entity-ingest-queue.ts:285`, quadratic on the
+  snapshot). `onLiveUpdate` fires per entity and writes the connection store twice per row
+  (`apps/game/src/sync/game-sync.ts:45-49`).
+- Fix: delete `setEntities`. One `heraldValue → ComponentValue` coercer per component schema (memoised per
+  `(component, fieldPath)`, using the `authoritativeComponentLookup` Map that already exists), one `setComponent` per
+  row. Slice by iterating the Map with a counter. Liveness per batch, throttled ≥ 250 ms. `MAX_APPLY_SLICE_MS` 25 → 6
+  (one frame budget, same number as the scene's queue).
+- Deletes: the envelope encoder, the `@dojoengine/state` dependency on the live path, the per-entity promise chain.
+- Gate: ingest of the 96-player snapshot ≤ 150 ms apply; no sync-owned long task ≥ 50 ms during a 96-bot workload.
+
+### L3 — RECS observers
+
+- Class: `Has(hot)` as a global re-render bus. 34 `useEntityQuery([Has(X)])` sites and 40 `useComponentValue` sites each
+  subscribe to every row of the component; `@dojoengine/react` returns a fresh array per row. The store managers then
+  re-scan the component (`ui/store-managers.tsx:294` Resource → `getResourceBalances` per row; `:596` ExplorerTroops →
+  `formatArmies` over all armies; `:49`/`:275` ResourceArrival twice). `DevSyncOverlay` is mounted in production
+  (`ui/layouts/world.tsx:57`) and renders once per ingested row. `Social` and `Settings` run their world-wide queries
+  before their `if (!isOpen) return null`.
+- Fix: one RECS → store bridge that runs at most once per ingest slice (it is the same chokepoint as L2's flush) and
+  publishes narrowed slices (my structures, my armies, selected entity, leaderboard). Components subscribe to slices.
+  `useEntityQuery([Has(hot)])` is banned by a source test for aggregate derivation, the way
+  `polling-discipline.source.test.ts` bans intervals.
+- Deletes: the nine store managers become one bridge; `DevSyncOverlay` mounts only under `DEV_MODE_ENABLED`.
+- Gate: React commits per second ≤ 10 with 96 bots active and no selection change (React Profiler sample in M).
+
+### L4 — Spatial projection (`world-spatial-projection.ts`)
+
+- Class: per-row publish. `applyTileOptUpdate` → `publishChanges` once per row (`:516`, `:643`); the S3 brief's
+  "coalesce to once per scheduler tick" was never built. Downstream, every army batch re-resolves hover
+  (`worldmap.tsx:1243,1332`) and every structure batch triggers a full visible-structure pass.
+- Fix: accumulate and flush once per ingest slice. This is the item the S3 brief already specifies.
+- Gate: projection listener invocations per slice = 1.
+
+### L5 — Scene (`apps/game/src/three`)
+
+Ranked by cost at 96 players; each is one chokepoint.
+
+1. Terrain composite. `applyTerrainPresentationComposite` (`worldmap.tsx:5582`) maps every composite cell (24×24×12 =
+   6,912) with `hexKey.split(",")` per cell, then `present()` rebuilds all prop pools and the fog mask for the whole
+   window (`procedural-terrain.ts:287,292`, `terrain-prop-pools.ts:49`) — on every explored tile inside the window,
+   outside the frame budget. Fix: incremental composite (mutate presentations, compose once per batch — plan item 1.5),
+   numeric cell keys, per-page delta writes into fixed pool sub-ranges, commit in the `critical` lane so it is measured.
+   PR #4905 (living roads) re-presents on structure changes too, so this is now the first item, not a follow-up.
+2. Structure pass. Any structure change re-runs `resolveStructureInfo` (3 RECS reads + BigInt unpack) for every visible
+   structure (`structure-manager.ts:321→1199,393`). Fix: cache `StructureInfo` per entity, invalidated by the component
+   subscriptions that already exist; drive the pass from the change set.
+3. Hover from data. `resolveHoverLabelEntities` materialises all armies and raycasts every instanced mesh
+   (`worldmap.tsx:2191,2218,2232`, `army-model.ts:2532`) on every army/structure batch. Fix: position-indexed lookup,
+   lazy raycast, reconcile only when the hovered hex's entities changed (plan item 3.4).
+4. Procedural actors uncapped (`procedural-army-representation.ts:13-15`). Fix: a hard actor budget by screen size,
+   instanced fallback beyond it (the handoff exists).
+5. `updateAllInstances` dirties every buffer for a one-army change (`army-model.ts:2406`). Fix: `addUpdateRange` per
+   slot, as `PathRenderer` does.
+6. One draw call per compact label (`compact-entity-label-renderer.ts:39`). Fix: the label atlas (plan item 6.1).
+7. `STRUCTURE_INSTANCE_CAPACITY = 512` throws on overflow (`structure-manager.ts:1456`). Fix: size from the window
+   maximum, loud clamp like `army-model.ts:522`.
+8. CSS2D renders every frame at close view (`game-renderer-policy.ts:243`); `ReservedHyperstructureManager` re-renders
+   all reserved hexes on any structure change. Fix: floor at 16 ms and render on change; consume the change set.
+
+Gate: on the owner's laptop (WebGL2 lane) spectating a live 96-bot game: steady p95 frame ≤ 16.7 ms, zero frames ≥ 50 ms
+outside chunk switches, terrain draws ≤ 40, `frameBudgetLongTasks` = 0 over 60 s.
+
+### L6 — React overlay
+
+- Class: one store, 269 selectors, 1 Hz object churn. `useUIStore` merges six slices (`use-ui-store.ts:262`); every
+  `set()` (tooltip on hover, `setCycleProgress` at 1 Hz) runs all 269 selectors. `BlockTimestampPoller` publishes a new
+  object every second so every consumer re-renders (`block-timestamp-poller.tsx:11`); ~36 files own a 1 Hz
+  `setInterval`. `top-header.tsx:50` calls `getBlockTimestamp()` on every render.
+- Fix: the Command Deck (half four) replaces the mount tree, so this is done as part of it, not patched: one clock store
+  with primitive fields, tooltip/hover in their own store, selectors per field, the six windows mounted only when open.
+- Gate: React commits per second ≤ 10 idle (same measurement as L3).
+
+### M — measure first (prerequisite, one day)
+
+1. Expose `GameSyncRuntimeMetrics` (`onMetrics` is plumbed but never wired, `game-sync.ts:61-72`) and
+   `getWorldmapRenderDiagnostics()` (DEV-only today, `worldmap.tsx:7621`) under `?dev` in deployed builds, as
+   `window.__eternumSyncMetrics` / `__eternumRenderDiagnostics`.
+2. Frame owner attribution: `unattributed` on every spike means the terrain composite, hover reconcile and label DOM run
+   outside `runWithFrameWorkOwner`. Wrap them so a spike names its owner.
+3. The number this brief lacks: a client attached to a live 96-bot game (`pnpm lab:harness -- --bots 96 --minutes 25` on
+   the box, owner's laptop spectating with `?dev`, `Ctrl+Shift+R` for 60 s). Record rows/s received, rows/s applied,
+   React commits/s, p95 frame, long tasks, heap slope — before and after each layer. Those columns go into the table in
+   half two.
+
+### Order
+
+M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
+items 4–8. Half two's classes 3–5 stay in front of all of this: they are gameplay-visible.
+
+## Half four — the overlay redo: Command Deck
+
+Design: the "Blitz Command Deck" artifact, https://claude.ai/code/artifact/0be5faba-8de2-403a-9e4b-0ebb87f54692 (real
+captures of game 11, zones drawn on them, modal → surface table, identity states). The rules it fixes in code:
+
+- One identity input, one output. The identity session is the only "logged in" fact; the chip in the top-left shows
+  spectating / spectating as name / name · n realms / connecting. `NotLoggedInMessage` reads the Dojo account, which is
+  the frozen `0x0` spectator account, so every spectator is told they are not logged in
+  (`shared/components/not-logged-in-message.tsx`); `play-view.tsx:883` gates the landing on the gameplay account so an
+  authenticated user sees "Sign in" while the account deploys; `gameplay-account-sync.tsx:43` nulls the account on every
+  `activeWorld` object identity change, dropping the route from ready to loading mid-boot. All three go with the chip.
+  The two URL spectate readers outside `utils/spectator-session.ts` (`play-route-boot-request.ts:34`,
+  `game-entry/context.ts:100`) go. The identity API's allowed origins must include the game origin — on
+  `eternum-game.pages.dev` `get-session` is CORS-blocked, so that build can never show a login.
+- No modals. `BlankOverlayContainer` (`ui/shared/containers/blank-overlay-container.tsx:26`) is a full-screen
+  `pointer-events-auto` wrapper around every `toggleModal` modal. The four systems (`toggleModal`, `CenteredModalShell`,
+  `DialogShell`, `openedPopups`) become one anchored, non-blocking `Popover`; build / produce / army / transfer / attack
+  become command-card tabs with ghost placement; market is a right ledger drawer; toasts, Transactions, Logistics and
+  Notifications become one event feed; chat is a bottom-right drawer. Transaction state renders on the button and the
+  entity (ghost → solid at pre-confirm → feed row gold at confirm → red flash + reason on revert). A direct realm link
+  must hand off for a spectator (today `/hex?spectate=true` blocks at "Waiting for world map"; `boot=map-first` works).
+- Deletes: Cartridge Controller button and the `x.cartridge.gg` iframe on the landing, the `demo-player` chat id,
+  `NoAccountModal`, `SignInPromptModal`, `EndgameModal`, the reconnect hard reload, the 4 s reconnect grace timer,
+  `bottom-right-panel.tsx`'s right-centre inspectors.
+
+Gate: a spectator with a session sees no login banner and a Play affordance when they own a realm; no element with
+`pointer-events-auto` covers the canvas while any surface is open; every action's pending state is visible on the entity
+within one frame of the click; `apps/game` contains no `Modal` shell component.
+
+## Procedural terrain
+
+PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
+(`e4524ccc668`, `8268a4c2ad1`): typecheck, the 49 terrain/verification test files (247 tests), prettier and knip clean.
+The remaining cost class the PRs leave is L5 item 1. `worldmap-initial-refresh.source.test.ts` fails on
+`feat/madara-lab` before the merge (it expects `return completeWorldmapInteractiveRefresh` where the branch has `await`)
+— the branch's own refresh change, to be fixed by its author.
