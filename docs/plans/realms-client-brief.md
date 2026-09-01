@@ -271,3 +271,30 @@ New classes the captures exposed, folded into the halves above:
 - **To verify while in a live game:** bot armies render as unequipped bodies with player-colour-tinted mounts at world
   zoom — check whether procedural equipment/mount resolution is failing for some troop types or whether the
   player-colour tint is applied to whole materials instead of accents.
+
+## Addendum — latency decomposition under load, 2026-09-01 evening
+
+39 `explore_reveal` samples from the owner's client (EU) against the Ashburn box while 80 bots ran mid-workload (~5
+tx/s): click→rendered p50 407 ms / p95 1,549 ms; pre_confirmed→rendered p50 143 ms / p95 353 ms. Segment medians: build
+calls ~2 ms · submit guard ~30 ms idle, **150–280 ms when acting rapidly** · sign+send ~150 ms (transatlantic RTT +
+tunnel) · submitted→pre_confirmed **~20 ms** · herald diff 30–60 ms (one ~600 ms hiccup in the tail) · diff→rendered
+~130 ms. The p95 tail is compounding (elevated sign+send + block-boundary wait + herald hiccup landing together), not
+one culprit.
+
+What this changes in the halves above:
+
+- **The premise is confirmed**: the sequencer has headroom at 80 bots (20 ms median execute+pre-confirm); the felt
+  latency is ~70 % network + client.
+- **The client-owned slice gets its gate.** diff_received→rendered (p50 143 ms under churn) is L2 + L5 work. Gate:
+  pre_confirmed→rendered ≤ 50 ms p95 on the reference machine during a 96-bot workload.
+- **New class — submit-guard serialization** (extends half two, class 4): calls*built→sign_send_started jumps to 150–280
+  ms only when actions are rapid, i.e. the nonce lock queues the \_signing* of action N+1 behind action N. Fix the
+  class: allocate nonces locally, pipeline sign+send, resync the nonce on revert; no action's signing ever waits on
+  another action's receipt or pre-confirm. Gate: calls_built→sign_send_started ≤ 35 ms p95 regardless of action rate.
+- **Geography is a named non-client lever.** Sign+send ~150 ms is RTT to Ashburn through the tunnel. The client-side
+  answer is already half four's rule — the ghost renders at click, so felt latency is one frame at any RTT; measure
+  "felt" as click→ghost. Box placement / an EU PoP is an infra decision, out of this brief's scope.
+- **L0 gate addition**: herald logs per-diff fold→publish latency so a 600 ms diff hiccup is attributable (alert above
+  200 ms), instead of surfacing only as a client tail sample.
+- Block-boundary pre-confirm waits (~500 ms worst case) are cadence, accepted — invisible once the ghost carries the
+  pending state.
