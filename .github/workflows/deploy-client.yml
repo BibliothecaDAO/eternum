@@ -75,11 +75,11 @@ jobs:
       - name: Run renderer scene smoke
         env:
           GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
-          HERALD_URL: "https://herald.jcndata.com"
+          HERALD_URL: "https://herald.realms.party"
         run: |
           node ./apps/game/scripts/run-renderer-scene-smoke.mjs \
             --base-url "$GAME_CLIENT_PREVIEW_URL" \
-            --chain appchain \
+            --chain madara \
             --scenes map,hex \
             --artifact-dir /tmp/renderer-scene-smoke-artifacts
 
