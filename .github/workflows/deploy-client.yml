@@ -143,11 +143,13 @@ jobs:
             Cache-Control: public, max-age=300, must-revalidate
           EOF
 
+      # wrangler-action@v3 auto-installs wrangler with `pnpm add`, which pnpm refuses at a workspace root
+      # (ERR_PNPM_ADDING_TO_ROOT). Run wrangler with `pnpm dlx` instead — isolated, no workspace mutation.
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command:
-            pages deploy apps/game/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main
-            --commit-hash=${{ github.sha }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          pnpm dlx wrangler@3 pages deploy apps/game/dist \
+            --project-name="${{ vars.CLOUDFLARE_PAGES_PROJECT }}" \
+            --branch=main --commit-hash="${{ github.sha }}"
