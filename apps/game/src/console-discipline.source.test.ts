@@ -79,11 +79,6 @@ const CAPTURED_WARN_ERROR_SITES = [
     forbidden: 'console.error("Transaction failed:", reason, payload.error ?? payload.message)',
   },
   {
-    path: "src/sync/recs-game-sync-store.ts",
-    required: 'appendConsoleFields("[GameSync] authoritative model did not parse into RECS"',
-    forbidden: 'console.error("[GameSync] authoritative model did not parse into RECS", {',
-  },
-  {
     path: "src/three/scenes/worldmap.tsx",
     required: "console.warn(formatWorldmapChunkWarning(event, details))",
     forbidden: "console.warn(`[WorldmapChunk] ${event}`, details)",

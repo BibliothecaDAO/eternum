@@ -23,7 +23,6 @@ describe("buildHeraldGameStreamUrl", () => {
       entityModels: [],
       eventModels: [],
       gameId: 54,
-      logging: false,
       onSnapshotProgress,
       setup: { network: { contractComponents: {} } } as never,
     });

@@ -33,7 +33,6 @@ const getEntityModels = (): string[] =>
 
 // initial sync runs before the game is playable and should sync minimal data
 type InitialSyncOptions = {
-  logging?: boolean;
   reportProgress?: boolean;
 };
 
@@ -43,7 +42,15 @@ const recordGamewideSubscriptionActive = (): void => {
   connection.recordSpatialHandshake();
 };
 
+// The connection store is a React store: every write re-renders its readers, so liveness is
+// recorded at most four times a second however fast the batches arrive.
+const LIVENESS_RECORD_INTERVAL_MS = 250;
+let livenessRecordedAt = 0;
+
 const recordGamewideLiveUpdate = (): void => {
+  const now = Date.now();
+  if (now - livenessRecordedAt < LIVENESS_RECORD_INTERVAL_MS) return;
+  livenessRecordedAt = now;
   const connection = useConnectionStore.getState();
   connection.recordGlobalUpdate();
   connection.recordSpatialUpdate();
@@ -56,7 +63,6 @@ const snapshotProgressPercentage = ({ completed, phase, total }: GameSyncSnapsho
 
 const createActiveGamewideSyncSession = (input: {
   setup: SetupResult;
-  logging: boolean;
   reportProgress: InitialSyncProgressReporter;
 }) => {
   return createHeraldGameSyncSession({
@@ -65,7 +71,6 @@ const createActiveGamewideSyncSession = (input: {
     entityModels: getEntityModels(),
     eventModels: getEventModels(),
     gameId: getScopedGameId(),
-    logging: input.logging,
     onSubscriptionActive: recordGamewideSubscriptionActive,
     onLiveUpdate: recordGamewideLiveUpdate,
     onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
@@ -163,11 +168,9 @@ const runInitialSyncTask = async ({
 
 const startAuthoritativeGameSyncSession = async ({
   setup,
-  logging,
   reportProgress,
 }: {
   setup: SetupResult;
-  logging: boolean;
   reportProgress: InitialSyncProgressReporter;
 }): Promise<void> => {
   const startedAt = performance.now();
@@ -176,7 +179,6 @@ const startAuthoritativeGameSyncSession = async ({
     await runtime.startSession(
       createActiveGamewideSyncSession({
         setup,
-        logging,
         reportProgress,
       }),
     );
@@ -232,14 +234,12 @@ export const initialSync = async (
   setInitialSyncProgress: (progress: number) => void,
   options: InitialSyncOptions = {},
 ): Promise<void> => {
-  const logging = options.logging ?? false;
   const reportProgress = createInitialSyncProgressReporter(options.reportProgress ?? true, setInitialSyncProgress);
 
   verboseLog("[STARTING game sync]");
   reportProgress(0);
   await startAuthoritativeGameSyncSession({
     setup,
-    logging,
     reportProgress,
   });
   selectInitialStructure(setup, state, reportProgress);

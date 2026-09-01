@@ -69,6 +69,11 @@ interface Deferred<Value> {
   settled: boolean;
 }
 
+interface EntityDelivery {
+  preconfirmed: boolean;
+  transactionHash?: string;
+}
+
 type StoredRow = HeraldSet;
 
 export interface HeraldGameSyncTransportOptions {
@@ -103,7 +108,6 @@ const deferred = <Value>(): Deferred<Value> => {
 };
 
 const rowIdentity = (model: string, key: string): string => `${model}:${key}`;
-const utf8Encoder = new TextEncoder();
 
 const toEntity = ({ key, model, value }: StoredRow): GameSyncEntity => ({
   hashed_keys: key,
@@ -115,13 +119,35 @@ const toRemoval = ({ key, model }: HeraldDelete): GameSyncEntity => ({
   models: { [model]: {} },
 });
 
+/** Herald rows are JSON records; two deliveries of the same value are one fact, not two RECS writes. */
+const isSameRowValue = (left: unknown, right: unknown): boolean => {
+  if (left === right) return true;
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) return false;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => isSameRowValue(item, right[index]))
+    );
+  }
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord);
+  return (
+    leftKeys.length === Object.keys(rightRecord).length &&
+    leftKeys.every((key) => key in rightRecord && isSameRowValue(leftRecord[key], rightRecord[key]))
+  );
+};
+
 export class HeraldGameSyncTransport implements GameSyncTransport {
   public readonly transactionStatusChannel = true;
   private readonly reconnectMs: number;
   private readonly socketFactory: (url: string) => HeraldSocket;
-  private readonly confirmedRows = new Map<string, StoredRow>();
+  // The one client-side copy of what herald has delivered: confirmed rows and the pre-confirmed
+  // overlay alike. Herald publishes the overlay as a delta with explicit reverts, so a row keeps
+  // its value until a diff changes it; `overlay_reset` carries no rows of its own.
   private readonly currentRows = new Map<string, StoredRow>();
-  private readonly pendingRows = new Set<string>();
   private handlers?: GameSyncSubscriptionHandlers;
   private initialSnapshot = deferred<{ items: GameSyncEntity[] }>();
   private ready = deferred<void>();
@@ -159,9 +185,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.handlers = handlers;
     this.ready = deferred<void>();
     this.initialSnapshot = deferred<{ items: GameSyncEntity[] }>();
-    this.confirmedRows.clear();
     this.currentRows.clear();
-    this.pendingRows.clear();
     this.snapshotRows = undefined;
     this.epoch = "";
     this.seq = 0;
@@ -197,7 +221,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         return;
       }
       if (message.type === "snapshot") {
-        this.acceptSnapshotChunk(message, utf8Encoder.encode(serialized).byteLength);
+        this.acceptSnapshotChunk(message, serialized.length);
         return;
       }
       if (message.type === "snapshot_end") {
@@ -270,9 +294,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     }
 
     if (message.type === "diff") this.acceptDiff(message);
-    else if (message.type === "overlay_reset") this.resetOverlay();
     else if (message.type === "tx") this.acceptTransaction(message);
-    else this.acceptHead(message);
+    else if (message.type === "head") this.acceptHead(message);
     this.seq = message.seq;
   }
 
@@ -287,57 +310,43 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptDiff(message: Extract<HeraldMessage, { type: "diff" }>): void {
     const entities = [
-      ...message.set.flatMap((change) => this.acceptSet(change, message.preconfirmed)),
-      ...message.del.flatMap((change) => this.acceptDelete(change, message.preconfirmed)),
+      ...message.set.flatMap((change) => this.acceptSet(change)),
+      ...message.del.flatMap((change) => this.acceptDelete(change)),
     ];
-    if (entities.length === 0) return;
-    if (this.handlers?.onEntityBatch) {
-      this.handlers.onEntityBatch({
-        entities,
-        preconfirmed: message.preconfirmed,
-        ...(message.transaction_hash ? { transactionHash: message.transaction_hash } : {}),
-      });
-      return;
-    }
-    entities.forEach((entity) => this.handlers?.onEntity(entity));
+    this.deliverEntities(entities, {
+      preconfirmed: message.preconfirmed,
+      ...(message.transaction_hash ? { transactionHash: message.transaction_hash } : {}),
+    });
   }
 
-  private acceptSet(change: HeraldSet, preconfirmed: boolean): GameSyncEntity[] {
+  private acceptSet(change: HeraldSet): GameSyncEntity[] {
     if (getGameSyncModel(change.model).deletion === "event-ephemeral") {
       this.handlers?.onEvent(toEntity(change));
       return [];
     }
 
     const identity = rowIdentity(change.model, change.key);
-    if (preconfirmed) this.pendingRows.add(identity);
-    else this.confirmedRows.set(identity, change);
+    const current = this.currentRows.get(identity);
+    if (current && isSameRowValue(current.value, change.value)) return [];
     this.currentRows.set(identity, change);
     return [toEntity(change)];
   }
 
-  private acceptDelete(change: HeraldDelete, preconfirmed: boolean): GameSyncEntity[] {
+  // A delete is delivered even when the row is unknown here: removing an absent component is
+  // free, and it keeps RECS honest for rows that reached it outside this stream.
+  private acceptDelete(change: HeraldDelete): GameSyncEntity[] {
     if (getGameSyncModel(change.model).deletion === "event-ephemeral") return [];
-
-    const identity = rowIdentity(change.model, change.key);
-    if (preconfirmed) this.pendingRows.add(identity);
-    else this.confirmedRows.delete(identity);
-    this.currentRows.delete(identity);
+    this.currentRows.delete(rowIdentity(change.model, change.key));
     return [toRemoval(change)];
   }
 
-  private resetOverlay(): void {
-    this.pendingRows.forEach((identity) => {
-      const current = this.currentRows.get(identity);
-      const confirmed = this.confirmedRows.get(identity);
-      if (confirmed) {
-        this.currentRows.set(identity, confirmed);
-        this.handlers?.onEntity(toEntity(confirmed));
-      } else if (current) {
-        this.currentRows.delete(identity);
-        this.handlers?.onEntity(toRemoval(current));
-      }
-    });
-    this.pendingRows.clear();
+  private deliverEntities(entities: GameSyncEntity[], delivery: EntityDelivery): void {
+    if (entities.length === 0) return;
+    if (this.handlers?.onEntityBatch) {
+      this.handlers.onEntityBatch({ entities, ...delivery });
+      return;
+    }
+    entities.forEach((entity) => this.handlers?.onEntity(entity));
   }
 
   private acceptTransaction(message: Extract<HeraldMessage, { type: "tx" }>): void {
@@ -355,22 +364,23 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.handlers?.onHead?.(head);
   }
 
+  /** A fresh snapshot after a failed resume: one batch carrying only what the world changed while we were away. */
   private reconcileSnapshot(rows: Map<string, StoredRow>): void {
+    const entities: GameSyncEntity[] = [];
     this.currentRows.forEach((row, identity) => {
-      if (!rows.has(identity)) this.handlers?.onEntity(toRemoval(row));
+      if (!rows.has(identity)) entities.push(toRemoval(row));
     });
-    rows.forEach((row) => this.handlers?.onEntity(toEntity(row)));
+    rows.forEach((row, identity) => {
+      const current = this.currentRows.get(identity);
+      if (!current || !isSameRowValue(current.value, row.value)) entities.push(toEntity(row));
+    });
     this.replaceState(rows);
+    this.deliverEntities(entities, { preconfirmed: false });
   }
 
   private replaceState(rows: Map<string, StoredRow>): void {
-    this.confirmedRows.clear();
     this.currentRows.clear();
-    rows.forEach((row, identity) => {
-      this.confirmedRows.set(identity, row);
-      this.currentRows.set(identity, row);
-    });
-    this.pendingRows.clear();
+    rows.forEach((row, identity) => this.currentRows.set(identity, row));
   }
 
   private parseMessage(data: string): HeraldMessage {

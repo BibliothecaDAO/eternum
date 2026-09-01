@@ -86,7 +86,7 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
-  it("hydrates a snapshot and restores a replaced pre-confirmed overlay", async () => {
+  it("hydrates a snapshot and keeps a pre-confirmed row through an overlay reset", async () => {
     const harness = streamHarness();
     const subscribed = harness.transport.subscribe(harness.handlers);
     const socket = harness.sockets[0]!;
@@ -106,11 +106,64 @@ describe("HeraldGameSyncTransport", () => {
 
     socket.receive(diff("epoch-a", 1, "0x1", 2, true));
     socket.receive({ confirmed_block: 12, epoch: "epoch-a", seq: 2, type: "overlay_reset" });
+    socket.receive(diff("epoch-a", 3, "0x1", 2, false));
+    socket.receive(diff("epoch-a", 4, "0x1", 1, true));
 
+    // The reset carries no rows and the confirmed diff repeats the pending value: neither reaches RECS.
     expect(harness.entities).toEqual([
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },
     ]);
+  });
+
+  it("delivers a reconciled snapshot as one batch of changed rows only", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const batches: unknown[] = [];
+    harness.handlers.onEntityBatch = (batch) => batches.push(batch);
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const first = harness.sockets[0]!;
+    first.receive(hello("epoch-a", 0));
+    await subscribed;
+    first.receive({
+      epoch: "epoch-a",
+      model: "ExplorerTroops",
+      rows: [
+        { key: "0x1", value: { game_id: "0x36", value: 1 } },
+        { key: "0x2", value: { game_id: "0x36", value: 2 } },
+      ],
+      seq: 0,
+      type: "snapshot",
+    });
+    first.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
+    await harness.transport.fetchSnapshotPage();
+
+    first.close();
+    await vi.advanceTimersByTimeAsync(200);
+    const restarted = harness.sockets[1]!;
+    restarted.receive(hello("epoch-b", 0));
+    restarted.receive({
+      epoch: "epoch-b",
+      model: "ExplorerTroops",
+      rows: [
+        { key: "0x1", value: { game_id: "0x36", value: 1 } },
+        { key: "0x3", value: { game_id: "0x36", value: 3 } },
+      ],
+      seq: 0,
+      type: "snapshot",
+    });
+    restarted.receive({ epoch: "epoch-b", seq: 0, type: "snapshot_end" });
+
+    expect(batches).toEqual([
+      {
+        entities: [
+          { hashed_keys: "0x2", models: { ExplorerTroops: {} } },
+          { hashed_keys: "0x3", models: { ExplorerTroops: { game_id: "0x36", value: 3 } } },
+        ],
+        preconfirmed: false,
+      },
+    ]);
+    expect(harness.entities).toEqual([]);
   });
 
   it("applies snapshot-boundary overlay transactions before the live sequence", async () => {
@@ -132,8 +185,6 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.entities).toEqual([
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
       { hashed_keys: "0x2", models: { ExplorerTroops: { game_id: "0x36", value: 3 } } },
-      { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },
-      { hashed_keys: "0x2", models: { ExplorerTroops: {} } },
     ]);
   });
 

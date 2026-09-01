@@ -4,16 +4,19 @@ import type {
   GameSyncSessionStart,
   GameSyncStore,
 } from "@bibliothecadao/eternum/game-sync";
-import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
-import { getComponentEntities, getComponentValue, removeComponent, Type as RecsType } from "@dojoengine/recs";
-import { setEntities } from "@dojoengine/state";
-import { appendConsoleFields } from "@/utils/console-message";
+import type { Component, ComponentValue, Entity, Metadata, Schema } from "@dojoengine/recs";
+import {
+  getComponentEntities,
+  hasComponent,
+  removeComponent,
+  setComponent,
+  Type as RecsType,
+  updateComponent,
+} from "@dojoengine/recs";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 
-interface DojoEntity {
-  hashed_keys: string;
-  models: Record<string, unknown>;
-}
+type ValueCoercer = (value: unknown) => unknown;
+type AuthoritativeComponent = Component<Schema, Metadata, undefined>;
 
 const qualifiedComponentName = (component: Component): string | null => {
   const namespace = component.metadata?.namespace;
@@ -21,18 +24,13 @@ const qualifiedComponentName = (component: Component): string | null => {
   return namespace && name ? `${namespace}-${name}` : null;
 };
 
-// Event components live nested under `events`. RECS writes need every component in
-// one flat list — a component missing from the list makes setEntities skip its rows
-// silently, which is how the entire event stream went dark for chest reveals.
+// Event components live nested under `events`. The lookup needs every component in one flat
+// list; a sync model without a component would otherwise be dropped silently.
 const flattenContractComponents = (
   contractComponents: SetupResult["network"]["contractComponents"],
-): Component<Schema, Metadata, undefined>[] => {
+): AuthoritativeComponent[] => {
   const { events, ...modelComponents } = contractComponents;
-  return [...Object.values(modelComponents), ...Object.values(events ?? {})] as unknown as Component<
-    Schema,
-    Metadata,
-    undefined
-  >[];
+  return [...Object.values(modelComponents), ...Object.values(events ?? {})] as unknown as AuthoritativeComponent[];
 };
 
 const reportUnresolvableSyncModels = (lookup: Map<string, Component>, models: readonly string[]): void => {
@@ -52,21 +50,7 @@ const createComponentLookup = (components: readonly Component[]): Map<string, Co
   return lookup;
 };
 
-const buildDojoTypedValue = (type: string, value: unknown): Record<string, unknown> => ({
-  key: false,
-  type,
-  type_name: "",
-  value,
-});
-
-const DOJO_ARRAY_ITEM_TYPES = new Map<RecsType, RecsType>([
-  [RecsType.NumberArray, RecsType.Number],
-  [RecsType.BigIntArray, RecsType.BigInt],
-  [RecsType.StringArray, RecsType.String],
-  [RecsType.EntityArray, RecsType.Entity],
-]);
-
-const DOJO_OPTIONAL_VALUE_TYPES = new Map<RecsType, RecsType>([
+const OPTIONAL_VALUE_TYPES = new Map<RecsType, RecsType>([
   [RecsType.OptionalNumber, RecsType.Number],
   [RecsType.OptionalBigInt, RecsType.BigInt],
   [RecsType.OptionalString, RecsType.String],
@@ -77,12 +61,6 @@ const DOJO_OPTIONAL_VALUE_TYPES = new Map<RecsType, RecsType>([
   [RecsType.OptionalEntityArray, RecsType.EntityArray],
   [RecsType.OptionalT, RecsType.T],
 ]);
-
-const isDojoTypedValue = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" &&
-  value !== null &&
-  typeof (value as Record<string, unknown>).type === "string" &&
-  Object.hasOwn(value, "value");
 
 const requireGameSyncRecord = (value: unknown): Record<string, unknown> => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -96,124 +74,140 @@ const requireGameSyncArray = (value: unknown): unknown[] => {
   return value;
 };
 
-const encodeGameSyncValueForDojo = (schema: unknown, value: unknown): Record<string, unknown> => {
-  if (isDojoTypedValue(value)) return value;
-
-  if (Array.isArray(schema)) {
-    return buildDojoTypedValue(
-      "array",
-      requireGameSyncArray(value).map((item) => encodeGameSyncValueForDojo(schema[0], item)),
-    );
+// Herald encodes felts as decimal or 0x-prefixed strings; a bare hex string is the last resort
+// before the raw value goes through, which is loud in the console rather than a silent zero.
+const coerceBigInt = (value: unknown): unknown => {
+  if (typeof value === "bigint") return value;
+  try {
+    return BigInt(value as string);
+  } catch {
+    try {
+      return BigInt(`0x${String(value)}`);
+    } catch {
+      console.warn(`[GameSync] ${String(value)} is not a felt; keeping the raw value`);
+      return value;
+    }
   }
+};
 
-  if (typeof schema === "object" && schema !== null) {
-    const fields = requireGameSyncRecord(value);
-    return buildDojoTypedValue(
-      "struct",
-      Object.fromEntries(
-        Object.entries(schema).flatMap(([field, fieldSchema]) =>
-          Object.hasOwn(fields, field) ? [[field, encodeGameSyncValueForDojo(fieldSchema, fields[field])]] : [],
-        ),
-      ),
-    );
+// StringArray members hold felts or enum names: felts become bigint, names stay strings.
+const coerceStringArrayItem = (item: unknown): unknown => {
+  try {
+    return BigInt(item as string);
+  } catch {
+    return item;
   }
+};
+
+const compileArrayCoercer = (coerceItem: ValueCoercer): ValueCoercer => {
+  return (value) => requireGameSyncArray(value).map(coerceItem);
+};
+
+const compileRecordCoercer = (schema: Record<string, unknown>): ValueCoercer => {
+  const fields = Object.entries(schema).map(
+    ([field, fieldSchema]) => [field, compileValueCoercer(fieldSchema)] as const,
+  );
+  return (value) => {
+    const record = requireGameSyncRecord(value);
+    const coerced: Record<string, unknown> = {};
+    for (const [field, coerce] of fields) {
+      if (Object.hasOwn(record, field)) coerced[field] = coerce(record[field]);
+    }
+    return coerced;
+  };
+};
+
+const compilePrimitiveCoercer = (recsType: RecsType): ValueCoercer => {
+  switch (recsType) {
+    case RecsType.Number:
+      return (value) => Number(value);
+    case RecsType.BigInt:
+      return coerceBigInt;
+    case RecsType.NumberArray:
+      return compileArrayCoercer((item) => Number(item));
+    case RecsType.BigIntArray:
+      return compileArrayCoercer(coerceBigInt);
+    case RecsType.StringArray:
+      return compileArrayCoercer(coerceStringArrayItem);
+    default:
+      return (value) => value;
+  }
+};
+
+/** One coercer per schema node, compiled once per component: the herald JSON row becomes the typed RECS value. */
+const compileValueCoercer = (schema: unknown): ValueCoercer => {
+  if (Array.isArray(schema)) return compileArrayCoercer(compileValueCoercer(schema[0]));
+  if (typeof schema === "object" && schema !== null) return compileRecordCoercer(schema as Record<string, unknown>);
 
   const recsType = schema as RecsType;
-  const optionalType = DOJO_OPTIONAL_VALUE_TYPES.get(recsType);
+  const optionalType = OPTIONAL_VALUE_TYPES.get(recsType);
   if (optionalType !== undefined) {
-    return {
-      ...buildDojoTypedValue("enum", {
-        option: value == null ? "None" : "Some",
-        value: value == null ? undefined : encodeGameSyncValueForDojo(optionalType, value),
-      }),
-      type_name: "Option",
-    };
+    const coerceInner = compileValueCoercer(optionalType);
+    return (value) => (value == null ? null : coerceInner(value));
   }
-
-  const itemType = DOJO_ARRAY_ITEM_TYPES.get(recsType);
-  if (itemType !== undefined) {
-    return buildDojoTypedValue(
-      "array",
-      requireGameSyncArray(value).map((item) => encodeGameSyncValueForDojo(itemType, item)),
-    );
-  }
-
-  return buildDojoTypedValue("primitive", value);
+  return compilePrimitiveCoercer(recsType);
 };
 
-const encodeGameSyncModelForDojo = (component: Component, value: unknown): Record<string, unknown> => {
-  const fields = requireGameSyncRecord(value);
-  return Object.fromEntries(
-    Object.entries(component.schema).flatMap(([field, schema]) =>
-      Object.hasOwn(fields, field) ? [[field, encodeGameSyncValueForDojo(schema, fields[field])]] : [],
-    ),
-  );
+const createComponentCoercers = () => {
+  const coercers = new Map<Component, ValueCoercer>();
+  return (component: Component): ValueCoercer => {
+    let coercer = coercers.get(component);
+    if (!coercer) {
+      coercer = compileRecordCoercer(component.schema as Record<string, unknown>);
+      coercers.set(component, coercer);
+    }
+    return coercer;
+  };
 };
 
-export const createRecsGameSyncStore = (
-  setup: SetupResult,
-  logging: boolean,
-  syncModels: readonly string[],
-): GameSyncStore => {
+export const createRecsGameSyncStore = (setup: SetupResult, syncModels: readonly string[]): GameSyncStore => {
   const authoritativeComponents = flattenContractComponents(setup.network.contractComponents);
   const authoritativeComponentLookup = createComponentLookup(authoritativeComponents);
   reportUnresolvableSyncModels(authoritativeComponentLookup, syncModels);
-  const applyOperations = async (operations: readonly GameSyncEntityStoreOperation[]) => {
-    for (const operation of operations) {
-      if (operation.type === "upsert") {
-        const dojoEntities = operation.entities.map((entity) => ({
-          ...entity,
-          models: Object.fromEntries(
-            Object.entries(entity.models).map(([model, value]) => {
-              const component = authoritativeComponentLookup.get(model);
-              if (!component) return [model, value];
-              return [qualifiedComponentName(component) ?? model, encodeGameSyncModelForDojo(component, value)];
-            }),
-          ),
-        }));
-        await setEntities(dojoEntities as never[], authoritativeComponents, logging);
-        operation.entities.forEach((entity) => {
-          Object.keys(entity.models).forEach((model) => {
-            const component = authoritativeComponentLookup.get(model);
-            if (!component) return;
-            const value = getComponentValue(component, entity.hashed_keys as Entity) as
-              | Record<string, unknown>
-              | undefined;
-            if (!value) {
-              if (import.meta.env.DEV) {
-                console.error(
-                  appendConsoleFields("[GameSync] authoritative model did not parse into RECS", {
-                    entity_id: entity.hashed_keys,
-                    model,
-                  }),
-                );
-              }
-              return;
-            }
-          });
-        });
-        continue;
-      }
-      if (operation.type === "delete-entity") {
-        setup.network.world.deleteEntity(operation.entityId as Entity);
-        continue;
-      }
+  const coercerFor = createComponentCoercers();
 
-      operation.models.forEach((model) => {
+  // Herald rows can be partial member updates, so an existing row merges instead of being replaced.
+  const writeRow = (component: Component, entity: Entity, value: unknown): void => {
+    const coerced = coercerFor(component)(value) as ComponentValue<Schema>;
+    if (hasComponent(component, entity)) updateComponent(component, entity, coerced);
+    else setComponent(component, entity, coerced);
+  };
+
+  const applyUpsert = (entities: Extract<GameSyncEntityStoreOperation, { type: "upsert" }>["entities"]): void => {
+    for (const entity of entities) {
+      for (const [model, value] of Object.entries(entity.models)) {
         const component = authoritativeComponentLookup.get(model);
-        if (!component) return;
-        removeComponent(component, operation.entityId as Entity);
-      });
+        if (component) writeRow(component, entity.hashed_keys as Entity, value);
+      }
     }
   };
 
+  const applyOperation = (operation: GameSyncEntityStoreOperation): void => {
+    if (operation.type === "upsert") {
+      applyUpsert(operation.entities);
+      return;
+    }
+    if (operation.type === "delete-entity") {
+      setup.network.world.deleteEntity(operation.entityId as Entity);
+      return;
+    }
+    operation.models.forEach((model) => {
+      const component = authoritativeComponentLookup.get(model);
+      if (component) removeComponent(component, operation.entityId as Entity);
+    });
+  };
+
   return {
-    applyEntityOperations: applyOperations,
-    async applyEvent(event) {
-      await setEntities([event] as DojoEntity[], authoritativeComponents, logging);
-      Object.keys(event.models).forEach((model) => {
+    applyEntityOperations(operations) {
+      operations.forEach(applyOperation);
+    },
+    // Event rows are ephemera: the write fires the RECS update stream, the removal keeps no row behind.
+    applyEvent(event) {
+      Object.entries(event.models).forEach(([model, value]) => {
         const component = authoritativeComponentLookup.get(model);
-        if (component) removeComponent(component, event.hashed_keys as Entity);
+        if (!component) return;
+        writeRow(component, event.hashed_keys as Entity, value);
+        removeComponent(component, event.hashed_keys as Entity);
       });
     },
     listModelEntityIds(model) {

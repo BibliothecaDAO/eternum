@@ -231,6 +231,48 @@ change can produce one), add a loud dev warn if that ever changes; the deployed-
 runtime flag on the dev server — sanity-check `?dev` once on the next real deploy; M.3's live ratio stays owed to Phase
 1's measurement game.
 
+Recorded, phase 1 (2026-09-01, branch `client-scale-96p`; L0 + L1 + L2 + the submit guard). Same setup as phase M (dev
+server, headless Brave on software WebGL2, spectating game 11, finished, so live churn is 0), and the box still runs the
+pre-phase herald, which is the compatibility case the client must handle. "Before" is phase M's after.
+
+| Measurement (game 11, spectate, software WebGL2) | Before (phase M)                   | After phase 1                                                        |
+| ------------------------------------------------ | ---------------------------------- | -------------------------------------------------------------------- |
+| snapshot receive / apply (7,217 rows)            | 878 / 154 ms (reviewer: 903 / 219) | 749 / 148 ms                                                         |
+| store writes for the snapshot, max batch apply   | 3, 91 ms (reviewer 102)            | 5, 44 ms                                                             |
+| sync-owned spike digests over 150 s              | 0 of 187                           | 0 of 311 (`render:backend` 310, terrain 1)                           |
+| `frameBudgetLongTasks` at boot, then over 60 s   | 3 (max 47 ms), +0                  | 3 (max 54 ms, terrain commit), +0                                    |
+| heap after boot, then over 60 s                  | 376 → 378 MB                       | 309 → 310 MB                                                         |
+| live rows received / component writes applied    | 0 / 0 (finished game)              | 0 / 0 — the 1.0 ratio is owed to the live game                       |
+| calls_built → sign_send_started p95              | not measured                       | owed to a joinable live game (unit-proven below)                     |
+| herald rows received per head / rows changed     | not measured                       | owed: box runs the old herald; `lab:probe-herald` after the redeploy |
+
+What changed, by layer. L0 (`apps/herald`): `rebuildOverlay` publishes only rows whose value differs from what
+subscribers hold (an `OverlayLedger` at the one pre-confirmed publish chokepoint; a confirmed diff forgets its row so a
+rebuilt row the head moved is still published) and publishes explicit reverts for overlay rows the rebuilt block no
+longer carries (`set` to the confirmed row, `del` when confirmed has none); `publish` stringifies once and the ring
+keeps the string; `DiffLatencyMonitor` logs `herald_diff_slow` over 200 ms and a per-kind digest per minute. Same
+message shapes, epoch/seq and resume; `overlay_reset` is still published at every head. L1 (transport): one
+`currentRows` map; a `set` whose value equals the held row is not delivered, a delete always is; `overlay_reset` carries
+no rows (herald reverts explicitly), so the client never reverts on its own — `confirmedRows`, `pendingRows` and
+`resetOverlay` are gone; a fresh snapshot after a failed resume reconciles into one `onEntityBatch` of changed rows;
+manifest lookup is a `Map`; bytes come from `serialized.length`. Deploy order: the client before herald — an old client
+against the delta herald would revert a pending row at reset and show the confirmed value until the row's next diff (≤
+one block). L2 (ingest): the Torii typed-value envelope, `@dojoengine/state`'s `setEntities` (and the dependency) and
+the per-entity promise chain are deleted; one coercer compiled per component schema writes each row with
+`setComponent`/`updateComponent`; `recs-game-sync-store.parity.test.ts` feeds 50 real game-11 rows across 20 models plus
+partial updates and matches the legacy output verbatim (`recs-game-sync-store.parity.json`), except that NumberArray
+members (`Structure.troop_explorers`, `BlitzSettlement.structure_ids`) were reaching RECS as raw envelope objects under
+the legacy path and now arrive as numbers; the ingest slice iterates the pending map in place (O(batch));
+`MAX_APPLY_SLICE_MS` 25 → 6 (a store write stays capped at 1,000 rows, which is why the snapshot lands in 5 writes
+rather than 25 frames — live batches are far below the cap, so the 6 ms slice governs them); liveness is one callback
+per batch, the connection store is written at most every 250 ms; `DevSyncOverlay` mounts only under `DEV_MODE_ENABLED`;
+the dead `logging` flag went with `setEntities`. Submit guard: nonces are dispensed locally per account (one shared
+pre-confirmed read per burst, FIFO), sign+send fires without waiting on any other action, a failed send resyncs and a
+nonce rejection retries once; the provider's promise queue drains synchronously and fires batches without awaiting the
+previous one (batching rules unchanged); explores of the same explorer still serialise by design until the ghost makes
+the next click relative to the pending position. Unit evidence: a 20-action burst is fully in flight from one nonce
+read; 10 actions are signed in the same macrotask while sends take 150 ms.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

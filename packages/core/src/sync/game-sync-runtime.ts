@@ -65,7 +65,7 @@ export class GameSyncRuntime {
   private ingestQueue: EntityIngestQueue | null = null;
   private worldSpatialProjection: WorldSpatialProjection | null = null;
   private recentEventIdentities = new Map<string, true>();
-  private liveUpdateTimestamps: number[] = [];
+  private liveUpdateSamples: Array<{ at: number; count: number }> = [];
   private receiveSequence = 0;
   private metrics = createEmptyMetrics();
   private recentTransactions = new Map<string, GameSyncTransaction>();
@@ -126,7 +126,7 @@ export class GameSyncRuntime {
     this.rejectTransactionWaiters("Game sync session was replaced");
     this.recentTransactions.clear();
     this.localTransactions.clear();
-    this.liveUpdateTimestamps = [];
+    this.liveUpdateSamples = [];
     this.receiveSequence = 0;
     this.snapshotAppliedOperations = 0;
     this.snapshotExpectedOperations = 0;
@@ -206,13 +206,13 @@ export class GameSyncRuntime {
         onEntity: (entity) => {
           if (!this.isCurrentGeneration(generation)) return;
           const update = { entity, receiveSequence: ++this.receiveSequence };
-          this.recordLiveUpdate("entity");
+          this.recordLiveUpdates("entity", 1);
           if (this.status === "running") this.ingestQueue?.enqueueEntity(entity);
           else bufferedUpdates.push(update);
         },
         onEntityBatch: (batch) => {
           if (!this.isCurrentGeneration(generation)) return;
-          batch.entities.forEach(() => this.recordLiveUpdate("entity"));
+          this.recordLiveUpdates("entity", batch.entities.length);
           if (this.status !== "running") {
             batch.entities.forEach((entity) => {
               bufferedUpdates.push({ entity, receiveSequence: ++this.receiveSequence });
@@ -236,7 +236,7 @@ export class GameSyncRuntime {
         },
         onEvent: (event) => {
           if (!this.isCurrentGeneration(generation)) return;
-          this.recordLiveUpdate("event");
+          this.recordLiveUpdates("event", 1);
           this.enqueueEventOnce(event);
         },
         onEventGapFill: (replayedEventCount) => {
@@ -387,17 +387,20 @@ export class GameSyncRuntime {
     this.publishMetrics();
   }
 
-  private recordLiveUpdate(kind: "entity" | "event"): void {
+  /** Liveness is a per-batch fact: one callback per delivery, however many rows it carried. */
+  private recordLiveUpdates(kind: "entity" | "event", count: number): void {
     const session = this.session;
-    if (!session) return;
+    if (!session || count === 0) return;
 
-    if (kind === "entity") this.metrics.totalLiveEntityUpdates += 1;
-    else this.metrics.totalLiveEventUpdates += 1;
+    if (kind === "entity") this.metrics.totalLiveEntityUpdates += count;
+    else this.metrics.totalLiveEventUpdates += count;
 
     const now = this.now();
-    this.liveUpdateTimestamps.push(now);
-    while (this.liveUpdateTimestamps[0] < now - 1_000) this.liveUpdateTimestamps.shift();
-    const nextPeak = Math.max(this.metrics.peakLiveUpdatesPerSecond, this.liveUpdateTimestamps.length);
+    this.liveUpdateSamples.push({ at: now, count });
+    while (this.liveUpdateSamples.length > 0 && this.liveUpdateSamples[0].at < now - 1_000)
+      this.liveUpdateSamples.shift();
+    const updatesInWindow = this.liveUpdateSamples.reduce((sum, sample) => sum + sample.count, 0);
+    const nextPeak = Math.max(this.metrics.peakLiveUpdatesPerSecond, updatesInWindow);
     const peakChanged = nextPeak !== this.metrics.peakLiveUpdatesPerSecond;
     this.metrics.peakLiveUpdatesPerSecond = nextPeak;
     session.onLiveUpdate?.(kind);

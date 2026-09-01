@@ -20,7 +20,6 @@ interface CreateHeraldGameSyncSessionInput {
   entityModels: readonly string[];
   eventModels: readonly string[];
   gameId: number;
-  logging: boolean;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
@@ -74,7 +73,7 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
     },
     scheduler: createBrowserScheduler(),
     snapshotModels: input.entityModels,
-    store: createRecsGameSyncStore(input.setup, input.logging, syncModels),
+    store: createRecsGameSyncStore(input.setup, syncModels),
     transport: new HeraldGameSyncTransport({
       url: buildHeraldGameStreamUrl(input.baseUrl, input.chain, input.gameId),
     }),

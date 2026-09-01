@@ -56,7 +56,6 @@
     "@cartridge/connector": "catalog:game",
     "@cartridge/controller": "catalog:game",
     "@dojoengine/core": "catalog:game",
-    "@dojoengine/state": "catalog:game",
     "@headlessui/react": "^2.2.0",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/react-select": "^2.0.0",

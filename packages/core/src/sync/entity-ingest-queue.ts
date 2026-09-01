@@ -51,7 +51,8 @@ interface EntityIngestQueueOptions {
 const isEmptyModel = (model: unknown): boolean =>
   typeof model === "object" && model !== null && !Array.isArray(model) && Object.keys(model).length === 0;
 
-const MAX_APPLY_SLICE_MS = 25;
+// One frame's budget, the same number the scene's work queue uses.
+const MAX_APPLY_SLICE_MS = 6;
 // The wall-clock slice is the normal yield boundary. This cap only protects
 // against a pathological delivery growing a single store write without bound.
 const MAX_ENTITY_CHANGES_PER_STORE_WRITE = 1_000;
@@ -282,9 +283,12 @@ export class EntityIngestQueue {
       }
 
       const remainingCapacity = MAX_ENTITY_CHANGES_PER_STORE_WRITE - entityChangeCount;
-      const entries = [...step.entities.entries()].slice(0, remainingCapacity);
-      const entities = entries.map(([, entity]) => entity);
-      entries.forEach(([entityId]) => step.entities.delete(entityId));
+      const entities: GameSyncEntity[] = [];
+      for (const [entityId, entity] of step.entities) {
+        if (entities.length >= remainingCapacity) break;
+        entities.push(entity);
+        step.entities.delete(entityId);
+      }
       operations.push({ type: "upsert", entities });
       entityChangeCount += entities.length;
       operationCount += entities.reduce((count, entity) => count + Object.keys(entity.models).length, 0);

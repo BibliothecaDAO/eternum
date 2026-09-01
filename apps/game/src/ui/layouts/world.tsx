@@ -54,7 +54,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Tooltip />
         <VersionDisplay />
         <ArmyMovementLatencyOverlay />
-        <DevSyncOverlay />
+        {DEV_MODE_ENABLED && <DevSyncOverlay />}
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>

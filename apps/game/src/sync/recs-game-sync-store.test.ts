@@ -13,7 +13,7 @@ describe("Herald RECS adapter", () => {
     const resourceEntity = "0x00e9c8dc40f9c88691aa427aa07c575b1cdcaaa4c21a71b00c15ee5a7c2fc95" as Entity;
     const world = createWorld();
     const components = defineContractComponents(world, "s2");
-    const store = createRecsGameSyncStore({ network: { contractComponents: components, world } } as never, false, [
+    const store = createRecsGameSyncStore({ network: { contractComponents: components, world } } as never, [
       "WorldConfig",
       "TileOpt",
       "ResourceList",
