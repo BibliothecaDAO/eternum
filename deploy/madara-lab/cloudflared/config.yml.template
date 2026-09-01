@@ -6,6 +6,7 @@
 #   rpc.${LAB_DOMAIN}      Starknet JSON-RPC of the sequencer (paths pass through: /rpc/v0_10_2 works)
 #   herald.${LAB_DOMAIN}   herald HTTP + WebSocket (apps/herald, systemd on the host)
 #   app.${LAB_DOMAIN}      apps/realms (SPA, identity API, binding authority; systemd on the host)
+#   chat.${LAB_DOMAIN}     apps/realtime-server (dev realtime chat: world chat, DMs, presence; systemd on the host)
 #
 # The identity RPC is not proxied any more: the browser calls the public mainnet node directly
 # (VITE_PUBLIC_IDENTITY_RPC_URL), which removes one hop and one config value. The admin RPC and the gateway are
@@ -20,4 +21,6 @@ ingress:
     service: http://host.docker.internal:3003
   - hostname: app.${LAB_DOMAIN}
     service: http://host.docker.internal:3000
+  - hostname: chat.${LAB_DOMAIN}
+    service: http://host.docker.internal:3005
   - service: http_status:404
