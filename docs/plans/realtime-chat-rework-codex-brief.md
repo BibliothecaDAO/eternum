@@ -7,6 +7,13 @@ features **and** the security hardening, as **one build**, because they share a 
 public zone chat + 1:1 DMs, and its entire authorization model guards a **client-asserted identity** (audit 2026-09-01,
 verified first-hand).
 
+## Implementation standard: Effect
+
+Owner mandate (2026-09-01): **our TypeScript uses Effect** (effect-ts). Build this rework in Effect — typed errors,
+`Layer`/services for the identity/herald/db dependencies, structured concurrency for fan-out — matching `apps/realms`
+which already runs on Effect. The chat is a **service**, so Effect is a clean fit (it replaces ad-hoc try/catch + the
+linear session scans with typed effects). Do not carry the current bare Hono/async-await style into the rework.
+
 ## The systemic foundation (everything rests here — build it first)
 
 Two changes, tightly coupled, that are the security fix **and** the feature enabler:
