@@ -27,4 +27,4 @@ export S2_OPERATOR_ADDRESS="${S2_OPERATOR_ADDRESS:-$DOJO_ACCOUNT_ADDRESS}"
 export PLAYER_REGISTRY_ADDRESS="${PLAYER_REGISTRY_ADDRESS:-$(jq -r '.playerRegistryAddress' "$LAB_DIR/.lab/gameplay-contracts.json")}"
 
 echo "==> bootstrap s2 ChainConfig and register Madara preset 1"
-bun "$REPO_ROOT/deploy/appchain/scripts/deploy-s2-world.ts" --environment madara.blitz
+bun "$LAB_DIR/scripts/deploy-s2-world.ts" --environment madara.blitz
