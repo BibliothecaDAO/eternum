@@ -255,14 +255,19 @@ message shapes, epoch/seq and resume; `overlay_reset` is still published at ever
 `currentRows` map; a `set` whose value equals the held row is not delivered, a delete always is; `overlay_reset` carries
 no rows (herald reverts explicitly), so the client never reverts on its own — `confirmedRows`, `pendingRows` and
 `resetOverlay` are gone; a fresh snapshot after a failed resume reconciles into one `onEntityBatch` of changed rows;
-manifest lookup is a `Map`; bytes come from `serialized.length`. Deploy order: the client before herald — an old client
-against the delta herald would revert a pending row at reset and show the confirmed value until the row's next diff (≤
-one block). L2 (ingest): the Torii typed-value envelope, `@dojoengine/state`'s `setEntities` (and the dependency) and
-the per-entity promise chain are deleted; one coercer compiled per component schema writes each row with
-`setComponent`/`updateComponent`; `recs-game-sync-store.parity.test.ts` feeds 50 real game-11 rows across 20 models plus
-partial updates and matches the legacy output verbatim (`recs-game-sync-store.parity.json`), except that NumberArray
-members (`Structure.troop_explorers`, `BlitzSettlement.structure_ids`) were reaching RECS as raw envelope objects under
-the legacy path and now arrive as numbers; the ingest slice iterates the pending map in place (O(batch));
+manifest lookup is a `Map`; bytes come from `serialized.length`. Deploy order (review ruling, 2026-09-02): **herald
+first, client second** — the reverse of the implementation's initial claim. Old client + new herald only degrades
+freshness: it reverts pending rows at reset and shows the confirmed value until the row's next diff (≤ one block,
+self-healing, never a wrong fact). New client + old herald is the dangerous combo: the old herald never publishes
+explicit reverts and the new client rightly never invents one, so a dropped/reverted pre-confirmed transaction (tile
+contention exists in every harness run) leaves a wrong game fact in RECS indefinitely. The box herald must therefore be
+redeployed BEFORE any live game is played or measured against this client. L2 (ingest): the Torii typed-value envelope,
+`@dojoengine/state`'s `setEntities` (and the dependency) and the per-entity promise chain are deleted; one coercer
+compiled per component schema writes each row with `setComponent`/`updateComponent`;
+`recs-game-sync-store.parity.test.ts` feeds 50 real game-11 rows across 20 models plus partial updates and matches the
+legacy output verbatim (`recs-game-sync-store.parity.json`), except that NumberArray members
+(`Structure.troop_explorers`, `BlitzSettlement.structure_ids`) were reaching RECS as raw envelope objects under the
+legacy path and now arrive as numbers; the ingest slice iterates the pending map in place (O(batch));
 `MAX_APPLY_SLICE_MS` 25 → 6 (a store write stays capped at 1,000 rows, which is why the snapshot lands in 5 writes
 rather than 25 frames — live batches are far below the cap, so the 6 ms slice governs them); liveness is one callback
 per batch, the connection store is written at most every 250 ms; `DevSyncOverlay` mounts only under `DEV_MODE_ENABLED`;
@@ -272,6 +277,23 @@ nonce rejection retries once; the provider's promise queue drains synchronously 
 previous one (batching rules unchanged); explores of the same explorer still serialise by design until the ghost makes
 the next click relative to the pending position. Unit evidence: a 20-action burst is fully in flight from one nonce
 read; 10 actions are signed in the same macrotask while sends take 150 ms.
+
+Reviewed 2026-09-02 (Claude, independent reproduction): game-11 table reproduced — snapshot receive/apply 783/166 ms,
+7,217 rows in 4 store writes, max batch apply 48 ms (halved from phase M's 91–102 ms), `frameBudgetLongTasks` 3 at boot
+and +0 over 65 s, heap flat, zero `[GameSync]` coercion warnings across the full real snapshot, 77/78 spike digests
+attributed. Tests reproduced with the real runners: herald vitest 44/45 (the one failure, `model-registry.test.ts`
+expecting 45 persistent models and finding 43, is PRE-EXISTING on `client-scale-audit` — verified by restoring the base
+`model-manifest.ts` — and belongs to the branch's own manifest/registry drift, same class as `worldmap-initial-refresh`;
+flag to the branch owner); core sync 58/58, provider 80/80 (pipelining + explorer serialization + one-tick multicall
+merge all asserted), game sync + parity + account 25/25; typecheck clean; `@dojoengine/state` gone from apps/game deps.
+Diff audit: the transport deletion is real (three structures → one `currentRows`, no client-side revert),
+`OverlayLedger` handles the repeat-value-after-confirm subtlety and late subscribers correctly, the per-explorer
+explore/VRF lock stays with its why-comment, and the NumberArray deviation is inert (no non-test RECS consumer of
+`troop_explorers`; `structure_ids` is read from herald HTTP, not RECS) and strictly better than the envelope objects
+legacy wrote. **Phase 1 approved**, with the deploy-order ruling above replacing the commit's claim. Watch item for the
+live gate: a lost middle nonce in a pipelined burst can strand later transactions in the mempool until the gap refills —
+the harness's failure classes will show it if it happens. Owed to the live game (after the herald redeploy):
+applied/received = 1.0 under churn, no-sync-long-task hold, submit-guard p95, and the wire ratio via `lab:probe-herald`.
 
 ### Order
 
