@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "chain": "madara",
+  "accountAddress": "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+  "owner": {
+    "environment": "madara.blitz",
+    "gameName": "lab-preset6-test",
+    "launchRequestId": "33511238240-1",
+    "workflowName": "Game Launch",
+    "workflowRunId": 33511238240,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "leaseId": "035005a8-30af-456d-ba9b-7bc612da504e"
+  },
+  "acquiredAt": "2026-09-01T13:06:24.316Z",
+  "heartbeatAt": "2026-09-01T13:06:24.316Z",
+  "expiresAt": "2026-09-01T13:16:24.316Z"
+}
