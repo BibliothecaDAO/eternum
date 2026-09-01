@@ -128,6 +128,7 @@ function buildDebugNavigationSections(): SectionConfig[] {
           tab: null,
           href: "/debug/procedural-character-benchmark",
         },
+        { id: "world-fx", label: "FX", tab: null, href: "/debug/world-fx" },
       ],
     },
   ];
