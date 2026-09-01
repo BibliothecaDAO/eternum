@@ -25,8 +25,8 @@ signal.
   `SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = { appchain.eternum, appchain.blitz }` (:357-360); base URL is
   `env.VITE_PUBLIC_FACTORY_WORKER_URL` (:355). The Cloudflare worker itself already accepts `madara.blitz`.
 - **Presets vs the lab.** `catalog.ts` blitz presets carry registrar `version` `"6"`/`"7"`; the lab registered preset
-  `"1"`. Reconcile with backend §D (register 6/7 on the lab, or map madara → `1`). Whatever `version` the UI sends must
-  be a preset registered on the target chain.
+  `"1"`. Backend §D **registers presets 6/7 on the lab and defaults madara to 6**, so the UI sends `6`/`7` **unchanged —
+  no mapping**. (Whatever `version` the UI sends must be registered on the target chain.)
 - **The launch is server-side.** `create-run-request.ts` `buildFactoryCreateRunRequest` POSTs
   environment/gameName/startTime/version/devMode/twoPlayer/singleRealm/duration/overrides to the worker, which
   dispatches `game-launch.yml`; `create_game` runs with the **registrar** key server-side. The **user's wallet is not
@@ -78,9 +78,8 @@ signal.
 
 ## Coordination with the backend brief
 
-- Environment id `madara.blitz`; worker URL via `VITE_PUBLIC_FACTORY_WORKER_URL` → the lab worker; the `version` the UI
-  sends must be a preset registered on the lab (backend §D). Settle the preset question (6/7 on the lab vs map → 1)
-  jointly.
+- Environment id `madara.blitz`; worker URL via `VITE_PUBLIC_FACTORY_WORKER_URL` → the lab worker. Presets: backend §D
+  registers 6/7 on the lab (default 6), so the UI sends 6/7 unchanged — **no mapping needed**.
 
 ## Verifiable gate
 

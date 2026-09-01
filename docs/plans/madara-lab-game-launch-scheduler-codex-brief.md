@@ -50,94 +50,112 @@ dispatch + run-store + scheduling for every environment. Add config rows, don't 
 
 ## The fix
 
-### A. Wire `game-launch.yml` for the lab registrar
+> **Repo changes vs owner-run operations (keep separate).** Codex lands the repo changes; the owner runs the
+> credentialed ops. **Repo:** the registrar/manifest fix (A), the `game-launch.yml` wiring (B), the worker CORS change +
+> `wrangler.toml` (C), the worker rotation-config source + madara YAML (D), the preset-registration script +
+> constant/default change (E). **Owner-run (needs creds):** creating the GitHub Environment and its vars/secrets,
+> deploying the Worker + its secrets, the worker/`chat` DNS, running preset registration against the lab, and the live
+> launch gates.
 
-- Add a GitHub Environment (or input→env binding) for `madara.blitz` carrying: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS` = the
-  lab **registrar/admin** account (the `DOJO_ACCOUNT_ADDRESS` `bootstrap-game` used — **not** the binding authority),
-  `secret GAME_LAUNCH_DOJO_PRIVATE_KEY` = its key, and pass `RPC_URL=https://rpc.realms.party/rpc/v0_10_2` to the CLI.
-- Verify the deployed lab registrar equals `constants.ts` `registrarAddress 0x23d89ba…` and that the committed
-  `contracts/l3/game/manifest_madara.json` `world.address = 0x0750…242b`; reconcile whichever is stale.
+### A. Point launches at the deployed registrar (blocker 1)
+
+- The configured registrar is **stale**: `constants.ts:31` madara `registrarAddress = 0x23d89…e9a5` returns "Contract
+  not found" on the live RPC. The **deployed** registrar is the manifest's `s2-registrar_systems`
+  `0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553` (world `0x7500…242b`). `calls.ts:72-83` prefers
+  the configured address **unless** `GAME_MANIFEST_PATH` is set, in which case it falls back to the manifest (the
+  deployed contract) — so launches currently target the missing contract.
+- Fix both, so neither path can hit the dead address:
+  - Set `GAME_MANIFEST_PATH=contracts/l3/game/manifest_madara.json` in the madara launch env (resolution uses the
+    manifest's deployed registrar).
+  - Update `constants.ts:31` to `0x765e…a553`, or better **drop the hardcoded madara `registrarAddress`** so the
+    manifest is the single source of truth (systemic — one address, not a stale duplicate).
+
+### B. Wire `game-launch.yml` for the lab registrar — RPC + creds explicit (correction 2)
+
+- Add/point a GitHub Environment for `madara.blitz`: `vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS` = the lab
+  **registrar/admin** account (the `DOJO_*` `bootstrap-game` used, **not** the binding authority);
+  `secret GAME_LAUNCH_DOJO_PRIVATE_KEY` = its key.
+- **GitHub Environment vars are not automatically shell env vars** — wire them explicitly in the job, e.g.
+  `GAME_LAUNCH_RPC_URL: ${{ vars.RPC_URL }}` with `vars.RPC_URL=https://rpc.realms.party/rpc/v0_10_2`, and export
+  `GAME_MANIFEST_PATH=contracts/l3/game/manifest_madara.json` for the step.
 - **Gate:**
-  `gh workflow run game-launch.yml -f environment=madara.blitz -f launch_kind=game -f game_name=<x> -f start_time=<+30m>`
-  creates a game on `rpc.realms.party` (run summary has `createGameTxHash` + `gameId`), visible in
-  `herald /madara/games` with a ~30-min registration window.
+  `gh workflow run game-launch.yml -f environment=madara.blitz -f launch_kind=game -f game_name=<x> -f game_start_time=<+30m>`
+  (the input is **`game_start_time`**, not `start_time`) creates a game on `rpc.realms.party` (run summary has
+  `createGameTxHash` + `gameId`), visible in `herald /madara/games` with a ~30-min registration window.
 
-### B. Deploy a run-store/dispatch worker for the lab
+### C. Deploy the dispatch/run-store worker with a real CORS allowlist (blocker 3)
 
-- Deploy `config/deployer/clean/run-store/cloudflare-worker.js` as a Cloudflare Worker (e.g. `launch.realms.party`) with
-  `GITHUB_TOKEN` (a GitHub App/PAT scoped to dispatch `game-launch.yml` + write the `factory-runs` branch),
+- Deploy `config/deployer/clean/run-store/cloudflare-worker.js` (add a `wrangler.toml` — none exists) with
+  `GITHUB_TOKEN` (scoped to dispatch `game-launch.yml` + write the `factory-runs` branch),
   `GITHUB_REPOSITORY=BibliothecaDAO/eternum`, `GITHUB_WORKFLOW_REF=feat/madara-lab` (→ `next` after merge),
-  `FACTORY_ALLOWED_ORIGIN=https://play.realms.party` (also allow `https://eternum-game.pages.dev`),
-  `FACTORY_ADMIN_SECRET`. It already accepts `madara.blitz`. Add a `wrangler.toml` under
-  `config/deployer/clean/run-store/` (the repo has no wrangler config today) and a deploy step.
-- The client reaches it via `VITE_PUBLIC_FACTORY_WORKER_URL` (set in the frontend brief).
-- **Gate:** `POST /api/factory/runs {environment:"madara.blitz", …}` dispatches `game-launch.yml` and returns a run
-  record; `GET /api/factory/runs?environment=madara.blitz` lists it; a disallowed Origin is rejected.
+  `FACTORY_ADMIN_SECRET`. It already accepts `madara.blitz`.
+- **CORS change (worker code — required, the current code cannot satisfy the gate).** `buildCorsHeaders`
+  (cloudflare-worker.js:2559) does `FACTORY_ALLOWED_ORIGIN || requestOrigin || "*"` — one literal, reflected, and it
+  **never rejects**. Replace with a comma-separated **`FACTORY_ALLOWED_ORIGINS`** allowlist: parse it, **exact-match**
+  the request `Origin`, echo only the matched origin into `Access-Control-Allow-Origin` (never a list, never `*`), and
+  return **403** for a browser request whose `Origin` is present but not in the list. Set
+  `FACTORY_ALLOWED_ORIGINS=https://play.realms.party,https://eternum-game.pages.dev`.
+- **Gate:** POST from an allowed origin dispatches + returns a run; `GET ?environment=madara.blitz` lists it; a
+  disallowed `Origin` gets **403**; no response ever carries a two-origin ACAO.
 
-### C. Scheduler as a Cloudflare Worker cron (owner's preference over the GH-Actions cron)
+### D. Scheduler = worker cron over an explicit config list (blocker 2)
 
-- Extend the worker's `scheduled()` (`handleScheduledFactoryMaintenance`, cloudflare-worker.js:40-42) to also **tick a
-  madara blitz rotation**: on cron, dispatch `game-launch.yml launch_kind=rotation` for a madara rotation config,
-  reusing the worker's existing GitHub-dispatch path — exactly what `blitz-rotation-tick.yml` does via
-  `gh workflow run`, but from the worker. This keeps scheduling in Cloudflare (own infra) and drops the GH-Actions cron
-  for the lab.
-- Add a rotation config `config/deployer/clean/launch-configs/madara-blitz-<name>.yaml` mirroring
-  `appchain-blitz-herald.yaml` but `environmentId: madara.blitz`, `version: "1"` (lab preset), a sane cadence (e.g. one
-  game every few hours, or 11:00/20:00 like appchain), `durationSeconds`, `advanceWindowGames: 1`,
-  `evaluationIntervalMinutes: 30`. The runner is idempotent (fills only missing games), so frequent ticks are safe.
-- Set the Worker cron trigger (`wrangler.toml [triggers] crons`) to the evaluation interval (e.g. `*/30 * * * *`).
-- **Alternative (note, not recommended):** add a madara entry to `blitz-rotation-tick.yml` — simpler, but a GH-Actions
-  cron, not the worker the owner asked for.
-- **Gate:** the worker cron creates the scheduled madara games on time; repeated ticks create no duplicates; herald
-  shows upcoming games with a ~24h joinable window.
+- The worker's `scheduled()` today only prunes the run-store and retries rotations already in the run-store indexes — it
+  does **not** know which standing rotations to bootstrap. Add the source: a worker env **`FACTORY_ROTATION_CONFIGS`** =
+  comma-separated **repo-relative YAML paths**. On cron, the worker dispatches `game-launch.yml launch_kind=rotation`
+  for each (idempotent — the runner fills only missing games).
+- **Scope decision (resolves the contradiction).** The worker owns **madara only** for now; **leave
+  `blitz-rotation-tick.yml` untouched** — the appchain rotation keeps running (appchain retires on its own schedule, not
+  in this brief). When appchain retires, move its configs into `FACTORY_ROTATION_CONFIGS` and delete that workflow. (No
+  "retire the appchain cron" here — that was the contradiction.)
+- Add `config/deployer/clean/launch-configs/madara-blitz-<name>.yaml` (`environmentId: madara.blitz`, `version: "6"` per
+  §E, `advanceWindowGames: 1`, `evaluationIntervalMinutes: 30`, a sane cadence). Set the Worker cron trigger
+  (`wrangler.toml [triggers] crons`) to `*/30 * * * *`.
+- **Gate:** the worker cron creates the scheduled madara games; repeated ticks create no duplicates; herald shows a ~24h
+  joinable window.
 
-### D. Preset alignment with the frontend
+### E. Preset alignment — decided (blocker 4)
 
-- The lab registered **preset 1** (fee-free 96-player); `DEFAULT_MADARA_PRESET_ID="1"` matches, so a no-`--version`
-  launch uses it. But the factory catalog offers Regular Fast/Duel as registrar **versions 6/7** (frontend brief). Pick
-  one and keep both briefs consistent: **either** register the same presets (6/7, …) on the lab via
-  `registrar/register-preset` so the catalog is identical across chains (recommended), **or** the frontend maps
-  `madara.blitz` launches to preset `1`. Whatever the UI sends as `version` must be registered on the lab.
+- **Register madara presets 6 and 7 on the lab** (via `registrar/register-preset`), **switch the madara default +
+  rotation to preset 6** (`DEFAULT_MADARA_PRESET_ID` `"1"`→`"6"`; rotation YAML `version: "6"`), and **keep preset 1
+  only for the harness** (its fee-free 96-player profile). Then the frontend sends `6`/`7` unchanged — no mapping. The
+  frontend brief drops its "map madara → 1" alternative accordingly.
 
-## Credentials / owner-gated
+### F. Decommission AWS (owner-gated — destructive)
 
-- The lab **registrar/admin private key** must reach the launcher. In the AWS-mirroring design it becomes a GitHub
-  Environment secret (`GAME_LAUNCH_DOJO_PRIVATE_KEY`) and the worker holds a `GITHUB_TOKEN`. This key has game-admin
-  power on the lab — **owner decides** whether to place it in GitHub secrets. (It is a dev-mode lab with no funds, so
-  the exposure is bounded, like the committed deployer/binding keys — but it is still an admin key.)
-- **Design fork (flag for owner):** run launches in **GitHub Actions** (key in GitHub, mirrors AWS — recommended now)
-  vs. **on the box** (key stays on the box; the worker cron would call a box endpoint instead of dispatching a workflow
-  — more own-infra, more new code). This brief assumes GitHub Actions.
+AWS is done. Once A–E are green:
 
-### E. Decommission AWS (owner-gated — destructive)
-
-AWS is done. Once the CF worker + `game-launch.yml` madara path (A–C) are green:
-
-- Tear down the CDK stack: `deploy/appchain/cdk` (the Lambda `LaunchService`, dev-stack.ts:392-438, plus whatever else
-  the stack owns — this is where `katana`/`herald.jcndata.com` live). `cdk destroy` is **irreversible** and needs the
-  owner's AWS credentials, which this session does not have — so the actual destroy is the owner's to run (or explicitly
-  grant creds). Confirm the lab fully replaces those services first (it does: rpc/herald/identity are all on the box).
-- Follow-up (separate PR): remove `deploy/appchain/**` and the AWS-only branches from the repo, and drop `appchain.*`
-  from the environment lists once no appchain deployment remains — that is the deletion the systemic framing calls for.
-  Keep it out of this brief's scope beyond leaving a `TODO(retire-aws)` marker so the removal is tracked.
+- Tear down the CDK stack `deploy/appchain/cdk` (the Lambda `LaunchService`, dev-stack.ts:392-438, plus whatever else
+  the stack owns — `katana`/`herald.jcndata.com`). `cdk destroy` is **irreversible** and needs the owner's AWS creds,
+  which this session does not have — so the owner runs it (or explicitly grants creds). Confirm the lab replaces those
+  first (it does: rpc/herald/identity are on the box).
+- Follow-up (separate PR): remove `deploy/appchain/**` and drop `appchain.*` env rows once no appchain deployment
+  remains. Leave a `TODO(retire-aws)` marker so the removal is tracked.
 
 ## Verifiable gate (end to end)
 
-1. Manual `workflow_dispatch` creates a madara game with a joinable window (herald `/madara/games`).
-2. Worker POST creates + dispatches a run; the client can read its status.
-3. Worker cron creates the scheduled rotation games; idempotent across ticks.
-4. A human registers and plays a launched game via the client (madara game-txs already use fixed bounds — no fee
-   estimation, so this works).
+1. Manual `gh workflow run … -f game_start_time=<+30m>` creates a madara game with a joinable window (herald
+   `/madara/games`).
+2. Worker POST from an allowed origin dispatches + returns a run; a disallowed `Origin` → 403; the client reads status.
+3. Worker cron creates the scheduled rotation games from `FACTORY_ROTATION_CONFIGS`; idempotent across ticks.
+4. Launches target the deployed registrar `0x765e…a553` (A), on preset 6 (E).
+5. A human registers and plays a launched game via the client (madara game-txs use fixed bounds — no fee estimation).
 
 ## Non-goals
 
-- The appchain rotation itself (it keeps running until its own retirement); AWS teardown is §E, not a non-goal.
+- The appchain rotation and `blitz-rotation-tick.yml` (untouched here — §D); the AWS _teardown itself_ is §F, not a
+  non-goal.
 - Ledger/value-plane launches (`LEDGER_*`) — dev-mode only on the lab.
-- The frontend catalog/worker-client/preset changes — [[factory-page-redo-frontend-brief]].
+- The frontend catalog/worker-client/preset-send changes — [[factory-page-redo-frontend-brief]].
 
 ## What I (Claude) will review
 
-- `game-launch.yml` madara env carries the registrar creds + `RPC_URL`; no key literal committed.
-- The worker deploy validates `madara.blitz`, CORS-restricts to the lab origins, and dispatches on the right ref.
-- The worker-cron rotation is idempotent and creates a genuinely joinable window (`start_main_at` well ahead).
-- Preset ids sent by the UI are registered on the lab (§D consistency).
+- Launches resolve the **manifest** registrar `0x765e…a553` (A) — the stale constant is fixed or gone; no launch can hit
+  `0x23d89…`.
+- `game-launch.yml` passes `RPC_URL`/`GAME_MANIFEST_PATH` explicitly (correction 2) and the gate uses `game_start_time`.
+- The worker CORS is an exact-match allowlist that echoes one origin and 403s the rest (blocker 3) — no key literal
+  committed.
+- The worker cron dispatches from `FACTORY_ROTATION_CONFIGS`, madara-only, `blitz-rotation-tick.yml` untouched (blocker
+  2); idempotent, joinable window.
+- Presets 6/7 registered on the lab, default→6, harness keeps 1 (blocker 4); the `version` the UI sends is registered.
+- Repo changes and owner-run ops are cleanly separated.
