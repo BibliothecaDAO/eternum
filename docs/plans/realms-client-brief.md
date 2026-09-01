@@ -268,9 +268,16 @@ New classes the captures exposed, folded into the halves above:
   single pending-state pattern for build / deploy / transfer / attack.
 - **Confirmed in prod:** the sync-status overlay (DevSyncOverlay) renders in the owner's production build, bottom-left —
   the L3 mount-gate fix is not hypothetical.
-- **To verify while in a live game:** bot armies render as unequipped bodies with player-colour-tinted mounts at world
-  zoom — check whether procedural equipment/mount resolution is failing for some troop types or whether the
-  player-colour tint is applied to whole materials instead of accents.
+- **Diagnosed — heraldry over-tint + tier-1 base body** (owner's bot close-up). Three causes, all tuning inside the
+  procedural-character system, no bug: (1) tier 1 deliberately maps to the `base` asset — bald body in shorts
+  (`procedural-character-appearance.ts` `assetByTier: {1: "base", 2: "peasant", 3: "ranger"}`), and every lab bot runs
+  T1, so the whole map reads as unclothed; (2) the horse coat lerps toward the owner's heraldry colour at **0.72**
+  (`procedural-horse-avatar.ts:489-494`), which turns the entire mount solid blue/pink for saturated player colours; (3)
+  shields and crossbows are built entirely from one `accentMaterial` set to the player colour
+  (`procedural-unit-equipment.ts:54,107`), so the prop is a flat colour blob. Fix: heraldry lives in accent zones — coat
+  lerp ≤ ~0.2 with the colour carried by saddle cloth/banner/trim, props split metal/wood + accent trim, and T1 wears
+  the peasant asset (or base + tabard) so no tier reads naked at distance. Gate: at mid zoom a bot army reads as an
+  equipped unit with a coloured banner, not a tinted mannequin.
 
 ## Addendum — latency decomposition under load, 2026-09-01 evening
 
