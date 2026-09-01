@@ -17,7 +17,7 @@ import {
 } from "@/ui/features/social";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
-import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { configManager, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -35,9 +35,9 @@ import { env } from "../../../../../env";
 
 const useRealtimeChatConfig = () => {
   const ConnectedAccount = useAccountStore((state) => state.account);
-  const accountName = useAccountStore((state) => state.accountName);
-
-  const defaultZoneId = "global";
+  const gameplayAccountAddress = ConnectedAccount?.address;
+  const gameId = configManager.getActiveGameId();
+  const defaultZoneId = `game:${gameId}`;
   const zoneIds = useMemo(() => [defaultZoneId], [defaultZoneId]);
   const chatBaseUrl = env.VITE_PUBLIC_CHAT_URL;
 
@@ -48,21 +48,13 @@ const useRealtimeChatConfig = () => {
   }, [chatBaseUrl]);
 
   const initializer = useMemo<InitializeRealtimeClientParams | null>(() => {
-    if (!chatBaseUrl) return null;
-
-    const walletAddress = ConnectedAccount?.address ?? undefined;
-    const normalizedAccountName = accountName?.trim() ?? "";
-    const hasUsername = normalizedAccountName.length > 0;
-    const playerId = hasUsername ? normalizedAccountName : (walletAddress ?? "demo-player");
-    const displayName = hasUsername ? normalizedAccountName : undefined;
+    if (!chatBaseUrl || !gameplayAccountAddress || gameId <= 0) return null;
 
     return {
       baseUrl: chatBaseUrl,
-      identity: { playerId, walletAddress, displayName },
-      queryParams: { walletAddress, playerName: displayName },
       joinZones: zoneIds,
     };
-  }, [ConnectedAccount?.address, accountName, chatBaseUrl, zoneIds]);
+  }, [chatBaseUrl, gameId, gameplayAccountAddress, zoneIds]);
 
   return { initializer, defaultZoneId, zoneIds };
 };

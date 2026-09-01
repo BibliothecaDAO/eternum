@@ -14,6 +14,10 @@ describe("realtime chat endpoint ownership", () => {
     const madaraEnvSample = readFileSync(resolve(process.cwd(), ".env.madara.blitz.sample"), "utf8");
 
     expect(sidebarSource).toContain("env.VITE_PUBLIC_CHAT_URL");
+    expect(sidebarSource).toContain("`game:${gameId}`");
+    expect(sidebarSource).not.toContain('"global"');
+    expect(sidebarSource).not.toContain("queryParams");
+    expect(sidebarSource).not.toContain("demo-player");
     expect(sidebarSource).not.toContain("VITE_PUBLIC_REALTIME_URL");
     expect(madaraEnvSample).toMatch(/^VITE_PUBLIC_CHAT_URL=$/m);
   });

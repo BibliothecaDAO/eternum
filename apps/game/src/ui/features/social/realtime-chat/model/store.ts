@@ -75,11 +75,8 @@ const toIsoTimestamp = (value: string | Date | null | undefined): string => {
 const normalizePresencePayload = (presence: PlayerPresence): PlayerPresence => ({
   playerId: presence.playerId,
   displayName: presence.displayName ?? null,
-  walletAddress: presence.walletAddress ?? null,
-  lastSeenAt: presence.lastSeenAt ?? null,
   isOnline: Boolean(presence.isOnline),
   isTypingInThreadIds: presence.isTypingInThreadIds ?? [],
-  lastZoneId: presence.lastZoneId ?? null,
 });
 
 const createFallbackThread = (message: DirectMessage): DirectMessageThread => {
@@ -105,7 +102,6 @@ const normalizeWorldChatMessage = (message: WorldChatMessage): WorldChatMessage 
   metadata: message.metadata ?? undefined,
   sender: {
     playerId: message.sender.playerId,
-    walletAddress: message.sender.walletAddress ?? undefined,
     displayName: message.sender.displayName ?? undefined,
     avatarUrl: message.sender.avatarUrl ?? undefined,
   },
@@ -121,7 +117,6 @@ const mapWorldChatRecordToMessage = (record: any, fallbackZoneId: string): World
     metadata: record.metadata ?? undefined,
     sender: {
       playerId: record.sender?.playerId ?? record.senderId ?? "unknown",
-      walletAddress: record.sender?.walletAddress ?? record.senderWallet ?? undefined,
       displayName: record.sender?.displayName ?? record.senderDisplayName ?? undefined,
       avatarUrl: record.sender?.avatarUrl ?? record.senderAvatarUrl ?? undefined,
     },
@@ -181,17 +176,11 @@ const mapDirectThreadRecord = (record: any): DirectMessageThread => {
   };
 };
 
-const matchesIdentityAlias = (
-  identity: { playerId: string; walletAddress?: string | null } | undefined,
-  candidate: string | null | undefined,
-): boolean => {
+const matchesIdentityAlias = (identity: { playerId: string } | undefined, candidate: string | null | undefined) => {
   if (!identity || !candidate) {
     return false;
   }
   if (identity.playerId === candidate) {
-    return true;
-  }
-  if (identity.walletAddress && identity.walletAddress === candidate) {
     return true;
   }
   return false;
@@ -248,8 +237,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       const client = new RealtimeClient({
         baseUrl: params.baseUrl,
-        playerId: params.identity.playerId,
-        queryParams: params.queryParams,
         onOpen: () => {
           set({
             connectionStatus: "connected",
@@ -273,6 +260,14 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           const { actions } = get();
 
           switch (message.type) {
+            case "connected":
+              set({
+                identity: {
+                  playerId: message.playerId as string,
+                  displayName: (message.displayName as string | null | undefined) ?? undefined,
+                },
+              });
+              break;
             case "world:message":
               actions.receiveWorldMessage(message.zoneId as string, message.message as WorldChatMessage, {
                 clientMessageId: message.clientMessageId as string | undefined,
@@ -308,6 +303,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 actions.upsertOnlinePlayer(normalizePresencePayload(message.player as PlayerPresence));
               }
               break;
+            case "presence:remove":
+              set((state) => ({
+                onlinePlayers: Object.fromEntries(
+                  Object.entries(state.onlinePlayers).filter(([playerId]) => playerId !== message.playerId),
+                ),
+              }));
+              break;
             case "error":
               set({
                 connectionStatus: "error",
@@ -324,7 +326,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       set({
         client,
-        identity: params.identity,
+        identity: undefined,
         baseUrl: httpBaseUrl,
         connectionStatus: "connecting",
         lastConnectionError: undefined,
@@ -421,9 +423,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       }
 
       const selfAliases = new Set<string>([selfId]);
-      if (identity?.walletAddress) {
-        selfAliases.add(identity.walletAddress);
-      }
 
       if (selfAliases.has(participantId)) {
         return undefined;
@@ -763,9 +762,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         createdAt,
         sender: {
           playerId: identity?.playerId ?? "local-player",
-          walletAddress: identity?.walletAddress,
           displayName: identity?.displayName,
-          avatarUrl: identity?.avatarUrl,
         },
         location: payload.location,
         metadata: payload.metadata,
@@ -884,7 +881,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     loadWorldHistory: async ({ zoneId, cursor, limit, since, replaceExisting }: LoadWorldChatHistoryParams) => {
-      const { baseUrl, identity } = get();
+      const { baseUrl } = get();
       if (!baseUrl) return;
 
       set((state) => {
@@ -910,18 +907,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           url.searchParams.set("since", sinceValue);
         }
 
-        const headers: Record<string, string> = {};
-        if (identity?.playerId) {
-          headers["x-player-id"] = identity.playerId;
-        }
-        if (identity?.walletAddress) {
-          headers["x-wallet-address"] = identity.walletAddress;
-        }
-        if (identity?.displayName) {
-          headers["x-player-name"] = identity.displayName;
-        }
-
-        const response = await fetch(url.toString(), { headers });
+        const response = await fetch(url.toString(), { credentials: "include" });
 
         if (!response.ok) {
           throw new Error(`Failed to load world chat history (${response.status})`);
@@ -975,7 +961,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       }
     },
     loadDirectHistory: async (threadId: string, cursor?: string) => {
-      const { baseUrl, identity } = get();
+      const { baseUrl } = get();
       if (!baseUrl) return;
 
       set((state) => {
@@ -1001,18 +987,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           url.searchParams.set("cursor", cursor);
         }
 
-        const headers: Record<string, string> = {};
-        if (identity?.playerId) {
-          headers["x-player-id"] = identity.playerId;
-        }
-        if (identity?.walletAddress) {
-          headers["x-wallet-address"] = identity.walletAddress;
-        }
-        if (identity?.displayName) {
-          headers["x-player-name"] = identity.displayName;
-        }
-
-        const response = await fetch(url.toString(), { headers });
+        const response = await fetch(url.toString(), { credentials: "include" });
 
         if (!response.ok) {
           // Handle 404 gracefully - new threads don't have history yet

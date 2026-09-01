@@ -1,6 +1,5 @@
-import { randomUUID } from "crypto";
-
 import { and, desc, eq, gt, lt, or } from "drizzle-orm";
+import { Effect, Either } from "effect";
 import { Hono } from "hono";
 
 import {
@@ -10,16 +9,22 @@ import {
   directMessageThreadQuerySchema,
   directMessageTypingSchema,
 } from "@bibliothecadao/types";
-import { db } from "../../db/client";
 import {
-  directMessageReadReceipts,
   directMessages,
   directMessageThreads,
   directMessageTypingStates,
+  playerBlocks,
 } from "../../db/schema/direct-messages";
+import { DirectMessageError, markDirectMessageRead, persistDirectMessage } from "../../services/direct-messages";
 import type { AppEnv } from "../middleware/auth";
 import { requirePlayerSession } from "../middleware/auth";
 import { formatZodError } from "../utils/zod";
+import { databaseEffect } from "../../effect/database";
+
+type DatabaseTask<A> = Parameters<typeof databaseEffect<A>>[1];
+
+const runDatabaseAtHttpBoundary = <A>(operation: string, task: DatabaseTask<A>): Promise<A> =>
+  Effect.runPromise(databaseEffect(operation, task));
 
 const directMessageRoutes = new Hono<AppEnv>();
 
@@ -60,14 +65,15 @@ directMessageRoutes.get("/threads", async (c) => {
     filters.push(lt(directMessageThreads.updatedAt, cursorDate));
   }
 
-  let query = db.select().from(directMessageThreads);
-  query = query.where(and(...filters)) as any;
-
   const limit = payload.limit ?? 50;
-
-  const threads = await query
-    .orderBy(desc(directMessageThreads.updatedAt ?? directMessageThreads.createdAt))
-    .limit(limit);
+  const threads = await runDatabaseAtHttpBoundary("read direct message threads", (database) =>
+    database
+      .select()
+      .from(directMessageThreads)
+      .where(and(...filters))
+      .orderBy(desc(directMessageThreads.updatedAt ?? directMessageThreads.createdAt))
+      .limit(limit),
+  );
 
   const nextCursor =
     threads.length === limit
@@ -95,11 +101,9 @@ directMessageRoutes.get("/threads/:threadId/messages", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const [thread] = await db
-    .select()
-    .from(directMessageThreads)
-    .where(eq(directMessageThreads.id, payload.threadId))
-    .limit(1);
+  const [thread] = await runDatabaseAtHttpBoundary("read direct message thread", (database) =>
+    database.select().from(directMessageThreads).where(eq(directMessageThreads.id, payload.threadId)).limit(1),
+  );
 
   if (!thread) {
     return c.json({ error: "Thread not found." }, 404);
@@ -125,12 +129,14 @@ directMessageRoutes.get("/threads/:threadId/messages", async (c) => {
 
   const limit = payload.limit ?? 100;
 
-  const messages = await db
-    .select()
-    .from(directMessages)
-    .where(and(...filters))
-    .orderBy(desc(directMessages.createdAt))
-    .limit(limit);
+  const messages = await runDatabaseAtHttpBoundary("read direct messages", (database) =>
+    database
+      .select()
+      .from(directMessages)
+      .where(and(...filters))
+      .orderBy(desc(directMessages.createdAt))
+      .limit(limit),
+  );
 
   const nextCursor = messages.length === limit ? messages[messages.length - 1]?.createdAt?.toISOString() : null;
 
@@ -152,105 +158,36 @@ directMessageRoutes.post("/messages", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const aliases = player.aliases ?? [player.playerId];
-
-  if (aliases.includes(payload.recipientId)) {
-    return c.json({ error: "Cannot send a direct message to yourself." }, 400);
-  }
-
-  const expectedThreadId = buildThreadId(player.playerId, payload.recipientId);
-  const providedThreadId = payload.threadId ?? expectedThreadId;
-
-  const [existingThread] = await db
-    .select()
-    .from(directMessageThreads)
-    .where(eq(directMessageThreads.id, providedThreadId))
-    .limit(1);
-
-  if (!existingThread && providedThreadId !== expectedThreadId) {
-    return c.json({ error: "Thread id does not match participants." }, 400);
-  }
-
-  let thread = existingThread;
-  let recipientId = payload.recipientId;
-
-  if (thread) {
-    const participants = [thread.playerAId, thread.playerBId];
-    const participantSet = new Set(participants);
-    const playerMatches = aliases.some((alias) => participantSet.has(alias));
-    if (!playerMatches) {
-      return c.json({ error: "Access denied." }, 403);
+  const result = await Effect.runPromise(Effect.either(persistDirectMessage(player, payload)));
+  if (Either.isLeft(result)) {
+    if (result.left instanceof DirectMessageError) {
+      return c.json({ error: result.left.message, code: result.left.code }, result.left.status);
     }
-
-    if (!participantSet.has(recipientId)) {
-      const otherParticipant = participants.find((participant) => !aliases.includes(participant));
-      if (!otherParticipant) {
-        return c.json({ error: "Unable to determine thread recipient." }, 400);
-      }
-      recipientId = otherParticipant;
-    }
-
-    if (aliases.includes(recipientId)) {
-      return c.json({ error: "Cannot send a direct message to yourself." }, 400);
-    }
-  } else {
-    const participants = sortParticipants(player.playerId, recipientId);
-    [thread] = await db
-      .insert(directMessageThreads)
-      .values({
-        id: providedThreadId,
-        playerAId: participants[0],
-        playerBId: participants[1],
-        unreadCounts: {
-          [participants[0]]: 0,
-          [participants[1]]: 0,
-        },
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    if (!thread) {
-      [thread] = await db
-        .select()
-        .from(directMessageThreads)
-        .where(eq(directMessageThreads.id, providedThreadId))
-        .limit(1);
-    }
+    throw result.left;
   }
+  return c.json({ message: result.right.message, thread: result.right.thread }, 201);
+});
 
-  if (!thread) {
-    return c.json({ error: "Failed to resolve direct message thread." }, 500);
-  }
+directMessageRoutes.post("/blocks/:playerId", async (c) => {
+  const player = c.get("playerSession")!;
+  const blockedId = c.req.param("playerId");
+  if (blockedId === player.playerId) return c.json({ error: "Cannot block yourself." }, 400);
+  const payloadResult = directMessageCreateSchema.pick({ recipientId: true }).safeParse({ recipientId: blockedId });
+  if (!payloadResult.success) return c.json(formatZodError(payloadResult.error), 400);
+  await runDatabaseAtHttpBoundary("block direct message player", (database) =>
+    database.insert(playerBlocks).values({ blockerId: player.playerId, blockedId }).onConflictDoNothing(),
+  );
+  return c.body(null, 204);
+});
 
-  const messageId = randomUUID();
-  const [message] = await db
-    .insert(directMessages)
-    .values({
-      id: messageId,
-      threadId: thread.id,
-      senderId: player.playerId,
-      recipientId,
-      content: payload.content,
-      metadata: payload.metadata ?? null,
-    })
-    .returning();
-
-  const unreadCounts = {
-    ...(thread.unreadCounts ?? {}),
-    [recipientId]: (thread.unreadCounts?.[recipientId] ?? 0) + 1,
-  };
-
-  await db
-    .update(directMessageThreads)
-    .set({
-      unreadCounts,
-      lastMessageId: messageId,
-      lastMessageAt: message.createdAt,
-      updatedAt: message.createdAt,
-    })
-    .where(eq(directMessageThreads.id, thread.id));
-
-  return c.json({ message }, 201);
+directMessageRoutes.delete("/blocks/:playerId", async (c) => {
+  const player = c.get("playerSession")!;
+  await runDatabaseAtHttpBoundary("unblock direct message player", (database) =>
+    database
+      .delete(playerBlocks)
+      .where(and(eq(playerBlocks.blockerId, player.playerId), eq(playerBlocks.blockedId, c.req.param("playerId")))),
+  );
+  return c.body(null, 204);
 });
 
 directMessageRoutes.post("/threads/:threadId/read", async (c) => {
@@ -268,63 +205,20 @@ directMessageRoutes.post("/threads/:threadId/read", async (c) => {
   }
 
   const payload = payloadResult.data;
+
   const player = c.get("playerSession")!;
 
   if (payload.readerId !== player.playerId) {
     return c.json({ error: "Cannot acknowledge read for another player." }, 403);
   }
 
-  const [thread] = await db
-    .select()
-    .from(directMessageThreads)
-    .where(eq(directMessageThreads.id, payload.threadId))
-    .limit(1);
-
-  if (!thread) {
-    return c.json({ error: "Thread not found." }, 404);
+  const result = await Effect.runPromise(Effect.either(markDirectMessageRead(player, payload)));
+  if (Either.isLeft(result)) {
+    if (result.left instanceof DirectMessageError) {
+      return c.json({ error: result.left.message, code: result.left.code }, result.left.status);
+    }
+    throw result.left;
   }
-
-  const participantSet = new Set([thread.playerAId, thread.playerBId]);
-  const isParticipant = player.aliases.some((alias) => participantSet.has(alias));
-  if (!isParticipant) {
-    return c.json({ error: "Access denied." }, 403);
-  }
-
-  const readAt = payload.readAt instanceof Date ? payload.readAt : new Date(payload.readAt);
-
-  await db
-    .insert(directMessageReadReceipts)
-    .values({
-      threadId: payload.threadId,
-      messageId: payload.messageId,
-      readerId: player.playerId,
-      readAt,
-      confirmed: true,
-    })
-    .onConflictDoUpdate({
-      target: [
-        directMessageReadReceipts.threadId,
-        directMessageReadReceipts.messageId,
-        directMessageReadReceipts.readerId,
-      ],
-      set: {
-        readAt,
-        confirmed: true,
-      },
-    });
-
-  const unreadCounts = { ...(thread.unreadCounts ?? {}) };
-  for (const alias of player.aliases) {
-    unreadCounts[alias] = 0;
-  }
-
-  await db
-    .update(directMessageThreads)
-    .set({
-      unreadCounts,
-      updatedAt: readAt,
-    })
-    .where(eq(directMessageThreads.id, payload.threadId));
 
   return c.body(null, 204);
 });
@@ -344,44 +238,41 @@ directMessageRoutes.post("/threads/:threadId/typing", async (c) => {
 
   const payload = payloadResult.data;
 
+  const [thread] = await runDatabaseAtHttpBoundary("read typing thread", (database) =>
+    database.select().from(directMessageThreads).where(eq(directMessageThreads.id, payload.threadId)).limit(1),
+  );
+  if (!thread) return c.json({ error: "Thread not found." }, 404);
+  if (![thread.playerAId, thread.playerBId].includes(payload.playerId)) {
+    return c.json({ error: "Access denied." }, 403);
+  }
+
   if (!payload.isTyping) {
-    await db
-      .delete(directMessageTypingStates)
-      .where(
-        and(
-          eq(directMessageTypingStates.threadId, payload.threadId),
-          eq(directMessageTypingStates.playerId, payload.playerId),
+    await runDatabaseAtHttpBoundary("clear direct message typing", (database) =>
+      database
+        .delete(directMessageTypingStates)
+        .where(
+          and(
+            eq(directMessageTypingStates.threadId, payload.threadId),
+            eq(directMessageTypingStates.playerId, payload.playerId),
+          ),
         ),
-      );
+    );
     return c.body(null, 204);
   }
 
   const expiresAt = new Date(Date.now() + 10_000);
 
-  await db
-    .insert(directMessageTypingStates)
-    .values({
-      threadId: payload.threadId,
-      playerId: payload.playerId,
-      expiresAt,
-    })
-    .onConflictDoUpdate({
-      target: [directMessageTypingStates.threadId, directMessageTypingStates.playerId],
-      set: {
-        expiresAt,
-      },
-    });
+  await runDatabaseAtHttpBoundary("write direct message typing", (database) =>
+    database
+      .insert(directMessageTypingStates)
+      .values({ threadId: payload.threadId, playerId: payload.playerId, expiresAt })
+      .onConflictDoUpdate({
+        target: [directMessageTypingStates.threadId, directMessageTypingStates.playerId],
+        set: { expiresAt },
+      }),
+  );
 
   return c.body(null, 204);
 });
-
-export function buildThreadId(playerA: string, playerB: string): string {
-  const [first, second] = sortParticipants(playerA, playerB);
-  return `${first}|${second}`;
-}
-
-export function sortParticipants(playerA: string, playerB: string): [string, string] {
-  return [playerA, playerB].toSorted((a, b) => (a < b ? -1 : a > b ? 1 : 0)) as [string, string];
-}
 
 export default directMessageRoutes;

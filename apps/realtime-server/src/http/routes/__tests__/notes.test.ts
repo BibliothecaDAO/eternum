@@ -16,12 +16,26 @@ describe("note validation", () => {
 
   it("accepts valid payloads", () => {
     const result = noteCreateSchema.safeParse({
-      zoneId: "zone-1",
+      zoneId: "game:1",
       title: "Test Note",
       content: "Hello world",
       location: { x: 1, y: 2 },
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("rejects oversized and deeply nested metadata", () => {
+    const base = {
+      zoneId: "game:1",
+      title: "Test Note",
+      content: "Hello world",
+      location: { x: 1, y: 2 },
+    };
+
+    expect(noteCreateSchema.safeParse({ ...base, metadata: { payload: "x".repeat(4_096) } }).success).toBe(false);
+    expect(noteCreateSchema.safeParse({ ...base, metadata: { one: { two: { three: { four: true } } } } }).success).toBe(
+      false,
+    );
   });
 });

@@ -175,16 +175,7 @@ export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientPara
     return () => {
       actions.resetClient();
     };
-  }, [
-    actions,
-    config?.baseUrl,
-    config?.identity.playerId,
-    config?.identity.displayName,
-    config?.identity.walletAddress,
-    config?.identity.avatarUrl,
-    JSON.stringify(config?.queryParams ?? {}),
-    JSON.stringify(config?.joinZones ?? []),
-  ]);
+  }, [actions, config?.baseUrl, JSON.stringify(config?.joinZones ?? [])]);
 };
 
 export const useRealtimeChatSelector = <T>(

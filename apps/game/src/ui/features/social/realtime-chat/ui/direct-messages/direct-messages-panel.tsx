@@ -44,7 +44,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   const { thread } = useDirectThread(resolvedThreadId);
   const identity = useRealtimeChatSelector((state) => state.identity);
   const identityId = identity?.playerId ?? "";
-  const identityWallet = identity?.walletAddress ?? null;
   const typingIndicators = useRealtimeTypingIndicators();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,11 +52,8 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     if (identityId) {
       aliases.push(identityId);
     }
-    if (identityWallet && !aliases.includes(identityWallet)) {
-      aliases.push(identityWallet);
-    }
     return aliases;
-  }, [identityId, identityWallet]);
+  }, [identityId]);
 
   const recipientId = useMemo(() => {
     if (!thread?.thread) return undefined;
@@ -222,7 +218,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                             <UserAvatar
                               name={displayLabel}
                               address={message.senderId}
-                              avatarUrl={isOwn ? identity?.avatarUrl : undefined}
                               size="sm"
                               className="mt-0.5 shrink-0"
                             />

@@ -96,5 +96,18 @@ export const directMessageTypingStates = pgTable(
   }),
 );
 
+export const playerBlocks = pgTable(
+  "player_blocks",
+  {
+    blockerId: varchar("blocker_id", { length: PLAYER_ID_MAX_LENGTH }).notNull(),
+    blockedId: varchar("blocked_id", { length: PLAYER_ID_MAX_LENGTH }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ name: "player_blocks_pk", columns: [table.blockerId, table.blockedId] }),
+    blockedIndex: index("player_blocks_blocked_idx").on(table.blockedId),
+  }),
+);
+
 export type DirectMessageThreadRecord = typeof directMessageThreads.$inferSelect;
 export type DirectMessageRecord = typeof directMessages.$inferSelect;

@@ -32,11 +32,8 @@ export type DirectReadMessage = {
 export interface PlayerPresencePayload {
   playerId: string;
   displayName?: string | null;
-  walletAddress?: string | null;
-  lastSeenAt?: string | null;
   isOnline: boolean;
   isTypingInThreadIds?: string[];
-  lastZoneId?: string | null;
 }
 
 export type RealtimeClientMessage =
@@ -82,8 +79,13 @@ export type PresenceUpdateBroadcastMessage = {
   player: PlayerPresencePayload;
 };
 
+export type PresenceRemoveBroadcastMessage = {
+  type: "presence:remove";
+  playerId: string;
+};
+
 export type RealtimeServerMessage =
-  | { type: "connected"; playerId: string }
+  | { type: "connected"; playerId: string; displayName?: string | null; channels: string[] }
   | { type: "joined:zone"; zoneId: string }
   | { type: "left:zone"; zoneId: string }
   | WorldBroadcastMessage
@@ -92,23 +94,17 @@ export type RealtimeServerMessage =
   | DirectReadBroadcastMessage
   | PresenceSyncBroadcastMessage
   | PresenceUpdateBroadcastMessage
+  | PresenceRemoveBroadcastMessage
   | { type: "error"; message: string; code?: string }
   | { type: string; [key: string]: unknown };
 
 export interface RealtimeClientOptions {
   baseUrl: string;
-  playerId: string;
   /**
    * Override the websocket path appended to the base URL.
    * Defaults to `/ws`.
    */
   websocketPath?: string;
-  /**
-   * Additional query parameters appended to the websocket URL.
-   * Useful when extra identity information (e.g. wallet address) must be sent
-   * as part of the handshake.
-   */
-  queryParams?: Record<string, string | undefined>;
   /**
    * Optional factory for constructing WebSocket instances.
    * This enables dependency injection during tests or on platforms
@@ -205,16 +201,7 @@ export class RealtimeClient {
     }
 
     url.pathname = this.#options.websocketPath ?? "/ws";
-    url.searchParams.set("playerId", this.#options.playerId);
-
-    if (this.#options.queryParams) {
-      for (const [key, value] of Object.entries(this.#options.queryParams)) {
-        if (typeof value === "string") {
-          url.searchParams.set(key, value);
-        }
-      }
-    }
-
+    url.search = "";
     return url.toString();
   }
 

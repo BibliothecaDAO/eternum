@@ -16,9 +16,7 @@ export type RealtimeConnectionStatus = "idle" | "connecting" | "connected" | "er
 
 export interface RealtimePlayerIdentity {
   playerId: string;
-  walletAddress?: string;
   displayName?: string;
-  avatarUrl?: string;
 }
 
 export type PlayerPresence = PlayerPresencePayload & {
@@ -89,9 +87,7 @@ export interface RealtimeChatState {
 
 export interface InitializeRealtimeClientParams {
   baseUrl: string;
-  identity: RealtimePlayerIdentity;
   joinZones?: string[];
-  queryParams?: Record<string, string | undefined>;
 }
 
 export interface LoadWorldChatHistoryParams extends Pick<WorldChatHistoryQuery, "cursor" | "limit" | "since"> {

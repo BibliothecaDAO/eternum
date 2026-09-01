@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { Effect, Either } from "effect";
 
 import { directMessageCreateSchema } from "@bibliothecadao/types";
-import { buildThreadId, sortParticipants } from "../direct-messages";
+import {
+  buildThreadId,
+  DirectMessageError,
+  isBlockedPair,
+  isThreadRecipient,
+  persistDirectMessage,
+  sortParticipants,
+} from "../../../services/direct-messages";
 
 describe("direct message helpers", () => {
   it("builds deterministic thread ids", () => {
@@ -15,6 +23,20 @@ describe("direct message helpers", () => {
   });
 });
 
+describe("direct message block policy", () => {
+  it("blocks delivery in both directions", () => {
+    const blocks = [{ blockerId: "player-a", blockedId: "player-b" }];
+    expect(isBlockedPair(blocks, "player-a", "player-b")).toBe(true);
+    expect(isBlockedPair(blocks, "player-b", "player-a")).toBe(true);
+    expect(isBlockedPair(blocks, "player-a", "player-c")).toBe(false);
+  });
+
+  it("cannot substitute a third player into an existing thread", () => {
+    expect(isThreadRecipient(["player-a", "player-b"], ["player-a"], "player-b")).toBe(true);
+    expect(isThreadRecipient(["player-a", "player-b"], ["player-a"], "player-c")).toBe(false);
+  });
+});
+
 describe("direct message validation", () => {
   it("requires content in direct message creation", () => {
     const result = directMessageCreateSchema.safeParse({
@@ -23,5 +45,19 @@ describe("direct message validation", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("returns a typed failure for a self-message before storage", async () => {
+    const result = await Effect.runPromise(
+      Effect.either(
+        persistDirectMessage(
+          { playerId: "player-a", membershipPlayerId: null, aliases: ["player-a"] },
+          { recipientId: "player-a", content: "hello" },
+        ),
+      ),
+    );
+
+    expect(Either.isLeft(result)).toBe(true);
+    if (Either.isLeft(result)) expect(result.left).toBeInstanceOf(DirectMessageError);
   });
 });

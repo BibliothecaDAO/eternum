@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-01",
+    title: "Secure Match Chat",
+    description:
+      "Blitz chat now opens only for signed-in match participants, with private presence and protected direct messages.",
+    type: "improvement",
+    gameSlug: "blitz",
+  },
+  {
     date: "2026-08-30",
     title: "Exact Blitz Results",
     description:

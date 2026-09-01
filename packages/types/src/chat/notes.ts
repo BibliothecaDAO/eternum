@@ -38,6 +38,7 @@ export const noteCreateSchema = z.object({
   location: mapLocationSchema,
   expiresAt: timestampSchema.optional(),
   metadata: metadataSchema.optional(),
+  visibility: z.enum(["public", "private"]).default("public"),
 });
 
 export const noteUpdateSchema = z.object({
