@@ -2,7 +2,13 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { Account, RpcProvider, shortString } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
-import { DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS, DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS } from "../constants";
+import {
+  DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+  DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
+  DEFAULT_APPCHAIN_PRESET_ID,
+  DEFAULT_MADARA_PRESET_ID,
+} from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import {
   createLedgerOperatorAccount,
@@ -71,7 +77,12 @@ function resolveSponsoredPool(request: LaunchGameRequest): bigint | undefined {
 
 function resolvePresetId(version: string | undefined, environment: DeploymentEnvironment): number {
   const configuredPresetId =
-    version ?? (environment.chain === "madara" ? "1" : environment.gameType === "eternum" ? "10" : "6");
+    version ??
+    (environment.chain === "madara"
+      ? DEFAULT_MADARA_PRESET_ID
+      : environment.gameType === "eternum"
+        ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID
+        : DEFAULT_APPCHAIN_PRESET_ID);
   const presetId = Number(configuredPresetId);
   if (!Number.isInteger(presetId) || presetId <= 0 || presetId > 0xffff_ffff) {
     throw new Error(`Preset id must be a positive u32, received "${configuredPresetId}"`);

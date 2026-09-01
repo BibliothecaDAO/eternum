@@ -125,6 +125,8 @@ jobs:
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
+      GAME_LAUNCH_RPC_URL: ${{ vars.RPC_URL }}
+      GAME_MANIFEST_PATH: ${{ vars.GAME_MANIFEST_PATH }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
       LEDGER_ADDRESS: ${{ vars.LEDGER_ADDRESS }}

@@ -10,6 +10,7 @@ import { requireRpcUrl } from "../shared/rpc";
 import type { DeploymentEnvironmentId } from "../types";
 import { buildRegisterPresetCalldata, isRegistrarAlreadyRegisteredError, registerPreset } from "./calls";
 import { buildPresetRegistration, summarizePresetSideTables } from "./preset";
+import { BALANCE_PROFILE_IDS, validatePresetBalanceProfile } from "./preset-profile";
 
 interface RegisterPresetOptions {
   presetId: number;
@@ -21,8 +22,6 @@ interface RegisterPresetOptions {
   sponsored: boolean;
   dryRun: boolean;
 }
-
-const BALANCE_PROFILE_IDS: BlitzBalanceProfileId[] = ["official-60", "official-90"];
 
 function readArgument(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -41,14 +40,7 @@ function parseOptions(): RegisterPresetOptions {
   if (environmentId !== "madara.blitz" && environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
     throw new Error("--environment must be madara.blitz, appchain.blitz, or appchain.eternum");
   }
-  if (balanceProfile !== undefined) {
-    if (!BALANCE_PROFILE_IDS.includes(balanceProfile)) {
-      throw new Error(`--balance-profile must be one of: ${BALANCE_PROFILE_IDS.join(", ")}`);
-    }
-    if (environmentId !== "appchain.blitz") {
-      throw new Error("--balance-profile only applies to appchain.blitz");
-    }
-  }
+  validatePresetBalanceProfile(environmentId as DeploymentEnvironmentId, balanceProfile);
   return {
     presetId,
     environmentId,
@@ -62,8 +54,8 @@ function parseOptions(): RegisterPresetOptions {
 }
 
 // The stored environment JSON is the raw base sheet: balance profiles
-// (official-60 "Regular Fast", official-90) are applied at game creation,
-// NOT baked into the stored config. A preset registered without the profile
+// (official-60 "Regular Fast", official-90) are applied at preset registration,
+// not baked into the stored config. A preset registered without the profile
 // silently ships base balance under a profile-flavored label (preset 4 bug).
 function loadPresetConfiguration(environmentId: DeploymentEnvironmentId, balanceProfile?: BlitzBalanceProfileId) {
   const config = loadEnvironmentConfiguration(environmentId);
@@ -114,6 +106,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   });
   const summary = {
     presetId: options.presetId,
+    balanceProfile: options.balanceProfile ?? null,
     calldataLength: calldata.length,
     counts: summarizePresetSideTables(payload),
     sponsored: options.sponsored,

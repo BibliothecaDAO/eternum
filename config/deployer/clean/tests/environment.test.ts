@@ -25,7 +25,7 @@ describe("resolveDeploymentEnvironment", () => {
     });
   });
 
-  test("accepts madara.blitz with the lab registrar", () => {
+  test("resolves the madara registrar from its deployment manifest", () => {
     const environment = resolveDeploymentEnvironment("madara.blitz");
 
     expect(environment.chain).toBe("madara");
@@ -35,7 +35,6 @@ describe("resolveDeploymentEnvironment", () => {
     expect(environment.world).toEqual({
       namespace: "s2",
       manifestPath: "contracts/l3/game/manifest_madara.json",
-      registrarAddress: "0x23d89ba402b33599107413ddb0f33f0cc38e57dcff4aa3b1989cba12076e9a5",
     });
   });
 

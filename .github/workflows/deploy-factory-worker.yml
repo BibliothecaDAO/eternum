@@ -1,0 +1,39 @@
+name: Deploy Factory Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: factory-worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Deploy worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: pnpm dlx wrangler@4 deploy --config config/deployer/clean/run-store/wrangler.toml
+
+      - name: Configure worker secrets
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          FACTORY_ADMIN_SECRET: ${{ secrets.FACTORY_ADMIN_SECRET }}
+          FACTORY_GITHUB_TOKEN: ${{ secrets.FACTORY_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg github_token "${FACTORY_GITHUB_TOKEN}" \
+            --arg admin_secret "${FACTORY_ADMIN_SECRET}" \
+            '{GITHUB_TOKEN: $github_token, FACTORY_ADMIN_SECRET: $admin_secret}' \
+            | pnpm dlx wrangler@4 secret bulk \
+                --config config/deployer/clean/run-store/wrangler.toml

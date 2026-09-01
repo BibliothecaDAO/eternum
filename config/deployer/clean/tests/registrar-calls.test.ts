@@ -81,4 +81,10 @@ describe("registrar receipt parsing", () => {
   test("resolves the eternum world registrar now that both s2 worlds are deployed", () => {
     expect(() => assertRegistrarAvailable("appchain.eternum")).not.toThrow();
   });
+
+  test("resolves the Madara registrar from the deployed manifest", () => {
+    expect(resolveRegistrarContractAddress("registrar_systems", "madara.blitz")).toBe(
+      "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
+    );
+  });
 });

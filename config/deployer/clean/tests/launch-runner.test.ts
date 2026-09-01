@@ -170,7 +170,7 @@ describe("registrar game launch", () => {
         expect.objectContaining({ address: "0xoperator" }),
         { address: "0xledger", rpcUrl: "https://mainnet.example/rpc" },
         19,
-        1,
+        6,
         4_070_908_800,
         4_070_912_400,
       );

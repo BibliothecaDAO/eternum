@@ -266,6 +266,7 @@ async function resolveHarnessGames(
       privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
       rpcUrl: options.rpcUrl,
       startTime: startAt,
+      version: "1",
     });
     if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
     games.push({ gameId: summary.gameId, gameName, startAt });

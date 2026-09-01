@@ -23,7 +23,7 @@ export type SeriesLaunchChildStepStatus = "pending" | "running" | "succeeded" | 
 export interface WorldDeployment {
   namespace: string;
   manifestPath: string;
-  registrarAddress: string;
+  registrarAddress?: string;
 }
 
 export interface DeploymentEnvironment {

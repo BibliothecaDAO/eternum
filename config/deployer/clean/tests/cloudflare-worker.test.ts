@@ -51,6 +51,92 @@ describe("factory worker registrar workflows", () => {
     });
   });
 
+  test("echoes one exact allowed origin", async () => {
+    installGitHubFetch(({ url }) => {
+      if (url.includes("/contents/runs/madara/blitz/bltz-cors.json")) {
+        return new Response("Not Found", { status: 404 });
+      }
+      if (url.includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+
+    const response = await worker.fetch(
+      buildJsonRequest(
+        "/api/factory/runs",
+        {
+          environment: "madara.blitz",
+          gameName: "bltz-cors",
+          gameStartTime: "2099-01-01T00:00:00Z",
+        },
+        { Origin: "https://play.realms.party" },
+      ),
+      buildWorkerEnv({
+        FACTORY_ALLOWED_ORIGINS: "https://play.realms.party, https://eternum-game.pages.dev",
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://play.realms.party");
+  });
+
+  test("rejects a browser origin outside the allowlist before touching GitHub", async () => {
+    const calls = installGitHubFetch(() => {
+      throw new Error("GitHub should not be called");
+    });
+
+    const response = await worker.fetch(
+      buildJsonRequest(
+        "/api/factory/runs",
+        {
+          environment: "madara.blitz",
+          gameName: "bltz-cors-rejected",
+          gameStartTime: "2099-01-01T00:00:00Z",
+        },
+        { Origin: "https://attacker.example" },
+      ),
+      buildWorkerEnv({ FACTORY_ALLOWED_ORIGINS: "https://play.realms.party" }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+    expect(await response.json()).toEqual({ error: "Origin is not allowed" });
+    expect(calls).toHaveLength(0);
+  });
+
+  test("dispatches configured rotation YAML files during scheduled maintenance", async () => {
+    const calls = installGitHubFetch(({ url }) => {
+      if (url.includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+      if (url.includes("/contents/indexes/")) {
+        return new Response("Not Found", { status: 404 });
+      }
+      throw new Error(`Unexpected fetch call: ${url}`);
+    });
+    const configPath = "config/deployer/clean/launch-configs/madara-blitz-daily.yaml";
+
+    await runScheduledWorker(
+      buildWorkerEnv({
+        FACTORY_ROTATION_CONFIGS: `${configPath}, ${configPath}`,
+      }),
+    );
+
+    const dispatches = calls.filter((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    expect(dispatches).toHaveLength(1);
+    expect(JSON.parse(String(dispatches[0]?.init?.body))).toEqual({
+      ref: "next",
+      inputs: {
+        launch_kind: "rotation",
+        environment: "madara.blitz",
+        launch_step: "full",
+        config_path: configPath,
+        auto_retry_enabled: "true",
+      },
+    });
+  });
+
   test("rejects retired public-chain environments before touching GitHub", async () => {
     const calls = installGitHubFetch(() => {
       throw new Error("GitHub should not be called");
@@ -155,6 +241,17 @@ function buildWorkerEnv(overrides: Record<string, string> = {}) {
     FACTORY_RUN_STORE_BRANCH: "factory-runs",
     ...overrides,
   };
+}
+
+async function runScheduledWorker(env: Record<string, string>) {
+  let scheduledTask: Promise<unknown> | undefined;
+  worker.scheduled({}, env, {
+    waitUntil(task: Promise<unknown>) {
+      scheduledTask = task;
+    },
+  });
+  if (!scheduledTask) throw new Error("Worker did not register scheduled maintenance");
+  await scheduledTask;
 }
 
 function buildGameRun({ waitStatus }: { waitStatus: "failed" | "succeeded" }) {

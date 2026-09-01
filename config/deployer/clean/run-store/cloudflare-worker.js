@@ -11,7 +11,8 @@
  * - GITHUB_WORKFLOW_FILE             default: game-launch.yml
  * - GITHUB_WORKFLOW_REF              default: next
  * - FACTORY_RUN_STORE_BRANCH         default: factory-runs
- * - FACTORY_ALLOWED_ORIGIN           default: *
+ * - FACTORY_ALLOWED_ORIGINS          comma-separated exact browser origins
+ * - FACTORY_ROTATION_CONFIGS         comma-separated repo-relative rotation YAML paths
  */
 
 const DEFAULT_FACTORY_RUN_RECOVERY_GRACE_MS = 15_000;
@@ -45,6 +46,7 @@ export default {
 async function handleRequest(request, env) {
   try {
     const url = new URL(request.url);
+    requireAllowedFactoryOrigin(request, env);
 
     if (request.method === "OPTIONS") {
       return buildCorsPreflightResponse(request, env);
@@ -136,12 +138,12 @@ async function handleRequest(request, env) {
 
     return buildJsonResponse(request, env, { error: "Not found" }, 404);
   } catch (error) {
-    logUnexpectedWorkerError(request, error);
-
     if (error instanceof HttpError) {
+      if (error.status >= 500) logUnexpectedWorkerError(request, error);
       return buildJsonResponse(request, env, { error: error.message }, error.status);
     }
 
+    logUnexpectedWorkerError(request, error);
     const message = error instanceof Error ? error.message : "Unexpected error";
     return buildJsonResponse(request, env, { error: message }, 500);
   }
@@ -2315,6 +2317,7 @@ function buildBaseLaunchWorkflowInputs(request) {
   };
 
   const launchOptions = buildReplayableLaunchOptions(request);
+  assignOptionalWorkflowInput(inputs, "config_path", request.configPath);
   if (Object.keys(launchOptions).length > 0) {
     inputs.launch_options_json = JSON.stringify(launchOptions);
   }
@@ -2558,14 +2561,37 @@ function buildJsonResponse(request, env, value, status) {
 
 function buildCorsHeaders(request, env) {
   const requestOrigin = request.headers.get("Origin");
-  const allowedOrigin = env.FACTORY_ALLOWED_ORIGIN || requestOrigin || "*";
+  const allowedOrigin = resolveAllowedFactoryOrigin(requestOrigin, env);
 
   return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+    ...(allowedOrigin ? { "Access-Control-Allow-Origin": allowedOrigin } : {}),
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Authorization,Content-Type,x-factory-admin-secret",
     Vary: "Origin",
   };
+}
+
+function requireAllowedFactoryOrigin(request, env) {
+  const requestOrigin = request.headers.get("Origin");
+  if (requestOrigin && !resolveAllowedFactoryOrigin(requestOrigin, env)) {
+    throw new HttpError(403, "Origin is not allowed");
+  }
+}
+
+function resolveAllowedFactoryOrigin(requestOrigin, env) {
+  if (!requestOrigin) return undefined;
+  return parseCommaSeparatedValues(env.FACTORY_ALLOWED_ORIGINS).includes(requestOrigin) ? requestOrigin : undefined;
+}
+
+function parseCommaSeparatedValues(value) {
+  return [
+    ...new Set(
+      String(value || "")
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 async function readJsonBody(request) {
@@ -2738,10 +2764,47 @@ function encodeTextToBase64(value) {
 
 async function handleScheduledFactoryMaintenance(env) {
   const github = createGitHubClient(env);
+  await dispatchConfiguredFactoryRotations(github, env);
   const branch = resolveRunStoreBranch(env);
   await retryEligibleFactorySeriesRuns(github, branch);
   await retryEligibleFactoryRotationRuns(github, branch);
   await evaluateEligibleFactoryRotationRuns(github, branch);
+}
+
+async function dispatchConfiguredFactoryRotations(github, env) {
+  for (const configPath of parseCommaSeparatedValues(env.FACTORY_ROTATION_CONFIGS)) {
+    const environment = resolveFactoryRotationConfigEnvironment(configPath);
+    try {
+      await dispatchGameLaunchWorkflow(github, {
+        launchKind: "rotation",
+        environment,
+        configPath,
+        launchStep: "full",
+      });
+    } catch (error) {
+      logFactoryError("rotation_config_dispatch_failed", {
+        environment,
+        configPath,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
+
+function resolveFactoryRotationConfigEnvironment(configPath) {
+  const directory = "config/deployer/clean/launch-configs/";
+  if (!configPath.startsWith(directory) || configPath.includes("..") || !configPath.endsWith(".yaml")) {
+    throw new Error(`Invalid FACTORY_ROTATION_CONFIGS path "${configPath}"`);
+  }
+
+  const fileName = configPath.slice(directory.length);
+  const environments = FACTORY_ENVIRONMENTS.filter((environment) =>
+    fileName.startsWith(`${environment.replaceAll(".", "-")}-`),
+  );
+  if (environments.length !== 1) {
+    throw new Error(`Cannot resolve a factory environment from rotation config "${configPath}"`);
+  }
+  return environments[0];
 }
 
 async function retryEligibleFactorySeriesRuns(github, branch) {

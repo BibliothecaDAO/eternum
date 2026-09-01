@@ -120,7 +120,7 @@ describe("launch request helpers", () => {
       waitForFactoryIndexPollMs: 2_000,
     });
     expect(madaraRequest).toMatchObject({
-      version: "1",
+      version: "6",
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
     });
@@ -236,6 +236,20 @@ games:
           startTime: "2026-05-09T18:00:00Z",
         },
       ],
+    });
+  });
+
+  test("loads the standing Madara rotation with the shared launch preset", () => {
+    const configPath = join(import.meta.dir, "../launch-configs/madara-blitz-daily.yaml");
+
+    expect(buildLaunchRotationRequest({ "config-path": configPath })).toMatchObject({
+      environmentId: "madara.blitz",
+      rotationName: "madara-blitz-daily",
+      advanceWindowGames: 1,
+      evaluationIntervalMinutes: 30,
+      durationSeconds: 3_600,
+      devModeOn: true,
+      version: "6",
     });
   });
 

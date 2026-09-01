@@ -8,7 +8,7 @@ export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 // all immutable, retired, never offered again.
 export const DEFAULT_APPCHAIN_PRESET_ID = "6";
 export const DEFAULT_APPCHAIN_ETERNUM_PRESET_ID = "10";
-export const DEFAULT_MADARA_PRESET_ID = "1";
+export const DEFAULT_MADARA_PRESET_ID = "6";
 export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
 export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;
 export const BLITZ_REGISTRATION_COUNT_CAP = 96;
@@ -28,7 +28,6 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
     world: {
       namespace: "s2",
       manifestPath: "contracts/l3/game/manifest_madara.json",
-      registrarAddress: "0x23d89ba402b33599107413ddb0f33f0cc38e57dcff4aa3b1989cba12076e9a5",
     },
   },
   "appchain.blitz": {

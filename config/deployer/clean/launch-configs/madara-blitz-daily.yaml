@@ -1,0 +1,23 @@
+# One daily lab game at 11:00 UTC. The advance window keeps the next game
+# joinable for roughly 24 hours; the worker evaluates the rotation every 30 minutes.
+launchKind: rotation
+environmentId: madara.blitz
+rotationName: madara-blitz-daily
+firstGameStartTime: 2026-09-02T11:00:00Z
+maxGames: 365
+advanceWindowGames: 1
+evaluationIntervalMinutes: 30
+autoRetryEnabled: true
+autoRetryIntervalMinutes: 15
+durationSeconds: 3600
+devModeOn: true
+version: "6"
+
+weeklyCadence:
+  - { weekday: monday, utcTime: "11:00" }
+  - { weekday: tuesday, utcTime: "11:00" }
+  - { weekday: wednesday, utcTime: "11:00" }
+  - { weekday: thursday, utcTime: "11:00" }
+  - { weekday: friday, utcTime: "11:00" }
+  - { weekday: saturday, utcTime: "11:00" }
+  - { weekday: sunday, utcTime: "11:00" }

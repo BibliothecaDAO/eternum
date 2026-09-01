@@ -1,0 +1,19 @@
+name = "realms-game-launch"
+main = "cloudflare-worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+routes = [
+  { pattern = "launch.realms.party", custom_domain = true },
+]
+
+[vars]
+GITHUB_REPOSITORY = "BibliothecaDAO/eternum"
+GITHUB_WORKFLOW_FILE = "game-launch.yml"
+GITHUB_WORKFLOW_REF = "feat/madara-lab"
+FACTORY_RUN_STORE_BRANCH = "factory-runs"
+FACTORY_ALLOWED_ORIGINS = "https://play.realms.party,https://eternum-game.pages.dev"
+FACTORY_ROTATION_CONFIGS = "config/deployer/clean/launch-configs/madara-blitz-daily.yaml"
+
+[triggers]
+crons = ["*/30 * * * *"]
