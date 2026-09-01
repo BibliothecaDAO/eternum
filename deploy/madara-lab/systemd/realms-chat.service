@@ -15,6 +15,11 @@ Environment=PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
 Environment=PORT=3005
 Environment=DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/eternum_realtime
 Environment=CORS_ORIGIN=https://play.realms.party,https://eternum-game.pages.dev
+Environment=IDENTITY_URL=http://127.0.0.1:3000
+Environment=HERALD_URL=http://127.0.0.1:3003
+Environment=HERALD_CHAIN=madara
+Environment=GAME_RPC_URL=https://rpc.realms.party/rpc/v0_10_2
+Environment=PLAYER_REGISTRY_ADDRESS=0x047d5db2930b9a3270d9cb0e31e3eed2645602c5b51419207f730f3a7f8fafe0
 ExecStart=/usr/bin/env bun run src/server.ts
 Restart=always
 RestartSec=3
