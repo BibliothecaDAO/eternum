@@ -14,6 +14,7 @@ export const TERRAIN_VERIFICATION_SCENE_IDS = Object.freeze([
   "all-biomes",
   "temperate-grove",
   "owned-roads",
+  "settlement-regrowth",
   "tropical-coast",
   "arid-basin",
   "cold-front",
@@ -33,6 +34,18 @@ const ROAD_VERIFICATION_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze([
   { col: 15, owner: "1", row: 3, structureId: "eastern-realm" },
   { col: 12, owner: "2", row: 9, structureId: "foreign-realm" },
 ]);
+export const TERRAIN_SETTLEMENT_REGROWTH_SITES = Object.freeze([
+  { col: 5, row: 4 },
+  { col: 10, row: 7 },
+  { col: 14, row: 4 },
+]);
+const SETTLEMENT_REGROWTH_ROAD_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze(
+  TERRAIN_SETTLEMENT_REGROWTH_SITES.map((site, index) => ({
+    ...site,
+    owner: "settlement-evaluation-owner",
+    structureId: `settlement-realm-${index + 1}`,
+  })),
+);
 
 const BIOME_REGION_COLUMNS = 4;
 const BIOME_REGION_WIDTH = ALL_BIOMES_COLUMNS / BIOME_REGION_COLUMNS;
@@ -80,7 +93,11 @@ export function createTerrainVerificationRequest(sceneId: TerrainVerificationSce
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
     roadSegments:
-      sceneId === "owned-roads" ? buildTerrainRoadSegments({ anchors: ROAD_VERIFICATION_ANCHORS, cells }) : [],
+      sceneId === "owned-roads"
+        ? buildTerrainRoadSegments({ anchors: ROAD_VERIFICATION_ANCHORS, cells })
+        : sceneId === "settlement-regrowth"
+          ? buildTerrainRoadSegments({ anchors: SETTLEMENT_REGROWTH_ROAD_ANCHORS, cells })
+          : [],
     strictBiomeParity: false,
     subdivisions: 3,
   };
@@ -186,7 +203,9 @@ function createAnchorCells(sceneId: TerrainBiomeAnchorSceneId) {
       occupied:
         sceneId === "owned-roads"
           ? ROAD_VERIFICATION_ANCHORS.some((anchor) => anchor.col === col && anchor.row === row)
-          : col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
+          : sceneId === "settlement-regrowth"
+            ? TERRAIN_SETTLEMENT_REGROWTH_SITES.some((site) => site.col === col && site.row === row)
+            : col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
       previewBiome: biome,
       row,
     };
@@ -201,6 +220,10 @@ function resolveAnchorBiome(sceneId: TerrainBiomeAnchorSceneId, col: number, row
     case "owned-roads":
       if (y + warp < 0.22) return BiomeType.Grassland;
       if (x - warp > 0.72) return BiomeType.TemperateRainForest;
+      return BiomeType.TemperateDeciduousForest;
+    case "settlement-regrowth":
+      if (y + warp < 0.2) return BiomeType.Grassland;
+      if (x - warp > 0.74) return BiomeType.TemperateRainForest;
       return BiomeType.TemperateDeciduousForest;
     case "temperate-grove":
       if (y + warp < 0.22) return BiomeType.Grassland;

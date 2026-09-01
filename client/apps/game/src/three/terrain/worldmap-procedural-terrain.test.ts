@@ -159,6 +159,7 @@ function emptyPresentationDiagnostics(): TerrainPresentationDiagnostics {
     propInstances: 0,
     propTriangles: 0,
     roadSegments: 0,
+    settlementSites: 0,
     shroudInstances: 0,
     shroudTriangles: 0,
     triangles: 0,

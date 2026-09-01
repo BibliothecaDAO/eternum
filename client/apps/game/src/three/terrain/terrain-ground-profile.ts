@@ -106,22 +106,33 @@ export function resolveTerrainGroundEcology(
   const shore = clampUnit(context.shore);
   const canopy = clampUnit(vegetation.canopyCover);
   const debris = clampUnit(vegetation.debrisCover);
+  const disturbance = clampUnit(vegetation.disturbanceStrength);
   const moss = canopy * vegetation.maturity * moisture * (0.65 + debris * 0.35);
   const regeneratingCover = vegetation.successionStrength * vegetation.understoryCover * moisture * (1 - canopy * 0.35);
   const wetlandCover = shore * moisture * (1 - canopy * 0.45) * (0.5 + vegetation.edgeStrength * 0.5);
   const dryLitter = canopy * (1 - moisture) * (0.5 + vegetation.maturity * 0.5);
 
-  result[GRASS] *= 1 - canopy * 0.62;
+  result[DRY_EARTH] += disturbance * 0.24;
+  result[GRASS] *= (1 - canopy * 0.62) * (1 - disturbance * 0.5);
   result[GRASS] += regeneratingCover * 0.18 + wetlandCover * 0.22;
-  result[LITTER] += canopy * 0.28 + debris * 0.14 + moss * 0.38 + regeneratingCover * 0.08 + dryLitter * 0.25;
-  result[SOIL] += canopy * 0.06 + wetlandCover * 0.22;
+  result[LITTER] +=
+    canopy * 0.28 + debris * 0.14 + moss * 0.38 + regeneratingCover * 0.08 + dryLitter * 0.25 + disturbance * 0.08;
+  result[SOIL] += canopy * 0.06 + wetlandCover * 0.22 + disturbance * 0.12;
 
   return {
-    roughnessOffset: clamp(-0.16, 0.08, moss * 0.04 + dryLitter * 0.05 - wetlandCover * 0.14),
+    roughnessOffset: clamp(-0.16, 0.08, moss * 0.04 + dryLitter * 0.05 - wetlandCover * 0.14 + disturbance * 0.035),
     tint: [
-      clamp(0.78, 1.12, 1 - moss * 0.12 - regeneratingCover * 0.04 - wetlandCover * 0.1 + dryLitter * 0.06),
-      clamp(0.78, 1.12, 1 - moss * 0.04 + regeneratingCover * 0.04 - wetlandCover * 0.04),
-      clamp(0.78, 1.12, 1 - moss * 0.16 - regeneratingCover * 0.07 - wetlandCover * 0.08 - dryLitter * 0.1),
+      clamp(
+        0.78,
+        1.12,
+        1 - moss * 0.12 - regeneratingCover * 0.04 - wetlandCover * 0.1 + dryLitter * 0.06 + disturbance * 0.04,
+      ),
+      clamp(0.78, 1.12, 1 - moss * 0.04 + regeneratingCover * 0.04 - wetlandCover * 0.04 - disturbance * 0.025),
+      clamp(
+        0.78,
+        1.12,
+        1 - moss * 0.16 - regeneratingCover * 0.07 - wetlandCover * 0.08 - dryLitter * 0.1 - disturbance * 0.08,
+      ),
     ],
     weights: normalizeWeights(result),
   };

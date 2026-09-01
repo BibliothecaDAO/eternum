@@ -50,6 +50,7 @@ export interface TerrainBiomeInfluence {
 export interface TerrainVegetationField {
   canopyCover: number;
   debrisCover: number;
+  disturbanceStrength: number;
   edgeStrength: number;
   gapStrength: number;
   maturity: number;
@@ -63,6 +64,7 @@ export interface TerrainPropDensityContext extends TerrainVegetationField {
   elevation: number;
   moisture: number;
   patchiness: number;
+  settlementEdgeStrength: number;
 }
 
 export interface TerrainVisualSample extends TerrainSurfaceSample {
@@ -84,7 +86,10 @@ const ROAD_INNER_RADIUS = 0.24;
 const ROAD_OUTER_RADIUS = 0.62;
 const ROAD_PROP_CLEARANCE_INNER_RADIUS = 0.32;
 const ROAD_PROP_CLEARANCE_OUTER_RADIUS = 0.72;
-const TERRAIN_ROAD_COLOR = new Color("#8b6d43");
+const TERRAIN_DISTURBED_GROUND_COLOR = new Color("#8b6d43");
+const SETTLEMENT_REGROWTH_INNER_RADIUS = 0.82;
+const SETTLEMENT_REGROWTH_PEAK_RADIUS = 1.18;
+const SETTLEMENT_REGROWTH_OUTER_RADIUS = 1.9;
 
 export class TerrainField {
   private readonly cellByKey = new Map<string, TerrainCellInput>();
@@ -222,25 +227,29 @@ export class TerrainField {
     });
     const road = this.sampleRoadProximity(worldX, worldZ);
     const roadGroundWeights = applyTerrainGroundRoad(groundEcology.weights, road);
-    const paddedGroundWeights = applyTerrainGroundStructurePad(
-      roadGroundWeights,
-      this.resolveStructurePadWeight(worldX, worldZ, candidates),
-    );
+    const structurePad = this.resolveStructurePadWeight(worldX, worldZ, candidates);
+    const paddedGroundWeights = applyTerrainGroundStructurePad(roadGroundWeights, structurePad);
 
     const macroStrength = macroTintStrength * inverseWeight;
     const wetness = shore * shoreWetness * inverseWeight;
     const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
     const albedoFactor = macroFactor * (1 - wetness * 0.16) * (1 - road * 0.08);
-    const roadColorBlend = road * 0.72;
+    const disturbedColorBlend = Math.max(road * 0.72, vegetation.disturbanceStrength * 0.5, structurePad * 0.78);
     const baseColor = [red * inverseWeight, green * inverseWeight, blue * inverseWeight] as const;
 
     return {
       biome: strongestBiome,
       biomeId: strongestBiomeId,
       color: [
-        (baseColor[0] + (TERRAIN_ROAD_COLOR.r - baseColor[0]) * roadColorBlend) * albedoFactor * groundEcology.tint[0],
-        (baseColor[1] + (TERRAIN_ROAD_COLOR.g - baseColor[1]) * roadColorBlend) * albedoFactor * groundEcology.tint[1],
-        (baseColor[2] + (TERRAIN_ROAD_COLOR.b - baseColor[2]) * roadColorBlend) * albedoFactor * groundEcology.tint[2],
+        (baseColor[0] + (TERRAIN_DISTURBED_GROUND_COLOR.r - baseColor[0]) * disturbedColorBlend) *
+          albedoFactor *
+          groundEcology.tint[0],
+        (baseColor[1] + (TERRAIN_DISTURBED_GROUND_COLOR.g - baseColor[1]) * disturbedColorBlend) *
+          albedoFactor *
+          groundEcology.tint[1],
+        (baseColor[2] + (TERRAIN_DISTURBED_GROUND_COLOR.b - baseColor[2]) * disturbedColorBlend) *
+          albedoFactor *
+          groundEcology.tint[2],
       ],
       explored,
       groundWeights: paddedGroundWeights,
@@ -363,11 +372,15 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
-  ): Pick<TerrainPropDensityContext, "biomeInfluences" | "clearance" | "elevation" | "moisture"> {
+  ): Pick<
+    TerrainPropDensityContext,
+    "biomeInfluences" | "clearance" | "elevation" | "moisture" | "settlementEdgeStrength"
+  > {
     let totalWeight = 0;
     let elevation = 0;
     let moisture = 0;
     let clearance = 1;
+    let settlementEdgeStrength = 0;
     const biomeWeights = new Map<BiomeType, number>();
 
     for (const candidate of candidates) {
@@ -378,6 +391,7 @@ export class TerrainField {
       if (cell?.occupied) {
         const distance = Math.sqrt(distanceSquared);
         clearance = Math.min(clearance, smoothstep(PROP_CLEARANCE_INNER_RADIUS, PROP_CLEARANCE_OUTER_RADIUS, distance));
+        settlementEdgeStrength = Math.max(settlementEdgeStrength, resolveSettlementRegrowthWeight(distance));
       }
       totalWeight += weight;
       elevation += candidate.elevation * weight;
@@ -386,7 +400,9 @@ export class TerrainField {
     }
 
     clearance = Math.min(clearance, this.sampleRoadClearance(worldX, worldZ));
-    if (totalWeight === 0) return { biomeInfluences: [], clearance, elevation: 0, moisture: 0 };
+    if (totalWeight === 0) {
+      return { biomeInfluences: [], clearance, elevation: 0, moisture: 0, settlementEdgeStrength };
+    }
     const inverseWeight = 1 / totalWeight;
     return {
       biomeInfluences: Array.from(biomeWeights, ([biome, weight]) => ({
@@ -396,6 +412,7 @@ export class TerrainField {
       clearance,
       elevation: elevation * inverseWeight,
       moisture: moisture * inverseWeight,
+      settlementEdgeStrength,
     };
   }
 
@@ -403,12 +420,16 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
-    environment: Pick<TerrainPropDensityContext, "biomeInfluences" | "clearance" | "elevation" | "moisture">,
+    environment: Pick<
+      TerrainPropDensityContext,
+      "biomeInfluences" | "clearance" | "elevation" | "moisture" | "settlementEdgeStrength"
+    >,
   ): TerrainVegetationField {
     if (candidates.length === 0 || environment.biomeInfluences.length === 0) {
       return {
         canopyCover: 0,
         debrisCover: 0,
+        disturbanceStrength: 0,
         edgeStrength: 0,
         gapStrength: 1,
         maturity: 0,
@@ -453,7 +474,7 @@ export class TerrainField {
     const gapThreshold = 0.7 - ecology.clearingStrength * 0.22;
     const dominantBiomeInfluence = Math.max(...environment.biomeInfluences.map(({ weight }) => weight));
     const edgeStrength = clampUnit((1 - dominantBiomeInfluence) * 2);
-    const disturbance = 1 - environment.clearance;
+    const disturbance = Math.max(1 - environment.clearance, environment.settlementEdgeStrength * 0.72);
     const naturalGapStrength = clampUnit(
       smoothstep(gapThreshold, gapThreshold + 0.22, gapNoise) * (0.35 + ecology.clearingStrength * 0.65),
     );
@@ -475,7 +496,8 @@ export class TerrainField {
         (0.7 + smoothstep(0.12, 0.88, canopyPatch) * 0.38),
     );
     const debrisCover = clampUnit(
-      canopyCover * (0.16 + smoothstep(0.18, 0.82, debrisPatch) * 0.46) * (1 - disturbance * 0.65),
+      canopyCover * (0.16 + smoothstep(0.18, 0.82, debrisPatch) * 0.46) * (1 - disturbance * 0.65) +
+        environment.settlementEdgeStrength * 0.28,
     );
     const maturity = clampUnit(
       canopyCover * (0.5 + debrisPatch * 0.5) * (1 - edgeStrength * 0.55) * (1 - gapStrength * 0.6) * (1 - disturbance),
@@ -487,6 +509,7 @@ export class TerrainField {
     return {
       canopyCover,
       debrisCover,
+      disturbanceStrength: disturbance,
       edgeStrength,
       gapStrength,
       maturity,
@@ -735,6 +758,12 @@ function pointToSegmentDistance(
   if (lengthSquared <= Number.EPSILON) return Math.hypot(pointX - start[0], pointZ - start[1]);
   const projection = clampUnit(((pointX - start[0]) * deltaX + (pointZ - start[1]) * deltaZ) / lengthSquared);
   return Math.hypot(pointX - (start[0] + deltaX * projection), pointZ - (start[1] + deltaZ * projection));
+}
+
+function resolveSettlementRegrowthWeight(distance: number): number {
+  const outsideCore = smoothstep(SETTLEMENT_REGROWTH_INNER_RADIUS, SETTLEMENT_REGROWTH_PEAK_RADIUS, distance);
+  const insideOuterEdge = 1 - smoothstep(SETTLEMENT_REGROWTH_PEAK_RADIUS, SETTLEMENT_REGROWTH_OUTER_RADIUS, distance);
+  return outsideCore * insideOuterEdge;
 }
 
 function clampUnit(value: number): number {

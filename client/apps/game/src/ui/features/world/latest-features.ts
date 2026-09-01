@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-01",
+    title: "Settlement Regrowth Zones",
+    description:
+      "Improved land around settlements with disturbed soil, cleared mature growth, pioneer shrubs and birch, and natural rings of stumps and fallen timber.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-01",
     title: "Living Road Networks",
     description:
       "Added natural roads between nearby structures under the same owner, with routes that avoid water and clear vegetation while blending into the surrounding landscape.",

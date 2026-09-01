@@ -39,9 +39,11 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   prepareMs: 0,
   propInstances: 0,
   qualityTier: "detail",
+  realmInstances: 0,
   revealProgress: 0,
   roadSegments: 0,
   sceneId: "all-biomes",
+  settlementSites: 0,
   shroudActiveReveals: 0,
   shroudFrontierInstances: 0,
   shroudInstances: 0,
@@ -260,7 +262,9 @@ export const ProceduralTerrainDebugView = () => {
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
             <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
+            <DebugMetric label="Realms" value={stats.realmInstances.toLocaleString()} />
             <DebugMetric label="Roads" value={stats.roadSegments.toLocaleString()} />
+            <DebugMetric label="Settlements" value={stats.settlementSites.toLocaleString()} />
             <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
             <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />

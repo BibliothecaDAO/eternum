@@ -44,6 +44,7 @@ export interface TerrainPresentationDiagnostics {
   propInstances: number;
   propTriangles: number;
   roadSegments: number;
+  settlementSites: number;
   shroudInstances: number;
   shroudTriangles: number;
   triangles: number;
@@ -373,10 +374,19 @@ function summarizePresentation(
       frontierPreviewCells: summary.frontierPreviewCells + page.diagnostics.frontierPreviewCells,
       geometryBytes: summary.geometryBytes + page.diagnostics.geometryBytes,
       pages: summary.pages + 1,
+      settlementSites: summary.settlementSites + page.diagnostics.settlementSites,
       triangles: summary.triangles + page.diagnostics.triangles,
       vertices: summary.vertices + page.diagnostics.vertices,
     }),
-    { fogTerrainCells: 0, frontierPreviewCells: 0, geometryBytes: 0, pages: 0, triangles: 0, vertices: 0 },
+    {
+      fogTerrainCells: 0,
+      frontierPreviewCells: 0,
+      geometryBytes: 0,
+      pages: 0,
+      settlementSites: 0,
+      triangles: 0,
+      vertices: 0,
+    },
   );
   return {
     ...terrain,

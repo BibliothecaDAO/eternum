@@ -3,7 +3,11 @@ import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
-import { getTerrainPropCanopyExclusionRadius, getTerrainPropPlacementLayer } from "./terrain-prop-catalog";
+import {
+  getTerrainPropCanopyExclusionRadius,
+  getTerrainPropDisturbanceAffinity,
+  getTerrainPropPlacementLayer,
+} from "./terrain-prop-catalog";
 import { prepareTerrainPropInstances, resolveEffectiveTerrainPropDensity } from "./terrain-props";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
@@ -193,6 +197,32 @@ describe("terrain prop placement", () => {
       ),
     ).toBe(true);
   });
+
+  it("biases settlement regrowth edges toward pioneer cover and deadwood", () => {
+    const occupiedSites = new Set(["6:6", "12:12", "18:18"]);
+    const cells = Array.from({ length: 25 * 25 }, (_, index) => {
+      const col = index % 25;
+      const row = Math.floor(index / 25);
+      return cell(col, row, BiomeType.TemperateDeciduousForest, occupiedSites.has(`${col}:${row}`));
+    });
+    const page = request(cells, "settlement-regrowth");
+    const field = new TerrainField(page);
+    const contextual = prepareTerrainPropInstances(page, field).map((instance) => ({
+      ...instance,
+      context: field.samplePropDensityContext(instance.worldX, instance.worldZ, {
+        col: instance.ownerCol,
+        row: instance.ownerRow,
+      }),
+    }));
+    const regrowth = contextual.filter(({ context }) => context.settlementEdgeStrength > 0.35);
+    const undisturbed = contextual.filter(({ context }) => context.settlementEdgeStrength === 0);
+
+    expect(regrowth.length).toBeGreaterThan(2);
+    expect(average(regrowth.map(({ archetype }) => getTerrainPropDisturbanceAffinity(archetype)))).toBeGreaterThan(
+      average(undisturbed.map(({ archetype }) => getTerrainPropDisturbanceAffinity(archetype))) + 0.08,
+    );
+    expect(regrowth.some(({ archetype }) => archetype === "shrub" || archetype === "stump")).toBe(true);
+  });
 });
 
 function average(values: readonly number[]): number {
@@ -245,11 +275,13 @@ function densityContext(overrides: Partial<TerrainPropDensityContext> & { normal
       patchiness: overrides.patchiness ?? 0.5,
       canopyCover: overrides.canopyCover ?? 0.7,
       debrisCover: overrides.debrisCover ?? 0.25,
+      disturbanceStrength: overrides.disturbanceStrength ?? 0,
       edgeStrength: overrides.edgeStrength ?? 0.2,
       gapStrength: overrides.gapStrength ?? 0.2,
       maturity: overrides.maturity ?? 0.45,
       successionStrength: overrides.successionStrength ?? 0.3,
       understoryCover: overrides.understoryCover ?? 0.5,
+      settlementEdgeStrength: overrides.settlementEdgeStrength ?? 0,
     },
     normalY: overrides.normalY ?? 1,
   };

@@ -99,6 +99,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       geometryBytes,
       prepareMs,
       roadSegments: request.roadSegments.length,
+      settlementSites: request.cells.filter(({ occupied }) => occupied).length,
       shroudInstances: shroudInstances.length,
       triangles: (buffers.indices.length + (waterBuffers?.indices.length ?? 0)) / 3,
       vertices: (buffers.positions.length + (waterBuffers?.positions.length ?? 0)) / 3,

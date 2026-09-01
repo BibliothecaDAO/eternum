@@ -79,6 +79,31 @@ describe("terrain gallery verification", () => {
     );
   });
 
+  it("requires disturbance sites in the settlement-regrowth gallery scene", () => {
+    const settlement = result("webgpu-auto", "webgpu", "textured");
+    settlement.sceneId = "settlement-regrowth";
+    settlement.snapshot.sceneId = "settlement-regrowth";
+    settlement.snapshot.biomeCount = 3;
+    settlement.snapshot.realmInstances = 3;
+    settlement.snapshot.settlementSites = 3;
+    const options = {
+      groundModes: ["textured"],
+      rendererModes: ["webgpu-auto"],
+      sceneIds: ["settlement-regrowth"],
+    };
+
+    expect(evaluateTerrainGalleryResults([settlement], options)).toMatchObject({ ok: true, reasons: [] });
+    settlement.snapshot.settlementSites = 0;
+    expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
+      "settlement-regrowth/webgpu-auto/textured: expected three deterministic settlement disturbance sites",
+    );
+    settlement.snapshot.settlementSites = 3;
+    settlement.snapshot.realmInstances = 0;
+    expect(evaluateTerrainGalleryResults([settlement], options).reasons).toContain(
+      "settlement-regrowth/webgpu-auto/textured: expected three production Realm instances",
+    );
+  });
+
   it("requires fog preview geometry to match the one-ring frontier", () => {
     const fog = result("webgpu-auto", "webgpu", "textured");
     fog.sceneId = "fog-frontier";
@@ -184,9 +209,11 @@ function result(rendererMode, activeMode, groundMode) {
       prepareMs: 20,
       propInstances: 39,
       qualityTier: "detail",
+      realmInstances: 0,
       revealProgress: 0,
       roadSegments: 0,
       sceneId: "all-biomes",
+      settlementSites: 0,
       shroudActiveReveals: 0,
       shroudFrontierInstances: 0,
       shroudInstances: 0,

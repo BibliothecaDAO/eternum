@@ -5,6 +5,7 @@ import { requireCompleteTerrainPropCatalog } from "./terrain-prop-asset-cache";
 import {
   TERRAIN_PROP_ARCHETYPE_IDS,
   getRequiredTerrainPropMeshNames,
+  getTerrainPropDisturbanceAffinity,
   getTerrainPropRole,
   getTerrainPropMeshName,
 } from "./terrain-prop-catalog";
@@ -36,5 +37,14 @@ describe("terrain prop catalog", () => {
     expect(getTerrainPropRole("shrub")).toBe("understory");
     expect(getTerrainPropRole("boulder")).toBe("rigid");
     expect(getTerrainPropRole("cactus")).toBe("rigid");
+  });
+
+  it("favors pioneer cover and deadwood at settlement regrowth edges", () => {
+    expect(getTerrainPropDisturbanceAffinity("shrub")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("broadleaf"));
+    expect(getTerrainPropDisturbanceAffinity("birch")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("willow"));
+    expect(getTerrainPropDisturbanceAffinity("stump")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("boulder"));
+    expect(getTerrainPropDisturbanceAffinity("fallen-log")).toBeGreaterThan(
+      getTerrainPropDisturbanceAffinity("boulder"),
+    );
   });
 });

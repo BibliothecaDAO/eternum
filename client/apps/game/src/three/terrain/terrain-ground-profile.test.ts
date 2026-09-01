@@ -89,6 +89,7 @@ function vegetation(overrides: Partial<Parameters<typeof resolveTerrainGroundEco
   return {
     canopyCover: 0.5,
     debrisCover: 0.2,
+    disturbanceStrength: 0,
     edgeStrength: 0.2,
     gapStrength: 0.2,
     maturity: 0.4,

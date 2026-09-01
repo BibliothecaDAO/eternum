@@ -137,6 +137,30 @@ describe("TerrainField", () => {
     expect(roadDensity.clearance).toBe(0);
   });
 
+  it("creates a pioneer regrowth ring beyond an occupied settlement core", () => {
+    const occupiedCells = Array.from({ length: 5 }, (_, col) =>
+      cell(col, 0, BiomeType.TemperateDeciduousForest, col === 0),
+    );
+    const openCells = occupiedCells.map((candidate) => ({ ...candidate, occupied: false }));
+    const occupiedField = new TerrainField(createRequest(occupiedCells));
+    const openField = new TerrainField(createRequest(openCells));
+    const settlement = terrainHexToWorld(0, 0);
+    const ringPoint = { x: settlement.x + 1.45, z: settlement.z };
+    const regrowth = occupiedField.samplePropDensityContext(ringPoint.x, ringPoint.z, occupiedCells[1]);
+    const undisturbed = openField.samplePropDensityContext(ringPoint.x, ringPoint.z, openCells[1]);
+    const regrowthGround = occupiedField.sampleVertex(ringPoint.x, ringPoint.z).groundWeights;
+    const openGround = openField.sampleVertex(ringPoint.x, ringPoint.z).groundWeights;
+    const regrowthColor = occupiedField.sampleVertex(ringPoint.x, ringPoint.z).color;
+    const openColor = openField.sampleVertex(ringPoint.x, ringPoint.z).color;
+
+    expect(regrowth.settlementEdgeStrength).toBeGreaterThan(0.35);
+    expect(regrowth.disturbanceStrength).toBeGreaterThan(0.2);
+    expect(regrowth.successionStrength).toBeGreaterThan(undisturbed.successionStrength + 0.2);
+    expect(regrowth.maturity).toBeLessThan(undisturbed.maturity);
+    expect(regrowthGround[1]).toBeGreaterThan(openGround[1]);
+    expect(regrowthColor[0]).toBeGreaterThan(openColor[0]);
+  });
+
   it("adds deterministic macro landforms without breaking biome ownership", () => {
     const cells = Array.from({ length: 8 }, (_, col) => cell(col, 0, BiomeType.Scorched));
     const first = new TerrainField(createRequest(cells));

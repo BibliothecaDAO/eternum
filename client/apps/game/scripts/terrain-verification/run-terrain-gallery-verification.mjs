@@ -15,6 +15,7 @@ const SCENE_IDS = [
   "all-biomes",
   "temperate-grove",
   "owned-roads",
+  "settlement-regrowth",
   "tropical-coast",
   "arid-basin",
   "cold-front",
@@ -104,6 +105,12 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (result.sceneId === "owned-roads" && !(result.snapshot?.roadSegments > 0)) {
       reasons.push(`${label}: expected deterministic same-owner road segments`);
     }
+    if (result.sceneId === "settlement-regrowth" && !(result.snapshot?.settlementSites >= 3)) {
+      reasons.push(`${label}: expected three deterministic settlement disturbance sites`);
+    }
+    if (result.sceneId === "settlement-regrowth" && result.snapshot?.realmInstances !== 3) {
+      reasons.push(`${label}: expected three production Realm instances`);
+    }
     const expectsFog = result.sceneId.startsWith("fog-");
     if (expectsFog && !(result.snapshot?.shroudInstances > 0)) {
       reasons.push(`${label}: expected deterministic exploration fog cells`);
@@ -192,7 +199,9 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.propInstances !== reference.propInstances ||
-        metric.roadSegments !== reference.roadSegments
+        metric.roadSegments !== reference.roadSegments ||
+        metric.settlementSites !== reference.settlementSites ||
+        metric.realmInstances !== reference.realmInstances
       ) {
         reasons.push(`${sceneId}: renderer backends produced different terrain presentation counts`);
       }

@@ -43,6 +43,19 @@ const SUCCESSION_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Ob
   stump: 0,
   willow: 0.35,
 });
+const DISTURBANCE_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
+  birch: 1,
+  boulder: 0,
+  broadleaf: 0.1,
+  cactus: 0,
+  conifer: 0.2,
+  "dead-tree": 0.55,
+  "fallen-log": 0.85,
+  palm: 0.2,
+  shrub: 1,
+  stump: 1,
+  willow: 0.25,
+});
 
 export function getTerrainPropRole(archetype: TerrainPropArchetypeId): TerrainPropRole {
   if (CANOPY_ARCHETYPES.has(archetype)) return "canopy";
@@ -64,6 +77,10 @@ export function getTerrainPropCanopyExclusionRadius(archetype: TerrainPropArchet
 
 export function getTerrainPropSuccessionAffinity(archetype: TerrainPropArchetypeId): number {
   return SUCCESSION_AFFINITY[archetype];
+}
+
+export function getTerrainPropDisturbanceAffinity(archetype: TerrainPropArchetypeId): number {
+  return DISTURBANCE_AFFINITY[archetype];
 }
 
 export const getTerrainPropMeshName = (archetype: TerrainPropArchetypeId, lod: TerrainPropLod): string =>

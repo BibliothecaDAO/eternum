@@ -7,6 +7,7 @@ import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
 import { TERRAIN_BIOME_DESCRIPTORS } from "./terrain-palette";
 import {
   getTerrainPropCanopyExclusionRadius,
+  getTerrainPropDisturbanceAffinity,
   getTerrainPropPlacementLayer,
   getTerrainPropRole,
   getTerrainPropSuccessionAffinity,
@@ -380,8 +381,17 @@ function resolveEcologicalWeights(
         : getTerrainPropRole(entry.archetype) === "canopy"
           ? 1.08 - undergrowth * 0.18
           : 0.86 + undergrowth * 0.28) *
-      resolveTerrainPropSuccessionWeight(entry.archetype, vegetation),
+      resolveTerrainPropSuccessionWeight(entry.archetype, vegetation) *
+      resolveTerrainPropDisturbanceWeight(entry.archetype, vegetation),
   }));
+}
+
+function resolveTerrainPropDisturbanceWeight(
+  archetype: TerrainPropArchetypeId,
+  vegetation: TerrainPropDensityContext,
+): number {
+  const affinity = getTerrainPropDisturbanceAffinity(archetype);
+  return 1 + vegetation.settlementEdgeStrength * (affinity * 1.35 - 0.3);
 }
 
 function resolveTerrainPropSuccessionWeight(
@@ -405,7 +415,7 @@ function resolveTerrainPropScale(
     value +
       (layer === "canopy" ? vegetation.maturity * 0.5 - vegetation.successionStrength * 0.36 : 0) +
       (layer === "understory" ? vegetation.successionStrength * 0.22 - vegetation.maturity * 0.08 : 0) +
-      (layer === "debris" ? vegetation.maturity * 0.18 : 0),
+      (layer === "debris" ? vegetation.maturity * 0.18 + vegetation.settlementEdgeStrength * 0.14 : 0),
   );
   if (role === "canopy") return 0.76 + shapedValue * 0.48;
   if (role === "understory") return 0.54 + shapedValue * 0.42;

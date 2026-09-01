@@ -1,9 +1,23 @@
-import { AmbientLight, Color, DirectionalLight, Group, PerspectiveCamera, Scene, Vector3 } from "three";
+import { StructureType } from "@bibliothecadao/types";
+import {
+  AmbientLight,
+  Color,
+  DirectionalLight,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  PerspectiveCamera,
+  Quaternion,
+  Scene,
+  Vector3,
+} from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import WebGPU from "three/addons/capabilities/WebGPU.js";
 import { WebGPURenderer } from "three/webgpu";
 
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
+import { getStructureModelPaths } from "@/three/constants/scene-constants";
+import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { TerrainQualityTier } from "@/three/terrain/terrain-quality";
@@ -11,11 +25,12 @@ import {
   createTerrainRevealVerificationRequest,
   createTerrainVerificationRequest,
   TERRAIN_REVEAL_TARGET,
+  TERRAIN_SETTLEMENT_REGROWTH_SITES,
   type TerrainVerificationSceneId,
 } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { TERRAIN_FOG_REVEAL_DURATION_SECONDS } from "@/three/terrain/terrain-fog-field";
 import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "@/three/terrain/terrain-fog-style";
-import { configureGltfTextureSupport } from "@/three/utils/utils";
+import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/utils";
 
 export interface ProceduralTerrainDebugStats {
   activeMode: "webgl2-fallback" | "webgpu";
@@ -40,9 +55,11 @@ export interface ProceduralTerrainDebugStats {
   prepareMs: number;
   propInstances: number;
   qualityTier: TerrainQualityTier;
+  realmInstances: number;
   revealProgress: number;
   roadSegments: number;
   sceneId: TerrainVerificationSceneId;
+  settlementSites: number;
   shroudActiveReveals: number;
   shroudFrontierInstances: number;
   shroudInstances: number;
@@ -89,6 +106,7 @@ interface TerrainDebugRuntime {
   firstRenderMs: number;
   frameSamplesMs: number[];
   renderer: TerrainDebugRendererSurface;
+  realmModel: InstancedModel | null;
   scene: Scene;
   terrain: ProceduralTerrain;
 }
@@ -133,6 +151,7 @@ export async function mountProceduralTerrainDebugRenderer(
         stopAnimation();
         resizeObserver.disconnect();
         runtime.controls.dispose();
+        runtime.realmModel?.dispose();
         runtime.terrain.dispose();
         runtime.renderer.dispose();
         delete debugWindow.__terrainVerification;
@@ -193,6 +212,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const propStats = terrain.getPropStats();
   const shroudStats = terrain.getShroudStats();
   const groundTextureStats = terrain.getGroundTextureStats();
+  const realmModel = await createSettlementRealmModel(input.sceneId, terrain);
+  const realmGeometry = measureInstancedModelGeometry(realmModel);
   terrain.object3d.userData.verification = {
     biomeCount: new Set(prepared.request.cells.map(({ biome }) => biome).filter(Boolean)).size,
     cellCount: prepared.request.cells.length,
@@ -209,15 +230,17 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     prepareMs: prepared.diagnostics.prepareMs,
     propInstances: propStats.instances,
     qualityTier: input.qualityTier,
+    realmInstances: realmModel?.getCount() ?? 0,
     revealProgress: input.revealProgress,
     roadSegments: prepared.diagnostics.roadSegments,
     sceneId: input.sceneId,
+    settlementSites: prepared.diagnostics.settlementSites,
     shroudActiveReveals: shroudStats.activeReveals,
     shroudFrontierInstances: shroudStats.frontierInstances,
     shroudInstances: shroudStats.instances,
     shroudTriangles: shroudStats.triangles,
-    triangles: prepared.diagnostics.triangles + propStats.triangles + shroudStats.triangles,
-    vertices: prepared.diagnostics.vertices,
+    triangles: prepared.diagnostics.triangles + propStats.triangles + shroudStats.triangles + realmGeometry.triangles,
+    vertices: prepared.diagnostics.vertices + realmGeometry.vertices,
   } satisfies Omit<
     ProceduralTerrainDebugStats,
     | "activeMode"
@@ -231,13 +254,52 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     | "textures"
   >;
   scene.add(terrain.object3d);
+  if (realmModel) scene.add(realmModel.group);
   scene.add(createLights());
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
   const firstRenderStartedAt = performance.now();
   renderer.render(scene, camera);
   const firstRenderMs = performance.now() - firstRenderStartedAt;
 
-  return { camera, cameraFrame, controls, frameSamplesMs: [], renderer, scene, terrain, firstRenderMs };
+  return { camera, cameraFrame, controls, frameSamplesMs: [], realmModel, renderer, scene, terrain, firstRenderMs };
+}
+
+async function createSettlementRealmModel(
+  sceneId: TerrainVerificationSceneId,
+  terrain: ProceduralTerrain,
+): Promise<InstancedModel | null> {
+  if (sceneId !== "settlement-regrowth") return null;
+  const realmPath = getStructureModelPaths(false)[StructureType.Realm][0];
+  const gltf = await gltfLoader.loadAsync(realmPath);
+  const model = new InstancedModel(gltf, TERRAIN_SETTLEMENT_REGROWTH_SITES.length, false, "Realm");
+  const matrix = new Matrix4();
+  const quaternion = new Quaternion();
+  const scale = new Vector3(1, 1, 1);
+  const up = new Vector3(0, 1, 0);
+
+  TERRAIN_SETTLEMENT_REGROWTH_SITES.forEach(({ col, row }, index) => {
+    const center = terrainHexToWorld(col, row);
+    const position = new Vector3(center.x, terrain.sampleSurface(center.x, center.z).height + 0.05, center.z);
+    quaternion.setFromAxisAngle(up, (index * Math.PI * 2) / TERRAIN_SETTLEMENT_REGROWTH_SITES.length);
+    matrix.compose(position, quaternion, scale);
+    model.setMatrixAt(index, matrix);
+  });
+  model.setCount(TERRAIN_SETTLEMENT_REGROWTH_SITES.length);
+  model.needsUpdate();
+  return model;
+}
+
+function measureInstancedModelGeometry(model: InstancedModel | null): { triangles: number; vertices: number } {
+  let triangles = 0;
+  let vertices = 0;
+  model?.group.traverse((object) => {
+    if (!(object instanceof InstancedMesh)) return;
+    const positionCount = object.geometry.getAttribute("position")?.count ?? 0;
+    const triangleCount = (object.geometry.index?.count ?? positionCount) / 3;
+    triangles += triangleCount * object.count;
+    vertices += positionCount * object.count;
+  });
+  return { triangles, vertices };
 }
 
 function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): void {

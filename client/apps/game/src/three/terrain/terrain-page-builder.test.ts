@@ -38,6 +38,7 @@ describe("prepareTerrainPage", () => {
 
     expect(forward.fingerprint).toBe(reverse.fingerprint);
     expect(occupied.fingerprint).not.toBe(forward.fingerprint);
+    expect(occupied.diagnostics.settlementSites).toBe(1);
   });
 
   it("includes road presentation in diagnostics and page identity", () => {
