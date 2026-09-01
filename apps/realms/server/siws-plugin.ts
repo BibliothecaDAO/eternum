@@ -1,3 +1,6 @@
+// Ported from apps/web/src/utils/auth/auth-siws-plugin.ts. The verification
+// logic is unchanged — nonce, address, host, SN_MAIN and on-chain signature
+// checks in the same order; apps/web keeps its copy until its deletion.
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, createAuthEndpoint } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
@@ -10,14 +13,11 @@ import { resolveEndpoint } from "@realms-world/chain";
 import { normalizeStarknetAddress, parseSiwsTypedData } from "@realms-world/identity";
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
+import { serverEnv } from "./env";
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 
-export interface SIWSPluginOptions {
+interface SIWSPluginOptions {
   domain: string;
-  // Optional configuration
-  chainId?: 1 | 11155111 | undefined;
-  version?: string;
-  resources?: string[];
 }
 
 function normalizeDomain(value?: string | null) {
@@ -51,12 +51,12 @@ function isEquivalentHost(a?: string, b?: string) {
 }
 
 const resolveIdentityRpcUrl = () =>
-  resolveEndpoint(process.env.IDENTITY_RPC_URL, {
+  resolveEndpoint(serverEnv.IDENTITY_RPC_URL, {
     name: "IDENTITY_RPC_URL",
     browserFacing: false,
   });
 
-export const consumeSiwsNonce = async (id: string): Promise<boolean> => {
+const consumeSiwsNonce = async (id: string): Promise<boolean> => {
   const consumed = await db
     .delete(verificationTable)
     .where(and(eq(verificationTable.id, id), gt(verificationTable.expiresAt, new Date())))
@@ -78,7 +78,6 @@ export const siws = (options: SIWSPluginOptions) =>
       },
     },
     endpoints: {
-      // Generate nonce endpoint
       nonce: createAuthEndpoint(
         "/siws/nonce",
         {
@@ -89,7 +88,6 @@ export const siws = (options: SIWSPluginOptions) =>
         },
         async (ctx) => {
           const nonce = randomBytes(32).toString("hex");
-          // Store nonce with 15-minute expiration
           await ctx.context.internalAdapter.createVerificationValue({
             identifier: `siws_${normalizeStarknetAddress(ctx.body.address)}`,
             value: nonce,
@@ -99,7 +97,6 @@ export const siws = (options: SIWSPluginOptions) =>
           return { nonce };
         },
       ),
-      // Verify siws payload
       verify: createAuthEndpoint(
         "/siws/verify",
         {
@@ -112,17 +109,14 @@ export const siws = (options: SIWSPluginOptions) =>
         },
         async (ctx) => {
           const { message, signature, address } = ctx.body;
-          // One address format everywhere: identity keys (nonce identifier, user
-          // id, address column) use the normalized form — the same derivation as
-          // apps/realms — while the raw address still goes to the chain for
-          // signature verification.
-          const owner = normalizeStarknetAddress(address);
 
+          // One address format everywhere: identity keys (nonce identifier,
+          // user id, address column) use the normalized form; the raw address
+          // still goes to the chain for signature verification.
+          const owner = normalizeStarknetAddress(address);
           const siwsMessage = parseSiwsTypedData(message);
           try {
-            // Find stored nonce to check it's validity
             const verification = await ctx.context.internalAdapter.findVerificationValue(`siws_${owner}`);
-            // Ensure nonce is valid and not expired
             if (!verification || new Date() > verification.expiresAt) {
               throw new APIError("UNAUTHORIZED", {
                 message: "Unauthorized: Invalid or expired nonce",
