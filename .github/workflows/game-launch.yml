@@ -160,7 +160,7 @@ jobs:
       - name: Build required packages
         run: |
           set -euo pipefail
-          pnpm --dir packages/types build
+          pnpm run build:packages
           pnpm --dir packages/provider build
 
       - name: Prepare launch arguments
