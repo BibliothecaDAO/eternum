@@ -1,4 +1,5 @@
 import { Context, Effect, Layer, Schema } from "effect";
+import { normalizeAddress } from "./address";
 import { BoundaryDecodeError, IdentityUnavailable } from "./errors";
 
 export interface LauncherIdentity {
@@ -17,8 +18,6 @@ const IdentitySessionSchema = Schema.Struct({
   session: Schema.Struct({ id: Schema.NonEmptyString }),
   user: Schema.Struct({ id: Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))) }),
 });
-
-const normalizeAddress = (value: string): string => `0x${BigInt(value).toString(16)}`;
 
 export const createIdentityResolver = (
   identityUrl: string,

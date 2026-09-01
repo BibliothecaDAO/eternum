@@ -111,6 +111,7 @@ const executeRun = async (
   herald: HeraldTarget,
   registrar: RegistrarCredentials,
 ): Promise<LaunchSummary> => {
+  // Safe to set process-wide: the DB single-writer index keeps exactly one run executing at a time.
   process.env.HERALD_URL = herald.url;
   process.env.GAME_MANIFEST_PATH = registrar.manifestPath;
 

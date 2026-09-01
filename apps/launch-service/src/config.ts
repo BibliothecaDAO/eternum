@@ -1,5 +1,6 @@
 import path from "node:path";
 import { Effect, Schema } from "effect";
+import { normalizeAddress } from "./address";
 import { BoundaryDecodeError } from "./errors";
 
 const NonEmptyString = Schema.NonEmptyString;
@@ -34,8 +35,6 @@ export interface LaunchServiceConfig {
   pollMs: number;
   rotationConfigs: readonly string[];
 }
-
-const normalizeAddress = (value: string): string => `0x${BigInt(value).toString(16)}`;
 
 const positiveInteger = (value: string | undefined, fallback: number, name: string): number => {
   if (value === undefined) return fallback;

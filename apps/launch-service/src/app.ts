@@ -99,6 +99,12 @@ const deleteRun = async (context: Context, store: LaunchServiceStore, kind: Laun
   return deleted ? context.json({ deleted: true }) : context.json({ error: "Run is missing or active." }, 409);
 };
 
+const cancelRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
+  const environment = readEnvironment(context.req.param("environment"));
+  const cancelled = await store.cancel(kind, environment, name);
+  return cancelled ? context.json({ cancelled: true }) : context.json({ error: "Run is missing or active." }, 409);
+};
+
 export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   const app = new Hono<AppEnv>();
   app.use("*", logger());
@@ -197,10 +203,4 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   );
 
   return app;
-};
-
-const cancelRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
-  const environment = readEnvironment(context.req.param("environment"));
-  const cancelled = await store.cancel(kind, environment, name);
-  return cancelled ? context.json({ cancelled: true }) : context.json({ error: "Run is missing or active." }, 409);
 };
