@@ -21,7 +21,7 @@ type AppEnv = {
 };
 
 interface LaunchAppDependencies {
-  config: Pick<LaunchServiceConfig, "allowedOrigins" | "launcherAllowlist">;
+  config: Pick<LaunchServiceConfig, "allowedOrigins" | "allowAnyLauncher" | "launcherAllowlist">;
   identity: IdentityResolver;
   store: LaunchServiceStore;
 }
@@ -47,7 +47,7 @@ const requireLauncher =
     const resolved = await Effect.runPromise(Effect.result(dependencies.identity.resolve(cookie)));
     if (Result.isFailure(resolved)) return context.json({ error: "Identity service unavailable." }, 503);
     if (!resolved.success) return context.json({ error: "Authenticated Realms session required." }, 401);
-    if (!dependencies.config.launcherAllowlist.has(resolved.success.address)) {
+    if (!dependencies.config.allowAnyLauncher && !dependencies.config.launcherAllowlist.has(resolved.success.address)) {
       return context.json({ error: "This identity is not allowed to launch games." }, 403);
     }
 

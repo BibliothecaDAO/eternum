@@ -11,10 +11,11 @@ const identity = (address: string | null): IdentityResolver => ({
   resolve: () => Effect.succeed(address ? { address } : null),
 });
 
-const createApp = (resolver: IdentityResolver, store = new InMemoryLaunchStore()) => ({
+const createApp = (resolver: IdentityResolver, store = new InMemoryLaunchStore(), allowAnyLauncher = false) => ({
   app: createLaunchApp({
     config: {
       allowedOrigins: new Set([ALLOWED_ORIGIN]),
+      allowAnyLauncher,
       launcherAllowlist: new Set([ALLOWED_ADDRESS]),
     },
     identity: resolver,
@@ -55,6 +56,11 @@ describe("launch service authorization", () => {
   test("rejects a signed-in address outside the launcher allowlist", async () => {
     const { app } = createApp(identity("0x456"));
     expect((await app.request(launchRequest())).status).toBe(403);
+  });
+
+  test("with a wildcard allowlist, any verified session may launch", async () => {
+    const { app } = createApp(identity("0x456"), new InMemoryLaunchStore(), true);
+    expect((await app.request(launchRequest())).status).toBe(202);
   });
 
   test("queues an authorized launch and keeps reads public", async () => {
