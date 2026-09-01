@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "appchain.blitz",
   "kind": "game",
-  "updatedAt": "2026-09-01T14:34:50.510Z",
+  "updatedAt": "2026-09-01T14:35:00.020Z",
   "entries": {
     "bltz-whiz-505": {
       "kind": "game",
@@ -45,12 +45,13 @@
       "path": "runs/appchain/blitz/bltz-kick-242.json",
       "inputPath": "inputs/appchain/blitz/bltz-kick-242/33520208945-1.json",
       "status": "running",
-      "updatedAt": "2026-09-01T14:34:50.510Z",
+      "updatedAt": "2026-09-01T14:35:00.020Z",
       "workflowRef": "feat/single-world-blitz",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-09-01T15:20:00.020Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": null,
       "startTime": 1788273300,
       "durationSeconds": 432000,
       "artifacts": {}
