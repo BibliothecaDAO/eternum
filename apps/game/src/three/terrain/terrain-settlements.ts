@@ -1,4 +1,4 @@
-import { StructureType } from "@bibliothecadao/types";
+import { RealmLevels, StructureType } from "@bibliothecadao/types";
 
 import type { TerrainSettlementAnchor } from "./terrain-types";
 
@@ -11,7 +11,7 @@ export const MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS = 2.7;
 
 export function resolveTerrainSettlementInfluence(anchor: TerrainSettlementAnchor): TerrainSettlementInfluenceProfile {
   const level = requireSettlementLevel(anchor.level);
-  const levelProgress = Math.min(3, level - 1) / 3;
+  const levelProgress = Math.min(RealmLevels.Empire, level) / RealmLevels.Empire;
   const base = resolveStructureInfluence(anchor.structureType);
   return {
     disturbanceStrength: clampUnit(base.disturbanceStrength + levelProgress * base.levelDisturbance),
@@ -44,9 +44,10 @@ function resolveStructureInfluence(structureType: StructureType): TerrainSettlem
   }
 }
 
+// Structure.base.level is the 0-based RealmLevels enum: every fresh realm is a Settlement at 0.
 function requireSettlementLevel(level: number): number {
-  if (!Number.isInteger(level) || level < 1) {
-    throw new Error(`Terrain settlement level must be a positive integer, received ${String(level)}`);
+  if (!Number.isInteger(level) || level < RealmLevels.Settlement) {
+    throw new Error(`Terrain settlement level must be a RealmLevels value, received ${String(level)}`);
   }
   return level;
 }
