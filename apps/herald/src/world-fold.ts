@@ -6,6 +6,7 @@ import type {
   FoldCheckpoint,
   FoldCheckpointRow,
   FoldRow,
+  FoldSet,
   GameSnapshot,
 } from "./types";
 
@@ -147,15 +148,13 @@ export class WorldFold {
     this.updateGameIndex(event.model.name, event.entityId, existing, rows.get(event.entityId) ?? undefined);
 
     if (event.kind === "delete") return { del: { key: event.entityId, model: event.model.name }, gameId };
-    const current = this.storedRow(event.model.name, event.entityId)!;
-    return {
-      gameId,
-      set: {
-        key: event.entityId,
-        model: event.model.name,
-        value: asJsonRecord({ ...current.key, ...current.value }),
-      },
-    };
+    return { gameId, set: this.currentRow(event.model.name, event.entityId)! };
+  }
+
+  /** The row as a diff `set` would carry it, or undefined when neither this fold nor its parent holds it. */
+  public currentRow(model: string, entityId: string): FoldSet | undefined {
+    const row = this.storedRow(model, entityId);
+    return row ? { key: entityId, model, value: asJsonRecord({ ...row.key, ...row.value }) } : undefined;
   }
 
   public checkpoint(): FoldCheckpoint {

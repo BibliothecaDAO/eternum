@@ -11,8 +11,9 @@ export interface StreamSocket {
 }
 
 interface RingEntry {
-  message: HeraldStreamMessage;
   recordedAt: number;
+  seq: number;
+  serialized: string;
 }
 
 interface GameStreamState {
@@ -93,7 +94,7 @@ export class GameStreamHub {
 
     session.active = true;
     for (const entry of state.ring) {
-      if (entry.message.seq > resumeFrom) this.send(session.socket, entry.message);
+      if (entry.seq > resumeFrom) session.socket.send(entry.serialized);
     }
   }
 
@@ -127,10 +128,12 @@ export class GameStreamHub {
     const state = this.games.get(gameId);
     if (!state) return;
     const message = { ...body, epoch: this.epoch, seq: ++state.seq } as HeraldStreamMessage;
-    state.ring.push({ message, recordedAt: Date.now() });
+    // Serialized once: every subscriber receives the same string, and resume replays it from the ring.
+    const serialized = JSON.stringify(message);
+    state.ring.push({ recordedAt: Date.now(), seq: message.seq, serialized });
     this.pruneRing(state);
     for (const subscriber of state.subscribers) {
-      if (subscriber.active) this.send(subscriber.socket, message);
+      if (subscriber.active) subscriber.socket.send(serialized);
     }
   }
 
@@ -146,7 +149,7 @@ export class GameStreamHub {
   private canResume(state: GameStreamState, request: ResumeRequest): boolean {
     if (request.epoch !== this.epoch || !Number.isSafeInteger(request.seq) || request.seq < 0) return false;
     if (request.seq > state.seq) return false;
-    const oldest = state.ring[0]?.message.seq ?? state.seq + 1;
+    const oldest = state.ring[0]?.seq ?? state.seq + 1;
     return request.seq >= oldest - 1;
   }
 

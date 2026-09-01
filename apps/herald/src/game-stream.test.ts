@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { GameStreamHub, type StreamSocket } from "./game-stream";
 import type { GameSnapshot } from "./types";
@@ -124,5 +124,29 @@ describe("GameStreamHub", () => {
       ["head", 1],
     ]);
     expect(socket.messages.slice(3, 5).every(({ preconfirmed }) => preconfirmed === true)).toBe(true);
+  });
+
+  it("serializes a published message once for every subscriber", () => {
+    const hub = new GameStreamHub("epoch-a");
+    const sockets = [recordingSocket(), recordingSocket(), recordingSocket()];
+    for (const socket of sockets) {
+      const session = hub.attach({
+        confirmedBlock: 12,
+        gameId: "7",
+        overlay: () => [],
+        preconfirmedBlock: null,
+        snapshot: () => snapshot,
+        socket,
+      });
+      hub.resume(session, { epoch: "", seq: 0, type: "resume" });
+    }
+    const stringify = vi.spyOn(JSON, "stringify");
+    const before = stringify.mock.calls.length;
+
+    hub.publishDiff("7", { block: 13, del: [], preconfirmed: false, set: [] });
+
+    expect(stringify.mock.calls.length - before).toBe(1);
+    expect(sockets.map((socket) => socket.messages.at(-1)?.type)).toEqual(["diff", "diff", "diff"]);
+    stringify.mockRestore();
   });
 });

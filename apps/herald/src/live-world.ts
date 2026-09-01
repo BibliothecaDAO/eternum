@@ -1,7 +1,9 @@
 import { normalizeFelt, type ModelRegistry } from "./model-registry";
 import type { CheckpointStore } from "./checkpoint-store";
+import { DiffLatencyMonitor } from "./diff-latency";
 import { GameStreamHub, type GameStreamSession, type SnapshotOverlayDiff, type StreamSocket } from "./game-stream";
 import { MadaraRpc } from "./madara-rpc";
+import { OverlayLedger } from "./overlay-ledger";
 import { replayWorldEvents } from "./snapshot-builder";
 import type { ResumeRequest } from "./stream-protocol";
 import type {
@@ -33,6 +35,7 @@ interface LiveWorldInput {
   rpc: MadaraRpc;
   hub?: GameStreamHub;
   decodeMonitor: WorldEventDecodeMonitor;
+  diffLatency?: DiffLatencyMonitor;
   historyStore?: HistoryStore;
 }
 
@@ -45,6 +48,7 @@ interface PendingPreconfirmedTransaction {
   changes: FoldChange[];
   eventIndexes: Set<number>;
   expectedEventIndexes?: Set<number>;
+  startedAt: number;
   transactionHash: string;
 }
 
@@ -83,11 +87,14 @@ export class LiveWorld {
   private readonly transactionSenders = new Map<string, string | null>();
   private readonly pendingReceipts = new Map<string, RpcReceipt[]>();
   private readonly overlayTransactions: OverlayTransaction[] = [];
+  private readonly overlayLedger = new OverlayLedger();
+  private readonly diffLatency: DiffLatencyMonitor;
   private pendingPreconfirmed?: PendingPreconfirmedTransaction;
   private pendingPreconfirmedFlush?: ReturnType<typeof setImmediate>;
 
   constructor(private readonly input: LiveWorldInput) {
     this.hub = input.hub ?? new GameStreamHub();
+    this.diffLatency = input.diffLatency ?? new DiffLatencyMonitor();
     this.confirmedFold = input.confirmedFold;
     this.overlayFold = input.confirmedFold.overlay();
     this.confirmedBlockValue = input.confirmedBlock;
@@ -159,6 +166,7 @@ export class LiveWorld {
       changes: [],
       eventIndexes: new Set(),
       expectedEventIndexes: this.preconfirmedReceiptEvents.get(transactionHash),
+      startedAt: performance.now(),
       transactionHash,
     };
     this.preconfirmedReceiptEvents.delete(transactionHash);
@@ -235,13 +243,16 @@ export class LiveWorld {
   private async reconcileHead(head: RpcHead): Promise<void> {
     if (this.checkpointFailure) throw this.checkpointFailure;
     if (head.block_number < this.confirmedBlockValue) return;
+    const startedAt = performance.now();
 
     this.flushPreconfirmedTransaction();
 
     const confirmedChanges = await this.applyConfirmedThrough(head.block_number);
-    for (const [block, changes] of confirmedChanges) this.broadcastChanges(changes, block, false);
+    for (const [block, changes] of confirmedChanges) this.broadcastConfirmedChanges(changes, block);
     this.resetOverlay();
     await this.rebuildOverlay();
+    this.publishOverlayReverts();
+    this.diffLatency.record("confirmed", performance.now() - startedAt);
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();
   }
@@ -274,12 +285,24 @@ export class LiveWorld {
     return changes;
   }
 
+  private broadcastConfirmedChanges(changes: FoldChange[], block: number): void {
+    this.overlayLedger.forgetConfirmed(changes);
+    this.broadcastChanges(changes, block, false);
+  }
+
   private resetOverlay(): void {
     this.overlayFold = this.confirmedFold.overlay();
     this.overlayEvents.clear();
     this.preconfirmedReceiptEvents.clear();
     this.overlayTransactions.length = 0;
+    this.overlayLedger.reset();
     for (const gameId of this.knownGames) this.hub.publishOverlayReset(gameId, this.confirmedBlockValue);
+  }
+
+  /** Subscribers keep overlay rows across a reset, so rows the rebuilt block dropped go back to confirmed state. */
+  private publishOverlayReverts(): void {
+    const reverts = this.overlayLedger.settleReverts((model, key) => this.confirmedFold.currentRow(model, key));
+    this.broadcastChanges(reverts, this.preconfirmedBlockValue, true);
   }
 
   private async rebuildOverlay(): Promise<void> {
@@ -397,12 +420,15 @@ export class LiveWorld {
       changes: pending.changes,
       transactionHash: pending.transactionHash,
     });
+    if (pending.changes.length > 0) this.diffLatency.record("preconfirmed", performance.now() - pending.startedAt);
   }
 
+  /** The whole transaction feeds late subscribers' overlay; the wire carries only the rows whose value changes. */
   private publishOverlayTransaction(transaction: OverlayTransaction): void {
     if (transaction.changes.length === 0) return;
     this.overlayTransactions.push(transaction);
-    this.broadcastChanges(transaction.changes, transaction.block, true, transaction.transactionHash);
+    const delta = this.overlayLedger.delta(transaction.changes);
+    this.broadcastChanges(delta, transaction.block, true, transaction.transactionHash);
   }
 
   private snapshotOverlay(gameId: string): SnapshotOverlayDiff[] {

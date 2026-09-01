@@ -252,4 +252,23 @@ describe("WorldFold", () => {
     expect(restored.snapshot(7, 12).models[0].rows[0].value.count).toBe("0x3");
     expect(overlay.snapshot(7, 12).models[0].rows[0].value.count).toBe("0x9");
   });
+
+  it("reads a row through an overlay in the shape a diff set carries", () => {
+    const confirmed = new WorldFold(registry);
+    const applied = confirmed.apply(
+      decodeRequired(
+        registry,
+        rawEvent(WORLD_EVENT_SELECTORS.set, "0x101", ["0x2", "0x7", "0x2", "0x5", "0x3", "0x1", "0x4", "0x5", "0x2"]),
+      ),
+    );
+    const overlay = confirmed.overlay();
+
+    expect(confirmed.currentRow("TestModel", "0xabc")).toEqual(applied?.set);
+    expect(overlay.currentRow("TestModel", "0xabc")).toEqual(applied?.set);
+    expect(confirmed.currentRow("TestModel", "0xdef")).toBeUndefined();
+
+    overlay.apply(decodeRequired(registry, rawEvent(WORLD_EVENT_SELECTORS.delete, "0x101", [])));
+    expect(overlay.currentRow("TestModel", "0xabc")).toBeUndefined();
+    expect(confirmed.currentRow("TestModel", "0xabc")).toEqual(applied?.set);
+  });
 });
