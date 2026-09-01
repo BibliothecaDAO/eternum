@@ -80,6 +80,7 @@ function fixture(cells: TerrainCellInput[]): TerrainPageRequest {
     halo: [],
     mapCenter: 0,
     pageKey: "shroud-fixture",
+    roadSegments: [],
     subdivisions: 2,
   };
 }

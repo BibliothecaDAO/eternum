@@ -217,6 +217,7 @@ function request(cells: TerrainCellInput[], pageKey = "props", halo: TerrainCell
     halo,
     mapCenter: 0,
     pageKey,
+    roadSegments: [],
     subdivisions: 1,
   };
 }

@@ -118,6 +118,25 @@ describe("TerrainField", () => {
     expect(openGround.clearance).toBe(1);
   });
 
+  it("turns routed ground into a compact vegetation-free road corridor", () => {
+    const cells = Array.from({ length: 5 }, (_, col) => cell(col, 0, BiomeType.Grassland));
+    const start = terrainHexToWorld(0, 0);
+    const end = terrainHexToWorld(4, 0);
+    const request = {
+      ...createRequest(cells),
+      roadSegments: [{ end: [end.x, end.z] as const, routeId: "west:east", start: [start.x, start.z] as const }],
+    };
+    const field = new TerrainField(request);
+    const center = terrainHexToWorld(2, 0);
+    const road = field.sampleVertex(center.x, center.z);
+    const open = field.sampleVertex(center.x, center.z + 0.9);
+    const roadDensity = field.samplePropDensityContext(center.x, center.z, cells[2]);
+
+    expect(road.groundWeights[1]).toBeGreaterThan(open.groundWeights[1]);
+    expect(road.groundWeights[3]).toBeLessThan(open.groundWeights[3]);
+    expect(roadDensity.clearance).toBe(0);
+  });
+
   it("adds deterministic macro landforms without breaking biome ownership", () => {
     const cells = Array.from({ length: 8 }, (_, col) => cell(col, 0, BiomeType.Scorched));
     const first = new TerrainField(createRequest(cells));
@@ -222,6 +241,7 @@ function createRequest(
     halo,
     mapCenter: 0,
     pageKey,
+    roadSegments: [],
     subdivisions: 3,
   };
 }

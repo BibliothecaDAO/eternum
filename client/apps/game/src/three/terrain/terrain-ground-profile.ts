@@ -75,6 +75,12 @@ export function applyTerrainGroundStructurePad(source: TerrainGroundWeights, pad
   return normalizeWeights(source.map((weight, index) => weight + (compactGround[index] - weight) * blend));
 }
 
+export function applyTerrainGroundRoad(source: TerrainGroundWeights, roadWeight: number): TerrainGroundWeights {
+  const compactRoad = weights(0, 0.62, 0.28, 0, 0, 0.1, 0, 0);
+  const blend = smoothstep(0, 1, roadWeight);
+  return normalizeWeights(source.map((weight, index) => weight + (compactRoad[index] - weight) * blend));
+}
+
 export interface TerrainGroundEcology {
   roughnessOffset: number;
   tint: readonly [number, number, number];

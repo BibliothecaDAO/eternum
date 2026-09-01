@@ -41,6 +41,7 @@ export interface ProceduralTerrainDebugStats {
   propInstances: number;
   qualityTier: TerrainQualityTier;
   revealProgress: number;
+  roadSegments: number;
   sceneId: TerrainVerificationSceneId;
   shroudActiveReveals: number;
   shroudFrontierInstances: number;
@@ -209,6 +210,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     propInstances: propStats.instances,
     qualityTier: input.qualityTier,
     revealProgress: input.revealProgress,
+    roadSegments: prepared.diagnostics.roadSegments,
     sceneId: input.sceneId,
     shroudActiveReveals: shroudStats.activeReveals,
     shroudFrontierInstances: shroudStats.frontierInstances,

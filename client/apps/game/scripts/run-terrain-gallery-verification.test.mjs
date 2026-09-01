@@ -60,6 +60,25 @@ describe("terrain gallery verification", () => {
     ).toMatchObject({ ok: true, performanceDeltas: [], reasons: [] });
   });
 
+  it("requires deterministic roads in the owned-road gallery scene", () => {
+    const roads = result("webgpu-auto", "webgpu", "textured");
+    roads.sceneId = "owned-roads";
+    roads.snapshot.sceneId = "owned-roads";
+    roads.snapshot.biomeCount = 3;
+    roads.snapshot.roadSegments = 15;
+    const options = {
+      groundModes: ["textured"],
+      rendererModes: ["webgpu-auto"],
+      sceneIds: ["owned-roads"],
+    };
+
+    expect(evaluateTerrainGalleryResults([roads], options)).toMatchObject({ ok: true, reasons: [] });
+    roads.snapshot.roadSegments = 0;
+    expect(evaluateTerrainGalleryResults([roads], options).reasons).toContain(
+      "owned-roads/webgpu-auto/textured: expected deterministic same-owner road segments",
+    );
+  });
+
   it("requires fog preview geometry to match the one-ring frontier", () => {
     const fog = result("webgpu-auto", "webgpu", "textured");
     fog.sceneId = "fog-frontier";
@@ -166,6 +185,7 @@ function result(rendererMode, activeMode, groundMode) {
       propInstances: 39,
       qualityTier: "detail",
       revealProgress: 0,
+      roadSegments: 0,
       sceneId: "all-biomes",
       shroudActiveReveals: 0,
       shroudFrontierInstances: 0,

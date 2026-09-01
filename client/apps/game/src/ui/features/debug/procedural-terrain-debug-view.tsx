@@ -40,6 +40,7 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   propInstances: 0,
   qualityTier: "detail",
   revealProgress: 0,
+  roadSegments: 0,
   sceneId: "all-biomes",
   shroudActiveReveals: 0,
   shroudFrontierInstances: 0,
@@ -259,6 +260,7 @@ export const ProceduralTerrainDebugView = () => {
             <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
             <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
             <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
+            <DebugMetric label="Roads" value={stats.roadSegments.toLocaleString()} />
             <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
             <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />

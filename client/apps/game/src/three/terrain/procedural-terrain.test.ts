@@ -94,6 +94,7 @@ function request(biome: BiomeType, occupied: boolean) {
     halo: [],
     mapCenter: 0,
     pageKey: "page",
+    roadSegments: [],
     subdivisions: 2,
   };
 }

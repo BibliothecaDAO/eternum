@@ -1338,6 +1338,7 @@ export default class HexceptionScene extends HexagonScene {
       halo: [],
       mapCenter: 0,
       pageKey: `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
+      roadSegments: [],
       strictBiomeParity: false,
       subdivisions: 2,
     });

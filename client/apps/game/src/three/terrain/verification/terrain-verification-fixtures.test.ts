@@ -35,7 +35,9 @@ describe("game-scale all-biomes fixture", () => {
         expect(second).toEqual(first);
         expect(first.cells).toHaveLength(TERRAIN_ANCHOR_COLUMNS * TERRAIN_ANCHOR_ROWS);
         expect(new Set(first.cells.map(({ biome }) => biome)).size).toBeGreaterThanOrEqual(3);
-        expect(first.cells.filter(({ occupied }) => occupied)).toHaveLength(1);
+        expect(first.cells.filter(({ occupied }) => occupied)).toHaveLength(sceneId === "owned-roads" ? 4 : 1);
+        if (sceneId === "owned-roads") expect(first.roadSegments.length).toBeGreaterThan(0);
+        else expect(first.roadSegments).toEqual([]);
       },
     );
   });

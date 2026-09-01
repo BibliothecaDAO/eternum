@@ -5,7 +5,16 @@ import type { Group } from "three";
 import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./procedural-terrain";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { terrainCellKey } from "./terrain-coordinates";
-import type { PreparedTerrainPage, TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
+import { terrainHexToWorld } from "./terrain-coordinates";
+import { buildTerrainRoadSegments } from "./terrain-roads";
+import type {
+  PreparedTerrainPage,
+  TerrainCellInput,
+  TerrainPageRequest,
+  TerrainRoadAnchor,
+  TerrainRoadSegment,
+  TerrainSurfaceSample,
+} from "./terrain-types";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import type { TerrainQualityTier } from "./terrain-quality";
 import type { TerrainFogFieldStats } from "./terrain-fog-field";
@@ -25,6 +34,7 @@ export interface WorldmapProceduralPresentationInput {
   pageOrigin: { col: number; row: number };
   pageWidth: number;
   propDensityMultiplier?: number;
+  roadAnchors?: readonly TerrainRoadAnchor[];
   subdivisions?: number;
 }
 
@@ -254,6 +264,7 @@ export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresen
   const cells = canonicalTerrainCells(input.cells.map(toTerrainCell));
   const cellsByKey = new Map(cells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
   const cellsByPage = new Map<string, TerrainCellInput[]>();
+  const roadSegments = buildTerrainRoadSegments({ anchors: input.roadAnchors ?? [], cells });
 
   for (const cell of cells) {
     const pageKey = resolvePageKey(cell.col, cell.row, input.pageWidth, input.pageHeight, input.pageOrigin);
@@ -271,9 +282,29 @@ export function buildWorldmapTerrainPageRequests(input: WorldmapProceduralPresen
       mapCenter: input.mapCenter,
       pageKey,
       propDensityMultiplier: input.propDensityMultiplier,
+      roadSegments: resolvePageRoadSegments(pageCells, roadSegments),
       strictBiomeParity: false,
       subdivisions: input.subdivisions ?? 2,
     }));
+}
+
+function resolvePageRoadSegments(
+  pageCells: readonly TerrainCellInput[],
+  roadSegments: readonly TerrainRoadSegment[],
+): TerrainRoadSegment[] {
+  const centers = pageCells.map(({ col, row }) => terrainHexToWorld(col, row));
+  const padding = 1.5;
+  const minimumX = Math.min(...centers.map(({ x }) => x)) - padding;
+  const maximumX = Math.max(...centers.map(({ x }) => x)) + padding;
+  const minimumZ = Math.min(...centers.map(({ z }) => z)) - padding;
+  const maximumZ = Math.max(...centers.map(({ z }) => z)) + padding;
+  return roadSegments.filter(
+    ({ start, end }) =>
+      Math.max(start[0], end[0]) >= minimumX &&
+      Math.min(start[0], end[0]) <= maximumX &&
+      Math.max(start[1], end[1]) >= minimumZ &&
+      Math.min(start[1], end[1]) <= maximumZ,
+  );
 }
 
 function resolvePageHalo(
@@ -335,6 +366,7 @@ function createRequestSignature(request: TerrainPageRequest): string {
     mapCenter: request.mapCenter,
     pageKey: request.pageKey,
     propDensityMultiplier: request.propDensityMultiplier,
+    roadSegments: request.roadSegments,
     subdivisions: request.subdivisions,
   });
 }

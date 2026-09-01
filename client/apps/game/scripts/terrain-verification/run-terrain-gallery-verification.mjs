@@ -14,6 +14,7 @@ const GROUND_MODES = ["flat", "textured"];
 const SCENE_IDS = [
   "all-biomes",
   "temperate-grove",
+  "owned-roads",
   "tropical-coast",
   "arid-basin",
   "cold-front",
@@ -100,6 +101,9 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
       reasons.push(`${label}: renderer texture count exceeded policy or was unavailable`);
     }
     if (!(result.snapshot?.propInstances > 0)) reasons.push(`${label}: expected deterministic prop instances`);
+    if (result.sceneId === "owned-roads" && !(result.snapshot?.roadSegments > 0)) {
+      reasons.push(`${label}: expected deterministic same-owner road segments`);
+    }
     const expectsFog = result.sceneId.startsWith("fog-");
     if (expectsFog && !(result.snapshot?.shroudInstances > 0)) {
       reasons.push(`${label}: expected deterministic exploration fog cells`);
@@ -187,7 +191,8 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         metric.frontierPreviewCells !== reference.frontierPreviewCells ||
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||
-        metric.propInstances !== reference.propInstances
+        metric.propInstances !== reference.propInstances ||
+        metric.roadSegments !== reference.roadSegments
       ) {
         reasons.push(`${sceneId}: renderer backends produced different terrain presentation counts`);
       }

@@ -2,6 +2,7 @@ import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
+import { terrainHexToWorld } from "./terrain-coordinates";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
@@ -37,6 +38,20 @@ describe("prepareTerrainPage", () => {
 
     expect(forward.fingerprint).toBe(reverse.fingerprint);
     expect(occupied.fingerprint).not.toBe(forward.fingerprint);
+  });
+
+  it("includes road presentation in diagnostics and page identity", () => {
+    const cells = [cell(0, 0, BiomeType.Grassland), cell(1, 0, BiomeType.Grassland)];
+    const start = terrainHexToWorld(0, 0);
+    const end = terrainHexToWorld(1, 0);
+    const open = prepareTerrainPage(createRequest(cells));
+    const routed = prepareTerrainPage({
+      ...createRequest(cells),
+      roadSegments: [{ end: [end.x, end.z], routeId: "first:second", start: [start.x, start.z] }],
+    });
+
+    expect(routed.diagnostics.roadSegments).toBe(1);
+    expect(routed.fingerprint).not.toBe(open.fingerprint);
   });
 
   it("changes identity when halo exploration changes frontier shroud presentation", () => {
@@ -180,6 +195,7 @@ function createRequest(cells: TerrainCellInput[]): TerrainPageRequest {
     halo: [],
     mapCenter: 0,
     pageKey: "builder-fixture",
+    roadSegments: [],
     subdivisions: 3,
   };
 }

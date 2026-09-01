@@ -43,6 +43,7 @@ export interface TerrainPresentationDiagnostics {
   pages: number;
   propInstances: number;
   propTriangles: number;
+  roadSegments: number;
   shroudInstances: number;
   shroudTriangles: number;
   triangles: number;
@@ -358,8 +359,14 @@ function summarizePresentation(
   propStats: TerrainPropPoolStats,
   shroudStats: TerrainFogFieldStats,
 ): TerrainPresentationDiagnostics {
+  const roadSegments = new Set(
+    pages.flatMap(({ request }) => request.roadSegments.map(({ start, end }) => `${start.join(",")}:${end.join(",")}`)),
+  ).size;
   const terrain = pages.reduce<
-    Omit<TerrainPresentationDiagnostics, "propInstances" | "propTriangles" | "shroudInstances" | "shroudTriangles">
+    Omit<
+      TerrainPresentationDiagnostics,
+      "propInstances" | "propTriangles" | "roadSegments" | "shroudInstances" | "shroudTriangles"
+    >
   >(
     (summary, page) => ({
       fogTerrainCells: summary.fogTerrainCells + page.diagnostics.fogTerrainCells,
@@ -375,6 +382,7 @@ function summarizePresentation(
     ...terrain,
     propInstances: propStats.instances,
     propTriangles: propStats.triangles,
+    roadSegments,
     shroudInstances: shroudStats.instances,
     shroudTriangles: shroudStats.triangles,
   };

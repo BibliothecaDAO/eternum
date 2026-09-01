@@ -1,7 +1,8 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 
-import type { TerrainPageRequest } from "../terrain-types";
+import { buildTerrainRoadSegments } from "../terrain-roads";
+import type { TerrainPageRequest, TerrainRoadAnchor } from "../terrain-types";
 
 export const ALL_BIOMES_FIXTURE_ID = "all-biomes-game-scale-v2";
 export const ALL_BIOMES_COLUMNS = 20;
@@ -12,6 +13,7 @@ export const TERRAIN_ANCHOR_ROWS = 12;
 export const TERRAIN_VERIFICATION_SCENE_IDS = Object.freeze([
   "all-biomes",
   "temperate-grove",
+  "owned-roads",
   "tropical-coast",
   "arid-basin",
   "cold-front",
@@ -25,6 +27,12 @@ export const TERRAIN_VERIFICATION_SCENE_IDS = Object.freeze([
 export type TerrainVerificationSceneId = (typeof TERRAIN_VERIFICATION_SCENE_IDS)[number];
 type TerrainBiomeAnchorSceneId = Exclude<TerrainVerificationSceneId, "all-biomes" | `fog-${string}`>;
 export const TERRAIN_REVEAL_TARGET = Object.freeze({ col: 2, row: 4 });
+const ROAD_VERIFICATION_ANCHORS: readonly TerrainRoadAnchor[] = Object.freeze([
+  { col: 3, owner: "1", row: 3, structureId: "western-realm" },
+  { col: 9, owner: "1", row: 6, structureId: "central-realm" },
+  { col: 15, owner: "1", row: 3, structureId: "eastern-realm" },
+  { col: 12, owner: "2", row: 9, structureId: "foreign-realm" },
+]);
 
 const BIOME_REGION_COLUMNS = 4;
 const BIOME_REGION_WIDTH = ALL_BIOMES_COLUMNS / BIOME_REGION_COLUMNS;
@@ -55,6 +63,7 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
     halo: [],
     mapCenter: 0,
     pageKey: ALL_BIOMES_FIXTURE_ID,
+    roadSegments: [],
     strictBiomeParity: false,
     subdivisions: 2,
   };
@@ -63,12 +72,15 @@ export function createAllBiomesTerrainRequest(): TerrainPageRequest {
 export function createTerrainVerificationRequest(sceneId: TerrainVerificationSceneId): TerrainPageRequest {
   if (sceneId === "all-biomes") return createAllBiomesTerrainRequest();
   if (isFogVerificationScene(sceneId)) return createFogVerificationRequest(sceneId);
+  const cells = createAnchorCells(sceneId);
   return {
-    cells: createAnchorCells(sceneId),
+    cells,
     climate: { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 },
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
+    roadSegments:
+      sceneId === "owned-roads" ? buildTerrainRoadSegments({ anchors: ROAD_VERIFICATION_ANCHORS, cells }) : [],
     strictBiomeParity: false,
     subdivisions: 3,
   };
@@ -111,6 +123,7 @@ function createFogVerificationRequest(
     halo: [],
     mapCenter: 0,
     pageKey: `terrain-anchor:${sceneId}`,
+    roadSegments: [],
     strictBiomeParity: false,
     subdivisions: 3,
   };
@@ -170,7 +183,10 @@ function createAnchorCells(sceneId: TerrainBiomeAnchorSceneId) {
       biome,
       col,
       explored: true,
-      occupied: col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
+      occupied:
+        sceneId === "owned-roads"
+          ? ROAD_VERIFICATION_ANCHORS.some((anchor) => anchor.col === col && anchor.row === row)
+          : col === Math.floor(TERRAIN_ANCHOR_COLUMNS * 0.58) && row === Math.floor(TERRAIN_ANCHOR_ROWS * 0.52),
       previewBiome: biome,
       row,
     };
@@ -182,6 +198,10 @@ function resolveAnchorBiome(sceneId: TerrainBiomeAnchorSceneId, col: number, row
   const y = row / (TERRAIN_ANCHOR_ROWS - 1);
   const warp = Math.sin(row * 0.82 + col * 0.21) * 0.045 + Math.sin(col * 0.47) * 0.035;
   switch (sceneId) {
+    case "owned-roads":
+      if (y + warp < 0.22) return BiomeType.Grassland;
+      if (x - warp > 0.72) return BiomeType.TemperateRainForest;
+      return BiomeType.TemperateDeciduousForest;
     case "temperate-grove":
       if (y + warp < 0.22) return BiomeType.Grassland;
       if (x - warp > 0.68) return BiomeType.TemperateRainForest;

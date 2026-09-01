@@ -5,6 +5,7 @@ import { Color } from "three";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
+  applyTerrainGroundRoad,
   applyTerrainGroundSlope,
   applyTerrainGroundStructurePad,
   blendTerrainGroundWeights,
@@ -79,6 +80,11 @@ const PAD_INNER_RADIUS = 0.5;
 const PAD_OUTER_RADIUS = 0.82;
 const PROP_CLEARANCE_INNER_RADIUS = 0.68;
 const PROP_CLEARANCE_OUTER_RADIUS = 1.22;
+const ROAD_INNER_RADIUS = 0.24;
+const ROAD_OUTER_RADIUS = 0.62;
+const ROAD_PROP_CLEARANCE_INNER_RADIUS = 0.32;
+const ROAD_PROP_CLEARANCE_OUTER_RADIUS = 0.72;
+const TERRAIN_ROAD_COLOR = new Color("#8b6d43");
 
 export class TerrainField {
   private readonly cellByKey = new Map<string, TerrainCellInput>();
@@ -214,30 +220,38 @@ export class TerrainField {
       shore,
       vegetation,
     });
+    const road = this.sampleRoadProximity(worldX, worldZ);
+    const roadGroundWeights = applyTerrainGroundRoad(groundEcology.weights, road);
     const paddedGroundWeights = applyTerrainGroundStructurePad(
-      groundEcology.weights,
+      roadGroundWeights,
       this.resolveStructurePadWeight(worldX, worldZ, candidates),
     );
 
     const macroStrength = macroTintStrength * inverseWeight;
     const wetness = shore * shoreWetness * inverseWeight;
     const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
-    const albedoFactor = macroFactor * (1 - wetness * 0.16);
+    const albedoFactor = macroFactor * (1 - wetness * 0.16) * (1 - road * 0.08);
+    const roadColorBlend = road * 0.72;
+    const baseColor = [red * inverseWeight, green * inverseWeight, blue * inverseWeight] as const;
 
     return {
       biome: strongestBiome,
       biomeId: strongestBiomeId,
       color: [
-        red * inverseWeight * albedoFactor * groundEcology.tint[0],
-        green * inverseWeight * albedoFactor * groundEcology.tint[1],
-        blue * inverseWeight * albedoFactor * groundEcology.tint[2],
+        (baseColor[0] + (TERRAIN_ROAD_COLOR.r - baseColor[0]) * roadColorBlend) * albedoFactor * groundEcology.tint[0],
+        (baseColor[1] + (TERRAIN_ROAD_COLOR.g - baseColor[1]) * roadColorBlend) * albedoFactor * groundEcology.tint[1],
+        (baseColor[2] + (TERRAIN_ROAD_COLOR.b - baseColor[2]) * roadColorBlend) * albedoFactor * groundEcology.tint[2],
       ],
       explored,
       groundWeights: paddedGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
       roughness: clampUnit(
-        roughness * inverseWeight + (macroMaterial - 0.5) * 0.08 - wetness * 0.18 + groundEcology.roughnessOffset,
+        roughness * inverseWeight +
+          (macroMaterial - 0.5) * 0.08 -
+          wetness * 0.18 +
+          groundEcology.roughnessOffset +
+          road * 0.035,
       ),
       shore,
       uvOffset: [(macroMaterial - 0.5) * macroStrength * 0.42, (0.5 - macroMaterial) * macroStrength * 0.27],
@@ -371,6 +385,7 @@ export class TerrainField {
       biomeWeights.set(candidate.biome, (biomeWeights.get(candidate.biome) ?? 0) + weight);
     }
 
+    clearance = Math.min(clearance, this.sampleRoadClearance(worldX, worldZ));
     if (totalWeight === 0) return { biomeInfluences: [], clearance, elevation: 0, moisture: 0 };
     const inverseWeight = 1 / totalWeight;
     return {
@@ -388,7 +403,7 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
-    environment: Pick<TerrainPropDensityContext, "biomeInfluences" | "elevation" | "moisture">,
+    environment: Pick<TerrainPropDensityContext, "biomeInfluences" | "clearance" | "elevation" | "moisture">,
   ): TerrainVegetationField {
     if (candidates.length === 0 || environment.biomeInfluences.length === 0) {
       return {
@@ -438,9 +453,11 @@ export class TerrainField {
     const gapThreshold = 0.7 - ecology.clearingStrength * 0.22;
     const dominantBiomeInfluence = Math.max(...environment.biomeInfluences.map(({ weight }) => weight));
     const edgeStrength = clampUnit((1 - dominantBiomeInfluence) * 2);
-    const gapStrength = clampUnit(
+    const disturbance = 1 - environment.clearance;
+    const naturalGapStrength = clampUnit(
       smoothstep(gapThreshold, gapThreshold + 0.22, gapNoise) * (0.35 + ecology.clearingStrength * 0.65),
     );
+    const gapStrength = Math.max(naturalGapStrength, disturbance * 0.92);
     const moistureSupport = 0.68 + smoothstep(0.16, 0.84, environment.moisture) * 0.42;
     const elevationStress = 1 - smoothstep(0.58, 0.92, environment.elevation) * 0.26;
     const canopyCover = clampUnit(
@@ -448,7 +465,8 @@ export class TerrainField {
         moistureSupport *
         elevationStress *
         (0.58 + smoothstep(0.16, 0.84, canopyPatch) * 0.55) *
-        (1 - gapStrength * 0.78),
+        (1 - gapStrength * 0.78) *
+        (1 - disturbance * 0.82),
     );
     const understoryCover = clampUnit(
       ecology.undergrowth *
@@ -456,12 +474,15 @@ export class TerrainField {
         (0.72 + (1 - canopyCover) * 0.34) *
         (0.7 + smoothstep(0.12, 0.88, canopyPatch) * 0.38),
     );
-    const debrisCover = clampUnit(canopyCover * (0.16 + smoothstep(0.18, 0.82, debrisPatch) * 0.46));
-    const maturity = clampUnit(
-      canopyCover * (0.5 + debrisPatch * 0.5) * (1 - edgeStrength * 0.55) * (1 - gapStrength * 0.6),
+    const debrisCover = clampUnit(
+      canopyCover * (0.16 + smoothstep(0.18, 0.82, debrisPatch) * 0.46) * (1 - disturbance * 0.65),
     );
+    const maturity = clampUnit(
+      canopyCover * (0.5 + debrisPatch * 0.5) * (1 - edgeStrength * 0.55) * (1 - gapStrength * 0.6) * (1 - disturbance),
+    );
+    const disturbanceSuccession = 4 * disturbance * (1 - disturbance);
     const successionStrength = clampUnit(
-      (edgeStrength * 0.72 + gapStrength * 0.35) * (0.45 + ecology.undergrowth * 0.55),
+      (edgeStrength * 0.72 + gapStrength * 0.35) * (0.45 + ecology.undergrowth * 0.55) + disturbanceSuccession * 0.65,
     );
     return {
       canopyCover,
@@ -618,6 +639,28 @@ export class TerrainField {
     return 1 - smoothstep(0.05, 1.8, Math.abs(nearestWater - nearestLand));
   }
 
+  private sampleRoadProximity(worldX: number, worldZ: number): number {
+    if (this.request.roadSegments.length === 0) return 0;
+    return 1 - smoothstep(ROAD_INNER_RADIUS, ROAD_OUTER_RADIUS, this.sampleRoadDistance(worldX, worldZ));
+  }
+
+  private sampleRoadClearance(worldX: number, worldZ: number): number {
+    if (this.request.roadSegments.length === 0) return 1;
+    return smoothstep(
+      ROAD_PROP_CLEARANCE_INNER_RADIUS,
+      ROAD_PROP_CLEARANCE_OUTER_RADIUS,
+      this.sampleRoadDistance(worldX, worldZ),
+    );
+  }
+
+  private sampleRoadDistance(worldX: number, worldZ: number): number {
+    let nearest = Number.POSITIVE_INFINITY;
+    for (const segment of this.request.roadSegments) {
+      nearest = Math.min(nearest, pointToSegmentDistance(worldX, worldZ, segment.start, segment.end));
+    }
+    return nearest;
+  }
+
   private resolveStructurePadWeight(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
     let weight = 0;
     for (const candidate of candidates) {
@@ -678,6 +721,20 @@ function resolveSeed(value: number | undefined): number {
 function smoothstep(edge0: number, edge1: number, value: number): number {
   const normalized = clampUnit((value - edge0) / (edge1 - edge0));
   return normalized * normalized * (3 - 2 * normalized);
+}
+
+function pointToSegmentDistance(
+  pointX: number,
+  pointZ: number,
+  start: readonly [number, number],
+  end: readonly [number, number],
+): number {
+  const deltaX = end[0] - start[0];
+  const deltaZ = end[1] - start[1];
+  const lengthSquared = deltaX * deltaX + deltaZ * deltaZ;
+  if (lengthSquared <= Number.EPSILON) return Math.hypot(pointX - start[0], pointZ - start[1]);
+  const projection = clampUnit(((pointX - start[0]) * deltaX + (pointZ - start[1]) * deltaZ) / lengthSquared);
+  return Math.hypot(pointX - (start[0] + deltaX * projection), pointZ - (start[1] + deltaZ * projection));
 }
 
 function clampUnit(value: number): number {

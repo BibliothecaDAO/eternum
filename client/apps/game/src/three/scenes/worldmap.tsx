@@ -105,6 +105,7 @@ import { Account, AccountInterface } from "starknet";
 import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
+import type { TerrainRoadAnchor } from "@/three/terrain/terrain-types";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import { env } from "../../../env";
 import { playerCosmeticsStore } from "../cosmetics";
@@ -1243,6 +1244,7 @@ export default class WorldmapScene extends WarpTravel {
         }
       });
       this.reconcileHoverLabels();
+      this.scheduleTerrainRoadNetworkRefresh();
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
       this.syncProjectedArmyPathfinding(changes);
@@ -5859,6 +5861,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
+    const roadAnchors = this.collectVisibleTerrainRoadAnchors(composite.cells);
     void this.proceduralTerrain
       .presentAsync({
         cells: composite.cells.map((cell) => {
@@ -5866,7 +5869,7 @@ export default class WorldmapScene extends WarpTravel {
           return {
             biomeKey: cell.biomeKey,
             col,
-            occupied: cell.occupied ?? this.isProjectedStructureHex(col, row),
+            occupied: this.isProjectedStructureHex(col, row),
             row,
           };
         }),
@@ -5875,6 +5878,7 @@ export default class WorldmapScene extends WarpTravel {
         pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
         pageOrigin: this.getVisualTerrainPageOrigin(),
         pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+        roadAnchors,
         subdivisions: 2,
       })
       .then((terrainDiagnostics) => {
@@ -5888,6 +5892,7 @@ export default class WorldmapScene extends WarpTravel {
           proceduralPreparedCachePages: terrainDiagnostics.preparedCachePages,
           proceduralPrepareMs: terrainDiagnostics.prepareMs,
           proceduralReusedPages: terrainDiagnostics.reusedPages,
+          proceduralRoadSegments: terrainDiagnostics.roadSegments,
           proceduralTriangles: terrainDiagnostics.triangles + terrainDiagnostics.propTriangles,
           proceduralVertices: terrainDiagnostics.vertices,
           presentationChunkKeys: composite.presentationChunkKeys,
@@ -5898,6 +5903,52 @@ export default class WorldmapScene extends WarpTravel {
       .catch((error) => {
         if (!this.isSwitchedOff) console.error("[WorldMap] Procedural terrain presentation failed", error);
       });
+  }
+
+  private collectVisibleTerrainRoadAnchors(
+    cells: readonly { biomeKey: string; hexKey: string }[],
+  ): TerrainRoadAnchor[] {
+    const visibleCells = new Set<string>();
+    const localBounds = {
+      maxCol: Number.NEGATIVE_INFINITY,
+      maxRow: Number.NEGATIVE_INFINITY,
+      minCol: Number.POSITIVE_INFINITY,
+      minRow: Number.POSITIVE_INFINITY,
+    };
+    for (const { biomeKey, hexKey } of cells) {
+      if (biomeKey === "Outline" || biomeKey === "Empty") continue;
+      visibleCells.add(hexKey);
+      const [col, row] = hexKey.split(",").map(Number);
+      localBounds.maxCol = Math.max(localBounds.maxCol, col);
+      localBounds.maxRow = Math.max(localBounds.maxRow, row);
+      localBounds.minCol = Math.min(localBounds.minCol, col);
+      localBounds.minRow = Math.min(localBounds.minRow, row);
+    }
+    if (visibleCells.size === 0) return [];
+
+    return this.worldSpatialProjection
+      .getStructuresInBounds(this.toContractBounds(localBounds))
+      .flatMap((structure): TerrainRoadAnchor[] => {
+        if (structure.reserved || structure.entityId === null) return [];
+        const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+        if (!visibleCells.has(`${normalized.x},${normalized.y}`)) return [];
+        const owner = this.getStructureOwnerAddress(structure.entityId);
+        if (owner === undefined || owner === 0n) return [];
+        return [
+          {
+            col: normalized.x,
+            owner: owner.toString(),
+            row: normalized.y,
+            structureId: structure.entityId.toString(),
+          },
+        ];
+      });
+  }
+
+  private scheduleTerrainRoadNetworkRefresh(): void {
+    if (this.visualTerrainPresentationState.presentations.length === 0) return;
+    if (this.refreshVisualTerrainWindowThrottled) this.refreshVisualTerrainWindowThrottled();
+    else this.rebuildTerrainPresentationComposite();
   }
 
   private scheduleTerrainPresentationRetentionCleanup(
@@ -8680,10 +8731,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private updatePlayerStructures(structures: Structure[]) {
+    const previousRoadOwnership = this.playerStructures
+      .map(({ entityId }) => entityId.toString())
+      .toSorted()
+      .join(":");
     this.playerStructures = structures;
     if (this.structureIndex >= structures.length) {
       this.structureIndex = 0;
     }
+    const nextRoadOwnership = structures
+      .map(({ entityId }) => entityId.toString())
+      .toSorted()
+      .join(":");
+    if (previousRoadOwnership !== nextRoadOwnership) this.scheduleTerrainRoadNetworkRefresh();
   }
 
   private selectNextRealmStructure() {

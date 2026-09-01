@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 15;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 16;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
@@ -13,6 +13,19 @@ export interface TerrainCellInput {
   row: number;
 }
 
+export interface TerrainRoadAnchor {
+  col: number;
+  owner: string;
+  row: number;
+  structureId: string;
+}
+
+export interface TerrainRoadSegment {
+  end: readonly [number, number];
+  routeId: string;
+  start: readonly [number, number];
+}
+
 export interface TerrainPageRequest {
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
@@ -20,6 +33,7 @@ export interface TerrainPageRequest {
   mapCenter: number;
   pageKey: string;
   propDensityMultiplier?: number;
+  roadSegments: readonly TerrainRoadSegment[];
   strictBiomeParity?: boolean;
   subdivisions?: number;
 }
@@ -80,6 +94,7 @@ export interface TerrainPageDiagnostics {
   frontierPreviewCells: number;
   geometryBytes: number;
   prepareMs: number;
+  roadSegments: number;
   shroudInstances: number;
   triangles: number;
   vertices: number;

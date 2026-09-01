@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-01",
+    title: "Living Road Networks",
+    description:
+      "Added natural roads between nearby structures under the same owner, with routes that avoid water and clear vegetation while blending into the surrounding landscape.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-08-31",
     title: "More Natural Forest Landscapes",
     description:
