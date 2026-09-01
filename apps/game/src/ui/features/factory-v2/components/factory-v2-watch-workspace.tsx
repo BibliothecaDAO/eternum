@@ -6,12 +6,12 @@ import Play from "lucide-react/dist/esm/icons/play";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { resolveFactoryEnvironmentLabel } from "../catalog";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import {
   getCompletedStep,
   getCurrentStep,
   getRunCurrentStepLabel,
-  getEnvironmentLabel,
   getNextStep,
   getRunDetailMessage,
   getRunHeadline,
@@ -57,7 +57,6 @@ type FactoryV2WatchWorkspaceProps = {
   isWatcherBusy: boolean;
   isResolvingRunName: boolean;
   notice: string | null;
-  lookupDisabledReason: string | null;
   onSelectRun: (runId: string) => void;
   onResolveRunByName: (gameName: string) => Promise<boolean>;
   onContinue: () => void;
@@ -66,8 +65,8 @@ type FactoryV2WatchWorkspaceProps = {
   onStopAutoRetry: () => void;
   onDeleteRun?: () => void;
   hasAdminSecret?: boolean;
-  deployerChain?: FactoryLaunchChain;
-  deployerEnvironmentLabel?: string;
+  deployerChain: FactoryLaunchChain;
+  deployerEnvironmentLabel: string;
 };
 
 type FactoryV2WatchWorkspaceState = {
@@ -103,7 +102,6 @@ export const FactoryV2WatchWorkspace = ({
   isWatcherBusy,
   isResolvingRunName,
   notice,
-  lookupDisabledReason,
   onSelectRun,
   onResolveRunByName,
   onContinue,
@@ -112,8 +110,8 @@ export const FactoryV2WatchWorkspace = ({
   onStopAutoRetry,
   onDeleteRun = () => {},
   hasAdminSecret = false,
-  deployerChain = "appchain",
-  deployerEnvironmentLabel = "Appchain",
+  deployerChain,
+  deployerEnvironmentLabel,
 }: FactoryV2WatchWorkspaceProps) => {
   const appearance = resolveFactoryModeAppearance(mode);
   const [showAllSteps, setShowAllSteps] = useState(false);
@@ -139,7 +137,6 @@ export const FactoryV2WatchWorkspace = ({
     isWatcherBusy,
     isResolvingRunName,
     notice,
-    lookupDisabledReason,
     watchGameName,
     isFilteringRuns,
     onContinue,
@@ -177,9 +174,7 @@ export const FactoryV2WatchWorkspace = ({
       return;
     }
 
-    if (!lookupDisabledReason) {
-      void onResolveRunByName(watchGameName);
-    }
+    void onResolveRunByName(watchGameName);
   };
 
   return (
@@ -189,7 +184,6 @@ export const FactoryV2WatchWorkspace = ({
         inputClassName={appearance.listItemClassName}
         watchGameName={watchGameName}
         matchingRuns={state.matchingRuns}
-        lookupDisabledReason={lookupDisabledReason}
         isResolvingRunName={isResolvingRunName}
         searchNotice={state.searchNotice}
         onSelectRun={chooseRun}
@@ -224,7 +218,6 @@ function resolveWatchWorkspaceState({
   isWatcherBusy,
   isResolvingRunName,
   notice,
-  lookupDisabledReason,
   watchGameName,
   isFilteringRuns,
   onContinue,
@@ -245,7 +238,6 @@ function resolveWatchWorkspaceState({
   isWatcherBusy: boolean;
   isResolvingRunName: boolean;
   notice: string | null;
-  lookupDisabledReason: string | null;
   watchGameName: string;
   isFilteringRuns: boolean;
   onContinue: () => void;
@@ -273,11 +265,10 @@ function resolveWatchWorkspaceState({
     watchGameName,
     watcher,
     isResolvingRunName,
-    lookupDisabledReason,
   });
   const runNotice = searchNotice ? null : notice;
   const primaryAction = selectedRun && !isWatcherBusy ? resolveRunPrimaryAction(selectedRun) : null;
-  const environmentLabel = selectedRun ? getEnvironmentLabel(selectedRun.environment) : null;
+  const environmentLabel = selectedRun ? resolveFactoryEnvironmentLabel(selectedRun.environment) : null;
   const currentStepLabel = isPendingSelectedRun
     ? `Starting ${selectedRun?.name ?? "your run"}`
     : selectedRun
@@ -337,7 +328,6 @@ function resolveWatchWorkspaceState({
           showsStopAutoRetryAction,
           showsDeleteRunAction,
           isWatcherBusy,
-          isBlocked: Boolean(lookupDisabledReason),
           hasAdminSecret,
           primaryButtonClassName,
           secondaryButtonClassName,
@@ -1148,7 +1138,6 @@ const FactoryV2WatchSearchPanel = ({
   inputClassName,
   watchGameName,
   matchingRuns,
-  lookupDisabledReason,
   isResolvingRunName,
   searchNotice,
   onSelectRun,
@@ -1160,7 +1149,6 @@ const FactoryV2WatchSearchPanel = ({
   inputClassName: string;
   watchGameName: string;
   matchingRuns: FactoryRun[];
-  lookupDisabledReason: string | null;
   isResolvingRunName: boolean;
   searchNotice: string | null;
   onSelectRun: (run: FactoryRun) => void;
@@ -1195,10 +1183,8 @@ const FactoryV2WatchSearchPanel = ({
           onFocus={onFocusInput}
           onKeyDown={onKeyDownInput}
           placeholder="Type a run name"
-          disabled={Boolean(lookupDisabledReason)}
           className={cn(
             "h-11 w-full rounded-[18px] border border-gold/15 bg-black/25 px-4 pr-10 text-center text-sm font-medium text-gold outline-none transition-colors placeholder:text-gold/30 focus:border-gold/30",
-            lookupDisabledReason ? "cursor-not-allowed opacity-60" : "",
             inputClassName,
           )}
         />
@@ -1206,13 +1192,11 @@ const FactoryV2WatchSearchPanel = ({
           type="button"
           data-testid="factory-watch-run-picker-toggle"
           onClick={onFocusInput}
-          disabled={Boolean(lookupDisabledReason)}
           className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gold/45 transition-colors hover:bg-gold/10 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronDown className="h-4 w-4" />
         </button>
       </div>
-      {lookupDisabledReason ? <p className="text-sm leading-6 text-gold/50">{lookupDisabledReason}</p> : null}
       {isResolvingRunName ? <p className="text-sm leading-6 text-gold/50">Looking for that run.</p> : null}
       {searchNotice ? (
         <FactoryV2CopyableMessageBox
@@ -1222,7 +1206,7 @@ const FactoryV2WatchSearchPanel = ({
           compact
         />
       ) : null}
-      {!lookupDisabledReason && !isResolvingRunName && !searchNotice ? (
+      {!isResolvingRunName && !searchNotice ? (
         <p className="text-sm leading-6 text-gold/46">Press Enter to check its status.</p>
       ) : null}
       {matchingRuns.length > 0 ? (
@@ -1240,7 +1224,9 @@ const FactoryV2WatchSearchPanel = ({
               >
                 <div className="min-w-0">
                   <div className="truncate font-semibold text-gold">{run.name}</div>
-                  <div className="mt-0.5 text-[11px] text-gold/42">{getEnvironmentLabel(run.environment)}</div>
+                  <div className="mt-0.5 text-[11px] text-gold/42">
+                    {resolveFactoryEnvironmentLabel(run.environment)}
+                  </div>
                 </div>
                 <div
                   className={cn(
@@ -1266,7 +1252,6 @@ const FactoryV2WatchActionBar = ({
   showsStopAutoRetryAction,
   showsDeleteRunAction,
   isWatcherBusy,
-  isBlocked,
   hasAdminSecret,
   primaryButtonClassName,
   secondaryButtonClassName,
@@ -1276,8 +1261,8 @@ const FactoryV2WatchActionBar = ({
   onStopAutoRetry,
   onDeleteRun,
 }: FactoryV2WatchActionBarProps) => {
-  const stopAutoRetryDisabled = isWatcherBusy || isBlocked || !hasAdminSecret;
-  const deleteRunDisabled = isWatcherBusy || isBlocked || !hasAdminSecret;
+  const stopAutoRetryDisabled = isWatcherBusy || !hasAdminSecret;
+  const deleteRunDisabled = isWatcherBusy || !hasAdminSecret;
   const [showsActionHelp, setShowsActionHelp] = useState(false);
   const hasAnyAction = Boolean(
     visiblePrimaryAction || showsManualRefresh || showsNudgeAction || showsStopAutoRetryAction || showsDeleteRunAction,
@@ -1292,7 +1277,7 @@ const FactoryV2WatchActionBar = ({
               label={visiblePrimaryAction.label}
               icon={<Play className="h-4 w-4" />}
               onClick={onContinue}
-              disabled={isWatcherBusy || isBlocked}
+              disabled={isWatcherBusy}
               className={primaryButtonClassName}
             />
           ) : null}
@@ -1302,7 +1287,7 @@ const FactoryV2WatchActionBar = ({
               label="Check again"
               icon={<RefreshCw className="h-4 w-4" />}
               onClick={onRefresh}
-              disabled={isWatcherBusy || isBlocked}
+              disabled={isWatcherBusy}
               className={secondaryButtonClassName}
             />
           ) : null}
@@ -1312,7 +1297,7 @@ const FactoryV2WatchActionBar = ({
               label="Run now"
               icon={<RefreshCw className="h-4 w-4" />}
               onClick={onNudge}
-              disabled={isWatcherBusy || isBlocked}
+              disabled={isWatcherBusy}
               className={secondaryButtonClassName}
             />
           ) : null}
@@ -1785,7 +1770,6 @@ interface FactoryV2WatchActionBarProps {
   showsStopAutoRetryAction: boolean;
   showsDeleteRunAction: boolean;
   isWatcherBusy: boolean;
-  isBlocked: boolean;
   hasAdminSecret: boolean;
   primaryButtonClassName: string;
   secondaryButtonClassName: string;
@@ -1867,16 +1851,14 @@ function resolveWatchSearchNotice({
   watchGameName,
   watcher,
   isResolvingRunName,
-  lookupDisabledReason,
 }: {
   notice: string | null;
   selectedRun: FactoryRun | null;
   watchGameName: string;
   watcher: FactoryWatcherState | null;
   isResolvingRunName: boolean;
-  lookupDisabledReason: string | null;
 }) {
-  if (!notice || watcher || isResolvingRunName || lookupDisabledReason) {
+  if (!notice || watcher || isResolvingRunName) {
     return null;
   }
 

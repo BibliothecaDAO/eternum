@@ -21,13 +21,10 @@ const buildProps = (overrides: Record<string, unknown> = {}) => {
   const draft = createFactoryMoreOptionsDraft("eternum", "appchain");
 
   return {
-    mode: "eternum" as const,
-    isOpen: true,
-    sections: getFactoryMoreOptionSections("eternum"),
+    sections: getFactoryMoreOptionSections("eternum", {}, "appchain"),
     draft,
     errors: validateFactoryMoreOptions("eternum", "appchain", draft).errors,
     invalidReason: null,
-    onToggle: vi.fn(),
     onValueChange: vi.fn(),
     ...overrides,
   };
@@ -95,7 +92,7 @@ describe("FactoryV2MoreOptions", () => {
         <FactoryV2MoreOptions
           {...buildProps({
             mode: "blitz",
-            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain"),
             draft,
             errors: validateFactoryMoreOptions("blitz", "appchain", draft, { twoPlayerMode: false }).errors,
           })}
@@ -126,7 +123,7 @@ describe("FactoryV2MoreOptions", () => {
         <FactoryV2MoreOptions
           {...buildProps({
             mode: "blitz",
-            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain"),
             draft,
             errors: validateFactoryMoreOptions("blitz", "appchain", draft, { twoPlayerMode: false }).errors,
           })}
@@ -179,7 +176,7 @@ describe("FactoryV2MoreOptions", () => {
         <FactoryV2MoreOptions
           {...buildProps({
             mode: "blitz",
-            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain"),
             draft,
             errors: validateFactoryMoreOptions("blitz", "appchain", draft, { twoPlayerMode: false }).errors,
           })}
@@ -194,7 +191,7 @@ describe("FactoryV2MoreOptions", () => {
 
   it("keeps an opened section expanded while editing a field", async () => {
     const draft = createFactoryMoreOptionsDraft("blitz", "appchain");
-    const sections = getFactoryMoreOptionSections("blitz", { twoPlayerMode: false });
+    const sections = getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain");
 
     await act(async () => {
       root.render(
@@ -231,7 +228,7 @@ describe("FactoryV2MoreOptions", () => {
         <FactoryV2MoreOptions
           {...buildProps({
             mode: "blitz",
-            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }),
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: false }, "appchain"),
             draft: updatedDraft,
             errors: validateFactoryMoreOptions("blitz", "appchain", updatedDraft, { twoPlayerMode: false }).errors,
           })}
@@ -251,7 +248,7 @@ describe("FactoryV2MoreOptions", () => {
         <FactoryV2MoreOptions
           {...buildProps({
             mode: "blitz",
-            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: true }),
+            sections: getFactoryMoreOptionSections("blitz", { twoPlayerMode: true }, "appchain"),
             draft,
             errors: validateFactoryMoreOptions("blitz", "appchain", draft, { twoPlayerMode: true }).errors,
           })}

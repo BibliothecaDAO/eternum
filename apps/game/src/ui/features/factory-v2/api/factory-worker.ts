@@ -1,12 +1,14 @@
 import { env } from "../../../../../env";
 import type { GameChain } from "@realms-world/chain";
+import type { GameEnvironmentId } from "@config";
 import type {
   FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 
-export type FactoryWorkerEnvironmentId = "madara.blitz" | "appchain.eternum" | "appchain.blitz";
+/** The worker accepts exactly the shared environment list. */
+export type FactoryWorkerEnvironmentId = GameEnvironmentId;
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
 export type FactoryWorkerGameLaunchStepId = "create-world" | "wait-for-factory-index";
 export type FactoryWorkerSeriesLaunchStepId = "create-series" | "create-worlds" | "wait-for-factory-indexes";
@@ -354,11 +356,6 @@ interface DeleteFactoryRotationRunRequest {
 
 const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
 
-const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
-  "appchain.eternum",
-  "appchain.blitz",
-]);
-
 export class FactoryWorkerApiError extends Error {
   constructor(
     message: string,
@@ -369,11 +366,6 @@ export class FactoryWorkerApiError extends Error {
     this.name = "FactoryWorkerApiError";
   }
 }
-
-export const isFactoryWorkerEnvironmentSupported = (
-  environmentId: string,
-): environmentId is FactoryWorkerEnvironmentId =>
-  SUPPORTED_FACTORY_WORKER_ENVIRONMENTS.has(environmentId as FactoryWorkerEnvironmentId);
 
 export async function listFactoryRuns(
   environment: FactoryWorkerEnvironmentId,

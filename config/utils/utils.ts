@@ -62,3 +62,10 @@ export {
   resolveBlitzBalanceProfileIdFromDurationSeconds,
 };
 export type { BlitzBalanceProfileId };
+export {
+  GAME_ENVIRONMENTS,
+  getGameEnvironmentsForChain,
+  isGameEnvironmentId,
+  type GameEnvironment,
+  type GameEnvironmentId,
+} from "../shared/game-environments";

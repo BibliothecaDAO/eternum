@@ -54,12 +54,17 @@ signal.
 - Point the client at the lab worker: set `VITE_PUBLIC_FACTORY_WORKER_URL` to the lab worker (backend §B) in
   `apps/game/.env.production`; appchain builds keep the appchain worker.
 
-### 2. Fix the flagged defaults
+### 2. The flagged defaults (verified 2026-09-01 — no separate fix)
 
-- **Seed:** the default game seed is hardcoded — every launch must use fresh randomness (or the launcher's derivation).
-  Verify the game seed and any map/settlement seed default to a random/derived value per launch, never a constant.
-- **Player count:** the default number of players is wrong — default to the **selected preset's** registration cap (e.g.
-  96 for standard blitz, 2 for Duel), sourced from the preset, not a hardcoded/incorrect value.
+- **Seed:** not hardcoded. The client sends no seed; the launcher derives
+  `poseidon(gameName, startMainAt, seriesId, gameNumber)` (`registrar/preset.ts` `deriveGameSeed`) and game names are
+  randomized, so every launch gets a fresh seed; the contract additionally derives `map_center_offset(game_id, seed)`.
+  The biome `elevationSeed`/`moistureSeed` default to the chain config (0) and are an explicit override under Advanced.
+- **Player count:** an instance of §1, not a second bug. The default path sends no cap; the launcher uses the
+  environment config's `registration_count_max` (madara 96, appchain 24; 2 for Duel). The registered preset does not
+  carry the cap — `create_game` takes it as a parameter. The UI's "Max players" value was computed for the hardcoded
+  `"appchain"` chain, so a madara build showed 24 while launching with 96. Deriving the chain from the environment (§1)
+  fixes it; `catalog.test.ts` pins 96/24 per chain.
 
 ### 3. Streamline now that presets carry the config
 

@@ -80,8 +80,6 @@ const buildProps = (
   seriesLookupError: null,
   existingRunName: null,
   notice: null,
-  launchDisabledReason: null,
-  moreOptionsOpen: false,
   moreOptionSections: [],
   moreOptionDraft: createFactoryMoreOptionsDraft("blitz", "appchain"),
   moreOptionErrors: {
@@ -127,7 +125,6 @@ const buildProps = (
   onRotationEvaluationIntervalChange: vi.fn(),
   onAutoRetryIntervalChange: vi.fn(),
   onSelectSeriesSuggestion: vi.fn(),
-  onToggleMapOptions: vi.fn(),
   onMapOptionValueChange: vi.fn(),
   onSelectBiomeClimateTarget: vi.fn(),
   onBiomeClimateValueChange: vi.fn(),
@@ -137,8 +134,7 @@ const buildProps = (
   onToggleTwoPlayerMode: vi.fn(),
   onToggleSingleRealmMode: vi.fn(),
   onFandomizeGameName: vi.fn(),
-  deployerChain: "appchain",
-  deployerEnvironmentLabel: "Appchain",
+  chain: "appchain",
   onLaunch: vi.fn(),
   isWatcherBusy: false,
   ...overrides,
@@ -167,17 +163,37 @@ describe("FactoryV2StartWorkspace play style", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("splits the start card into clear launch sections", async () => {
+  it("keeps the default path to preset, name, start time and launch", async () => {
     await act(async () => {
       root.render(<FactoryV2StartWorkspace {...buildProps()} />);
       await waitForAsyncWork();
     });
 
     expect(container.textContent).toContain("Launch basics");
-    expect(container.textContent).toContain("Blitz setup");
+    expect(container.querySelector("#factory-preset")).not.toBeNull();
+    expect(container.querySelector("#factory-game-name")).not.toBeNull();
+    expect(container.querySelector("#factory-start-date")).not.toBeNull();
+    expect(container.querySelector('[data-testid="factory-launch-button"]')).not.toBeNull();
     expect(container.textContent).toContain("Advanced");
+    expect(container.textContent).not.toContain("Launch type");
+    expect(container.textContent).not.toContain("Blitz setup");
+    expect(container.textContent).not.toContain("Biome tuning");
+    expect(container.textContent).not.toContain("Max players");
+  });
+
+  it("reveals launch type, blitz setup and map tuning behind Advanced", async () => {
+    await act(async () => {
+      root.render(<FactoryV2StartWorkspace {...buildProps()} />);
+      await waitForAsyncWork();
+    });
+
+    await openAdvanced(container);
+
+    expect(container.textContent).toContain("Launch type");
+    expect(container.textContent).toContain("Blitz setup");
     expect(container.textContent).toContain("Biome tuning");
     expect(container.textContent).toContain("Max players");
+    expect(container.textContent).toContain("More options");
   });
 
   it("uses a wide layout with a sticky mobile launch bar", async () => {
@@ -268,7 +284,7 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(startTimeDisplay?.className).toContain("sm:hidden");
   });
 
-  it("lets the blitz schedule keep the full row when duration is shown", async () => {
+  it("keeps the duration override out of the schedule row and behind Advanced", async () => {
     await act(async () => {
       root.render(
         <FactoryV2StartWorkspace
@@ -281,6 +297,10 @@ describe("FactoryV2StartWorkspace play style", () => {
       );
       await waitForAsyncWork();
     });
+
+    expect(container.querySelector("#factory-duration")).toBeNull();
+
+    await openAdvanced(container);
 
     const timingGroup = container.querySelector('[data-testid="factory-launch-timing"]');
     const startDateInput = container.querySelector<HTMLInputElement>("#factory-start-date");
@@ -298,6 +318,8 @@ describe("FactoryV2StartWorkspace play style", () => {
       await waitForAsyncWork();
     });
 
+    await openAdvanced(container);
+
     const defaultButton = findPlayStyleButton(container, "Multiple Players, 3 Realms");
     const twoPlayerButton = findPlayStyleButton(container, "2 players, 3 Realms");
     const singleRealmButton = findPlayStyleButton(container, "Multiple Players, 1 Realm");
@@ -313,6 +335,9 @@ describe("FactoryV2StartWorkspace play style", () => {
       await waitForAsyncWork();
     });
 
+    await openAdvanced(container);
+
+    expect(container.textContent).toContain("Blitz setup");
     expect(container.textContent).not.toContain("Max players");
   });
 
@@ -335,6 +360,8 @@ describe("FactoryV2StartWorkspace play style", () => {
       );
       await waitForAsyncWork();
     });
+
+    await openAdvanced(container);
 
     expect(container.textContent).toContain("Biome tuning");
     expect(container.textContent).toContain("Apply to all");
@@ -365,8 +392,12 @@ describe("FactoryV2StartWorkspace play style", () => {
 
     const launchButton = container.querySelector<HTMLButtonElement>('[data-testid="factory-launch-button"]');
 
-    expect(container.textContent).toContain("Elevation scale BPS must be an integer between 0 and 65535.");
     expect(launchButton?.disabled).toBe(true);
+    expect(container.textContent).toContain("Needs review");
+
+    await openAdvanced(container);
+
+    expect(container.textContent).toContain("Elevation scale BPS must be an integer between 0 and 65535.");
   });
 
   it("switches to the two-player play style from the default state", async () => {
@@ -384,6 +415,8 @@ describe("FactoryV2StartWorkspace play style", () => {
       );
       await waitForAsyncWork();
     });
+
+    await openAdvanced(container);
 
     const twoPlayerButton = findPlayStyleButton(container, "2 players, 3 Realms");
 
@@ -446,6 +479,15 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.textContent).toContain("bltz-ladder-loop-02");
   });
 });
+
+async function openAdvanced(container: HTMLDivElement) {
+  const toggle = container.querySelector<HTMLButtonElement>('[data-testid="factory-advanced-toggle"]');
+
+  await act(async () => {
+    (toggle as HTMLButtonElement).click();
+    await waitForAsyncWork();
+  });
+}
 
 function findPlayStyleButton(container: HTMLDivElement, label: string) {
   return Array.from(container.querySelectorAll<HTMLButtonElement>("button[aria-pressed]")).find((button) =>

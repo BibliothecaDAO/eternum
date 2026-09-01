@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
@@ -15,19 +15,16 @@ import {
 } from "../launch-modes";
 import {
   getFactoryMoreOptionField,
-  type FactoryMoreOptionField,
   type FactoryMoreOptionSection,
   type FactoryMoreOptionsDraft,
   type FactoryMoreOptionsErrors,
 } from "../map-options";
-import {
-  listFactoryBiomeClimateFields,
-  type FactoryBiomeClimateDraft,
-  type FactoryBiomeClimateErrors,
-  type FactoryBiomeClimateFieldId,
+import type {
+  FactoryBiomeClimateDraft,
+  FactoryBiomeClimateErrors,
+  FactoryBiomeClimateFieldId,
 } from "../biome-climate-options";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
-import { buildFactoryBiomePreviewModel } from "../../factory/shared/biome-preview";
 import {
   buildFactoryStartAtValue,
   formatFactoryStartDateLabel,
@@ -47,7 +44,12 @@ import type {
   FactorySeriesRetryIntervalMinutes,
 } from "../types";
 import { FactoryV2DeployerWalletCard } from "./factory-v2-deployer-wallet-card";
-import { FactoryV2MoreOptions } from "./factory-v2-more-options";
+import { FactoryV2StartAdvanced } from "./factory-v2-start-advanced";
+import {
+  FACTORY_FIELD_CONTROL_CLASS_NAME,
+  FACTORY_SELECT_CONTROL_CLASS_NAME,
+  FactoryV2StartSectionCard,
+} from "./factory-v2-start-primitives";
 
 const getPresetFacts = (preset: FactoryLaunchPreset) =>
   [
@@ -56,11 +58,6 @@ const getPresetFacts = (preset: FactoryLaunchPreset) =>
       : null,
     preset.defaults.devMode ? "Test mode" : null,
   ].filter(Boolean);
-
-const FACTORY_FIELD_CONTROL_CLASS_NAME =
-  "mt-2 block h-11 w-full min-w-0 max-w-full rounded-[18px] border border-gold/15 bg-black/25 px-3 text-left text-[13px] text-gold outline-none transition-colors focus:border-gold/30 backdrop-blur-[6px] md:px-4 md:text-center md:text-sm";
-
-const FACTORY_SELECT_CONTROL_CLASS_NAME = `${FACTORY_FIELD_CONTROL_CLASS_NAME} appearance-none pr-11 font-medium`;
 
 const FACTORY_SCHEDULE_PANEL_CLASS_NAME =
   "block min-w-0 overflow-hidden rounded-[20px] border border-gold/10 bg-black/20 px-3 py-3 shadow-[0_8px_22px_rgba(0,0,0,0.12)] backdrop-blur-[6px] transition-colors focus-within:border-gold/25";
@@ -112,8 +109,6 @@ type FactoryV2StartWorkspaceProps = {
   seriesLookupError: string | null;
   existingRunName: string | null;
   notice: string | null;
-  launchDisabledReason: string | null;
-  moreOptionsOpen: boolean;
   moreOptionSections: FactoryMoreOptionSection[];
   moreOptionDraft: FactoryMoreOptionsDraft;
   moreOptionErrors: FactoryMoreOptionsErrors;
@@ -139,7 +134,6 @@ type FactoryV2StartWorkspaceProps = {
   onRotationEvaluationIntervalChange: (value: FactoryRotationEvaluationIntervalMinutes) => void;
   onAutoRetryIntervalChange: (value: FactorySeriesRetryIntervalMinutes) => void;
   onSelectSeriesSuggestion: (seriesName: string) => void;
-  onToggleMapOptions: () => void;
   onMapOptionValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
   onSelectBiomeClimateTarget: (targetId: string) => void;
   onBiomeClimateValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
@@ -149,8 +143,7 @@ type FactoryV2StartWorkspaceProps = {
   onToggleTwoPlayerMode: () => void;
   onToggleSingleRealmMode: () => void;
   onFandomizeGameName: () => void;
-  deployerChain: FactoryLaunchChain;
-  deployerEnvironmentLabel: string;
+  chain: FactoryLaunchChain;
   onLaunch: () => void;
   isWatcherBusy: boolean;
 };
@@ -221,7 +214,6 @@ function resolveStartWorkspaceState(
     twoPlayerMode,
     singleRealmMode,
     isWatcherBusy,
-    launchDisabledReason,
     moreOptionsDisabledReason,
     biomeClimateDisabledReason,
   }: FactoryV2ResolvedStartWorkspaceProps,
@@ -253,7 +245,6 @@ function resolveStartWorkspaceState(
         rotationAdvanceWindowGames,
       }) &&
       !isWatcherBusy &&
-      !launchDisabledReason &&
       !moreOptionsDisabledReason &&
       !biomeClimateDisabledReason,
     presetFacts: getPresetFacts(selectedPreset).join(" · "),
@@ -322,8 +313,6 @@ const FactoryV2ConfiguredStartWorkspace = ({
   seriesLookupError,
   existingRunName,
   notice,
-  launchDisabledReason,
-  moreOptionsOpen,
   moreOptionSections,
   moreOptionDraft,
   moreOptionErrors,
@@ -349,7 +338,6 @@ const FactoryV2ConfiguredStartWorkspace = ({
   onRotationEvaluationIntervalChange,
   onAutoRetryIntervalChange,
   onSelectSeriesSuggestion,
-  onToggleMapOptions,
   onMapOptionValueChange,
   onSelectBiomeClimateTarget,
   onBiomeClimateValueChange,
@@ -359,12 +347,13 @@ const FactoryV2ConfiguredStartWorkspace = ({
   onToggleTwoPlayerMode,
   onToggleSingleRealmMode,
   onFandomizeGameName,
-  deployerChain,
-  deployerEnvironmentLabel,
+  chain,
+  environmentLabel,
   onLaunch,
   appearance,
   workspace,
 }: FactoryV2ConfiguredStartWorkspaceProps) => {
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const maxPlayersField = getFactoryMoreOptionField(mode, "maxPlayers", { twoPlayerMode });
 
   const selectBlitzPlayStyle = (playStyleId: BlitzPlayStyleId) => {
@@ -396,13 +385,6 @@ const FactoryV2ConfiguredStartWorkspace = ({
     <article className="w-full md:mx-auto md:max-w-lg">
       <div className={cn("px-0 py-0 md:rounded-[28px] md:border md:px-7 md:py-8", appearance.featureSurfaceClassName)}>
         <div className="space-y-3 pb-24 md:space-y-4 md:pb-0">
-          <FactoryV2LaunchTargetSection
-            launchTargetKind={launchTargetKind}
-            appearanceClassName={appearance.quietSurfaceClassName}
-            buttonClassName={appearance.secondaryButtonClassName}
-            onSelectLaunchTargetKind={onSelectLaunchTargetKind}
-          />
-
           <FactoryV2LaunchSetupSection
             mode={mode}
             selectedPreset={selectedPreset}
@@ -412,21 +394,17 @@ const FactoryV2ConfiguredStartWorkspace = ({
             seriesName={seriesName}
             rotationName={rotationName}
             startAt={startAt}
-            durationMinutes={durationMinutes}
             seriesGameCount={seriesGameCount}
             rotationGameIntervalMinutes={rotationGameIntervalMinutes}
             rotationMaxGames={rotationMaxGames}
             rotationAdvanceWindowGames={rotationAdvanceWindowGames}
             rotationEvaluationIntervalMinutes={rotationEvaluationIntervalMinutes}
             autoRetryIntervalMinutes={autoRetryIntervalMinutes}
-            showsDuration={showsDuration}
-            durationOptions={durationOptions}
             seriesSuggestions={seriesSuggestions}
             isLoadingSeries={isLoadingSeries}
             seriesLookupError={seriesLookupError}
             existingRunName={existingRunName}
             notice={notice}
-            launchDisabledReason={launchDisabledReason}
             appearanceClassName={appearance.listItemClassName}
             cardAppearanceClassName={appearance.quietSurfaceClassName}
             onSelectPreset={onSelectPreset}
@@ -434,7 +412,6 @@ const FactoryV2ConfiguredStartWorkspace = ({
             onSeriesNameChange={onSeriesNameChange}
             onRotationNameChange={onRotationNameChange}
             onStartAtChange={onStartAtChange}
-            onDurationChange={onDurationChange}
             onSeriesGameCountChange={onSeriesGameCountChange}
             onRotationGameIntervalMinutesChange={onRotationGameIntervalMinutesChange}
             onRotationMaxGamesChange={onRotationMaxGamesChange}
@@ -461,23 +438,16 @@ const FactoryV2ConfiguredStartWorkspace = ({
             />
           ) : null}
 
-          {workspace.showsBlitzModes ? (
-            <FactoryV2BlitzSetupSection
-              maxPlayersField={maxPlayersField}
-              moreOptionDraft={moreOptionDraft}
-              moreOptionErrors={moreOptionErrors}
-              blitzPlayStyleOptions={workspace.blitzPlayStyleOptions}
-              selectedBlitzPlayStyleId={workspace.selectedBlitzPlayStyleId}
-              appearanceClassName={appearance.quietSurfaceClassName}
-              buttonClassName={appearance.secondaryButtonClassName}
-              onMapOptionValueChange={onMapOptionValueChange}
-              onSelectBlitzPlayStyle={selectBlitzPlayStyle}
-            />
-          ) : null}
-
-          <FactoryV2AdvancedSection
-            mode={mode}
-            moreOptionsOpen={moreOptionsOpen}
+          <FactoryV2StartAdvanced
+            isOpen={isAdvancedOpen}
+            launchTargetKind={launchTargetKind}
+            showsDuration={showsDuration}
+            durationMinutes={durationMinutes}
+            durationOptions={durationOptions}
+            showsBlitzModes={workspace.showsBlitzModes}
+            maxPlayersField={maxPlayersField}
+            blitzPlayStyleOptions={workspace.blitzPlayStyleOptions}
+            selectedBlitzPlayStyleId={workspace.selectedBlitzPlayStyleId}
             moreOptionSections={moreOptionSections}
             moreOptionDraft={moreOptionDraft}
             moreOptionErrors={moreOptionErrors}
@@ -487,8 +457,11 @@ const FactoryV2ConfiguredStartWorkspace = ({
             biomeClimateTargets={biomeClimateTargets}
             selectedBiomeClimateTargetId={selectedBiomeClimateTargetId}
             biomeClimateDisabledReason={biomeClimateDisabledReason}
-            appearanceClassName={appearance.quietSurfaceClassName}
-            onToggleMapOptions={onToggleMapOptions}
+            appearance={appearance}
+            onToggle={() => setIsAdvancedOpen((currentValue) => !currentValue)}
+            onSelectLaunchTargetKind={onSelectLaunchTargetKind}
+            onDurationChange={onDurationChange}
+            onSelectBlitzPlayStyle={selectBlitzPlayStyle}
             onMapOptionValueChange={onMapOptionValueChange}
             onSelectBiomeClimateTarget={onSelectBiomeClimateTarget}
             onBiomeClimateValueChange={onBiomeClimateValueChange}
@@ -497,7 +470,7 @@ const FactoryV2ConfiguredStartWorkspace = ({
             onApplyBiomeClimateToAll={onApplyBiomeClimateToAll}
           />
 
-          <FactoryV2DeployerWalletCard chain={deployerChain} environmentLabel={deployerEnvironmentLabel} />
+          <FactoryV2DeployerWalletCard chain={chain} environmentLabel={environmentLabel} />
 
           <FactoryV2LaunchActionBar
             launchSummaryItems={workspace.launchSummaryItems}
@@ -513,48 +486,6 @@ const FactoryV2ConfiguredStartWorkspace = ({
   );
 };
 
-const FactoryV2LaunchTargetSection = ({
-  launchTargetKind,
-  appearanceClassName,
-  buttonClassName,
-  onSelectLaunchTargetKind,
-}: {
-  launchTargetKind: FactoryLaunchTargetKind;
-  appearanceClassName: string;
-  buttonClassName: string;
-  onSelectLaunchTargetKind: (kind: FactoryLaunchTargetKind) => void;
-}) => (
-  <FactoryV2StartSectionCard
-    title="Launch type"
-    description="Start one game, queue a full series, or keep a rotation automatically filled."
-    appearanceClassName={appearanceClassName}
-  >
-    <div className="grid gap-2 sm:grid-cols-3">
-      <FactoryV2LaunchTargetButton
-        label="Single game"
-        description="One world, one launch."
-        isSelected={launchTargetKind === "game"}
-        appearanceClassName={buttonClassName}
-        onClick={() => onSelectLaunchTargetKind("game")}
-      />
-      <FactoryV2LaunchTargetButton
-        label="Series"
-        description="One parent run for many games."
-        isSelected={launchTargetKind === "series"}
-        appearanceClassName={buttonClassName}
-        onClick={() => onSelectLaunchTargetKind("series")}
-      />
-      <FactoryV2LaunchTargetButton
-        label="Rotation"
-        description="Keep future games queued ahead."
-        isSelected={launchTargetKind === "rotation"}
-        appearanceClassName={buttonClassName}
-        onClick={() => onSelectLaunchTargetKind("rotation")}
-      />
-    </div>
-  </FactoryV2StartSectionCard>
-);
-
 const FactoryV2LaunchSetupSection = ({
   mode,
   selectedPreset,
@@ -564,21 +495,17 @@ const FactoryV2LaunchSetupSection = ({
   seriesName,
   rotationName,
   startAt,
-  durationMinutes,
   seriesGameCount,
   rotationGameIntervalMinutes,
   rotationMaxGames,
   rotationAdvanceWindowGames,
   rotationEvaluationIntervalMinutes,
   autoRetryIntervalMinutes,
-  showsDuration,
-  durationOptions,
   seriesSuggestions,
   isLoadingSeries,
   seriesLookupError,
   existingRunName,
   notice,
-  launchDisabledReason,
   appearanceClassName,
   cardAppearanceClassName,
   onSelectPreset,
@@ -586,7 +513,6 @@ const FactoryV2LaunchSetupSection = ({
   onSeriesNameChange,
   onRotationNameChange,
   onStartAtChange,
-  onDurationChange,
   onSeriesGameCountChange,
   onRotationGameIntervalMinutesChange,
   onRotationMaxGamesChange,
@@ -604,21 +530,17 @@ const FactoryV2LaunchSetupSection = ({
   seriesName: string;
   rotationName: string;
   startAt: string;
-  durationMinutes: number | null;
   seriesGameCount: number;
   rotationGameIntervalMinutes: number;
   rotationMaxGames: number;
   rotationAdvanceWindowGames: number;
   rotationEvaluationIntervalMinutes: FactoryRotationEvaluationIntervalMinutes;
   autoRetryIntervalMinutes: FactorySeriesRetryIntervalMinutes;
-  showsDuration: boolean;
-  durationOptions: FactoryDurationOption[];
   seriesSuggestions: FactoryV2StartWorkspaceProps["seriesSuggestions"];
   isLoadingSeries: boolean;
   seriesLookupError: string | null;
   existingRunName: string | null;
   notice: string | null;
-  launchDisabledReason: string | null;
   appearanceClassName: string;
   cardAppearanceClassName: string;
   onSelectPreset: (presetId: string) => void;
@@ -626,7 +548,6 @@ const FactoryV2LaunchSetupSection = ({
   onSeriesNameChange: (value: string) => void;
   onRotationNameChange: (value: string) => void;
   onStartAtChange: (value: string) => void;
-  onDurationChange: (value: number) => void;
   onSeriesGameCountChange: (value: number) => void;
   onRotationGameIntervalMinutesChange: (value: number) => void;
   onRotationMaxGamesChange: (value: number) => void;
@@ -661,7 +582,6 @@ const FactoryV2LaunchSetupSection = ({
         seriesLookupError={seriesLookupError}
         existingRunName={existingRunName}
         notice={notice}
-        launchDisabledReason={launchDisabledReason}
         onSeriesNameChange={onSeriesNameChange}
         onSeriesGameCountChange={onSeriesGameCountChange}
         onAutoRetryIntervalChange={onAutoRetryIntervalChange}
@@ -679,7 +599,6 @@ const FactoryV2LaunchSetupSection = ({
         autoRetryIntervalMinutes={autoRetryIntervalMinutes}
         existingRunName={existingRunName}
         notice={notice}
-        launchDisabledReason={launchDisabledReason}
         onRotationNameChange={onRotationNameChange}
         onRotationGameIntervalMinutesChange={onRotationGameIntervalMinutesChange}
         onRotationMaxGamesChange={onRotationMaxGamesChange}
@@ -693,7 +612,6 @@ const FactoryV2LaunchSetupSection = ({
         gameName={gameName}
         existingRunName={existingRunName}
         notice={notice}
-        launchDisabledReason={launchDisabledReason}
         buttonClassName={appearanceClassName}
         onGameNameChange={onGameNameChange}
         onFandomizeGameName={onFandomizeGameName}
@@ -702,15 +620,6 @@ const FactoryV2LaunchSetupSection = ({
 
     <div data-testid="factory-launch-timing" className="space-y-4">
       <FactoryV2StartTimeField startAt={startAt} helperText={workspace.timingHelperText} onChange={onStartAtChange} />
-
-      {showsDuration && durationMinutes !== null ? (
-        <FactoryV2DurationField
-          durationMinutes={durationMinutes}
-          durationOptions={durationOptions}
-          appearanceClassName={appearanceClassName}
-          onChange={onDurationChange}
-        />
-      ) : null}
     </div>
   </FactoryV2StartSectionCard>
 );
@@ -760,7 +669,6 @@ const FactoryV2SingleGameBasics = ({
   gameName,
   existingRunName,
   notice,
-  launchDisabledReason,
   buttonClassName,
   onGameNameChange,
   onFandomizeGameName,
@@ -769,7 +677,6 @@ const FactoryV2SingleGameBasics = ({
   gameName: string;
   existingRunName: string | null;
   notice: string | null;
-  launchDisabledReason: string | null;
   buttonClassName: string;
   onGameNameChange: (value: string) => void;
   onFandomizeGameName: () => void;
@@ -802,9 +709,6 @@ const FactoryV2SingleGameBasics = ({
       <p className="mt-2 text-sm leading-6 text-gold/50">That name is already in use. We will open that run instead.</p>
     ) : null}
     {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-gold/50">{notice}</p> : null}
-    {!existingRunName && launchDisabledReason ? (
-      <p className="mt-2 text-sm leading-6 text-gold/50">{launchDisabledReason}</p>
-    ) : null}
   </div>
 );
 
@@ -855,284 +759,6 @@ const FactoryV2RotationPreviewSection = ({
       ))}
     </div>
   </FactoryV2StartSectionCard>
-);
-
-const FactoryV2BlitzSetupSection = ({
-  maxPlayersField,
-  moreOptionDraft,
-  moreOptionErrors,
-  blitzPlayStyleOptions,
-  selectedBlitzPlayStyleId,
-  appearanceClassName,
-  buttonClassName,
-  onMapOptionValueChange,
-  onSelectBlitzPlayStyle,
-}: {
-  maxPlayersField: FactoryMoreOptionField | null;
-  moreOptionDraft: FactoryMoreOptionsDraft;
-  moreOptionErrors: FactoryMoreOptionsErrors;
-  blitzPlayStyleOptions: ReturnType<typeof getBlitzPlayStyleOptions>;
-  selectedBlitzPlayStyleId: BlitzPlayStyleId;
-  appearanceClassName: string;
-  buttonClassName: string;
-  onMapOptionValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
-  onSelectBlitzPlayStyle: (playStyleId: BlitzPlayStyleId) => void;
-}) => (
-  <FactoryV2StartSectionCard
-    title="Blitz setup"
-    description="Pick the realm spread, then adjust the multiplayer cap when needed."
-    appearanceClassName={appearanceClassName}
-  >
-    {maxPlayersField ? (
-      <FactoryV2InlineOptionField
-        field={maxPlayersField}
-        value={moreOptionDraft.maxPlayers}
-        error={moreOptionErrors.maxPlayers}
-        onChange={(value) => onMapOptionValueChange("maxPlayers", value)}
-      />
-    ) : null}
-
-    <div className="space-y-1">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">Play style</div>
-      <p className="text-sm leading-5 text-gold/50">Choose how players and realms are arranged for this game.</p>
-    </div>
-    <div className="space-y-1.5">
-      {blitzPlayStyleOptions.map((playStyle) => (
-        <FactoryV2PlayStyleOption
-          key={playStyle.id}
-          label={playStyle.label}
-          isEnabled={selectedBlitzPlayStyleId === playStyle.id}
-          appearanceClassName={buttonClassName}
-          onClick={() => onSelectBlitzPlayStyle(playStyle.id)}
-        />
-      ))}
-    </div>
-  </FactoryV2StartSectionCard>
-);
-
-const FactoryV2AdvancedSection = ({
-  mode,
-  moreOptionsOpen,
-  moreOptionSections,
-  moreOptionDraft,
-  moreOptionErrors,
-  moreOptionsDisabledReason,
-  biomeClimateDraft,
-  biomeClimateErrors,
-  biomeClimateTargets,
-  selectedBiomeClimateTargetId,
-  biomeClimateDisabledReason,
-  appearanceClassName,
-  onToggleMapOptions,
-  onMapOptionValueChange,
-  onSelectBiomeClimateTarget,
-  onBiomeClimateValueChange,
-  onRandomizeBiomeClimateSeeds,
-  onResetBiomeClimate,
-  onApplyBiomeClimateToAll,
-}: {
-  mode: FactoryGameMode;
-  moreOptionsOpen: boolean;
-  moreOptionSections: FactoryMoreOptionSection[];
-  moreOptionDraft: FactoryMoreOptionsDraft;
-  moreOptionErrors: FactoryMoreOptionsErrors;
-  moreOptionsDisabledReason: string | null;
-  biomeClimateDraft: FactoryBiomeClimateDraft;
-  biomeClimateErrors: FactoryBiomeClimateErrors;
-  biomeClimateTargets: Array<{ id: string; label: string }>;
-  selectedBiomeClimateTargetId: string;
-  biomeClimateDisabledReason: string | null;
-  appearanceClassName: string;
-  onToggleMapOptions: () => void;
-  onMapOptionValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
-  onSelectBiomeClimateTarget: (targetId: string) => void;
-  onBiomeClimateValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
-  onRandomizeBiomeClimateSeeds: () => void;
-  onResetBiomeClimate: () => void;
-  onApplyBiomeClimateToAll: () => void;
-}) => (
-  <FactoryV2StartSectionCard
-    title="Advanced"
-    description="Optional map tuning for this launch only."
-    appearanceClassName={appearanceClassName}
-  >
-    <div className="space-y-3">
-      <FactoryV2BiomeClimateOptions
-        draft={biomeClimateDraft}
-        errors={biomeClimateErrors}
-        targets={biomeClimateTargets}
-        selectedTargetId={selectedBiomeClimateTargetId}
-        invalidReason={biomeClimateDisabledReason}
-        onSelectTarget={onSelectBiomeClimateTarget}
-        onValueChange={onBiomeClimateValueChange}
-        onRandomizeSeeds={onRandomizeBiomeClimateSeeds}
-        onReset={onResetBiomeClimate}
-        onApplyToAll={onApplyBiomeClimateToAll}
-      />
-      <FactoryV2MoreOptions
-        mode={mode}
-        isOpen={moreOptionsOpen}
-        sections={moreOptionSections}
-        draft={moreOptionDraft}
-        errors={moreOptionErrors}
-        invalidReason={moreOptionsDisabledReason}
-        onToggle={onToggleMapOptions}
-        onValueChange={onMapOptionValueChange}
-      />
-    </div>
-  </FactoryV2StartSectionCard>
-);
-
-const FactoryV2BiomeClimateOptions = ({
-  draft,
-  errors,
-  targets,
-  selectedTargetId,
-  invalidReason,
-  onSelectTarget,
-  onValueChange,
-  onRandomizeSeeds,
-  onReset,
-  onApplyToAll,
-}: {
-  draft: FactoryBiomeClimateDraft;
-  errors: FactoryBiomeClimateErrors;
-  targets: Array<{ id: string; label: string }>;
-  selectedTargetId: string;
-  invalidReason: string | null;
-  onSelectTarget: (targetId: string) => void;
-  onValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
-  onRandomizeSeeds: () => void;
-  onReset: () => void;
-  onApplyToAll: () => void;
-}) => {
-  const preview = buildFactoryBiomePreviewModel({ overrides: draft });
-  const hasMultipleTargets = targets.length > 1;
-
-  return (
-    <div className="space-y-3 rounded-[20px] border border-gold/15 bg-black/20 p-3 text-left">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-gold">Biome tuning</div>
-          <p className="mt-1 text-[11px] leading-4 text-gold/42">Preview climate changes before launch.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onRandomizeSeeds}
-            className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-gold/70 hover:bg-gold/10"
-          >
-            Randomize seeds
-          </button>
-          <button
-            type="button"
-            onClick={onReset}
-            className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-gold/70 hover:bg-gold/10"
-          >
-            Reset
-          </button>
-          {hasMultipleTargets ? (
-            <button
-              type="button"
-              onClick={onApplyToAll}
-              className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-gold/70 hover:bg-gold/10"
-            >
-              Apply to all
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {hasMultipleTargets ? (
-        <label className="block">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/42">Game</span>
-          <select
-            value={selectedTargetId}
-            onChange={(event) => onSelectTarget(event.target.value)}
-            className="mt-1 block h-9 w-full rounded-[14px] border border-gold/15 bg-black/25 px-3 text-[12px] text-gold outline-none"
-          >
-            {targets.map((target) => (
-              <option key={target.id} value={target.id}>
-                {target.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px]">
-        <div
-          className="grid aspect-square overflow-hidden rounded-[16px] border border-gold/15 bg-black/35"
-          style={{ gridTemplateColumns: "repeat(21, minmax(0, 1fr))" }}
-        >
-          {preview.tiles.map((tile) => (
-            <div
-              key={tile.key}
-              title={`${tile.biome} (${tile.col}, ${tile.row})`}
-              style={{ backgroundColor: tile.color }}
-            />
-          ))}
-        </div>
-        <div className="space-y-1.5">
-          {preview.distribution.slice(0, 8).map((entry) => (
-            <div key={entry.biome} className="flex items-center justify-between gap-2 text-[11px] text-gold/62">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: entry.color }} />
-                <span className="truncate">{entry.biome}</span>
-              </div>
-              <span className="font-mono text-gold/72">{entry.percentage}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {listFactoryBiomeClimateFields().map((field) => (
-          <label key={field.id} className="block rounded-[16px] border border-gold/10 bg-black/25 px-3 py-2">
-            <span className="block text-[12px] font-medium text-gold/70">{field.label}</span>
-            <input
-              type="number"
-              min={0}
-              max={field.max}
-              step={1}
-              value={draft[field.id]}
-              onChange={(event) => onValueChange(field.id, event.target.value)}
-              className="mt-1 h-8 w-full rounded-[12px] border border-gold/15 bg-black/25 px-2 text-right text-[13px] font-semibold text-gold outline-none"
-            />
-            {errors[field.id] ? <span className="mt-1 block text-[11px] text-rose-400">{errors[field.id]}</span> : null}
-          </label>
-        ))}
-      </div>
-
-      {invalidReason ? <p className="text-[11px] leading-5 text-rose-400">{invalidReason}</p> : null}
-    </div>
-  );
-};
-
-const FactoryV2LaunchTargetButton = ({
-  label,
-  description,
-  isSelected,
-  appearanceClassName,
-  onClick,
-}: {
-  label: string;
-  description: string;
-  isSelected: boolean;
-  appearanceClassName: string;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={cn(
-      "rounded-[20px] border px-4 py-3 text-left transition-colors",
-      isSelected ? "border-gold/20 bg-black/30 text-gold shadow-[0_8px_20px_rgba(0,0,0,0.16)]" : appearanceClassName,
-    )}
-  >
-    <div className="text-[13px] font-semibold leading-5">{label}</div>
-    <div className="mt-1 text-[11px] leading-5 text-gold/48">{description}</div>
-  </button>
 );
 
 function resolveLaunchReadiness({
@@ -1320,7 +946,6 @@ const FactoryV2SeriesBasics = ({
   seriesLookupError,
   existingRunName,
   notice,
-  launchDisabledReason,
   onSeriesNameChange,
   onSeriesGameCountChange,
   onAutoRetryIntervalChange,
@@ -1340,7 +965,6 @@ const FactoryV2SeriesBasics = ({
   seriesLookupError: string | null;
   existingRunName: string | null;
   notice: string | null;
-  launchDisabledReason: string | null;
   onSeriesNameChange: (value: string) => void;
   onSeriesGameCountChange: (value: number) => void;
   onAutoRetryIntervalChange: (value: FactorySeriesRetryIntervalMinutes) => void;
@@ -1385,7 +1009,6 @@ const FactoryV2SeriesBasics = ({
         </p>
       ) : null}
       {notice ? <p className="mt-2 text-sm leading-6 text-gold/50">{notice}</p> : null}
-      {launchDisabledReason ? <p className="mt-2 text-sm leading-6 text-gold/50">{launchDisabledReason}</p> : null}
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2">
@@ -1456,7 +1079,6 @@ const FactoryV2RotationBasics = ({
   autoRetryIntervalMinutes,
   existingRunName,
   notice,
-  launchDisabledReason,
   onRotationNameChange,
   onRotationGameIntervalMinutesChange,
   onRotationMaxGamesChange,
@@ -1474,7 +1096,6 @@ const FactoryV2RotationBasics = ({
   autoRetryIntervalMinutes: FactorySeriesRetryIntervalMinutes;
   existingRunName: string | null;
   notice: string | null;
-  launchDisabledReason: string | null;
   onRotationNameChange: (value: string) => void;
   onRotationGameIntervalMinutesChange: (value: number) => void;
   onRotationMaxGamesChange: (value: number) => void;
@@ -1503,9 +1124,6 @@ const FactoryV2RotationBasics = ({
         </p>
       ) : null}
       {!existingRunName && notice ? <p className="mt-2 text-sm leading-6 text-gold/50">{notice}</p> : null}
-      {!existingRunName && launchDisabledReason ? (
-        <p className="mt-2 text-sm leading-6 text-gold/50">{launchDisabledReason}</p>
-      ) : null}
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2">
@@ -1667,31 +1285,6 @@ const FactoryV2RotationPreviewRow = ({ game }: { game: FactoryRotationPreviewGam
     </div>
   );
 };
-
-const FactoryV2StartSectionCard = ({
-  title,
-  description,
-  appearanceClassName,
-  children,
-}: {
-  title: string;
-  description: string;
-  appearanceClassName: string;
-  children: ReactNode;
-}) => (
-  <section
-    className={cn(
-      "space-y-4 rounded-[24px] border border-gold/10 px-4 py-4 text-left sm:px-5 sm:py-5",
-      appearanceClassName,
-    )}
-  >
-    <div className="mx-auto max-w-sm space-y-1 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">{title}</div>
-      <p className="text-sm leading-5 text-gold/50">{description}</p>
-    </div>
-    {children}
-  </section>
-);
 
 const FactoryV2StartTimeField = ({
   startAt,
@@ -1878,126 +1471,6 @@ const FactoryV2NativePickerField = ({
       />
     </div>
   </label>
-);
-
-const FactoryV2DurationField = ({
-  durationMinutes,
-  durationOptions,
-  appearanceClassName,
-  onChange,
-}: {
-  durationMinutes: number;
-  durationOptions: FactoryDurationOption[];
-  appearanceClassName: string;
-  onChange: (value: number) => void;
-}) => (
-  <div className="min-w-0">
-    <label
-      htmlFor="factory-duration"
-      className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42"
-    >
-      Duration
-    </label>
-    <div className="relative mt-2">
-      <select
-        id="factory-duration"
-        value={String(durationMinutes)}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className={cn(FACTORY_SELECT_CONTROL_CLASS_NAME, appearanceClassName)}
-      >
-        {durationOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/45" />
-    </div>
-  </div>
-);
-
-const FactoryV2InlineOptionField = ({
-  field,
-  value,
-  error,
-  onChange,
-}: {
-  field: FactoryMoreOptionField;
-  value: string;
-  error: string | null;
-  onChange: (value: string) => void;
-}) => (
-  <label className="block rounded-[20px] border border-gold/10 bg-black/25 px-4 py-3.5">
-    <div className="flex items-center gap-3">
-      <div className="min-w-0 flex-1">
-        <span className="block text-[13px] font-medium leading-5 text-gold/74">{field.label}</span>
-        <span className="block text-[11px] leading-4 text-gold/38">{field.helperText}</span>
-      </div>
-      <div
-        className={cn(
-          "flex h-9 items-center gap-1 rounded-full border bg-black/25 px-2.5 shadow-none",
-          error ? "border-rose-400/70" : "border-gold/15",
-        )}
-      >
-        <input
-          type="number"
-          inputMode={field.inputMode}
-          min={field.min}
-          max={field.max}
-          step={field.step}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-7 w-16 border-0 bg-transparent p-0 text-right text-[13px] font-semibold text-gold outline-none"
-        />
-        {field.unitLabel ? (
-          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-gold/42">{field.unitLabel}</span>
-        ) : null}
-      </div>
-    </div>
-    {error ? <span className="mt-1 block text-[11px] leading-5 text-rose-700">{error}</span> : null}
-  </label>
-);
-
-const FactoryV2PlayStyleOption = ({
-  label,
-  isEnabled,
-  appearanceClassName,
-  onClick,
-}: {
-  label: string;
-  isEnabled: boolean;
-  appearanceClassName: string;
-  onClick: () => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    aria-pressed={isEnabled}
-    className={cn(
-      "w-full rounded-[18px] border px-4 py-3 text-left transition-all duration-200",
-      isEnabled
-        ? "border-gold/25 bg-black/30 text-gold shadow-[0_8px_20px_rgba(0,0,0,0.16)]"
-        : cn(appearanceClassName, "text-gold/70 shadow-none"),
-    )}
-  >
-    <div className="flex items-center gap-3">
-      <span
-        aria-hidden="true"
-        className={cn(
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-200",
-          isEnabled ? "border-gold bg-gold" : "border-gold/25 bg-transparent",
-        )}
-      >
-        <span
-          className={cn(
-            "h-1.5 w-1.5 rounded-full transition-colors duration-200",
-            isEnabled ? "bg-[#15110f]" : "bg-transparent",
-          )}
-        />
-      </span>
-      <span className="text-[13px] font-semibold leading-5">{label}</span>
-    </div>
-  </button>
 );
 
 const FactoryV2LaunchActionBar = ({

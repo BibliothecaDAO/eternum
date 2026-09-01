@@ -1,48 +1,38 @@
+import { GAME_ENVIRONMENTS, getGameEnvironmentsForChain, type GameEnvironment } from "@config";
+import type { GameChain } from "@realms-world/chain";
+import { env } from "../../../../env";
 import type {
   FactoryEnvironmentOption,
   FactoryGameMode,
-  FactoryLaunchChain,
   FactoryLaunchPreset,
   FactoryLaunchStartRule,
   FactoryModeDefinition,
 } from "./types";
 
-const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
-  "appchain.eternum": "Appchain",
-  "appchain.blitz": "Appchain",
+const FACTORY_CHAIN_LABELS: Record<GameChain, string> = {
+  appchain: "Appchain",
+  madara: "Madara",
 };
 
-const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["appchain.eternum"],
-  blitz: ["appchain.blitz"],
-};
+const FACTORY_MODE_DEFINITIONS: FactoryModeDefinition[] = [
+  { id: "eternum", label: "Eternum" },
+  { id: "blitz", label: "Blitz" },
+];
 
-/** `<chain>.<mode>` -> chain, so a new environment only needs a list entry. */
-const resolveFactoryLaunchChain = (_environmentId: string): FactoryLaunchChain => "appchain";
+const PREFERRED_FACTORY_MODE: FactoryGameMode = "blitz";
+
+const buildEnvironmentOption = (environment: GameEnvironment): FactoryEnvironmentOption => ({
+  id: environment.id,
+  label: FACTORY_CHAIN_LABELS[environment.chain],
+  mode: environment.gameType,
+  chain: environment.chain,
+});
+
+/** The environments this build can launch: the shared list filtered to the build chain. */
+const listBuildEnvironments = () => getGameEnvironmentsForChain(env.VITE_PUBLIC_CHAIN).map(buildEnvironmentOption);
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
-
-export const factoryModeDefinitions: FactoryModeDefinition[] = [
-  {
-    id: "eternum",
-    label: "Eternum",
-    strapline: "Larger worlds with a few extra finishing touches.",
-    description: "Use this when you are launching a full Eternum world.",
-    accentClassName: "from-gold/30 via-orange/20 to-red-900/30",
-    focusLabel: "Bigger launch, clearer recovery",
-    stepPrinciples: ["Keep the flow calm", "Show what needs attention", "Hide the heavy lifting"],
-  },
-  {
-    id: "blitz",
-    label: "Blitz",
-    strapline: "Quick games with a short setup path.",
-    description: "Use this for fast games that should feel easy to start and easy to check.",
-    accentClassName: "from-amber-200/30 via-orange-200/10 to-stone-900/35",
-    focusLabel: "Fast start, low noise",
-    stepPrinciples: ["Keep it simple", "Show progress clearly", "Hide extra setup"],
-  },
-];
 
 const factoryLaunchPresets: FactoryLaunchPreset[] = [
   {
@@ -121,10 +111,6 @@ const formatDateTimeLocalValue = (date: Date) => {
   );
 };
 
-const resolveFactoryEnvironmentLabel = (environment: string) =>
-  FACTORY_ENVIRONMENT_LABELS[environment] ??
-  environment.replace(/\..+$/, "").replace(/(^\w|-\w)/g, (value) => value.replace("-", " ").toUpperCase());
-
 const resolvePresetStartAtValue = (startRule: FactoryLaunchStartRule, now = new Date()) => {
   if (startRule === "next_hour") {
     return formatDateTimeLocalValue(buildNextHourDate(now));
@@ -133,20 +119,34 @@ const resolvePresetStartAtValue = (startRule: FactoryLaunchStartRule, now = new 
   return formatDateTimeLocalValue(now);
 };
 
-export const getFactoryEnvironmentOptions = (mode: FactoryGameMode): FactoryEnvironmentOption[] =>
-  FACTORY_ENVIRONMENTS_BY_MODE[mode].map((environment) => ({
-    id: environment,
-    label: resolveFactoryEnvironmentLabel(environment),
-    mode,
-    chain: resolveFactoryLaunchChain(environment),
-  }));
+/** Modes offered on this build: the ones with a launch environment on the build chain. */
+export const getFactoryModeDefinitions = () => {
+  const environments = listBuildEnvironments();
+  return FACTORY_MODE_DEFINITIONS.filter((mode) => environments.some((environment) => environment.mode === mode.id));
+};
 
-export const getDefaultEnvironmentIdForMode = (mode: FactoryGameMode) =>
-  getFactoryEnvironmentOptions(mode)[0]?.id ?? "";
+export const isFactoryModeAvailable = (mode: FactoryGameMode) =>
+  getFactoryModeDefinitions().some((definition) => definition.id === mode);
 
-export const resolveFactoryEnvironmentIdForModeAndChain = (mode: FactoryGameMode, chain: FactoryLaunchChain) =>
-  getFactoryEnvironmentOptions(mode).find((environment) => environment.chain === chain)?.id ??
-  getDefaultEnvironmentIdForMode(mode);
+export const getDefaultFactoryMode = (): FactoryGameMode =>
+  isFactoryModeAvailable(PREFERRED_FACTORY_MODE) ? PREFERRED_FACTORY_MODE : getFactoryModeDefinitions()[0].id;
+
+/** One launch environment per mode per build; a mode without one is not offered. */
+export const resolveFactoryEnvironmentForMode = (mode: FactoryGameMode): FactoryEnvironmentOption => {
+  const environment = listBuildEnvironments().find((candidate) => candidate.mode === mode);
+
+  if (!environment) {
+    throw new Error(`No ${mode} launch environment is configured for ${env.VITE_PUBLIC_CHAIN}`);
+  }
+
+  return environment;
+};
+
+/** Chain label for any environment id, including ids read back from run records. */
+export const resolveFactoryEnvironmentLabel = (environmentId: string) => {
+  const environment = GAME_ENVIRONMENTS.find((candidate) => candidate.id === environmentId);
+  return environment ? FACTORY_CHAIN_LABELS[environment.chain] : "Unknown";
+};
 
 export const getFactoryLaunchPresetsForMode = (mode: FactoryGameMode) =>
   factoryLaunchPresets.filter((preset) => preset.mode === mode);

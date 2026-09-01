@@ -1,9 +1,10 @@
+import { isGameEnvironmentId, type GameEnvironmentId } from "@config";
 import type { FactoryGameMode, FactoryRunKind } from "./types";
 
 const FACTORY_PENDING_LAUNCHES_STORAGE_KEY = "factory-v2-pending-launches";
 
 export interface FactoryPendingLaunch {
-  environmentId: string;
+  environmentId: GameEnvironmentId;
   name: string;
   mode: FactoryGameMode;
   kind: FactoryRunKind;
@@ -77,7 +78,7 @@ function isFactoryPendingLaunch(value: unknown): value is FactoryPendingLaunch {
 
   return (
     typeof pendingLaunch.environmentId === "string" &&
-    pendingLaunch.environmentId.length > 0 &&
+    isGameEnvironmentId(pendingLaunch.environmentId) &&
     typeof normalizedName === "string" &&
     normalizedName.length > 0 &&
     (pendingLaunch.mode === "eternum" || pendingLaunch.mode === "blitz") &&
@@ -90,9 +91,9 @@ function isFactoryPendingLaunch(value: unknown): value is FactoryPendingLaunch {
   );
 }
 
-function normalizePendingLaunch(pendingLaunch: Partial<FactoryPendingLaunch> & { gameName?: string }) {
+function normalizePendingLaunch(pendingLaunch: FactoryPendingLaunch & { gameName?: string }) {
   return {
-    environmentId: pendingLaunch.environmentId ?? "",
+    environmentId: pendingLaunch.environmentId,
     name: pendingLaunch.name ?? pendingLaunch.gameName ?? "",
     mode: pendingLaunch.mode ?? "blitz",
     kind: pendingLaunch.kind ?? "game",

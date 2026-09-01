@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useState } from "react";
-import { factoryModeDefinitions } from "../catalog";
+import { getFactoryModeDefinitions } from "../catalog";
 import { useFactoryV2 } from "../hooks/use-factory-v2";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
 import { FactoryV2DeveloperTools } from "./factory-v2-developer-tools";
@@ -11,6 +11,7 @@ import { FactoryV2WorkflowSwitch, type FactoryWorkflowView } from "./factory-v2-
 
 export const FactoryV2Content = () => {
   const factory = useFactoryV2();
+  const modes = getFactoryModeDefinitions();
   const appearance = resolveFactoryModeAppearance(factory.selectedMode);
   const [selectedWorkflow, setSelectedWorkflow] = useState<FactoryWorkflowView>(() =>
     resolveInitialFactoryWorkflow(factory.selectedRun),
@@ -37,14 +38,13 @@ export const FactoryV2Content = () => {
           >
             <div className="mx-auto max-w-xl space-y-5">
               <div className="space-y-5">
-                <FactoryV2ModeSwitch
-                  modes={factoryModeDefinitions}
-                  selectedMode={factory.selectedMode}
-                  environmentOptions={factory.environmentOptions}
-                  selectedEnvironmentId={factory.selectedEnvironmentId}
-                  onSelectEnvironment={factory.selectEnvironment}
-                  onSelectMode={factory.selectMode}
-                />
+                {modes.length > 1 ? (
+                  <FactoryV2ModeSwitch
+                    modes={modes}
+                    selectedMode={factory.selectedMode}
+                    onSelectMode={factory.selectMode}
+                  />
+                ) : null}
                 <FactoryV2WorkflowSwitch
                   mode={factory.selectedMode}
                   selectedView={selectedWorkflow}
@@ -72,7 +72,7 @@ export const FactoryV2Content = () => {
             <FactoryV2StartWorkspace
               mode={factory.selectedMode}
               modeLabel={factory.modeDefinition.label}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
+              environmentLabel={factory.selectedEnvironment.label}
               launchTargetKind={factory.selectedLaunchKind}
               presets={factory.presets}
               selectedPreset={factory.selectedPreset}
@@ -98,8 +98,6 @@ export const FactoryV2Content = () => {
               seriesLookupError={factory.seriesLookupError}
               existingRunName={factory.matchingRun?.name ?? null}
               notice={factory.notice}
-              launchDisabledReason={factory.environmentUnavailableReason}
-              moreOptionsOpen={factory.moreOptions.isOpen}
               moreOptionSections={factory.moreOptions.sections}
               moreOptionDraft={factory.moreOptions.draft}
               moreOptionErrors={factory.moreOptions.errors}
@@ -125,7 +123,6 @@ export const FactoryV2Content = () => {
               onRotationEvaluationIntervalChange={factory.setDraftRotationEvaluationIntervalMinutes}
               onAutoRetryIntervalChange={factory.setDraftAutoRetryIntervalMinutes}
               onSelectSeriesSuggestion={factory.selectSeriesSuggestion}
-              onToggleMapOptions={factory.moreOptions.toggleOpen}
               onMapOptionValueChange={factory.moreOptions.setValue}
               onSelectBiomeClimateTarget={factory.selectBiomeClimateTarget}
               onBiomeClimateValueChange={factory.setBiomeClimateValue}
@@ -135,8 +132,7 @@ export const FactoryV2Content = () => {
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
               onFandomizeGameName={factory.fandomizeGameName}
-              deployerChain={factory.selectedEnvironment?.chain ?? "appchain"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
+              chain={factory.selectedEnvironment.chain}
               onLaunch={() => {
                 void launchSelectedPreset();
               }}
@@ -145,8 +141,8 @@ export const FactoryV2Content = () => {
 
             <FactoryV2DeveloperTools
               mode={factory.selectedMode}
-              chain={factory.selectedEnvironment?.chain ?? "appchain"}
-              environmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
+              chain={factory.selectedEnvironment.chain}
+              environmentLabel={factory.selectedEnvironment.label}
               draftGameName={factory.draftGameName}
               selectedRunName={factory.selectedRun?.name ?? null}
             />
@@ -166,7 +162,6 @@ export const FactoryV2Content = () => {
               isWatcherBusy={factory.isWatcherBusy}
               isResolvingRunName={factory.isResolvingRunName}
               notice={factory.notice}
-              lookupDisabledReason={factory.environmentUnavailableReason}
               onSelectRun={factory.selectRun}
               onResolveRunByName={factory.resolveRunByName}
               onContinue={() => {
@@ -185,8 +180,8 @@ export const FactoryV2Content = () => {
                 void factory.deleteSelectedRun();
               }}
               hasAdminSecret={factory.factoryAdminSecret.trim().length > 0}
-              deployerChain={factory.selectedEnvironment?.chain ?? "appchain"}
-              deployerEnvironmentLabel={factory.selectedEnvironment?.label ?? "Appchain"}
+              deployerChain={factory.selectedEnvironment.chain}
+              deployerEnvironmentLabel={factory.selectedEnvironment.label}
             />
           </div>
         ) : null}

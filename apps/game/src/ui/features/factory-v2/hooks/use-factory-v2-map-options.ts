@@ -21,21 +21,18 @@ export const useFactoryV2MoreOptions = ({
   twoPlayerMode: boolean;
   durationMinutes: number | null;
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const blitzBalanceProfileId =
     mode === "blitz" ? resolveBlitzBalanceProfileIdFromDurationMinutes(durationMinutes) : null;
   const [draft, setDraft] = useState(() => createFactoryMoreOptionsDraft(mode, chain, durationMinutes));
   const visibility = { twoPlayerMode };
 
   useEffect(() => {
-    setIsOpen(false);
     setDraft(createFactoryMoreOptionsDraft(mode, chain, durationMinutes));
   }, [blitzBalanceProfileId, chain, mode, presetId]);
 
   const validation = validateFactoryMoreOptions(mode, chain, draft, visibility, durationMinutes);
 
   return {
-    isOpen,
     sections: getFactoryMoreOptionSections(mode, visibility, chain, durationMinutes),
     draft,
     errors: validation.errors,
@@ -43,7 +40,6 @@ export const useFactoryV2MoreOptions = ({
     mapConfigOverrides: validation.mapConfigOverrides,
     blitzRegistrationOverrides: validation.blitzRegistrationOverrides,
     hasInvalidValues: validation.hasErrors,
-    toggleOpen: () => setIsOpen((currentValue) => !currentValue),
     setValue: (fieldId: FactoryMoreOptionFieldId, value: string) => {
       setDraft((currentDraft) => ({
         ...currentDraft,

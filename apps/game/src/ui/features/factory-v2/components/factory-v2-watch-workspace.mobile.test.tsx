@@ -127,7 +127,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -191,7 +192,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -243,7 +245,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={noticeMessage}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -323,7 +326,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -397,7 +401,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -468,7 +473,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -535,7 +541,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -585,7 +592,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -625,7 +633,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -679,7 +688,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -719,7 +729,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -756,7 +767,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={missingRunNotice}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -804,7 +816,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={openingNotice}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -878,7 +891,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -935,7 +949,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -980,7 +995,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -1050,7 +1066,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -1116,7 +1133,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -1187,7 +1205,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}
@@ -1303,7 +1322,8 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
           isWatcherBusy={false}
           isResolvingRunName={false}
           notice={null}
-          lookupDisabledReason={null}
+          deployerChain="appchain"
+          deployerEnvironmentLabel="Appchain"
           onSelectRun={vi.fn()}
           onResolveRunByName={vi.fn(async () => false)}
           onContinue={vi.fn()}

@@ -16,8 +16,8 @@ import {
 
 describe("Factory V2 map options", () => {
   it("shows the correct advanced fields for each mode and keeps Blitz player cap out of the advanced drawer", () => {
-    const blitzSections = getFactoryMoreOptionSections("blitz");
-    const eternumSections = getFactoryMoreOptionSections("eternum");
+    const blitzSections = getFactoryMoreOptionSections("blitz", {}, "appchain");
+    const eternumSections = getFactoryMoreOptionSections("eternum", {}, "appchain");
 
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
       "Essence Rift chance",

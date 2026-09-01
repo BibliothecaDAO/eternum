@@ -61,9 +61,6 @@ const STEP_COPY_BY_ID: Record<FactoryRunStepId, FactoryStepCopy> = {
   },
 };
 
-export const getEnvironmentLabel = (environment: string) =>
-  environment.startsWith("madara.") ? "Madara" : environment.startsWith("appchain.") ? "Appchain" : "Unknown";
-
 export const getRunStatusMeta = (status: FactoryRunStatus) => {
   switch (status) {
     case "attention":

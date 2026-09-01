@@ -44,14 +44,14 @@ function resolveFactoryDeployerTokens(
       decimals: TOKEN_DECIMALS,
     },
   ];
-  if (chain === "appchain") {
-    tokens.push({
-      symbol: "LORDS",
-      address: requireTokenAddress(seasonAddresses.lords, chain, "LORDS"),
-      decimals: TOKEN_DECIMALS,
-    });
+  if (isConfiguredTokenAddress(seasonAddresses.lords)) {
+    tokens.push({ symbol: "LORDS", address: seasonAddresses.lords, decimals: TOKEN_DECIMALS });
   }
   return tokens;
+}
+
+function isConfiguredTokenAddress(address: string | undefined): address is string {
+  return Boolean(address) && BigInt(address as string) !== 0n;
 }
 
 function requireTokenAddress(address: string | undefined, chain: FactoryLaunchChain, symbol: string): string {

@@ -10,7 +10,7 @@ vi.mock("@/ui/design-system/atoms/lib/utils", () => ({
 }));
 
 vi.mock("../catalog", () => ({
-  factoryModeDefinitions: [],
+  getFactoryModeDefinitions: () => [],
 }));
 
 vi.mock("../hooks/use-factory-v2", () => ({

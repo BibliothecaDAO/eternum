@@ -6,6 +6,11 @@ import type { FactoryWorkerGameRunRecord, FactoryWorkerSeriesRunRecord } from ".
 import { readFactoryPendingLaunches, writeFactoryPendingLaunches } from "../pending-launch-storage";
 import { useFactoryV2 } from "./use-factory-v2";
 
+// These scenarios launch both Eternum and Blitz, which only an appchain build offers.
+vi.mock("../../../../../env", () => ({
+  env: { VITE_PUBLIC_CHAIN: "appchain", VITE_PUBLIC_FACTORY_WORKER_URL: "https://factory.test" },
+}));
+
 vi.mock("../api/factory-worker", () => {
   class MockFactoryWorkerApiError extends Error {
     constructor(
@@ -28,9 +33,6 @@ vi.mock("../api/factory-worker", () => {
     createFactorySeriesRun: vi.fn(),
     continueFactoryRun: vi.fn(),
     continueFactorySeriesRun: vi.fn(),
-    isFactoryWorkerEnvironmentSupported: vi.fn((environmentId: string) =>
-      ["appchain.eternum", "appchain.eternum", "appchain.blitz", "appchain.blitz"].includes(environmentId),
-    ),
   };
 });
 
@@ -49,7 +51,6 @@ vi.mock("../funny-names", () => ({
 
 vi.mock("./use-factory-v2-map-options", () => ({
   useFactoryV2MoreOptions: vi.fn(() => ({
-    isOpen: false,
     sections: [],
     draft: {},
     errors: {},
@@ -57,7 +58,6 @@ vi.mock("./use-factory-v2-map-options", () => ({
     mapConfigOverrides: undefined,
     blitzRegistrationOverrides: undefined,
     hasInvalidValues: false,
-    toggleOpen: vi.fn(),
     setValue: vi.fn(),
   })),
 }));
@@ -317,7 +317,7 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     expect(getFactory().selectedMode).toBe("blitz");
-    expect(getFactory().selectedEnvironmentId).toBe("appchain.blitz");
+    expect(getFactory().selectedEnvironment.id).toBe("appchain.blitz");
     expect(getFactory().pendingRunName).toBe("blitz-launch-1");
   });
 
@@ -379,7 +379,7 @@ describe("useFactoryV2 pending launch cache", () => {
     });
 
     expect(getFactory().selectedMode).toBe("eternum");
-    expect(getFactory().selectedEnvironmentId).toBe("appchain.eternum");
+    expect(getFactory().selectedEnvironment.id).toBe("appchain.eternum");
     expect(getFactory().selectedRun?.id).toBe("pending:game:appchain.eternum:cached-launch");
     expect(getFactory().pendingRunName).toBe("cached-launch");
   });
@@ -404,8 +404,7 @@ describe("useFactoryV2 pending launch cache", () => {
       expect(getFactory().modeRuns[0]?.id).toBe("pending:game:appchain.eternum:appchain-launch");
     });
 
-    expect(getFactory().selectedEnvironmentId).toBe("appchain.eternum");
-    expect(getFactory().environmentUnavailableReason).toBeNull();
+    expect(getFactory().selectedEnvironment.id).toBe("appchain.eternum");
     expect(getFactory().modeRuns[0]?.steps.map((step) => step.id)).toEqual([
       "launch-request",
       "create-world",
@@ -413,7 +412,7 @@ describe("useFactoryV2 pending launch cache", () => {
     ]);
   });
 
-  it("keeps the current network when switching modes", async () => {
+  it("follows the mode's launch environment when switching modes", async () => {
     await act(async () => {
       root.render(<HookHarness />);
       await waitForAsyncWork();
@@ -424,19 +423,14 @@ describe("useFactoryV2 pending launch cache", () => {
       await waitForAsyncWork();
     });
 
-    await act(async () => {
-      getFactory().selectEnvironment("appchain.eternum");
-      await waitForAsyncWork();
-    });
-
-    expect(getFactory().selectedEnvironmentId).toBe("appchain.eternum");
+    expect(getFactory().selectedEnvironment.id).toBe("appchain.eternum");
 
     await act(async () => {
       getFactory().selectMode("blitz");
       await waitForAsyncWork();
     });
 
-    expect(getFactory().selectedEnvironmentId).toBe("appchain.blitz");
+    expect(getFactory().selectedEnvironment.id).toBe("appchain.blitz");
   });
 
   it("clears cached pending launches when the run list already contains the real run", async () => {

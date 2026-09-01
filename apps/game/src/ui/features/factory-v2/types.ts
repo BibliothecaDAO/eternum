@@ -1,5 +1,6 @@
 import type { GameChain } from "@realms-world/chain";
 import type { FactoryBiomeClimateOverrides } from "@bibliothecadao/types";
+import type { GameEnvironmentId } from "@config";
 
 export type FactoryGameMode = "eternum" | "blitz";
 export type FactoryLaunchChain = GameChain;
@@ -44,15 +45,10 @@ export type FactoryLaunchStartRule = "next_hour";
 export interface FactoryModeDefinition {
   id: FactoryGameMode;
   label: string;
-  strapline: string;
-  description: string;
-  accentClassName: string;
-  focusLabel: string;
-  stepPrinciples: string[];
 }
 
 export interface FactoryEnvironmentOption {
-  id: string;
+  id: GameEnvironmentId;
   label: string;
   mode: FactoryGameMode;
   chain: FactoryLaunchChain;
@@ -65,9 +61,9 @@ export interface FactoryLaunchPresetDefaults {
   twoPlayerMode: boolean;
   singleRealmMode: boolean;
   /**
-   * Registered on-chain preset id the launch runs on (appchain registrar):
-   * "2" = Regular Fast rulebook, "3" = Duel balance. Legacy chains ignore it
-   * and use their factory config version default.
+   * Registered registrar preset id the launch runs on. The same ids are
+   * registered on every chain the factory serves; a launch without one uses
+   * the launcher's per-chain default.
    */
   version?: string;
 }
@@ -176,7 +172,7 @@ export interface FactoryRun {
   kind: FactoryRunKind;
   mode: FactoryGameMode;
   name: string;
-  environment: string;
+  environment: GameEnvironmentId;
   owner: string;
   presetId: string;
   status: FactoryRunStatus;

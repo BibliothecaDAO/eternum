@@ -43,49 +43,26 @@ describe("Factory V2 mobile switches", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("renders full-width network and game switches on mobile", async () => {
+  it("renders a full-width game switch on mobile", async () => {
     await act(async () => {
       root.render(
         <FactoryV2ModeSwitch
           modes={[
-            {
-              id: "eternum",
-              label: "Eternum",
-              strapline: "",
-              description: "",
-              accentClassName: "",
-              focusLabel: "",
-              stepPrinciples: [],
-            },
-            {
-              id: "blitz",
-              label: "Blitz",
-              strapline: "",
-              description: "",
-              accentClassName: "",
-              focusLabel: "",
-              stepPrinciples: [],
-            },
+            { id: "eternum", label: "Eternum" },
+            { id: "blitz", label: "Blitz" },
           ]}
           selectedMode="eternum"
-          environmentOptions={[{ id: "appchain", label: "Appchain", mode: "eternum", chain: "appchain" }]}
-          selectedEnvironmentId="appchain"
-          onSelectEnvironment={vi.fn()}
           onSelectMode={vi.fn()}
         />,
       );
       await waitForAsyncWork();
     });
 
-    const networkSwitch = container.querySelector('[data-testid="factory-network-switch"]');
     const gameSwitch = container.querySelector('[data-testid="factory-game-switch"]');
-    const rootGroup = container.querySelector("section > div");
 
-    expect(networkSwitch?.className).toContain("w-full");
-    expect(networkSwitch?.className).toContain("md:max-w-[18rem]");
     expect(gameSwitch?.className).toContain("w-full");
     expect(gameSwitch?.className).toContain("md:max-w-[18rem]");
-    expect(rootGroup?.className).toContain("text-center");
+    expect(container.textContent).not.toContain("Network");
   });
 
   it("renders a full-width workflow switch on mobile", async () => {
