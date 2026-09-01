@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "33520208945-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-09-01T14:34:21.456Z",
-  "updatedAt": "2026-09-01T14:34:50.510Z",
+  "updatedAt": "2026-09-01T14:35:00.020Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-09-01T14:35:00.020Z"
     }
   ],
   "artifacts": {
@@ -48,5 +49,13 @@
     "gameId": 53,
     "worldAddress": "0x78ff85ac450bb559c97966b64666fd5292f4a98756a607349d9f93f4563bdd2",
     "createGameTxHash": "0x3d0df1f9c409ae6412eec3f41e374d57fb38fac80ff292fed40d06673e547ab"
+  },
+  "activeLease": {
+    "launchRequestId": "33520208945-1",
+    "workflowRunId": 33520208945,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-09-01T14:35:00.020Z",
+    "expiresAt": "2026-09-01T15:20:00.020Z"
   }
 }
