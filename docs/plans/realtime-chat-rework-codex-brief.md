@@ -13,19 +13,19 @@ Two changes, tightly coupled, that are the security fix **and** the feature enab
 
 1. **Verified identity.** Resolve the sender from the shared `.realms.party` session, never from client input. This is
    the audit's root cause (C1/C2) and the basis for all membership.
-2. **Gameplay-anchored channels with _derived_ membership.** Channels are game entities — **tribe**, **game/match**,
-   **zone/global**, **DM-pair** (alliance later). Membership is a **function of the verified player's on-chain/game
-   state**, never client-managed. **Channel authorization (read/post/join) = membership.**
+2. **Gameplay-anchored channels with _derived_ membership.** Channels are game entities. The set is **format-aware**:
+   **tribe/alliance exist in Eternum, not Blitz** — so Blitz = **game/match** + **DM**; Eternum adds **tribe** (+
+   alliance). Membership is a **function of the verified player's on-chain/game state**, never client-managed. **Channel
+   authorization (read/post/join) = membership.**
 
 This single model is why merging is correct: "can you read this tribe channel?" and "are you who you say you are?" are
 the same question, and answering it closes the whole authorization class (impersonation, unvalidated zone-join,
 publish-to-any-zone) **and** delivers group chat done right (groups = tribes/games, not arbitrary rooms).
 
-> **Key design decision to resolve (blocking Phase 0/1).** Where does the chat learn a player's **tribe** and **active
-> games**? It must come from a **trusted source**, not the client. Options: read from **herald** read models / the game
-> RPC (tribe membership + game-registry participation), or extend the identity server to expose it. **Recommended:**
-> herald/RPC, cached per-player with a short TTL, since herald already folds game state. Name the exact tables/contracts
-> in the implementation. Do **not** accept tribe/game membership from the client.
+> **Membership source (resolved by owner): herald.** The chat reads a player's channels from herald, never the client:
+> **game/match** participation from herald's game directory (both formats), and **tribe** membership from Eternum's
+> herald tribe read model (Eternum only — Blitz has no tribes). Cache per-player with a short TTL. Name the exact herald
+> tables in the implementation.
 
 ## Current state (grounded)
 
@@ -58,14 +58,13 @@ publish-to-any-zone) **and** delivers group chat done right (groups = tribes/gam
 
 ### Phase 1 — MVP (the smallest set that makes it a war-game coordination tool)
 
-Features:
+Features — scoped to **Blitz** (what the lab runs now; Blitz has no tribes):
 
-1. **Tribe chat** — private channel, membership = on-chain tribe. The #1 gap.
-2. **Game/match chat** — auto-join on entering game X; ephemeral for Blitz (channel dies with the match), seasonal for
-   Eternum.
-3. **DMs + Block** — keep DMs; add block (stop receiving from a player, both directions).
-4. **Map pings / tactical signals** — click a hex → `attack | defend | rally | help` ping delivered to the tribe/game
-   channel and shown on the map (reuse the message `location` field + `notes`). Low-friction live-battle comms.
+1. **Game/match chat** — auto-join the verified player of game X (from herald); ephemeral (the channel dies with the
+   match). This is the core Blitz social surface.
+2. **DMs + Block** — keep the existing 1:1 DMs; add block (stop receiving from a player, both directions).
+
+(Tribe chat is **Eternum-only** → Phase 2. Map pings are **not** in scope — see the uncertain list below.)
 
 Hardening folded in (required before any network exposure):
 
@@ -76,12 +75,19 @@ Hardening folded in (required before any network exposure):
 7. **Zone/channel membership enforced (H3/M1):** `zoneIdSchema.safeParse` on join, cap zones-per-socket; publishing to a
    channel you haven't joined / aren't a member of is rejected.
 
-### Phase 2 — fast-follow
+### Phase 2 — Eternum + fast-follow
 
-- **@mentions + notifications** (DM/mention/tribe-ping while away); **rich presence** (activity: in battle / at realm X
-  / in game Y); **rally points / shared tribe map markers**; **game-object embeds** (reference a
-  realm/army/hex/hyperstructure, click to jump the camera); **history search**; **moderation** (report / mute / admin
-  hide — `moderated_at` already exists).
+- **Tribe chat (Eternum-only)** — private channel, membership from herald's tribe read model; **alliance channels**
+  (cross-tribe) after. Blitz never gets these.
+- **@mentions + notifications** (DM / mention / tribe-ping while away); **rich presence** (activity: in battle / at
+  realm X / in game Y); **history search**; **moderation** (report / mute / admin hide — `moderated_at` already exists).
+
+### Uncertain — not planned until validated
+
+- **Map pings / rally markers / game-object camera-jump.** These need **client map-rendering** work (drawing markers on
+  the WorldmapScene, consuming a message's `location`) that has **not** been validated as feasible. The chat-server data
+  path (a message with `location`) is trivial; the open question is the client. Do **not** build these until the client
+  side is confirmed — hold as an idea, not a commitment.
 
 ### Correctness & retention (fold in during the phases)
 
@@ -107,12 +113,12 @@ Hardening folded in (required before any network exposure):
 - **Identity:** `wss://host/ws?playerId=<victim>` and `curl -H 'x-player-id: <victim>' …` are rejected (401); messages
   are attributed to the caller's verified identity, never a spoofed one; you cannot open a socket as someone else or
   receive their DMs.
-- **Membership:** you cannot read or post a tribe/game/zone channel you are not a member of; game chat auto-joins the
-  player of game X; tribe chat delivers only to tribe members.
+- **Membership:** you cannot read or post a game/zone channel you are not a member of (per herald); game chat auto-joins
+  the verified player of game X. (Eternum: tribe chat delivers only to tribe members — Phase 2.)
 - **Abuse:** a one-connection flood is throttled; connection caps hold; oversized messages are rejected;
   `playerPresence` returns to baseline after disconnect; the presence snapshot carries no `walletAddress`.
-- **Features:** DM block works both directions; a map ping reaches the tribe/game channel and appears on the map;
-  @mention notifies (Phase 2).
+- **Features:** game/match chat auto-joins on entering a game; DM block works both directions; @mention notifies (Phase
+  2).
 - **Correctness:** HTTP unread counts don't drift under concurrency; expired notes aren't returned.
 
 ## Sequencing / owner-gated
