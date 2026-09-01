@@ -4,16 +4,15 @@
   "accountAddress": "0x54b9b1b06e7110f1ef0b0c3467610438311da4680d3c75d557b52788591741",
   "owner": {
     "environment": "appchain.blitz",
-    "gameName": "bltz-kick-242",
-    "launchRequestId": "33520208945-1",
+    "gameName": "blitz-herald",
+    "launchRequestId": "33523265547-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 33520208945,
+    "workflowRunId": 33523265547,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "4938abc0-ce9e-409f-a1ac-8472edf4a2c2"
+    "leaseId": "3dcdf8fd-d965-4603-ba43-19ef1a271580"
   },
-  "acquiredAt": "2026-09-01T14:34:32.639Z",
-  "heartbeatAt": "2026-09-01T14:34:47.731Z",
-  "expiresAt": "2026-09-01T14:34:47.731Z",
-  "releasedAt": "2026-09-01T14:34:47.731Z"
+  "acquiredAt": "2026-09-01T15:03:44.351Z",
+  "heartbeatAt": "2026-09-01T15:03:44.351Z",
+  "expiresAt": "2026-09-01T15:13:44.351Z"
 }
