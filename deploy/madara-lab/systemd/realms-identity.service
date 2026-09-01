@@ -1,0 +1,18 @@
+# apps/realms serves the identity SPA and its API from one process on the box.
+# Installed by scripts/bootstrap-server.sh into /etc/systemd/system/realms-identity.service.
+# Redeploy: build apps/realms, then sudo systemctl restart realms-identity.
+[Unit]
+Description=Realms identity (SPA + /api, :3000)
+After=network-online.target docker.service herald.service
+Wants=network-online.target
+
+[Service]
+User=realms
+WorkingDirectory=/opt/realms/eternum
+Environment=PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env pnpm --dir apps/realms start:server
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

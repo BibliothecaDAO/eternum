@@ -36,7 +36,7 @@ Endpoints (all bound to localhost only):
 | 5050 | Starknet JSON-RPC. `/` is v0.10.2; `/rpc/v0_9_0`, `/rpc/v0_8_1`, `/rpc/v0_10_0` are pinned routes |
 | 5051 | Madara admin RPC (`madara_*`). Never expose.                                            |
 | 5062 | Feeder gateway + gateway                                                               |
-| 5432 | Postgres for `apps/web` (profile `web`, see below)                                     |
+| 5432 | Postgres for the identity service (profile `web`, see below)                           |
 
 ### HTTPS: Caddy in front of everything a browser touches
 
@@ -146,7 +146,7 @@ Measured 2026-08-25 on this laptop, fresh random key, zero balance, default fee 
 pre-confirmed 74 ms, accepted on L2 0.8–1.9 s (the next 2 s block).
 
 The binding authority (the key that rotates gameplay-account keys and writes the `PlayerRegistry`) is devnet
-account #2, public devnet material that exists only on this chain — put it in `apps/web/.env`:
+account #2, public devnet material that exists only on this chain — put it in the root `.env` used by `apps/realms`:
 
 ```
 BINDING_AUTHORITY_ADDRESS=0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4
@@ -163,12 +163,13 @@ PLAYER_REGISTRY_ADDRESS=0x047d5db2930b9a3270d9cb0e31e3eed2645602c5b51419207f730f
 The values are deterministic for the current source and binding authority. Re-run the bootstrap after changing either
 contract. It rejects a registry address that contains a different class.
 
-## Session store for `apps/web`
+## Session store for `apps/realms`
 
 ```bash
 docker compose --profile web up -d --wait postgres
-# apps/web/.env
+# root .env
 DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms
+DATABASE_SSL=false
 ```
 
 State lives in the `postgres-data` volume; `down -v` wipes sessions along with the chain.
@@ -563,15 +564,15 @@ not a fact.
 
 The same compose on a rented box (first: Latitude `f4.metal.small`, New York, from 2026-08-31 — see "Box and
 region" below). Differences from the laptop, all of them deletions of laptop machinery: no mkcert, no `realms.test`, no Caddy — **Cloudflare Tunnel** terminates TLS on the owner's zone
-and the box opens no public port but SSH. Herald and `apps/web` run as systemd units on the host (herald is the read
-path; `apps/web` holds the binding-authority key, so it must run where the chain is). The game client is served by
+and the box opens no public port but SSH. Herald and `apps/realms` run as systemd units on the host (herald is the read
+path; `apps/realms` serves the identity SPA/API and holds the binding-authority key, so it must run where the chain is). The game client is served by
 Cloudflare Pages and talks to these hosts:
 
 | Host                    | Service                                                             |
 | ----------------------- | ------------------------------------------------------------------- |
 | `rpc.<LAB_DOMAIN>`      | `madara:9944` through the tunnel (paths pass through)               |
 | `herald.<LAB_DOMAIN>`   | herald on the host, `:3003` (HTTP + WebSocket)                      |
-| `app.<LAB_DOMAIN>`      | `apps/web` on the host, `:3000` (SIWS, binding authority)           |
+| `app.<LAB_DOMAIN>`      | `apps/realms` on the host, `:3000` (SPA, SIWS, binding authority)   |
 | identity RPC            | not proxied: the browser calls the public mainnet node directly     |
 
 ### Box and region — chosen for action latency (2026-08-30)
@@ -589,7 +590,7 @@ push. The box and the region are picked for those two terms; nothing else about 
   pick is the highest-clocked Zen 4 on the list with the largest cache — not the most cores. `m4.metal.small`
   (4244P, 6c, 5.1 GHz, $296) is the same core slower; `m4.metal.medium` (9124 Genoa, 3.7 GHz, $456) costs more and
   is slower on the serial path. Bigger boxes add cores the chain cannot use.
-- **Everything on the one box** (Madara, Postgres, herald, `apps/web`): no cross-host hop anywhere in the action path.
+- **Everything on the one box** (Madara, Postgres, herald, `apps/realms`): no cross-host hop anywhere in the action path.
 - **Backups to Cloudflare R2** (S3-compatible, zero egress): one bucket, one `s5cmd` sync of the Madara DB snapshot
   and the Postgres dump on a cron, token in the root `.env`. Replaces the laptop-local backup path.
 - **Measure both terms separately**: origin-side latency from an SSH session on the box (the client brief's bars, no
@@ -609,22 +610,37 @@ LAB_DOMAIN=lab.example.com TUNNEL_ID=<uuid> bash bootstrap-server.sh
 
 It installs Docker, node 22 + pnpm, bun and asdf (scarb 2.13.1, sozo 1.8.7) for a `realms` user, checks the repo
 out at `/opt/realms/eternum`, renders `.lab/cloudflared/config.yml` from `cloudflared/config.yml.template`, installs
-the `herald` and `web` units, and closes every port but SSH (`ufw`). Then, as `realms`:
+the `herald` and `realms-identity` units, and closes every port but SSH (`ufw`). Then, as `realms`:
 
 ```bash
 cd /opt/realms/eternum
-cp .env.example .env            # DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms, IDENTITY_RPC_URL=<mainnet rpc>,
-                                # BINDING_AUTHORITY_*: the lab authority pair — never a mainnet key
+# Create the root .env from the identity brief: local DATABASE_URL with DATABASE_SSL=false,
+# public identity/game/herald URLs, and the lab BINDING_AUTHORITY_* pair — never a mainnet key.
 pnpm install && pnpm run build:packages
 cd deploy/madara-lab
 docker compose --profile server --profile web up -d --wait madara postgres cloudflared   # never caddy here
 scripts/deploy-world.sh && scripts/bootstrap-game.sh             # as on the laptop; fresh genesis
-sudo systemctl start herald web
+cd ../..
+DATABASE_SSL=false pnpm --filter @realms-world/db push
+pnpm --filter @realms-world/realms build
+sudo systemctl disable --now web.service 2>/dev/null || true
+sudo systemctl start herald realms-identity
 curl -s https://herald.<LAB_DOMAIN>/health
+curl -s https://app.<LAB_DOMAIN>/health
 ```
 
-Redeploys are `git pull && pnpm run build:packages && sudo systemctl restart herald` (and `pnpm --dir apps/web build
-&& sudo systemctl restart web`). The harness runs on the box (`pnpm lab:harness`) — driver-on-box for now; the
+Identity redeploys are
+`git pull && pnpm install && pnpm run build:packages && DATABASE_SSL=false pnpm --filter @realms-world/db push && pnpm --filter @realms-world/realms build && sudo systemctl restart realms-identity`.
+On a box provisioned before `realms-identity.service` replaced `web.service`, switch the units once:
+
+```bash
+sudo install -m 0644 deploy/madara-lab/systemd/realms-identity.service /etc/systemd/system/realms-identity.service
+sudo systemctl daemon-reload
+sudo systemctl disable --now web.service
+sudo systemctl enable --now realms-identity.service
+```
+
+Herald redeploys remain `git pull && pnpm run build:packages && sudo systemctl restart herald`. The harness runs on the box (`pnpm lab:harness`) — driver-on-box for now; the
 driver-off-box variant (E.1) is the laptop against `rpc.<LAB_DOMAIN>` and is a separate measurement. Record the
 `cloudflared` image digest here at first `up` (pin discipline). Cloudflare's proxy has a 100 s per-request limit and
 WebSockets pass through; the herald stream and the RPC are both fine with that.

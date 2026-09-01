@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   // Version and chain info
   DATABASE_URL: z.string(), // Add other chains as needed
+  DATABASE_SSL: z.enum(["true", "false"]).optional(),
   VERCEL_ENV: z.string().optional(),
 });
 

@@ -1,7 +1,15 @@
 import { auth } from "./auth";
-import { gameplayAccountOf } from "./binding";
+import { handleApiCors } from "./api-cors";
+import {
+  BindGameplayAccountInput,
+  RotateGameplayAccountInput,
+  bindGameplayAccount,
+  gameplayAccountOf,
+  rotateGameplayAccountKey,
+} from "./binding";
 import { leaderboardPopulation, namesByOwners } from "./names";
 import { serverEnv } from "./env";
+import { serveStatic } from "./static";
 
 /**
  * The identity server for apps/realms, shaped like herald: one Bun fetch
@@ -40,25 +48,80 @@ const handleGameplayAccount = async (request: Request): Promise<Response> => {
   return json({ account: await gameplayAccountOf(owner) });
 };
 
-const server = Bun.serve({
-  port: serverEnv.REALMS_SERVER_PORT,
-  async fetch(request) {
-    const url = new URL(request.url);
+const handleGameplayAccountAction = async (request: Request, action: string): Promise<Response> => {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+    query: { disableCookieCache: true },
+  });
+  if (!session) return json({ error: "Authentication required" }, 401);
+  if (!isGameplayAccountAction(action)) return json({ error: "not_found" }, 404);
 
-    if (url.pathname.startsWith("/api/auth/")) return auth.handler(request);
-    if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
-
-    try {
-      if (url.pathname === "/api/names") return await handleNames(url);
-      if (url.pathname === "/api/leaderboard") return await handleLeaderboard();
-      if (url.pathname === "/api/gameplay-account") return await handleGameplayAccount(request);
-      if (url.pathname === "/health") return json({ service: "realms-identity", success: true });
-    } catch (error) {
-      console.error("realms-identity request failed", url.pathname, error);
-      return json({ error: "internal" }, 500);
+  try {
+    const input: unknown = await request.json();
+    if (action === "bind") {
+      return json(await bindGameplayAccount({ owner: session.user.id, ...BindGameplayAccountInput.parse(input) }));
     }
-    return json({ error: "not_found" }, 404);
-  },
-});
+    return json(
+      await rotateGameplayAccountKey({
+        owner: session.user.id,
+        sessionId: session.session.id,
+        ...RotateGameplayAccountInput.parse(input),
+      }),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Gameplay account request failed";
+    return json({ error: message }, 400);
+  }
+};
 
-console.info(`realms identity server listening on :${server.port}`);
+const handleApiRequest = async (request: Request, url: URL): Promise<Response> => {
+  try {
+    if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
+
+    if (request.method === "GET") {
+      if (url.pathname === "/api/names") return handleNames(url);
+      if (url.pathname === "/api/leaderboard") return handleLeaderboard();
+      if (url.pathname === "/api/gameplay-account") return handleGameplayAccount(request);
+    }
+
+    const gameplayAction = /^\/api\/gameplay-account\/([^/]+)$/.exec(url.pathname)?.[1];
+    if (request.method === "POST" && gameplayAction) {
+      return handleGameplayAccountAction(request, gameplayAction);
+    }
+
+    return json({ error: "not_found" }, 404);
+  } catch (error) {
+    console.error("realms-identity request failed", url.pathname, error);
+    return json({ error: "internal" }, 500);
+  }
+};
+
+const isGameplayAccountAction = (action: string): action is "bind" | "rotate" =>
+  action === "bind" || action === "rotate";
+
+export async function handleRequest(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+
+  if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+    return handleApiCors(request, () => handleApiRequest(request, url));
+  }
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return json({ error: "method_not_allowed" }, 405);
+  }
+
+  try {
+    if (url.pathname === "/health") return json({ service: "realms-identity", success: true });
+    return await serveStatic(url, request.method);
+  } catch (error) {
+    console.error("realms-identity request failed", url.pathname, error);
+    return json({ error: "internal" }, 500);
+  }
+}
+
+if (import.meta.main) {
+  const server = Bun.serve({
+    port: serverEnv.REALMS_SERVER_PORT,
+    fetch: handleRequest,
+  });
+  console.info(`realms identity server listening on :${server.port}`);
+}

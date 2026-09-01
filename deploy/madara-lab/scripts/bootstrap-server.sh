@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bootstrap a fresh Ubuntu box into the lab's server profile: Docker, the toolchain herald and the deployer need,
-# the repo under /opt/realms, the Cloudflare Tunnel config, and the herald/web systemd units.
+# the repo under /opt/realms, the Cloudflare Tunnel config, and the herald/identity systemd units.
 #
 # Run as root on a fresh Ubuntu 24.04 LTS host:
 #   LAB_DOMAIN=lab.example.com TUNNEL_ID=<uuid> bash bootstrap-server.sh
@@ -113,20 +113,23 @@ render_tunnel_config() {
 }
 
 install_units() {
-  log "systemd units (herald, web)"
+  log "systemd units (herald, realms identity)"
   install -m 0644 "$LAB_DIR/systemd/herald.service" /etc/systemd/system/herald.service
-  install -m 0644 "$LAB_DIR/systemd/web.service" /etc/systemd/system/web.service
+  install -m 0644 "$LAB_DIR/systemd/realms-identity.service" /etc/systemd/system/realms-identity.service
   systemctl daemon-reload
-  systemctl enable herald web >/dev/null
+  if systemctl list-unit-files web.service --no-legend | grep -q '^web.service'; then
+    systemctl disable --now web.service >/dev/null
+  fi
+  systemctl enable herald realms-identity >/dev/null
 }
 
 harden() {
-  log "firewall: ssh from anywhere; herald/web reachable only from the docker networks (the tunnel), nothing else"
+  log "firewall: ssh from anywhere; herald/identity reachable only from the docker networks (the tunnel), nothing else"
   ufw --force reset >/dev/null
   ufw default deny incoming >/dev/null
   ufw default allow outgoing >/dev/null
   ufw allow OpenSSH >/dev/null
-  # cloudflared runs in a docker network and proxies to herald (:3003) and apps/web (:3000) on the host via
+  # cloudflared runs in a docker network and proxies to herald (:3003) and apps/realms (:3000) on the host via
   # host.docker.internal. That container→host traffic hits the INPUT chain, so allow the docker ranges to those
   # ports — otherwise the tunnel reaches rpc (container→container) but times out on herald/app (Cloudflare 52x).
   ufw allow from 172.16.0.0/12 to any port 3003 proto tcp >/dev/null

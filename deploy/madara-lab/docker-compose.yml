@@ -2,7 +2,7 @@
 #
 #   docker compose up -d                 # madara only
 #   scripts/deploy-world.sh              # sozo build + migrate the s2 world (writes world address to .lab/)
-#   docker compose --profile web up -d   # postgres for apps/web's session store
+#   docker compose --profile web up -d   # postgres for the identity session store
 #   docker compose --profile server --profile web up -d madara postgres cloudflared   # the rented box (README "Server profile")
 #
 # caddy terminates TLS for every *.realms.test host on 127.0.0.1:443 (see Caddyfile); run
@@ -181,13 +181,13 @@ services:
     volumes:
       - ./.lab/cloudflared:/etc/cloudflared:ro
     extra_hosts:
-      - "host.docker.internal:host-gateway"   # herald and apps/web run on the host as systemd units
+      - "host.docker.internal:host-gateway"   # herald and apps/realms run on the host as systemd units
     depends_on:
       madara:
         condition: service_healthy
     restart: unless-stopped
 
-  # Session store for apps/web (better-auth over Drizzle). DATABASE_URL in README.
+  # Session store for apps/realms (better-auth over Drizzle). DATABASE_URL in README.
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:17-alpine}
     container_name: madara-lab-postgres
