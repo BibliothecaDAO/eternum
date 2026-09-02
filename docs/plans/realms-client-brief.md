@@ -1568,6 +1568,30 @@ render-before-snapshot-end left to the owner. Pre-existing reds untouched: `worl
 the `row.activityBreakdown` assertion, the three load-sensitive timeout files. Owner gates pending are listed in each
 record above and in the plan's "Owner gate pending" paragraph.
 
+### Autonomous run — end review (reviewer, 2026-09-03)
+
+**Approved; deployed from this tip.** All 18 items landed or verified as recorded. Reviewer reproduction: the global
+deletion gates hold by grep — no `toggleModal`/`setModal`, no `openedPopups`/`togglePopup` outside the ban-list test, no
+modal shell files, no `role="dialog"` outside `popover.tsx`, no `sonner`, no reload in the reconnect path (the remaining
+`location.reload` sites are the landing, the error boundary and settings' change-game redirect — legitimate);
+`packages/core` 160/160 green (the reworked transport streaming tests included), `apps/game` typecheck clean, knip clean
+but for the two pre-existing dist findings. Full `apps/game` suite: 823/836 files — 13 red, accounted one by one: three
+were stale pins that the run's own recorded rulings outdated (the hexception constructor-setup pin, the reconnect-grace
+count, console-discipline's `tx-emit.tsx` site plus the decomposition-relocated hover trace), fixed by the reviewer in
+`2d8ca8196b0`; the other ten are the documented pre-existing set, each verified untouched by run commits
+(`play-view.review-autopen`'s red case predates the run; only its endgame case was retargeted, and that one passes).
+Spot audits: the transport's paged first snapshot (waiter/buffer/failure/reset paths all correct, terminating on an
+empty page), the label `retainOnly` riding `syncVisibleSlots` with its source pin, the Popover's
+`PanelAnchor | (() => PanelAnchor)` generalisation, and the feed's countdown resolving through the one
+`useBlockTimestampStore` after item 9. Rulings on the four flags: (1) item 3's tile panels kept — **accepted**; the
+Deck's delete assumed a command card that doesn't exist yet, and the panels hold the only tile actions; they go when a
+card exists. (2) item 12's capacity from the game cap — **accepted**; sized for a world that can exist, guarded by the
+loud overflow counter. (3) item 15's per-model compile — **accepted, plan amended**; the loaded group carries the final
+materials and the evidence (worst boot frame 926 ms → 16 ms) closes the class. (4) item 17's render-before-snapshot-end
+— **correctly deferred**; changing the `bootstrap.status === "ready"` contract is the owner's call and joins the
+owner-gate list. Deploy note: item 17's Herald-side page ordering (`orderSnapshotModelsForStreaming`) ships when the box
+redeploys Herald from this branch — the client tolerates any order, so the client deploy alone is safe.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
