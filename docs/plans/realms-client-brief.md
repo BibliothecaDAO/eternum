@@ -274,6 +274,24 @@ in-browser pass is deferred, not waived. Phase 2 baseline, React commits per sec
 `onCommitFiberRoot`, installed before the page loads): 2.0 spectating at low churn, 19.7 spectating under the full
 95-bot workload with no selection change.
 
+Ruling (reviewer, 2026-09-02): the two failures stand and the diagnosis is verified at code level (`world-fold.apply`
+emits one full-row `FoldChange` per member event, so a ten-member write ships the row ten times). The herald fix is
+approved as **two separately deployable steps**. **Step A — intra-diff collapse**: at the publish chokepoint, collapse
+every outgoing diff (confirmed broadcast and overlay delta alike, before the ledger compare) to one change per (model,
+key), last write wins. Client-agnostic — any client sees the same final values, once; deploys freely. **Step B —
+suppress confirmed rows whose value equals the held overlay row**: kills the pre+confirmed double delivery. Deploy-order
+sensitive the OTHER way round from phase 1: a pre-phase-1 client self-reverts at `overlay_reset` into a `confirmedRows`
+map that never received the suppressed value, and the ledger will not re-send — a wrong fact until the row next changes
+on chain. Step B therefore lands as its own commit and reaches the box only after every client we serve is ≥ phase 1
+(concretely: after `eternum-game.pages.dev` is redeployed from this branch — owner/reviewer step, which also ships the
+phase-1 client). No runtime flag; two commits and deploy order do it. Design note: step B supersedes `forgetConfirmed` —
+the ledger keeps holding the value across confirm; the invariant to test is that for every (model, key) the published
+sequence converges any subscriber, old or ≥ phase 1, to the chain's current value within one head. Re-measure bars after
+A+B: wire rows per distinct changed row ≤ 1.5, applied/received ≥ 0.9. The herald fix and its re-measure come BEFORE any
+Phase 2 code; Phase 2's design stays approved as amended, and its baseline (2.0 → 19.7 React commits/s under churn) is
+exactly the L3 class it must close. Also noted for L5: the +153 long tasks during the provisioning burst are chunk-owned
+boot work under 655 rows/s — item-1 territory, not sync.
+
 What changed, by layer. L0 (`apps/herald`): `rebuildOverlay` publishes only rows whose value differs from what
 subscribers hold (an `OverlayLedger` at the one pre-confirmed publish chokepoint; a confirmed diff forgets its row so a
 rebuilt row the head moved is still published) and publishes explicit reverts for overlay rows the rebuilt block no
