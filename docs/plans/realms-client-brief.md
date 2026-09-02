@@ -1286,6 +1286,44 @@ gone; world containers, layouts and discipline suites green; typecheck clean; kn
 **Ruling taken, review me.** The in-game "Watch review" step is gone: the review lives on the dashboard (the landing's
 own `GameReviewModal`, half one's territory), so the pill points there rather than re-hosting that modal in the HUD.
 
+### Autonomous run record — item 5: the `toggleModal` system → Popover (2026-09-02, commit `784fd25e83c`)
+
+**Landed.** `use-popover-store.ts` gains a surface: `openSurface({ id, content, anchor? })` hands content to the store,
+`SurfaceHost` (mounted once in the HUD next to the loading overlays) renders it through the same panel every
+element-anchored popover uses — portaled, viewport-capped, Escape / outside-pointer dismiss, one open at a time, no
+scrim — hanging from the rect a button passed (`surfaceAnchorFrom(event.currentTarget)`) or from the top centre when a
+scene click or an event-less hook opened it. `SurfaceFrame` is the shared header-over-scrolling-body frame for the large
+surfaces. The plan named five `toggleModal` components; the class had twenty callers once multi-line opens were counted,
+and all of them migrated in this commit: production (eight sites, including the hexception building click and the castle
+buttons), market, chest, help (troop transfer) and spire travel from the worldmap scene and the army chip, battle lab
+and live combat details, the quick-attack preview (its own draggable bronze box and `react-draggable` use are gone — the
+panel is the frame), craft relic, relic activation popup and selector, wonder faith details, faith devotion and the
+Lordpedia. Every surface-opened component dropped its `CenteredModalShell` / `DialogShell` / `BasePopup` for the frame.
+Deleted: `toggleModal`, `setModal`, `modalContent`, `showModal` (store fields and types), `PlayOverlayManager`'s
+full-screen modal host (`BlankOverlayContainer` now wraps only the landing's loading overlay) and the landing's dead
+`LandingModalHost`.
+
+**Gate.** `popover.test.tsx` (6: anchor/no scrim, exclusivity, toggle + Escape, outside pointer, a store surface through
+the same panel closing on Escape, surface ↔ element popover exclusivity — `useAudio` mocked for the open/close cue that
+moved from the modal host); the production shell and quick-attack tests read the popover store;
+`overlay-surfaces.source.test.ts` bans the four deleted store fields and the landing host by name. Molecules,
+production, military, economy, world components, layouts, landing, relics, social, modules, combat and store suites 110
+files / 391 tests: green except the two documented pre-existing reds and one stale pin fixed in the next commit
+(`cf2d69be2e8`: `combat-presentation-coordinator.source.test.ts` still expected the scene's `replayIndexedCombat` and
+`armyManager.onProcedural*` calls that decomposition Cut 4 moved into `worldmap-combat-presentation.ts`; retargeted to
+the collaborator, same intent). Typecheck clean; knip clean. Headless smoke on game 16: HUD mounts, no React errors, no
+`pointer-events-auto` element covering the viewport. LOC: +765 −591 (42 files).
+
+**Ruling taken, review me.** (1) The item's scope grew from the five named components to the whole `toggleModal` class —
+the store fields could only be deleted with every caller migrated, and a half-migrated host is the known hazard. (2)
+Scene-opened surfaces (attack preview, chest, help, spire travel, the building's production panel) hang from the top
+centre: the scene handlers have no pointer position in scope, and threading one through the interaction runtime is a
+bigger change than the surface warrants. (3) Market and chat stay top-centre surfaces here; their edge anchoring (right
+ledger, bottom-right drawer) is item 6's, where the remaining inline shells go.
+
+**Owner gate pending:** every migrated surface needs a signed-in player to open (build, produce, attack, chest, relics,
+market); the headless spectator lane can only prove the primitive and the HUD.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
