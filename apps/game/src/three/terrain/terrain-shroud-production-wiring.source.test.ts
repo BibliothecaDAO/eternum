@@ -16,6 +16,22 @@ describe("exploration shroud production wiring", () => {
     expect(worldmap.match(/writeExploredTileFromProjection\(/g)).toHaveLength(3);
   });
 
+  it("routes hydration, live diffs and the player's own explore through the one explored-tile writer", () => {
+    const worldmap = source("src/three/scenes/worldmap.tsx");
+    const body = (name: string) => {
+      const start = worldmap.indexOf(`private ${name}(`);
+      expect(start).toBeGreaterThan(-1);
+      return worldmap.slice(start, worldmap.indexOf("\n  }\n", start));
+    };
+
+    // The chunk refresh (snapshot hydration and window moves) and the projection diff subscription are the only two
+    // entries, and both end in the writer; nothing else assigns an explored tile.
+    expect(body("syncExploredTilesFromProjection")).toContain("this.writeExploredTileFromProjection(");
+    expect(body("applyProjectedExploredTileChange")).toContain("this.writeExploredTileFromProjection(");
+    expect(worldmap.match(/this\.exploredTiles\.get\(col\)!\.set\(row, biome\)/g)).toHaveLength(1);
+    expect(worldmap.match(/this\.worldSpatialProjection\.subscribeTiles\(/g)).toHaveLength(1);
+  });
+
   it("finishes a reveal within the 300 ms interaction budget", () => {
     const fogField = source("src/three/terrain/terrain-fog-field.ts");
 
