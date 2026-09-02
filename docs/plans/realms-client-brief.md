@@ -680,6 +680,28 @@ Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
   identical to HEAD); managers + terrain 644/644; typecheck clean on the three touched files; prettier + knip clean on
   them.
 
+- Cut 2 — terrain-visibility health monitor (**relocation**, 2026-09-02, branch `client-scale-96p`). Moved the
+  terrain/chunk visibility self-heal out of the scene into a collaborator: new
+  `apps/game/src/three/scenes/worldmap-terrain-visibility-health-monitor.ts`
+  (`WorldmapTerrainVisibilityHealthMonitor`, 245 lines) with its own test (136 lines / 7 cases). The collaborator now
+  owns the seven frame/recovery counters and six config thresholds that were `worldmap.tsx` fields, plus the ~147-line
+  `monitorTerrainVisibilityHealth` body (split into `recoverOffscreenChunk` / `evaluateRetainedTerrain` for one level of
+  abstraction). The scene builds it in `initializeWorldmapSupportManagers` (injecting `isBoxVisible`,
+  `getVisibleCellCount`, `requestChunkRefresh`, `waitForRequestedChunkRefresh`, `emitTelemetry`, `recordBoundsRecovery`);
+  `update()` calls `tick(snapshot)` once (the old `terrainSelfHeal` if/else folds inside), and
+  `resetZoomHardeningRuntimeState` calls `reset()` — the single reset chokepoint. Shared reset helper (chokepoint
+  pattern): `resetWorldmapZoomHardeningRuntimeState` dropped its two terrain fields (`zeroTerrainFrames`,
+  `terrainRecoveryInFlight`); that reset discipline now lives in the collaborator's `reset()`. Retargeted tests in the
+  same commit: `worldmap-zoom-hardening.test.ts` dropped those two fields from its reset-helper cases (the preserved
+  intent — reset clears the recovery-in-flight guard and the counters, while the cooldown timestamp survives — is now
+  asserted by the collaborator's own test); `worldmap-refresh-scheduler.wiring.test.ts` reads the `offscreen_chunk` /
+  `terrain_self_heal` force-refresh discipline from the collaborator source now that those calls live there. Pure anomaly
+  math (`evaluateChunkVisibilityAnomaly` / `evaluateTerrainVisibilityAnomaly`) stays in `worldmap-zoom-hardening.ts`,
+  imported by the collaborator; behaviour preserved (`reset()` clears the six counters the scene cleared and leaves
+  `lastTerrainRecoveryAtMs`). worldmap.tsx 8663 → 8503 (−160; git +22/−182). Gate: collaborator 7/7, zoom-hardening
+  12/12; scenes 850/851 (the one red is the pre-existing known `worldmap-initial-refresh` drift, untouched here);
+  managers + terrain 644/644; typecheck clean repo-wide; prettier + knip clean on the touched files.
+
 Recorded, L5b (2026-09-03, branch `client-scale-96p`, one commit on top of the L5 tip). (1) Content ladder: one table,
 `apps/game/src/three/scenes/worldmap-content-ladder.ts`, maps the zoom band (`CameraView`, resolved from distance) to
 what renders — near: everything; mid: models and FX, text only for priority entities, armies as tier glyphs; far: the

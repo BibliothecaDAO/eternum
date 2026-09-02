@@ -17,8 +17,6 @@ interface WorldmapZoomHardeningRuntimeStateInput {
   chunkRefreshRunning: boolean;
   chunkRefreshRerunRequested: boolean;
   pendingChunkRefreshForce: boolean;
-  zeroTerrainFrames: number;
-  terrainRecoveryInFlight: boolean;
 }
 
 interface TerrainVisibilityAnomalyInput {
@@ -77,8 +75,6 @@ export function resetWorldmapZoomHardeningRuntimeState(
     chunkRefreshRunning: false,
     chunkRefreshRerunRequested: false,
     pendingChunkRefreshForce: false,
-    zeroTerrainFrames: 0,
-    terrainRecoveryInFlight: false,
   };
 }
 

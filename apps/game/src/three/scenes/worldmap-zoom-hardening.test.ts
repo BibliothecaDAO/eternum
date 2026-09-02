@@ -55,8 +55,6 @@ describe("resetWorldmapZoomHardeningRuntimeState", () => {
         chunkRefreshRunning: true,
         chunkRefreshRerunRequested: true,
         pendingChunkRefreshForce: true,
-        zeroTerrainFrames: 6,
-        terrainRecoveryInFlight: true,
       },
       (timeoutId) => {
         clearedTimers.push(timeoutId);
@@ -71,8 +69,6 @@ describe("resetWorldmapZoomHardeningRuntimeState", () => {
       chunkRefreshRunning: false,
       chunkRefreshRerunRequested: false,
       pendingChunkRefreshForce: false,
-      zeroTerrainFrames: 0,
-      terrainRecoveryInFlight: false,
     });
   });
 
@@ -86,8 +82,6 @@ describe("resetWorldmapZoomHardeningRuntimeState", () => {
         chunkRefreshRunning: false,
         chunkRefreshRerunRequested: false,
         pendingChunkRefreshForce: false,
-        zeroTerrainFrames: 0,
-        terrainRecoveryInFlight: false,
       },
       (timeoutId) => {
         clearedTimers.push(timeoutId);

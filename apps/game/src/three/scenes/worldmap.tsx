@@ -255,12 +255,8 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import {
-  createWorldmapZoomHardeningConfig,
-  evaluateChunkVisibilityAnomaly,
-  evaluateTerrainVisibilityAnomaly,
-  resetWorldmapZoomHardeningRuntimeState,
-} from "./worldmap-zoom-hardening";
+import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visibility-health-monitor";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
   normalizeWorldmapWheelDelta,
@@ -693,19 +689,7 @@ export default class WorldmapScene extends WarpTravel {
   private isShortcutArmySelectionInFlight = false;
   private lastControlsCameraDistance: number | null = null;
   private readonly zoomForceRefreshDistanceThreshold = 0.75;
-  private zeroTerrainFrames = 0;
-  private lowTerrainFrames = 0;
-  private offscreenChunkFrames = 0;
-  private terrainReferenceInstances = 0;
-  private terrainReferenceChunkKey: string | null = null;
-  private terrainRecoveryInFlight = false;
-  private lastTerrainRecoveryAtMs = 0;
-  private readonly zeroTerrainFrameThreshold = 3;
-  private readonly lowTerrainFrameThreshold = 3;
-  private readonly offscreenChunkFrameThreshold = 2;
-  private readonly minRetainedTerrainFraction = 0.45;
-  private readonly minReferenceTerrainInstances = 100;
-  private readonly terrainRecoveryCooldownMs = 1500;
+  private terrainVisibilityHealthMonitor!: WorldmapTerrainVisibilityHealthMonitor;
   private readonly minCachedTerrainCoverageFraction = 0.08;
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
@@ -1266,6 +1250,18 @@ export default class WorldmapScene extends WarpTravel {
       (hexCoords: HexPosition) => this.resolveHoverLabelEntities(hexCoords),
       this.getCurrentCameraView(),
       this.markLabelsDirty,
+    );
+
+    this.terrainVisibilityHealthMonitor = new WorldmapTerrainVisibilityHealthMonitor(
+      { selfHealEnabled: WORLDMAP_ZOOM_HARDENING.terrainSelfHeal },
+      {
+        isBoxVisible: (box) => this.visibilityManager.isBoxVisible(box),
+        getVisibleCellCount: () => this.proceduralTerrain.getVisibleCellCount(),
+        requestChunkRefresh: (force, reason) => this.requestChunkRefresh(force, reason),
+        waitForRequestedChunkRefresh: (token) => this.waitForRequestedChunkRefresh(token),
+        emitTelemetry: (event, payload) => this.emitZoomHardeningTelemetry(event, payload),
+        recordBoundsRecovery: () => recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_bounds_recovery"),
+      },
     );
   }
 
@@ -3941,8 +3937,6 @@ export default class WorldmapScene extends WarpTravel {
         chunkRefreshRunning: this.chunkRefreshRunning,
         chunkRefreshRerunRequested: this.chunkRefreshRerunRequested,
         pendingChunkRefreshForce: this.pendingChunkRefreshForce,
-        zeroTerrainFrames: this.zeroTerrainFrames,
-        terrainRecoveryInFlight: this.terrainRecoveryInFlight,
       },
       (timeoutId) => clearTimeout(timeoutId),
     );
@@ -3956,15 +3950,10 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
     this.pendingChunkRefreshReasons.clear();
     this.pendingChunkRefreshUiReason = "default";
-    this.zeroTerrainFrames = resetState.zeroTerrainFrames;
-    this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
-    this.lowTerrainFrames = 0;
-    this.offscreenChunkFrames = 0;
+    this.terrainVisibilityHealthMonitor.reset();
     this.zoomRefreshPlannerState = createWorldmapZoomRefreshPlannerState();
     this.lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
     this.lastPublishedZoomStatus = "idle";
-    this.terrainReferenceInstances = 0;
-    this.terrainReferenceChunkKey = null;
     this.lastChunkSwitchMovement = null;
     this.isShortcutArmySelectionInFlight = false;
   }
@@ -7525,13 +7514,12 @@ export default class WorldmapScene extends WarpTravel {
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
     this.runPendingHoverLabelRecoveryFrame();
-    if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
-      this.monitorTerrainVisibilityHealth();
-    } else {
-      this.zeroTerrainFrames = 0;
-      this.lowTerrainFrames = 0;
-      this.offscreenChunkFrames = 0;
-    }
+    this.terrainVisibilityHealthMonitor.tick({
+      isWorldmapScene: this.sceneManager.getCurrentScene() === SceneName.WorldMap,
+      isSwitchedOff: this.isSwitchedOff,
+      currentChunk: this.currentChunk,
+      currentChunkBox: this.currentChunkBounds?.box ?? null,
+    });
   }
 
   private syncTerrainMovementInteractions(): void {
@@ -7801,154 +7789,6 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
     debugWindow.evaluateWorldmapChunkFirstVisibleCommitP95Regression = undefined;
     debugWindow.evaluateWorldmapProjectionSyncVolumeRegression = undefined;
-  }
-
-  private monitorTerrainVisibilityHealth(): void {
-    if (
-      this.sceneManager.getCurrentScene() !== SceneName.WorldMap ||
-      this.isSwitchedOff ||
-      this.currentChunk === "null" ||
-      !this.currentChunkBounds
-    ) {
-      this.zeroTerrainFrames = 0;
-      this.lowTerrainFrames = 0;
-      this.offscreenChunkFrames = 0;
-      return;
-    }
-
-    const isCurrentChunkVisible = this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
-    const chunkVisibilityAnomaly = evaluateChunkVisibilityAnomaly({
-      isCurrentChunkVisible,
-      offscreenChunkFrames: this.offscreenChunkFrames,
-      offscreenChunkFrameThreshold: this.offscreenChunkFrameThreshold,
-    });
-    this.offscreenChunkFrames = chunkVisibilityAnomaly.offscreenChunkFrames;
-
-    if (!isCurrentChunkVisible) {
-      this.zeroTerrainFrames = 0;
-      this.lowTerrainFrames = 0;
-
-      if (!chunkVisibilityAnomaly.shouldTriggerRecovery) {
-        return;
-      }
-
-      const now = performance.now();
-      if (this.terrainRecoveryInFlight || now - this.lastTerrainRecoveryAtMs < this.terrainRecoveryCooldownMs) {
-        return;
-      }
-
-      this.lastTerrainRecoveryAtMs = now;
-      this.terrainRecoveryInFlight = true;
-
-      console.warn("[WorldMap] Current chunk bounds remained offscreen; forcing chunk refresh", {
-        chunk: this.currentChunk,
-        offscreenChunkFrames: this.offscreenChunkFrames,
-      });
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_bounds_recovery");
-      this.emitZoomHardeningTelemetry("self_heal_start", {
-        chunk: this.currentChunk,
-        reason: "offscreen",
-        offscreenChunkFrames: this.offscreenChunkFrames,
-      });
-
-      const refreshToken = this.requestChunkRefresh(true, "offscreen_chunk");
-      void this.waitForRequestedChunkRefresh(refreshToken)
-        .catch((error) => {
-          console.error("[WorldMap] Offscreen chunk recovery failed:", error);
-          this.emitZoomHardeningTelemetry("self_heal_failed", {
-            chunk: this.currentChunk,
-            reason: "offscreen",
-            error: error instanceof Error ? error.message : String(error),
-          });
-        })
-        .finally(() => {
-          this.emitZoomHardeningTelemetry("self_heal_complete", {
-            chunk: this.currentChunk,
-            reason: "offscreen",
-          });
-          this.terrainRecoveryInFlight = false;
-          this.offscreenChunkFrames = 0;
-        });
-      return;
-    }
-
-    const totalTerrainInstances = this.proceduralTerrain.getVisibleCellCount();
-
-    if (this.terrainReferenceChunkKey !== this.currentChunk) {
-      this.terrainReferenceChunkKey = this.currentChunk;
-      this.terrainReferenceInstances = totalTerrainInstances;
-      this.zeroTerrainFrames = 0;
-      this.lowTerrainFrames = 0;
-      return;
-    }
-
-    const anomalyResult = evaluateTerrainVisibilityAnomaly({
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
-      zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
-      zeroTerrainFrameThreshold: this.zeroTerrainFrameThreshold,
-      lowTerrainFrameThreshold: this.lowTerrainFrameThreshold,
-      minRetainedTerrainFraction: this.minRetainedTerrainFraction,
-      minReferenceTerrainInstances: this.minReferenceTerrainInstances,
-    });
-
-    this.zeroTerrainFrames = anomalyResult.zeroTerrainFrames;
-    this.lowTerrainFrames = anomalyResult.lowTerrainFrames;
-    if (!anomalyResult.shouldTriggerRecovery) {
-      if (totalTerrainInstances > 0 && this.lowTerrainFrames === 0) {
-        this.terrainReferenceInstances = totalTerrainInstances;
-      }
-      return;
-    }
-
-    const now = performance.now();
-    if (this.terrainRecoveryInFlight || now - this.lastTerrainRecoveryAtMs < this.terrainRecoveryCooldownMs) {
-      return;
-    }
-
-    this.lastTerrainRecoveryAtMs = now;
-    this.terrainRecoveryInFlight = true;
-
-    console.warn("[WorldMap] Terrain visibility anomaly detected; forcing chunk refresh", {
-      chunk: this.currentChunk,
-      reason: anomalyResult.recoveryReason,
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
-      zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
-    });
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_bounds_recovery");
-    this.emitZoomHardeningTelemetry("self_heal_start", {
-      chunk: this.currentChunk,
-      reason: anomalyResult.recoveryReason,
-      terrainInstances: totalTerrainInstances,
-      terrainReferenceInstances: this.terrainReferenceInstances,
-      zeroTerrainFrames: this.zeroTerrainFrames,
-      lowTerrainFrames: this.lowTerrainFrames,
-    });
-
-    const refreshToken = this.requestChunkRefresh(true, "terrain_self_heal");
-    void this.waitForRequestedChunkRefresh(refreshToken)
-      .catch((error) => {
-        console.error("[WorldMap] Terrain visibility recovery failed:", error);
-        this.emitZoomHardeningTelemetry("self_heal_failed", {
-          chunk: this.currentChunk,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      })
-      .finally(() => {
-        this.emitZoomHardeningTelemetry("self_heal_complete", {
-          chunk: this.currentChunk,
-        });
-        this.terrainRecoveryInFlight = false;
-        this.zeroTerrainFrames = 0;
-        this.lowTerrainFrames = 0;
-        this.offscreenChunkFrames = 0;
-        if (totalTerrainInstances > this.terrainReferenceInstances) {
-          this.terrainReferenceInstances = totalTerrainInstances;
-        }
-      });
   }
 
   public hasActiveLabelAnimations(): boolean {
