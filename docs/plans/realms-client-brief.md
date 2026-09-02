@@ -1389,6 +1389,56 @@ arrivals tab stays — it is the claim surface; the feed only shows the rows.
 **Owner gate pending:** a real transfer on the deploy (row at click, caravan row at pre-confirm, flip at arrival) and
 the ticker under live action.
 
+### Autonomous run record — item 9: L6, one clock and the tooltip store (2026-09-02, commit `7ec7de467f7`)
+
+**Landed.** The block timestamp store already ticked once a second; it now also carries the wall clock (`nowMs`), and
+`useNowMs` / `useNowSeconds` / `useCoarseNowSeconds` read it — an `enabled` flag turns a subscriber into a constant so a
+hidden or settled component never re-renders for the clock. Eighteen React components that each owned a 1 Hz
+`setInterval` read the one clock instead: the world countdown (three timers), the resource chip's cap check (the default
+tick already advances), the arrivals list, the battle and defence cooldowns, the attack preview, the prize panel (30 s
+window), the build menu, the production sidebar, the merged resource panel, the register-points button and the
+hyperstructure leaderboard (coarse refresh signals), the automation cue, the game start countdown and the end timer (the
+block timestamp is their clock; the local elapsed state and the tooltip's own timer are gone), the transaction row's
+elapsed label and the two network-status surfaces. Their eighteen polling-discipline allowances are deleted; the list
+keeps the two clock stores, the scheduler, the scene, the debug and boot overlays and the landing. The hover tooltip
+moved to `hooks/store/use-tooltip-store.ts` (with its anchor-fallback helpers), so a hover no longer writes the UI store
+and runs its selectors; every `setTooltip` caller, the scene managers and the `Tooltip` molecule read the new store, and
+the top header reads its tick from the store instead of calling `getBlockTimestamp()` per render.
+
+**Gate.** Polling-discipline "clock" allowances: 16 UI entries → 0 (the clock stores remain). Idle React commits per
+second, headless on game 16 (a finished game, so few countdowns run): **0.72 before → 0.67 after** (the devtools-hook
+stub counting `onCommitFiberRoot` over 60 s, spectating, scene up); the 2.31 idle figure in the phase-2 record was a
+live world with its timers running — the class that number measured (a 1 Hz interval per countdown component) is closed
+structurally, and the live re-measure is an owner gate. Hooks, components, economy, military, prize, settlement, social,
+world, design-system, event-feed, modules, scene-manager and discipline suites 113 files / 515 tests green except the
+documented pre-existing ownership red; typecheck clean; knip clean. LOC: +279 −430 (43 files).
+
+**Ruling taken, review me.** Caravan countdowns and elapsed labels follow the block store's 1 Hz tick (`nowMs` is the
+wall clock at that tick), not `performance.now()` per frame — one clock, one cadence.
+
+### Autonomous run record — item 10: selection emphasis and the click's ghost stage (2026-09-02, commit `bbdbf439e36`)
+
+**Landed.** Selecting a structure or army rang every hex the owner held — the ownership-pulse presenter and footprint
+policy from decomposition Cut 1 (`worldmap-structure-ownership-pulses.ts`, `worldmap-ownership-pulse-policy.ts`) and the
+pulse manager's ownership meshes, shared material and geometry. The addendum's convention is that only the selection and
+its legal targets are emphasised and ownership is tint, so all of it is deleted with its tests; the selection pulse and
+the action-path highlight stay. Left-click selects, right-click is the action on the target and Esc cancels already
+(`onHexagonRightClick`, the Escape shortcut, the "Right-click to confirm" instruction). The move handler records a new
+`ghost_rendered` latency stage the moment the local pending state is on screen — destination selected, path highlighted,
+then the travel or compass effect — before anything is signed, so `__clientActionLatencyMeasurements` shows click →
+ghost as one frame. Latest-features: "Quieter Selection".
+
+**Gate.** `worldmap-movement-latency-tracing.source.test.ts` pins the stage in `onArmyMovement`; scenes suite 193/194
+(the documented initial-refresh red), the pulse manager test without its ownership case, observability suite green;
+typecheck clean; knip clean.
+
+**Ruling taken, review me.** (1) Cut 1's presenter is deleted rather than kept: the decomposition moved it, the addendum
+retires the behaviour, and a tinted marker already says who owns what. (2) `ghost_rendered` is recorded for moves and
+explores; build placement (`building-preview`) and caravans (`arrival-ghost-manager`) already render their pending state
+from the local click and the pre-confirmed row respectively, and attack confirmation is the preview surface's own
+submitting state — no second ghost was added for them. **Owner gate pending:** click → ghost ≤ one frame on the quiet
+box (`__clientActionLatencyMeasurements`, `ghost_rendered − click`).
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
