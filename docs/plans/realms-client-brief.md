@@ -540,6 +540,15 @@ structure full pass is sliced or bounded so no single owner share exceeds the fr
 owner's machine: far and mid band p95 ≤ 16.7 ms with far-band draws ≤ 60 and triangles ≤ 2 M; close band no worse than
 today and zero unsplit long tasks — the close-view content cost then feeds L5 items 4–8.
 
+L5b reviewed (reviewer, 2026-09-02): the ladder is one frozen band→content table read by every surface
+(`worldmap-content-ladder.ts`, wiring enforced by a source test); the present pipeline runs per-page geometry and buffer
+writes as separate revision-guarded tasks with a fingerprint no-op guard; the sliced structure diff fences `isCurrent`
+per slice and removes+re-adds refreshed entities inside one slice so nothing blinks. Reviewer reproduction: ladder +
+wiring + structure + visibility-diff + terrain suites 206/206, typecheck clean; the far-band screenshot is the strategic
+map as ruled (biome surface + sparse icons, no models, characters or text). **Code approved; the GPU bars remain with
+the owner's re-measure on the redeployed build.** The close band's 507 compact-label draws are confirmed as L5 item 6's
+class — if the close bar fails, the atlas is the lever, not the ladder.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
