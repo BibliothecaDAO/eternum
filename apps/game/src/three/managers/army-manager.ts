@@ -159,6 +159,7 @@ import {
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
 import { gameEntityKey } from "@/sync/game-scope";
+import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -324,12 +325,13 @@ export class ArmyManager {
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
+    compilePipelines?: PipelineCompiler,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
-    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
+    this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView, compilePipelines);
     this.armyModel.setModelsVisible(this.contentLadder.armyModels);
     this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
     this.proceduralArmyCharacterLayer.setShadowsEnabled(

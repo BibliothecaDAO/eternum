@@ -52,6 +52,7 @@ import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
+import { createPipelineCompiler } from "@/three/pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
@@ -71,6 +72,11 @@ export default class GameRenderer {
   private renderer!: RendererSurfaceLike;
   private interactionRuntime!: RendererInteractionRuntime;
   private camera!: RendererInteractionRuntime["camera"];
+  // Reads the live backend at call time: the backend can be replaced after a device loss.
+  private readonly pipelineCompiler = createPipelineCompiler({
+    getRenderer: () => this.backend?.renderer,
+    getCamera: () => this.camera,
+  });
   private raycaster!: RendererInteractionRuntime["raycaster"];
   private mouse!: RendererInteractionRuntime["pointer"];
   private controls!: NonNullable<RendererInteractionRuntime["controls"]>;
@@ -426,6 +432,7 @@ export default class GameRenderer {
       effectsBridgeRuntime: this.supportRuntimeRegistry.ensureEffectsBridge(),
       fastTravelEnabled: this.isFastTravelEnabled(),
       inputSurface: this.renderer.domElement,
+      compilePipelines: this.pipelineCompiler,
       markLabelsDirty: () => this.labelRuntime?.markDirty(),
       mouse: this.mouse,
       renderVisuals: renderProfile.visuals,

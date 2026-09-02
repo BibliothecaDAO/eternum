@@ -1,4 +1,4 @@
-import type { Camera, Object3D, Texture } from "three";
+import type { Camera, Object3D, Scene, Texture } from "three";
 import type {
   RendererBackendV2,
   RendererFramePipeline,
@@ -31,6 +31,7 @@ export interface RendererSurfaceLike {
   initTexture?(texture: Texture): void;
   outputColorSpace?: string;
   render(scene: Object3D, camera: Camera): void;
+  compileAsync?(object: Object3D, camera: Camera, targetScene?: Scene | null): Promise<unknown>;
   setPixelRatio(pixelRatio: number): void;
   setSize(width: number, height: number): void;
   shadowMap: {

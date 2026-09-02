@@ -9,6 +9,7 @@ import {
   recordWorldmapRenderDuration,
   setWorldmapRenderGauge,
 } from "@/three/perf/worldmap-render-diagnostics";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import {
   EMPTY_LABEL_PRIORITY_CONTEXT,
@@ -336,6 +337,7 @@ export class StructureManager {
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
+    private readonly compilePipelines?: PipelineCompiler,
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -1061,7 +1063,8 @@ export class StructureManager {
     }
 
     pending = Promise.all(modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)))
-      .then((models) => {
+      .then(async (models) => {
+        await this.compileModelPipelines(models);
         this.structureModels.set(structureType, models);
         this.attachStructureModelsToScene(models);
         return models;
@@ -1122,7 +1125,8 @@ export class StructureManager {
     }
 
     pending = this.loadCosmeticStructureModels(cosmeticId, assetPaths)
-      .then((models) => {
+      .then(async (models) => {
+        await this.compileModelPipelines(models);
         this.cosmeticStructureModels.set(cosmeticId, models);
         this.attachStructureModelsToScene(models);
         return models;
@@ -1139,6 +1143,11 @@ export class StructureManager {
 
     this.cosmeticStructureModelPromises.set(cosmeticId, pending);
     return pending;
+  }
+
+  // Pipelines compile before the group joins the scene, so the first frame that shows a chunk draws terrain only.
+  private async compileModelPipelines(models: InstancedModel[]): Promise<void> {
+    for (const model of models) await this.compilePipelines?.(model.group, this.scene);
   }
 
   // Models load after the band may have hidden the layer, so a freshly loaded group takes the ladder's state.

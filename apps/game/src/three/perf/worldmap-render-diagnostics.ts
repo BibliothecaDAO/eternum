@@ -94,6 +94,7 @@ export type WorldmapRenderCounter =
   | "structureInstanceCapacityOverflow"
   | "css2dLabelRenders"
   | "reservedSiteRebuilds"
+  | "pipelinePrecompiles"
   | "biomeMismatchCount"
   | "frameBudgetLongTasks"
   | "worldBiomeSurfaceCommits"
@@ -240,6 +241,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     structureInstanceCapacityOverflow: 0,
     css2dLabelRenders: 0,
     reservedSiteRebuilds: 0,
+    pipelinePrecompiles: 0,
     biomeMismatchCount: 0,
     frameBudgetLongTasks: 0,
     worldBiomeSurfaceCommits: 0,

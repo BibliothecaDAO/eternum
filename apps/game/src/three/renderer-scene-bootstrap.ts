@@ -6,6 +6,7 @@ import WorldmapScene from "@/three/scenes/worldmap";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
+import type { PipelineCompiler } from "./pipeline-compiler";
 import { SceneName } from "./types";
 
 interface SceneInputSurfaceOwner {
@@ -60,6 +61,7 @@ interface CreateRendererSceneRegistryInput<
   createSceneManager: (transitionManager: TTransitionManager) => TSceneManager;
   createTransitionManager: () => TTransitionManager;
   createWorldmapScene: (input: {
+    compilePipelines: PipelineCompiler;
     controls: TControls;
     dojo: TDojo;
     markLabelsDirty: () => void;
@@ -68,6 +70,7 @@ interface CreateRendererSceneRegistryInput<
     sceneManager: TSceneManager;
   }) => TWorldmapScene;
   dojo: TDojo;
+  compilePipelines?: PipelineCompiler;
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
   markLabelsDirty?: () => void;
@@ -122,6 +125,7 @@ export function createRendererSceneRegistry<
     sceneManager,
   });
   const worldmapScene = input.createWorldmapScene({
+    compilePipelines: input.compilePipelines ?? (async () => {}),
     controls: input.controls,
     dojo: input.dojo,
     markLabelsDirty: input.markLabelsDirty ?? (() => {}),
@@ -158,6 +162,7 @@ export function createRendererSceneRegistry<
 }
 
 export function createGameRendererSceneRegistry(input: {
+  compilePipelines?: PipelineCompiler;
   controls: MapControls;
   dojo: SetupResult;
   fastTravelEnabled: boolean;
@@ -167,6 +172,7 @@ export function createGameRendererSceneRegistry(input: {
   raycaster: Raycaster;
 }): RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene, FastTravelScene> {
   return createRendererSceneRegistry({
+    compilePipelines: input.compilePipelines,
     controls: input.controls,
     createFastTravelScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
       new FastTravelScene(dojo, raycaster, controls, mouse, sceneManager),
@@ -174,8 +180,8 @@ export function createGameRendererSceneRegistry(input: {
       new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
     createTransitionManager: () => new TransitionManager(),
-    createWorldmapScene: ({ controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>
-      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager, markLabelsDirty),
+    createWorldmapScene: ({ compilePipelines, controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>
+      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager, markLabelsDirty, compilePipelines),
     dojo: input.dojo,
     fastTravelEnabled: input.fastTravelEnabled,
     inputSurface: input.inputSurface,

@@ -73,6 +73,7 @@ import {
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
 import { findAnimationByName } from "./animation-clip-matcher";
+import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
@@ -188,7 +189,12 @@ export class ArmyModel {
     ["T3" as TroopTier, EasingType.EaseOutQuart],
   ]);
 
-  constructor(scene: Scene, labelsGroup?: Group, cameraView?: CameraView) {
+  constructor(
+    scene: Scene,
+    labelsGroup?: Group,
+    cameraView?: CameraView,
+    private readonly compilePipelines?: PipelineCompiler,
+  ) {
     this.scene = scene;
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
@@ -238,9 +244,11 @@ export class ArmyModel {
     pending = new Promise<ModelData>((resolve, reject) => {
       gltfLoader.load(
         assetPath,
-        (gltf) => {
+        async (gltf) => {
           try {
             const modelData = this.createModelData(gltf);
+            await this.compilePipelines?.(modelData.group, this.scene);
+            this.scene.add(modelData.group);
             this.models.set(modelType, modelData);
             this.reapplyInstancesForModel(modelType, modelData);
             resolve(modelData);
@@ -279,8 +287,10 @@ export class ArmyModel {
         assetPath: assetPaths[0] ?? "",
         registryEntry,
       })
-        .then((gltf) => {
+        .then(async (gltf) => {
           const modelData = this.createModelData(gltf, false);
+          await this.compilePipelines?.(modelData.group, this.scene);
+          this.scene.add(modelData.group);
           this.cosmeticModels.set(cosmeticId, modelData);
           this.reapplyInstancesForCosmeticModel(cosmeticId, modelData);
           resolve(modelData);
@@ -402,8 +412,6 @@ export class ArmyModel {
     contactShadowMesh.instanceMatrix.needsUpdate = true;
     group.add(contactShadowMesh);
     group.visible = this.modelsVisible;
-
-    this.scene.add(group);
 
     const mixer = new AnimationMixer(gltf.scene);
 

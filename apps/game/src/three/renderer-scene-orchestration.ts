@@ -6,6 +6,7 @@ import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { RendererEffectsBridgeRuntime } from "./renderer-effects-bridge-runtime";
 import type { RenderVisualProfile } from "./render-profile";
 import {
@@ -32,6 +33,7 @@ interface PrepareGameRendererScenesInput {
   >;
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
+  compilePipelines?: PipelineCompiler;
   markLabelsDirty?: () => void;
   mouse: Vector2;
   renderVisuals: RenderVisualProfile;
@@ -40,6 +42,7 @@ interface PrepareGameRendererScenesInput {
 
 export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput): void {
   const sceneRegistry = createGameRendererSceneRegistry({
+    compilePipelines: input.compilePipelines,
     controls: input.controls,
     dojo: input.dojo,
     fastTravelEnabled: input.fastTravelEnabled,

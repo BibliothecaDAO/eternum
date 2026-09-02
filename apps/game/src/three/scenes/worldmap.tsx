@@ -1,3 +1,4 @@
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
@@ -959,6 +960,7 @@ export default class WorldmapScene extends WarpTravel {
     mouse: Vector2,
     sceneManager: SceneManager,
     private readonly markLabelsDirty: () => void = () => {},
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
@@ -1113,6 +1115,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
+      this.compilePipelines,
     );
     this.armyManager.setProceduralCollisionMode(renderProfile.mode);
     this.combatPresentation = new CombatPresentationCoordinator(this.scene, {
@@ -1159,6 +1162,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
+      this.compilePipelines,
     );
     this.reservedHyperstructureManager = new ReservedHyperstructureManager(
       this.scene,
