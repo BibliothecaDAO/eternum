@@ -682,36 +682,36 @@ Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
 
 - Cut 2 — terrain-visibility health monitor (**relocation**, 2026-09-02, branch `client-scale-96p`). Moved the
   terrain/chunk visibility self-heal out of the scene into a collaborator: new
-  `apps/game/src/three/scenes/worldmap-terrain-visibility-health-monitor.ts`
-  (`WorldmapTerrainVisibilityHealthMonitor`, 245 lines) with its own test (136 lines / 7 cases). The collaborator now
-  owns the seven frame/recovery counters and six config thresholds that were `worldmap.tsx` fields, plus the ~147-line
-  `monitorTerrainVisibilityHealth` body (split into `recoverOffscreenChunk` / `evaluateRetainedTerrain` for one level of
-  abstraction). The scene builds it in `initializeWorldmapSupportManagers` (injecting `isBoxVisible`,
-  `getVisibleCellCount`, `requestChunkRefresh`, `waitForRequestedChunkRefresh`, `emitTelemetry`, `recordBoundsRecovery`);
-  `update()` calls `tick(snapshot)` once (the old `terrainSelfHeal` if/else folds inside), and
-  `resetZoomHardeningRuntimeState` calls `reset()` — the single reset chokepoint. Shared reset helper (chokepoint
-  pattern): `resetWorldmapZoomHardeningRuntimeState` dropped its two terrain fields (`zeroTerrainFrames`,
-  `terrainRecoveryInFlight`); that reset discipline now lives in the collaborator's `reset()`. Retargeted tests in the
-  same commit: `worldmap-zoom-hardening.test.ts` dropped those two fields from its reset-helper cases (the preserved
-  intent — reset clears the recovery-in-flight guard and the counters, while the cooldown timestamp survives — is now
-  asserted by the collaborator's own test); `worldmap-refresh-scheduler.wiring.test.ts` reads the `offscreen_chunk` /
-  `terrain_self_heal` force-refresh discipline from the collaborator source now that those calls live there. Pure anomaly
-  math (`evaluateChunkVisibilityAnomaly` / `evaluateTerrainVisibilityAnomaly`) stays in `worldmap-zoom-hardening.ts`,
-  imported by the collaborator; behaviour preserved (`reset()` clears the six counters the scene cleared and leaves
-  `lastTerrainRecoveryAtMs`). worldmap.tsx 8663 → 8503 (−160; git +22/−182). Gate: collaborator 7/7, zoom-hardening
-  12/12; scenes 850/851 (the one red is the pre-existing known `worldmap-initial-refresh` drift, untouched here);
-  managers + terrain 644/644; typecheck clean repo-wide; prettier + knip clean on the touched files.
+  `apps/game/src/three/scenes/worldmap-terrain-visibility-health-monitor.ts` (`WorldmapTerrainVisibilityHealthMonitor`,
+  245 lines) with its own test (136 lines / 7 cases). The collaborator now owns the seven frame/recovery counters and
+  six config thresholds that were `worldmap.tsx` fields, plus the ~147-line `monitorTerrainVisibilityHealth` body (split
+  into `recoverOffscreenChunk` / `evaluateRetainedTerrain` for one level of abstraction). The scene builds it in
+  `initializeWorldmapSupportManagers` (injecting `isBoxVisible`, `getVisibleCellCount`, `requestChunkRefresh`,
+  `waitForRequestedChunkRefresh`, `emitTelemetry`, `recordBoundsRecovery`); `update()` calls `tick(snapshot)` once (the
+  old `terrainSelfHeal` if/else folds inside), and `resetZoomHardeningRuntimeState` calls `reset()` — the single reset
+  chokepoint. Shared reset helper (chokepoint pattern): `resetWorldmapZoomHardeningRuntimeState` dropped its two terrain
+  fields (`zeroTerrainFrames`, `terrainRecoveryInFlight`); that reset discipline now lives in the collaborator's
+  `reset()`. Retargeted tests in the same commit: `worldmap-zoom-hardening.test.ts` dropped those two fields from its
+  reset-helper cases (the preserved intent — reset clears the recovery-in-flight guard and the counters, while the
+  cooldown timestamp survives — is now asserted by the collaborator's own test);
+  `worldmap-refresh-scheduler.wiring.test.ts` reads the `offscreen_chunk` / `terrain_self_heal` force-refresh discipline
+  from the collaborator source now that those calls live there. Pure anomaly math (`evaluateChunkVisibilityAnomaly` /
+  `evaluateTerrainVisibilityAnomaly`) stays in `worldmap-zoom-hardening.ts`, imported by the collaborator; behaviour
+  preserved (`reset()` clears the six counters the scene cleared and leaves `lastTerrainRecoveryAtMs`). worldmap.tsx
+  8663 → 8503 (−160; git +22/−182). Gate: collaborator 7/7, zoom-hardening 12/12; scenes 850/851 (the one red is the
+  pre-existing known `worldmap-initial-refresh` drift, untouched here); managers + terrain 644/644; typecheck clean
+  repo-wide; prettier + knip clean on the touched files.
 
 - Cut 3 — hover-label recovery (**relocation**, 2026-09-02, branch `client-scale-96p`). Moved the "keep retrying the
   hovered hex until its labels resolve" state machine out of the scene into a collaborator: new
   `apps/game/src/three/scenes/worldmap-hover-label-recovery.ts` (`WorldmapHoverLabelRecovery`, 159 lines) with its own
-  test (140 lines / 9 cases). The collaborator owns the single `pending` retry state (was the `pendingHoverLabelRecovery`
-  field), the `HoverLabelRecoveryReason` / `PendingHoverLabelRecovery` types, the `HOVER_LABEL_RECOVERY_FRAME_BUDGET`
-  const, and the decision methods `applyResult` / `isPendingForHex` / `trace` (was
+  test (140 lines / 9 cases). The collaborator owns the single `pending` retry state (was the
+  `pendingHoverLabelRecovery` field), the `HoverLabelRecoveryReason` / `PendingHoverLabelRecovery` types, the
+  `HOVER_LABEL_RECOVERY_FRAME_BUDGET` const, and the decision methods `applyResult` / `isPendingForHex` / `trace` (was
   `applyHoverLabelRecoveryResult` / `isPendingHoverRecoveryForHex` / `traceHoverLabelRecovery`); the hovered hex and the
   switch-off flag stay scene state, read through injected `getHoverHex` / `isSwitchedOff` accessors plus a
-  `reconcileHexHover` callback. The scene builds it in `initializeWorldmapSupportManagers` and keeps four thin delegators
-  (`reconcileHoverLabels`, `retryPendingHoverLabelRecovery`, `runPendingHoverLabelRecoveryFrame`,
+  `reconcileHexHover` callback. The scene builds it in `initializeWorldmapSupportManagers` and keeps four thin
+  delegators (`reconcileHoverLabels`, `retryPendingHoverLabelRecovery`, `runPendingHoverLabelRecoveryFrame`,
   `clearPendingHoverLabelRecovery`) so every lifecycle call site (mouse-move, scene-ready, converged, critical/
   non-critical catch-up, switch-off, attach/detach labels) keeps its wiring — only the two body-content pins moved.
   Retargeted tests in the same commit, preserving intent: `worldmap-hover-label-wiring.source.test.ts` now checks the
@@ -947,6 +947,22 @@ LOC: `102642cecdc` +1062 −275 (360 of the additions are tests); the six file d
    readers (`play-route-boot-request.ts`, `game-entry/context.ts`), `EndgameModal` (its replacement is the review route
    and the feed; it now opens the chip popover for sign-in), and the `openedPopups` windows (Social, Settings, …), which
    keep their own exclusivity domain until they migrate.
+
+Phase 4 steps 1+2 + decomposition relocations reviewed (reviewer, 2026-09-02): the identity session store is the one
+"logged in" fact and the chip resolver takes only the spectator-session intent, the identity store, the account store
+and the bridge slices — no URL heuristics; the Popover primitive matches the contract (anchored, portaled,
+Escape/outside dismiss, one open, no scrim) and the spectator screenshot shows the game alive behind the sign-in
+surface; the banner, both sign-in modals, the rank pill and the old status resolver are deleted. Reviewer reproduction:
+identity/popover suites 16/16, scenes 188/189 (the one red is the documented pre-existing initial-refresh drift),
+typecheck clean. The two ruled relocations (terrain-visibility self-heal, hover-label recovery) landed with their
+retargeted tests in-commit; worldmap.tsx 8704 → 8392. Rulings on the findings: (1) the deletions swept into the
+reviewer's docs commit are accepted as-is — reviewer error (index-wide commit in a shared worktree), fixed by pathspec
+commits henceforth; (2) signed-out-in-HUD reachable only on session drop is accepted — the route guard is upstream by
+design; (3) Play-from-spectate re-entering via /enter is accepted pending the owner's live check — if the transition
+janks, the bootstrap cache key carries intent as a step-3 rider; (4) the untouched surfaces (Controller wallet entry,
+URL spectate readers, EndgameModal, Social/Settings windows) are the step-3+ migration list. **Approved; deployed from
+this tip.** Owner eyeballs: the three chip states, the sign-in popover as spectator, and Play-from-spectate. The
+decomposition now stops per its ruling and reports the scene's remaining composition before any further cut.
 
 ## Procedural terrain
 
