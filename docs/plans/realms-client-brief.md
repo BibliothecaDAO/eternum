@@ -523,6 +523,23 @@ real GPU, spike frames carry small owned shares (`terrain:composite` ≤ 56 ms p
 the fixed slots; nothing in the GPU evidence names vertex-bound padding as a cost — revisit only if the owner-run p95
 does (evidence before optimization). Phase 4 (Command Deck) may start; the owed cells close in parallel.
 
+L5 owed cells, closed by the owner on the deployed build (2026-09-02 pm, RTX 3070 WebGL2, spectating a 96-player world,
+build `50c07ffef…`): **terrain-edge gate PASSES** — the whole explored world is visible at maximum zoom-out with no edge
+(screenshots in the session). **The GPU frame gate FAILS**, and the attribution says exactly why: zoomed out, `rf()`
+reads p50 60.8 / p95 176.1 ms (277 of 524 frames over 50 ms) with the stats recorder at 21 fps avg, **318 draw calls
+average (805 max) and 13.4 M triangles average (20.5 M max)** — the far band hides the page terrain but every structure
+mesh, procedural character, prop, FX and text label still renders across the whole world. The "far band = 2 draws"
+number was terrain-only accounting; the content never joined the ladder. Zoomed in: p50 49 / p95 103.8 ms. Named spike
+owners on the run: `manager:structure-full-refresh` 194 ms, `terrain:composite` owner_max 67 ms (the critical-lane
+commit is one unsplit task, far over the 8 ms budget), one `render:backend` 1,857 ms (pipeline-compile class). Ruling —
+**L5b, before Phase 4**: (1) far/mid-band CONTENT gating at the zoom-band chokepoint: beyond the band threshold
+structures render as instanced atlas icons, armies as instanced colour+tier markers, and procedural characters, props,
+terrain FX and text labels are hidden — this is the artifact's label-ladder far and mid rows, promoted from later work
+because the far band is unusable without it; (2) the terrain composite commit splits into ≤ 8 ms sub-tasks; (3) the
+structure full pass is sliced or bounded so no single owner share exceeds the frame budget. Re-measure bars on the
+owner's machine: far and mid band p95 ≤ 16.7 ms with far-band draws ≤ 60 and triangles ≤ 2 M; close band no worse than
+today and zero unsplit long tasks — the close-view content cost then feeds L5 items 4–8.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
