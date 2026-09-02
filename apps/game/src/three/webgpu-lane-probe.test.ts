@@ -70,6 +70,69 @@ describe("resolveWebGpuLaneStart", () => {
     expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgpu", reason: "adapter" });
   });
 
+  it("treats a boot-time timeout as soft: WebGL2 now, one idle re-probe rewrites the lane for the next boot", async () => {
+    const storage = createStorage();
+    const idle: Array<() => void> = [];
+    const reprobe = vi.fn(async () => "adapter" as const);
+    await expect(
+      resolveWebGpuLaneStart({
+        forceReprobe: false,
+        probe: async () => "adapter-timeout",
+        reprobe,
+        requestedMode: "webgpu-auto",
+        scheduleIdle: (work) => void idle.push(work),
+        storage,
+      }),
+    ).resolves.toEqual({ fallbackReason: "webgpu-probe-timeout", forceWebGL: true, remembered: false });
+    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: "adapter-timeout" });
+    expect(idle).toHaveLength(1);
+
+    idle[0]();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(reprobe).toHaveBeenCalledTimes(1);
+    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgpu", reason: "idle:adapter" });
+  });
+
+  it("keeps hard verdicts hard: no-adapter and no-navigator-gpu schedule no re-probe", async () => {
+    for (const verdict of ["no-adapter", "no-navigator-gpu"] as const) {
+      const storage = createStorage();
+      const idle: Array<() => void> = [];
+      await resolveWebGpuLaneStart({
+        forceReprobe: false,
+        probe: async () => verdict,
+        requestedMode: "webgpu-auto",
+        scheduleIdle: (work) => void idle.push(work),
+        storage,
+      });
+      expect(idle).toHaveLength(0);
+      expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: verdict });
+    }
+  });
+
+  it("re-probes at idle again when the remembered lane came from a soft verdict, until the answer is hard", async () => {
+    const storage = createStorage({
+      [RENDERER_LANE_STORAGE_KEY]: JSON.stringify({ lane: "webgl2", reason: "idle:adapter-timeout", recordedAt: 1 }),
+    });
+    const idle: Array<() => void> = [];
+    const probe = vi.fn(async () => "adapter" as const);
+    await expect(
+      resolveWebGpuLaneStart({
+        forceReprobe: false,
+        probe,
+        requestedMode: "webgpu-auto",
+        scheduleIdle: (work) => void idle.push(work),
+        storage,
+      }),
+    ).resolves.toMatchObject({ forceWebGL: true, remembered: true });
+    expect(probe).not.toHaveBeenCalled();
+    expect(idle).toHaveLength(1);
+    idle[0]();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgpu" });
+  });
+
   it("ignores corrupt memory", () => {
     expect(readRememberedRendererLane(createStorage({ [RENDERER_LANE_STORAGE_KEY]: "{oops" }))).toBeNull();
     expect(readRememberedRendererLane(createStorage({ [RENDERER_LANE_STORAGE_KEY]: '{"lane":"metal"}' }))).toBeNull();

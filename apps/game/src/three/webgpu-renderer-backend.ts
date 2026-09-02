@@ -31,6 +31,7 @@ import {
   probeWebGpuAdapter,
   rememberRendererLane,
   resolveWebGpuLaneStart,
+  WEBGPU_ADAPTER_REPROBE_TIMEOUT_MS,
   type RendererLane,
   type WebGpuLaneStart,
 } from "./webgpu-lane-probe";
@@ -145,6 +146,7 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
     resolveWebGpuLaneStart({
       ...input,
       probe: () => probeWebGpuAdapter({ gpu: resolveNavigatorGpu() }),
+      reprobe: () => probeWebGpuAdapter({ gpu: resolveNavigatorGpu(), timeoutMs: WEBGPU_ADAPTER_REPROBE_TIMEOUT_MS }),
       storage: resolveLaneStorage(),
     }),
 };

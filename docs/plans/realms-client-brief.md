@@ -753,6 +753,18 @@ ladder, wiring, zoom, terrain, scene, manager, FX, combat, UI and store suites 3
 `worldmap-initial-refresh` drift); typecheck clean; knip adds nothing. Owed to the owner: re-measure max-out (= mid band
 over the underlay), eyeball the art, and confirm the minimap matches the camera on load.
 
+L5d(e) recorded (2026-09-03, second commit in the L5d stack). `adapter-timeout` is now a soft verdict inside
+`webgpu-lane-probe.ts`: the boot that times out still starts on WebGL2 with no stall and remembers
+`{lane: "webgl2", reason: "adapter-timeout"}`, but it schedules one background re-probe after boot settles
+(`requestIdleCallback` with a 30 s ceiling, a 10 s timer where idle callbacks do not exist) with a 5 s bound and
+rewrites the memory with the answer as `idle:<verdict>` — so the next load boots WebGPU when an adapter answers; a
+remembered soft verdict (`adapter-timeout` or `idle:adapter-timeout`) re-probes at idle again on every boot until the
+answer is hard; `no-adapter` and `no-navigator-gpu` stay hard and schedule nothing; the renderer never hot-swaps
+mid-session. Unit tests pin the soft/hard split, the single idle re-probe, the memory rewrite and the remembered-soft
+re-probe. Headless can only exercise the hard `no-adapter` path (this browser has no adapter); the owner's machine is
+the live gate: load once (`renderer_mode=webgl2-fallback`, memory `adapter-timeout`), let it idle, reload — the second
+load must log `renderer_mode=webgpu` with the memory reading `idle:adapter`.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
