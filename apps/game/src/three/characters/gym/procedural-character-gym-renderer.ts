@@ -383,9 +383,14 @@ class ProceduralCharacterGymRuntime {
     const failures: string[] = [];
     const stats = this.character.getStats();
     if (!this.character.hasFiniteState()) failures.push("character pose contains a non-finite value");
-    if (this.config.kind === "boat") failures.push(...this.character.getPoseDiagnostics().issues);
-    const expectedReferenceClips = this.config.kind === "horse" || this.config.kind === "paladin";
-    if (!expectedReferenceClips && stats.authoredClipCount !== 0) failures.push("authored animation clips were loaded");
+    if (this.config.kind === "boat" || this.config.kind === "dragon") {
+      failures.push(...this.character.getPoseDiagnostics().issues);
+    }
+    const expectedReferenceClips =
+      this.config.kind === "horse" || (this.config.kind === "paladin" && this.config.dragon.tier < 3);
+    if (!expectedReferenceClips && stats.authoredClipCount !== 0) {
+      failures.push("authored animation clips were loaded");
+    }
     if (expectedReferenceClips && stats.authoredClipCount < 13) failures.push("horse reference clips were not loaded");
     if (expectedReferenceClips && stats.minimumBendAlignment < 0) failures.push("a horse leg crossed its bend pole");
     const expectedTerminalMode = this.config.kind === "boat" ? "sinking" : "ragdoll";
@@ -396,10 +401,13 @@ class ProceduralCharacterGymRuntime {
       if (projectiles.spawnedCount < 1) failures.push("release did not spawn a pooled projectile");
       if (projectiles.hitCount < 1) failures.push("pooled projectile did not sweep-hit the target");
     }
+    if (this.config.kind === "dragon" && stats.rangedReleaseCount < 1) {
+      failures.push("dragon fire breath did not emit a release edge");
+    }
     if (isMeleeKind(this.config.kind) && this.meleeStage.getContactCount() !== 1) {
       failures.push("melee attack did not emit exactly one cosmetic contact edge");
     }
-    const expectedPhysics = resolveExpectedPhysicsCounts(this.config.kind);
+    const expectedPhysics = resolveExpectedPhysicsCounts(this.config);
     const bodyCount = stats.bodyCount;
     if (bodyCount !== expectedPhysics.bodies) {
       failures.push(`expected ${expectedPhysics.bodies} articulated Jolt bodies, received ${bodyCount}`);
@@ -422,7 +430,11 @@ class ProceduralCharacterGymRuntime {
   }
 
   private fireArrow(): boolean {
-    if (this.disposed || (this.config.kind !== "archer" && this.config.kind !== "boat")) return false;
+    if (
+      this.disposed ||
+      (this.config.kind !== "archer" && this.config.kind !== "boat" && this.config.kind !== "dragon")
+    )
+      return false;
     this.syncActionTargets();
     return this.character.fireRangedAttack(this.targetPosition);
   }
@@ -487,6 +499,7 @@ class ProceduralCharacterGymRuntime {
     this.projectiles.group.visible = false;
     if (sequence === "archer-shot") this.fireArrow();
     if (sequence === "boat-broadside") this.fireArrow();
+    if (sequence === "dragon-fire") this.fireArrow();
     if (sequence === "melee-attack") this.attackMelee();
     this.unitRuntime.update(0);
   }
@@ -637,7 +650,7 @@ class ProceduralCharacterGymRuntime {
   private runSmoke(): void {
     this.reset();
     this.smoke = startCharacterGymSmoke();
-    if (this.config.kind === "archer" || this.config.kind === "boat") this.fireArrow();
+    if (this.config.kind === "archer" || this.config.kind === "boat" || this.config.kind === "dragon") this.fireArrow();
     if (isMeleeKind(this.config.kind)) this.attackMelee();
   }
 
@@ -741,6 +754,12 @@ class ProceduralCharacterGymRuntime {
       this.controls.update();
       return;
     }
+    if (this.config.kind === "dragon") {
+      this.camera.position.set(7.5, 4.8, 9.5);
+      this.controls.target.set(0, 2, 0.3);
+      this.controls.update();
+      return;
+    }
     if (isMeleeKind(this.config.kind)) {
       this.camera.position.set(4.8, 2.8, 6.4);
       this.controls.target.set(-0.12, 1.08, 0.62);
@@ -762,16 +781,19 @@ class ProceduralCharacterGymRuntime {
   ): void {
     const mounted = this.config.kind === "paladin" || this.config.kind === "horse";
     const naval = this.config.kind === "boat";
+    const dragon = this.config.kind === "dragon" || (this.config.kind === "paladin" && this.config.dragon.tier === 3);
     const aspectFitScale = Math.max(1, 1.15 / Math.max(0.5, this.camera.aspect));
     const distanceScale = view.distanceScale ?? 1;
-    const distance = (naval ? 6.8 : mounted ? 6.3 : 4.7) * (view.detailTarget ? 1 : aspectFitScale) * distanceScale;
-    const targetHeight = naval ? 0.95 : mounted ? 1.55 : 1.4;
+    const distance =
+      (naval ? 6.8 : dragon ? 7.5 : mounted ? 6.3 : 4.7) * (view.detailTarget ? 1 : aspectFitScale) * distanceScale;
+    const targetHeight = naval ? 0.95 : dragon ? 2.25 : mounted ? 1.55 : 1.4;
     const detailTarget = view.detailTarget;
     const targetTuple = detailTarget
       ? diagnostics?.humanoid?.socketGrips[detailTarget === "gripLeft" ? "left" : "right"]
       : null;
     const rootPosition = this.character.object.getWorldPosition(new Vector3());
     const target = targetTuple ? new Vector3(...targetTuple) : rootPosition.add(new Vector3(0, targetHeight, 0));
+    if (dragon && !detailTarget) target.lerp(this.targetPosition, 0.18);
     const azimuth = (view.azimuthDegrees * Math.PI) / 180;
     const elevation = (view.elevationDegrees * Math.PI) / 180;
     const horizontalDistance = Math.cos(elevation) * distance;
@@ -891,7 +913,7 @@ class ProceduralCharacterGymRuntime {
       this.character.setMeleeTarget(undefined);
       return;
     }
-    if (this.config.kind === "archer") {
+    if (this.config.kind === "archer" || this.config.kind === "dragon") {
       this.archerStage.writeTargetPosition(this.targetPosition);
       this.character.setRangedTarget(this.targetPosition);
       this.character.setMeleeTarget(undefined);
@@ -912,7 +934,8 @@ class ProceduralCharacterGymRuntime {
     this.character.object.visible = !collisionVisible;
     const archerVisible = this.config.kind === "archer";
     const boatVisible = this.config.kind === "boat";
-    this.archerStage.group.visible = !collisionVisible && archerVisible;
+    const dragonVisible = this.config.kind === "dragon";
+    this.archerStage.group.visible = !collisionVisible && (archerVisible || dragonVisible);
     this.boatStage.group.visible = !collisionVisible && boatVisible;
     this.boatStage.setTargetVisible(!collisionVisible && boatVisible);
     this.projectiles.group.visible = !collisionVisible && (archerVisible || boatVisible);
@@ -1044,15 +1067,19 @@ function setLandStageVisible(stage: Group, visible: boolean): void {
   });
 }
 
-function resolveExpectedPhysicsCounts(kind: ProceduralUnitConfig["kind"]): { bodies: number; constraints: number } {
-  if (kind === "boat") return { bodies: 0, constraints: 0 };
-  if (kind === "horse") return { bodies: 17, constraints: 16 };
-  if (kind === "paladin") return { bodies: 28, constraints: 26 };
+function resolveExpectedPhysicsCounts(config: ProceduralUnitConfig): { bodies: number; constraints: number } {
+  if (config.kind === "boat") return { bodies: 0, constraints: 0 };
+  if (config.kind === "dragon") return { bodies: 0, constraints: 0 };
+  if (config.kind === "horse") return { bodies: 17, constraints: 16 };
+  if (config.kind === "paladin") {
+    return config.dragon.tier === 3 ? { bodies: 11, constraints: 10 } : { bodies: 28, constraints: 26 };
+  }
   return { bodies: 11, constraints: 10 };
 }
 
 function isGroundedGymCharacter(config: ProceduralUnitConfig): boolean {
-  return config.kind !== "boat";
+  if (config.kind === "boat" || config.kind === "dragon") return false;
+  return config.kind !== "paladin" || config.dragon.tier < 3;
 }
 
 function isGymCharacterLocomoting(config: ProceduralUnitConfig): boolean {
@@ -1075,6 +1102,9 @@ function assertCaptureSequenceMatchesKind(
   if (sequence === "boat-broadside" && kind !== "boat") {
     throw new Error(`Cannot capture a boat broadside for ${kind}`);
   }
+  if (sequence === "dragon-fire" && kind !== "dragon") {
+    throw new Error(`Cannot capture dragon fire for ${kind}`);
+  }
   if (sequence === "melee-attack" && !isMeleeKind(kind)) {
     throw new Error(`Cannot capture a melee attack for ${kind}`);
   }
@@ -1086,7 +1116,9 @@ function resolveRuntimeCapturePhase(
 ): string {
   if (sequence === "locomotion-cycle") return "gait";
   const stats = character.getStats();
-  return sequence === "archer-shot" || sequence === "boat-broadside" ? stats.rangedPhase : stats.meleePhase;
+  return sequence === "archer-shot" || sequence === "boat-broadside" || sequence === "dragon-fire"
+    ? stats.rangedPhase
+    : stats.meleePhase;
 }
 
 function captureCanvasThumbnail(

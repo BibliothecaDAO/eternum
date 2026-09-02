@@ -64,15 +64,36 @@ export function createProceduralAnimationFrameAnnotations(
   const humanoid = input.diagnostics.humanoid ? createHumanoidAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
   const horse = input.diagnostics.horse ? createHorseAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
   const boat = input.diagnostics.boat ? createBoatAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
+  const dragon = input.diagnostics.dragon ? createDragonAnnotationFragment(input.diagnostics) : EMPTY_FRAGMENT;
   const equipment = createEquipmentAnnotationFragment(input.diagnostics);
   return {
-    angles: [...humanoid.angles, ...horse.angles, ...boat.angles, ...equipment.angles],
+    angles: [...humanoid.angles, ...horse.angles, ...dragon.angles, ...boat.angles, ...equipment.angles],
     header: `${input.diagnostics.kind.toUpperCase()} · F${String(input.frameIndex).padStart(3, "0")} · ${input.view.label.toUpperCase()}`,
     issues: input.issues,
-    markers: [...humanoid.markers, ...horse.markers, ...boat.markers, ...equipment.markers],
-    metrics: [...humanoid.metrics, ...horse.metrics, ...boat.metrics, ...equipment.metrics],
-    segments: [...humanoid.segments, ...horse.segments, ...boat.segments, ...equipment.segments],
+    markers: [...humanoid.markers, ...horse.markers, ...dragon.markers, ...boat.markers, ...equipment.markers],
+    metrics: [...humanoid.metrics, ...horse.metrics, ...dragon.metrics, ...boat.metrics, ...equipment.metrics],
+    segments: [...humanoid.segments, ...horse.segments, ...dragon.segments, ...boat.segments, ...equipment.segments],
     subheader: `${input.elapsedSeconds.toFixed(3)}s · expected ${input.expectedPhase} · runtime ${input.runtimePhase}`,
+  };
+}
+
+function createDragonAnnotationFragment(diagnostics: ProceduralUnitPoseDiagnostics): AnnotationFragment {
+  const dragon = diagnostics.dragon;
+  if (!dragon) return EMPTY_FRAGMENT;
+  return {
+    angles: [],
+    markers: [
+      marker(30, "mouth", dragon.mouthWorld, "equipment", dragon.firePhase.toUpperCase()),
+      marker(31, "saddle", dragon.saddleWorld, "neutral"),
+    ],
+    metrics: [
+      metric("locomotion", dragon.locomotionMode),
+      metric("flight state", dragon.flightState),
+      metric("fire breath", dragon.firePhase),
+      metric("altitude", `${dragon.altitude.toFixed(2)}m`),
+      metric("contacts", `${dragon.contactCount}/4`),
+    ],
+    segments: [{ start: dragon.saddleWorld, end: dragon.mouthWorld, tone: "neutral" }],
   };
 }
 

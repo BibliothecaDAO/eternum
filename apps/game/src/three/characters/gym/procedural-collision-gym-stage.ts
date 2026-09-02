@@ -5,7 +5,10 @@ import {
   type ProceduralUnitKind,
   type ProceduralUnitRuntime,
 } from "@/three/characters";
-import { createProceduralCollisionProfile } from "../collision/procedural-collision-profile";
+import {
+  createProceduralCollisionBudget,
+  createProceduralCollisionProfile,
+} from "../collision/procedural-collision-profile";
 import type { ProceduralUnitImpact } from "../collision/procedural-impact";
 import {
   ProceduralSeparationSimulation,
@@ -66,11 +69,15 @@ const MAX_GYM_PROXIES = MAX_GYM_ACTORS * 2;
 const ACTOR_BUILD_BATCH_SIZE = 1;
 const GYM_ACTOR_SCALE = 0.78;
 const ARENA_HALF_EXTENT = 3.2;
+const GYM_COLLISION_BUDGET = createProceduralCollisionBudget("benchmark");
 
 export class ProceduralCollisionGymStage implements ProjectileHitQuery {
   public readonly group = new Group();
 
-  private readonly simulation = new ProceduralSeparationSimulation({ maxPairResolutions: 2_048 });
+  private readonly simulation = new ProceduralSeparationSimulation({
+    maxNeighborsPerBody: GYM_COLLISION_BUDGET.maxNeighborsPerBody,
+    maxPairResolutions: GYM_COLLISION_BUDGET.maxPairResolutions,
+  });
   private readonly actors: CollisionGymActorRecord[] = [];
   private readonly inputs: ProceduralSeparationInput[] = [];
   private readonly debugGeometry = new CylinderGeometry(1, 1, 0.025, 16);
@@ -232,7 +239,7 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
     const record = this.actors.find(({ entityId }) => entityId === request.intendedTargetEntityId);
     if (!record || record.entityId === request.ownerEntityId || record.actor.mode !== "animated") return undefined;
     this.writeTargetPosition(record, this.hitCenter);
-    const radius = record.kind === "paladin" ? 0.62 : 0.42;
+    const radius = record.kind === "paladin" ? 0.62 : record.kind === "dragon" ? 0.72 : 0.42;
     const hit = intersectSweptSphere(request.from, request.to, this.hitCenter, radius + request.radius, this.hitPoint);
     if (!hit) return undefined;
     const normal = hit.point.clone().sub(this.hitCenter);
@@ -505,6 +512,15 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
       archer: {
         detailedEquipment: this.desiredActorCount < 50 && this.unitConfig.archer.detailedEquipment,
       },
+      dragon: {
+        locomotionMode: kind === "dragon" ? "walk" : this.unitConfig.dragon.locomotionMode,
+        renderDetail: this.desiredActorCount >= 24 ? "crowd" : this.unitConfig.dragon.renderDetail,
+        seed: (this.config.seed + index * 97) >>> 0,
+        showBones: false,
+        showSockets: false,
+        speed: this.config.speed * 1.6,
+        tier: this.resolveActorTier(index),
+      },
       kind,
       horse: {
         gait: kind === "paladin" || kind === "horse" ? "trot" : this.unitConfig.horse.gait,
@@ -532,7 +548,7 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
 
   private writeTargetPosition(record: CollisionGymActorRecord, out: Vector3): void {
     out.copy(record.actor.object.position);
-    out.y += record.kind === "paladin" ? 1.05 : 0.9;
+    out.y += record.kind === "paladin" ? 1.05 : record.kind === "dragon" ? 1.45 : 0.9;
   }
 
   private updateVisibility(): void {
@@ -544,9 +560,9 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
 function resolveScenarioKind(scenario: ProceduralCollisionGymConfig["scenario"], index: number): ProceduralUnitKind {
   if (isArrowScenario(scenario)) return index === 0 ? "archer" : "knight";
   if (scenario === "foot-vs-mounted") return index === 0 ? "knight" : "paladin";
-  if (scenario === "crowd") return (["knight", "archer", "crossbowman"] as const)[index % 3];
+  if (scenario === "crowd") return (["knight", "archer", "crossbowman", "dragon"] as const)[index % 4];
   if (scenario === "crossflow") {
-    return (["knight", "archer", "crossbowman", "paladin"] as const)[index % 4];
+    return (["knight", "archer", "crossbowman", "paladin", "dragon"] as const)[index % 5];
   }
   return "knight";
 }

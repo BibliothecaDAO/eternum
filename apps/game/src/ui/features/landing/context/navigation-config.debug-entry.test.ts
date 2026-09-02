@@ -34,6 +34,12 @@ describe("debug navigation entry", () => {
         tab: null,
         href: "/debug/procedural-character-benchmark",
       },
+      {
+        id: "world-fx",
+        label: "FX",
+        tab: null,
+        href: "/debug/world-fx",
+      },
     ]);
   });
 
@@ -44,6 +50,13 @@ describe("debug navigation entry", () => {
     expect(getActiveSubItem(debugSection, "/debug/procedural-character-benchmark", new URLSearchParams())).toEqual(
       debugSection.subMenu[2],
     );
+  });
+
+  it("selects the procedural FX gym by route path", () => {
+    const debugSection = getSectionFromPath("/debug/world-fx");
+
+    expect(debugSection.id).toBe("debug");
+    expect(getActiveSubItem(debugSection, "/debug/world-fx", new URLSearchParams())).toEqual(debugSection.subMenu[3]);
   });
 
   it("selects the procedural character gym by route path", () => {

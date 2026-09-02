@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import {
   PROCEDURAL_CHARACTER_APPEARANCES,
   PROCEDURAL_CHARACTER_PRESETS,
+  PROCEDURAL_HORSE_APPEARANCES,
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,
   PROCEDURAL_UNIT_KINDS,
@@ -28,7 +29,10 @@ import {
   type ProceduralArcherConfig,
   type ProceduralBoatConfig,
   type ProceduralBoatMotionMode,
+  type ProceduralDragonConfig,
+  type ProceduralDragonLocomotionMode,
   type ProceduralHorseConfig,
+  type ProceduralHorseAppearanceId,
   type ProceduralHorseGait,
   type ProceduralHorseLead,
   type ProceduralHorseTerrainPreset,
@@ -64,6 +68,18 @@ type NumericHorseConfigKey = {
 
 interface HorseNumericField {
   key: NumericHorseConfigKey;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}
+
+type NumericDragonConfigKey = {
+  [Key in keyof ProceduralDragonConfig]: ProceduralDragonConfig[Key] extends number ? Key : never;
+}[keyof ProceduralDragonConfig];
+
+interface DragonNumericField {
+  key: NumericDragonConfigKey;
   label: string;
   min: number;
   max: number;
@@ -168,6 +184,29 @@ const HORSE_GAIT_PREVIEW_SPEEDS: Readonly<Record<ProceduralHorseGait, number>> =
   canter: 3.8,
   gallop: 6.2,
 };
+
+const DRAGON_FLIGHT_FIELDS: readonly DragonNumericField[] = [
+  { key: "speed", label: "Travel speed", min: 0, max: 12, step: 0.05 },
+  { key: "altitude", label: "Flight altitude", min: 0.6, max: 8, step: 0.05 },
+  { key: "wingBeatHz", label: "Wing beats / second", min: 0.15, max: 3, step: 0.01 },
+  { key: "wingAmplitude", label: "Wing amplitude", min: 0.05, max: 1.4, step: 0.01 },
+  { key: "glide", label: "Glide blend", min: 0, max: 1, step: 0.01 },
+  { key: "bank", label: "Bank", min: -0.8, max: 0.8, step: 0.01 },
+  { key: "pitch", label: "Body pitch", min: -0.6, max: 0.6, step: 0.01 },
+  { key: "turnRate", label: "Turn response", min: -2, max: 2, step: 0.01 },
+  { key: "strideScale", label: "Ground stride", min: 0.45, max: 1.8, step: 0.01 },
+  { key: "stepHeight", label: "Ground clearance", min: 0, max: 1, step: 0.01 },
+  { key: "neckMotion", label: "Neck follow-through", min: 0, max: 1, step: 0.01 },
+  { key: "tailMotion", label: "Tail response", min: 0, max: 1.5, step: 0.01 },
+];
+
+const DRAGON_FIRE_FIELDS: readonly DragonNumericField[] = [
+  { key: "acquireSeconds", label: "Acquire", min: 0.03, max: 1.5, step: 0.01 },
+  { key: "inhaleSeconds", label: "Inhale", min: 0.08, max: 1.5, step: 0.01 },
+  { key: "fireSeconds", label: "Breath duration", min: 0.12, max: 2, step: 0.01 },
+  { key: "recoverSeconds", label: "Recover", min: 0.08, max: 2, step: 0.01 },
+  { key: "fireRange", label: "Breath range", min: 1, max: 12, step: 0.1 },
+];
 
 const BODY_FIELDS: readonly NumericField[] = [
   { key: "gravity", label: "Gravity", min: -30, max: 0, step: 0.1 },
@@ -302,20 +341,21 @@ export const CharacterGymControls = (props: CharacterGymControlsProps) => (
   <aside className="order-2 max-h-[48vh] overflow-y-auto border-t border-white/10 bg-[#0b111b] lg:order-1 lg:max-h-none lg:border-t-0 lg:border-r">
     <div className="space-y-3 p-4">
       <div className="border border-violet-300/15 bg-violet-300/[0.045] p-3 text-xs leading-relaxed text-slate-300">
-        Tune archers, melee knights, mounts, or the naval ship. Projectile releases, weapon contacts, water motion,
-        sinking, cosmetics, and the exact production handoff share one runtime.
+        Tune archers, melee knights, mounts, Sky Dragons, or the naval ship. Projectile releases, fire breath, weapon
+        contacts, flight, water motion, sinking, cosmetics, and the exact production handoff share one runtime.
       </div>
       {props.config.kind !== "boat" && <CollisionGymControls {...props} />}
       <CharacterControls {...props} />
       {props.config.kind === "boat" && <BoatControls {...props} />}
+      {props.config.kind === "dragon" && <DragonControls {...props} />}
       {props.config.kind === "archer" && <ArcherControls {...props} />}
       {isMeleeKind(props.config.kind) && <MeleeControls {...props} />}
-      {props.config.kind === "boat" ? null : isMountedKind(props.config.kind) ? (
+      {props.config.kind === "boat" || props.config.kind === "dragon" ? null : isMountedKind(props.config.kind) ? (
         <HorseMotionControls config={props.config.horse} onPatchConfig={props.onPatchConfig} />
       ) : (
         <MotionControls config={props.config.humanoid} onPatchConfig={props.onPatchConfig} />
       )}
-      {props.config.kind !== "boat" && (
+      {props.config.kind !== "boat" && props.config.kind !== "dragon" && (
         <>
           <BodyControls config={props.config.humanoid} onPatchConfig={props.onPatchConfig} />
           <NumericControlSection
@@ -539,6 +579,34 @@ const BoatControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
   </>
 );
 
+const DragonControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
+  <>
+    <ControlSection title="Dragon locomotion" icon={<Activity />} defaultOpen>
+      <SegmentedControl
+        label="State"
+        value={config.dragon.locomotionMode}
+        options={[
+          { value: "idle", label: "Idle" },
+          { value: "walk", label: "Walk" },
+          { value: "flight", label: "Flight" },
+        ]}
+        onChange={(locomotionMode) =>
+          onPatchConfig({ dragon: { locomotionMode: locomotionMode as ProceduralDragonLocomotionMode } })
+        }
+      />
+      <DragonRangeFieldList fields={DRAGON_FLIGHT_FIELDS} config={config.dragon} onPatchConfig={onPatchConfig} />
+    </ControlSection>
+    <ControlSection title="Fire breath" icon={<Crosshair />} defaultOpen>
+      <ToggleControl
+        label="Auto fire"
+        checked={config.dragon.autoFire}
+        onChange={(autoFire) => onPatchConfig({ dragon: { autoFire } })}
+      />
+      <DragonRangeFieldList fields={DRAGON_FIRE_FIELDS} config={config.dragon} onPatchConfig={onPatchConfig} />
+    </ControlSection>
+  </>
+);
+
 const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfig }: CharacterGymControlsProps) => (
   <ControlSection title="Character" icon={<Shield />} defaultOpen>
     <SelectControl
@@ -547,9 +615,9 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       options={PROCEDURAL_UNIT_KINDS.map(({ id, label }) => ({ value: id, label }))}
       onChange={(kind) => onPatchConfig({ kind: kind as ProceduralUnitKind })}
     />
-    {config.kind !== "horse" && config.kind !== "boat" && (
+    {config.kind !== "horse" && config.kind !== "boat" && config.kind !== "dragon" && (
       <SelectControl
-        label="Appearance"
+        label={config.kind === "paladin" ? "Rider appearance" : "Appearance"}
         value={config.humanoid.appearanceId}
         options={PROCEDURAL_CHARACTER_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
         onChange={(appearanceId) =>
@@ -557,7 +625,17 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
         }
       />
     )}
-    {config.kind !== "boat" && (
+    {isMountedKind(config.kind) && (
+      <SelectControl
+        label={config.kind === "paladin" ? "Mount appearance" : "Horse appearance"}
+        value={config.horse.appearanceId}
+        options={PROCEDURAL_HORSE_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
+        onChange={(appearanceId) =>
+          onPatchConfig({ horse: { appearanceId: appearanceId as ProceduralHorseAppearanceId } })
+        }
+      />
+    )}
+    {config.kind !== "boat" && config.kind !== "dragon" && (
       <SelectControl
         label="Preset"
         value={selectedPreset}
@@ -570,7 +648,13 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
     )}
     <SegmentedControl
       label="Upgrade tier"
-      value={String(config.kind === "boat" ? config.boat.tier : config.humanoid.tier)}
+      value={String(
+        config.kind === "boat"
+          ? config.boat.tier
+          : config.kind === "dragon"
+            ? config.dragon.tier
+            : config.humanoid.tier,
+      )}
       options={[
         { value: "1", label: "T1" },
         { value: "2", label: "T2" },
@@ -578,23 +662,29 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       ]}
       onChange={(value) => {
         const tier = Number(value) as 1 | 2 | 3;
-        onPatchConfig({ boat: { tier }, humanoid: { tier }, horse: { tier } });
+        onPatchConfig({ boat: { tier }, dragon: { tier }, humanoid: { tier }, horse: { tier } });
       }}
     />
     <div className="grid grid-cols-[1fr_auto] gap-2">
       <NumberControl
         label="Seed"
-        value={config.kind === "boat" ? config.boat.seed : config.humanoid.seed}
+        value={
+          config.kind === "boat"
+            ? config.boat.seed
+            : config.kind === "dragon"
+              ? config.dragon.seed
+              : config.humanoid.seed
+        }
         min={0}
         max={2_147_483_647}
         step={1}
-        onChange={(seed) => onPatchConfig({ boat: { seed }, humanoid: { seed } })}
+        onChange={(seed) => onPatchConfig({ boat: { seed }, dragon: { seed }, humanoid: { seed } })}
       />
       <button
         type="button"
         onClick={() => {
           const seed = Math.floor(Math.random() * 2_147_483_647);
-          onPatchConfig({ boat: { seed }, humanoid: { seed } });
+          onPatchConfig({ boat: { seed }, dragon: { seed }, humanoid: { seed } });
         }}
         className="mt-[1.35rem] grid h-9 w-9 place-items-center border border-white/10 text-slate-300 transition hover:bg-white/10 hover:text-white"
         aria-label="Randomize deterministic character seed"
@@ -604,12 +694,23 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
     </div>
     <ColorControl
       label="Heraldry"
-      value={config.kind === "boat" ? config.boat.primaryColor : config.humanoid.primaryColor}
+      value={
+        config.kind === "boat"
+          ? config.boat.primaryColor
+          : config.kind === "dragon"
+            ? config.dragon.primaryColor
+            : config.humanoid.primaryColor
+      }
       onChange={(primaryColor) =>
-        onPatchConfig({ boat: { primaryColor }, humanoid: { primaryColor }, horse: { primaryColor } })
+        onPatchConfig({
+          boat: { primaryColor },
+          dragon: { primaryColor },
+          humanoid: { primaryColor },
+          horse: { primaryColor },
+        })
       }
     />
-    {config.kind !== "boat" && (
+    {config.kind !== "boat" && config.kind !== "dragon" && (
       <RangeFieldList fields={APPEARANCE_FIELDS} config={config.humanoid} onPatchConfig={onPatchConfig} />
     )}
   </ControlSection>
@@ -740,8 +841,23 @@ const DebugControls = ({ config, copied, onCopyConfig, onPatchConfig, onResetCam
     {config.kind !== "boat" && (
       <ToggleControl
         label="Joint markers"
-        checked={config.humanoid.showJoints || config.horse.showBones}
-        onChange={(visible) => onPatchConfig({ humanoid: { showJoints: visible }, horse: { showBones: visible } })}
+        checked={
+          config.kind === "dragon" ? config.dragon.showBones : config.humanoid.showJoints || config.horse.showBones
+        }
+        onChange={(visible) =>
+          onPatchConfig({
+            dragon: { showBones: visible },
+            humanoid: { showJoints: visible },
+            horse: { showBones: visible },
+          })
+        }
+      />
+    )}
+    {config.kind === "dragon" && (
+      <ToggleControl
+        label="Saddle and mouth sockets"
+        checked={config.dragon.showSockets}
+        onChange={(showSockets) => onPatchConfig({ dragon: { showSockets } })}
       />
     )}
     {isMountedKind(config.kind) && (
@@ -761,8 +877,12 @@ const DebugControls = ({ config, copied, onCopyConfig, onPatchConfig, onResetCam
     {config.kind !== "boat" && (
       <ToggleControl
         label="Wireframe"
-        checked={config.humanoid.wireframe || config.horse.wireframe}
-        onChange={(wireframe) => onPatchConfig({ humanoid: { wireframe }, horse: { wireframe } })}
+        checked={
+          config.kind === "dragon" ? config.dragon.wireframe : config.humanoid.wireframe || config.horse.wireframe
+        }
+        onChange={(wireframe) =>
+          onPatchConfig({ dragon: { wireframe }, humanoid: { wireframe }, horse: { wireframe } })
+        }
       />
     )}
     <ToggleControl
@@ -822,6 +942,30 @@ const HorseRangeFieldList = ({
         max={field.max}
         step={field.step}
         onChange={(value) => onPatchConfig({ horse: { [field.key]: value } as Partial<ProceduralHorseConfig> })}
+      />
+    ))}
+  </>
+);
+
+const DragonRangeFieldList = ({
+  fields,
+  config,
+  onPatchConfig,
+}: {
+  fields: readonly DragonNumericField[];
+  config: ProceduralDragonConfig;
+  onPatchConfig: CharacterGymControlsProps["onPatchConfig"];
+}) => (
+  <>
+    {fields.map((field) => (
+      <RangeControl
+        key={field.key}
+        label={field.label}
+        value={config[field.key]}
+        min={field.min}
+        max={field.max}
+        step={field.step}
+        onChange={(value) => onPatchConfig({ dragon: { [field.key]: value } as Partial<ProceduralDragonConfig> })}
       />
     ))}
   </>

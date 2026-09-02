@@ -191,6 +191,7 @@ class ProceduralCharacterBenchmarkRuntime {
   private readonly actors = new Map<number, BenchmarkActorRecord>();
   private readonly collisionInputs: ProceduralSeparationInput[] = [];
   private readonly separation = new ProceduralSeparationSimulation({
+    maxNeighborsPerBody: BENCHMARK_COLLISION_BUDGET.maxNeighborsPerBody,
     maxPairResolutions: BENCHMARK_COLLISION_BUDGET.maxPairResolutions,
   });
   private readonly performanceEvaluator = new ProceduralCharacterPerformanceEvaluator();
@@ -1047,6 +1048,19 @@ function resolveBenchmarkActorConfig(
       targetRadius: 0.42,
     },
     kind,
+    dragon: {
+      altitude: 1.9,
+      autoFire: false,
+      locomotionMode: "flight",
+      primaryColor,
+      renderDetail: "crowd",
+      seed: resolveActorSeed(benchmark.seed, actorId),
+      showBones: false,
+      showSockets: false,
+      speed: benchmark.movementSpeed * 2.1,
+      tier,
+      wireframe: false,
+    },
     horse: {
       gait: resolveBenchmarkHorseGait(benchmark),
       primaryColor,
@@ -1077,7 +1091,8 @@ function resolveBenchmarkUnitKind(
   if (mix === "melee") return actorId % 3 === 0 ? "paladin" : "knight";
   if (mix === "horses") return "horse";
   if (mix === "mounted") return "paladin";
-  return (["knight", "archer", "crossbowman", "paladin"] as const)[actorId % 4];
+  if (mix === "dragons") return "dragon";
+  return (["knight", "archer", "crossbowman", "paladin", "dragon"] as const)[actorId % 5];
 }
 
 function resolveBenchmarkHorseGait(

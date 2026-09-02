@@ -123,6 +123,7 @@ Procfile          text
 # Graphics
 *.ai              binary
 *.bmp             binary
+*.bin             binary
 *.eps             binary
 *.gif             binary
 *.gifv            binary

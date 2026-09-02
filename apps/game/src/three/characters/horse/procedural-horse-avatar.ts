@@ -19,20 +19,18 @@ import {
   requireSkinnedBone,
   type SegmentBoneBinding,
 } from "../skinned-pose-binding";
+import { requireHorseBone, type HorseRigAdapter } from "./horse-rig-adapter";
 import type { ProceduralHorseConfig } from "./procedural-horse-config";
 import { HORSE_HOOF_IDS, type HorseHoofId } from "./procedural-horse-gait";
 import type { ProceduralHorsePose } from "./procedural-horse-pose";
 import {
   HORSE_LEG_SEGMENT_IDS,
-  resolveQuaterniusHorseRig,
+  resolveHorseRig,
   type HorseLegSegmentId,
   type ResolvedHorseRig,
 } from "./procedural-horse-rig";
-import {
-  QUATERNIUS_HORSE_BONES,
-  type LoadedQuaterniusHorseAsset,
-  requireQuaterniusHorseBone,
-} from "./quaternius-horse-assets";
+import type { LoadedProceduralHorseAsset } from "./procedural-horse-assets";
+import type { ProceduralHorseMaterialProfile } from "./procedural-horse-appearance";
 import { ProceduralHorseUpgrades } from "./procedural-horse-upgrades";
 
 interface LocalBoneTransform {
@@ -52,11 +50,15 @@ interface HorseMaterialBinding {
 }
 
 export interface ProceduralHorseAvatarStats {
+  appearanceId: string;
+  appearanceLabel: string;
+  assetId: string;
   assetLabel: string;
   authoredClipCount: number;
   boneCount: number;
   maximumBoneStretchRatio: number;
   minimumBendAlignment: number;
+  rigAdapterId: string;
   skinnedMeshCount: number;
   stanceHoofCount: number;
 }
@@ -78,27 +80,13 @@ export interface ProceduralHorsePhysicsPose {
   >;
 }
 
-const HORSE_SCENE_SCALE = 0.52;
-const NECK_BONE_NAMES = [
-  QUATERNIUS_HORSE_BONES.neck1,
-  QUATERNIUS_HORSE_BONES.neck2,
-  QUATERNIUS_HORSE_BONES.neck3,
-] as const;
-const TAIL_BONE_NAMES = [
-  QUATERNIUS_HORSE_BONES.tail1,
-  QUATERNIUS_HORSE_BONES.tail2,
-  QUATERNIUS_HORSE_BONES.tail3,
-  QUATERNIUS_HORSE_BONES.tail4,
-  QUATERNIUS_HORSE_BONES.tail5,
-  QUATERNIUS_HORSE_BONES.tail6,
-  QUATERNIUS_HORSE_BONES.tail7,
-] as const;
-
 export class ProceduralHorseAvatar {
   public readonly group = new Group();
   public readonly rig: ResolvedHorseRig;
 
   private readonly scene: Group;
+  private readonly adapter: HorseRigAdapter;
+  private readonly asset: LoadedProceduralHorseAsset;
   private readonly helper: SkeletonHelper;
   private readonly skeletons = new Set<Skeleton>();
   private readonly materials = new Set<Material>();
@@ -131,34 +119,40 @@ export class ProceduralHorseAvatar {
   private lastPose?: ProceduralHorsePose;
   private skinnedMeshCount = 0;
 
-  public constructor(asset: LoadedQuaterniusHorseAsset, config: ProceduralHorseConfig) {
+  public constructor(asset: LoadedProceduralHorseAsset, config: ProceduralHorseConfig) {
+    this.asset = asset;
+    this.adapter = asset.adapter;
     this.scene = asset.gltf.scene;
     this.authoredClipCount = asset.gltf.animations.length;
     this.config = config;
     this.group.name = "procedural-horse-avatar";
-    this.scene.name = "quaternius-procedural-horse";
+    this.scene.name = `procedural-horse:${asset.appearanceId}:${asset.id}`;
     this.group.add(this.scene);
     this.prepareScene();
     this.alignHoovesToGround();
     this.boneLengthBindings = captureBoneLengthBindings(this.skeletons);
-    this.rig = resolveQuaterniusHorseRig(this.group, this.scene);
+    this.rig = resolveHorseRig(this.adapter, this.group, this.scene);
     this.segmentBindings = this.createSegmentBindings();
     this.chestPhysicsBinding = createSegmentBoneBinding(
       this.scene,
-      QUATERNIUS_HORSE_BONES.chest,
-      QUATERNIUS_HORSE_BONES.withers,
+      this.adapter.axialBones.chest,
+      this.adapter.axialBones.withers,
     );
-    this.neckPhysicsBindings = NECK_BONE_NAMES.map((name, index) =>
-      createSegmentBoneBinding(this.scene, name, NECK_BONE_NAMES[index + 1] ?? QUATERNIUS_HORSE_BONES.head),
+    this.neckPhysicsBindings = this.adapter.neck.map((name, index) =>
+      createSegmentBoneBinding(this.scene, name, this.adapter.neck[index + 1] ?? this.adapter.axialBones.head),
     );
-    this.headPhysicsBinding = createSegmentBoneBinding(this.scene, QUATERNIUS_HORSE_BONES.head);
-    this.rootTransform = captureLocalTransform(requireQuaterniusHorseBone(this.scene, QUATERNIUS_HORSE_BONES.root));
-    this.neckTransforms = NECK_BONE_NAMES.map((name) =>
-      captureLocalTransform(requireQuaterniusHorseBone(this.scene, name)),
+    this.headPhysicsBinding = createSegmentBoneBinding(this.scene, this.adapter.axialBones.head);
+    this.rootTransform = captureLocalTransform(
+      requireHorseBone(this.scene, this.adapter.axialBones.root, this.adapter),
     );
-    this.headTransform = captureLocalTransform(requireQuaterniusHorseBone(this.scene, QUATERNIUS_HORSE_BONES.head));
-    this.tailTransforms = TAIL_BONE_NAMES.map((name) =>
-      captureLocalTransform(requireQuaterniusHorseBone(this.scene, name)),
+    this.neckTransforms = this.adapter.neck.map((name) =>
+      captureLocalTransform(requireHorseBone(this.scene, name, this.adapter)),
+    );
+    this.headTransform = captureLocalTransform(
+      requireHorseBone(this.scene, this.adapter.axialBones.head, this.adapter),
+    );
+    this.tailTransforms = this.adapter.tail.map((name) =>
+      captureLocalTransform(requireHorseBone(this.scene, name, this.adapter)),
     );
     this.targetBones = Object.fromEntries(
       HORSE_HOOF_IDS.map((hoofId) => [hoofId, requireSkinnedBone(this.scene, this.rig.legs[hoofId].targetBoneName)]),
@@ -234,11 +228,15 @@ export class ProceduralHorseAvatar {
   public getStats(): ProceduralHorseAvatarStats {
     const pose = this.lastPose;
     return {
-      assetLabel: "Quaternius horse",
+      appearanceId: this.asset.appearanceId,
+      appearanceLabel: this.asset.appearanceLabel,
+      assetId: this.asset.id,
+      assetLabel: this.asset.label,
       authoredClipCount: this.authoredClipCount,
       boneCount: new Set([...this.skeletons].flatMap(({ bones }) => bones)).size,
       maximumBoneStretchRatio: this.resolveMaximumBoneStretchRatio(),
       minimumBendAlignment: pose ? Math.min(...Object.values(pose.legs).map(({ bendAlignment }) => bendAlignment)) : 1,
+      rigAdapterId: this.adapter.id,
       skinnedMeshCount: this.skinnedMeshCount,
       stanceHoofCount: pose
         ? Object.values(pose.legs).filter(({ cycle }) => cycle.contact === "stance").length
@@ -282,7 +280,7 @@ export class ProceduralHorseAvatar {
   }
 
   private prepareScene(): void {
-    this.scene.scale.setScalar(HORSE_SCENE_SCALE);
+    this.scene.scale.setScalar(this.asset.scale);
     this.scene.traverse((object) => {
       if (!(object instanceof Mesh)) return;
       object.castShadow = true;
@@ -295,7 +293,7 @@ export class ProceduralHorseAvatar {
           material instanceof MeshStandardMaterial &&
           !this.materialBindings.some(({ material: entry }) => entry === material)
         ) {
-          this.materialBindings.push(createHorseMaterialBinding(material));
+          this.materialBindings.push(createHorseMaterialBinding(material, this.asset.materials));
         }
       });
       if (object instanceof SkinnedMesh) {
@@ -307,12 +305,10 @@ export class ProceduralHorseAvatar {
   }
 
   private alignHoovesToGround(): void {
-    const hoofY = [
-      QUATERNIUS_HORSE_BONES.frontHoofLeft,
-      QUATERNIUS_HORSE_BONES.frontHoofRight,
-      QUATERNIUS_HORSE_BONES.hindHoofLeft,
-      QUATERNIUS_HORSE_BONES.hindHoofRight,
-    ].map((name) => requireQuaterniusHorseBone(this.scene, name).getWorldPosition(new Vector3()).y);
+    const hoofY = HORSE_HOOF_IDS.map(
+      (hoofId) =>
+        requireHorseBone(this.scene, this.adapter.legs[hoofId].hoof, this.adapter).getWorldPosition(new Vector3()).y,
+    );
     this.scene.position.y -= Math.min(...hoofY);
     this.scene.updateWorldMatrix(true, true);
   }
@@ -333,7 +329,7 @@ export class ProceduralHorseAvatar {
 
   private createSkeletonHelper(): SkeletonHelper {
     const helper = new SkeletonHelper(this.scene);
-    helper.name = "quaternius-horse-skeleton";
+    helper.name = `${this.adapter.id}-skeleton`;
     helper.frustumCulled = false;
     forEachMaterial(helper.material, (material) => {
       material.depthTest = false;
@@ -480,9 +476,18 @@ function captureBoneLengthBindings(skeletons: ReadonlySet<Skeleton>): BoneLength
   });
 }
 
-function createHorseMaterialBinding(material: MeshStandardMaterial): HorseMaterialBinding {
+function createHorseMaterialBinding(
+  material: MeshStandardMaterial,
+  profile: ProceduralHorseMaterialProfile,
+): HorseMaterialBinding {
   const name = material.name.toLowerCase();
-  const role = name.includes("dark") ? "dark" : name.includes("light") ? "light" : name === "main" ? "coat" : "detail";
+  const role = profile.dark.test(name)
+    ? "dark"
+    : profile.light.test(name)
+      ? "light"
+      : profile.coat.test(name)
+        ? "coat"
+        : "detail";
   return { baseColor: material.color.clone(), material, role };
 }
 

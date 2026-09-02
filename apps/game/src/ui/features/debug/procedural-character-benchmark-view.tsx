@@ -456,6 +456,7 @@ const BenchmarkControls = ({
             { value: "melee", label: "Melee" },
             { value: "horses", label: "Horse" },
             { value: "mounted", label: "Mount" },
+            { value: "dragons", label: "Dragon" },
           ]}
           onChange={(unitMix) => onPatchConfig({ unitMix: unitMix as ProceduralCharacterBenchmarkConfig["unitMix"] })}
         />

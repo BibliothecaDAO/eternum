@@ -1,0 +1,11 @@
+Model Information:
+* title:	icy dragon
+* source:	https://sketchfab.com/3d-models/icy-dragon-2db9268227b943e6a41e88390f2875a6
+* author:	chengzijieczj (https://sketchfab.com/chengzijieczj)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "icy dragon" (https://sketchfab.com/3d-models/icy-dragon-2db9268227b943e6a41e88390f2875a6) by chengzijieczj (https://sketchfab.com/chengzijieczj) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

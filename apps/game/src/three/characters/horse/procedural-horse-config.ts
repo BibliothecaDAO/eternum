@@ -1,10 +1,16 @@
 import type { ProceduralCharacterTier } from "../procedural-character-config";
+import {
+  DEFAULT_PROCEDURAL_HORSE_APPEARANCE_ID,
+  normalizeProceduralHorseAppearanceId,
+  type ProceduralHorseAppearanceId,
+} from "./procedural-horse-appearance";
 
 export type ProceduralHorseGait = "idle" | "walk" | "trot" | "canter" | "gallop";
 export type ProceduralHorseLead = "left" | "right";
 export type ProceduralHorseTerrainPreset = "flat" | "slope" | "waves" | "steps";
 
 export interface ProceduralHorseConfig {
+  appearanceId: ProceduralHorseAppearanceId;
   tier: ProceduralCharacterTier;
   seed: number;
   primaryColor: string;
@@ -34,6 +40,7 @@ export interface ProceduralHorseConfig {
 }
 
 const DEFAULT_CONFIG: ProceduralHorseConfig = {
+  appearanceId: DEFAULT_PROCEDURAL_HORSE_APPEARANCE_ID,
   tier: 1,
   seed: 1337,
   primaryColor: "#49342b",
@@ -73,6 +80,7 @@ export function applyProceduralHorseConfigPatch(
   const input = { ...current, ...patch };
   return {
     ...input,
+    appearanceId: normalizeProceduralHorseAppearanceId(input.appearanceId),
     tier: clampInteger(input.tier, 1, 3) as ProceduralCharacterTier,
     seed: clampInteger(input.seed, 0, 2_147_483_647),
     primaryColor: normalizeColor(input.primaryColor),

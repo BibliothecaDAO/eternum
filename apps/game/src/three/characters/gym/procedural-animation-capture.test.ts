@@ -90,6 +90,23 @@ describe("procedural animation capture plan", () => {
     expect(plan.sampleFrames).toHaveLength(5);
   });
 
+  it("captures the complete dragon fire-breath cycle from five body views", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "dragon" });
+    const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");
+
+    expect(resolveDefaultAnimationCaptureSequence("dragon")).toBe("dragon-fire");
+    expect(plan.sequence).toBe("dragon-fire");
+    expect(plan.phases.map(({ id }) => id)).toEqual(["acquire", "inhale", "fire", "recover"]);
+    expect(plan.sampleFrames).toHaveLength(4);
+    expect(plan.views.map(({ id }) => id)).toEqual([
+      "front",
+      "right-profile",
+      "rear",
+      "left-profile",
+      "elevated-three-quarter",
+    ]);
+  });
+
   it("samples all four locomotion quarters across the five-view atlas", () => {
     const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "horse" });
     const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");

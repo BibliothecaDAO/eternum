@@ -31,7 +31,7 @@ created lazily for ragdolls and never decides movement, damage, or death.
 
 Three identifiers have different jobs:
 
-- `kind` selects behavior: archer, knight, crossbowman, horse, or mounted Paladin;
+- `kind` selects behavior: archer, knight, crossbowman, horse, mounted Paladin, Sky Dragon, or naval ship;
 - `tier` selects the T1/T2/T3 upgrade appearance;
 - `appearanceId` selects a coexisting body/art family;
 - `rigAdapterId` selects the skeleton convention that translates canonical joints into model bones.
@@ -40,22 +40,26 @@ Do not add a new `kind` for a visual-only variation or a fourth `tier` for an al
 
 ## Ownership map
 
-| Concern                                                    | Source of truth                                                                                                                                                                                                                                       |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Appearance/tier model and material selection               | [`procedural-character-appearance.ts`](../../client/apps/game/src/three/characters/procedural-character-appearance.ts)                                                                                                                                |
-| Shared template loading and actor-local model replacement  | [`procedural-character-assets.ts`](../../client/apps/game/src/three/characters/procedural-character-assets.ts), [`quaternius-character-assets.ts`](../../client/apps/game/src/three/characters/quaternius-character-assets.ts)                        |
-| Canonical skeleton contract and adapters                   | [`humanoid-rig-adapter.ts`](../../client/apps/game/src/three/characters/humanoid-rig-adapter.ts), [`quaternius-humanoid-rig-adapter.ts`](../../client/apps/game/src/three/characters/quaternius-humanoid-rig-adapter.ts)                              |
-| Procedural morphology and Jolt part definitions            | [`procedural-character-rig.ts`](../../client/apps/game/src/three/characters/procedural-character-rig.ts)                                                                                                                                              |
-| Gait timing and contact cycles                             | [`procedural-character-gait.ts`](../../client/apps/game/src/three/characters/procedural-character-gait.ts)                                                                                                                                            |
-| Joint targets and upper-body composition                   | [`procedural-character-pose.ts`](../../client/apps/game/src/three/characters/procedural-character-pose.ts)                                                                                                                                            |
-| Root-aware foot planting and pose filtering                | [`procedural-plant-controller.ts`](../../client/apps/game/src/three/characters/procedural-plant-controller.ts), [`procedural-character-pose-filter.ts`](../../client/apps/game/src/three/characters/procedural-character-pose-filter.ts)              |
-| Skeleton binding, IK, hands, sockets, and material styling | [`procedural-character-avatar.ts`](../../client/apps/game/src/three/characters/procedural-character-avatar.ts)                                                                                                                                        |
-| Humanoid animation/ragdoll lifecycle                       | [`procedural-character-runtime.ts`](../../client/apps/game/src/three/characters/procedural-character-runtime.ts)                                                                                                                                      |
-| Unit behavior, equipment, mounts, attacks                  | [`procedural-unit-runtime.ts`](../../client/apps/game/src/three/characters/procedural-unit-runtime.ts)                                                                                                                                                |
-| Gym scene and controls                                     | [`procedural-character-gym-renderer.ts`](../../client/apps/game/src/three/characters/gym/procedural-character-gym-renderer.ts), [`procedural-character-gym-view.tsx`](../../client/apps/game/src/ui/features/debug/procedural-character-gym-view.tsx) |
-| Objective capture/evaluation                               | [`procedural-animation-capture.ts`](../../client/apps/game/src/three/characters/gym/procedural-animation-capture.ts), [`procedural-animation-evaluation.ts`](../../client/apps/game/src/three/characters/gym/procedural-animation-evaluation.ts)      |
-| Troop/tier mapping and production actors                   | [`procedural-army-character-layer.ts`](../../client/apps/game/src/three/characters/procedural-army-character-layer.ts)                                                                                                                                |
-| Atomic legacy-to-procedural handoff                        | [`procedural-army-representation.ts`](../../client/apps/game/src/three/characters/procedural-army-representation.ts)                                                                                                                                  |
+| Concern                                                    | Source of truth                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Appearance/tier model and material selection               | [`procedural-character-appearance.ts`](../../client/apps/game/src/three/characters/procedural-character-appearance.ts)                                                                                                                                                                                                                                                                                                                                   |
+| Shared template loading and actor-local model replacement  | [`procedural-character-assets.ts`](../../client/apps/game/src/three/characters/procedural-character-assets.ts), [`quaternius-character-assets.ts`](../../client/apps/game/src/three/characters/quaternius-character-assets.ts)                                                                                                                                                                                                                           |
+| Canonical skeleton contract and adapters                   | [`humanoid-rig-adapter.ts`](../../client/apps/game/src/three/characters/humanoid-rig-adapter.ts), [`quaternius-humanoid-rig-adapter.ts`](../../client/apps/game/src/three/characters/quaternius-humanoid-rig-adapter.ts)                                                                                                                                                                                                                                 |
+| Horse appearance and shared asset templates                | [`procedural-horse-appearance.ts`](../../client/apps/game/src/three/characters/horse/procedural-horse-appearance.ts), [`procedural-horse-assets.ts`](../../client/apps/game/src/three/characters/horse/procedural-horse-assets.ts)                                                                                                                                                                                                                       |
+| Canonical horse rig contract and adapters                  | [`horse-rig-adapter.ts`](../../client/apps/game/src/three/characters/horse/horse-rig-adapter.ts), [`quaternius-horse-rig-adapter.ts`](../../client/apps/game/src/three/characters/horse/quaternius-horse-rig-adapter.ts)                                                                                                                                                                                                                                 |
+| Mounted-creature lifecycle consumed by the rider           | [`procedural-mount-actor.ts`](../../client/apps/game/src/three/characters/mount/procedural-mount-actor.ts), [`procedural-horse-mount-actor.ts`](../../client/apps/game/src/three/characters/mount/procedural-horse-mount-actor.ts)                                                                                                                                                                                                                       |
+| Dragon ground/flight pose, fire breath, and test avatar    | [`procedural-dragon-pose.ts`](../../client/apps/game/src/three/characters/dragon/procedural-dragon-pose.ts), [`procedural-dragon-fire-cycle.ts`](../../client/apps/game/src/three/characters/dragon/procedural-dragon-fire-cycle.ts), [`icy-dragon-assets.ts`](../../client/apps/game/src/three/characters/dragon/icy-dragon-assets.ts), [`procedural-dragon-avatar.ts`](../../client/apps/game/src/three/characters/dragon/procedural-dragon-avatar.ts) |
+| Procedural morphology and Jolt part definitions            | [`procedural-character-rig.ts`](../../client/apps/game/src/three/characters/procedural-character-rig.ts)                                                                                                                                                                                                                                                                                                                                                 |
+| Gait timing and contact cycles                             | [`procedural-character-gait.ts`](../../client/apps/game/src/three/characters/procedural-character-gait.ts)                                                                                                                                                                                                                                                                                                                                               |
+| Joint targets and upper-body composition                   | [`procedural-character-pose.ts`](../../client/apps/game/src/three/characters/procedural-character-pose.ts)                                                                                                                                                                                                                                                                                                                                               |
+| Root-aware foot planting and pose filtering                | [`procedural-plant-controller.ts`](../../client/apps/game/src/three/characters/procedural-plant-controller.ts), [`procedural-character-pose-filter.ts`](../../client/apps/game/src/three/characters/procedural-character-pose-filter.ts)                                                                                                                                                                                                                 |
+| Skeleton binding, IK, hands, sockets, and material styling | [`procedural-character-avatar.ts`](../../client/apps/game/src/three/characters/procedural-character-avatar.ts)                                                                                                                                                                                                                                                                                                                                           |
+| Humanoid animation/ragdoll lifecycle                       | [`procedural-character-runtime.ts`](../../client/apps/game/src/three/characters/procedural-character-runtime.ts)                                                                                                                                                                                                                                                                                                                                         |
+| Unit behavior, equipment, mounts, attacks                  | [`procedural-unit-runtime.ts`](../../client/apps/game/src/three/characters/procedural-unit-runtime.ts)                                                                                                                                                                                                                                                                                                                                                   |
+| Gym scene and controls                                     | [`procedural-character-gym-renderer.ts`](../../client/apps/game/src/three/characters/gym/procedural-character-gym-renderer.ts), [`procedural-character-gym-view.tsx`](../../client/apps/game/src/ui/features/debug/procedural-character-gym-view.tsx)                                                                                                                                                                                                    |
+| Objective capture/evaluation                               | [`procedural-animation-capture.ts`](../../client/apps/game/src/three/characters/gym/procedural-animation-capture.ts), [`procedural-animation-evaluation.ts`](../../client/apps/game/src/three/characters/gym/procedural-animation-evaluation.ts)                                                                                                                                                                                                         |
+| Troop/tier mapping and production actors                   | [`procedural-army-character-layer.ts`](../../client/apps/game/src/three/characters/procedural-army-character-layer.ts)                                                                                                                                                                                                                                                                                                                                   |
+| Atomic legacy-to-procedural handoff                        | [`procedural-army-representation.ts`](../../client/apps/game/src/three/characters/procedural-army-representation.ts)                                                                                                                                                                                                                                                                                                                                     |
 
 Route a defect to its owner. Sliding belongs to planting; robotic timing to gait/action curves; wrong elbows or feet to
 pose/IK binding; wrong grips to hands/sockets/equipment; exploding deaths to the Jolt rig. Avoid compensating for a bad
@@ -121,6 +125,46 @@ shared library and replaces only the actor-local model; decoded geometry and tex
 
 Completion criterion: both families alternate before and after Jolt ragdoll without reloading decoded assets, leaking
 actor-local skeleton/material resources, changing behavior, or introducing family branches in gait/action code.
+
+### New horse appearance or skeleton
+
+1. Add the optimized horse GLB and provenance under `client/public/models/characters/<family>/`, then register one
+   `ProceduralHorseAssetDefinition` in the shared template loader.
+2. Reuse an existing `HorseRigAdapterId` when the semantic skeleton matches. Otherwise add one adapter containing the
+   axial bones, ordered neck and tail chains, all four limb chains, hoof/contact targets, canonical segment roles, and
+   saddle derivation; register it in `horse-rig-adapters.ts`.
+3. Add an independent appearance id, tier-to-asset mapping, material-role profile, and required adapter in
+   `procedural-horse-appearance.ts`.
+4. Extend adapter validation, appearance resolution, asset isolation/disposal, config normalization, source-file
+   provenance, and GLB bone/skin tests. A missing adapter, asset, bone, invalid scene scale, or adapter mismatch must
+   fail before an actor is visible.
+5. Keep gait, planting, pose filtering, mounted coupling, and Jolt code unchanged. The runtime replaces only the
+   actor-local horse avatar while decoded geometry remains shared.
+
+Completion criterion: two horse appearances can alternate by `appearanceId + tier`, preserve the same procedural pose
+and saddle contract, survive mounted Jolt handoff/reset, and report their actual appearance, asset, and rig adapter ids.
+
+### New dragon appearance or skeleton
+
+Keep dragon behavior in `dragon/`: ground gait, flight phase, fire-breath cycle, collision reaction, and socket output
+are asset-independent. The current visible surface is the CC BY 4.0 Icy Dragon glTF. Its authored clip is discarded
+immediately after validation; idle, walk, flight, leg planting, wings, neck, tail, jaw, and fire timing are driven by
+the procedural pose pipeline. The adapter maps its opaque 88-joint source skeleton into the shared body, neck, head,
+jaw, bilateral wing, four-limb, tail, saddle, and mouth contract. The seven supplied textures are delivered at 1024 ×
+1024, and the source attribution plus Eternum's modifications live beside the model under
+`client/public/models/characters/icy-dragon/`.
+
+Icy Dragon actor meshes never cast real-time shadows. Six skinned meshes and roughly 134,000 triangles make an animated
+shadow pass too expensive for the crowd path; use a cheap contact/blob shadow and introduce a lower-detail geometry LOD
+before increasing the number of simultaneous production dragons.
+
+In production presentation, a tier-three Paladin uses the Sky Dragon mount form. The authoritative army movement flag
+requests flight: the procedural runtime takes off, remains airborne along the existing map path, and lands when movement
+ends. Stationary and walking review poses align the lowest semantic stance foot to sampled terrain; overall mesh bounds
+must not decide ground contact.
+
+Completion criterion: the replacement passes walk, flight, fire-breath, collision, drop/reset, capture, and crowd
+simulation tests while the rider-facing mount and unit interfaces remain unchanged.
 
 Add a new `ProceduralUnitKind` only when the unit has different behavior. In that case, also wire its controller and
 equipment in `ProceduralUnitRuntime`, its control in `PROCEDURAL_UNIT_KINDS`, and its deterministic capture sequence.

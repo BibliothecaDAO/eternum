@@ -34,6 +34,9 @@ const DebugProceduralTerrainBenchmarkView = lazy(() =>
     default: module.ProceduralTerrainBenchmarkView,
   })),
 );
+const DebugWorldFxGymView = lazy(() =>
+  import("./ui/features/debug/world-fx-gym-view").then((module) => ({ default: module.WorldFxGymView })),
+);
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
@@ -105,6 +108,14 @@ function App() {
           element={
             <DebugRouteShell>
               <DebugProceduralTerrainBenchmarkView />
+            </DebugRouteShell>
+          }
+        />
+        <Route
+          path="/debug/world-fx"
+          element={
+            <DebugRouteShell>
+              <DebugWorldFxGymView />
             </DebugRouteShell>
           }
         />

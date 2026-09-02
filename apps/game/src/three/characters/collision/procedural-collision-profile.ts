@@ -3,6 +3,7 @@ import type { ProceduralUnitKind } from "../procedural-unit-config";
 export interface ProceduralCollisionBudget {
   maxActivePresentationBodies: number;
   maxActiveRagdolls: number;
+  maxNeighborsPerBody: number;
   maxPairResolutions: number;
 }
 
@@ -56,6 +57,17 @@ export function createProceduralCollisionProfile(kind: ProceduralUnitKind, world
       proxies: createMountedProxies(scale, 0.38, 0.36),
     };
   }
+  if (kind === "dragon") {
+    return {
+      ...createBodyProfile(8, 0.2, 0.018, 0.28, 0.17),
+      maxVisualOffset: 0.2 * scale,
+      proxies: [
+        { forwardOffset: -0.52 * scale, lateralOffset: 0, radius: 0.46 * scale },
+        { forwardOffset: 0.22 * scale, lateralOffset: 0, radius: 0.54 * scale },
+        { forwardOffset: 0.82 * scale, lateralOffset: 0, radius: 0.38 * scale },
+      ],
+    };
+  }
   return {
     ...FOOT_PROFILES[kind],
     maxVisualOffset: FOOT_PROFILES[kind].maxVisualOffset * scale,
@@ -65,12 +77,17 @@ export function createProceduralCollisionProfile(kind: ProceduralUnitKind, world
 
 export function createProceduralCollisionBudget(mode: "battery" | "benchmark" | "quality"): ProceduralCollisionBudget {
   if (mode === "battery") {
-    return { maxActivePresentationBodies: 64, maxActiveRagdolls: 4, maxPairResolutions: 512 };
+    return { maxActivePresentationBodies: 64, maxActiveRagdolls: 4, maxNeighborsPerBody: 8, maxPairResolutions: 512 };
   }
   if (mode === "benchmark") {
-    return { maxActivePresentationBodies: 100, maxActiveRagdolls: 8, maxPairResolutions: 2_048 };
+    return {
+      maxActivePresentationBodies: 100,
+      maxActiveRagdolls: 8,
+      maxNeighborsPerBody: 16,
+      maxPairResolutions: 2_048,
+    };
   }
-  return { maxActivePresentationBodies: 128, maxActiveRagdolls: 8, maxPairResolutions: 1_024 };
+  return { maxActivePresentationBodies: 128, maxActiveRagdolls: 8, maxNeighborsPerBody: 8, maxPairResolutions: 1_024 };
 }
 
 function createBodyProfile(
