@@ -1,3 +1,4 @@
+import { resolveSpectateIntent } from "@/utils/spectator-session";
 import { buildPlayHref, parsePlayRoute, type PlayRouteDescriptor, type PlayScene } from "./play-route";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
@@ -19,8 +20,9 @@ const buildCanonicalMapFirstRoute = (
   });
 };
 
-const shouldBootMapFirst = (route: PlayRouteDescriptor): boolean => {
-  if (route.spectate) {
+// Spectators open on the map directly; only a player's hex or travel entry boots map-first.
+const shouldBootMapFirst = (route: PlayRouteDescriptor, spectate: boolean): boolean => {
+  if (spectate) {
     return false;
   }
 
@@ -41,7 +43,7 @@ const buildCanonicalPlayerBootHref = ({
 
 export const normalizePlayBootLocation = (location: LocationLike): string | null => {
   const route = parsePlayRoute(location);
-  if (!route || !shouldBootMapFirst(route)) {
+  if (!route || !shouldBootMapFirst(route, resolveSpectateIntent(location))) {
     return null;
   }
 

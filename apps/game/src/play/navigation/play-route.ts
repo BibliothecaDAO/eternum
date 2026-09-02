@@ -1,6 +1,7 @@
 import type { GameChain as Chain } from "@realms-world/chain";
 
 import type { WorldProfile } from "@/runtime/world/types";
+import { hasSpectateQuery } from "@/utils/spectator-session";
 
 export type PlayScene = "map" | "hex" | "travel";
 type EntryIntent = "play" | "settle" | "spectate";
@@ -12,10 +13,12 @@ export interface PlayRouteDescriptor {
   scene: PlayScene;
   col: number | null;
   row: number | null;
-  spectate: boolean;
   bootMode?: PlayBootMode;
   resumeScene?: PlayScene | null;
 }
+
+/** A play href may carry the spectate flag; the parsed route never does — `utils/spectator-session` owns that fact. */
+type PlayHrefInput = PlayRouteDescriptor & { spectate?: boolean };
 
 interface EntryRouteDescriptor {
   chain: Chain;
@@ -74,13 +77,12 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
     scene: rawScene,
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
-    spectate: searchParams.get("spectate") === "true",
     bootMode,
     resumeScene,
   };
 };
 
-export const buildPlayHref = (route: PlayRouteDescriptor): string => {
+export const buildPlayHref = (route: PlayHrefInput): string => {
   const bootMode = route.bootMode ?? "direct";
   const resumeScene = bootMode === "map-first" ? (route.resumeScene ?? null) : null;
   const searchParams = new URLSearchParams();
@@ -162,7 +164,7 @@ const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: WorldPr
     scene,
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
-    spectate: searchParams.get("spectate") === "true",
+    spectate: hasSpectateQuery(location.search),
     bootMode: "direct",
     resumeScene: null,
   });
@@ -187,7 +189,7 @@ const resolveLegacyWorldRoute = (location: LocationLike, fallbackWorld?: WorldPr
     scene: "map",
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
-    spectate: searchParams.get("spectate") === "true",
+    spectate: hasSpectateQuery(location.search),
     bootMode: "direct",
     resumeScene: null,
   });
@@ -208,7 +210,7 @@ const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProf
     scene,
     col: parseOptionalNumber(searchParams, "col"),
     row: parseOptionalNumber(searchParams, "row"),
-    spectate: searchParams.get("spectate") === "true",
+    spectate: hasSpectateQuery(location.search),
     bootMode: "direct",
     resumeScene: null,
   });

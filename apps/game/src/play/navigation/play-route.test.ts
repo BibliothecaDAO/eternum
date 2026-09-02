@@ -28,7 +28,6 @@ describe("play-route", () => {
       scene: "map",
       col: 12,
       row: 34,
-      spectate: true,
       bootMode: "direct",
       resumeScene: null,
     });
@@ -42,7 +41,6 @@ describe("play-route", () => {
         scene: "travel",
         col: 7,
         row: 9,
-        spectate: false,
       }),
     ).toBe("/play/madara/iron-age/travel?col=7&row=9");
   });

@@ -1,4 +1,5 @@
 import { Position, configManager } from "@bibliothecadao/eternum";
+import { resolveSpectateIntent } from "@/utils/spectator-session";
 
 import { parsePlayRoute, type PlayRouteDescriptor, type PlayScene } from "./play-route";
 import { resolvePlaySceneTarget } from "./play-scene-target";
@@ -100,7 +101,7 @@ export const resolvePlayRouteTarget = (
     routeWorldPosition,
     hexRealmPosition: resolveHexRealmPosition(scene, routeWorldPosition),
     hexCameraTarget: scene === "hex" ? "keep-center" : null,
-    spectate: playRoute?.spectate ?? false,
+    spectate: playRoute !== null && resolveSpectateIntent(location),
     isCanonical: playRoute !== null,
     playRoute,
   };

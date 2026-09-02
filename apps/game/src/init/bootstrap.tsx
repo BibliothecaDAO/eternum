@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
-import { captureSpectateIntentFromUrl } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
@@ -131,9 +130,6 @@ export const bootstrapGameForEntryContext = async (
   context: ResolvedEntryContext,
   lifecycle: BootstrapLifecycle = {},
 ): Promise<BootstrapResult> => {
-  // Latch spectator intent while the entry URL still carries ?spectate —
-  // in-app navigation strips the query string later.
-  captureSpectateIntentFromUrl();
   const cachedSession = getCachedBootstrappedEntrySession(context);
   if (cachedSession) {
     return cachedSession;

@@ -1,6 +1,7 @@
 import type { GameChain as Chain } from "@realms-world/chain";
 
 import type { WorldSelectionInput } from "@/runtime/world";
+import { resolveSpectateIntent } from "@/utils/spectator-session";
 import {
   buildEntryHref,
   buildPlayHref,
@@ -103,7 +104,7 @@ export const resolveEntryContextFromPlayRoute = (location: LocationLike): Resolv
   return {
     chain: route.chain,
     worldName: route.worldName,
-    intent: route.spectate ? "spectate" : "play",
+    intent: resolveSpectateIntent(location) ? "spectate" : "play",
     autoSettle: false,
     source: "play-route",
   };

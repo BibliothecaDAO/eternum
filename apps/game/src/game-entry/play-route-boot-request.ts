@@ -1,5 +1,6 @@
 import { parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import { resolvePlaySceneTarget } from "@/play/navigation/play-scene-target";
+import { resolveSpectateIntent } from "@/utils/spectator-session";
 
 export interface ResolvedPlayBootRequest {
   bootScene: PlayScene;
@@ -32,7 +33,7 @@ export const resolvePlayBootRequest = (
   return {
     bootScene: route.bootMode === "map-first" ? "map" : resolvedScene,
     chain: route.chain,
-    entryMode: route.spectate ? "spectator" : "player",
+    entryMode: resolveSpectateIntent(location) ? "spectator" : "player",
     fallbackPolicy: routeWorldPosition ? "route" : "synced-structure",
     requestedScene,
     resumeScene,

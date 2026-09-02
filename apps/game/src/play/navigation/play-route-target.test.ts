@@ -34,7 +34,6 @@ describe("resolvePlayRouteTarget", () => {
         col: 12,
         row: 34,
         resumeScene: null,
-        spectate: false,
       },
     });
   });
@@ -58,7 +57,6 @@ describe("resolvePlayRouteTarget", () => {
         col: 4,
         row: 9,
         resumeScene: null,
-        spectate: false,
       },
     });
   });
@@ -84,7 +82,6 @@ describe("resolvePlayRouteTarget", () => {
         col: 7,
         row: 11,
         resumeScene: null,
-        spectate: false,
       },
     });
   });
@@ -110,7 +107,6 @@ describe("resolvePlayRouteTarget", () => {
         col: 7,
         row: 11,
         resumeScene: null,
-        spectate: false,
       },
     });
   });
@@ -136,7 +132,6 @@ describe("resolvePlayRouteTarget", () => {
         col: null,
         row: null,
         resumeScene: null,
-        spectate: true,
       },
     });
   });

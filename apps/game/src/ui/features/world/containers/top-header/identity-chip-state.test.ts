@@ -1,8 +1,4 @@
-import {
-  captureSpectateIntentFromUrl,
-  isExplicitSpectateSession,
-  overrideSpectateIntent,
-} from "@/utils/spectator-session";
+import { isExplicitSpectateSession, overrideSpectateIntent, resolveSpectateIntent } from "@/utils/spectator-session";
 import { StructureType } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -13,8 +9,7 @@ import {
 } from "./identity-chip-state";
 
 const enterPlaySession = (search: string) => {
-  window.history.replaceState({}, "", `/play/madara/iron-age/map${search}`);
-  captureSpectateIntentFromUrl();
+  resolveSpectateIntent({ search });
 };
 
 const signedInPlayer = (overrides: Partial<IdentityChipInput> = {}): IdentityChipInput => ({
@@ -54,9 +49,8 @@ describe("resolveIdentityChipState", () => {
     });
   });
 
-  it("the spectate intent survives in-app navigation stripping the query, and overriding it makes a player", () => {
+  it("the latched intent outlives the query it came from, and overriding it makes a player", () => {
     enterPlaySession("?spectate=true");
-    window.history.replaceState({}, "", "/play/madara/iron-age/hex");
     expect(resolveIdentityChipState(signedInPlayer()).kind).toBe("spectating");
 
     overrideSpectateIntent(false);
