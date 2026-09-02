@@ -1084,6 +1084,25 @@ leaderboard button + popover and the settings popover pending on the deploy. **A
 4 = the remaining utility `openedPopups` windows (transactions, shortcuts, latest features, rewards) onto popovers;
 automation dashboards, resource transfer, EndgameModal and the URL spectate readers stay on the step-5 list.
 
+## Autonomous run (owner ruling, 2026-09-02)
+
+The per-step implement→review loop closes here; the owner ruled the rest of this brief runs as one autonomous pass. The
+implementing agent: (1) derives the remaining-work checklist from this brief's own records (anything a record marks
+closed, approved or parked is done — WebGPU is parked, strategic-marker and the streaming reshape stay out of scope),
+writes it into this section as an ordered plan with one verifiable gate per item, and commits that plan first; (2)
+executes item by item — one item per commit or small commit group, explicit paths only, each item self-verified (scoped
+suites, typecheck, knip, prettier; headless screenshots for visual work; the existing measurement recipes — `rf()`,
+`[FramePerf]`, `__eternumGameEntryTimeline`, the headless capture scripts — for perf work, numbers recorded next to the
+old ones) and recorded here in the same record format as it lands; (3) where an item needs a judgment call, takes the
+KISS-conventional option, marks the record "**ruling taken, review me**", and continues — it stops early only when
+blocked on something only the owner can do (a live human gate on the owner's machine, credentials, or cutting a
+spec-locked system, which still needs the owner per repo rules). Known pre-existing reds it must not chase:
+`worldmap-initial-refresh.source.test.ts` and the `row.activityBreakdown` assertion in
+`in-game-leaderboard-ownership.source.test.ts` (drift since `f5f226cd282`), plus the three load-sensitive timeout-prone
+files named in CLAUDE.md. The agent does not deploy; the reviewer reviews the whole run at the end, deploys from the
+reviewed tip, and the owner does one live pass. Owner-gate measurements the agent cannot take (quiet-box human gates)
+are recorded as "owner gate pending" rows, not skipped silently.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
