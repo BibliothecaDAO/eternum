@@ -1,54 +1,25 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
+import { TRANSACTIONS_POPOVER_ID, TransactionPanel } from "@/ui/components/transaction-center";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { Popover } from "@/ui/design-system/molecules/popover";
+import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
-import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
-import { latestFeatures, rewards, transactions } from "@/ui/features/world";
+import { LATEST_FEATURES_POPOVER_ID, LatestFeaturesPanel } from "@/ui/modules/latest-features/latest-features";
 import { SETTINGS_POPOVER_ID, SettingsPanel } from "@/ui/modules/settings/settings";
-
-import { useDojo } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
-
 import { useMemo } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
 
-/** The top bar's utility cluster: rewards, latest features, network, transactions and settings. */
-export const SecondaryMenuItems = () => {
-  const {
-    setup: {
-      components: { GameRegistry },
-    },
-  } = useDojo();
+type TransactionSignal = "idle" | "pending" | "stuck" | "error";
 
-  // Legacy worlds emit a SeasonEnded event (the bridge keeps it in the seasonEnded
-  // slice); the s2 single world flips the active game's registry status instead.
-  const hasSeasonEndedEvent = useWorldSlicesStore((state) => state.seasonEnded !== null);
-  const gameRegistry = useComponentValue(
-    GameRegistry,
-    useMemo(() => gameEntityKey([]), []),
-  );
-  const registryStatus = gameRegistry ? String(gameRegistry.status) : "";
-  const hasSeasonEnded = hasSeasonEndedEvent || registryStatus === "Ended" || registryStatus === "Settled";
-
-  const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
-
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const isLeaderboardOpen = usePopoverStore((state) => state.openId === LEADERBOARD_POPOVER_ID);
-  const isSettingsOpen = usePopoverStore((state) => state.openId === SETTINGS_POPOVER_ID);
-  const togglePopover = usePopoverStore((state) => state.toggle);
-
-  // Transaction status for the network button indicator
+/** The transactions button's indicator: pending count plus the loudest live signal. */
+const useTransactionSignal = () => {
   const txTransactions = useTransactionStore((state) => state.transactions);
   const txStuckThresholdMs = useTransactionStore((state) => state.stuckThresholdMs);
 
-  const txStatus = useMemo(() => {
+  return useMemo(() => {
     const now = Date.now();
     const pending = txTransactions.filter((t) => t.status === "pending");
     const stuck = pending.filter((t) => now - t.submittedAt >= txStuckThresholdMs);
@@ -56,7 +27,7 @@ export const SecondaryMenuItems = () => {
       (t) => t.status === "reverted" && t.confirmedAt && now - t.confirmedAt < 60_000,
     );
 
-    let status: "idle" | "pending" | "stuck" | "error" = "idle";
+    let status: TransactionSignal = "idle";
     if (recentReverted) status = "error";
     else if (stuck.length > 0) status = "stuck";
     else if (pending.length > 0) status = "pending";
@@ -68,6 +39,15 @@ export const SecondaryMenuItems = () => {
         status === "error" ? "red" : status === "stuck" ? "orange" : status === "pending" ? "gold" : undefined,
     };
   }, [txTransactions, txStuckThresholdMs]);
+};
+
+/** The top bar's utility cluster: leaderboard, what's new, network, transactions and settings, each a popover off its button. */
+export const SecondaryMenuItems = () => {
+  const openPopoverId = usePopoverStore((state) => state.openId);
+  const togglePopover = usePopoverStore((state) => state.toggle);
+  const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
+  const txStatus = useTransactionSignal();
+  const isLatestFeaturesOpen = openPopoverId === LATEST_FEATURES_POPOVER_ID;
 
   return (
     <div className="pointer-events-auto flex items-center gap-2">
@@ -82,7 +62,7 @@ export const SecondaryMenuItems = () => {
             variant="hud"
             className="social-selector"
             tooltipLocation="bottom"
-            active={isLeaderboardOpen}
+            active={openPopoverId === LEADERBOARD_POPOVER_ID}
             image={BuildingThumbs.guild}
             label={"Leaderboard"}
             size="topbar"
@@ -93,36 +73,38 @@ export const SecondaryMenuItems = () => {
         <SocialBoard />
       </Popover>
 
-      {/* End-of-season rewards stay surfaced while the season has ended. */}
-      {hasSeasonEnded && (
-        <CircleButton
-          variant="hud"
-          tooltipLocation="bottom"
-          image={BuildingThumbs.rewards}
-          label={rewards}
-          active={isPopupOpen(rewards)}
-          size="topbar"
-          onClick={() => togglePopup(rewards)}
-        />
-      )}
-
-      {/* Latest Features — render only while there are unseen features. */}
-      {unseenFeaturesCount > 0 && (
-        <CircleButton
-          variant="hud"
-          className="latest-features-selector"
-          tooltipLocation="bottom"
-          active={isPopupOpen(latestFeatures)}
-          image={BuildingThumbs.latestUpdates}
-          label={"Latest Features"}
-          size="topbar"
-          onClick={() => togglePopup(latestFeatures)}
-          primaryNotification={{
-            value: unseenFeaturesCount,
-            color: "gold",
-            location: "topright",
-          }}
-        />
+      {/* What's new — the button shows while there are unseen features, and stays while its feed is open
+          (opening the feed marks it seen). */}
+      {(unseenFeaturesCount > 0 || isLatestFeaturesOpen) && (
+        <Popover
+          id={LATEST_FEATURES_POPOVER_ID}
+          ariaLabel="What's new"
+          align="end"
+          className="w-[420px] overflow-y-auto p-0"
+          trigger={
+            <CircleButton
+              variant="hud"
+              className="latest-features-selector"
+              tooltipLocation="bottom"
+              active={isLatestFeaturesOpen}
+              image={BuildingThumbs.latestUpdates}
+              label={"Latest Features"}
+              size="topbar"
+              onClick={() => togglePopover(LATEST_FEATURES_POPOVER_ID)}
+              primaryNotification={
+                unseenFeaturesCount > 0
+                  ? {
+                      value: unseenFeaturesCount,
+                      color: "gold",
+                      location: "topright",
+                    }
+                  : undefined
+              }
+            />
+          }
+        >
+          <LatestFeaturesPanel />
+        </Popover>
       )}
 
       {/* Connection health indicator - only visible when unhealthy. The
@@ -133,36 +115,46 @@ export const SecondaryMenuItems = () => {
 
       {/* Transactions — always visible, sits immediately to the left of Settings.
           Status dot indicator overlays when there's an active signal. */}
-      <div className="relative">
-        <CircleButton
-          variant="hud"
-          className="transactions-selector"
-          tooltipLocation="bottom"
-          active={isPopupOpen(transactions)}
-          image="/image-icons/network.png"
-          label={"Transactions"}
-          size="topbar"
-          onClick={() => togglePopup(transactions)}
-          primaryNotification={
-            txStatus.pendingCount > 0
-              ? {
-                  value: txStatus.pendingCount,
-                  color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
-                  location: "topright",
-                }
-              : undefined
-          }
-        />
-        {txStatus.status !== "idle" && (
-          <div
-            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
+      <Popover
+        id={TRANSACTIONS_POPOVER_ID}
+        ariaLabel="Transactions"
+        align="end"
+        className="w-[360px] overflow-y-auto p-0"
+        trigger={
+          <div className="relative">
+            <CircleButton
+              variant="hud"
+              className="transactions-selector"
+              tooltipLocation="bottom"
+              active={openPopoverId === TRANSACTIONS_POPOVER_ID}
+              image="/image-icons/network.png"
+              label={"Transactions"}
+              size="topbar"
+              onClick={() => togglePopover(TRANSACTIONS_POPOVER_ID)}
+              primaryNotification={
+                txStatus.pendingCount > 0
+                  ? {
+                      value: txStatus.pendingCount,
+                      color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
+                      location: "topright",
+                    }
+                  : undefined
+              }
+            />
+            {txStatus.status !== "idle" && (
+              <div
+                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
                         ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
                         ${txStatus.status === "stuck" ? "bg-orange animate-pulse" : ""}
                         ${txStatus.status === "error" ? "bg-danger" : ""}
                         shadow-[0_0_6px_currentColor]`}
-          />
-        )}
-      </div>
+              />
+            )}
+          </div>
+        }
+      >
+        <TransactionPanel />
+      </Popover>
 
       {/* Settings stays last in the utility cluster; its panel hangs off the gear. */}
       <Popover
@@ -175,7 +167,7 @@ export const SecondaryMenuItems = () => {
             variant="hud"
             className="settings-selector"
             tooltipLocation="bottom"
-            active={isSettingsOpen}
+            active={openPopoverId === SETTINGS_POPOVER_ID}
             image={BuildingThumbs.settings}
             label={"Settings"}
             size="topbar"

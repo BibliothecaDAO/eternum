@@ -106,7 +106,6 @@ export const BuildingThumbs = {
   guild: `${prefix}guild.png`,
   trophy: `${prefix}trophy.png`,
   discord: `${prefix}discord.png`,
-  rewards: "/images/buildings/thumb/rewards.png",
   production: `${prefix}production.png`,
   house: `${prefix}house.png`,
   home: `${prefix}home.png`,

@@ -14,11 +14,13 @@ const ABSORBED_SURFACES = [
   "ui/layouts/no-account-modal.tsx",
   "ui/layouts/sign-in-prompt-modal.tsx",
   "ui/features/social/components/social.tsx",
+  "ui/components/transaction-center/transaction-window.tsx",
 ];
 
-const ABSORBED_NAMES = /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow)\b/;
+const ABSORBED_NAMES =
+  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow)\b/;
 
-const ABSORBED_WINDOW_NAMES = /"(Settings|Leaderboard)"/;
+const ABSORBED_WINDOW_NAMES = /"(Settings|Leaderboard|Rewards|Shortcuts|LatestFeatures|Transactions)"/;
 
 const isSourceFile = (name: string) =>
   (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".test.ts") && !name.endsWith(".test.tsx");
@@ -31,7 +33,7 @@ const walk = (directory: string): string[] =>
   });
 
 describe("overlay surfaces", () => {
-  it("the login banner, the sign-in modals and the leaderboard window are gone", () => {
+  it("the login banner, the sign-in modals and the utility windows are gone", () => {
     for (const surface of ABSORBED_SURFACES) {
       expect(existsSync(resolve(SOURCE_ROOT, surface)), surface).toBe(false);
     }
@@ -44,7 +46,7 @@ describe("overlay surfaces", () => {
     expect(references).toEqual([]);
   });
 
-  it("the leaderboard and settings windows have no popup name left to open them", () => {
+  it("the migrated windows have no popup name left to open them", () => {
     const popupNames = readFileSync(resolve(SOURCE_ROOT, "ui/features/world/components/config.tsx"), "utf8");
     expect(popupNames).not.toMatch(ABSORBED_WINDOW_NAMES);
   });

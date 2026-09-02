@@ -35,9 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
-    title: "Leaderboard and Settings Popovers",
+    title: "Top Bar Popovers",
     description:
-      "The leaderboard (players, tribes, faith, prize) now opens from the identity chip's popover and settings hang off the gear. Both close on Escape or a click outside and never block the map; the two floating windows are gone.",
+      "The leaderboard, what's new, transactions and settings (with the keyboard shortcuts inside) now open as popovers under their top-bar buttons. Each closes on Escape or a click outside and never blocks the map; the floating windows are gone.",
     type: "improvement",
   },
   {

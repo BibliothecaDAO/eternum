@@ -1,10 +1,10 @@
 import { KeyboardShortcut } from "@/hooks/store/use-shortcut-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Divider, KbdKey } from "@/ui/design-system/atoms";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Headline } from "@/ui/design-system/molecules";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { shortcuts } from "@/ui/features/world";
 import { useShortcutManager } from "@/utils/shortcuts";
+import ArrowLeftIcon from "lucide-react/dist/esm/icons/arrow-left";
 import { useMemo } from "react";
 
 interface CategorizedShortcuts {
@@ -13,9 +13,8 @@ interface CategorizedShortcuts {
   local: KeyboardShortcut[];
 }
 
-export const ShortcutsWindow = () => {
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isOpen = useUIStore((state) => state.isPopupOpen(shortcuts));
+/** The keyboard shortcut list; it renders as a view inside the settings popover. */
+export const ShortcutsPanel = ({ onBack }: { onBack: () => void }) => {
   const shortcutManager = useShortcutManager();
 
   const registeredShortcuts = shortcutManager.getShortcuts();
@@ -69,32 +68,30 @@ export const ShortcutsWindow = () => {
     );
   };
 
-  if (!isOpen) return null;
-
   return (
-    <CenteredModalShell
-      title="Keyboard Shortcuts"
-      onClose={() => togglePopup(shortcuts)}
-      persistKey="shortcuts"
-      panelClassName="w-[500px] h-auto max-h-[calc(100vh-64px)]"
-      bodyClassName="overflow-auto"
-    >
-      <div className="flex flex-col space-y-4 p-6 overflow-y-auto h-full">
-        <Headline>Active Shortcuts ({registeredShortcuts.length})</Headline>
+    <div className="flex flex-col space-y-4 p-2">
+      <button
+        type="button"
+        onClick={onBack}
+        className={cn(HUD_LABEL, "inline-flex items-center gap-1 self-start transition hover:text-gold")}
+      >
+        <ArrowLeftIcon className="h-3 w-3" aria-hidden="true" />
+        Settings
+      </button>
+      <Headline>Active Shortcuts ({registeredShortcuts.length})</Headline>
 
-        {registeredShortcuts.length === 0 ? (
-          <div className="text-gold/60 text-center py-8">No shortcuts are currently registered.</div>
-        ) : (
-          <div className="space-y-6">
-            {renderShortcutSection("Global", categorizedShortcuts.global)}
-            {renderShortcutSection("World View", categorizedShortcuts.world)}
-            {renderShortcutSection("Local View", categorizedShortcuts.local)}
-          </div>
-        )}
+      {registeredShortcuts.length === 0 ? (
+        <div className="text-gold/60 text-center py-8">No shortcuts are currently registered.</div>
+      ) : (
+        <div className="space-y-6">
+          {renderShortcutSection("Global", categorizedShortcuts.global)}
+          {renderShortcutSection("World View", categorizedShortcuts.world)}
+          {renderShortcutSection("Local View", categorizedShortcuts.local)}
+        </div>
+      )}
 
-        <Divider spacing="sm" className="mt-4" />
-        <p className="text-gold/60 text-xxs">Shortcuts are automatically registered by active components and scenes.</p>
-      </div>
-    </CenteredModalShell>
+      <Divider spacing="sm" className="mt-4" />
+      <p className="text-gold/60 text-xxs">Shortcuts are automatically registered by active components and scenes.</p>
+    </div>
   );
 };

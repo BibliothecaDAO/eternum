@@ -5,8 +5,6 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
@@ -14,10 +12,10 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
-import { shortcuts } from "@/ui/features/world";
 import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
 import { resetBootstrap } from "@/init/bootstrap";
 import { useNavigate } from "react-router-dom";
+import { ShortcutsPanel } from "@/ui/modules/shortcuts/shortcuts";
 import { addressToNumber } from "@/ui/utils/utils";
 import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
 import { useState } from "react";
@@ -30,8 +28,21 @@ const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
 
 export const SETTINGS_POPOVER_ID = "settings";
 
-/** The settings panel. It renders inside the gear's popover, so its audio, camera and guild subscriptions exist only while that is open. */
+type SettingsView = "settings" | "shortcuts";
+
+/**
+ * The settings panel: the settings sections, or the keyboard shortcut list behind its View link. It renders inside
+ * the gear's popover, so its audio, camera and guild subscriptions exist only while that is open, and the view resets
+ * to the sections on every open.
+ */
 export const SettingsPanel = () => {
+  const [view, setView] = useState<SettingsView>("settings");
+
+  if (view === "shortcuts") return <ShortcutsPanel onBack={() => setView("settings")} />;
+  return <SettingsSections onViewShortcuts={() => setView("shortcuts")} />;
+};
+
+const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) => {
   const {
     account: { account },
   } = useDojo();
@@ -64,9 +75,6 @@ export const SettingsPanel = () => {
     setFullScreen(!fullScreen);
     toggleFullScreen();
   };
-
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const closePopover = usePopoverStore((state) => state.close);
 
   // The guilds slice is the subscription; the bridge publishes it once per ingest slice and on account change.
   const guilds = useWorldSlicesStore((state) => state.guilds);
@@ -131,13 +139,7 @@ export const SettingsPanel = () => {
           </div>
           <div className="flex items-center justify-between text-xs text-gray-gold">
             <div>Keyboard Shortcuts</div>
-            <Button
-              size="xs"
-              onClick={() => {
-                closePopover(SETTINGS_POPOVER_ID);
-                togglePopup(shortcuts);
-              }}
-            >
+            <Button size="xs" onClick={onViewShortcuts}>
               View
             </Button>
           </div>
