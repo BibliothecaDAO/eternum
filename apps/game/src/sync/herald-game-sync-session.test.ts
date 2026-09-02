@@ -27,9 +27,9 @@ describe("buildHeraldGameStreamUrl", () => {
       setup: { network: { contractComponents: {} } } as never,
     });
 
-    session.onSnapshotProgress?.({ completed: 1, phase: "receiving", total: 2 });
-    session.onSnapshotProgress?.({ completed: 2, phase: "receiving", total: 2 });
-    session.onSnapshotProgress?.({ completed: 3, phase: "applying", total: 3 });
+    session.onSnapshotProgress?.({ completed: 1, phase: "receiving", streaming: true, total: 2 });
+    session.onSnapshotProgress?.({ completed: 2, phase: "receiving", streaming: false, total: 2 });
+    session.onSnapshotProgress?.({ completed: 3, phase: "applying", streaming: false, total: 3 });
 
     expect(onSnapshotProgress).toHaveBeenCalledTimes(3);
     expect(

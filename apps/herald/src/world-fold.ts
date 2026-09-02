@@ -72,6 +72,20 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
   return `missing=${missing.join(",") || "none"}, unexpected=${unexpected.join(",") || "none"}`;
 };
 
+// The client streams the snapshot into its store one model page at a time and renders from the first pages that
+// carry the world's structures and explored tiles; those go first, the rest keep registry order.
+const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["Structure", "Tile"];
+
+export const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
+  definitions: readonly TDefinition[],
+): TDefinition[] => {
+  const rank = (name: string) => {
+    const index = SNAPSHOT_STREAMING_PRIORITY.indexOf(name);
+    return index === -1 ? SNAPSHOT_STREAMING_PRIORITY.length : index;
+  };
+  return [...definitions].sort((left, right) => rank(left.name) - rank(right.name));
+};
+
 export class WorldFold {
   private readonly registry: ModelRegistry;
   private readonly parent?: WorldFold;
@@ -214,14 +228,14 @@ export class WorldFold {
       },
     ];
     if (!requestedModels || requestedModels.length === 0) {
-      return this.registry.persistent.map(({ definition }) => definition);
+      return orderSnapshotModelsForStreaming(this.registry.persistent.map(({ definition }) => definition));
     }
 
     const requested = new Set(requestedModels);
     const available = new Set(definitions.map(({ name }) => name));
     const missing = [...requested].filter((model) => !available.has(model));
     if (missing.length > 0) throw new Error(`Unknown snapshot models: ${missing.join(", ")}`);
-    return definitions.filter(({ name }) => requested.has(name));
+    return orderSnapshotModelsForStreaming(definitions.filter(({ name }) => requested.has(name)));
   }
 
   public retainedRowCount(): number {

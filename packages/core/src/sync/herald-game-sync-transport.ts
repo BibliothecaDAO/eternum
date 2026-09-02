@@ -1,5 +1,6 @@
 import { getGameSyncModel } from "./model-manifest";
 import type {
+  GameSyncSnapshotPage,
   GameSyncEntity,
   GameSyncHead,
   GameSyncSubscriptionHandlers,
@@ -149,7 +150,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   // its value until a diff changes it; `overlay_reset` carries no rows of its own.
   private readonly currentRows = new Map<string, StoredRow>();
   private handlers?: GameSyncSubscriptionHandlers;
-  private initialSnapshot = deferred<{ items: GameSyncEntity[] }>();
+  // The first snapshot streams to the runtime one model page at a time; later snapshots reconcile as one batch.
+  private readonly initialSnapshotPages: GameSyncSnapshotPage[] = [];
+  private initialSnapshotPageWaiter: ReturnType<typeof deferred<GameSyncSnapshotPage>> | null = null;
+  private initialSnapshotComplete = false;
+  private initialSnapshotFailure: Error | null = null;
   private ready = deferred<void>();
   private snapshotRows?: Map<string, StoredRow>;
   private socket?: HeraldSocket;
@@ -162,6 +167,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private snapshotBytesReceived = 0;
   private snapshotModelsReceived = 0;
   private snapshotRowsReceived = 0;
+  private initialSnapshotPageCursor = 0;
 
   constructor(private readonly options: HeraldGameSyncTransportOptions) {
     this.reconnectMs = options.reconnectMs ?? DEFAULT_RECONNECT_MS;
@@ -176,15 +182,39 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     return { cancel: () => this.stop() };
   }
 
-  public async fetchSnapshotPage(cursor?: string): Promise<{ items: GameSyncEntity[] }> {
-    if (cursor) throw new Error(`Herald snapshots have one page; received cursor ${cursor}`);
-    return this.initialSnapshot.promise;
+  public async fetchSnapshotPage(): Promise<GameSyncSnapshotPage> {
+    if (this.initialSnapshotFailure) throw this.initialSnapshotFailure;
+    const page = this.initialSnapshotPages.shift();
+    if (page) return this.withNextCursor(page);
+    if (this.initialSnapshotComplete) return { items: [] };
+    this.initialSnapshotPageWaiter ??= deferred<GameSyncSnapshotPage>();
+    return this.initialSnapshotPageWaiter.promise;
+  }
+
+  /** A cursor means "ask again": more model pages are buffered or still streaming. */
+  private withNextCursor(page: GameSyncSnapshotPage): GameSyncSnapshotPage {
+    const hasMore = this.initialSnapshotPages.length > 0 || !this.initialSnapshotComplete;
+    return hasMore ? { ...page, nextCursor: `page-${++this.initialSnapshotPageCursor}` } : page;
+  }
+
+  private deliverInitialSnapshotPage(page: GameSyncSnapshotPage): void {
+    const waiter = this.initialSnapshotPageWaiter;
+    if (waiter) {
+      this.initialSnapshotPageWaiter = null;
+      waiter.resolve(this.withNextCursor(page));
+      return;
+    }
+    this.initialSnapshotPages.push(page);
   }
 
   private resetSession(handlers: GameSyncSubscriptionHandlers): void {
     this.handlers = handlers;
     this.ready = deferred<void>();
-    this.initialSnapshot = deferred<{ items: GameSyncEntity[] }>();
+    this.initialSnapshotPages.length = 0;
+    this.initialSnapshotPageWaiter = null;
+    this.initialSnapshotComplete = false;
+    this.initialSnapshotFailure = null;
+    this.initialSnapshotPageCursor = 0;
     this.currentRows.clear();
     this.snapshotRows = undefined;
     this.epoch = "";
@@ -232,7 +262,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error));
       if (!this.ready.settled) this.ready.reject(failure);
-      if (!this.initialSnapshot.settled) this.initialSnapshot.reject(failure);
+      if (!this.initialSnapshotComplete) {
+        this.initialSnapshotFailure = failure;
+        this.initialSnapshotPageWaiter?.reject(failure);
+        this.initialSnapshotPageWaiter = null;
+      }
       this.forceFreshSnapshot = true;
       this.socket?.close();
     }
@@ -251,10 +285,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptSnapshotChunk(message: Extract<HeraldMessage, { type: "snapshot" }>, bytesReceived: number): void {
     this.snapshotRows ??= new Map();
-    message.rows.forEach((row) => {
-      const stored = { ...row, model: message.model };
-      this.snapshotRows?.set(rowIdentity(stored.model, stored.key), stored);
-    });
+    const stored = message.rows.map((row) => ({ ...row, model: message.model }));
+    stored.forEach((row) => this.snapshotRows?.set(rowIdentity(row.model, row.key), row));
+    if (!this.initialSnapshotComplete) this.deliverInitialSnapshotPage({ items: stored.map(toEntity) });
     this.snapshotBytesReceived += bytesReceived;
     this.snapshotModelsReceived += 1;
     this.snapshotRowsReceived += message.rows.length;
@@ -268,10 +301,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
 
   private acceptSnapshotEnd(message: Extract<HeraldMessage, { type: "snapshot_end" }>): void {
     const rows = this.snapshotRows ?? new Map<string, StoredRow>();
-    const firstSnapshot = !this.initialSnapshot.settled;
-    if (firstSnapshot) {
+    if (!this.initialSnapshotComplete) {
       this.replaceState(rows);
-      this.initialSnapshot.resolve({ items: [...rows.values()].map(toEntity) });
+      this.initialSnapshotComplete = true;
+      this.initialSnapshotPageWaiter?.resolve({ items: [] });
+      this.initialSnapshotPageWaiter = null;
     } else {
       this.reconcileSnapshot(rows);
     }

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createModelRegistry } from "./model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, WorldManifest } from "./types";
 import { WORLD_EVENT_SELECTORS, decodeWorldEvent } from "./world-event-decoder";
-import { WorldFold } from "./world-fold";
+import { WorldFold, orderSnapshotModelsForStreaming } from "./world-fold";
 
 const entityDefinition: GameSyncModelDefinition = {
   availability: "all",
@@ -270,5 +270,17 @@ describe("WorldFold", () => {
     overlay.apply(decodeRequired(registry, rawEvent(WORLD_EVENT_SELECTORS.delete, "0x101", [])));
     expect(overlay.currentRow("TestModel", "0xabc")).toBeUndefined();
     expect(confirmed.currentRow("TestModel", "0xabc")).toEqual(applied?.set);
+  });
+});
+
+describe("orderSnapshotModelsForStreaming", () => {
+  it("streams structures and explored tiles first and keeps registry order for the rest", () => {
+    const ordered = orderSnapshotModelsForStreaming([
+      { name: "ExplorerTroops" },
+      { name: "Tile" },
+      { name: "Hyperstructure" },
+      { name: "Structure" },
+    ]);
+    expect(ordered.map(({ name }) => name)).toEqual(["Structure", "Tile", "ExplorerTroops", "Hyperstructure"]);
   });
 });

@@ -21,10 +21,12 @@ export interface GameSyncSnapshotChunkProgress {
 export interface GameSyncSnapshotProgress {
   completed: number;
   phase: "receiving" | "applying";
+  /** True while more snapshot pages may still arrive, so `completed >= total` is not yet the end of the phase. */
+  streaming: boolean;
   total: number;
 }
 
-interface GameSyncSnapshotPage {
+export interface GameSyncSnapshotPage {
   items: GameSyncEntity[];
   nextCursor?: string;
 }

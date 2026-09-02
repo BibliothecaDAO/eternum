@@ -74,6 +74,7 @@ export class GameSyncRuntime {
   private localTransactions = new Map<string, true>();
   private snapshotAppliedOperations = 0;
   private snapshotExpectedOperations = 0;
+  private snapshotPagesPending = false;
   private readonly sliceAppliedListeners = new Set<() => void>();
   private transactionWaiters = new Map<
     string,
@@ -270,6 +271,7 @@ export class GameSyncRuntime {
           session.onSnapshotProgress?.({
             completed: Math.min(progress.modelsReceived, session.snapshotModels.length),
             phase: "receiving",
+            streaming: progress.modelsReceived < session.snapshotModels.length,
             total: session.snapshotModels.length,
           });
         },
@@ -304,6 +306,15 @@ export class GameSyncRuntime {
     );
   }
 
+  private reportSnapshotApplyProgress(): void {
+    this.session?.onSnapshotProgress?.({
+      completed: Math.min(this.snapshotAppliedOperations, this.snapshotExpectedOperations),
+      phase: "applying",
+      streaming: this.snapshotPagesPending,
+      total: this.snapshotExpectedOperations,
+    });
+  }
+
   private async hydrateSnapshot(
     generation: number,
     session: GameSyncSessionStart,
@@ -311,6 +322,7 @@ export class GameSyncRuntime {
   ): Promise<void> {
     const visitedCursors = new Set<string>();
     let cursor: string | undefined;
+    this.snapshotPagesPending = true;
 
     do {
       const page = await session.transport.fetchSnapshotPage(cursor);
@@ -334,6 +346,9 @@ export class GameSyncRuntime {
         visitedCursors.add(cursor);
       }
     } while (cursor);
+
+    this.snapshotPagesPending = false;
+    if (this.snapshotExpectedOperations > 0) this.reportSnapshotApplyProgress();
   }
 
   private reconcileAbsentSnapshotComponents(
@@ -401,11 +416,7 @@ export class GameSyncRuntime {
     }
     if (this.status === "snapshotting" && this.snapshotExpectedOperations > 0) {
       this.snapshotAppliedOperations += info.operationCount;
-      this.session?.onSnapshotProgress?.({
-        completed: Math.min(this.snapshotAppliedOperations, this.snapshotExpectedOperations),
-        phase: "applying",
-        total: this.snapshotExpectedOperations,
-      });
+      this.reportSnapshotApplyProgress();
     }
     this.worldSpatialProjection?.flush();
     this.sliceAppliedListeners.forEach((listener) => listener());

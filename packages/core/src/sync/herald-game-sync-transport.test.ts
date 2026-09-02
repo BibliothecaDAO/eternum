@@ -96,7 +96,7 @@ describe("HeraldGameSyncTransport", () => {
 
     const snapshotPage = harness.transport.fetchSnapshotPage();
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
-    await expect(snapshotPage).resolves.toEqual({
+    await expect(snapshotPage).resolves.toMatchObject({
       items: [{ hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } }],
     });
     expect(harness.snapshotProgress).toEqual([
@@ -114,6 +114,41 @@ describe("HeraldGameSyncTransport", () => {
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 2 } } },
       { hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } },
     ]);
+  });
+
+  it("streams the first snapshot to the runtime one model page at a time, before snapshot_end", async () => {
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const socket = harness.sockets[0]!;
+    socket.receive(hello("epoch-a", 0));
+    await subscribed;
+
+    socket.receive({
+      epoch: "epoch-a",
+      model: "Structure",
+      rows: [{ key: "0x1", value: { game_id: "0x36" } }],
+      seq: 0,
+      type: "snapshot",
+    });
+    const first = await harness.transport.fetchSnapshotPage();
+    expect(first.items).toEqual([{ hashed_keys: "0x1", models: { Structure: { game_id: "0x36" } } }]);
+    expect(first.nextCursor).toBeDefined();
+
+    const pending = harness.transport.fetchSnapshotPage();
+    socket.receive({
+      epoch: "epoch-a",
+      model: "Tile",
+      rows: [{ key: "0x2", value: { game_id: "0x36" } }],
+      seq: 0,
+      type: "snapshot",
+    });
+    const second = await pending;
+    expect(second.items).toEqual([{ hashed_keys: "0x2", models: { Tile: { game_id: "0x36" } } }]);
+    expect(second.nextCursor).toBeDefined();
+
+    const last = harness.transport.fetchSnapshotPage();
+    socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
+    expect(await last).toEqual({ items: [] });
   });
 
   it("delivers a reconciled snapshot as one batch of changed rows only", async () => {
@@ -179,7 +214,7 @@ describe("HeraldGameSyncTransport", () => {
     socket.receive(diff("epoch-a", 0, "0x2", 3, true));
     socket.receive({ confirmed_block: 12, epoch: "epoch-a", seq: 1, type: "overlay_reset" });
 
-    await expect(snapshotPage).resolves.toEqual({
+    await expect(snapshotPage).resolves.toMatchObject({
       items: [{ hashed_keys: "0x1", models: { ExplorerTroops: { game_id: "0x36", value: 1 } } }],
     });
     expect(harness.entities).toEqual([

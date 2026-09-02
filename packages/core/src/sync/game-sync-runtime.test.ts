@@ -136,7 +136,7 @@ describe("GameSyncRuntime recovery", () => {
     expect(harness.order).toEqual(["subscribe-active", "snapshot-page-1", "snapshot-page-2"]);
     expect([...memory.rows.keys()]).toEqual(["one", "two"]);
     expect(runtime.getMetrics()).toMatchObject({ snapshotEntityCount: 2, snapshotPageCount: 2 });
-    expect(snapshotProgress).toHaveBeenLastCalledWith({ completed: 2, phase: "applying", total: 2 });
+    expect(snapshotProgress).toHaveBeenLastCalledWith({ completed: 2, phase: "applying", streaming: false, total: 2 });
     expect(runtime.getStatus()).toBe("running");
   });
 

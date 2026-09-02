@@ -39,7 +39,8 @@ const createSnapshotProgressObserver = (
       startedAt.set(progress.phase, performance.now());
       markGameEntryMilestone(`${milestone}-started`);
     }
-    if (progress.total > 0 && progress.completed >= progress.total && !completed.has(progress.phase)) {
+    const phaseDone = !progress.streaming && progress.total > 0 && progress.completed >= progress.total;
+    if (phaseDone && !completed.has(progress.phase)) {
       completed.add(progress.phase);
       markGameEntryMilestone(`${milestone}-completed`);
       recordGameEntryDuration(milestone, performance.now() - startedAt.get(progress.phase)!);
