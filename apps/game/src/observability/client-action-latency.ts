@@ -1,5 +1,7 @@
 export type ClientActionLatencyPhase =
   | "click"
+  /** The local pending state (ghost, highlighted path, selected destination) is on screen — same frame as the click. */
+  | "ghost_rendered"
   | "calls_built"
   | "submit_guard_released"
   | "provider_lock_acquired"

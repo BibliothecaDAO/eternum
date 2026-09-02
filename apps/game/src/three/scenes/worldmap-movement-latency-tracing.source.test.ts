@@ -30,6 +30,7 @@ describe("Worldmap movement latency tracing wiring", () => {
 
     expect(source).toContain("beginClientActionLatency");
     expect(source).toContain("recordClientActionSubmitted");
+    expect(source).toContain('recordClientActionPhase(exploreLatencyActionId, "ghost_rendered")');
     expect(source).toContain("recordClientActionPreConfirmed");
     expect(source).toContain("recordExploreRevealAfterRender(current.hexCoords, terrainPageRebuild)");
     expect(source).toContain("void terrainPageRebuild.then");

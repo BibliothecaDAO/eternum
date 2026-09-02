@@ -11,27 +11,15 @@ import { type PulseVisualPalette, resolveSelectionPulsePalette } from "./worldma
 export class SelectionPulseManager {
   private scene: THREE.Scene;
   private pulseMesh: THREE.Mesh | null = null;
-  private ownershipPulseMeshes: THREE.Mesh[] = [];
   private isVisible = false;
   private selectedEntityId: number | null = null;
 
-  // Shared geometry for all ownership pulse meshes (created once, reused)
-  private readonly sharedOwnershipGeometry: THREE.ShapeGeometry;
-
-  // Shared material for ownership pulses (separate from main selection)
-  // All ownership pulses animate together so they can share one material
-  private readonly sharedOwnershipMaterial: THREE.MeshBasicMaterial;
   private readonly primaryPulseMaterial: THREE.MeshBasicMaterial;
   private readonly primaryBaseColor = new THREE.Color();
   private readonly primaryPulseColor = new THREE.Color();
-  private readonly ownershipBaseColor = new THREE.Color(0.2, 0.8, 1.0);
-  private readonly ownershipPulseColor = new THREE.Color(1.0, 1.0, 0.8);
   private primaryPulseIntensity = 0.28;
-  private ownershipPulseIntensity = 0.5;
   private primaryPulseTime = 0;
-  private ownershipPulseTime = 0;
   private readonly animatedPrimaryColor = new THREE.Color();
-  private readonly animatedOwnershipColor = new THREE.Color();
 
   constructor(
     scene: THREE.Scene,
@@ -43,17 +31,9 @@ export class SelectionPulseManager {
     this.primaryPulseColor.setHex(defaultPulsePalette.pulseColor);
     this.primaryPulseIntensity = defaultPulsePalette.intensity;
 
-    // Pre-create shared geometry for ownership pulses
-    this.sharedOwnershipGeometry = this.createRingGeometry(HEX_SIZE * 1.12, HEX_SIZE * 0.86);
-
     this.primaryPulseMaterial = new THREE.MeshBasicMaterial({
       color: this.primaryBaseColor.clone(),
       opacity: this.primaryPulseIntensity,
-      transparent: true,
-    });
-    this.sharedOwnershipMaterial = new THREE.MeshBasicMaterial({
-      color: this.ownershipBaseColor.clone(),
-      opacity: this.ownershipPulseIntensity,
       transparent: true,
     });
 
@@ -83,11 +63,7 @@ export class SelectionPulseManager {
   }
 
   private shouldAnimate(): boolean {
-    if (this.isVisible) {
-      return true;
-    }
-
-    return this.ownershipPulseMeshes.some((mesh) => mesh.visible);
+    return this.isVisible;
   }
 
   public update(deltaTime: number): void {
@@ -100,7 +76,6 @@ export class SelectionPulseManager {
     }
 
     this.primaryPulseTime += deltaTime;
-    this.ownershipPulseTime += deltaTime;
     this.applyMaterialState(
       this.primaryPulseMaterial,
       this.primaryBaseColor,
@@ -109,15 +84,6 @@ export class SelectionPulseManager {
       this.primaryPulseTime,
       this.animatedPrimaryColor,
       this.isVisible,
-    );
-    this.applyMaterialState(
-      this.sharedOwnershipMaterial,
-      this.ownershipBaseColor,
-      this.ownershipPulseColor,
-      this.ownershipPulseIntensity,
-      this.ownershipPulseTime,
-      this.animatedOwnershipColor,
-      this.ownershipPulseMeshes.some((mesh) => mesh.visible),
     );
   }
 
@@ -146,62 +112,6 @@ export class SelectionPulseManager {
     this.pulseMesh.visible = false;
     this.isVisible = false;
     this.selectedEntityId = null;
-  }
-
-  /**
-   * Show ownership pulses for a set of hex coordinates using provided colors
-   * Optimized: Uses shared geometry and material for all ownership pulses
-   */
-  public showOwnershipPulses(
-    positions: Array<{ x: number; z: number }>,
-    baseColor: THREE.Color,
-    pulseColor: THREE.Color,
-  ): void {
-    this.ownershipBaseColor.copy(baseColor);
-    this.ownershipPulseColor.copy(pulseColor);
-    this.ownershipPulseTime = 0;
-    this.applyMaterialState(
-      this.sharedOwnershipMaterial,
-      this.ownershipBaseColor,
-      this.ownershipPulseColor,
-      this.ownershipPulseIntensity,
-      this.ownershipPulseTime,
-      this.animatedOwnershipColor,
-      positions.length > 0,
-    );
-
-    // Lazy-create ownership meshes up to required count using shared resources
-    positions.forEach((pos, index) => {
-      let mesh = this.ownershipPulseMeshes[index];
-      if (!mesh) {
-        // Use shared geometry and material instead of creating new ones
-        mesh = new THREE.Mesh(this.sharedOwnershipGeometry, this.sharedOwnershipMaterial);
-        mesh.position.y = 0.5;
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.renderOrder = 99; // Slightly below primary pulse so focus pulse stays on top
-        mesh.raycast = () => {};
-        this.scene.add(mesh);
-        this.ownershipPulseMeshes[index] = mesh;
-      }
-
-      mesh.visible = true;
-      mesh.position.set(pos.x, this.terrainSurface.sampleSurface(pos.x, pos.z).height + 0.5, pos.z);
-    });
-
-    // Hide unused meshes
-    for (let i = positions.length; i < this.ownershipPulseMeshes.length; i++) {
-      const mesh = this.ownershipPulseMeshes[i];
-      mesh.visible = false;
-    }
-  }
-
-  /**
-   * Clear all ownership pulses
-   */
-  public clearOwnershipPulses(): void {
-    this.ownershipPulseMeshes.forEach((mesh) => {
-      mesh.visible = false;
-    });
   }
 
   /**
@@ -283,16 +193,6 @@ export class SelectionPulseManager {
       this.primaryPulseMaterial.dispose();
       this.pulseMesh = null;
     }
-
-    // Remove ownership meshes from scene (they share geometry/material)
-    this.ownershipPulseMeshes.forEach((mesh) => {
-      this.scene.remove(mesh);
-    });
-    this.ownershipPulseMeshes = [];
-
-    // Dispose shared resources
-    this.sharedOwnershipGeometry.dispose();
-    this.sharedOwnershipMaterial.dispose();
 
     this.isVisible = false;
     this.selectedEntityId = null;

@@ -237,7 +237,6 @@ import {
   type MovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { WorldmapOwnershipPulsePresenter } from "./worldmap-structure-ownership-pulses";
 import {
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
@@ -817,7 +816,6 @@ export default class WorldmapScene extends WarpTravel {
   private selectedHexManager!: SelectedHexManager;
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
   private selectionPulseManager!: SelectionPulseManager;
-  private ownershipPulsePresenter!: WorldmapOwnershipPulsePresenter;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private refreshVisualTerrainWindowThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
@@ -1652,17 +1650,6 @@ export default class WorldmapScene extends WarpTravel {
       dojoComponents: this.dojo.components,
     });
     this.selectionPulseManager = new SelectionPulseManager(this.scene, this.getTerrainSurface());
-    this.ownershipPulsePresenter = new WorldmapOwnershipPulsePresenter({
-      clearOwnershipPulses: () => this.selectionPulseManager.clearOwnershipPulses(),
-      showOwnershipPulses: (positions, baseColor, pulseColor) =>
-        this.selectionPulseManager.showOwnershipPulses(positions, baseColor, pulseColor),
-      getStructureHex: (structureId) => this.getStructureHexPosition(structureId),
-      getOwnedArmyHexes: (structureId) =>
-        this.worldSpatialProjection
-          .getArmies()
-          .filter(({ entityId }) => this.getArmyOwnerStructureId(entityId) === structureId)
-          .map(({ entityId }) => this.getArmyDisplayPosition(entityId)),
-    });
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
@@ -2602,6 +2589,10 @@ export default class WorldmapScene extends WarpTravel {
       if (exploreLatencyActionId) {
         this.pendingExploreLatencyActions.set(selectedEntityId, { actionId: exploreLatencyActionId, targetKey: key });
       }
+      // The click's ghost: the destination stays selected and the path highlighted before anything is signed.
+      if (exploreLatencyActionId) {
+        recordClientActionPhase(exploreLatencyActionId, "ghost_rendered");
+      }
       const effectType = isTravelAction ? "travel" : "compass";
       const effectLabel = isTravelAction ? "Traveling" : "Exploring";
       let cleanup = () => {};
@@ -2983,12 +2974,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-
-    const extraHexes: HexPosition[] = [];
-    if (hexCoords) {
-      extraHexes.push(hexCoords);
-    }
-    this.ownershipPulsePresenter.update(selectedEntityId, extraHexes);
   }
 
   private clearEvictedArmyMovementVisuals(entityId: ID): void {
@@ -3270,15 +3255,6 @@ export default class WorldmapScene extends WarpTravel {
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
     this.showSelectedArmyPulse(selectedEntityId);
-
-    const extraHexes: HexPosition[] = [];
-    if (armyPosition) {
-      extraHexes.push(armyPosition);
-    }
-
-    const owningStructureId = this.getArmyOwnerStructureId(selectedEntityId);
-
-    this.ownershipPulsePresenter.update(owningStructureId ?? undefined, extraHexes, extraHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
   }
@@ -3487,7 +3463,6 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
-    this.selectionPulseManager.clearOwnershipPulses();
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.attachWorldmapManagerLabels();
   }
@@ -8137,7 +8112,6 @@ export default class WorldmapScene extends WarpTravel {
       this.state.setHoveredHex(null);
       this.highlightHexManager.highlightHexes([]);
       this.selectionPulseManager.hideSelection();
-      this.selectionPulseManager.clearOwnershipPulses();
       if (shouldResetSharedInteractionState) {
         resetWorldmapEntityActions();
       }
