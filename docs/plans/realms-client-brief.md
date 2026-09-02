@@ -562,6 +562,17 @@ observed); (3) bound the WebGPU probe and fix the preload chunk TypeError so cap
 Re-measure far/mid p95 after 1+2; close is accepted with its attributions. Phase 4 (Command Deck steps 1+2) may start in
 parallel — different files.
 
+L5c reviewed (reviewer, 2026-09-02): the strategic-marker layer draws every structure and army from the spatial
+projection in owner colours, far-band only, kept current from the change sets — the per-kind/per-tier instanced meshes
+(≤ 8 draws) are an accepted simplification of the single-atlas letter, well inside the 60-draw bar; the partition is one
+linear bucketing pass with per-page sorts (2.6–2.8 ms headless); the WebGPU lane probe is bounded at 1 s with typed
+verdicts, remembered per profile in `eternum-renderer-lane`, forced-WebGL never probes, and the root cause is on the
+record: three's capability addon holds an unbounded top-level await that Rollup propagates into async chunks with
+late-assigned exports — the addon import is deleted everywhere and a source test bans it. Reviewer reproduction:
+marker/lane/discipline/wiring/terrain suites 197/197, typecheck clean, the far-band screenshot shows the ownership map.
+**Approved; deployed from this tip.** Owner closes the two owed cells: far/mid p95 ≤ 16.7 after the partition split, and
+the capable machine reaching `webgpu` via `?rendererMode=webgpu-auto` then booting the remembered lane with no probe.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
