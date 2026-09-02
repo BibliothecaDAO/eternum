@@ -15,12 +15,16 @@ const ABSORBED_SURFACES = [
   "ui/layouts/sign-in-prompt-modal.tsx",
   "ui/features/social/components/social.tsx",
   "ui/components/transaction-center/transaction-window.tsx",
+  "ui/features/economy/resources/realm-transfer-manager.tsx",
+  "ui/features/infrastructure/automation/production-automation-dashboard.tsx",
+  "ui/features/military/components/exploration-automation-dashboard.tsx",
+  "ui/features/world/containers/top-navigation.tsx",
+  "ui/features/world/components/config.tsx",
+  "hooks/store/use-popups-store.ts",
 ];
 
 const ABSORBED_NAMES =
-  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow)\b/;
-
-const ABSORBED_WINDOW_NAMES = /"(Settings|Leaderboard|Rewards|Shortcuts|LatestFeatures|Transactions)"/;
+  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen)\b/;
 
 const isSourceFile = (name: string) =>
   (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".test.ts") && !name.endsWith(".test.tsx");
@@ -44,11 +48,6 @@ describe("overlay surfaces", () => {
       .filter((path) => ABSORBED_NAMES.test(readFileSync(path, "utf8")))
       .map((path) => relative(SOURCE_ROOT, path));
     expect(references).toEqual([]);
-  });
-
-  it("the migrated windows have no popup name left to open them", () => {
-    const popupNames = readFileSync(resolve(SOURCE_ROOT, "ui/features/world/components/config.tsx"), "utf8");
-    expect(popupNames).not.toMatch(ABSORBED_WINDOW_NAMES);
   });
 
   it("every sign-in prompt goes through the identity session store", () => {

@@ -1,4 +1,5 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
@@ -154,7 +155,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const playerStructures = useUIStore((state) => state.playerStructures);
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const togglePopup = useUIStore((state) => state.togglePopup);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const { isMapView } = useQuery();
   const {
@@ -336,14 +336,11 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     [toggleModal],
   );
 
-  const handleOpenTransfer = useCallback(
-    (resourceId: ResourcesIds) => {
-      if (!selectedStructureId) return;
-      setStructureEntityId(selectedStructureId);
-      togglePopup(resourceId.toString());
-    },
-    [selectedStructureId, setStructureEntityId, togglePopup],
-  );
+  // A transfer acts on the selected structure: select it before the cell's popover opens.
+  const selectStructureForTransfer = useCallback(() => {
+    if (!selectedStructureId) return;
+    setStructureEntityId(selectedStructureId);
+  }, [selectedStructureId, setStructureEntityId]);
 
   const getResourceBalance = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
@@ -926,7 +923,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                       onManageProduction={() => handleManageProduction(structure.entityId, resourceId)}
                                       canCraftRelic={canCraftRelic}
                                       onCraftRelic={() => handleOpenCraftRelic(structure.entityId)}
-                                      onOpenTransfer={() => handleOpenTransfer(resourceId)}
+                                      onBeforeOpenTransfer={selectStructureForTransfer}
                                       onDragStart={handleDragStart}
                                       onDragEnd={handleDragEnd}
                                       onDoubleClick={handleDoubleClick}
@@ -1009,7 +1006,7 @@ interface TransferCellProps {
   isSelectedStructure: boolean;
   hasProductionBuilding: boolean;
   onManageProduction: () => void;
-  onOpenTransfer: () => void;
+  onBeforeOpenTransfer: () => void;
   canCraftRelic: boolean;
   onCraftRelic: () => void;
   onDragStart: (structureId: number, resourceId: ResourcesIds, amount: number) => void;
@@ -1036,7 +1033,7 @@ const TransferCell = React.memo((props: TransferCellProps) => {
     onManageProduction,
     canCraftRelic,
     onCraftRelic,
-    onOpenTransfer,
+    onBeforeOpenTransfer,
     onDragStart,
     onDragEnd,
     onDoubleClick,
@@ -1172,17 +1169,23 @@ const TransferCell = React.memo((props: TransferCellProps) => {
             )}
             {isSelectedStructure && (
               <>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onOpenTransfer();
-                  }}
-                  className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
-                  title="Open transfer modal"
-                >
-                  <ArrowLeftRight className="h-2.5 w-2.5" />
-                </button>
+                <ResourceTransferPopover
+                  resourceId={resourceId}
+                  onBeforeOpen={onBeforeOpenTransfer}
+                  trigger={({ toggle }) => (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggle();
+                      }}
+                      className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
+                      title="Transfer"
+                    >
+                      <ArrowLeftRight className="h-2.5 w-2.5" />
+                    </button>
+                  )}
+                />
                 {cell.amount > 0 && (
                   <button
                     type="button"

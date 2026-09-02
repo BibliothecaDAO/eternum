@@ -248,7 +248,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   }, [calls]);
 
   return (
-    <div className="flex h-full min-h-[75vh] flex-col gap-3 p-3 md:p-5">
+    <div className="flex flex-col gap-3 p-3 md:p-5">
       <header className="rounded-lg border border-gold/30 bg-black/40 p-3 md:p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3 md:gap-4">

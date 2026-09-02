@@ -29,7 +29,7 @@ const generateId = () => {
   return `ea_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
 };
 
-export interface ExplorationAutomationEntry {
+interface ExplorationAutomationEntry {
   id: string;
   explorerId: string;
   active: boolean;

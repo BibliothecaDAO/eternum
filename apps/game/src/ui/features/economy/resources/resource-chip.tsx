@@ -1,6 +1,7 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
@@ -233,7 +234,6 @@ export const ResourceChip = ({
     // setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
   }, [setTooltip, actualBalance, setShowPerHour, setIsHovered, setDisplayBalance]);
 
-  const togglePopup = useUIStore((state) => state.togglePopup);
   const mode = useGameModeConfig();
 
   const canShowProductionShortcut = useMemo(() => {
@@ -451,30 +451,35 @@ export const ResourceChip = ({
         </button>
       )}
       {showTransfer && (
-        <button
-          data-tooltip-anchor
-          onClick={(event) => {
-            event.stopPropagation();
-            togglePopup(resourceId.toString());
-          }}
-          disabled={disableButtons}
-          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-            />
-          </svg>
-        </button>
+        <ResourceTransferPopover
+          resourceId={resourceId}
+          trigger={({ toggle }) => (
+            <button
+              data-tooltip-anchor
+              onClick={(event) => {
+                event.stopPropagation();
+                toggle();
+              }}
+              disabled={disableButtons}
+              className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                />
+              </svg>
+            </button>
+          )}
+        />
       )}
       {isRelic && balance > 0 && (
         <button

@@ -7,7 +7,6 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
 import { BuildModeStore, createBuildModeStoreSlice } from "./use-build-mode-store";
-import { createPopupsSlice, PopupsStore } from "./use-popups-store";
 import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
 import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
@@ -224,7 +223,7 @@ interface UIStore {
   setCycleTime: (time: number) => void;
 }
 
-export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
+export type AppStore = UIStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
 
 const readLocalBool = (key: string, fallback: boolean): boolean => {
   if (typeof window === "undefined") return fallback;
@@ -395,7 +394,6 @@ export const useUIStore = create(
     setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
     militaryMapVersion: 0,
     bumpMilitaryMapVersion: () => set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
-    ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
     ...createRealmStoreSlice(set),

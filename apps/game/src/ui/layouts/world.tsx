@@ -8,7 +8,6 @@ import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
 import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
-import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
@@ -18,7 +17,6 @@ import { BottomRightPanel } from "../features/world/components/bottom-right-pane
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
-import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
@@ -87,7 +85,6 @@ const BackgroundSystems = () => (
  */
 const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   <>
-    <RealmTransferManager />
     <PlayOverlayManager backgroundImage={backgroundImage} />
   </>
 );
@@ -108,7 +105,7 @@ const ActionOverlays = () => (
  * - Top-left: TopHeader (player info, map toggle, tick progress)
  * - Left: LeftCommandSidebar (structure selector, navigation, views)
  * - Bottom-right: BottomRightPanel (tile info, minimap)
- * - Floating: ModalWindows (settings, shortcuts, social - rendered when open)
+ * Every other surface is a popover hanging off its own trigger.
  */
 const HUD = () => (
   <>
@@ -120,11 +117,6 @@ const HUD = () => (
 
     {/* Bottom-right — minimap + contextual tile inspector. */}
     <BottomRightPanel />
-
-    {/* Floating modal windows (settings, social, etc.) - needs high z-index and pointer-events */}
-    <div className="absolute w-screen top-10 flex pointer-events-none z-[100]">
-      <ModalWindows />
-    </div>
   </>
 );
 

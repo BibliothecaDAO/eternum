@@ -49,10 +49,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "external",
     reason: "deployment worker run status cannot push",
   },
-  "apps/game/src/ui/features/infrastructure/automation/production-automation-dashboard.tsx": {
-    class: "clock",
-    reason: "automation countdown interpolation",
-  },
   "apps/game/src/ui/features/landing/components/game-entry-modal.tsx": {
     class: "ui",
     reason: "reveal animation and registration countdown",
@@ -68,10 +64,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
   "apps/game/src/ui/features/military/battle/quick-attack-preview.tsx": {
     class: "clock",
     reason: "battle cooldown interpolation",
-  },
-  "apps/game/src/ui/features/military/components/exploration-automation-dashboard.tsx": {
-    class: "clock",
-    reason: "automation countdown interpolation",
   },
   "apps/game/src/ui/features/military/components/structure-defence.tsx": {
     class: "clock",
@@ -195,9 +187,6 @@ describe("polling discipline", () => {
   it("keeps chain facts, health, and transaction status off polling loops", () => {
     expect(source("packages/provider/src/index.ts")).not.toContain("this.provider.waitForTransaction(");
     expect(source("apps/game/src/ui/shared/components/chain-time-poller.tsx")).not.toContain('getBlock("latest")');
-    expect(source("apps/game/src/ui/features/military/components/exploration-automation-dashboard.tsx")).not.toContain(
-      "refreshExplorerPositions",
-    );
     expect(existsSync(join(REPO_ROOT, "apps/game/src/dojo"))).toBe(false);
     expect(source("apps/game/src/init/bootstrap.tsx")).not.toContain("probeWorldToriiAlive");
   });
