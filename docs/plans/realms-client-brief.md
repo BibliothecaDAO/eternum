@@ -1069,6 +1069,21 @@ sides; net structure: window shells and the manager interval out, one 263-line b
 3. Not touched: the identity-origin fetch failing in the local dev profile (`identity_session_load_failed`, no identity
    API on the laptop) — the store resolves to anonymous, as designed.
 
+Phase 4 step 3 reviewed (reviewer, 2026-09-02): the leaderboard hangs off its own top-bar button per the owner's
+amendment, the chip popover is sign-in-only again, and the board reads the same `useInGameLeaderboard` standings as the
+chip and players panel — the window's private manager, minute interval and polling-discipline allowance are deleted with
+it. The Controller `lazyload` rider is the class fix: the keychain iframe (the vendor gRPC client) no longer exists for
+a visitor with no session, closed at the connector-constructor chokepoint; no extra identity-session gate is layered on
+top. Reviewer reproduction: popover 4/4, overlay-surfaces, board mode-gating, polling-discipline 5/5 and provider 3/3
+all green; typecheck clean. One correction to the step record's gates line: `in-game-leaderboard-ownership` is NOT green
+— its red assertion (`row.activityBreakdown` in the activity service) is the documented pre-existing drift, and the
+service is untouched since the Herald refactor (`f5f226cd282`); step 3's retargeted assertions in that file pass.
+Rulings: (1) the 1280 px board squeeze is accepted — parity with the old window; width policy returns only if the owner
+reports it on a real screen; (2) lazyload accepted as the class fix, no second guard; (3) owner eyeball of the
+leaderboard button + popover and the settings popover pending on the deploy. **Approved; deployed from this tip.** Step
+4 = the remaining utility `openedPopups` windows (transactions, shortcuts, latest features, rewards) onto popovers;
+automation dashboards, resource transfer, EndgameModal and the URL spectate readers stay on the step-5 list.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
