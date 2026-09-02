@@ -7,9 +7,9 @@ import { describe, expect, it } from "vitest";
 const source = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("P7D push ownership gates", () => {
-  it("keeps route reconnect grace in one production owner", () => {
+  it("keeps the route free of reconnect grace timers — the identity session owns reconnect", () => {
     expect(existsSync(resolve(process.cwd(), "src/hooks/context/use-unified-onboarding.ts"))).toBe(false);
-    expect(source("src/game-entry/play-route-boot.ts").match(/PLAY_ROUTE_RECONNECT_GRACE_MS/g)).toHaveLength(2);
+    expect(source("src/game-entry/play-route-boot.ts")).not.toContain("PLAY_ROUTE_RECONNECT_GRACE_MS");
   });
 
   it("removes superseded scene-ready events and orphan polling surfaces", () => {

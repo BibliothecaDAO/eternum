@@ -26,6 +26,7 @@ const SANCTIONED_CLIENT_FILES = new Set([
   "src/three/managers/army-model-debug-hooks.ts",
   "src/three/scenes/hexagon-scene.ts",
   "src/three/scenes/hexception.tsx",
+  "src/three/scenes/worldmap-hover-label-recovery.ts",
   "src/three/scenes/worldmap-perf-simulation.ts",
   "src/three/scenes/worldmap.tsx",
   "src/three/stats-recorder.ts",
@@ -74,8 +75,8 @@ const CAPTURED_WARN_ERROR_SITES = [
     forbidden: 'console.error("System call error:", error)',
   },
   {
-    path: "src/ui/shared/components/tx-emit.tsx",
-    required: "console.error(`Transaction failed: ${consoleReason}`)",
+    path: "src/ui/shared/components/transaction-audio-cues.tsx",
+    required: "console.error(`Transaction failed: ${formatReadableErrorForConsole(",
     forbidden: 'console.error("Transaction failed:", reason, payload.error ?? payload.message)',
   },
   {
