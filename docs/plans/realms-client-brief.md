@@ -597,6 +597,12 @@ is answered: `eternum-renderer-lane` reads `{"lane":"webgl2","reason":"adapter-t
 this Brave/Wayland/NVIDIA machine never answers `requestAdapter()` (matches the earlier brave://gpu finding), so the
 instant fallback is correct; `?rendererMode=webgpu-auto` re-probes after any driver or browser update.
 
+One more L5d item from the owner: **(d) the minimap viewport is not synced to the camera on load** — it only matches
+after the first wheel event. Same class as the sync guardrails' "entities are state; events are ephemera", applied to
+camera state: the minimap derives its rectangle from zoom events and never reads the current camera on mount. Fix at the
+chokepoint: on mount and on scene handoff the minimap reads the camera's current position/distance once, then subscribes
+for updates — and any other camera-state consumer wired events-only gets migrated in the same change.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
