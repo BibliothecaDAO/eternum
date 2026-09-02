@@ -1324,6 +1324,38 @@ ledger, bottom-right drawer) is item 6's, where the remaining inline shells go.
 **Owner gate pending:** every migrated surface needs a signed-in player to open (build, produce, attack, chest, relics,
 market); the headless spectator lane can only prove the primitive and the HUD.
 
+### Autonomous run record — item 6: the last modal shells (2026-09-02, commit `3d07c83f7e0`)
+
+**Landed.** `PopoverPanel` is store-free: whoever mounts it owns its open state, and it hangs from a rect (live, when
+given as a function) or a viewport edge (`top-center`, `right-edge`, `bottom-right`); `Popover` (element trigger +
+store) and `SurfaceHost` (store surface) are thin wrappers over it, so a view-driven surface, a store popover and a
+store surface render through exactly one panel. The left command sidebar's views render through it with
+`leftNavigationView` as their open state — Chat is the bottom-right drawer (`w-[720px]`, capped), Build, Military and
+Logistics hang from the top centre in the shared `SurfaceFrame` — and the market opened from the entity card is the
+right-edge ledger (`openSurface({ …, anchor: "right-edge" })`). The structure rename popup, the end-season
+congratulations, the resource table's transfer cart and transfer-amount dialogs and the banking confirmation popup mount
+the panel directly; the transfer-automation panel keeps only its embedded rendering (its dialog branch had no caller).
+Deleted: `CenteredModalShell`, `DialogShell` (and its barrel export), `BasePopup`, and the `draggable-position` helper
+only the modal shell used; `react-draggable` has no importer left (the dependency entry stays until a lockfile change is
+warranted).
+
+**Gate.** `apps/game` contains no Modal shell component: `overlay-surfaces.source.test.ts` asserts the four files and
+the three names stay gone and that `role="dialog"` exists only in `popover.tsx` (the half-four gate's letter);
+`popover.test.tsx` (7) covers a store-free edge-anchored panel calling its owner on Escape. Molecules, world containers
+and components, economy, social, military, layouts and store suites 56 files / 280 tests green except the documented
+pre-existing ownership red; typecheck clean; knip clean. Headless smoke on game 16: HUD mounts, zero `role="dialog"`
+elements at rest, zero `pointer-events-auto` elements covering the viewport, no React errors. LOC: +401 −692.
+
+**Ruling taken, review me.** (1) Build, Military and Logistics hang from the top centre rather than beside the entity
+card: the artifact's "command-card tabs" are a redesign of those surfaces (item 10's ghost placement belongs with it),
+and a top-centre panel is the smallest change that removes the shell without moving the content. (2) The view surfaces
+and the store popovers are two exclusivity domains — opening a store popover does not close the sidebar's Build panel;
+`leftNavigationView` stays the one truth for the views, so no second store was layered on it. (3) Item 5's scene-opened
+surfaces stay top-centre.
+
+**Owner gate pending:** Build / Military / Logistics / Chat / market / transfer cart need a signed-in player with
+structures; the headless spectator lane proves the primitive, the rest-state gate and the HUD.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
