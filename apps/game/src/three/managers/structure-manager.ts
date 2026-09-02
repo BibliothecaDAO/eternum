@@ -484,6 +484,20 @@ export class StructureManager {
     this.requestVisibleStructuresRefreshForEntities([entityId]);
   }
 
+  /** The cached facts a strategic marker needs; read-through the same per-entity cache as the visible pass. */
+  public getStructureMarkerFacts(
+    entityId: ID,
+  ): { isAlly: boolean; isMine: boolean; ownerAddress: bigint; structureType: StructureType } | undefined {
+    const structure = this.resolveStructureInfoByEntityId(entityId);
+    if (!structure) return undefined;
+    return {
+      isAlly: structure.isAlly,
+      isMine: structure.isMine,
+      ownerAddress: structure.owner.address,
+      structureType: structure.structureType,
+    };
+  }
+
   private resolveStructureInfoByEntityId(entityId: ID): StructureInfo | undefined {
     const renderable = this.worldSpatialProjection.getStructure(entityId);
     return renderable ? this.resolveStructureInfo(renderable) : undefined;

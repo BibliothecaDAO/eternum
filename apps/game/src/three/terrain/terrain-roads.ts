@@ -7,7 +7,8 @@ import { isTerrainWaterBiome } from "./terrain-water";
 
 interface TerrainRoadNetworkInput {
   anchors: readonly TerrainRoadAnchor[];
-  cells: readonly TerrainCellInput[];
+  /** Keyed by `hexCellKey(col, row)`; shared with the caller's partition so no second map is built. */
+  cellsByKey: ReadonlyMap<number, TerrainCellInput>;
 }
 
 interface RoadConnectionCandidate {
@@ -29,7 +30,7 @@ const MAX_ROAD_DEGREE = 3;
 const TERRAIN_HEX_STEP_WORLD_DISTANCE = Math.sqrt(3);
 
 export function buildTerrainRoadSegments(input: TerrainRoadNetworkInput): TerrainRoadSegment[] {
-  const cellsByKey = new Map(input.cells.map((cell) => [hexCellKey(cell.col, cell.row), cell]));
+  const cellsByKey = input.cellsByKey;
   const anchors = canonicalRoadAnchors(input.anchors).filter((anchor) => isEligibleRoadAnchor(anchor, cellsByKey));
   const anchorsByOwner = groupRoadAnchorsByOwner(anchors);
   const segments: TerrainRoadSegment[] = [];

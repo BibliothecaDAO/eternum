@@ -133,8 +133,11 @@ function hasRendererReadyMilestone(snapshot: GameEntryTimelineSnapshot): boolean
   return snapshot.milestones.some((milestone) => RENDERER_READY_MILESTONES.has(milestone.name));
 }
 
+// A dynamic import settles only after the backend chunk's own top-level awaits (the blockchain
+// vendor chunk carries one), so the export is a function by the time it is called.
 const preloadWebGpuRendererBackendModules = async (): Promise<void> => {
-  await import("./three/preload-webgpu-renderer-backend");
+  const { preloadWebGpuRendererModules } = await import("./three/webgpu-renderer-backend");
+  preloadWebGpuRendererModules();
 };
 
 const primeWebGpuRendererModules = createWebGpuRendererModulePrimer({

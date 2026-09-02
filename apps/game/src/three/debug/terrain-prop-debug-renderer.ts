@@ -12,7 +12,7 @@ import {
   Vector3,
 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import WebGPU from "three/addons/capabilities/WebGPU.js";
+import { resolveWebGpuRendererActiveMode } from "@/three/webgpu-renderer-backend";
 import { WebGPURenderer } from "three/webgpu";
 
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
@@ -232,7 +232,7 @@ function startAnimation(runtime: TerrainPropDebugRuntime): () => void {
 function readStats(runtime: TerrainPropDebugRuntime, forceWebGL: boolean): TerrainPropDebugStats {
   const renderInfo = runtime.renderer.info.render;
   return {
-    activeMode: forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
+    activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
     drawCalls: renderInfo.drawCalls ?? renderInfo.calls,
     triangles: renderInfo.triangles,
     visibleProps: TERRAIN_PROP_ARCHETYPE_IDS.length,

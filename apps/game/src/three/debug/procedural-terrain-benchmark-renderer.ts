@@ -11,7 +11,7 @@ import {
   Vector3,
 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import WebGPU from "three/addons/capabilities/WebGPU.js";
+import { resolveWebGpuRendererActiveMode } from "@/three/webgpu-renderer-backend";
 import { WebGPURenderer } from "three/webgpu";
 
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
@@ -549,7 +549,7 @@ function readBenchmarkSnapshot(runtime: TerrainBenchmarkRuntime): TerrainBenchma
   const memory = readRendererMemory(runtime.renderer);
   const propInstances = runtime.terrain.getVisibleCellCount() === 0 ? 0 : countVisiblePropInstances(runtime.terrain);
   return {
-    activeMode: runtime.forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
+    activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
     assets: readAssetRequestCounts(),
     chunks: recorder.chunks,
     contractVersion: TERRAIN_BENCHMARK_CONTRACT_VERSION,

@@ -623,6 +623,54 @@ sliced-diff tests; typecheck clean; knip adds nothing. Owed to the owner's machi
 close p50/p95 no worse than 49/104, zero unsplit long tasks under churn (the `rf()` snippet + stats recorder on the
 deployed build).
 
+Recorded, L5c (2026-09-03, branch `client-scale-96p`, one commit on top of the L5b re-measure). (1) The far band's
+subjects: `apps/game/src/three/managers/strategic-marker-layer.ts` — one instanced quad mesh per structure kind (realm,
+village, hyperstructure, bank, mine; the existing label icons as textures) and one per army tier (the army icon with the
+tier numeral burned into a canvas texture), every instance tinted by the owner's `playerColorManager` colour, tilted to
+the camera pitch, swap-removed so `count` is live, `addUpdateRange` per commit, loud overflow at fixed capacities. It is
+fed from the whole-world spatial projection, not the render window: seeded beside the biome surface from
+`getStructures()`/`getArmies()`, kept by the structure and army change sets (one commit per batch), refreshed for a
+structure and its armies when a `Structure` row's owner changes, and shown only in the far band (mid keeps models, so
+the layer stays far-only as the ruling allowed). Structure facts come from the structure manager's per-entity cache
+(`getStructureMarkerFacts`), army owners from `ExplorerTroops.owner` → structure owner. Deviation from the ruling's
+letter: one draw per kind/tier (≤ 8, four in game 16) instead of one atlas draw — no custom shader, no atlas asset, and
+the far band's draw bar has 40 to spare. (2) `terrain:present:partition` no longer sorts the whole window: it buckets
+cells per page in one linear pass and builds the cell map; each page sorts its own cells inside its request task; the
+road builder now shares that map (`cellsByKey`) instead of building a second 9 k-key map, and the wrapper's private
+`packCellKey` is gone in favour of the one `hexCellKey`. (3) WebGPU: three's capability addon answers "is WebGPU
+available" with a **top-level `await navigator.gpu.requestAdapter()`** — unbounded, and Rollup turns every chunk that
+reaches it into an async module whose exports are assigned only after its `__tla` resolves, which is exactly the preload
+chunk's `TypeError: r is not a function` (`r()` was the not-yet-assigned `preloadWebGpuRendererModules`); the blockchain
+vendor chunk carries its own top-level await, so the backend chunk was async regardless. Fix the class:
+`apps/game/src/three/webgpu-lane-probe.ts` asks for an adapter with a 1 s bound and remembers the lane per profile
+(`eternum-renderer-lane` in localStorage: `{lane, reason, recordedAt}`); the backend takes its lane from that (a forced
+WebGL mode never probes, an explicit `?rendererMode=` re-probes and rewrites the memory, a fresh profile probes once, a
+remembered lane starts immediately), records `webgpu` when the WebGPU lane actually initialises and `webgl2` after an
+init stall so the 15 s guard is paid at most once per profile; the addon import is gone from the backend and the four
+debug renderers (they report the backend three built, `resolveWebGpuRendererActiveMode`), the preload chunk file is
+deleted (the primer awaits a dynamic import of the backend module, which settles after any top-level await), and
+`renderer-lane-discipline.source.test.ts` bans the addon import. New fallback reasons: `webgpu-probe-timeout`,
+`webgpu-remembered-fallback`. Latest-features: the Strategic Map entry now names the ownership markers. Net: 21 tracked
+files +310/−72 (production +239/−53, tests +71/−19) plus 456 new production lines in two files and 218 new test lines;
+one file deleted.
+
+L5c gate record (2026-09-03, game 16 snapshot, headless software WebGL2, same instruments as L5/L5b). Far band shows its
+subjects: 367 structure markers (285 realms, 51 villages, 31 mines; no hyperstructure or bank in this world) and 285
+army markers (all T1) in owner colours — screenshot `scratchpad/screens/l5c-far-markers.jpeg`; gauges
+`strategicStructureMarkers` / `strategicArmyMarkers`, 4 marker draws, so far-band draws 9 → 13 and triangles +2.6 k; the
+layer hides on entering the mid band (`getStrategicMarkers().object3d.visible` false at 35.95) and the structure models
+return (`structureHiddenModelGroups` 7 → 0). Partition: `presentRequestsMaxMs` 4.3 → 2.6–2.8 ms at boot in this lane
+(bar ≤ 8; the owner's 22 ms was the global sort plus the road builder's second map, both gone). WebGPU: with
+`?rendererMode=webgpu-auto` the headless browser (no adapter) answered `no-adapter` at once, remembered
+`{"lane":"webgl2","reason":"no-adapter"}`, started on WebGL2 (`renderer_mode=webgl2-fallback`) and the next default boot
+reused the memory without probing; the production build now has no `WebGPU-*.js` addon chunk and no preload chunk, and
+`requestAdapter` appears only in the backend chunk's bounded probe. `frameBudgetLongTasks` +0 over the session. Tests:
+352/354 files in the terrain, scene, manager, FX, combat, debug and renderer suites (the known
+`worldmap-initial-refresh` drift plus the spatial-retention proxy, which now bans whole-projection reads only when they
+feed the pathfinding worker — the far band's GPU layers read the whole projection by design); typecheck clean; knip adds
+nothing. Owed to the owner: far/mid p95 ≤ 16.7 ms after the partition split, and a capable browser landing on
+`renderer_mode=webgpu` with `?rendererMode=webgpu-auto` (the headless lane cannot show WebGPU).
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

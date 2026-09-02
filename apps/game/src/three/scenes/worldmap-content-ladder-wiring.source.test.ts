@@ -25,6 +25,18 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(/this\.structureManager\.setLabelPriorityContext\(context\)/);
   });
 
+  it("keeps the far band's subjects on the strategic marker layer fed from the whole-world projection", () => {
+    const source = read("worldmap.tsx");
+    expect(source).toMatch(/this\.strategicMarkers\.setVisible\(ladder\.band === CameraView\.Far\)/);
+    expect(source).toMatch(/this\.seedWorldBiomeSurface\(\);\s*this\.seedStrategicMarkers\(\);/);
+    expect(source).toMatch(
+      /this\.worldSpatialProjection\.getStructures\(\)\.forEach\(\(structure\) => this\.writeStructureMarker\(structure\)\)/,
+    );
+    expect(source).toMatch(/this\.syncStructureMarkers\(changes\)/);
+    expect(source).toMatch(/this\.syncArmyMarkers\(changes\)/);
+    expect(source).toMatch(/this\.strategicMarkers\.setViewPitch\(pitch\)/);
+  });
+
   it("refreshes label priority on hover, hex leave and selection changes", () => {
     const source = read("worldmap.tsx");
     expect(source.match(/this\.refreshLabelPriorityContext\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(4);

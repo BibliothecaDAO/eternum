@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-03",
     title: "Strategic Map View",
     description:
-      "Zoom all the way out and the world becomes a strategic map: every realm, village, hyperstructure and army shows as an icon in its owner's colour over the biome map, with no models, effects or name tags in the way. Zoom in a step and names return for your own, allied and top-ten holdings; zoom in fully for the complete picture.",
+      "Zoom all the way out and the world becomes a strategic map: every realm, village, hyperstructure, mine and bank in the world shows as an icon tinted in its owner's colour, and every army as a marker in its owner's colour carrying its tier, over the biome map — so who holds what reads at a glance, like the minimap. Zoom in a step and names return for your own, allied and top-ten holdings; zoom in fully for the complete picture.",
     type: "feature",
     gameSlug: "world",
   },

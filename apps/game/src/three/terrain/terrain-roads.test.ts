@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { buildTerrainRoadSegments } from "./terrain-roads";
+import { hexCellKey } from "./hex-cell-key";
 import type { TerrainCellInput, TerrainRoadAnchor } from "./terrain-types";
 
 describe("terrain road network", () => {
@@ -14,8 +15,11 @@ describe("terrain road network", () => {
       { col: 3, owner: "2", row: 4, structureId: "foreign" },
     ];
 
-    const forward = buildTerrainRoadSegments({ anchors, cells });
-    const reversed = buildTerrainRoadSegments({ anchors: [...anchors].reverse(), cells: [...cells].reverse() });
+    const forward = buildTerrainRoadSegments({ anchors, cellsByKey: roadCellsByKey(cells) });
+    const reversed = buildTerrainRoadSegments({
+      anchors: [...anchors].reverse(),
+      cellsByKey: roadCellsByKey([...cells].reverse()),
+    });
 
     expect(reversed).toEqual(forward);
     expect(new Set(forward.map(({ routeId }) => routeId))).toEqual(new Set(["alpha:beta"]));
@@ -30,7 +34,7 @@ describe("terrain road network", () => {
       { col: 1, owner: "1", row: 2, structureId: "alpha" },
       { col: 5, owner: "1", row: 2, structureId: "beta" },
     ];
-    const routed = buildTerrainRoadSegments({ anchors, cells });
+    const routed = buildTerrainRoadSegments({ anchors, cellsByKey: roadCellsByKey(cells) });
     const waterCenter = terrainHexToWorld(3, 2);
 
     expect(routed.length).toBeGreaterThan(4);
@@ -41,7 +45,7 @@ describe("terrain road network", () => {
     const concealed = cells.map((cell) =>
       cell.col === 3 ? { ...cell, biome: null, explored: false, occupied: false } : cell,
     );
-    expect(buildTerrainRoadSegments({ anchors, cells: concealed })).toEqual([]);
+    expect(buildTerrainRoadSegments({ anchors, cellsByKey: roadCellsByKey(concealed) })).toEqual([]);
   });
 });
 
@@ -62,4 +66,8 @@ function createLandCells(columns: number, rows: number): TerrainCellInput[] {
       row,
     };
   });
+}
+
+function roadCellsByKey(cells: readonly TerrainCellInput[]): Map<number, TerrainCellInput> {
+  return new Map(cells.map((cell) => [hexCellKey(cell.col, cell.row), cell]));
 }

@@ -4,7 +4,13 @@ import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 
 export type RendererActiveMode = "webgpu" | "webgl2-fallback";
-export type RendererFallbackReason = "webgpu-device-lost" | "webgpu-init-timeout" | "webgpu-unavailable" | null;
+export type RendererFallbackReason =
+  | "webgpu-device-lost"
+  | "webgpu-init-timeout"
+  | "webgpu-probe-timeout"
+  | "webgpu-remembered-fallback"
+  | "webgpu-unavailable"
+  | null;
 
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;

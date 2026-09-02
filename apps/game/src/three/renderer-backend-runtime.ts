@@ -11,6 +11,7 @@ import {
   removeRetiredRendererModePreference,
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
+  hasExplicitRendererMode,
 } from "./renderer-build-mode";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 
@@ -45,6 +46,7 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
   removeRetiredRendererModePreference(getBrowserStorage());
 
   const backend = createWebGPURendererBackend({
+    forceReprobe: hasExplicitRendererMode(input.search),
     isMobileDevice: input.isMobileDevice,
     onDeviceLost: input.onDeviceLost,
     pixelRatio: input.pixelRatio,

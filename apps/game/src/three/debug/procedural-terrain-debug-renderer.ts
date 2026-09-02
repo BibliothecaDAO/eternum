@@ -12,7 +12,7 @@ import {
   Vector3,
 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import WebGPU from "three/addons/capabilities/WebGPU.js";
+import { resolveWebGpuRendererActiveMode } from "@/three/webgpu-renderer-backend";
 import { WebGPURenderer } from "three/webgpu";
 
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
@@ -503,7 +503,7 @@ function readStats(
   >;
   return {
     ...verification,
-    activeMode: forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
+    activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
     drawCalls: runtime.renderer.info.render.drawCalls ?? runtime.renderer.info.render.calls,
     firstRenderMs: runtime.firstRenderMs,
     frameP50Ms: percentile(runtime.frameSamplesMs, 0.5),

@@ -12,6 +12,7 @@ import {
   type TerrainPresentationDiagnostics,
   type TerrainUploadMetrics,
 } from "./procedural-terrain";
+import { hexCellKey } from "./hex-cell-key";
 import { terrainHexToWorld, type TerrainWorldCoordinate } from "./terrain-coordinates";
 import { buildTerrainRoadSegments } from "./terrain-roads";
 import { MAX_TERRAIN_SETTLEMENT_INFLUENCE_RADIUS } from "./terrain-settlements";
@@ -125,8 +126,6 @@ interface WorldBounds {
 
 const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
 const ROAD_PAGE_PADDING = 1.5;
-// Hex coordinates are signed and stay far inside ±32k, so one double holds (row, col) exactly.
-const CELL_KEY_OFFSET = 0x8000;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
   "terrain:present:fog": "presentFogMaxMs",
   "terrain:present:page": "presentPageTaskMaxMs",
@@ -405,17 +404,23 @@ function partitionWorldmapTerrainPages(input: WorldmapProceduralPresentationInpu
   requirePageSize(input.pageWidth, "width");
   requirePageSize(input.pageHeight, "height");
   requirePageOrigin(input.pageOrigin);
-  const cells = canonicalTerrainCells(input.cells.map(toTerrainCell));
+  const cells = input.cells.map(toTerrainCell);
   const pagesByKey = new Map<number, WorldmapTerrainPageCells>();
-  // Canonical cell order carries into each page, so page cells never need sorting again.
-  for (const cell of cells) resolvePageCells(pagesByKey, cell, input).cells.push(cell);
+  const cellsByKey = new Map<number, TerrainCellInput>();
+  let visibleCellCount = 0;
+  // Bucketing is linear; each page sorts its own cells inside its request task.
+  for (const cell of cells) {
+    resolvePageCells(pagesByKey, cell, input).cells.push(cell);
+    cellsByKey.set(hexCellKey(cell.col, cell.row), cell);
+    if (cell.explored) visibleCellCount += 1;
+  }
   return {
     cells,
-    cellsByKey: new Map(cells.map((cell) => [packCellKey(cell.col, cell.row), cell])),
+    cellsByKey,
     pages: Array.from(pagesByKey.values()).toSorted(
       (left, right) => left.startRow - right.startRow || left.startCol - right.startCol,
     ),
-    visibleCellCount: cells.filter((cell) => cell.explored).length,
+    visibleCellCount,
   };
 }
 
@@ -423,7 +428,7 @@ function buildWorldmapTerrainRoadSegments(
   input: WorldmapProceduralPresentationInput,
   partition: WorldmapTerrainPagePartition,
 ): TerrainRoadSegment[] {
-  return buildTerrainRoadSegments({ anchors: input.roadAnchors ?? [], cells: partition.cells });
+  return buildTerrainRoadSegments({ anchors: input.roadAnchors ?? [], cellsByKey: partition.cellsByKey });
 }
 
 function buildWorldmapTerrainPageRequest(
@@ -432,11 +437,12 @@ function buildWorldmapTerrainPageRequest(
   page: WorldmapTerrainPageCells,
   roadSegments: readonly TerrainRoadSegment[],
 ): TerrainPageRequest {
-  const bounds = resolvePageWorldBounds(page.cells);
+  const cells = canonicalTerrainCells(page.cells);
+  const bounds = resolvePageWorldBounds(cells);
   return {
-    cells: page.cells,
+    cells,
     climate: input.climate ?? NEUTRAL_BIOME_CLIMATE,
-    halo: resolvePageHalo(page.cells, partition.cellsByKey),
+    halo: resolvePageHalo(cells, partition.cellsByKey),
     mapCenter: input.mapCenter,
     pageKey: page.pageKey,
     propDensityMultiplier: input.propDensityMultiplier,
@@ -475,7 +481,7 @@ function resolvePageCells(
 ): WorldmapTerrainPageCells {
   const startCol = resolvePageStart(cell.col, input.pageOrigin.col, input.pageWidth);
   const startRow = resolvePageStart(cell.row, input.pageOrigin.row, input.pageHeight);
-  const key = packCellKey(startCol, startRow);
+  const key = hexCellKey(startCol, startRow);
   let page = pagesByKey.get(key);
   if (!page) {
     page = { cells: [], pageKey: `${startRow},${startCol}`, startCol, startRow };
@@ -492,11 +498,11 @@ function resolvePageHalo(
   pageCells: readonly TerrainCellInput[],
   cellsByKey: ReadonlyMap<number, TerrainCellInput>,
 ): TerrainCellInput[] {
-  const ownedKeys = new Set(pageCells.map((cell) => packCellKey(cell.col, cell.row)));
+  const ownedKeys = new Set(pageCells.map((cell) => hexCellKey(cell.col, cell.row)));
   const haloByKey = new Map<number, TerrainCellInput>();
   for (const cell of pageCells) {
     for (const neighbor of getNeighborHexes(cell.col, cell.row)) {
-      const key = packCellKey(neighbor.col, neighbor.row);
+      const key = hexCellKey(neighbor.col, neighbor.row);
       const candidate = cellsByKey.get(key);
       if (candidate && !ownedKeys.has(key)) haloByKey.set(key, candidate);
     }
@@ -551,10 +557,6 @@ function expandWorldBounds(bounds: WorldBounds, padding: number): WorldBounds {
 
 function containsWorldPoint(bounds: WorldBounds, point: TerrainWorldCoordinate): boolean {
   return point.x >= bounds.minX && point.x <= bounds.maxX && point.z >= bounds.minZ && point.z <= bounds.maxZ;
-}
-
-function packCellKey(col: number, row: number): number {
-  return (row + CELL_KEY_OFFSET) * 0x10000 + (col + CELL_KEY_OFFSET);
 }
 
 function toTerrainCell(cell: WorldmapProceduralCell): TerrainCellInput {

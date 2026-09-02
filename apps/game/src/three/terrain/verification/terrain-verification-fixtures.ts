@@ -2,6 +2,7 @@ import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
 
 import { buildTerrainRoadSegments } from "../terrain-roads";
+import { hexCellKey } from "../hex-cell-key";
 import type { TerrainPageRequest, TerrainRoadAnchor, TerrainSettlementAnchor } from "../terrain-types";
 
 export const ALL_BIOMES_FIXTURE_ID = "all-biomes-game-scale-v2";
@@ -105,9 +106,15 @@ export function createTerrainVerificationRequest(sceneId: TerrainVerificationSce
     pageKey: `terrain-anchor:${sceneId}`,
     roadSegments:
       sceneId === "owned-roads"
-        ? buildTerrainRoadSegments({ anchors: ROAD_VERIFICATION_ANCHORS, cells })
+        ? buildTerrainRoadSegments({
+            anchors: ROAD_VERIFICATION_ANCHORS,
+            cellsByKey: new Map(cells.map((cell) => [hexCellKey(cell.col, cell.row), cell])),
+          })
         : sceneId === "settlement-regrowth"
-          ? buildTerrainRoadSegments({ anchors: SETTLEMENT_REGROWTH_ROAD_ANCHORS, cells })
+          ? buildTerrainRoadSegments({
+              anchors: SETTLEMENT_REGROWTH_ROAD_ANCHORS,
+              cellsByKey: new Map(cells.map((cell) => [hexCellKey(cell.col, cell.row), cell])),
+            })
           : [],
     settlementAnchors,
     strictBiomeParity: false,

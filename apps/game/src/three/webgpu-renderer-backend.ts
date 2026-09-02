@@ -27,6 +27,13 @@ import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumentation";
+import {
+  probeWebGpuAdapter,
+  rememberRendererLane,
+  resolveWebGpuLaneStart,
+  type RendererLane,
+  type WebGpuLaneStart,
+} from "./webgpu-lane-probe";
 
 interface WebGPURendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
@@ -69,12 +76,13 @@ interface WebGPURendererBackendDependencies {
     signal: AbortSignal;
   }): Promise<CreatedWebGPURenderer>;
   now(): number;
+  /** Remembers the lane that actually started, so the next boot on this profile skips the question. */
+  rememberLane(lane: RendererLane, reason: string): void;
+  /** Decides whether to try WebGPU at all — bounded probe or per-profile memory, never an unbounded adapter wait. */
+  resolveLaneStart(input: { forceReprobe: boolean; requestedMode: RendererBuildMode }): Promise<WebGpuLaneStart>;
 }
 
 interface WebGpuRendererModules {
-  WebGPU: {
-    isAvailable(): boolean;
-  };
   threeWebGPUModule: typeof import("three/webgpu");
 }
 
@@ -85,16 +93,14 @@ async function createDefaultWebGPURenderer(input: {
   signal: AbortSignal;
 }): Promise<CreatedWebGPURenderer> {
   const moduleImportStartedAt = performance.now();
-  const { WebGPU, threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
+  const { threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
   recordRendererStartupTiming("webgpu-module-import", performance.now() - moduleImportStartedAt);
 
   const { ACESFilmicToneMapping, HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
     threeWebGPUModule as typeof import("three/webgpu");
 
   throwIfAborted(input.signal);
-  // Once three's adapter probe has answered "no adapter", asking Dawn again from a WebGPU
-  // backend only queues behind a GPU process that may be busy for seconds. Build WebGL2 directly.
-  const forceWebGL = input.forceWebGL || !WebGPU.isAvailable();
+  const forceWebGL = input.forceWebGL;
   const rendererCreateStartedAt = performance.now();
   const renderer = new WebGPURenderer({ forceWebGL }) as WebGPURendererSurface;
 
@@ -116,7 +122,7 @@ async function createDefaultWebGPURenderer(input: {
 
   return {
     activeMode: forceWebGL ? "webgl2-fallback" : "webgpu",
-    fallbackReason: forceWebGL && !input.forceWebGL ? "webgpu-unavailable" : null,
+    fallbackReason: null,
     renderer,
   };
 }
@@ -134,7 +140,27 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
   createPostProcessRuntime: createWebGPUPostProcessRuntime,
   createRenderer: createDefaultWebGPURenderer,
   now: () => performance.now(),
+  rememberLane: (lane, reason) => rememberRendererLane(resolveLaneStorage(), lane, reason),
+  resolveLaneStart: (input) =>
+    resolveWebGpuLaneStart({
+      ...input,
+      probe: () => probeWebGpuAdapter({ gpu: resolveNavigatorGpu() }),
+      storage: resolveLaneStorage(),
+    }),
 };
+
+function resolveNavigatorGpu(): { requestAdapter(): Promise<unknown | null> } | undefined {
+  if (typeof navigator === "undefined") return undefined;
+  return (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown | null> } }).gpu;
+}
+
+function resolveLaneStorage(): Storage | null {
+  try {
+    return typeof localStorage === "undefined" ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
 const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
@@ -157,15 +183,9 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
 });
 
 async function importWebGpuRendererModules(): Promise<WebGpuRendererModules> {
-  const [{ default: WebGPU }, threeWebGPUModule] = await Promise.all([
-    import("three/addons/capabilities/WebGPU.js"),
-    import("three/webgpu"),
-  ]);
-
-  return {
-    WebGPU,
-    threeWebGPUModule: threeWebGPUModule as typeof import("three/webgpu"),
-  };
+  // Only three's renderer module: the capability addon's top-level adapter await is replaced by the bounded probe.
+  const threeWebGPUModule = await import("three/webgpu");
+  return { threeWebGPUModule: threeWebGPUModule as typeof import("three/webgpu") };
 }
 
 async function loadWebGpuRendererModules(signal?: AbortSignal): Promise<WebGpuRendererModules> {
@@ -180,6 +200,12 @@ async function loadWebGpuRendererModules(signal?: AbortSignal): Promise<WebGpuRe
   const modules = await webGpuRendererModulesPromise;
   throwIfAborted(signal);
   return modules;
+}
+
+/** Which backend three actually built; debug renderers report it instead of re-asking the browser. */
+export function resolveWebGpuRendererActiveMode(renderer: unknown): RendererActiveMode {
+  const backend = (renderer as { backend?: { isWebGPUBackend?: boolean } }).backend;
+  return backend?.isWebGPUBackend ? "webgpu" : "webgl2-fallback";
 }
 
 export function preloadWebGpuRendererModules(): void {
@@ -360,6 +386,8 @@ export function createWebGPURendererBackend(
     onDeviceLost?: (event: RendererDeviceLostEvent) => void;
     pixelRatio: number;
     requestedMode: RendererBuildMode;
+    /** An explicit `?rendererMode=` re-probes instead of trusting the remembered lane. */
+    forceReprobe?: boolean;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
 ): RendererBackendV2 {
@@ -423,18 +451,26 @@ export function createWebGPURendererBackend(
   };
 
   const startRendererLaneWithWebGlFallback = async (): Promise<InitializedRendererLane> => {
+    const start = await resolvedDependencies.resolveLaneStart({
+      forceReprobe: options.forceReprobe ?? false,
+      requestedMode: options.requestedMode,
+    });
     try {
-      return await startRendererLane(options.requestedMode === "webgpu-force-webgl");
+      const lane = await startRendererLane(start.forceWebGL);
+      if (lane.activeMode === "webgpu") resolvedDependencies.rememberLane("webgpu", "init");
+      return { ...lane, fallbackReason: lane.fallbackReason ?? start.fallbackReason };
     } catch (error) {
       if (!isStalledWebGpuLane(error)) {
         throw error;
       }
 
       // A WebGPU init that never answers is the browser's stall (a saturated GPU process,
-      // adapter probing), not a scene problem: WebGL2 is the lane that still renders.
+      // adapter probing), not a scene problem: WebGL2 is the lane that still renders — and this
+      // profile does not ask again.
       console.warn(
         `[WebGPURendererBackend] WebGPU init stalled for ${WEBGPU_BACKEND_STARTUP_TIMEOUT_MS}ms; continuing on WebGL2`,
       );
+      resolvedDependencies.rememberLane("webgl2", "webgpu-init-timeout");
       return { ...(await startRendererLane(true)), fallbackReason: "webgpu-init-timeout" };
     }
   };

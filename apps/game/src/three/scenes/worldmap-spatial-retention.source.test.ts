@@ -17,8 +17,10 @@ describe("Worldmap spatial cache retention", () => {
     const tileCollectionEnd = source.indexOf("private collectRetainedStructurePathfinding(", tileCollectionStart);
     const tileCollectionBody = source.slice(tileCollectionStart, tileCollectionEnd);
 
-    expect(lifecycleBody).not.toContain("getStructures().forEach");
-    expect(lifecycleBody).not.toContain("getArmies().forEach");
+    // Whole-projection reads may feed GPU layers (the far band's biome surface and markers) but never the
+    // pathfinding worker, which only ever receives the retained render area.
+    expect(lifecycleBody).not.toMatch(/getStructures\(\)\.forEach[\s\S]{0,400}?gameWorkerManager\./);
+    expect(lifecycleBody).not.toMatch(/getArmies\(\)\.forEach[\s\S]{0,400}?gameWorkerManager\./);
     expect(source).toMatch(/private updatePinnedChunks\([\s\S]*this\.pruneWorldmapSpatialCaches\(\)/);
     expect(source).toMatch(/clearCache\(\)[\s\S]*this\.exploredTiles\.clear\(\)/);
     expect(rebuildBody).toContain("gameWorkerManager.hydrateWorldState(");

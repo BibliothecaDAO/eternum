@@ -47,6 +47,8 @@ import {
   requireActiveGameSyncRuntime,
   type ArmySpatialProjectionChange,
   type StructureSpatialProjectionChange,
+  type ArmySpatialRenderable,
+  type StructureSpatialRenderable,
   type TileSpatialProjectionChange,
   type WorldSpatialHex,
   type TileSpatialRenderable,
@@ -111,6 +113,13 @@ import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
+import {
+  StrategicMarkerLayer,
+  type StrategicArmyMarkerTier,
+  type StrategicStructureMarkerKind,
+} from "@/three/managers/strategic-marker-layer";
+import { playerColorManager } from "@/three/systems/player-colors";
+import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import {
   normalizeOwnerAddress,
   resolveWorldmapContentLadder,
@@ -515,6 +524,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   ) => WorldmapProjectionSyncVolumeRegressionDebugResult;
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
   getWorldBiomeSurface?: () => WorldBiomeSurface;
+  getStrategicMarkers?: () => StrategicMarkerLayer;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   getTerrainPresentMetrics?: () => TerrainPresentMetrics;
   resetWorldmapRenderDiagnostics?: () => void;
@@ -539,6 +549,14 @@ const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
 const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
+function resolveStructureMarkerKind(structureType: StructureType): StrategicStructureMarkerKind {
+  if (structureType === StructureType.Realm) return "realm";
+  if (structureType === StructureType.Hyperstructure) return "hyperstructure";
+  if (structureType === StructureType.Bank) return "bank";
+  if (structureType === StructureType.FragmentMine || structureType === StructureType.BitcoinMine) return "mine";
+  return isVillageLikeStructureCategory(structureType) ? "village" : "realm";
+}
+
 function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: number; y: number }): boolean {
   return hex !== undefined && hex.col === contract.x && hex.row === contract.y;
 }
@@ -821,6 +839,7 @@ export default class WorldmapScene extends WarpTravel {
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private proceduralTerrain!: WorldmapProceduralTerrain;
   private worldBiomeSurface!: WorldBiomeSurface;
+  private strategicMarkers!: StrategicMarkerLayer;
   // normalized positions and if they are allied or not
 
   // Battle direction manager for tracking attacker/defender relationships
@@ -1034,6 +1053,8 @@ export default class WorldmapScene extends WarpTravel {
     this.scene.add(this.proceduralTerrain.object3d);
     this.worldBiomeSurface = new WorldBiomeSurface();
     this.scene.add(this.worldBiomeSurface.object3d);
+    this.strategicMarkers = new StrategicMarkerLayer();
+    this.scene.add(this.strategicMarkers.object3d);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2, {
       terrainSurface: this.proceduralTerrain,
     });
@@ -1250,6 +1271,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private bindWorldSpatialProjectionLifecycle(): void {
     this.seedWorldBiomeSurface();
+    this.seedStrategicMarkers();
     const unsubscribeTiles = this.worldSpatialProjection.subscribeTiles((changes) => {
       this.handleProjectedTileChanges(changes);
     });
@@ -1262,6 +1284,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       this.reconcileHoverLabelsForProjectionChanges(changes);
       this.scheduleTerrainEcologyRefresh();
+      this.syncStructureMarkers(changes);
     });
     const structureEcologySubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
       const [current, previous] = value;
@@ -1271,11 +1294,13 @@ export default class WorldmapScene extends WarpTravel {
         current?.base.level !== previous?.base.level
       ) {
         this.scheduleTerrainEcologyRefresh();
+        if (current) this.refreshStructureMarkersForEntity(current.entity_id);
       }
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
+      this.syncArmyMarkers(changes);
     });
     this.unsubscribeWorldSpatialProjection = () => {
       unsubscribeTiles();
@@ -1310,6 +1335,81 @@ export default class WorldmapScene extends WarpTravel {
     setWorldmapRenderGauge("structureFullRefreshMaxSliceMs", metrics.fullRefreshMaxSliceMs);
     setWorldmapRenderGauge("structureHiddenModelGroups", metrics.hiddenModelGroups);
     setWorldmapRenderGauge("structureCompactLabelsShown", metrics.compactLabelsShown);
+  }
+
+  /** The far band's subjects: every structure and army in the world, coloured by owner, from the projection. */
+  private seedStrategicMarkers(): void {
+    this.worldSpatialProjection.getStructures().forEach((structure) => this.writeStructureMarker(structure));
+    this.worldSpatialProjection.getArmies().forEach((army) => this.writeArmyMarker(army));
+    this.commitStrategicMarkers();
+  }
+
+  private syncStructureMarkers(changes: readonly StructureSpatialProjectionChange[]): void {
+    changes.forEach(({ previous, current }) => {
+      if (current) this.writeStructureMarker(current);
+      else if (previous?.entityId !== null && previous?.entityId !== undefined) {
+        this.strategicMarkers.removeStructure(previous.entityId);
+      }
+    });
+    this.commitStrategicMarkers();
+  }
+
+  private refreshStructureMarkersForEntity(entityId: ID): void {
+    const structure = this.worldSpatialProjection.getStructure(entityId);
+    if (!structure) return;
+    this.writeStructureMarker(structure);
+    this.worldSpatialProjection.getArmies().forEach((army) => {
+      if (this.getArmyOwnerStructureId(army.entityId) === entityId) this.writeArmyMarker(army);
+    });
+    this.commitStrategicMarkers();
+  }
+
+  private syncArmyMarkers(changes: readonly ArmySpatialProjectionChange[]): void {
+    changes.forEach(({ previous, current }) => {
+      if (current) this.writeArmyMarker(current);
+      else if (previous) this.strategicMarkers.removeArmy(previous.entityId);
+    });
+    this.commitStrategicMarkers();
+  }
+
+  private writeStructureMarker(structure: StructureSpatialRenderable): void {
+    if (structure.reserved) return;
+    const facts = this.structureManager.getStructureMarkerFacts(structure.entityId);
+    if (!facts) return;
+    const position = this.resolveMarkerWorldPosition(structure.hexCoords);
+    const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, false, facts.ownerAddress).primary;
+    this.strategicMarkers.setStructure(
+      structure.entityId,
+      resolveStructureMarkerKind(facts.structureType),
+      position.x,
+      position.z,
+      color,
+    );
+  }
+
+  private writeArmyMarker(army: ArmySpatialRenderable): void {
+    const ownerAddress = this.getArmyOwnerAddress(army.entityId);
+    const position = this.resolveMarkerWorldPosition(army.hexCoords);
+    const isMine = ownerAddress !== undefined && isAddressEqualToAccount(ownerAddress);
+    const color = playerColorManager.getProfileForUnit(isMine, false, false, ownerAddress).primary;
+    this.strategicMarkers.setArmy(
+      army.entityId,
+      army.troopTier as StrategicArmyMarkerTier,
+      position.x,
+      position.z,
+      color,
+    );
+  }
+
+  private resolveMarkerWorldPosition(hexCoords: WorldSpatialHex): Vector3 {
+    const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    return getWorldPositionForHex({ col: normalized.x, row: normalized.y });
+  }
+
+  private commitStrategicMarkers(): void {
+    this.strategicMarkers.commit();
+    setWorldmapRenderGauge("strategicStructureMarkers", this.strategicMarkers.metrics.structures);
+    setWorldmapRenderGauge("strategicArmyMarkers", this.strategicMarkers.metrics.armies);
   }
 
   private commitWorldBiomeSurface(): void {
@@ -1463,6 +1563,8 @@ export default class WorldmapScene extends WarpTravel {
     this.combatPresentation?.setVisible(ladder.fx);
     this.arrivalGhostManager.setSuspended(!ladder.fx);
     this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
+    this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
+    this.commitStrategicMarkers();
     this.refreshLabelPriorityContext();
     this.syncStructureManagerGauges();
   }
@@ -1851,6 +1953,7 @@ export default class WorldmapScene extends WarpTravel {
   private placeWorldmapCameraAtDistance(distance: number): void {
     const pitch = resolveWorldmapCameraPitchRadians(distance);
     this.cameraAngle = pitch;
+    this.strategicMarkers.setViewPitch(pitch);
     this.controls.object.position.set(
       this.controls.target.x,
       this.controls.target.y + Math.sin(pitch) * distance,
@@ -7698,6 +7801,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
     debugWindow.getWorldBiomeSurface = () => this.worldBiomeSurface;
+    debugWindow.getStrategicMarkers = () => this.strategicMarkers;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
     debugWindow.resetWorldmapRenderDiagnostics = () => resetWorldmapRenderDiagnostics();
@@ -7727,6 +7831,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.getWorldmapRenderDiagnostics = undefined;
     debugWindow.getWorldBiomeSurface = undefined;
+    debugWindow.getStrategicMarkers = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.getTerrainPresentMetrics = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
@@ -7972,6 +8077,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chunkWorkQueue.dispose();
     this.proceduralTerrain.dispose();
     this.worldBiomeSurface.dispose();
+    this.strategicMarkers.dispose();
 
     super.destroy();
   }

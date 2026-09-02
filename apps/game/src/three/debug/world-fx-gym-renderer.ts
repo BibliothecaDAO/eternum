@@ -17,7 +17,7 @@ import {
   Vector3,
 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import WebGPU from "three/addons/capabilities/WebGPU.js";
+import { resolveWebGpuRendererActiveMode } from "@/three/webgpu-renderer-backend";
 import { WebGPURenderer } from "three/webgpu";
 
 import type { RendererSurfaceLike } from "../renderer-backend";
@@ -297,7 +297,7 @@ function readStats(runtime: WorldFxGymRuntime): WorldFxGymStats {
   const render = runtime.renderer.info.render;
   return {
     ...fx,
-    activeMode: runtime.input.forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
+    activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
     emitterCount: runtime.input.count,
     fps: runtime.frameMs > 0 ? Math.round(1_000 / runtime.frameMs) : 0,
     frameMs: Math.round(runtime.frameMs * 100) / 100,

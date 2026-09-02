@@ -34,7 +34,9 @@ export type WorldmapRenderGauge =
   | "structureFullRefreshSlices"
   | "structureFullRefreshMaxSliceMs"
   | "structureHiddenModelGroups"
-  | "structureCompactLabelsShown";
+  | "structureCompactLabelsShown"
+  | "strategicStructureMarkers"
+  | "strategicArmyMarkers";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -174,6 +176,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     structureFullRefreshMaxSliceMs: 0,
     structureHiddenModelGroups: 0,
     structureCompactLabelsShown: 0,
+    strategicStructureMarkers: 0,
+    strategicArmyMarkers: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
