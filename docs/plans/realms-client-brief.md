@@ -612,6 +612,16 @@ client re-probes in the background at idle and rewrites the lane memory, so the 
 `no-adapter`/`no-navigator-gpu` stay hard verdicts. The owner's machine is the test case: after the fix, load once
 (webgl2), reload — the second load must show `renderer_mode=webgpu`.
 
+L5d reviewed (reviewer, 2026-09-02): the underlay is a ladder field on every row; the zoom cap and the band thresholds
+read one shared `WORLDMAP_BAND_BOUNDARIES` table (`maxDistance` = the mid/far boundary, the far band parked in code and
+tests); procedural characters are off everywhere behind a dev-only `?proceduralCharacters=1` override; the minimap
+derives its initial scale from the live camera distance on mount and subscribes for updates; and `adapter-timeout` is a
+soft verdict — one patient (5 s) idle re-probe per boot rewrites the lane memory so the next boot flips to WebGPU,
+`no-adapter` staying hard. Reviewer reproduction: 215/215 across ladder/wiring/zoom/lane/structure/terrain suites,
+typecheck clean; the max-out screenshot shows real terrain over the full-world biome underlay with no void. **Approved;
+deployed from this tip.** The owner's four live checks (art at max-out + rf(), one army representation, minimap on load,
+second-load WebGPU) close the phase; Phase 4 steps 1+2 then proceed.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
