@@ -109,7 +109,7 @@ import {
 import { getComponentValue } from "@dojoengine/recs";
 import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
-import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
@@ -238,7 +238,7 @@ import {
   type MovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
+import { WorldmapOwnershipPulsePresenter } from "./worldmap-structure-ownership-pulses";
 import {
   resolveEntityActionPathLookup,
   resolveEntityActionPathsTransitionTokenForForcedRefresh,
@@ -848,7 +848,7 @@ export default class WorldmapScene extends WarpTravel {
   private selectedHexManager!: SelectedHexManager;
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
   private selectionPulseManager!: SelectionPulseManager;
-  private structurePulseColorCache: Map<string, { base: Color; pulse: Color }> = new Map();
+  private ownershipPulsePresenter!: WorldmapOwnershipPulsePresenter;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private refreshVisualTerrainWindowThrottled?: ReturnType<typeof throttle>;
   private updateCameraTargetHex = () => {
@@ -1661,6 +1661,17 @@ export default class WorldmapScene extends WarpTravel {
       dojoComponents: this.dojo.components,
     });
     this.selectionPulseManager = new SelectionPulseManager(this.scene, this.getTerrainSurface());
+    this.ownershipPulsePresenter = new WorldmapOwnershipPulsePresenter({
+      clearOwnershipPulses: () => this.selectionPulseManager.clearOwnershipPulses(),
+      showOwnershipPulses: (positions, baseColor, pulseColor) =>
+        this.selectionPulseManager.showOwnershipPulses(positions, baseColor, pulseColor),
+      getStructureHex: (structureId) => this.getStructureHexPosition(structureId),
+      getOwnedArmyHexes: (structureId) =>
+        this.worldSpatialProjection
+          .getArmies()
+          .filter(({ entityId }) => this.getArmyOwnerStructureId(entityId) === structureId)
+          .map(({ entityId }) => this.getArmyDisplayPosition(entityId)),
+    });
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
@@ -3081,7 +3092,7 @@ export default class WorldmapScene extends WarpTravel {
     if (hexCoords) {
       extraHexes.push(hexCoords);
     }
-    this.updateStructureOwnershipPulses(selectedEntityId, extraHexes);
+    this.ownershipPulsePresenter.update(selectedEntityId, extraHexes);
   }
 
   private clearEvictedArmyMovementVisuals(entityId: ID): void {
@@ -3447,7 +3458,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const owningStructureId = this.getArmyOwnerStructureId(selectedEntityId);
 
-    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
+    this.ownershipPulsePresenter.update(owningStructureId ?? undefined, extraHexes, extraHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
   }
@@ -3681,58 +3692,6 @@ export default class WorldmapScene extends WarpTravel {
     const hoveredHexKey = `${hexCoords.col + FELT_CENTER()},${hexCoords.row + FELT_CENTER()}`;
     const actionPath = getLiveWorldmapEntityActions().actionPaths.get(hoveredHexKey);
     return actionPath ? ActionPaths.getActionType(actionPath) : undefined;
-  }
-
-  private updateStructureOwnershipPulses(
-    structureId: ID | undefined,
-    extraHexes: HexPosition[] = [],
-    suppressedHexes: HexPosition[] = [],
-  ) {
-    if (structureId === undefined || structureId === null) {
-      this.selectionPulseManager.clearOwnershipPulses();
-      return;
-    }
-
-    const colors = this.getStructurePulseColors(structureId);
-    const ownershipHexes = resolveOwnershipPulseHexes({
-      structureHex: this.getStructureHexPosition(structureId),
-      ownedArmyHexes: [
-        ...this.worldSpatialProjection
-          .getArmies()
-          .filter(({ entityId }) => this.getArmyOwnerStructureId(entityId) === structureId)
-          .map(({ entityId }) => this.getArmyDisplayPosition(entityId)),
-      ],
-      extraHexes,
-      suppressedHexes,
-    });
-
-    const positions = ownershipHexes.map((hex) => {
-      const worldPos = getWorldPositionForHex(hex);
-      return { x: worldPos.x, z: worldPos.z };
-    });
-
-    if (positions.length === 0) {
-      this.selectionPulseManager.clearOwnershipPulses();
-      return;
-    }
-
-    this.selectionPulseManager.showOwnershipPulses(positions, colors.base, colors.pulse);
-  }
-
-  private getStructurePulseColors(structureId: ID) {
-    const key = structureId.toString();
-    const cached = this.structurePulseColorCache.get(key);
-    if (cached) {
-      return cached;
-    }
-
-    const numericId = Number(structureId);
-    const hue = (((numericId % 360) + 360) % 360) / 360;
-    const base = new Color().setHSL(hue, 0.65, 0.4);
-    const pulse = new Color().setHSL(hue, 0.65, 0.6);
-    const colors = { base, pulse };
-    this.structurePulseColorCache.set(key, colors);
-    return colors;
   }
 
   private getStructureHexPosition(structureId: ID): HexPosition | undefined {

@@ -647,6 +647,24 @@ logic change; each extracted module owns its tests with no private cross-imports
 level reads as an outline per the repo's Clean Code Standard (line count ≤ ~1,500 as the smell proxy, not the goal).
 Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
 
+**Decomposition extraction map (append one row per move-only cut).**
+
+- Cut 1 — structure ownership pulses (2026-09-02, branch `client-scale-96p`). Moved the selection-feedback overlay
+  that pulses a structure's owned footprint out of the scene into a collaborator: new
+  `apps/game/src/three/scenes/worldmap-structure-ownership-pulses.ts` (`WorldmapOwnershipPulsePresenter`, 71 lines) with
+  its own test (`worldmap-structure-ownership-pulses.test.ts`, 104 lines / 6 cases). Removed from `worldmap.tsx`:
+  `updateStructureOwnershipPulses` + `getStructurePulseColors` methods and the `structurePulseColorCache` field (the
+  presenter now owns the colour cache); the scene constructs the presenter in `initializeWorldmapInteractionRuntime`
+  (injecting `clearOwnershipPulses`/`showOwnershipPulses`/`getStructureHex`/`getOwnedArmyHexes`) and calls
+  `ownershipPulsePresenter.update(...)` at the two former call sites (`onStructureSelection`, `onArmySelection`). The
+  now-unused `Color` and `resolveOwnershipPulseHexes` imports were dropped; the shared `getStructureHexPosition` (6
+  callers) stays in the scene and is injected. Pure footprint geometry was already extracted
+  (`worldmap-ownership-pulse-policy.ts`), so this move added no logic. worldmap.tsx 8704 → 8663 (−41; git +16/−57). No
+  source/wiring test pinned the moved methods. Gate: presenter test 6/6; scenes 842/843 (the one red is the pre-existing
+  known `worldmap-initial-refresh` drift, in the warp-travel refresh region this cut never touches — string counts
+  identical to HEAD); managers + terrain 644/644; typecheck clean on the three touched files; prettier + knip clean on
+  them.
+
 Recorded, L5b (2026-09-03, branch `client-scale-96p`, one commit on top of the L5 tip). (1) Content ladder: one table,
 `apps/game/src/three/scenes/worldmap-content-ladder.ts`, maps the zoom band (`CameraView`, resolved from distance) to
 what renders — near: everything; mid: models and FX, text only for priority entities, armies as tier glyphs; far: the
