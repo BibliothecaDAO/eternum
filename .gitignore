@@ -16,6 +16,8 @@ apps/game/minimap
 .claude/ralph-loop.local.md
 .claude/tsc-cache/
 **/.claude/tsc-cache/
+.claude/worktrees/
+**/.claude/worktrees/
 thoughts/
 
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
