@@ -976,6 +976,20 @@ before optimization), colliding with Phase 4 and the label pass in a shared work
 brief only if a profile or bug names the streaming subsystem. Final cut lands with a close-out row in the extraction
 map, then the decomposition agent is done.
 
+Phase 4 live check + log triage (owner + reviewer, 2026-09-02): the three chip states and Play-from-spectate pass on the
+deployed build — finding 3 is closed, no intent-cache-key rider needed. One UX amendment ruled by the owner: **the
+leaderboard keeps its own button** — reaching it through the identity chip is bad UX. Step 3 therefore anchors the
+Social/Leaderboard surface to its own top-bar button (same Popover primitive) and removes the Leaderboard entry from the
+chip's sign-in popover; the chip popover stays sign-in-only for spectators. Log triage from the same session: (a)
+`WebGPU init stalled for 15000ms` — the parked lane machinery converging as designed: the idle re-probe had found an
+adapter and rewrote memory to webgpu, the next boot's full init stalled, and the stall wrote the hard
+`webgpu-init-timeout` verdict, so this profile never asks again; no action, WebGPU stays parked. (b) The 3.4s/5.9s
+`frame_owner=render:backend` spikes sit at scene boot and the /enter re-entry — first-render shader compile; this is the
+conviction evidence for the queued compile-prewarm class (half two, class 1). (c) `rpc error: Unauthenticated` pairs
+while spectating anonymously come from a vendor gRPC client (not our source) polling an authed endpoint with no session
+— **step-3 rider**: identify the caller and gate it on the identity-session fact, closing the class "authed calls fire
+while anonymous". (d) The virtual-keyboard `overlaysContent` line is browser noise; ignored.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
