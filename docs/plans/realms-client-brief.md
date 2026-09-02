@@ -588,6 +588,15 @@ zoom cap and the band thresholds live where the CameraView bands are defined, on
 the max-out view IS the mid band over the full biome underlay; owner re-measures max-out and the digests rule the
 residual (compile bursts feed half two class 1, label quads feed L5 item 6).
 
+Additions from the owner's same session. **(c) armies render twice at close zoom** — the screenshot shows the procedural
+army character (base mesh, no cosmetics, wrong scale) standing beside the legacy army model. The owner's ruling: **keep
+the legacy army models as the one active representation for now** — the procedural characters are still being iterated
+on, so `proceduralCharacters` turns off at every band (a dev flag may re-enable them for that iteration; nothing is
+deleted), which also closes the double-render by construction. The biome work is approved as-is. And the WebGPU question
+is answered: `eternum-renderer-lane` reads `{"lane":"webgl2","reason":"adapter-timeout"}` — the bounded probe works;
+this Brave/Wayland/NVIDIA machine never answers `requestAdapter()` (matches the earlier brave://gpu finding), so the
+instant fallback is correct; `?rendererMode=webgpu-auto` re-probes after any driver or browser update.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
