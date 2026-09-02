@@ -1556,7 +1556,8 @@ export default class WorldmapScene extends WarpTravel {
   /** The band table decides what the scene shows; managers apply their own rows from the same table. */
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     setWorldmapRenderGauge("contentBand", ladder.band);
-    // The far band shows the whole-world biome surface alone; nearer bands composite the detailed pages over it.
+    // The whole-world biome surface underlies every band; the far band shows it alone, nearer bands composite the pages over it.
+    this.worldBiomeSurface.setVisible(ladder.biomeUnderlay);
     this.proceduralTerrain.object3d.visible = ladder.band !== CameraView.Far;
     this.fxManager.setVisible(ladder.fx);
     this.resourceFXManager.setVisible(ladder.fx);
@@ -1947,6 +1948,8 @@ export default class WorldmapScene extends WarpTravel {
     this.zoomCoordinator.syncToDistance(distance, performance.now());
     this.lastControlsCameraDistance = this.getCurrentCameraDistance();
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
+    // Camera state is state, not an event: entry and resume publish it now, not on the next throttled change.
+    this.updateCameraTargetHex();
   }
 
   /** Places the camera on the worldmap's fixed azimuth at `distance`, pitched per the zoom profile. */

@@ -16,6 +16,7 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(
       /runWithFrameWorkOwner\("zoom:content-ladder", \(\) => \{\s*this\.applyContentLadder\(resolveWorldmapContentLadder\(view\)\)/,
     );
+    expect(source).toMatch(/this\.worldBiomeSurface\.setVisible\(ladder\.biomeUnderlay\)/);
     expect(source).toMatch(/this\.proceduralTerrain\.object3d\.visible = ladder\.band !== CameraView\.Far/);
     expect(source).toMatch(/this\.fxManager\.setVisible\(ladder\.fx\)/);
     expect(source).toMatch(/this\.resourceFXManager\.setVisible\(ladder\.fx\)/);

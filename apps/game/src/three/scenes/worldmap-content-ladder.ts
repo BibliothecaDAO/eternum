@@ -1,3 +1,5 @@
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
+
 import { CameraView } from "./camera-view";
 
 export type WorldmapTextLabelTier = "full" | "priority" | "none";
@@ -10,10 +12,18 @@ export type WorldmapTextLabelTier = "full" | "priority" | "none";
  * - near: everything.
  * - mid: models and FX, text only for priority entities, armies as tier glyphs.
  * - far: the strategic map — atlas icons and markers only; no models, no
- *   procedural characters, no FX, no text.
+ *   procedural characters, no FX, no text. Parked: wheel zoom-out stops at the
+ *   top of the mid band until a map-mode key asks for this band.
+ *
+ * The whole-world biome surface is an underlay on every row, so no band shows
+ * void beyond the composite window; page terrain sits above it where it exists.
+ * Procedural army characters are off on every row while they are iterated on —
+ * the legacy army models are the one representation; `?proceduralCharacters=1`
+ * under dev mode re-enables them.
  */
 export interface WorldmapContentLadder {
   readonly band: CameraView;
+  readonly biomeUnderlay: boolean;
   readonly structureModels: boolean;
   readonly armyModels: boolean;
   readonly proceduralCharacters: boolean;
@@ -22,11 +32,14 @@ export interface WorldmapContentLadder {
   readonly armyTierGlyphs: boolean;
 }
 
+const PROCEDURAL_CHARACTERS_ENABLED = resolveProceduralCharactersOverride();
+
 const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
   band: CameraView.Close,
+  biomeUnderlay: true,
   structureModels: true,
   armyModels: true,
-  proceduralCharacters: true,
+  proceduralCharacters: PROCEDURAL_CHARACTERS_ENABLED,
   fx: true,
   textLabels: "full",
   armyTierGlyphs: false,
@@ -34,9 +47,10 @@ const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
 
 const MID_LADDER: WorldmapContentLadder = Object.freeze({
   band: CameraView.Medium,
+  biomeUnderlay: true,
   structureModels: true,
   armyModels: true,
-  proceduralCharacters: true,
+  proceduralCharacters: PROCEDURAL_CHARACTERS_ENABLED,
   fx: true,
   textLabels: "priority",
   armyTierGlyphs: true,
@@ -44,6 +58,7 @@ const MID_LADDER: WorldmapContentLadder = Object.freeze({
 
 const FAR_LADDER: WorldmapContentLadder = Object.freeze({
   band: CameraView.Far,
+  biomeUnderlay: true,
   structureModels: false,
   armyModels: false,
   proceduralCharacters: false,
@@ -51,6 +66,11 @@ const FAR_LADDER: WorldmapContentLadder = Object.freeze({
   textLabels: "none",
   armyTierGlyphs: false,
 });
+
+function resolveProceduralCharactersOverride(): boolean {
+  if (!DEV_MODE_ENABLED || typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("proceduralCharacters") === "1";
+}
 
 export function resolveWorldmapContentLadder(view: CameraView): WorldmapContentLadder {
   switch (view) {

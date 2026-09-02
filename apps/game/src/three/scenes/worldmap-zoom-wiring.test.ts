@@ -48,6 +48,18 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/onResumeStart: \(\) => this\.alignWorldmapCameraToDistance\(/);
   });
 
+  it("caps wheel zoom-out at the top of the mid band and keeps the far band parked", () => {
+    const profile = readFileSync(join(currentDir, "worldmap-camera-view-profile.ts"), "utf8");
+    expect(profile).toMatch(/maxDistance: WORLDMAP_BAND_BOUNDARIES\.mediumFar/);
+    expect(profile).toMatch(/parked until a map-mode key/);
+  });
+
+  it("publishes camera state to the UI store on entry and resume, not only on the next throttled change", () => {
+    expect(source).toMatch(
+      /private alignWorldmapCameraToDistance\(distance: number\): void \{[\s\S]*?this\.updateCameraTargetHex\(\);\s*\}/,
+    );
+  });
+
   it("persists the settled zoom distance once per completed transition", () => {
     expect(source).toMatch(/setWorldmapDistance\(settled\)/);
   });

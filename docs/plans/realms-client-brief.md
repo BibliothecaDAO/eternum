@@ -721,6 +721,38 @@ feed the pathfinding worker — the far band's GPU layers read the whole project
 nothing. Owed to the owner: far/mid p95 ≤ 16.7 ms after the partition split, and a capable browser landing on
 `renderer_mode=webgpu` with `?rendererMode=webgpu-auto` (the headless lane cannot show WebGPU).
 
+Recorded, L5d (2026-09-03, branch `client-scale-96p`, one commit; the four ladder-level rulings a–d, smallest diffs).
+(a) Underlay: the ladder gained `biomeUnderlay`, true on every row, and the scene's band listener applies it
+(`worldBiomeSurface.setVisible(ladder.biomeUnderlay)`) — the whole-world biome surface sits at y = −0.7 under the page
+terrain (land −0.47…0.37, water −0.055, fog sheet 0.24), so page terrain always wins where it exists and no band shows
+void beyond the composite window. (b) Zoom cap: `WORLDMAP_BAND_BOUNDARIES` (close/medium 15, medium/far 45,
+hysteresis 4) now lives in the band policy and `WORLDMAP_CAMERA_ZOOM.maxDistance` reads its `mediumFar`, so wheel
+zoom-out stops at 45 — the top of the mid band; the far strategic band and the marker layer stay in the code and tests,
+unreachable by wheel, parked in the ladder comment until a map-mode key. (c) One army representation:
+`proceduralCharacters` is false on every row — the legacy army models are the one representation while the procedural
+characters are iterated on; nothing is deleted, `?proceduralCharacters=1` under dev mode re-enables them (the existing
+reconcile makes the switch atomic per entity, which also closes the double render by construction). (d) Camera state is
+state: the scene now publishes `cameraTargetHex`/`cameraDistance` to the UI store unthrottled at the end of the entry
+and resume alignment (`alignWorldmapCameraToDistance`), and the minimap seeds its scale from the current distance on
+mount (`resolveMinimapScaleForCameraDistance`) instead of only reacting to the next change; the remaining camera
+`CustomEvent`s (`minimapCameraMove`, `minimapZoom`) are commands from the minimap to the scene, not state, and stay.
+Latest-features: the Strategic Map entry now says max zoom shows the real terrain over the full-world biome map and that
+the icon map is parked behind a future map-mode key. Net: 9 tracked files +85/−22 (production +59/−13, tests +26/−9).
+
+L5d gate record (2026-09-03, game 16 snapshot, headless software WebGL2). Zoom cap: eight wheel notches out from 35.95
+stop at exactly 45 (`worldmapDistance` 45 persisted), band stays 2 (mid), the marker layer stays hidden and both the
+page terrain group and the biome surface stay visible. No void beyond the window: screenshots at max-out
+(`scratchpad/screens/l5d-maxout-45.jpeg` — pages in the centre, flat biome hexes beyond them to the frame edge) and mid
+(`l5d-mid-25.jpeg`); what remains dark beyond the window is unexplored shroud in the deep-fog colour, the same constant
+the in-window fog sheet mixes from. One army representation: at close zoom (distance 10, 65 visible armies) the scene
+holds zero `procedural-army-character:*` objects; only the legacy instanced army model groups draw. Minimap: the SVG
+viewBox and camera circle follow the published distance (12.21 → viewBox 123.8 wide, 14.92 → 151.3, i.e. scale
+1.4·20/distance) — the mount-time mismatch the owner saw could not be reproduced headlessly, so the fix is the class the
+ruling named (publish on entry/resume, seed from current state) and the owner confirms on the deployed build. Tests:
+ladder, wiring, zoom, terrain, scene, manager, FX, combat, UI and store suites 378/379 files (the known
+`worldmap-initial-refresh` drift); typecheck clean; knip adds nothing. Owed to the owner: re-measure max-out (= mid band
+over the underlay), eyeball the art, and confirm the minimap matches the camera on load.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

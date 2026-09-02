@@ -1,6 +1,13 @@
 import { CameraView } from "../camera-view";
 import type { WorldmapZoomBand, WorldmapZoomStatus } from "./worldmap-zoom-types";
 
+/** Camera distances where the content bands change; the zoom cap reads the same numbers. */
+export const WORLDMAP_BAND_BOUNDARIES = {
+  closeMedium: 15,
+  mediumFar: 45,
+  hysteresisWidth: 4,
+} as const;
+
 export interface WorldmapZoomBandState {
   resolvedBand: WorldmapZoomBand;
   stableBand: WorldmapZoomBand;
@@ -74,9 +81,9 @@ export function resolveWorldmapZoomBand(input: {
   mediumFarBoundary?: number;
   hysteresisWidth?: number;
 }): WorldmapZoomBand {
-  const closeMediumBoundary = input.closeMediumBoundary ?? 15;
-  const mediumFarBoundary = input.mediumFarBoundary ?? 45;
-  const hysteresisHalfWidth = (input.hysteresisWidth ?? 4) / 2;
+  const closeMediumBoundary = input.closeMediumBoundary ?? WORLDMAP_BAND_BOUNDARIES.closeMedium;
+  const mediumFarBoundary = input.mediumFarBoundary ?? WORLDMAP_BAND_BOUNDARIES.mediumFar;
+  const hysteresisHalfWidth = (input.hysteresisWidth ?? WORLDMAP_BAND_BOUNDARIES.hysteresisWidth) / 2;
 
   switch (input.currentBand) {
     case CameraView.Close:

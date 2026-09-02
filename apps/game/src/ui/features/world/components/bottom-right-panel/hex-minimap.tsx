@@ -195,6 +195,12 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/** The minimap's zoom follows the world camera distance; unknown (not yet published) means the reference scale. */
+const resolveMinimapScaleForCameraDistance = (cameraDistance: number | null | undefined): number =>
+  cameraDistance
+    ? clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4)
+    : MINIMAP_SCALE_REFERENCE;
+
 interface HexMinimapProps {
   tiles: MinimapTile[];
   selectedHex: HexPosition | null;
@@ -231,9 +237,11 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles), [tiles]);
 
+  // Mount reads the camera's current state (position and distance); the store subscription carries updates.
   const initialView = useMemo(() => {
+    const scale = resolveMinimapScaleForCameraDistance(cameraDistance);
     if (!tiles.length) {
-      return { x: 0, y: 0, scale: MINIMAP_SCALE_REFERENCE };
+      return { x: 0, y: 0, scale };
     }
 
     const targetHex = cameraTargetHex ?? navigationTarget ?? selectedHex;
@@ -241,15 +249,15 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       const col = targetHex.col - FELT_CENTER();
       const row = targetHex.row - FELT_CENTER();
       const centerPixel = offsetToPixel(col, row);
-      return { x: centerPixel.x, y: centerPixel.y, scale: MINIMAP_SCALE_REFERENCE };
+      return { x: centerPixel.x, y: centerPixel.y, scale };
     }
 
     return {
       x: (centeredIndex.bounds.minX + centeredIndex.bounds.maxX) / 2,
       y: (centeredIndex.bounds.minY + centeredIndex.bounds.maxY) / 2,
-      scale: MINIMAP_SCALE_REFERENCE,
+      scale,
     };
-  }, [tiles.length, cameraTargetHex, navigationTarget, selectedHex, centeredIndex.bounds]);
+  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds]);
 
   const [view, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
   const viewRef = useRef(view);
@@ -308,7 +316,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   useEffect(() => {
     if (!cameraDistance) return;
-    const nextScale = clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4);
+    const nextScale = resolveMinimapScaleForCameraDistance(cameraDistance);
     const current = viewRef.current;
     if (Math.abs(current.scale - nextScale) < 0.01) return;
     scheduleViewUpdate({ ...current, scale: nextScale });

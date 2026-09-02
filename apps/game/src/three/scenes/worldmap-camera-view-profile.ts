@@ -1,9 +1,15 @@
+import { WORLDMAP_BAND_BOUNDARIES } from "./worldmap-zoom/worldmap-zoom-band-policy";
+
 const WORLDMAP_CAMERA_FOV_DEGREES = 38;
 
-/** Continuous worldmap zoom range; the wheel sets any camera distance inside it. */
+/**
+ * Continuous worldmap zoom range; the wheel sets any camera distance inside it.
+ * Zoom-out stops at the top of the mid band: the far strategic band stays in
+ * the code and tests but is parked until a map-mode key asks for it.
+ */
 export const WORLDMAP_CAMERA_ZOOM = {
   minDistance: 10,
-  maxDistance: 80,
+  maxDistance: WORLDMAP_BAND_BOUNDARIES.mediumFar,
   defaultDistance: 20,
 } as const;
 
