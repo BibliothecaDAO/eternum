@@ -750,6 +750,13 @@ Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
   returns only as its own brief if a profile or bug convicts it. The one red scenes test
   (`worldmap-initial-refresh.source.test.ts`) is the documented pre-existing drift, untouched by any of these cuts.
 
+- Cut 4 + close-out reviewed (reviewer, 2026-09-02): the diff is a faithful relocation — the four methods reproduced
+  verbatim over injected accessors, the projectile-impact subscription resolved at the same point in
+  `initializeWorldmapManagers`, teardown in the same order behind the one `dispose()` hook, the coordinator's own
+  `dispose` staying scene-owned. Reviewer reproduction: collaborator 8/8, scenes 867/868 (the one red is the documented
+  drift), typecheck clean, no scene path touched by the concurrent Phase 4 WIP. **Approved; the decomposition entry is
+  CLOSED. Deployed from this tip.**
+
 Recorded, L5b (2026-09-03, branch `client-scale-96p`, one commit on top of the L5 tip). (1) Content ladder: one table,
 `apps/game/src/three/scenes/worldmap-content-ladder.ts`, maps the zoom band (`CameraView`, resolved from distance) to
 what renders — near: everything; mid: models and FX, text only for priority entities, armies as tier glyphs; far: the
