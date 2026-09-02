@@ -24,6 +24,7 @@ export const LandingIdentityChip = () => {
   const signInRequest = useIdentitySessionStore((state) => state.signInRequest);
   const clearSignInRequest = useIdentitySessionStore((state) => state.clearSignInRequest);
   const closePopover = usePopoverStore((state) => state.close);
+  const togglePopover = usePopoverStore((state) => state.toggle);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,7 +40,11 @@ export const LandingIdentityChip = () => {
       ariaLabel="Identity"
       align="end"
       trigger={
-        <Button className="h-9 min-w-[128px] px-4" isLoading={status === "loading"}>
+        <Button
+          className="h-9 min-w-[128px] px-4"
+          isLoading={status === "loading"}
+          onClick={() => togglePopover(IDENTITY_POPOVER_ID)}
+        >
           {resolveChipLabel(status, session)}
         </Button>
       }

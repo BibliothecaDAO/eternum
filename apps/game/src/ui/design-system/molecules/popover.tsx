@@ -20,12 +20,13 @@ interface PopoverProps {
 
 /**
  * The one anchored, non-blocking overlay. The panel hangs off its trigger, closes on Escape or a pointer-down
- * outside it, never covers the page with a scrim, and at most one is open at a time (`usePopoverStore`).
- * Anything a fast transaction can answer renders here instead of in a modal.
+ * outside it, never covers the page with a scrim, and at most one is open at a time (`usePopoverStore`). The
+ * trigger opens it through the store (`toggle(id)`); the panel is capped to the viewport on the side it grows
+ * towards, so wide content shrinks instead of leaving the screen. Anything a fast transaction can answer renders
+ * here instead of in a modal.
  */
 export const Popover = ({ id, trigger, children, ariaLabel, align = "start", className }: PopoverProps) => {
   const isOpen = usePopoverStore((state) => state.openId === id);
-  const toggle = usePopoverStore((state) => state.toggle);
   const close = usePopoverStore((state) => state.close);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -70,7 +71,7 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
 
   return (
     <>
-      <span ref={anchorRef} className="inline-flex" data-popover-anchor={id} onClick={() => toggle(id)}>
+      <span ref={anchorRef} className="inline-flex" data-popover-anchor={id}>
         {trigger}
       </span>
       {isOpen &&
@@ -82,7 +83,7 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
             aria-label={ariaLabel}
             data-popover-panel={id}
             className={cn(
-              "pointer-events-auto fixed z-[130] w-80 max-w-[calc(100vw-1rem)] rounded-xl p-4 text-gold",
+              "pointer-events-auto fixed z-[130] w-80 rounded-xl p-4 text-gold",
               OVERLAY_SURFACE_BASE,
               className,
             )}
@@ -98,10 +99,13 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
 
 const resolvePanelStyle = (anchor: DOMRect, align: PopoverAlign): CSSProperties => {
   const top = anchor.bottom + PANEL_GAP_PX;
+  const maxHeight = Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
   if (align === "end") {
-    return { top, right: Math.max(VIEWPORT_MARGIN_PX, window.innerWidth - anchor.right) };
+    const right = Math.max(VIEWPORT_MARGIN_PX, window.innerWidth - anchor.right);
+    return { top, right, maxHeight, maxWidth: Math.max(0, window.innerWidth - right - VIEWPORT_MARGIN_PX) };
   }
-  return { top, left: Math.max(VIEWPORT_MARGIN_PX, anchor.left) };
+  const left = Math.max(VIEWPORT_MARGIN_PX, anchor.left);
+  return { top, left, maxHeight, maxWidth: Math.max(0, window.innerWidth - left - VIEWPORT_MARGIN_PX) };
 };
 
 const isInside = (target: EventTarget | null, element: HTMLElement | null): boolean =>

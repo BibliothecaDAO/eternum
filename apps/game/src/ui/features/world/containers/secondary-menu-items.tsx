@@ -1,12 +1,16 @@
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { Popover } from "@/ui/design-system/molecules/popover";
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
-import { latestFeatures, rewards, settings, transactions } from "@/ui/features/world";
+import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
+import { latestFeatures, rewards, transactions } from "@/ui/features/world";
+import { SETTINGS_POPOVER_ID, SettingsPanel } from "@/ui/modules/settings/settings";
 
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
@@ -36,6 +40,9 @@ export const SecondaryMenuItems = () => {
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const isLeaderboardOpen = usePopoverStore((state) => state.openId === LEADERBOARD_POPOVER_ID);
+  const isSettingsOpen = usePopoverStore((state) => state.openId === SETTINGS_POPOVER_ID);
+  const togglePopover = usePopoverStore((state) => state.toggle);
 
   // Transaction status for the network button indicator
   const txTransactions = useTransactionStore((state) => state.transactions);
@@ -64,6 +71,28 @@ export const SecondaryMenuItems = () => {
 
   return (
     <div className="pointer-events-auto flex items-center gap-2">
+      {/* Leaderboard keeps its own button; the social board hangs off it. */}
+      <Popover
+        id={LEADERBOARD_POPOVER_ID}
+        ariaLabel="Leaderboard"
+        align="end"
+        className="w-auto"
+        trigger={
+          <CircleButton
+            variant="hud"
+            className="social-selector"
+            tooltipLocation="bottom"
+            active={isLeaderboardOpen}
+            image={BuildingThumbs.guild}
+            label={"Leaderboard"}
+            size="topbar"
+            onClick={() => togglePopover(LEADERBOARD_POPOVER_ID)}
+          />
+        }
+      >
+        <SocialBoard />
+      </Popover>
+
       {/* End-of-season rewards stay surfaced while the season has ended. */}
       {hasSeasonEnded && (
         <CircleButton
@@ -135,17 +164,27 @@ export const SecondaryMenuItems = () => {
         )}
       </div>
 
-      {/* Settings stays last in the utility cluster. */}
-      <CircleButton
-        variant="hud"
-        className="settings-selector"
-        tooltipLocation="bottom"
-        active={isPopupOpen(settings)}
-        image={BuildingThumbs.settings}
-        label={"Settings"}
-        size="topbar"
-        onClick={() => togglePopup(settings)}
-      />
+      {/* Settings stays last in the utility cluster; its panel hangs off the gear. */}
+      <Popover
+        id={SETTINGS_POPOVER_ID}
+        ariaLabel="Settings"
+        align="end"
+        className="w-[420px] overflow-y-auto"
+        trigger={
+          <CircleButton
+            variant="hud"
+            className="settings-selector"
+            tooltipLocation="bottom"
+            active={isSettingsOpen}
+            image={BuildingThumbs.settings}
+            label={"Settings"}
+            size="topbar"
+            onClick={() => togglePopover(SETTINGS_POPOVER_ID)}
+          />
+        }
+      >
+        <SettingsPanel />
+      </Popover>
     </div>
   );
 };

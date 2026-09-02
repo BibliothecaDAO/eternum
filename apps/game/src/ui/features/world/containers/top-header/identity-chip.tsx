@@ -1,7 +1,6 @@
 import { IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { resetBootstrap } from "@/init/bootstrap";
 import { buildEntryHref } from "@/play/navigation/play-route";
@@ -11,7 +10,6 @@ import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import { leaderboard } from "@/ui/features/world/components/config";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
@@ -55,9 +53,9 @@ const useIdentityChipState = (): IdentityChipState => {
 };
 
 /**
- * The top-left identity chip: who you are in this game, in one pill, with the sign-in surface, the Play affordance
- * and the leaderboard behind one popover. It replaces the spectating pill, the rank pill and the "not logged in"
- * banner.
+ * The top-left identity chip: who you are in this game, in one pill, with the sign-in surface and the Play
+ * affordance behind one popover. It replaces the spectating pill, the rank pill and the "not logged in" banner; the
+ * leaderboard has its own top-bar button.
  */
 export const IdentityChip = () => {
   const state = useIdentityChipState();
@@ -69,26 +67,31 @@ export const IdentityChip = () => {
       ariaLabel="Identity"
       trigger={<IdentityChipTrigger state={state} isOpen={isOpen} />}
     >
-      <IdentityChipPanel state={state} />
+      <IdentityChipPanelBody state={state} />
     </Popover>
   );
 };
 
-const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOpen: boolean }) => (
-  <button
-    type="button"
-    aria-expanded={isOpen}
-    aria-label="Identity"
-    className={cn(
-      TOP_PILL,
-      TOP_PILL_TEXT,
-      "identity-chip whitespace-nowrap transition hover:bg-gold/15",
-      isOpen && "border-gold/60 bg-gold/15",
-    )}
-  >
-    <IdentityChipLabel state={state} />
-  </button>
-);
+const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOpen: boolean }) => {
+  const togglePopover = usePopoverStore((popovers) => popovers.toggle);
+
+  return (
+    <button
+      type="button"
+      aria-expanded={isOpen}
+      aria-label="Identity"
+      onClick={() => togglePopover(IDENTITY_POPOVER_ID)}
+      className={cn(
+        TOP_PILL,
+        TOP_PILL_TEXT,
+        "identity-chip whitespace-nowrap transition hover:bg-gold/15",
+        isOpen && "border-gold/60 bg-gold/15",
+      )}
+    >
+      <IdentityChipLabel state={state} />
+    </button>
+  );
+};
 
 const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
   switch (state.kind) {
@@ -138,24 +141,6 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
 const Separator = () => <span className="text-gold/50">·</span>;
 
 const formatRealmCount = (count: number): string => `${count} ${count === 1 ? "realm" : "realms"}`;
-
-const IdentityChipPanel = ({ state }: { state: IdentityChipState }) => {
-  const togglePopup = useUIStore((ui) => ui.togglePopup);
-  const closePopover = usePopoverStore((popovers) => popovers.close);
-  const openLeaderboard = useCallback(() => {
-    closePopover(IDENTITY_POPOVER_ID);
-    togglePopup(leaderboard);
-  }, [closePopover, togglePopup]);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <IdentityChipPanelBody state={state} />
-      <Button variant="outline" size="xs" className="w-full justify-center" onClick={openLeaderboard}>
-        Leaderboard
-      </Button>
-    </div>
-  );
-};
 
 const IdentityChipPanelBody = ({ state }: { state: IdentityChipState }) => {
   switch (state.kind) {

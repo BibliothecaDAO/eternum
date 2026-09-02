@@ -16,9 +16,12 @@ const identityRpcUrl = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_RPC_URL, {
 // Controller is an identity wallet option only (owner decision, brief "Decisions taken"): it signs the one
 // SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
 // The connector package keeps the first instance and ignores later options — own exactly one.
+// `lazyload`: the keychain iframe (x.cartridge.gg, an authed gRPC client of its own) is created on the first
+// wallet action, not at module load — an anonymous spectator never starts a vendor client that needs a session.
 const controller = new ControllerConnector({
   errorDisplayMode: "notification",
   webauthnPopup: true,
+  lazyload: true,
   chains: [{ rpcUrl: env.VITE_PUBLIC_CONTROLLER_RPC_URL || identityRpcUrl }],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });

@@ -3,9 +3,9 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-describe("Social tab mode gating", () => {
+describe("SocialBoard tab mode gating", () => {
   it("gates blitz and faith tabs by resolved world mode", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/ui/features/social/components/social.tsx"), "utf8");
+    const source = readFileSync(resolve(process.cwd(), "src/ui/features/social/components/social-board.tsx"), "utf8");
 
     expect(source).toContain('const isBlitzMode = resolvedWorldMode === "blitz";');
     expect(source).toContain('const isEternumMode = resolvedWorldMode === "eternum";');

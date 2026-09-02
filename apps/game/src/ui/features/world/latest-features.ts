@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Leaderboard and Settings Popovers",
+    description:
+      "The leaderboard (players, tribes, faith, prize) now opens from the identity chip's popover and settings hang off the gear. Both close on Escape or a click outside and never block the map; the two floating windows are gone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-03",
     title: "Identity Chip",
     description:
       "The top-left chip now says who you are in this game: spectating (and as whom), not signed in with view-only access, connecting while your gameplay account is prepared, or your name with realms, rank and points. Sign-in, the leaderboard and Play for a spectator who owns a realm live in its popover, so no sign-in modal blocks the map any more.",

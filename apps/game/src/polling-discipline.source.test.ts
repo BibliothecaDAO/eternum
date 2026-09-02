@@ -90,10 +90,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "clock",
     reason: "points interpolation",
   },
-  "apps/game/src/ui/features/social/components/social.tsx": {
-    class: "clock",
-    reason: "leaderboard points interpolation",
-  },
   "apps/game/src/ui/features/social/player/use-leaderboard-effects.ts": {
     class: "debug",
     reason: "opt-in mock effect generator",

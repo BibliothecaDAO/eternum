@@ -1,21 +1,19 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore, type WorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
-import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { PrizePanel } from "@/ui/features/prize";
-import { FaithLeaderboardPanel } from "../faith";
-import { GuildMembers } from "../guilds/guild-members";
-import { Guilds } from "../guilds/guilds";
-import { PlayersPanel } from "../player/players-panel";
-import { leaderboard } from "@/ui/features/world";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
+import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 import { Shapes, Sparkles, Users } from "lucide-react";
 import { ReactNode, useCallback, useEffect, useMemo } from "react";
+import { FaithLeaderboardPanel } from "../faith";
+import { GuildMembers } from "../guilds/guild-members";
+import { Guilds } from "../guilds/guilds";
+import { PlayersPanel } from "../player/players-panel";
+import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
 
@@ -52,16 +50,13 @@ const countStructuresByOwner = (structures: WorldSlicesStore["structures"]) =>
     return countsByOwner;
   }, new Map());
 
-export const Social = () => {
-  const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
+export const LEADERBOARD_POPOVER_ID = "leaderboard";
 
-  // The window's world-slice subscriptions and leaderboard timers exist only while it is open.
-  if (!isOpen) return null;
-
-  return <SocialWindow />;
-};
-
-const SocialWindow = () => {
+/**
+ * The social board: players, tribes, faith and prize tabs with the expandable player / tribe detail column. It
+ * renders inside the leaderboard button's popover; its world-slice subscriptions exist only while that is open.
+ */
+export const SocialBoard = () => {
   const {
     account: { account },
     setup: { components },
@@ -80,7 +75,6 @@ const SocialWindow = () => {
   const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
   const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
-  const togglePopup = useUIStore((state) => state.togglePopup);
   const mode = useGameModeConfig();
   const resolvedWorldMode = useResolvedWorldGameMode();
   const isBlitzMode = resolvedWorldMode === "blitz";
@@ -97,23 +91,20 @@ const SocialWindow = () => {
   );
   const playerStructureCountsMap = useMemo(() => countStructuresByOwner(structures), [structures]);
 
-  useEffect(() => {
-    // update first time - initialize with interval on first call
-    const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
-    manager.initialize();
-    setPlayersByRank(manager.playersByRank);
-  }, [components, setPlayersByRank]);
+  // One leaderboard source: the same standings the identity chip and the players panel read, recomputed on the
+  // bridge's leaderboard revision and the coarse tick instead of a private manager interval.
+  const { standingsByAddress } = useInGameLeaderboard();
+  const rankedPlayers = useMemo(
+    () =>
+      [...standingsByAddress.values()]
+        .toSorted((left, right) => left.rank - right.rank)
+        .map((standing): [ContractAddress, number] => [standing.address, standing.points]),
+    [standingsByAddress],
+  );
 
-  // Add periodic updates every 1 minute to refresh unregistered shareholder points
   useEffect(() => {
-    const interval = setInterval(() => {
-      const manager = LeaderboardManager.instance(components);
-      manager.updatePoints();
-      setPlayersByRank(manager.playersByRank);
-    }, LEADERBOARD_UPDATE_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [components, setPlayersByRank]);
+    setPlayersByRank(rankedPlayers);
+  }, [rankedPlayers, setPlayersByRank]);
 
   useEffect(() => {
     setPlayerInfo(
@@ -228,14 +219,11 @@ const SocialWindow = () => {
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
   return (
-    <CenteredModalShell
-      title={leaderboard}
-      onClose={() => togglePopup(leaderboard)}
-      persistKey={leaderboard}
-      panelClassName={`h-[760px] max-h-[calc(100vh-64px)] max-w-[calc(100vw-48px)] ${
-        isExpanded ? "w-[1500px]" : "w-[1100px]"
-      }`}
-      bodyClassName="flex overflow-hidden"
+    <div
+      className={cn(
+        "flex h-[720px] max-h-[calc(100vh-7rem)] max-w-full overflow-hidden",
+        isExpanded ? "w-[1400px]" : "w-[1000px]",
+      )}
     >
       <div className="flex-1 min-w-0 overflow-hidden">
         <Tabs
@@ -246,7 +234,7 @@ const SocialWindow = () => {
             setIsExpanded(false);
             setSelectedPlayer(0n);
           }}
-          className="h-full mt-3"
+          className="h-full"
         >
           <div className="flex flex-col h-full">
             <Tabs.List className="">
@@ -272,6 +260,6 @@ const SocialWindow = () => {
           {tabs[activeTabIndex]?.expandedContent ?? null}
         </div>
       )}
-    </CenteredModalShell>
+    </div>
   );
 };

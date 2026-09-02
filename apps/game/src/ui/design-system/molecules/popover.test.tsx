@@ -4,12 +4,21 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Popover } from "./popover";
 
+const Trigger = ({ id, label }: { id: string; label: string }) => {
+  const toggle = usePopoverStore((state) => state.toggle);
+  return (
+    <button type="button" onClick={() => toggle(id)}>
+      {label}
+    </button>
+  );
+};
+
 const TwoPopovers = () => (
   <>
-    <Popover id="a" ariaLabel="A" trigger={<button type="button">open a</button>}>
+    <Popover id="a" ariaLabel="A" trigger={<Trigger id="a" label="open a" />}>
       <span>panel a</span>
     </Popover>
-    <Popover id="b" ariaLabel="B" trigger={<button type="button">open b</button>}>
+    <Popover id="b" ariaLabel="B" trigger={<Trigger id="b" label="open b" />}>
       <span>panel b</span>
     </Popover>
   </>

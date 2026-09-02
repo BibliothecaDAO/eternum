@@ -12,11 +12,19 @@ describe("StarknetProvider identity boundary", () => {
     expect(source).not.toContain("VITE_PUBLIC_NODE_URL");
   });
 
-  it("offers extension wallets without Controller or paymaster wiring", () => {
+  it("offers the extension wallets and Controller as identity wallets, without paymaster wiring", () => {
     const source = readFileSync(resolve(process.cwd(), "src/hooks/context/starknet-provider.tsx"), "utf8");
 
-    expect(source).toContain("[ready(), braavos()]");
-    expect(source).not.toContain("ControllerConnector");
-    expect(source).not.toContain("paymaster");
+    expect(source).toContain("[controller, ready(), braavos()]");
+    expect(source).not.toContain("paymasterProvider");
+    expect(source).not.toContain("policies:");
+  });
+
+  it("never starts the Controller keychain without a wallet action", () => {
+    // The keychain iframe is a vendor client with its own authed RPCs: without `lazyload` it boots at module load
+    // and polls unauthenticated for every anonymous spectator.
+    const source = readFileSync(resolve(process.cwd(), "src/hooks/context/starknet-provider.tsx"), "utf8");
+
+    expect(source).toContain("lazyload: true");
   });
 });
