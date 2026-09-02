@@ -1,8 +1,6 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { env } from "@/../env";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
 import {
   BookOpen,
@@ -51,8 +49,6 @@ const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
 const FactoryV2Content = lazy(() =>
   import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
 );
-
-const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
 
 type LearnGuideTier = "beginner" | "advanced";
 type LearnGuideKind = "video" | "written";
@@ -800,8 +796,8 @@ export const PlayView = ({
   const [modeFilter, setModeFilter] = useState<LandingModeFilter>(initialModeFilter);
 
   // Auth state
-  const account = useAccountStore((state) => state.account);
-  const setModal = useUIStore((state) => state.setModal);
+  const isSignedIn = useIdentitySession().status === "signed-in";
+  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
   const currentLandingHref = `${location.pathname}${location.search}`;
   const entryRedirectState: LandingEntryRouteState = {
     returnTo: currentLandingHref,
@@ -880,53 +876,47 @@ export const PlayView = ({
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = hasConnectedAccountAddress(account?.address);
-
-      // Check if user needs to sign in before entering game
-      if (!hasAccount) {
+      if (!isSignedIn) {
         const redirectTo = buildEntryRedirectHref(selection, "settle", false);
         if (!redirectTo) {
           return;
         }
 
-        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
+        requestSignIn({ redirectTo, redirectState: entryRedirectState });
         return;
       }
 
       // Open settle flow
       openGameEntryRoute(selection, "settle", false);
     },
-    [account?.address, buildEntryRedirectHref, entryRedirectState, openGameEntryRoute, setModal],
+    [buildEntryRedirectHref, entryRedirectState, isSignedIn, openGameEntryRoute, requestSignIn],
   );
 
   const handleAutoSettleGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = hasConnectedAccountAddress(account?.address);
-      if (!hasAccount) return;
+      if (!isSignedIn) return;
 
       openGameEntryRoute(selection, "settle", true);
     },
-    [account?.address, openGameEntryRoute],
+    [isSignedIn, openGameEntryRoute],
   );
 
   const handlePlayGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = hasConnectedAccountAddress(account?.address);
-
-      if (!hasAccount) {
+      if (!isSignedIn) {
         const redirectTo = buildEntryRedirectHref(selection, "play", false);
         if (!redirectTo) {
           return;
         }
 
-        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
+        requestSignIn({ redirectTo, redirectState: entryRedirectState });
         return;
       }
 
       // Open direct play flow
       openGameEntryRoute(selection, "play", false);
     },
-    [account?.address, buildEntryRedirectHref, entryRedirectState, openGameEntryRoute, setModal],
+    [buildEntryRedirectHref, entryRedirectState, isSignedIn, openGameEntryRoute, requestSignIn],
   );
 
   const handleSpectate = useCallback(
@@ -971,8 +961,8 @@ export const PlayView = ({
   }, [dismissReviewForWorld, reviewWorld]);
 
   const handleRequireSignIn = useCallback(() => {
-    setModal(<SignInPromptModal redirectTo={currentLandingHref} />, true);
-  }, [currentLandingHref, setModal]);
+    requestSignIn({ redirectTo: currentLandingHref });
+  }, [currentLandingHref, requestSignIn]);
 
   const renderContent = () => {
     switch (activeTab) {

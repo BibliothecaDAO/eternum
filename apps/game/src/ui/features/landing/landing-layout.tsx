@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { IdentityLogin } from "@/ui/modules/identity/identity-login";
+import { LandingIdentityChip } from "@/ui/modules/identity/landing-identity-chip";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
@@ -90,7 +90,7 @@ const LandingLayoutContent = () => {
         headerControls={
           <>
             <LandingMusicPlayer className="hidden lg:flex" presentation="header" />
-            <IdentityLogin />
+            <LandingIdentityChip />
           </>
         }
         onSettingsClick={handleSettingsClick}

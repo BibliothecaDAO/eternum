@@ -1,7 +1,6 @@
 export { CountUpNumber } from "./components/count-up-number";
 export { EndgameModal } from "./components/endgame-modal";
 export { ProductionStatusBadge } from "./components/production-status-badge";
-export { NotLoggedInMessage } from "./components/not-logged-in-message";
 export { Toaster } from "./components/toaster";
 export { TransactionNotification } from "./components/tx-emit";
 export { ChunkTransitionIndicator } from "./components/chunk-transition-indicator";

@@ -1,18 +1,14 @@
-import { env } from "../../../../env";
-import { IDENTITY_SESSION_CHANGED_EVENT, notifyIdentitySessionChanged } from "@/hooks/context/identity-session";
+import {
+  identityClient,
+  identityOrigin,
+  useIdentitySession,
+  useIdentitySessionStore,
+} from "@/hooks/context/identity-session";
 import Button from "@/ui/design-system/atoms/button";
-import { resolveEndpoint } from "@realms-world/chain";
-import { createIdentityClient, type Session } from "@realms-world/identity";
 import { useAccount, useConnect, useSignTypedData } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { addAddressPadding } from "starknet";
-
-const identityOrigin = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_ORIGIN, {
-  name: "VITE_PUBLIC_IDENTITY_ORIGIN",
-  browserFacing: true,
-});
-const identityClient = createIdentityClient({ baseUrl: `${identityOrigin}/api/auth` });
 
 interface IdentityLoginProps {
   className?: string;
@@ -22,27 +18,9 @@ export const IdentityLogin = ({ className = "" }: IdentityLoginProps) => {
   const { address } = useAccount();
   const { connectAsync, connectors, isPending: isConnecting } = useConnect();
   const { signTypedDataAsync, isPending: isSigning } = useSignTypedData({});
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const { status, session } = useIdentitySession();
+  const applySession = useIdentitySessionStore((state) => state.applySession);
   const [error, setError] = useState<string | null>(null);
-
-  const loadSession = useCallback(async () => {
-    setIsLoadingSession(true);
-    try {
-      setSession(await identityClient.getSession());
-    } catch (sessionError) {
-      console.error("identity_session_load_failed", sessionError);
-      setSession(null);
-    } finally {
-      setIsLoadingSession(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadSession();
-    window.addEventListener(IDENTITY_SESSION_CHANGED_EVENT, loadSession);
-    return () => window.removeEventListener(IDENTITY_SESSION_CHANGED_EVENT, loadSession);
-  }, [loadSession]);
 
   const isSignedIn = useMemo(
     () => Boolean(address && session?.user.id && BigInt(address) === BigInt(session.user.id)),
@@ -66,18 +44,17 @@ export const IdentityLogin = ({ className = "" }: IdentityLoginProps) => {
           uri: identityOrigin,
           signTypedData: (message) => signTypedDataAsync(message),
         });
-        setSession(nextSession);
-        notifyIdentitySessionChanged();
+        applySession(nextSession);
       } catch (loginError) {
         const message = loginError instanceof Error ? loginError.message : "Identity login failed";
         console.error("identity_login_failed", { error: message });
         setError(message);
       }
     },
-    [address, connectAsync, connectors, signTypedDataAsync],
+    [address, applySession, connectAsync, signTypedDataAsync],
   );
 
-  const isPending = isConnecting || isSigning || isLoadingSession;
+  const isPending = isConnecting || isSigning || status === "loading";
   const label = isSignedIn ? shortAddress(address!) : address ? "Sign in" : "Connect wallet";
 
   return (
@@ -93,12 +70,13 @@ export const IdentityLogin = ({ className = "" }: IdentityLoginProps) => {
         </Button>
       ) : (
         // One button per installed wallet: the identity step must offer every configured connector,
-        // not silently try the first one and fail when that extension is absent.
-        <div className="flex gap-1">
+        // not silently try the first one and fail when that extension is absent. Stacked, wrapping
+        // buttons: this renders inside a popover, and a connector name can be long.
+        <div className="flex w-full flex-col gap-1">
           {connectors.map((connector) => (
             <Button
               key={connector.id}
-              className="h-9 px-4"
+              className="w-full !whitespace-normal px-4 py-2 leading-tight"
               isLoading={isPending}
               onClick={() => void handleLogin(connector)}
             >

@@ -12,7 +12,7 @@ describe("PlayView sign-in entry redirects", () => {
     const source = readSource("src/ui/features/landing/views/play-view.tsx");
 
     expect(source).toContain("landingModeFilter: modeFilter");
-    expect(source).toContain("redirectState={entryRedirectState}");
+    expect(source).toContain("redirectState: entryRedirectState");
     expect(source).toContain("state: entryRedirectState");
   });
 });

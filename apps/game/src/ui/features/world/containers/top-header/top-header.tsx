@@ -5,11 +5,11 @@ import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
+import { IdentityChip } from "./identity-chip";
 import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TickProgress } from "./tick-progress";
 import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
@@ -120,15 +120,8 @@ export const TopHeader = memo(() => {
           (rank · view · day · timer · army toggle · settings); the right
           cluster carries ancillary status icons (network / tx / features). */}
       <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
-        {isSpectating && (
-          <div className={cn(TOP_PILL, HUD_LABEL_BRIGHT)}>
-            <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
-            <span>Spectating</span>
-          </div>
-        )}
-
-        {/* 1. Player rank */}
-        <SecondaryMenuItems variant="rank" />
+        {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
+        <IdentityChip />
 
         {/* 2. Empire-wide suggested actions — sits right after the rank pill and
             is hidden while spectating (a spectator has no empire to act on). */}
@@ -232,7 +225,7 @@ export const TopHeader = memo(() => {
         )}
 
         {/* 7. Settings + ancillary status icons (network, tx, latest features…) */}
-        <SecondaryMenuItems variant="rest" />
+        <SecondaryMenuItems />
       </div>
 
       {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}

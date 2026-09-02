@@ -1,6 +1,6 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configureGameplayAccountSubmits } from "@/account/gameplay-account-submit";
-import { IDENTITY_SESSION_CHANGED_EVENT } from "@/hooks/context/identity-session";
+import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
 import { useActiveWorldProfile } from "@/runtime/world/use-active-world";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import {
@@ -13,52 +13,68 @@ import {
   readBoundGameplayAccount,
   readGameplayAccountPublicKey,
 } from "@bibliothecadao/eternum";
-import { resolveEndpoint, type GameChain } from "@realms-world/chain";
-import { createIdentityClient } from "@realms-world/identity";
+import type { GameChain } from "@realms-world/chain";
 import { useAccount } from "@starknet-react/core";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { addAddressPadding, num } from "starknet";
-import { env } from "../../../env";
 
-const identityOrigin = resolveEndpoint(env.VITE_PUBLIC_IDENTITY_ORIGIN, {
-  name: "VITE_PUBLIC_IDENTITY_ORIGIN",
-  browserFacing: true,
-});
-const identityClient = createIdentityClient({ baseUrl: `${identityOrigin}/api/auth` });
 const gameplayAccountApi = createGameplayAccountApi({ baseUrl: identityOrigin });
 
-export function GameplayAccountSync({ children }: { children: ReactNode }) {
+interface GameplayWorldTarget {
+  chain: GameChain;
+  rpcUrl: string;
+  bindingAuthorityAddress?: string;
+  playerAccountClassHash?: string;
+  playerRegistryAddress?: string;
+}
+
+// Keyed by value, not by profile object identity: a re-created profile for the same world must not null the
+// gameplay account mid-boot.
+const useGameplayWorldTarget = (): GameplayWorldTarget | null => {
   const activeWorld = useActiveWorldProfile();
+  const chain = activeWorld?.chain;
+  const rpcUrl = activeWorld?.rpcUrl;
+  const bindingAuthorityAddress = activeWorld?.bindingAuthorityAddress;
+  const playerAccountClassHash = activeWorld?.playerAccountClassHash;
+  const playerRegistryAddress = activeWorld?.playerRegistryAddress;
+
+  return useMemo(
+    () =>
+      chain && rpcUrl
+        ? { chain: chain as GameChain, rpcUrl, bindingAuthorityAddress, playerAccountClassHash, playerRegistryAddress }
+        : null,
+    [bindingAuthorityAddress, chain, playerAccountClassHash, playerRegistryAddress, rpcUrl],
+  );
+};
+
+export function GameplayAccountSync({ children }: { children: ReactNode }) {
+  const worldTarget = useGameplayWorldTarget();
   const { address: connectedIdentityAddress } = useAccount();
+  const { status: identityStatus, session } = useIdentitySession();
+  const sessionOwner = session?.user.id ?? null;
   const setGameplayAccount = useAccountStore((state) => state.setGameplayAccount);
-  const [identitySessionRevision, setIdentitySessionRevision] = useState(0);
 
   useEffect(() => {
-    const refreshSession = () => setIdentitySessionRevision((revision) => revision + 1);
-    window.addEventListener(IDENTITY_SESSION_CHANGED_EVENT, refreshSession);
-    return () => window.removeEventListener(IDENTITY_SESSION_CHANGED_EVENT, refreshSession);
-  }, []);
+    if (identityStatus === "loading") return;
 
-  useEffect(() => {
     let active = true;
     setGameplayAccount(null, null);
 
     const sync = async () => {
-      if (!activeWorld?.rpcUrl) return;
+      if (!worldTarget) return;
 
       try {
-        const chain = activeWorld.chain as GameChain;
-        const session = await identityClient.getSession();
-        const owner = resolveGameplayOwner(session?.user.id ?? null, connectedIdentityAddress);
+        const owner = resolveGameplayOwner(sessionOwner, connectedIdentityAddress);
         if (owner === null) return;
 
-        const accountConfig = resolveGameplayAccountConfig(activeWorld);
-        const provider = getCachedRpcProvider(activeWorld.rpcUrl);
+        const accountConfig = resolveGameplayAccountConfig(worldTarget);
+        const provider = getCachedRpcProvider(worldTarget.rpcUrl);
         await assertGameplayAccountClassDeclared(provider, accountConfig.classHash);
         const chainId = await provider.getChainId();
         const storedKey = getStoredGameplayKey({ storage: localStorage, chainId, owner });
-        const key = storedKey ?? getOrCreateGameplayKey({ storage: localStorage, chain, chainId, owner });
+        const key =
+          storedKey ?? getOrCreateGameplayKey({ storage: localStorage, chain: worldTarget.chain, chainId, owner });
         const boundAccount = await readBoundGameplayAccount(provider, accountConfig.registryAddress, owner);
 
         const account = boundAccount
@@ -78,7 +94,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
             });
 
         if (active) {
-          setGameplayAccount(configureGameplayAccountSubmits(account, chain), addAddressPadding(owner));
+          setGameplayAccount(configureGameplayAccountSubmits(account, worldTarget.chain), addAddressPadding(owner));
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
@@ -93,7 +109,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [activeWorld, connectedIdentityAddress, identitySessionRevision, setGameplayAccount]);
+  }, [connectedIdentityAddress, identityStatus, sessionOwner, setGameplayAccount, worldTarget]);
 
   return <>{children}</>;
 }

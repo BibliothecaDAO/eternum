@@ -1,12 +1,11 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
-import { captureSpectateIntentFromUrl, isExplicitSpectateSession } from "@/utils/spectator-session";
+import { captureSpectateIntentFromUrl } from "@/utils/spectator-session";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
 import { world } from "@bibliothecadao/types";
-import { ReactNode } from "react";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import { applyWorldSelection, patchManifestWithFactory, type WorldProfile } from "@/runtime/world";
@@ -20,7 +19,6 @@ import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
-import { NoAccountModal } from "../ui/layouts/no-account-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
@@ -72,22 +70,6 @@ const resolveBootstrapSelection = (context: ResolvedEntryContext): BootstrapSele
     chain: context.chain,
     worldName: context.worldName,
   };
-};
-
-const shouldBypassNoAccountModal = (): boolean => {
-  const isSpectatingInStore = useUIStore.getState().isSpectating;
-  return isExplicitSpectateSession() || isSpectatingInStore;
-};
-
-const handleNoAccount = (modalContent: ReactNode) => {
-  if (shouldBypassNoAccountModal()) {
-    verboseLog("[bootstrap] Skipping account modal - spectate mode");
-    return;
-  }
-
-  const uiStore = useUIStore.getState();
-  uiStore.setModal(null, false);
-  uiStore.setModal(modalContent, true);
 };
 
 const applyWorldSelectionForEntryContext = async (context: ResolvedEntryContext): Promise<WorldProfile> => {
@@ -250,9 +232,8 @@ const runDojoSetup = async (chain: Chain, namespace: string, gameId: number): Pr
       gameId,
     },
     {
-      onNoAccount: () => {
-        handleNoAccount(<NoAccountModal />);
-      },
+      // The identity chip derives "not signed in" from the identity session itself; nothing to open here.
+      onNoAccount: () => verboseLog("[bootstrap] No gameplay account - the identity chip carries the sign-in surface"),
       onError: (error: unknown) => {
         console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
 

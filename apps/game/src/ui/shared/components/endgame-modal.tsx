@@ -1,3 +1,4 @@
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resetBootstrap } from "@/init/bootstrap";
@@ -5,7 +6,6 @@ import { getActiveWorld } from "@/runtime/world";
 import { GameIsOverModal } from "@/ui/features/landing/components/game-is-over-modal";
 import { GameReviewModal } from "@/ui/features/landing/components/game-review-modal";
 import { isGameReviewDismissed, setGameReviewDismissed } from "@/ui/features/landing/lib/game-review-storage";
-import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +21,6 @@ interface ReviewWorld {
 
 export const EndgameModal = () => {
   const navigate = useNavigate();
-  const setModal = useUIStore((state) => state.setModal);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const currentBlockTimestamp = useCurrentBlockTimestamp();
 
@@ -109,8 +108,8 @@ export const EndgameModal = () => {
   }, [dismissReview, navigate]);
 
   const handleRequireSignIn = useCallback(() => {
-    setModal(<SignInPromptModal />, true);
-  }, [setModal]);
+    useIdentitySessionStore.getState().requestSignIn();
+  }, []);
 
   if (!shouldShowEndgameFlow || !activeWorldChain || !activeWorldName || !activeWorldAddress) {
     return null;

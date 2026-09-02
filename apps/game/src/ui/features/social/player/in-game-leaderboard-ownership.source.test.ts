@@ -8,9 +8,10 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("in-game leaderboard fact ownership", () => {
   it("keeps the rank pill entirely on the RECS-backed leaderboard", () => {
+    // The rank now renders in the identity chip; the top header mounts it.
     const rankPillSources = [
       readSource("src/ui/features/world/containers/top-header/top-header.tsx"),
-      readSource("src/ui/features/world/containers/secondary-menu-items.tsx"),
+      readSource("src/ui/features/world/containers/top-header/identity-chip.tsx"),
     ];
 
     rankPillSources.forEach((source) => {

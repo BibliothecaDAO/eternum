@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Identity Chip",
+    description:
+      "The top-left chip now says who you are in this game: spectating (and as whom), not signed in with view-only access, connecting while your gameplay account is prepared, or your name with realms, rank and points. Sign-in, the leaderboard and Play for a spectator who owns a realm live in its popover, so no sign-in modal blocks the map any more.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-03",
     title: "Strategic Map View",
     description:
       "Zooming all the way out now shows the whole explored world as real terrain: the biome map underlies every zoom level, so there is no void beyond the detailed pages. Names show for your own, allied and top-ten holdings at mid zoom and for everyone up close. The icon-only strategic map (ownership markers over the biome map) is finished but parked behind a future map-mode key.",
