@@ -505,6 +505,24 @@ whole 10-minute budget installing and starting the browser and was killed withou
 draws/triangle bars are unverified in this lane. The pure terrain suite that the benchmark's evaluator shares its
 thresholds with is green.
 
+L5 review (reviewer, 2026-09-02): code, tests and counters all reproduce — 219 terrain/structure tests, typecheck, and
+on a live 96-bot game (17, `lab-mtjzah2p`) the upload counters held under real churn: `propPoolFullRewrites` 0,
+incremental fog/page writes only, structure-cache hits climbing, zero full-window re-uploads. Zoom deletions verified
+(`changeCameraView` 0 references; `CameraView` survives only as the content-band selector). **The code is approved; two
+gate cells stay owed** — the GPU p95 bands and a clean max-zoom-out screenshot (the headless shots are behind the
+finished-game modal, and the headed session ended in a tab crash before a clean capture). They close with a two-minute
+owner-run snippet on the deployed client (redeployed from this tip). What the measurement session found on the way, now
+on the books: (1) **background-tab throttling stalls boot** — with `document.hidden` the sync drain runs at ~100 ops/s
+against ~140 rows/s arriving, so a hidden tab never finishes booting; foregrounding completed it instantly. Fix class
+for the boot phase: a visibility-aware drain (keep the 100 ms timer authoritative when hidden). (2) **First terrain
+201.7 s** on the production build over the fully-populated 96-player world (renderer-init 1.0 s) — the half-two boot
+classes now have their 96-player headline number; the cost is terrain/model/chunk work, not the renderer. (3) On the
+real GPU, spike frames carry small owned shares (`terrain:composite` ≤ 56 ms per slice) with the remainder unattributed
+— extending frame-owner coverage to army sync and chunk work is the M follow-up that makes the next profile conclusive.
+(4) One renderer tab crash at the end of the session, cause uncaptured — watch for recurrence. Prop-padding ruling: keep
+the fixed slots; nothing in the GPU evidence names vertex-bound padding as a cost — revisit only if the owner-run p95
+does (evidence before optimization). Phase 4 (Command Deck) may start; the owed cells close in parallel.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
