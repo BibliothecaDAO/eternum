@@ -109,6 +109,7 @@ export class ArmyModel {
 
   // Cosmetic model management
   private readonly cosmeticModels: Map<string, ModelData> = new Map();
+  private modelsVisible = true;
   private readonly pendingCosmeticModelLoads: Map<string, Promise<ModelData>> = new Map();
   private readonly entityCosmeticMap: Map<number, string> = new Map(); // entityId -> cosmeticId
   private readonly activeBaseModelByEntity: Map<number, ModelType | null> = new Map();
@@ -404,6 +405,7 @@ export class ArmyModel {
     contactShadowMesh.visible = this.contactShadowsEnabled;
     contactShadowMesh.instanceMatrix.needsUpdate = true;
     group.add(contactShadowMesh);
+    group.visible = this.modelsVisible;
 
     this.scene.add(group);
 
@@ -1174,6 +1176,7 @@ export class ArmyModel {
 
   // Animation Methods
   public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
+    if (!this.modelsVisible) return;
     const now = performance.now();
     const time = now * 0.001;
 
@@ -2160,6 +2163,14 @@ export class ArmyModel {
    * Updates the current camera view
    * @param view - The new camera view
    */
+  /** The far zoom band draws armies as markers only; instances keep their slots so the band change is atomic. */
+  public setModelsVisible(visible: boolean): void {
+    if (this.modelsVisible === visible) return;
+    this.modelsVisible = visible;
+    this.models.forEach((modelData) => (modelData.group.visible = visible));
+    this.cosmeticModels.forEach((modelData) => (modelData.group.visible = visible));
+  }
+
   public setCurrentCameraView(view: CameraView): void {
     this.currentCameraView = view;
   }

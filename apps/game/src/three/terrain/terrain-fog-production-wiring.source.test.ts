@@ -46,9 +46,7 @@ describe("continuous exploration fog production wiring", () => {
   it("prepares the global distance mask on the terrain worker before the atomic worldmap commit", () => {
     const worldmapTerrain = source("src/three/terrain/worldmap-procedural-terrain.ts");
     const prepareMask = worldmapTerrain.indexOf("await this.terrain.prepareFogMaskAsync(preparedPages)");
-    const commit = worldmapTerrain.indexOf(
-      "this.commitPreparedPages(input, preparedPages, builtPages, reusedPages, fogMask)",
-    );
+    const commit = worldmapTerrain.indexOf("this.commitPreparedPages(run, preparedPages, fogMask)");
 
     expect(prepareMask).toBeGreaterThan(0);
     expect(prepareMask).toBeLessThan(commit);

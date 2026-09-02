@@ -179,20 +179,25 @@ describe("StructureManager.prewarmChunkAssets", () => {
     expect(subject.ensureCosmeticStructureModels).not.toHaveBeenCalled();
   });
 
-  it("attaches a loaded structure model to the scene", async () => {
+  it("attaches a loaded structure model to the scene in the current band's visibility", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
-    const group = {};
+    const group = { visible: true };
     const model = { group, setWorldBounds: vi.fn() };
     subject.structureModels = new Map();
+    subject.cosmeticStructureModels = new Map();
     subject.structureModelPromises = new Map();
     subject.structureModelPaths = { Village: ["/village.glb"] };
     subject.loadStructureModel = vi.fn(async () => model);
     subject.scene = { add: vi.fn() };
     subject.currentChunkBounds = undefined;
+    subject.currentCameraView = 3;
+    subject.metrics = { hiddenModelGroups: 0 };
 
     await subject.ensureStructureModels("Village");
 
     expect(subject.scene.add).toHaveBeenCalledWith(group);
+    expect(group.visible).toBe(false);
+    expect(subject.metrics.hiddenModelGroups).toBe(1);
   });
 
   it("loads visible chunk cosmetic models before the visible update path runs", async () => {

@@ -108,6 +108,29 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("presents a page set step by step with the same page writes as one present", async () => {
+    const terrain = new ProceduralTerrain();
+    await terrain.loadProps();
+    const west = terrain.preparePage(blockRequest("west", 0));
+    const east = terrain.preparePage(blockRequest("east", 10));
+
+    terrain.beginPresentation([west, east]);
+    expect(terrain.isPagePresented(west)).toBe(false);
+    terrain.presentPage(west);
+    terrain.presentPage(east);
+    expect(terrain.isPagePresented(west)).toBe(true);
+    const stepped = terrain.finishPresentation([west, east]);
+    const settled = terrain.getUploadMetrics();
+    clearPropUploads(terrain);
+
+    expect(stepped.pages).toBe(2);
+    expect(settled).toMatchObject({ fogMaskFullRebuilds: 1, propPoolFullRewrites: 0, propPoolPageWrites: 2 });
+    expect(terrain.present([west, east])).toEqual(stepped);
+    expect(terrain.getUploadMetrics()).toEqual(settled);
+    expect(collectPropUploads(terrain)).toHaveLength(0);
+    terrain.dispose();
+  });
+
   it("writes every retained page once when the prop catalog arrives after the pages", async () => {
     const terrain = new ProceduralTerrain();
     terrain.present([terrain.preparePage(blockRequest("west", 0)), terrain.preparePage(blockRequest("east", 10))]);

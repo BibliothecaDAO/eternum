@@ -57,6 +57,8 @@ export interface WorldFxHandle {
 export interface WorldFxBackend {
   readonly kind: WorldFxBackendKind;
   destroy(): void;
+  /** Hides every effect at once (the far zoom band); effects keep running so their promises still settle. */
+  setVisible(visible: boolean): void;
   spawnIconFx(spec: IconFxSpec): WorldFxHandle;
   spawnTextFx(spec: TextFxSpec): WorldFxHandle;
   update(deltaTime: number): void;
@@ -96,7 +98,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
   private lastDotCount = -1;
 
   constructor(
-    protected readonly scene: THREE.Scene,
+    protected readonly parent: THREE.Object3D,
     protected readonly spec: IconFxSpec,
     labelEnabled: boolean,
   ) {
@@ -127,7 +129,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
       this.group.add(this.label);
     }
 
-    this.scene.add(this.group);
+    this.parent.add(this.group);
   }
 
   public onComplete(resolve: () => void): void {
@@ -224,8 +226,8 @@ class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
   private readonly sprite: THREE.Sprite;
   private readonly baseScale = new THREE.Vector3();
 
-  constructor(scene: THREE.Scene, spec: IconFxSpec, labelEnabled: boolean) {
-    super(scene, spec, labelEnabled);
+  constructor(parent: THREE.Object3D, spec: IconFxSpec, labelEnabled: boolean) {
+    super(parent, spec, labelEnabled);
 
     this.material = new THREE.SpriteMaterial({
       depthTest: false,
@@ -265,8 +267,8 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
   private readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   private readonly baseScale = new THREE.Vector3();
 
-  constructor(scene: THREE.Scene, spec: IconFxSpec, labelEnabled: boolean) {
-    super(scene, spec, labelEnabled);
+  constructor(parent: THREE.Object3D, spec: IconFxSpec, labelEnabled: boolean) {
+    super(parent, spec, labelEnabled);
 
     this.material = new THREE.MeshBasicMaterial({
       depthTest: false,
@@ -319,8 +321,8 @@ class GroundDecalWorldFxEffect extends BaseIconWorldFxEffect {
   private readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   private readonly baseScale = new THREE.Vector3();
 
-  constructor(scene: THREE.Scene, spec: IconFxSpec, labelEnabled: boolean) {
-    super(scene, spec, labelEnabled);
+  constructor(parent: THREE.Object3D, spec: IconFxSpec, labelEnabled: boolean) {
+    super(parent, spec, labelEnabled);
 
     this.material = new THREE.MeshBasicMaterial({
       depthWrite: false,
@@ -372,7 +374,7 @@ class TextWorldFxEffect implements ManagedWorldFxEffect {
   private isEnding = false;
   private endStartTime = 0;
 
-  constructor(scene: THREE.Scene, spec: TextFxSpec) {
+  constructor(parent: THREE.Object3D, spec: TextFxSpec) {
     this.group = new THREE.Group();
     this.group.renderOrder = WORLD_FX_RENDER_ORDER;
     this.group.position.set(spec.x, spec.y, spec.z);
@@ -396,7 +398,7 @@ class TextWorldFxEffect implements ManagedWorldFxEffect {
 
     this.label = new CSS2DObject(div);
     this.group.add(this.label);
-    scene.add(this.group);
+    parent.add(this.group);
   }
 
   public onComplete(resolve: () => void): void {
@@ -468,11 +470,19 @@ class TextWorldFxEffect implements ManagedWorldFxEffect {
 abstract class BaseWorldFxBackend implements WorldFxBackend {
   public abstract readonly kind: WorldFxBackendKind;
   protected readonly activeEffects = new Set<ManagedWorldFxEffect>();
+  protected readonly root = new THREE.Group();
 
   constructor(
-    protected readonly scene: THREE.Scene,
+    scene: THREE.Scene,
     protected readonly capabilities: RendererFxCapabilities,
-  ) {}
+  ) {
+    this.root.name = "world-fx";
+    scene.add(this.root);
+  }
+
+  public setVisible(visible: boolean): void {
+    this.root.visible = visible;
+  }
 
   public update(deltaTime: number): void {
     if (this.activeEffects.size === 0) {
@@ -489,6 +499,7 @@ abstract class BaseWorldFxBackend implements WorldFxBackend {
       effect.destroy();
     });
     this.activeEffects.clear();
+    this.root.parent?.remove(this.root);
   }
 
   public spawnTextFx(spec: TextFxSpec): WorldFxHandle {
@@ -496,7 +507,7 @@ abstract class BaseWorldFxBackend implements WorldFxBackend {
       return createNoopWorldFxHandle();
     }
 
-    return this.registerEffect(new TextWorldFxEffect(this.scene, spec));
+    return this.registerEffect(new TextWorldFxEffect(this.root, spec));
   }
 
   public abstract spawnIconFx(spec: IconFxSpec): WorldFxHandle;
@@ -547,9 +558,9 @@ class LegacySpriteWorldFxBackend extends BaseWorldFxBackend {
 
   public spawnIconFx(spec: IconFxSpec): WorldFxHandle {
     if (spec.renderMode === "ground") {
-      return this.registerEffect(new GroundDecalWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
+      return this.registerEffect(new GroundDecalWorldFxEffect(this.root, spec, this.capabilities.supportsDomLabelFx));
     }
-    return this.registerEffect(new LegacySpriteWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
+    return this.registerEffect(new LegacySpriteWorldFxEffect(this.root, spec, this.capabilities.supportsDomLabelFx));
   }
 }
 
@@ -562,12 +573,10 @@ class WebGpuBillboardWorldFxBackend extends BaseWorldFxBackend {
     }
 
     if (spec.renderMode === "ground") {
-      return this.registerEffect(new GroundDecalWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx));
+      return this.registerEffect(new GroundDecalWorldFxEffect(this.root, spec, this.capabilities.supportsDomLabelFx));
     }
 
-    return this.registerEffect(
-      new WebGpuBillboardWorldFxEffect(this.scene, spec, this.capabilities.supportsDomLabelFx),
-    );
+    return this.registerEffect(new WebGpuBillboardWorldFxEffect(this.root, spec, this.capabilities.supportsDomLabelFx));
   }
 }
 

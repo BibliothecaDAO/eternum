@@ -73,6 +73,8 @@ describe("ResourceFXManager", () => {
     await promise;
 
     expect(manager.hasActiveFx()).toBe(false);
-    expect(scene.children).toHaveLength(0);
+    // The backend keeps one root group under the scene; finished effects leave it empty.
+    expect(scene.children).toHaveLength(1);
+    expect(scene.children[0].children).toHaveLength(0);
   });
 });

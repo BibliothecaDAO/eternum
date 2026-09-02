@@ -48,6 +48,10 @@ export class ResourceFXManager {
     return this.activeResourceFX.size > 0;
   }
 
+  public setVisible(visible: boolean): void {
+    this.backend.setVisible(visible);
+  }
+
   public update(deltaTime: number): void {
     this.backend.update(deltaTime);
   }

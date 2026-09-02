@@ -25,6 +25,13 @@ import {
   setWorldmapRenderGauge,
 } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
+import {
+  EMPTY_LABEL_PRIORITY_CONTEXT,
+  resolveWorldmapContentLadder,
+  shouldShowTextLabel,
+  type WorldmapContentLadder,
+  type WorldmapLabelPriorityContext,
+} from "@/three/scenes/worldmap-content-ladder";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
@@ -232,6 +239,8 @@ export class ArmyManager {
   private labelPool = new LabelPool();
   private labelsGroup: Group;
   private currentCameraView: CameraView;
+  private contentLadder: WorldmapContentLadder;
+  private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
@@ -319,7 +328,9 @@ export class ArmyManager {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
     this.armyModel = new ArmyModel(scene, labelsGroup, this.currentCameraView);
+    this.armyModel.setModelsVisible(this.contentLadder.armyModels);
     this.proceduralArmyCharacterLayer = new ProceduralArmyCharacterLayer(scene);
     this.proceduralArmyCharacterLayer.setShadowsEnabled(
       this.currentCameraView === CameraView.Close && (hexagonScene?.getShadowsEnabled() ?? true),
@@ -1337,12 +1348,16 @@ export class ArmyManager {
   }
 
   private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
+    if (!this.shouldShowArmyCompactLabel(army)) {
+      this.compactLabelRenderer.removeLabel(army.entityId);
+      return;
+    }
     const labelPosition = this.tempIconPosition.copy(position);
     labelPosition.y += 2.78;
     this.compactLabelRenderer.setLabel({
       entityId: army.entityId,
       position: labelPosition,
-      text: resolveArmyCompactEntityLabel(army),
+      text: this.contentLadder.armyTierGlyphs ? army.tier : resolveArmyCompactEntityLabel(army),
       variant: resolveCompactEntityLabelVariant(army),
     });
   }
@@ -2519,7 +2534,9 @@ export class ArmyManager {
     this.proceduralArmyPresentationBuffer.length = 0;
     this.desiredProceduralArmyEntityIds.clear();
 
-    this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
+    if (this.contentLadder.proceduralCharacters) {
+      this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
+    }
     this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
     this.syncProceduralArmyRepresentationVisibility();
     this.pruneProceduralArmyPresentationCache();
@@ -3211,7 +3228,42 @@ export class ArmyManager {
 
     // Apply label transitions using the centralized function
     applyLabelTransitions(this.entityIdLabels, view);
+    this.applyContentLadder(resolveWorldmapContentLadder(view));
   };
+
+  private applyContentLadder(ladder: WorldmapContentLadder): void {
+    this.contentLadder = ladder;
+    this.armyModel.setModelsVisible(ladder.armyModels);
+    this.labelsGroup.visible = ladder.textLabels !== "none";
+    this.resyncVisibleArmyCompactLabels();
+  }
+
+  /** Mid-band label priority (selection, hover, spectator, top-10) comes from the scene. */
+  public setLabelPriorityContext(context: WorldmapLabelPriorityContext): void {
+    this.labelPriorityContext = context;
+    if (this.contentLadder.textLabels === "priority") this.resyncVisibleArmyCompactLabels();
+  }
+
+  private resyncVisibleArmyCompactLabels(): void {
+    this.visibleArmies.forEach((army) => {
+      const instance = this.armyModel.getInstanceData(this.toNumericId(army.entityId));
+      if (instance) this.updateArmyCompactLabel(army, instance.position);
+    });
+  }
+
+  private shouldShowArmyCompactLabel(army: ArmyData): boolean {
+    return shouldShowTextLabel(
+      this.contentLadder.textLabels,
+      {
+        entityId: this.toNumericId(army.entityId),
+        isMine: army.isMine,
+        isAlly: false,
+        ownerAddress: army.owner.address,
+        underAttack: army.attackedFromDegrees !== undefined,
+      },
+      this.labelPriorityContext,
+    );
+  }
 
   public isArmySelectable(entityId: ID): boolean {
     // Check if army exists in our data

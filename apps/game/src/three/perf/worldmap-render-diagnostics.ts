@@ -29,7 +29,12 @@ export type WorldmapRenderGauge =
   | "structureInfoCacheHits"
   | "structureInfoCacheMisses"
   | "visibleStructureBoundsQueries"
-  | "visibleStructureChangeSetUpdates";
+  | "visibleStructureChangeSetUpdates"
+  | "contentBand"
+  | "structureFullRefreshSlices"
+  | "structureFullRefreshMaxSliceMs"
+  | "structureHiddenModelGroups"
+  | "structureCompactLabelsShown";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -164,6 +169,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     structureInfoCacheMisses: 0,
     visibleStructureBoundsQueries: 0,
     visibleStructureChangeSetUpdates: 0,
+    contentBand: 0,
+    structureFullRefreshSlices: 0,
+    structureFullRefreshMaxSliceMs: 0,
+    structureHiddenModelGroups: 0,
+    structureCompactLabelsShown: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,

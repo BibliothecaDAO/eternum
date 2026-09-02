@@ -1,6 +1,7 @@
 import { getNeighborHexes } from "@bibliothecadao/types";
 
-import { terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
+import { terrainHexToWorld } from "./terrain-coordinates";
+import { hexCellFromKey, hexCellKey } from "./hex-cell-key";
 import type { TerrainCellInput, TerrainRoadAnchor, TerrainRoadSegment } from "./terrain-types";
 import { isTerrainWaterBiome } from "./terrain-water";
 
@@ -28,7 +29,7 @@ const MAX_ROAD_DEGREE = 3;
 const TERRAIN_HEX_STEP_WORLD_DISTANCE = Math.sqrt(3);
 
 export function buildTerrainRoadSegments(input: TerrainRoadNetworkInput): TerrainRoadSegment[] {
-  const cellsByKey = new Map(input.cells.map((cell) => [terrainCellKey(cell.col, cell.row), cell]));
+  const cellsByKey = new Map(input.cells.map((cell) => [hexCellKey(cell.col, cell.row), cell]));
   const anchors = canonicalRoadAnchors(input.anchors).filter((anchor) => isEligibleRoadAnchor(anchor, cellsByKey));
   const anchorsByOwner = groupRoadAnchorsByOwner(anchors);
   const segments: TerrainRoadSegment[] = [];
@@ -52,11 +53,11 @@ function groupRoadAnchorsByOwner(anchors: readonly TerrainRoadAnchor[]): Readonl
 
 function buildOwnerRoadSegments(
   anchors: readonly TerrainRoadAnchor[],
-  cellsByKey: ReadonlyMap<string, TerrainCellInput>,
+  cellsByKey: ReadonlyMap<number, TerrainCellInput>,
 ): TerrainRoadSegment[] {
   const parentById = new Map(anchors.map(({ structureId }) => [structureId, structureId]));
   const degreeById = new Map(anchors.map(({ structureId }) => [structureId, 0]));
-  const anchorKeys = new Set(anchors.map(({ col, row }) => terrainCellKey(col, row)));
+  const anchorKeys = new Set(anchors.map(({ col, row }) => hexCellKey(col, row)));
   const segments: TerrainRoadSegment[] = [];
 
   for (const connection of buildConnectionCandidates(anchors)) {
@@ -98,19 +99,19 @@ function buildConnectionCandidates(anchors: readonly TerrainRoadAnchor[]): RoadC
 function findRoadPath(
   from: TerrainRoadAnchor,
   to: TerrainRoadAnchor,
-  cellsByKey: ReadonlyMap<string, TerrainCellInput>,
-  anchorKeys: ReadonlySet<string>,
+  cellsByKey: ReadonlyMap<number, TerrainCellInput>,
+  anchorKeys: ReadonlySet<number>,
 ): Array<{ col: number; row: number }> | null {
-  const startKey = terrainCellKey(from.col, from.row);
-  const targetKey = terrainCellKey(to.col, to.row);
+  const startKey = hexCellKey(from.col, from.row);
+  const targetKey = hexCellKey(to.col, to.row);
   const open: RoadSearchNode[] = [{ col: from.col, cost: 0, estimate: worldDistance(from, to), row: from.row }];
   const costByKey = new Map([[startKey, 0]]);
-  const previousByKey = new Map<string, string>();
+  const previousByKey = new Map<number, number>();
 
   while (open.length > 0) {
     const currentIndex = findBestSearchNodeIndex(open);
     const [current] = open.splice(currentIndex, 1);
-    const currentKey = terrainCellKey(current.col, current.row);
+    const currentKey = hexCellKey(current.col, current.row);
     if (current.cost !== costByKey.get(currentKey)) continue;
     if (currentKey === targetKey) return reconstructRoadPath(targetKey, previousByKey);
     if (current.cost >= MAX_ROAD_ROUTE_STEPS) continue;
@@ -119,7 +120,7 @@ function findRoadPath(
       (left, right) => left.row - right.row || left.col - right.col,
     );
     for (const neighbor of neighbors) {
-      const neighborKey = terrainCellKey(neighbor.col, neighbor.row);
+      const neighborKey = hexCellKey(neighbor.col, neighbor.row);
       const cell = cellsByKey.get(neighborKey);
       if (!isRoadCellPassable(cell, neighborKey, anchorKeys)) continue;
       const nextCost = current.cost + 1;
@@ -146,12 +147,12 @@ function findBestSearchNodeIndex(open: readonly RoadSearchNode[]): number {
   return bestIndex;
 }
 
-function reconstructRoadPath(targetKey: string, previousByKey: ReadonlyMap<string, string>) {
-  const path = [parseCellKey(targetKey)];
+function reconstructRoadPath(targetKey: number, previousByKey: ReadonlyMap<number, number>) {
+  const path = [hexCellFromKey(targetKey)];
   let key = targetKey;
   while (previousByKey.has(key)) {
     key = previousByKey.get(key)!;
-    path.push(parseCellKey(key));
+    path.push(hexCellFromKey(key));
   }
   return path.reverse();
 }
@@ -164,13 +165,13 @@ function pathToRoadSegments(path: readonly { col: number; row: number }[], route
   });
 }
 
-function isEligibleRoadAnchor(anchor: TerrainRoadAnchor, cellsByKey: ReadonlyMap<string, TerrainCellInput>): boolean {
+function isEligibleRoadAnchor(anchor: TerrainRoadAnchor, cellsByKey: ReadonlyMap<number, TerrainCellInput>): boolean {
   if (anchor.owner === "" || anchor.owner === "0" || anchor.owner === "0x0") return false;
-  const cell = cellsByKey.get(terrainCellKey(anchor.col, anchor.row));
+  const cell = cellsByKey.get(hexCellKey(anchor.col, anchor.row));
   return Boolean(cell?.explored && cell.biome && !isTerrainWaterBiome(cell.biome));
 }
 
-function isRoadCellPassable(cell: TerrainCellInput | undefined, key: string, anchorKeys: ReadonlySet<string>): boolean {
+function isRoadCellPassable(cell: TerrainCellInput | undefined, key: number, anchorKeys: ReadonlySet<number>): boolean {
   return Boolean(
     cell?.explored && cell.biome && !isTerrainWaterBiome(cell.biome) && (!cell.occupied || anchorKeys.has(key)),
   );
@@ -223,9 +224,4 @@ function unionRoots(parentById: Map<string, string>, left: string, right: string
   const rightRoot = findRoot(parentById, right);
   const [parent, child] = [leftRoot, rightRoot].toSorted();
   parentById.set(child, parent);
-}
-
-function parseCellKey(key: string): { col: number; row: number } {
-  const [col, row] = key.split(":").map(Number);
-  return { col, row };
 }

@@ -302,6 +302,7 @@ function createStructureManagerSubject() {
   subject.compactLabelRenderer = {
     dispose: disposeCompactLabels,
   };
+  subject.compactLabelIds = new Set([1]);
 
   return {
     subject,
@@ -373,6 +374,10 @@ function createZeroMetrics() {
     structureInfoCacheMisses: 0,
     visibleStructureBoundsQueries: 0,
     visibleStructureChangeSetUpdates: 0,
+    fullRefreshSlices: 0,
+    fullRefreshMaxSliceMs: 0,
+    hiddenModelGroups: 0,
+    compactLabelsShown: 0,
   };
 }
 
@@ -586,9 +591,9 @@ describe("StructureManager change-set driven visible pass", () => {
     expect(subject.buildStructureInfo).toHaveBeenCalledWith(moved);
     expect(subject.worldSpatialProjection.getStructuresInBounds).not.toHaveBeenCalled();
     expect(subject.getStructureManagerMetrics()).toEqual({
+      ...createZeroMetrics(),
       structureInfoCacheHits: 2,
       structureInfoCacheMisses: 1,
-      visibleStructureBoundsQueries: 0,
       visibleStructureChangeSetUpdates: 1,
     });
 
@@ -707,6 +712,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
     expect(fixture.disposeCompactLabels).toHaveBeenCalledTimes(1);
+    expect(fixture.subject.compactLabelIds.size).toBe(0);
     expect(fixture.subject.structureModels.size).toBe(0);
     expect(fixture.subject.cosmeticStructureModels.size).toBe(0);
     expect(fixture.subject.entityIdMaps.size).toBe(0);

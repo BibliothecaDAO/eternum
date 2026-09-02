@@ -250,9 +250,10 @@ describe.each([
     });
 
     expect(backend.kind).toBe(expectedKind);
-    expect(scene.children).toHaveLength(1);
+    const root = scene.children[0] as THREE.Group;
+    expect(root.children).toHaveLength(1);
 
-    const group = scene.children[0] as THREE.Group;
+    const group = root.children[0] as THREE.Group;
     const objectTypes = collectObjectTypes(group);
     expect(group.renderOrder).toBeLessThan(Number.POSITIVE_INFINITY);
     expect(objectTypes).toContain(expectedObjectType);
@@ -265,7 +266,7 @@ describe.each([
     backend.update(1);
     await handle.promise;
 
-    expect(scene.children).toHaveLength(0);
+    expect((scene.children[0] as THREE.Group).children).toHaveLength(0);
   });
 
   it("disables depth testing for floating icon fx so terrain cannot occlude them", () => {
@@ -329,7 +330,7 @@ describe("world fx promise teardown", () => {
 
     handle.dispose();
     await expect(handle.promise).resolves.toBeUndefined();
-    expect(scene.children).toHaveLength(0);
+    expect((scene.children[0] as THREE.Group).children).toHaveLength(0);
   });
 
   it("resolves all outstanding promises when the backend is destroyed", async () => {

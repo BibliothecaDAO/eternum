@@ -1,5 +1,9 @@
 import { Euler, Object3D, Vector3 } from "three";
 
+/** Structures sit just above the terrain sample; the compact label floats above the roofline. */
+export const STRUCTURE_SURFACE_LIFT = 0.05;
+export const COMPACT_LABEL_LIFT = 2.72;
+
 interface VisibleStructureLabel {
   position: Vector3;
 }
@@ -77,7 +81,7 @@ export function applyVisibleStructurePresentation<
 ): void {
   const { col, row } = input.structure.hexCoords;
   input.getWorldPositionForHexCoordsInto(col, row, input.scratchPosition);
-  input.scratchPosition.y += 0.05;
+  input.scratchPosition.y += STRUCTURE_SURFACE_LIFT;
   input.dummy.position.copy(input.scratchPosition);
   input.dummy.rotation.y = input.rotationY;
   input.dummy.updateMatrix();
@@ -105,7 +109,7 @@ export function applyVisibleStructurePresentation<
   }
 
   input.scratchIconPosition.copy(input.scratchPosition);
-  input.scratchIconPosition.y += 2.72;
+  input.scratchIconPosition.y += COMPACT_LABEL_LIFT;
   input.syncCompactLabel?.(input.structure, input.scratchIconPosition);
 
   const entityNumericId = Number(input.structure.entityId);

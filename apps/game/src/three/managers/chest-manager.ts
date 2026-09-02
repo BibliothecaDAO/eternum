@@ -7,6 +7,7 @@ import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
+import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "../scenes/worldmap-content-ladder";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
@@ -58,6 +59,7 @@ export class ChestManager {
   private scale: number = 1;
   private chunkSize: number;
   private currentCameraView: CameraView;
+  private contentLadder: WorldmapContentLadder;
   private animations: Map<number, THREE.AnimationMixer> = new Map();
   private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
@@ -84,6 +86,7 @@ export class ChestManager {
     this.renderChunkSize = renderChunkSize;
     this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
     this.loadModel().then(() => {
       if (isCommittedManagerChunk(this.currentChunkKey)) {
         void this.requestVisibleChestsRefresh(this.currentChunkKey);
@@ -117,6 +120,7 @@ export class ChestManager {
       this.chestModel.setContactShadowsEnabled(enableContactShadows);
     }
 
+    this.applyContentLadder(resolveWorldmapContentLadder(view));
     if (this.currentCameraView === view) return;
 
     // If we're moving away from Medium view, clean up transition state
@@ -134,6 +138,12 @@ export class ChestManager {
     // Update all existing labels to reflect the new view
     applyLabelTransitions(this.entityIdLabels, view);
   };
+
+  private applyContentLadder(ladder: WorldmapContentLadder): void {
+    this.contentLadder = ladder;
+    if (this.chestModel) this.chestModel.group.visible = ladder.structureModels;
+    this.labelsGroup.visible = ladder.textLabels !== "none";
+  }
 
   private initializePointsRenderer(): void {
     // Load chest icon texture
@@ -234,6 +244,7 @@ export class ChestManager {
         }
         this.chestModel = model;
         this.animationClips = clips;
+        model.group.visible = this.contentLadder.structureModels;
         this.scene.add(model.group);
         const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
         const enableContactShadows = !(this.currentCameraView === CameraView.Close && shadowsEnabled);

@@ -112,6 +112,7 @@ export class ArrivalGhostManager {
   private readonly ghosts = new Map<ArrivalGhostKey, ArrivalGhostState>();
   private readonly diagnostics = createArrivalGhostDiagnostics();
   private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
+  private suspended = false;
 
   constructor(
     private readonly scene: Scene,
@@ -200,6 +201,13 @@ export class ArrivalGhostManager {
         this.clearArrivalGhost(ghost.entityId, ghost.resolveReason);
       }
     }
+  }
+
+  /** The far zoom band shows no ghosts; tracking continues so they return with the band. */
+  public setSuspended(suspended: boolean): void {
+    if (this.suspended === suspended) return;
+    this.suspended = suspended;
+    this.ghosts.forEach((ghost) => this.syncGhostVisibility(ghost));
   }
 
   public setCurrentChunk(chunkKey: string | null): void {
@@ -338,7 +346,7 @@ export class ArrivalGhostManager {
   }
 
   private syncGhostVisibility(ghost: ArrivalGhostState): void {
-    ghost.container.visible = this.isGhostVisibleInCurrentChunk(ghost.hexCoords);
+    ghost.container.visible = !this.suspended && this.isGhostVisibleInCurrentChunk(ghost.hexCoords);
   }
 
   private isGhostVisibleInCurrentChunk(hexCoords: HexPosition): boolean {

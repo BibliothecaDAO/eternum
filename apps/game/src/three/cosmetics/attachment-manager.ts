@@ -1,4 +1,4 @@
-import { Euler, Mesh, Object3D, Scene, Vector3 } from "three";
+import { Euler, Group, Mesh, Object3D, Scene, Vector3 } from "three";
 import { CosmeticAssetHandle, ensureCosmeticAsset, loadCosmeticAsset } from "./asset-cache";
 import { getCosmeticRegistry } from "./registry";
 import { AttachmentTransform, CosmeticAttachmentTemplate, CosmeticRegistryEntry } from "./types";
@@ -34,9 +34,11 @@ const normalizeAssetPath = (path?: string): string | undefined => {
 
 /**
  * Manages pooled Three.js objects for cosmetic attachments (auras, weapons, etc.).
+ * Every attachment lives under one root group so the whole layer toggles with a
+ * single switch, independent of per-object slot visibility.
  */
 export class CosmeticAttachmentManager {
-  private readonly scene: Scene;
+  private readonly root = new Group();
   private readonly attachments = new Map<number, AttachmentHandle[]>();
   private readonly templatePools = new Map<string, AttachmentTemplatePool>();
   private readonly templateSources = new Map<string, AttachmentSource>();
@@ -46,8 +48,13 @@ export class CosmeticAttachmentManager {
   private readonly tempRotation = new Euler();
 
   constructor(scene: Scene) {
-    this.scene = scene;
+    this.root.name = "cosmetic-attachments";
+    scene.add(this.root);
     this.indexRegistryAttachments();
+  }
+
+  setVisible(visible: boolean): void {
+    this.root.visible = visible;
   }
 
   spawnAttachments(entityId: number, templates: CosmeticAttachmentTemplate[]) {
@@ -77,7 +84,7 @@ export class CosmeticAttachmentManager {
         template,
       };
 
-      this.scene.add(object);
+      this.root.add(object);
       handles.push(handle);
     });
 
@@ -295,7 +302,7 @@ export class CosmeticAttachmentManager {
           cosmeticPlaceholder: false,
         };
 
-        const parent = placeholder.parent ?? this.scene;
+        const parent = placeholder.parent ?? this.root;
         parent.add(upgraded);
         parent.remove(placeholder);
 
@@ -347,11 +354,7 @@ export class CosmeticAttachmentManager {
   }
 
   private detachAndReset(object: Object3D) {
-    if (object.parent) {
-      object.parent.remove(object);
-    } else {
-      this.scene.remove(object);
-    }
+    object.parent?.remove(object);
 
     object.visible = false;
     object.position.set(0, 0, 0);

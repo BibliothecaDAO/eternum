@@ -46,6 +46,7 @@ export class ReservedHyperstructureManager {
   private readonly instanceMatrix = new Matrix4();
   private readonly unsubscribeProjection: () => void;
   private reservedHyperstructureModel: InstancedModel | null = null;
+  private modelVisible = true;
   private destroyed = false;
 
   constructor(
@@ -57,6 +58,12 @@ export class ReservedHyperstructureManager {
       this.renderReservedHyperstructures();
     });
     void this.loadModel();
+  }
+
+  /** Reserved sites are structure models for the content ladder: hidden in the far band. */
+  public setModelVisible(visible: boolean): void {
+    this.modelVisible = visible;
+    if (this.reservedHyperstructureModel) this.reservedHyperstructureModel.group.visible = visible;
   }
 
   public getVisibleCount(): number {
@@ -88,6 +95,7 @@ export class ReservedHyperstructureManager {
         "ReservedHyperstructure",
       );
       reservedHyperstructureModel.setContactShadowsEnabled(false);
+      reservedHyperstructureModel.group.visible = this.modelVisible;
       this.scene.add(reservedHyperstructureModel.group);
       this.reservedHyperstructureModel = reservedHyperstructureModel;
       this.renderReservedHyperstructures();

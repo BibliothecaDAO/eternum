@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-03",
+    title: "Strategic Map View",
+    description:
+      "Zoom all the way out and the world becomes a strategic map: every realm, village, hyperstructure and army shows as an icon in its owner's colour over the biome map, with no models, effects or name tags in the way. Zoom in a step and names return for your own, allied and top-ten holdings; zoom in fully for the complete picture.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-09-02",
     title: "Continuous Map Zoom",
     description:

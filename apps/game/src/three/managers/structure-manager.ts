@@ -6,7 +6,14 @@ import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/terrain-surface";
+import {
+  EMPTY_LABEL_PRIORITY_CONTEXT,
+  resolveWorldmapContentLadder,
+  shouldShowTextLabel,
+  type WorldmapContentLadder,
+  type WorldmapLabelPriorityContext,
+} from "@/three/scenes/worldmap-content-ladder";
+import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -81,9 +88,14 @@ import {
   type CompactEntityLabelVariant,
 } from "./compact-entity-label-policy";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
-import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
+import {
+  applyVisibleStructurePresentation,
+  COMPACT_LABEL_LIFT,
+  STRUCTURE_SURFACE_LIFT,
+} from "./structure-visible-presentation";
 import {
   commitManagerVisibilityDiff,
+  commitManagerVisibilityDiffSliced,
   createManagerVisibilityDiff,
   type ManagerVisibilityDiff,
 } from "./manager-visibility-diff";
@@ -109,6 +121,8 @@ import {
 // structure type in a render area, not a growth seed.
 const STRUCTURE_INSTANCE_CAPACITY = 512;
 const WONDER_MODEL_INDEX = 4;
+// A full window refresh is sliced into tasks of this size so it never owns a whole frame.
+const FULL_REFRESH_SLICE_BUDGET_MS = 6;
 
 interface ChunkBounds {
   minCol: number;
@@ -167,6 +181,22 @@ interface StructureManagerMetrics {
   structureInfoCacheMisses: number;
   visibleStructureBoundsQueries: number;
   visibleStructureChangeSetUpdates: number;
+  fullRefreshSlices: number;
+  fullRefreshMaxSliceMs: number;
+  hiddenModelGroups: number;
+  compactLabelsShown: number;
+}
+
+/** Scratch state shared by every slice of one visible pass. */
+interface VisibleStructurePassScratch {
+  attachmentRetain: Set<number>;
+  dirtyModels: Set<InstancedModel>;
+}
+
+// A running battle cooldown (troop_guards.*.battle_cooldown_end in RECS) is the structure's
+// "under attack" fact: its guards fought and the penalty timer is still counting down.
+function isStructureUnderAttack(structure: StructureInfo): boolean {
+  return (structure.battleTimerLeft ?? 0) > 0;
 }
 
 function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSpatialBounds): boolean {
@@ -246,6 +276,9 @@ export class StructureManager {
     fragmentMine: PointsLabelRenderer;
   };
   private compactLabelRenderer: CompactEntityLabelRenderer;
+  // Ids the manager has asked the compact renderer to show; the label tier gate is re-evaluated against it.
+  private readonly compactLabelIds = new Set<ID>();
+  private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
@@ -272,6 +305,10 @@ export class StructureManager {
     structureInfoCacheMisses: 0,
     visibleStructureBoundsQueries: 0,
     visibleStructureChangeSetUpdates: 0,
+    fullRefreshSlices: 0,
+    fullRefreshMaxSliceMs: 0,
+    hiddenModelGroups: 0,
+    compactLabelsShown: 0,
   };
   private isDestroyed = false;
 
@@ -299,6 +336,7 @@ export class StructureManager {
     this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
+    this.labelsGroup.visible = this.contentLadder.textLabels !== "none";
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
@@ -742,27 +780,117 @@ export class StructureManager {
     // Use the centralized label transition function
     applyLabelTransitions(this.entityIdLabels, view);
     this.updateShadowFlags();
+    this.applyContentLadder();
   };
+
+  /** The band → content table is the single gate; it is read from the current view, never copied. */
+  private get contentLadder(): WorldmapContentLadder {
+    return resolveWorldmapContentLadder(this.currentCameraView);
+  }
+
+  // Band flips toggle what already exists in place: model groups, the attachment layer and each
+  // visible structure's text label. Nothing is re-queried and no instance is rebuilt.
+  private applyContentLadder(): void {
+    const ladder = this.contentLadder;
+    this.setStructureModelsVisible(ladder.structureModels);
+    this.labelsGroup.visible = ladder.textLabels !== "none";
+    if (ladder.textLabels === "none") {
+      this.clearStructureCompactLabels();
+    } else {
+      this.syncVisibleStructureTextLabels();
+      this.entityIdLabels.forEach((_label, entityId) => this.refreshTrackedStructureLabelOrPrune(entityId));
+    }
+    this.frustumVisibilityDirty = true;
+  }
+
+  private setStructureModelsVisible(visible: boolean): void {
+    this.forEachStructureModel((model) => {
+      model.group.visible = visible;
+    });
+    this.attachmentManager.setVisible(visible);
+    this.metrics.hiddenModelGroups = this.countHiddenModelGroups();
+  }
+
+  private countHiddenModelGroups(): number {
+    let hidden = 0;
+    this.forEachStructureModel((model) => {
+      if (!model.group.visible) hidden += 1;
+    });
+    return hidden;
+  }
+
+  private forEachStructureModel(callback: (model: InstancedModel) => void): void {
+    this.structureModels.forEach((models) => models.forEach(callback));
+    this.cosmeticStructureModels.forEach((models) => models.forEach(callback));
+  }
+
+  /** Mid-band label facts (spectator, top-10 owners, selection, hover) pushed by the scene. */
+  public setLabelPriorityContext(context: WorldmapLabelPriorityContext): void {
+    this.labelPriorityContext = context;
+    if (this.contentLadder.textLabels === "priority") {
+      this.syncVisibleStructureTextLabels();
+    }
+  }
+
+  private syncVisibleStructureTextLabels(): void {
+    const structureWindow = this.visibleStructureWindow;
+    if (!structureWindow) return;
+
+    for (const renderable of structureWindow.structures.values()) {
+      const structure = this.resolveStructureInfo(renderable);
+      if (structure) this.syncStructureCompactLabel(structure);
+    }
+  }
+
+  /** Re-applies the label gate to one committed-visible structure, touching the renderer only on a flip. */
+  private syncStructureCompactLabel(structure: StructureInfo): void {
+    if (!this.previousVisibleIds.has(structure.entityId)) return;
+    if (this.shouldShowStructureTextLabel(structure) === this.compactLabelIds.has(structure.entityId)) return;
+
+    this.updateStructureCompactLabel(structure, this.resolveStructureCompactLabelPosition(structure));
+  }
+
+  private shouldShowStructureTextLabel(structure: StructureInfo): boolean {
+    return shouldShowTextLabel(
+      this.contentLadder.textLabels,
+      {
+        entityId: structure.entityId,
+        isMine: structure.isMine,
+        isAlly: structure.isAlly,
+        ownerAddress: structure.owner.address,
+        underAttack: isStructureUnderAttack(structure),
+      },
+      this.labelPriorityContext,
+    );
+  }
+
+  private resolveStructureCompactLabelPosition(structure: StructureInfo): Vector3 {
+    const position = this.scratchIconPosition;
+    getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, position);
+    placePositionOnTerrain(position, this.resolveTerrainSurface());
+    position.y += STRUCTURE_SURFACE_LIFT + COMPACT_LABEL_LIFT;
+    return position;
+  }
+
+  private resolveTerrainSurface(): TerrainSurface {
+    return this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
+  }
 
   private updateShadowFlags(): void {
     const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
     const enableCasting = this.currentCameraView === CameraView.Close && shadowsEnabled;
     const enableContactShadows = !enableCasting;
-    const applyToModels = (models: InstancedModel[]) => {
-      models.forEach((model) => {
-        model.instancedMeshes.forEach((mesh) => {
-          if (mesh.name === LAND_NAME) {
-            mesh.castShadow = false;
-            return;
-          }
-          mesh.castShadow = enableCasting;
-        });
-        model.setContactShadowsEnabled(enableContactShadows);
-      });
-    };
 
-    this.structureModels.forEach((models) => applyToModels(models));
-    this.cosmeticStructureModels.forEach((models) => applyToModels(models));
+    this.forEachStructureModel((model) => {
+      model.instancedMeshes.forEach((mesh) => {
+        if (mesh.name === LAND_NAME) {
+          mesh.castShadow = false;
+          return;
+        }
+        mesh.castShadow = enableCasting;
+      });
+      model.setContactShadowsEnabled(enableContactShadows);
+    });
   }
 
   public destroy() {
@@ -807,30 +935,15 @@ export class StructureManager {
     this.activeStructureAttachmentEntities.clear();
     this.structureAttachmentSignatures.clear();
 
-    // Dispose of all structure models
-    this.structureModels.forEach((models) => {
-      models.forEach((model) => {
-        if (typeof model.dispose === "function") {
-          model.dispose();
-        }
-        if (model.group.parent) {
-          model.group.parent.remove(model.group);
-        }
-      });
+    this.forEachStructureModel((model) => {
+      if (typeof model.dispose === "function") {
+        model.dispose();
+      }
+      if (model.group.parent) {
+        model.group.parent.remove(model.group);
+      }
     });
     this.structureModels.clear();
-
-    // Dispose of cosmetic structure models
-    this.cosmeticStructureModels.forEach((models) => {
-      models.forEach((model) => {
-        if (typeof model.dispose === "function") {
-          model.dispose();
-        }
-        if (model.group.parent) {
-          model.group.parent.remove(model.group);
-        }
-      });
-    });
     this.cosmeticStructureModels.clear();
 
     // Clear all maps
@@ -849,11 +962,9 @@ export class StructureManager {
     this.structureInfoCache.clear();
     this.visibleStructureWindow = undefined;
 
-    // Clean up points renderers
-    if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach((renderer) => renderer.dispose());
-    }
+    this.forEachPointsRenderer((renderer) => renderer.dispose());
     this.compactLabelRenderer.dispose();
+    this.compactLabelIds.clear();
 
     if (this.unsubscribeVisibility) {
       this.unsubscribeVisibility();
@@ -928,12 +1039,7 @@ export class StructureManager {
     pending = Promise.all(modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)))
       .then((models) => {
         this.structureModels.set(structureType, models);
-        models.forEach((model) => {
-          this.scene.add(model.group);
-          if (this.currentChunkBounds) {
-            model.setWorldBounds(this.currentChunkBounds);
-          }
-        });
+        this.attachStructureModelsToScene(models);
         return models;
       })
       .finally(() => {
@@ -994,12 +1100,7 @@ export class StructureManager {
     pending = this.loadCosmeticStructureModels(cosmeticId, assetPaths)
       .then((models) => {
         this.cosmeticStructureModels.set(cosmeticId, models);
-        models.forEach((model) => {
-          this.scene.add(model.group);
-          if (this.currentChunkBounds) {
-            model.setWorldBounds(this.currentChunkBounds);
-          }
-        });
+        this.attachStructureModelsToScene(models);
         return models;
       })
       .catch((error) => {
@@ -1014,6 +1115,19 @@ export class StructureManager {
 
     this.cosmeticStructureModelPromises.set(cosmeticId, pending);
     return pending;
+  }
+
+  // Models load after the band may have hidden the layer, so a freshly loaded group takes the ladder's state.
+  private attachStructureModelsToScene(models: InstancedModel[]): void {
+    const visible = this.contentLadder.structureModels;
+    models.forEach((model) => {
+      model.group.visible = visible;
+      this.scene.add(model.group);
+      if (this.currentChunkBounds) {
+        model.setWorldBounds(this.currentChunkBounds);
+      }
+    });
+    this.metrics.hiddenModelGroups = this.countHiddenModelGroups();
   }
 
   private async loadCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<InstancedModel[]> {
@@ -1315,22 +1429,33 @@ export class StructureManager {
         refreshEntityIds: options.refreshEntityIds,
         refreshExisting: options.refreshExisting,
       });
-      return await scheduleFrameBudgetWork(
-        this.chunkWorkScheduler,
-        options.workLane ?? "visible",
-        () => this.commitVisibleStructureDiff(visibleStructurePassSnapshot, visibilityDiff),
-        this.resolveVisibleStructureCommitOwner(options),
-      );
+      return await this.scheduleVisibleStructureCommit(visibleStructurePassSnapshot, visibilityDiff, options);
     } finally {
       recordWorldmapRenderDuration("performVisibleStructuresUpdate", performance.now() - updateStartedAt);
       setWorldmapRenderGauge("visibleStructures", this.visibleStructureCount);
     }
   }
 
-  private resolveVisibleStructureCommitOwner(options: VisibleStructureRefreshOptions): string {
+  // A full refresh rebuilds the whole window and is sliced; a targeted or chunk diff is one
+  // player-visible step and stays one task.
+  private scheduleVisibleStructureCommit(
+    snapshot: VisibleStructurePassSnapshot,
+    visibilityDiff: ManagerVisibilityDiff<StructureInfo, ID>,
+    options: VisibleStructureRefreshOptions,
+  ): Promise<boolean> {
+    const lane = options.workLane ?? "visible";
     if (options.refreshExisting) {
-      return "manager:structure-full-refresh";
+      return this.commitVisibleStructureDiffSliced(snapshot, visibilityDiff, lane);
     }
+    return scheduleFrameBudgetWork(
+      this.chunkWorkScheduler,
+      lane,
+      () => this.commitVisibleStructureDiff(snapshot, visibilityDiff),
+      this.resolveVisibleStructureCommitOwner(options),
+    );
+  }
+
+  private resolveVisibleStructureCommitOwner(options: VisibleStructureRefreshOptions): string {
     if (options.refreshEntityIds && [...options.refreshEntityIds].length > 0) {
       return "manager:structure-targeted-refresh";
     }
@@ -1412,7 +1537,7 @@ export class StructureManager {
       tempCosmeticRotation: this.tempCosmeticRotation,
       getWorldPositionForHexCoordsInto: (col, row, out) => {
         getWorldPositionForHexCoordsInto(col, row, out);
-        return placePositionOnTerrain(out, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE);
+        return placePositionOnTerrain(out, this.resolveTerrainSurface());
       },
       getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
@@ -1444,7 +1569,50 @@ export class StructureManager {
       return false;
     }
 
-    const dirtyModels = new Set<InstancedModel>();
+    const pass = this.beginVisibleStructurePass(visibilityDiff);
+    this.beginVisibleStructureSlice();
+    try {
+      return commitManagerVisibilityDiff({
+        diff: visibilityDiff,
+        isCurrent: () => !this.shouldDiscardVisibleStructurePass(snapshot),
+        remove: (entityId) => this.removeVisibleStructureInstance(entityId, pass.dirtyModels),
+        add: (structure) => this.addVisibleStructureInstance(structure, pass.attachmentRetain, pass.dirtyModels),
+        commitVisibleIds: (visibleIds) => this.commitVisibleStructureIds(visibleIds, pass),
+      });
+    } finally {
+      this.endVisibleStructureSlice(pass);
+    }
+  }
+
+  // Every slice is its own queue task under the full-refresh owner and re-checks the pass fence,
+  // so a superseded refresh stops between slices instead of finishing stale work.
+  private commitVisibleStructureDiffSliced(
+    snapshot: VisibleStructurePassSnapshot,
+    visibilityDiff: ManagerVisibilityDiff<StructureInfo, ID>,
+    lane: FrameBudgetWorkLane,
+  ): Promise<boolean> {
+    const pass = this.beginVisibleStructurePass(visibilityDiff);
+    return commitManagerVisibilityDiffSliced({
+      diff: visibilityDiff,
+      getEntityId: (structure) => structure.entityId,
+      isCurrent: () => !this.shouldDiscardVisibleStructurePass(snapshot),
+      remove: (entityId) => this.removeVisibleStructureInstance(entityId, pass.dirtyModels),
+      add: (structure) => this.addVisibleStructureInstance(structure, pass.attachmentRetain, pass.dirtyModels),
+      commitVisibleIds: (visibleIds) => this.commitVisibleStructureIds(visibleIds, pass),
+      schedule: (work, owner) => scheduleFrameBudgetWork(this.chunkWorkScheduler, lane, work, owner),
+      owner: "manager:structure-full-refresh",
+      sliceBudgetMs: FULL_REFRESH_SLICE_BUDGET_MS,
+      beginSlice: () => this.beginVisibleStructureSlice(),
+      endSlice: (sliceMs) => {
+        this.endVisibleStructureSlice(pass);
+        this.recordFullRefreshSlice(sliceMs);
+      },
+    });
+  }
+
+  private beginVisibleStructurePass(
+    visibilityDiff: ManagerVisibilityDiff<StructureInfo, ID>,
+  ): VisibleStructurePassScratch {
     const visibleNumericIds = new Set(visibilityDiff.visibleIds.map(Number));
     const attachmentRetain = new Set<number>();
     this.activeStructureAttachmentEntities.forEach((entityId) => {
@@ -1452,28 +1620,40 @@ export class StructureManager {
         attachmentRetain.add(entityId);
       }
     });
+    return { attachmentRetain, dirtyModels: new Set<InstancedModel>() };
+  }
 
+  private beginVisibleStructureSlice(): void {
+    this.forEachPointsRenderer((renderer) => renderer.beginBatch());
+  }
+
+  /** Each slice's structures become drawable at its end; only the world bounds wait for the whole pass. */
+  private endVisibleStructureSlice(pass: VisibleStructurePassScratch): void {
+    this.flushDirtyStructureModels(pass);
+    this.forEachPointsRenderer((renderer) => renderer.endBatch());
+  }
+
+  private flushDirtyStructureModels({ dirtyModels }: VisibleStructurePassScratch): void {
+    this.updateVisibleStructureModelCounts(dirtyModels);
+    dirtyModels.clear();
+  }
+
+  private commitVisibleStructureIds(visibleIds: ID[], pass: VisibleStructurePassScratch): void {
+    const { attachmentRetain } = pass;
+    this.flushDirtyStructureModels(pass);
+    this.applyPendingModelBounds();
+    this.visibleStructureCount = visibleIds.length;
+    this.finalizeVisibleStructurePass(new Set(visibleIds), attachmentRetain);
+  }
+
+  private recordFullRefreshSlice(sliceMs: number): void {
+    this.metrics.fullRefreshSlices += 1;
+    this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
+  }
+
+  private forEachPointsRenderer(callback: (renderer: PointsLabelRenderer) => void): void {
     if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach((renderer) => renderer.beginBatch());
-    }
-
-    try {
-      return commitManagerVisibilityDiff({
-        diff: visibilityDiff,
-        isCurrent: () => !this.shouldDiscardVisibleStructurePass(snapshot),
-        remove: (entityId) => this.removeVisibleStructureInstance(entityId, dirtyModels),
-        add: (structure) => this.addVisibleStructureInstance(structure, attachmentRetain, dirtyModels),
-        commitVisibleIds: (visibleIds) => {
-          this.updateVisibleStructureModelCounts(dirtyModels);
-          this.applyPendingModelBounds();
-          this.visibleStructureCount = visibleIds.length;
-          this.finalizeVisibleStructurePass(new Set(visibleIds), attachmentRetain);
-        },
-      });
-    } finally {
-      if (this.pointsRenderers) {
-        Object.values(this.pointsRenderers).forEach((renderer) => renderer.endBatch());
-      }
+      Object.values(this.pointsRenderers).forEach(callback);
     }
   }
 
@@ -1692,17 +1872,33 @@ export class StructureManager {
     return null;
   }
 
+  /** The one place a compact label is created: the band's text tier gates it for every caller. */
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
+    if (!this.shouldShowStructureTextLabel(structure)) {
+      this.removeStructureCompactLabel(structure.entityId);
+      return;
+    }
+
     this.compactLabelRenderer.setLabel({
       entityId: structure.entityId,
       position,
       text: resolveStructureCompactEntityLabel(structure),
       variant: this.resolveStructureCompactLabelVariant(structure),
     });
+    this.compactLabelIds.add(structure.entityId);
+    this.metrics.compactLabelsShown = this.compactLabelIds.size;
   }
 
   private removeStructureCompactLabel(entityId: ID): void {
     this.compactLabelRenderer.removeLabel(entityId);
+    this.compactLabelIds.delete(entityId);
+    this.metrics.compactLabelsShown = this.compactLabelIds.size;
+  }
+
+  private clearStructureCompactLabels(): void {
+    this.compactLabelRenderer.clear();
+    this.compactLabelIds.clear();
+    this.metrics.compactLabelsShown = 0;
   }
 
   private resolveStructureCompactLabelVariant(structure: StructureInfo): CompactEntityLabelVariant {
@@ -1813,12 +2009,7 @@ export class StructureManager {
     if (!this.hasPendingModelBounds) return;
     this.hasPendingModelBounds = false;
     const bounds = this.currentChunkBounds;
-    this.structureModels.forEach((models) => {
-      models.forEach((model) => model.setWorldBounds(bounds));
-    });
-    this.cosmeticStructureModels.forEach((models) => {
-      models.forEach((model) => model.setWorldBounds(bounds));
-    });
+    this.forEachStructureModel((model) => model.setWorldBounds(bounds));
   }
 
   private isChunkVisible(): boolean {
@@ -1841,13 +2032,10 @@ export class StructureManager {
 
     this.updateCompactLabelCamera();
 
-    const context = this.resolveAnimationVisibilityContext(visibility);
-    this.structureModels.forEach((models) => {
-      models.forEach((model) => model.updateAnimations(deltaTime, context));
-    });
-    this.cosmeticStructureModels.forEach((models) => {
-      models.forEach((model) => model.updateAnimations(deltaTime, context));
-    });
+    if (this.contentLadder.structureModels) {
+      const context = this.resolveAnimationVisibilityContext(visibility);
+      this.forEachStructureModel((model) => model.updateAnimations(deltaTime, context));
+    }
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2077,7 +2265,7 @@ export class StructureManager {
 
   private resolveStructureLabelPosition(structure: StructureInfo): Vector3 {
     const position = getWorldPositionForHex(structure.hexCoords);
-    return placePositionOnTerrain(position, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE, 0.05);
+    return placePositionOnTerrain(position, this.resolveTerrainSurface(), STRUCTURE_SURFACE_LIFT);
   }
 
   private refreshExistingStructureLabel(structure: StructureInfo, label: CSS2DObject) {
@@ -2101,12 +2289,7 @@ export class StructureManager {
   }
 
   private clearStructurePointHoverIcons() {
-    if (!this.pointsRenderers) {
-      this.compactLabelRenderer.clearHover();
-      return;
-    }
-
-    Object.values(this.pointsRenderers).forEach((renderer) => renderer.clearHover());
+    this.forEachPointsRenderer((renderer) => renderer.clearHover());
     this.compactLabelRenderer.clearHover();
   }
 
@@ -2160,7 +2343,7 @@ export class StructureManager {
       const diff = newGuard.count - oldGuard.count;
 
       const worldPos = getWorldPositionForHex(structure.hexCoords);
-      placePositionOnTerrain(worldPos, this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE);
+      placePositionOnTerrain(worldPos, this.resolveTerrainSurface());
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
     }
   }
@@ -2278,6 +2461,8 @@ export class StructureManager {
 
       if (!timedLabelState.isActive) {
         inactiveTimedLabels.push(entityId);
+        // The cooldown ending drops the under-attack priority; no component row changes to trigger a refresh.
+        this.syncStructureCompactLabel(structure);
       }
 
       const label = this.entityIdLabels.get(entityId);
@@ -2296,7 +2481,7 @@ export class StructureManager {
    */
   private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
     const dataKey = buildStructureLabelDataKey(structure, useChainTimeStore.getState().getNowSeconds());
-    const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
+    const isVisible = this.labelsGroup.parent !== null && this.labelsGroup.visible && existingLabel.visible === true;
     if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
       return;
     }

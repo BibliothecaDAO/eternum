@@ -25,7 +25,9 @@ describe("worldmap frame-budget work queue wiring", () => {
       'this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width, "prefetch")',
     );
     expect(worldmapSource).not.toContain("requestAnimationFrame(processFrame)");
-    expect(worldmapSource.match(/this\.chunkWorkQueue,/g)).toHaveLength(3);
+    // Army manager, structure manager, chest manager and the terrain present pipeline share the one queue.
+    expect(worldmapSource.match(/this\.chunkWorkQueue,/g)).toHaveLength(4);
+    expect(worldmapSource).toMatch(/subdivisions: 2,\s*\},\s*this\.chunkWorkQueue,?\s*\)/);
     expect(armyManagerSource).toContain('"manager:army-projection"');
     expect(armyManagerSource).toContain('"manager:army-visibility"');
     expect(armyManagerSource).toContain('"manager:army-entering"');

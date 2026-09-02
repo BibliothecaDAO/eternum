@@ -109,8 +109,16 @@ import throttle from "lodash/throttle";
 import { Account, AccountInterface } from "starknet";
 import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
+import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
+import {
+  normalizeOwnerAddress,
+  resolveWorldmapContentLadder,
+  type WorldmapContentLadder,
+  type WorldmapLabelPriorityContext,
+} from "./worldmap-content-ladder";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { LeaderboardManager } from "@bibliothecadao/eternum";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
@@ -508,6 +516,7 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
   getWorldBiomeSurface?: () => WorldBiomeSurface;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
+  getTerrainPresentMetrics?: () => TerrainPresentMetrics;
   resetWorldmapRenderDiagnostics?: () => void;
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
 };
@@ -533,6 +542,9 @@ const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
 function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: number; y: number }): boolean {
   return hex !== undefined && hex.col === contract.x && hex.row === contract.y;
 }
+
+/** How many leaderboard leaders keep their name tags in the mid zoom band. */
+const TOP_OWNER_LABEL_COUNT = 10;
 
 /** One minimap zoom click moves the camera by two wheel notches. */
 const MINIMAP_ZOOM_STEP_DELTA = 240;
@@ -1294,6 +1306,10 @@ export default class WorldmapScene extends WarpTravel {
     setWorldmapRenderGauge("structureInfoCacheMisses", metrics.structureInfoCacheMisses);
     setWorldmapRenderGauge("visibleStructureBoundsQueries", metrics.visibleStructureBoundsQueries);
     setWorldmapRenderGauge("visibleStructureChangeSetUpdates", metrics.visibleStructureChangeSetUpdates);
+    setWorldmapRenderGauge("structureFullRefreshSlices", metrics.fullRefreshSlices);
+    setWorldmapRenderGauge("structureFullRefreshMaxSliceMs", metrics.fullRefreshMaxSliceMs);
+    setWorldmapRenderGauge("structureHiddenModelGroups", metrics.hiddenModelGroups);
+    setWorldmapRenderGauge("structureCompactLabelsShown", metrics.compactLabelsShown);
   }
 
   private commitWorldBiomeSurface(): void {
@@ -1431,11 +1447,53 @@ export default class WorldmapScene extends WarpTravel {
       runWithFrameWorkOwner("zoom:worldmap-shadows", () => {
         this.configureWorldmapShadows();
       });
-      runWithFrameWorkOwner("zoom:terrain-detail", () => {
-        // The far band shows the whole-world biome surface alone; nearer bands composite the detailed pages over it.
-        this.proceduralTerrain.object3d.visible = view !== CameraView.Far;
+      runWithFrameWorkOwner("zoom:content-ladder", () => {
+        this.applyContentLadder(resolveWorldmapContentLadder(view));
       });
     });
+  }
+
+  /** The band table decides what the scene shows; managers apply their own rows from the same table. */
+  private applyContentLadder(ladder: WorldmapContentLadder): void {
+    setWorldmapRenderGauge("contentBand", ladder.band);
+    // The far band shows the whole-world biome surface alone; nearer bands composite the detailed pages over it.
+    this.proceduralTerrain.object3d.visible = ladder.band !== CameraView.Far;
+    this.fxManager.setVisible(ladder.fx);
+    this.resourceFXManager.setVisible(ladder.fx);
+    this.combatPresentation?.setVisible(ladder.fx);
+    this.arrivalGhostManager.setSuspended(!ladder.fx);
+    this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
+    this.refreshLabelPriorityContext();
+    this.syncStructureManagerGauges();
+  }
+
+  private refreshLabelPriorityContext(): void {
+    const context = this.buildLabelPriorityContext();
+    this.armyManager.setLabelPriorityContext(context);
+    this.structureManager.setLabelPriorityContext(context);
+  }
+
+  private buildLabelPriorityContext(): WorldmapLabelPriorityContext {
+    const hovered = this.currentHoverLabelHex ? this.getHexagonEntity(this.currentHoverLabelHex) : undefined;
+    const selectedEntityId = getLiveWorldmapEntityActions().selectedEntityId;
+    return {
+      isSpectator: isExplicitSpectateSession(),
+      topOwnerAddresses: this.resolveTopOwnerAddresses(),
+      selectedEntityId: selectedEntityId === undefined || selectedEntityId === null ? null : Number(selectedEntityId),
+      hoveredEntityId: hovered?.army?.id ?? hovered?.structure?.id ?? null,
+    };
+  }
+
+  /** Top-10 by the live leaderboard; recomputed only when a label-priority refresh asks for it. */
+  private resolveTopOwnerAddresses(): ReadonlySet<string> {
+    const leaderboard = LeaderboardManager.instance(this.dojo.components);
+    leaderboard.updatePoints();
+    const top = new Set<string>();
+    leaderboard.playersByRank.slice(0, TOP_OWNER_LABEL_COUNT).forEach(([address]: [bigint, number]) => {
+      const key = normalizeOwnerAddress(address);
+      if (key) top.add(key);
+    });
+    return top;
   }
 
   private registerWorldUpdateSubscriptions(): void {
@@ -2011,6 +2069,7 @@ export default class WorldmapScene extends WarpTravel {
       this.currentHoverLabelHex = null;
       this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
+      this.refreshLabelPriorityContext();
       return;
     }
     const { hexCoords } = hex;
@@ -2026,6 +2085,7 @@ export default class WorldmapScene extends WarpTravel {
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
     this.reconcileHoverLabels("hover");
+    this.refreshLabelPriorityContext();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
@@ -5529,30 +5589,37 @@ export default class WorldmapScene extends WarpTravel {
       targetCoverageKeys: this.getVisualTerrainTargetCoverageKeys(),
       targetChunkKey: this.currentChunk,
     });
-    this.applyTerrainPresentationComposite(composite);
+    // Composing and presenting are separate budgeted tasks so neither alone exceeds the frame budget.
+    void this.chunkWorkQueue
+      .schedule("critical", () => this.applyTerrainPresentationComposite(composite), "terrain:composite:present")
+      .catch((error: unknown) => {
+        if (!isFrameBudgetWorkQueueDisposedError(error)) throw error;
+      });
     return composite;
   }
 
   private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
-    const presentation = runWithFrameWorkOwner("terrain:composite", () => {
-      const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
-      return this.proceduralTerrain.presentAsync({
-        cells: composite.cells.map((cell) => ({
-          biomeKey: cell.biomeKey,
-          col: cell.col,
-          occupied: this.isProjectedStructureHex(cell.col, cell.row),
-          row: cell.row,
-        })),
-        climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-        mapCenter: configManager.getMapCenter(),
-        pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
-        pageOrigin: this.getVisualTerrainPageOrigin(),
-        pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
-        roadAnchors,
-        settlementAnchors,
-        subdivisions: 2,
-      });
-    })
+    const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
+    const presentation = this.proceduralTerrain
+      .presentAsync(
+        {
+          cells: composite.cells.map((cell) => ({
+            biomeKey: cell.biomeKey,
+            col: cell.col,
+            occupied: this.isProjectedStructureHex(cell.col, cell.row),
+            row: cell.row,
+          })),
+          climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+          mapCenter: configManager.getMapCenter(),
+          pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
+          pageOrigin: this.getVisualTerrainPageOrigin(),
+          pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+          roadAnchors,
+          settlementAnchors,
+          subdivisions: 2,
+        },
+        this.chunkWorkQueue,
+      )
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
         recordWorldmapRenderDuration("terrainPreparedMs", terrainDiagnostics.prepareMs);
@@ -7632,6 +7699,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
     debugWindow.getWorldBiomeSurface = () => this.worldBiomeSurface;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
+    debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
     debugWindow.resetWorldmapRenderDiagnostics = () => resetWorldmapRenderDiagnostics();
     debugWindow.captureWorldmapChunkBaseline = (label?: string) => this.captureChunkDiagnosticsBaseline(label);
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = (
@@ -7660,6 +7728,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getWorldmapRenderDiagnostics = undefined;
     debugWindow.getWorldBiomeSurface = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
+    debugWindow.getTerrainPresentMetrics = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
@@ -8201,8 +8270,10 @@ export default class WorldmapScene extends WarpTravel {
       onIncomingTroopArrivalsChanged: (publicIncomingTroopArrivalsByStructure) => {
         this.structureManager.setIncomingTroopArrivalsByStructure(publicIncomingTroopArrivalsByStructure);
       },
-      onEntityActionsChanged: (nextEntityActions, previousEntityActions) =>
-        this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions),
+      onEntityActionsChanged: (nextEntityActions, previousEntityActions) => {
+        this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions);
+        this.refreshLabelPriorityContext();
+      },
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
       },

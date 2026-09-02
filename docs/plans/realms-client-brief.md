@@ -549,6 +549,58 @@ logic change; each extracted module owns its tests with no private cross-imports
 level reads as an outline per the repo's Clean Code Standard (line count ≤ ~1,500 as the smell proxy, not the goal).
 Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
 
+Recorded, L5b (2026-09-03, branch `client-scale-96p`, one commit on top of the L5 tip). (1) Content ladder: one table,
+`apps/game/src/three/scenes/worldmap-content-ladder.ts`, maps the zoom band (`CameraView`, resolved from distance) to
+what renders — near: everything; mid: models and FX, text only for priority entities, armies as tier glyphs; far: the
+strategic map, atlas icons and markers only. Every surface reads it from the band listener it already had: the structure
+manager hides every `InstancedModel` group, wonder, cosmetic attachment (now under one root) and CSS2D group, clears its
+compact labels and skips model animation in the far band, keeping the `PointsLabelRenderer` icons (one `THREE.Points`
+draw per category — these are the ruling's atlas icons); the army manager hides every army model group
+(`ArmyModel.setModelsVisible`, animation skipped while hidden), stops presenting procedural characters (the existing
+reconcile restores the hidden legacy representation per entity, so the handoff is atomic) and gates compact labels; the
+chest and reserved-hyperstructure managers hide their models; the scene hides the FX backends (every effect now hangs
+under one `world-fx` root with `setVisible`), combat projectiles/impacts and arrival ghosts, and the detailed terrain
+group as before. Mid-band label priority (`shouldShowTextLabel`): selected, hovered and under-attack always; then own,
+allied and the top-10 leaderboard owners (`LeaderboardManager.playersByRank`, normalised addresses); spectators only the
+first three. The scene pushes a `WorldmapLabelPriorityContext` to both managers on band change, hover, hex leave and
+selection change. (2) The composite commit is now a pipeline of critical-lane tasks: `terrain:composite` (compose),
+`terrain:composite:present` (ecology anchors + kick), then inside `presentAsync(input, scheduler)`
+`terrain:present:partition`, `:roads`, `:request` per page, `:release`, `:page` (geometry) and `:page-writes` (prop slot
+
+- fog cells) per changed page, `:fog` — each revision-guarded, a superseded run resolves null. The request build lost
+  its 55 k-string halo map and per-page sorts (numeric cell keys), and the road builder's A\* keys are numeric too
+  (`hexCellFromKey` inverts `hexCellKey`). (3) The structure full refresh (`refreshExisting`) commits through
+  `commitManagerVisibilityDiffSliced` — 6 ms slices, each its own `manager:structure-full-refresh` task, the pass fence
+  checked per slice, points batches per slice, one `commitVisibleIds` at the end; targeted passes stay one step.
+  Counters: gauges `contentBand`, `structureFullRefreshSlices`, `structureFullRefreshMaxSliceMs`,
+  `structureHiddenModelGroups`, `structureCompactLabelsShown`; `getTerrainPresentMetrics()` under `?dev`
+  (`presentTasks`, `presentRequestsMaxMs`, `presentPageTaskMaxMs`, `presentPageWritesMaxMs`, `presentFogMaxMs`).
+  Latest-features: "Strategic Map View". Net: 30 tracked files +1,479/−417 (production +1,112/−373, tests +367/−44) plus
+  122 new production lines (the ladder) and 606 new test lines; the structure manager (+185), the terrain present
+  wrapper (+171) and the sliced diff helper (+131) carry the growth — the ruling asked for three new capabilities, and
+  the deletions are the whole-window request build, the scene-per-effect FX parenting and the duplicated model loops.
+
+L5b gate record (2026-09-03, game 16 `lab-mtjsp8bk` snapshot, 96 realms / 310 visible structures / 65 armies, spectating
+from the dev server in headless software WebGL2; scene-graph draws and triangles = visible meshes × instances before
+frustum culling, same instrument as the L5 record). Far band (distance 80): **9 draws, 0.026–0.056 M triangles** (bars ≤
+60 / ≤ 2 M) — the biome surface's two draws, six structure/army icon `Points`, the interactive hex grid; the earlier
+far-band content (structure models, characters, props, FX, labels, reserved sites: 318 draws / 13.4 M on the owner's
+box) is gone from the graph. Mid band (35.95): 56 draws / 12.85 M (terrain pages+props 5.6 M, models the rest) with
+`structureHiddenModelGroups` 7 → 0 on entry and back to 7 on leaving; compact labels 0 as a spectator (only
+selected/hovered/under-attack qualify). Close band (10.83): 507 draws / 12.87 M — one compact label quad per visible
+entity is the draw count, L5 item 6's class, untouched here ("no worse than today" is by construction: the near row of
+the ladder is today's behaviour). Present pipeline after the split, boot at far (4 pages, 32 tasks):
+`presentRequestsMaxMs` 4.3, `presentPageTaskMaxMs` 1.6, `presentPageWritesMaxMs` 2.8, `presentFogMaxMs` 0.7 — every step
+under 8 ms even in this lane (before splitting geometry from writes, the first page task read 20.8 ms). Structure full
+pass: 15 slices over two band flips, `structureFullRefreshMaxSliceMs` 8 (6 ms budget plus one structure's overshoot);
+the unit test commits 310 structures in 7 slices at 0.125 ms each. `frameBudgetLongTasks` **+0 over 60 s spectating in
+the far band** (0 at 108 s, 0 at 163 s). Screenshots `scratchpad/screens/l5b-far.jpeg` (strategic map: biome hexes,
+icons, nothing else), `l5b-mid.jpeg`, `l5b-close.jpeg`. Tests: terrain 37 files / 182, scenes + managers + FX 206/207
+files (the known `worldmap-initial-refresh` drift), structure manager 12 files / 63 incl. the 7 new ladder tests and 5
+sliced-diff tests; typecheck clean; knip adds nothing. Owed to the owner's machine: far and mid band p95 ≤ 16.7 ms,
+close p50/p95 no worse than 49/104, zero unsplit long tasks under churn (the `rf()` snippet + stats recorder on the
+deployed build).
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

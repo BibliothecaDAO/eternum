@@ -108,6 +108,12 @@ export class CombatPresentationCoordinator {
     this.meleeImpacts.spawn(presentation);
   }
 
+  /** The far zoom band shows no combat FX; the systems keep simulating so nothing desynchronises. */
+  public setVisible(visible: boolean): void {
+    this.projectiles.group.visible = visible;
+    this.meleeImpacts.group.visible = visible;
+  }
+
   public update(deltaSeconds: number): void {
     if (this.disposed) return;
     const elapsed = Number.isFinite(deltaSeconds) ? Math.min(Math.max(0, deltaSeconds), 0.1) : 0;
