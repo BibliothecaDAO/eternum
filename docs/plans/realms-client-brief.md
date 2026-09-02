@@ -1243,6 +1243,30 @@ play-route descriptor declares no `spectate`; game-entry, play/navigation, top-h
 68 green (the target and play-route tests drop the flag from the parsed descriptor, the chip test drives the latch
 directly); typecheck clean; knip clean. LOC: +? −? (recorded from the commit stat).
 
+### Autonomous run record — item 3: the last `openedPopups` windows (2026-09-02, commit `359c2f25d39`)
+
+**Landed.** Resource transfers: `economy/resources/resource-transfer-popover.tsx` renders the transfer form in a popover
+owned by its trigger — the resource chip's transfer button and the resource table's transfer cell each mount their own
+instance (`useId`-keyed), so a resource shown in two lists never shares a panel, and the table selects the structure
+before its popover opens (the old `handleOpenTransfer` side effect, now `onBeforeOpen`). The form drops its 75 vh
+minimum height; the popover caps it to the viewport and scrolls. Automation dashboards: neither window had an opener
+anywhere in `apps/game` (production was mounted with nothing toggling it; exploration was commented out), so both files,
+the exploration window test and their two polling-discipline allowances are deleted rather than migrated. Deleted with
+them: `RealmTransferManager` (one container per catalogue resource, all mounted), `TopNavigation` and its HUD mount,
+`world/components/config.tsx` (popup names), the `PopupsStore` slice and `use-popups-store.ts` — nothing in `apps/game`
+reads `openedPopups`, `togglePopup` or `isPopupOpen` any more. `ExplorationAutomationEntry` became a module-private type
+(its only importer was the deleted dashboard).
+
+**Gate.** `overlay-surfaces.source.test.ts` asserts the seven deleted files and the deleted component / API names stay
+gone; `resource-transfer-popover.test.tsx` (one panel per trigger for the same resource, before-open hook only on open);
+economy/resources, hooks/store, layouts, world containers, discipline and popover suites 32 files green; typecheck
+clean; knip clean. LOC: +174 −1075.
+
+**Ruling taken, review me.** The automation dashboards were deleted as unreachable UI, not migrated — "wired or
+deleted"; the automation runners themselves (`AutomationManager`, `ExplorationAutomationManager`) are untouched. **Owner
+gate pending:** the transfer popover needs a signed-in player with resources on screen, which the headless spectator
+lane cannot produce — eyeball it from a chip and from a table cell on the deploy.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
