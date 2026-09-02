@@ -42,6 +42,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-03",
+    title: "Direct Realm Links",
+    description:
+      "A link to a realm's local view now opens that realm, signed in or spectating: the world map boots first and hands off to the local scene instead of stranding you on the map.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-03",
     title: "Top Bar Popovers",
     description:
       "The leaderboard, what's new, transactions and settings (with the keyboard shortcuts inside) now open as popovers under their top-bar buttons, and a finished game shows a pill where the timer was instead of covering the map. Each popover closes on Escape or a click outside; the floating windows are gone.",
