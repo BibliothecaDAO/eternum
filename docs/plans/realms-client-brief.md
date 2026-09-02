@@ -638,6 +638,21 @@ inconsistently. The orphaning is a correctness smell: the glyph layer must be dr
 and removes the army models, not a parallel lifecycle. Folds into L5 item 6 (label atlas + ladder polish) when that item
 is picked up, after Phase 4 steps 1+2.
 
+Decomposition Cut 1 reviewed (reviewer, 2026-09-02): the ownership-pulse presenter extraction is a clean move (net −41
+lines in the scene, presenter owns its cache, 6/6 new tests, ladder wiring still green) — **approved**. The agent's stop
+is ruled correct: the remaining fat is pinned by seam-owning wiring/source tests by design, and cutting it is state
+relocation, not moving. Ruling on the question: **state relocation is permitted, on the relocation basis** — when pinned
+code moves to a collaborator, the pinning wiring test retargets to enforce the SAME discipline at the new home, in the
+same commit, which is labeled `relocation` (not move-only), one relocation per commit, the test's preserved intent
+stated in the commit message; shared reset helpers may gain the collaborator's reset hook (chokepoint pattern); global
+discipline gates (recs-query/polling) are never retargeted. **Sequencing: the decomposition pauses until Phase 4 steps
+1+2 land and the tree is green** — the identity module is transiently broken mid-flight and two agents relocating state
+in one worktree over a red typecheck is the known hazard. Order of relocations when it resumes: terrain-visibility
+health monitor first, then hover-label recovery; the strategic-marker and combat-presentation shells are re-judged after
+those two. Honest expectation set now: extraction alone will not reach the ~1,500-line proxy — after the relocation
+round we measure what remains and decide on evidence whether the top-level outline gate is met or a larger reshape is
+warranted.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
@@ -649,8 +664,8 @@ Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
 
 **Decomposition extraction map (append one row per move-only cut).**
 
-- Cut 1 — structure ownership pulses (2026-09-02, branch `client-scale-96p`). Moved the selection-feedback overlay
-  that pulses a structure's owned footprint out of the scene into a collaborator: new
+- Cut 1 — structure ownership pulses (2026-09-02, branch `client-scale-96p`). Moved the selection-feedback overlay that
+  pulses a structure's owned footprint out of the scene into a collaborator: new
   `apps/game/src/three/scenes/worldmap-structure-ownership-pulses.ts` (`WorldmapOwnershipPulsePresenter`, 71 lines) with
   its own test (`worldmap-structure-ownership-pulses.test.ts`, 104 lines / 6 cases). Removed from `worldmap.tsx`:
   `updateStructureOwnershipPulses` + `getStructurePulseColors` methods and the `structurePulseColorCache` field (the
