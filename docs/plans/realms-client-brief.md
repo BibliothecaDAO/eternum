@@ -409,6 +409,19 @@ before the bridge's listeners so a slice's scene work and store work each happen
 +352/−1,097 plus 762 lines in six new files (bridge 306, runners 323 carried over from the managers, store 56, readers
 26, hyperstructure infos 36, mount 15); tests +188/−49 and a 64-line source test.
 
+Phase 2 churn gate (2026-09-02, game 16 `lab-mtjsp8bk`, 95 bots, spectating from the dev server on headless software
+WebGL2 with the scene up, 60 s inside the steady workload at ~24 rows/s and ~8 events/s): **React 3.38 commits/s**
+against the ≤ 10 bar (19.7 before phase 2); idle on the same tree after the workload ended, 2.31 commits/s with zero
+rows, slices or derives — the residual is the 1 Hz clock UI, L6's business. Projection publishes 29 over 38 applied
+slices (`projectionPublishCount` now sits next to `appliedBatchCount` in the sync metrics): at most one per slice, and a
+slice with no spatial change publishes nothing. Bridge derives 38 for 38 slice triggers and 0 store triggers
+(`window.__eternumBridgeMetrics` under `?dev`); the review's finding that the bridge flushed on any `useUIStore` write
+while dirty is closed at the source — its store subscription now derives only for a selection or relic-refresh change.
+Applied/received 1,420 / 1,420, `frameBudgetLongTasks` +0, live max slice 34 ms, so the phase 1 holds survive the new
+tree. `recs-store-bridge.test.ts` installs the bridge with a fake runtime and real components, writes real parity rows
+through the store, and pins one derive at install, one per applied slice however many rows changed, derives only for
+selection or relic changes among store writes, and nothing after dispose.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

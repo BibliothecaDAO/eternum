@@ -7,6 +7,7 @@ import { activeGameRows, allRows } from "@/sync/recs-rows";
 import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
+import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import {
   ClientConfigManager,
@@ -54,6 +55,23 @@ interface RecsStoreBridgeInput {
 }
 
 const NO_ACCOUNT = "0x0";
+
+/** `?dev` mirror: how often the bridge derived, and which trigger asked for it. */
+export interface RecsStoreBridgeMetrics {
+  derives: number;
+  sliceTriggers: number;
+  storeTriggers: number;
+  accountTriggers: number;
+}
+
+interface BridgeMetricsWindow {
+  __eternumBridgeMetrics?: RecsStoreBridgeMetrics;
+}
+
+const publishBridgeMetrics = (metrics: RecsStoreBridgeMetrics): void => {
+  if (!DEV_MODE_ENABLED || typeof window === "undefined") return;
+  (window as typeof window & BridgeMetricsWindow).__eternumBridgeMetrics = { ...metrics };
+};
 
 const readPlayers = (components: ClientComponents): Player[] =>
   [...getComponentEntities(components.AddressName as Component)].flatMap((entity) => {
@@ -178,6 +196,7 @@ const publishSeasonClock = (): void => {
  */
 export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeInput): (() => void) => {
   const dirty = new Set<Slice>();
+  const metrics: RecsStoreBridgeMetrics = { accountTriggers: 0, derives: 0, sliceTriggers: 0, storeTriggers: 0 };
   let seasonEnded: WorldSlicesStore["seasonEnded"] = null;
   const account = () => useAccountStore.getState().account?.address ?? NO_ACCOUNT;
 
@@ -203,6 +222,8 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
 
   const flush = (): void => {
     if (dirty.size === 0) return;
+    metrics.derives += 1;
+    publishBridgeMetrics(metrics);
     const pending = new Set(dirty);
     dirty.clear();
     const address = account();
@@ -281,16 +302,25 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
       markDirty("players");
     }),
   );
-  const unsubscribeSlices = runtime.subscribeSliceApplied(flush);
+  const unsubscribeSlices = runtime.subscribeSliceApplied(() => {
+    metrics.sliceTriggers += 1;
+    flush();
+  });
   const unsubscribeAccount = useAccountStore.subscribe((state, previous) => {
     if (state.account?.address === previous.account?.address) return;
+    metrics.accountTriggers += 1;
     markDirty("mine", "guilds", "armies");
     flush();
   });
+  // Selection and relic refreshes are the only store writes that change a derived fact; nothing else flushes here.
   const unsubscribeUi = useUIStore.subscribe((state, previous) => {
-    if (state.structureEntityId !== previous.structureEntityId) markDirty("mine");
-    if (state.relicsRefreshNonce !== previous.relicsRefreshNonce) markDirty("resources");
-    if (dirty.size > 0) flush();
+    const selectionChanged = state.structureEntityId !== previous.structureEntityId;
+    const relicsRefreshed = state.relicsRefreshNonce !== previous.relicsRefreshNonce;
+    if (!selectionChanged && !relicsRefreshed) return;
+    metrics.storeTriggers += 1;
+    if (selectionChanged) markDirty("mine");
+    if (relicsRefreshed) markDirty("resources");
+    flush();
   });
 
   publishSeasonClock();

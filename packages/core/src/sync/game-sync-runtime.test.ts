@@ -412,8 +412,8 @@ describe("GameSyncRuntime lifecycle", () => {
 
   it("owns and replaces the session spatial projection", () => {
     const runtime = new GameSyncRuntime();
-    const first = { start: vi.fn(), dispose: vi.fn() };
-    const second = { start: vi.fn(), dispose: vi.fn() };
+    const first = { dispose: vi.fn(), start: vi.fn(), subscribe: vi.fn(() => () => undefined) };
+    const second = { dispose: vi.fn(), start: vi.fn(), subscribe: vi.fn(() => () => undefined) };
 
     runtime.installWorldSpatialProjection(first as never);
     runtime.installWorldSpatialProjection(second as never);
@@ -430,10 +430,11 @@ describe("GameSyncRuntime lifecycle", () => {
   it("does not retain a spatial projection that fails to start", () => {
     const runtime = new GameSyncRuntime();
     const projection = {
+      dispose: vi.fn(),
       start: vi.fn(() => {
         throw new Error("projection failed");
       }),
-      dispose: vi.fn(),
+      subscribe: vi.fn(() => () => undefined),
     };
 
     expect(() => runtime.installWorldSpatialProjection(projection as never)).toThrow("projection failed");

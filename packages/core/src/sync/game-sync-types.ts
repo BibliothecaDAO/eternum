@@ -81,6 +81,8 @@ export interface GameSyncRuntimeMetrics {
   /** Same as maxBatchApplyDurationMs over running-status slices only: neither the snapshot nor the boot replay hides the churn number. */
   maxLiveBatchApplyDurationMs: number;
   peakLiveUpdatesPerSecond: number;
+  /** Spatial projection publishes; against appliedBatchCount it is the L4 gate (at most one per slice). */
+  projectionPublishCount: number;
   snapshotEntityCount: number;
   snapshotPageCount: number;
   totalLiveEntityUpdates: number;

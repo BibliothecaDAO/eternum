@@ -49,6 +49,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   maxBatchApplyDurationMs: 0,
   maxLiveBatchApplyDurationMs: 0,
   peakLiveUpdatesPerSecond: 0,
+  projectionPublishCount: 0,
   snapshotEntityCount: 0,
   snapshotPageCount: 0,
   totalLiveEntityUpdates: 0,
@@ -150,6 +151,9 @@ export class GameSyncRuntime {
   public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
     this.disposeWorldSpatialProjection();
     try {
+      projection.subscribe(() => {
+        this.metrics.projectionPublishCount += 1;
+      });
       projection.start();
       this.worldSpatialProjection = projection;
     } catch (error) {
