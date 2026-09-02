@@ -57,7 +57,7 @@ interface RecsStoreBridgeInput {
 const NO_ACCOUNT = "0x0";
 
 /** `?dev` mirror: how often the bridge derived, and which trigger asked for it. */
-export interface RecsStoreBridgeMetrics {
+interface RecsStoreBridgeMetrics {
   derives: number;
   sliceTriggers: number;
   storeTriggers: number;

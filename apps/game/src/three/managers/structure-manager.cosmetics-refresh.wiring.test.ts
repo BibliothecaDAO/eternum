@@ -15,7 +15,8 @@ describe("structure manager cosmetics refresh wiring", () => {
     expect(source).toMatch(/public\s+refreshCosmeticsForOwner\s*\(\s*owner:\s*string\s*\|\s*bigint\s*\)/);
     expect(source).toMatch(/this\.worldSpatialProjection\.getStructures\(\)\.flatMap/);
     expect(source).toMatch(/getComponentValue\(this\.components\.Structure/);
-    expect(source).toMatch(/void\s+this\.requestVisibleStructuresRefresh\s*\(\{\s*refreshEntityIds\s*\}\)/);
+    expect(source).toMatch(/refreshEntityIds\.forEach\(\(entityId\) => this\.invalidateStructureInfo\(entityId\)\)/);
+    expect(source).toMatch(/this\.requestVisibleStructuresRefreshForEntities\(refreshEntityIds\)/);
   });
 
   it("does not maintain a second structure truth store", () => {

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  WORLDMAP_STEP_WHEEL_DELTA,
   applyContinuousWorldmapZoomDelta,
   normalizeWorldmapWheelDelta,
   resolveWorldmapWheelPixelDelta,
 } from "./worldmap-zoom-input-normalizer";
+
+const WHEEL_NOTCH_DELTA = 120;
 
 describe("resolveWorldmapWheelPixelDelta", () => {
   it("normalizes wheel deltas across pixel, line, and page modes", () => {
@@ -21,10 +22,9 @@ describe("normalizeWorldmapWheelDelta", () => {
     expect(normalizeWorldmapWheelDelta({ delta: 0.5, deltaMode: 2, viewportHeight: 900 }).normalizedDelta).toBe(450);
   });
 
-  it("classifies micro-scroll input as trackpad while preserving direction", () => {
+  it("preserves the direction of micro-scroll input", () => {
     expect(normalizeWorldmapWheelDelta({ delta: -6, deltaMode: 0, viewportHeight: 900 })).toEqual({
       direction: -1,
-      inputKind: "trackpad",
       normalizedDelta: -6,
     });
   });
@@ -39,27 +39,27 @@ describe("applyContinuousWorldmapZoomDelta", () => {
     expect(
       applyContinuousWorldmapZoomDelta({
         currentDistance: 20,
-        normalizedDelta: -WORLDMAP_STEP_WHEEL_DELTA,
+        normalizedDelta: -WHEEL_NOTCH_DELTA,
         minDistance: 10,
         maxDistance: 40,
       }),
-    ).toBeCloseTo(18.1, 1);
+    ).toBeCloseTo(16.37, 1);
 
     expect(
       applyContinuousWorldmapZoomDelta({
         currentDistance: 20,
-        normalizedDelta: WORLDMAP_STEP_WHEEL_DELTA,
+        normalizedDelta: WHEEL_NOTCH_DELTA,
         minDistance: 10,
         maxDistance: 40,
       }),
-    ).toBeCloseTo(22.1, 1);
+    ).toBeCloseTo(24.43, 1);
   });
 
   it("clamps the resolved distance within the worldmap zoom bounds", () => {
     expect(
       applyContinuousWorldmapZoomDelta({
         currentDistance: 10.2,
-        normalizedDelta: -WORLDMAP_STEP_WHEEL_DELTA * 4,
+        normalizedDelta: -WHEEL_NOTCH_DELTA * 4,
         minDistance: 10,
         maxDistance: 40,
       }),
@@ -68,7 +68,7 @@ describe("applyContinuousWorldmapZoomDelta", () => {
     expect(
       applyContinuousWorldmapZoomDelta({
         currentDistance: 39.5,
-        normalizedDelta: WORLDMAP_STEP_WHEEL_DELTA * 4,
+        normalizedDelta: WHEEL_NOTCH_DELTA * 4,
         minDistance: 10,
         maxDistance: 40,
       }),

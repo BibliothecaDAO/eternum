@@ -96,7 +96,6 @@ describe("createGameRendererRuntimeAssembly", () => {
       },
       transitionManager: { fadeIn: vi.fn() },
       worldmapScene: {
-        changeCameraView: vi.fn(),
         moveCameraToColRow: vi.fn(),
         moveCameraToXYZ: vi.fn(),
       },

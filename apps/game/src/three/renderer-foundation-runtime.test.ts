@@ -32,7 +32,6 @@ describe("createRendererFoundationRuntime", () => {
       isMobileDevice: false,
       onControlsChange: vi.fn(),
       onInteraction: vi.fn(),
-      resolveCurrentSceneName: vi.fn(),
       warn,
     });
 
@@ -67,7 +66,6 @@ describe("createRendererFoundationRuntime", () => {
       isMobileDevice: true,
       onControlsChange: vi.fn(),
       onInteraction: vi.fn(),
-      resolveCurrentSceneName: vi.fn(),
       warn,
     });
 

@@ -70,9 +70,6 @@ export function createGameRendererRuntimeAssembly(
 
 function createGameRendererControlBridgeRuntime(input: CreateGameRendererRuntimeAssemblyInput) {
   return createRendererControlBridgeRuntime({
-    changeCameraView: (view) => {
-      input.resolveRuntimeState().worldmapScene?.changeCameraView(view);
-    },
     createFolder: input.createFolder,
     fastTravelEnabled: input.fastTravelEnabled,
     getCurrentScene: () => input.resolveRuntimeState().sceneManager?.getCurrentScene(),

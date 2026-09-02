@@ -154,7 +154,7 @@ const { StructureManager } = await import("./structure-manager");
 function createSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
   subject.chunkAssetPrewarmPromises = new Map();
-  subject.getVisibleStructuresForChunk = vi.fn();
+  subject.queryStructureInfosInChunk = vi.fn();
   subject.ensureStructureModels = vi.fn(async () => []);
   subject.ensureCosmeticStructureModels = vi.fn(async () => []);
   subject.hasCosmeticSkin = vi.fn((structure: { cosmeticId?: string; cosmeticAssetPaths?: string[] }) => {
@@ -166,7 +166,7 @@ function createSubject() {
 describe("StructureManager.prewarmChunkAssets", () => {
   it("loads visible chunk structure models before the visible update path runs", async () => {
     const subject = createSubject();
-    subject.getVisibleStructuresForChunk.mockReturnValue([
+    subject.queryStructureInfosInChunk.mockReturnValue([
       { structureType: "Village" },
       { structureType: "Village" },
       { structureType: "Bank" },
@@ -174,7 +174,7 @@ describe("StructureManager.prewarmChunkAssets", () => {
 
     await subject.prewarmChunkAssets("24,24");
 
-    expect(subject.getVisibleStructuresForChunk).toHaveBeenCalledWith(24, 24);
+    expect(subject.queryStructureInfosInChunk).toHaveBeenCalledWith(24, 24);
     expect(subject.ensureStructureModels.mock.calls).toEqual([["Village"], ["Bank"]]);
     expect(subject.ensureCosmeticStructureModels).not.toHaveBeenCalled();
   });
@@ -197,7 +197,7 @@ describe("StructureManager.prewarmChunkAssets", () => {
 
   it("loads visible chunk cosmetic models before the visible update path runs", async () => {
     const subject = createSubject();
-    subject.getVisibleStructuresForChunk.mockReturnValue([
+    subject.queryStructureInfosInChunk.mockReturnValue([
       {
         structureType: "Village",
         cosmeticId: "skin-a",
@@ -214,7 +214,7 @@ describe("StructureManager.prewarmChunkAssets", () => {
   it("dedupes concurrent prewarm requests for the same chunk assets", async () => {
     const subject = createSubject();
     let resolveStructureModels!: () => void;
-    subject.getVisibleStructuresForChunk.mockReturnValue([{ structureType: "Village" }]);
+    subject.queryStructureInfosInChunk.mockReturnValue([{ structureType: "Village" }]);
     subject.ensureStructureModels.mockImplementation(
       () =>
         new Promise<void>((resolve) => {

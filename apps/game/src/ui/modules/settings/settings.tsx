@@ -8,7 +8,7 @@ import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
-import { CameraView } from "@/three/scenes/camera-view";
+import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
@@ -22,12 +22,6 @@ import { addressToNumber } from "@/ui/utils/utils";
 import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-const WORLDMAP_ZOOM_OPTIONS: { label: string; view: CameraView }[] = [
-  { label: "Close", view: CameraView.Close },
-  { label: "Medium", view: CameraView.Medium },
-  { label: "Far", view: CameraView.Far },
-];
 
 const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
   { label: "Quality", mode: "quality" },
@@ -53,12 +47,10 @@ const SettingsPanel = () => {
   // Use full audio system for reactive state updates
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   const { trackName, next: nextTrack } = useMusicPlayer();
-  const enableMapZoom = useUIStore((state) => state.enableMapZoom);
-  const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
-
-  const worldmapZoomView = useCameraZoomStore((state) => state.worldmapView) ?? CameraView.Medium;
+  const worldmapZoomDistance =
+    useCameraZoomStore((state) => state.worldmapDistance) ?? WORLDMAP_CAMERA_ZOOM.defaultDistance;
   const localZoomDistance = useCameraZoomStore((state) => state.localDistance) ?? LOCAL_CAMERA_ZOOM.defaultDistance;
-  const setWorldmapZoomView = useCameraZoomStore((state) => state.setWorldmapView);
+  const setWorldmapZoomDistance = useCameraZoomStore((state) => state.setWorldmapDistance);
   const setLocalZoomDistance = useCameraZoomStore((state) => state.setLocalDistance);
   const resetCameraZoom = useCameraZoomStore((state) => state.resetToDefaults);
 
@@ -172,20 +164,6 @@ const SettingsPanel = () => {
               <Checkbox enabled={fullScreen} />
               <div>Fullscreen</div>
             </div>
-            <div
-              className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold"
-              onClick={() => {
-                if (enableMapZoom) {
-                  playToggleOff();
-                } else {
-                  playToggleOn();
-                }
-                setEnableMapZoom(!enableMapZoom);
-              }}
-            >
-              <Checkbox enabled={enableMapZoom} />
-              <div>Enable Map Zoom</div>
-            </div>
 
             <div className="text-xs text-gray-gold mt-2">Render Mode</div>
             <div className="flex space-x-2">
@@ -212,19 +190,15 @@ const SettingsPanel = () => {
               active scene and are restored on every scene switch and reload. */}
           <section className="space-y-3">
             <Headline>Camera</Headline>
-            <div className="text-xs text-gray-gold">World Map Zoom</div>
-            <div className="flex space-x-2">
-              {WORLDMAP_ZOOM_OPTIONS.map(({ label, view }) => (
-                <Button
-                  key={view}
-                  disabled={worldmapZoomView === view}
-                  variant={worldmapZoomView === view ? "success" : "outline"}
-                  onClick={() => setWorldmapZoomView(view)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
+            <RangeInput
+              title="World Map Zoom"
+              fromTitle="Close"
+              toTitle="Far"
+              min={WORLDMAP_CAMERA_ZOOM.minDistance}
+              max={WORLDMAP_CAMERA_ZOOM.maxDistance}
+              value={Math.round(worldmapZoomDistance)}
+              onChange={setWorldmapZoomDistance}
+            />
             <RangeInput
               title="Local View Zoom"
               fromTitle="Close"

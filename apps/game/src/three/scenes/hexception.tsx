@@ -388,18 +388,6 @@ export default class HexceptionScene extends HexagonScene {
       ),
     );
 
-    // Subscribe to zoom setting changes
-    this.storeUnsubscribes.push(
-      useUIStore.subscribe(
-        (state) => state.enableMapZoom,
-        (enableMapZoom) => {
-          if (this.controls) {
-            this.controls.enableZoom = enableMapZoom;
-          }
-        },
-      ),
-    );
-
     // Re-render the hex grid when the loading overlay dismisses.
     // Buildings may not be in RECS when the scene first sets up;
     // once showBlankOverlay becomes false, structures are synced.
@@ -431,13 +419,9 @@ export default class HexceptionScene extends HexagonScene {
     return this.proceduralTerrain;
   }
 
-  private applyPersistedLocalZoom(): void {
-    const persistedDistance = this.resolveStoredLocalZoomDistance();
-    if (persistedDistance === null) {
-      return;
-    }
-
-    this.animateCameraToLocalZoomDistance(persistedDistance);
+  private alignLocalCameraToPreferredZoom(): void {
+    this.cameraAngle = LOCAL_CAMERA_ZOOM.pitchRadians;
+    this.animateCameraToLocalZoomDistance(this.resolvePreferredLocalZoomDistance());
   }
 
   private applyLocalZoomPreferenceLive(): void {
@@ -445,7 +429,7 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const preferredDistance = this.resolveStoredLocalZoomDistance() ?? this.resolveDefaultLocalZoomDistance();
+    const preferredDistance = this.resolvePreferredLocalZoomDistance();
     const currentDistance = this.controls.object.position.distanceTo(this.controls.target);
     if (Math.abs(preferredDistance - currentDistance) < 0.1) {
       return;
@@ -454,15 +438,9 @@ export default class HexceptionScene extends HexagonScene {
     this.animateCameraToLocalZoomDistance(preferredDistance);
   }
 
-  private resolveStoredLocalZoomDistance(): number | null {
-    return resolveStoredLocalCameraDistance({
-      min: this.controls.minDistance,
-      max: this.controls.maxDistance,
-    });
-  }
-
-  private resolveDefaultLocalZoomDistance(): number {
-    return Math.min(LOCAL_CAMERA_ZOOM.defaultDistance, this.controls.maxDistance);
+  private resolvePreferredLocalZoomDistance(): number {
+    const range = { min: this.controls.minDistance, max: this.controls.maxDistance };
+    return resolveStoredLocalCameraDistance(range) ?? Math.min(LOCAL_CAMERA_ZOOM.defaultDistance, range.max);
   }
 
   private animateCameraToLocalZoomDistance(distance: number): void {
@@ -660,12 +638,11 @@ export default class HexceptionScene extends HexagonScene {
 
     this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
     this.controls.enablePan = false;
-    this.controls.enableZoom = useUIStore.getState().enableMapZoom;
+    this.controls.enableZoom = true;
     this.controls.zoomToCursor = false;
 
     this.moveCameraToURLLocation();
-    this.changeCameraView(2);
-    this.applyPersistedLocalZoom();
+    this.alignLocalCameraToPreferredZoom();
 
     // Configure thunder bolts for hexception - focused storm effect
     this.getThunderBoltManager().setConfig({

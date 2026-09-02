@@ -1,3 +1,5 @@
+import { hexCellKey } from "@/three/terrain/hex-cell-key";
+
 export type WorldmapTerrainPresentationKind = "exact" | "provisional";
 export type WorldmapTerrainPresentationCoverageKind = "chunk" | "visual_page";
 export type WorldmapVisualTerrainPageKey = `${number},${number}`;
@@ -18,7 +20,8 @@ interface WorldmapTerrainPageOrigin {
 }
 
 export interface WorldmapTerrainSourceCellRef {
-  hexKey: string;
+  col: number;
+  row: number;
   biomeKey: string;
   instanceIndex: number;
   occupied?: boolean;
@@ -84,7 +87,7 @@ interface ComposeWorldmapTerrainPresentationsInput<TBiomeEntries, TBounds> {
 
 interface ApplyWorldmapTerrainPresentationInput<TBiomeEntries, TBounds> extends Omit<
   ComposeWorldmapTerrainPresentationsInput<TBiomeEntries, TBounds>,
-  "presentations"
+  "maxCells" | "presentations"
 > {
   latestTransitionToken: number;
   maxCompositeChunks: number;
@@ -119,7 +122,6 @@ interface ApplyWorldmapVisualTerrainPageInput<TBiomeEntries, TBounds> {
   authoritativeChunkKey?: string | null;
   latestGeneration: number;
   latestTransitionToken?: number;
-  maxCells: number;
   maxCompositePages: number;
   nowMs?: number;
   presentation: WorldmapTerrainPresentation<TBiomeEntries, TBounds>;
@@ -127,15 +129,8 @@ interface ApplyWorldmapVisualTerrainPageInput<TBiomeEntries, TBounds> {
   targetCoverageKeys: ReadonlySet<string>;
 }
 
-type ApplyWorldmapTerrainPresentationResult<TBiomeEntries, TBounds> =
-  | {
-      status: "applied";
-      composite: WorldmapTerrainComposite<TBiomeEntries, TBounds>;
-    }
-  | {
-      status: "stale_dropped";
-      composite: WorldmapTerrainComposite<TBiomeEntries, TBounds>;
-    };
+/** Applies mutate the presentation state only; callers compose once per batch. */
+export type ApplyWorldmapTerrainPresentationStatus = "applied" | "stale_dropped";
 
 export function createWorldmapTerrainPresentationState<
   TBiomeEntries = unknown,
@@ -151,14 +146,15 @@ export function composeWorldmapTerrainPresentations<TBiomeEntries = unknown, TBo
 ): WorldmapTerrainComposite<TBiomeEntries, TBounds> {
   const cells: Array<WorldmapComposedTerrainCellRef<TBiomeEntries, TBounds>> = [];
   const cellsByBiome = new Map<string, Array<WorldmapComposedTerrainCellRef<TBiomeEntries, TBounds>>>();
-  const seenHexKeys = new Set<string>();
+  const seenCells = new Set<number>();
   const biomeInstanceCounts = new Map<string, number>();
   const maxCells = Math.max(0, Math.floor(input.maxCells));
   let droppedCellCount = 0;
 
   for (const presentation of getPrioritizedWorldmapTerrainPresentations(input)) {
     for (const cell of presentation.cells) {
-      if (seenHexKeys.has(cell.hexKey)) {
+      const cellKey = hexCellKey(cell.col, cell.row);
+      if (seenCells.has(cellKey)) {
         continue;
       }
 
@@ -167,7 +163,7 @@ export function composeWorldmapTerrainPresentations<TBiomeEntries = unknown, TBo
         continue;
       }
 
-      seenHexKeys.add(cell.hexKey);
+      seenCells.add(cellKey);
       const nextInstanceIndex = biomeInstanceCounts.get(cell.biomeKey) ?? 0;
       biomeInstanceCounts.set(cell.biomeKey, nextInstanceIndex + 1);
 
@@ -236,12 +232,7 @@ export function partitionPreparedTerrainIntoVisualPages<TBiomeEntries = unknown,
   const biomeCountsByPage = new Map<string, Map<string, number>>();
 
   input.cells.forEach((cell) => {
-    const hex = parseHexKey(cell.hexKey);
-    if (!hex) {
-      return;
-    }
-
-    const page = resolveWorldmapVisualTerrainPageKeyForHex(hex, input.pageSize, input.pageOrigin);
+    const page = resolveWorldmapVisualTerrainPageKeyForHex(cell, input.pageSize, input.pageOrigin);
     const pageCells = cellsByPage.get(page.pageKey) ?? [];
     const biomeCounts = biomeCountsByPage.get(page.pageKey) ?? new Map<string, number>();
     const nextInstanceIndex = biomeCounts.get(cell.biomeKey) ?? 0;
@@ -270,31 +261,25 @@ export function partitionPreparedTerrainIntoVisualPages<TBiomeEntries = unknown,
     }));
 }
 
-export function composeWorldmapVisualTerrainPresentations<TBiomeEntries = unknown, TBounds = unknown>(
-  input: ComposeWorldmapTerrainPresentationsInput<TBiomeEntries, TBounds>,
-): WorldmapTerrainComposite<TBiomeEntries, TBounds> {
-  return composeWorldmapTerrainPresentations(input);
-}
-
 export function applyWorldmapVisualTerrainPage<TBiomeEntries = unknown, TBounds = unknown>(
   state: WorldmapTerrainPresentationRuntimeState<TBiomeEntries, TBounds>,
   input: ApplyWorldmapVisualTerrainPageInput<TBiomeEntries, TBounds>,
-): ApplyWorldmapTerrainPresentationResult<TBiomeEntries, TBounds> {
+): ApplyWorldmapTerrainPresentationStatus {
   const coverageKey = getTerrainPresentationCoverageKey(input.presentation);
   if (input.presentation.generation !== undefined && input.presentation.generation !== input.latestGeneration) {
-    return buildVisualTerrainStaleDropResult(state, input);
+    return "stale_dropped";
   }
 
   if (input.latestTransitionToken !== undefined && input.presentation.transitionToken !== input.latestTransitionToken) {
-    return buildVisualTerrainStaleDropResult(state, input);
+    return "stale_dropped";
   }
 
   if (!input.targetCoverageKeys.has(coverageKey) && input.retainPreviousUntilMs === undefined) {
-    return buildVisualTerrainStaleDropResult(state, input);
+    return "stale_dropped";
   }
 
   if (input.presentation.kind === "provisional" && hasExactPresentationForCoverage(state.presentations, coverageKey)) {
-    return buildVisualTerrainStaleDropResult(state, input);
+    return "stale_dropped";
   }
 
   const nextPresentations = [
@@ -322,16 +307,7 @@ export function applyWorldmapVisualTerrainPage<TBiomeEntries = unknown, TBounds 
     input.maxCompositePages,
   );
 
-  return {
-    status: "applied",
-    composite: composeWorldmapVisualTerrainPresentations({
-      authoritativeChunkKey: input.authoritativeChunkKey ?? null,
-      maxCells: input.maxCells,
-      nowMs: input.nowMs,
-      presentations: state.presentations,
-      targetCoverageKeys: input.targetCoverageKeys,
-    }),
-  };
+  return "applied";
 }
 
 function capTerrainPresentationsKeepingApplied<TBiomeEntries, TBounds>(
@@ -359,15 +335,9 @@ function capTerrainPresentationsKeepingApplied<TBiomeEntries, TBounds>(
 export function applyWorldmapTerrainPresentation<TBiomeEntries = unknown, TBounds = unknown>(
   state: WorldmapTerrainPresentationRuntimeState<TBiomeEntries, TBounds>,
   input: ApplyWorldmapTerrainPresentationInput<TBiomeEntries, TBounds>,
-): ApplyWorldmapTerrainPresentationResult<TBiomeEntries, TBounds> {
+): ApplyWorldmapTerrainPresentationStatus {
   if (input.presentation.transitionToken !== input.latestTransitionToken) {
-    return {
-      status: "stale_dropped",
-      composite: composeWorldmapTerrainPresentations({
-        ...input,
-        presentations: state.presentations,
-      }),
-    };
+    return "stale_dropped";
   }
 
   state.presentations = resolveNextTerrainPresentations(state.presentations, input);
@@ -376,13 +346,7 @@ export function applyWorldmapTerrainPresentation<TBiomeEntries = unknown, TBound
     presentations: state.presentations,
   }).slice(0, input.maxCompositeChunks);
 
-  return {
-    status: "applied",
-    composite: composeWorldmapTerrainPresentations({
-      ...input,
-      presentations: state.presentations,
-    }),
-  };
+  return "applied";
 }
 
 export function getPrioritizedWorldmapTerrainPresentations<TBiomeEntries = unknown, TBounds = unknown>(
@@ -477,22 +441,6 @@ function getTerrainPresentationPriority(
   return 4;
 }
 
-function buildVisualTerrainStaleDropResult<TBiomeEntries, TBounds>(
-  state: WorldmapTerrainPresentationRuntimeState<TBiomeEntries, TBounds>,
-  input: ApplyWorldmapVisualTerrainPageInput<TBiomeEntries, TBounds>,
-): ApplyWorldmapTerrainPresentationResult<TBiomeEntries, TBounds> {
-  return {
-    status: "stale_dropped",
-    composite: composeWorldmapVisualTerrainPresentations({
-      authoritativeChunkKey: input.authoritativeChunkKey ?? null,
-      maxCells: input.maxCells,
-      nowMs: input.nowMs,
-      presentations: state.presentations,
-      targetCoverageKeys: input.targetCoverageKeys,
-    }),
-  };
-}
-
 function hasExactPresentationForCoverage(
   presentations: Array<WorldmapTerrainPresentation<unknown, unknown>>,
   coverageKey: string,
@@ -566,14 +514,6 @@ function worldPointToHex(point: WorldmapPointLike, hexSize: number): { col: numb
 
 function getRowOffset(row: number, horizontalDistance: number): number {
   return ((row % 2) * Math.sign(row) * horizontalDistance) / 2;
-}
-
-function parseHexKey(hexKey: string): { col: number; row: number } | null {
-  const [col, row] = hexKey.split(",").map(Number);
-  if (!Number.isFinite(col) || !Number.isFinite(row)) {
-    return null;
-  }
-  return { col, row };
 }
 
 function compareTerrainPageKeys(leftKey: string, rightKey: string): number {

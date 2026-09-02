@@ -1,31 +1,27 @@
 import { describe, expect, it } from "vitest";
 
-import { CameraView } from "./camera-view";
 import {
+  WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
-  resolveWorldmapCameraViewProfile,
-  resolveWorldmapCameraViewProfiles,
+  resolveWorldmapCameraPitchDegrees,
 } from "./worldmap-camera-view-profile";
 
-describe("resolveWorldmapCameraViewProfiles", () => {
-  it("uses a monotonic top-down camera angle curve as zoom bands move farther away", () => {
-    const profiles = resolveWorldmapCameraViewProfiles();
-
-    expect(profiles[CameraView.Close].angleRadians).toBeLessThan(profiles[CameraView.Medium].angleRadians);
-    expect(profiles[CameraView.Medium].angleRadians).toBeLessThan(profiles[CameraView.Far].angleRadians);
+describe("worldmap camera profile", () => {
+  it("tilts the camera monotonically toward top-down as the zoom distance grows", () => {
+    const distances = [10, 15, 20, 30, 45, 60, 80];
+    const pitches = distances.map(resolveWorldmapCameraPitchDegrees);
+    pitches.slice(1).forEach((pitch, index) => expect(pitch).toBeGreaterThan(pitches[index]));
   });
 
-  it("keeps the existing coarse distance bands while making far view the most tactical angle", () => {
-    const closeProfile = resolveWorldmapCameraViewProfile(CameraView.Close);
-    const mediumProfile = resolveWorldmapCameraViewProfile(CameraView.Medium);
-    const farProfile = resolveWorldmapCameraViewProfile(CameraView.Far);
+  it("keeps the former close, medium and far looks at their distances", () => {
+    expect(resolveWorldmapCameraPitchDegrees(10)).toBe(42);
+    expect(resolveWorldmapCameraPitchDegrees(20)).toBe(52);
+    expect(resolveWorldmapCameraPitchDegrees(45)).toBe(58);
+  });
 
-    expect(closeProfile.distance).toBe(10);
-    expect(mediumProfile.distance).toBe(20);
-    expect(farProfile.distance).toBe(40);
-    expect(closeProfile.angleDegrees).toBe(42);
-    expect(mediumProfile.angleDegrees).toBe(52);
-    expect(farProfile.angleDegrees).toBe(58);
+  it("clamps the pitch at both ends of the zoom range", () => {
+    expect(resolveWorldmapCameraPitchDegrees(WORLDMAP_CAMERA_ZOOM.minDistance - 5)).toBe(42);
+    expect(resolveWorldmapCameraPitchDegrees(WORLDMAP_CAMERA_ZOOM.maxDistance + 50)).toBe(66);
   });
 
   it("uses a narrower worldmap field of view to reduce perspective skew", () => {

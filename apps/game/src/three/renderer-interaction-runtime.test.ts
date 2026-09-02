@@ -1,12 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { controlsInstances, currentZoomSetting, subscribeMock, unsubscribeMock, zoomSubscriber } = vi.hoisted(() => ({
+const { controlsInstances } = vi.hoisted(() => ({
   controlsInstances: [] as MockMapControls[],
-  currentZoomSetting: { value: true },
-  subscribeMock: vi.fn(),
-  unsubscribeMock: vi.fn(),
-  zoomSubscriber: { current: undefined as ((enableMapZoom: boolean) => void) | undefined },
 }));
 
 class MockMapControls {
@@ -66,33 +62,15 @@ vi.mock("@/three/constants", () => ({
   },
 }));
 
-vi.mock("@/hooks/store/use-ui-store", () => ({
-  useUIStore: {
-    getState: () => ({
-      enableMapZoom: currentZoomSetting.value,
-    }),
-    subscribe: subscribeMock,
-  },
-}));
-
 vi.mock("three/addons/controls/MapControls.js", () => ({
   MapControls: MockMapControls,
 }));
 
 const { createRendererInteractionRuntime } = await import("./renderer-interaction-runtime");
-const { SceneName } = await import("./types");
 
 describe("createRendererInteractionRuntime", () => {
   beforeEach(() => {
     controlsInstances.length = 0;
-    currentZoomSetting.value = true;
-    unsubscribeMock.mockReset();
-    subscribeMock.mockReset();
-    zoomSubscriber.current = undefined;
-    subscribeMock.mockImplementation((_selector, listener) => {
-      zoomSubscriber.current = listener;
-      return unsubscribeMock;
-    });
   });
 
   it("configures shared camera, picking primitives, and control change wiring", () => {
@@ -101,7 +79,6 @@ describe("createRendererInteractionRuntime", () => {
     const runtime = createRendererInteractionRuntime({
       onControlsChange,
       onInteraction,
-      resolveCurrentSceneName: () => SceneName.FastTravel,
     });
 
     const surface = document.createElement("canvas");
@@ -125,38 +102,12 @@ describe("createRendererInteractionRuntime", () => {
     expect(onInteraction).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves the current world map zoom lockout when the zoom preference changes", () => {
-    let currentSceneName = SceneName.WorldMap;
-    const runtime = createRendererInteractionRuntime({
-      onControlsChange: vi.fn(),
-      onInteraction: vi.fn(),
-      resolveCurrentSceneName: () => currentSceneName,
-    });
-
-    runtime.attachSurface(document.createElement("canvas"));
-    const controls = controlsInstances[0];
-
-    expect(controls?.enableZoom).toBe(true);
-
-    zoomSubscriber.current?.(true);
-    expect(controls?.enableZoom).toBe(false);
-
-    currentSceneName = SceneName.Hexception;
-    zoomSubscriber.current?.(true);
-    expect(controls?.enableZoom).toBe(true);
-
-    zoomSubscriber.current?.(false);
-    expect(controls?.enableZoom).toBe(false);
-    expect(controls?.enableDamping).toBe(true);
-  });
-
-  it("removes document listeners, unsubscribes zoom sync, and disposes controls once", () => {
+  it("removes document listeners and disposes controls once", () => {
     const addDocumentListenerSpy = vi.spyOn(document, "addEventListener");
     const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
     const runtime = createRendererInteractionRuntime({
       onControlsChange: vi.fn(),
       onInteraction: vi.fn(),
-      resolveCurrentSceneName: () => SceneName.FastTravel,
     });
 
     runtime.attachSurface(document.createElement("canvas"));
@@ -178,7 +129,6 @@ describe("createRendererInteractionRuntime", () => {
     runtime.dispose();
     runtime.dispose();
 
-    expect(unsubscribeMock).toHaveBeenCalledTimes(1);
     expect(controls?.dispose).toHaveBeenCalledTimes(1);
     expect(removeDocumentListenerSpy).toHaveBeenCalledWith("focus", focusHandler, true);
     expect(removeDocumentListenerSpy).toHaveBeenCalledWith("blur", blurHandler, true);

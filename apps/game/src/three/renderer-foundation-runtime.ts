@@ -1,6 +1,5 @@
 import { createRendererInteractionRuntime, type RendererInteractionRuntime } from "./renderer-interaction-runtime";
 import { createRendererLabelRuntime, type RendererLabelRuntime } from "./renderer-label-runtime";
-import type { SceneName } from "./types";
 
 export interface RendererFoundationRuntime {
   camera: RendererInteractionRuntime["camera"];
@@ -14,7 +13,6 @@ interface CreateRendererFoundationRuntimeInput {
   isMobileDevice: boolean;
   onControlsChange: () => void;
   onInteraction: () => void;
-  resolveCurrentSceneName: () => SceneName | undefined;
   warn: (message: string, error: unknown) => void;
 }
 
@@ -24,7 +22,6 @@ export function createRendererFoundationRuntime(
   const interactionRuntime = createRendererInteractionRuntime({
     onControlsChange: input.onControlsChange,
     onInteraction: input.onInteraction,
-    resolveCurrentSceneName: input.resolveCurrentSceneName,
   });
   const labelRuntime = createRendererLabelRuntime({
     isMobileDevice: input.isMobileDevice,

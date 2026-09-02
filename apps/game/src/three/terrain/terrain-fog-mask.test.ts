@@ -4,7 +4,9 @@ import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordin
 import {
   applyTerrainFogReveals,
   buildTerrainFogMask,
+  resolveTerrainFogInfluence,
   TERRAIN_FOG_MASK_TEXELS_PER_HEX_WIDTH,
+  writeTerrainFogMaskRegion,
   type TerrainFogMask,
 } from "./terrain-fog-mask";
 import type { TerrainShroudInstance } from "./terrain-types";
@@ -49,6 +51,22 @@ describe("terrain fog mask", () => {
     expect(sampleData(mid, mask, 0, 0)).toBeLessThan(baseCenter);
     expect(sampleData(complete, mask, 0, 0)).toBe(0);
     expect(sampleMask(mask, 0, 0)).toBe(baseCenter);
+  });
+
+  it("rewrites a region from every cell that reaches it exactly as a whole-window build would", () => {
+    const cells = Array.from({ length: 36 }, (_, index) => hexFogCell(index % 6, Math.floor(index / 6), false));
+    const mask = buildTerrainFogMask(cells)!;
+    const explored = hexFogCell(2, 2, false);
+    const frontier = hexFogCell(1, 2, true, [1, 0]);
+    const changed = cells
+      .filter((cell) => cell !== cells[2 * 6 + 2])
+      .map((cell) => (cell.col === 1 && cell.row === 2 ? frontier : cell));
+
+    const texels = writeTerrainFogMaskRegion(mask, changed, resolveTerrainFogInfluence([explored, frontier])!);
+
+    expect(texels).toBeGreaterThan(0);
+    expect(texels).toBeLessThan(mask.width * mask.height);
+    expect(mask).toEqual(buildTerrainFogMask(changed));
   });
 
   it("clamps adaptive dimensions to the bounded texture contract", () => {
@@ -139,6 +157,16 @@ function toWindowFogCell(cell: WindowFogCell): TerrainShroudInstance {
 
 function cellKey(cell: { col: number; row: number }): string {
   return `${cell.col}:${cell.row}`;
+}
+
+function hexFogCell(
+  col: number,
+  row: number,
+  frontier: boolean,
+  frontierDirection: readonly [number, number] = [0, 0],
+): TerrainShroudInstance {
+  const center = terrainHexToWorld(col, row);
+  return { ...fogCell(center.x, center.z, frontier, frontierDirection), col, row };
 }
 
 function fogCell(

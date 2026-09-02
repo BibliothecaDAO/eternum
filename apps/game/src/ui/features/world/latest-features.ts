@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-02",
+    title: "Continuous Map Zoom",
+    description:
+      "The world map and local view now zoom smoothly with the mouse wheel to any height. The Close, Medium and Far presets and the Enable Map Zoom setting are gone, and zooming all the way out shows the whole explored world as a biome map with no terrain edge.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-02",
     title: "Licensed Icy Sky Dragon",
     description:
       "Replaced the temporary Sky Dragon test model with a licensed icy dragon, preserving procedural walking, flight, reactions, and targeted fire breath with clearer textures and a production-safe source.",

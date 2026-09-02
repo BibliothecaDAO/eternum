@@ -14,7 +14,6 @@ type GuiFolderLike = {
 };
 
 interface SetupRendererDevGuiInput {
-  changeCameraView: (view: 1 | 2 | 3) => void;
   contactShadowOpacity: number;
   createFolder: (name: string) => GuiFolderLike;
   fastTravelEnabled: boolean;
@@ -61,11 +60,6 @@ function setupCameraMovementFolder(input: SetupRendererDevGuiInput): void {
     "move",
   );
 
-  const cameraViewParams = { view: 2 };
-  folder.add(cameraViewParams, "view", [1, 2, 3]).name("Camera View");
-  folder
-    .add({ changeView: () => input.changeCameraView(cameraViewParams.view as 1 | 2 | 3) }, "changeView")
-    .name("Change View");
   folder.close();
 }
 

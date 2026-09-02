@@ -65,7 +65,6 @@ describe("worldmap store bridge", () => {
       onIncomingTroopArrivalsChanged: vi.fn(),
       onEntityActionsChanged: vi.fn(),
       onSelectedHexChanged: vi.fn(),
-      onMapZoomPolicyChanged: vi.fn(),
     };
 
     const subscriptions = registerWorldmapStoreBridge({
@@ -73,22 +72,20 @@ describe("worldmap store bridge", () => {
       ...callbacks,
     });
 
-    expect(subscriptions).toHaveLength(6);
-    expect(listeners).toHaveLength(6);
+    expect(subscriptions).toHaveLength(5);
+    expect(listeners).toHaveLength(5);
 
     listeners[0].listener([{ entityId: 7 }] as never, [] as never);
     listeners[1].listener([{ entityId: 11 }] as never, [] as never);
     listeners[2].listener({ 99: [] } as never, {} as never);
     listeners[3].listener({ selectedEntityId: 42 } as never, { selectedEntityId: null } as never);
     listeners[4].listener({ col: 1, row: 2 } as never, null as never);
-    listeners[5].listener(true as never, false as never);
 
     expect(callbacks.onSelectableArmiesChanged).toHaveBeenCalledWith([{ entityId: 7 }], []);
     expect(callbacks.onPlayerStructuresChanged).toHaveBeenCalledWith([{ entityId: 11 }], []);
     expect(callbacks.onIncomingTroopArrivalsChanged).toHaveBeenCalledWith({ 99: [] }, {});
     expect(callbacks.onEntityActionsChanged).toHaveBeenCalledWith({ selectedEntityId: 42 }, { selectedEntityId: null });
     expect(callbacks.onSelectedHexChanged).toHaveBeenCalledWith({ col: 1, row: 2 }, null);
-    expect(callbacks.onMapZoomPolicyChanged).toHaveBeenCalledTimes(1);
   });
 
   it("continues disposing subscriptions after one unsubscribe throws", () => {
@@ -126,7 +123,6 @@ describe("worldmap store bridge", () => {
       hasMissingActionPathOwnership: () => false,
       clearEntitySelection: vi.fn(),
       onSelectedHexChanged: vi.fn(),
-      onMapZoomPolicyChanged: vi.fn(),
       onSynced: vi.fn(),
     });
 
@@ -146,7 +142,6 @@ describe("worldmap store bridge", () => {
     const { store } = createWorldmapStoreApi(state);
     const clearEntitySelection = vi.fn();
     const onSelectedHexChanged = vi.fn();
-    const onMapZoomPolicyChanged = vi.fn();
     const onSynced = vi.fn();
 
     syncWorldmapStoreBridgeState({
@@ -160,13 +155,11 @@ describe("worldmap store bridge", () => {
       hasMissingActionPathOwnership: () => true,
       clearEntitySelection,
       onSelectedHexChanged,
-      onMapZoomPolicyChanged,
       onSynced,
     });
 
     expect(clearEntitySelection).toHaveBeenCalledTimes(1);
     expect(onSelectedHexChanged).not.toHaveBeenCalled();
-    expect(onMapZoomPolicyChanged).not.toHaveBeenCalled();
     expect(onSynced).not.toHaveBeenCalled();
   });
 
@@ -190,7 +183,6 @@ describe("worldmap store bridge", () => {
       onEntityActionStateSynced: vi.fn(),
       clearEntitySelection: vi.fn(),
       onSelectedHexChanged: vi.fn(),
-      onMapZoomPolicyChanged: vi.fn(),
       onSynced: vi.fn(),
     };
 
@@ -207,7 +199,6 @@ describe("worldmap store bridge", () => {
     expect(callbacks.onIncomingTroopArrivalsChanged).toHaveBeenCalledWith({ 3: [{ count: 4 }] });
     expect(callbacks.onEntityActionStateSynced).toHaveBeenCalledWith(state.entityActions);
     expect(callbacks.onSelectedHexChanged).toHaveBeenCalledWith({ col: 5, row: 6 });
-    expect(callbacks.onMapZoomPolicyChanged).toHaveBeenCalledTimes(1);
     expect(callbacks.onSynced).toHaveBeenCalledWith(state);
     expect(callbacks.clearEntitySelection).toHaveBeenCalledTimes(1);
   });

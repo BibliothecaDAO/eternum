@@ -431,6 +431,80 @@ reviewer measured independently last round. 19.7 → 3.38 commits/s under churn 
 L5 items 0–3 + continuous zoom, far-LOD first. The parked biome-material polish (owner's separate track) must not ride
 along — it lands after L5 to avoid worldmap collisions.
 
+Recorded, L5 items 0–3 + continuous zoom (2026-09-02, branch `client-scale-96p`, one commit). Item 0: one whole-world
+biome surface (`apps/game/src/three/terrain/world-biome-surface.ts`) — an instanced flat hex per explored tile painted
+from the projection's tile index (seeded from `getTiles()` at bind, then one `setTile` per tile change and one
+`commit()` per ingest batch, `addUpdateRange` on the touched slot span) plus one shroud plane in the fog's deep colour
+that grows with the explored extents; two draw calls, ≤ 65,536 tiles (loud overflow). It replaces the shared navy ground
+plane on the worldmap (`shouldCreateGroundMesh` → false; that plane at y = −0.05 hid everything below it). The far band
+(> 45) hides the procedural terrain group and shows the surface alone; nearer bands composite the pages over it, so
+there is no window edge at any zoom. Continuous zoom: the wheel feeds `continuous_delta` intents to the existing
+coordinator, the camera sits on the worldmap's fixed azimuth at the eased distance with a pitch keyframed by distance
+(42° at 10 → 52° at 20 → 58° at 45 → 66° at 80, `worldmap-camera-view-profile.ts`), the settled distance persists per
+scene (`use-camera-zoom-store` v2, a slider in Settings), the local view's `enableZoom` is always on with its own 52°
+pitch; camera far plane and scene fog now follow the distance instead of a 40-unit cap. Deleted: the Close/Medium/Far
+presets and their profiles, the stepped wheel controller and anchor solver, the 1/2/3 shortcuts, the "Enable Map Zoom"
+setting and every `enableMapZoom` reader (renderer, hexception, store bridge), `changeCameraView` across the base scene,
+dev GUI and control bridge, the `resolveCurrentSceneName` pass-through, and the fixed-zoom PTD doc. Bands (`CameraView`)
+survive only as content selectors: close < 15, far > 45. Item 1: composite cells carry `col`/`row` and are keyed by
+`hexCellKey(col,row)` (`terrain/hex-cell-key.ts`; every `hexKey.split` and the string sets are gone); page applies
+mutate the presentation state only and `requestVisualTerrainCompositeCommit()` composes and presents once per batch in
+the work queue's critical lane (`terrain:composite`), so an exact chunk's pages, a shell's pages or a burst of live-tile
+rebuilds cost one composite; `TerrainPropPools` writes each page into a fixed per-archetype slot (12 slots, capacity
+1.5× the measured per-page maximum per archetype, loud overflow) with `addUpdateRange` on the slot's sub-range, and
+`TerrainFogField` keeps per-page shroud lists and rewrites only the changed page's mask sub-rect; `present()` diffs
+pages by key + fingerprint. The whole-window `update(all)` paths, the never-read `visibleTerrainMembership` (module,
+ownership arrays, two tests of a dead write) and the `composeWorldmapVisualTerrainPresentations` alias are deleted. Item
+2: `StructureInfo` is cached per entity and invalidated by the projection change set and the existing
+`Structure`/`StructureBuildings`/`Hyperstructure`/ `AddressName` subscriptions; the visible pass keeps a
+`Map<ID, renderable>` for the current chunk window, applies each change batch to it and commits one diff — a bounds
+query only runs on a chunk change (`getVisibleStructuresForChunk` deleted). Item 3: army and structure batches call
+`reconcileHoverLabels` only when a change's previous or current hex is the hovered hex; pointer moves keep the raycast.
+Net: 55 tracked files +2,015/−1,459 (production +1,198/−1,020, tests +817/−439) plus 338 new production lines in three
+files and 487 new test lines; eight files deleted. Honest cost: the prop/fog delta writes grew those three modules by
+~380 lines (slot allocator, region writer, delta bookkeeping) and the structure manager by 116; the deletions elsewhere
+carry the net.
+
+L5 gate record (2026-09-02, game 16 `lab-mtjsp8bk` after its workload ended: 96 realms, 4,226 explored tiles, 310
+visible structures, spectating from the dev server in headless software WebGL2). No terrain edge at any zoom:
+screenshots at distance 80 (whole explored world as biome hexes, shroud beyond, structures on top), 36 (pages composited
+over the surface, flat hexes visible past the window) and 10.8 (close), captured with the render loop stalled
+(`scratchpad/screens/far-lod-d80-noground.jpeg`, `far-lod-medium36.jpeg`, `far-lod-close11.jpeg`; the owner reproduces
+with `?dev=1` and `getWorldBiomeSurface()`). Surface: 4,226 instances uploaded in one commit (`worldBiomeSurfaceCommits`
+1, `worldBiomeSurfaceInstancesUploaded` 4,226, gauge `worldBiomeSurfaceInstances`), 2 draw calls, 16.9 k triangles.
+Draws and triangles from the scene graph (visible meshes × instances, before frustum culling): far band = terrain group
+hidden, terrain draws 2 / 0.017 M triangles (bar < 1.5 M passes); close band = terrain group 38 draws + surface 2 = 40
+(bar ≤ 40), 18.1 M submitted terrain triangles — the twelve-page composite's whole-window prop pools (15 archetypes,
+e.g. broadleaf 1,887 instances, count 2,100 with slot padding), which is the pre-existing window cost, not this phase's;
+the ≤ 3 M close bar belongs to the terrain benchmark scenario (see the benchmark line). Continuous zoom: four wheel
+notches 80 → 35.95 and six more → 10.83, transitions started/completed 2/2, the settled distance written to the store
+once per transition; the ecology/page composite recomposed 5 times across the two zooms (`terrainCompositeRebuilt`).
+Structure cache: at boot 1,974 hits / 367 misses over 3 bounds queries; seven minutes later 5,074 hits / 367 misses — no
+structure was rebuilt without a row change — and `visibleStructureChangeSetUpdates` stayed 0 because the finished game
+sent no batches. Hover: no batch arrived, so the gate is by construction (`reconcileHoverLabelsForProjectionChanges`).
+Explored-tile churn: the whole-window paths no longer exist; the counters to watch on a live game are
+`getTerrainUploadMetrics()` → `propPoolPageWrites`, `propPoolInstancesUploaded`, `propPoolFullRewrites` (≤ 1, the
+catalog arriving late), `propPoolPaddingInstances`, `fogMaskPageWrites`, `fogMaskTexelsWritten`, `fogMaskFullRebuilds`
+(flat except on window moves), beside `worldBiomeSurfaceCommits`; **the live churn numbers are owed to the next running
+game** (game 16 had ended). At boot with four pages present the counters read `propPoolPageWrites` 4,
+`propPoolInstancesUploaded` 725, `propPoolFullRewrites` 0, `fogMaskFullRebuilds` 1, `fogMaskPageWrites` 0 — and
+`propPoolPaddingInstances` 11,139: the fixed per-page slots leave zero-scaled gaps inside each pool's drawn prefix, and
+those gaps are still vertex-shaded (about 15× the real instances at boot, shrinking as the twelve slots fill). That is
+the named cost of the sub-range design; if it shows on the owner's p95, the follow-ups are a tighter slot capacity
+(1.25× the measured page maximum) or prop pools as `BatchedMesh` with per-instance visibility so gaps cost nothing.
+`frameBudgetLongTasks`: 1 at boot, 3 after the two zooms; **the +0-over-60-s hold is not demonstrable in this lane** —
+at close zoom the software rasteriser takes 23 s per frame on the 18 M submitted triangles, the chunk-transition
+watchdog (20 s) then forces a recovery refresh every ~115 s, and each recovery re-applies the exact pages (+1 long task
+per cycle: 5 at 459 s, 6 at 649 s); on a GPU the same frame is milliseconds. Tests: terrain 36 files / 175 pass (incl.
+the new pool-slot, fog sub-rect, surface and cell-key tests), scenes 193/194 (the known `worldmap-initial-refresh`
+drift), structure manager 45/45, zoom modules, runtimes, stores and UI 12 files / 50 pass; `apps/game` typecheck clean;
+knip adds nothing new (the two `dist` d.ts files pre-date the branch). Owed to the owner's machine: steady p95 ≤ 16.7
+ms, the 60 s long-task hold under churn, and `benchmark:terrain:quick` — it drives `/debug/procedural-terrain-benchmark`
+through `npx agent-browser` against an https dev server; run here against the session's server on 5174 it spent the
+whole 10-minute budget installing and starting the browser and was killed without a result (exit 143), so its
+draws/triangle bars are unverified in this lane. The pure terrain suite that the benchmark's evaluator shares its
+thresholds with is green.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

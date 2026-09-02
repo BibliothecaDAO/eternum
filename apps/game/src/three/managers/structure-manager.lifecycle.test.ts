@@ -293,6 +293,8 @@ function createStructureManagerSubject() {
   subject.battleDirectionsByStructure = new Map([[1, {}]]);
   subject.structuresWithActiveTimedLabels = new Set([1]);
   subject.previousVisibleIds = new Set([1]);
+  subject.structureInfoCache = new Map([[1, { entityId: 1 }]]);
+  subject.visibleStructureWindow = { chunkKey: "0,0", bounds: {}, structures: new Map([[1, {}]]) };
   subject.pointsRenderers = {
     a: { dispose: disposePointsA },
     b: { dispose: disposePointsB },
@@ -350,6 +352,10 @@ function createVisibleStructurePassSubject() {
   subject.structureAttachmentSignatures = new Map();
   subject.entityIdLabels = new Map();
   subject.previousVisibleIds = new Set();
+  subject.visibleStructureWindow = undefined;
+  subject.structureInfoCache = new Map();
+  subject.metrics = createZeroMetrics();
+  subject.updateTimedLabelTracking = vi.fn();
   subject.finalizeVisibleStructurePass = vi.fn();
   subject.syncVisibleStructurePresentation = vi.fn();
   subject.resolveVisibleStructureRotationY = vi.fn(() => 0);
@@ -361,13 +367,27 @@ function createVisibleStructurePassSubject() {
   return { subject, visibleStructurePassFence };
 }
 
+function createZeroMetrics() {
+  return {
+    structureInfoCacheHits: 0,
+    structureInfoCacheMisses: 0,
+    visibleStructureBoundsQueries: 0,
+    visibleStructureChangeSetUpdates: 0,
+  };
+}
+
+function createStructureRenderable(entityId: number, hexCoords: { col: number; row: number }) {
+  return { kind: "structure", spatialId: `entity:${entityId}`, entityId, reserved: false, hexCoords, occupierType: 1 };
+}
+
 function createStructureVisibilitySubject() {
   const subject = Object.create(StructureManager.prototype) as any;
 
   subject.currentChunk = "0,0";
   subject.renderChunkSize = { width: 48, height: 48 };
   subject.chunkStride = 24;
-  subject.resolveStructureInfo = (renderable: unknown) => renderable;
+  subject.visibleStructureWindow = undefined;
+  subject.metrics = createZeroMetrics();
 
   return subject;
 }
@@ -415,11 +435,232 @@ describe("StructureManager structure visibility", () => {
       ),
     };
 
-    const visibleStructures = subject.getVisibleStructuresForChunk(0, 0);
+    const structureWindow = subject.ensureVisibleStructureWindow("0,0");
 
-    expect(visibleStructures.map((structure: { entityId: number }) => structure.entityId).toSorted()).toEqual([
-      196, 198,
+    expect([...structureWindow.structures.keys()].toSorted()).toEqual([196, 198]);
+    expect(subject.metrics.visibleStructureBoundsQueries).toBe(1);
+  });
+});
+
+describe("StructureManager structure info cache", () => {
+  function createCacheSubject() {
+    const subject = Object.create(StructureManager.prototype) as any;
+    subject.structureInfoCache = new Map();
+    subject.metrics = createZeroMetrics();
+    subject.updateTimedLabelTracking = vi.fn();
+    subject.buildStructureInfo = vi.fn((renderable: { entityId: number }) => ({
+      entityId: renderable.entityId,
+      battleCooldownEnd: 0,
+    }));
+    return subject;
+  }
+
+  it("serves repeated resolves from the cache and counts hits and misses", () => {
+    const subject = createCacheSubject();
+    const renderable = createStructureRenderable(7, { col: 0, row: 0 });
+
+    const first = subject.resolveStructureInfo(renderable);
+    const second = subject.resolveStructureInfo(renderable);
+
+    expect(second).toBe(first);
+    expect(subject.buildStructureInfo).toHaveBeenCalledTimes(1);
+    expect(subject.updateTimedLabelTracking).toHaveBeenCalledWith(7, 0, undefined);
+    expect(subject.getStructureManagerMetrics()).toMatchObject({
+      structureInfoCacheHits: 1,
+      structureInfoCacheMisses: 1,
+    });
+  });
+
+  it("rebuilds a record after its component row changes", () => {
+    const subject = createCacheSubject();
+    const callbacks: Record<string, (update: { value: unknown[] }) => void> = {};
+    const component = (name: string) => ({
+      update$: {
+        subscribe: (callback: (update: { value: unknown[] }) => void) => {
+          callbacks[name] = callback;
+          return { unsubscribe: vi.fn() };
+        },
+      },
+    });
+
+    subject.components = {
+      Structure: component("structure"),
+      StructureBuildings: component("buildings"),
+      Hyperstructure: component("hyperstructure"),
+      AddressName: component("addressName"),
+    };
+    subject.recsUnsubscribes = [];
+    subject.entityIdLabels = new Map();
+    subject.visibleStructureWindow = undefined;
+    subject.worldSpatialProjection = {
+      getStructure: vi.fn((entityId: number) => createStructureRenderable(entityId, { col: 0, row: 0 })),
+    };
+    subject.resolveGuardArmies = vi.fn(() => []);
+    subject.playStructureGuardDifferenceFx = vi.fn();
+    subject.refreshStructureLabelIfTracked = vi.fn();
+    subject.requestVisibleStructuresRefresh = vi.fn();
+    subject.subscribeToStructurePresentationComponents();
+
+    const stale = { entityId: 7, stale: true };
+    subject.structureInfoCache.set(7, stale);
+    callbacks.buildings({ value: [{ entity_id: 7 }, undefined] });
+    expect(subject.structureInfoCache.get(7)).not.toBe(stale);
+    expect(subject.buildStructureInfo).toHaveBeenCalledTimes(1);
+
+    subject.structureInfoCache.set(7, stale);
+    callbacks.hyperstructure({ value: [undefined, { hyperstructure_id: 7 }] });
+    expect(subject.structureInfoCache.get(7)).not.toBe(stale);
+
+    subject.structureInfoCache.set(7, stale);
+    callbacks.structure({ value: [{ entity_id: 7 }, undefined] });
+    expect(subject.structureInfoCache.get(7)).not.toBe(stale);
+
+    subject.structureInfoCache.set(8, stale);
+    callbacks.addressName({ value: [{ address: 1n, name: 2n }, undefined] });
+    expect(subject.structureInfoCache.size).toBe(0);
+    expect(subject.requestVisibleStructuresRefresh).not.toHaveBeenCalled();
+  });
+
+  it("drops the cached record when a battle direction changes", () => {
+    const subject = createCacheSubject();
+    subject.battleDirectionsByStructure = new Map();
+    subject.worldSpatialProjection = {
+      getStructure: vi.fn((entityId: number) => createStructureRenderable(entityId, { col: 0, row: 0 })),
+    };
+    subject.refreshStructureLabelIfTracked = vi.fn();
+    subject.structureInfoCache.set(7, { entityId: 7, stale: true });
+
+    subject.updateBattleDirection(7, 90, "attacker");
+
+    expect(subject.buildStructureInfo).toHaveBeenCalledTimes(1);
+    expect(subject.structureInfoCache.get(7)).toMatchObject({ entityId: 7 });
+    expect(subject.structureInfoCache.get(7).stale).toBeUndefined();
+  });
+});
+
+describe("StructureManager change-set driven visible pass", () => {
+  function createWindowedPassSubject() {
+    const { subject } = createVisibleStructurePassSubject();
+    const model = {};
+    const renderables = [1, 2, 3].map((entityId) => createStructureRenderable(entityId, { col: entityId, row: 0 }));
+
+    subject.visibleStructureWindow = {
+      chunkKey: subject.currentChunk,
+      bounds: { minCol: -10, maxCol: 10, minRow: -10, maxRow: 10 },
+      structures: new Map(renderables.map((renderable) => [renderable.entityId, renderable])),
+    };
+    renderables.forEach((renderable) => {
+      subject.structureInfoCache.set(renderable.entityId, {
+        entityId: renderable.entityId,
+        hexCoords: renderable.hexCoords,
+        structureType: "Village",
+      });
+    });
+    subject.buildStructureInfo = vi.fn((renderable: { entityId: number; hexCoords: unknown }) => ({
+      entityId: renderable.entityId,
+      hexCoords: renderable.hexCoords,
+      structureType: "Village",
+      rebuilt: true,
+    }));
+    subject.worldSpatialProjection = { getStructuresInBounds: vi.fn(() => []) };
+    subject.previousVisibleIds = new Set([1, 2, 3]);
+    subject.getModelForStructure = vi.fn(() => model);
+    subject.preloadStructureModels = vi.fn(async () => undefined);
+    subject.commitVisibleStructureDiff = vi.fn(() => true);
+    subject.removeStructurePresentation = vi.fn();
+    initializePendingVisibleStructureRefresh(subject);
+
+    return { subject, renderables };
+  }
+
+  it("resolves only the changed entity and runs no bounds query for a batch touching one of N", async () => {
+    const { subject, renderables } = createWindowedPassSubject();
+    const moved = { ...renderables[1], occupierType: 2 };
+
+    subject.handleStructureProjectionChanges([
+      { kind: "structure", spatialId: "entity:2", previous: renderables[1], current: moved },
     ]);
+    await vi.waitFor(() => expect(subject.commitVisibleStructureDiff).toHaveBeenCalledTimes(1));
+
+    expect(subject.buildStructureInfo).toHaveBeenCalledTimes(1);
+    expect(subject.buildStructureInfo).toHaveBeenCalledWith(moved);
+    expect(subject.worldSpatialProjection.getStructuresInBounds).not.toHaveBeenCalled();
+    expect(subject.getStructureManagerMetrics()).toEqual({
+      structureInfoCacheHits: 2,
+      structureInfoCacheMisses: 1,
+      visibleStructureBoundsQueries: 0,
+      visibleStructureChangeSetUpdates: 1,
+    });
+
+    const [, diff] = subject.commitVisibleStructureDiff.mock.calls[0];
+    expect(diff.entering).toEqual([expect.objectContaining({ entityId: 2, rebuilt: true })]);
+    expect(diff.leaving).toEqual([2]);
+    expect(diff.staying.toSorted()).toEqual([1, 3]);
+    expect(diff.visibleIds.toSorted()).toEqual([1, 2, 3]);
+  });
+
+  it("removes a structure that leaves the window and skips the pass for changes outside it", async () => {
+    const { subject, renderables } = createWindowedPassSubject();
+
+    subject.handleStructureProjectionChanges([
+      {
+        kind: "structure",
+        spatialId: "entity:9",
+        previous: undefined,
+        current: createStructureRenderable(9, { col: 500, row: 500 }),
+      },
+    ]);
+    await Promise.resolve();
+    expect(subject.commitVisibleStructureDiff).not.toHaveBeenCalled();
+    expect(subject.visibleStructureWindow.structures.has(9)).toBe(false);
+
+    subject.handleStructureProjectionChanges([
+      { kind: "structure", spatialId: "entity:2", previous: renderables[1], current: undefined },
+    ]);
+    await vi.waitFor(() => expect(subject.commitVisibleStructureDiff).toHaveBeenCalledTimes(1));
+
+    expect(subject.removeStructurePresentation).toHaveBeenCalledWith(2);
+    expect(subject.visibleStructureWindow.structures.has(2)).toBe(false);
+    expect(subject.buildStructureInfo).not.toHaveBeenCalled();
+    const [, diff] = subject.commitVisibleStructureDiff.mock.calls[0];
+    expect(diff.leaving).toEqual([2]);
+    expect(diff.visibleIds.toSorted()).toEqual([1, 3]);
+    expect(subject.getStructureManagerMetrics().visibleStructureChangeSetUpdates).toBe(2);
+  });
+
+  it("runs exactly one bounds query per chunk change", async () => {
+    const { subject } = createVisibleStructurePassSubject();
+    const model = {};
+
+    subject.renderChunkSize = { width: 48, height: 48 };
+    subject.chunkStride = 24;
+    subject.worldSpatialProjection = {
+      getStructuresInBounds: vi.fn(() => [createStructureRenderable(1, { col: 0, row: 0 })]),
+    };
+    subject.buildStructureInfo = vi.fn((renderable: { entityId: number; hexCoords: unknown }) => ({
+      entityId: renderable.entityId,
+      hexCoords: renderable.hexCoords,
+      structureType: "Village",
+    }));
+    subject.getModelForStructure = vi.fn(() => model);
+    subject.preloadStructureModels = vi.fn(async () => undefined);
+    subject.commitVisibleStructureDiff = vi.fn(() => true);
+
+    await subject.performVisibleStructuresUpdate();
+    await subject.performVisibleStructuresUpdate({ refreshEntityIds: [1] });
+    expect(subject.worldSpatialProjection.getStructuresInBounds).toHaveBeenCalledTimes(1);
+    expect(subject.visibleStructureWindow.chunkKey).toBe("24,24");
+
+    subject.currentChunk = "48,48";
+    await subject.performVisibleStructuresUpdate();
+
+    expect(subject.worldSpatialProjection.getStructuresInBounds).toHaveBeenCalledTimes(2);
+    expect(subject.visibleStructureWindow.chunkKey).toBe("48,48");
+    expect(subject.getStructureManagerMetrics()).toMatchObject({
+      visibleStructureBoundsQueries: 2,
+      structureInfoCacheMisses: 1,
+      structureInfoCacheHits: 2,
+    });
   });
 });
 
@@ -480,6 +721,8 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.subject.battleDirectionsByStructure.size).toBe(0);
     expect(fixture.subject.structuresWithActiveTimedLabels.size).toBe(0);
     expect(fixture.subject.previousVisibleIds.size).toBe(0);
+    expect(fixture.subject.structureInfoCache.size).toBe(0);
+    expect(fixture.subject.visibleStructureWindow).toBeUndefined();
   });
 
   it("is idempotent and skips duplicate cleanup on repeated destroy", () => {
@@ -518,7 +761,7 @@ describe("StructureManager destroy lifecycle", () => {
     subject.activeStructureAttachmentEntities = new Set();
     subject.entityIdLabels = new Map();
     subject.previousVisibleIds = new Set();
-    subject.getVisibleStructuresForChunk = vi.fn(() => [
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => [
       {
         entityId: 1,
         hexCoords: { col: 0, row: 0 },
@@ -555,7 +798,7 @@ describe("StructureManager destroy lifecycle", () => {
     let resolvePreload: (() => void) | undefined;
 
     subject.structureModels.set(structureType, [{ setCount }]);
-    subject.getVisibleStructuresForChunk = vi.fn(() => [
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => [
       {
         entityId: 1,
         hexCoords: { col: 0, row: 0 },
@@ -599,7 +842,7 @@ describe("StructureManager destroy lifecycle", () => {
     const model = {};
     subject.structureModels.set(structureType, [model]);
     subject.getModelForStructure = vi.fn(() => model);
-    subject.getVisibleStructuresForChunk = vi.fn(() => visibleStructures);
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => visibleStructures);
     subject.preloadStructureModels = vi
       .fn()
       .mockImplementationOnce(
@@ -644,7 +887,7 @@ describe("StructureManager destroy lifecycle", () => {
     let resolvePreload: (() => void) | undefined;
 
     subject.latestTransitionToken = 4;
-    subject.getVisibleStructuresForChunk = vi.fn(() => []);
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => []);
     subject.preloadStructureModels = vi.fn(
       () =>
         new Promise<void>((resolve) => {
@@ -675,7 +918,7 @@ describe("StructureManager destroy lifecycle", () => {
     const scheduledOwners: string[] = [];
 
     subject.previousVisibleIds = new Set([1, 2]);
-    subject.getVisibleStructuresForChunk = vi.fn(() => structures);
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => structures);
     subject.getModelForStructure = vi.fn(() => model);
     subject.preloadStructureModels = vi.fn(async () => undefined);
     subject.commitVisibleStructureDiff = vi.fn();
@@ -702,14 +945,33 @@ describe("StructureManager destroy lifecycle", () => {
     const subject = Object.create(StructureManager.prototype) as any;
     const structure = { entityId: 7 };
 
+    subject.structureInfoCache = new Map([[7, { entityId: 7, stale: true }]]);
+    subject.visibleStructureWindow = { chunkKey: "0,0", bounds: {}, structures: new Map([[7, {}]]) };
     subject.resolveStructureInfoByEntityId = vi.fn(() => structure);
-    subject.refreshTrackedStructureLabelState = vi.fn();
+    subject.refreshStructureLabelIfTracked = vi.fn();
     subject.requestVisibleStructuresRefresh = vi.fn();
 
     subject.refreshStructurePresentation(7);
 
-    expect(subject.refreshTrackedStructureLabelState).toHaveBeenCalledWith(7, structure);
+    expect(subject.structureInfoCache.has(7)).toBe(false);
+    expect(subject.refreshStructureLabelIfTracked).toHaveBeenCalledWith(7, structure);
     expect(subject.requestVisibleStructuresRefresh).toHaveBeenCalledWith({ refreshEntityIds: [7] });
+  });
+
+  it("refreshes the label but skips the visible pass for a component change outside the window", () => {
+    const subject = Object.create(StructureManager.prototype) as any;
+    const structure = { entityId: 7 };
+
+    subject.structureInfoCache = new Map();
+    subject.visibleStructureWindow = { chunkKey: "0,0", bounds: {}, structures: new Map([[8, {}]]) };
+    subject.resolveStructureInfoByEntityId = vi.fn(() => structure);
+    subject.refreshStructureLabelIfTracked = vi.fn();
+    subject.requestVisibleStructuresRefresh = vi.fn();
+
+    subject.refreshStructurePresentation(7);
+
+    expect(subject.refreshStructureLabelIfTracked).toHaveBeenCalledWith(7, structure);
+    expect(subject.requestVisibleStructuresRefresh).not.toHaveBeenCalled();
   });
 
   it("prunes a tracked label when an address-name update finds that its structure vanished", () => {
@@ -717,12 +979,12 @@ describe("StructureManager destroy lifecycle", () => {
 
     subject.resolveStructureInfoByEntityId = vi.fn(() => undefined);
     subject.removeStructurePresentation = vi.fn();
-    subject.refreshTrackedStructureLabelState = vi.fn();
+    subject.refreshStructureLabelIfTracked = vi.fn();
 
     subject.refreshTrackedStructureLabelOrPrune(7);
 
     expect(subject.removeStructurePresentation).toHaveBeenCalledWith(7);
-    expect(subject.refreshTrackedStructureLabelState).not.toHaveBeenCalled();
+    expect(subject.refreshStructureLabelIfTracked).not.toHaveBeenCalled();
   });
 
   it("mutates only entering and leaving structure slots and ignores a superseded commit", () => {
@@ -867,7 +1129,7 @@ describe("StructureManager destroy lifecycle", () => {
     subject.structureModels.set("Village", [model]);
     subject.hasCosmeticSkin = vi.fn(() => false);
     subject.getModelForStructure = vi.fn(() => model);
-    subject.getVisibleStructuresForChunk = vi.fn(() => [visibleStructure]);
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => [visibleStructure]);
     subject.preloadStructureModels = vi.fn(
       () =>
         new Promise<void>((resolve) => {

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
-import { resolveStoredWorldmapCameraView, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
+import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { LoadingStateKey } from "@/hooks/store/use-world-loading";
@@ -48,6 +48,7 @@ import {
   type ArmySpatialProjectionChange,
   type StructureSpatialProjectionChange,
   type TileSpatialProjectionChange,
+  type WorldSpatialHex,
   type TileSpatialRenderable,
   type WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
@@ -109,6 +110,9 @@ import { Account, AccountInterface } from "starknet";
 import { Box3, Color, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
+import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
+import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
+import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
@@ -240,17 +244,8 @@ import {
   evaluateTerrainVisibilityAnomaly,
   resetWorldmapZoomHardeningRuntimeState,
 } from "./worldmap-zoom-hardening";
-import {
-  applyWorldmapWheelIntent,
-  createWorldmapZoomControllerState,
-  resetWorldmapWheelIntent,
-  resolveWorldmapWheelGestureTimeoutMs,
-  resolveWorldmapWheelThreshold,
-  setWorldmapZoomTargetView,
-} from "./worldmap-zoom-controller";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
-  WORLDMAP_STEP_WHEEL_DELTA,
   normalizeWorldmapWheelDelta,
   resolveWorldmapWheelPixelDelta,
 } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
@@ -258,7 +253,7 @@ import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
 } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
-import type { WorldmapCameraSnapshot } from "./worldmap-zoom/worldmap-zoom-types";
+import type { WorldmapCameraSnapshot, ZoomIntent } from "./worldmap-zoom/worldmap-zoom-types";
 import {
   resolveWorldmapChunkRefreshDebounceMs,
   shouldDelayWorldmapChunkSwitch,
@@ -307,7 +302,6 @@ import {
   type WorldmapRenderDurationMetric,
 } from "../perf/worldmap-render-diagnostics";
 import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
-import { buildVisibleTerrainMembership, type VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
 import {
   captureChunkDiagnosticsBaseline,
@@ -356,8 +350,9 @@ import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-til
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 import { gameEntityKey } from "@/sync/game-scope";
 import {
+  WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
-  resolveWorldmapCameraViewProfile,
+  resolveWorldmapCameraPitchRadians,
 } from "./worldmap-camera-view-profile";
 import {
   appendWorldmapChunkTrace,
@@ -390,7 +385,6 @@ interface CachedTerrainEntry {
   sphere?: Sphere;
   expectedExploredTerrainInstances?: number;
   terrainFingerprint?: string;
-  visibleTerrainOwnership?: Array<[string, VisibleTerrainInstanceRef]>;
   terrainCells?: WorldmapTerrainSourceCellRef[];
   generation?: number;
 }
@@ -402,7 +396,6 @@ interface PreparedTerrainChunk {
   bounds: { box: Box3; sphere: Sphere };
   expectedExploredTerrainInstances: number;
   terrainFingerprint: string;
-  visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]>;
   terrainCells: WorldmapTerrainSourceCellRef[];
   biomeEntries: Map<string, CachedTerrainEntry>;
 }
@@ -513,6 +506,8 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     allowedIncreaseFraction?: number,
   ) => WorldmapProjectionSyncVolumeRegressionDebugResult;
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
+  getWorldBiomeSurface?: () => WorldBiomeSurface;
+  getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   resetWorldmapRenderDiagnostics?: () => void;
   getWorldmapChunkTrace?: () => WorldmapChunkTraceEntry[];
 };
@@ -535,6 +530,13 @@ const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
 const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
+function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: number; y: number }): boolean {
+  return hex !== undefined && hex.col === contract.x && hex.row === contract.y;
+}
+
+/** One minimap zoom click moves the camera by two wheel notches. */
+const MINIMAP_ZOOM_STEP_DELTA = 240;
+
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
   telemetry: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING_TELEMETRY === true,
@@ -629,23 +631,18 @@ export default class WorldmapScene extends WarpTravel {
   private activeVisualTerrainBuildPageKeys: Map<string, WorldmapVisualTerrainPageBuildRequest> = new Map();
   private readonly visualTerrainPageRevisions = new Map<string, number>();
   private readonly liveTilePageRebuilds = new Map<string, Promise<void>>();
+  private pendingVisualTerrainCompositeCommit: Promise<WorldmapTerrainPresentationComposite | null> | null = null;
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
-  private readonly worldmapMinZoomDistance = 10;
-  private readonly worldmapMaxZoomDistance = 40;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private wheelEventTarget: HTMLElement | null = null;
-  private zoomControllerState = createWorldmapZoomControllerState(CameraView.Medium);
-  private wheelResetTimeout: ReturnType<typeof setTimeout> | null = null;
-  private readonly wheelThreshold = WORLDMAP_STEP_WHEEL_DELTA;
-  private readonly wheelGestureTimeoutMs = 50;
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
-    minDistance: this.worldmapMinZoomDistance,
-    maxDistance: this.worldmapMaxZoomDistance,
+    minDistance: WORLDMAP_CAMERA_ZOOM.minDistance,
+    maxDistance: WORLDMAP_CAMERA_ZOOM.maxDistance,
   });
   private zoomRefreshPlannerState = createWorldmapZoomRefreshPlannerState();
   private readonly worldmapCameraViewListeners: Set<(view: CameraView) => void> = new Set();
@@ -811,6 +808,7 @@ export default class WorldmapScene extends WarpTravel {
   private unsubscribeWorldSpatialProjection?: () => void;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private proceduralTerrain!: WorldmapProceduralTerrain;
+  private worldBiomeSurface!: WorldBiomeSurface;
   // normalized positions and if they are allied or not
 
   // Battle direction manager for tracking attacker/defender relationships
@@ -933,7 +931,6 @@ export default class WorldmapScene extends WarpTravel {
 
   dojo: SetupResult;
 
-  private visibleTerrainMembership: Map<string, VisibleTerrainInstanceRef> = new Map();
   private pinnedRenderAreas: Set<string> = new Set();
 
   private fxManager!: FXManager;
@@ -1014,10 +1011,17 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  /** The whole-world biome surface is the worldmap's ground; the shared navy plane would hide it. */
+  protected override shouldCreateGroundMesh(): boolean {
+    return false;
+  }
+
   private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
     this.proceduralTerrain = new WorldmapProceduralTerrain();
     this.scene.add(this.proceduralTerrain.object3d);
+    this.worldBiomeSurface = new WorldBiomeSurface();
+    this.scene.add(this.worldBiomeSurface.object3d);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2, {
       terrainSurface: this.proceduralTerrain,
     });
@@ -1233,6 +1237,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
+    this.seedWorldBiomeSurface();
     const unsubscribeTiles = this.worldSpatialProjection.subscribeTiles((changes) => {
       this.handleProjectedTileChanges(changes);
     });
@@ -1243,7 +1248,7 @@ export default class WorldmapScene extends WarpTravel {
           clearPendingReservedHyperstructureCreation(previous.hexCoords);
         }
       });
-      this.reconcileHoverLabels();
+      this.reconcileHoverLabelsForProjectionChanges(changes);
       this.scheduleTerrainEcologyRefresh();
     });
     const structureEcologySubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
@@ -1270,6 +1275,37 @@ export default class WorldmapScene extends WarpTravel {
 
   private handleProjectedTileChanges(changes: readonly TileSpatialProjectionChange[]): void {
     changes.forEach((change) => this.applyProjectedTileChange(change));
+    this.commitWorldBiomeSurface();
+  }
+
+  /** The far-LOD biome surface paints every explored tile in the world, not just the render window. */
+  private seedWorldBiomeSurface(): void {
+    this.worldSpatialProjection.getTiles().forEach((tile) => {
+      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+      this.worldBiomeSurface.setTile(normalized.x, normalized.y, resolveTileBiomeType(tile.biome));
+    });
+    this.commitWorldBiomeSurface();
+  }
+
+  private syncStructureManagerGauges(): void {
+    const metrics = this.structureManager.getStructureManagerMetrics();
+    setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
+    setWorldmapRenderGauge("structureInfoCacheHits", metrics.structureInfoCacheHits);
+    setWorldmapRenderGauge("structureInfoCacheMisses", metrics.structureInfoCacheMisses);
+    setWorldmapRenderGauge("visibleStructureBoundsQueries", metrics.visibleStructureBoundsQueries);
+    setWorldmapRenderGauge("visibleStructureChangeSetUpdates", metrics.visibleStructureChangeSetUpdates);
+  }
+
+  private commitWorldBiomeSurface(): void {
+    const uploadedBefore = this.worldBiomeSurface.metrics.uploadedInstances;
+    this.worldBiomeSurface.commit();
+    const uploaded = this.worldBiomeSurface.metrics.uploadedInstances - uploadedBefore;
+    if (uploaded === 0) {
+      return;
+    }
+    incrementWorldmapRenderCounter("worldBiomeSurfaceCommits");
+    incrementWorldmapRenderCounter("worldBiomeSurfaceInstancesUploaded", uploaded);
+    setWorldmapRenderGauge("worldBiomeSurfaceInstances", this.worldBiomeSurface.metrics.instanceCount);
   }
 
   private applyProjectedTileChange({ previous, current }: TileSpatialProjectionChange): void {
@@ -1281,6 +1317,7 @@ export default class WorldmapScene extends WarpTravel {
     if (current) this.completePendingExploreEffects(current.hexCoords);
 
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
+    this.worldBiomeSurface.setTile(normalized.x, normalized.y, current ? resolveTileBiomeType(current.biome) : null);
     if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
       return;
     }
@@ -1344,7 +1381,21 @@ export default class WorldmapScene extends WarpTravel {
       this.recalculateArrowsForEntity(entityId);
       this.recalculateArrowsForEntitiesRelatedTo(entityId);
     });
-    this.reconcileHoverLabels();
+    this.reconcileHoverLabelsForProjectionChanges(changes);
+  }
+
+  /** Data batches only re-resolve the hover when they touch the hovered hex; pointer moves do the rest. */
+  private reconcileHoverLabelsForProjectionChanges(
+    changes: ReadonlyArray<{ previous?: { hexCoords: WorldSpatialHex }; current?: { hexCoords: WorldSpatialHex } }>,
+  ): void {
+    const hovered = this.currentHoverLabelHex;
+    if (!hovered) return;
+    const contract = new Position({ x: hovered.col, y: hovered.row }).getContract();
+    const touchesHoveredHex = changes.some(
+      ({ previous, current }) =>
+        isSameWorldSpatialHex(previous?.hexCoords, contract) || isSameWorldSpatialHex(current?.hexCoords, contract),
+    );
+    if (touchesHoveredHex) this.reconcileHoverLabels();
   }
 
   private syncProjectedStructurePathfinding(changes: readonly StructureSpatialProjectionChange[]): void {
@@ -1379,6 +1430,10 @@ export default class WorldmapScene extends WarpTravel {
       });
       runWithFrameWorkOwner("zoom:worldmap-shadows", () => {
         this.configureWorldmapShadows();
+      });
+      runWithFrameWorkOwner("zoom:terrain-detail", () => {
+        // The far band shows the whole-world biome surface alone; nearer bands composite the detailed pages over it.
+        this.proceduralTerrain.object3d.visible = view !== CameraView.Far;
       });
     });
   }
@@ -1521,30 +1576,6 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     this.shortcutManager.registerShortcut({
-      id: "camera-view-close",
-      key: "1",
-      description: "Zoom to close view",
-      sceneRestriction: SceneName.WorldMap,
-      action: () => this.changeCameraView(CameraView.Close),
-    });
-
-    this.shortcutManager.registerShortcut({
-      id: "camera-view-medium",
-      key: "2",
-      description: "Zoom to medium view",
-      sceneRestriction: SceneName.WorldMap,
-      action: () => this.changeCameraView(CameraView.Medium),
-    });
-
-    this.shortcutManager.registerShortcut({
-      id: "camera-view-far",
-      key: "3",
-      description: "Zoom to far view",
-      sceneRestriction: SceneName.WorldMap,
-      action: () => this.changeCameraView(CameraView.Far),
-    });
-
-    this.shortcutManager.registerShortcut({
       id: "escape-handler",
       key: "Escape",
       description: "Clear selection or close navigation views",
@@ -1561,7 +1592,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private setupCameraZoomHandler() {
     this.detachWorldmapWheelHandler();
-    this.resetWheelState();
     this.wheelHandler = (event: WheelEvent) => {
       const normalizedWheelDelta = normalizeWorldmapWheelDelta({
         delta: event.deltaY,
@@ -1583,22 +1613,7 @@ export default class WorldmapScene extends WarpTravel {
 
       event.preventDefault();
       event.stopPropagation();
-
-      const wheelThreshold = resolveWorldmapWheelThreshold(normalizedWheelDelta.inputKind, this.wheelThreshold);
-      const wheelGestureTimeoutMs = resolveWorldmapWheelGestureTimeoutMs(
-        normalizedWheelDelta.inputKind,
-        this.wheelGestureTimeoutMs,
-      );
-      const zoomIntent = applyWorldmapWheelIntent(this.zoomControllerState, {
-        currentView: this.zoomControllerState.targetView,
-        normalizedDelta: normalizedWheelDelta.normalizedDelta,
-        wheelThreshold,
-      });
-      this.zoomControllerState = zoomIntent.nextState;
-      if (zoomIntent.didRequestViewChange) {
-        this.changeCameraView(zoomIntent.nextTargetView);
-      }
-      this.scheduleWheelAccumulatorReset(wheelGestureTimeoutMs);
+      this.applyWorldmapZoomIntent({ type: "continuous_delta", delta: normalizedWheelDelta.normalizedDelta });
     };
 
     this.attachWorldmapWheelHandler();
@@ -1627,67 +1642,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
-    const zoomIntent = applyWorldmapWheelIntent(this.zoomControllerState, {
-      currentView: this.zoomControllerState.targetView,
-      normalizedDelta: zoomOut ? this.wheelThreshold : -this.wheelThreshold,
-      wheelThreshold: this.wheelThreshold,
-    });
-    this.zoomControllerState = zoomIntent.nextState;
-
-    if (zoomIntent.didRequestViewChange) {
-      this.changeCameraView(zoomIntent.nextTargetView);
-      return;
-    }
-
-    if (this.isCameraDistanceOutOfSync(this.zoomControllerState.targetView)) {
-      this.changeCameraView(this.zoomControllerState.targetView);
-    }
+    const delta = zoomOut ? MINIMAP_ZOOM_STEP_DELTA : -MINIMAP_ZOOM_STEP_DELTA;
+    this.applyWorldmapZoomIntent({ type: "continuous_delta", delta });
   }
 
-  public override changeCameraView(position: CameraView) {
-    this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, position);
-    this.zoomCoordinator.applyIntent({
-      type: "snap_to_band",
-      band: position,
-      anchor: {
-        mode: "screen_center",
-        worldPoint: this.controls.target.clone(),
-      },
-    });
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
-
-    const previousView = this.targetCameraView;
-    const target = this.controls.target;
-    if (position !== previousView) {
-      incrementWorldmapRenderCounter("zoomTransitionsStarted");
-    }
-
-    this.targetCameraView = position;
-    // Persist after targetCameraView is committed so the settings-driven store
-    // subscription sees an already-applied view and does not re-enter.
-    useCameraZoomStore.getState().setWorldmapView(position);
-    const profile = resolveWorldmapCameraViewProfile(position);
-    this.cameraDistance = profile.distance;
-    this.cameraAngle = profile.angleRadians;
-
-    const cameraHeight = Math.sin(profile.angleRadians) * profile.distance;
-    const cameraDepth = Math.cos(profile.angleRadians) * profile.distance;
-    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    const duration = this.resolveCameraViewTransitionDuration(Math.abs(position - previousView));
-    const ease = this.resolveCameraTransitionEase();
-
-    this.cameraAnimate(
-      newPosition,
-      target,
-      duration,
-      () => {
-        if (position !== previousView) {
-          incrementWorldmapRenderCounter("zoomTransitionsCompleted");
-        }
-        this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
-      },
-      { ease },
-    );
+  private applyWorldmapZoomIntent(intent: ZoomIntent): void {
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.applyIntent(intent));
   }
 
   public override getCurrentCameraView(): CameraView {
@@ -1739,48 +1699,6 @@ export default class WorldmapScene extends WarpTravel {
     return this.controls.object.position.distanceTo(this.controls.target);
   }
 
-  private getTargetDistanceForCameraView(view: CameraView): number {
-    return resolveWorldmapCameraViewProfile(view).distance;
-  }
-
-  private isCameraDistanceOutOfSync(view: CameraView, tolerance: number = 1): boolean {
-    const currentDistance = this.getCurrentCameraDistance();
-    const targetDistance = this.getTargetDistanceForCameraView(view);
-    return Math.abs(currentDistance - targetDistance) > tolerance;
-  }
-
-  private scheduleWheelAccumulatorReset(timeoutMs: number): void {
-    if (this.wheelResetTimeout) {
-      clearTimeout(this.wheelResetTimeout);
-    }
-
-    this.wheelResetTimeout = setTimeout(() => {
-      this.resetWheelState();
-    }, timeoutMs);
-  }
-
-  private resetWheelState(): void {
-    const timeoutId = this.wheelResetTimeout;
-    this.wheelResetTimeout = null;
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-
-    this.zoomControllerState = resetWorldmapWheelIntent(this.zoomControllerState);
-  }
-
-  private resolveCameraViewTransitionDuration(viewDelta: number): number {
-    if (viewDelta <= 0) {
-      return 0.32;
-    }
-
-    return 0.3 + viewDelta * 0.12;
-  }
-
-  private resolveCameraTransitionEase(): string {
-    return "power2.out";
-  }
-
   private publishWorldmapZoomSnapshot(snapshot: WorldmapCameraSnapshot): void {
     const nextStableCameraView = snapshot.stableBand;
     if (nextStableCameraView !== this.lastPublishedStableCameraView) {
@@ -1792,8 +1710,27 @@ export default class WorldmapScene extends WarpTravel {
       snapshot.status === "zooming" ? "transitioning" : "idle";
     if (nextTransitionStatus !== this.lastPublishedZoomStatus) {
       this.lastPublishedZoomStatus = nextTransitionStatus;
+      this.recordZoomTransition(nextTransitionStatus, snapshot.actualDistance);
       this.worldmapCameraTransitionListeners.forEach((listener) => listener(nextTransitionStatus));
     }
+  }
+
+  private recordZoomTransition(status: WorldmapCameraTransitionStatus, settledDistance: number): void {
+    if (status === "transitioning") {
+      incrementWorldmapRenderCounter("zoomTransitionsStarted");
+      return;
+    }
+    incrementWorldmapRenderCounter("zoomTransitionsCompleted");
+    this.persistSettledWorldmapZoom(settledDistance);
+  }
+
+  private persistSettledWorldmapZoom(distance: number): void {
+    const settled = Math.round(distance * 100) / 100;
+    const stored = useCameraZoomStore.getState().worldmapDistance;
+    if (stored !== null && Math.abs(stored - settled) < 0.05) {
+      return;
+    }
+    useCameraZoomStore.getState().setWorldmapDistance(settled);
   }
 
   public moveCameraToURLLocation(options: WorldmapUrlLocationMoveOptions = {}): void {
@@ -1836,39 +1773,30 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private alignInitialWorldmapCameraView(): void {
-    this.alignWorldmapCameraToView(this.resolvePreferredWorldmapCameraView());
+    this.alignWorldmapCameraToDistance(this.resolvePreferredWorldmapCameraDistance());
   }
 
-  /** Player-persisted zoom band, falling back to the scene's Medium default. */
-  private resolvePreferredWorldmapCameraView(): CameraView {
-    return resolveStoredWorldmapCameraView(CameraView.Medium);
+  /** Player-persisted zoom distance, falling back to the scene's default. */
+  private resolvePreferredWorldmapCameraDistance(): number {
+    const range = { min: WORLDMAP_CAMERA_ZOOM.minDistance, max: WORLDMAP_CAMERA_ZOOM.maxDistance };
+    return resolveStoredWorldmapCameraDistance(range) ?? WORLDMAP_CAMERA_ZOOM.defaultDistance;
   }
 
-  private alignWorldmapCameraToView(view: CameraView): void {
-    // Commit the same view state the interactive changeCameraView path commits,
-    // so later zoom intents and the settings-store guard compare against the
-    // snapped band instead of a stale one.
-    this.targetCameraView = view;
-    const profile = resolveWorldmapCameraViewProfile(view);
-    this.cameraDistance = profile.distance;
-    this.cameraAngle = profile.angleRadians;
-
-    this.alignWorldmapCameraToBand(view);
-    this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, view);
-    this.zoomCoordinator.syncToBand(view, performance.now());
+  private alignWorldmapCameraToDistance(distance: number): void {
+    this.placeWorldmapCameraAtDistance(distance);
+    this.zoomCoordinator.syncToDistance(distance, performance.now());
     this.lastControlsCameraDistance = this.getCurrentCameraDistance();
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
   }
 
-  private alignWorldmapCameraToBand(view: CameraView): void {
-    const profile = resolveWorldmapCameraViewProfile(view);
-    const cameraHeight = Math.sin(profile.angleRadians) * profile.distance;
-    const cameraDepth = Math.cos(profile.angleRadians) * profile.distance;
-
+  /** Places the camera on the worldmap's fixed azimuth at `distance`, pitched per the zoom profile. */
+  private placeWorldmapCameraAtDistance(distance: number): void {
+    const pitch = resolveWorldmapCameraPitchRadians(distance);
+    this.cameraAngle = pitch;
     this.controls.object.position.set(
       this.controls.target.x,
-      this.controls.target.y + cameraHeight,
-      this.controls.target.z + cameraDepth,
+      this.controls.target.y + Math.sin(pitch) * distance,
+      this.controls.target.z + Math.cos(pitch) * distance,
     );
     this.notifyControlsChanged();
   }
@@ -3659,7 +3587,7 @@ export default class WorldmapScene extends WarpTravel {
       onInitialSetupStart: () => this.prepareWarpTravelInitialSetup(),
       // The camera is shared across scenes, so re-entry inherits the previous
       // scene's zoom; realign to the player's persisted worldmap band.
-      onResumeStart: () => this.alignWorldmapCameraToView(this.resolvePreferredWorldmapCameraView()),
+      onResumeStart: () => this.alignWorldmapCameraToDistance(this.resolvePreferredWorldmapCameraDistance()),
       moveCameraToSceneLocation: () => this.moveCameraToURLLocation({ requestRefresh: false }),
       attachLabelGroupsToScene: () => this.attachWorldmapLabelGroupsToScene(),
       attachManagerLabels: () => this.attachWorldmapManagerLabels(),
@@ -3846,7 +3774,8 @@ export default class WorldmapScene extends WarpTravel {
       existingStoreSubscriptionCount: this.storeSubscriptions.length,
     });
     this.syncUrlChangedListenerLifecycle("setup");
-    this.controls.maxDistance = this.worldmapMaxZoomDistance;
+    this.controls.maxDistance = WORLDMAP_CAMERA_ZOOM.maxDistance;
+    this.lockMapControlsZoom();
     this.camera.fov = resolveWorldmapCameraFieldOfViewDegrees();
     this.camera.far = 65;
     this.camera.updateProjectionMatrix();
@@ -4749,7 +4678,9 @@ export default class WorldmapScene extends WarpTravel {
       priority: request.priority,
     });
     incrementWorldmapRenderCounter("visualPageBuilt");
-    this.applyVisualTerrainPagePresentation(presentation);
+    if (this.applyVisualTerrainPagePresentation(presentation)) {
+      void this.requestVisualTerrainCompositeCommit();
+    }
   }
 
   private traceVisualTerrainPageStaleDrop(request: WorldmapVisualTerrainPageBuildRequest, reason: string): void {
@@ -4836,9 +4767,8 @@ export default class WorldmapScene extends WarpTravel {
       halfCols: cols / 2,
       halfRows: rows / 2,
     });
-    const visibleTerrainOwnership: Array<[string, VisibleTerrainInstanceRef]> = [];
     const terrainCells: WorldmapTerrainSourceCellRef[] = [];
-    const fingerprintEntries: Array<{ hexKey: string; biomeKey: string; occupied: boolean }> = [];
+    const fingerprintEntries: WorldmapTerrainSourceCellRef[] = [];
     const instanceCounts = new Map<string, number>();
     let expectedExploredTerrainInstances = 0;
 
@@ -4855,21 +4785,15 @@ export default class WorldmapScene extends WarpTravel {
           : this.perfSimulation!.getSimulatedBiome(col, row)
         : null;
       const biomeKey = biome ?? "Outline";
-      const hexKey = String(col) + "," + String(row);
       const instanceIndex = instanceCounts.get(biomeKey) ?? 0;
       const occupied = this.isProjectedStructureHex(col, row);
       instanceCounts.set(biomeKey, instanceIndex + 1);
-      terrainCells.push({ biomeKey, hexKey, instanceIndex, occupied });
+      const cell = { biomeKey, col, instanceIndex, occupied, row };
+      terrainCells.push(cell);
 
       if (biome) {
         expectedExploredTerrainInstances += 1;
-        const owner = {
-          biomeKey,
-          chunkKey: String(startRow) + "," + String(startCol),
-          instanceIndex,
-        };
-        visibleTerrainOwnership.push([hexKey, owner]);
-        fingerprintEntries.push({ biomeKey, hexKey, occupied });
+        fingerprintEntries.push(cell);
       }
     }
 
@@ -4882,7 +4806,6 @@ export default class WorldmapScene extends WarpTravel {
       startRow,
       terrainCells,
       terrainFingerprint: createWorldmapTerrainFingerprint(fingerprintEntries),
-      visibleTerrainOwnership,
     };
   }
 
@@ -5033,18 +4956,20 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    let committedCellCount = 0;
-    presentations.forEach((presentation) => {
-      const composite = this.applyVisualTerrainPagePresentation(presentation, {
+    const appliedPresentations = presentations.filter((presentation) =>
+      this.applyVisualTerrainPagePresentation(presentation, {
         allowOutsideWindow: true,
         latestTransitionToken: this.chunkTransitionToken,
-      });
-      committedCellCount = composite?.cells.length ?? committedCellCount;
-    });
-
+      }),
+    );
+    const committedCellCount = appliedPresentations.reduce(
+      (count, presentation) => count + presentation.cells.length,
+      0,
+    );
     if (committedCellCount === 0) {
       return;
     }
+    void this.requestVisualTerrainCompositeCommit();
 
     this.traceChunk("terrain_shell_committed", {
       cellCount: committedCellCount,
@@ -5055,10 +4980,11 @@ export default class WorldmapScene extends WarpTravel {
     incrementWorldmapRenderCounter("terrainShellCommitted");
   }
 
+  /** Mutates the presentation state only; the composite is committed once per batch via requestVisualTerrainCompositeCommit. */
   private applyVisualTerrainPagePresentation(
     presentation: WorldmapTerrainPresentationEntry,
     options: { allowOutsideWindow?: boolean; latestTransitionToken?: number } = {},
-  ): WorldmapTerrainPresentationComposite | null {
+  ): boolean {
     const previousPresentations = [...this.visualTerrainPresentationState.presentations];
     const coverageKey = presentation.coverageKey ?? presentation.chunkKey;
     const targetCoverageKeys = this.getVisualTerrainTargetCoverageKeys();
@@ -5072,18 +4998,17 @@ export default class WorldmapScene extends WarpTravel {
         existingPresentation.kind === "provisional" &&
         presentation.kind === "exact",
     );
-    const result = applyWorldmapVisualTerrainPage(this.visualTerrainPresentationState, {
+    const status = applyWorldmapVisualTerrainPage(this.visualTerrainPresentationState, {
       authoritativeChunkKey: this.currentChunk === "null" ? null : this.currentChunk,
       latestGeneration: presentation.generation ?? this.visualTerrainGeneration,
       latestTransitionToken: options.latestTransitionToken,
-      maxCells: this.getTerrainCompositeCellCapacity(),
       maxCompositePages: WORLDMAP_CHUNK_POLICY.visualPresentation.maxCompositePages,
       nowMs: performance.now(),
       presentation,
       targetCoverageKeys,
     });
 
-    if (result.status === "stale_dropped") {
+    if (status === "stale_dropped") {
       this.disposeTerrainPresentation(presentation);
       this.traceChunk("visual_page_stale_dropped", {
         coverageKey,
@@ -5092,13 +5017,12 @@ export default class WorldmapScene extends WarpTravel {
         kind: presentation.kind,
       });
       incrementWorldmapRenderCounter("visualPageStaleDropped");
-      return null;
+      return false;
     }
 
     this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
-    this.applyTerrainPresentationComposite(result.composite);
     this.traceChunk("visual_page_committed", {
-      cellCount: result.composite.cells.length,
+      cellCount: presentation.cells.length,
       coverageKey,
       generation: presentation.generation,
       kind: presentation.kind,
@@ -5113,7 +5037,7 @@ export default class WorldmapScene extends WarpTravel {
       incrementWorldmapRenderCounter("visualPageReplaced");
     }
 
-    return result.composite;
+    return true;
   }
 
   private deferNonCriticalManagerCatchUpForChunk(
@@ -5395,14 +5319,7 @@ export default class WorldmapScene extends WarpTravel {
       },
       expectedExploredTerrainInstances,
       terrainFingerprint: cachedMetadata?.terrainFingerprint ?? terrainFingerprint,
-      visibleTerrainOwnership: cachedMetadata?.visibleTerrainOwnership ?? [],
-      terrainCells:
-        cachedMetadata?.terrainCells ??
-        (cachedMetadata?.visibleTerrainOwnership ?? []).map(([hexKey, owner]) => ({
-          hexKey,
-          biomeKey: owner.biomeKey,
-          instanceIndex: owner.instanceIndex,
-        })),
+      terrainCells: cachedMetadata?.terrainCells ?? [],
       biomeEntries: new Map(),
     };
   }
@@ -5538,12 +5455,11 @@ export default class WorldmapScene extends WarpTravel {
       retainPreviousExactUntilMs?: number;
       targetChunkKey: string;
     },
-  ): WorldmapTerrainPresentationComposite | null {
+  ): void {
     const previousPresentations = [...this.visualTerrainPresentationState.presentations];
-    const result = applyWorldmapTerrainPresentation(this.visualTerrainPresentationState, {
+    const status = applyWorldmapTerrainPresentation(this.visualTerrainPresentationState, {
       authoritativeChunkKey: this.currentChunk === "null" ? null : this.currentChunk,
       latestTransitionToken: this.chunkTransitionToken,
-      maxCells: this.getTerrainCompositeCellCapacity(),
       maxCompositeChunks: WORLDMAP_CHUNK_POLICY.visualPresentation.maxCompositeChunks,
       nowMs: performance.now(),
       presentation,
@@ -5552,7 +5468,7 @@ export default class WorldmapScene extends WarpTravel {
       targetChunkKey: input.targetChunkKey,
     });
 
-    if (result.status === "stale_dropped") {
+    if (status === "stale_dropped") {
       this.disposeTerrainPresentation(presentation);
       this.traceChunk("terrain_shell_stale_dropped", {
         chunkKey: presentation.chunkKey,
@@ -5561,12 +5477,11 @@ export default class WorldmapScene extends WarpTravel {
         currentTransitionToken: this.chunkTransitionToken,
       });
       incrementWorldmapRenderCounter("terrainShellStaleDropped");
-      return null;
+      return;
     }
 
     this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
-    this.applyTerrainPresentationComposite(result.composite);
-    return result.composite;
+    void this.requestVisualTerrainCompositeCommit();
   }
 
   private rebuildTerrainPresentationComposite(targetChunkKey: string | null = this.currentChunk): void {
@@ -5584,30 +5499,50 @@ export default class WorldmapScene extends WarpTravel {
     }).slice(0, maxPresentations);
 
     this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
+    void this.requestVisualTerrainCompositeCommit();
+  }
+
+  /** One composite per batch of page applies, committed in the frame-budget critical lane. */
+  private requestVisualTerrainCompositeCommit(): Promise<WorldmapTerrainPresentationComposite | null> {
+    if (this.pendingVisualTerrainCompositeCommit) {
+      return this.pendingVisualTerrainCompositeCommit;
+    }
+    const commit = this.chunkWorkQueue
+      .schedule("critical", () => this.commitVisualTerrainComposite(), "terrain:composite")
+      .catch((error: unknown) => {
+        if (isFrameBudgetWorkQueueDisposedError(error)) return null;
+        throw error;
+      })
+      .finally(() => {
+        if (this.pendingVisualTerrainCompositeCommit === commit) this.pendingVisualTerrainCompositeCommit = null;
+      });
+    this.pendingVisualTerrainCompositeCommit = commit;
+    return commit;
+  }
+
+  private commitVisualTerrainComposite(): WorldmapTerrainPresentationComposite {
     const composite = composeWorldmapTerrainPresentations({
       authoritativeChunkKey: this.currentChunk === "null" ? null : this.currentChunk,
       maxCells: this.getTerrainCompositeCellCapacity(),
       nowMs: performance.now(),
       presentations: this.visualTerrainPresentationState.presentations,
-      targetCoverageKeys,
-      targetChunkKey,
+      targetCoverageKeys: this.getVisualTerrainTargetCoverageKeys(),
+      targetChunkKey: this.currentChunk,
     });
     this.applyTerrainPresentationComposite(composite);
+    return composite;
   }
 
   private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
     const presentation = runWithFrameWorkOwner("terrain:composite", () => {
       const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
       return this.proceduralTerrain.presentAsync({
-        cells: composite.cells.map((cell) => {
-          const [col, row] = cell.hexKey.split(",").map(Number);
-          return {
-            biomeKey: cell.biomeKey,
-            col,
-            occupied: this.isProjectedStructureHex(col, row),
-            row,
-          };
-        }),
+        cells: composite.cells.map((cell) => ({
+          biomeKey: cell.biomeKey,
+          col: cell.col,
+          occupied: this.isProjectedStructureHex(cell.col, cell.row),
+          row: cell.row,
+        })),
         climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
         mapCenter: configManager.getMapCenter(),
         pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
@@ -5646,21 +5581,20 @@ export default class WorldmapScene extends WarpTravel {
     void presentation.catch(() => undefined);
   }
 
-  private collectVisibleTerrainEcologyAnchors(cells: readonly { biomeKey: string; hexKey: string }[]): {
+  private collectVisibleTerrainEcologyAnchors(cells: readonly { biomeKey: string; col: number; row: number }[]): {
     roadAnchors: TerrainRoadAnchor[];
     settlementAnchors: TerrainSettlementAnchor[];
   } {
-    const visibleCells = new Set<string>();
+    const visibleCells = new Set<number>();
     const localBounds = {
       maxCol: Number.NEGATIVE_INFINITY,
       maxRow: Number.NEGATIVE_INFINITY,
       minCol: Number.POSITIVE_INFINITY,
       minRow: Number.POSITIVE_INFINITY,
     };
-    for (const { biomeKey, hexKey } of cells) {
+    for (const { biomeKey, col, row } of cells) {
       if (biomeKey === "Outline" || biomeKey === "Empty") continue;
-      visibleCells.add(hexKey);
-      const [col, row] = hexKey.split(",").map(Number);
+      visibleCells.add(hexCellKey(col, row));
       localBounds.maxCol = Math.max(localBounds.maxCol, col);
       localBounds.maxRow = Math.max(localBounds.maxRow, row);
       localBounds.minCol = Math.min(localBounds.minCol, col);
@@ -5673,7 +5607,7 @@ export default class WorldmapScene extends WarpTravel {
     for (const structure of this.worldSpatialProjection.getStructuresInBounds(this.toContractBounds(localBounds))) {
       if (structure.reserved || structure.entityId === null) continue;
       const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
-      if (!visibleCells.has(`${normalized.x},${normalized.y}`)) continue;
+      if (!visibleCells.has(hexCellKey(normalized.x, normalized.y))) continue;
       const component = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(structure.entityId)]));
       if (!component) continue;
       const structureId = structure.entityId.toString();
@@ -5745,7 +5679,6 @@ export default class WorldmapScene extends WarpTravel {
     cachedChunk.set("__meta__", {
       expectedExploredTerrainInstances: preparedTerrain.expectedExploredTerrainInstances,
       terrainFingerprint: preparedTerrain.terrainFingerprint,
-      visibleTerrainOwnership: preparedTerrain.visibleTerrainOwnership,
       terrainCells: preparedTerrain.terrainCells,
       generation: this.exploredTilesGeneration.current(chunkKey),
     });
@@ -5775,6 +5708,7 @@ export default class WorldmapScene extends WarpTravel {
         latestTransitionToken: this.chunkTransitionToken,
       });
     });
+    void this.requestVisualTerrainCompositeCommit();
     if (replacedShell) {
       this.traceChunk("terrain_shell_replaced", {
         chunkKey: preparedTerrain.chunkKey,
@@ -5789,7 +5723,6 @@ export default class WorldmapScene extends WarpTravel {
       incrementWorldmapRenderCounter("visualPageReplaced");
     }
     this.scheduleTerrainPresentationRetentionCleanup();
-    this.setVisibleTerrainMembership(preparedTerrain.visibleTerrainOwnership);
     this.computeInteractiveHexes(
       preparedTerrain.startRow,
       preparedTerrain.startCol,
@@ -6348,22 +6281,9 @@ export default class WorldmapScene extends WarpTravel {
     return normalizedKey !== "outline" && normalizedKey !== "none";
   }
 
-  private setVisibleTerrainMembership(ownershipEntries: Array<[string, VisibleTerrainInstanceRef]>): void {
-    const membershipResult = buildVisibleTerrainMembership(
-      ownershipEntries.map(([hexKey, owner]) => ({
-        hexKey,
-        biomeKey: owner.biomeKey,
-        chunkKey: owner.chunkKey,
-        instanceIndex: owner.instanceIndex,
-      })),
-    );
-
-    this.visibleTerrainMembership = membershipResult.membership;
-  }
-
   private getTerrainFingerprintForChunk(startRow: number, startCol: number): string {
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    const fingerprintEntries: Array<{ hexKey: string; biomeKey: string }> = [];
+    const fingerprintEntries: Array<{ biomeKey: string; col: number; row: number }> = [];
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
       for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
@@ -6378,10 +6298,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         const biome = exploredBiome ?? this.perfSimulation!.getSimulatedBiome(col, row);
-        fingerprintEntries.push({
-          hexKey: `${col},${row}`,
-          biomeKey: biome,
-        });
+        fingerprintEntries.push({ biomeKey: biome, col, row });
       }
     }
 
@@ -7283,7 +7200,7 @@ export default class WorldmapScene extends WarpTravel {
       recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
       recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
       setWorldmapRenderGauge("visibleArmies", this.armyManager.getVisibleCount());
-      setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
+      this.syncStructureManagerGauges();
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
       this.reconcileHoverLabels("manager_catch_up");
@@ -7383,7 +7300,7 @@ export default class WorldmapScene extends WarpTravel {
       recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
       recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
       setWorldmapRenderGauge("visibleArmies", this.armyManager.getVisibleCount());
-      setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
+      this.syncStructureManagerGauges();
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
       this.retryPendingHoverLabelRecovery("critical_manager_catch_up");
@@ -7492,11 +7409,13 @@ export default class WorldmapScene extends WarpTravel {
 
   private syncWorldmapZoomSnapshot(deltaTime: number): void {
     const zoomFrame = this.zoomCoordinator.tick({
-      cameraPosition: this.controls.object.position,
-      target: this.controls.target,
+      actualDistance: this.getCurrentCameraDistance(),
       deltaMs: deltaTime * 1000,
       nowMs: performance.now(),
     });
+    if (zoomFrame.didMove) {
+      this.placeWorldmapCameraAtDistance(zoomFrame.snapshot.actualDistance);
+    }
 
     this.publishWorldmapZoomSnapshot(zoomFrame.snapshot);
   }
@@ -7711,6 +7630,8 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getWorldmapChunkTrace = () => this.getChunkTraceSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
+    debugWindow.getWorldBiomeSurface = () => this.worldBiomeSurface;
+    debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.resetWorldmapRenderDiagnostics = () => resetWorldmapRenderDiagnostics();
     debugWindow.captureWorldmapChunkBaseline = (label?: string) => this.captureChunkDiagnosticsBaseline(label);
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = (
@@ -7737,6 +7658,8 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getWorldmapChunkTrace = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.getWorldmapRenderDiagnostics = undefined;
+    debugWindow.getWorldBiomeSurface = undefined;
+    debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
@@ -7979,6 +7902,7 @@ export default class WorldmapScene extends WarpTravel {
     this.cosmeticsSubscriptionCleanup = undefined;
     this.chunkWorkQueue.dispose();
     this.proceduralTerrain.dispose();
+    this.worldBiomeSurface.dispose();
 
     super.destroy();
   }
@@ -8257,10 +8181,9 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private applyStoreControlledZoomLock(): void {
-    if (this.controls) {
-      this.controls.enableZoom = false;
-    }
+  /** The worldmap zooms through its coordinator so bands and refreshes stay in step; MapControls must not. */
+  private lockMapControlsZoom(): void {
+    this.controls.enableZoom = false;
   }
 
   private registerStoreSubscriptions() {
@@ -8283,7 +8206,6 @@ export default class WorldmapScene extends WarpTravel {
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
       },
-      onMapZoomPolicyChanged: () => this.applyStoreControlledZoomLock(),
     });
     this.bindRouteOwnedRefreshLifecycle();
     this.bindPersistedZoomPreferenceLifecycle();
@@ -8317,19 +8239,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   // Applies zoom-preference changes coming from the settings UI while the
-  // worldmap is active. Scene-driven zooms write the same view back to the
-  // store, which the targetCameraView guard turns into a no-op.
+  // worldmap is active. Settled scene zooms write the same distance back to
+  // the store, which the target-distance guard turns into a no-op.
   private bindPersistedZoomPreferenceLifecycle(): void {
     this.storeSubscriptions.push(
       useCameraZoomStore.subscribe(
-        (state) => state.worldmapView,
+        (state) => state.worldmapDistance,
         () => {
-          const view = this.resolvePreferredWorldmapCameraView();
-          if (view === this.targetCameraView) {
+          const distance = this.resolvePreferredWorldmapCameraDistance();
+          if (Math.abs(distance - this.zoomCoordinator.getSnapshot().targetDistance) < 0.05) {
             return;
           }
 
-          this.changeCameraView(view);
+          this.applyWorldmapZoomIntent({ type: "snap_to_distance", distance });
         },
       ),
     );
@@ -8387,7 +8309,6 @@ export default class WorldmapScene extends WarpTravel {
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
       },
-      onMapZoomPolicyChanged: () => this.applyStoreControlledZoomLock(),
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {
           ...this.getInteractionDebugSnapshot(),

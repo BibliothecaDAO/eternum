@@ -24,7 +24,6 @@ interface RegisterWorldmapStoreBridgeInput {
     previousEntityActions: WorldmapStoreState["entityActions"] | undefined,
   ) => void;
   onSelectedHexChanged: (selectedHex: WorldmapStoreState["selectedHex"]) => void;
-  onMapZoomPolicyChanged: () => void;
 }
 
 interface DisposeWorldmapStoreBridgeInput {
@@ -45,7 +44,6 @@ interface SyncWorldmapStoreBridgeStateInput {
   hasMissingActionPathOwnership: () => boolean;
   clearEntitySelection: () => void;
   onSelectedHexChanged: (selectedHex: WorldmapStoreState["selectedHex"]) => void;
-  onMapZoomPolicyChanged: () => void;
   onSynced: (uiState: WorldmapStoreState) => void;
 }
 
@@ -61,7 +59,6 @@ export function registerWorldmapStoreBridge({
   onIncomingTroopArrivalsChanged,
   onEntityActionsChanged,
   onSelectedHexChanged,
-  onMapZoomPolicyChanged,
 }: RegisterWorldmapStoreBridgeInput): Array<() => void> {
   return [
     store.subscribe((state) => state.selectableArmies, onSelectableArmiesChanged),
@@ -69,12 +66,6 @@ export function registerWorldmapStoreBridge({
     store.subscribe((state) => state.publicIncomingTroopArrivalsByStructure, onIncomingTroopArrivalsChanged),
     store.subscribe((state) => state.entityActions, onEntityActionsChanged),
     store.subscribe((state) => state.selectedHex, onSelectedHexChanged),
-    store.subscribe(
-      (state) => state.enableMapZoom,
-      () => {
-        onMapZoomPolicyChanged();
-      },
-    ),
   ];
 }
 
@@ -99,7 +90,6 @@ export function syncWorldmapStoreBridgeState({
   hasMissingActionPathOwnership,
   clearEntitySelection,
   onSelectedHexChanged,
-  onMapZoomPolicyChanged,
   onSynced,
 }: SyncWorldmapStoreBridgeStateInput): void {
   if (!isInteractionOwner) {
@@ -120,7 +110,6 @@ export function syncWorldmapStoreBridgeState({
   }
 
   onSelectedHexChanged(uiState.selectedHex);
-  onMapZoomPolicyChanged();
   onSynced(uiState);
 
   if (uiState.entityActions.selectedEntityId === null || uiState.entityActions.selectedEntityId === undefined) {

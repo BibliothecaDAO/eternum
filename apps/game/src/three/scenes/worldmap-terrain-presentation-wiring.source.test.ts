@@ -79,7 +79,7 @@ describe("worldmap terrain presentation wiring", () => {
     expect(shellMethod).toContain("applyWorldmapVisualTerrainPage");
     expect(shellMethod).not.toContain("commitCurrentChunkAuthority");
     expect(shellMethod).not.toContain("updateManagersForChunk");
-    expect(shellMethod).not.toContain("setVisibleTerrainMembership");
+    expect(shellMethod).not.toContain("computeInteractiveHexes");
   });
 
   it("contains shell preparation failures inside the async shell worker", () => {
@@ -115,7 +115,10 @@ describe("worldmap terrain presentation wiring", () => {
     expect(exactCommit).toContain("visual_page");
     expect(exactCommit).toContain("visual_page_replaced");
     expect(exactCommit.indexOf("partitionPreparedTerrainIntoVisualPages")).toBeLessThan(
-      exactCommit.indexOf("setVisibleTerrainMembership"),
+      exactCommit.indexOf("requestVisualTerrainCompositeCommit"),
+    );
+    expect(exactCommit.indexOf("requestVisualTerrainCompositeCommit")).toBeLessThan(
+      exactCommit.indexOf("computeInteractiveHexes"),
     );
   });
 });

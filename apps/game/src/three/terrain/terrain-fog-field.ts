@@ -15,7 +15,17 @@ import * as ThreeWebGPU from "three/webgpu";
 import { color, float, mix, positionWorld, smoothstep, texture, time, uniform, uv } from "three/tsl";
 
 import { terrainCellKey } from "./terrain-coordinates";
-import { applyTerrainFogReveals, buildTerrainFogMask, type TerrainFogMask } from "./terrain-fog-mask";
+import {
+  applyTerrainFogReveals,
+  buildTerrainFogMask,
+  isSameTerrainFogMaskLayout,
+  resolveTerrainFogInfluence,
+  resolveTerrainFogMaskLayout,
+  writeTerrainFogMaskRegion,
+  type TerrainFogMask,
+  type TerrainFogMaskBounds,
+  type TerrainFogMaskLayout,
+} from "./terrain-fog-mask";
 import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "./terrain-fog-style";
 import type { TerrainShroudInstance } from "./terrain-types";
 
@@ -30,6 +40,14 @@ export interface TerrainFogFieldStats {
   maskHeight: number;
   maskWidth: number;
   triangles: number;
+}
+
+export interface TerrainFogMaskMetrics {
+  /** Whole-window mask builds: the fog window moved, or the first fog appeared. */
+  fullRebuilds: number;
+  /** Sub-rect writes: a changed page or a completed reveal re-rasterised only its own area. */
+  pageWrites: number;
+  texelsWritten: number;
 }
 
 interface ActiveReveal {
@@ -50,6 +68,11 @@ const MeshBasicNodeMaterialConstructor = (
   ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
 ).MeshBasicNodeMaterial;
 
+/**
+ * One mist sheet over every unexplored cell of the presented pages. Pages hand in their shroud cells; a commit
+ * rebuilds the whole distance mask only when the fog window moves and otherwise re-rasterises the sub-rects the
+ * changed pages (or completed reveals) touched.
+ */
 export class TerrainFogField {
   readonly object3d = new Group();
   private textureData = new Uint8Array(1);
@@ -58,10 +81,12 @@ export class TerrainFogField {
   private maskTextureWidth = 1;
   private readonly materials = createFogMaterial(this.maskTexture);
   private readonly fogMesh = createFogMesh(this.materials.material);
+  private readonly pages = new Map<string, readonly TerrainShroudInstance[]>();
+  private readonly renderedInstances = new Map<string, TerrainShroudInstance>();
   private readonly activeReveals = new Map<string, ActiveReveal>();
   private readonly queuedReveals = new Set<string>();
-  private readonly latestInstances = new Map<string, TerrainShroudInstance>();
-  private readonly renderedInstances = new Map<string, TerrainShroudInstance>();
+  private readonly dirtyRegions: TerrainFogMaskBounds[] = [];
+  private readonly metrics: TerrainFogMaskMetrics = { fullRebuilds: 0, pageWrites: 0, texelsWritten: 0 };
   private mask: TerrainFogMask | null = null;
   private frontierInstances = 0;
 
@@ -70,21 +95,49 @@ export class TerrainFogField {
     this.object3d.add(this.fogMesh);
   }
 
-  update(instances: readonly TerrainShroudInstance[], preparedMask?: TerrainFogMask | null): void {
-    requireFogCapacity(instances.length);
-    this.latestInstances.clear();
-    instances.forEach((instance) => this.latestInstances.set(instanceKey(instance), instance));
-    this.activateCommittedReveals();
-    this.dropOrphanedQueuedReveals();
-    this.refreshFogField(preparedMask);
+  setPage(pageKey: string, instances: readonly TerrainShroudInstance[]): void {
+    const previous = this.pages.get(pageKey) ?? [];
+    const nextByKey = new Map(instances.map((instance) => [instanceKey(instance), instance]));
+    previous.forEach((instance) => {
+      if (!nextByKey.has(instanceKey(instance))) this.releasePageCell(instance);
+    });
+    instances.forEach((instance) => this.renderPageCell(instance));
+    this.pages.set(pageKey, instances);
+    requireFogCapacity(this.renderedInstances.size);
+    this.markDirty(resolveChangedFogCells(previous, nextByKey));
   }
 
+  removePage(pageKey: string): void {
+    this.setPage(pageKey, []);
+    this.pages.delete(pageKey);
+  }
+
+  /** Applies the page changes since the last commit; `preparedMask` is adopted only if it fits the new window. */
+  commit(preparedMask: TerrainFogMask | null = null): void {
+    const layout = resolveTerrainFogMaskLayout(this.renderedInstances.values());
+    if (!layout) {
+      this.mask = null;
+      this.dirtyRegions.length = 0;
+      this.fogMesh.visible = false;
+      return;
+    }
+    if (this.mask && isSameTerrainFogMaskLayout(this.mask, layout)) this.writeDirtyRegions(this.mask);
+    else this.rebuildMask(layout, preparedMask);
+    this.uploadFogMask();
+  }
+
+  /** The cells the next commit will render for these incoming pages, including cells held back by pending reveals. */
   resolveIncomingFogCells(instances: readonly TerrainShroudInstance[]): TerrainShroudInstance[] {
     const incoming = new Map(instances.map((instance) => [instanceKey(instance), instance]));
     this.queuedReveals.forEach((key) => retainFogCell(incoming, this.renderedInstances, key));
     this.activeReveals.forEach((_reveal, key) => retainFogCell(incoming, this.renderedInstances, key));
     requireFogCapacity(incoming.size);
-    return Array.from(incoming.values()).toSorted((left, right) => left.row - right.row || left.col - right.col);
+    return Array.from(incoming.values());
+  }
+
+  requiresMaskRebuild(instances: readonly TerrainShroudInstance[]): boolean {
+    const layout = resolveTerrainFogMaskLayout(instances);
+    return layout !== null && (!this.mask || !isSameTerrainFogMaskLayout(this.mask, layout));
   }
 
   queueReveal(col: number, row: number): void {
@@ -95,16 +148,20 @@ export class TerrainFogField {
   updateAnimation(deltaSeconds: number): void {
     if (this.activeReveals.size === 0) return;
     const boundedDelta = Math.min(0.05, Math.max(0, deltaSeconds));
-    let completed = false;
+    const completed: TerrainShroudInstance[] = [];
     this.activeReveals.forEach((reveal, key) => {
       reveal.elapsedSeconds += boundedDelta;
-      if (reveal.elapsedSeconds >= TERRAIN_FOG_REVEAL_DURATION_SECONDS) {
-        this.activeReveals.delete(key);
-        completed = true;
-      }
+      if (reveal.elapsedSeconds < TERRAIN_FOG_REVEAL_DURATION_SECONDS) return;
+      this.activeReveals.delete(key);
+      completed.push(reveal.instance);
     });
-    if (completed) this.refreshFogField();
-    else this.uploadFogMask();
+    if (completed.length === 0) {
+      this.uploadFogMask();
+      return;
+    }
+    completed.forEach((instance) => this.releaseRenderedCell(instance));
+    this.markDirty(completed);
+    this.commit();
   }
 
   setQuality(motionStrength: number, mistStrength: number): void {
@@ -124,54 +181,72 @@ export class TerrainFogField {
     };
   }
 
+  getMetrics(): TerrainFogMaskMetrics {
+    return { ...this.metrics };
+  }
+
   dispose(): void {
     this.fogMesh.geometry.dispose();
     this.materials.material.dispose();
     this.maskTexture.dispose();
     this.activeReveals.clear();
     this.queuedReveals.clear();
-    this.latestInstances.clear();
+    this.pages.clear();
     this.renderedInstances.clear();
+    this.dirtyRegions.length = 0;
     this.object3d.clear();
     this.mask = null;
   }
 
-  private activateCommittedReveals(): void {
-    this.queuedReveals.forEach((key) => {
-      if (this.latestInstances.has(key)) return;
-      const instance = this.renderedInstances.get(key);
-      if (!instance) return;
-      this.activeReveals.set(key, { elapsedSeconds: 0, instance });
-      this.queuedReveals.delete(key);
-    });
+  private renderPageCell(instance: TerrainShroudInstance): void {
+    const key = instanceKey(instance);
+    this.activeReveals.delete(key);
+    this.releaseRenderedCell(instance);
+    this.renderedInstances.set(key, instance);
+    if (instance.frontier) this.frontierInstances += 1;
   }
 
-  private dropOrphanedQueuedReveals(): void {
-    this.queuedReveals.forEach((key) => {
-      if (!this.latestInstances.has(key) && !this.renderedInstances.has(key)) this.queuedReveals.delete(key);
-    });
-  }
-
-  private refreshFogField(preparedMask?: TerrainFogMask | null): void {
-    this.renderedInstances.clear();
-    this.latestInstances.forEach((instance, key) => this.renderedInstances.set(key, instance));
-    this.activeReveals.forEach(({ instance }, key) => this.renderedInstances.set(key, instance));
-    requireFogCapacity(this.renderedInstances.size);
-    const ordered = Array.from(this.renderedInstances.values()).toSorted(
-      (left, right) => left.row - right.row || left.col - right.col,
-    );
-    this.frontierInstances = ordered.filter((instance) => instance.frontier).length;
-    this.mask = preparedMask === undefined ? buildTerrainFogMask(ordered) : preparedMask;
-    this.positionFogMesh();
-    this.uploadFogMask();
-  }
-
-  private positionFogMesh(): void {
-    if (!this.mask) {
-      this.fogMesh.visible = false;
+  private releasePageCell(instance: TerrainShroudInstance): void {
+    const key = instanceKey(instance);
+    if (!this.queuedReveals.has(key)) {
+      this.releaseRenderedCell(instance);
       return;
     }
-    const { maxX, maxZ, minX, minZ } = this.mask.bounds;
+    // The cell stays rendered while its reveal animates it away.
+    this.queuedReveals.delete(key);
+    this.activeReveals.set(key, { elapsedSeconds: 0, instance });
+  }
+
+  private releaseRenderedCell(instance: TerrainShroudInstance): void {
+    const key = instanceKey(instance);
+    const rendered = this.renderedInstances.get(key);
+    if (!rendered) return;
+    this.renderedInstances.delete(key);
+    if (rendered.frontier) this.frontierInstances -= 1;
+  }
+
+  private markDirty(instances: readonly TerrainShroudInstance[]): void {
+    const region = resolveTerrainFogInfluence(instances);
+    if (region) this.dirtyRegions.push(region);
+  }
+
+  private rebuildMask(layout: TerrainFogMaskLayout, preparedMask: TerrainFogMask | null): void {
+    const prepared = preparedMask && isSameTerrainFogMaskLayout(preparedMask, layout) ? preparedMask : null;
+    this.mask = prepared ?? buildTerrainFogMask(Array.from(this.renderedInstances.values()));
+    this.dirtyRegions.length = 0;
+    this.metrics.fullRebuilds += 1;
+    this.positionFogMesh(layout.bounds);
+  }
+
+  private writeDirtyRegions(mask: TerrainFogMask): void {
+    for (const region of this.dirtyRegions) {
+      this.metrics.texelsWritten += writeTerrainFogMaskRegion(mask, this.renderedInstances.values(), region);
+      this.metrics.pageWrites += 1;
+    }
+    this.dirtyRegions.length = 0;
+  }
+
+  private positionFogMesh({ maxX, maxZ, minX, minZ }: TerrainFogMaskBounds): void {
     this.fogMesh.position.set((minX + maxX) / 2, FOG_PLANE_HEIGHT, (minZ + maxZ) / 2);
     this.fogMesh.scale.set(maxX - minX, 1, maxZ - minZ);
     this.fogMesh.visible = true;
@@ -267,6 +342,35 @@ function createFogMesh(material: MeshBasicNodeMaterial): Mesh<PlaneGeometry, Mes
   mesh.raycast = disableFogRaycast;
   mesh.visible = false;
   return mesh;
+}
+
+/** The cells whose mask contribution differs between a page's previous and next shroud, old and new alike. */
+function resolveChangedFogCells(
+  previous: readonly TerrainShroudInstance[],
+  nextByKey: ReadonlyMap<string, TerrainShroudInstance>,
+): TerrainShroudInstance[] {
+  const changed: TerrainShroudInstance[] = [];
+  const unchangedKeys = new Set<string>();
+  for (const instance of previous) {
+    const key = instanceKey(instance);
+    const next = nextByKey.get(key);
+    if (next && isSameFogCell(instance, next)) unchangedKeys.add(key);
+    else changed.push(instance);
+  }
+  nextByKey.forEach((instance, key) => {
+    if (!unchangedKeys.has(key)) changed.push(instance);
+  });
+  return changed;
+}
+
+function isSameFogCell(left: TerrainShroudInstance, right: TerrainShroudInstance): boolean {
+  return (
+    left.frontier === right.frontier &&
+    left.frontierDirection[0] === right.frontierDirection[0] &&
+    left.frontierDirection[1] === right.frontierDirection[1] &&
+    left.worldX === right.worldX &&
+    left.worldZ === right.worldZ
+  );
 }
 
 function retainFogCell(

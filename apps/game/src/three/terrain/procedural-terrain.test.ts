@@ -1,11 +1,17 @@
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
-import { Group, Mesh } from "three";
+import { Group, InstancedMesh, Mesh } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { TerrainPropPools } from "./terrain-prop-pools";
+import type { TerrainCellInput } from "./terrain-types";
+
+vi.mock("./terrain-prop-asset-cache", async () => {
+  const { createTerrainPropCatalogFixture } = await import("./verification/terrain-prop-catalog-fixture");
+  return { loadTerrainPropCatalog: () => Promise.resolve({ scene: createTerrainPropCatalogFixture() }) };
+});
 
 describe("ProceduralTerrain", () => {
   it("atomically presents, reuses, replaces, and disposes page geometry", () => {
@@ -64,6 +70,56 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("writes only the changed page's prop slots and fog sub-rect on a later present", async () => {
+    const terrain = new ProceduralTerrain();
+    await terrain.loadProps();
+    const west = terrain.preparePage(blockRequest("west", 0));
+    const east = terrain.preparePage(blockRequest("east", 10));
+    terrain.present([west]);
+    const westUploads = collectPropUploads(terrain);
+    clearPropUploads(terrain);
+    terrain.present([west, east]);
+    clearPropUploads(terrain);
+    const settled = terrain.getUploadMetrics();
+    expect(settled).toMatchObject({ fogMaskFullRebuilds: 2, fogMaskPageWrites: 0, propPoolPageWrites: 2 });
+    expect(settled.propPoolFullRewrites).toBe(0);
+
+    terrain.present([west, east]);
+    expect(terrain.getUploadMetrics()).toEqual(settled);
+    expect(collectPropUploads(terrain)).toHaveLength(0);
+
+    const changedEast = terrain.preparePage(blockRequest("east", 10, { exploredCell: [12, 6] }));
+    expect(changedEast.fingerprint).not.toBe(east.fingerprint);
+    terrain.present([west, changedEast]);
+    const eastUploads = collectPropUploads(terrain);
+
+    expect(eastUploads.length).toBeGreaterThan(0);
+    expect(eastUploads.filter((upload) => westUploads.includes(upload))).toEqual([]);
+    expect(terrain.getUploadMetrics()).toMatchObject({
+      fogMaskFullRebuilds: 2,
+      fogMaskPageWrites: 1,
+      propPoolFullRewrites: 0,
+      propPoolPageWrites: 3,
+    });
+
+    terrain.present([west]);
+    expect(terrain.getPropStats().instances).toBe(west.propInstances.length);
+    expect(terrain.getShroudStats().instances).toBe(west.shroudInstances.length);
+    terrain.dispose();
+  });
+
+  it("writes every retained page once when the prop catalog arrives after the pages", async () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(blockRequest("west", 0)), terrain.preparePage(blockRequest("east", 10))]);
+    expect(terrain.getUploadMetrics()).toMatchObject({ propPoolFullRewrites: 0, propPoolPageWrites: 0 });
+
+    await terrain.loadProps();
+
+    expect(terrain.getUploadMetrics()).toMatchObject({ propPoolFullRewrites: 1, propPoolPageWrites: 2 });
+    expect(terrain.getPropStats().instances).toBeGreaterThan(0);
+    terrain.dispose();
+  });
+
   it("retains a requested quality tier while the catalog loads", async () => {
     const pools = {
       dispose: vi.fn(),
@@ -71,7 +127,7 @@ describe("ProceduralTerrain", () => {
       object3d: new Group(),
       setLod: vi.fn(),
       setWindStrength: vi.fn(),
-      update: vi.fn(),
+      writePage: vi.fn(),
     };
     const load = vi.spyOn(TerrainPropPools, "load").mockResolvedValue(pools as unknown as TerrainPropPools);
     const terrain = new ProceduralTerrain();
@@ -165,4 +221,46 @@ function unknownRequest() {
     ...request(BiomeType.None, false),
     cells: [{ biome: null, col: 0, explored: false, occupied: false, previewBiome: BiomeType.Grassland, row: 0 }],
   };
+}
+
+/**
+ * Six explored grassland columns from `minCol` over rows 0..5 plus two unexplored rows beneath them; `exploredCell`
+ * explores one of the fogged cells, which changes both the page's props and its shroud.
+ */
+function blockRequest(pageKey: string, minCol: number, options: { exploredCell?: readonly [number, number] } = {}) {
+  const cells: TerrainCellInput[] = [];
+  for (let row = 0; row <= 7; row += 1) {
+    for (let col = minCol; col < minCol + 6; col += 1) {
+      const explored = row <= 5 || (col === options.exploredCell?.[0] && row === options.exploredCell?.[1]);
+      cells.push({
+        biome: explored ? BiomeType.Grassland : null,
+        col,
+        explored,
+        occupied: false,
+        previewBiome: BiomeType.Grassland,
+        row,
+      });
+    }
+  }
+  return { ...request(BiomeType.Grassland, false), cells, pageKey };
+}
+
+function propPoolMeshes(terrain: ProceduralTerrain): InstancedMesh[] {
+  const meshes: InstancedMesh[] = [];
+  terrain.object3d.traverse((object) => {
+    if (object instanceof InstancedMesh && object.name.startsWith("terrain-prop-pool:")) meshes.push(object);
+  });
+  return meshes;
+}
+
+/** Every queued instance-matrix upload as `pool@start`, the sub-range identity a page's slot owns. */
+function collectPropUploads(terrain: ProceduralTerrain): string[] {
+  return propPoolMeshes(terrain).flatMap((mesh) =>
+    mesh.instanceMatrix.updateRanges.map((range) => `${mesh.name}@${range.start}`),
+  );
+}
+
+/** What the renderer does to the asserted matrix ranges after consuming them on a draw. */
+function clearPropUploads(terrain: ProceduralTerrain): void {
+  propPoolMeshes(terrain).forEach((mesh) => mesh.instanceMatrix.clearUpdateRanges());
 }

@@ -9,11 +9,29 @@ function readStructureManagerSource(): string {
 }
 
 describe("StructureManager projection update wiring", () => {
-  it("coalesces projection changes into the visible presentation refresh", () => {
+  it("drives the visible presentation refresh from the projection change set, not a bounds re-query", () => {
     const source = readStructureManagerSource();
+    const handler = source.slice(
+      source.indexOf("private handleStructureProjectionChanges("),
+      source.indexOf("private applyStructureChangesToVisibleWindow("),
+    );
 
     expect(source).toMatch(/worldSpatialProjection\.subscribeStructures\(\(changes\) =>/);
     expect(source).toMatch(/this\.handleStructureProjectionChanges\(changes\)/);
-    expect(source).toMatch(/void this\.requestVisibleStructuresRefresh\(\{ refreshEntityIds \}\)/);
+    expect(handler).toMatch(/this\.applyStructureChangesToVisibleWindow\(changes\)/);
+    expect(handler).toMatch(/void this\.requestVisibleStructuresRefresh\(\{ refreshEntityIds \}\)/);
+    expect(handler).not.toContain("getStructuresInBounds");
+  });
+
+  it("re-queries structure bounds only when the window's chunk changes", () => {
+    const source = readStructureManagerSource();
+    const passBody = source.slice(
+      source.indexOf("private async performVisibleStructuresUpdate("),
+      source.indexOf("private resolveVisibleStructureCommitOwner("),
+    );
+
+    expect(passBody).toMatch(/this\.resolveVisibleStructuresForChunk\(visibleStructurePassSnapshot\.chunkKey\)/);
+    expect(passBody).not.toContain("getStructuresInBounds");
+    expect(source).toMatch(/if \(this\.visibleStructureWindow\?\.chunkKey === chunkKey\)/);
   });
 });

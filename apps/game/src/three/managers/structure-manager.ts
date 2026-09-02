@@ -23,6 +23,7 @@ import {
 import type {
   StructureSpatialProjectionChange,
   StructureSpatialRenderable,
+  WorldSpatialBounds,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ClientComponents, GuardSlot, ID, StructureType } from "@bibliothecadao/types";
@@ -150,6 +151,33 @@ interface VisibleStructureRefreshOptions {
   workLane?: FrameBudgetWorkLane;
 }
 
+type EntityStructureRenderable = Extract<StructureSpatialRenderable, { reserved: false }>;
+
+// Structures inside the committed chunk's presentation bounds. Seeded by one bounds query per
+// chunk change and kept current from the projection change set, so a change batch never re-queries.
+interface VisibleStructureWindow {
+  chunkKey: string;
+  /** Contract-space bounds, matching the projection's coordinates. */
+  bounds: WorldSpatialBounds;
+  structures: Map<ID, EntityStructureRenderable>;
+}
+
+interface StructureManagerMetrics {
+  structureInfoCacheHits: number;
+  structureInfoCacheMisses: number;
+  visibleStructureBoundsQueries: number;
+  visibleStructureChangeSetUpdates: number;
+}
+
+function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSpatialBounds): boolean {
+  return (
+    hexCoords.col >= bounds.minCol &&
+    hexCoords.col <= bounds.maxCol &&
+    hexCoords.row >= bounds.minRow &&
+    hexCoords.row <= bounds.maxRow
+  );
+}
+
 export class StructureManager {
   private scene: Scene;
   private structureModels: Map<StructureType, InstancedModel[]> = new Map();
@@ -236,6 +264,15 @@ export class StructureManager {
   private pendingVisibleStructureRefreshIds = new Set<ID>();
   private pendingVisibleStructureTransitionToken?: number;
   private previousVisibleIds: Set<ID> = new Set(); // Committed visible ownership; also drives point cleanup.
+  private visibleStructureWindow?: VisibleStructureWindow;
+  // Per-entity StructureInfo; a Structure, StructureBuildings, Hyperstructure, or projection change deletes the entry.
+  private readonly structureInfoCache = new Map<ID, StructureInfo>();
+  private readonly metrics: StructureManagerMetrics = {
+    structureInfoCacheHits: 0,
+    structureInfoCacheMisses: 0,
+    visibleStructureBoundsQueries: 0,
+    visibleStructureChangeSetUpdates: 0,
+  };
   private isDestroyed = false;
 
   private readonly worldSpatialProjection: WorldSpatialProjection;
@@ -294,6 +331,8 @@ export class StructureManager {
     }
 
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
+      // isMine is folded into every cached record.
+      this.structureInfoCache.clear();
       this.requestVisibleStructuresRefresh({ refreshExisting: true });
     });
 
@@ -319,21 +358,42 @@ export class StructureManager {
   }
 
   private handleStructureProjectionChanges(changes: readonly StructureSpatialProjectionChange[]): void {
-    const refreshEntityIds = new Set<ID>();
     changes.forEach(({ previous, current }) => {
-      const previousEntityId = normalizeEntityId(previous?.entityId);
-      const currentEntityId = normalizeEntityId(current?.entityId);
-      if (previousEntityId !== undefined) {
-        refreshEntityIds.add(previousEntityId);
-      }
-      if (currentEntityId !== undefined) {
-        refreshEntityIds.add(currentEntityId);
-      }
+      this.invalidateStructureInfo(previous?.entityId);
+      this.invalidateStructureInfo(current?.entityId);
       if (previous && !previous.reserved && !current) {
         this.removeStructurePresentation(previous.entityId);
       }
     });
-    void this.requestVisibleStructuresRefresh({ refreshEntityIds });
+
+    const refreshEntityIds = this.applyStructureChangesToVisibleWindow(changes);
+    this.metrics.visibleStructureChangeSetUpdates += 1;
+    if (refreshEntityIds.size > 0) {
+      void this.requestVisibleStructuresRefresh({ refreshEntityIds });
+    }
+  }
+
+  /** Returns the entity ids whose window membership or record changed, so the pass re-adds only those. */
+  private applyStructureChangesToVisibleWindow(changes: readonly StructureSpatialProjectionChange[]): Set<ID> {
+    const touchedEntityIds = new Set<ID>();
+    const structureWindow = this.visibleStructureWindow;
+    if (!structureWindow) return touchedEntityIds;
+
+    changes.forEach(({ previous, current }) => {
+      const entityId = normalizeEntityId(current?.entityId ?? previous?.entityId);
+      if (entityId === undefined) return;
+
+      const wasVisible = structureWindow.structures.has(entityId);
+      const visibleRenderable =
+        current && !current.reserved && isWithinBounds(current.hexCoords, structureWindow.bounds) ? current : undefined;
+      if (visibleRenderable) {
+        structureWindow.structures.set(entityId, visibleRenderable);
+      } else {
+        structureWindow.structures.delete(entityId);
+      }
+      if (wasVisible || visibleRenderable) touchedEntityIds.add(entityId);
+    });
+    return touchedEntityIds;
   }
 
   private subscribeToStructurePresentationComponents(): void {
@@ -366,6 +426,8 @@ export class StructureManager {
     if (hyperstructureSubscription) this.recsUnsubscribes.push(() => hyperstructureSubscription.unsubscribe());
 
     const addressNameSubscription = this.components?.AddressName?.update$.subscribe(() => {
+      // Owner names are folded into every cached record.
+      this.structureInfoCache.clear();
       this.entityIdLabels.forEach((_label, entityId) => {
         this.refreshTrackedStructureLabelOrPrune(entityId);
       });
@@ -374,15 +436,14 @@ export class StructureManager {
   }
 
   private refreshStructurePresentation(entityId: ID): void {
+    this.invalidateStructureInfo(entityId);
     const structure = this.resolveStructureInfoByEntityId(entityId);
-    if (!structure) {
+    if (structure) {
+      this.refreshStructureLabelIfTracked(entityId, structure);
+    } else {
       this.removeStructurePresentation(entityId);
-      void this.requestVisibleStructuresRefresh({ refreshEntityIds: [entityId] });
-      return;
     }
-
-    this.refreshTrackedStructureLabelState(entityId, structure);
-    void this.requestVisibleStructuresRefresh({ refreshEntityIds: [entityId] });
+    this.requestVisibleStructuresRefreshForEntities([entityId]);
   }
 
   private resolveStructureInfoByEntityId(entityId: ID): StructureInfo | undefined {
@@ -393,6 +454,29 @@ export class StructureManager {
   private resolveStructureInfo(renderable: StructureSpatialRenderable): StructureInfo | undefined {
     if (renderable.reserved) return undefined;
 
+    const cached = this.structureInfoCache.get(renderable.entityId);
+    if (cached) {
+      this.metrics.structureInfoCacheHits += 1;
+      return cached;
+    }
+
+    this.metrics.structureInfoCacheMisses += 1;
+    const structure = this.buildStructureInfo(renderable);
+    if (structure) {
+      this.structureInfoCache.set(renderable.entityId, structure);
+      // battleTimerLeft and incomingTroopArrivals are time-derived; the timed label loop keeps them
+      // current for tracked ids, so a cached record with an active timer must be tracked.
+      this.updateTimedLabelTracking(renderable.entityId, structure.battleCooldownEnd, structure.incomingTroopArrivals);
+    }
+    return structure;
+  }
+
+  private invalidateStructureInfo(entityId: ID | null | undefined): void {
+    const normalizedEntityId = normalizeEntityId(entityId);
+    if (normalizedEntityId !== undefined) this.structureInfoCache.delete(normalizedEntityId);
+  }
+
+  private buildStructureInfo(renderable: EntityStructureRenderable): StructureInfo | undefined {
     const renderInfo = getStructureInfoFromTileOccupier(renderable.occupierType);
     if (!renderInfo || renderInfo.reserved) return undefined;
 
@@ -762,6 +846,8 @@ export class StructureManager {
     this.battleDirectionsByStructure.clear();
     this.structuresWithActiveTimedLabels.clear();
     this.previousVisibleIds.clear();
+    this.structureInfoCache.clear();
+    this.visibleStructureWindow = undefined;
 
     // Clean up points renderers
     if (this.pointsRenderers) {
@@ -791,7 +877,7 @@ export class StructureManager {
     }
 
     const prewarmPromise = (async () => {
-      const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+      const visibleStructures = this.queryStructureInfosInChunk(startRow, startCol);
       const structureTypes = new Set<StructureType>();
       const cosmeticAssets = new Map<string, string[]>();
 
@@ -978,19 +1064,6 @@ export class StructureManager {
     });
   }
 
-  private refreshTrackedStructureLabelState(entityId: ID, structureRecord?: StructureInfo) {
-    if (!structureRecord) {
-      return;
-    }
-
-    this.updateTimedLabelTracking(entityId, structureRecord.battleCooldownEnd, structureRecord.incomingTroopArrivals);
-
-    const existingLabel = this.entityIdLabels.get(entityId);
-    if (existingLabel) {
-      this.updateStructureLabelData(structureRecord, existingLabel);
-    }
-  }
-
   private refreshTrackedStructureLabelOrPrune(entityId: ID): void {
     const structure = this.resolveStructureInfoByEntityId(entityId);
     if (!structure) {
@@ -998,12 +1071,20 @@ export class StructureManager {
       return;
     }
 
-    this.refreshTrackedStructureLabelState(entityId, structure);
+    this.refreshStructureLabelIfTracked(entityId, structure);
   }
 
-  private getStructurePresentationBounds(startRow: number, startCol: number) {
+  /** Contract-space bounds of the structures presented for a chunk, matching the projection's coordinates. */
+  private resolveStructurePresentationBounds(startRow: number, startCol: number): WorldSpatialBounds {
     const renderBounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
-    return expandBoundsForStructurePresentation(renderBounds, this.chunkStride);
+    const bounds = expandBoundsForStructurePresentation(renderBounds, this.chunkStride);
+    const center = FELT_CENTER();
+    return {
+      minCol: bounds.minCol + center,
+      maxCol: bounds.maxCol + center,
+      minRow: bounds.minRow + center,
+      maxRow: bounds.maxRow + center,
+    };
   }
 
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
@@ -1080,6 +1161,10 @@ export class StructureManager {
     return this.visibleStructureCount;
   }
 
+  public getStructureManagerMetrics(): StructureManagerMetrics {
+    return { ...this.metrics };
+  }
+
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     const normalizedOwner = BigInt(owner);
     const refreshEntityIds = this.worldSpatialProjection.getStructures().flatMap((renderable) => {
@@ -1089,6 +1174,13 @@ export class StructureManager {
         normalizedOwner;
       return matchesOwner ? [renderable.entityId] : [];
     });
+    refreshEntityIds.forEach((entityId) => this.invalidateStructureInfo(entityId));
+    this.requestVisibleStructuresRefreshForEntities(refreshEntityIds);
+  }
+
+  // Component rows change facts, not positions: only structures inside the window need a pass.
+  private requestVisibleStructuresRefreshForEntities(entityIds: readonly ID[]): void {
+    const refreshEntityIds = entityIds.filter((entityId) => this.visibleStructureWindow?.structures.has(entityId));
     if (refreshEntityIds.length > 0) {
       void this.requestVisibleStructuresRefresh({ refreshEntityIds });
     }
@@ -1207,8 +1299,7 @@ export class StructureManager {
     try {
       const visibleStructurePassSnapshot = this.captureVisibleStructurePassSnapshot(options.transitionToken);
 
-      const [startRow, startCol] = visibleStructurePassSnapshot.chunkKey.split(",").map(Number);
-      const visibleStructures = this.getVisibleStructuresForChunk(startRow, startCol);
+      const visibleStructures = this.resolveVisibleStructuresForChunk(visibleStructurePassSnapshot.chunkKey);
       const preloadPlan = this.createStructureModelPreloadPlan(visibleStructures);
       await this.preloadStructureModels(preloadPlan);
 
@@ -1622,20 +1713,44 @@ export class StructureManager {
     return resolveCompactEntityLabelVariant(structure);
   }
 
-  private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
-    const bounds = this.getStructurePresentationBounds(startRow, startCol);
-    const center = FELT_CENTER();
-    return this.worldSpatialProjection
-      .getStructuresInBounds({
-        minCol: bounds.minCol + center,
-        maxCol: bounds.maxCol + center,
-        minRow: bounds.minRow + center,
-        maxRow: bounds.maxRow + center,
-      })
-      .flatMap((renderable) => {
-        const structure = this.resolveStructureInfo(renderable);
-        return structure ? [structure] : [];
-      });
+  private resolveVisibleStructuresForChunk(chunkKey: string): StructureInfo[] {
+    return this.resolveStructureInfos(this.ensureVisibleStructureWindow(chunkKey).structures.values());
+  }
+
+  // Only a chunk change re-queries the bounds; inside a chunk the change set keeps the window current.
+  private ensureVisibleStructureWindow(chunkKey: string): VisibleStructureWindow {
+    if (this.visibleStructureWindow?.chunkKey === chunkKey) {
+      return this.visibleStructureWindow;
+    }
+
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    const bounds = this.resolveStructurePresentationBounds(startRow, startCol);
+    const structures = new Map<ID, EntityStructureRenderable>();
+    this.queryStructuresInBounds(bounds).forEach((renderable) => {
+      if (!renderable.reserved) structures.set(renderable.entityId, renderable);
+    });
+    this.visibleStructureWindow = { chunkKey, bounds, structures };
+    return this.visibleStructureWindow;
+  }
+
+  private queryStructureInfosInChunk(startRow: number, startCol: number): StructureInfo[] {
+    return this.resolveStructureInfos(
+      this.queryStructuresInBounds(this.resolveStructurePresentationBounds(startRow, startCol)),
+    );
+  }
+
+  private queryStructuresInBounds(bounds: WorldSpatialBounds): readonly StructureSpatialRenderable[] {
+    this.metrics.visibleStructureBoundsQueries += 1;
+    return this.worldSpatialProjection.getStructuresInBounds(bounds);
+  }
+
+  private resolveStructureInfos(renderables: Iterable<StructureSpatialRenderable>): StructureInfo[] {
+    const structures: StructureInfo[] = [];
+    for (const renderable of renderables) {
+      const structure = this.resolveStructureInfo(renderable);
+      if (structure) structures.push(structure);
+    }
+    return structures;
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
@@ -2024,6 +2139,7 @@ export class StructureManager {
       directions.attackedFromDegrees = degrees;
     }
     this.battleDirectionsByStructure.set(normalizedEntityId, directions);
+    this.invalidateStructureInfo(normalizedEntityId);
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
     if (structure) this.refreshStructureLabelIfTracked(normalizedEntityId, structure);

@@ -15,7 +15,7 @@ const presentation = (
   chunkKey: string,
   kind: "exact" | "provisional",
   transitionToken: number,
-  cells: Array<{ hexKey: string; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
+  cells: Array<{ col: number; row: number; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
 ): WorldmapTerrainPresentation<Record<string, true>, string> => ({
   chunkKey,
   kind,
@@ -41,15 +41,15 @@ describe("worldmap terrain presentation runtime", () => {
 
   it("composes active exact, target provisional, and retained previous terrain without duplicate hexes", () => {
     const retainedPrevious = presentation("0,0", "exact", 7, [
-      { hexKey: "0,0", biomeKey: "Grassland", instanceIndex: 0 },
-      { hexKey: "1,0", biomeKey: "Grassland", instanceIndex: 1 },
+      { col: 0, row: 0, biomeKey: "Grassland", instanceIndex: 0 },
+      { col: 1, row: 0, biomeKey: "Grassland", instanceIndex: 1 },
     ]);
     const targetShell = presentation("24,0", "provisional", 8, [
-      { hexKey: "1,0", biomeKey: "Outline", instanceIndex: 0 },
-      { hexKey: "2,0", biomeKey: "Outline", instanceIndex: 1 },
+      { col: 1, row: 0, biomeKey: "Outline", instanceIndex: 0 },
+      { col: 2, row: 0, biomeKey: "Outline", instanceIndex: 1 },
     ]);
     const activeExact = presentation("24,0", "exact", 8, [
-      { hexKey: "1,0", biomeKey: "Beach", instanceIndex: 0, authoritative: true },
+      { col: 1, row: 0, biomeKey: "Beach", instanceIndex: 0, authoritative: true },
     ]);
 
     const composite = composeWorldmapTerrainPresentations({
@@ -59,7 +59,9 @@ describe("worldmap terrain presentation runtime", () => {
       targetChunkKey: "24,0",
     });
 
-    expect(composite.cells.map((cell) => [cell.hexKey, cell.biomeKey, cell.presentationChunkKey])).toEqual([
+    expect(
+      composite.cells.map((cell) => [`${cell.col},${cell.row}`, cell.biomeKey, cell.presentationChunkKey]),
+    ).toEqual([
       ["1,0", "Beach", "24,0"],
       ["2,0", "Outline", "24,0"],
       ["0,0", "Grassland", "0,0"],
@@ -75,9 +77,9 @@ describe("worldmap terrain presentation runtime", () => {
       maxCells: 2,
       presentations: [
         presentation("24,0", "exact", 8, [
-          { hexKey: "0,0", biomeKey: "Beach", instanceIndex: 0, authoritative: true },
-          { hexKey: "1,0", biomeKey: "Beach", instanceIndex: 1, authoritative: true },
-          { hexKey: "2,0", biomeKey: "Beach", instanceIndex: 2, authoritative: true },
+          { col: 0, row: 0, biomeKey: "Beach", instanceIndex: 0, authoritative: true },
+          { col: 1, row: 0, biomeKey: "Beach", instanceIndex: 1, authoritative: true },
+          { col: 2, row: 0, biomeKey: "Beach", instanceIndex: 2, authoritative: true },
         ]),
       ],
       targetChunkKey: "24,0",
@@ -108,41 +110,45 @@ describe("worldmap terrain presentation runtime", () => {
     const staleResult = applyWorldmapTerrainPresentation(state, {
       authoritativeChunkKey: "0,0",
       latestTransitionToken: 2,
-      maxCells: 10,
       maxCompositeChunks: 3,
       nowMs: 100,
-      presentation: presentation("24,0", "provisional", 1, [{ hexKey: "1,0", biomeKey: "Outline", instanceIndex: 0 }]),
+      presentation: presentation("24,0", "provisional", 1, [{ col: 1, row: 0, biomeKey: "Outline", instanceIndex: 0 }]),
       targetChunkKey: "24,0",
     });
 
-    expect(staleResult.status).toBe("stale_dropped");
+    expect(staleResult).toBe("stale_dropped");
     expect(state.presentations).toEqual([]);
 
     applyWorldmapTerrainPresentation(state, {
       authoritativeChunkKey: "0,0",
       latestTransitionToken: 2,
-      maxCells: 10,
       maxCompositeChunks: 3,
       nowMs: 100,
-      presentation: presentation("24,0", "provisional", 2, [{ hexKey: "1,0", biomeKey: "Outline", instanceIndex: 0 }]),
+      presentation: presentation("24,0", "provisional", 2, [{ col: 1, row: 0, biomeKey: "Outline", instanceIndex: 0 }]),
       targetChunkKey: "24,0",
     });
 
     const exactResult = applyWorldmapTerrainPresentation(state, {
       authoritativeChunkKey: "24,0",
       latestTransitionToken: 2,
-      maxCells: 10,
       maxCompositeChunks: 3,
       nowMs: 120,
       presentation: presentation("24,0", "exact", 2, [
-        { hexKey: "1,0", biomeKey: "Beach", instanceIndex: 0, authoritative: true },
+        { col: 1, row: 0, biomeKey: "Beach", instanceIndex: 0, authoritative: true },
       ]),
       targetChunkKey: "24,0",
     });
 
-    expect(exactResult.status).toBe("applied");
+    expect(exactResult).toBe("applied");
     expect(state.presentations.map((item) => [item.chunkKey, item.kind])).toEqual([["24,0", "exact"]]);
-    expect(exactResult.composite.cells.map((cell) => [cell.hexKey, cell.biomeKey, cell.authoritative])).toEqual([
+    const composite = composeWorldmapTerrainPresentations({
+      authoritativeChunkKey: "24,0",
+      maxCells: 10,
+      nowMs: 120,
+      presentations: state.presentations,
+      targetChunkKey: "24,0",
+    });
+    expect(composite.cells.map((cell) => [`${cell.col},${cell.row}`, cell.biomeKey, cell.authoritative])).toEqual([
       ["1,0", "Beach", true],
     ]);
   });

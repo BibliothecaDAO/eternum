@@ -44,7 +44,6 @@ describe("setupRendererDevGui", () => {
     const createdFolders: Record<string, ReturnType<typeof createFolderDouble>> = {};
 
     setupRendererDevGui({
-      changeCameraView: vi.fn(),
       contactShadowOpacity: 0.2,
       createFolder: (name) => {
         const folder = createFolderDouble();
@@ -69,10 +68,8 @@ describe("setupRendererDevGui", () => {
     const switchScene = vi.fn();
     const moveCameraToColRow = vi.fn();
     const moveCameraToXYZ = vi.fn();
-    const changeCameraView = vi.fn();
 
     setupRendererDevGui({
-      changeCameraView,
       contactShadowOpacity: 0.2,
       createFolder: (name) => {
         const folder = createFolderDouble();
@@ -96,24 +93,18 @@ describe("setupRendererDevGui", () => {
 
     const colRowAction = cameraFolderRecords[5]?.object.move as (() => void) | undefined;
     const xyzAction = cameraFolderRecords[6]?.object.move as (() => void) | undefined;
-    const viewParams = cameraFolderRecords[7]?.object;
-    const viewAction = cameraFolderRecords[8]?.object.changeView as (() => void) | undefined;
-    viewParams!.view = 3;
     colRowAction?.();
     xyzAction?.();
-    viewAction?.();
 
     expect(switchScene).toHaveBeenCalledWith(SceneName.FastTravel);
     expect(moveCameraToColRow).toHaveBeenCalledWith(0, 0, 0);
     expect(moveCameraToXYZ).toHaveBeenCalledWith(0, 0, 0, 0);
-    expect(changeCameraView).toHaveBeenCalledWith(3);
   });
 
   it("skips renderer controls when no renderer is available", () => {
     const createdFolders: string[] = [];
 
     setupRendererDevGui({
-      changeCameraView: vi.fn(),
       contactShadowOpacity: 0.2,
       createFolder: (name) => {
         createdFolders.push(name);
@@ -137,7 +128,6 @@ describe("setupRendererDevGui", () => {
     const updateContactShadowOpacity = vi.fn();
 
     setupRendererDevGui({
-      changeCameraView: vi.fn(),
       contactShadowOpacity: 0.24,
       createFolder: (name) => {
         const folder = createFolderDouble();

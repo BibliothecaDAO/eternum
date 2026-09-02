@@ -3,7 +3,6 @@ import { SceneName } from "./types";
 import { getContactShadowResources } from "./utils/contact-shadow";
 
 interface CreateRendererControlBridgeRuntimeInput {
-  changeCameraView: (view: 1 | 2 | 3) => void;
   createFolder: (name: string) => {
     add(
       target: object,
@@ -52,7 +51,6 @@ export function createRendererControlBridgeRuntime(
         const { material } = getContactShadowResources();
 
         setupRendererDevGui({
-          changeCameraView: input.changeCameraView,
           contactShadowOpacity: material.opacity,
           createFolder: input.createFolder,
           fastTravelEnabled: input.fastTravelEnabled(),

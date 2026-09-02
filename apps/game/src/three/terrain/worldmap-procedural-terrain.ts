@@ -3,7 +3,11 @@ import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
 import type { Group } from "three";
 
 import { runWithFrameWorkOwner } from "../frame-work-owner";
-import { ProceduralTerrain, type TerrainPresentationDiagnostics } from "./procedural-terrain";
+import {
+  ProceduralTerrain,
+  type TerrainPresentationDiagnostics,
+  type TerrainUploadMetrics,
+} from "./procedural-terrain";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { terrainCellKey } from "./terrain-coordinates";
 import { terrainHexToWorld } from "./terrain-coordinates";
@@ -160,6 +164,10 @@ export class WorldmapProceduralTerrain {
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     return this.terrain.sampleSurface(worldX, worldZ);
+  }
+
+  getUploadMetrics(): TerrainUploadMetrics {
+    return this.terrain.getUploadMetrics();
   }
 
   getVisibleCellCount(): number {

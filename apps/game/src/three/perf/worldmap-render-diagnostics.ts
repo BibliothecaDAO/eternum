@@ -20,7 +20,16 @@ export type WorldmapRenderDurationMetric =
   | "workerFindPath"
   | "createPath";
 
-export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
+export type WorldmapRenderGauge =
+  | "activePaths"
+  | "visibleArmies"
+  | "visibleStructures"
+  | "activeLabels"
+  | "worldBiomeSurfaceInstances"
+  | "structureInfoCacheHits"
+  | "structureInfoCacheMisses"
+  | "visibleStructureBoundsQueries"
+  | "visibleStructureChangeSetUpdates";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -76,7 +85,9 @@ export type WorldmapRenderCounter =
   | "armyRenderIntegrityHealDuplicateOwner"
   | "armyInstanceCapacityOverflow"
   | "biomeMismatchCount"
-  | "frameBudgetLongTasks";
+  | "frameBudgetLongTasks"
+  | "worldBiomeSurfaceCommits"
+  | "worldBiomeSurfaceInstancesUploaded";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -148,6 +159,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
+    worldBiomeSurfaceInstances: 0,
+    structureInfoCacheHits: 0,
+    structureInfoCacheMisses: 0,
+    visibleStructureBoundsQueries: 0,
+    visibleStructureChangeSetUpdates: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
@@ -206,6 +222,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     armyInstanceCapacityOverflow: 0,
     biomeMismatchCount: 0,
     frameBudgetLongTasks: 0,
+    worldBiomeSurfaceCommits: 0,
+    worldBiomeSurfaceInstancesUploaded: 0,
   },
   forceRefreshReasons: {
     default: 0,

@@ -1,5 +1,3 @@
-export const WORLDMAP_STEP_WHEEL_DELTA = 120;
-
 interface ResolveWorldmapWheelPixelDeltaInput {
   delta: number;
   deltaMode: number;
@@ -21,7 +19,6 @@ interface ApplyContinuousWorldmapZoomDeltaInput {
 interface NormalizedWorldmapWheelDelta {
   normalizedDelta: number;
   direction: -1 | 0 | 1;
-  inputKind: "trackpad" | "wheel";
 }
 
 export function normalizeWorldmapWheelDelta(input: NormalizeWorldmapWheelDeltaInput): NormalizedWorldmapWheelDelta {
@@ -29,16 +26,13 @@ export function normalizeWorldmapWheelDelta(input: NormalizeWorldmapWheelDeltaIn
   const clampedDelta = clamp(pixelDelta, -(input.maxPixelDelta ?? 480), input.maxPixelDelta ?? 480);
   const direction = Math.sign(clampedDelta) as -1 | 0 | 1;
 
-  return {
-    normalizedDelta: clampedDelta,
-    direction,
-    inputKind: Math.abs(clampedDelta) < 24 ? "trackpad" : "wheel",
-  };
+  return { normalizedDelta: clampedDelta, direction };
 }
 
+/** One wheel notch (120px) scales the distance by ~1.22, so the full range is about ten notches. */
 export function applyContinuousWorldmapZoomDelta(input: ApplyContinuousWorldmapZoomDeltaInput): number {
   const clampedDelta = clamp(input.normalizedDelta, -480, 480);
-  const zoomScale = Math.exp(clampedDelta / (input.zoomSensitivity ?? 1200));
+  const zoomScale = Math.exp(clampedDelta / (input.zoomSensitivity ?? 600));
   const unclampedDistance = input.currentDistance * zoomScale;
 
   return clamp(unclampedDistance, input.minDistance, input.maxDistance);

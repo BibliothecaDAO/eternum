@@ -9,7 +9,7 @@ describe("continuous exploration fog production wiring", () => {
     const fogField = source("src/three/terrain/terrain-fog-field.ts");
 
     expect(fogField).toContain("new PlaneGeometry(1, 1, 1, 1)");
-    expect(fogField).toContain("buildTerrainFogMask(ordered)");
+    expect(fogField).toContain("writeTerrainFogMaskRegion(mask, this.renderedInstances.values(), region)");
     expect(fogField).toContain("mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog)");
     expect(fogField).not.toContain("uv().add(");
     expect(fogField).not.toContain("InstancedMesh");

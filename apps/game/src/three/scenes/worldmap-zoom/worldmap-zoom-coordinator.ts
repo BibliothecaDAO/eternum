@@ -1,16 +1,18 @@
-import { CameraView } from "../camera-view";
-import { resolveWorldmapCameraViewProfile } from "../worldmap-camera-view-profile";
-import { solveWorldmapZoomAnchor } from "./worldmap-zoom-anchor-solver";
-import { createWorldmapZoomBandState, updateWorldmapZoomBandState } from "./worldmap-zoom-band-policy";
+import {
+  createWorldmapZoomBandState,
+  resolveWorldmapZoomBand,
+  updateWorldmapZoomBandState,
+} from "./worldmap-zoom-band-policy";
 import { applyContinuousWorldmapZoomDelta } from "./worldmap-zoom-input-normalizer";
 import type {
   WorldmapCameraSnapshot,
+  WorldmapZoomBand,
   WorldmapZoomState,
   WorldmapZoomTickResult,
   ZoomIntent,
 } from "./worldmap-zoom-types";
 import type { WorldmapZoomBandState } from "./worldmap-zoom-band-policy";
-import { Vector3 } from "three";
+import { CameraView } from "../camera-view";
 
 interface WorldmapZoomCoordinatorOptions {
   initialDistance: number;
@@ -19,6 +21,10 @@ interface WorldmapZoomCoordinatorOptions {
   easingPerSecond?: number;
 }
 
+/**
+ * Owns the worldmap's target camera distance: intents move the target, `tick`
+ * eases the actual distance toward it and derives the content band from it.
+ */
 export class WorldmapZoomCoordinator {
   private readonly minDistance: number;
   private readonly maxDistance: number;
@@ -28,7 +34,7 @@ export class WorldmapZoomCoordinator {
   private state: WorldmapZoomState;
 
   constructor(options: WorldmapZoomCoordinatorOptions) {
-    const initialBand = resolveDistanceBand(options.initialDistance);
+    const initialBand = resolveBandForDistance(options.initialDistance);
     this.minDistance = options.minDistance;
     this.maxDistance = options.maxDistance;
     this.easingPerSecond = options.easingPerSecond ?? 16;
@@ -40,15 +46,13 @@ export class WorldmapZoomCoordinator {
       maxDistance: options.maxDistance,
       status: "idle",
       activeGestureId: null,
-      anchorMode: "screen_center",
-      anchorWorldPoint: null,
       resolvedBand: initialBand,
       stableBand: initialBand,
     };
   }
 
   public applyIntent(intent: ZoomIntent): WorldmapCameraSnapshot {
-    const nextTargetDistance = resolveTargetDistanceFromIntent(intent, this.state, this.minDistance, this.maxDistance);
+    const nextTargetDistance = this.resolveTargetDistance(intent);
     const hasTargetChanged = Math.abs(nextTargetDistance - this.state.targetDistance) > 0.001;
 
     if (!hasTargetChanged) {
@@ -60,20 +64,14 @@ export class WorldmapZoomCoordinator {
       targetDistance: nextTargetDistance,
       status: "zooming",
       activeGestureId: this.nextGestureId++,
-      anchorMode: intent.anchor.mode,
-      anchorWorldPoint: intent.anchor.worldPoint?.clone() ?? null,
     };
 
     return this.getSnapshot();
   }
 
-  public syncToBand(band: CameraView, nowMs: number = 0): WorldmapCameraSnapshot {
-    return this.syncToDistance(resolveBandDistance(band), nowMs);
-  }
-
   public syncToDistance(distance: number, nowMs: number = 0): WorldmapCameraSnapshot {
     const nextDistance = clamp(distance, this.minDistance, this.maxDistance);
-    const nextBand = resolveDistanceBand(nextDistance);
+    const nextBand = resolveBandForDistance(nextDistance);
 
     this.bandState = {
       resolvedBand: nextBand,
@@ -87,8 +85,6 @@ export class WorldmapZoomCoordinator {
       targetDistance: nextDistance,
       status: "idle",
       activeGestureId: null,
-      anchorMode: "screen_center",
-      anchorWorldPoint: null,
       resolvedBand: nextBand,
       stableBand: nextBand,
     };
@@ -96,26 +92,14 @@ export class WorldmapZoomCoordinator {
     return this.getSnapshot();
   }
 
-  public tick(input: {
-    cameraPosition: Vector3;
-    target: Vector3;
-    deltaMs: number;
-    nowMs: number;
-  }): WorldmapZoomTickResult {
-    const actualDistance = input.cameraPosition.distanceTo(input.target);
+  public tick(input: { actualDistance: number; deltaMs: number; nowMs: number }): WorldmapZoomTickResult {
     const nextDistance = resolveNextDistance({
-      actualDistance,
+      actualDistance: input.actualDistance,
       targetDistance: this.state.targetDistance,
       deltaMs: input.deltaMs,
       easingPerSecond: this.easingPerSecond,
     });
-    const solveResult = solveWorldmapZoomAnchor({
-      cameraPosition: input.cameraPosition,
-      target: input.target,
-      anchorWorldPoint: this.state.anchorWorldPoint,
-      nextDistance,
-    });
-    const didMove = Math.abs(nextDistance - actualDistance) > 0.0001;
+    const didMove = Math.abs(nextDistance - input.actualDistance) > 0.0001;
     const status = Math.abs(this.state.targetDistance - nextDistance) <= 0.05 ? "idle" : "zooming";
 
     this.bandState = updateWorldmapZoomBandState(this.bandState, {
@@ -133,40 +117,25 @@ export class WorldmapZoomCoordinator {
       stableBand: this.bandState.stableBand,
     };
 
-    return {
-      cameraPosition: solveResult.cameraPosition,
-      target: solveResult.target,
-      snapshot: this.getSnapshot(),
-      didMove,
-    };
+    return { snapshot: this.getSnapshot(), didMove };
   }
 
   public getSnapshot(): WorldmapCameraSnapshot {
-    return {
-      ...this.state,
-      anchorWorldPoint: this.state.anchorWorldPoint?.clone() ?? null,
-    };
+    return { ...this.state };
   }
-}
 
-function resolveTargetDistanceFromIntent(
-  intent: ZoomIntent,
-  state: WorldmapZoomState,
-  minDistance: number,
-  maxDistance: number,
-): number {
-  switch (intent.type) {
-    case "continuous_delta":
-      return applyContinuousWorldmapZoomDelta({
-        currentDistance: state.targetDistance,
-        normalizedDelta: intent.delta,
-        minDistance,
-        maxDistance,
-      });
-    case "snap_to_distance":
-      return clamp(intent.distance, minDistance, maxDistance);
-    case "snap_to_band":
-      return resolveBandDistance(intent.band);
+  private resolveTargetDistance(intent: ZoomIntent): number {
+    switch (intent.type) {
+      case "continuous_delta":
+        return applyContinuousWorldmapZoomDelta({
+          currentDistance: this.state.targetDistance,
+          normalizedDelta: intent.delta,
+          minDistance: this.minDistance,
+          maxDistance: this.maxDistance,
+        });
+      case "snap_to_distance":
+        return clamp(intent.distance, this.minDistance, this.maxDistance);
+    }
   }
 }
 
@@ -186,18 +155,8 @@ function resolveNextDistance(input: {
   return Math.abs(input.targetDistance - nextDistance) <= 0.05 ? input.targetDistance : nextDistance;
 }
 
-function resolveDistanceBand(distance: number): CameraView {
-  if (distance <= 15) {
-    return CameraView.Close;
-  }
-  if (distance >= 30) {
-    return CameraView.Far;
-  }
-  return CameraView.Medium;
-}
-
-function resolveBandDistance(band: CameraView): number {
-  return resolveWorldmapCameraViewProfile(band).distance;
+function resolveBandForDistance(distance: number): WorldmapZoomBand {
+  return resolveWorldmapZoomBand({ currentBand: CameraView.Medium, distance });
 }
 
 function clamp(value: number, min: number, max: number): number {

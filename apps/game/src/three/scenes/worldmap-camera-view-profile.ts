@@ -1,33 +1,40 @@
-import { CameraView } from "./camera-view";
-
 const WORLDMAP_CAMERA_FOV_DEGREES = 38;
 
-interface WorldmapCameraViewProfile {
-  angleDegrees: number;
-  angleRadians: number;
-  distance: number;
-}
+/** Continuous worldmap zoom range; the wheel sets any camera distance inside it. */
+export const WORLDMAP_CAMERA_ZOOM = {
+  minDistance: 10,
+  maxDistance: 80,
+  defaultDistance: 20,
+} as const;
+
+/**
+ * Camera pitch keyframes by distance: the closest zoom looks across the terrain,
+ * the farthest looks down on the world like a map. Linear between keyframes.
+ */
+const WORLDMAP_CAMERA_PITCH_KEYFRAMES: ReadonlyArray<readonly [distance: number, pitchDegrees: number]> = [
+  [10, 42],
+  [20, 52],
+  [45, 58],
+  [80, 66],
+];
 
 export function resolveWorldmapCameraFieldOfViewDegrees(): number {
   return WORLDMAP_CAMERA_FOV_DEGREES;
 }
 
-export function resolveWorldmapCameraViewProfile(view: CameraView): WorldmapCameraViewProfile {
-  return resolveWorldmapCameraViewProfiles()[view];
+export function resolveWorldmapCameraPitchRadians(distance: number): number {
+  return (resolveWorldmapCameraPitchDegrees(distance) * Math.PI) / 180;
 }
 
-export function resolveWorldmapCameraViewProfiles(): Record<CameraView, WorldmapCameraViewProfile> {
-  return {
-    [CameraView.Close]: createWorldmapCameraViewProfile(10, 42),
-    [CameraView.Medium]: createWorldmapCameraViewProfile(20, 52),
-    [CameraView.Far]: createWorldmapCameraViewProfile(40, 58),
-  };
-}
-
-function createWorldmapCameraViewProfile(distance: number, angleDegrees: number): WorldmapCameraViewProfile {
-  return {
-    angleDegrees,
-    angleRadians: (angleDegrees * Math.PI) / 180,
-    distance,
-  };
+export function resolveWorldmapCameraPitchDegrees(distance: number): number {
+  const keyframes = WORLDMAP_CAMERA_PITCH_KEYFRAMES;
+  if (distance <= keyframes[0][0]) return keyframes[0][1];
+  for (let index = 1; index < keyframes.length; index += 1) {
+    const [toDistance, toPitch] = keyframes[index];
+    if (distance > toDistance) continue;
+    const [fromDistance, fromPitch] = keyframes[index - 1];
+    const progress = (distance - fromDistance) / (toDistance - fromDistance);
+    return fromPitch + (toPitch - fromPitch) * progress;
+  }
+  return keyframes[keyframes.length - 1][1];
 }

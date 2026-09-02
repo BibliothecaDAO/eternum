@@ -1,8 +1,6 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { CAMERA_CONFIG, CAMERA_FAR_PLANE, CONTROL_CONFIG } from "@/three/constants";
 import { PerspectiveCamera, Raycaster, Vector2 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
-import { SceneName } from "./types";
 
 export interface RendererInteractionRuntime {
   camera: PerspectiveCamera;
@@ -16,7 +14,6 @@ export interface RendererInteractionRuntime {
 interface CreateRendererInteractionRuntimeInput {
   onControlsChange: () => void;
   onInteraction: () => void;
-  resolveCurrentSceneName: () => SceneName | undefined;
 }
 
 export function createRendererInteractionRuntime(
@@ -30,7 +27,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   public readonly raycaster = new Raycaster();
   public readonly pointer = new Vector2();
   public controls?: MapControls;
-  private unsubscribeEnableMapZoom?: () => void;
   private hasDocumentKeyboardLifecycle = false;
   private inputSurface?: HTMLElement;
   private readonly handleSurfaceInteraction = () => this.input.onInteraction();
@@ -58,7 +54,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
       surface,
     });
     this.registerDocumentKeyboardLifecycle();
-    this.subscribeToZoomPreference();
   }
 
   public dispose(): void {
@@ -67,8 +62,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
 
   private disposeControls(): void {
     this.detachInteractionListeners();
-    this.unsubscribeEnableMapZoom?.();
-    this.unsubscribeEnableMapZoom = undefined;
 
     if (this.hasDocumentKeyboardLifecycle) {
       document.removeEventListener("focus", this.handleDocumentFocus, true);
@@ -103,22 +96,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
     document.addEventListener("blur", this.handleDocumentBlur, true);
     this.hasDocumentKeyboardLifecycle = true;
   }
-
-  private subscribeToZoomPreference(): void {
-    this.unsubscribeEnableMapZoom = useUIStore.subscribe(
-      (state) => state.enableMapZoom,
-      (enableMapZoom) => {
-        if (!this.controls) {
-          return;
-        }
-
-        this.controls.enableZoom = resolveRendererZoomPermission({
-          enableMapZoom,
-          currentSceneName: this.input.resolveCurrentSceneName(),
-        });
-      },
-    );
-  }
 }
 
 function createRendererCamera(): PerspectiveCamera {
@@ -146,7 +123,7 @@ function createConfiguredMapControls(input: {
   const controls = new MapControls(input.camera, input.surface);
 
   controls.enableRotate = CONTROL_CONFIG.enableRotate;
-  controls.enableZoom = useUIStore.getState().enableMapZoom;
+  controls.enableZoom = true;
   controls.enablePan = CONTROL_CONFIG.enablePan;
   controls.panSpeed = CONTROL_CONFIG.panSpeed;
   controls.zoomToCursor = CONTROL_CONFIG.zoomToCursor;
@@ -166,15 +143,4 @@ function createConfiguredMapControls(input: {
   controls.listenToKeyEvents(document.body);
 
   return controls;
-}
-
-function resolveRendererZoomPermission(input: {
-  currentSceneName: SceneName | undefined;
-  enableMapZoom: boolean;
-}): boolean {
-  if (input.currentSceneName === SceneName.WorldMap) {
-    return false;
-  }
-
-  return input.enableMapZoom;
 }

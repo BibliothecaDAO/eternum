@@ -145,7 +145,6 @@ export default class GameRenderer {
         this.supportRuntimeRegistry.getControlBridge().handleInteractionChange();
       },
       onInteraction: () => this.markRendererInteraction(),
-      resolveCurrentSceneName: () => this.sceneManager?.getCurrentScene(),
       warn: (message, error) => console.warn(message, error),
     });
 

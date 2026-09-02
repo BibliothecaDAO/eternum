@@ -28,13 +28,13 @@ describe("updateWorldmapZoomBandState", () => {
     let state = createWorldmapZoomBandState(CameraView.Medium);
 
     state = updateWorldmapZoomBandState(state, {
-      actualDistance: 32,
-      targetDistance: 40,
+      actualDistance: 47,
+      targetDistance: 55,
       status: "zooming",
       nowMs: 10,
     });
     state = updateWorldmapZoomBandState(state, {
-      actualDistance: 28,
+      actualDistance: 43,
       targetDistance: 20,
       status: "zooming",
       nowMs: 20,
@@ -48,23 +48,23 @@ describe("updateWorldmapZoomBandState", () => {
     let state = createWorldmapZoomBandState(CameraView.Medium);
 
     state = updateWorldmapZoomBandState(state, {
-      actualDistance: 36,
-      targetDistance: 40,
+      actualDistance: 51,
+      targetDistance: 55,
       status: "zooming",
       nowMs: 10,
     });
 
     state = updateWorldmapZoomBandState(state, {
-      actualDistance: 40,
-      targetDistance: 40,
+      actualDistance: 55,
+      targetDistance: 55,
       status: "idle",
       nowMs: 100,
     });
     expect(state.stableBand).toBe(CameraView.Medium);
 
     state = updateWorldmapZoomBandState(state, {
-      actualDistance: 40,
-      targetDistance: 40,
+      actualDistance: 55,
+      targetDistance: 55,
       status: "idle",
       nowMs: 116,
     });

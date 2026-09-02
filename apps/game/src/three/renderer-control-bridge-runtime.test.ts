@@ -19,7 +19,6 @@ describe("renderer control bridge runtime", () => {
     const markLabelsDirty = vi.fn();
     const requestFastTravelSceneRefresh = vi.fn();
     const runtime = createRendererControlBridgeRuntime({
-      changeCameraView: vi.fn(),
       createFolder: vi.fn(),
       fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.FastTravel,
@@ -42,7 +41,6 @@ describe("renderer control bridge runtime", () => {
     const markLabelsDirty = vi.fn();
     const requestFastTravelSceneRefresh = vi.fn();
     const runtime = createRendererControlBridgeRuntime({
-      changeCameraView: vi.fn(),
       createFolder: vi.fn(),
       fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.WorldMap,
@@ -65,13 +63,11 @@ describe("renderer control bridge runtime", () => {
     const material = { opacity: 0.24 };
     getContactShadowResources.mockReturnValue({ material });
     const createFolder = vi.fn();
-    const changeCameraView = vi.fn();
     const moveCameraToColRow = vi.fn();
     const moveCameraToXYZ = vi.fn();
     const switchScene = vi.fn();
     const renderer = { toneMapping: 1, toneMappingExposure: 0.8 };
     const runtime = createRendererControlBridgeRuntime({
-      changeCameraView,
       createFolder,
       fastTravelEnabled: () => false,
       getCurrentScene: () => SceneName.WorldMap,
@@ -89,7 +85,6 @@ describe("renderer control bridge runtime", () => {
     runtime.setupGuiControls();
 
     expect(setupRendererDevGui).toHaveBeenCalledWith({
-      changeCameraView,
       contactShadowOpacity: 0.24,
       createFolder,
       fastTravelEnabled: false,
@@ -111,7 +106,6 @@ describe("renderer control bridge runtime", () => {
       throw new TypeError("Cannot read properties of undefined (reading 'addFolder')");
     });
     const runtime = createRendererControlBridgeRuntime({
-      changeCameraView: vi.fn(),
       createFolder: vi.fn(),
       fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.WorldMap,

@@ -60,7 +60,6 @@ import {
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
-import { resolveWorldmapCameraViewProfile } from "./worldmap-camera-view-profile";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 import { LightningEffectSystem } from "./lightning-effect-system";
 import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-policy";
@@ -112,10 +111,8 @@ export abstract class HexagonScene {
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
 
-  protected cameraDistance = CAMERA_CONFIG.defaultDistance; // Maintain the same distance
   protected cameraAngle = CAMERA_CONFIG.defaultAngle;
-  protected currentCameraView = CameraView.Medium; // Track current camera view position
-  protected targetCameraView = CameraView.Medium;
+  protected currentCameraView = CameraView.Medium; // Content band resolved from the camera distance
   private animationCameraTarget: Vector3 = new Vector3();
   private readonly hoverGroundPlane = new Plane(new Vector3(0, 1, 0), 0);
   private readonly hoverGroundIntersection = new Vector3();
@@ -1294,38 +1291,15 @@ export abstract class HexagonScene {
     this.cameraTransitionListeners.delete(listener);
   }
 
-  public changeCameraView(position: CameraView) {
-    const previousView = this.targetCameraView;
-    const target = this.controls.target;
-    if (position !== previousView) {
-      incrementWorldmapRenderCounter("zoomTransitionsStarted");
-    }
-    this.targetCameraView = position;
-    this.applyTargetCameraView(position);
-
-    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-
-    const newPosition = new Vector3(target.x, target.y + cameraHeight, target.z + cameraDepth);
-    const viewDelta = Math.abs(position - previousView);
-    const duration = viewDelta > 0 ? 0.6 + viewDelta * 0.4 : 0.6;
-    this.cameraAnimate(newPosition, target, duration, () => {
-      if (position !== previousView) {
-        incrementWorldmapRenderCounter("zoomTransitionsCompleted");
-      }
-      this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
-    });
-  }
-
   private updateCameraClipPlanesForDistance(distance: number): void {
     const minNear = 0.1;
     const maxNear = 1.5;
     const minFar = 50;
-    const maxFar = 140;
     const farMultiplier = 3.5;
 
     const desiredNear = Math.min(maxNear, Math.max(minNear, distance * 0.02));
-    const desiredFar = Math.min(maxFar, Math.max(minFar, distance * farMultiplier));
+    // The far plane follows the zoom distance so the whole-world view is never clipped.
+    const desiredFar = Math.max(minFar, distance * farMultiplier);
 
     // Guard against the camera's live planes, not a scene-local cache: the camera is
     // shared across scenes, so a cache goes stale whenever another scene retunes it
@@ -1351,13 +1325,9 @@ export abstract class HexagonScene {
       this.scene.fog = this.fog;
     }
 
-    const clipFar = Math.min(this.camera.far, distance * 3.5);
-    const normalizedDistance = Math.min(1, Math.max(0, (distance - 10) / 50));
-    const startFactor = 0.3 + normalizedDistance * 0.15;
-    const endFactor = 0.8 + normalizedDistance * 0.1;
-
-    const desiredNear = Math.max(FOG_CONFIG.near, clipFar * startFactor);
-    const desiredFar = Math.max(desiredNear + 1, clipFar * endFactor);
+    // Fog starts just beyond the camera target and swallows the far plane, at every zoom distance.
+    const desiredNear = Math.max(FOG_CONFIG.near, distance * 1.35);
+    const desiredFar = Math.max(desiredNear + 1, Math.min(this.camera.far, distance * 3.1));
 
     if (Math.abs(desiredNear - this.fog.near) < 0.5 && Math.abs(desiredFar - this.fog.far) < 0.5) {
       return;
@@ -1365,12 +1335,6 @@ export abstract class HexagonScene {
 
     this.fog.near = desiredNear;
     this.fog.far = desiredFar;
-  }
-
-  private applyTargetCameraView(position: CameraView): void {
-    const profile = resolveWorldmapCameraViewProfile(position);
-    this.cameraDistance = profile.distance;
-    this.cameraAngle = profile.angleRadians;
   }
 
   /**

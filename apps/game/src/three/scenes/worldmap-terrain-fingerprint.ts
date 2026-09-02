@@ -1,5 +1,6 @@
 interface TerrainFingerprintEntry {
-  hexKey: string;
+  col: number;
+  row: number;
   biomeKey: string;
   occupied?: boolean;
 }
@@ -29,7 +30,7 @@ function fnv1a(input: string): number {
  * This digest folds each entry's FNV-1a hash into commutative accumulators
  * (sum + xor) alongside the entry count, so it is:
  * - order-independent (sum/xor/count do not depend on iteration order),
- * - sensitive to any (hexKey, biomeKey) change, to per-hex biome swaps, and to
+ * - sensitive to any (col, row, biomeKey) change, to per-hex biome swaps, and to
  *   added/removed cells (count guards equal-multiset edge cases),
  * - constant size (~<=24 chars) regardless of window size, so storing and
  *   comparing it is O(1).
@@ -40,7 +41,7 @@ export function createWorldmapTerrainFingerprint(entries: Iterable<TerrainFinger
   let xor = 0;
 
   for (const entry of entries) {
-    const entryHash = fnv1a(`${entry.hexKey}:${entry.biomeKey}:${entry.occupied ? 1 : 0}`);
+    const entryHash = fnv1a(`${entry.col},${entry.row}:${entry.biomeKey}:${entry.occupied ? 1 : 0}`);
     count += 1;
     sum = (sum + entryHash) >>> 0;
     xor = (xor ^ entryHash) >>> 0;

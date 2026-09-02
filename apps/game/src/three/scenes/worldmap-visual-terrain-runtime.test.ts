@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyWorldmapVisualTerrainPage,
-  composeWorldmapVisualTerrainPresentations,
+  composeWorldmapTerrainPresentations,
   createWorldmapTerrainPresentationState,
   partitionPreparedTerrainIntoVisualPages,
   resolveWorldmapVisualTerrainWindow,
@@ -16,7 +16,7 @@ const pagePresentation = (
   coverageKey: string,
   kind: "exact" | "provisional",
   generation: number,
-  cells: Array<{ hexKey: string; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
+  cells: Array<{ col: number; row: number; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
   authorityChunkKey: string | null = null,
 ): WorldmapTerrainPresentation<Record<string, true>, string> => ({
   chunkKey: authorityChunkKey ?? coverageKey,
@@ -70,29 +70,29 @@ describe("worldmap visual terrain runtime", () => {
 
   it("composes exact authoritative pages ahead of target provisional and retained pages", () => {
     const retainedPrevious = pagePresentation("-24,0", "exact", 4, [
-      { hexKey: "0,0", biomeKey: "Grassland", instanceIndex: 0 },
-      { hexKey: "1,0", biomeKey: "Grassland", instanceIndex: 1 },
+      { col: 0, row: 0, biomeKey: "Grassland", instanceIndex: 0 },
+      { col: 1, row: 0, biomeKey: "Grassland", instanceIndex: 1 },
     ]);
     const targetShell = pagePresentation("0,0", "provisional", 5, [
-      { hexKey: "1,0", biomeKey: "Outline", instanceIndex: 0 },
-      { hexKey: "2,0", biomeKey: "Outline", instanceIndex: 1 },
+      { col: 1, row: 0, biomeKey: "Outline", instanceIndex: 0 },
+      { col: 2, row: 0, biomeKey: "Outline", instanceIndex: 1 },
     ]);
     const authoritativeExact = pagePresentation(
       "0,0",
       "exact",
       5,
-      [{ hexKey: "1,0", biomeKey: "Beach", instanceIndex: 0, authoritative: true }],
+      [{ col: 1, row: 0, biomeKey: "Beach", instanceIndex: 0, authoritative: true }],
       "0,0",
     );
 
-    const composite = composeWorldmapVisualTerrainPresentations({
+    const composite = composeWorldmapTerrainPresentations({
       authoritativeChunkKey: "0,0",
       maxCells: 10,
       presentations: [retainedPrevious, targetShell, authoritativeExact],
       targetCoverageKeys: new Set(["0,0"]),
     });
 
-    expect(composite.cells.map((cell) => [cell.hexKey, cell.biomeKey, cell.coverageKey])).toEqual([
+    expect(composite.cells.map((cell) => [`${cell.col},${cell.row}`, cell.biomeKey, cell.coverageKey])).toEqual([
       ["1,0", "Beach", "0,0"],
       ["2,0", "Outline", "0,0"],
       ["0,0", "Grassland", "-24,0"],
@@ -103,28 +103,26 @@ describe("worldmap visual terrain runtime", () => {
     const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
     const staleResult = applyWorldmapVisualTerrainPage(state, {
       latestGeneration: 2,
-      maxCells: 10,
       maxCompositePages: 16,
       presentation: pagePresentation("0,0", "provisional", 1, [
-        { hexKey: "0,0", biomeKey: "Outline", instanceIndex: 0 },
+        { col: 0, row: 0, biomeKey: "Outline", instanceIndex: 0 },
       ]),
       targetCoverageKeys: new Set(["0,0"]),
     });
 
-    expect(staleResult.status).toBe("stale_dropped");
+    expect(staleResult).toBe("stale_dropped");
     expect(state.presentations).toEqual([]);
 
     const currentResult = applyWorldmapVisualTerrainPage(state, {
       latestGeneration: 2,
-      maxCells: 10,
       maxCompositePages: 16,
       presentation: pagePresentation("0,0", "provisional", 2, [
-        { hexKey: "0,0", biomeKey: "Outline", instanceIndex: 0 },
+        { col: 0, row: 0, biomeKey: "Outline", instanceIndex: 0 },
       ]),
       targetCoverageKeys: new Set(["0,0"]),
     });
 
-    expect(currentResult.status).toBe("applied");
+    expect(currentResult).toBe("applied");
     expect(state.presentations).toHaveLength(1);
   });
 
@@ -133,38 +131,42 @@ describe("worldmap visual terrain runtime", () => {
     const staleResult = applyWorldmapVisualTerrainPage(state, {
       latestGeneration: 2,
       latestTransitionToken: 3,
-      maxCells: 10,
       maxCompositePages: 16,
       presentation: pagePresentation("0,0", "provisional", 2, [
-        { hexKey: "0,0", biomeKey: "Outline", instanceIndex: 0 },
+        { col: 0, row: 0, biomeKey: "Outline", instanceIndex: 0 },
       ]),
       targetCoverageKeys: new Set(["0,0"]),
     });
 
-    expect(staleResult.status).toBe("stale_dropped");
+    expect(staleResult).toBe("stale_dropped");
     expect(state.presentations).toEqual([]);
   });
 
   it("keeps the newly accepted page when a full visual window has equal-priority pages", () => {
     const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
     state.presentations = [
-      pagePresentation("0,0", "provisional", 3, [{ hexKey: "0,0", biomeKey: "Outline", instanceIndex: 0 }]),
-      pagePresentation("0,24", "provisional", 3, [{ hexKey: "24,0", biomeKey: "Outline", instanceIndex: 0 }]),
+      pagePresentation("0,0", "provisional", 3, [{ col: 0, row: 0, biomeKey: "Outline", instanceIndex: 0 }]),
+      pagePresentation("0,24", "provisional", 3, [{ col: 24, row: 0, biomeKey: "Outline", instanceIndex: 0 }]),
     ];
 
     const result = applyWorldmapVisualTerrainPage(state, {
       latestGeneration: 3,
-      maxCells: 10,
       maxCompositePages: 2,
       presentation: pagePresentation("24,0", "provisional", 3, [
-        { hexKey: "0,24", biomeKey: "Outline", instanceIndex: 0 },
+        { col: 0, row: 24, biomeKey: "Outline", instanceIndex: 0 },
       ]),
       targetCoverageKeys: new Set(["0,0", "0,24", "24,0"]),
     });
 
-    expect(result.status).toBe("applied");
+    expect(result).toBe("applied");
     expect(state.presentations.map((presentation) => presentation.coverageKey)).toContain("24,0");
-    expect(result.composite.cells.map((cell) => cell.coverageKey)).toContain("24,0");
+    const composite = composeWorldmapTerrainPresentations({
+      authoritativeChunkKey: null,
+      maxCells: 10,
+      presentations: state.presentations,
+      targetCoverageKeys: new Set(["0,0", "0,24", "24,0"]),
+    });
+    expect(composite.cells.map((cell) => cell.coverageKey)).toContain("24,0");
   });
 
   it("partitions exact 48x48 prepared terrain into four 24x24 visual pages with page-local indices", () => {
@@ -172,7 +174,8 @@ describe("worldmap visual terrain runtime", () => {
     for (let row = -12; row < 36; row += 1) {
       for (let col = -12; col < 36; col += 1) {
         cells.push({
-          hexKey: `${col},${row}`,
+          col,
+          row,
           biomeKey: "Grassland",
           instanceIndex: cells.length,
           authoritative: true,
@@ -194,7 +197,8 @@ describe("worldmap visual terrain runtime", () => {
     expect(pages.map((page) => page.coverageKey).sort()).toEqual(["-12,-12", "-12,12", "12,-12", "12,12"]);
     expect(pages.every((page) => page.cells.length === 576)).toBe(true);
     expect(pages.find((page) => page.coverageKey === "12,12")?.cells[0]).toMatchObject({
-      hexKey: "12,12",
+      col: 12,
+      row: 12,
       instanceIndex: 0,
     });
   });

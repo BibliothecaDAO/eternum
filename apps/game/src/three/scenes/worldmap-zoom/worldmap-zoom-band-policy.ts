@@ -75,7 +75,7 @@ export function resolveWorldmapZoomBand(input: {
   hysteresisWidth?: number;
 }): WorldmapZoomBand {
   const closeMediumBoundary = input.closeMediumBoundary ?? 15;
-  const mediumFarBoundary = input.mediumFarBoundary ?? 30;
+  const mediumFarBoundary = input.mediumFarBoundary ?? 45;
   const hysteresisHalfWidth = (input.hysteresisWidth ?? 4) / 2;
 
   switch (input.currentBand) {
