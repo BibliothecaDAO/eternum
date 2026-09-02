@@ -110,7 +110,7 @@ describe("GPU backend hot-path instrumentation", () => {
     startFrame(62, warn);
 
     expect(warn).toHaveBeenCalledWith(
-      "[FramePerf] spike renderer_mode=webgpu duration_ms=62 frame_owner=catchup:army owner_ms=0 gpu_attribution=enabled gpu_backend_ms=0 attribution=cpu-bound",
+      "[FramePerf] spike renderer_mode=webgpu duration_ms=62 frame_owner=catchup:army owner_ms=0 owner_max_ms=0 gpu_attribution=enabled gpu_backend_ms=0 attribution=cpu-bound",
     );
   });
 

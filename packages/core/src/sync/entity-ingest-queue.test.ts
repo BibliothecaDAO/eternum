@@ -96,7 +96,7 @@ describe("EntityIngestQueue", () => {
 
   it("keeps a typical logical update burst in one store write", async () => {
     let nowMs = 0;
-    const appliedBatches: Array<{ applyDurationMs: number; operationCount: number }> = [];
+    const appliedBatches: Array<{ applyDurationMs: number; eventCount: number; operationCount: number }> = [];
     const applyEntityOperations = vi.fn(() => {
       nowMs += 30;
     });
@@ -137,7 +137,7 @@ describe("EntityIngestQueue", () => {
         ),
       ),
     ).toEqual([120]);
-    expect(appliedBatches).toEqual([{ applyDurationMs: 30, operationCount: 120 }]);
+    expect(appliedBatches).toEqual([{ applyDurationMs: 30, eventCount: 0, operationCount: 120 }]);
   });
 
   it("applies one local transaction batch immediately and atomically", async () => {

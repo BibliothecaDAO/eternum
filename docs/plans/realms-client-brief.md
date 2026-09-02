@@ -242,9 +242,9 @@ pre-phase herald, which is the compatibility case the client must handle. "Befor
 | sync-owned spike digests over 150 s              | 0 of 187                           | 0 of 311 (`render:backend` 310, terrain 1)                                                  |
 | `frameBudgetLongTasks` at boot, then over 60 s   | 3 (max 47 ms), +0                  | 3 (max 54 ms, terrain commit), +0                                                           |
 | heap after boot, then over 60 s                  | 376 → 378 MB                       | 309 → 310 MB                                                                                |
-| live rows received / component writes applied    | 0 / 0 (finished game)              | 1,152 / 326 and 384 / 138 on the live game (0.28–0.36) — fails, see below                   |
+| live rows received / component writes applied    | 0 / 0 (finished game)              | 1,329 / 1,329 = 1.00 on game 15 after herald A+B (0.28–0.36 on game 14) — passes            |
 | calls_built → sign_send_started p95              | not measured                       | 4.7 ms over 6 explores with a bot key; enqueue → sign+send 1.3–3.5 ms after the first burst |
-| herald rows received per head / rows changed     | not measured                       | 8.35 over 279 heads (132,776 wire rows / 15,892 distinct changed) — fails, see below        |
+| herald rows received per head / rows changed     | not measured                       | 1.34 on game 15 after herald A+B, 299 heads (8.35 on game 14) — passes                      |
 
 Live gates (2026-09-02, game 14 `lab-mtjo7c6z`, 95 bots acting, herald redeployed from the branch at `73d44929dfe`,
 spectating from the dev server on headless software WebGL2). **applied/received fails**: 1,152 rows received against 326
@@ -302,6 +302,22 @@ dedupes). Herald suite 48/49, the failure being the pre-existing model-registry 
 client to `eternum-game.pages.dev` from the branch tip (workflow run 33599560955, green 06:42Z), then box herald pulled
 to `d04a5d75e38` and restarted (healthy, block 60,561). Re-measure game: 15, `lab-mtjqbqr5`, 95 bots, 25-minute
 workload, one open slot. Bars: wire ≤ 1.5, applied/received ≥ 0.9.
+
+Re-measured after herald steps A and B (2026-09-02, game 15 `lab-mtjqbqr5`, 95 bots, box herald `d04a5d75e38`, pages.dev
+client on the branch tip; spectating from the dev server on headless software WebGL2). **Wire ratio passes**: 18,740
+rows on the wire over 299 heads for 14,009 distinct rows changed, 1.34 against the ≤ 1.5 bar (8.35 before). Intra-diff
+repeats are gone (0, from 73 %), the confirmed diff carried 28 rows in ten minutes (80,348 in the previous probe), and
+rebuild plus reverts stayed at 308 rows, 1.03 per head. The remaining quarter, 4,731 rows, is the same row written again
+by a later transaction inside the same head: successive chain changes, each a real delivery. **applied/received
+passes**: 1,329 rows received and 1,329 entity writes applied over 60 s at ~22 rows/s with ~7.5 events/s alongside, 1.00
+against the ≥ 0.9 bar, with the applied counter now counting entity writes only — event applies were inflating it (the
+first run read 1,538 applied for 1,463 received). **The no-sync-long-task hold still passes on the new wire shape**: in
+the steady run with the scene up the largest live slice was 31 ms, `frameBudgetLongTasks` moved +0 and React committed
+2.8 times per second; the `sync:ingest` spike lines showed `owner_ms` up to 622 ms, which is some fifteen sub-50 ms
+slices accumulated inside one 1.7 s software-GL frame, so the spike line now also prints `owner_max_ms`, the owner's
+longest single call. A second run booted under the full workload and never got the scene up within 160 s (React 20.7
+commits/s, +156 chunk-owned long tasks, the phase 2 class again); its 66 ms slice was the replay of the boot backlog, so
+`maxLiveBatchApplyDurationMs` now counts running-status slices only.
 
 What changed, by layer. L0 (`apps/herald`): `rebuildOverlay` publishes only rows whose value differs from what
 subscribers hold (an `OverlayLedger` at the one pre-confirmed publish chokepoint; a confirmed diff forgets its row so a

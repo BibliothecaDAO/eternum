@@ -40,12 +40,12 @@ describe("frame work owner", () => {
 
   it("resets reused owner totals between frames", () => {
     runWithFrameWorkOwner("catchup:army", () => undefined, createNowSequence([0, 10]));
-    expect(consumeDominantFrameWorkOwner()).toEqual({ durationMs: 10, owner: "catchup:army" });
+    expect(consumeDominantFrameWorkOwner()).toEqual({ durationMs: 10, maxCallMs: 10, owner: "catchup:army" });
 
     runWithFrameWorkOwner("catchup:army", () => undefined, createNowSequence([10, 11]));
     runWithFrameWorkOwner("sync:ingest", () => undefined, createNowSequence([11, 13]));
 
-    expect(consumeDominantFrameWorkOwner()).toEqual({ durationMs: 2, owner: "sync:ingest" });
+    expect(consumeDominantFrameWorkOwner()).toEqual({ durationMs: 2, maxCallMs: 2, owner: "sync:ingest" });
     expect(consumeDominantFrameWorkOwner()).toBeNull();
   });
 });

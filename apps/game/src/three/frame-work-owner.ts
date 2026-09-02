@@ -2,11 +2,16 @@ interface FrameWorkOwnerStat {
   durationMs: number;
   frameGeneration: number;
   lastSequence: number;
+  maxCallMs: number;
 }
 
-/** The owner that accounted for the most attributed time in the frame, with that time. */
+/**
+ * The owner that accounted for the most attributed time in the frame: the total across its calls, and its longest
+ * single call, so a frame full of small slices reads differently from one long task.
+ */
 export interface DominantFrameWorkOwner {
   durationMs: number;
+  maxCallMs: number;
   owner: string;
 }
 
@@ -55,9 +60,9 @@ export function consumeDominantFrameWorkOwner(): DominantFrameWorkOwner | null {
     }
   });
   frameGeneration += 1;
-  return dominantOwner === null || dominantStat === null
-    ? null
-    : { durationMs: (dominantStat as FrameWorkOwnerStat).durationMs, owner: dominantOwner };
+  if (dominantOwner === null || dominantStat === null) return null;
+  const stat = dominantStat as FrameWorkOwnerStat;
+  return { durationMs: stat.durationMs, maxCallMs: stat.maxCallMs, owner: dominantOwner };
 }
 
 function recordFrameWorkOwner(owner: string, durationMs: number): void {
@@ -65,12 +70,15 @@ function recordFrameWorkOwner(owner: string, durationMs: number): void {
     durationMs: 0,
     frameGeneration,
     lastSequence: 0,
+    maxCallMs: 0,
   };
   if (stat.frameGeneration !== frameGeneration) {
     stat.durationMs = 0;
     stat.frameGeneration = frameGeneration;
+    stat.maxCallMs = 0;
   }
   stat.durationMs += durationMs;
+  stat.maxCallMs = Math.max(stat.maxCallMs, durationMs);
   stat.lastSequence = ++ownerSequence;
   frameOwnerStats.set(owner, stat);
 }

@@ -334,10 +334,14 @@ function buildGpuBackendSpikeReport(
   hotPathStats: ReadonlyMap<string, HotPathStat> | null,
   textureStats: ReadonlyMap<object, TextureHotPathStat> | null,
 ): string {
-  // owner_ms says how much of the spike the dominant owner explains; a small share means the rest ran unattributed.
+  // owner_ms is the dominant owner's total across the frame's calls and owner_max_ms its longest single call: a
+  // frame that stalled for one long task reads differently from one that ran many short slices.
+  const ownerSummary = owner
+    ? ` owner_ms=${Math.round(owner.durationMs)} owner_max_ms=${Math.round(owner.maxCallMs)}`
+    : "";
   const frameSummary = `[FramePerf] spike renderer_mode=${rendererMode} duration_ms=${Math.round(
     durationMs,
-  )} frame_owner=${owner?.owner ?? "unattributed"}${owner ? ` owner_ms=${Math.round(owner.durationMs)}` : ""}`;
+  )} frame_owner=${owner?.owner ?? "unattributed"}${ownerSummary}`;
   if (!gpuAttributionEnabled) {
     return `${frameSummary} gpu_attribution=disabled`;
   }

@@ -38,6 +38,9 @@ interface DrainWaiter {
 
 export interface EntityIngestBatchInfo {
   applyDurationMs: number;
+  /** Event effects applied in the slice; kept apart so the entity count stays comparable with rows received. */
+  eventCount: number;
+  /** Entity component writes and removals applied in the slice. */
   operationCount: number;
 }
 
@@ -223,12 +226,14 @@ export class EntityIngestQueue {
     this.flushing = true;
     const startedAt = this.now();
     let operationCount = 0;
+    let eventCount = 0;
 
     try {
       while (this.steps.length > 0) {
         const batch = this.takeNextApplyBatch();
         await this.applyBatch(batch);
-        operationCount += batch.operationCount;
+        if (batch.type === "event") eventCount += 1;
+        else operationCount += batch.operationCount;
         if (batch.completedOperationIds.length > 0) {
           this.appliedOperationId = Math.max(this.appliedOperationId, ...batch.completedOperationIds);
         }
@@ -237,8 +242,8 @@ export class EntityIngestQueue {
         }
       }
 
-      if (operationCount > 0) {
-        this.onBatchApplied?.({ applyDurationMs: this.now() - startedAt, operationCount });
+      if (operationCount > 0 || eventCount > 0) {
+        this.onBatchApplied?.({ applyDurationMs: this.now() - startedAt, eventCount, operationCount });
       }
     } catch (error) {
       this.failure = error instanceof Error ? error : new Error(String(error));

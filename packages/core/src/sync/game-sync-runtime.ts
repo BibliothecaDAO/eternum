@@ -376,6 +376,9 @@ export class GameSyncRuntime {
     this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
     if (this.status === "replaying" || this.status === "running") {
       this.metrics.totalLiveEntityOperationsApplied += info.operationCount;
+    }
+    // The replay of the boot backlog is boot work; the live max is the churn number the gate asks for.
+    if (this.status === "running") {
       this.metrics.maxLiveBatchApplyDurationMs = Math.max(
         this.metrics.maxLiveBatchApplyDurationMs,
         info.applyDurationMs,

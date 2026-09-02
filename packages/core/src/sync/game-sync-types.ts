@@ -78,7 +78,7 @@ export interface GameSyncRuntimeMetrics {
   eventGapFillReplayCount: number;
   lastRecoveryDurationMs: number;
   maxBatchApplyDurationMs: number;
-  /** Same as maxBatchApplyDurationMs but over live slices only, so the snapshot's writes do not hide the churn number. */
+  /** Same as maxBatchApplyDurationMs over running-status slices only: neither the snapshot nor the boot replay hides the churn number. */
   maxLiveBatchApplyDurationMs: number;
   peakLiveUpdatesPerSecond: number;
   snapshotEntityCount: number;
