@@ -1103,6 +1103,103 @@ files named in CLAUDE.md. The agent does not deploy; the reviewer reviews the wh
 reviewed tip, and the owner does one live pass. Owner-gate measurements the agent cannot take (quiet-box human gates)
 are recorded as "owner gate pending" rows, not skipped silently.
 
+### Autonomous run — plan (implementing agent, 2026-09-02; committed before any code)
+
+**Derived from the records above.** Done, approved or parked, so not on the list: M, phase 1 (L0–L2, submit guard),
+phase 2 (L3–L4), L5 items 0–3 + continuous zoom, L5b/c/d(a–e) (L5 closed by owner acceptance; WebGPU parked — "keep the
+GPU for ourselves"), the worldmap decomposition (closed; strategic-marker skipped; the chunk/terrain streaming reshape
+out of scope), Phase 4 steps 1+2 and 3 (approved). Owner-only, recorded as "owner gate pending" rows rather than worked:
+the GPU p95 bars and every quiet-box measurement, M.3's live 96-bot columns, half one (gated on the web app's lobby),
+the identity API's allowed origins (infra), and the Cartridge Controller deletion in the half-four Deletes list
+(superseded by the owner's later decision `1532d48942a` to keep Controller as an identity wallet; the iframe half of
+that line is closed by step 3's lazy load). Parked with the procedural characters: the heraldry tuning. Ruled keep: the
+prop padding.
+
+**Order.** UI layer first (1–9), then scene-touching (10–14), then perf (15–18). One item per commit or small group,
+explicit paths only, record appended here as each lands.
+
+1. **Phase 4 step 4 — utility windows → popovers.** Transactions, keyboard shortcuts (a view inside the settings popover
+   behind its View link), what's new; the rewards button is deleted — it toggled a popup nothing rendered. Gate:
+   `overlay-surfaces.source.test.ts` asserts the window shells and the `Transactions` / `Shortcuts` / `LatestFeatures` /
+   `Rewards` popup names are gone; headless screenshots of each popover.
+2. **Step 5a — URL spectate readers.** `play-route-boot-request.ts` and `game-entry/context.ts` stop parsing `spectate`
+   themselves; the entry intent comes from `utils/spectator-session.ts`. Gate: a source test that only
+   `spectator-session.ts` reads the `spectate` query; game-entry + play-route suites green.
+3. **Step 5b — the last `openedPopups` windows.** Production automation dashboard (a popover off its trigger), the
+   commented-out exploration dashboard (deleted, dead), the per-resource realm transfer windows (a popover anchored to
+   the resource chip that opens it). Then `use-popups-store.ts`, the `PopupsStore` slice and `components/config.tsx`
+   popup names are deleted with `TopNavigation`. Gate: no `togglePopup` / `isPopupOpen` / `openedPopups` in
+   `apps/game/src`; overlay source test extended.
+4. **Step 5c — EndgameModal.** The in-game finished-game surface becomes a non-blocking finished pill in the top bar
+   whose popover offers review and home (the map stays reachable, the artifact's first complaint); `EndgameModal` and
+   `GameIsOverModal` are deleted; the landing's review flow is untouched (half one's territory). Gate: a spectator of a
+   finished game reaches the map headless with no `pointer-events-auto` element covering it; source test.
+5. **Step 6 — `toggleModal` modals → Popover.** The Popover gains a screen-point anchor (for surfaces opened from a
+   scene click) and an optional titled header with close; `ProductionModal` (5 call sites), `BattleLab`,
+   `CraftRelicPopup`, `QuickAttackPreview`, `HintModal` migrate; `toggleModal` / `setModal` / `modalContent` /
+   `showModal`, `PlayOverlayManager`'s modal host and `BlankOverlayContainer`'s modal use are deleted. Gate: no
+   `toggleModal(` in `apps/game/src`; `blank-overlay-container.tsx` no longer wraps any modal; popover tests cover the
+   point anchor.
+6. **Step 7 — `CenteredModalShell` consumers → Popover, `DialogShell` → Popover.** The 17 shell consumers (construction,
+   military, market, production popup shell, chest, help, spire travel, faith devotion, wonder faith detail, end season,
+   chat shell, structure edit, transfer manager, both dashboards, battle lab, the sidebar's own use) and the four
+   `DialogShell` consumers (transfer automation, base-popup, entity resource table, hint) move onto the Popover; both
+   shells and `base-popup.tsx` are deleted. Market is anchored to the right edge as a ledger panel and chat to the
+   bottom-right corner as a drawer — same primitive, edge-anchored, per the half-four surface table. Gate: `apps/game`
+   contains no `Modal` shell component (`centered-modal-shell.tsx`, `dialog-shell.tsx` gone; source test bans
+   `role="dialog"` outside `popover.tsx`); no element with `pointer-events-auto` covers the canvas while any surface is
+   open (headless check with each large surface open); every migrated surface's shell deleted in its commit.
+7. **Event feed.** One feed store fed by the transaction store (pending / confirmed / reverted rows), the
+   `resourceArrivals` slice (transfer rows with a countdown that flip on arrival) and the toasts that today announce
+   actions; the transactions popover becomes the feed and `Toaster` leaves the game route (errors keep a feed row in red
+   with the reason). Gate: a started transfer is a feed row within one frame of pre-confirm (unit test on the feed store
+   against a fake transaction + arrivals slice); no `toast(` call left in `apps/game/src` outside the feed.
+8. **Reconnect and direct links.** Delete the reconnect hard reload and the 4 s grace timer in the network status /
+   retry path (the transport reconnects on its own); a spectator `/hex?spectate=true` link boots map-first and hands off
+   instead of blocking at "Waiting for world map"; `bottom-right-panel.tsx`'s right-centre inspectors are deleted per
+   the Deletes list (their facts stay on the entity card). Gate: no `location.reload` in the reconnect path (source
+   test); headless `/hex?spectate=true` reaches the HUD; the inspector components are gone.
+9. **L6 — overlay churn.** One clock store with primitive fields replaces the 1 Hz object publish
+   (`BlockTimestampPoller`) and the per-file 1 Hz intervals that only interpolate the clock; `getBlockTimestamp()` per
+   render leaves the top header; tooltip and hover move to their own store so a hover no longer runs every `useUIStore`
+   selector. Gate: polling-discipline "clock" allowances shrink to the one clock store; idle React commits/s recorded
+   next to 2.31.
+10. **Action-mode conventions + pending state on the entity.** Left-click selects, right-click is the smart action on
+    the target, Esc cancels; only the selection and legal targets are emphasised; the ghost pattern carries the pending
+    state for move (exists), build (exists), attack (target pulse from click) and transfer (caravan from pre-confirm),
+    with the button's state following the transaction store. Gate: click→ghost within one frame for each action in the
+    scene's action tests; `__clientActionLatencyMeasurements` gains `ghost_rendered`.
+11. **Label pass (L5 item 6).** One glyph/digit atlas for the close band's compact labels (one draw for all quads), the
+    army tier glyphs driven by the army manager's reconcile (placed and removed with the model, never a parallel
+    lifecycle), mid-band plates and glyphs consistent per the ladder. Gate: close band at distance 10 on the game-16
+    snapshot ≤ 60 draws (507 today); a unit test that despawning an army removes its glyph in the same reconcile;
+    screenshots at 10 and 25.
+12. **L5 items 5, 7, 8.** `ArmyModel.updateAllInstances` writes `addUpdateRange` per touched slot;
+    `STRUCTURE_INSTANCE_CAPACITY` is sized from the window maximum with a loud clamp instead of a throw; CSS2D renders
+    on change with a 16 ms floor and `ReservedHyperstructureManager` consumes the change set. Gate: unit tests per item;
+    `getWorldmapRenderDiagnostics()` counters for label renders and reserved-site rebuilds flat while idle.
+13. **Frame-owner coverage.** Army sync and chunk work run under `runWithFrameWorkOwner` so a spike names its owner (the
+    M follow-up the L5 review asked for). Gate: 60 s headless digest with zero `unattributed` spikes after boot.
+14. **Visibility-aware drain.** The ingest drain keeps its timer authoritative when `document.hidden`, so a background
+    tab finishes booting. Gate: a unit test on the drain with a hidden document; headless boot with the page hidden
+    completes.
+15. **Half two class 1 — compile prewarm.** One pipeline warm-up list built from the asset manifest, compiled off the
+    critical path after first terrain; the first-terrain frame draws terrain pipelines only. Gate: first-frame
+    `createRenderPipeline` count and the `render:backend` boot spike recorded before/after on the headless recipe (today
+    `createRenderPipeline=65x/1.4 s` in the first spike); owner gate pending for the 3.4 s / 5.9 s spikes.
+16. **Half two class 3 — fog.** Verify then fix: every explored-tile write (hydration, diff, own action) reaches one fog
+    invalidation chokepoint and the reveal starts from the diff. Gate: a unit test that a hydration write and a diff
+    write both mark the fog page dirty; the terrain fog wiring source test extended.
+17. **Half two class 5 — bootstrap streaming.** The scene renders from the first snapshot page that carries the player's
+    own structures and streams the rest. Gate: `bootstrap_done` / `first_terrain` from `__eternumGameEntryTimeline`
+    recorded headless before/after; owner gate pending for the ≤ 1 s / ≤ 2 s bars.
+18. **Half two class 4 — render on arrival.** Verify the one-player-event path applies its diff in the frame it is
+    received (L4 flush per slice, ≤ 6 ms). Gate: `pre_confirmed → rendered` headless number recorded; owner gate pending
+    for ≤ 50 ms p95 under a 96-bot workload.
+
+Owner gate pending (recorded, not worked): far/mid/close p95 on the GPU after items 11–15; explore p95 ≤ 250 ms and
+click→ghost on the quiet box; M.3 live columns; the second-load WebGPU check (parked).
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
