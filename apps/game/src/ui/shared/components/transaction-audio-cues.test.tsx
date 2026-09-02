@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TransactionNotification } from "./tx-emit";
+import { TransactionAudioCues } from "./transaction-audio-cues";
 
 const provider = vi.hoisted(() => {
   const listeners = new Map<string, Set<(payload: unknown) => void>>();
@@ -24,7 +24,6 @@ const provider = vi.hoisted(() => {
   };
 });
 
-const toastMock = vi.hoisted(() => vi.fn());
 const playMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@bibliothecadao/react", () => ({
@@ -37,10 +36,6 @@ vi.mock("@bibliothecadao/react", () => ({
   }),
 }));
 
-vi.mock("sonner", () => ({
-  toast: toastMock,
-}));
-
 vi.mock("@/audio/core/AudioManager", () => ({
   AudioManager: {
     getInstance: () => ({
@@ -49,7 +44,7 @@ vi.mock("@/audio/core/AudioManager", () => ({
   },
 }));
 
-describe("TransactionNotification", () => {
+describe("TransactionAudioCues", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -59,7 +54,6 @@ describe("TransactionNotification", () => {
     document.body.appendChild(container);
     root = createRoot(container);
     provider.removeAllListeners();
-    toastMock.mockClear();
     playMock.mockClear();
   });
 
@@ -75,7 +69,7 @@ describe("TransactionNotification", () => {
 
   it("shows explicit uncertainty guidance for no-hash submit timeouts", async () => {
     await act(async () => {
-      root.render(<TransactionNotification />);
+      root.render(<TransactionAudioCues />);
     });
 
     await act(async () => {
@@ -87,18 +81,13 @@ describe("TransactionNotification", () => {
       });
     });
 
-    expect(toastMock).toHaveBeenCalledWith("⚠️ Transaction status uncertain", {
-      description: expect.stringContaining(
-        "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.",
-      ),
-    });
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 
   it("surfaces the classified Cairo reason on reverts", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await act(async () => {
-      root.render(<TransactionNotification />);
+      root.render(<TransactionAudioCues />);
     });
 
     await act(async () => {
@@ -116,16 +105,13 @@ describe("TransactionNotification", () => {
       });
     });
 
-    expect(toastMock).toHaveBeenCalledWith("❌ Transaction failed", {
-      description: expect.stringContaining("failed: not enough stamina"),
-    });
     expect(consoleError).toHaveBeenCalledWith("Transaction failed: not enough stamina");
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 
   it("prefers the raw receipt revert reason over the regex-salvaged message", async () => {
     await act(async () => {
-      root.render(<TransactionNotification />);
+      root.render(<TransactionAudioCues />);
     });
 
     await act(async () => {
@@ -140,9 +126,6 @@ describe("TransactionNotification", () => {
       });
     });
 
-    expect(toastMock).toHaveBeenCalledWith("❌ Transaction failed", {
-      description: expect.stringContaining("failed: Population exceeds capacity"),
-    });
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 });

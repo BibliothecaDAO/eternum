@@ -19,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 const toPaddedFeltAddress = (address: string): string => `0x${BigInt(address).toString(16).padStart(64, "0")}`;
 

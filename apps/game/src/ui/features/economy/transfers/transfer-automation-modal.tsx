@@ -4,7 +4,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
     return entry.resourceConfigs

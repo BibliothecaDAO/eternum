@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import { useDojo } from "@bibliothecadao/react";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {

@@ -2,7 +2,7 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import { getContractByName } from "@dojoengine/core";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";

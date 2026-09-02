@@ -17,7 +17,7 @@ vi.mock("@/observability/observed-client-transaction", () => ({
   executeObservedClientTransaction: mocks.executeObservedClientTransaction,
 }));
 
-vi.mock("sonner", () => ({
+vi.mock("@/ui/features/event-feed/notify", () => ({
   toast: {
     error: mocks.toastError,
   },

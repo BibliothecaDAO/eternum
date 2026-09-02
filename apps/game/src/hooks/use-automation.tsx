@@ -33,7 +33,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage, isInsufficientResourceBalanceRevert } from "@/utils/error-message";
 

@@ -54,7 +54,7 @@ vi.mock("@/ui/lib/structure-capabilities", () => ({
   canTransferMilitaryInventoryBetweenStructureIds: () => true,
 }));
 
-vi.mock("sonner", () => ({
+vi.mock("@/ui/features/event-feed/notify", () => ({
   toast: {
     success: mocks.toastSuccess,
     error: mocks.toastError,

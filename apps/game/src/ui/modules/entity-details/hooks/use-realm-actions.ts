@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { CallData, type Call } from "starknet";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";

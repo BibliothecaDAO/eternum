@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { Position } from "@bibliothecadao/eternum";

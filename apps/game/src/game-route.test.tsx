@@ -20,11 +20,17 @@ vi.mock("./hooks/use-transaction-listener", () => ({
   useTransactionListener: vi.fn(),
 }));
 
+vi.mock("./ui/features/event-feed/event-feed-ticker", () => ({
+  EventFeedTicker: () => <div>EventFeedTicker</div>,
+}));
+
+vi.mock("./ui/shared/components/transaction-audio-cues", () => ({
+  TransactionAudioCues: () => <div>TransactionAudioCues</div>,
+}));
+
 vi.mock("./ui/shared", () => ({
   ChunkTransitionIndicator: () => <div>ChunkTransitionIndicator</div>,
   ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Toaster: () => <div>Toaster</div>,
-  TransactionNotification: () => <div>TransactionNotification</div>,
   WorldLoading: () => <div>WorldLoading</div>,
 }));
 

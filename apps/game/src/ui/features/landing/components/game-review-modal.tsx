@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
 import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, Shield, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";

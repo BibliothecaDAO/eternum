@@ -1,6 +1,6 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
 import { TileManager } from "@bibliothecadao/eternum";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import { getScopedGameId } from "@/sync/game-scope";
 import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction-buildability";
 

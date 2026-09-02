@@ -16,7 +16,7 @@ import { ID, StructureType } from "@bibliothecadao/types";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { useStructureEntityDetail } from "../entities/hooks/use-structure-entity-detail";
 

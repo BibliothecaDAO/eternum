@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { LandingIdentityChip } from "@/ui/modules/identity/landing-identity-chip";
+import { EventFeedTicker } from "@/ui/features/event-feed/event-feed-ticker";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
@@ -114,6 +115,8 @@ const LandingLayoutContent = () => {
 
       {/* Bottom navigation (mobile only) */}
       <MobileBottomNav />
+
+      <EventFeedTicker />
 
       {/* Settings modal */}
       {settingsOpen && (

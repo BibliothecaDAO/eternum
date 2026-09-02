@@ -311,8 +311,10 @@ export const extractErrorMessage = (error: unknown, fallback = "Unknown error"):
 export const formatErrorForConsole = (error: unknown, fallback = "Unknown error"): string =>
   extractErrorMessage(error, fallback).replace(/\s+/g, " ").trim();
 
+/** @public */
 export type TransactionErrorKind = "resource_bounds" | "user_cancelled" | "reverted" | "submit_failed" | "unknown";
 
+/** @public */
 export interface ClassifiedTransactionError {
   kind: TransactionErrorKind;
   reason?: string;

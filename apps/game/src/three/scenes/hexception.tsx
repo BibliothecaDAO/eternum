@@ -93,7 +93,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import gsap from "gsap";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import {
   AnimationClip,
   AnimationMixer,
@@ -1051,16 +1051,12 @@ export default class HexceptionScene extends HexagonScene {
     });
 
     const producedResource = getProducedResource(building.category as BuildingType);
-    usePopoverStore
-      .getState()
-      .openSurface({
-        id: "production",
-        content: (
-          <ProductionModal
-            preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource}
-          />
-        ),
-      });
+    usePopoverStore.getState().openSurface({
+      id: "production",
+      content: (
+        <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />
+      ),
+    });
   }
 
   public moveCameraToURLLocation() {

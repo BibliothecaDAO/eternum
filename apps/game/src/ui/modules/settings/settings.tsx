@@ -19,7 +19,7 @@ import { ShortcutsPanel } from "@/ui/modules/shortcuts/shortcuts";
 import { addressToNumber } from "@/ui/utils/utils";
 import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
   { label: "Quality", mode: "quality" },

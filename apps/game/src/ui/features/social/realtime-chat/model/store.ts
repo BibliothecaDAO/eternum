@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";

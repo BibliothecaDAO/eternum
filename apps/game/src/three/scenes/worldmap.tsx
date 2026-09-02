@@ -3,7 +3,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { DEV_MODE_ENABLED, VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -2137,11 +2137,6 @@ export default class WorldmapScene extends WarpTravel {
           )}
         </div>
       </div>,
-      {
-        classNames: {
-          toast: "!bg-dark-brown !border-gold/30",
-        },
-      },
     );
   }
 
@@ -2881,14 +2876,12 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    usePopoverStore
-      .getState()
-      .openSurface({
-        id: "spire-travel",
-        content: (
-          <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />
-        ),
-      });
+    usePopoverStore.getState().openSurface({
+      id: "spire-travel",
+      content: (
+        <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />
+      ),
+    });
   }
 
   private onArmyCreate(actionPath: ActionPath[], selectedEntityId: ID) {

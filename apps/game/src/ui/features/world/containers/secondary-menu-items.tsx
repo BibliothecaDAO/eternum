@@ -1,7 +1,7 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
-import { TRANSACTIONS_POPOVER_ID, TransactionPanel } from "@/ui/components/transaction-center";
+import { EventFeedPanel, FEED_POPOVER_ID } from "@/ui/features/event-feed/event-feed-panel";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { Popover } from "@/ui/design-system/molecules/popover";
@@ -113,11 +113,11 @@ export const SecondaryMenuItems = () => {
           empty. */}
       <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
 
-      {/* Transactions — always visible, sits immediately to the left of Settings.
+      {/* Activity — the event feed, always visible, immediately to the left of Settings.
           Status dot indicator overlays when there's an active signal. */}
       <Popover
-        id={TRANSACTIONS_POPOVER_ID}
-        ariaLabel="Transactions"
+        id={FEED_POPOVER_ID}
+        ariaLabel="Activity"
         align="end"
         className="w-[360px] overflow-y-auto p-0"
         trigger={
@@ -126,11 +126,11 @@ export const SecondaryMenuItems = () => {
               variant="hud"
               className="transactions-selector"
               tooltipLocation="bottom"
-              active={openPopoverId === TRANSACTIONS_POPOVER_ID}
+              active={openPopoverId === FEED_POPOVER_ID}
               image="/image-icons/network.png"
-              label={"Transactions"}
+              label={"Activity"}
               size="topbar"
-              onClick={() => togglePopover(TRANSACTIONS_POPOVER_ID)}
+              onClick={() => togglePopover(FEED_POPOVER_ID)}
               primaryNotification={
                 txStatus.pendingCount > 0
                   ? {
@@ -153,7 +153,7 @@ export const SecondaryMenuItems = () => {
           </div>
         }
       >
-        <TransactionPanel />
+        <EventFeedPanel />
       </Popover>
 
       {/* Settings stays last in the utility cluster; its panel hangs off the gear. */}

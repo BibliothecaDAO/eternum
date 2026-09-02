@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
 }));
 
-vi.mock("sonner", () => ({ toast: { error: mocks.toastError } }));
+vi.mock("@/ui/features/event-feed/notify", () => ({ toast: { error: mocks.toastError } }));
 vi.mock("@bibliothecadao/eternum", () => ({
   TileManager: vi.fn().mockImplementation(() => ({
     getRealmLevel: () => 1,

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import { Copy, Loader2, Share2 } from "lucide-react";
 
 import { Button } from "@/ui/design-system/atoms";

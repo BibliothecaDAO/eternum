@@ -1,6 +1,6 @@
 import Navigation from "lucide-react/dist/esm/icons/navigation";
 import X from "lucide-react/dist/esm/icons/x";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -8,7 +8,7 @@ import { type BattleLocation, formatWinnerName, STORY_EVENT_THEMES } from "./sto
 import type { StoryEventIcon } from "@bibliothecadao/eternum";
 
 interface BattleToastProps {
-  toastId: string | number;
+  toastId: string;
   icon: StoryEventIcon;
   attackerLabel: string;
   defenderLabel: string;

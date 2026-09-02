@@ -10,7 +10,7 @@ import { useDojo } from "@bibliothecadao/react";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import { WinnersTable } from "./components/winners-table";
 

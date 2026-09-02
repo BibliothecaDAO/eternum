@@ -14,7 +14,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, getEntityString } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 import type { Account, AccountInterface } from "starknet";
 
 import { getExplorationStrategy } from "@/automation/exploration";

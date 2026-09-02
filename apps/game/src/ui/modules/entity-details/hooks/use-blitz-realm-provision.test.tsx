@@ -28,7 +28,7 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useResolvedWorldGameMode: () => mocks.worldMode,
 }));
 
-vi.mock("sonner", () => ({
+vi.mock("@/ui/features/event-feed/notify", () => ({
   toast: {
     error: mocks.toastError,
   },

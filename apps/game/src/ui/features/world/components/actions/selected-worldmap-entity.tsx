@@ -31,7 +31,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@/ui/features/event-feed/notify";
 
 // Layout: vertical column of bubbles. The outer parent (TileDetails atom in
 // bottom-right-panel) already provides positioning + scroll, so this layout
