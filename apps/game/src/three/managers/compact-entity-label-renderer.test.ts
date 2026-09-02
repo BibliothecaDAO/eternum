@@ -29,6 +29,18 @@ function createCanvasElement() {
   } as unknown as HTMLCanvasElement;
 }
 
+const batchesOf = (renderer: CompactEntityLabelRenderer): THREE.BatchedMesh[] =>
+  (renderer as unknown as { group: THREE.Group }).group.children as THREE.BatchedMesh[];
+
+const instanceMatrixOf = (renderer: CompactEntityLabelRenderer, entityId: number): THREE.Matrix4 => {
+  const label = (
+    renderer as unknown as { labels: Map<number, { batch: { mesh: THREE.BatchedMesh }; instanceId: number }> }
+  ).labels.get(entityId)!;
+  const matrix = new THREE.Matrix4();
+  label.batch.mesh.getMatrixAt(label.instanceId, matrix);
+  return matrix;
+};
+
 beforeEach(() => {
   vi.stubGlobal("document", {
     createElement: vi.fn((tagName: string) => {
@@ -46,160 +58,121 @@ afterEach(() => {
 });
 
 describe("CompactEntityLabelRenderer", () => {
-  it("renders labels with WebGPU-safe mesh materials", () => {
+  it("draws every label on an atlas page as one batched mesh with a plain material", () => {
     const scene = new THREE.Scene();
     const renderer = createRenderer(scene);
 
-    renderer.setLabel({
-      entityId: 1,
-      position: new THREE.Vector3(1, 2, 3),
-      text: "Sable Order",
-      variant: "mine",
-    });
+    for (let entityId = 1; entityId <= 50; entityId += 1) {
+      renderer.setLabel({
+        entityId,
+        position: new THREE.Vector3(entityId, 0, 0),
+        text: entityId % 2 === 0 ? "Even" : "Odd",
+        variant: entityId % 3 === 0 ? "ally" : "enemy",
+      });
+    }
 
-    const group = (renderer as unknown as { group: THREE.Group }).group;
-    const mesh = group.children[0] as THREE.Mesh;
-
-    expect(mesh).toBeInstanceOf(THREE.Mesh);
-    expect(mesh.geometry).toBeInstanceOf(THREE.PlaneGeometry);
-    expect(mesh.material).toBeInstanceOf(THREE.MeshBasicMaterial);
-    expect((mesh.material as THREE.MeshBasicMaterial).map).toBeInstanceOf(THREE.CanvasTexture);
-    expect(mesh).not.toBeInstanceOf(THREE.Sprite);
-    expect(mesh.material).not.toBeInstanceOf(THREE.ShaderMaterial);
+    const batches = batchesOf(renderer);
+    expect(batches).toHaveLength(1);
+    expect(renderer.drawCount).toBe(1);
+    expect(batches[0]).toBeInstanceOf(THREE.BatchedMesh);
+    expect(batches[0].material).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect((batches[0].material as THREE.MeshBasicMaterial).map).toBeInstanceOf(THREE.CanvasTexture);
+    expect(batches[0].material).not.toBeInstanceOf(THREE.ShaderMaterial);
+    // Four distinct texts × variants share four quad geometries between fifty instances.
+    expect(
+      (renderer as unknown as { batches: Map<unknown, { geometryIdByKey: Map<string, unknown> }> }).batches
+        .values()
+        .next().value?.geometryIdByKey.size,
+    ).toBe(4);
   });
 
-  it("uses a compact default footprint for always-on map labels", () => {
-    const scene = new THREE.Scene();
-    const renderer = createRenderer(scene);
-
-    renderer.setLabel({
-      entityId: 1,
-      position: new THREE.Vector3(),
-      text: "Sable Order",
-      variant: "mine",
-    });
-
-    const group = (renderer as unknown as { group: THREE.Group }).group;
-    const mesh = group.children[0] as THREE.Mesh;
-    expect(mesh.scale.y).toBeCloseTo(0.46);
-    expect(mesh.scale.x).toBeGreaterThan(mesh.scale.y);
-  });
-
-  it("keeps visual labels out of raycast picking", () => {
-    const scene = new THREE.Scene();
-    const renderer = createRenderer(scene);
-
-    renderer.setLabel({
-      entityId: 1,
-      position: new THREE.Vector3(),
-      text: "Sable Order",
-      variant: "mine",
-    });
-
-    const group = (renderer as unknown as { group: THREE.Group }).group;
-    const mesh = group.children[0] as THREE.Mesh;
-    const intersections: THREE.Intersection[] = [];
-
-    mesh.raycast(new THREE.Raycaster(), intersections);
-
-    expect(intersections).toEqual([]);
-  });
-
-  it("reuses cached textures and materials until the last label is removed", () => {
-    const scene = new THREE.Scene();
-    const renderer = createRenderer(scene);
-
-    renderer.setLabel({
-      entityId: 1,
-      position: new THREE.Vector3(),
-      text: "Shared",
-      variant: "enemy",
-    });
-    renderer.setLabel({
-      entityId: 2,
-      position: new THREE.Vector3(1, 0, 0),
-      text: "Shared",
-      variant: "enemy",
-    });
-
-    const group = (renderer as unknown as { group: THREE.Group }).group;
-    const texture = ((group.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial).map as THREE.Texture;
-    expect((group.children[0] as THREE.Mesh).material).toBe((group.children[1] as THREE.Mesh).material);
-    const materialDispose = vi.spyOn((group.children[0] as THREE.Mesh).material as THREE.Material, "dispose");
-    const textureDispose = vi.spyOn(texture, "dispose");
-
-    renderer.removeLabel(1);
-    expect(textureDispose).not.toHaveBeenCalled();
-    expect(materialDispose).not.toHaveBeenCalled();
-
-    renderer.removeLabel(2);
-    expect(textureDispose).toHaveBeenCalledTimes(1);
-    expect(materialDispose).toHaveBeenCalledTimes(1);
-  });
-
-  it("faces labels toward the active camera", () => {
+  it("uses a compact default footprint and faces the active camera", () => {
     const scene = new THREE.Scene();
     const renderer = createRenderer(scene);
     const camera = new THREE.PerspectiveCamera();
     camera.rotation.set(0.2, 0.4, 0.6);
     camera.updateMatrixWorld();
 
-    renderer.setLabel({
-      entityId: 1,
-      position: new THREE.Vector3(),
-      text: "Facing",
-      variant: "ally",
-    });
+    renderer.setLabel({ entityId: 1, position: new THREE.Vector3(3, 1, 2), text: "Facing", variant: "ally" });
     renderer.updateCamera(camera);
 
-    const group = (renderer as unknown as { group: THREE.Group }).group;
-    const mesh = group.children[0] as THREE.Mesh;
-
-    expect(mesh.quaternion.x).toBeCloseTo(camera.quaternion.x);
-    expect(mesh.quaternion.y).toBeCloseTo(camera.quaternion.y);
-    expect(mesh.quaternion.z).toBeCloseTo(camera.quaternion.z);
-    expect(mesh.quaternion.w).toBeCloseTo(camera.quaternion.w);
+    const position = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    instanceMatrixOf(renderer, 1).decompose(position, quaternion, scale);
+    expect(position.x).toBeCloseTo(3);
+    expect(scale.y).toBeCloseTo(0.46);
+    expect(scale.x).toBeGreaterThan(scale.y);
+    expect(quaternion.x).toBeCloseTo(camera.quaternion.x);
+    expect(quaternion.y).toBeCloseTo(camera.quaternion.y);
+    expect(quaternion.z).toBeCloseTo(camera.quaternion.z);
   });
 
-  it("shares one atlas material across different labels and renderer owners", () => {
-    const armyRenderer = createRenderer(new THREE.Scene());
-    const structureRenderer = createRenderer(new THREE.Scene());
+  it("keeps labels out of raycast picking", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    renderer.setLabel({ entityId: 1, position: new THREE.Vector3(), text: "Picked?", variant: "neutral" });
 
-    armyRenderer.setLabel({ entityId: 1, position: new THREE.Vector3(), text: "Army", variant: "mine" });
-    structureRenderer.setLabel({
-      entityId: 2,
-      position: new THREE.Vector3(),
-      text: "Structure",
-      variant: "structure",
-    });
-
-    const armyGroup = (armyRenderer as unknown as { group: THREE.Group }).group;
-    const structureGroup = (structureRenderer as unknown as { group: THREE.Group }).group;
-    const armyMesh = armyGroup.children[0] as THREE.Mesh;
-    const structureMesh = structureGroup.children[0] as THREE.Mesh;
-
-    expect(armyMesh.material).toBe(structureMesh.material);
-    expect(armyMesh.geometry).not.toBe(structureMesh.geometry);
-    expect(armyMesh.geometry.getAttribute("uv").array).not.toEqual(structureMesh.geometry.getAttribute("uv").array);
+    const raycaster = new THREE.Raycaster(new THREE.Vector3(0, 0, 5), new THREE.Vector3(0, 0, -1));
+    expect(raycaster.intersectObjects([scene], true)).toEqual([]);
   });
 
-  it("coalesces multiple atlas changes into one upload per frame", () => {
-    let uploadFrame: FrameRequestCallback | undefined;
-    const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-      uploadFrame = callback;
-      return 1;
-    });
-    vi.stubGlobal("requestAnimationFrame", requestAnimationFrame);
-    const renderer = createRenderer(new THREE.Scene());
+  it("reuses the page texture and material until the last label is removed", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
 
-    renderer.setLabel({ entityId: 1, position: new THREE.Vector3(), text: "First", variant: "mine" });
-    renderer.setLabel({ entityId: 2, position: new THREE.Vector3(), text: "Second", variant: "enemy" });
-    const group = (renderer as unknown as { group: THREE.Group }).group;
-    const texture = ((group.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial).map as THREE.Texture;
-    const versionBeforeUpload = texture.version;
+    renderer.setLabel({ entityId: 1, position: new THREE.Vector3(), text: "Shared", variant: "enemy" });
+    renderer.setLabel({ entityId: 2, position: new THREE.Vector3(1, 0, 0), text: "Shared", variant: "enemy" });
 
-    expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
-    uploadFrame?.(16);
-    expect(texture.version).toBe(versionBeforeUpload + 1);
+    const material = batchesOf(renderer)[0].material as THREE.MeshBasicMaterial;
+    const texture = material.map as THREE.Texture;
+    const materialDispose = vi.spyOn(material, "dispose");
+    const textureDispose = vi.spyOn(texture, "dispose");
+
+    renderer.removeLabel(1);
+    expect(textureDispose).not.toHaveBeenCalled();
+    expect(materialDispose).not.toHaveBeenCalled();
+    expect(batchesOf(renderer)).toHaveLength(1);
+
+    renderer.removeLabel(2);
+    expect(textureDispose).toHaveBeenCalledTimes(1);
+    expect(materialDispose).toHaveBeenCalledTimes(1);
+    expect(batchesOf(renderer)).toHaveLength(0);
+  });
+
+  it("scales the hovered label up and back", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    renderer.setLabel({ entityId: 7, position: new THREE.Vector3(), text: "Hover", variant: "mine" });
+
+    const scale = new THREE.Vector3();
+    instanceMatrixOf(renderer, 7).decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
+    const restingHeight = scale.y;
+
+    renderer.setHover(7);
+    instanceMatrixOf(renderer, 7).decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
+    expect(scale.y).toBeCloseTo(restingHeight * 1.12);
+
+    renderer.clearHover();
+    instanceMatrixOf(renderer, 7).decompose(new THREE.Vector3(), new THREE.Quaternion(), scale);
+    expect(scale.y).toBeCloseTo(restingHeight);
+  });
+
+  it("retains only the labels whose entity is still placed", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    for (const entityId of [1, 2, 3]) {
+      renderer.setLabel({
+        entityId,
+        position: new THREE.Vector3(entityId, 0, 0),
+        text: `T${entityId}`,
+        variant: "enemy",
+      });
+    }
+
+    renderer.retainOnly([2]);
+
+    const labels = (renderer as unknown as { labels: Map<number, unknown> }).labels;
+    expect([...labels.keys()]).toEqual([2]);
   });
 });

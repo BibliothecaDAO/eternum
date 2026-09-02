@@ -1375,6 +1375,7 @@ export class ArmyManager {
 
   private syncVisibleSlots(): void {
     this.armyModel.setVisibleSlots(this.visibleArmyIndices.values());
+    this.compactLabelRenderer.retainOnly(this.visibleArmyIndices.keys());
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
