@@ -149,10 +149,12 @@ export const GameLoadingOverlay = () => {
     markGameEntryMilestone("overlay-dismissed");
     window.setTimeout(() => {
       setShowBlankOverlay(false);
-      if (playRoute && playRoute.bootMode === "map-first" && playRoute.resumeScene) {
+      // Read the route now, not at capture time: the handoff may have moved the URL since this callback was made.
+      const settledRoute = parsePlayRoute(window.location);
+      if (settledRoute && settledRoute.bootMode === "map-first" && settledRoute.resumeScene) {
         navigate(
           buildPlayHref({
-            ...playRoute,
+            ...settledRoute,
             bootMode: "direct",
             resumeScene: null,
           }),
@@ -161,7 +163,7 @@ export const GameLoadingOverlay = () => {
       }
       markGameEntryMilestone("world-interactive");
     }, 0);
-  }, [navigate, playRoute, setShowBlankOverlay]);
+  }, [navigate, setShowBlankOverlay]);
 
   useEffect(() => {
     if (!isReady || finalReadyMilestoneRef.current) {

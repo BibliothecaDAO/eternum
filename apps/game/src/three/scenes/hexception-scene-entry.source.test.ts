@@ -13,6 +13,12 @@ describe("hexception scene entry gate", () => {
     expect(source).toContain("  onSwitchOff(_nextSceneName?: SceneName) {\n    this.isEntered = false;");
   });
 
+  it("is set up by the scene manager on entry, never eagerly from its constructor", () => {
+    const constructorStart = source.indexOf("  constructor(");
+    const constructorEnd = source.indexOf("\n  }\n", constructorStart);
+    expect(source.slice(constructorStart, constructorEnd)).not.toContain("this.setup()");
+  });
+
   it("rebuilds the grid and marks hex readiness only while entered", () => {
     expect(source).toContain("  updateHexceptionGrid(radius: number) {\n    if (!this.isEntered) return;");
     expect(source).toContain(
