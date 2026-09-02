@@ -1356,6 +1356,39 @@ surfaces stay top-centre.
 **Owner gate pending:** Build / Military / Logistics / Chat / market / transfer cart need a signed-in player with
 structures; the headless spectator lane proves the primitive, the rest-state gate and the HUD.
 
+### Autonomous run record — item 7: one event feed (2026-09-02, commit `d2d49705e90`)
+
+**Landed.** `ui/features/event-feed/`: the feed is a view over three sources — the transaction store (pending, stuck,
+confirmed, reverted rows, written by the listener as before), the `resourceArrivals` bridge slice (caravans, with a
+countdown on the block clock that flips to "arrived" when their time passes) and the feed's own notices
+(`event-feed-store.ts`, ephemera). `deriveFeedRows` sorts them into in flight / arrived / recent; `EventFeedPanel` is
+the activity popover on the top-bar button (the old transactions button, badge and status dot kept), and
+`EventFeedTicker` shows what just happened at the bottom centre for a few seconds, each row leaving on its own
+`setTimeout` — the game route and the landing both mount it. `notify.ts` exposes the same `toast(...)` shape the toast
+library had (default, info, success, error, warning, custom, dismiss), so the twenty-two call sites changed only their
+import; the transaction toast emitter became `TransactionAudioCues` (sounds and the failure log only — the rows come
+from the listener). Deleted: `Toaster`, `tx-emit`, `TransactionList`, `TransactionPanel`, the transaction-center barrel;
+nothing in `apps/game` imports `sonner`.
+
+**Gate.** `event-feed-rows.test.ts`: a started transfer is an in-flight row from its pending transaction, its caravan is
+an in-flight row with a countdown that flips to arrived, stuck transactions lead, confirmed ones move to recent at their
+confirmation time, notices keep their own ttl in the ticker; `event-feed-ticker.test.tsx` (raise → shown, expire,
+dismiss by id); `event-feed.source.test.ts` (no `sonner` import in `apps/game/src`, only `notify.ts` writes notices);
+`transaction-audio-cues.test.tsx` (the three cues without toasts); the five suites that mocked the toast library mock
+`notify` now. Feed, shared, world containers, game-route, story-events, settlement, entity-details, landing, economy and
+discipline suites 38 files green; typecheck clean; knip clean. Headless on game 16: the activity popover renders the
+empty feed ("Nothing yet"), no toaster element exists — screenshot `scratchpad/screens/p4s7-after-activity-feed.png`.
+LOC: +661 −462 (49 files).
+
+**Ruling taken, review me.** (1) The feed row for a transfer and the row for its caravan are two rows, not one: a
+transaction hash and a `ResourceArrival` share no key, so the caravan row keys on `(structure, day, slot)` and appears
+when the arrival reaches RECS — within the same ingest slice as the pre-confirmed row. (2) Caravan countdowns follow
+`useCurrentBlockTimestamp` (the 1 Hz block store) until item 9 consolidates the clock. (3) The Logistics view's own
+arrivals tab stays — it is the claim surface; the feed only shows the rows.
+
+**Owner gate pending:** a real transfer on the deploy (row at click, caravan row at pre-confirm, flip at arrival) and
+the ticker under live action.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
