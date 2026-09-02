@@ -1226,6 +1226,23 @@ text in the HUD — screenshots `scratchpad/screens/p4s4-after-transactions-popo
 the only entry point was the settings panel's View link, and a popover cannot outlive the anchor it hangs from. The
 feed's "New" pips stay lit for entries dated tomorrow (the feed dates entries by deploy day) — data, not the seen logic.
 
+### Autonomous run record — item 2: one reader for spectator intent (2026-09-02, commit `b3ca5e5778d`)
+
+**Landed.** `utils/spectator-session.ts` is the only reader of the `spectate` query: `hasSpectateQuery(search)` is the
+parse, `resolveSpectateIntent(location)` latches the session intent wherever a play route is resolved — the boot request
+(`play-route-boot-request.ts`), the entry context (`game-entry/context.ts`), the map-first normalisation and the route
+target — and `isExplicitSpectateSession()` keeps serving the bridge, the realm store, the scene's label priority, the
+shareholder guard and the identity chip. The parsed `PlayRouteDescriptor` has no `spectate` field any more;
+`buildPlayHref` takes the flag as an optional input, so the three legacy URL rewrites carry it through by calling the
+one parse. Bootstrap's own `captureSpectateIntentFromUrl()` is deleted: it read whatever URL was current when the
+bootstrap started, which on the landing's `/enter?intent=spectate` path is a URL without the flag — the play-route
+resolvers now latch from the play URL itself, once per resolution.
+
+**Gate.** `spectator-session.source.test.ts`: the `.get("spectate")` read exists only in `spectator-session.ts`, and the
+play-route descriptor declares no `spectate`; game-entry, play/navigation, top-header, init and store suites 20 files /
+68 green (the target and play-route tests drop the flag from the parsed descriptor, the chip test drives the latch
+directly); typecheck clean; knip clean. LOC: +? −? (recorded from the commit stat).
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
