@@ -45,10 +45,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "clock",
     reason: "arrival countdown interpolation",
   },
-  "apps/game/src/ui/features/factory-v2/components/factory-v2-watch-workspace.tsx": {
-    class: "clock",
-    reason: "deployment cooldown label",
-  },
   "apps/game/src/ui/features/factory-v2/hooks/use-factory-v2.ts": {
     class: "external",
     reason: "deployment worker run status cannot push",

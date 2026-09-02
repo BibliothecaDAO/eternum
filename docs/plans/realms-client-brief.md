@@ -303,6 +303,22 @@ client to `eternum-game.pages.dev` from the branch tip (workflow run 33599560955
 to `d04a5d75e38` and restarted (healthy, block 60,561). Re-measure game: 15, `lab-mtjqbqr5`, 95 bots, 25-minute
 workload, one open slot. Bars: wire ≤ 1.5, applied/received ≥ 0.9.
 
+Phase 2 review (reviewer, 2026-09-02): L4 `3ee28acfaf9` and L3 `9b1a1fb7ef8` audited and reproduced. The runtime's slice
+hook fires projection flush before slice listeners as specified; the bridge marks slices dirty from seventeen `update$`
+sources and derives once per slice into `useWorldSlicesStore` (plus one `useUIStore` write); the `recs-query-discipline`
+source test enforces the ban with an EMPTY allowlist — stronger than required; seven managers deleted (net −1,097
+tracked production lines). Independent idle reproduction: 1.98 React commits/s spectating game 15 (their 2.07), no
+bridge console errors. The three suspicious "pre-existing" failures were verified at the phase-2 parent in a detached
+worktree — all fail there too; the polling-discipline one was a stale allowlist entry for
+`factory-v2-watch-workspace.tsx` (its interval left in upstream drift) and is pruned in this commit, making that test
+green again. **Approved pending the churn gate.** Findings carried to the gate hand-back: (1) the bridge (306 lines)
+ships without its own unit test — add a small install/derive/dispose test with a fake runtime before the gate closes;
+(2) the bridge's `useUIStore.subscribe` handler flushes pending dirty slices on ANY store write in the mark-to-slice
+window, not only selection/relic changes — harmless (idempotent, self-clearing) but measure whether it shows up as extra
+flushes under churn; (3) flush cadence is once per applied slice, which under heavy churn approaches frame rate — if the
+churn gate fails, the lever is a per-slice minimum interval, not consumer patches. Re-measure game for the churn gate:
+16 (`lab-mtjrn0i8`, 95 bots, 25 minutes).
+
 Re-measured after herald steps A and B (2026-09-02, game 15 `lab-mtjqbqr5`, 95 bots, box herald `d04a5d75e38`, pages.dev
 client on the branch tip; spectating from the dev server on headless software WebGL2). **Wire ratio passes**: 18,740
 rows on the wire over 299 heads for 14,009 distinct rows changed, 1.34 against the ≤ 1.5 bar (8.35 before). Intra-diff
