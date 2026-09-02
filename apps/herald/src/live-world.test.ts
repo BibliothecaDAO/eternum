@@ -621,3 +621,174 @@ describe("LiveWorld", () => {
     expect(diffLatency.record).toHaveBeenCalledWith("confirmed", expect.any(Number));
   });
 });
+
+// Two subscriber models over the recorded wire: the pre-phase-1 transport reverts pending rows to its confirmed copy
+// at overlay_reset; the phase-1 transport keeps every row until a diff changes it. Both are reduced from the same
+// messages a socket recorded, and compared to what a fresh subscriber is handed at that moment.
+type SubscriberRows = Map<string, unknown>;
+
+const rowsOf = (message: Record<string, unknown>, field: "set" | "del") =>
+  (message[field] as Array<{ key: string; model: string; value?: unknown }> | undefined) ?? [];
+
+const reduceKeepingRows = (messages: Array<Record<string, unknown>>): SubscriberRows => {
+  const current: SubscriberRows = new Map();
+  for (const message of messages) {
+    if (message.type === "snapshot") {
+      for (const row of message.rows as Array<{ key: string; value: unknown }>) {
+        current.set(`${message.model as string}:${row.key}`, row.value);
+      }
+    }
+    if (message.type === "diff") {
+      for (const row of rowsOf(message, "set")) current.set(`${row.model}:${row.key}`, row.value);
+      for (const row of rowsOf(message, "del")) current.delete(`${row.model}:${row.key}`);
+    }
+  }
+  return current;
+};
+
+const reduceRevertingRows = (messages: Array<Record<string, unknown>>): SubscriberRows => {
+  const confirmed: SubscriberRows = new Map();
+  const current: SubscriberRows = new Map();
+  const pending = new Set<string>();
+  for (const message of messages) {
+    if (message.type === "snapshot") {
+      for (const row of message.rows as Array<{ key: string; value: unknown }>) {
+        const identity = `${message.model as string}:${row.key}`;
+        confirmed.set(identity, row.value);
+        current.set(identity, row.value);
+      }
+    }
+    if (message.type === "diff") {
+      for (const row of rowsOf(message, "set")) {
+        const identity = `${row.model}:${row.key}`;
+        if (message.preconfirmed) pending.add(identity);
+        else confirmed.set(identity, row.value);
+        current.set(identity, row.value);
+      }
+      for (const row of rowsOf(message, "del")) {
+        const identity = `${row.model}:${row.key}`;
+        if (message.preconfirmed) pending.add(identity);
+        else confirmed.delete(identity);
+        current.delete(identity);
+      }
+    }
+    if (message.type === "overlay_reset") {
+      for (const identity of pending) {
+        if (confirmed.has(identity)) current.set(identity, confirmed.get(identity));
+        else current.delete(identity);
+      }
+      pending.clear();
+    }
+  }
+  return current;
+};
+
+const testModelRows = (rows: SubscriberRows) =>
+  Object.fromEntries([...rows].filter(([identity]) => identity.startsWith("TestModel:")).sort());
+
+/** Head 13 confirms the streamed transaction and opens block 14's overlay; head 14 confirms that overlay. */
+const twoHeadRpc = (): MadaraRpc & { advanceTo: (block: number) => void } => {
+  const confirmedByBlock = new Map<number, RawWorldEvent[]>([
+    [
+      13,
+      [
+        setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x2"], 0),
+        setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x4"], 1),
+      ],
+    ],
+    [
+      14,
+      [
+        setEvent("0x101", "0x333", ["0x1", "0x7", "0x1", "0x5"], 0),
+        setEvent("0x101", "0x333", ["0x1", "0x7", "0x1", "0x6"], 1, "0xdef"),
+      ],
+    ],
+  ]);
+  const preconfirmedByHead = new Map<number, RpcBlockWithReceipts>([
+    [
+      13,
+      {
+        block_number: 14,
+        timestamp: 100,
+        transactions: [
+          blockSet("0x333", [
+            ["0xabc", "0x5"],
+            ["0xdef", "0x6"],
+          ]),
+        ],
+      },
+    ],
+    [14, { block_number: 15, timestamp: 101, transactions: [] }],
+  ]);
+  let head = 12;
+  return {
+    advanceTo: (block: number) => {
+      head = block;
+    },
+    blockNumber: async () => head,
+    getBlockWithReceipts: async () => preconfirmedByHead.get(head)!,
+    getEvents: async function* ({ fromBlock, toBlock }: { fromBlock: number; toBlock: number }) {
+      for (let block = fromBlock; block <= toBlock; block += 1) {
+        const events = (confirmedByBlock.get(block) ?? []).map((event) => ({ ...event, block_number: block }));
+        if (events.length > 0) yield { events, page: block };
+      }
+    },
+  } as unknown as MadaraRpc & { advanceTo: (block: number) => void };
+};
+
+describe("LiveWorld wire economy", () => {
+  it("publishes a row once per diff however many events touched it", async () => {
+    const confirmed = [
+      { ...setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x2"], 0), block_number: 13 },
+      { ...setEvent("0x101", "0x222", ["0x1", "0x7", "0x1", "0x4"], 1), block_number: 13 },
+    ];
+    const { live } = liveFixture({ rpc: rpcFixture({ ...replacementBlock(), transactions: [] }, confirmed) });
+    const socket = attachResumed(live);
+
+    const first = subscribedSet("0x222", "0x2", 0);
+    const second = subscribedSet("0x222", "0x4", 1);
+    live.acceptPreconfirmedEvent(first);
+    const receipt = live.acceptReceipt(preconfirmedReceipt([first, second]));
+    live.acceptPreconfirmedEvent(second);
+    await endMacrotask();
+    await receipt;
+
+    const streamed = socket.messages.filter(({ type }) => type === "diff");
+    expect(streamed).toHaveLength(1);
+    expect(streamed[0]).toMatchObject({
+      preconfirmed: true,
+      set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x4" } }],
+    });
+
+    await live.reconcileAfterSubscribe();
+    const confirmedDiff = socket.messages.find(({ preconfirmed, type }) => type === "diff" && preconfirmed === false)!;
+    expect(confirmedDiff.set).toEqual([{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x4" } }]);
+  });
+
+  it("converges a reverting subscriber and a row-keeping subscriber to a fresh subscriber's view at every head", async () => {
+    const rpc = twoHeadRpc();
+    const { live } = liveFixture({ rpc });
+    const socket = attachResumed(live);
+    const first = subscribedSet("0x222", "0x2", 0);
+    const second = subscribedSet("0x222", "0x4", 1);
+    live.acceptPreconfirmedEvent(first);
+    live.acceptPreconfirmedEvent(second);
+    live.acceptReceipt(preconfirmedReceipt([first, second]));
+    await endMacrotask();
+
+    for (const head of [13, 14]) {
+      rpc.advanceTo(head);
+      await live.acceptSubscribedHead({ block_number: head, timestamp: 100 });
+      const fresh = testModelRows(reduceKeepingRows(attachResumed(live).messages));
+
+      expect(testModelRows(reduceKeepingRows(socket.messages)), `phase-1 subscriber at head ${head}`).toEqual(fresh);
+      expect(testModelRows(reduceRevertingRows(socket.messages)), `pre-phase-1 subscriber at head ${head}`).toEqual(
+        fresh,
+      );
+    }
+    expect(testModelRows(reduceKeepingRows(socket.messages))).toEqual({
+      "TestModel:0xabc": { game_id: "0x7", value: "0x5" },
+      "TestModel:0xdef": { game_id: "0x7", value: "0x6" },
+    });
+  });
+});

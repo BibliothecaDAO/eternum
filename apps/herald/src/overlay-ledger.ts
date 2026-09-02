@@ -34,6 +34,19 @@ const isSameHeldRow = (left: HeldRow, right: HeldRow): boolean =>
   left === null || right === null ? left === right : isSameRecord(left.value, right.value);
 
 /**
+ * One change per (model, key), the last value, in first-appearance order. The fold emits a full-row change per
+ * member event, so a transaction that writes ten members of one row would otherwise ship the row ten times.
+ */
+export const collapseChanges = (changes: readonly FoldChange[]): FoldChange[] => {
+  const byIdentity = new Map<string, FoldChange>();
+  for (const change of changes) {
+    const entry = ledgerEntry(change);
+    byIdentity.set(rowIdentity(entry.model, entry.key), change);
+  }
+  return [...byIdentity.values()];
+};
+
+/**
  * The pre-confirmed rows subscribers currently hold beyond the confirmed fold. Subscribers keep a row's value until a
  * later diff changes it (they no longer revert on overlay_reset), so the wire carries only the rows whose value
  * differs from what they hold, while the ledger tracks the whole overlay to know which rows a rebuild must revert.

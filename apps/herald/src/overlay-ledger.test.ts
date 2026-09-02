@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { OverlayLedger } from "./overlay-ledger";
+import { collapseChanges, OverlayLedger } from "./overlay-ledger";
 import type { DecodedRecord, FoldChange, FoldSet } from "./types";
 
 const row = (key: string, value: string): FoldSet => ({ key, model: "TestModel", value: { game_id: "0x7", value } });
@@ -10,6 +10,17 @@ const del = (key: string): FoldChange => ({ del: { key, model: "TestModel" }, ga
 const nestedSet = (value: DecodedRecord): FoldChange => ({
   gameId: "7",
   set: { key: "0x1", model: "TestModel", value },
+});
+
+describe("collapseChanges", () => {
+  it("keeps one change per row with its last value, in first-appearance order", () => {
+    expect(collapseChanges([set("0xabc", "0x1"), set("0xdef", "0x2"), set("0xabc", "0x3")])).toEqual([
+      set("0xabc", "0x3"),
+      set("0xdef", "0x2"),
+    ]);
+    expect(collapseChanges([set("0xabc", "0x1"), del("0xabc")])).toEqual([del("0xabc")]);
+    expect(collapseChanges([del("0xabc"), set("0xabc", "0x4")])).toEqual([set("0xabc", "0x4")]);
+  });
 });
 
 describe("OverlayLedger", () => {

@@ -3,7 +3,7 @@ import type { CheckpointStore } from "./checkpoint-store";
 import { DiffLatencyMonitor } from "./diff-latency";
 import { GameStreamHub, type GameStreamSession, type SnapshotOverlayDiff, type StreamSocket } from "./game-stream";
 import { MadaraRpc } from "./madara-rpc";
-import { OverlayLedger } from "./overlay-ledger";
+import { collapseChanges, OverlayLedger } from "./overlay-ledger";
 import { replayWorldEvents } from "./snapshot-builder";
 import type { ResumeRequest } from "./stream-protocol";
 import type {
@@ -286,8 +286,9 @@ export class LiveWorld {
   }
 
   private broadcastConfirmedChanges(changes: FoldChange[], block: number): void {
-    this.overlayLedger.forgetConfirmed(changes);
-    this.broadcastChanges(changes, block, false);
+    const collapsed = collapseChanges(changes);
+    this.overlayLedger.forgetConfirmed(collapsed);
+    this.broadcastChanges(collapsed, block, false);
   }
 
   private resetOverlay(): void {
@@ -425,9 +426,10 @@ export class LiveWorld {
 
   /** The whole transaction feeds late subscribers' overlay; the wire carries only the rows whose value changes. */
   private publishOverlayTransaction(transaction: OverlayTransaction): void {
-    if (transaction.changes.length === 0) return;
-    this.overlayTransactions.push(transaction);
-    const delta = this.overlayLedger.delta(transaction.changes);
+    const changes = collapseChanges(transaction.changes);
+    if (changes.length === 0) return;
+    this.overlayTransactions.push({ ...transaction, changes });
+    const delta = this.overlayLedger.delta(changes);
     this.broadcastChanges(delta, transaction.block, true, transaction.transactionHash);
   }
 
