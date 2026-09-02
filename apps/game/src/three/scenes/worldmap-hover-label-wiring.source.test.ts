@@ -13,6 +13,10 @@ function readRendererSceneBootstrapSource(): string {
   return readFileSync(resolve(currentDir, "../renderer-scene-bootstrap.ts"), "utf8");
 }
 
+function readHoverLabelRecoverySource(): string {
+  return readFileSync(resolve(currentDir, "worldmap-hover-label-recovery.ts"), "utf8");
+}
+
 function extractSourceBetween(source: string, startSignature: string, endSignature: string): string {
   const start = source.indexOf(startSignature);
   const end = source.indexOf(endSignature, start + startSignature.length);
@@ -86,16 +90,16 @@ describe("worldmap hover label wiring", () => {
     expect(reconcilePos).toBeGreaterThan(convergencePos);
   });
 
+  // The pending-recovery state machine moved to the WorldmapHoverLabelRecovery collaborator; the same
+  // discipline (reconcile routes through the recovery-result apply, and the scene still drives the
+  // per-frame retry tick) is enforced at that home.
   it("routes hover reconciliation through pending recovery state", () => {
     const source = readWorldmapSource();
-    const reconcileHoverLabels = extractSourceBetween(
-      source,
-      "private reconcileHoverLabels(",
-      "protected tryArmyRaycastFallback(",
-    );
+    const recoverySource = readHoverLabelRecoverySource();
+    const reconcile = extractSourceBetween(recoverySource, "reconcile(", "retry(");
 
-    expect(source).toContain("pendingHoverLabelRecovery");
-    expect(reconcileHoverLabels).toContain("this.applyHoverLabelRecoveryResult(");
+    expect(recoverySource).toContain("private pending: PendingHoverLabelRecovery | null");
+    expect(reconcile).toContain("this.applyResult(");
     expect(source).toContain("this.runPendingHoverLabelRecoveryFrame()");
   });
 

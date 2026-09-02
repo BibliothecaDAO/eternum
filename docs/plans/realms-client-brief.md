@@ -702,6 +702,28 @@ Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
   12/12; scenes 850/851 (the one red is the pre-existing known `worldmap-initial-refresh` drift, untouched here);
   managers + terrain 644/644; typecheck clean repo-wide; prettier + knip clean on the touched files.
 
+- Cut 3 — hover-label recovery (**relocation**, 2026-09-02, branch `client-scale-96p`). Moved the "keep retrying the
+  hovered hex until its labels resolve" state machine out of the scene into a collaborator: new
+  `apps/game/src/three/scenes/worldmap-hover-label-recovery.ts` (`WorldmapHoverLabelRecovery`, 159 lines) with its own
+  test (140 lines / 9 cases). The collaborator owns the single `pending` retry state (was the `pendingHoverLabelRecovery`
+  field), the `HoverLabelRecoveryReason` / `PendingHoverLabelRecovery` types, the `HOVER_LABEL_RECOVERY_FRAME_BUDGET`
+  const, and the decision methods `applyResult` / `isPendingForHex` / `trace` (was
+  `applyHoverLabelRecoveryResult` / `isPendingHoverRecoveryForHex` / `traceHoverLabelRecovery`); the hovered hex and the
+  switch-off flag stay scene state, read through injected `getHoverHex` / `isSwitchedOff` accessors plus a
+  `reconcileHexHover` callback. The scene builds it in `initializeWorldmapSupportManagers` and keeps four thin delegators
+  (`reconcileHoverLabels`, `retryPendingHoverLabelRecovery`, `runPendingHoverLabelRecoveryFrame`,
+  `clearPendingHoverLabelRecovery`) so every lifecycle call site (mouse-move, scene-ready, converged, critical/
+  non-critical catch-up, switch-off, attach/detach labels) keeps its wiring — only the two body-content pins moved.
+  Retargeted tests in the same commit, preserving intent: `worldmap-hover-label-wiring.source.test.ts` now checks the
+  collaborator owns the pending state and that `reconcile` routes through `applyResult` (the scene still drives
+  `runPendingHoverLabelRecoveryFrame` per frame); `worldmap-initial-terrain-convergence.source.test.ts` reads the
+  no-entity-clears-pending discipline from the collaborator's `applyResult`. Behaviour-neutral (the state machine is
+  reproduced verbatim over injected accessors). worldmap.tsx 8503 → 8392 (−111; git +12/−123). Gate: collaborator 9/9;
+  scenes 859/860 (the one red is the pre-existing known `worldmap-initial-refresh` drift); managers + terrain 644/644;
+  typecheck clean repo-wide; prettier + knip clean on the touched files. Relocations (1) and (2) done — next: stop and
+  re-judge the strategic-marker and combat-presentation shells with the owner before touching them, then report
+  worldmap.tsx's residual composition.
+
 Recorded, L5b (2026-09-03, branch `client-scale-96p`, one commit on top of the L5 tip). (1) Content ladder: one table,
 `apps/game/src/three/scenes/worldmap-content-ladder.ts`, maps the zoom band (`CameraView`, resolved from distance) to
 what renders — near: everything; mid: models and FX, text only for priority entities, armies as tier glyphs; far: the

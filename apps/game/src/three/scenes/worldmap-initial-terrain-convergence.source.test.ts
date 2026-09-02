@@ -54,10 +54,12 @@ describe("Worldmap initial terrain convergence", () => {
     expect(flushBody).toContain("state: this.chunkRefreshRuntimeState");
   });
 
+  // The recovery-result apply moved to the WorldmapHoverLabelRecovery collaborator; the same discipline
+  // (a hovered tile that resolves no entity clears the pending retry rather than scheduling one) holds there.
   it("does not schedule hover recovery when a hovered tile resolves no entity", () => {
-    const source = readSource("src/three/scenes/worldmap.tsx");
-    const methodStart = source.indexOf("private applyHoverLabelRecoveryResult(");
-    const methodEnd = source.indexOf("private retryPendingHoverLabelRecovery(", methodStart);
+    const source = readSource("src/three/scenes/worldmap-hover-label-recovery.ts");
+    const methodStart = source.indexOf("private applyResult(");
+    const methodEnd = source.indexOf("private isPendingForHex(", methodStart);
 
     expect(methodStart).toBeGreaterThanOrEqual(0);
     expect(methodEnd).toBeGreaterThan(methodStart);
@@ -65,6 +67,6 @@ describe("Worldmap initial terrain convergence", () => {
     const methodBody = source.slice(methodStart, methodEnd);
 
     expect(methodBody).toContain("!result.resolvedAnyEntity");
-    expect(methodBody).toContain('this.clearPendingHoverLabelRecovery("no_entity")');
+    expect(methodBody).toContain('this.clear("no_entity")');
   });
 });

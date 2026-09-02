@@ -256,6 +256,7 @@ import {
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
 import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { WorldmapHoverLabelRecovery, type HoverLabelRecoveryReason } from "./worldmap-hover-label-recovery";
 import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visibility-health-monitor";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
@@ -544,7 +545,6 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
-const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
 function resolveStructureMarkerKind(structureType: StructureType): StrategicStructureMarkerKind {
   if (structureType === StructureType.Realm) return "realm";
   if (structureType === StructureType.Hyperstructure) return "hyperstructure";
@@ -577,21 +577,6 @@ type WorldmapCameraTransitionStatus = "idle" | "transitioning";
 interface WorldmapUrlLocationMoveOptions {
   requestRefresh?: boolean;
 }
-type HoverLabelRecoveryReason =
-  | "hover"
-  | "initial_refresh"
-  | "manager_catch_up"
-  | "critical_manager_catch_up"
-  | "non_critical_manager_catch_up"
-  | "scene_ready"
-  | "frame_retry";
-
-interface PendingHoverLabelRecovery {
-  hex: HexPosition;
-  reason: HoverLabelRecoveryReason;
-  remainingFrameRetries: number;
-}
-
 let worldmapInteractionDebugInstanceCounter = 0;
 
 function allocateWorldmapInteractionDebugInstanceId(): number {
@@ -969,7 +954,7 @@ export default class WorldmapScene extends WarpTravel {
   private unregisterWorldmapRecoveryHandle: (() => void) | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
-  private pendingHoverLabelRecovery: PendingHoverLabelRecovery | null = null;
+  private hoverLabelRecovery!: WorldmapHoverLabelRecovery;
 
   constructor(
     dojoContext: SetupResult,
@@ -1263,6 +1248,12 @@ export default class WorldmapScene extends WarpTravel {
         recordBoundsRecovery: () => recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_bounds_recovery"),
       },
     );
+
+    this.hoverLabelRecovery = new WorldmapHoverLabelRecovery({
+      getHoverHex: () => this.currentHoverLabelHex,
+      isSwitchedOff: () => this.isSwitchedOff,
+      reconcileHexHover: (hex) => this.hoverLabelManager.reconcileHexHover(hex),
+    });
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
@@ -2358,121 +2349,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private reconcileHoverLabels(reason: HoverLabelRecoveryReason = "hover"): HoverLabelReconcileResult | null {
-    if (!this.currentHoverLabelHex) {
-      this.clearPendingHoverLabelRecovery("no_hover");
-      return null;
-    }
-
-    const hoverHex = this.currentHoverLabelHex;
-    const result = runWithFrameWorkOwner("hover:reconcile", () => this.hoverLabelManager.reconcileHexHover(hoverHex));
-    this.applyHoverLabelRecoveryResult(result, reason);
-    this.traceHoverLabelRecovery("reconcile", {
-      reason,
-      hex: this.currentHoverLabelHex,
-      result,
-      pending: this.pendingHoverLabelRecovery,
-    });
-
-    return result;
-  }
-
-  private applyHoverLabelRecoveryResult(result: HoverLabelReconcileResult, reason: HoverLabelRecoveryReason): void {
-    if (!this.currentHoverLabelHex || this.isSwitchedOff) {
-      this.clearPendingHoverLabelRecovery("inactive");
-      return;
-    }
-
-    if (!result.resolvedAnyEntity) {
-      this.clearPendingHoverLabelRecovery("no_entity");
-      return;
-    }
-
-    if (result.shownAnyLabel && result.missingTypes.length === 0) {
-      this.clearPendingHoverLabelRecovery("resolved");
-      return;
-    }
-
-    const pendingHex = { ...this.currentHoverLabelHex };
-    if (reason === "frame_retry") {
-      if (!this.pendingHoverLabelRecovery || !this.isPendingHoverRecoveryForHex(pendingHex)) {
-        return;
-      }
-      this.pendingHoverLabelRecovery = {
-        ...this.pendingHoverLabelRecovery,
-        reason,
-      };
-      return;
-    }
-
-    this.pendingHoverLabelRecovery = {
-      hex: pendingHex,
-      reason,
-      remainingFrameRetries: HOVER_LABEL_RECOVERY_FRAME_BUDGET,
-    };
+    return this.hoverLabelRecovery.reconcile(reason);
   }
 
   private retryPendingHoverLabelRecovery(reason: HoverLabelRecoveryReason): void {
-    if (!this.pendingHoverLabelRecovery && !this.currentHoverLabelHex) {
-      return;
-    }
-
-    if (this.isSwitchedOff || !this.currentHoverLabelHex) {
-      this.clearPendingHoverLabelRecovery("inactive_retry");
-      return;
-    }
-
-    this.reconcileHoverLabels(reason);
+    this.hoverLabelRecovery.retry(reason);
   }
 
   private runPendingHoverLabelRecoveryFrame(): void {
-    if (!this.pendingHoverLabelRecovery) {
-      return;
-    }
-
-    if (
-      this.isSwitchedOff ||
-      !this.currentHoverLabelHex ||
-      !this.isPendingHoverRecoveryForHex(this.currentHoverLabelHex)
-    ) {
-      this.clearPendingHoverLabelRecovery("frame_inactive");
-      return;
-    }
-
-    if (this.pendingHoverLabelRecovery.remainingFrameRetries <= 0) {
-      this.clearPendingHoverLabelRecovery("frame_budget_exhausted");
-      return;
-    }
-
-    this.pendingHoverLabelRecovery.remainingFrameRetries -= 1;
-    this.reconcileHoverLabels("frame_retry");
-  }
-
-  private isPendingHoverRecoveryForHex(hexCoords: HexPosition): boolean {
-    return (
-      this.pendingHoverLabelRecovery !== null &&
-      this.pendingHoverLabelRecovery.hex.col === hexCoords.col &&
-      this.pendingHoverLabelRecovery.hex.row === hexCoords.row
-    );
+    this.hoverLabelRecovery.runFrame();
   }
 
   private clearPendingHoverLabelRecovery(reason: string): void {
-    if (!this.pendingHoverLabelRecovery) {
-      return;
-    }
-
-    this.traceHoverLabelRecovery("clear", {
-      reason,
-      pending: this.pendingHoverLabelRecovery,
-    });
-    this.pendingHoverLabelRecovery = null;
-  }
-
-  private traceHoverLabelRecovery(event: string, details: Record<string, unknown>): void {
-    if (!import.meta.env.DEV || !VERBOSE_LOGS_ENABLED) {
-      return;
-    }
-
-    console.debug(`[WorldmapHoverLabels] ${event}`, details);
+    this.hoverLabelRecovery.clear(reason);
   }
 
   protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
