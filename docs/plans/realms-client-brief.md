@@ -1023,6 +1023,52 @@ while spectating anonymously come from a vendor gRPC client (not our source) pol
 — **step-3 rider**: identify the caller and gate it on the identity-session fact, closing the class "authed calls fire
 while anonymous". (d) The virtual-keyboard `overlaysContent` line is browser noise; ignored.
 
+### Phase 4 record — step 3: leaderboard and settings popovers, Controller keychain gated (2026-09-02, commit `8c08d4238fa`)
+
+**Landed.** The Social/Leaderboard window is the social board (`social/components/social-board.tsx`: players, tribes,
+faith and prize tabs with the expandable player / tribe column) hanging off its own leaderboard button in the top bar's
+utility cluster, through the Popover primitive — per the owner's amendment, not the identity chip, whose popover is
+sign-in only again. The board derives its ranking from `useInGameLeaderboard`, the standings the chip and the players
+panel already read, so the window's private `LeaderboardManager` initialise + interval and its polling-discipline
+allowance are gone. The Settings window hangs off the gear as a popover; its Keyboard Shortcuts link closes the popover
+and opens the shortcuts window as before. Popover: the trigger owns its click (toggle through the store) so a
+`CircleButton` trigger keeps a real `onClick`; the panel carries viewport caps (max width and height on the side it
+grows towards) so a wide board shrinks instead of leaving the screen. Deleted: `social.tsx` (the `Social` /
+`SocialWindow` shell), `SettingsWindow`, the `Settings` and `Leaderboard` popup names and their `TopNavigation` mounts.
+
+**Rider — anonymous authed RPCs.** The paired `rpc error: code = Unauthenticated desc = access denied` lines come from
+`x.cartridge.gg`: the Cartridge Controller keychain iframe, which the SDK creates in the `ControllerConnector`
+constructor at module load (`starknet-provider.tsx`) for every visitor, and which then polls its own authed API with no
+Cartridge session. The class is "a vendor client that needs a session starts for a visitor who has none"; the SDK's
+`lazyload: true` closes it — the iframe is created on the first wallet action (a sign-in click, or auto-connect for a
+returning Controller user, who has that session). Verified headless: no iframe and no `Unauthenticated` output over 30 s
+of anonymous spectating (before: iframe present, pairs at ~12 s and on every re-entry). The stale provider source test —
+red since Controller rejoined the identity wallet picker in `1532d48942a` — now pins the current decision
+(`[controller, ready(), braavos()]`, no paymaster, no policies) and the lazy load.
+
+**Gates.** `overlay-surfaces.source.test.ts` (renamed from identity-surfaces: banner, sign-in modals and the window
+shell gone, no re-mount, no `Settings` / `Leaderboard` popup names, prompts only through `requestSignIn`),
+`social-board.mode-gating.test.ts` and the leaderboard-ownership source test retargeted to the board, `popover.test.tsx`
+(4), `starknet-provider.factory-tab.test.ts` (3, previously 1 red). Targeted suites green (11 files); `typecheck` clean;
+`knip` clean (the two pre-existing dist findings). Full `apps/game` suite (run with the decomposition agent's in-flight
+worldmap edits in the tree): the pre-existing list from the steps 1+2 record, minus starknet-provider.factory-tab, plus
+two from that in-flight work — `console-discipline` (a `console.log` in `worldmap-hover-label-recovery.ts:157`) and
+`combat-presentation-coordinator.source` (expects `this.replayIndexedCombat(update)` in `worldmap.tsx`). Screenshots in
+the session scratchpad `screens/`: `p4s3-after-leaderboard-popover.png` (board under its button, game alive behind),
+`p4s3-after-settings-popover.png`. LOC: `8c08d4238fa` +396 −369 (the settings panel's re-indentation counts on both
+sides; net structure: window shells and the manager interval out, one 263-line board in).
+
+**Findings.**
+
+1. The top strip is centred, so on a 1280 px viewport the leaderboard popover gets ~820 px (its natural width is 1000
+   px, 1400 px expanded) and the players grid narrows; on 1920 px it has full width. The old window centred at 1100 px
+   with the same squeeze on small screens. Anchoring is the amendment's; width policy is the reviewer's call.
+2. `EndgameModal`, the URL spectate readers and the remaining `openedPopups` windows (transactions, shortcuts, latest
+   features, rewards, automation, resource transfer) are still the step-4+ list; the settings panel's Keyboard Shortcuts
+   link still opens the shortcuts window through `openedPopups`.
+3. Not touched: the identity-origin fetch failing in the local dev profile (`identity_session_load_failed`, no identity
+   API on the laptop) — the store resolves to anonymous, as designed.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
