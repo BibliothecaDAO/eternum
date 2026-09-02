@@ -1,3 +1,4 @@
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
 import { Button, TextInput } from "@/ui/design-system/atoms";
 import { CreateGuildButton } from "./create-guild-button";
@@ -10,7 +11,7 @@ import {
   LeaderboardManager,
   toHexString,
 } from "@bibliothecadao/eternum";
-import { useDojo, useGuilds, usePlayerWhitelist } from "@bibliothecadao/react";
+import { useDojo, usePlayerWhitelist } from "@bibliothecadao/react";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
 import Download from "lucide-react/dist/esm/icons/download";
@@ -43,7 +44,8 @@ export const Guilds = ({
   const [isPublic, setIsPublic] = useState(true);
   const [guildName, setGuildName] = useState("");
 
-  const guilds = useGuilds();
+  // The guilds slice is the subscription; the bridge publishes it once per ingest slice and on account change.
+  const guilds = useWorldSlicesStore((state) => state.guilds);
   const guildInvites = usePlayerWhitelist(ContractAddress(account.address));
   const playerGuild = useMemo(
     () => getGuildFromPlayerAddress(ContractAddress(account.address), components),

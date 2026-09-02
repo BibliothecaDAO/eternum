@@ -21,7 +21,8 @@ import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
-import { StoreManagers } from "../store-managers";
+import { ActionRunners } from "../action-runners";
+import { RecsStoreBridge } from "./recs-store-bridge";
 import { PlayOverlayManager } from "./play-overlay-manager";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
@@ -67,7 +68,8 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
  */
 const BackgroundSystems = () => (
   <>
-    <StoreManagers />
+    <RecsStoreBridge />
+    <ActionRunners />
     <BlockTimestampPoller />
     <ChainTimePoller />
     <NotLoggedInMessage />

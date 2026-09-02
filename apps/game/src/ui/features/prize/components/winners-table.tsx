@@ -1,9 +1,9 @@
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { activeGameRows } from "@/sync/recs-rows";
 import { displayAddress } from "@/ui/utils/utils";
-import { belongsToActiveGame, getAddressName, toHexString } from "@bibliothecadao/eternum";
+import { getAddressName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import { useMemo } from "react";
 
 type WinnerRow = {
@@ -27,22 +27,21 @@ export const WinnersTable = () => {
   const {
     setup: { components },
   } = useDojo();
-  const rankEntities = useEntityQuery([Has(components.PlayerRank)]);
-  const pointEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);
+  const leaderboardRevision = useWorldSlicesStore((state) => state.leaderboardRevision);
 
   const rows = useMemo<WinnerRow[]>(() => {
-    const pointsByPlayer = new Map<bigint, bigint>();
-    for (const entity of pointEntities) {
-      const value = getComponentValue(components.PlayerRegisteredPoints, entity);
-      if (value && belongsToActiveGame(value)) {
-        pointsByPlayer.set(value.address as bigint, value.registered_points as bigint);
-      }
-    }
+    // The revision is the recompute signal, not an input: ranks and registered points are read from RECS here.
+    void leaderboardRevision;
+    const pointsByPlayer = new Map<bigint, bigint>(
+      activeGameRows(components.PlayerRegisteredPoints).map((row) => [
+        row.address as bigint,
+        row.registered_points as bigint,
+      ]),
+    );
 
-    return rankEntities
-      .flatMap((entity) => {
-        const value = getComponentValue(components.PlayerRank, entity);
-        if (!value || !belongsToActiveGame(value) || Number(value.rank) <= 0) return [];
+    return activeGameRows(components.PlayerRank)
+      .flatMap((value) => {
+        if (Number(value.rank) <= 0) return [];
         const player = value.player as bigint;
         return [
           {
@@ -54,7 +53,7 @@ export const WinnersTable = () => {
         ];
       })
       .toSorted((left, right) => left.rank - right.rank || (left.player < right.player ? -1 : 1));
-  }, [components.PlayerRank, components.PlayerRegisteredPoints, pointEntities, rankEntities]);
+  }, [components, leaderboardRevision]);
 
   const playerName = (address: bigint): string =>
     getAddressName(ContractAddress(address), components) || displayAddress(toHexString(address));

@@ -1,9 +1,7 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  filterPlayersByBlitzSettlement,
-  useBlitzSettlementPlayerAddresses,
-} from "@/services/blitz/blitz-settlement-players";
+import { useWorldSlicesStore, type WorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { PrizePanel } from "@/ui/features/prize";
@@ -13,13 +11,11 @@ import { Guilds } from "../guilds/guilds";
 import { PlayersPanel } from "../player/players-panel";
 import { leaderboard } from "@/ui/features/world";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { belongsToActiveGame, getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
-import { useDojo, usePlayers } from "@bibliothecadao/react";
+import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import { Shapes, Sparkles, Users } from "lucide-react";
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { PlayerId } from "./player-id";
 import { useSocialStore } from "./use-social-store";
 
@@ -38,7 +34,34 @@ type PlayerStructureCounts = {
   villages: number;
 };
 
+const countStructuresByOwner = (structures: WorldSlicesStore["structures"]) =>
+  structures.reduce<Map<bigint, PlayerStructureCounts>>((countsByOwner, structure) => {
+    const counts = countsByOwner.get(structure.owner) ?? {
+      banks: 0,
+      mines: 0,
+      realms: 0,
+      hyperstructures: 0,
+      villages: 0,
+    };
+    if (structure.base.category === StructureType.Realm) counts.realms += 1;
+    if (structure.base.category === StructureType.Hyperstructure) counts.hyperstructures += 1;
+    if (structure.base.category === StructureType.Bank) counts.banks += 1;
+    if (structure.base.category === StructureType.FragmentMine) counts.mines += 1;
+    if (structure.base.category === StructureType.Village) counts.villages += 1;
+    countsByOwner.set(structure.owner, counts);
+    return countsByOwner;
+  }, new Map());
+
 export const Social = () => {
+  const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
+
+  // The window's world-slice subscriptions and leaderboard timers exist only while it is open.
+  if (!isOpen) return null;
+
+  return <SocialWindow />;
+};
+
+const SocialWindow = () => {
   const {
     account: { account },
     setup: { components },
@@ -58,58 +81,31 @@ export const Social = () => {
   const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
   const mode = useGameModeConfig();
   const resolvedWorldMode = useResolvedWorldGameMode();
   const isBlitzMode = resolvedWorldMode === "blitz";
   const isEternumMode = resolvedWorldMode === "eternum";
   const showGuildsTab = isEternumMode && mode.ui.showGuildsTab;
 
-  const allPlayers = usePlayers();
-  const blitzSettlementPlayerAddresses = useBlitzSettlementPlayerAddresses(components);
+  // The world slices are the subscription: the bridge publishes each once per ingest slice, already active-game scoped.
+  const allPlayers = useWorldSlicesStore((state) => state.players);
+  const blitzSettlementPlayerAddresses = useWorldSlicesStore((state) => state.blitzSettlementPlayers);
+  const structures = useWorldSlicesStore((state) => state.structures);
   const players = useMemo(
     () => (isBlitzMode ? filterPlayersByBlitzSettlement(allPlayers, blitzSettlementPlayerAddresses) : allPlayers),
     [allPlayers, blitzSettlementPlayerAddresses, isBlitzMode],
   );
-
-  const structureEntities = useEntityQuery([Has(components.Structure)]);
-  const playerStructureCountsMap = useMemo(
-    () =>
-      structureEntities.reduce<Map<bigint, PlayerStructureCounts>>((countsByOwner, entity) => {
-        const structure = getComponentValue(components.Structure, entity);
-        if (!structure || !belongsToActiveGame(structure)) return countsByOwner;
-
-        const counts = countsByOwner.get(structure.owner) ?? {
-          banks: 0,
-          mines: 0,
-          realms: 0,
-          hyperstructures: 0,
-          villages: 0,
-        };
-        if (structure.base.category === StructureType.Realm) counts.realms += 1;
-        if (structure.base.category === StructureType.Hyperstructure) counts.hyperstructures += 1;
-        if (structure.base.category === StructureType.Bank) counts.banks += 1;
-        if (structure.base.category === StructureType.FragmentMine) counts.mines += 1;
-        if (structure.base.category === StructureType.Village) counts.villages += 1;
-        countsByOwner.set(structure.owner, counts);
-        return countsByOwner;
-      }, new Map()),
-    [components.Structure, structureEntities],
-  );
+  const playerStructureCountsMap = useMemo(() => countStructuresByOwner(structures), [structures]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     // update first time - initialize with interval on first call
     const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
     manager.initialize();
     setPlayersByRank(manager.playersByRank);
-  }, [components, isOpen, setPlayersByRank]);
+  }, [components, setPlayersByRank]);
 
   // Add periodic updates every 1 minute to refresh unregistered shareholder points
   useEffect(() => {
-    if (!isOpen) return;
-
     const interval = setInterval(() => {
       const manager = LeaderboardManager.instance(components);
       manager.updatePoints();
@@ -117,15 +113,13 @@ export const Social = () => {
     }, LEADERBOARD_UPDATE_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [components, isOpen, setPlayersByRank]);
+  }, [components, setPlayersByRank]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     setPlayerInfo(
       getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, components),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, components, isOpen, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, components, setPlayerInfo]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
@@ -232,8 +226,6 @@ export const Social = () => {
       setSelectedTab(activeTabIndex);
     }
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
-
-  if (!isOpen) return null;
 
   return (
     <CenteredModalShell

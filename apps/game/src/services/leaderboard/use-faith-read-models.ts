@@ -1,35 +1,17 @@
-import { belongsToActiveGame } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useMemo } from "react";
 
 import type { FaithReadModels } from "./faith-leaderboard-service";
 
+/** The world slices are the subscription; the bridge already narrows structures, wonder faith and faithful structures to the active game. */
 export const useFaithReadModels = (): FaithReadModels => {
-  const {
-    setup: { components },
-  } = useDojo();
-  const structureEntities = useEntityQuery([Has(components.Structure)]);
-  const wonderFaithEntities = useEntityQuery([Has(components.WonderFaith)]);
-  const faithfulStructureEntities = useEntityQuery([Has(components.FaithfulStructure)]);
-  const addressNameEntities = useEntityQuery([Has(components.AddressName)]);
+  const structures = useWorldSlicesStore((state) => state.structures);
+  const wonderFaith = useWorldSlicesStore((state) => state.wonderFaith);
+  const faithfulStructures = useWorldSlicesStore((state) => state.faithfulStructures);
+  const addressNames = useWorldSlicesStore((state) => state.addressNames);
 
   return useMemo(
-    () => ({
-      structures: structureEntities
-        .map((entity) => getComponentValue(components.Structure, entity))
-        .filter((row): row is NonNullable<typeof row> => Boolean(row && belongsToActiveGame(row))),
-      wonderFaith: wonderFaithEntities
-        .map((entity) => getComponentValue(components.WonderFaith, entity))
-        .filter((row): row is NonNullable<typeof row> => Boolean(row && belongsToActiveGame(row))),
-      faithfulStructures: faithfulStructureEntities
-        .map((entity) => getComponentValue(components.FaithfulStructure, entity))
-        .filter((row): row is NonNullable<typeof row> => Boolean(row && belongsToActiveGame(row))),
-      addressNames: addressNameEntities
-        .map((entity) => getComponentValue(components.AddressName, entity))
-        .filter((row): row is NonNullable<typeof row> => Boolean(row)),
-    }),
-    [addressNameEntities, components, faithfulStructureEntities, structureEntities, wonderFaithEntities],
+    () => ({ structures, wonderFaith, faithfulStructures, addressNames }),
+    [addressNames, faithfulStructures, structures, wonderFaith],
   );
 };

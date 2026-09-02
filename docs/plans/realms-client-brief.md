@@ -368,6 +368,31 @@ live gate: a lost middle nonce in a pipelined burst can strand later transaction
 the harness's failure classes will show it if it happens. Owed to the live game (after the herald redeploy):
 applied/received = 1.0 under churn, no-sync-long-task hold, submit-guard p95, and the wire ratio via `lab:probe-herald`.
 
+Recorded, phase 2 (2026-09-02, branch `client-scale-96p`; L3 + L4). Before: 19.7 React commits/s spectating game 14
+under the full 95-bot workload and 2.0 at low churn (phase 1's measurement, a devtools-hook stub counting
+`onCommitFiberRoot`, installed before the page loads). After, on this session's tree: 2.07 commits/s spectating game 15
+idle after its workload ended, scene up, no bridge errors; **the ≤ 10 commits/s under churn gate is owed to the next
+live game** — no bot workload was running when the code landed. L3: one RECS → store bridge
+(`apps/game/src/sync/recs-store-bridge.ts`) subscribes to the hot components only to mark slices dirty and derives the
+dirty slices once per ingest slice from the runtime's new `subscribeSliceApplied` hook, writing each store once: the
+existing `playerStructures`, `selectableArmies`, `playerRelics`, arrivals summary, `gameWinner`, clock gates and
+`disableButtons` into `useUIStore`, and the new slices (`players`, `guilds`, `structures`, `buildings`,
+`hyperstructures`, `blitzSettlementPlayers`, `resourceArrivals`, faith read models, `seasonEnded`) plus three revision
+counters (`leaderboardRevision`, `resourcesRevision`, `armiesRevision`) into a dedicated `useWorldSlicesStore`, so the
+bridge's write never runs `useUIStore`'s selectors. Consumers that keep their own RECS reads (in-game leaderboard, prize
+panel, winners table, register-points button, resource table, exploration dashboard) memoise on the revision and say so
+at the memo. Seven store managers died (player structures, selectable armies, relics, public troop arrivals, season
+winner, season timer, button state); the arrival auto-claim and auto-register-points runners stay in
+`apps/game/src/ui/action-runners.tsx` reading slices. Every `useEntityQuery` without a `HasValue` is gone from
+`apps/game` and `packages/react` (`usePlayers`, `useGuilds`, `useHyperstructures` deleted from the shared package;
+`useBlitzSettlementPlayerAddresses` deleted), and `recs-query-discipline.source.test.ts` bans new ones with a named,
+reasoned allowlist that is empty today. Social and Settings mount their query-bearing bodies only while open. L4: the
+spatial projection keeps its indexes current per row but publishes once per ingest slice through `flush()`, merging
+first-previous with last-current per key and dropping rows that end the slice where they started; the runtime calls it
+before the bridge's listeners so a slice's scene work and store work each happen once. Net: 25 production files
++352/−1,097 plus 762 lines in six new files (bridge 306, runners 323 carried over from the managers, store 56, readers
+26, hyperstructure infos 36, mount 15); tests +188/−49 and a 64-line source test.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5

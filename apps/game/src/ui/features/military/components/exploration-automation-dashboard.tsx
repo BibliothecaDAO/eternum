@@ -5,14 +5,14 @@ import {
   type ExplorationAutomationEntry,
 } from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { explorationAutomation } from "@/ui/features/world";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -212,7 +212,8 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
   const {
     setup: { components },
   } = useDojo();
-  const explorerEntities = useEntityQuery([Has(components.ExplorerTroops)]);
+  // The armies revision is the recompute signal; positions are read per listed explorer, not per army row.
+  const armiesRevision = useWorldSlicesStore((state) => state.armiesRevision);
 
   // Get explorer positions
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -232,7 +233,7 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
       }
     });
     return positions;
-  }, [components.ExplorerTroops, explorerEntities, list]);
+  }, [armiesRevision, components.ExplorerTroops, list]);
 
   const handlePauseAll = useCallback(() => {
     const activeCount = list.filter((e) => e.active).length;

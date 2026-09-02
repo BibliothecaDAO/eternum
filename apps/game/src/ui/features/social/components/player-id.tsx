@@ -2,6 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { Position as PositionType } from "@bibliothecadao/eternum";
 import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 
 import { Button } from "@/ui/design-system/atoms";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules";
@@ -15,8 +16,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import MapPin from "lucide-react/dist/esm/icons/map-pin";
 import { useMemo } from "react";
 
@@ -43,14 +42,14 @@ export const PlayerId = ({
   } = useDojo();
 
   const mode = useGameModeConfig();
-  const structureEntities = useEntityQuery([Has(components.Structure)]);
-  const hyperstructureEntities = useEntityQuery([Has(components.Hyperstructure)]);
+  // The world slices are the subscription: the bridge publishes them once per ingest slice.
+  const structures = useWorldSlicesStore((state) => state.structures);
+  const hyperstructures = useWorldSlicesStore((state) => state.hyperstructures);
 
   const playerStructures = useMemo(
     () =>
-      structureEntities.flatMap((entity) => {
-        const structure = getComponentValue(components.Structure, entity);
-        if (!structure || structure.owner !== selectedPlayer) return [];
+      structures.flatMap((structure) => {
+        if (structure.owner !== selectedPlayer) return [];
 
         return [
           {
@@ -63,7 +62,7 @@ export const PlayerId = ({
           },
         ];
       }),
-    [components.Structure, selectedPlayer, structureEntities],
+    [selectedPlayer, structures],
   );
 
   const playerName = useMemo(() => {
@@ -76,14 +75,11 @@ export const PlayerId = ({
   const hyperstructuresPointsGivenPerSecondMap = useMemo(() => {
     const hyperstructureConfig = configManager.getHyperstructureConfig();
     const hyps: Map<string, number> = new Map();
-    hyperstructureEntities.forEach((e) => {
-      const hyp = getComponentValue(components.Hyperstructure, e);
-      if (hyp) {
-        hyps.set(hyp.hyperstructure_id.toString(), hyperstructureConfig.pointsPerCycle * hyp.points_multiplier);
-      }
+    hyperstructures.forEach((hyp) => {
+      hyps.set(hyp.hyperstructure_id.toString(), hyperstructureConfig.pointsPerCycle * hyp.points_multiplier);
     });
     return hyps;
-  }, [components.Hyperstructure, hyperstructureEntities]);
+  }, [hyperstructures]);
 
   // getHyperstructureConfig
   // Count structure types

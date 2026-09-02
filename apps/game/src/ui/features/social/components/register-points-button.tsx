@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,8 +12,6 @@ import {
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import Zap from "lucide-react/dist/esm/icons/zap";
 import { useEffect, useMemo, useState } from "react";
 import { useSocialStore } from "./use-social-store";
@@ -40,25 +39,35 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
   } = useDojo();
 
   const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
-  const [, setRefreshTick] = useState(0);
+  const [refreshTick, setRefreshTick] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
 
-  const hyperstructure_entities = useEntityQuery([Has(components.Hyperstructure)]);
+  // The hyperstructure slice is the subscription; the bridge publishes it once per ingest slice.
+  const hyperstructures = useWorldSlicesStore((state) => state.hyperstructures);
+  const leaderboardRevision = useWorldSlicesStore((state) => state.leaderboardRevision);
   const playerAddress = ContractAddress(account.address);
   const leaderboardManager = LeaderboardManager.instance(components);
 
-  const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(playerAddress);
-  const unregisteredShareholderPoints =
-    leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress);
+  const { registeredPoints, unregisteredShareholderPoints } = useMemo(() => {
+    // The revision is the recompute signal for points reaching RECS; the tick covers the manager's local state
+    // (accrual over time, a pending claim). The points themselves are read from the manager here.
+    void leaderboardRevision;
+    void refreshTick;
+    return {
+      registeredPoints: leaderboardManager.getPlayerRegisteredPoints(playerAddress),
+      unregisteredShareholderPoints:
+        leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress),
+    };
+  }, [leaderboardManager, leaderboardRevision, playerAddress, refreshTick]);
 
-  const hyperstructuresEntityIds = useMemo(() => {
-    return hyperstructure_entities
-      .map((entity) => getComponentValue(components.Hyperstructure, entity))
-      .filter((hyperstructure) => hyperstructure?.completed)
-      .map((hyperstructure) => hyperstructure?.hyperstructure_id)
-      .filter((id) => id !== undefined);
-  }, [components.Hyperstructure, hyperstructure_entities]);
+  const hyperstructuresEntityIds = useMemo(
+    () =>
+      hyperstructures
+        .filter((hyperstructure) => hyperstructure.completed)
+        .map((hyperstructure) => hyperstructure.hyperstructure_id),
+    [hyperstructures],
+  );
 
   const hasUnregisteredPoints = unregisteredShareholderPoints > 0;
   const totalPoints = registeredPoints + unregisteredShareholderPoints;
@@ -66,6 +75,12 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
   const logPointsSummary = (...args: unknown[]) => {
     if (!POINTS_SUMMARY_DEBUG) return;
     console.log("[PointsSummary]", ...args);
+  };
+
+  // A claim changes the manager's local view (pending override, refresh) before RECS does: publish that view.
+  const publishPoints = () => {
+    setPlayersByRank(leaderboardManager.playersByRank);
+    setRefreshTick((previous) => previous + 1);
   };
 
   useEffect(() => {
@@ -124,7 +139,7 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
         leaderboardManager.setPendingSharePointsClaim(playerAddress, claimedPointsAtSubmit, txHash ?? undefined);
       }
       leaderboardManager.updatePoints();
-      setPlayersByRank(leaderboardManager.playersByRank);
+      publishPoints();
       logPointsSummary("pending override applied");
 
       if (txHash) {
@@ -138,8 +153,7 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
       clearUncertainClaimSharePointsSubmission(playerAddress);
       leaderboardManager.forceRefresh();
       leaderboardManager.updatePoints();
-
-      setPlayersByRank(leaderboardManager.playersByRank);
+      publishPoints();
       logPointsSummary("claim confirmed and refreshed", { txHash });
     } catch (error) {
       if (isNoHashSubmissionTimeout(error)) {
@@ -150,7 +164,7 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
       }
       leaderboardManager.clearPendingSharePointsClaim(playerAddress, txHash ?? undefined);
       leaderboardManager.updatePoints();
-      setPlayersByRank(leaderboardManager.playersByRank);
+      publishPoints();
       logPointsSummary("claim failed or confirmation failed", { txHash, error });
       console.error(error);
     } finally {

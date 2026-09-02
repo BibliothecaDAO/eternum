@@ -134,7 +134,7 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "clock",
     reason: "local chain-time interpolation",
   },
-  "apps/game/src/ui/store-managers.tsx": { class: "scheduler", reason: "submits due point claims on chain time" },
+  "apps/game/src/ui/action-runners.tsx": { class: "scheduler", reason: "submits due point claims on chain time" },
   "packages/core/src/managers/leaderboard-manager.ts": { class: "clock", reason: "accrued points interpolation" },
 };
 

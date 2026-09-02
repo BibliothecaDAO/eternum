@@ -40,7 +40,7 @@ const SANCTIONED_CLIENT_FILES = new Set([
   "src/ui/features/military/chest/chest-container.tsx",
   "src/ui/features/social/components/register-points-button.tsx",
   "src/ui/features/social/realtime-chat/model/store.ts",
-  "src/ui/store-managers.tsx",
+  "src/ui/action-runners.tsx",
   "src/utils/chain-time-debug.ts",
   "src/utils/dev-mode.ts",
   "src/utils/shortcuts/centralized-shortcut-manager.ts",

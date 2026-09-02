@@ -7,8 +7,9 @@ import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
 // @ts-ignore
-import { useDojo, useHyperstructures, useQuery } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 
+import { useHyperstructureInfos } from "@/hooks/helpers/use-hyperstructure-infos";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
@@ -94,7 +95,7 @@ export function NewsHeadlineBridge() {
   }, [setup.components]);
 
   const { data: storyEventLog = [] } = useStoryEvents(350);
-  const hyperstructures = useHyperstructures();
+  const hyperstructures = useHyperstructureInfos();
 
   // Queue state
   const [queue, setQueue] = useState<Headline[]>([]);

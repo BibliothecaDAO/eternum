@@ -1,19 +1,8 @@
-import { formatGuildMembers, formatGuilds, getAddressName } from "@bibliothecadao/eternum";
+import { formatGuildMembers, getAddressName } from "@bibliothecadao/eternum";
 import { ContractAddress, type GuildMemberInfo } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
+import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context";
-
-export const useGuilds = () => {
-  const {
-    account: { account },
-    setup: { components },
-  } = useDojo();
-
-  const guilds = useEntityQuery([Has(components.Guild), NotValue(components.Guild, { member_count: 0 })]);
-
-  return formatGuilds(guilds, ContractAddress(account.address), components);
-};
 
 export const useGuildMembers = (guildEntityId: ContractAddress) => {
   const {

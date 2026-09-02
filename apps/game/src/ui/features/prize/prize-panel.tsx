@@ -1,13 +1,12 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { activeGameRows } from "@/sync/recs-rows";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
 import { displayAddress } from "@/ui/utils/utils";
-import { belongsToActiveGame, LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useState } from "react";
@@ -47,40 +46,34 @@ export const PrizePanel = () => {
   } = useDojo();
   const account = useAccountStore((state) => state.account);
   const mode = useGameModeConfig();
-  const settledPlayers = useBlitzSettlementPlayerAddresses(components);
+  // The settlement slice is the subscription; the leaderboard revision is the recompute signal for the RECS reads.
+  const settledPlayers = useWorldSlicesStore((state) => state.blitzSettlementPlayers);
+  const leaderboardRevision = useWorldSlicesStore((state) => state.leaderboardRevision);
 
-  const gameEntities = useEntityQuery([Has(components.GameRegistry)]);
-  const game = useMemo(
+  const { game, trial, pointsByPlayer } = useMemo(() => {
+    // The revision is the signal, not an input: the registry, trial and registered points are read from RECS here.
+    void leaderboardRevision;
+    return {
+      game: activeGameRows(components.GameRegistry).at(0),
+      trial: activeGameRows(components.PlayersRankTrial).at(0),
+      pointsByPlayer: new Map<bigint, bigint>(
+        activeGameRows(components.PlayerRegisteredPoints).map((row) => [
+          row.address as bigint,
+          row.registered_points as bigint,
+        ]),
+      ),
+    };
+  }, [components, leaderboardRevision]);
+  const rankedPlayers = useMemo<RankedPlayer[]>(
     () =>
-      gameEntities
-        .map((entity) => getComponentValue(components.GameRegistry, entity))
-        .find((value) => value && belongsToActiveGame(value)),
-    [components.GameRegistry, gameEntities],
+      settledPlayers
+        .map((address) => ({ address, points: pointsByPlayer.get(address) ?? 0n }))
+        .toSorted((left, right) => {
+          if (left.points !== right.points) return left.points > right.points ? -1 : 1;
+          return left.address < right.address ? -1 : 1;
+        }),
+    [pointsByPlayer, settledPlayers],
   );
-  const trialEntities = useEntityQuery([Has(components.PlayersRankTrial)]);
-  const trial = useMemo(
-    () =>
-      trialEntities
-        .map((entity) => getComponentValue(components.PlayersRankTrial, entity))
-        .find((value) => value && belongsToActiveGame(value)),
-    [components.PlayersRankTrial, trialEntities],
-  );
-  const pointEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);
-  const rankedPlayers = useMemo<RankedPlayer[]>(() => {
-    const pointsByPlayer = new Map<bigint, bigint>();
-    for (const entity of pointEntities) {
-      const value = getComponentValue(components.PlayerRegisteredPoints, entity);
-      if (value && belongsToActiveGame(value)) {
-        pointsByPlayer.set(value.address as bigint, value.registered_points as bigint);
-      }
-    }
-    return settledPlayers
-      .map((address) => ({ address, points: pointsByPlayer.get(address) ?? 0n }))
-      .toSorted((left, right) => {
-        if (left.points !== right.points) return left.points > right.points ? -1 : 1;
-        return left.address < right.address ? -1 : 1;
-      });
-  }, [components.PlayerRegisteredPoints, pointEntities, settledPlayers]);
 
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [playersPerTransaction, setPlayersPerTransaction] = useState(200);

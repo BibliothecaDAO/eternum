@@ -51,8 +51,9 @@ describe("in-game leaderboard fact ownership", () => {
   it("builds the Blitz player list from the active game's settlement membership", () => {
     const socialSource = readSource("src/ui/features/social/components/social.tsx");
 
-    expect(socialSource).toContain("useBlitzSettlementPlayerAddresses(components)");
+    expect(socialSource).toContain("useWorldSlicesStore((state) => state.blitzSettlementPlayers)");
     expect(socialSource).toContain("filterPlayersByBlitzSettlement(allPlayers, blitzSettlementPlayerAddresses)");
-    expect(socialSource).toContain("belongsToActiveGame(structure)");
+    // The structures slice is already narrowed to the active game by the bridge.
+    expect(socialSource).toContain("useWorldSlicesStore((state) => state.structures)");
   });
 });

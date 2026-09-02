@@ -2,6 +2,7 @@ import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
@@ -19,8 +20,7 @@ import {
   type Structure,
   StructureType,
 } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
@@ -81,25 +81,11 @@ export const useStructuresWithMetadata = ({
     [structures],
   );
   const trackedStructureIds = useMemo(() => new Set(structureTileStatIds), [structureTileStatIds]);
-  const buildingEntities = useEntityQuery([Has(components.Building)]);
+  // The bridge publishes every building tile once per ingest slice; the picker only counts the tracked ones.
+  const buildings = useWorldSlicesStore((state) => state.buildings);
   const buildingTileCountsByStructure = useMemo(
-    () =>
-      countOccupiedBuildingTilesByStructure({
-        trackedStructureIds,
-        buildings: Array.from(buildingEntities)
-          .map((entity) => getComponentValue(components.Building, entity))
-          .flatMap((building) => {
-            if (!building) return [];
-            return [
-              {
-                outerEntityId: Number(building.outer_entity_id ?? 0),
-                innerCol: Number(building.inner_col ?? 0),
-                innerRow: Number(building.inner_row ?? 0),
-              },
-            ];
-          }),
-      }),
-    [buildingEntities, components.Building, trackedStructureIds],
+    () => countOccupiedBuildingTilesByStructure({ trackedStructureIds, buildings }),
+    [buildings, trackedStructureIds],
   );
 
   return useMemo<StructureWithMetadata[]>(() => {

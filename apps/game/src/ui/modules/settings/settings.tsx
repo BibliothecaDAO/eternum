@@ -6,6 +6,7 @@ import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
 import { CameraView } from "@/three/scenes/camera-view";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -18,8 +19,7 @@ import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
 import { resetBootstrap } from "@/init/bootstrap";
 import { useNavigate } from "react-router-dom";
 import { addressToNumber } from "@/ui/utils/utils";
-import { useGuilds, useScreenOrientation } from "@bibliothecadao/react";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +35,15 @@ const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
 ];
 
 export const SettingsWindow = () => {
+  const isOpen = useUIStore((state) => state.isPopupOpen(settings));
+
+  // The panel's audio, camera and guild subscriptions exist only while the window is open.
+  if (!isOpen) return null;
+
+  return <SettingsPanel />;
+};
+
+const SettingsPanel = () => {
   const {
     account: { account },
   } = useDojo();
@@ -72,9 +81,8 @@ export const SettingsWindow = () => {
 
   const togglePopup = useUIStore((state) => state.togglePopup);
 
-  const isOpen = useUIStore((state) => state.isPopupOpen(settings));
-
-  const guilds = useGuilds();
+  // The guilds slice is the subscription; the bridge publishes it once per ingest slice and on account change.
+  const guilds = useWorldSlicesStore((state) => state.guilds);
   const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
     const savedGuilds = localStorage.getItem("WHITELIST");
     return savedGuilds ? savedGuilds.split(",") : [];
@@ -94,8 +102,6 @@ export const SettingsWindow = () => {
     localStorage.removeItem("WHITELIST");
     toast("Guild whitelist cleared!");
   };
-
-  if (!isOpen) return null;
 
   return (
     <CenteredModalShell

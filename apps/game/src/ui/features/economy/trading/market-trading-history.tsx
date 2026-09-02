@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { getActiveWorld } from "@/runtime/world";
 import { fetchHeraldGameHistory } from "@/runtime/world/herald-http";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
@@ -9,8 +10,6 @@ import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./tra
 import { useDojo } from "@bibliothecadao/react";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
 import { memo, useEffect, useMemo, useState } from "react";
 
 const TRADES_PER_PAGE = 25;
@@ -32,7 +31,8 @@ const MarketTradingHistoryContent = memo(() => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const structureEntities = useEntityQuery([Has(components.Structure)]);
+  // Owner lookup comes from the bridge's structures slice, one array per ingest slice instead of one per row.
+  const structures = useWorldSlicesStore((state) => state.structures);
   const profile = getActiveWorld();
   const world = getWorldById(profile?.worldId ?? "blitz") ?? getDefaultWorld();
   const gameId = configManager.getActiveGameId();
@@ -40,10 +40,7 @@ const MarketTradingHistoryContent = memo(() => {
   useEffect(() => {
     setIsLoading(true);
     const ownerByEntity = new Map(
-      structureEntities.flatMap((entity) => {
-        const structure = getComponentValue(components.Structure, entity);
-        return structure ? [[String(structure.entity_id), String(structure.owner)] as const] : [];
-      }),
+      structures.map((structure) => [String(structure.entity_id), String(structure.owner)] as const),
     );
     const playerEntityIds = new Set(playerStructures.map((structure) => String(structure.entityId)));
     void fetchHeraldGameHistory(world, gameId, { limit: 500, model: "SwapEvent" })
@@ -78,7 +75,7 @@ const MarketTradingHistoryContent = memo(() => {
       .then(setTradeEvents)
       .catch(() => setTradeEvents([]))
       .finally(() => setIsLoading(false));
-  }, [address, components.Structure, gameId, playerStructures, structureEntities, world]);
+  }, [address, gameId, playerStructures, structures, world]);
 
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
 

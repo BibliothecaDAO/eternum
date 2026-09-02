@@ -1,5 +1,6 @@
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { BuildingThumbs } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,10 +12,9 @@ import { triggerConnectionForceReconnect } from "@/ui/features/world/components/
 import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
 import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-header/top-pill";
 
-import { useDojo, usePlayers } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { Has } from "@dojoengine/recs";
+import { useComponentValue } from "@dojoengine/react";
 
 import { useCallback, useMemo } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
@@ -45,7 +45,8 @@ const LeaderboardRankNode = ({
   isOpen: boolean;
   onOpen: () => void;
 }) => {
-  const players = usePlayers();
+  // The players slice is the subscription; the bridge publishes it once per ingest slice.
+  const players = useWorldSlicesStore((state) => state.players);
   const { standingsByAddress } = useInGameLeaderboard();
   const rankPill = useMemo(() => {
     if (!accountAddress) return null;
@@ -108,17 +109,14 @@ const LeaderboardRankNode = ({
 export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) => {
   const {
     setup: {
-      components: {
-        GameRegistry,
-        events: { SeasonEnded },
-      },
+      components: { GameRegistry },
     },
     account: { account },
   } = useDojo();
 
-  // Legacy worlds emit a SeasonEnded event; the s2 single world flips the
-  // active game's registry status instead.
-  const hasSeasonEndedEvent = useEntityQuery([Has(SeasonEnded)]).length > 0;
+  // Legacy worlds emit a SeasonEnded event (the bridge keeps it in the seasonEnded
+  // slice); the s2 single world flips the active game's registry status instead.
+  const hasSeasonEndedEvent = useWorldSlicesStore((state) => state.seasonEnded !== null);
   const gameRegistry = useComponentValue(
     GameRegistry,
     useMemo(() => gameEntityKey([]), []),

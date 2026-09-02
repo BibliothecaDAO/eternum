@@ -1,6 +1,7 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { Button } from "@/ui/design-system/atoms";
 import { DialogShell } from "@/ui/design-system/molecules";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -29,8 +30,7 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
-import { useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
@@ -219,24 +219,19 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     return craftableStructureIds;
   }, [components.Structure, structureColumns]);
 
-  const resourceEntities = useEntityQuery([Has(components.Resource)]);
+  // The resources revision is the recompute signal; only the columns' own rows are read, never every Resource row.
+  const resourcesRevision = useWorldSlicesStore((state) => state.resourcesRevision);
 
   const resourcesByStructure = useMemo(() => {
     const map = new Map<number, ComponentValue<ClientComponents["Resource"]["schema"]>>();
-    if (structureIdSet.size === 0) return map;
-
-    resourceEntities.forEach((entity) => {
-      const resourceValue = getComponentValue(components.Resource, entity);
-      if (!resourceValue) return;
-
-      const structureEntityId = Number(resourceValue.entity_id || 0);
-      if (structureIdSet.has(structureEntityId)) {
-        map.set(structureEntityId, resourceValue as ComponentValue<ClientComponents["Resource"]["schema"]>);
-      }
+    void resourcesRevision;
+    structureIdSet.forEach((structureEntityId) => {
+      const resourceValue = getComponentValue(components.Resource, gameEntityKey([BigInt(structureEntityId)]));
+      if (resourceValue) map.set(structureEntityId, resourceValue);
     });
 
     return map;
-  }, [resourceEntities, structureIdSet, components.Resource]);
+  }, [resourcesRevision, structureIdSet, components.Resource]);
 
   const resourceSummaries = useMemo(() => {
     const summaries = new Map<ResourcesIds, ResourceSummary>();
