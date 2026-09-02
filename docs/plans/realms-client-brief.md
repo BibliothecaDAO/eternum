@@ -422,6 +422,15 @@ tree. `recs-store-bridge.test.ts` installs the bridge with a fake runtime and re
 through the store, and pins one derive at install, one per applied slice however many rows changed, derives only for
 selection or relic changes among store writes, and nothing after dispose.
 
+Phase 2 closed (reviewer, 2026-09-02): gate record audited, the store-write flush fix is at the source (early return
+unless selection or relic-refresh changed, with `__eternumBridgeMetrics` counting triggers under `?dev`), the L4 gate
+gained a permanent counter (`projectionPublishCount` beside `appliedBatchCount`), and the owed bridge unit test landed.
+Reviewer reproduction: bridge + discipline tests 10/10, core sync 64/64, apps/game typecheck clean; the churn window
+itself was accepted on the recorded methodology (game 16's workload had ended), consistent with the idle number the
+reviewer measured independently last round. 19.7 → 3.38 commits/s under churn closes the L3 class. Next per the order:
+L5 items 0–3 + continuous zoom, far-LOD first. The parked biome-material polish (owner's separate track) must not ride
+along — it lands after L5 to avoid worldmap collisions.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
