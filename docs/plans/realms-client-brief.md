@@ -1200,6 +1200,32 @@ explicit paths only, record appended here as each lands.
 Owner gate pending (recorded, not worked): far/mid/close p95 on the GPU after items 11–15; explore p95 ≤ 250 ms and
 click→ghost on the quiet box; M.3 live columns; the second-load WebGPU check (parked).
 
+### Autonomous run record — item 1: utility windows → popovers (2026-09-02, commit `c5a1567a79a`)
+
+**Landed.** Transactions: `TransactionPanel` (`components/transaction-center/transaction-panel.tsx`, the list + the
+Voyager hint) in a popover off its top-bar button, the pending-count badge and status dot on the trigger as before.
+Keyboard shortcuts: `ShortcutsPanel` is a view inside the settings popover behind its View link (same gear anchor, back
+link to the sections; the popover unmounts on close so the view resets). What's new: `LatestFeaturesPanel` in a popover
+off its button; the button renders while there are unseen features or while the feed is open, and mounting the panel
+marks the feed seen. Rewards: the button toggled a popup nothing rendered (its window was commented out), so the button,
+its `Rewards` popup name, its `BuildingThumbs.rewards` entry and the header's season-ended derivation (a `GameRegistry`
+`useComponentValue` plus the `seasonEnded` slice read) are deleted. Also deleted: `TransactionWindow`,
+`ShortcutsWindow`, `LatestFeaturesWindow`, the `Shortcuts` / `LatestFeatures` / `Transactions` popup names and their
+`TopNavigation` mounts; the utility cluster no longer reads `useUIStore` or `useDojo`. `PopupName` keeps only the two
+automation dashboards for item 3.
+
+**Gate.** `overlay-surfaces.source.test.ts` asserts the window shell files and component names are gone and that
+`config.tsx` carries none of the six migrated popup names; targeted suites (overlay, world containers, modules,
+transaction-center types, social, discipline, popover) green; typecheck clean; knip clean (the two pre-existing dist
+findings). Headless (game 16 snapshot, 1280 px): transactions popover 360 px under its button, what's-new popover 420 px
+with the feed marked seen, shortcuts view inside the settings popover and back, zero draggable windows, no "Rewards"
+text in the HUD — screenshots `scratchpad/screens/p4s4-after-transactions-popover.png`,
+`p4s4-after-whats-new-popover.png`, `p4s4-after-shortcuts-view.png`. LOC: +220 −275.
+
+**Ruling taken, review me.** Shortcuts live inside the settings popover rather than on a top-bar button of their own:
+the only entry point was the settings panel's View link, and a popover cannot outlive the anchor it hangs from. The
+feed's "New" pips stay lit for entries dated tomorrow (the feed dates entries by deploy day) — data, not the seen logic.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
