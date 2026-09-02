@@ -1439,6 +1439,135 @@ from the local click and the pre-confirmed row respectively, and attack confirma
 submitting state — no second ghost was added for them. **Owner gate pending:** click → ghost ≤ one frame on the quiet
 box (`__clientActionLatencyMeasurements`, `ghost_rendered − click`).
 
+### Autonomous run record — item 8: the identity session owns reconnect; direct links boot map-first (2026-09-02, commits `280fd334444`, `95e081c28ca`, `2ba82514ef5`)
+
+**Landed.** The reconnect grace timer and the `location.assign` reload are gone: the play route derives its reconnect
+status from the identity session (`connected / failed / connecting / restoring / idle`), a player route with no account
+and nothing restoring it shows `IdentityLogin` inline on the reconnect screen, and spectators boot map-first like
+players (`shouldBootMapFirst` = hex | travel), the canonical href keeping `spectate`. The inspectors keep their
+right-centre tile panels (ruling taken: they hold the only copies of the tile actions).
+
+**Direct realm link, the class behind it.** A spectator realm link with coordinates booted the map and then stayed on
+the map without its handoff flags. Two halves: the hexception scene ran `setup()` from its own constructor ("keep the
+initial grid boot eager"), so from renderer init it was entered, built the grid for the route's realm while the world
+map was active, and marked hex-ready before the handoff; the loading overlay then dismissed in the same commit as the
+handoff navigation and its deferred dismissal rewrote the URL from the route it had captured (the map). Fixes: the scene
+owns one `isEntered` fact (setup → switch-off) gating the grid rebuild and the readiness mark, the constructor setup is
+deleted (every hex/travel entry boots map-first, so the scene manager's entry setup is the only path), and the dismissal
+reads the route at dismissal time. Source test `hexception-scene-entry.source.test.ts` pins all three.
+
+**Gate.** Headless, game 16, `/hex?col=1561739777&row=1561739751&spectate=true`: normalises to
+`/map?…&boot=map-first&resumeScene=hex`, map ready at 9.8 s, handoff navigation at 9.8 s, overlay dismissed at 10.2 s
+onto `/hex?col&row&spectate=true`, chip "Spectating", castle panel showing. Screenshot
+`screens/item8-spectator-realm-link.png`. Owner gate pending: the same link signed in (player) on the quiet box.
+
+### Autonomous run record — item 11: the label atlas (2026-09-02, commit `2952dbff9f1`)
+
+**Landed.** `CompactEntityLabelRenderer` keeps one `BatchedMesh` per atlas page (geometry per distinct label text,
+refcounted by key; instance per entity) and writes position, camera facing and hover scale per instance; the batch
+optimises after a run of deletions. The army manager's visible-slot sync retains only the labels of armies that still
+hold a slot (`retainOnly`), closing the lifecycle gap; `army-manager.label-lifecycle.source.test.ts` pins it.
+
+**Gate.** Draw calls are no longer a function of labels in view. Headless (1280×720, game 16, spectator):
+
+| distance | band  | labels shown | draws before | draws after           |
+| -------- | ----- | ------------ | ------------ | --------------------- |
+| 10       | close | 310          | 65           | 65                    |
+| 12.9     | close | 310          | 70           | 68 / 77 (two samples) |
+
+The headless frustum holds only a handful of the 310 labels, so the before/after is flat here; the 507-draw close band
+came from the owner's wide viewport. Owner gate pending: close-band draw count and p95 on the laptop. Screenshots
+`screens/item11-before-d12.9.png`, `screens/item11-after-d12.9.png`, `…-d10.png`.
+
+### Autonomous run record — item 12: L5 items 5, 7, 8 (2026-09-02, commit `b0ac0ba4c43`)
+
+**Landed.** Army instances: `ModelData.dirtySlots` is the touched slot span; writes mark it and one flush per frame
+(`flushInstanceUploads`, also after a buffer rebuild) queues one `addUpdateRange` per attribute
+(`utils/instance-update-ranges.ts`); the strategic marker layer's own copy of that accounting moved onto the helper.
+Structure instances: the fixed per-model capacity is 1024 (from the game cap, matching armies; ruling taken: the
+window's hex count is 9216 and would allocate for a world that cannot exist) and an overflow is refused loudly
+(`structureInstanceCapacityOverflow`) instead of throwing out of the visible-structure pass. Labels and reserved sites:
+the CSS2D close cadence floors at 16 ms (the mobile zero-interval special case deleted), and the reserved hyperstructure
+manager rebuilds only when a change touches a reserved site; both counted.
+
+**Gate.** Unit tests per item (`instance-update-ranges.test.ts`, `structure-manager.capacity.source.test.ts`,
+`game-renderer-policy.test.ts`, `reserved-hyperstructure-manager.test.ts`). Idle counters headless, 30 s apart at
+distance 12.9: `css2dLabelRenders` 2 → 2, `reservedSiteRebuilds` 1 → 1, `structureInstanceCapacityOverflow` 0.
+
+### Autonomous run record — items 13 and 14: frame owners, frame-or-timer drains (2026-09-02, commit `fcfd437a64f`)
+
+**Landed.** The per-frame army update runs as `armies:update` and each chunk manager's update as `chunk:<label>` (flat
+owners, no nesting, so the dominant-owner digest stays honest). The ingest scheduler already paired
+`requestAnimationFrame` with a 100 ms timer; the frame-budget work queue waited on frames alone, so a background tab
+never finished its chunk work. One helper, `utils/frame-or-timeout.ts`, serves both drains; the queue's frame injection
+became a drain-request injection and its two stale dominant-owner assertions were brought up to date.
+
+**Gate.** `frame-owner-coverage.source.test.ts`, `frame-or-timeout.test.ts` (frame first, timer when frames stop, cancel
+both). Headless 60 s digest after boot: every spike names `render:backend` (the software GPU), none unattributed. The
+hidden-tab boot could not be emulated headless (a second page did not hide the first: `visibilityState` stayed visible,
+boot 12 s); owner gate pending: open the map in a background tab and confirm it reaches the chip.
+
+### Autonomous run record — item 15: pipeline compile before first draw (2026-09-03, commit `b3f987e1814`)
+
+**Landed.** `GameRenderer` hands the scenes one `PipelineCompiler` over the live backend (`pipeline-compiler.ts`);
+structure and army loaders await `compileAsync` against the world scene before adding a model's group, so the frame that
+first draws a chunk creates terrain pipelines only. On WebGPU that is the async pipeline path; on WebGL it moves the
+program links out of the render frame. Compiles count under `pipelinePrecompiles`. Ruling taken, review me: the compile
+runs per loaded model group rather than from a manifest-built warm-up list — the manifest lists GLB paths, and the
+loaded group is the one object that carries the final materials.
+
+**Gate.** Headless (WebGL2 lane, game 16): before, the boot window's compile digest read
+`createRenderPipeline=67x/1.6–1.8 s` with the worst boot frame `render:backend owner_max 926 ms`; after, the worst
+`render:backend` call in the boot window is 16 ms (two boots: 5–16 ms) with `pipelinePrecompiles` = 11 model groups per
+boot and `worldmap-terrain-visible` at 9.8 s / 11.0 s (before 9.9–10.1 s, noise). Owner gate pending: the 3.4 s / 5.9 s
+WebGPU boot spikes on the laptop.
+
+### Autonomous run record — item 16: fog class 3 verified (2026-09-02, commit `3a636688c1c`)
+
+**Verified, no fix needed.** Snapshot hydration and window refreshes (`syncExploredTilesFromProjection`), live diffs
+(`applyProjectedExploredTileChange`) and the player's own explore (a diff like any other) all end in
+`writeExploredTileFromProjection`, which queues the shroud reveal and the terrain page invalidation; nothing else
+assigns an explored tile and the projection's `subscribeTiles` is the one live entry. The fog wiring source test now
+pins both entries and the single assignment.
+
+### Autonomous run record — item 17: bootstrap streaming (2026-09-03, commit `6f1740e47b0`)
+
+**Landed.** The transport used to buffer every snapshot model until `snapshot_end` and hand the runtime one 7 MB page.
+The first snapshot now reaches the runtime one page per model as each arrives (the runtime's paging loop was already
+there; the transport keeps its own row state for the reconcile path), Herald sends `Structure` and `Tile` first
+(`orderSnapshotModelsForStreaming`), and snapshot progress carries a `streaming` fact so the apply milestone completes
+after the last page. Ruling taken, review me: rendering before `snapshot_end` (the second half of the class) changes the
+boot contract (`bootstrap.status === "ready"` gates the scene) and stays with the owner.
+
+**Gate.** Headless timeline, game 16, two boots each:
+
+| milestone                        | before  | after                               |
+| -------------------------------- | ------- | ----------------------------------- |
+| initial-sync started → completed | 1523 ms | 1435 ms / 1646 ms                   |
+| snapshot receive                 | 594 ms  | 785 ms / 737 ms (apply overlaps it) |
+| snapshot apply after receive     | 165 ms  | 0 ms (applied per page)             |
+| worldmap-terrain-visible         | 9.84 s  | 9.89 s / 10.15 s                    |
+
+Owner gate pending: `bootstrap_done ≤ 1 s`, `first_terrain ≤ 2 s` bars on the laptop.
+
+### Autonomous run record — item 18: render on arrival, verified (2026-09-03)
+
+**Verified, no fix needed.** A local pre-confirmed batch enqueues with `immediate` and flushes atomically in the same
+turn (`entity-ingest-queue.test.ts` "applies one local transaction batch immediately and atomically"); ambient batches
+drain on a frame or a 100 ms timer in ≤ 6 ms slices. The `pre_confirmed → rendered` number needs a player action against
+a live game and is an owner gate pending on the 96-bot workload (p95 ≤ 50 ms).
+
+### Autonomous run — hand-back summary (2026-09-03)
+
+Commits, in order: `c5a1567a79a` (1), `b3ca5e5778d` (2), `359c2f25d39` (3), `4f5510d5b50` (4), `784fd25e83c` (5),
+`3d07c83f7e0` (6), `d2d49705e90` (7), `280fd334444` + `95e081c28ca` + `2ba82514ef5` (8), `7ec7de467f7` (9),
+`145834e869c` (10), `2952dbff9f1` (11), `b0ac0ba4c43` + `793ff46a015` (12), `fcfd437a64f` (13, 14), `b3f987e1814` (15),
+`3a636688c1c` (16), `6f1740e47b0` (17), plus the docs commits. Rulings taken (review me): item 3's tile panels kept;
+item 12's structure capacity from the game cap; item 15's per-model compile instead of a manifest list; item 17's
+render-before-snapshot-end left to the owner. Pre-existing reds untouched: `worldmap-initial-refresh.source.test.ts`,
+the `row.activityBreakdown` assertion, the three load-sensitive timeout files. Owner gates pending are listed in each
+record above and in the plan's "Owner gate pending" paragraph.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
