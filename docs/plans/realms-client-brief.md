@@ -292,6 +292,17 @@ Phase 2 code; Phase 2's design stays approved as amended, and its baseline (2.0 
 exactly the L3 class it must close. Also noted for L5: the +153 long tasks during the provisioning burst are chunk-owned
 boot work under 655 rows/s — item-1 territory, not sync.
 
+Herald fix reviewed and deployed (reviewer, 2026-09-02): step A `bb9d184e3dd` (collapseChanges per (model, key), last
+write wins, applied to confirmed broadcasts and overlay transactions before the ledger compare) and step B `d04a5d75e38`
+(`settleConfirmed` keeps a confirmed row off the wire when subscribers hold its value; a pending write equal to the
+confirmed row stays out of the ledger; `settleReverts` skips reverts equal to confirmed) — semantics traced through the
+pending↔confirmed cases, late-subscriber snapshot parity and resume-from-ring; one harmless imperfection (a pending
+write equal to old-confirmed followed by its own confirmation publishes one redundant row, which the client transport
+dedupes). Herald suite 48/49, the failure being the pre-existing model-registry drift. Deployed in the ruled order:
+client to `eternum-game.pages.dev` from the branch tip (workflow run 33599560955, green 06:42Z), then box herald pulled
+to `d04a5d75e38` and restarted (healthy, block 60,561). Re-measure game: 15, `lab-mtjqbqr5`, 95 bots, 25-minute
+workload, one open slot. Bars: wire ≤ 1.5, applied/received ≥ 0.9.
+
 What changed, by layer. L0 (`apps/herald`): `rebuildOverlay` publishes only rows whose value differs from what
 subscribers hold (an `OverlayLedger` at the one pre-confirmed publish chokepoint; a confirmed diff forgets its row so a
 rebuilt row the head moved is still published) and publishes explicit reverts for overlay rows the rebuilt block no
