@@ -286,9 +286,8 @@ export class LiveWorld {
   }
 
   private broadcastConfirmedChanges(changes: FoldChange[], block: number): void {
-    const collapsed = collapseChanges(changes);
-    this.overlayLedger.forgetConfirmed(collapsed);
-    this.broadcastChanges(collapsed, block, false);
+    const published = this.overlayLedger.settleConfirmed(collapseChanges(changes));
+    this.broadcastChanges(published, block, false);
   }
 
   private resetOverlay(): void {
@@ -429,7 +428,7 @@ export class LiveWorld {
     const changes = collapseChanges(transaction.changes);
     if (changes.length === 0) return;
     this.overlayTransactions.push({ ...transaction, changes });
-    const delta = this.overlayLedger.delta(changes);
+    const delta = this.overlayLedger.delta(changes, (model, key) => this.confirmedFold.currentRow(model, key));
     this.broadcastChanges(delta, transaction.block, true, transaction.transactionHash);
   }
 

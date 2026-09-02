@@ -760,12 +760,12 @@ describe("LiveWorld wire economy", () => {
       set: [{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x4" } }],
     });
 
+    // The head confirms the value subscribers already hold, so the confirmed diff carries nothing at all.
     await live.reconcileAfterSubscribe();
-    const confirmedDiff = socket.messages.find(({ preconfirmed, type }) => type === "diff" && preconfirmed === false)!;
-    expect(confirmedDiff.set).toEqual([{ key: "0xabc", model: "TestModel", value: { game_id: "0x7", value: "0x4" } }]);
+    expect(socket.messages.filter(({ preconfirmed, type }) => type === "diff" && preconfirmed === false)).toEqual([]);
   });
 
-  it("converges a reverting subscriber and a row-keeping subscriber to a fresh subscriber's view at every head", async () => {
+  it("converges a row-keeping subscriber at every head; a reverting subscriber only until a held row is confirmed", async () => {
     const rpc = twoHeadRpc();
     const { live } = liveFixture({ rpc });
     const socket = attachResumed(live);
@@ -776,19 +776,25 @@ describe("LiveWorld wire economy", () => {
     live.acceptReceipt(preconfirmedReceipt([first, second]));
     await endMacrotask();
 
-    for (const head of [13, 14]) {
-      rpc.advanceTo(head);
-      await live.acceptSubscribedHead({ block_number: head, timestamp: 100 });
-      const fresh = testModelRows(reduceKeepingRows(attachResumed(live).messages));
+    rpc.advanceTo(13);
+    await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
+    const freshAt13 = testModelRows(reduceKeepingRows(attachResumed(live).messages));
+    expect(testModelRows(reduceKeepingRows(socket.messages)), "phase-1 subscriber at head 13").toEqual(freshAt13);
+    expect(testModelRows(reduceRevertingRows(socket.messages)), "pre-phase-1 subscriber at head 13").toEqual(freshAt13);
 
-      expect(testModelRows(reduceKeepingRows(socket.messages)), `phase-1 subscriber at head ${head}`).toEqual(fresh);
-      expect(testModelRows(reduceRevertingRows(socket.messages)), `pre-phase-1 subscriber at head ${head}`).toEqual(
-        fresh,
-      );
-    }
-    expect(testModelRows(reduceKeepingRows(socket.messages))).toEqual({
+    rpc.advanceTo(14);
+    await live.acceptSubscribedHead({ block_number: 14, timestamp: 101 });
+    const freshAt14 = testModelRows(reduceKeepingRows(attachResumed(live).messages));
+    expect(freshAt14).toEqual({
       "TestModel:0xabc": { game_id: "0x7", value: "0x5" },
       "TestModel:0xdef": { game_id: "0x7", value: "0x6" },
+    });
+    expect(testModelRows(reduceKeepingRows(socket.messages)), "phase-1 subscriber at head 14").toEqual(freshAt14);
+    // The confirmed diff that repeats a held value stays off the wire, so a pre-phase-1 subscriber's confirmed copy
+    // never learns it and its revert at overlay_reset lands on stale rows. This is why step B reaches the box only
+    // after every served client keeps rows across resets.
+    expect(testModelRows(reduceRevertingRows(socket.messages)), "pre-phase-1 subscriber at head 14").toEqual({
+      "TestModel:0xabc": { game_id: "0x7", value: "0x1" },
     });
   });
 });
