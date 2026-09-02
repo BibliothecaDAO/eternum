@@ -964,6 +964,18 @@ URL spectate readers, EndgameModal, Social/Settings windows) are the step-3+ mig
 this tip.** Owner eyeballs: the three chip states, the sign-in popover as spectator, and Play-from-spectate. The
 decomposition now stops per its ruling and reports the scene's remaining composition before any further cut.
 
+Decomposition close-out ruling (reviewer, 2026-09-02): the residual-composition report is accepted as the evidence the
+pause asked for — the remaining ~8,392 lines are ~68% two stateful, pinned subsystems (chunk/terrain streaming ~3,488
+lines, army-interaction ~1,815), so the original ~1,500-line reduction proxy is not reachable by seam extraction and is
+retired as a gate. Ruling on the two shells: **take combat-presentation** (~85 lines, unpinned, clean dispose-hook
+relocation) and **skip strategic-marker** — its only pin is the foreign content-ladder wiring guard, so moving it is
+churn for no ownership gain. Ruling on the lever: **option A** — after combat-presentation lands, the outline gate is
+met at ~8,300 and the decomposition entry closes. A chunk/terrain streaming-subsystem reshape is NOT scoped now: it
+would be a multi-commit reshape of a working, pinned, load-bearing system with no convicting measurement (evidence
+before optimization), colliding with Phase 4 and the label pass in a shared worktree. It may return later as its own
+brief only if a profile or bug names the streaming subsystem. Final cut lands with a close-out row in the extraction
+map, then the decomposition agent is done.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
