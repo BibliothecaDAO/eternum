@@ -302,6 +302,7 @@ describe("WorldSpatialProjection", () => {
     const unsubscribe = projection.subscribe(listener);
 
     writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    projection.flush();
 
     expect(listener).toHaveBeenCalledWith([
       expect.objectContaining({
@@ -322,6 +323,7 @@ describe("WorldSpatialProjection", () => {
 
     unsubscribe();
     writeTile("second", { col: 12, row: 13, occupierId: 8 });
+    projection.flush();
     expect(listener).toHaveBeenCalledOnce();
 
     projection.dispose();
@@ -354,8 +356,10 @@ describe("WorldSpatialProjection", () => {
       occupierType: TileOccupier.RealmWonderLevel2,
     });
     removeComponent(tileOpt, "reserved");
+    projection.flush();
 
-    expect(listener).toHaveBeenNthCalledWith(1, [
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith([
       {
         kind: "structure",
         spatialId: "entity:7",
@@ -370,8 +374,6 @@ describe("WorldSpatialProjection", () => {
           occupierType: TileOccupier.RealmWonderLevel2,
         }),
       },
-    ]);
-    expect(listener).toHaveBeenNthCalledWith(2, [
       {
         kind: "structure",
         spatialId: "reserved:12:13",
@@ -387,8 +389,11 @@ describe("WorldSpatialProjection", () => {
     projection.subscribeArmies(listener);
 
     writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    projection.flush();
     writeArmy("army", { explorerId: 7, col: 20, row: 21, category: "Crossbowman", tier: "T3" });
+    projection.flush();
     removeComponent(explorerTroops, "army");
+    projection.flush();
 
     expect(listener).toHaveBeenNthCalledWith(1, [
       {
@@ -464,6 +469,7 @@ describe("WorldSpatialProjection", () => {
     expect(projection.getStructuresAtHex({ col: 12, row: 13 })).toEqual([
       expect.objectContaining({ spatialId: "entity:77", entityId: 77, reserved: false }),
     ]);
+    projection.flush();
     expect(listener).toHaveBeenCalledWith([
       expect.objectContaining({ spatialId: "reserved:12:13", current: undefined }),
       expect.objectContaining({ spatialId: "entity:77", previous: undefined }),
@@ -524,5 +530,146 @@ describe("WorldSpatialProjection", () => {
     projection.rebuild();
 
     expect(projection.getArmy(7)).toBeUndefined();
+  });
+
+  it("publishes each kind once and the combined change once per flush", () => {
+    const { projection, writeArmy, writeTile } = createHarness();
+    projection.start();
+    const tileListener = vi.fn();
+    const chestListener = vi.fn();
+    const structureListener = vi.fn();
+    const armyListener = vi.fn();
+    const listener = vi.fn();
+    projection.subscribeTiles(tileListener);
+    projection.subscribeChests(chestListener);
+    projection.subscribeStructures(structureListener);
+    projection.subscribeArmies(armyListener);
+    projection.subscribe(listener);
+
+    writeTile("tile-a", { col: 10, row: 11, occupierId: 0, occupierType: TileOccupier.None });
+    writeTile("tile-b", { col: 12, row: 13, occupierId: 0, occupierType: TileOccupier.None });
+    writeTile("tile-c", { col: 14, row: 15, occupierId: 0, occupierType: TileOccupier.None });
+    writeArmy("army-a", { explorerId: 7, col: 20, row: 21 });
+    writeArmy("army-b", { explorerId: 8, col: 22, row: 23 });
+    expect(listener).not.toHaveBeenCalled();
+
+    projection.flush();
+
+    expect(tileListener).toHaveBeenCalledOnce();
+    expect(tileListener).toHaveBeenCalledWith([
+      expect.objectContaining({ spatialId: "tile:10:11" }),
+      expect.objectContaining({ spatialId: "tile:12:13" }),
+      expect.objectContaining({ spatialId: "tile:14:15" }),
+    ]);
+    expect(armyListener).toHaveBeenCalledOnce();
+    expect(armyListener).toHaveBeenCalledWith([
+      expect.objectContaining({ entityId: 7 }),
+      expect.objectContaining({ entityId: 8 }),
+    ]);
+    expect(chestListener).not.toHaveBeenCalled();
+    expect(structureListener).not.toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith([
+      expect.objectContaining({ kind: "tile", spatialId: "tile:10:11" }),
+      expect.objectContaining({ kind: "tile", spatialId: "tile:12:13" }),
+      expect.objectContaining({ kind: "tile", spatialId: "tile:14:15" }),
+      expect.objectContaining({ kind: "army", entityId: 7 }),
+      expect.objectContaining({ kind: "army", entityId: 8 }),
+    ]);
+    expect(tileListener.mock.invocationCallOrder[0]).toBeLessThan(armyListener.mock.invocationCallOrder[0]);
+    expect(armyListener.mock.invocationCallOrder[0]).toBeLessThan(listener.mock.invocationCallOrder[0]);
+  });
+
+  it("publishes nothing for rows that end the slice where they started", () => {
+    const { projection, explorerTroops, tileOpt, writeArmy, writeTile } = createHarness();
+    writeArmy("returning-army", { explorerId: 9, col: 30, row: 31 });
+    projection.start();
+    const listener = vi.fn();
+    projection.subscribe(listener);
+
+    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+    removeComponent(tileOpt, "chest");
+    writeArmy("army", { explorerId: 8, col: 20, row: 21 });
+    removeComponent(explorerTroops, "army");
+    writeArmy("returning-army", { explorerId: 9, col: 40, row: 41 });
+    writeArmy("returning-army", { explorerId: 9, col: 30, row: 31 });
+    projection.flush();
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(projection.getChests()).toEqual([]);
+    expect(projection.getArmies().map(({ entityId }) => entityId)).toEqual([9]);
+  });
+
+  it("publishes one net change for a row moved twice inside one slice", () => {
+    const { projection, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    projection.start();
+    const listener = vi.fn();
+    projection.subscribeArmies(listener);
+
+    writeArmy("army", { explorerId: 7, col: 20, row: 21 });
+    writeArmy("army", { explorerId: 7, col: 30, row: 31 });
+    projection.flush();
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith([
+      {
+        kind: "army",
+        entityId: 7,
+        previous: expect.objectContaining({ hexCoords: { col: 10, row: 11 } }),
+        current: expect.objectContaining({ hexCoords: { col: 30, row: 31 } }),
+      },
+    ]);
+  });
+
+  it("reads the latest position between writes before the slice is flushed", () => {
+    const { projection, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    projection.start();
+    const listener = vi.fn();
+    projection.subscribeArmies(listener);
+
+    writeArmy("army", { explorerId: 7, col: 20, row: 21 });
+    expect(projection.getArmy(7)?.hexCoords).toEqual({ col: 20, row: 21 });
+    expect(projection.getArmiesAtHex({ col: 10, row: 11 })).toEqual([]);
+    writeArmy("army", { explorerId: 7, col: 30, row: 31 });
+    expect(
+      projection.getArmiesInBounds({ minCol: 24, maxCol: 32, minRow: 24, maxRow: 32 }).map(({ entityId }) => entityId),
+    ).toEqual([7]);
+    expect(listener).not.toHaveBeenCalled();
+
+    projection.flush();
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it("notifies listeners from a rebuild without an explicit flush", () => {
+    const { projection, writeTile } = createHarness();
+    projection.start();
+    const listener = vi.fn();
+    projection.subscribeChests(listener);
+
+    writeTile("live-chest", { col: 10, row: 11, occupierId: 7 });
+    writeTile("missed-chest", { col: 12, row: 13, occupierId: 8 }, true);
+    projection.rebuild();
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith([
+      expect.objectContaining({ entityId: 7, current: expect.objectContaining({ hexCoords: { col: 10, row: 11 } }) }),
+      expect.objectContaining({ entityId: 8, current: expect.objectContaining({ hexCoords: { col: 12, row: 13 } }) }),
+    ]);
+  });
+
+  it("drops pending changes on dispose", () => {
+    const { projection, writeTile } = createHarness();
+    projection.start();
+    writeTile("chest", { col: 10, row: 11, occupierId: 7 });
+
+    projection.dispose();
+    const listener = vi.fn();
+    projection.subscribe(listener);
+    projection.flush();
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

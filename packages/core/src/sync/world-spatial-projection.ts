@@ -247,24 +247,28 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
   private byKey = new Map<TKey, TRenderable>();
   private keysByHex = new Map<string, Set<TKey>>();
   private keysByBucket = new Map<string, Set<TKey>>();
+  /**
+   * Net change per key since the last drain. The index itself moves on every row so reads
+   * between rows always reflect the latest RECS state; only the notification waits.
+   */
+  private pendingChanges = new Map<TKey, SpatialIndexChange<TKey, TRenderable>>();
 
   constructor(
     private readonly bucketSize: number,
     private readonly isSame: (left: TRenderable, right: TRenderable) => boolean,
   ) {}
 
-  public replace(nextByKey: Map<TKey, TRenderable>): SpatialIndexChange<TKey, TRenderable>[] {
-    const changes = this.resolveChanges(nextByKey);
+  public replace(nextByKey: Map<TKey, TRenderable>): void {
+    this.resolveChanges(nextByKey).forEach((change) => this.queueChange(change));
     this.byKey = nextByKey;
     this.keysByHex = this.buildIndex((renderable) => spatialHexKey(renderable.hexCoords));
     this.keysByBucket = this.buildIndex((renderable) => spatialBucketKey(renderable.hexCoords, this.bucketSize));
-    return changes;
   }
 
-  public update(key: TKey, current: TRenderable | undefined): SpatialIndexChange<TKey, TRenderable> | undefined {
+  public update(key: TKey, current: TRenderable | undefined): void {
     const previous = this.byKey.get(key);
-    if (!previous && !current) return undefined;
-    if (previous && current && this.isSame(previous, current)) return undefined;
+    if (!previous && !current) return;
+    if (previous && current && this.isSame(previous, current)) return;
 
     if (previous) this.removeFromSpatialIndexes(key, previous);
     if (current) {
@@ -274,7 +278,13 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
       this.byKey.delete(key);
     }
 
-    return { key, previous, current };
+    this.queueChange({ key, previous, current });
+  }
+
+  public drainChanges(): SpatialIndexChange<TKey, TRenderable>[] {
+    const changes = [...this.pendingChanges.values()];
+    this.pendingChanges.clear();
+    return changes;
   }
 
   public get(key: TKey): TRenderable | undefined {
@@ -309,6 +319,23 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
     this.byKey.clear();
     this.keysByHex.clear();
     this.keysByBucket.clear();
+    this.pendingChanges.clear();
+  }
+
+  /**
+   * Merge rule: a listener needs the first previous and the last current of a key, nothing in
+   * between. A key that ends where it started (created then removed, moved and moved back) is
+   * dropped instead of published as a no-op.
+   */
+  private queueChange(change: SpatialIndexChange<TKey, TRenderable>): void {
+    const pending = this.pendingChanges.get(change.key);
+    const previous = pending ? pending.previous : change.previous;
+    const current = change.current;
+    const isUnchanged =
+      previous === undefined ? current === undefined : current !== undefined && this.isSame(previous, current);
+
+    if (isUnchanged) this.pendingChanges.delete(change.key);
+    else this.pendingChanges.set(change.key, { key: change.key, previous, current });
   }
 
   private resolveChanges(nextByKey: Map<TKey, TRenderable>): SpatialIndexChange<TKey, TRenderable>[] {
@@ -374,12 +401,62 @@ const isInsideBounds = (hexCoords: WorldSpatialHex, bounds: WorldSpatialBounds):
   hexCoords.row >= bounds.minRow &&
   hexCoords.row <= bounds.maxRow;
 
+const toTileChange = ({
+  key: spatialId,
+  previous,
+  current,
+}: SpatialIndexChange<TileSpatialRenderable["spatialId"], TileSpatialRenderable>): TileSpatialProjectionChange => ({
+  kind: "tile",
+  spatialId,
+  previous,
+  current,
+});
+
+const toChestChange = ({
+  key: entityId,
+  previous,
+  current,
+}: SpatialIndexChange<ID, ChestSpatialRenderable>): ChestSpatialProjectionChange => ({
+  kind: "chest",
+  entityId,
+  previous,
+  current,
+});
+
+const toStructureChange = ({
+  key: spatialId,
+  previous,
+  current,
+}: SpatialIndexChange<
+  StructureSpatialRenderable["spatialId"],
+  StructureSpatialRenderable
+>): StructureSpatialProjectionChange => ({
+  kind: "structure",
+  spatialId,
+  previous,
+  current,
+});
+
+const toArmyChange = ({
+  key: entityId,
+  previous,
+  current,
+}: SpatialIndexChange<ID, ArmySpatialRenderable>): ArmySpatialProjectionChange => ({
+  kind: "army",
+  entityId,
+  previous,
+  current,
+});
+
 /**
  * Rebuildable spatial read model derived exclusively from authoritative RECS facts.
  *
  * The projection stores renderable identity, location, and mesh variant only.
  * Gameplay panels continue to read RECS directly; renderers use this index to
  * select visible entities without introducing another source of gameplay truth.
+ *
+ * Every RECS row updates the indexes immediately; listeners hear the net result once per
+ * `flush()`, which the sync runtime calls after each applied ingest slice.
  */
 export class WorldSpatialProjection {
   private readonly tileOptComponent: Component<Schema, Metadata, unknown>;
@@ -476,102 +553,50 @@ export class WorldSpatialProjection {
       if (army) nextArmies.set(army.entityId, army);
     }
 
-    const chestChanges = this.chestIndex.replace(nextChests).map(
-      ({ key: entityId, previous, current }): ChestSpatialProjectionChange => ({
-        kind: "chest",
-        entityId,
-        previous,
-        current,
-      }),
-    );
-    const structureChanges = this.structureIndex.replace(nextStructures).map(
-      ({ key: spatialId, previous, current }): StructureSpatialProjectionChange => ({
-        kind: "structure",
-        spatialId,
-        previous,
-        current,
-      }),
-    );
-    const armyChanges = this.armyIndex.replace(nextArmies).map(
-      ({ key: entityId, previous, current }): ArmySpatialProjectionChange => ({
-        kind: "army",
-        entityId,
-        previous,
-        current,
-      }),
-    );
-
-    const tileChanges = this.tileIndex.replace(nextTiles).map(
-      ({ key: spatialId, previous, current }): TileSpatialProjectionChange => ({
-        kind: "tile",
-        spatialId,
-        previous,
-        current,
-      }),
-    );
-
-    this.publishChanges(tileChanges, chestChanges, structureChanges, armyChanges);
+    this.chestIndex.replace(nextChests);
+    this.structureIndex.replace(nextStructures);
+    this.armyIndex.replace(nextArmies);
+    this.tileIndex.replace(nextTiles);
+    // A rebuild is a recovery step, not an ingest slice: listeners hear about it right away.
+    this.flush();
   }
 
   private applyTileOptUpdate(tileEntity: unknown, [currentTileOpt]: [TileOpt | undefined, TileOpt | undefined]): void {
     const previousTile = this.tilesByTileEntity.get(tileEntity);
     const currentTile = resolveTileRenderable(currentTileOpt);
     this.replaceTileSource(this.tilesByTileEntity, tileEntity, currentTile);
-    const tileChanges = this.reconcileSourceKeys(
+    this.reconcileSourceKeys(
       this.tileIndex,
       this.tilesByTileEntity,
       previousTile?.spatialId,
       currentTile?.spatialId,
       currentTile,
       (tile) => tile.spatialId,
-    ).map(
-      ({ key: spatialId, previous, current }): TileSpatialProjectionChange => ({
-        kind: "tile",
-        spatialId,
-        previous,
-        current,
-      }),
     );
 
     const previousChest = this.chestsByTileEntity.get(tileEntity);
     const currentChest = resolveChestRenderable(currentTileOpt);
     this.replaceTileSource(this.chestsByTileEntity, tileEntity, currentChest);
-    const chestChanges = this.reconcileSourceKeys(
+    this.reconcileSourceKeys(
       this.chestIndex,
       this.chestsByTileEntity,
       previousChest?.entityId,
       currentChest?.entityId,
       currentChest,
       (chest) => chest.entityId,
-    ).map(
-      ({ key: entityId, previous, current }): ChestSpatialProjectionChange => ({
-        kind: "chest",
-        entityId,
-        previous,
-        current,
-      }),
     );
 
     const previousStructure = this.structuresByTileEntity.get(tileEntity);
     const currentStructure = resolveStructureRenderable(currentTileOpt);
     this.replaceTileSource(this.structuresByTileEntity, tileEntity, currentStructure);
-    const structureChanges = this.reconcileSourceKeys(
+    this.reconcileSourceKeys(
       this.structureIndex,
       this.structuresByTileEntity,
       previousStructure?.spatialId,
       currentStructure?.spatialId,
       currentStructure,
       (structure) => structure.spatialId,
-    ).map(
-      ({ key: spatialId, previous, current }): StructureSpatialProjectionChange => ({
-        kind: "structure",
-        spatialId,
-        previous,
-        current,
-      }),
     );
-
-    this.publishChanges(tileChanges, chestChanges, structureChanges, []);
   }
 
   private applyExplorerTroopsUpdate([currentExplorerTroops, previousExplorerTroops]: [
@@ -585,12 +610,9 @@ export class WorldSpatialProjection {
     if (previousEntityId !== undefined && previousEntityId !== null) entityIds.add(previousEntityId);
     if (currentEntityId !== undefined && currentEntityId !== null) entityIds.add(currentEntityId);
 
-    const changes = [...entityIds].flatMap((entityId): ArmySpatialProjectionChange[] => {
-      const nextArmy = currentEntityId === entityId ? currentArmy : undefined;
-      const change = this.armyIndex.update(entityId, nextArmy);
-      return change ? [{ kind: "army", entityId, previous: change.previous, current: change.current }] : [];
+    entityIds.forEach((entityId) => {
+      this.armyIndex.update(entityId, currentEntityId === entityId ? currentArmy : undefined);
     });
-    this.publishChanges([], [], [], changes);
   }
 
   private replaceTileSource<TRenderable>(
@@ -609,18 +631,17 @@ export class WorldSpatialProjection {
     currentKey: TKey | undefined,
     preferredCurrent: TRenderable | undefined,
     resolveKey: (renderable: TRenderable) => TKey,
-  ): SpatialIndexChange<TKey, TRenderable>[] {
+  ): void {
     const keys = new Set<TKey>();
     if (previousKey !== undefined) keys.add(previousKey);
     if (currentKey !== undefined) keys.add(currentKey);
 
-    return [...keys].flatMap((key) => {
+    keys.forEach((key) => {
       const current =
         currentKey === key && preferredCurrent
           ? preferredCurrent
           : [...sources.values()].find((candidate) => resolveKey(candidate) === key);
-      const change = index.update(key, current);
-      return change ? [change] : [];
+      index.update(key, current);
     });
   }
 
@@ -702,6 +723,19 @@ export class WorldSpatialProjection {
 
   public getArmiesInBounds(bounds: WorldSpatialBounds): readonly ArmySpatialRenderable[] {
     return this.armyIndex.getInBounds(bounds);
+  }
+
+  /**
+   * Publishes the net changes accumulated since the last flush. The runtime owns the cadence and
+   * calls this once per applied ingest slice, so a listener runs once per slice, not once per row.
+   */
+  public flush(): void {
+    this.publishChanges(
+      this.tileIndex.drainChanges().map(toTileChange),
+      this.chestIndex.drainChanges().map(toChestChange),
+      this.structureIndex.drainChanges().map(toStructureChange),
+      this.armyIndex.drainChanges().map(toArmyChange),
+    );
   }
 
   public subscribe(listener: WorldSpatialProjectionListener): () => void {

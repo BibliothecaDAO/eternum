@@ -73,6 +73,7 @@ export class GameSyncRuntime {
   private localTransactions = new Map<string, true>();
   private snapshotAppliedOperations = 0;
   private snapshotExpectedOperations = 0;
+  private readonly sliceAppliedListeners = new Set<() => void>();
   private transactionWaiters = new Map<
     string,
     Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
@@ -168,6 +169,15 @@ export class GameSyncRuntime {
     return this.worldSpatialProjection;
   }
 
+  /**
+   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from RECS here,
+   * so a slice that touched a thousand rows costs the overlay one recompute, not a thousand.
+   */
+  public subscribeSliceApplied(listener: () => void): () => void {
+    this.sliceAppliedListeners.add(listener);
+    return () => this.sliceAppliedListeners.delete(listener);
+  }
+
   public async applyAuthoritativeEntities(entities: readonly GameSyncEntity[]): Promise<void> {
     if (this.status !== "running" || !this.ingestQueue) {
       throw new Error("GameSyncRuntime cannot apply an authoritative query outside a running session");
@@ -179,6 +189,7 @@ export class GameSyncRuntime {
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
+    this.sliceAppliedListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
@@ -392,6 +403,8 @@ export class GameSyncRuntime {
         total: this.snapshotExpectedOperations,
       });
     }
+    this.worldSpatialProjection?.flush();
+    this.sliceAppliedListeners.forEach((listener) => listener());
     this.publishMetrics();
   }
 
