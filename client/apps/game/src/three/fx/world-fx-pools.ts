@@ -17,7 +17,7 @@ import {
   WORLD_FX_PARTICLE_ATTRIBUTE,
 } from "./world-fx-materials";
 
-type WorldFxParticleKind = "flame" | "smoke" | "spark";
+type WorldFxParticleKind = "energy" | "flame" | "flash" | "smoke" | "spark";
 
 export interface WorldFxParticleSpawn {
   effectId: number;
@@ -198,15 +198,14 @@ export class WorldFxParticlePool {
     const progress = clampUnit(slot.ageSeconds / slot.lifetimeSeconds);
     const opacity = resolveParticleOpacity(slot.kind, progress);
     const size = slot.size * resolveParticleGrowth(slot.kind, progress);
-    const width = slot.kind === "spark" ? size * 0.3 : size * (1 - progress * 0.22);
-    const height = slot.kind === "spark" ? size * 3.8 : size * (1 + progress * 1.15);
-    this.position.set(slot.positionX, slot.positionY, slot.positionZ);
+    const { height, width, verticalOffset } = resolveParticleDimensions(slot.kind, size, progress);
+    this.position.set(slot.positionX, slot.positionY + verticalOffset, slot.positionZ);
     this.rotationQuaternion.setFromAxisAngle(BILLBOARD_FORWARD, slot.rotation);
     this.rotationQuaternion.premultiply(this.billboardQuaternion);
     this.scale.set(width, height, 1);
     this.matrix.compose(this.position, this.rotationQuaternion, this.scale);
     this.mesh.setMatrixAt(renderIndex, this.matrix);
-    this.particleAttribute.setXYZW(renderIndex, opacity, progress, slot.tone, slot.kind === "spark" ? 1 : 0);
+    this.particleAttribute.setXYZW(renderIndex, opacity, progress, slot.tone, resolveParticleShape(slot.kind));
   }
 }
 
@@ -405,13 +404,35 @@ function resolveParticleOpacity(kind: WorldFxParticleKind, progress: number): nu
   const fadeIn = Math.min(1, progress / 0.12);
   if (kind === "smoke") return fadeIn * (1 - progress) ** 1.4 * 0.72;
   if (kind === "spark") return fadeIn * (1 - progress) ** 2;
+  if (kind === "flash") return fadeIn * (1 - progress) ** 1.15;
+  if (kind === "energy") return fadeIn * (1 - progress) ** 1.35;
   return fadeIn * (1 - progress) ** 1.6;
 }
 
 function resolveParticleGrowth(kind: WorldFxParticleKind, progress: number): number {
-  if (kind === "smoke") return 0.7 + progress * 1.8;
-  if (kind === "spark") return 0.8 + progress * 0.25;
-  return 0.72 + progress * 0.95;
+  if (kind === "smoke") return 0.78 + progress * 1.55;
+  if (kind === "spark") return 0.86 + progress * 0.18;
+  if (kind === "flash") return 0.62 + progress * 1.7;
+  if (kind === "energy") return 0.88 + progress * 0.3;
+  return 0.82 + progress * 0.72;
+}
+
+function resolveParticleDimensions(kind: WorldFxParticleKind, size: number, progress: number) {
+  if (kind === "spark") return { height: size * 4.8, verticalOffset: 0, width: size * 0.22 };
+  if (kind === "flash") return { height: size * 1.08, verticalOffset: size * 0.08, width: size * 1.35 };
+  if (kind === "energy") return { height: size, verticalOffset: 0, width: size };
+  if (kind === "smoke") {
+    const height = size * (0.82 + progress * 0.42);
+    return { height, verticalOffset: height * 0.16, width: size * (1.18 - progress * 0.08) };
+  }
+  const height = size * (1.5 + progress * 0.58);
+  return { height, verticalOffset: height * 0.34, width: size * (0.84 - progress * 0.14) };
+}
+
+function resolveParticleShape(kind: WorldFxParticleKind): number {
+  if (kind === "energy") return 0.33;
+  if (kind === "flash") return 0.66;
+  return kind === "spark" ? 1 : 0;
 }
 
 function disableRaycast(raycaster: unknown, intersects: unknown[]): void {

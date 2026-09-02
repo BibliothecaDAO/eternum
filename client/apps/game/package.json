@@ -11,6 +11,7 @@
     "benchmark:renderer-load": "node ./scripts/run-renderer-load-benchmark.mjs",
     "benchmark:procedural-characters": "node ./scripts/run-procedural-character-performance-benchmark.mjs",
     "capture:character-animation": "node ./scripts/run-character-animation-capture.mjs",
+    "capture:world-fx": "node ./scripts/run-world-fx-gym-capture.mjs",
     "build:terrain-props": "node ./scripts/terrain-props/build-ultimate-nature-catalog.mjs",
     "build:terrain-ground": "node ./scripts/terrain-ground/build-ground-textures.mjs",
     "benchmark:terrain": "node ./scripts/terrain-verification/run-terrain-performance-benchmark.mjs",
