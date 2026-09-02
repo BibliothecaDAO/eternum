@@ -235,16 +235,44 @@ Recorded, phase 1 (2026-09-01, branch `client-scale-96p`; L0 + L1 + L2 + the sub
 server, headless Brave on software WebGL2, spectating game 11, finished, so live churn is 0), and the box still runs the
 pre-phase herald, which is the compatibility case the client must handle. "Before" is phase M's after.
 
-| Measurement (game 11, spectate, software WebGL2) | Before (phase M)                   | After phase 1                                                        |
-| ------------------------------------------------ | ---------------------------------- | -------------------------------------------------------------------- |
-| snapshot receive / apply (7,217 rows)            | 878 / 154 ms (reviewer: 903 / 219) | 749 / 148 ms                                                         |
-| store writes for the snapshot, max batch apply   | 3, 91 ms (reviewer 102)            | 5, 44 ms                                                             |
-| sync-owned spike digests over 150 s              | 0 of 187                           | 0 of 311 (`render:backend` 310, terrain 1)                           |
-| `frameBudgetLongTasks` at boot, then over 60 s   | 3 (max 47 ms), +0                  | 3 (max 54 ms, terrain commit), +0                                    |
-| heap after boot, then over 60 s                  | 376 → 378 MB                       | 309 → 310 MB                                                         |
-| live rows received / component writes applied    | 0 / 0 (finished game)              | 0 / 0 — the 1.0 ratio is owed to the live game                       |
-| calls_built → sign_send_started p95              | not measured                       | owed to a joinable live game (unit-proven below)                     |
-| herald rows received per head / rows changed     | not measured                       | owed: box runs the old herald; `lab:probe-herald` after the redeploy |
+| Measurement (game 11, spectate, software WebGL2) | Before (phase M)                   | After phase 1                                                                               |
+| ------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------- |
+| snapshot receive / apply (7,217 rows)            | 878 / 154 ms (reviewer: 903 / 219) | 749 / 148 ms                                                                                |
+| store writes for the snapshot, max batch apply   | 3, 91 ms (reviewer 102)            | 5, 44 ms                                                                                    |
+| sync-owned spike digests over 150 s              | 0 of 187                           | 0 of 311 (`render:backend` 310, terrain 1)                                                  |
+| `frameBudgetLongTasks` at boot, then over 60 s   | 3 (max 47 ms), +0                  | 3 (max 54 ms, terrain commit), +0                                                           |
+| heap after boot, then over 60 s                  | 376 → 378 MB                       | 309 → 310 MB                                                                                |
+| live rows received / component writes applied    | 0 / 0 (finished game)              | 1,152 / 326 and 384 / 138 on the live game (0.28–0.36) — fails, see below                   |
+| calls_built → sign_send_started p95              | not measured                       | 4.7 ms over 6 explores with a bot key; enqueue → sign+send 1.3–3.5 ms after the first burst |
+| herald rows received per head / rows changed     | not measured                       | 8.35 over 279 heads (132,776 wire rows / 15,892 distinct changed) — fails, see below        |
+
+Live gates (2026-09-02, game 14 `lab-mtjo7c6z`, 95 bots acting, herald redeployed from the branch at `73d44929dfe`,
+spectating from the dev server on headless software WebGL2). **applied/received fails**: 1,152 rows received against 326
+component writes in 60 s of provisioning churn (0.28) and 384 against 138 in the steady workload (0.36). The 10-minute
+wire probe explains it: of 132,776 rows on the wire over 279 heads, 96,490 (73 %) repeat a row already in the same diff
+— herald publishes one `set` per member event, so a transaction touching ten members of one `Resource` row ships that
+row ten times — and the pre-confirmed/confirmed double delivery adds 20,394 distinct rows (1.28× the 15,892 distinct
+rows the blocks changed). The transport delivers every intermediate value (each differs from the held one) and the
+ingest queue merges them per entity and model before the store; that merge is the whole gap between received and
+applied. The M-era republish after `overlay_reset` is gone: 811 rebuild and revert rows over 279 heads (2.9 per head).
+**Wire ratio fails** at 8.35 against the ≤ 1.1 bar. The fix for both sits at the herald's publish chokepoint: collapse
+each published diff to one change per (model, key), last write wins; then drop confirmed rows equal to the held overlay
+row — the second step only once the client that keeps rows across resets is deployed, because an old client's eager
+revert would otherwise leave a wrong fact. **The no-sync-long-task hold passes**: over 60 s of churn the ingest owns at
+most 7 ms of any spike frame (`owner_ms`, added to the `[FramePerf]` line for this), and `frameBudgetLongTasks` moved +0
+idle, +4 in the steady workload and +153 during the provisioning burst, the last while the scene was still booting under
+655 rows/s; the lifetime `maxBatchApplyDurationMs` of 52 ms is the boot snapshot's 1,000-row write, so the metrics now
+also carry `maxLiveBatchApplyDurationMs`. **The submit guard passes** without a human login:
+`deploy/madara-lab/scripts/probe-submit-guard.ts` (`pnpm lab:probe-submit-guard <gameId>`) joins a game with a fresh
+gameplay account through the harness setup path and drives the client's own `configureGameplayAccountSubmits` and
+`EternumProvider` queue — three bursts of five actions (two explores on different armies, three produces) on game 13,
+because game 14's last slot went to the first attempt: calls_built → sign_send_started p50 1.8 / p95 4.7 ms over the six
+explores; enqueue → sign+send 1.3–3.5 ms for every action after the first burst and 100–112 ms in the first burst only
+(the one shared pre-confirmed nonce read of a fresh account, which sits after that seam); nonces 6 → 21 for 15 actions,
+all 15 `PRE_CONFIRMED`, no stranded hash (12 reverted on game rules, expected for an unprepared bot). The human
+in-browser pass is deferred, not waived. Phase 2 baseline, React commits per second (a devtools-hook stub counting
+`onCommitFiberRoot`, installed before the page loads): 2.0 spectating at low churn, 19.7 spectating under the full
+95-bot workload with no selection change.
 
 What changed, by layer. L0 (`apps/herald`): `rebuildOverlay` publishes only rows whose value differs from what
 subscribers hold (an `OverlayLedger` at the one pre-confirmed publish chokepoint; a confirmed diff forgets its row so a
