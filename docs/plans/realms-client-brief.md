@@ -603,6 +603,15 @@ camera state: the minimap derives its rectangle from zoom events and never reads
 chokepoint: on mount and on scene handoff the minimap reads the camera's current position/distance once, then subscribes
 for updates — and any other camera-state consumer wired events-only gets migrated in the same change.
 
+**(e) The adapter-timeout verdict is a false negative on capable machines.** The owner's Brave returned a real
+`GPUAdapter` from the console at idle, while the boot-time probe recorded `adapter-timeout` twice (fresh `recordedAt`
+each run) — because the 1 s wall-clock race runs during boot, when multi-hundred-ms boot tasks block the main thread and
+the adapter's reply cannot be delivered before the deadline. A capable machine gets webgl2 remembered forever. Ruling:
+`adapter-timeout` becomes a **soft verdict** — the current boot stays on WebGL2 (no stall), but once boot settles the
+client re-probes in the background at idle and rewrites the lane memory, so the NEXT load boots WebGPU;
+`no-adapter`/`no-navigator-gpu` stay hard verdicts. The owner's machine is the test case: after the fix, load once
+(webgl2), reload — the second load must show `renderer_mode=webgpu`.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
