@@ -1,4 +1,5 @@
-import { memo, useEffect, useState } from "react";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { memo } from "react";
 
 const formatCountdown = (secondsLeft: number): string => {
   const total = Math.max(0, Math.floor(secondsLeft));
@@ -24,20 +25,7 @@ interface WorldCountdownProps {
  * This prevents parent component re-renders every second when displaying countdowns.
  */
 const WorldCountdown = memo(({ startMainAt, endAt, status, className }: WorldCountdownProps) => {
-  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
-
-  // Only run the interval if we have timing data to display
-  const needsTimer = startMainAt != null && status === "ok";
-
-  useEffect(() => {
-    if (!needsTimer) return;
-
-    const id = window.setInterval(() => {
-      setNowSec(Math.floor(Date.now() / 1000));
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [needsTimer]);
+  const nowSec = useNowSeconds(startMainAt != null && status === "ok");
 
   // Compute the display label
   const label = (() => {
@@ -74,19 +62,7 @@ WorldCountdown.displayName = "WorldCountdown";
  * Extended version with more detailed formatting for the modal view.
  */
 export const WorldCountdownDetailed = memo(({ startMainAt, endAt, status, className }: WorldCountdownProps) => {
-  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
-
-  const needsTimer = startMainAt != null && status === "ok";
-
-  useEffect(() => {
-    if (!needsTimer) return;
-
-    const id = window.setInterval(() => {
-      setNowSec(Math.floor(Date.now() / 1000));
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, [needsTimer]);
+  const nowSec = useNowSeconds(startMainAt != null && status === "ok");
 
   const label = (() => {
     if (startMainAt == null) {
@@ -124,16 +100,7 @@ WorldCountdownDetailed.displayName = "WorldCountdownDetailed";
  * Updates every second for instant transitions when timers reach 0.
  */
 export const useGameTimeStatus = () => {
-  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
-
-  useEffect(() => {
-    // Update every second for instant game status transitions
-    const id = window.setInterval(() => {
-      setNowSec(Math.floor(Date.now() / 1000));
-    }, 1000);
-
-    return () => window.clearInterval(id);
-  }, []);
+  const nowSec = useNowSeconds();
 
   const isOngoing = (startMainAt: number | null, endAt: number | null) => {
     if (startMainAt == null) return false;

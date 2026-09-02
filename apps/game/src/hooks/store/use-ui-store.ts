@@ -1,4 +1,5 @@
 import { BattleViewInfo, LeftView } from "@/types";
+import { useTooltipStore } from "./use-tooltip-store";
 import { ContextMenuState } from "@/types/context-menu";
 import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
 import { SelectableArmy } from "@bibliothecadao/eternum";
@@ -11,85 +12,10 @@ import { createRealmStoreSlice, RealmStore } from "./use-realm-store";
 import { createThreeStoreSlice, ThreeStore } from "./use-three-store";
 import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
-type TooltipPlacement = "top" | "left" | "right" | "bottom";
-
 type BottomPanelTabId = "tile" | "minimap";
 
 export type LeftListFilter = StructureType | "all";
 export type LeftListSort = "favorites" | "level" | "population" | "name";
-
-let lastResolvedAnchor: HTMLElement | null = null;
-
-const isInDocument = (element: HTMLElement | null) => {
-  if (!element) {
-    return false;
-  }
-
-  return document.contains(element);
-};
-
-const INTERACTIVE_SELECTOR = "[data-tooltip-anchor], button, [role='button'], a, [data-radix-collection-item]";
-
-const getFallbackAnchor = (existing?: HTMLElement | null): HTMLElement | null => {
-  if (existing) {
-    lastResolvedAnchor = existing;
-    return existing;
-  }
-
-  if (typeof document === "undefined") {
-    return null;
-  }
-
-  const hovered = document.querySelectorAll(":hover");
-  const lastHovered = hovered.length ? (hovered[hovered.length - 1] as HTMLElement) : null;
-  const tooltipElement = document.getElementById("tooltip-root");
-
-  if (lastHovered && tooltipElement && tooltipElement.contains(lastHovered)) {
-    return null;
-  }
-
-  if (lastHovered) {
-    const interactiveAncestor = lastHovered.closest(INTERACTIVE_SELECTOR) as HTMLElement | null;
-
-    if (interactiveAncestor) {
-      lastResolvedAnchor = interactiveAncestor;
-      return interactiveAncestor;
-    }
-
-    lastResolvedAnchor = lastHovered;
-    return lastHovered;
-  }
-
-  const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-  if (active) {
-    const anchorCandidate = active.closest(INTERACTIVE_SELECTOR) as HTMLElement | null;
-    if (anchorCandidate) {
-      lastResolvedAnchor = anchorCandidate;
-      return anchorCandidate;
-    }
-    lastResolvedAnchor = active;
-    return active;
-  }
-
-  if (isInDocument(lastResolvedAnchor)) {
-    return lastResolvedAnchor;
-  }
-
-  lastResolvedAnchor = null;
-
-  return null;
-};
-
-type TooltipType = {
-  content: React.ReactNode;
-  position?: TooltipPlacement;
-  anchorElement?: HTMLElement | null;
-  fixed?: {
-    x: number;
-    y: number;
-  };
-} | null;
 
 type ArmyCreationPopupConfig = {
   structureId?: number;
@@ -141,8 +67,6 @@ interface UIStore {
   setMusicLevel: (level: number) => void;
   effectsLevel: number;
   setEffectsLevel: (level: number) => void;
-  tooltip: TooltipType;
-  setTooltip: (tooltip: TooltipType) => void;
   contextMenu: ContextMenuState | null;
   contextMenuStack: ContextMenuState[];
   openContextMenu: (menu: ContextMenuState) => void;
@@ -291,17 +215,6 @@ export const useUIStore = create(
       set({ effectsLevel: level });
       localStorage.setItem("effectsLevel", level.toString());
     },
-    tooltip: null,
-    setTooltip: (tooltip) =>
-      set({
-        tooltip:
-          tooltip && !tooltip.fixed
-            ? {
-                ...tooltip,
-                anchorElement: getFallbackAnchor(tooltip.anchorElement ?? undefined),
-              }
-            : tooltip,
-      }),
     contextMenu: null,
     contextMenuStack: [],
     openContextMenu: (menu: ContextMenuState) => set({ contextMenu: menu, contextMenuStack: [] }),
@@ -324,7 +237,10 @@ export const useUIStore = create(
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
-    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
+    setLeftNavigationView: (view: LeftView) => {
+      useTooltipStore.getState().setTooltip(null);
+      set({ leftNavigationView: view });
+    },
     leftListFilter: readLeftListFilter(),
     setLeftListFilter: (filter: LeftListFilter) => {
       set({ leftListFilter: filter });

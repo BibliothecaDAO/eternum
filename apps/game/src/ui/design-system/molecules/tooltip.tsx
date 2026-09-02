@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import clsx from "clsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -33,7 +33,7 @@ const getHiddenTransform = (placement: TooltipPlacement) => {
 
 export const Tooltip = ({ className }: TooltipProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const tooltip = useUIStore((state) => state.tooltip);
+  const tooltip = useTooltipStore((state) => state.tooltip);
   const [placement, setPlacement] = useState<TooltipPlacement>("top");
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -203,7 +203,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
 
   useEffect(() => {
     const clearTooltip = () => {
-      const setTooltip = useUIStore.getState().setTooltip;
+      const setTooltip = useTooltipStore.getState().setTooltip;
       setTooltip(null);
     };
 

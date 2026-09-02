@@ -1,4 +1,5 @@
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { configManager, getEntityIdFromKeys, getStructureRelicEffects, ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
@@ -53,21 +54,7 @@ const SidebarRealm = ({
     },
   } = useDojo();
 
-  const [timerTick, setTimerTick] = useState(0);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const interval = window.setInterval(() => {
-      setTimerTick((tick) => tick + 1);
-    }, 1000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, []);
-
-  const currentTime = useMemo(() => Date.now(), [timerTick]);
+  const currentTime = useNowMs();
 
   const buildings = useMemo(() => {
     const buildings = runQuery([

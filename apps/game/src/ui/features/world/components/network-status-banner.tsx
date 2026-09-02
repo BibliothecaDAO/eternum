@@ -1,11 +1,12 @@
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AlertBannerShell } from "@/ui/shared/components/alert-banner-shell";
 import { AnimatePresence, motion } from "framer-motion";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw";
 import X from "lucide-react/dist/esm/icons/x";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const OUTAGE_BANNER_THRESHOLD_MS = 30_000;
 const OUTAGE_BANNER_ATTEMPT_THRESHOLD = 3;
@@ -21,13 +22,8 @@ export const NetworkStatusBanner = ({ onRetry }: NetworkStatusBannerProps) => {
   const lastDisconnectedAt = useConnectionStore((s) => s.lastDisconnectedAt);
   const reconnectAttempts = useConnectionStore((s) => s.reconnectAttempts);
 
-  const [now, setNow] = useState(() => Date.now());
+  const now = useNowMs();
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1_000);
-    return () => clearInterval(id);
-  }, []);
 
   const outageLongEnough = lastDisconnectedAt !== null && now - lastDisconnectedAt >= OUTAGE_BANNER_THRESHOLD_MS;
   const manyAttempts = reconnectAttempts >= OUTAGE_BANNER_ATTEMPT_THRESHOLD;

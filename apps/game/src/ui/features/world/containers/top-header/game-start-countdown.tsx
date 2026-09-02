@@ -1,7 +1,7 @@
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Clock from "lucide-react/dist/esm/icons/clock";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 
 interface GameStartCountdownVisibilityInput {
   gameStartMainAt: number | null;
@@ -44,18 +44,8 @@ export const formatGameStartCountdown = (secondsUntilStart: number): string => {
 export const GameStartCountdown = memo(() => {
   const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
   const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const [localElapsedSeconds, setLocalElapsedSeconds] = useState(0);
-
-  useEffect(() => {
-    setLocalElapsedSeconds(0);
-    const intervalId = window.setInterval(() => {
-      setLocalElapsedSeconds((current) => current + 1);
-    }, 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [currentBlockTimestamp]);
-
-  const effectiveTimestamp = currentBlockTimestamp + localElapsedSeconds;
+  // The block timestamp store ticks every second, so it is the clock here too.
+  const effectiveTimestamp = currentBlockTimestamp;
   const shouldShow = shouldShowGameStartCountdown({ gameStartMainAt, currentBlockTimestamp: effectiveTimestamp });
   const countdownLabel = useMemo(() => {
     if (!shouldShow || gameStartMainAt == null) {

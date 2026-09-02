@@ -1,5 +1,5 @@
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Position as PositionInterface } from "@bibliothecadao/eternum";
 
 import clsx from "clsx";
@@ -13,7 +13,7 @@ export const ViewOnMapIcon = ({
   hideTooltip?: boolean;
   className?: string;
 }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const navigateToMapView = useNavigateToMapView();
 
   return (

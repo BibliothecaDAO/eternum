@@ -1,6 +1,6 @@
 import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
@@ -285,7 +285,7 @@ const PlayerRow = ({
   effect?: PlayerEffect;
   registerRef: (el: HTMLDivElement | null) => void;
 }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   const isUnranked = player.rank === Number.MAX_SAFE_INTEGER;
   const tilesLabel = formatActivityValue(player.tilesExplored, player.tilesExploredPoints);

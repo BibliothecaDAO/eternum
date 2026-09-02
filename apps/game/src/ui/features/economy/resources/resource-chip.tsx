@@ -1,7 +1,7 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
@@ -66,7 +66,7 @@ export const ResourceChip = ({
   currentArmiesTick?: number;
   armiesTickTimeRemaining?: number;
 }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
   const {
@@ -131,19 +131,11 @@ export const ResourceChip = ({
     return resourceManager.timeUntilValueReached(currentTick, resourceId);
   }, [resourceManager, currentTick]);
 
+  // The default tick advances on the one clock; the cap is re-read as it does.
   useEffect(() => {
-    const tickTime = configManager.getTick(TickIds.Default) * 1000;
-    let realTick = currentTick;
-
-    if (isProducing && !hasReachedMaxCap) {
-      const interval = setInterval(() => {
-        realTick += 1;
-        const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(realTick, resourceEnumId);
-
-        setHasReachedMaxCap(hasReachedMaxCapacity);
-      }, tickTime);
-      return () => clearInterval(interval);
-    }
+    if (!isProducing || hasReachedMaxCap) return;
+    const { hasReachedMaxCapacity } = resourceManager.balanceWithProduction(currentTick, resourceEnumId);
+    setHasReachedMaxCap(hasReachedMaxCapacity);
   }, [resourceManager, resourceEnumId, currentTick, isProducing, hasReachedMaxCap]);
 
   const icon = useMemo(() => {

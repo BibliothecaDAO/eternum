@@ -1,4 +1,5 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
@@ -904,7 +905,7 @@ export default class HexceptionScene extends HexagonScene {
 
   protected onHexagonMouseMove(hex: { position: Vector3; hexCoords: HexPosition } | null): void {
     // Always clear the tooltip first to prevent it from persisting when other elements overlap
-    this.state.setTooltip(null);
+    useTooltipStore.getState().setTooltip(null);
 
     if (hex === null) {
       this.clearHoverLabel();

@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
@@ -100,7 +100,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
   const upgradeInfo = useStructureUpgrade(entityIdOrNull);
   const provisionInfo = useBlitzRealmProvision(entityIdOrNull);
   const bootstrapInfo = useRealmUpgradeAndProvision(entityIdOrNull);
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   if (!upgradeInfo) {
     return null;

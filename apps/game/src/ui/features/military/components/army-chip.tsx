@@ -1,4 +1,5 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
@@ -34,7 +35,7 @@ export const NavigateToPositionIcon = ({
   className?: string;
   tooltipContent?: string;
 }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
 
   return (
@@ -77,7 +78,7 @@ const ArmyChip = ({
   const {
     setup: { components },
   } = useDojo();
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const [editMode, setEditMode] = useState(false);

@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import type { Transaction } from "@/hooks/store/use-transaction-store";
 import {
   getExplorerTxUrl,
@@ -19,27 +20,18 @@ interface TransactionItemProps {
 }
 
 export const TransactionItem = ({ transaction, isStuck }: TransactionItemProps) => {
-  const [timeAgo, setTimeAgo] = useState(() => formatTimeAgo(transaction.submittedAt));
+  const isPending = transaction.status === "pending";
+  // A pending row re-renders on the clock so its elapsed label keeps moving; a settled one is static.
+  useNowSeconds(isPending);
+  const timeAgo = formatTimeAgo(
+    isPending ? transaction.submittedAt : (transaction.confirmedAt ?? transaction.submittedAt),
+  );
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Check if this is a batched transaction
   const isBatched = transaction.batchDetails && transaction.batchDetails.length > 0;
   const batchTotalCount = isBatched ? getBatchTotalCount(transaction.batchDetails!) : 0;
   const explorerUrl = getExplorerTxUrl(transaction.hash);
-
-  // Update time every second for pending transactions
-  useEffect(() => {
-    if (transaction.status !== "pending") {
-      setTimeAgo(formatTimeAgo(transaction.confirmedAt ?? transaction.submittedAt));
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTimeAgo(formatTimeAgo(transaction.submittedAt));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [transaction.status, transaction.submittedAt, transaction.confirmedAt]);
 
   const handleExplorerClick = useCallback(
     (e: React.MouseEvent) => {

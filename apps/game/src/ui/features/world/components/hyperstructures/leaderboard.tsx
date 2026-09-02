@@ -1,4 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
+import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { currencyIntlFormat, displayAddress, getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -6,7 +7,7 @@ import { getAddressName, LeaderboardManager, toHexString } from "@bibliothecadao
 import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { getAvatarUrl } from "@/hooks/use-player-avatar";
 import { gameEntityKey } from "@/sync/game-scope";
 
@@ -24,7 +25,8 @@ export const Leaderboard = ({
     account: { account },
     setup: { components },
   } = dojo;
-  const [, setRefreshTick] = useState(0);
+  // The coarse clock is the refresh signal: the standings below are recomputed on every render.
+  useCoarseNowSeconds(LEADERBOARD_AUTO_REFRESH_INTERVAL_MS / 1000);
 
   const playerPointsLeaderboard = (() => {
     const leaderboardManager = LeaderboardManager.instance(dojo.setup.components);
@@ -59,16 +61,6 @@ export const Leaderboard = ({
     sortKey: "number",
     sort: "none",
   });
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setRefreshTick((previous) => previous + 1);
-    }, LEADERBOARD_AUTO_REFRESH_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
 
   const isOwner = useMemo(() => {
     const owner = getComponentValue(components.Structure, gameEntityKey([BigInt(hyperstructureEntityId)]))?.owner;

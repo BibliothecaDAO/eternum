@@ -2,20 +2,13 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import PackageOpen from "lucide-react/dist/esm/icons/package-open";
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 
 export const AllResourceArrivals = memo(
   ({ className = "", hasArrivals = false }: { className?: string; hasArrivals?: boolean }) => {
     const playerStructures = useUIStore((state) => state.playerStructures);
     const { currentBlockTimestamp } = getBlockTimestamp();
-    const [now, setNow] = useState(currentBlockTimestamp);
-
-    useEffect(() => {
-      if (!hasArrivals || !currentBlockTimestamp || typeof window === "undefined") return;
-      setNow(currentBlockTimestamp);
-      const interval = window.setInterval(() => setNow((prev) => prev + 1), 1000);
-      return () => window.clearInterval(interval);
-    }, [hasArrivals, currentBlockTimestamp]);
+    const now = currentBlockTimestamp;
 
     if (!hasArrivals) {
       return (

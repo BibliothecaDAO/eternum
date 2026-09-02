@@ -7,6 +7,8 @@ interface BlockTimestampState {
   currentDefaultTick: number;
   currentArmiesTick: number;
   armiesTickTimeRemaining: number;
+  /** Wall-clock milliseconds at the last tick: the one clock every countdown and elapsed-time label reads. */
+  nowMs: number;
   tick: () => void;
 }
 
@@ -24,6 +26,7 @@ const computeTimestampState = (): Omit<BlockTimestampState, "tick"> => {
     currentDefaultTick,
     currentArmiesTick,
     armiesTickTimeRemaining,
+    nowMs: Date.now(),
   };
 };
 

@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import Button from "@/ui/design-system/atoms/button";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
@@ -22,7 +23,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showCongratsPopup, setShowCongratsPopup] = useState(false);
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const currentBlockTimestamp = getBlockTimestamp().currentBlockTimestamp;

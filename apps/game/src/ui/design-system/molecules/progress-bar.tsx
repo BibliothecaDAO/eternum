@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ReactNode } from "react";
 
 interface ProgressBarProps {
@@ -24,7 +24,7 @@ export const ProgressBar = ({
   tooltipContent,
   className,
 }: ProgressBarProps) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   return (
     <div className="flex flex-row text-xxs text-gold">

@@ -14,6 +14,24 @@ const leaderboardManagerMock = {
   getPlayerHyperstructureUnregisteredShareholderPoints: vi.fn(() => 0),
 };
 
+const clock = vi.hoisted(() => ({ coarseNowSeconds: 0 }));
+
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useNowMs: () => 0,
+  useNowSeconds: () => 0,
+  useCoarseNowSeconds: () => clock.coarseNowSeconds,
+  useCurrentBlockTimestamp: () => 0,
+  useCurrentDefaultTick: () => 0,
+  useCoarseCurrentDefaultTick: () => 0,
+  useCurrentArmiesTick: () => 0,
+  useBlockTimestamp: () => ({
+    currentBlockTimestamp: 0,
+    currentDefaultTick: 0,
+    currentArmiesTick: 0,
+    armiesTickTimeRemaining: 0,
+  }),
+}));
+
 vi.mock("@/ui/design-system/atoms/button", () => ({
   default: ({ children, onClick }: { children: string; onClick: () => void }) => (
     <button onClick={onClick}>{children}</button>
@@ -99,8 +117,10 @@ describe("In-game Leaderboard", () => {
 
     currentRegisteredPoints = 250;
 
+    // The coarse clock is the refresh signal: the next window re-renders the standings.
+    clock.coarseNowSeconds += 30;
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(31_000);
+      root.render(<Leaderboard hyperstructureEntityId={1 as never} setSelectedTab={vi.fn()} />);
     });
 
     expect(container.textContent).toContain("250");

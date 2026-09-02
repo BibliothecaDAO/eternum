@@ -1,4 +1,6 @@
 import { usePlayResourceSound } from "@/audio";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -144,7 +146,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const dojo = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
-  const [timerTick, setTimerTick] = useState(0);
   const [pendingAction, setPendingAction] = useState<"destroy" | "production" | null>(null);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
@@ -160,15 +161,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const structure = useComponentValue(dojo.setup.components.Structure, realmEntity);
   const structureBuildings = useComponentValue(dojo.setup.components.StructureBuildings, realmEntity);
   const resourceData = useComponentValue(dojo.setup.components.Resource, realmEntity);
-  const currentTime = useMemo(() => Date.now(), [timerTick]);
+  const currentTime = useNowMs();
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const interval = window.setInterval(() => setTimerTick((tick) => tick + 1), 1000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   const existingBuildings = useMemo(
     () =>
@@ -1196,7 +1191,7 @@ const BuildingCard = ({
   pauseResumeAllLoading?: boolean;
   allPaused?: boolean;
 }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const isDisabled = disabled;
   const showDisabledMessage = isDisabled && disabledReason;
   const effectiveRemainingSeconds =

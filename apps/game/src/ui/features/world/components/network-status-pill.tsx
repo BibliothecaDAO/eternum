@@ -1,9 +1,10 @@
 import { useConnectionStore, type StreamStatus } from "@/hooks/store/use-connection-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import Globe from "lucide-react/dist/esm/icons/globe";
 import MapPin from "lucide-react/dist/esm/icons/map-pin";
 import WifiOff from "lucide-react/dist/esm/icons/wifi-off";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 interface NetworkStatusPillProps {
   onRetry: () => void | Promise<void>;
@@ -47,13 +48,7 @@ export const NetworkStatusPill = ({ onRetry }: NetworkStatusPillProps) => {
   const lastGlobalUpdate = useConnectionStore((s) => s.lastGlobalUpdate);
   const reconnectAttempts = useConnectionStore((s) => s.reconnectAttempts);
 
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (status === "connected") return;
-    const id = setInterval(() => setNow(Date.now()), 1_000);
-    return () => clearInterval(id);
-  }, [status]);
+  const now = useNowMs(status !== "connected");
 
   const reconnecting = spatialStatus === "reconnecting" || globalStatus === "reconnecting";
   const spatialSick = spatialStatus !== "connected";

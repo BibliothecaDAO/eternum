@@ -1,7 +1,7 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -82,13 +82,7 @@ export const MergedResourcePanel = memo(
 
     // 1s tick so production timers/rings decay live (same pattern as the
     // production panel + build menu).
-    const [timerTick, setTimerTick] = useState(0);
-    useEffect(() => {
-      if (typeof window === "undefined") return;
-      const interval = window.setInterval(() => setTimerTick((tick) => tick + 1), 1000);
-      return () => window.clearInterval(interval);
-    }, []);
-    const currentTime = useMemo(() => Date.now(), [timerTick]);
+    const currentTime = useNowMs();
 
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
@@ -141,8 +135,8 @@ export const MergedResourcePanel = memo(
         realmPosition: realm.position,
         world: { components, systemCalls: dojo.setup.systemCalls },
       });
-      // timerTick keeps this fresh as synced building occupancy changes.
-    }, [realm?.position, entityId, components, dojo.setup.systemCalls, timerTick]);
+      // the clock keeps this fresh as synced building occupancy changes.
+    }, [realm?.position, entityId, components, dojo.setup.systemCalls, currentTime]);
 
     const handleAutoBuild = useCallback(
       async (buildingType: BuildingType, resourceId: ResourcesIds) => {

@@ -21,8 +21,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
   "apps/game/src/three/managers/structure-manager.ts": { class: "clock", reason: "local timed-label interpolation" },
   "apps/game/src/three/managers/weather-manager.ts": { class: "debug", reason: "developer weather counters" },
   "apps/game/src/three/systems/wind-system.ts": { class: "debug", reason: "developer wind counters" },
-  "apps/game/src/ui/components/transaction-center/transaction-item.tsx": { class: "ui", reason: "elapsed-time label" },
-  "apps/game/src/ui/components/world-countdown.tsx": { class: "clock", reason: "countdown interpolation" },
   "apps/game/src/ui/debug/army-movement-latency-overlay.tsx": { class: "debug", reason: "local metrics repaint" },
   "apps/game/src/ui/debug/dev-sync-overlay.tsx": { class: "debug", reason: "local age-label repaint" },
   "apps/game/src/ui/features/cosmetics/components/cosmetic-model-viewer.tsx": {
@@ -37,14 +35,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "debug",
     reason: "developer terrain metrics repaint",
   },
-  "apps/game/src/ui/features/economy/resources/resource-chip.tsx": {
-    class: "clock",
-    reason: "production interpolation",
-  },
-  "apps/game/src/ui/features/economy/trading/resource-arrivals.tsx": {
-    class: "clock",
-    reason: "arrival countdown interpolation",
-  },
   "apps/game/src/ui/features/factory-v2/hooks/use-factory-v2.ts": {
     class: "external",
     reason: "deployment worker run status cannot push",
@@ -57,56 +47,9 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "clock",
     reason: "review playback interpolation",
   },
-  "apps/game/src/ui/features/military/battle/battle-cooldown-timer.tsx": {
-    class: "clock",
-    reason: "battle cooldown interpolation",
-  },
-  "apps/game/src/ui/features/military/battle/quick-attack-preview.tsx": {
-    class: "clock",
-    reason: "battle cooldown interpolation",
-  },
-  "apps/game/src/ui/features/military/components/structure-defence.tsx": {
-    class: "clock",
-    reason: "stamina interpolation",
-  },
-  "apps/game/src/ui/features/prize/prize-panel.tsx": { class: "clock", reason: "prize countdown interpolation" },
-  "apps/game/src/ui/features/settlement/construction/select-preview-building.tsx": {
-    class: "clock",
-    reason: "production interpolation",
-  },
-  "apps/game/src/ui/features/settlement/production/production-sidebar.tsx": {
-    class: "clock",
-    reason: "production interpolation",
-  },
-  "apps/game/src/ui/features/social/components/register-points-button.tsx": {
-    class: "clock",
-    reason: "points interpolation",
-  },
   "apps/game/src/ui/features/social/player/use-leaderboard-effects.ts": {
     class: "debug",
     reason: "opt-in mock effect generator",
-  },
-  "apps/game/src/ui/features/world/components/hyperstructures/leaderboard.tsx": {
-    class: "clock",
-    reason: "leaderboard points interpolation",
-  },
-  "apps/game/src/ui/features/world/components/network-status-banner.tsx": { class: "ui", reason: "outage age label" },
-  "apps/game/src/ui/features/world/components/network-status-pill.tsx": { class: "ui", reason: "stream age label" },
-  "apps/game/src/ui/features/world/containers/left-facets/empire-cockpit.tsx": {
-    class: "clock",
-    reason: "arrival countdown interpolation",
-  },
-  "apps/game/src/ui/features/world/containers/left-facets/merged-resource-panel.tsx": {
-    class: "clock",
-    reason: "production interpolation",
-  },
-  "apps/game/src/ui/features/world/containers/top-header/game-end-timer.tsx": {
-    class: "clock",
-    reason: "game countdown interpolation",
-  },
-  "apps/game/src/ui/features/world/containers/top-header/game-start-countdown.tsx": {
-    class: "clock",
-    reason: "game countdown interpolation",
   },
   "apps/game/src/ui/layouts/bootstrap-loading/bootstrap-loading-panel.tsx": {
     class: "ui",

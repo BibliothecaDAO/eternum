@@ -1,4 +1,5 @@
 import { ReactComponent as PlusIcon } from "@/assets/icons/common/plus-sign.svg";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ArmyManager } from "@bibliothecadao/eternum";
@@ -30,21 +31,9 @@ interface CooldownTimerProps {
 }
 
 const CooldownTimer = ({ slot, time }: CooldownTimerProps) => {
-  const [timeLeft, setTimeLeft] = useState(time);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 0) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+  const nowSeconds = useNowSeconds();
+  const [startedAtSeconds] = useState(nowSeconds);
+  const timeLeft = Math.max(0, time - (nowSeconds - startedAtSeconds));
 
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);

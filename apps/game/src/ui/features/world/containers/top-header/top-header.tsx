@@ -1,7 +1,8 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -45,7 +46,7 @@ export const TopHeader = memo(() => {
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
   const followingArmyMessage = useUIStore((state) => state.followingArmyMessage);
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const currentDefaultTick = useCurrentDefaultTick();
 
   // force a refresh of getEntityInfo when the structure data arrives
   const structure = useComponentValue(setup.components.Structure, gameEntityKey([BigInt(structureEntityId)]));

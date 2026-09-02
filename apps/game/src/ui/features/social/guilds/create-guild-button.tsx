@@ -1,6 +1,6 @@
 import { ReactComponent as LockClosed } from "@/assets/icons/common/lock-closed.svg";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ReactComponent as LockOpen } from "@/assets/icons/common/lock-open.svg";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/types";
@@ -20,7 +20,7 @@ export const CreateGuildButton = ({
   isPublic,
   setIsPublic,
 }: CreateGuildButtonProps) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   const handleSubmit = () => {
     handleCreateGuild(guildName, isPublic);

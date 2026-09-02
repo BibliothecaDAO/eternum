@@ -1,5 +1,5 @@
 import { useUISound } from "@/audio";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import clsx from "clsx";
 import { memo, useCallback, useMemo } from "react";
@@ -120,7 +120,7 @@ const CircleButton = ({
 }: CircleButtonProps) => {
   const playHoverClick = useUISound("ui.hover");
   const playClick = useUISound("ui.click");
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   const tooltipContent = useMemo(
     () => (label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null),

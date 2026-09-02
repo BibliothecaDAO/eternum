@@ -1,4 +1,5 @@
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
+import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
@@ -7,24 +8,19 @@ import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { type ID } from "@bibliothecadao/types";
 import Factory from "lucide-react/dist/esm/icons/factory";
-import { memo, useEffect, useState } from "react";
+import { memo } from "react";
 
 const AUTOMATION_LABELS: Record<string, string> = { smart: "Smart", idle: "Idle", custom: "Custom" };
 
 /**
  * Header cue: this structure's automation mode (Smart / Idle / Custom), then
- * the countdown to the next automation run. Ticks on its own 1s interval so the
- * whole cockpit + resource panel don't re-render every second.
+ * the countdown to the next automation run. Reads the one clock so only this cue
+ * re-renders every second, not the whole cockpit + resource panel.
  */
 const AutomationCue = memo(({ structureEntityId }: { structureEntityId: ID }) => {
   const presetId = useAutomationStore((state) => state.realms[String(structureEntityId)]?.presetId);
   const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
-  const [nowMs, setNowMs] = useState(() => Date.now());
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setNowMs(Date.now()), 1000);
-    return () => window.clearInterval(interval);
-  }, []);
+  const nowMs = useNowMs();
 
   const label = AUTOMATION_LABELS[presetId ?? "idle"] ?? "Idle";
   const secondsUntilRun = nextRunTimestamp ? Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000)) : null;

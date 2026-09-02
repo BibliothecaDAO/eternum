@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
@@ -40,7 +41,7 @@ const RealmVillageDetails = () => {
   const dojo = useDojo();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const mode = useGameModeConfig();
 
   const structure = useMemo(

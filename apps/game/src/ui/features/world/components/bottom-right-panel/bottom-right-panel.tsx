@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -206,7 +207,7 @@ const LocalTilePanel = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);

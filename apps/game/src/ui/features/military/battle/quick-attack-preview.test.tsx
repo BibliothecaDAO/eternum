@@ -66,6 +66,7 @@ vi.mock("@/audio/unit-command-audio", () => ({
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useNowSeconds: () => 0,
   useBlockTimestamp: () => ({
     currentArmiesTick: 1,
     armiesTickTimeRemaining: 0,

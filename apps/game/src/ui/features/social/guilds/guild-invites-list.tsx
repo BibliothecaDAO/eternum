@@ -1,5 +1,5 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -53,7 +53,7 @@ const InviteRow = ({
   removePlayerFromWhitelist: (playerAddress: ContractAddress) => void;
   userIsGuildMaster: boolean;
 }) => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const hasPlayerAddress = typeof player.address === "bigint";
 
   return (

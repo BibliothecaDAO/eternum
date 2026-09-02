@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { activeGameRows } from "@/sync/recs-rows";
@@ -9,7 +10,7 @@ import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Users from "lucide-react/dist/esm/icons/users";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { WinnersTable } from "./components/winners-table";
@@ -75,15 +76,10 @@ export const PrizePanel = () => {
     [pointsByPlayer, settledPlayers],
   );
 
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const now = useCoarseNowSeconds(30);
   const [playersPerTransaction, setPlayersPerTransaction] = useState(200);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [submission, setSubmission] = useState<SubmissionState>({ phase: "idle" });
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 30_000);
-    return () => clearInterval(interval);
-  }, []);
 
   const finalTrialId = BigInt(game?.final_trial_id ?? 0);
   const finalized = finalTrialId > 0n;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestamp, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
@@ -119,16 +119,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
   const [garrisonEnabled, setGarrisonEnabled] = useState(false);
 
-  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
+  const currentTime = useNowSeconds();
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Math.floor(Date.now() / 1000));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const {
     attackerRelicEffects,

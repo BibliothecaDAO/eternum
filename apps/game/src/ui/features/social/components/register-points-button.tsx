@@ -1,4 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
@@ -39,8 +40,9 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
   } = useDojo();
 
   const [isSharePointsLoading, setIsSharePointsLoading] = useState(false);
-  const [refreshTick, setRefreshTick] = useState(0);
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const refreshTick = useCoarseNowSeconds(LEADERBOARD_UPDATE_INTERVAL / 1000);
+  const [claimTick, setClaimTick] = useState(0);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
 
   // The hyperstructure slice is the subscription; the bridge publishes it once per ingest slice.
@@ -54,12 +56,13 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
     // (accrual over time, a pending claim). The points themselves are read from the manager here.
     void leaderboardRevision;
     void refreshTick;
+    void claimTick;
     return {
       registeredPoints: leaderboardManager.getPlayerRegisteredPoints(playerAddress),
       unregisteredShareholderPoints:
         leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress),
     };
-  }, [leaderboardManager, leaderboardRevision, playerAddress, refreshTick]);
+  }, [claimTick, leaderboardManager, leaderboardRevision, playerAddress, refreshTick]);
 
   const hyperstructuresEntityIds = useMemo(
     () =>
@@ -80,7 +83,7 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
   // A claim changes the manager's local view (pending override, refresh) before RECS does: publish that view.
   const publishPoints = () => {
     setPlayersByRank(leaderboardManager.playersByRank);
-    setRefreshTick((previous) => previous + 1);
+    setClaimTick((previous) => previous + 1);
   };
 
   useEffect(() => {
@@ -91,19 +94,12 @@ export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPoi
   }, [playerAddress]);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setRefreshTick((previous) => previous + 1);
-      logPointsSummary("refresh tick", {
-        registeredPoints,
-        unregisteredShareholderPoints,
-        totalPoints,
-      });
-    }, LEADERBOARD_UPDATE_INTERVAL);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [registeredPoints, totalPoints, unregisteredShareholderPoints]);
+    logPointsSummary("refresh tick", {
+      registeredPoints,
+      unregisteredShareholderPoints,
+      totalPoints,
+    });
+  }, [refreshTick, registeredPoints, totalPoints, unregisteredShareholderPoints]);
 
   useEffect(() => {
     logPointsSummary("computed values", {

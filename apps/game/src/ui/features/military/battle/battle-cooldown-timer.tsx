@@ -1,5 +1,5 @@
 import { formatTime } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
 interface BattleCooldownTimerProps {
   cooldownEnd: number;
@@ -7,26 +7,8 @@ interface BattleCooldownTimerProps {
 }
 
 export const BattleCooldownTimer = ({ cooldownEnd, className = "" }: BattleCooldownTimerProps) => {
-  const [timeRemaining, setTimeRemaining] = useState(calculateTimeRemaining());
-
-  function calculateTimeRemaining() {
-    const currentTime = Math.floor(Date.now() / 1000);
-    return Math.max(0, cooldownEnd - currentTime);
-  }
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const remaining = calculateTimeRemaining();
-      setTimeRemaining(remaining);
-
-      // Clear interval when cooldown expires
-      if (remaining === 0) {
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [cooldownEnd]);
+  const nowSeconds = useNowSeconds();
+  const timeRemaining = Math.max(0, cooldownEnd - nowSeconds);
 
   if (timeRemaining === 0) return null;
 

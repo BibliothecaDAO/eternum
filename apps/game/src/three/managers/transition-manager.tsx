@@ -1,3 +1,4 @@
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 const FADE_DURATION = 300;
@@ -24,9 +25,8 @@ export class TransitionManager {
 
   fadeIn() {
     this.cancelPendingFadeOut();
-    const { setIsLoadingScreenEnabled, setTooltip } = useUIStore.getState();
-    setIsLoadingScreenEnabled(false);
-    setTooltip(null);
+    useUIStore.getState().setIsLoadingScreenEnabled(false);
+    useTooltipStore.getState().setTooltip(null);
   }
 
   isActive() {

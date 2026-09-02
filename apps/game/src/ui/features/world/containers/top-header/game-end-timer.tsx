@@ -1,4 +1,6 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resetBootstrap } from "@/init/bootstrap";
 import Button from "@/ui/design-system/atoms/button";
@@ -7,7 +9,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import Clock from "lucide-react/dist/esm/icons/clock";
 import TrophyIcon from "lucide-react/dist/esm/icons/trophy";
 import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -84,25 +85,12 @@ const getSecondsRemaining = (gameEndAt: number | null, currentBlockTimestamp: nu
 
 export const GameEndTimer = memo(() => {
   const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const setTooltip = useUIStore((state) => state.setTooltip);
-  const { currentBlockTimestamp } = getBlockTimestamp();
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
   const hasFiniteGameEnd = useMemo(() => hasFiniteSeasonEnd(gameEndAt), [gameEndAt]);
 
-  const [secondsRemaining, setSecondsRemaining] = useState(() => getSecondsRemaining(gameEndAt, currentBlockTimestamp));
+  const secondsRemaining = getSecondsRemaining(gameEndAt, currentBlockTimestamp);
   const [isTooltipVisible, setIsTooltipVisible] = useState(false);
-
-  useEffect(() => {
-    const nextRemaining = getSecondsRemaining(gameEndAt, currentBlockTimestamp);
-    setSecondsRemaining((previous) => (previous === nextRemaining ? previous : nextRemaining));
-  }, [currentBlockTimestamp, gameEndAt]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsRemaining((prev) => (prev <= 0 ? 0 : prev - 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     if (!isTooltipVisible) return;
@@ -142,9 +130,6 @@ export const GameEndTimer = memo(() => {
     };
 
     updateTooltip();
-    const tooltipTimer = setInterval(updateTooltip, 1000);
-
-    return () => clearInterval(tooltipTimer);
   }, [hasFiniteGameEnd, isTooltipVisible, secondsRemaining, setTooltip]);
 
   const secondsForDisplay = useMemo(() => {

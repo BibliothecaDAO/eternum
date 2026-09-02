@@ -13,6 +13,22 @@ const components = {
   Resource: { name: "Resource" },
 };
 
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useNowMs: () => 0,
+  useNowSeconds: () => 0,
+  useCoarseNowSeconds: () => 0,
+  useCurrentBlockTimestamp: () => 0,
+  useCurrentDefaultTick: () => 0,
+  useCoarseCurrentDefaultTick: () => 0,
+  useCurrentArmiesTick: () => 0,
+  useBlockTimestamp: () => ({
+    currentBlockTimestamp: 0,
+    currentDefaultTick: 0,
+    currentArmiesTick: 0,
+    armiesTickTimeRemaining: 0,
+  }),
+}));
+
 vi.mock("@/audio", () => ({
   usePlayResourceSound: () => ({ playResourceSound: vi.fn() }),
 }));

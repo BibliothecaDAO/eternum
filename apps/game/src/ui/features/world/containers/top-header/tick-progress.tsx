@@ -1,4 +1,5 @@
 import { useUISound } from "@/audio";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -18,7 +19,7 @@ const PHASES = [
 ] as const;
 
 export const TickProgress = memo(() => {
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const setCycleProgress = useUIStore((state) => state.setCycleProgress);
   const setCycleTime = useUIStore((state) => state.setCycleTime);
   const debugCycleProgressOverride = useUIStore((state) => state.debugCycleProgressOverride);
