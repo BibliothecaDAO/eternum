@@ -573,6 +573,21 @@ marker/lane/discipline/wiring/terrain suites 197/197, typecheck clean, the far-b
 **Approved; deployed from this tip.** Owner closes the two owed cells: far/mid p95 ≤ 16.7 after the partition split, and
 the capable machine reaching `webgpu` via `?rendererMode=webgpu-auto` then booting the remembered lane with no probe.
 
+L5c owner re-measure (2026-09-02, deployed build, WebGL2 lane — the boot log shows no probe stall and no preload error;
+whether this machine has any WebGPU adapter at all is still unconfirmed, see brave://gpu): far band p50 18.1 / p95 30.4
+with only 6 of 2,365 frames over 50 ms and **21 draws / 20k triangles** (structure and triangle bars pass); mid p50 6.1
+/ p95 36.3; close **p50 6.1 / p95 18.2** — the close band, 12.1/145 one build earlier and 49/104 at the baseline, is now
+the best band in the game, confirming the compile-burst attribution. The far/mid p95 cells stay open, and the owner
+added two design rulings from playing the build: (1) **the mid band still shows a black void beyond the composite
+window** — the far biome surface exists but only renders at far; and (2) **the strategic map replaces the real art too
+eagerly** — "cap the max zoom out before we turn it into this, for now — I want to see the real art." Ruled as **L5d**:
+(a) the far biome surface becomes a permanent underlay beneath page terrain at near and mid, so no band ever shows void
+beyond the window (~2 draws); (b) wheel zoom-out is capped at the top of the mid band for now — the far strategic band
+(markers layer included) stays in the code, unreachable by wheel, parked until the owner asks for a map-mode key; the
+zoom cap and the band thresholds live where the CameraView bands are defined, one constant each, no new mode. After L5d
+the max-out view IS the mid band over the full biome underlay; owner re-measures max-out and the digests rule the
+residual (compile bursts feed half two class 1, label quads feed L5 item 6).
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
