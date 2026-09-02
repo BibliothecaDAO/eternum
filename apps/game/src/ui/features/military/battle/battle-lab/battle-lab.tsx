@@ -4,7 +4,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   type Army,
@@ -83,7 +84,7 @@ export const BattleLab = ({
   const gameMode = useGameModeConfig();
   const accountName = useAccountStore((s) => s.accountName);
   const selectedHex = useUIStore((s) => s.selectedHex);
-  const toggleModal = useUIStore((s) => s.toggleModal);
+  const closeSurface = usePopoverStore((s) => s.closeSurface);
   const updateSelectedEntityId = useUIStore((s) => s.updateEntityActionSelectedEntityId);
 
   const attackerEntityId = selected?.id ?? (0 as ID);
@@ -277,7 +278,7 @@ export const BattleLab = ({
         });
       }
       updateSelectedEntityId(null);
-      toggleModal(null);
+      closeSurface();
     } catch (error) {
       console.error("Attack failed:", error);
     } finally {
@@ -311,12 +312,12 @@ export const BattleLab = ({
   ]);
 
   return (
-    <CenteredModalShell
+    <SurfaceFrame
       title="Combat"
       icon={Swords}
-      onClose={() => toggleModal(null)}
-      size="xl"
-      bodyClassName="relative overflow-y-auto overflow-x-hidden"
+      onClose={closeSurface}
+      className="w-[1320px] h-[calc(100vh-7rem)]"
+      bodyClassName="relative overflow-x-hidden"
     >
       <CombatParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
 
@@ -420,6 +421,6 @@ export const BattleLab = ({
           />
         </div>
       )}
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

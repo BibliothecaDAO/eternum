@@ -106,9 +106,6 @@ const LandingLayoutContent = () => {
           "overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
         )}
       >
-        {/* Modal host for landing routes */}
-        <LandingModalHost />
-
         {/* Page content */}
         <div className="flex-1 px-6 lg:px-10">
           <Outlet />
@@ -131,45 +128,5 @@ const LandingLayoutContent = () => {
         </BlankOverlayContainer>
       )}
     </div>
-  );
-};
-
-/**
- * Modal host component for landing-specific modals.
- */
-const LandingModalHost = () => {
-  const showModal = useUIStore((state) => state.showModal);
-  const modalContent = useUIStore((state) => state.modalContent);
-  const toggleModal = useUIStore((state) => state.toggleModal);
-
-  const onOverlayDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) toggleModal(null);
-    },
-    [toggleModal],
-  );
-
-  useEffect(() => {
-    if (!showModal) return;
-    const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") {
-        ev.stopPropagation();
-        ev.preventDefault();
-        toggleModal(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [showModal, toggleModal]);
-
-  return (
-    <BlankOverlayContainer
-      zIndex={120}
-      open={showModal}
-      onPointerDown={onOverlayDown}
-      className="bg-black/75 backdrop-blur-[2px]"
-    >
-      {modalContent}
-    </BlankOverlayContainer>
   );
 };

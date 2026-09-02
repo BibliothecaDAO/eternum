@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -8,7 +9,6 @@ import Trees from "lucide-react/dist/esm/icons/trees";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
 import CrosshairIcon from "lucide-react/dist/esm/icons/crosshair";
@@ -184,11 +184,11 @@ export const BiomeSummaryCard = ({
 };
 
 export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
 
   const handleSimulateBattle = useCallback(() => {
-    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
-  }, [biome, toggleModal]);
+    openSurface({ id: "battle-lab", content: <BattleLab mode="sim" initialBiome={biome} /> });
+  }, [biome, openSurface]);
 
   return (
     <div className="h-full min-h-0 w-full">

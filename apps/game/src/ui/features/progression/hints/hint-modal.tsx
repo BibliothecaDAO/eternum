@@ -1,5 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { DialogShell } from "@/ui/design-system/molecules/dialog-shell";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useState } from "react";
 import { Buildings } from "./buildings";
 import { Combat } from "./combat";
@@ -89,11 +89,11 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
     sections.find((section) => section.name === initialActiveSection) || sections[0],
   );
 
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   return (
-    <DialogShell title="The Lordpedia" size="xl" onClose={() => toggleModal(null)} contentClassName="p-0">
-      <div className="flex h-[calc(80vh)]">
+    <SurfaceFrame title="The Lordpedia" onClose={closeSurface} className="w-[1100px]" bodyClassName="overflow-hidden">
+      <div className="flex h-[calc(100vh-9rem)] min-h-0">
         <div className="w-1/4 overflow-auto border-r border-gold/10 p-4">
           <div className="space-y-1">
             {sections.map((section) => (
@@ -113,6 +113,6 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
         </div>
         <div className="w-3/4 overflow-auto p-8">{activeSection.content}</div>
       </div>
-    </DialogShell>
+    </SurfaceFrame>
   );
 };

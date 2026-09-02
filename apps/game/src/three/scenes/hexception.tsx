@@ -1,4 +1,5 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -1050,9 +1051,16 @@ export default class HexceptionScene extends HexagonScene {
     });
 
     const producedResource = getProducedResource(building.category as BuildingType);
-    this.state.toggleModal(
-      <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />,
-    );
+    usePopoverStore
+      .getState()
+      .openSurface({
+        id: "production",
+        content: (
+          <ProductionModal
+            preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource}
+          />
+        ),
+      });
   }
 
   public moveCameraToURLLocation() {

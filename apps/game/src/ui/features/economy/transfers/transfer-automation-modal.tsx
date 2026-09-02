@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useState } from "react";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -6,7 +7,6 @@ import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } fro
 import { useDojo } from "@bibliothecadao/react";
 import { toast } from "sonner";
 import { DialogShell } from "@/ui/design-system/molecules";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
     return entry.resourceConfigs
@@ -32,7 +32,7 @@ const formatLastRun = (timestamp: number) => {
 };
 
 export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded?: boolean }) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const entries = useTransferAutomationStore((s) => s.entries);
   const toggleActive = useTransferAutomationStore((s) => s.toggleActive);
   const remove = useTransferAutomationStore((s) => s.remove);
@@ -246,7 +246,7 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
   }
 
   return (
-    <DialogShell title="Scheduled Transfers" onClose={() => toggleModal(null)} size="xl">
+    <DialogShell title="Scheduled Transfers" onClose={closeSurface} size="xl">
       {content}
     </DialogShell>
   );

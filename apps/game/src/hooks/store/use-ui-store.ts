@@ -153,9 +153,6 @@ interface UIStore {
   setShowRealmsFlags: (show: boolean) => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  modalContent: React.ReactNode;
-  toggleModal: (content: React.ReactNode) => void;
-  showModal: boolean;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
@@ -177,7 +174,6 @@ interface UIStore {
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
-  setModal: (content: React.ReactNode | null, show: boolean) => void;
   transferPanelSourceId: number | null;
   setTransferPanelSourceId: (entityId: number | null) => void;
   // Default tab to open inside the unified Logistics view (Arrivals / Transfer /
@@ -325,11 +321,6 @@ export const useUIStore = create(
     setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
     isLoadingScreenEnabled: true,
     setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
-    modalContent: null,
-    toggleModal: (content) => {
-      set({ modalContent: content, showModal: !!content, tooltip: null });
-    },
-    showModal: false,
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
@@ -361,8 +352,6 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    setModal: (content: React.ReactNode | null, show: boolean) =>
-      set({ modalContent: content, showModal: show, tooltip: null }),
     transferPanelSourceId: null,
     setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
     logisticsActiveTab: "arrivals",

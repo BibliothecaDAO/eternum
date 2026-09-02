@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { displayAddress } from "@/ui/utils/utils";
 import { buildFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
 import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
@@ -31,22 +31,26 @@ const buildOwnerLabel = (entry: FaithLeaderboardEntry): string => {
 };
 
 export const FaithLeaderboardPanel = () => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const readModels = useFaithReadModels();
   const entries = useMemo(() => buildFaithLeaderboard(readModels), [readModels]);
 
   const hasEntries = entries.length > 0;
   const openWonderDetails = useCallback(
     (entry: FaithLeaderboardEntry) => {
-      toggleModal(
-        <WonderFaithDetailModal
-          wonderId={entry.wonderId}
-          fallbackWonderName={entry.wonderName}
-          onClose={() => toggleModal(null)}
-        />,
-      );
+      openSurface({
+        id: "wonder-faith",
+        content: (
+          <WonderFaithDetailModal
+            wonderId={entry.wonderId}
+            fallbackWonderName={entry.wonderName}
+            onClose={closeSurface}
+          />
+        ),
+      });
     },
-    [toggleModal],
+    [openSurface],
   );
 
   return (

@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   attackGuardVsExplorer: vi.fn(async () => undefined),
   playUnitCommandSound: vi.fn(),
   toggleModal: vi.fn(),
+  openSurface: vi.fn(),
+  closeSurface: vi.fn(),
   updateSelectedEntityId: vi.fn(),
   components: {
     Structure: Symbol("Structure"),
@@ -73,6 +75,12 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (selector: (state: { accountName: string }) => unknown) =>
     selector({ accountName: "Test Commander" }),
+}));
+
+vi.mock("@/hooks/store/use-popover-store", () => ({
+  usePopoverStore: (
+    selector: (state: { openSurface: typeof mocks.openSurface; closeSurface: typeof mocks.closeSurface }) => unknown,
+  ) => selector({ openSurface: mocks.openSurface, closeSurface: mocks.closeSurface }),
 }));
 
 vi.mock("@/hooks/store/use-ui-store", () => ({

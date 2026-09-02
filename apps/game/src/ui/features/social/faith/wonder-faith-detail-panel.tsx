@@ -1,6 +1,6 @@
 import { buildWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useMemo } from "react";
@@ -194,16 +194,15 @@ interface WonderFaithDetailModalProps {
 
 export const WonderFaithDetailModal = ({ wonderId, fallbackWonderName, onClose }: WonderFaithDetailModalProps) => {
   return (
-    <CenteredModalShell
+    <SurfaceFrame
       title="Wonder Faith Details"
       onClose={onClose}
-      persistKey="wonder-faith-detail-modal"
-      panelClassName="w-[980px] h-auto max-h-[calc(100vh-64px)]"
+      className="max-h-[calc(100vh-7rem)] w-[980px]"
       bodyClassName="overflow-auto"
     >
       <div className="p-4">
         <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
       </div>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

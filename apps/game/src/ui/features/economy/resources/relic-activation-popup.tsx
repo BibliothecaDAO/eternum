@@ -1,6 +1,6 @@
 import Button from "@/ui/design-system/atoms/button";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { getRecipientTypeColor, getRelicTypeColor } from "@/ui/design-system/molecules/relic-colors";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
@@ -108,7 +108,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   );
 
   return (
-    <BasePopup title="Activate Relic" onClose={onClose} footer={footer} contentClassName="">
+    <SurfaceFrame title="Activate Relic" onClose={onClose} footer={footer} className="w-[560px]" bodyClassName="p-4">
       <RelicSummary
         resourceKey={resourceKey}
         title={resourceName}
@@ -157,6 +157,6 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       {!compatible && (
         <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={recipientType} className="mb-4" />
       )}
-    </BasePopup>
+    </SurfaceFrame>
   );
 };

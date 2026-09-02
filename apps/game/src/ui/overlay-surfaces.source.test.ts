@@ -26,7 +26,7 @@ const ABSORBED_SURFACES = [
 ];
 
 const ABSORBED_NAMES =
-  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen|EndgameModal|GameIsOverModal)\b/;
+  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen|EndgameModal|GameIsOverModal|toggleModal|setModal|modalContent|showModal|LandingModalHost)\b/;
 
 const isSourceFile = (name: string) =>
   (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".test.ts") && !name.endsWith(".test.tsx");

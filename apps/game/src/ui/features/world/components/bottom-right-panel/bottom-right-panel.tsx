@@ -1,4 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
@@ -205,7 +207,7 @@ const LocalTilePanel = () => {
   const playerStructures = useUIStore((state) => state.playerStructures);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
@@ -727,7 +729,13 @@ const LocalTilePanel = () => {
               {canAddProduction && (
                 <button
                   type="button"
-                  onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+                  onClick={(event) =>
+                    openSurface({
+                      id: "production",
+                      content: <ProductionModal preSelectedResource={producedResource} />,
+                      anchor: surfaceAnchorFrom(event.currentTarget),
+                    })
+                  }
                   disabled={isActionLoading}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gold/40 bg-gold/10 text-gold shadow transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
                   title="Automate production"
@@ -907,7 +915,7 @@ BottomRightPanel.displayName = "BottomRightPanel";
 //   Build           → ConstructionView modal (SelectPreviewBuildingMenu)
 //   Transfer        → LogisticsView modal (with Transfer tab pre-selected)
 //   Chat            → Chat modal
-//   Trade           → MarketModal (toggleModal)
+//   Trade           → MarketModal (openSurface)
 //   Prediction      → PredictionMarket modal
 // Replaces the old vertical view-switcher pill strip on the left edge.
 // ---------------------------------------------------------------------------
@@ -915,7 +923,7 @@ BottomRightPanel.displayName = "BottomRightPanel";
 const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
-  const toggleModalAction = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
   const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
@@ -932,8 +940,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   }, [arrivedArrivalsNumber, pendingArrivalsNumber, setLogisticsActiveTab, setView, view]);
   const handleOpenProduction = useCallback(() => {
     if (!structureEntityId) return;
-    toggleModalAction(<ProductionModal preSelectedRealmId={Number(structureEntityId)} />);
-  }, [structureEntityId, toggleModalAction]);
+    openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> });
+  }, [structureEntityId, openSurface]);
   const toggleView = useCallback(
     (target: LeftView) => () => setView(view === target ? LeftView.None : target),
     [setView, view],
@@ -1013,7 +1021,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           tooltipLocation="top"
           image={BuildingThumbs.scale}
           label="Trade"
-          onClick={() => toggleModalAction(<MarketModal />)}
+          onClick={() => openSurface({ id: "market", content: <MarketModal /> })}
         />
       )}
       {/* Prediction Market button retired: the PM deployment is gone until

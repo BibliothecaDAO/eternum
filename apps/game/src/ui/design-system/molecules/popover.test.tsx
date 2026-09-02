@@ -1,8 +1,11 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Popover } from "./popover";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: vi.fn() }) }));
+
+import { Popover, SurfaceHost } from "./popover";
 
 const Trigger = ({ id, label }: { id: string; label: string }) => {
   const toggle = usePopoverStore((state) => state.toggle);
@@ -15,6 +18,7 @@ const Trigger = ({ id, label }: { id: string; label: string }) => {
 
 const TwoPopovers = () => (
   <>
+    <SurfaceHost />
     <Popover id="a" ariaLabel="A" trigger={<Trigger id="a" label="open a" />}>
       <span>panel a</span>
     </Popover>
@@ -88,5 +92,34 @@ describe("Popover", () => {
       document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     });
     expect(panel("a")).toBeNull();
+  });
+
+  it("renders a store surface through the same panel and closes it on Escape", async () => {
+    await act(async () => {
+      usePopoverStore.getState().openSurface({ id: "s", content: <span>surface body</span> });
+    });
+    expect(panel("s")?.textContent).toBe("surface body");
+    expect(panel("s")?.parentElement).toBe(document.body);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    expect(panel("s")).toBeNull();
+    expect(usePopoverStore.getState().surface).toBeNull();
+  });
+
+  it("a surface and an element popover are exclusive of each other", async () => {
+    await act(async () => {
+      usePopoverStore.getState().openSurface({ id: "s", content: <span>surface body</span> });
+    });
+    await act(async () => trigger("open a").click());
+    expect(panel("s")).toBeNull();
+    expect(panel("a")).not.toBeNull();
+
+    await act(async () => {
+      usePopoverStore.getState().openSurface({ id: "s", content: <span>surface body</span> });
+    });
+    expect(panel("a")).toBeNull();
+    expect(panel("s")).not.toBeNull();
   });
 });

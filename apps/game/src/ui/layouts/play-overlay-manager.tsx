@@ -1,11 +1,6 @@
-import type { PointerEvent } from "react";
-import { useCallback, useEffect, useRef } from "react";
-
-import { useAudio } from "@/audio/hooks/useAudio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { shouldShowTransitionLoadingOverlay } from "@/ui/layouts/loading-flow";
 import { LoadingOroborus } from "@/ui/modules/loading-oroborus";
-import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { GameLoadingOverlay } from "@/ui/layouts/game-loading-overlay";
 
 interface PlayOverlayManagerProps {
@@ -14,67 +9,18 @@ interface PlayOverlayManagerProps {
   enableOnboarding?: boolean;
 }
 
+/** The loading overlays only: every in-game surface is a popover now (`SurfaceHost`). */
 export const PlayOverlayManager = ({
   enableOnboarding = true,
   // backgroundImage is kept in the interface for caller compatibility but no longer used
 }: PlayOverlayManagerProps) => {
-  const showModal = useUIStore((state) => state.showModal);
-  const modalContent = useUIStore((state) => state.modalContent);
-  const toggleModal = useUIStore((state) => state.toggleModal);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const showTransitionLoadingOverlay = shouldShowTransitionLoadingOverlay(showBlankOverlay, isLoadingScreenEnabled);
 
-  const { play } = useAudio();
-  const prevShowModalRef = useRef(showModal);
-
-  useEffect(() => {
-    const wasShowing = prevShowModalRef.current;
-    prevShowModalRef.current = showModal;
-
-    if (showModal && !wasShowing) {
-      play("ui.modal_open");
-    } else if (!showModal && wasShowing) {
-      play("ui.modal_close");
-    }
-  }, [showModal, play]);
-
-  const handleModalOverlayPointerDown = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget) {
-        toggleModal(null);
-      }
-    },
-    [toggleModal],
-  );
-
-  useEffect(() => {
-    if (!showModal) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        event.preventDefault();
-        toggleModal(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showModal, toggleModal]);
-
   return (
     <>
-      <BlankOverlayContainer zIndex={120} open={showModal} onPointerDown={handleModalOverlayPointerDown}>
-        {modalContent}
-      </BlankOverlayContainer>
-
       {enableOnboarding && showBlankOverlay ? <GameLoadingOverlay /> : null}
-
       <LoadingOroborus loading={showTransitionLoadingOverlay} />
     </>
   );

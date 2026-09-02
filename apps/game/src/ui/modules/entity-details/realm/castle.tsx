@@ -1,4 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
@@ -28,7 +30,7 @@ export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
   const [isWonderBonusLoading, setIsWonderBonusLoading] = useState(false);
   const [isLevelUpLoading, setIsLevelUpLoading] = useState(false);
   const [showMissingResources, setShowMissingResources] = useState(false);
@@ -275,7 +277,13 @@ export const Castle = () => {
                             ))}
                           </div>
                           <Button
-                            onClick={() => toggleModal(<ProductionModal />)}
+                            onClick={(event) =>
+                              openSurface({
+                                id: "production",
+                                content: <ProductionModal />,
+                                anchor: surfaceAnchorFrom(event.currentTarget),
+                              })
+                            }
                             variant="outline"
                             size="md"
                             className="mt-3 w-full border-amber-400/30 text-amber-400 hover:bg-amber-400/10"
@@ -298,7 +306,13 @@ export const Castle = () => {
           {isOwner && isLaborProductionEnabled && (
             <div className="flex justify-center">
               <Button
-                onClick={() => toggleModal(<ProductionModal preSelectedResource={ResourcesIds.Labor} />)}
+                onClick={(event) =>
+                  openSurface({
+                    id: "production",
+                    content: <ProductionModal preSelectedResource={ResourcesIds.Labor} />,
+                    anchor: surfaceAnchorFrom(event.currentTarget),
+                  })
+                }
                 variant="primary"
                 withoutSound
                 className="w-full max-w-[300px]"

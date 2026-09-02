@@ -1,14 +1,14 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import Button from "@/ui/design-system/atoms/button";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import ArrowRightLeft from "lucide-react/dist/esm/icons/arrow-right-left";
 
 export const SpireTravelModal = ({ onTravelThroughSpire }: { onTravelThroughSpire: () => void }) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   const closeModal = () => {
-    toggleModal(null);
+    closeSurface();
   };
 
   const handleTravel = () => {
@@ -17,7 +17,7 @@ export const SpireTravelModal = ({ onTravelThroughSpire }: { onTravelThroughSpir
   };
 
   return (
-    <CenteredModalShell title="Spire Gate" icon={Sparkles} onClose={closeModal} size="compact" bodyClassName="p-5">
+    <SurfaceFrame title="Spire Gate" icon={Sparkles} onClose={closeModal} className="w-[560px]" bodyClassName="p-5">
       <div className="flex flex-col gap-4 text-gold/90">
         <div className="flex items-start gap-3 rounded border border-cyan-300/25 bg-cyan-500/10 p-3">
           <Sparkles className="mt-0.5 h-4 w-4 text-cyan-200" />
@@ -40,6 +40,6 @@ export const SpireTravelModal = ({ onTravelThroughSpire }: { onTravelThroughSpir
           </span>
         </Button>
       </div>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

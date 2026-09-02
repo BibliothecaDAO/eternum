@@ -1,8 +1,8 @@
 import { memo, useCallback, useMemo } from "react";
 
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -218,7 +218,8 @@ export const CompactEntityInventory = memo(
     showHiddenCount = true,
     heroCount = 0,
   }: CompactEntityInventoryProps) => {
-    const toggleModal = useUIStore((state) => state.toggleModal);
+    const openSurface = usePopoverStore((state) => state.openSurface);
+    const closeSurface = usePopoverStore((state) => state.closeSurface);
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
@@ -245,16 +246,19 @@ export const CompactEntityInventory = memo(
           entityType,
         };
 
-        toggleModal(
-          <RelicActivationSelector
-            resourceId={item.resourceId}
-            displayAmount={formatInventoryAmount(item.amount)}
-            holders={[holder]}
-            onClose={() => toggleModal(null)}
-          />,
-        );
+        openSurface({
+          id: "relic-activation",
+          content: (
+            <RelicActivationSelector
+              resourceId={item.resourceId}
+              displayAmount={formatInventoryAmount(item.amount)}
+              holders={[holder]}
+              onClose={closeSurface}
+            />
+          ),
+        });
       },
-      [allowRelicActivation, entityId, entityType, recipientType, toggleModal],
+      [allowRelicActivation, entityId, entityType, recipientType, openSurface],
     );
 
     if (displayItems.length === 0) {

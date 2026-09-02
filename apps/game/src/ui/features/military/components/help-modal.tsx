@@ -1,6 +1,6 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ActorType, ID } from "@bibliothecadao/types";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { Suspense } from "react";
@@ -23,14 +23,14 @@ export const HelpModal = ({
   };
   allowBothDirections?: boolean;
 }) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   return (
-    <CenteredModalShell
+    <SurfaceFrame
       title="Transfer Troops & Relics"
       icon={ArrowLeftRight}
-      onClose={() => toggleModal(null)}
-      size="wide"
+      onClose={closeSurface}
+      className="w-[920px] max-h-[calc(100vh-7rem)]"
       bodyClassName="overflow-y-auto"
     >
       <div className="p-4">
@@ -38,6 +38,6 @@ export const HelpModal = ({
           <HelpContainer selected={selected} target={target} allowBothDirections={allowBothDirections} />
         </Suspense>
       </div>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

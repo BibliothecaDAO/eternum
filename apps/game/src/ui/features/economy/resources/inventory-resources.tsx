@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -33,7 +33,8 @@ export const InventoryResources = ({
   activateRelics?: boolean;
 }) => {
   const [showAll, setShowAll] = useState(false);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   const { regularResources, relics } = useMemo(() => {
     const { currentDefaultTick } = getBlockTimestamp();
@@ -74,16 +75,19 @@ export const InventoryResources = ({
   const handleRelicClick = (resourceId: number, amount: number) => {
     if (!entityId || !entityOwnerId || recipientType === undefined) return;
 
-    toggleModal(
-      <RelicActivationPopup
-        entityId={entityId}
-        entityOwnerId={entityOwnerId}
-        recipientType={recipientType}
-        relicId={resourceId}
-        relicBalance={amount}
-        onClose={() => toggleModal(null)}
-      />,
-    );
+    openSurface({
+      id: "relic-activation",
+      content: (
+        <RelicActivationPopup
+          entityId={entityId}
+          entityOwnerId={entityOwnerId}
+          recipientType={recipientType}
+          relicId={resourceId}
+          relicBalance={amount}
+          onClose={closeSurface}
+        />
+      ),
+    });
   };
 
   const totalItems = regularResources.length + relics.length;

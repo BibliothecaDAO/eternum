@@ -1,4 +1,5 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -77,7 +78,7 @@ const ArmyChip = ({
     setup: { components },
   } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
 
   const [editMode, setEditMode] = useState(false);
 
@@ -113,22 +114,25 @@ const ArmyChip = ({
   }, [army.troops]);
 
   const onTroopSwap = useCallback(() => {
-    toggleModal(
-      <HelpModal
-        selected={{
-          type: ActorType.Explorer,
-          id: army.entityId,
-          hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
-        }}
-        target={{
-          type: ActorType.Structure,
-          id: army.entity_owner_id,
-          hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
-        }}
-        allowBothDirections={true}
-      />,
-    );
-  }, [army, hexPosition, toggleModal]);
+    openSurface({
+      id: "help",
+      content: (
+        <HelpModal
+          selected={{
+            type: ActorType.Explorer,
+            id: army.entityId,
+            hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
+          }}
+          target={{
+            type: ActorType.Structure,
+            id: army.entity_owner_id,
+            hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
+          }}
+          allowBothDirections={true}
+        />
+      ),
+    });
+  }, [army, hexPosition, openSurface]);
 
   return (
     <div

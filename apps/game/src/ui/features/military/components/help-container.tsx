@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { TransferResourcesContainer } from "./transfer-resources-container";
@@ -37,7 +38,7 @@ export const HelpContainer = ({
   }, [transferType]);
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   // Get the current entities we're working with based on direction state
   const baseSelected = swapped ? target : selected;
@@ -71,7 +72,7 @@ export const HelpContainer = ({
   // Handle transfer completion
   const handleTransferComplete = () => {
     updateSelectedEntityId(null);
-    toggleModal(null);
+    closeSurface();
   };
 
   // Handle toggling transfer direction when both entities support it

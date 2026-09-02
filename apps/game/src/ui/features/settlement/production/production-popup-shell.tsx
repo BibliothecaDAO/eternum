@@ -1,5 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import Factory from "lucide-react/dist/esm/icons/factory";
 
 interface ProductionPopupShellProps {
@@ -7,20 +7,20 @@ interface ProductionPopupShellProps {
   onClose?: () => void;
 }
 
-/**
- * Production-specific wrapper around the shared modal shell. Kept as a thin
- * adapter so the modal's existing consumers (and the test file) don't have
- * to change — but the chrome (backdrop, bronze frame, header strip, close
- * button) now comes from the shared CenteredModalShell so Production matches
- * Build / Military / Chat / Logistics visually.
- */
+/** Production's frame inside the surface popover: the shared header strip over a scrolling body at panel size. */
 export const ProductionPopupShell = ({ children, onClose }: ProductionPopupShellProps) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
-  const handleClose = onClose ?? (() => toggleModal(null));
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
+  const handleClose = onClose ?? closeSurface;
 
   return (
-    <CenteredModalShell title="Production" icon={Factory} onClose={handleClose} size="xl">
+    <SurfaceFrame
+      title="Production"
+      icon={Factory}
+      onClose={handleClose}
+      className="w-[1320px] h-[calc(100vh-7rem)]"
+      bodyClassName="overflow-hidden"
+    >
       {children}
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

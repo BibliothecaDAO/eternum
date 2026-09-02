@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
@@ -32,7 +33,7 @@ export const useSuggestionActions = () => {
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
 
   const { fireUpgrade, fireProvision, fireUpgradeAndProvision, pendingRealmId } = useRealmActions();
@@ -125,7 +126,10 @@ export const useSuggestionActions = () => {
           setLeftNavigationView(LeftView.ConstructionView);
           return;
         default:
-          toggleModal(<ProductionModal preSelectedRealmId={Number(suggestion.realmId)} />);
+          openSurface({
+            id: "production",
+            content: <ProductionModal preSelectedRealmId={Number(suggestion.realmId)} />,
+          });
       }
     },
     [
@@ -135,7 +139,7 @@ export const useSuggestionActions = () => {
       focusRealm,
       runAutoBuildSuggestion,
       setLeftNavigationView,
-      toggleModal,
+      openSurface,
     ],
   );
 

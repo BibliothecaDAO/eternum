@@ -1,4 +1,5 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import {
   buildFaithLeaderboard,
@@ -9,7 +10,6 @@ import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models
 import { WonderFaithDetailModal, WonderFaithDetailPanel } from "@/ui/features/social/faith/wonder-faith-detail-panel";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, StructureType } from "@bibliothecadao/types";
@@ -103,7 +103,8 @@ export const FaithDevotionActionPanel = ({
   variant = "compact",
   className,
 }: FaithDevotionActionPanelProps) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const resolvedWorldMode = useResolvedWorldGameMode();
   const isEternumMode = resolvedWorldMode === "eternum";
   const { structure, isMine, isLoadingStructure, structureName } = useStructureEntityDetail({ structureEntityId });
@@ -147,23 +148,29 @@ export const FaithDevotionActionPanel = ({
   }, [currentWonderEntry, devotionStatus]);
 
   const openDevotionModal = useCallback(() => {
-    toggleModal(
-      <FaithDevotionModal
-        structureEntityId={structureEntityId}
-        structureLabel={structureName ?? `Structure #${String(structureEntityId)}`}
-      />,
-    );
-  }, [structureEntityId, structureName, toggleModal]);
+    openSurface({
+      id: "faith-devotion",
+      content: (
+        <FaithDevotionModal
+          structureEntityId={structureEntityId}
+          structureLabel={structureName ?? `Structure #${String(structureEntityId)}`}
+        />
+      ),
+    });
+  }, [structureEntityId, structureName, openSurface]);
 
   const openWonderDetailModal = useCallback(() => {
-    toggleModal(
-      <WonderFaithDetailModal
-        wonderId={structureEntityId}
-        fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
-        onClose={() => toggleModal(null)}
-      />,
-    );
-  }, [structureEntityId, structureName, toggleModal]);
+    openSurface({
+      id: "wonder-faith",
+      content: (
+        <WonderFaithDetailModal
+          wonderId={structureEntityId}
+          fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+          onClose={closeSurface}
+        />
+      ),
+    });
+  }, [structureEntityId, structureName, openSurface]);
 
   const currentWonderId = devotionStatus?.wonderId ?? null;
   const openCurrentWonderDetailModal = useCallback(() => {
@@ -171,14 +178,17 @@ export const FaithDevotionActionPanel = ({
       return;
     }
 
-    toggleModal(
-      <WonderFaithDetailModal
-        wonderId={currentWonderId}
-        fallbackWonderName={currentWonderLabel}
-        onClose={() => toggleModal(null)}
-      />,
-    );
-  }, [currentWonderId, currentWonderLabel, toggleModal]);
+    openSurface({
+      id: "wonder-faith",
+      content: (
+        <WonderFaithDetailModal
+          wonderId={currentWonderId}
+          fallbackWonderName={currentWonderLabel}
+          onClose={closeSurface}
+        />
+      ),
+    });
+  }, [currentWonderId, currentWonderLabel, openSurface]);
 
   if (!isEternumMode) {
     return null;
@@ -350,7 +360,8 @@ const DevotionSplitStat = ({ label, value }: { label: string; value: string }) =
 );
 
 const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotionModalProps) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const faithReadModels = useFaithReadModels();
   const {
     account: { account },
@@ -395,8 +406,8 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
   }, [devotionStatus, selectedWonderId]);
 
   const closeModal = useCallback(() => {
-    toggleModal(null);
-  }, [toggleModal]);
+    closeSurface();
+  }, [openSurface]);
 
   const confirmDevotion = useCallback(async () => {
     if (!selectedWonderId) {
@@ -444,11 +455,10 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
   }, [account, closeModal, devotionStatus, faithSystemCalls, selectedWonderId, structureEntityId]);
 
   return (
-    <CenteredModalShell
+    <SurfaceFrame
       title="Devote to a Wonder"
       onClose={closeModal}
-      persistKey="faith-devotion-modal"
-      panelClassName="w-[860px] h-auto max-h-[calc(100vh-64px)]"
+      className="max-h-[calc(100vh-7rem)] w-[860px]"
       bodyClassName="overflow-auto"
     >
       <div className="flex flex-col gap-3 p-4">
@@ -544,6 +554,6 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
           </div>
         </div>
       </div>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

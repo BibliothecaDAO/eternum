@@ -1,4 +1,6 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
@@ -65,7 +67,8 @@ export const ResourceChip = ({
   armiesTickTimeRemaining?: number;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const {
     setup: { components },
   } = useDojo();
@@ -262,13 +265,16 @@ export const ResourceChip = ({
     }
 
     if (!resourceManager?.entityId) return;
-    toggleModal(
-      <ProductionModal
-        preSelectedRealmId={resourceManager.entityId}
-        preSelectedResource={resourceId as ResourcesIds}
-      />,
-    );
-  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, toggleModal]);
+    openSurface({
+      id: "production",
+      content: (
+        <ProductionModal
+          preSelectedRealmId={resourceManager.entityId}
+          preSelectedResource={resourceId as ResourcesIds}
+        />
+      ),
+    });
+  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, openSurface]);
 
   // Check if this resource is a relic
   const isRelic = useMemo(() => {
@@ -431,7 +437,11 @@ export const ResourceChip = ({
           onClick={(event) => {
             event.stopPropagation();
             import("./craft-relic-popup").then(({ CraftRelicPopup }) => {
-              toggleModal(<CraftRelicPopup structureId={resourceManager.entityId} onClose={() => toggleModal(null)} />);
+              openSurface({
+                id: "craft-relic",
+                content: <CraftRelicPopup structureId={resourceManager.entityId} onClose={closeSurface} />,
+                anchor: surfaceAnchorFrom(event.currentTarget),
+              });
             });
           }}
           onMouseEnter={(event) =>
@@ -487,16 +497,19 @@ export const ResourceChip = ({
           onClick={(event) => {
             event.stopPropagation();
             import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
-              toggleModal(
-                <RelicActivationPopup
-                  entityId={resourceManager.entityId}
-                  entityOwnerId={resourceManager.entityId}
-                  recipientType={RelicRecipientType.Structure}
-                  relicId={resourceId}
-                  relicBalance={divideByPrecision(balance)}
-                  onClose={() => toggleModal(null)}
-                />,
-              );
+              openSurface({
+                id: "relic-activation",
+                content: (
+                  <RelicActivationPopup
+                    entityId={resourceManager.entityId}
+                    entityOwnerId={resourceManager.entityId}
+                    recipientType={RelicRecipientType.Structure}
+                    relicId={resourceId}
+                    relicBalance={divideByPrecision(balance)}
+                    onClose={closeSurface}
+                  />
+                ),
+              });
             });
           }}
           disabled={disableButtons || relicTimeRemaining > 0}

@@ -4,6 +4,7 @@ import { Leva } from "leva";
 import { env } from "../../../env";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
+import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
 import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
@@ -83,6 +84,7 @@ const BackgroundSystems = () => (
  */
 const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   <>
+    <SurfaceHost />
     <PlayOverlayManager backgroundImage={backgroundImage} />
   </>
 );

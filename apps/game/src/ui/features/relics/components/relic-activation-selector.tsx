@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
-import { BasePopup } from "@/ui/design-system/molecules/base-popup";
 import { currencyFormat } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
@@ -321,7 +321,7 @@ export const RelicActivationSelector = ({
   };
 
   return (
-    <BasePopup title="Select Activation Target" onClose={onClose} contentClassName="max-w-[520px]">
+    <SurfaceFrame title="Select Activation Target" onClose={onClose} className="w-[560px]" bodyClassName="p-4">
       <div className="space-y-5">
         <RelicSummary
           resourceKey={resourceKey}
@@ -356,6 +356,6 @@ export const RelicActivationSelector = ({
           </div>
         )}
       </div>
-    </BasePopup>
+    </SurfaceFrame>
   );
 };

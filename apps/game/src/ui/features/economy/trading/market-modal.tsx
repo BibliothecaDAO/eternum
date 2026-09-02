@@ -1,4 +1,6 @@
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
 import { ReactComponent as Swap } from "@/assets/icons/swap.svg";
@@ -9,7 +11,6 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Select, Tabs } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { LoadingAnimation, ResourceIcon } from "@/ui/design-system/molecules";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -59,18 +60,18 @@ const TradeSummaryBar = lazy(() =>
 );
 
 export const MarketModal = () => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   return (
-    <CenteredModalShell
+    <SurfaceFrame
       title="Market"
       icon={Store}
-      onClose={() => toggleModal(null)}
-      size="xl"
+      onClose={closeSurface}
+      className="w-[1320px] h-[calc(100vh-7rem)]"
       bodyClassName="overflow-hidden"
     >
       <MarketContent />
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };
 

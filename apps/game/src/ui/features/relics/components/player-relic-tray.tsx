@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo } from "react";
 
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -122,7 +123,8 @@ const RelicGrid = ({ relics, gridClass, iconSize, onRelicClick }: RelicGridProps
 const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTrayProps = {}) => {
   const playerRelics = useUIStore((state) => state.playerRelics);
   const playerRelicsLoading = useUIStore((state) => state.playerRelicsLoading);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   const aggregatedRelics = useMemo(() => aggregateRelics(playerRelics), [playerRelics]);
 
@@ -130,20 +132,23 @@ const PlayerRelicTray = memo(({ variant = "floating", className }: PlayerRelicTr
     (relic: AggregatedRelic) => {
       import("./relic-activation-selector")
         .then(({ RelicActivationSelector }) => {
-          toggleModal(
-            <RelicActivationSelector
-              resourceId={relic.resourceId}
-              displayAmount={relic.displayAmount}
-              holders={relic.holders}
-              onClose={() => toggleModal(null)}
-            />,
-          );
+          openSurface({
+            id: "relic-activation",
+            content: (
+              <RelicActivationSelector
+                resourceId={relic.resourceId}
+                displayAmount={relic.displayAmount}
+                holders={relic.holders}
+                onClose={closeSurface}
+              />
+            ),
+          });
         })
         .catch((error) => {
           console.error("Failed to load relic activation selector", error);
         });
     },
-    [toggleModal],
+    [openSurface],
   );
 
   if (variant === "embedded") {

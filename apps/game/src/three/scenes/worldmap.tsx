@@ -1,4 +1,5 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { DEV_MODE_ENABLED, VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
@@ -2827,7 +2828,10 @@ export default class WorldmapScene extends WarpTravel {
       hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
     };
 
-    this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+    usePopoverStore.getState().openSurface({
+      id: "quick-attack",
+      content: <QuickAttackPreview attacker={attackerSummary} target={targetSummary} />,
+    });
     // The preview popup is now the confirm step. Clear only the hovered hex so
     // the "right-click to confirm" action panel (gated on hoveredHex) hides —
     // this is the same minimal call onArmyMovement makes, so the army stays
@@ -2864,7 +2868,10 @@ export default class WorldmapScene extends WarpTravel {
         alt: true,
       };
 
-      this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+      usePopoverStore.getState().openSurface({
+        id: "quick-attack",
+        content: <QuickAttackPreview attacker={attackerSummary} target={targetSummary} />,
+      });
       this.state.updateEntityActionHoveredHex(null);
       return;
     }
@@ -2874,9 +2881,14 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    this.state.toggleModal(
-      <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />,
-    );
+    usePopoverStore
+      .getState()
+      .openSurface({
+        id: "spire-travel",
+        content: (
+          <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />
+        ),
+      });
   }
 
   private onArmyCreate(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -2906,21 +2918,24 @@ export default class WorldmapScene extends WarpTravel {
     const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
     const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
 
-    this.state.toggleModal(
-      <HelpModal
-        selected={{
-          type: selected.army ? ActorType.Explorer : ActorType.Structure,
-          id: selectedEntityId,
-          hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
-        }}
-        target={{
-          type: target.army ? ActorType.Explorer : ActorType.Structure,
-          id: target.army?.id || target.structure?.id || 0,
-          hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
-        }}
-        allowBothDirections={isTargetMine && isSelectedMine}
-      />,
-    );
+    usePopoverStore.getState().openSurface({
+      id: "help",
+      content: (
+        <HelpModal
+          selected={{
+            type: selected.army ? ActorType.Explorer : ActorType.Structure,
+            id: selectedEntityId,
+            hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+          }}
+          target={{
+            type: target.army ? ActorType.Explorer : ActorType.Structure,
+            id: target.army?.id || target.structure?.id || 0,
+            hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+          }}
+          allowBothDirections={isTargetMine && isSelectedMine}
+        />
+      ),
+    });
   }
 
   private onStructureSelection(selectedEntityId: ID, hexCoords?: HexPosition) {
@@ -3404,16 +3419,19 @@ export default class WorldmapScene extends WarpTravel {
     // Get the target hex (last hex in the path)
     const targetHex = selectedPath[selectedPath.length - 1];
 
-    this.state.toggleModal(
-      <ChestModal
-        selected={{
-          type: ActorType.Explorer,
-          id: selectedEntityId,
-          hex: { x: targetHex.col, y: targetHex.row },
-        }}
-        chestHex={{ x: targetHex.col, y: targetHex.row }}
-      />,
-    );
+    usePopoverStore.getState().openSurface({
+      id: "chest",
+      content: (
+        <ChestModal
+          selected={{
+            type: ActorType.Explorer,
+            id: selectedEntityId,
+            hex: { x: targetHex.col, y: targetHex.row },
+          }}
+          chestHex={{ x: targetHex.col, y: targetHex.row }}
+        />
+      ),
+    });
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {

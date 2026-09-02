@@ -1,6 +1,6 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { ActorType, ID } from "@bibliothecadao/types";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { Suspense, useCallback } from "react";
@@ -17,20 +17,20 @@ export const ChestModal = ({
   };
   chestHex: { x: number; y: number };
 }) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
-  const close = useCallback(() => toggleModal(null), [toggleModal]);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
+  const close = useCallback(() => closeSurface(), [closeSurface]);
 
   return (
-    <CenteredModalShell
+    <SurfaceFrame
       title="Open Relic Crate"
       icon={Sparkles}
       onClose={close}
-      size="xl"
+      className="w-[1320px] h-[calc(100vh-7rem)]"
       bodyClassName="overflow-y-auto overflow-x-hidden"
     >
       <Suspense fallback={<LoadingAnimation />}>
         <ChestContainer explorerEntityId={selected.id} chestHex={chestHex} />
       </Suspense>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

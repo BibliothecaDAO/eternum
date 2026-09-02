@@ -1,4 +1,5 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -154,7 +155,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   );
 
   const playerStructures = useUIStore((state) => state.playerStructures);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const { isMapView } = useQuery();
   const {
@@ -322,18 +324,24 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const handleManageProduction = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
-      toggleModal(<ProductionModal preSelectedRealmId={structureId} preSelectedResource={resourceId} />);
+      openSurface({
+        id: "production",
+        content: <ProductionModal preSelectedRealmId={structureId} preSelectedResource={resourceId} />,
+      });
     },
-    [toggleModal],
+    [openSurface],
   );
 
   const handleOpenCraftRelic = useCallback(
     (structureId: number) => {
       import("../craft-relic-popup").then(({ CraftRelicPopup }) => {
-        toggleModal(<CraftRelicPopup structureId={structureId} onClose={() => toggleModal(null)} />);
+        openSurface({
+          id: "craft-relic",
+          content: <CraftRelicPopup structureId={structureId} onClose={closeSurface} />,
+        });
       });
     },
-    [toggleModal],
+    [closeSurface, openSurface],
   );
 
   // A transfer acts on the selected structure: select it before the cell's popover opens.

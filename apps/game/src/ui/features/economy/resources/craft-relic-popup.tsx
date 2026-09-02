@@ -2,7 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { BasePopup } from "@/ui/design-system/molecules/base-popup";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -324,7 +324,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   );
 
   return (
-    <BasePopup title="Craft Relic" onClose={onClose} footer={footer} contentClassName="max-w-[520px]">
+    <SurfaceFrame title="Craft Relic" onClose={onClose} footer={footer} className="w-[560px]" bodyClassName="p-4">
       <div className="space-y-4 text-left">
         <div className="rounded border border-relic/40 bg-gradient-to-b from-relic/20 to-dark-brown/30 p-4">
           <div className="flex items-start justify-between gap-3">
@@ -423,6 +423,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
           </div>
         )}
       </div>
-    </BasePopup>
+    </SurfaceFrame>
   );
 };

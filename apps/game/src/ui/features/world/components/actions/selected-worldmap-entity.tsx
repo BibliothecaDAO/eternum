@@ -1,4 +1,5 @@
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -73,7 +74,7 @@ const SelectedWorldmapEntityContent = ({
   headerAction?: ReactNode;
 }) => {
   const { handleUrlChange } = useQuery();
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
 
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
@@ -84,8 +85,8 @@ const SelectedWorldmapEntityContent = ({
     return configManager.getBiome(selectedHex.col || 0, selectedHex.row || 0);
   }, [selectedHex.col, selectedHex.row]);
   const handleSimulateBattle = useCallback(() => {
-    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
-  }, [biome, toggleModal]);
+    openSurface({ id: "battle-lab", content: <BattleLab mode="sim" initialBiome={biome} /> });
+  }, [biome, openSurface]);
 
   const hasOccupier = !!tile && hasTileOccupier(tile.occupier_type);
   const occupierType = tile?.occupier_type ?? 0;

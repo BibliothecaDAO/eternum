@@ -1,4 +1,5 @@
 import { useUISound } from "@/audio";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -379,7 +380,7 @@ export const ChestContainer = ({
   const playChestSound = useUISound("relic.chest");
   const playChestOpenSound = useUISound("relic.chest");
 
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
   const triggerRelicsRefresh = useUIStore((state) => state.triggerRelicsRefresh);
 
   const revealRelics = useCallback(
@@ -977,7 +978,7 @@ export const ChestContainer = ({
           <button
             className="px-8 py-3 bg-gold/20 hover:bg-gold/30 border-2 border-gold text-gold font-semibold rounded-lg transition-all duration-200 hover:scale-105"
             onClick={() => {
-              toggleModal(null);
+              closeSurface();
             }}
           >
             Continue Exploring

@@ -1,4 +1,4 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { HintModal } from "@/ui/features/progression";
@@ -9,12 +9,12 @@ type HintModalButtonProps = {
 };
 
 export const HintModalButton = ({ className, section }: HintModalButtonProps) => {
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const openSurface = usePopoverStore((state) => state.openSurface);
 
   return (
     <CircleButton
       className={className}
-      onClick={() => toggleModal(<HintModal initialActiveSection={section} />)}
+      onClick={() => openSurface({ id: "hints", content: <HintModal initialActiveSection={section} /> })}
       size={"sm"}
       image={BuildingThumbs.question}
     />

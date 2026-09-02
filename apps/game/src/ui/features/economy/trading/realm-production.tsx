@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -11,7 +12,7 @@ import { useMemo, useState } from "react";
 export const RealmProduction = () => {
   const mode = useGameModeConfig();
   const setSelectedPlayer = useUIStore((state) => state.setSelectedPlayer);
-  const toggleModal = useUIStore((state) => state.toggleModal);
+  const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   // todo: pay attention to expensive query
   const realms = useAllRealms();
@@ -56,7 +57,7 @@ export const RealmProduction = () => {
   }, [realmsProduction, filterProduced, filterConsumed, resourcesInputs]);
 
   const handleRealmClick = (realm: any) => {
-    toggleModal(null);
+    closeSurface();
     setSelectedPlayer(realm.owner);
   };
 
