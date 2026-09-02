@@ -5,7 +5,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { Button } from "@/ui/design-system/atoms";
-import { DialogShell } from "@/ui/design-system/molecules";
+import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import {
@@ -1287,59 +1287,66 @@ const TransferCartModal = React.memo(
     const readyCount = drafts.filter((draft) => (draft.isSelected ?? true) && !draft.isProcessing).length;
 
     return (
-      <DialogShell
-        title="Transfer Cart"
-        icon={ShoppingCart}
-        onClose={onClose}
-        size="lg"
-        backdropClassName="bg-brown/70"
-        contentClassName="space-y-4"
+      <PopoverPanel
+        id="transfer-cart"
+        ariaLabel="Transfer cart"
+        anchor="top-center"
+        className="w-auto p-0"
+        onDismiss={onClose}
       >
-        <p className="text-xs text-gold/60">
-          {drafts.length} staged transfer{drafts.length === 1 ? "" : "s"}
-        </p>
+        <SurfaceFrame
+          title="Transfer Cart"
+          icon={ShoppingCart}
+          onClose={onClose}
+          className="w-[720px] max-h-[calc(100vh-7rem)]"
+          bodyClassName="space-y-4 p-4"
+        >
+          <p className="text-xs text-gold/60">
+            {drafts.length} staged transfer{drafts.length === 1 ? "" : "s"}
+          </p>
 
-        {drafts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gold/30 p-6 text-center text-sm text-gold/70">
-            Your cart is empty. Drag a resource to another structure and tap Add to Cart to queue it here.
-          </div>
-        ) : (
-          <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-            {drafts.map((draft) => (
-              <TransferCartItem
-                key={draft.id}
-                draft={draft}
-                structureColumns={structureColumns}
-                onToggleSelect={onToggleSelect}
-                onRemove={onRemove}
-                onSendSingle={onSendSingle}
-              />
-            ))}
-          </div>
-        )}
+          {drafts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gold/30 p-6 text-center text-sm text-gold/70">
+              Your cart is empty. Drag a resource to another structure and tap Add to Cart to queue it here.
+            </div>
+          ) : (
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+              {drafts.map((draft) => (
+                <TransferCartItem
+                  key={draft.id}
+                  draft={draft}
+                  structureColumns={structureColumns}
+                  onToggleSelect={onToggleSelect}
+                  onRemove={onRemove}
+                  onSendSingle={onSendSingle}
+                />
+              ))}
+            </div>
+          )}
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3 text-xs text-gold/70">
-          <span>{selectedCount} selected</span>
-          <div className="ml-auto flex gap-2">
-            <button
-              type="button"
-              onClick={onClear}
-              disabled={drafts.length === 0}
-              className="rounded-full border border-danger/30 px-3 py-1 text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={onSendSelected}
-              disabled={readyCount === 0 || isBatchProcessing}
-              className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1 font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isBatchProcessing ? "Transferring..." : "Transfer All"}
-            </button>
+          <div className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3 text-xs text-gold/70">
+            <span>{selectedCount} selected</span>
+            <div className="ml-auto flex gap-2">
+              <button
+                type="button"
+                onClick={onClear}
+                disabled={drafts.length === 0}
+                className="rounded-full border border-danger/30 px-3 py-1 text-danger transition hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={onSendSelected}
+                disabled={readyCount === 0 || isBatchProcessing}
+                className="rounded-full border border-gold/40 bg-gold/10 px-4 py-1 font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isBatchProcessing ? "Transferring..." : "Transfer All"}
+              </button>
+            </div>
           </div>
-        </div>
-      </DialogShell>
+        </SurfaceFrame>
+      </PopoverPanel>
     );
   },
 );
@@ -1529,134 +1536,140 @@ const DragDropAmountDialog = React.memo(
     };
 
     return (
-      <DialogShell
-        title={`Transfer ${resourceKey}`}
-        onClose={onCancel}
-        size="md"
-        backdropClassName="bg-brown/70"
-        panelClassName="min-w-[400px]"
-        contentClassName="space-y-4"
+      <PopoverPanel
+        id="transfer-amount"
+        ariaLabel="Transfer amount"
+        anchor="top-center"
+        className="w-auto p-0"
+        onDismiss={onCancel}
       >
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={resourceKey} size="lg" />
-          <div>
-            <p className="text-xs text-gold/60">
-              {fromStructure?.label} → {toStructure?.label}
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleAddToCart} className="space-y-4">
-          <div>
-            <label className="block text-sm text-gold/80 mb-2">
-              Amount to transfer
-              <span className="block text-[11px] text-gold/60">
-                Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available:{" "}
-                {formatResourceAmount(dragData.maxAmount)}
-              </span>
-            </label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              max={dragData.maxAmount}
-              min={0.01}
-              step="any"
-              className="w-full px-3 py-2 bg-brown/20 border border-gold/30 rounded text-gold focus:border-gold/60 focus:outline-none"
-              autoFocus
-            />
+        <SurfaceFrame
+          title={`Transfer ${resourceKey}`}
+          onClose={onCancel}
+          className="w-[480px] max-h-[calc(100vh-7rem)]"
+          bodyClassName="p-4"
+        >
+          <div className="flex items-center gap-2">
+            <ResourceIcon resource={resourceKey} size="lg" />
+            <div>
+              <p className="text-xs text-gold/60">
+                {fromStructure?.label} → {toStructure?.label}
+              </p>
+            </div>
           </div>
 
-          {/* Balance Preview */}
-          {amount > 0 && (
-            <div className="bg-brown/10 rounded p-2 border border-gold/20">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <ResourceIcon resource={resourceKey} size="sm" withTooltip={false} />
-                <span className="text-xs font-medium text-gold/90">Balance Preview</span>
-              </div>
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gold/70">{fromStructure?.label}:</span>
-                  <span className="text-gold">
-                    {dragData.maxAmount} → {dragData.maxAmount - amount}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gold/70">{toStructure?.label}:</span>
-                  <span className="text-green">
-                    {recipientBalance} → {recipientBalance + amount}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Donkey Requirements */}
-          <div className="bg-brown/10 rounded p-3 border border-gold/20">
-            <div className="flex items-center gap-2 mb-2">
-              <ResourceIcon resource={donkeyTrait} size="sm" withTooltip={false} />
-              <span className="text-sm font-medium text-gold/90">Transport</span>
-            </div>
-
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gold/70">Available:</span>
-                <span className="text-gold font-medium">{availableDonkeys.toLocaleString()} 🐴</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gold/70">Required:</span>
-                <span className={clsx("font-medium", canCarry ? "text-progress-bar-good" : "text-danger")}>
-                  {neededDonkeys.toLocaleString()} 🐴
+          <form onSubmit={handleAddToCart} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gold/80 mb-2">
+                Amount to transfer
+                <span className="block text-[11px] text-gold/60">
+                  Max transportable: {formatResourceAmount(maxTransferableAmount)} / Available:{" "}
+                  {formatResourceAmount(dragData.maxAmount)}
                 </span>
-              </div>
+              </label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                max={dragData.maxAmount}
+                min={0.01}
+                step="any"
+                className="w-full px-3 py-2 bg-brown/20 border border-gold/30 rounded text-gold focus:border-gold/60 focus:outline-none"
+                autoFocus
+              />
             </div>
 
-            {!canCarry && (
-              <div className="mt-3 p-2 bg-danger/10 border border-danger/20 rounded text-xs text-danger">
-                ❌ Need {(neededDonkeys - availableDonkeys).toLocaleString()} more donkeys
+            {/* Balance Preview */}
+            {amount > 0 && (
+              <div className="bg-brown/10 rounded p-2 border border-gold/20">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <ResourceIcon resource={resourceKey} size="sm" withTooltip={false} />
+                  <span className="text-xs font-medium text-gold/90">Balance Preview</span>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-gold/70">{fromStructure?.label}:</span>
+                    <span className="text-gold">
+                      {dragData.maxAmount} → {dragData.maxAmount - amount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gold/70">{toStructure?.label}:</span>
+                    <span className="text-green">
+                      {recipientBalance} → {recipientBalance + amount}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
-            {canCarry && neededDonkeys > 0 && (
-              <div className="mt-3 p-2 bg-progress-bar-good/10 border border-progress-bar-good/20 rounded text-xs text-progress-bar-good">
-                Sufficient Donkey Capacity
-              </div>
-            )}
-          </div>
 
-          {/* Quick Amount Buttons */}
-          <div className="flex gap-2">
-            {[0.25, 0.5, 0.75, 1].map((percentage) => (
+            {/* Donkey Requirements */}
+            <div className="bg-brown/10 rounded p-3 border border-gold/20">
+              <div className="flex items-center gap-2 mb-2">
+                <ResourceIcon resource={donkeyTrait} size="sm" withTooltip={false} />
+                <span className="text-sm font-medium text-gold/90">Transport</span>
+              </div>
+
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gold/70">Available:</span>
+                  <span className="text-gold font-medium">{availableDonkeys.toLocaleString()} 🐴</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gold/70">Required:</span>
+                  <span className={clsx("font-medium", canCarry ? "text-progress-bar-good" : "text-danger")}>
+                    {neededDonkeys.toLocaleString()} 🐴
+                  </span>
+                </div>
+              </div>
+
+              {!canCarry && (
+                <div className="mt-3 p-2 bg-danger/10 border border-danger/20 rounded text-xs text-danger">
+                  ❌ Need {(neededDonkeys - availableDonkeys).toLocaleString()} more donkeys
+                </div>
+              )}
+              {canCarry && neededDonkeys > 0 && (
+                <div className="mt-3 p-2 bg-progress-bar-good/10 border border-progress-bar-good/20 rounded text-xs text-progress-bar-good">
+                  Sufficient Donkey Capacity
+                </div>
+              )}
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div className="flex gap-2">
+              {[0.25, 0.5, 0.75, 1].map((percentage) => (
+                <button
+                  key={percentage}
+                  type="button"
+                  onClick={() => handleQuickSelect(percentage)}
+                  className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+                >
+                  {percentage === 1 ? "All" : `${percentage * 100}%`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3 pt-2">
               <button
-                key={percentage}
-                type="button"
-                onClick={() => handleQuickSelect(percentage)}
-                className="px-3 py-1 text-xs bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors"
+                type="submit"
+                disabled={!isValidTransfer || isLoading}
+                className="flex-1 px-4 py-2 bg-blueish/20 text-blueish rounded hover:bg-blueish/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {percentage === 1 ? "All" : `${percentage * 100}%`}
+                {!canCarry ? "Insufficient Donkeys" : "Add to Cart"}
               </button>
-            ))}
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={!isValidTransfer || isLoading}
-              className="flex-1 px-4 py-2 bg-blueish/20 text-blueish rounded hover:bg-blueish/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {!canCarry ? "Insufficient Donkeys" : "Add to Cart"}
-            </button>
-            <Button
-              type="button"
-              isLoading={isLoading}
-              onClick={handleSendNow}
-              disabled={!isValidTransfer || isLoading}
-              className="flex-1 px-4 py-2 bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Send
-            </Button>
-          </div>
-        </form>
-      </DialogShell>
+              <Button
+                type="button"
+                isLoading={isLoading}
+                onClick={handleSendNow}
+                disabled={!isValidTransfer || isLoading}
+                className="flex-1 px-4 py-2 bg-gold/20 text-gold rounded hover:bg-gold/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send
+              </Button>
+            </div>
+          </form>
+        </SurfaceFrame>
+      </PopoverPanel>
     );
   },
 );

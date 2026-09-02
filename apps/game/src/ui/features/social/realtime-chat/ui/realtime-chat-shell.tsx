@@ -170,7 +170,7 @@ export function RealtimeChatShell({
       <div
         className={cn(
           "flex flex-col overflow-hidden transition-all duration-300",
-          // Embedded inside the bronze CenteredModalShell — stay transparent and
+          // Embedded inside the bronze surface frame — stay transparent and
           // square so the shell's warm gradient + frame show through (the flat
           // black box read as a different surface from the rest of the HUD).
           isEmbedded ? "rounded-none bg-transparent" : "rounded-2xl bg-black/70",

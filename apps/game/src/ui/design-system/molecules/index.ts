@@ -1,7 +1,6 @@
 export * from "./army-capacity";
 export * from "./base-three-tooltip";
 export * from "./circle-button";
-export * from "./dialog-shell";
 export * from "./headline";
 export * from "./hint-modal-button";
 export * from "./dropdown-list";

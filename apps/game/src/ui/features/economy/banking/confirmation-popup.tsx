@@ -1,5 +1,5 @@
 import Button from "@/ui/design-system/atoms/button";
-import { BasePopup } from "@/ui/design-system/molecules/base-popup";
+import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import React from "react";
 
 interface ConfirmationPopupProps {
@@ -33,8 +33,16 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
   );
 
   return (
-    <BasePopup title={title} onClose={onCancel} footer={footer} contentClassName="">
-      {children}
-    </BasePopup>
+    <PopoverPanel id="confirm" ariaLabel={title} anchor="top-center" className="w-auto p-0" onDismiss={onCancel}>
+      <SurfaceFrame
+        title={title}
+        onClose={onCancel}
+        footer={footer}
+        className="w-[480px]"
+        bodyClassName="p-4 text-center"
+      >
+        {children}
+      </SurfaceFrame>
+    </PopoverPanel>
   );
 };

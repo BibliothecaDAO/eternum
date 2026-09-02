@@ -84,7 +84,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
             <TransferAutomationPanel initialSourceId={transferPanelSourceId ?? undefined} />
           </Tabs.Panel>
           <Tabs.Panel className="h-full overflow-y-auto">
-            <TransferAutomationAdvancedModal embedded />
+            <TransferAutomationAdvancedModal />
           </Tabs.Panel>
           <Tabs.Panel className="h-full overflow-y-auto">
             <AllRealmsBalanceTab structures={playerStructures} />

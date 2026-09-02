@@ -1,12 +1,10 @@
 import { useMemo, useCallback, useState } from "react";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { toast } from "sonner";
-import { DialogShell } from "@/ui/design-system/molecules";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
     return entry.resourceConfigs
@@ -31,8 +29,7 @@ const formatLastRun = (timestamp: number) => {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 };
 
-export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded?: boolean }) => {
-  const closeSurface = usePopoverStore((state) => state.closeSurface);
+export const TransferAutomationAdvancedModal = () => {
   const entries = useTransferAutomationStore((s) => s.entries);
   const toggleActive = useTransferAutomationStore((s) => s.toggleActive);
   const remove = useTransferAutomationStore((s) => s.remove);
@@ -179,7 +176,7 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
   const hasActiveFiltered = filtered.some((entry) => entry.active);
 
   const content = (
-    <div className={embedded ? "p-3 space-y-3 overflow-y-auto max-h-[70vh]" : "p-4 pb-6 h-full overflow-y-auto"}>
+    <div className="p-3 space-y-3 overflow-y-auto max-h-[70vh]">
       <div className="mb-3 flex flex-col gap-2">
         <input
           type="text"
@@ -241,13 +238,5 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
     </div>
   );
 
-  if (embedded) {
-    return content;
-  }
-
-  return (
-    <DialogShell title="Scheduled Transfers" onClose={closeSurface} size="xl">
-      {content}
-    </DialogShell>
-  );
+  return content;
 };

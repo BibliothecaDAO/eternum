@@ -23,10 +23,14 @@ const ABSORBED_SURFACES = [
   "hooks/store/use-popups-store.ts",
   "ui/shared/components/endgame-modal.tsx",
   "ui/features/landing/components/game-is-over-modal.tsx",
+  "ui/features/world/containers/centered-modal-shell.tsx",
+  "ui/design-system/molecules/dialog-shell.tsx",
+  "ui/design-system/molecules/base-popup.tsx",
+  "ui/shared/lib/draggable-position.ts",
 ];
 
 const ABSORBED_NAMES =
-  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen|EndgameModal|GameIsOverModal|toggleModal|setModal|modalContent|showModal|LandingModalHost)\b/;
+  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen|EndgameModal|GameIsOverModal|toggleModal|setModal|modalContent|showModal|LandingModalHost|CenteredModalShell|DialogShell|BasePopup)\b/;
 
 const isSourceFile = (name: string) =>
   (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".test.ts") && !name.endsWith(".test.tsx");
@@ -50,6 +54,13 @@ describe("overlay surfaces", () => {
       .filter((path) => ABSORBED_NAMES.test(readFileSync(path, "utf8")))
       .map((path) => relative(SOURCE_ROOT, path));
     expect(references).toEqual([]);
+  });
+
+  it("the popover panel is the only dialog role in the client", () => {
+    const dialogs = walk(SOURCE_ROOT)
+      .filter((path) => /role=["']dialog["']/.test(readFileSync(path, "utf8")))
+      .map((path) => relative(SOURCE_ROOT, path));
+    expect(dialogs).toEqual(["ui/design-system/molecules/popover.tsx"]);
   });
 
   it("every sign-in prompt goes through the identity session store", () => {

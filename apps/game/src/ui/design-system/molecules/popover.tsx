@@ -14,48 +14,68 @@ const HEADER_CLEARANCE_PX = 56;
 
 type PopoverAlign = "start" | "end";
 
+/** An edge of the viewport a surface can hang from instead of a rect. */
+type PanelEdge = "top-center" | "right-edge" | "bottom-right";
+
+type PanelAnchor = SurfaceAnchor | PanelEdge;
+
 interface PopoverPanelProps {
   id: string;
   ariaLabel: string;
-  align: PopoverAlign;
+  /** What the panel hangs from: a rect (live, when a function) or a viewport edge. */
+  anchor: PanelAnchor | (() => PanelAnchor);
+  align?: PopoverAlign;
   className?: string;
   children: ReactNode;
-  /** The rect the panel hangs from; null hangs it from the top centre of the viewport. */
-  resolveAnchor: () => SurfaceAnchor | null;
+  /** Escape or a pointer-down outside the panel (and outside its anchor) asks the owner to close it. */
+  onDismiss: () => void;
   /** Pointer-downs inside the anchor are the trigger's own clicks, never an outside dismiss. */
-  isInsideAnchor: (target: EventTarget | null) => boolean;
+  isInsideAnchor?: (target: EventTarget | null) => boolean;
 }
 
-/** The one panel: portaled to the body, capped to the viewport, closed by Escape or a pointer-down outside. */
-const PopoverPanel = ({
+const neverInsideAnchor = () => false;
+
+/**
+ * The one panel: portaled to the body, capped to the viewport, closed by Escape or a pointer-down outside. It is
+ * store-free — whoever mounts it owns its open state — so a view-driven surface (the sidebar's Build, Military,
+ * Logistics and Chat), a store popover and a store surface all render through exactly this.
+ */
+export const PopoverPanel = ({
   id,
   ariaLabel,
-  align,
+  anchor,
+  align = "start",
   className,
   children,
-  resolveAnchor,
-  isInsideAnchor,
+  onDismiss,
+  isInsideAnchor = neverInsideAnchor,
 }: PopoverPanelProps) => {
-  const close = usePopoverStore((state) => state.close);
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
+  const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
+  const resolveAnchorRef = useRef(resolveAnchor);
+  resolveAnchorRef.current = resolveAnchor;
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+  const isInsideAnchorRef = useRef(isInsideAnchor);
+  isInsideAnchorRef.current = isInsideAnchor;
 
   useLayoutEffect(() => {
-    const place = () => setPanelStyle(resolvePanelStyle(resolveAnchor(), align));
+    const place = () => setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align));
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [align, resolveAnchor]);
+  }, [align]);
 
   useEffect(() => {
     const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (isInsideAnchor(event.target) || isInside(event.target, panelRef.current)) return;
-      close(id);
+      if (isInsideAnchorRef.current(event.target) || isInside(event.target, panelRef.current)) return;
+      onDismissRef.current();
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
-      close(id);
+      onDismissRef.current();
     };
 
     document.addEventListener("pointerdown", closeOnOutsidePointer);
@@ -64,7 +84,7 @@ const PopoverPanel = ({
       document.removeEventListener("pointerdown", closeOnOutsidePointer);
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [close, id, isInsideAnchor]);
+  }, []);
 
   if (!panelStyle) return null;
 
@@ -101,8 +121,9 @@ interface PopoverProps {
  */
 export const Popover = ({ id, trigger, children, ariaLabel, align = "start", className }: PopoverProps) => {
   const isOpen = usePopoverStore((state) => state.openId === id);
+  const close = usePopoverStore((state) => state.close);
   const anchorRef = useRef<HTMLSpanElement>(null);
-  const resolveAnchor = useRef(() => anchorRef.current?.getBoundingClientRect() ?? null).current;
+  const resolveAnchor = useRef((): PanelAnchor => anchorRef.current?.getBoundingClientRect() ?? "top-center").current;
   const isInsideAnchor = useRef((target: EventTarget | null) => isInside(target, anchorRef.current)).current;
 
   return (
@@ -114,9 +135,10 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
         <PopoverPanel
           id={id}
           ariaLabel={ariaLabel}
+          anchor={resolveAnchor}
           align={align}
           className={className}
-          resolveAnchor={resolveAnchor}
+          onDismiss={() => close(id)}
           isInsideAnchor={isInsideAnchor}
         >
           {children}
@@ -126,8 +148,6 @@ export const Popover = ({ id, trigger, children, ariaLabel, align = "start", cla
   );
 };
 
-const neverInsideAnchor = () => false;
-
 /**
  * Renders the store's surface — content handed to `openSurface` by a scene click or a plain button — through the
  * same panel, hanging from the rect it was opened at (or the top centre when it has none). Mounted once in the HUD.
@@ -135,9 +155,9 @@ const neverInsideAnchor = () => false;
 export const SurfaceHost = () => {
   const surface = usePopoverStore((state) => state.surface);
   const isOpen = usePopoverStore((state) => state.surface !== null && state.openId === state.surface.id);
+  const close = usePopoverStore((state) => state.close);
   const { play } = useAudio();
   const wasOpenRef = useRef(false);
-  const resolveAnchor = useRef(() => usePopoverStore.getState().surface?.anchor ?? null).current;
 
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) play("ui.modal_open");
@@ -151,10 +171,9 @@ export const SurfaceHost = () => {
     <PopoverPanel
       id={surface.id}
       ariaLabel={surface.id}
-      align="start"
+      anchor={surface.anchor ?? "top-center"}
       className="w-auto p-0"
-      resolveAnchor={resolveAnchor}
-      isInsideAnchor={neverInsideAnchor}
+      onDismiss={() => close(surface.id)}
     >
       {surface.content}
     </PopoverPanel>
@@ -220,19 +239,26 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
   return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
 };
 
-const resolvePanelStyle = (anchor: SurfaceAnchor | null, align: PopoverAlign): CSSProperties => {
-  if (!anchor) {
+const resolvePanelStyle = (anchor: PanelAnchor, align: PopoverAlign): CSSProperties => {
+  const maxWidth = Math.max(0, window.innerWidth - 2 * VIEWPORT_MARGIN_PX);
+  if (anchor === "top-center") {
     const top = HEADER_CLEARANCE_PX;
+    return { top, left: "50%", transform: "translateX(-50%)", maxHeight: viewportHeightBelow(top), maxWidth };
+  }
+  if (anchor === "right-edge") {
+    const top = HEADER_CLEARANCE_PX;
+    return { top, right: VIEWPORT_MARGIN_PX, maxHeight: viewportHeightBelow(top), maxWidth };
+  }
+  if (anchor === "bottom-right") {
     return {
-      top,
-      left: "50%",
-      transform: "translateX(-50%)",
-      maxHeight: Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX),
-      maxWidth: Math.max(0, window.innerWidth - 2 * VIEWPORT_MARGIN_PX),
+      bottom: VIEWPORT_MARGIN_PX,
+      right: VIEWPORT_MARGIN_PX,
+      maxHeight: viewportHeightBelow(HEADER_CLEARANCE_PX),
+      maxWidth,
     };
   }
   const top = anchor.bottom + PANEL_GAP_PX;
-  const maxHeight = Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
+  const maxHeight = viewportHeightBelow(top);
   if (align === "end") {
     const right = Math.max(VIEWPORT_MARGIN_PX, window.innerWidth - anchor.right);
     return { top, right, maxHeight, maxWidth: Math.max(0, window.innerWidth - right - VIEWPORT_MARGIN_PX) };
@@ -240,6 +266,8 @@ const resolvePanelStyle = (anchor: SurfaceAnchor | null, align: PopoverAlign): C
   const left = Math.max(VIEWPORT_MARGIN_PX, anchor.left);
   return { top, left, maxHeight, maxWidth: Math.max(0, window.innerWidth - left - VIEWPORT_MARGIN_PX) };
 };
+
+const viewportHeightBelow = (top: number): number => Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
 
 const isInside = (target: EventTarget | null, element: HTMLElement | null): boolean =>
   element !== null && target instanceof Node && element.contains(target);

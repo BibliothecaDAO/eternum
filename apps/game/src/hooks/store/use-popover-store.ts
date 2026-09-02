@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { create } from "zustand";
 
-/** Where a surface hangs from when it has no trigger element in the tree: a screen rect, or null for the top centre. */
+/** A screen rect a surface hangs from — a button's rect, or a scene point as a zero-size rect. */
 export interface SurfaceAnchor {
   left: number;
   top: number;
@@ -9,10 +9,13 @@ export interface SurfaceAnchor {
   bottom: number;
 }
 
+/** Where a surface hangs from: a rect, a viewport edge, or null for the top centre. */
+type SurfaceAnchorInput = SurfaceAnchor | "top-center" | "right-edge" | "bottom-right";
+
 interface OpenSurface {
   id: string;
   content: ReactNode;
-  anchor: SurfaceAnchor | null;
+  anchor: SurfaceAnchorInput | null;
 }
 
 /**
@@ -26,7 +29,7 @@ interface PopoverStore {
   open: (id: string) => void;
   close: (id?: string) => void;
   toggle: (id: string) => void;
-  openSurface: (surface: { id: string; content: ReactNode; anchor?: SurfaceAnchor | null }) => void;
+  openSurface: (surface: { id: string; content: ReactNode; anchor?: SurfaceAnchorInput | null }) => void;
   closeSurface: () => void;
 }
 

@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
@@ -94,21 +94,27 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
       </Button>
 
       {showCongratsPopup && (
-        <CenteredModalShell
-          onClose={() => setShowCongratsPopup(false)}
-          title="🔥 Congratulations! 🔥"
-          persistKey="🔥 Congratulations! 🔥"
-          panelClassName="w-[500px] h-auto max-h-[calc(100vh-64px)]"
-          bodyClassName="overflow-auto"
+        <PopoverPanel
+          id="season-ended"
+          ariaLabel="Season ended"
+          anchor="top-center"
+          className="w-auto p-0"
+          onDismiss={() => setShowCongratsPopup(false)}
         >
-          <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-            <div className="text-6xl">🏆</div>
-            <h2 className="text-2xl font-bold text-gold">You have conquered Eternum Season 1!</h2>
-            <Button variant="primary" onClick={() => setShowCongratsPopup(false)} className="mt-4">
-              Close
-            </Button>
-          </div>
-        </CenteredModalShell>
+          <SurfaceFrame
+            title="🔥 Congratulations! 🔥"
+            onClose={() => setShowCongratsPopup(false)}
+            className="w-[500px] max-h-[calc(100vh-7rem)]"
+          >
+            <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
+              <div className="text-6xl">🏆</div>
+              <h2 className="text-2xl font-bold text-gold">You have conquered Eternum Season 1!</h2>
+              <Button variant="primary" onClick={() => setShowCongratsPopup(false)} className="mt-4">
+                Close
+              </Button>
+            </div>
+          </SurfaceFrame>
+        </PopoverPanel>
       )}
     </>
   );

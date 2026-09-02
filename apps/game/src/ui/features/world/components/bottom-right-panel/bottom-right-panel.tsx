@@ -1021,7 +1021,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           tooltipLocation="top"
           image={BuildingThumbs.scale}
           label="Trade"
-          onClick={() => openSurface({ id: "market", content: <MarketModal /> })}
+          onClick={() => openSurface({ id: "market", content: <MarketModal />, anchor: "right-edge" })}
         />
       )}
       {/* Prediction Market button retired: the PM deployment is gone until

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: vi.fn() }) }));
 
-import { Popover, SurfaceHost } from "./popover";
+import { Popover, PopoverPanel, SurfaceHost } from "./popover";
 
 const Trigger = ({ id, label }: { id: string; label: string }) => {
   const toggle = usePopoverStore((state) => state.toggle);
@@ -121,5 +121,32 @@ describe("Popover", () => {
     });
     expect(panel("a")).toBeNull();
     expect(panel("s")).not.toBeNull();
+  });
+
+  it("a store-free panel hangs from a viewport edge and asks its owner to close on Escape", async () => {
+    const onDismiss = vi.fn();
+    const edgeContainer = document.createElement("div");
+    document.body.appendChild(edgeContainer);
+    const edgeRoot = createRoot(edgeContainer);
+    await act(async () =>
+      edgeRoot.render(
+        <PopoverPanel id="drawer" ariaLabel="Drawer" anchor="bottom-right" onDismiss={onDismiss}>
+          <span>drawer body</span>
+        </PopoverPanel>,
+      ),
+    );
+
+    const drawer = panel("drawer")!;
+    expect(drawer.style.bottom).toBe("8px");
+    expect(drawer.style.right).toBe("8px");
+    expect(drawer.style.top).toBe("");
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+
+    await act(async () => edgeRoot.unmount());
+    edgeContainer.remove();
   });
 });

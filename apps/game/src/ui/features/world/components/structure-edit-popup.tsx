@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import {
   STRUCTURE_GROUP_COLORS,
   StructureGroupColor,
@@ -35,13 +35,7 @@ export const StructureEditPopup = ({
   const isNameEmpty = trimmedName === "";
 
   return (
-    <CenteredModalShell
-      title="Edit Structure"
-      onClose={onCancel}
-      persistKey="structure-edit-popup"
-      panelClassName="w-[480px] h-auto max-h-[calc(100vh-64px)]"
-      bodyClassName="overflow-auto"
-    >
+    <SurfaceFrame title="Edit Structure" onClose={onCancel} className="w-[480px] max-h-[calc(100vh-7rem)]">
       <div className="flex flex-col gap-4 p-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Name</p>
@@ -110,6 +104,6 @@ export const StructureEditPopup = ({
           </Button>
         </div>
       </div>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 };

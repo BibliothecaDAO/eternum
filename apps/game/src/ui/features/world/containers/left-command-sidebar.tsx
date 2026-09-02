@@ -2,7 +2,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
@@ -175,7 +175,7 @@ export const LeftCommandSidebar = memo(() => {
   const isPanelOpen = view !== LeftView.None;
   const closeView = useCallback(() => setView(LeftView.None), [setView]);
 
-  // Esc handling lives inside each modal's CenteredModalShell now, so we don't
+  // Esc handling lives inside each view's popover panel now, so we don't
   // double-bind it here.
 
   const ConnectedAccount = useAccountStore((state) => state.account);
@@ -200,39 +200,79 @@ export const LeftCommandSidebar = memo(() => {
         </div>
       )}
 
-      {/* Bubble modals — each renders its own CenteredModalShell so the chrome
-          (bronze frame, header strip, close button) and window size are the
-          same everywhere. We just dispatch by view. */}
+      {/* The view surfaces — `leftNavigationView` is their open state; each is one popover panel whose frame
+          (header strip, close) is the shared one. Chat is the bottom-right drawer; the work surfaces hang from
+          the top centre. */}
       {isPanelOpen && view === LeftView.ChatView && (
-        <CenteredModalShell title="Chat" icon={MessageCircle} onClose={closeView} size="xl">
-          <div className="h-full">
+        <PopoverPanel id="chat" ariaLabel="Chat" anchor="bottom-right" className="w-auto p-0" onDismiss={closeView}>
+          <SurfaceFrame
+            title="Chat"
+            icon={MessageCircle}
+            onClose={closeView}
+            className="w-[720px] h-[min(640px,calc(100vh-7rem))]"
+            bodyClassName="overflow-hidden"
+          >
             <ChatModalContent
               initializer={realtimeInitializer}
               zoneIds={chatZoneIds}
               defaultZoneId={chatDefaultZoneId}
             />
-          </div>
-        </CenteredModalShell>
+          </SurfaceFrame>
+        </PopoverPanel>
       )}
-      {isPanelOpen && view === LeftView.ConstructionView && <ConstructionModal structureEntityId={structureEntityId} />}
+      {isPanelOpen && view === LeftView.ConstructionView && (
+        <PopoverPanel id="build" ariaLabel="Build" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
+          <ConstructionModal structureEntityId={structureEntityId} />
+        </PopoverPanel>
+      )}
       {isPanelOpen && view === LeftView.ResourceArrivals && (
-        <CenteredModalShell title="Logistics" icon={PackageIcon} onClose={closeView} size="xl">
-          <div className="h-full min-h-0 overflow-hidden">
+        <PopoverPanel
+          id="logistics"
+          ariaLabel="Logistics"
+          anchor="top-center"
+          className="w-auto p-0"
+          onDismiss={closeView}
+        >
+          <SurfaceFrame
+            title="Logistics"
+            icon={PackageIcon}
+            onClose={closeView}
+            className="w-[1320px] h-[calc(100vh-7rem)]"
+            bodyClassName="overflow-hidden"
+          >
             <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-          </div>
-        </CenteredModalShell>
+          </SurfaceFrame>
+        </PopoverPanel>
       )}
-      {isPanelOpen && view === LeftView.MilitaryView && <MilitaryModal structureEntityId={structureEntityId} />}
+      {isPanelOpen && view === LeftView.MilitaryView && (
+        <PopoverPanel
+          id="military"
+          ariaLabel="Military"
+          anchor="top-center"
+          className="w-auto p-0"
+          onDismiss={closeView}
+        >
+          <MilitaryModal structureEntityId={structureEntityId} />
+        </PopoverPanel>
+      )}
 
       {pendingRenameStructureEntityId !== null && pendingRenameMetadata && editingStructureId !== null && (
-        <StructureEditPopup
-          currentName={pendingRenameMetadata.name}
-          originalName={pendingRenameMetadata.originalName ?? pendingRenameMetadata.name}
-          groupColor={structureGroups[editingStructureId] ?? null}
-          onConfirm={(newName) => handleNameChange(editingStructureId, newName)}
-          onCancel={() => setPendingRenameStructureEntityId(null)}
-          onUpdateColor={(color) => updateStructureGroup(editingStructureId, color)}
-        />
+        <PopoverPanel
+          id="structure-edit"
+          ariaLabel="Edit structure"
+          anchor="top-center"
+          className="w-auto p-0"
+          onDismiss={() => setPendingRenameStructureEntityId(null)}
+        >
+          <StructureEditPopup
+            currentName={pendingRenameMetadata.name}
+            originalName={pendingRenameMetadata.originalName ?? pendingRenameMetadata.name}
+            groupColor={structureGroups[editingStructureId] ?? null}
+            onConfirm={(newName) => handleNameChange(editingStructureId, newName)}
+            onCancel={() => setPendingRenameStructureEntityId(null)}
+            onUpdateColor={(color) => updateStructureGroup(editingStructureId, color)}
+          />
+        </PopoverPanel>
       )}
     </>
   );

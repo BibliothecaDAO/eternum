@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { BUILDABLE_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID } from "@bibliothecadao/types";
@@ -45,7 +45,13 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
   }, [structureEntityId]);
 
   return (
-    <CenteredModalShell title="Build" icon={Hammer} onClose={close} size="xl">
+    <SurfaceFrame
+      title="Build"
+      icon={Hammer}
+      onClose={close}
+      className="w-[1320px] h-[calc(100vh-7rem)]"
+      bodyClassName="overflow-hidden"
+    >
       <div className="grid h-full grid-cols-12 min-h-0">
         <div className="col-span-3 border-r border-gold/15 min-h-0">
           <StructureSidebar
@@ -61,7 +67,7 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
           </Suspense>
         </div>
       </div>
-    </CenteredModalShell>
+    </SurfaceFrame>
   );
 });
 
