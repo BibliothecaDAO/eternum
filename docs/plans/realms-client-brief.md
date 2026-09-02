@@ -858,6 +858,52 @@ Gate: a spectator with a session sees no login banner and a Play affordance when
 `pointer-events-auto` covers the canvas while any surface is open; every action's pending state is visible on the entity
 within one frame of the click; `apps/game` contains no `Modal` shell component.
 
+### Phase 4 record — steps 1+2: identity chip + Popover primitive (2026-09-02, commit `102642cecdc`)
+
+**Landed.** One identity input: `hooks/context/identity-session.ts` is a store and the identity session is the only
+"logged in" fact. `IdentityLogin` and `GameplayAccountSync` read it (their two private `getSession` loaders are gone),
+and the account sync keys on world values instead of profile object identity (the `gameplay-account-sync.tsx:43`
+finding). One identity output: `top-header/identity-chip.tsx` with the pure resolver `identity-chip-state.ts` — states
+`spectating` / `spectating as <name>` (+ Play when the account owns a structure) / `not signed in · view only` /
+`connecting` / `<name> · n realms · #rank · VP`. Inputs: `isExplicitSpectateSession()`, the identity store, the account
+store, and the bridge slices (players, structures, leaderboard standings through `useInGameLeaderboard`). The
+spectator's ownership comes from the `structures` slice because `playerStructures` is `[]` by design in an explicit
+spectate session (bridge `readPlayerStructures`). One overlay primitive: `design-system/molecules/popover.tsx` +
+`hooks/store/use-popover-store.ts` — anchored to its trigger, portaled to the body, Escape / outside pointer-down close,
+at most one open, no scrim. Migrated onto it and deleted: `NoAccountModal` and `SignInPromptModal` (the one sign-in
+surface is the chip's popover; on the landing `landing-identity-chip.tsx` replays the requested entry route with its
+state once the session lands). Also deleted: `NotLoggedInMessage` and its mount, the rank pill in `SecondaryMenuItems`
+(variant prop gone), `top-header-player-status`, bootstrap's no-account modal path (`onNoAccount` only logs; the chip
+derives the state), and play-view's gameplay-account gate (identity session now, so an authenticated user no longer sees
+"Sign in" while the account deploys).
+
+**Gates.** `identity-chip-state.test.ts` (9 cases, drives the real spectator-session module), `popover.test.tsx` (4),
+`landing-identity-chip.test.tsx` (3), `identity-surfaces.source.test.ts` (banner and both modals gone, nothing re-mounts
+them, sign-in prompts only through `requestSignIn`). `typecheck` clean; `knip` clean (the two pre-existing dist
+findings). Full `apps/game` suite: 12 failing files, none from this change — all pre-existing at HEAD:
+worldmap-initial-refresh, starknet-provider.factory-tab, play-view.review-autopen, in-game-leaderboard-ownership (test
+2, `row.activityBreakdown`), client-legacy-purge-p7d, icy-dragon-assets, frame-budget-work-queue (2),
+game-renderer.backend, use-cosmetic-loadout-store (`ResourcesIds` mock), start-time (locale), game-review-service (5 s
+timeout under load, green alone). Screenshots in the session scratchpad `screens/`: `p4-before-spectator.png` (banner +
+SPECTATING pill), `p4-after-spectator.png` (chip), `p4-after-spectator-popover.png` (sign-in surface + Leaderboard).
+LOC: `102642cecdc` +1062 −275 (360 of the additions are tests); the six file deletions (−302) sit in `75d82901d16`
+(finding 1).
+
+**Findings.**
+
+1. Attribution: the six `git rm` deletions were staged when the decomposition agent's docs commit `75d82901d16` landed
+   in the shared worktree, so that commit carries them. History was not rewritten; the stack is consistent at HEAD.
+2. The play route without a session stops at `play-route-reconnect-screen.tsx` (account recovery) before the HUD mounts,
+   so the pure `signed-out` chip state shows only when a session drops mid-game. The anonymous spectator (the banner's
+   main victim) shows SPECTATING with the sign-in surface in the popover. The three owner eyeballs: anonymous spectator,
+   spectating-as / player (needs a wallet), signed-out (clear the identity cookie while in the HUD).
+3. Play from an explicit spectate session re-enters through `resetBootstrap()` + `/enter/<chain>/<world>` (play intent):
+   the bootstrap cache key ignores intent, so an in-place mode switch needs a bootstrap change. Live verification owed.
+4. Untouched, by scope: the Controller entry in the connector list (`starknet-provider.tsx`), the two URL spectate
+   readers (`play-route-boot-request.ts`, `game-entry/context.ts`), `EndgameModal` (its replacement is the review route
+   and the feed; it now opens the chip popover for sign-in), and the `openedPopups` windows (Social, Settings, …), which
+   keep their own exclusivity domain until they migrate.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
