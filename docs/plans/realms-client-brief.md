@@ -724,6 +724,32 @@ Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
   re-judge the strategic-marker and combat-presentation shells with the owner before touching them, then report
   worldmap.tsx's residual composition.
 
+- Cut 4 — combat presentation (**relocation**, 2026-09-02, branch `client-scale-96p`). Moved the procedural-combat
+  presentation bridge out of the scene into a collaborator: new
+  `apps/game/src/three/scenes/worldmap-combat-presentation.ts` (`WorldmapCombatPresentation`, 111 lines) with its own
+  test (149 lines / 8 cases). The collaborator owns the three procedural subscription handles (was the
+  `unsubscribeProcedural{RangedRelease,MeleeContact,ProjectileImpact}` fields) and the `replayIndexedCombat` /
+  `bindProceduralCombatPresentation` / `presentProcedural{RangedRelease,MeleeContact}` methods; the army manager and the
+  combat coordinator stay scene-owned, reached through injected accessors (`armyManager`, `getCombatPresentation`,
+  `getArmyDisplayPosition`, `getStructureHexPosition`). The scene builds it in `initializeWorldmapManagers` and calls
+  `bind()`; the battle subscription calls `combatPresentationRuntime.replayIndexed(update)`; `destroy` calls its
+  `dispose()` (the dispose hook, replacing the three inline unsubscribe pairs). No source/wiring test pinned the shell,
+  so no retarget was needed; the now-unused `ProceduralRangedReleaseEvent` / `ProceduralMeleeContactEvent` /
+  `ProceduralImpactAuthority` imports were dropped. Behaviour-neutral (methods reproduced verbatim over injected
+  accessors). worldmap.tsx 8392 → 8314 (−78; git +11/−89). Gate: collaborator 8/8; scenes 867/868 (the one red is the
+  pre-existing known `worldmap-initial-refresh` drift); typecheck clean repo-wide; prettier + knip clean on the touched
+  files.
+
+- **Close-out (2026-09-02).** The worldmap decomposition entry is closed per the close-out ruling above. Four cuts
+  landed on `client-scale-96p` — pulses (move-only), terrain-visibility self-heal, hover-label recovery and combat
+  presentation (relocations) — taking `worldmap.tsx` **8704 → 8314** (−390) and lifting four stateful subsystems out of
+  the god-object into tested collaborators, each reading as a `this.<collaborator>.<verb>()` line at the scene's top
+  level. Strategic-marker was deliberately left (its only pin is the foreign content-ladder wiring guard — churn for no
+  ownership gain). The ~1,500-line proxy is retired: the residual ~8,314 lines are ~68% two working, pinned,
+  load-bearing subsystems (chunk/terrain streaming ~3,488, army-interaction ~1,815), whose reshape is out of scope and
+  returns only as its own brief if a profile or bug convicts it. The one red scenes test
+  (`worldmap-initial-refresh.source.test.ts`) is the documented pre-existing drift, untouched by any of these cuts.
+
 Recorded, L5b (2026-09-03, branch `client-scale-96p`, one commit on top of the L5 tip). (1) Content ladder: one table,
 `apps/game/src/three/scenes/worldmap-content-ladder.ts`, maps the zoom band (`CameraView`, resolved from distance) to
 what renders — near: everything; mid: models and FX, text only for priority entities, armies as tier glyphs; far: the
