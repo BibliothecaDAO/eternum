@@ -1,6 +1,5 @@
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
-import { EndgameModal } from "@/ui/shared";
 import { Leva } from "leva";
 import { env } from "../../../env";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
@@ -70,7 +69,6 @@ const BackgroundSystems = () => (
     <ActionRunners />
     <BlockTimestampPoller />
     <ChainTimePoller />
-    <EndgameModal />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
     <TransferAutomationManager />

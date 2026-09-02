@@ -28,13 +28,14 @@ describe("PlayView review auto-open", () => {
     expect(source).toContain("<GameReviewModal");
   });
 
-  it("keeps automatic review prompting owned by the in-game endgame flow", () => {
-    const source = readSource("src/ui/shared/components/endgame-modal.tsx");
+  it("keeps the in-game finished surface a pill that points at the dashboard, never a modal", () => {
+    const source = readSource("src/ui/features/world/containers/top-header/game-end-timer.tsx");
 
-    expect(source).toContain("export const EndgameModal");
-    expect(source).toContain("isGameReviewDismissed");
-    expect(source).toContain("const handleOpenReview = useCallback");
-    expect(source).toContain("<GameIsOverModal");
-    expect(source).toContain("<GameReviewModal");
+    expect(source).toContain("const GameFinishedPill");
+    expect(source).toContain("<GameFinishedPill />");
+    expect(source).toContain("resetBootstrap();");
+    expect(source).toContain('navigate("/");');
+    expect(source).not.toContain("GameIsOverModal");
+    expect(source).not.toContain("GameReviewModal");
   });
 });

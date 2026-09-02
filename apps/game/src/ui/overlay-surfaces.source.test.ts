@@ -21,10 +21,12 @@ const ABSORBED_SURFACES = [
   "ui/features/world/containers/top-navigation.tsx",
   "ui/features/world/components/config.tsx",
   "hooks/store/use-popups-store.ts",
+  "ui/shared/components/endgame-modal.tsx",
+  "ui/features/landing/components/game-is-over-modal.tsx",
 ];
 
 const ABSORBED_NAMES =
-  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen)\b/;
+  /\b(NotLoggedInMessage|NoAccountModal|SignInPromptModal|SocialWindow|SettingsWindow|TransactionWindow|ShortcutsWindow|LatestFeaturesWindow|RealmTransferManager|ProductionAutomationWindow|ExplorationAutomationWindow|TopNavigation|openedPopups|togglePopup|isPopupOpen|EndgameModal|GameIsOverModal)\b/;
 
 const isSourceFile = (name: string) =>
   (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".test.ts") && !name.endsWith(".test.tsx");
@@ -55,6 +57,6 @@ describe("overlay surfaces", () => {
       .filter((path) => /requestSignIn\(/.test(readFileSync(path, "utf8")))
       .map((path) => relative(SOURCE_ROOT, path))
       .toSorted();
-    expect(prompts).toEqual(["ui/features/landing/views/play-view.tsx", "ui/shared/components/endgame-modal.tsx"]);
+    expect(prompts).toEqual(["ui/features/landing/views/play-view.tsx"]);
   });
 });

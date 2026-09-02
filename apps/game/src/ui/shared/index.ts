@@ -1,5 +1,4 @@
 export { CountUpNumber } from "./components/count-up-number";
-export { EndgameModal } from "./components/endgame-modal";
 export { ProductionStatusBadge } from "./components/production-status-badge";
 export { Toaster } from "./components/toaster";
 export { TransactionNotification } from "./components/tx-emit";
