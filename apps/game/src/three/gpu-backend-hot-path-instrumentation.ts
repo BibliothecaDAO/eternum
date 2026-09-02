@@ -1,5 +1,5 @@
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { consumeDominantFrameWorkOwner } from "./frame-work-owner";
+import { consumeDominantFrameWorkOwner, type DominantFrameWorkOwner } from "./frame-work-owner";
 import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
 
 interface InstrumentedTexture {
@@ -328,15 +328,16 @@ const MATERIAL_GPU_MS = 8;
 
 function buildGpuBackendSpikeReport(
   durationMs: number,
-  owner: string | null,
+  owner: DominantFrameWorkOwner | null,
   rendererMode: string,
   gpuAttributionEnabled: boolean,
   hotPathStats: ReadonlyMap<string, HotPathStat> | null,
   textureStats: ReadonlyMap<object, TextureHotPathStat> | null,
 ): string {
+  // owner_ms says how much of the spike the dominant owner explains; a small share means the rest ran unattributed.
   const frameSummary = `[FramePerf] spike renderer_mode=${rendererMode} duration_ms=${Math.round(
     durationMs,
-  )} frame_owner=${owner ?? "unattributed"}`;
+  )} frame_owner=${owner?.owner ?? "unattributed"}${owner ? ` owner_ms=${Math.round(owner.durationMs)}` : ""}`;
   if (!gpuAttributionEnabled) {
     return `${frameSummary} gpu_attribution=disabled`;
   }

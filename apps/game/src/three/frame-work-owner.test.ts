@@ -23,7 +23,7 @@ describe("frame work owner", () => {
     );
 
     expect(getCurrentFrameWorkOwner()).toBeNull();
-    expect(consumeDominantFrameWorkOwner()).toBe("chunk-work:visible");
+    expect(consumeDominantFrameWorkOwner()?.owner).toBe("chunk-work:visible");
     expect(consumeDominantFrameWorkOwner()).toBeNull();
   });
 
@@ -35,17 +35,17 @@ describe("frame work owner", () => {
     ).toThrow("failed");
 
     expect(getCurrentFrameWorkOwner()).toBeNull();
-    expect(consumeDominantFrameWorkOwner()).toBe("sync:ingest");
+    expect(consumeDominantFrameWorkOwner()?.owner).toBe("sync:ingest");
   });
 
   it("resets reused owner totals between frames", () => {
     runWithFrameWorkOwner("catchup:army", () => undefined, createNowSequence([0, 10]));
-    expect(consumeDominantFrameWorkOwner()).toBe("catchup:army");
+    expect(consumeDominantFrameWorkOwner()).toEqual({ durationMs: 10, owner: "catchup:army" });
 
     runWithFrameWorkOwner("catchup:army", () => undefined, createNowSequence([10, 11]));
     runWithFrameWorkOwner("sync:ingest", () => undefined, createNowSequence([11, 13]));
 
-    expect(consumeDominantFrameWorkOwner()).toBe("sync:ingest");
+    expect(consumeDominantFrameWorkOwner()).toEqual({ durationMs: 2, owner: "sync:ingest" });
     expect(consumeDominantFrameWorkOwner()).toBeNull();
   });
 });

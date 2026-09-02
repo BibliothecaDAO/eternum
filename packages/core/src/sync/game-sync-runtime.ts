@@ -47,6 +47,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   eventGapFillReplayCount: 0,
   lastRecoveryDurationMs: 0,
   maxBatchApplyDurationMs: 0,
+  maxLiveBatchApplyDurationMs: 0,
   peakLiveUpdatesPerSecond: 0,
   snapshotEntityCount: 0,
   snapshotPageCount: 0,
@@ -375,6 +376,10 @@ export class GameSyncRuntime {
     this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
     if (this.status === "replaying" || this.status === "running") {
       this.metrics.totalLiveEntityOperationsApplied += info.operationCount;
+      this.metrics.maxLiveBatchApplyDurationMs = Math.max(
+        this.metrics.maxLiveBatchApplyDurationMs,
+        info.applyDurationMs,
+      );
     }
     if (this.status === "snapshotting" && this.snapshotExpectedOperations > 0) {
       this.snapshotAppliedOperations += info.operationCount;

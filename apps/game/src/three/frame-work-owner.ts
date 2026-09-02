@@ -4,6 +4,12 @@ interface FrameWorkOwnerStat {
   lastSequence: number;
 }
 
+/** The owner that accounted for the most attributed time in the frame, with that time. */
+export interface DominantFrameWorkOwner {
+  durationMs: number;
+  owner: string;
+}
+
 // Ownership is deliberately synchronous: queued work captures the marker when
 // scheduled, while overlapping promises must never share ambient ownership.
 let currentOwner: string | null = null;
@@ -30,7 +36,7 @@ export function runWithFrameWorkOwner<T>(owner: string, work: () => T, now: () =
   }
 }
 
-export function consumeDominantFrameWorkOwner(): string | null {
+export function consumeDominantFrameWorkOwner(): DominantFrameWorkOwner | null {
   let dominantOwner: string | null = null;
   let dominantStat: FrameWorkOwnerStat | null = null;
 
@@ -49,7 +55,9 @@ export function consumeDominantFrameWorkOwner(): string | null {
     }
   });
   frameGeneration += 1;
-  return dominantOwner;
+  return dominantOwner === null || dominantStat === null
+    ? null
+    : { durationMs: (dominantStat as FrameWorkOwnerStat).durationMs, owner: dominantOwner };
 }
 
 function recordFrameWorkOwner(owner: string, durationMs: number): void {
