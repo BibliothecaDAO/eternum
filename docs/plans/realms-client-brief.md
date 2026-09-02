@@ -549,6 +549,19 @@ map as ruled (biome surface + sparse icons, no models, characters or text). **Co
 the owner's re-measure on the redeployed build.** The close band's 507 compact-label draws are confirmed as L5 item 6's
 class — if the close bar fails, the atlas is the lever, not the ladder.
 
+L5b owner re-measure (2026-09-02, deployed build, WebGL2 — the WebGPU init stalled 15 s and fell back, with the
+`preload-webgpu-renderer-backend` chunk throwing `TypeError: r is not a function`; both belong to half two class 2 and
+are now scheduled): far band p50 6.1 / p95 24.3 ms with **21 draws / 20k triangles** (draw and triangle bars pass 30×;
+12 of 5,424 frames over 50 ms); mid p50 6.2 / p95 36.5; close **p50 12.1** (was 49 — 4×) / p95 145.5, the p95 carried by
+a 2.6 s first-zoom pipeline-compile burst (half two class 1) over the 507 label quads (L5 item 6). Residuals ruled as
+**L5c** before Phase 4's first review lands: (1) **the far band lost its subjects** — the ruling said structures render
+as instanced atlas icons and armies as colour+tier markers, but only the pre-existing POI points survived, so the
+strategic map shows biomes with no structures or armies; add the instanced structure-icon and army-marker layers to the
+far (and mid, where models already show) band; (2) split `terrain:present:partition` to the 8 ms sub-task budget (22 ms
+observed); (3) bound the WebGPU probe and fix the preload chunk TypeError so capable hardware actually gets WebGPU.
+Re-measure far/mid p95 after 1+2; close is accepted with its attributions. Phase 4 (Command Deck steps 1+2) may start in
+parallel — different files.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
