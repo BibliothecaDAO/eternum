@@ -1267,6 +1267,25 @@ deleted"; the automation runners themselves (`AutomationManager`, `ExplorationAu
 gate pending:** the transfer popover needs a signed-in player with resources on screen, which the headless spectator
 lane cannot produce — eyeball it from a chip and from a table cell on the deploy.
 
+### Autonomous run record — item 4: the finished-game surface (2026-09-02, commit `4f5510d5b50`)
+
+**Landed.** The end timer pill (`top-header/game-end-timer.tsx`) already owned the clock and hid itself once the game
+ended; it now renders `GameFinishedPill` in its place — a top-bar pill whose popover says the game has ended and offers
+the dashboard (`resetBootstrap()` + `navigate("/")`, the path the old modal's "Go back home" took), where the review,
+standings and rewards already live. The map stays reachable behind it. Deleted: `EndgameModal` (its dismissal storage
+reads, its debug flag and its in-game copy of the landing's `GameReviewModal`) and `GameIsOverModal`, which had no other
+user; the `endgame-*` CSS stays because the landing's review modal shares it.
+
+**Gate.** Headless on game 16 (finished): the pill renders where the timer was, its popover reads "This game has ended …
+Go to the review", and no `pointer-events-auto` element covers the viewport while it is open (the artifact's first
+complaint) — screenshot `scratchpad/screens/p4s5-after-game-finished-pill.png`.
+`play-view.review-autopen.source.test.ts` now pins the pill instead of the modal pair (its `handleClaimRewards`
+assertion stays the documented pre-existing red); `overlay-surfaces.source.test.ts` asserts both files and names stay
+gone; world containers, layouts and discipline suites green; typecheck clean; knip clean. LOC: +77 −240.
+
+**Ruling taken, review me.** The in-game "Watch review" step is gone: the review lives on the dashboard (the landing's
+own `GameReviewModal`, half one's territory), so the pill points there rather than re-hosting that modal in the HUD.
+
 ## Procedural terrain
 
 PR #4903 (procedural terrain and armies) and PR #4905 (ecology and living roads) are merged onto the phase-1 layout
