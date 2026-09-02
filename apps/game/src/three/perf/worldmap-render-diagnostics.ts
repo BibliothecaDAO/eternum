@@ -91,6 +91,9 @@ export type WorldmapRenderCounter =
   | "armyRenderIntegrityHealStalePosition"
   | "armyRenderIntegrityHealDuplicateOwner"
   | "armyInstanceCapacityOverflow"
+  | "structureInstanceCapacityOverflow"
+  | "css2dLabelRenders"
+  | "reservedSiteRebuilds"
   | "biomeMismatchCount"
   | "frameBudgetLongTasks"
   | "worldBiomeSurfaceCommits"
@@ -234,6 +237,9 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     armyRenderIntegrityHealStalePosition: 0,
     armyRenderIntegrityHealDuplicateOwner: 0,
     armyInstanceCapacityOverflow: 0,
+    structureInstanceCapacityOverflow: 0,
+    css2dLabelRenders: 0,
+    reservedSiteRebuilds: 0,
     biomeMismatchCount: 0,
     frameBudgetLongTasks: 0,
     worldBiomeSurfaceCommits: 0,

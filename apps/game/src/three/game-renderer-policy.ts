@@ -251,7 +251,7 @@ export function resolveLabelRenderIntervalMs(view: LabelRenderView, isMobileDevi
   const baseInterval = (() => {
     switch (view) {
       case "close":
-        return 0;
+        return 16;
       case "medium":
         return 33;
       case "far":
@@ -263,10 +263,6 @@ export function resolveLabelRenderIntervalMs(view: LabelRenderView, isMobileDevi
 
   if (!isMobileDevice) {
     return baseInterval;
-  }
-
-  if (baseInterval === 0) {
-    return 33;
   }
 
   return Math.round(baseInterval * 1.5);

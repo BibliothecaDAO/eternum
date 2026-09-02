@@ -14,6 +14,12 @@ import {
   TextureLoader,
   Vector3,
 } from "three";
+import {
+  createSlotDirtyRange,
+  flushSlotDirtyRange,
+  markSlotDirty,
+  type SlotDirtyRange,
+} from "../utils/instance-update-ranges";
 
 export type StrategicStructureMarkerKind = "realm" | "village" | "hyperstructure" | "bank" | "mine";
 export type StrategicArmyMarkerTier = "T1" | "T2" | "T3";
@@ -31,8 +37,7 @@ interface MarkerPool {
   readonly positions: Float32Array;
   readonly slotByEntity: Map<number, number>;
   readonly entityBySlot: number[];
-  dirtyMax: number;
-  dirtyMin: number;
+  readonly dirty: SlotDirtyRange;
 }
 
 interface MarkerPoolSpec {
@@ -155,7 +160,10 @@ export class StrategicMarkerLayer {
     this.orientation.copy(next);
     this.forEachPool((pool) => {
       for (let slot = 0; slot < pool.entityBySlot.length; slot += 1) this.writeMatrix(pool, slot);
-      if (pool.entityBySlot.length > 0) this.markDirty(pool, 0, pool.entityBySlot.length - 1);
+      if (pool.entityBySlot.length > 0) {
+        markSlotDirty(pool.dirty, 0);
+        markSlotDirty(pool.dirty, pool.entityBySlot.length - 1);
+      }
     });
   }
 
@@ -165,16 +173,7 @@ export class StrategicMarkerLayer {
     this.forEachPool((pool) => {
       pool.mesh.count = pool.entityBySlot.length;
       if (pool.mesh.count > 0 && pool.mesh.material.map) drawCalls += 1;
-      if (pool.dirtyMin > pool.dirtyMax) return;
-      const count = pool.dirtyMax - pool.dirtyMin + 1;
-      pool.mesh.instanceMatrix.addUpdateRange(pool.dirtyMin * 16, count * 16);
-      pool.mesh.instanceMatrix.needsUpdate = true;
-      const colors = requireInstanceColors(pool.mesh);
-      colors.addUpdateRange(pool.dirtyMin * 3, count * 3);
-      colors.needsUpdate = true;
-      uploaded += count;
-      pool.dirtyMin = Number.POSITIVE_INFINITY;
-      pool.dirtyMax = -1;
+      uploaded += flushSlotDirtyRange(pool.dirty, [pool.mesh.instanceMatrix, requireInstanceColors(pool.mesh)]);
     });
     this.metrics.commits += 1;
     this.metrics.uploadedInstances += uploaded;
@@ -227,8 +226,7 @@ export class StrategicMarkerLayer {
     });
     this.object3d.add(mesh);
     return {
-      dirtyMax: -1,
-      dirtyMin: Number.POSITIVE_INFINITY,
+      dirty: createSlotDirtyRange(),
       entityBySlot: [],
       mesh,
       positions: new Float32Array(spec.capacity * 2),
@@ -250,7 +248,7 @@ export class StrategicMarkerLayer {
     pool.positions[slot * 2 + 1] = z;
     this.writeMatrix(pool, slot);
     pool.mesh.setColorAt(slot, color);
-    this.markDirty(pool, slot, slot);
+    markSlotDirty(pool.dirty, slot);
   }
 
   /** Swap-remove keeps every pool dense so `count` is the live instance count. */
@@ -267,7 +265,7 @@ export class StrategicMarkerLayer {
       this.writeMatrix(pool, slot);
       const colors = requireInstanceColors(pool.mesh);
       colors.setXYZ(slot, colors.getX(lastSlot), colors.getY(lastSlot), colors.getZ(lastSlot));
-      this.markDirty(pool, slot, slot);
+      markSlotDirty(pool.dirty, slot);
     }
     pool.entityBySlot.pop();
     pool.slotByEntity.delete(entityId);
@@ -280,11 +278,6 @@ export class StrategicMarkerLayer {
     this.scratchMatrix.compose(this.scratchPosition, this.orientation, this.scratchScale);
     void size;
     pool.mesh.setMatrixAt(slot, this.scratchMatrix);
-  }
-
-  private markDirty(pool: MarkerPool, from: number, to: number): void {
-    pool.dirtyMin = Math.min(pool.dirtyMin, from);
-    pool.dirtyMax = Math.max(pool.dirtyMax, to);
   }
 
   private forEachPool(visit: (pool: MarkerPool) => void): void {

@@ -11,12 +11,12 @@ import {
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 describe("resolveLabelRenderIntervalMs", () => {
-  it("returns close-view cadence for desktop", () => {
-    expect(resolveLabelRenderIntervalMs("close", false)).toBe(0);
+  it("floors the close-view cadence at one frame on desktop", () => {
+    expect(resolveLabelRenderIntervalMs("close", false)).toBe(16);
   });
 
-  it("applies mobile floor cadence for close view", () => {
-    expect(resolveLabelRenderIntervalMs("close", true)).toBe(33);
+  it("scales the close-view floor on mobile", () => {
+    expect(resolveLabelRenderIntervalMs("close", true)).toBe(24);
   });
 
   it("scales medium cadence on mobile", () => {

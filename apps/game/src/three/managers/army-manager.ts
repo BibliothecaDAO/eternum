@@ -1174,7 +1174,7 @@ export class ArmyManager {
   private updateVisibleArmyBuffers(): void {
     this.compactVisibleArmySlots();
     this.syncVisibleSlots();
-    this.armyModel.updateAllInstances();
+    this.armyModel.flushInstanceUploads();
     // Defer bounds computation until after instance matrices are flushed
     // to prevent frustum culling mismatches at chunk edges
     this.armyModel.requestBoundsUpdate();
@@ -2500,6 +2500,7 @@ export class ArmyManager {
     // This consolidates point icons, compact labels, and attachment transforms.
     this.updateVisibleArmiesBatched();
     this.syncArmyBoundsForMovementState();
+    this.armyModel.flushInstanceUploads();
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2980,7 +2981,7 @@ export class ArmyManager {
       .map((id) => this.armyPresentations.get(id))
       .filter((army): army is ArmyData => Boolean(army));
 
-    this.armyModel.updateAllInstances();
+    this.armyModel.flushInstanceUploads();
     this.syncVisibleSlots();
     this.frustumVisibilityDirty = true;
   }

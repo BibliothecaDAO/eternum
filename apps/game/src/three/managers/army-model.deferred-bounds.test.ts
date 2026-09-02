@@ -55,7 +55,7 @@ describe("ArmyModel deferred bounds", () => {
     expect(bodyAfterMethod).toContain("this.hasPendingBounds = true");
   });
 
-  it("bounds are applied after updateAllInstances in updateVisibleArmyBuffers", () => {
+  it("bounds are applied after flushInstanceUploads in updateVisibleArmyBuffers", () => {
     const source = readSource("./army-manager.ts");
 
     // Find updateVisibleArmyBuffers and verify ordering
@@ -64,7 +64,7 @@ describe("ArmyModel deferred bounds", () => {
 
     const bodyAfterMethod = source.substring(methodStart);
 
-    const updateAllIdx = bodyAfterMethod.indexOf("updateAllInstances()");
+    const updateAllIdx = bodyAfterMethod.indexOf("flushInstanceUploads()");
     const requestBoundsIdx = bodyAfterMethod.indexOf("requestBoundsUpdate()");
     const applyBoundsIdx = bodyAfterMethod.indexOf("applyPendingBounds()");
 
@@ -72,7 +72,7 @@ describe("ArmyModel deferred bounds", () => {
     expect(requestBoundsIdx).toBeGreaterThan(-1);
     expect(applyBoundsIdx).toBeGreaterThan(-1);
 
-    // Ordering: updateAllInstances → requestBoundsUpdate → applyPendingBounds
+    // Ordering: flushInstanceUploads → requestBoundsUpdate → applyPendingBounds
     expect(updateAllIdx).toBeLessThan(requestBoundsIdx);
     expect(requestBoundsIdx).toBeLessThan(applyBoundsIdx);
   });

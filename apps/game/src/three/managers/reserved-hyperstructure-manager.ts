@@ -1,9 +1,10 @@
 import { ReservedHyperstructureModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import type { StructureSpatialProjectionChange, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { type HexPosition } from "@bibliothecadao/types";
 import { Color, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene } from "three";
+import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
@@ -12,6 +13,10 @@ const RESERVED_HYPERSTRUCTURE_CAPACITY = 128;
 const RESERVED_HYPERSTRUCTURE_COLOR = new Color(0xf3cc5b);
 const RESERVED_HYPERSTRUCTURE_OPACITY = 0.42;
 const RESERVED_HYPERSTRUCTURE_Y_OFFSET = 0.05;
+
+/** Ordinary structure churn never touches the reserved instances; only a reserved site appearing, moving or being claimed does. */
+export const changesTouchReservedSites = (changes: readonly StructureSpatialProjectionChange[]): boolean =>
+  changes.some((change) => change.previous?.reserved === true || change.current?.reserved === true);
 
 const cloneReservedHyperstructureMaterial = (material: Material) => {
   const cloned = material.clone();
@@ -54,7 +59,8 @@ export class ReservedHyperstructureManager {
     private readonly worldSpatialProjection: WorldSpatialProjection,
     private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
   ) {
-    this.unsubscribeProjection = worldSpatialProjection.subscribeStructures(() => {
+    this.unsubscribeProjection = worldSpatialProjection.subscribeStructures((changes) => {
+      if (!changesTouchReservedSites(changes)) return;
       this.renderReservedHyperstructures();
     });
     void this.loadModel();
@@ -110,6 +116,7 @@ export class ReservedHyperstructureManager {
       return;
     }
 
+    incrementWorldmapRenderCounter("reservedSiteRebuilds");
     const entries = this.getReservedHyperstructureHexes();
     const previousCount = reservedHyperstructureModel.getCount();
 

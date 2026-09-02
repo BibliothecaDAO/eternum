@@ -4,7 +4,11 @@ import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
-import { recordWorldmapRenderDuration, setWorldmapRenderGauge } from "@/three/perf/worldmap-render-diagnostics";
+import {
+  incrementWorldmapRenderCounter,
+  recordWorldmapRenderDuration,
+  setWorldmapRenderGauge,
+} from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import {
   EMPTY_LABEL_PRIORITY_CONTEXT,
@@ -119,7 +123,9 @@ import {
 // Fixed buffer capacity per structure model — buffers never grow (InstancedModel
 // refuses overflow loudly), so this is sized to the worst-case count of one
 // structure type in a render area, not a growth seed.
-const STRUCTURE_INSTANCE_CAPACITY = 512;
+// Fixed per model (buffers never grow, see InstancedModel). Sized from the game cap: 96 players times the
+// largest per-player structure class (six Eternum villages) plus the reserved sites, matching the army capacity.
+const STRUCTURE_INSTANCE_CAPACITY = 1024;
 const WONDER_MODEL_INDEX = 4;
 // A full window refresh is sliced into tasks of this size so it never owns a whole frame.
 const FULL_REFRESH_SLICE_BUDGET_MS = 6;
@@ -157,6 +163,9 @@ interface StructureInstanceBinding {
   instanceIndex: number;
   model: InstancedModel;
 }
+
+const isBoundStructureInstance = (binding: StructureInstanceBinding | undefined): binding is StructureInstanceBinding =>
+  binding !== undefined;
 
 interface VisibleStructureRefreshOptions {
   refreshEntityIds?: Iterable<ID>;
@@ -224,6 +233,7 @@ export class StructureManager {
   private structureInstanceBindings: Map<ID, StructureInstanceBinding[]> = new Map();
   private structureInstanceSlots: Map<InstancedModel, Array<ID | undefined>> = new Map();
   private structureInstanceFreeSlots: Map<InstancedModel, number> = new Map();
+  private hasWarnedStructureCapacityOverflow = false;
   private structureModelDrawCounts: Map<InstancedModel, number> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
@@ -1713,7 +1723,7 @@ export class StructureManager {
       }
     }
 
-    return bindings;
+    return bindings.filter(isBoundStructureInstance);
   }
 
   private addVisibleCosmeticStructureInstances(
@@ -1727,7 +1737,9 @@ export class StructureManager {
     }
 
     const entityIdsByInstance = this.getOrCreateCosmeticEntityIdMap(cosmeticId);
-    return [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
+    return [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)].filter(
+      isBoundStructureInstance,
+    );
   }
 
   private bindStructureInstance(
@@ -1735,11 +1747,12 @@ export class StructureManager {
     entityId: ID,
     entityIdsByInstance: Map<number, ID>,
     dirtyModels: Set<InstancedModel>,
-  ): StructureInstanceBinding {
+  ): StructureInstanceBinding | undefined {
     const slots = this.structureInstanceSlots.get(model) ?? [];
     const instanceIndex = this.takeFreeStructureInstanceSlot(model, slots);
     if (instanceIndex >= STRUCTURE_INSTANCE_CAPACITY) {
-      throw new Error(`Structure instance capacity exceeded for entity ${entityId}`);
+      this.refuseStructureInstanceOverflow(entityId);
+      return undefined;
     }
 
     slots[instanceIndex] = entityId;
@@ -1749,6 +1762,16 @@ export class StructureManager {
     dirtyModels.add(model);
 
     return { entityIdsByInstance, instanceIndex, model };
+  }
+
+  // An overflow is a sizing bug, not a runtime condition: count it, warn once, and keep the pass alive.
+  private refuseStructureInstanceOverflow(entityId: ID): void {
+    incrementWorldmapRenderCounter("structureInstanceCapacityOverflow");
+    if (this.hasWarnedStructureCapacityOverflow) return;
+    this.hasWarnedStructureCapacityOverflow = true;
+    console.error(
+      `[StructureManager] entity ${entityId} exceeds the fixed structure instance capacity ${STRUCTURE_INSTANCE_CAPACITY}; refusing the instance`,
+    );
   }
 
   private takeFreeStructureInstanceSlot(model: InstancedModel, slots: Array<ID | undefined>): number {

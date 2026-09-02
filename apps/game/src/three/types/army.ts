@@ -1,4 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
+import type { SlotDirtyRange } from "../utils/instance-update-ranges";
 import {
   Vector3,
   Euler,
@@ -100,6 +101,8 @@ export interface ModelData {
     }
   >;
   activeInstances: Set<number>;
+  /** Slots written since the last upload flush. */
+  dirtySlots: SlotDirtyRange;
   targetScales: Map<number, Vector3>;
   currentScales: Map<number, Vector3>;
   lastAnimationUpdate: number;

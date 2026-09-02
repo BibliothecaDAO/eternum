@@ -23,6 +23,7 @@ import {
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
+import { createSlotDirtyRange, flushSlotDirtyRange, markSlotDirty } from "../utils/instance-update-ranges";
 import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
@@ -76,17 +77,12 @@ import { findAnimationByName } from "./animation-clip-matcher";
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
 
-const markArmyModelAttributesDirty = (modelData: ModelData): void => {
-  modelData.instancedMeshes.forEach((mesh) => {
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) {
-      mesh.instanceColor.needsUpdate = true;
-    }
-  });
-
-  if (modelData.contactShadowMesh) {
-    modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-  }
+// One upload range over the touched slot span, so a one-army write never re-uploads every buffer.
+const flushArmyModelSlotUploads = (modelData: ModelData): void => {
+  flushSlotDirtyRange(modelData.dirtySlots, [
+    ...modelData.instancedMeshes.flatMap((mesh) => [mesh.instanceMatrix, mesh.instanceColor]),
+    modelData.contactShadowMesh?.instanceMatrix,
+  ]);
 };
 
 export class ArmyModel {
@@ -432,6 +428,7 @@ export class ArmyModel {
       },
       animationActions: new Map(),
       activeInstances: new Set(),
+      dirtySlots: createSlotDirtyRange(),
       targetScales: new Map(),
       currentScales: new Map(),
       lastAnimationUpdate: 0,
@@ -631,13 +628,10 @@ export class ArmyModel {
   private clearModelSlot(modelData: ModelData, matrixIndex: number): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      mesh.instanceMatrix.needsUpdate = true;
       mesh.userData.entityIdMap?.delete(matrixIndex);
     });
-    if (modelData.contactShadowMesh) {
-      modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
-      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
-    }
+    modelData.contactShadowMesh?.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+    markSlotDirty(modelData.dirtySlots, matrixIndex);
   }
 
   // Instance Management Methods
@@ -1141,11 +1135,9 @@ export class ArmyModel {
   ): void {
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
-      mesh.instanceMatrix.needsUpdate = true;
 
       if (color && mesh.instanceColor) {
         mesh.setColorAt(index, color);
-        mesh.instanceColor.needsUpdate = true;
       }
 
       mesh.userData.entityIdMap = mesh.userData.entityIdMap || new Map<number, number>();
@@ -1170,8 +1162,8 @@ export class ArmyModel {
         this.contactShadowMatrix.setPosition(position.x, baseY + CONTACT_SHADOW_Y_OFFSET, position.z);
         modelData.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
       }
-      modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
     }
+    markSlotDirty(modelData.dirtySlots, index);
   }
 
   // Animation Methods
@@ -2414,9 +2406,10 @@ export class ArmyModel {
     });
   }
 
-  public updateAllInstances(): void {
-    this.models.forEach(markArmyModelAttributesDirty);
-    this.cosmeticModels.forEach(markArmyModelAttributesDirty);
+  /** Queues the GPU upload of every slot written since the last flush; called once per frame and after a buffer rebuild. */
+  public flushInstanceUploads(): void {
+    this.models.forEach(flushArmyModelSlotUploads);
+    this.cosmeticModels.forEach(flushArmyModelSlotUploads);
   }
 
   public setVisibleSlots(slots: Iterable<number>): void {
