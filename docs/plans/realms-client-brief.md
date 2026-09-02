@@ -540,6 +540,15 @@ structure full pass is sliced or bounded so no single owner share exceeds the fr
 owner's machine: far and mid band p95 ≤ 16.7 ms with far-band draws ≤ 60 and triangles ≤ 2 M; close band no worse than
 today and zero unsplit long tasks — the close-view content cost then feeds L5 items 4–8.
 
+Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
+~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
+agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
+`worldmap-zoom/`, `worldmap-store-bridge`, `worldmap-critical-manager-catchup-runtime`); the remaining cut lines are the
+frame-owner seams (hover, structure pass, projection intake, boot/handoff). Rules: move-only commits separated from any
+logic change; each extracted module owns its tests with no private cross-imports; the gate is that the scene file's top
+level reads as an outline per the repo's Clean Code Standard (line count ≤ ~1,500 as the smell proxy, not the goal).
+Runs after L5b and may overlap Phase 4's UI-layer steps, never L5b itself.
+
 ### Order
 
 M → L1 + L2 (deletions, the amplification ratio) → L3 + L4 (fan-out) → L5 items 1–3 → half four (which carries L6) → L5
