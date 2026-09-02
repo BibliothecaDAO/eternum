@@ -1,3 +1,4 @@
+import { requestFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { getCurrentFrameWorkOwner, runWithFrameWorkOwner } from "./frame-work-owner";
 
 export type FrameBudgetWorkLane = "critical" | "visible" | "prefetch";
@@ -28,8 +29,8 @@ interface FrameBudgetWorkQueueOptions {
   loadingFrameBudgetMs?: number;
   isLoading?: () => boolean;
   now?: () => number;
-  requestFrame?: (callback: FrameRequestCallback) => number;
-  cancelFrame?: (handle: number) => void;
+  /** Requests the next drain; returns its cancel. Defaults to the next frame or a timer when frames stop. */
+  requestDrain?: (callback: () => void) => () => void;
   onLongTask?: (task: { durationMs: number; owner: string }) => void;
 }
 
@@ -40,6 +41,7 @@ interface QueuedWork {
 }
 
 const DEFAULT_FRAME_BUDGET_MS = 6;
+const DRAIN_FRAME_FALLBACK_MS = 100;
 const LOADING_FRAME_BUDGET_MS = 24;
 const CRITICAL_BURST_LIMIT = 8;
 const VISIBLE_BURST_LIMIT = 4;
@@ -74,10 +76,9 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   private readonly loadingFrameBudgetMs: number;
   private readonly isLoading: () => boolean;
   private readonly now: () => number;
-  private readonly requestFrame: (callback: FrameRequestCallback) => number;
-  private readonly cancelFrame: (handle: number) => void;
+  private readonly requestDrainCallback: (callback: () => void) => () => void;
   private readonly onLongTask?: (task: { durationMs: number; owner: string }) => void;
-  private frameHandle: number | null = null;
+  private cancelDrainRequest: (() => void) | null = null;
   private isDraining = false;
   private isDisposed = false;
   private consecutiveCriticalTasks = 0;
@@ -88,8 +89,8 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     this.loadingFrameBudgetMs = options.loadingFrameBudgetMs ?? LOADING_FRAME_BUDGET_MS;
     this.isLoading = options.isLoading ?? (() => false);
     this.now = options.now ?? (() => performance.now());
-    this.requestFrame = options.requestFrame ?? ((callback) => window.requestAnimationFrame(callback));
-    this.cancelFrame = options.cancelFrame ?? ((handle) => window.cancelAnimationFrame(handle));
+    this.requestDrainCallback =
+      options.requestDrain ?? ((callback) => requestFrameOrTimeout(callback, DRAIN_FRAME_FALLBACK_MS));
     this.onLongTask = options.onLongTask;
   }
 
@@ -122,9 +123,9 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     }
 
     this.isDisposed = true;
-    if (this.frameHandle !== null) {
-      this.cancelFrame(this.frameHandle);
-      this.frameHandle = null;
+    if (this.cancelDrainRequest !== null) {
+      this.cancelDrainRequest();
+      this.cancelDrainRequest = null;
     }
 
     const error = new FrameBudgetWorkQueueDisposedError();
@@ -134,12 +135,12 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   }
 
   private requestDrain(): void {
-    if (this.isDisposed || this.isDraining || this.frameHandle !== null || !this.hasPendingWork()) {
+    if (this.isDisposed || this.isDraining || this.cancelDrainRequest !== null || !this.hasPendingWork()) {
       return;
     }
 
-    this.frameHandle = this.requestFrame(() => {
-      this.frameHandle = null;
+    this.cancelDrainRequest = this.requestDrainCallback(() => {
+      this.cancelDrainRequest = null;
       void this.drainFrame();
     });
   }

@@ -14,6 +14,7 @@ import {
   updateComponent,
 } from "@dojoengine/recs";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
+import { requestFrameOrTimeout } from "@/utils/frame-or-timeout";
 
 type ValueCoercer = (value: unknown) => unknown;
 type AuthoritativeComponent = Component<Schema, Metadata, undefined>;
@@ -221,28 +222,6 @@ const GAME_SYNC_FRAME_FALLBACK_MS = 100;
 
 export const createBrowserScheduler = (): NonNullable<GameSyncSessionStart["scheduler"]> => ({
   schedule(task) {
-    let active = true;
-    let frame: number | undefined;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const runIngestSlice = () => {
-      if (!active) return;
-      active = false;
-      if (frame !== undefined) cancelAnimationFrame(frame);
-      if (timeout !== undefined) clearTimeout(timeout);
-      runWithFrameWorkOwner("sync:ingest", task);
-    };
-
-    if (typeof requestAnimationFrame === "function" && typeof cancelAnimationFrame === "function") {
-      frame = requestAnimationFrame(runIngestSlice);
-      timeout = setTimeout(runIngestSlice, GAME_SYNC_FRAME_FALLBACK_MS);
-    } else {
-      timeout = setTimeout(runIngestSlice, 0);
-    }
-
-    return () => {
-      active = false;
-      if (frame !== undefined) cancelAnimationFrame(frame);
-      if (timeout !== undefined) clearTimeout(timeout);
-    };
+    return requestFrameOrTimeout(() => runWithFrameWorkOwner("sync:ingest", task), GAME_SYNC_FRAME_FALLBACK_MS);
   },
 });

@@ -11,17 +11,16 @@ function createHarness(
 ) {
   let now = 0;
   let nextFrameId = 1;
-  const frames = new Map<number, FrameRequestCallback>();
+  const frames = new Map<number, () => void>();
   const queue = new FrameBudgetWorkQueue({
     isLoading: options.isLoading,
     onLongTask: options.onLongTask,
     now: () => now,
-    requestFrame: (callback) => {
+    requestDrain: (callback) => {
       const id = nextFrameId++;
       frames.set(id, callback);
-      return id;
+      return () => frames.delete(id);
     },
-    cancelFrame: (id) => frames.delete(id),
   });
 
   return {
@@ -31,7 +30,7 @@ function createHarness(
     flushFrame: async () => {
       const pending = [...frames.entries()];
       frames.clear();
-      pending.forEach(([, callback]) => callback(now));
+      pending.forEach(([, callback]) => callback());
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     },
     frameCount: () => frames.size,
@@ -142,7 +141,7 @@ describe("FrameBudgetWorkQueue", () => {
     await harness.flushFrame();
     await pending;
 
-    expect(consumeDominantFrameWorkOwner()).toBe("catchup:army");
+    expect(consumeDominantFrameWorkOwner()?.owner).toBe("catchup:army");
   });
 
   it("uses an explicit domain owner instead of the generic lane", async () => {
@@ -152,7 +151,7 @@ describe("FrameBudgetWorkQueue", () => {
     await harness.flushFrame();
     await pending;
 
-    expect(consumeDominantFrameWorkOwner()).toBe("terrain:visible-page-build");
+    expect(consumeDominantFrameWorkOwner()?.owner).toBe("terrain:visible-page-build");
   });
 
   it("reports long work through the bounded diagnostic callback without writing to the console", async () => {

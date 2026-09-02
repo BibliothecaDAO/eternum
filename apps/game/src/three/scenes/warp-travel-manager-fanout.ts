@@ -1,3 +1,5 @@
+import { runWithFrameWorkOwner } from "../frame-work-owner";
+
 export interface WarpTravelManagerFanoutOptions {
   force?: boolean;
   transitionToken?: number;
@@ -144,7 +146,9 @@ export async function runWarpTravelManagerFanout(input: {
   onManagerFailed?: (label: string, reason: unknown) => void;
 }): Promise<{ failedManagers: WarpTravelManagerFanoutFailure[] }> {
   const results = await Promise.allSettled(
-    input.managers.map((manager) => manager.updateChunk(input.chunkKey, input.options)),
+    input.managers.map((manager) =>
+      runWithFrameWorkOwner(`chunk:${manager.label}`, () => manager.updateChunk(input.chunkKey, input.options)),
+    ),
   );
 
   const failedManagers: WarpTravelManagerFanoutFailure[] = [];

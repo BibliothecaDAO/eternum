@@ -7301,7 +7301,7 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
-    this.armyManager.update(deltaTime, animationContext);
+    runWithFrameWorkOwner("armies:update", () => this.armyManager.update(deltaTime, animationContext));
     this.syncTerrainMovementInteractions();
     this.proceduralTerrain.update(deltaTime);
     this.combatPresentation?.update(deltaTime);
