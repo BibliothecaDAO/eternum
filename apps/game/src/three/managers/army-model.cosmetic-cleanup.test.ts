@@ -122,6 +122,7 @@ function createModelData() {
     },
     animationActions: new Map(),
     activeInstances: new Set<number>(),
+    dirtySlots: { min: Number.POSITIVE_INFINITY, max: -1 },
     lastAnimationUpdate: 0,
     animationUpdateInterval: 50,
     contactShadowMesh: null,
