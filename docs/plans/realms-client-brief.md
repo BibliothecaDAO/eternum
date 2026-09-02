@@ -622,6 +622,15 @@ typecheck clean; the max-out screenshot shows real terrain over the full-world b
 deployed from this tip.** The owner's four live checks (art at max-out + rf(), one army representation, minimap on load,
 second-load WebGPU) close the phase; Phase 4 steps 1+2 then proceed.
 
+**L5 CLOSED by owner acceptance (2026-09-02).** All four live checks passed on the deployed build: zoom-out stops at the
+mid band over the full-world biome underlay with real art and no void; exactly one model per army; the minimap matches
+the camera on load; and max-out reads **p50 12.1 / p95 24.6 ms** (from 61/176 at the L5b baseline). The one open
+curiosity is parked by owner ruling ("let's keep the GPU for ourselves"): even the patient 5 s idle re-probe records
+`idle:adapter-timeout` while a manual console `requestAdapter()` resolves instantly — WebGL2 remains the lane, the
+soft-verdict machinery stays in place harmlessly, and the WebGPU chase stops here. Remaining perf levers (label atlas
+item 6, compile prewarm half two class 1) stay queued on their own merits. **Phase 4 (Command Deck) steps 1+2 are now
+the open track**, with the worldmap decomposition cleared to run alongside.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
