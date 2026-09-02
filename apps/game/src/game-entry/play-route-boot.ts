@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { type IdentitySessionStatus, useIdentitySession } from "@/hooks/context/identity-session";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type BootstrapTask, useGameEntryBootstrapController } from "@/game-entry/bootstrap-controller";
 import { getGameModeId } from "@/config/game-modes";
@@ -13,7 +14,6 @@ import { useLocation } from "react-router-dom";
 import { resolvePlayBootRequest, type ResolvedPlayBootRequest } from "./play-route-boot-request";
 import { usePlayRouteReadinessStore } from "./play-route-readiness-store";
 
-const PLAY_ROUTE_RECONNECT_GRACE_MS = 4000;
 const READ_ONLY_SPECTATOR_ACCOUNT = {
   address: "0x0",
   execute: async () => {
@@ -78,7 +78,7 @@ export type PlayRouteBootPhase =
   | "reconnect_required"
   | "error";
 
-export type PlayRouteReconnectStatus = "idle" | "restoring" | "connecting" | "failed" | "connected";
+type PlayRouteReconnectStatus = "idle" | "restoring" | "connecting" | "failed" | "connected";
 
 interface PlayRouteBootSnapshot {
   account: AccountInterface | null;
@@ -95,7 +95,6 @@ interface PlayRouteBootSnapshot {
 }
 
 interface PlayRouteBootControllerState extends PlayRouteBootSnapshot {
-  connectWallet: () => void;
   isReconnectRequired: boolean;
   retry: () => void;
 }
@@ -228,8 +227,22 @@ const resolveBootProgress = ({
   return bootstrapProgress;
 };
 
-const resolveReconnectStatus = ({ hasResolvedAccount }: { hasResolvedAccount: boolean }): PlayRouteReconnectStatus => {
-  return hasResolvedAccount ? "connected" : "idle";
+// The identity session is the fact: anonymous means no gameplay account is coming, signed-in means one is being
+// restored, and a provisioning error is the failure — no grace timer guesses in between.
+const resolveReconnectStatus = ({
+  hasResolvedAccount,
+  identityStatus,
+  provisioningError,
+}: {
+  hasResolvedAccount: boolean;
+  identityStatus: IdentitySessionStatus;
+  provisioningError: string | null;
+}): PlayRouteReconnectStatus => {
+  if (hasResolvedAccount) return "connected";
+  if (provisioningError) return "failed";
+  if (identityStatus === "loading") return "connecting";
+  if (identityStatus === "signed-in") return "restoring";
+  return "idle";
 };
 
 const resolveAccountTask = (reconnectStatus: PlayRouteReconnectStatus): BootstrapTask => {
@@ -253,6 +266,7 @@ export const usePlayRouteBootSnapshot = () => usePlayRouteBootStore();
 export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const location = useLocation();
   const gameplayAccount = useAccountStore((state) => state.account);
+  const { status: identityStatus } = useIdentitySession();
   const setShowBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const entryContext = useMemo(() => resolveEntryContextFromPlayRoute(location), [location.pathname, location.search]);
   const canonicalEntry = useMemo(() => resolveCanonicalPlayEntry(entryContext), [entryContext]);
@@ -274,7 +288,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     [fastTravelEnabled, location.pathname, location.search],
   );
   const [bootToken, setBootToken] = useState(0);
-  const [hasReconnectGraceElapsed, setHasReconnectGraceElapsed] = useState(false);
   const readiness = usePlayRouteReadinessStore();
   const nextBootTokenRef = useRef(0);
   const previousEntryRef = useRef<CanonicalPlayEntry | null>(null);
@@ -308,38 +321,18 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     return gameplayAccount ?? null;
   }, [gameplayAccount, resolvedRequest?.entryMode]);
 
+  const reconnectError = useAccountStore((state) => state.provisioningError);
   const reconnectStatus = resolveReconnectStatus({
     hasResolvedAccount: resolvedAccount !== null,
+    identityStatus,
+    provisioningError: reconnectError,
   });
-  const reconnectError = useAccountStore((state) => state.provisioningError);
-  const isAutomaticRestorePending = reconnectStatus === "restoring";
 
-  const shouldTrackReconnectGrace =
-    resolvedRequest?.entryMode === "player" && !resolvedAccount && !isAutomaticRestorePending;
-  useEffect(() => {
-    if (!shouldTrackReconnectGrace) {
-      setHasReconnectGraceElapsed(false);
-      return;
-    }
-
-    if (hasReconnectGraceElapsed) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setHasReconnectGraceElapsed(true);
-    }, PLAY_ROUTE_RECONNECT_GRACE_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [hasReconnectGraceElapsed, shouldTrackReconnectGrace, location.pathname, location.search]);
-
-  const connectWallet = useCallback(() => {
-    window.location.assign("/");
-  }, []);
-
-  const isReconnectRequired = shouldTrackReconnectGrace && hasReconnectGraceElapsed;
+  // A player route with no account and nothing restoring it needs the sign-in surface now.
+  const isReconnectRequired =
+    resolvedRequest?.entryMode === "player" &&
+    !resolvedAccount &&
+    (reconnectStatus === "idle" || reconnectStatus === "failed");
   const phase = resolveBootPhase({
     bootstrapError: bootstrap.error,
     bootstrapStatus: bootstrap.status,
@@ -407,7 +400,6 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
 
   return {
     ...snapshot,
-    connectWallet,
     isReconnectRequired,
     retry: bootstrap.retry,
   };

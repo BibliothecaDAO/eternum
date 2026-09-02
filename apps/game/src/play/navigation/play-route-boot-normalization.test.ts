@@ -12,13 +12,13 @@ describe("normalizePlayBootLocation", () => {
     ).toBe("/play/appchain/aurora-blitz/map?col=4&row=9&boot=map-first&resumeScene=hex");
   });
 
-  it("does not rewrite spectator routes into map-first boot routes", () => {
+  it("rewrites spectator hex routes into map-first boot routes too, keeping the spectate flag", () => {
     expect(
       normalizePlayBootLocation({
         pathname: "/play/appchain/aurora-blitz/hex",
         search: "?col=4&row=9&spectate=true",
       }),
-    ).toBeNull();
+    ).toBe("/play/appchain/aurora-blitz/map?col=4&row=9&spectate=true&boot=map-first&resumeScene=hex");
   });
 
   it("does not rewrite in-progress map-first handoff routes back to the world map", () => {

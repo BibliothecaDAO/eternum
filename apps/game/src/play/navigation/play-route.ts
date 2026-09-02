@@ -1,7 +1,7 @@
 import type { GameChain as Chain } from "@realms-world/chain";
 
 import type { WorldProfile } from "@/runtime/world/types";
-import { hasSpectateQuery } from "@/utils/spectator-session";
+import { hasSpectateQuery, isExplicitSpectateSession } from "@/utils/spectator-session";
 
 export type PlayScene = "map" | "hex" | "travel";
 type EntryIntent = "play" | "settle" | "spectate";
@@ -17,7 +17,10 @@ export interface PlayRouteDescriptor {
   resumeScene?: PlayScene | null;
 }
 
-/** A play href may carry the spectate flag; the parsed route never does — `utils/spectator-session` owns that fact. */
+/**
+ * A play href carries the spectate flag; the parsed route never does — `utils/spectator-session` owns that fact.
+ * A builder that does not say otherwise writes the session's intent, so no navigation can drop it.
+ */
 type PlayHrefInput = PlayRouteDescriptor & { spectate?: boolean };
 
 interface EntryRouteDescriptor {
@@ -83,6 +86,7 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
 };
 
 export const buildPlayHref = (route: PlayHrefInput): string => {
+  const spectate = route.spectate ?? isExplicitSpectateSession();
   const bootMode = route.bootMode ?? "direct";
   const resumeScene = bootMode === "map-first" ? (route.resumeScene ?? null) : null;
   const searchParams = new URLSearchParams();
@@ -95,7 +99,7 @@ export const buildPlayHref = (route: PlayHrefInput): string => {
     searchParams.set("row", String(route.row));
   }
 
-  if (route.spectate) {
+  if (spectate) {
     searchParams.set("spectate", "true");
   }
 

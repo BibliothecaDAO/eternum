@@ -24,6 +24,15 @@ vi.mock("@/config/game-modes", () => ({
   getGameModeId: () => "eternum",
 }));
 
+const identityState: { status: "loading" | "anonymous" | "signed-in"; session: null } = {
+  status: "signed-in",
+  session: null,
+};
+
+vi.mock("@/hooks/context/identity-session", () => ({
+  useIdentitySession: () => identityState,
+}));
+
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (selector: (state: typeof accountStoreState) => unknown) => selector(accountStoreState),
 }));
@@ -131,6 +140,7 @@ describe("usePlayRouteBootController", () => {
     uiStoreState.showBlankOverlay = false;
     accountStoreState.account = null;
     accountStoreState.provisioningError = null;
+    identityState.status = "signed-in";
     latestBootController = null;
     navigate = null;
     usePlayRouteReadinessStore.getState().reset(0);
@@ -321,18 +331,34 @@ describe("usePlayRouteBootController", () => {
     });
   });
 
-  it("surfaces gameplay account provisioning failures after reconnect grace", async () => {
-    vi.useFakeTimers();
+  it("surfaces a gameplay account provisioning failure at once, with no grace timer", async () => {
     accountStoreState.provisioningError = "account class is not declared";
 
     await renderPlayerRoute();
-    await advanceTimers(10_000);
 
     expect(latestBootController).toMatchObject({
       isReconnectRequired: true,
       phase: "reconnect_required",
       reconnectError: "account class is not declared",
+      reconnectStatus: "failed",
+    });
+  });
+
+  it("asks an anonymous identity to sign in at once, and keeps waiting while a session restores its account", async () => {
+    identityState.status = "anonymous";
+    await renderPlayerRoute();
+    expect(latestBootController).toMatchObject({
+      isReconnectRequired: true,
+      phase: "reconnect_required",
       reconnectStatus: "idle",
+    });
+
+    identityState.status = "signed-in";
+    await renderPlayerRoute();
+    expect(latestBootController).toMatchObject({
+      isReconnectRequired: false,
+      phase: "await_account",
+      reconnectStatus: "restoring",
     });
   });
 });

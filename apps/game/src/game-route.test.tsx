@@ -34,6 +34,10 @@ vi.mock("./ui/shared", () => ({
   WorldLoading: () => <div>WorldLoading</div>,
 }));
 
+vi.mock("./ui/modules/identity/identity-login", () => ({
+  IdentityLogin: () => <div>IdentityLogin</div>,
+}));
+
 vi.mock("./ui/features/news-headlines", () => ({
   NewsHeadlineBridge: () => <div>NewsHeadlineBridge</div>,
 }));
@@ -110,13 +114,12 @@ describe("GameRoute", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("keeps direct play-route reconnect grace on the game route instead of redirecting home", async () => {
+  it("keeps a restoring account on the game route instead of redirecting home", async () => {
     usePlayRouteBootControllerMock.mockReturnValue({
       phase: "await_account",
       progress: 24,
       setupResult: null,
       account: null,
-      connectWallet: vi.fn(),
       retry: vi.fn(),
       isReconnectRequired: false,
       currentTask: null,
@@ -135,16 +138,15 @@ describe("GameRoute", () => {
     });
 
     expect(container.textContent).toContain("Charting the World");
-    expect(container.textContent).not.toContain("Reconnect to Continue");
+    expect(container.textContent).not.toContain("Sign in to Continue");
   });
 
-  it("renders an on-route reconnect screen for direct play routes after reconnect grace expires", async () => {
+  it("renders the on-route sign-in screen when no account is coming", async () => {
     usePlayRouteBootControllerMock.mockReturnValue({
       phase: "reconnect_required",
       progress: 0,
       setupResult: null,
       account: null,
-      connectWallet: vi.fn(),
       retry: vi.fn(),
       isReconnectRequired: true,
       currentTask: null,
@@ -162,7 +164,7 @@ describe("GameRoute", () => {
       );
     });
 
-    expect(container.textContent).toContain("Reconnect to Continue");
+    expect(container.textContent).toContain("Sign in to Continue");
   });
 
   it("shows automatic gameplay-account restoration as restoring", async () => {
@@ -171,7 +173,6 @@ describe("GameRoute", () => {
       progress: 0,
       setupResult: null,
       account: null,
-      connectWallet: vi.fn(),
       retry: vi.fn(),
       isReconnectRequired: false,
       currentTask: null,
@@ -190,7 +191,7 @@ describe("GameRoute", () => {
     });
 
     expect(container.textContent).toContain("Restoring gameplay account");
-    expect(container.textContent).not.toContain("Reconnect to Continue");
+    expect(container.textContent).not.toContain("Sign in to Continue");
   });
 
   it("keys the ready app by the active boot token so route rebootstrap remounts DojoProvider", () => {
@@ -213,7 +214,6 @@ describe("GameRoute", () => {
         },
       } as { network: { provider: typeof transactionProvider } } | null,
       account: { address: "0x123" } as { address: string } | null,
-      connectWallet: vi.fn(),
       retry: vi.fn(),
       isReconnectRequired: false,
       currentTask: "dojo",

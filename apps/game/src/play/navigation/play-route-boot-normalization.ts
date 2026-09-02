@@ -1,4 +1,4 @@
-import { resolveSpectateIntent } from "@/utils/spectator-session";
+import { isExplicitSpectateSession, resolveSpectateIntent } from "@/utils/spectator-session";
 import { buildPlayHref, parsePlayRoute, type PlayRouteDescriptor, type PlayScene } from "./play-route";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
@@ -8,6 +8,7 @@ const DEFAULT_PLAYER_RESUME_SCENE: PlayScene = "hex";
 const buildCanonicalMapFirstRoute = (
   route: PlayRouteDescriptor,
   resumeScene: PlayScene,
+  spectate: boolean,
   coordinates?: { col: number | null; row: number | null },
 ) => {
   return buildPlayHref({
@@ -15,35 +16,39 @@ const buildCanonicalMapFirstRoute = (
     scene: "map",
     col: coordinates?.col ?? route.col,
     row: coordinates?.row ?? route.row,
+    spectate,
     bootMode: "map-first",
     resumeScene,
   });
 };
 
-// Spectators open on the map directly; only a player's hex or travel entry boots map-first.
-const shouldBootMapFirst = (route: PlayRouteDescriptor, spectate: boolean): boolean => {
-  if (spectate) {
-    return false;
-  }
-
-  return route.scene === "hex" || route.scene === "travel";
-};
+// A hex or travel entry boots map-first for players and spectators alike: the world map readies first and hands
+// off, which is the only path a direct hex link completes on.
+const shouldBootMapFirst = (route: PlayRouteDescriptor): boolean => route.scene === "hex" || route.scene === "travel";
 
 const buildCanonicalPlayerBootHref = ({
   route,
   resumeScene,
+  spectate,
   coordinates,
 }: {
   route: PlayRouteDescriptor;
   resumeScene?: PlayScene | null;
+  spectate: boolean;
   coordinates?: { col: number | null; row: number | null };
 }): string => {
-  return buildCanonicalMapFirstRoute(route, resumeScene ?? route.scene ?? DEFAULT_PLAYER_RESUME_SCENE, coordinates);
+  return buildCanonicalMapFirstRoute(
+    route,
+    resumeScene ?? route.scene ?? DEFAULT_PLAYER_RESUME_SCENE,
+    spectate,
+    coordinates,
+  );
 };
 
 export const normalizePlayBootLocation = (location: LocationLike): string | null => {
   const route = parsePlayRoute(location);
-  if (!route || !shouldBootMapFirst(route, resolveSpectateIntent(location))) {
+  const spectate = resolveSpectateIntent(location);
+  if (!route || !shouldBootMapFirst(route)) {
     return null;
   }
 
@@ -59,12 +64,14 @@ export const normalizePlayBootLocation = (location: LocationLike): string | null
         row: null,
       },
       resumeScene: route.scene,
+      spectate,
     });
   }
 
   return buildCanonicalPlayerBootHref({
     route,
     resumeScene: route.scene,
+    spectate,
   });
 };
 
@@ -90,5 +97,8 @@ export const buildMapResumeHref = ({
     });
   }
 
-  return buildCanonicalMapFirstRoute(route, resumeScene ?? DEFAULT_PLAYER_RESUME_SCENE, { col, row });
+  return buildCanonicalMapFirstRoute(route, resumeScene ?? DEFAULT_PLAYER_RESUME_SCENE, isExplicitSpectateSession(), {
+    col,
+    row,
+  });
 };

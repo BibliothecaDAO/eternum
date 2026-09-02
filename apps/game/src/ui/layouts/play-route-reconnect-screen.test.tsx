@@ -7,32 +7,35 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayRouteReconnectScreen } from "./play-route-reconnect-screen";
 
 vi.mock("@/ui/modules/boot-loader", () => ({
-  BootLoaderShell: ({ detail }: { detail: React.ReactNode }) => <div>{detail}</div>,
+  BootLoaderShell: ({ title, detail }: { title: string; detail: React.ReactNode }) => (
+    <div>
+      <h1>{title}</h1>
+      {detail}
+    </div>
+  ),
+}));
+
+vi.mock("@/ui/modules/identity/identity-login", () => ({
+  IdentityLogin: () => <div data-testid="identity-login">identity login</div>,
 }));
 
 const renderReconnectScreen = ({
   reconnectError = null,
-  reconnectStatus = "idle",
-}: {
-  reconnectError?: string | null;
-  reconnectStatus?: "idle" | "restoring" | "connecting" | "failed" | "connected";
-} = {}): { onReconnect: ReturnType<typeof vi.fn>; onRetry: ReturnType<typeof vi.fn> } => {
-  const onReconnect = vi.fn();
+  showRetry = true,
+}: { reconnectError?: string | null; showRetry?: boolean } = {}) => {
   const onRetry = vi.fn();
   const onReturnToDashboard = vi.fn();
   act(() => {
     root.render(
       <PlayRouteReconnectScreen
-        onReconnect={onReconnect}
         onRetry={onRetry}
         onReturnToDashboard={onReturnToDashboard}
         reconnectError={reconnectError}
-        reconnectStatus={reconnectStatus}
-        showRetry={true}
+        showRetry={showRetry}
       />,
     );
   });
-  return { onReconnect, onRetry };
+  return { onRetry, onReturnToDashboard };
 };
 
 let container: HTMLDivElement;
@@ -60,25 +63,24 @@ describe("PlayRouteReconnectScreen", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("disables only the connection action while its attempt is pending", () => {
-    const actions = renderReconnectScreen({ reconnectStatus: "connecting" });
+  it("signs in on the route itself, with retry and the dashboard as the other ways out", () => {
+    const actions = renderReconnectScreen();
 
-    expect(getButton("Connecting...").disabled).toBe(true);
-    expect(getButton("Retry Bootstrap").disabled).toBe(false);
-    expect(getButton("Return to Dashboard").disabled).toBe(false);
+    expect(container.textContent).toContain("Sign in to Continue");
+    expect(container.querySelector('[data-testid="identity-login"]')).not.toBeNull();
 
     act(() => getButton("Retry Bootstrap").click());
     expect(actions.onRetry).toHaveBeenCalledOnce();
+    act(() => getButton("Return to Dashboard").click());
+    expect(actions.onReturnToDashboard).toHaveBeenCalledOnce();
   });
 
-  it("shows a normalized failure and retries through the connection action", () => {
-    const actions = renderReconnectScreen({
-      reconnectError: "user rejected",
-      reconnectStatus: "failed",
-    });
+  it("shows the provisioning failure and hides retry when bootstrap did not fail", () => {
+    renderReconnectScreen({ reconnectError: "account class is not declared", showRetry: false });
 
-    expect(container.querySelector('[role="alert"]')?.textContent).toBe("user rejected");
-    act(() => getButton("Retry Connection").click());
-    expect(actions.onReconnect).toHaveBeenCalledOnce();
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe("account class is not declared");
+    expect([...container.querySelectorAll("button")].map((button) => button.textContent)).toEqual([
+      "Return to Dashboard",
+    ]);
   });
 });

@@ -72,14 +72,12 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     progress,
     setupResult,
     account,
-    connectWallet,
     retry,
     isReconnectRequired,
     currentTask,
     tasks,
     bootToken,
     reconnectError,
-    reconnectStatus,
   } = state;
   const hasActiveBoot = bootToken > 0;
   const routeView = resolveGameRouteView({
@@ -102,11 +100,9 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   if (routeView === "reconnect") {
     return (
       <PlayRouteReconnectScreen
-        onReconnect={connectWallet}
         onRetry={retry}
         onReturnToDashboard={() => navigate("/")}
         reconnectError={reconnectError}
-        reconnectStatus={reconnectStatus}
         showRetry={phase === "error"}
       />
     );
