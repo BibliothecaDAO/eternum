@@ -214,6 +214,9 @@ export default class HexceptionScene extends HexagonScene {
   private activeRealmGeneration = 0;
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
+  // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
+  // hex-ready mark it ends with) only counts while this scene is the one being entered or shown.
+  private isEntered = false;
   private readonly localZoomPersistDebounceMs = 500;
   private localZoomPersistTimeout: ReturnType<typeof setTimeout> | null = null;
   private readonly handleLocalZoomControlsChange = () => {
@@ -573,6 +576,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
+    this.isEntered = true;
     this.bootstrapSceneOwnership();
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
@@ -668,6 +672,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
+    this.isEntered = false;
     // Capture a zoom still waiting on its debounce so quick scene switches keep it.
     this.flushPendingLocalZoomPersist();
 
@@ -1178,6 +1183,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   updateHexceptionGrid(radius: number) {
+    if (!this.isEntered) return;
     const realmGeneration = this.activeRealmGeneration;
     const dummy = new Object3D();
     const mainStructureType = this.tileManager.structureType();
@@ -1280,7 +1286,7 @@ export default class HexceptionScene extends HexagonScene {
           }
           if (VERBOSE_LOGS_ENABLED) console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
-          if (typeof window !== "undefined") {
+          if (typeof window !== "undefined" && this.isEntered) {
             usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
               col: this.centerColRow[0],
               row: this.centerColRow[1],
