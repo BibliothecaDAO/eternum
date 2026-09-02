@@ -317,7 +317,7 @@ ships without its own unit test — add a small install/derive/dispose test with
 window, not only selection/relic changes — harmless (idempotent, self-clearing) but measure whether it shows up as extra
 flushes under churn; (3) flush cadence is once per applied slice, which under heavy churn approaches frame rate — if the
 churn gate fails, the lever is a per-slice minimum interval, not consumer patches. Re-measure game for the churn gate:
-16 (`lab-mtjrn0i8`, 95 bots, 25 minutes).
+16 (`lab-mtjsp8bk`, 95 bots, 25 minutes).
 
 Re-measured after herald steps A and B (2026-09-02, game 15 `lab-mtjqbqr5`, 95 bots, box herald `d04a5d75e38`, pages.dev
 client on the branch tip; spectating from the dev server on headless software WebGL2). **Wire ratio passes**: 18,740
