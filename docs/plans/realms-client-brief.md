@@ -631,6 +631,13 @@ soft-verdict machinery stays in place harmlessly, and the WebGPU chase stops her
 item 6, compile prewarm half two class 1) stay queued on their own merits. **Phase 4 (Command Deck) steps 1+2 are now
 the open track**, with the worldmap decomposition cleared to run alongside.
 
+Queued finding for the label work (owner screenshot, 2026-09-02, mid band; explicitly deferred — "let's fully finish our
+work first"): several army tier glyphs ("T1") render orphaned on empty hexes with no army beneath them — anchors
+mispositioned or glyphs lingering after the army moved or despawned — and the mid band mixes name-plates and glyphs
+inconsistently. The orphaning is a correctness smell: the glyph layer must be driven by the same reconcile that places
+and removes the army models, not a parallel lifecycle. Folds into L5 item 6 (label atlas + ladder polish) when that item
+is picked up, after Phase 4 steps 1+2.
+
 Scheduled after L5b gates green (owner + reviewer, 2026-09-02): **worldmap decomposition**. The perf work is hardening a
 ~7,600-line god-object in place — every L5 fix threads through `worldmap.tsx`, and it is the one file where concurrent
 agents are forbidden. The extraction pattern is already half-done (`worldmap-terrain-presentation- runtime`,
