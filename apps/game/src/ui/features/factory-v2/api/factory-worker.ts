@@ -22,6 +22,9 @@ export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "
 export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 
+const factoryAdminHeaders = (environment: FactoryWorkerEnvironmentId, adminSecret: string) =>
+  environment === "madara.blitz" ? {} : { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret };
+
 export interface FactoryWorkerRunRecovery {
   state: FactoryWorkerRunRecoveryState;
   canContinue: boolean;
@@ -354,7 +357,21 @@ interface DeleteFactoryRotationRunRequest {
   adminSecret: string;
 }
 
-const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, "");
+interface FactoryEndpoint {
+  baseUrl: string;
+  credentials: RequestCredentials;
+}
+
+export const resolveFactoryEndpoint = (environment: FactoryWorkerEnvironmentId): FactoryEndpoint => {
+  if (environment === "madara.blitz") {
+    if (!env.VITE_PUBLIC_LAUNCH_SERVICE_URL) {
+      throw new Error("VITE_PUBLIC_LAUNCH_SERVICE_URL is required for madara.blitz launches");
+    }
+    return { baseUrl: env.VITE_PUBLIC_LAUNCH_SERVICE_URL.replace(/\/$/, ""), credentials: "include" };
+  }
+
+  return { baseUrl: env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, ""), credentials: "omit" };
+};
 
 export class FactoryWorkerApiError extends Error {
   constructor(
@@ -371,7 +388,7 @@ export async function listFactoryRuns(
   environment: FactoryWorkerEnvironmentId,
 ): Promise<FactoryWorkerRunRecord[] | null> {
   try {
-    const response = await fetchFactoryWorkerJson<FactoryWorkerRunListResponse>("/api/factory/runs", {
+    const response = await fetchFactoryWorkerJson<FactoryWorkerRunListResponse>(environment, "/api/factory/runs", {
       query: { environment },
     });
 
@@ -389,21 +406,27 @@ async function readFactoryRun(
   environment: FactoryWorkerEnvironmentId,
   gameName: string,
 ): Promise<FactoryWorkerGameRunRecord> {
-  return fetchFactoryWorkerJson<FactoryWorkerGameRunRecord>(buildFactoryRunPath(environment, gameName));
+  return fetchFactoryWorkerJson<FactoryWorkerGameRunRecord>(environment, buildFactoryRunPath(environment, gameName));
 }
 
 async function readFactorySeriesRun(
   environment: FactoryWorkerEnvironmentId,
   seriesName: string,
 ): Promise<FactoryWorkerSeriesRunRecord> {
-  return fetchFactoryWorkerJson<FactoryWorkerSeriesRunRecord>(buildFactorySeriesRunPath(environment, seriesName));
+  return fetchFactoryWorkerJson<FactoryWorkerSeriesRunRecord>(
+    environment,
+    buildFactorySeriesRunPath(environment, seriesName),
+  );
 }
 
 async function readFactoryRotationRun(
   environment: FactoryWorkerEnvironmentId,
   rotationName: string,
 ): Promise<FactoryWorkerRotationRunRecord> {
-  return fetchFactoryWorkerJson<FactoryWorkerRotationRunRecord>(buildFactoryRotationRunPath(environment, rotationName));
+  return fetchFactoryWorkerJson<FactoryWorkerRotationRunRecord>(
+    environment,
+    buildFactoryRotationRunPath(environment, rotationName),
+  );
 }
 
 export async function readFactoryRunIfPresent(
@@ -469,14 +492,14 @@ export async function readFactoryRunByNameIfPresent(
 }
 
 export async function createFactoryRun(request: CreateFactoryRunRequest): Promise<void> {
-  await fetchFactoryWorkerJson("/api/factory/runs", {
+  await fetchFactoryWorkerJson(request.environment, "/api/factory/runs", {
     method: "POST",
     body: JSON.stringify(request),
   });
 }
 
 export async function createFactorySeriesRun(request: CreateFactorySeriesRunRequest): Promise<void> {
-  await fetchFactoryWorkerJson("/api/factory/series-runs", {
+  await fetchFactoryWorkerJson(request.environment, "/api/factory/series-runs", {
     method: "POST",
     body: JSON.stringify({
       ...request,
@@ -486,7 +509,7 @@ export async function createFactorySeriesRun(request: CreateFactorySeriesRunRequ
 }
 
 export async function createFactoryRotationRun(request: CreateFactoryRotationRunRequest): Promise<void> {
-  await fetchFactoryWorkerJson("/api/factory/rotation-runs", {
+  await fetchFactoryWorkerJson(request.environment, "/api/factory/rotation-runs", {
     method: "POST",
     body: JSON.stringify({
       ...request,
@@ -496,14 +519,19 @@ export async function createFactoryRotationRun(request: CreateFactoryRotationRun
 }
 
 export async function continueFactoryRun(request: ContinueFactoryRunRequest): Promise<void> {
-  await fetchFactoryWorkerJson(`${buildFactoryRunPath(request.environment, request.gameName)}/actions/continue`, {
-    method: "POST",
-    body: JSON.stringify(request.launchStep ? { launchStep: request.launchStep } : {}),
-  });
+  await fetchFactoryWorkerJson(
+    request.environment,
+    `${buildFactoryRunPath(request.environment, request.gameName)}/actions/continue`,
+    {
+      method: "POST",
+      body: JSON.stringify(request.launchStep ? { launchStep: request.launchStep } : {}),
+    },
+  );
 }
 
 export async function continueFactorySeriesRun(request: ContinueFactorySeriesRunRequest): Promise<void> {
   await fetchFactoryWorkerJson(
+    request.environment,
     `${buildFactorySeriesRunPath(request.environment, request.seriesName)}/actions/continue`,
     {
       method: "POST",
@@ -517,6 +545,7 @@ export async function continueFactorySeriesRun(request: ContinueFactorySeriesRun
 
 export async function continueFactoryRotationRun(request: ContinueFactoryRotationRunRequest): Promise<void> {
   await fetchFactoryWorkerJson(
+    request.environment,
     `${buildFactoryRotationRunPath(request.environment, request.rotationName)}/actions/continue`,
     {
       method: "POST",
@@ -532,7 +561,7 @@ export async function nudgeFactoryRotationRun(
   environment: FactoryWorkerEnvironmentId,
   rotationName: string,
 ): Promise<void> {
-  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/nudge`, {
+  await fetchFactoryWorkerJson(environment, `${buildFactoryRotationRunPath(environment, rotationName)}/actions/nudge`, {
     method: "POST",
     body: JSON.stringify({}),
   });
@@ -540,47 +569,59 @@ export async function nudgeFactoryRotationRun(
 
 export async function cancelFactorySeriesAutoRetry(request: CancelFactorySeriesAutoRetryRequest): Promise<void> {
   const { adminSecret, environment, seriesName, cancelReason } = request;
-  await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/cancel-auto-retry`, {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify({ cancelReason }),
-  });
+  await fetchFactoryWorkerJson(
+    environment,
+    `${buildFactorySeriesRunPath(environment, seriesName)}/actions/cancel-auto-retry`,
+    {
+      method: "POST",
+      headers: factoryAdminHeaders(environment, adminSecret),
+      body: JSON.stringify({ cancelReason }),
+    },
+  );
 }
 
 export async function cancelFactoryRotationAutoRetry(request: CancelFactoryRotationAutoRetryRequest): Promise<void> {
   const { adminSecret, environment, rotationName, cancelReason } = request;
-  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/cancel-auto-retry`, {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify({ cancelReason }),
-  });
+  await fetchFactoryWorkerJson(
+    environment,
+    `${buildFactoryRotationRunPath(environment, rotationName)}/actions/cancel-auto-retry`,
+    {
+      method: "POST",
+      headers: factoryAdminHeaders(environment, adminSecret),
+      body: JSON.stringify({ cancelReason }),
+    },
+  );
 }
 
 export async function deleteFactoryRun(request: DeleteFactoryRunRequest): Promise<void> {
   const { adminSecret, environment, gameName } = request;
-  await fetchFactoryWorkerJson(`${buildFactoryRunPath(environment, gameName)}/actions/delete`, {
+  await fetchFactoryWorkerJson(environment, `${buildFactoryRunPath(environment, gameName)}/actions/delete`, {
     method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    headers: factoryAdminHeaders(environment, adminSecret),
     body: JSON.stringify({}),
   });
 }
 
 export async function deleteFactorySeriesRun(request: DeleteFactorySeriesRunRequest): Promise<void> {
   const { adminSecret, environment, seriesName } = request;
-  await fetchFactoryWorkerJson(`${buildFactorySeriesRunPath(environment, seriesName)}/actions/delete`, {
+  await fetchFactoryWorkerJson(environment, `${buildFactorySeriesRunPath(environment, seriesName)}/actions/delete`, {
     method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
+    headers: factoryAdminHeaders(environment, adminSecret),
     body: JSON.stringify({}),
   });
 }
 
 export async function deleteFactoryRotationRun(request: DeleteFactoryRotationRunRequest): Promise<void> {
   const { adminSecret, environment, rotationName } = request;
-  await fetchFactoryWorkerJson(`${buildFactoryRotationRunPath(environment, rotationName)}/actions/delete`, {
-    method: "POST",
-    headers: { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret },
-    body: JSON.stringify({}),
-  });
+  await fetchFactoryWorkerJson(
+    environment,
+    `${buildFactoryRotationRunPath(environment, rotationName)}/actions/delete`,
+    {
+      method: "POST",
+      headers: factoryAdminHeaders(environment, adminSecret),
+      body: JSON.stringify({}),
+    },
+  );
 }
 
 function buildFactoryRunPath(environment: FactoryWorkerEnvironmentId, gameName: string) {
@@ -600,6 +641,7 @@ function isMissingListEndpoint(error: unknown) {
 }
 
 async function fetchFactoryWorkerJson<ResponseBody>(
+  environment: FactoryWorkerEnvironmentId,
   pathname: string,
   options: {
     method?: "GET" | "POST";
@@ -619,10 +661,12 @@ async function fetchFactoryWorkerJson<ResponseBody>(
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(buildFactoryWorkerUrl(pathname, options.query), {
+  const endpoint = resolveFactoryEndpoint(environment);
+  const response = await fetch(buildFactoryWorkerUrl(endpoint, pathname, options.query), {
     method: options.method ?? "GET",
     headers: requestHeaders,
     body: options.body,
+    credentials: endpoint.credentials,
   });
 
   const payload = await readFactoryWorkerPayload(response);
@@ -638,8 +682,12 @@ async function fetchFactoryWorkerJson<ResponseBody>(
   return payload as ResponseBody;
 }
 
-function buildFactoryWorkerUrl(pathname: string, query?: Record<string, string | undefined>) {
-  const url = new URL(`${FACTORY_WORKER_BASE_URL}${pathname}`);
+function buildFactoryWorkerUrl(
+  endpoint: FactoryEndpoint,
+  pathname: string,
+  query?: Record<string, string | undefined>,
+) {
+  const url = new URL(`${endpoint.baseUrl}${pathname}`);
 
   Object.entries(query ?? {}).forEach(([key, value]) => {
     if (value) {

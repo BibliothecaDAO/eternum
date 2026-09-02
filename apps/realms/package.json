@@ -19,7 +19,7 @@
     "@tanstack/react-router": "1.166.2",
     "better-auth": "1.5.3",
     "drizzle-orm": "catalog:web",
-    "effect": "^3.14.0",
+    "effect": "4.0.0-rc.108",
     "react": "catalog:web",
     "react-dom": "catalog:web",
     "starknet": "catalog:web",

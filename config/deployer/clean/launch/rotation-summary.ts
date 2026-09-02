@@ -7,8 +7,8 @@ import type {
   SeriesLaunchGameStepState,
   SeriesLaunchGameSummary,
 } from "../types";
-import { loadRotationLaunchSummaryIfPresent, writeRotationLaunchSummary } from "./rotation-io";
 import { resolveSeriesLaunchStepIds } from "./series-plan";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { parseStartTime, toIsoUtc } from "./time";
 import { requireRpcUrl } from "../shared/rpc";
 
@@ -62,14 +62,15 @@ export function validateRotationLaunchRequest(request: LaunchRotationRequest): v
   parseStartTime(request.firstGameStartTime);
 }
 
-export function resolveRotationRequestWithPersistedSchedule<TRequest extends LaunchRotationRequest>(
+export async function resolveRotationRequestWithPersistedSchedule<TRequest extends LaunchRotationRequest>(
   request: TRequest,
-): TRequest {
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<TRequest> {
   if (hasRequestSchedule(request)) {
     return request;
   }
 
-  const summary = resolvePersistedRotationScheduleSummary(request);
+  const summary = await resolvePersistedRotationScheduleSummary(request, store);
   if (!summary) {
     return request;
   }
@@ -85,10 +86,11 @@ function hasRequestSchedule(request: LaunchRotationRequest): boolean {
   return hasWeeklyCadence(request) || isRotationPositiveInteger(request.gameIntervalMinutes);
 }
 
-function resolvePersistedRotationScheduleSummary(request: LaunchRotationRequest): LaunchRotationSummary | null {
-  return (
-    request.resumeSummary ?? loadRotationLaunchSummaryIfPresent(request.environmentId, request.rotationName.trim())
-  );
+async function resolvePersistedRotationScheduleSummary(
+  request: LaunchRotationRequest,
+  store: LaunchRunStore,
+): Promise<LaunchRotationSummary | null> {
+  return request.resumeSummary ?? store.loadRotation(request.environmentId, request.rotationName.trim());
 }
 
 function resolvePersistedRotationGameIntervalMinutes(
@@ -446,11 +448,14 @@ export function reconcileRotationLaunchSummary(
   );
 }
 
-export async function hydrateRotationLaunchSummary(request: LaunchRotationRequest): Promise<LaunchRotationSummary> {
+export async function hydrateRotationLaunchSummary(
+  request: LaunchRotationRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchRotationSummary> {
   const baseSummary = request.resumeSummary
     ? applyRotationRequestSettings(request.resumeSummary, request)
     : applyRotationRequestSettings(
-        loadRotationLaunchSummaryIfPresent(request.environmentId, request.rotationName.trim()) ||
+        (await store.loadRotation(request.environmentId, request.rotationName.trim())) ||
           buildInitialRotationLaunchSummary(request),
         request,
       );
@@ -458,9 +463,7 @@ export async function hydrateRotationLaunchSummary(request: LaunchRotationReques
   return assignRotationGameNumbers(request, baseSummary);
 }
 
-export function persistRotationLaunchSummary(summary: LaunchRotationSummary): LaunchRotationSummary {
-  return {
-    ...summary,
-    outputPath: writeRotationLaunchSummary(summary),
-  };
-}
+export const persistRotationLaunchSummary = (
+  summary: LaunchRotationSummary,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchRotationSummary> => store.saveRotation(summary);

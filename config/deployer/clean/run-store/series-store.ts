@@ -1,11 +1,10 @@
 import { DEFAULT_FACTORY_RUN_LEASE_DURATION_MS } from "../constants";
+import { buildInitialSeriesLaunchSummary, hydrateSeriesLaunchSummary } from "../launch/series-summary";
 import {
-  buildInitialSeriesLaunchSummary,
-  hydrateSeriesLaunchSummary,
-  persistSeriesLaunchSummary,
-  resolveDefaultSeriesRetryIntervalMinutes,
-} from "../launch/series-summary";
-import { loadSeriesLaunchSummaryIfPresent, resolveSeriesLaunchSummaryRelativePath } from "../launch/series-io";
+  loadSeriesLaunchSummaryIfPresent,
+  resolveSeriesLaunchSummaryRelativePath,
+  writeSeriesLaunchSummary,
+} from "../launch/series-io";
 import type { LaunchSeriesStepId, LaunchSeriesSummary } from "../types";
 import { createFactorySeriesRunStoreEventContext } from "./context";
 import {
@@ -25,7 +24,6 @@ import type {
   FactorySeriesRunRequestContext,
   FactorySeriesRunStepRecord,
   FactorySeriesRunStoreEventContext,
-  FactoryRunExecutionMode,
   FactoryRunStatus,
   FactoryRunStepStatus,
 } from "./types";
@@ -548,15 +546,14 @@ export async function recordFactorySeriesLaunchStepSucceeded(
     buildInitialSeriesLaunchSummary(request.request),
     options,
     (current) => {
-      const nextSummary = persistSeriesLaunchSummary(
-        mergeSeriesSummary(current.summary, resolveSeriesSummaryFromWorkspace(request), {
-          stepId,
-          targetGameNames: request.request.targetGameNames,
-          status: "succeeded",
-          latestEvent: buildSeriesStepSucceededEvent(stepId),
-          timestamp: context.timestamp,
-        }),
-      );
+      const mergedSummary = mergeSeriesSummary(current.summary, resolveSeriesSummaryFromWorkspace(request), {
+        stepId,
+        targetGameNames: request.request.targetGameNames,
+        status: "succeeded",
+        latestEvent: buildSeriesStepSucceededEvent(stepId),
+        timestamp: context.timestamp,
+      });
+      const nextSummary = { ...mergedSummary, outputPath: writeSeriesLaunchSummary(mergedSummary) };
       const nextStepStatus = resolveSeriesSummaryStepStatus(nextSummary, stepId);
       const nextStepEvent = resolveSeriesSummaryStepEvent(nextSummary, stepId);
       const nextRun = finalizeSeriesRunRecord(

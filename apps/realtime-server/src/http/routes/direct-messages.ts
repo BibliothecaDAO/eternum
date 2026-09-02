@@ -1,5 +1,5 @@
 import { and, desc, eq, gt, lt, or } from "drizzle-orm";
-import { Effect, Either } from "effect";
+import { Effect, Result } from "effect";
 import { Hono } from "hono";
 
 import {
@@ -158,14 +158,14 @@ directMessageRoutes.post("/messages", async (c) => {
   const payload = payloadResult.data;
   const player = c.get("playerSession")!;
 
-  const result = await Effect.runPromise(Effect.either(persistDirectMessage(player, payload)));
-  if (Either.isLeft(result)) {
-    if (result.left instanceof DirectMessageError) {
-      return c.json({ error: result.left.message, code: result.left.code }, result.left.status);
+  const result = await Effect.runPromise(Effect.result(persistDirectMessage(player, payload)));
+  if (Result.isFailure(result)) {
+    if (result.failure instanceof DirectMessageError) {
+      return c.json({ error: result.failure.message, code: result.failure.code }, result.failure.status);
     }
-    throw result.left;
+    throw result.failure;
   }
-  return c.json({ message: result.right.message, thread: result.right.thread }, 201);
+  return c.json({ message: result.success.message, thread: result.success.thread }, 201);
 });
 
 directMessageRoutes.post("/blocks/:playerId", async (c) => {
@@ -212,12 +212,12 @@ directMessageRoutes.post("/threads/:threadId/read", async (c) => {
     return c.json({ error: "Cannot acknowledge read for another player." }, 403);
   }
 
-  const result = await Effect.runPromise(Effect.either(markDirectMessageRead(player, payload)));
-  if (Either.isLeft(result)) {
-    if (result.left instanceof DirectMessageError) {
-      return c.json({ error: result.left.message, code: result.left.code }, result.left.status);
+  const result = await Effect.runPromise(Effect.result(markDirectMessageRead(player, payload)));
+  if (Result.isFailure(result)) {
+    if (result.failure instanceof DirectMessageError) {
+      return c.json({ error: result.failure.message, code: result.failure.code }, result.failure.status);
     }
-    throw result.left;
+    throw result.failure;
   }
 
   return c.body(null, 204);

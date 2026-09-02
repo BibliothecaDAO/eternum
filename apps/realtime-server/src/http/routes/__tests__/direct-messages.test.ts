@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Effect, Either } from "effect";
+import { Effect, Result } from "effect";
 
 import { directMessageCreateSchema } from "@bibliothecadao/types";
 import {
@@ -49,7 +49,7 @@ describe("direct message validation", () => {
 
   it("returns a typed failure for a self-message before storage", async () => {
     const result = await Effect.runPromise(
-      Effect.either(
+      Effect.result(
         persistDirectMessage(
           { playerId: "player-a", membershipPlayerId: null, aliases: ["player-a"] },
           { recipientId: "player-a", content: "hello" },
@@ -57,7 +57,7 @@ describe("direct message validation", () => {
       ),
     );
 
-    expect(Either.isLeft(result)).toBe(true);
-    if (Either.isLeft(result)) expect(result.left).toBeInstanceOf(DirectMessageError);
+    expect(Result.isFailure(result)).toBe(true);
+    if (Result.isFailure(result)) expect(result.failure).toBeInstanceOf(DirectMessageError);
   });
 });

@@ -10,10 +10,9 @@ interface GameplayAccountService {
   readonly resolve: (owner: string) => Effect.Effect<string | null, PlayerRegistryUnavailable | BoundaryDecodeError>;
 }
 
-export class GameplayAccounts extends Context.Tag("chat/GameplayAccounts")<
-  GameplayAccounts,
-  GameplayAccountService
->() {}
+export class GameplayAccounts extends Context.Service<GameplayAccounts, GameplayAccountService>()(
+  "chat/GameplayAccounts",
+) {}
 
 export const createGameplayAccountService = ({
   rpcUrl,

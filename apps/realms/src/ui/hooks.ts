@@ -35,7 +35,7 @@ export function useQuery<A, E>(
           setState({ kind: "ok", value: exit.value });
           return;
         }
-        const failure = Cause.failureOption(exit.cause);
+        const failure = Cause.findErrorOption(exit.cause);
         if (failure._tag === "Some") setState({ kind: "error", error: failure.value });
         else console.error("realms query died", Cause.pretty(exit.cause));
       });
@@ -70,7 +70,7 @@ export function useMutation<Args extends unknown[], A, E>(make: (...args: Args) 
           setState({ kind: "ok", value: exit.value });
           return exit.value;
         }
-        const failure = Cause.failureOption(exit.cause);
+        const failure = Cause.findErrorOption(exit.cause);
         if (failure._tag === "Some") setState({ kind: "error", error: failure.value });
         else {
           console.error("realms mutation died", Cause.pretty(exit.cause));

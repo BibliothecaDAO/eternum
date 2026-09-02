@@ -1,11 +1,10 @@
 import { DEFAULT_FACTORY_RUN_LEASE_DURATION_MS } from "../constants";
+import { hydrateRotationLaunchSummary, reconcileRotationLaunchSummary } from "../launch/rotation-summary";
 import {
-  hydrateRotationLaunchSummary,
-  persistRotationLaunchSummary,
-  reconcileRotationLaunchSummary,
-  resolveDefaultRotationRetryIntervalMinutes,
-} from "../launch/rotation-summary";
-import { loadRotationLaunchSummaryIfPresent, resolveRotationLaunchSummaryRelativePath } from "../launch/rotation-io";
+  loadRotationLaunchSummaryIfPresent,
+  resolveRotationLaunchSummaryRelativePath,
+  writeRotationLaunchSummary,
+} from "../launch/rotation-io";
 import { resolveSeriesLaunchStepIds } from "../launch/series-plan";
 import type { LaunchRotationStepId, LaunchRotationSummary, RotationLaunchStepId } from "../types";
 import { createFactoryRotationRunStoreEventContext } from "./context";
@@ -27,7 +26,6 @@ import type {
   FactoryRotationRunRequestContext,
   FactoryRotationRunStepRecord,
   FactoryRotationRunStoreEventContext,
-  FactoryRunExecutionMode,
   FactoryRunStatus,
   FactoryRunStepStatus,
   FactorySeriesAutoRetryState,
@@ -502,7 +500,8 @@ async function updateRotationRunRecord(
 
 async function resolvePlannedRotationSummary(request: FactoryRotationRunRequestContext["request"]) {
   const hydratedSummary = await hydrateRotationLaunchSummary(request);
-  return persistRotationLaunchSummary(reconcileRotationLaunchSummary(request, hydratedSummary));
+  const summary = reconcileRotationLaunchSummary(request, hydratedSummary);
+  return { ...summary, outputPath: writeRotationLaunchSummary(summary) };
 }
 
 async function readCurrentFactoryRotationRunRecord(
@@ -641,15 +640,14 @@ export async function recordFactoryRotationLaunchStepSucceeded(
     await resolvePlannedRotationSummary(request.request),
     options,
     (current) => {
-      const nextSummary = persistRotationLaunchSummary(
-        mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request), {
-          stepId,
-          targetGameNames: request.request.targetGameNames,
-          status: "succeeded",
-          latestEvent: buildRotationStepSucceededEvent(stepId),
-          timestamp: context.timestamp,
-        }),
-      );
+      const mergedSummary = mergeRotationSummary(current.summary, resolveRotationSummaryFromWorkspace(request), {
+        stepId,
+        targetGameNames: request.request.targetGameNames,
+        status: "succeeded",
+        latestEvent: buildRotationStepSucceededEvent(stepId),
+        timestamp: context.timestamp,
+      });
+      const nextSummary = { ...mergedSummary, outputPath: writeRotationLaunchSummary(mergedSummary) };
       const nextStepStatus = resolveRotationSummaryStepStatus(nextSummary, stepId);
       const nextStepEvent = resolveRotationSummaryStepEvent(nextSummary, stepId);
       const nextRun = finalizeRotationRunRecord(

@@ -22,7 +22,7 @@ const DEFAULT_SERIES_AUTO_RETRY_INTERVAL_MINUTES = 15;
 const DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT = 50;
 const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
-const FACTORY_ENVIRONMENTS = ["madara.blitz", "appchain.blitz", "appchain.eternum"];
+const FACTORY_ENVIRONMENTS = ["appchain.blitz", "appchain.eternum"];
 const BIOME_CLIMATE_OVERRIDE_LIMITS = {
   elevationScaleBps: 65_535,
   moistureScaleBps: 65_535,

@@ -21,7 +21,7 @@ describe("grouped series-like runner fail-fast behavior", () => {
         request,
         summary,
         stepId: "create-worlds",
-        persistSummary: (next) => {
+        persistSummary: async (next) => {
           persistedSummaries.push(next);
           return next;
         },

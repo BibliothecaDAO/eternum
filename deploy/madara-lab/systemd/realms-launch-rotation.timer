@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate Realms Madara rotations every 30 minutes
+
+[Timer]
+OnCalendar=*-*-* *:00,30:00
+Persistent=true
+RandomizedDelaySec=30
+Unit=realms-launch-rotation.service
+
+[Install]
+WantedBy=timers.target

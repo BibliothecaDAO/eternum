@@ -1,0 +1,17 @@
+[Unit]
+Description=Enqueue due Realms Madara rotation launches
+After=network-online.target realms-launch.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=realms
+WorkingDirectory=/opt/realms/eternum
+Environment=PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-/opt/realms/eternum/.env
+Environment=DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/eternum_launch
+Environment=IDENTITY_URL=http://127.0.0.1:3000
+Environment=CORS_ORIGIN=https://play.realms.party,https://eternum-game.pages.dev
+Environment=HERALD_URL=http://127.0.0.1:3003
+Environment=GAME_MANIFEST_PATH=/opt/realms/eternum/contracts/l3/game/manifest_madara.json
+ExecStart=/usr/bin/env pnpm --dir apps/launch-service rotation:tick

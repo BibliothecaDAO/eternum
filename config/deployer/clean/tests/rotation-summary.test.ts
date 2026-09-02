@@ -159,14 +159,14 @@ describe("rotation launch summary", () => {
     ]);
   });
 
-  test("validates a retry request with the persisted weekly cadence", () => {
+  test("validates a retry request with the persisted weekly cadence", async () => {
     const persistedRequest = buildWeeklyRotationRequest();
     const retryRequest = buildWeeklyRotationRequest({
       weeklyCadence: undefined,
       resumeSummary: buildInitialRotationLaunchSummary(persistedRequest),
     });
 
-    const resolvedRequest = resolveRotationRequestWithPersistedSchedule(retryRequest);
+    const resolvedRequest = await resolveRotationRequestWithPersistedSchedule(retryRequest);
 
     expect(() => validateRotationLaunchRequest(resolvedRequest)).not.toThrow();
     expect(resolvedRequest.weeklyCadence).toEqual(persistedRequest.weeklyCadence);
