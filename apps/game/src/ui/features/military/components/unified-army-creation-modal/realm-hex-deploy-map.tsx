@@ -1,13 +1,7 @@
-import { BIOME_COLORS } from "@/three/managers/biome-colors";
+import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  BiomeIdToType,
-  BiomeType,
-  Direction,
-  getDirectionBetweenAdjacentHexes,
-  getNeighborHexes,
-} from "@bibliothecadao/types";
+import { Direction, getDirectionBetweenAdjacentHexes, getNeighborHexes } from "@bibliothecadao/types";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import { useMemo } from "react";
 
@@ -53,11 +47,9 @@ const UNEXPLORED_FILL = "#1f2933";
 const REALM_FILL = "rgba(223, 170, 84, 0.35)";
 
 const getBiomeFill = (biomeId?: number) => {
-  if (biomeId === undefined || biomeId === 0) return UNEXPLORED_FILL;
-  const biomeType = BiomeIdToType[biomeId];
-  if (biomeType === BiomeType.Taiga) return "#ffffff";
-  const color = BIOME_COLORS[biomeType as keyof typeof BIOME_COLORS];
-  return color?.getStyle?.() ?? UNEXPLORED_FILL;
+  const biomeType = resolveBiomeTypeFromId(biomeId);
+  if (!biomeType) return UNEXPLORED_FILL;
+  return requireBiomeColor(biomeType).getStyle();
 };
 
 type HexEntry = {

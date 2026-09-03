@@ -2,9 +2,8 @@ import { forwardRef, type Ref, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { GameReviewMapSnapshot, GameReviewMapSnapshotTile } from "@/services/review/game-review-service";
-import { BIOME_COLORS } from "@/three/managers/biome-colors";
+import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { FELT_CENTER } from "@/ui/config";
-import { BiomeIdToType, BiomeType } from "@bibliothecadao/types";
 import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 import { BLITZ_CARD_BASE_STYLES, BLITZ_CARD_FONT_IMPORT, BLITZ_CARD_GOLD_THEME } from "../lib/blitz-card-shared";
 
@@ -137,10 +136,9 @@ const applyGoldLevel = (color: string, goldLevel: number): string => {
 };
 
 const getBiomeColor = (tile: GameReviewMapSnapshotTile): string => {
-  const biomeType = BiomeIdToType[tile.biome];
-  if (biomeType === BiomeType.Taiga) return "#ffffff";
-  const color = BIOME_COLORS[biomeType as keyof typeof BIOME_COLORS];
-  return color?.getStyle?.() ?? "#4b5563";
+  const biomeType = resolveBiomeTypeFromId(tile.biome);
+  if (!biomeType) return "#4b5563";
+  return requireBiomeColor(biomeType).getStyle();
 };
 
 const getOccupierColor = (tile: GameReviewMapSnapshotTile, fallbackBiomeColor: string): string => {

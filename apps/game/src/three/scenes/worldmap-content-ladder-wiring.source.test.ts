@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -48,6 +48,27 @@ describe("worldmap content ladder wiring", () => {
     expect(surface).toContain("requireBiomeColor(biome)");
     expect(worldmap).not.toContain("BiomeIdToType");
     expect(minimap).not.toContain("BiomeIdToType");
+  });
+
+  it("keeps biome-colors.ts the only source file resolving biome ids", () => {
+    const srcRoot = join(currentDir, "../..");
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (entry === "node_modules" || entry === "dist" || entry === "assets") continue;
+        const path = join(dir, entry);
+        if (statSync(path).isDirectory()) {
+          walk(path);
+          continue;
+        }
+        if (!/\.tsx?$/.test(entry) || /\.test\.tsx?$/.test(entry)) continue;
+        if (readFileSync(path, "utf8").includes("BiomeIdToType")) offenders.push(relative(srcRoot, path));
+      }
+    };
+    walk(srcRoot);
+    expect(offenders, "resolve biome ids through three/managers/biome-colors.ts, never locally").toEqual([
+      "three/managers/biome-colors.ts",
+    ]);
   });
 
   it("refreshes label priority on hover, hex leave and selection changes", () => {
