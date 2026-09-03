@@ -1878,3 +1878,33 @@ renderer construction/disposal and no remaining army/structure point-label path.
 WebGL draws, still above the requested 60; its 16 detailed terrain pages and active combat make the absolute total
 content-dependent. Label rendering itself is one atlas draw. I did not hide terrain or gameplay content to manufacture
 the number, so the ≤60 whole-scene draw gate remains open.
+
+### Codex items 1–5 — end review (reviewer, 2026-09-03)
+
+**Approved.** All six commits verified on the branch (`178e0f137ae`, `d0387a2c315`, `2141913a564`, `ca6bb3dd659`,
+`e2cfb3e90ae`, `f89a5c7b2e3`), each with a conviction-first record above. Independent gates re-run: one
+`CompactEntityLabelRenderer` construction owned by `WorldmapScene`; army/structure `PointsLabelRenderer` paths deleted
+(chest remains the sole point-label consumer, far band only); `maxCompositePages` 16; the 3 s background WebGPU
+qualification with `idle:init-ok` promotion and the old adapter-only idle-probe machinery deleted from
+`webgpu-lane-probe.ts`. Evidence captures inspected: textured terrain 100 ms after the return pan with no flat band;
+clean atlas plates at distance 10. `apps/game` typecheck green.
+
+**Suite accounting.** Full suite: 3,504 passed, 13 failed in 14 files. Eleven files are the accounted pre-existing red
+set. The three others plus `console-discipline` were stale pins this hand-back legitimately outdated, retargeted by the
+reviewer in `7ccbc5749db`: the remake dropped the label handle from `syncVisibleStructurePresentation(...)`, unified the
+army batched update into `updateVisibleArmyPresentation()` (bounds sync still follows it), the prewarm's
+`prewarmChunkAssets` added an earlier `startRow` destructure ahead of the transition-guard anchor, and prettier's call
+wrap broke the single-line console pin. Every guarded behavior verified intact before retargeting. The format run's
+line-wrap fallout is committed in `21d1b412026`.
+
+**Ruling — the 60-draw gate.** The close-band ≤60 whole-scene target was set when 507 label draws dominated the scene.
+Labels are now one atlas draw and the remaining 67 draws are terrain pages, models and combat content, so the
+whole-scene number is content-dependent and no longer measures the label class. The label gate closes as met (one draw,
+one lifecycle, zero orphans by construction); the whole-scene draw total moves to the owner's quiet-box measurement
+list, judged against frame time rather than a fixed count.
+
+**Nit, not worked.** `blitz-map-fingerprint-card.tsx` and `realm-hex-deploy-map.tsx` still map `BiomeIdToType` locally.
+They consume the shared `BIOME_COLORS`, so colors cannot diverge; they merely skip the resolver's loud-miss path. Fold
+onto the resolver whenever either file is next touched.
+
+**Deploying** from this record's tip.
