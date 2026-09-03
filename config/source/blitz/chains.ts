@@ -77,7 +77,10 @@ function resolveAppchainBlitzRegistrationConfig(context: EnvironmentContext): Co
 export function resolveBlitzChainConfig(chain: GameChain, context: EnvironmentContext): ConfigPatch {
   switch (chain) {
     case "madara":
-      return madaraBlitzConfig;
+      // The standard patch applies on every chain — skipping it here shipped the
+      // base sheet's season/battle values into registered preset 6 (24-tick spawn
+      // immunity in a mode that has none).
+      return mergeConfigPatches(STANDARD_BLITZ_CHAIN_CONFIG, madaraBlitzConfig);
     case "appchain":
       // dev appchain (WP_REALMS_DEV): REAL mainnet game balance, free entry.
       // (The local-style dev balance shipped to testers as presets 2/3 —

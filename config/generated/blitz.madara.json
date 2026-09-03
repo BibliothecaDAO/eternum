@@ -41,7 +41,7 @@
     "donkey_for_troops": 27
   },
   "battle": {
-    "regularImmunityTicks": 24,
+    "regularImmunityTicks": 0,
     "villageImmunityTicks": 0,
     "delaySeconds": 0,
     "villageRaidImmunityTicks": 24
@@ -68,12 +68,12 @@
     "moistureSeed": 0
   },
   "season": {
-    "startSettlingAfterSeconds": 86400,
-    "startMainAfterSeconds": 129600,
-    "durationSeconds": 5400,
+    "startSettlingAfterSeconds": 59,
+    "startMainAfterSeconds": 60,
+    "durationSeconds": 7200,
     "endGraceSeconds": 86400,
     "bridgeCloseAfterEndSeconds": 604800,
-    "pointRegistrationCloseAfterEndSeconds": 604800,
+    "pointRegistrationCloseAfterEndSeconds": 600,
     "startSettlingAt": 0,
     "startMainAt": 0
   },
@@ -213,13 +213,8 @@
       "on": true
     },
     "registration": {
-      "fee_token": "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
-      "fee_recipient": "0x040DB150844Dc372928b3B47e23CB6E240E2c99ddC5381680aFd73d777Cbd6C8",
-      "fee_amount": "0",
       "registration_count_max": 96,
       "registration_delay_seconds": 10,
-      "entry_token_class_hash": "0x0",
-      "entry_token_ipfs_cid": "Qm123idkmaybe",
       "collectible_cosmetics_max_items": 5,
       "collectible_cosmetics_address": "0x0",
       "collectible_timelock_address": "0x0",
@@ -1717,17 +1712,6 @@
     "pointsForTileExploration": "10000000",
     "pointsForRelicDiscovery": "1000000000"
   },
-  "mmr": {
-    "enabled": true,
-    "mmr_token_address": "0x0",
-    "distribution_mean": 1500,
-    "spread_factor": 450,
-    "max_delta": 45,
-    "k_factor": 50,
-    "lobby_split_weight_scaled": 2500,
-    "mean_regression_scaled": 150,
-    "min_players": 6
-  },
   "trade": {
     "maxCount": 0
   },
@@ -1748,7 +1732,24 @@
   "setup": {
     "chain": "madara",
     "addresses": {
-      "strk": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
+      "strk": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      "factoryDeployer": "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+      "lords": "0x0",
+      "seasonPass": "0x0",
+      "villagePass": "0x0",
+      "realms": "0x0",
+      "marketplace": "0x0",
+      "mmrToken": "0x0",
+      "cosmetics": "0x0",
+      "cosmeticsClaim": "0x0",
+      "lootChests": "0x0",
+      "eliteInvite": "0x0",
+      "collectiblesClassHash": "0x0",
+      "resources": "0x0",
+      "Collectibles: Realms: Loot Chest": "0x0",
+      "Collectibles: Realms: Cosmetic Items": "0x0",
+      "Collectibles: Timelock Maker": "0x0",
+      "Collectibles: Realms: Elite Invite": "0x0"
     },
     "manifest": {
       "world": {
@@ -1781,12 +1782,1464 @@
           "grant_writer",
           "revoke_writer",
           "upgrade"
+        ],
+        "abi": [
+          {
+            "type": "impl",
+            "name": "World",
+            "interface_name": "dojo::world::iworld::IWorld"
+          },
+          {
+            "type": "struct",
+            "name": "core::byte_array::ByteArray",
+            "members": [
+              {
+                "name": "data",
+                "type": "core::array::Array::<core::bytes_31::bytes31>"
+              },
+              {
+                "name": "pending_word",
+                "type": "core::felt252"
+              },
+              {
+                "name": "pending_word_len",
+                "type": "core::internal::bounded_int::BoundedInt::<0, 30>"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "dojo::world::resource::Resource",
+            "variants": [
+              {
+                "name": "Model",
+                "type": "(core::starknet::contract_address::ContractAddress, core::felt252)"
+              },
+              {
+                "name": "Event",
+                "type": "(core::starknet::contract_address::ContractAddress, core::felt252)"
+              },
+              {
+                "name": "Contract",
+                "type": "(core::starknet::contract_address::ContractAddress, core::felt252)"
+              },
+              {
+                "name": "Namespace",
+                "type": "core::byte_array::ByteArray"
+              },
+              {
+                "name": "World",
+                "type": "()"
+              },
+              {
+                "name": "Unregistered",
+                "type": "()"
+              },
+              {
+                "name": "Library",
+                "type": "(core::starknet::class_hash::ClassHash, core::felt252)"
+              },
+              {
+                "name": "ExternalContract",
+                "type": "(core::starknet::contract_address::ContractAddress, core::felt252)"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "dojo::model::metadata::ResourceMetadata",
+            "members": [
+              {
+                "name": "resource_id",
+                "type": "core::felt252"
+              },
+              {
+                "name": "metadata_uri",
+                "type": "core::byte_array::ByteArray"
+              },
+              {
+                "name": "metadata_hash",
+                "type": "core::felt252"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::array::Span::<core::felt252>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<core::felt252>"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "dojo::model::definition::ModelIndex",
+            "variants": [
+              {
+                "name": "Keys",
+                "type": "core::array::Span::<core::felt252>"
+              },
+              {
+                "name": "Id",
+                "type": "core::felt252"
+              },
+              {
+                "name": "MemberId",
+                "type": "(core::felt252, core::felt252)"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::array::Span::<core::integer::u8>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<core::integer::u8>"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "dojo::meta::layout::FieldLayout",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252"
+              },
+              {
+                "name": "layout",
+                "type": "dojo::meta::layout::Layout"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::array::Span::<dojo::meta::layout::FieldLayout>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<dojo::meta::layout::FieldLayout>"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::array::Span::<dojo::meta::layout::Layout>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<dojo::meta::layout::Layout>"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "dojo::meta::layout::Layout",
+            "variants": [
+              {
+                "name": "Fixed",
+                "type": "core::array::Span::<core::integer::u8>"
+              },
+              {
+                "name": "Struct",
+                "type": "core::array::Span::<dojo::meta::layout::FieldLayout>"
+              },
+              {
+                "name": "Tuple",
+                "type": "core::array::Span::<dojo::meta::layout::Layout>"
+              },
+              {
+                "name": "Array",
+                "type": "core::array::Span::<dojo::meta::layout::Layout>"
+              },
+              {
+                "name": "ByteArray",
+                "type": "()"
+              },
+              {
+                "name": "Enum",
+                "type": "core::array::Span::<dojo::meta::layout::FieldLayout>"
+              },
+              {
+                "name": "FixedArray",
+                "type": "(core::array::Span::<dojo::meta::layout::Layout>, core::integer::u32)"
+              }
+            ]
+          },
+          {
+            "type": "struct",
+            "name": "core::array::Span::<dojo::model::definition::ModelIndex>",
+            "members": [
+              {
+                "name": "snapshot",
+                "type": "@core::array::Array::<dojo::model::definition::ModelIndex>"
+              }
+            ]
+          },
+          {
+            "type": "enum",
+            "name": "core::bool",
+            "variants": [
+              {
+                "name": "False",
+                "type": "()"
+              },
+              {
+                "name": "True",
+                "type": "()"
+              }
+            ]
+          },
+          {
+            "type": "interface",
+            "name": "dojo::world::iworld::IWorld",
+            "items": [
+              {
+                "type": "function",
+                "name": "resource",
+                "inputs": [
+                  {
+                    "name": "selector",
+                    "type": "core::felt252"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "dojo::world::resource::Resource"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "world_version",
+                "inputs": [],
+                "outputs": [
+                  {
+                    "type": "core::felt252"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "uuid",
+                "inputs": [],
+                "outputs": [
+                  {
+                    "type": "core::integer::u32"
+                  }
+                ],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "metadata",
+                "inputs": [
+                  {
+                    "name": "resource_selector",
+                    "type": "core::felt252"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "dojo::model::metadata::ResourceMetadata"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "set_metadata",
+                "inputs": [
+                  {
+                    "name": "metadata",
+                    "type": "dojo::model::metadata::ResourceMetadata"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "register_namespace",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "register_event",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "register_model",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "register_contract",
+                "inputs": [
+                  {
+                    "name": "salt",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "register_external_contract",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "contract_name",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "instance_name",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "contract_address",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  },
+                  {
+                    "name": "block_number",
+                    "type": "core::integer::u64"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "register_library",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  },
+                  {
+                    "name": "name",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "version",
+                    "type": "core::byte_array::ByteArray"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "init_contract",
+                "inputs": [
+                  {
+                    "name": "selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "init_calldata",
+                    "type": "core::array::Span::<core::felt252>"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "upgrade_event",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "upgrade_model",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "upgrade_contract",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "upgrade_external_contract",
+                "inputs": [
+                  {
+                    "name": "namespace",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "instance_name",
+                    "type": "core::byte_array::ByteArray"
+                  },
+                  {
+                    "name": "contract_address",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  },
+                  {
+                    "name": "block_number",
+                    "type": "core::integer::u64"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "emit_event",
+                "inputs": [
+                  {
+                    "name": "event_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "keys",
+                    "type": "core::array::Span::<core::felt252>"
+                  },
+                  {
+                    "name": "values",
+                    "type": "core::array::Span::<core::felt252>"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "emit_events",
+                "inputs": [
+                  {
+                    "name": "event_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "keys",
+                    "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+                  },
+                  {
+                    "name": "values",
+                    "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "entity",
+                "inputs": [
+                  {
+                    "name": "model_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "index",
+                    "type": "dojo::model::definition::ModelIndex"
+                  },
+                  {
+                    "name": "layout",
+                    "type": "dojo::meta::layout::Layout"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::array::Span::<core::felt252>"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "entities",
+                "inputs": [
+                  {
+                    "name": "model_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "indexes",
+                    "type": "core::array::Span::<dojo::model::definition::ModelIndex>"
+                  },
+                  {
+                    "name": "layout",
+                    "type": "dojo::meta::layout::Layout"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "set_entity",
+                "inputs": [
+                  {
+                    "name": "model_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "index",
+                    "type": "dojo::model::definition::ModelIndex"
+                  },
+                  {
+                    "name": "values",
+                    "type": "core::array::Span::<core::felt252>"
+                  },
+                  {
+                    "name": "layout",
+                    "type": "dojo::meta::layout::Layout"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "set_entities",
+                "inputs": [
+                  {
+                    "name": "model_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "indexes",
+                    "type": "core::array::Span::<dojo::model::definition::ModelIndex>"
+                  },
+                  {
+                    "name": "values",
+                    "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+                  },
+                  {
+                    "name": "layout",
+                    "type": "dojo::meta::layout::Layout"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "delete_entity",
+                "inputs": [
+                  {
+                    "name": "model_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "index",
+                    "type": "dojo::model::definition::ModelIndex"
+                  },
+                  {
+                    "name": "layout",
+                    "type": "dojo::meta::layout::Layout"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "delete_entities",
+                "inputs": [
+                  {
+                    "name": "model_selector",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "indexes",
+                    "type": "core::array::Span::<dojo::model::definition::ModelIndex>"
+                  },
+                  {
+                    "name": "layout",
+                    "type": "dojo::meta::layout::Layout"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "is_owner",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "address",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::bool"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "grant_owner",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "address",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "revoke_owner",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "address",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "owners_count",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::integer::u64"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "is_writer",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "contract",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "type": "core::bool"
+                  }
+                ],
+                "state_mutability": "view"
+              },
+              {
+                "type": "function",
+                "name": "grant_writer",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "contract",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              },
+              {
+                "type": "function",
+                "name": "revoke_writer",
+                "inputs": [
+                  {
+                    "name": "resource",
+                    "type": "core::felt252"
+                  },
+                  {
+                    "name": "contract",
+                    "type": "core::starknet::contract_address::ContractAddress"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              }
+            ]
+          },
+          {
+            "type": "impl",
+            "name": "UpgradeableWorld",
+            "interface_name": "dojo::world::iworld::IUpgradeableWorld"
+          },
+          {
+            "type": "interface",
+            "name": "dojo::world::iworld::IUpgradeableWorld",
+            "items": [
+              {
+                "type": "function",
+                "name": "upgrade",
+                "inputs": [
+                  {
+                    "name": "new_class_hash",
+                    "type": "core::starknet::class_hash::ClassHash"
+                  }
+                ],
+                "outputs": [],
+                "state_mutability": "external"
+              }
+            ]
+          },
+          {
+            "type": "constructor",
+            "name": "constructor",
+            "inputs": []
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::WorldSpawned",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "creator",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::WorldUpgraded",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::NamespaceRegistered",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "hash",
+                "type": "core::felt252",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ModelRegistered",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::EventRegistered",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ContractRegistered",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "salt",
+                "type": "core::felt252",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ExternalContractRegistered",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "contract_name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "instance_name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "contract_selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "contract_address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "block_number",
+                "type": "core::integer::u64",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ExternalContractUpgraded",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "instance_name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "contract_selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "contract_address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "block_number",
+                "type": "core::integer::u64",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ModelUpgraded",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "prev_address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::EventUpgraded",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              },
+              {
+                "name": "address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              },
+              {
+                "name": "prev_address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ContractUpgraded",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::ContractInitialized",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "init_calldata",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::LibraryRegistered",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "name",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "namespace",
+                "type": "core::byte_array::ByteArray",
+                "kind": "key"
+              },
+              {
+                "name": "class_hash",
+                "type": "core::starknet::class_hash::ClassHash",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::EventEmitted",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "system_address",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "key"
+              },
+              {
+                "name": "keys",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              },
+              {
+                "name": "values",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::MetadataUpdate",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "resource",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "uri",
+                "type": "core::byte_array::ByteArray",
+                "kind": "data"
+              },
+              {
+                "name": "hash",
+                "type": "core::felt252",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::StoreSetRecord",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "entity_id",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "keys",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              },
+              {
+                "name": "values",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::StoreUpdateRecord",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "entity_id",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "values",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::StoreUpdateMember",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "entity_id",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "member_selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "values",
+                "type": "core::array::Span::<core::felt252>",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::StoreDelRecord",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "selector",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "entity_id",
+                "type": "core::felt252",
+                "kind": "key"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::WriterUpdated",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "resource",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "contract",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "key"
+              },
+              {
+                "name": "value",
+                "type": "core::bool",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::OwnerUpdated",
+            "kind": "struct",
+            "members": [
+              {
+                "name": "resource",
+                "type": "core::felt252",
+                "kind": "key"
+              },
+              {
+                "name": "contract",
+                "type": "core::starknet::contract_address::ContractAddress",
+                "kind": "key"
+              },
+              {
+                "name": "value",
+                "type": "core::bool",
+                "kind": "data"
+              }
+            ]
+          },
+          {
+            "type": "event",
+            "name": "dojo::world::world_contract::world::Event",
+            "kind": "enum",
+            "variants": [
+              {
+                "name": "WorldSpawned",
+                "type": "dojo::world::world_contract::world::WorldSpawned",
+                "kind": "nested"
+              },
+              {
+                "name": "WorldUpgraded",
+                "type": "dojo::world::world_contract::world::WorldUpgraded",
+                "kind": "nested"
+              },
+              {
+                "name": "NamespaceRegistered",
+                "type": "dojo::world::world_contract::world::NamespaceRegistered",
+                "kind": "nested"
+              },
+              {
+                "name": "ModelRegistered",
+                "type": "dojo::world::world_contract::world::ModelRegistered",
+                "kind": "nested"
+              },
+              {
+                "name": "EventRegistered",
+                "type": "dojo::world::world_contract::world::EventRegistered",
+                "kind": "nested"
+              },
+              {
+                "name": "ContractRegistered",
+                "type": "dojo::world::world_contract::world::ContractRegistered",
+                "kind": "nested"
+              },
+              {
+                "name": "ExternalContractRegistered",
+                "type": "dojo::world::world_contract::world::ExternalContractRegistered",
+                "kind": "nested"
+              },
+              {
+                "name": "ExternalContractUpgraded",
+                "type": "dojo::world::world_contract::world::ExternalContractUpgraded",
+                "kind": "nested"
+              },
+              {
+                "name": "ModelUpgraded",
+                "type": "dojo::world::world_contract::world::ModelUpgraded",
+                "kind": "nested"
+              },
+              {
+                "name": "EventUpgraded",
+                "type": "dojo::world::world_contract::world::EventUpgraded",
+                "kind": "nested"
+              },
+              {
+                "name": "ContractUpgraded",
+                "type": "dojo::world::world_contract::world::ContractUpgraded",
+                "kind": "nested"
+              },
+              {
+                "name": "ContractInitialized",
+                "type": "dojo::world::world_contract::world::ContractInitialized",
+                "kind": "nested"
+              },
+              {
+                "name": "LibraryRegistered",
+                "type": "dojo::world::world_contract::world::LibraryRegistered",
+                "kind": "nested"
+              },
+              {
+                "name": "EventEmitted",
+                "type": "dojo::world::world_contract::world::EventEmitted",
+                "kind": "nested"
+              },
+              {
+                "name": "MetadataUpdate",
+                "type": "dojo::world::world_contract::world::MetadataUpdate",
+                "kind": "nested"
+              },
+              {
+                "name": "StoreSetRecord",
+                "type": "dojo::world::world_contract::world::StoreSetRecord",
+                "kind": "nested"
+              },
+              {
+                "name": "StoreUpdateRecord",
+                "type": "dojo::world::world_contract::world::StoreUpdateRecord",
+                "kind": "nested"
+              },
+              {
+                "name": "StoreUpdateMember",
+                "type": "dojo::world::world_contract::world::StoreUpdateMember",
+                "kind": "nested"
+              },
+              {
+                "name": "StoreDelRecord",
+                "type": "dojo::world::world_contract::world::StoreDelRecord",
+                "kind": "nested"
+              },
+              {
+                "name": "WriterUpdated",
+                "type": "dojo::world::world_contract::world::WriterUpdated",
+                "kind": "nested"
+              },
+              {
+                "name": "OwnerUpdated",
+                "type": "dojo::world::world_contract::world::OwnerUpdated",
+                "kind": "nested"
+              }
+            ]
+          }
         ]
       },
       "contracts": [
         {
-          "address": "0x3fa8a7934510309299b2b7e88514478a2d0ae74e383939c7a821370d729ef14",
-          "class_hash": "0x52d457573dfc80fe9ad90881a6e68ee2dd252df182568bb931c0b01bc8ae052",
+          "address": "0x3c3f98015d9d973ef0d3a1628e19ad01fb63b36d5bbbe1ccb40c152f01a08dc",
+          "class_hash": "0x544952dba4283ce79477790f43b28282807272703f25a3b560f635dabedeffd",
           "init_calldata": [],
           "tag": "s2-agent_discovery_systems",
           "selector": "0x7c2671ec6cf1263363a6c9bacd12a59bc15615a469f7d58d8a9096dea069a2d",
@@ -1795,8 +3248,8 @@
           ]
         },
         {
-          "address": "0x60dbcb5cf83c1ab9a302c55db5506ade1ae95f62ee61a5587a1097a2d35b34d",
-          "class_hash": "0x3d4124566b72aa1e0564e5ff082198a0f96622251ab017cd380a8881dc76f97",
+          "address": "0x1239757ce96d0a5d15ef6d422ccd563e0839acfb49eaf9885f217abd65fa6d9",
+          "class_hash": "0x51d0a1d7fe720f73aa1470f689c920054ec0e1ad3ac6705b11cf984febfd202",
           "init_calldata": [],
           "tag": "s2-alt_movement_systems",
           "selector": "0x7a0748f310a218b245cf8225f1c22391cff786962c85b0c0f959d4cf5042837",
@@ -1806,8 +3259,8 @@
           ]
         },
         {
-          "address": "0x145059c906b38512efe64765da6c6b6c7386007454e9b301c0302c6c64d1a71",
-          "class_hash": "0x27695158ac725625ea619954d0e705a6d87337f6df625f8c780050a6d990b41",
+          "address": "0x444fbe6881e97f83efa728fb3751ebbf5715f5b007d3c9ca9320131702e13ad",
+          "class_hash": "0x48b3f2ac31c1935c3941fd3da8238d09c17a948e4e890bc347ef0aeaecc558c",
           "init_calldata": [],
           "tag": "s2-artificer_systems",
           "selector": "0x1c84002a713c32809fb1ed3b3646b263f8e643208fb1fe7645ed316e810536d",
@@ -1817,8 +3270,8 @@
           ]
         },
         {
-          "address": "0x25d012cd2fbef38a39154a735f9e5ee40db0deb323bc501ffa05799177c4e1",
-          "class_hash": "0x6982c65f5b46d6948349b0ab744b8d69848d6195d9f58d2cf8765c70f778315",
+          "address": "0x507ea088e667a4b9f613c3d4b40e6fbe596f0c96c9f43cb1c321cc4d79d8303",
+          "class_hash": "0x179e84d74f0e739aa9b8dc63ce94725b3ab04337529a50ad848d191d9af4a82",
           "init_calldata": [],
           "tag": "s2-bank_systems",
           "selector": "0x73e968dc553c4888fe990f7f2d677c813c7d46438b982b770d0ebfc4c5ba9e1",
@@ -1828,8 +3281,8 @@
           ]
         },
         {
-          "address": "0x757c4d3ede27ec06bd12a456ee3933f71932af8aee3f5bb6e07b98847dcec76",
-          "class_hash": "0x62ed3de61ef330699a8687cc0fafa3803f3cdbecfb003fbbb3541ce4ef83203",
+          "address": "0x5233bf3a77e2eaeb45941904fdf7d6ab37f563686667e018c889e983f4944d",
+          "class_hash": "0x6aad60eb4add272e5c9909d8b5ba2f4bf60b6bc6ce9a92d11448f244f7ea71a",
           "init_calldata": [],
           "tag": "s2-bitcoin_mine_discovery_systems",
           "selector": "0x5014b4bbd6db146a2f69180267047b2033c1cc0a5b0f4c831da0bddba0531b1",
@@ -1838,8 +3291,8 @@
           ]
         },
         {
-          "address": "0x219a17219e48f110a754e98c3617332c86df99cf7b10d0dac1f01306ebe15e0",
-          "class_hash": "0x4fb4eb38c7d4b7f3acc2bfa480dbaed11a724b0cc3aa343dac9ad684d613313",
+          "address": "0x4c55473994f031bd77593855e9e076fbce214a3ef4422a115cd828043e688f2",
+          "class_hash": "0x5b858f0f8aa443db71432c584ebf2597b871d507b5812136316c17eca16bb2b",
           "init_calldata": [],
           "tag": "s2-bitcoin_mine_systems",
           "selector": "0x6b644b5ad75bac2dbcf4fc9ca9eb167bfc4986eff173d67ecf19f56046bbdf4",
@@ -1850,21 +3303,20 @@
           ]
         },
         {
-          "address": "0x6d6a641e16cb59f2bc816973340ad45255f2b76eb6bb56f23db1a1dca76636",
-          "class_hash": "0x21ef6a3ec8dd69ba8ff1b28e4615a0890d8e9116463956e7977ad617377867a",
+          "address": "0x24a29eca64b5968c56ea4109fc22ee791a9f9f5df641550724a95dadf1d44ce",
+          "class_hash": "0x556aa52b6801e2e2948ea509d2c3b9cf8e745b5832a64ddd898471937ac56d9",
           "init_calldata": [],
           "tag": "s2-blitz_realm_systems",
           "selector": "0x2f457be35501fb088476ae8ad493f012f5b4bb4060d8a639a9b8fb45e6b8c3",
           "systems": [
-            "obtain_entry_token",
             "settle",
             "provision_realm",
             "upgrade"
           ]
         },
         {
-          "address": "0x47f93358de2097ab4c3384bec247c1bc8cc9227b3bd8d783f30d7877f733c5f",
-          "class_hash": "0x7cd843c6c1a9f270eb8e98617e123985ac1c75a73d3f4dc6455446806576ba7",
+          "address": "0x72390320f19ba24c0caf4bfbaac75b318682cd7ad0f46b715c2d0095af96745",
+          "class_hash": "0x575db9b1ecdd8096e18e94b0a457686c2c289aadfab26e5245846b83626077d",
           "init_calldata": [],
           "tag": "s2-camp_discovery_systems",
           "selector": "0x4989e0a399f095799c92aea5fdf2cd57a9b13dbf358db7697a6485b1c039b6f",
@@ -1873,8 +3325,8 @@
           ]
         },
         {
-          "address": "0x6990ecd794af6a464f48d84d163140ca7579599648dfb249de9142077328635",
-          "class_hash": "0x4f4d5f162ab12be1cb6a3898ce25ed53b4683b8ebf942ee5b4b720af0ea11f8",
+          "address": "0x73f631fbdcc1ceed0c9345f6bfa301687203315941e286139cb4edde9741bb6",
+          "class_hash": "0x3eddab80f0e23f30705c27834908a851d68ebdd760f63cd414e63d08674280f",
           "init_calldata": [],
           "tag": "s2-dev_resource_systems",
           "selector": "0x2fc2b48de3465e4be3f170c76fa28b81e85dfb130b16cab706753095f67950c",
@@ -1884,8 +3336,19 @@
           ]
         },
         {
-          "address": "0x4e450c432a306b65cb10c5495d7e9f454918034e56f6667275c24f5f9f93003",
-          "class_hash": "0x651cba8773ea2f4836104a9e15271efd19a7b95f3186d9140ba78a53172d70c",
+          "address": "0x745cd95c8a13f577fafed0422f765db09f3e87a4ee63bd4534282c22207e6e5",
+          "class_hash": "0x39b7173aaac6389a8be54a91777c1557e4bd032d61d89a2c53d02f2b5749f2",
+          "init_calldata": [],
+          "tag": "s2-entry_systems",
+          "selector": "0x3ccb11ff6de17405c6c24b774784bd9662fef9666046f88a83ba400487b9c75",
+          "systems": [
+            "register_from_l2",
+            "upgrade"
+          ]
+        },
+        {
+          "address": "0x60ea0760babfeada75390c32a462dd2eef72deebd264413129fea329b792a7f",
+          "class_hash": "0x75ac1f3db12c31377fefd3c25a71540bf26f3c5db4f86a036898174cc9e6ae0",
           "init_calldata": [],
           "tag": "s2-faith_prize_systems",
           "selector": "0x54e38ca25a11d71812b250fad1fef534ba27a8ed5f8063d53e31eb5b8ef2e14",
@@ -1896,8 +3359,8 @@
           ]
         },
         {
-          "address": "0x5ec229e9d506f5df5b7aaa1aaa1be80e0cd0c2e5c7a780c06cc4391b10fdcf9",
-          "class_hash": "0x3f5631a3ef5a806718131d8228f177f30ecc3e0f5dcdb49a87a7c29599f84a1",
+          "address": "0x5d28a9e5627d953344bcaa6d3d12c53977719add6c6a96cae528a24d6ae518",
+          "class_hash": "0x6e78bc110322f66eeaf881826c852bc70692696b04b39961d020f9e9ebb93cc",
           "init_calldata": [],
           "tag": "s2-faith_systems",
           "selector": "0x5e232d2f0244cd5f3e181cf9d2107ec4395e638a8ee135e0e8cacc99d5d1322",
@@ -1914,8 +3377,8 @@
           ]
         },
         {
-          "address": "0x4a117b9dd123190dd9112a7c2bef1aa52094232488559fc35c6b81c215c5fd5",
-          "class_hash": "0x7ea406349f7e8a6a6d6a445eb971497650bc06498394301468f7480a36f79c3",
+          "address": "0x20c78041e32a364908928457c30feea98929c4515648bff42dc8ac4cfdf7c42",
+          "class_hash": "0x121800ac8ba106c8705070b16993b29b4a4b3c114c33273705d1f923a8f4a91",
           "init_calldata": [],
           "tag": "s2-guild_systems",
           "selector": "0x5ece639575c025f471d361a3088773e18bcd3cb514b4f68f2d055ec58cd4277",
@@ -1929,8 +3392,8 @@
           ]
         },
         {
-          "address": "0x42b6b860cb2339439850f7b8ece5278daade70ca0adcb2ca69bd529b9852eba",
-          "class_hash": "0x60354870319911af57560d251d12db2735fa3dd385211c88744ca92f0e5ce4d",
+          "address": "0x2c1b587588f3aaf0d6309661d34ec6e0e4bc7c9cc087a7f21a19cfc1e5047d3",
+          "class_hash": "0xc32f46dfdaedc6d4be613b73bcfe25c55d586cdaf397c60061391db166db9",
           "init_calldata": [],
           "tag": "s2-holysite_discovery_systems",
           "selector": "0x7f86430688d179157aba39a0cea06dbb9d1499f7cfe948a1d55bd225cf5041f",
@@ -1939,8 +3402,8 @@
           ]
         },
         {
-          "address": "0x184d294373e9029936a097b1e508e98493e7009145372c164d0952ccf913a",
-          "class_hash": "0x3753bf350919ab9287c69ce721e1e2d0673fb28d38b66d7215158d1a335a2ab",
+          "address": "0x4fdc10f11826ae91b807f819f7f6327e38aa31092fdcd243cbb5a8236530888",
+          "class_hash": "0x7db620b43b96a6a4d86ced8c6beaf73b6600370f6fe5658bcc05f800109c6e1",
           "init_calldata": [],
           "tag": "s2-hyperstructure_create_systems",
           "selector": "0x1696302d09890ddce3c1ea176cdd45c8d53934cbbfc493fd3c8a42496c34b82",
@@ -1951,8 +3414,8 @@
           ]
         },
         {
-          "address": "0x7ca8a4458b052dd740f1acc069b8086ac6efa74df3d50b38a3cf7d6641ad935",
-          "class_hash": "0x385951c8da5950a0295fa97d69b58381a84fc7e495ac131714a94a75bffb6f",
+          "address": "0x4b01b93cce6b5dbfd5f881374fd0012f8250c8daa60cb33b6112a5a0b26b87e",
+          "class_hash": "0xd34fc5d6be2830c35fa44b33d34d15f3cfea61221b67ffcd1b6f5ce5948b58",
           "init_calldata": [],
           "tag": "s2-hyperstructure_discovery_systems",
           "selector": "0x1e7eb38cc340c53be39c039e55684b33e2a70ac89e8e4e46dc9cc9956be62b5",
@@ -1961,8 +3424,8 @@
           ]
         },
         {
-          "address": "0x3307613c448f6d2a61ff1ece4d3cdc17d377ddc7eadb48eb4ad0e9f6324f00e",
-          "class_hash": "0x63fa28a2a20d7af2836aacec6068c9c5daadd5750d31da4b847c44ea5fe8b0f",
+          "address": "0x39f94d1972ae1b783e1fc2f05ab3926cc0d1c7479e56b792f0da73f40263ef",
+          "class_hash": "0x7a7a6b969d65b8e1958defbc3985736498135f332f814b34ced3f53e271d224",
           "init_calldata": [],
           "tag": "s2-hyperstructure_systems",
           "selector": "0x6712ea3e6f0bb1ab77a969cc5c99866e1697139eb93b61fd182bceeb7413c6a",
@@ -1976,8 +3439,8 @@
           ]
         },
         {
-          "address": "0x4eda90ce45812c5a6b4952b6efe6c7e6fd215ebeda00201fe1c71737bdd957b",
-          "class_hash": "0x2b1861259b57acf3d385507605e0993f89540fcdc38c304932822489ea4db27",
+          "address": "0x68722061887bda3931d9bd5480cbb51793f0aa1fecb81015cbe5d43758f15a1",
+          "class_hash": "0xfb117f4fc73a4b43b56815783da47f2095a36eb3ce3bd804d9238eb8fb95c6",
           "init_calldata": [],
           "tag": "s2-liquidity_systems",
           "selector": "0x2561a5f7a8d40bf75a6abf17ff561ded28a54414703220dbd7274161e8695e4",
@@ -1988,24 +3451,12 @@
           ]
         },
         {
-          "address": "0x42e78f61e580d818c30ca1f929ce25939ec591b24e1e73e8f3ec96a728437e4",
-          "class_hash": "0x2dc4966e28f1fa0ac0396f802f0fdce149b497937e8a4b33e84f778a8d7f0fe",
+          "address": "0x6b0765220a83062e4595b01ceb7130721b2888c8e32fb560d2b52d94387bd8a",
+          "class_hash": "0x16877f04ce1d8ec9a23ac33675bf1769b2db3d40d9c1541de7333f169f87c09",
           "init_calldata": [],
           "tag": "s2-mine_discovery_systems",
           "selector": "0x52778c1c10bde296c8a455f4a75cc32672ab3e75f23ebb0db1d06d8c1cdca2f",
           "systems": [
-            "upgrade"
-          ]
-        },
-        {
-          "address": "0x50a6710522df260ba92380692bda635b815cceb1a4c41acc1c46598e3eead6b",
-          "class_hash": "0xfa108dab0e4a0af7f5e9a0ac41636adecb83c8b4bc214404ef3dcfc6a6f582",
-          "init_calldata": [],
-          "tag": "s2-mmr_systems",
-          "selector": "0x59b4d6b0684c40ace9ec3a54980145da5606b7dbf5327b9eedf755521ebbeda",
-          "systems": [
-            "commit_game_mmr_meta",
-            "claim_game_mmr",
             "upgrade"
           ]
         },
@@ -2021,8 +3472,8 @@
           ]
         },
         {
-          "address": "0x331bff59304a8c5228571a9feef543cd98f42213b8f1fa4720259f2d016a370",
-          "class_hash": "0x414dd9e05b57b145538ad59ce305e9e50ea19e87f4145c588e226ddd2f30be4",
+          "address": "0x1aaf02ca786539f4500176b518f138723cf71ea437add371ff648fc45601624",
+          "class_hash": "0x250b8bdc3b094a99198322f5895ef640f15e864c8e2b794418879168c8e56e1",
           "init_calldata": [],
           "tag": "s2-ownership_systems",
           "selector": "0x5b91b9dd3e18200a0d83b0052450799431a3c996a8db43ab750852f98fc9b4f",
@@ -2033,8 +3484,8 @@
           ]
         },
         {
-          "address": "0x18d4bb62bfd1fe6e29a8fcb0e288c01a7498bb589af509388d3348aec8160c4",
-          "class_hash": "0x508b3ba469b17ca890082cfe559c92e4dd09514362d9f68a7e20499c25f65ce",
+          "address": "0x1cb27eb4832e9e29381ae1b3ced6ddaf9d03eebadba14f40db18590f3dcb500",
+          "class_hash": "0x6349d6d9d1fd989a2b15e342a071efa713a6e997d6b67d89384a841ed5c412e",
           "init_calldata": [],
           "tag": "s2-point_systems",
           "selector": "0x1fa907303c222be3ec373269a668bdcb6b9900202b852cfe7e22fd7882cd0ad",
@@ -2043,26 +3494,22 @@
           ]
         },
         {
-          "address": "0x751cf72fc75e3919a24050b77ddc896750d2ba4fd35d207824ef439bcca1218",
-          "class_hash": "0x7cf02f6c34f58f83045787a173906f2cda2f1dc431456a7a3b88e865843206e",
+          "address": "0x362d9977c3a795d8fbabd37843efa82e2df47a7f16225648faefaecd5021052",
+          "class_hash": "0x721a76c8ae3852a245e3bdf05521dddb7b596ce4aba03de8c53bdb082af5a8b",
           "init_calldata": [],
           "tag": "s2-prize_distribution_systems",
           "selector": "0x12aecde0aeb831c6bd68cd5136815edd4f4db05e9a55c4b734534601718437d",
           "systems": [
             "blitz_get_or_compute_series_chest_reward_state",
-            "blitz_prize_claim_no_game",
-            "blitz_prize_claim",
             "blitz_prize_player_rank",
             "blitz_get_ranked",
-            "blitz_get_winner",
             "reset_trial",
-            "blitz_sweep_remaining_escrow",
             "upgrade"
           ]
         },
         {
-          "address": "0x1fe7964883fe7848bf9dcf4f65a6ea088640af23a0ee1a6c3a411059319298a",
-          "class_hash": "0x2ae19e5bf52f9592a0454fc3d9a938bf97ba65f6794adf42b288632e3e71fca",
+          "address": "0x6cb7491ef804ad6664e2d3f02e2089ee2564b774f69f3cb55732473bee76c90",
+          "class_hash": "0x3c16458f6d4460e1cef64fee246c061e19eeb1ab899f8cbe4d184f9a4b45987",
           "init_calldata": [],
           "tag": "s2-production_systems",
           "selector": "0x4e7d3887a854bdfe780deea047c072c709e83e70d9c6611df26e69ce21af3aa",
@@ -2078,8 +3525,8 @@
           ]
         },
         {
-          "address": "0x7bb3c19e5241590adc3043a8c719f170c5b18bbf66acf9044b3e002ce48a94",
-          "class_hash": "0x7ccdbbc19c563af6007107784c0afe3a9517b14ec4e2abeb42025b5ab7d182f",
+          "address": "0x513f86a0238cf603785512b80d5e75c01ddb958f0f9b5109cc0456b828a58cb",
+          "class_hash": "0x3b1f6bbe9b10f270b28d932d6e8e3368bad75e9e5594186413e57d49c0b5387",
           "init_calldata": [],
           "tag": "s2-quest_systems",
           "selector": "0x540595f0c6797a5aeda35fd5237d8542c354d6dcf6b150c243d3b80709438cd",
@@ -2095,8 +3542,8 @@
           ]
         },
         {
-          "address": "0x5cd3254452336476717bde3e04d8eeffe8ac1a01943a2d228b8ee18a29dc3bd",
-          "class_hash": "0x7a985d245ece21b765760554d8fbda858e0a2672a498f44ed94bc4c05211146",
+          "address": "0x15eecf15f1b470d23a8c6608db42a9e53c3b2dfd96469eb53aa9a81e2e93564",
+          "class_hash": "0x38d7efedd3e0efe44806bd418ffeffbf6f31a2e3cfe31c6f0f6b280519055c9",
           "init_calldata": [],
           "tag": "s2-realm_internal_systems",
           "selector": "0x60a3de2b7fe2038c858e8171e21c4b75f1db9087e1e86cebd228e710d3e6afc",
@@ -2107,8 +3554,8 @@
           ]
         },
         {
-          "address": "0x6a1e7e8455ac98cba968f25b6277b767d086383c24888d9bb1c5e227dc19bc7",
-          "class_hash": "0x665b79c747941deb474dbe4e61fcf3366e01acf52fabfefd5a60b0f754cb590",
+          "address": "0x477eabbcf73904cb9734857241ad65d2f0f25e9f2d5dc8c70c9923f1aa82951",
+          "class_hash": "0x43427d95f889fb9fe4ae85f61b6ae7d74414c9c593c9aad9aca81efefcb1d61",
           "init_calldata": [],
           "tag": "s2-realm_systems",
           "selector": "0x15840f61f67edf5690ea72dd3e54dfe561477810b5684035e0476bef3436923",
@@ -2118,8 +3565,8 @@
           ]
         },
         {
-          "address": "0x23d89ba402b33599107413ddb0f33f0cc38e57dcff4aa3b1989cba12076e9a5",
-          "class_hash": "0x421f1827c50005d4948807615c40a360d1b3a0d23a9e81a632e2cf46be7a057",
+          "address": "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
+          "class_hash": "0x242e40b4e8857a6222d65b019dde9504c4e532671a52dd64a7822c9a7f94c2e",
           "init_calldata": [],
           "tag": "s2-registrar_systems",
           "selector": "0x4804d037c91147634be0c5239a0c366e59e0365a3dbb5da3c4c4c5e9cfd6014",
@@ -2135,8 +3582,8 @@
           ]
         },
         {
-          "address": "0xc2dcbc5e6dba925035ba9b51193e9184cf3f07d161e374b6c09eacc3f9dcae",
-          "class_hash": "0x97357a09aa043a5c60254c3f3dae6c236a34cbfe90e3297f445ad3ba73e29",
+          "address": "0x5d8ba4295b7bbb3baa79207c3bdb9a0e90385321a0682d93c25b4d82b7ebf87",
+          "class_hash": "0x434b34b0d0be2f27fc7f8516d65d305a3e9e8f77a3c49ef1c18e54e8988cc39",
           "init_calldata": [],
           "tag": "s2-relic_chest_discovery_systems",
           "selector": "0x482f02f80b37fe032bf7a2525683c83b8c3c9519d4c34c4285f26d96240fdd",
@@ -2145,8 +3592,8 @@
           ]
         },
         {
-          "address": "0x926021e32a34b9e41ab8a1c7bdd502b07152198a21d54547cbeb19c22c1a60",
-          "class_hash": "0x3993482e70c689c534c4e660a380c7ce984b53d1a6bffab6c40763f96d4c02c",
+          "address": "0x6ad2cedfb88e875147fe203e05205a6dbd8faccf7faccd156b9382c9010835f",
+          "class_hash": "0x1277779288fdf524e6655b801de2c5d8b6a32624f798fe848e047b9a8481719",
           "init_calldata": [],
           "tag": "s2-relic_systems",
           "selector": "0x59ae849f6b5f2fb35aac5a3c8b8daee0c0083bef0717a05ab47d361b30bafc5",
@@ -2157,8 +3604,8 @@
           ]
         },
         {
-          "address": "0x3d65e6fa649657b3c11ae10b8432005b65b2f1054374f1346e3195162621768",
-          "class_hash": "0x53c63b06697e9436310ff3e113288c35406d704e0b60290cf0e5d857a50b809",
+          "address": "0x2012bb66d44dd66ac8b0889deada91817f7ccb83e92ed5849731e61359863d7",
+          "class_hash": "0x5eaadeddabd4893d8bafdfc7732cdae752c79850045778b599663ce94fcda0f",
           "init_calldata": [],
           "tag": "s2-resource_bridge_systems",
           "selector": "0x4157f73bc343f1c3729cb8d993e7a12c1d4bf8a4f335978df83e2d489638011",
@@ -2166,13 +3613,12 @@
             "deposit",
             "withdraw",
             "lp_withdraw",
-            "velords_claim",
             "upgrade"
           ]
         },
         {
-          "address": "0x3a0bb5a7fcb2d74ed2f9c8c284d079a86cc071c90b744e676922dcadecca881",
-          "class_hash": "0x52967cf2697022930835cf6b416685b1a584ab8bba3eaa1c026c440dbaa9119",
+          "address": "0xe56a5f2516ce0578d332cb3b038ac814a01e5368b8a36d4e740680ea346d84",
+          "class_hash": "0x9c155ad12f5807f332cf78fdd0077e9d7231858bf5ded82565b74eee92b7d9",
           "init_calldata": [],
           "tag": "s2-resource_systems",
           "selector": "0x7b684d925313a76f3f6b00e657b8d10247a72fce77dafb1b1e31cd7501fb52a",
@@ -2191,8 +3637,8 @@
           ]
         },
         {
-          "address": "0x57cb5170ebd2522a6f143ce138849a42eef619cdf7882fceff8a2eaa3f9f72f",
-          "class_hash": "0x4c3336683be2d84bd7248902e8ec52c2ef2543ee96c2cdff2bc33d08d8e5419",
+          "address": "0xa65cf5a57d37b86116296f58dea3a7b65814115cdeed63326294a7eb8c2b17",
+          "class_hash": "0x5d39512031a13f7ba7e988f8877b6a325505987952dba07b46c0bd3bc5367dc",
           "init_calldata": [],
           "tag": "s2-season_systems",
           "selector": "0x647b9e1ced068c5c41511cf3851a373962bfe18fe4a1a469657f9d2c362208f",
@@ -2202,8 +3648,8 @@
           ]
         },
         {
-          "address": "0x5fbb9ace20be9bf0192709e0a9063c1e879d56a8580c61a2efdd016055a4cc4",
-          "class_hash": "0x5a83e73f8af0eb5042ef4220b91b0973a6aa40823d79e4a9f3815881a3f5f7f",
+          "address": "0x98a121ecd7a0e56485c38798275af785f666d3b41bcf55d91f4fd4d10bb015",
+          "class_hash": "0x7b35da3e075cf437658a98b1a44c3bbac8b73b208b2b0e295d9ffc42a7364f0",
           "init_calldata": [],
           "tag": "s2-spire_systems",
           "selector": "0xa00423907c74d1d633a22ec1c4fb0617044b5aa02badae7d69d21be273d874",
@@ -2213,8 +3659,8 @@
           ]
         },
         {
-          "address": "0x2551b8866522c81d84663578b802e83ee524d78092c0cd0a4a4e3d499628093",
-          "class_hash": "0x7a1e3faea6c20f5952a2aa91ca30c7b0a38fa8ec3e8a114f0b89614b225382d",
+          "address": "0x3ce159003fa421cd7e1de59bbaa4ad205a342d814228f20100c47c3f395097f",
+          "class_hash": "0x1e8122ba4a397052b3ec5f01d4b3429e7075cfe2f16d80751e793e02a3ecd1b",
           "init_calldata": [],
           "tag": "s2-structure_systems",
           "selector": "0x2ad85fc53b7641bd7384db9df083b2933792ca78cecd410cae0b29190ab889c",
@@ -2224,8 +3670,8 @@
           ]
         },
         {
-          "address": "0x7eef0705dba73017df434866b0f0389f836bef2934318daa5684bd38526e627",
-          "class_hash": "0x4984a430ab42c5fd8d78e3043042c32cbc9f34fea8a93da0385fb7f6b84fb8c",
+          "address": "0x707dc3ccf90e96612573c52a1e47e07d4813fa99dcab7a8ba79f80e9727cb7",
+          "class_hash": "0x6deddd1cf28b39b09e44e41d14c39c7651090afd839818697b42259608fc2c",
           "init_calldata": [],
           "tag": "s2-swap_systems",
           "selector": "0x7f8b75330f52d8ef715c833018ec8cc7f8ab49a72b18cc6646a317b79a68de2",
@@ -2236,8 +3682,8 @@
           ]
         },
         {
-          "address": "0x1b6e5d3d90c27086c0f33b09ef8f01ddfa1e3988c761eb08ec266baa930b3ad",
-          "class_hash": "0x4228be13564dd6a7974916c539e52fb56b37c03ba5c932cd48b20c33ac8f769",
+          "address": "0x8872006b149513f88df7daf82ce17143e854adf7d5a86b956f8606e92617a0",
+          "class_hash": "0x30610c817e468a1fe4bdad1c5dbfd2ccd60d0cc1ca0b729af0ed16d775d3cc",
           "init_calldata": [],
           "tag": "s2-trade_systems",
           "selector": "0x2e9d493f482cbae3686cc97204e9c9810b82ed6bf1c5c6a56c8e7f9eb373ee0",
@@ -2249,8 +3695,8 @@
           ]
         },
         {
-          "address": "0x610faa390ca040a55163e2fcf194ce7669983eaa44a224c4f725728151066e3",
-          "class_hash": "0x402fe231dbe271f8f0f8156507020b4cc59726eda86fb036c02cd579b31b30e",
+          "address": "0x3e88dd57cafee0eef0264b59865a13eaf986470979892e43041dbcb8adc820",
+          "class_hash": "0x7088f626a2e86f0feb74a85497838c40b0f5a0e4031560698fd82d6cf920122",
           "init_calldata": [],
           "tag": "s2-troop_battle_systems",
           "selector": "0x25b78a11c862d0bda3ff8aaec76e9f1dca6de6c6fe97aed5434a606695dbff",
@@ -2262,8 +3708,8 @@
           ]
         },
         {
-          "address": "0x1b0db734052b955b2f034aa151e669e6f4013c8df5db719b89a8961120d64c0",
-          "class_hash": "0x2f793a659d49c8f55c9e191983a9d12c318f681c135c6121976f2de228dd68",
+          "address": "0x4db549d37af331d9e872a79bebf5bf3d2c088a6e262182250a3cb5195a39451",
+          "class_hash": "0x55bf858287886a2755c243b5f23617e8b2636825a0386e04e1e5cd1f86a8840",
           "init_calldata": [],
           "tag": "s2-troop_management_systems",
           "selector": "0x6a6e0b89963cd143f8ac59715bb8703b82846a949938ed025fca425ad293739",
@@ -2280,8 +3726,8 @@
           ]
         },
         {
-          "address": "0x6076b2058326319fbdb9948b22282baa769b93bdbe937f8910953bf493c7495",
-          "class_hash": "0x401e8b6d9a16c19e3e9fe439597bd953c5e516cc20ea6592a1ab18e29cd55c1",
+          "address": "0xc1068e7f9d112f3e70f7869a243ab81c0bc37247799bf8c0b70fa418e38e29",
+          "class_hash": "0xea49baef1bf8cb9c4e9ee8bfefa59d12f727d85e120173c53d6daf7efc8d58",
           "init_calldata": [],
           "tag": "s2-troop_movement_systems",
           "selector": "0x3660164eb20db73a2286ce100d274c9631ca84fae00bd5c45d0b763017b56b2",
@@ -2302,8 +3748,8 @@
           ]
         },
         {
-          "address": "0x40f7f427312218427c6b3cfd96fe43b544b44badbcadd3515cbc3d6bbd7118d",
-          "class_hash": "0x22d7830e0c8d3a5470779a737402107935071b15d1eebf13f04e55e95d8dd15",
+          "address": "0x1c74a99f09cf98904d2f7fda73cf84778138c5833e2d25f873261702ae8297a",
+          "class_hash": "0x789a9cb0df957dd5a2eb2647434506e6c5359e39d176dfe61059b7f381a6885",
           "init_calldata": [],
           "tag": "s2-troop_raid_systems",
           "selector": "0x6a85660241b94f0f911a3e401027baecca8e3c962797e77362aa07761a19de6",
@@ -2313,8 +3759,8 @@
           ]
         },
         {
-          "address": "0x5a0edc4ff7733800e86a22df568720368b13b6a7f18200195941d78fa339b8d",
-          "class_hash": "0x71f6e3f3e0b8daaa84ee06fd76626fafb11712fc22f34907d816f5942dc6a9d",
+          "address": "0x20a8aa583cde37a57cc2c256bdaa46c37675b657e5bb9f1eace20b7e13d6e42",
+          "class_hash": "0x47dfca3f27a7e59f2e9824efe7bf8b94f542a7b3321c659657363fe200fbe0b",
           "init_calldata": [],
           "tag": "s2-village_systems",
           "selector": "0x7edd79ed540ae459d77f2b23976b0539de02ccbc8b43d723de2564369d38f8c",
@@ -2327,7 +3773,7 @@
       ],
       "libraries": [
         {
-          "class_hash": "0x336564b30c599c0225e00bba9a6fe8e62eeef982e4c009938c49a80570f9616",
+          "class_hash": "0x7da86fd5136e0cb2b7115d00aa45e8b9376ee924af69a8cfeea4c06737726ac",
           "tag": "s2-biome_library_v0_1_13",
           "selector": "0x3f57dacceb06626edd63d8604a5b78595644d82f8fec30b9c8b685384923ad2",
           "systems": [],
@@ -2348,14 +3794,14 @@
           "version": "0_1_0"
         },
         {
-          "class_hash": "0x2e4f07171be373896210c98ffe888574a8192e53f795457e0d9a8d024083996",
+          "class_hash": "0x2d4f363307b6d5dd15e27c7d2d67ab37f22ca7cc76c84e83a62a91a2d7760e0",
           "tag": "s2-rng_library_v0_1_16",
           "selector": "0x65b098fdddc3a9d5164d51571d9f0fd05cafeb62506532d54a23f543c90da13",
           "systems": [],
           "version": "0_1_16"
         },
         {
-          "class_hash": "0x71a55ecb42c00eaef86307cb143a054d3f63c23cd03f73d5c7da2f9ffde65da",
+          "class_hash": "0xefabcbe30d3920e19406c726d9c502e489284df70f9cc1bca1696452db2db4",
           "tag": "s2-structure_creation_library_v0_1_18",
           "selector": "0x16f1565db366652914b03f1d4a3f923e8a68907f7de2b08d94515bbdec88b00",
           "systems": [],
@@ -2638,33 +4084,6 @@
               "key": true
             },
             {
-              "name": "token_id",
-              "type": "core::integer::u128",
-              "key": true
-            },
-            {
-              "name": "issued",
-              "type": "core::bool",
-              "key": false
-            },
-            {
-              "name": "registered",
-              "type": "core::bool",
-              "key": false
-            }
-          ],
-          "class_hash": "0x6ed3fdf11c65f47aad2daf0b77cb34d6a231e2dec1348c0d63cc0318c8aa158",
-          "tag": "s2-BlitzEntryTokenRegister",
-          "selector": "0x7b4c6050229505373f382ded20dd25955dac9c0cf29f5a7240d737c6be56c19"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
               "name": "player",
               "type": "core::starknet::contract_address::ContractAddress",
               "key": true
@@ -2823,6 +4242,16 @@
               "key": false
             },
             {
+              "name": "ledger_operator_address",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            },
+            {
+              "name": "player_registry_address",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            },
+            {
               "name": "vrf_provider_address",
               "type": "core::starknet::contract_address::ContractAddress",
               "key": false
@@ -2830,26 +4259,6 @@
             {
               "name": "agent_controller_config",
               "type": "eternum::models::config::AgentControllerConfig",
-              "key": false
-            },
-            {
-              "name": "mmr_config",
-              "type": "eternum::models::mmr::MMRConfig",
-              "key": false
-            },
-            {
-              "name": "fee_token",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "key": false
-            },
-            {
-              "name": "fee_recipient",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "key": false
-            },
-            {
-              "name": "entry_token_address",
-              "type": "core::starknet::contract_address::ContractAddress",
               "key": false
             },
             {
@@ -2873,7 +4282,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x5731178f4273c9d1453e2dad4b158d206de94721fd3de6746fc757b7d09cdc6",
+          "class_hash": "0x4f6ca02875602be1f1a8e279650754b8556fa57f7f4e162acd7856fb90ff154",
           "tag": "s2-ChainConfig",
           "selector": "0x61823304792b97c11797dcd646d3f856bd9571bc8952480d6c9ec68ab35e417"
         },
@@ -3105,19 +4514,9 @@
               "name": "seed",
               "type": "core::felt252",
               "key": false
-            },
-            {
-              "name": "fees_collected",
-              "type": "core::integer::u256",
-              "key": false
-            },
-            {
-              "name": "fees_paid_out",
-              "type": "core::integer::u256",
-              "key": false
             }
           ],
-          "class_hash": "0x67c6bfa1f4c9bde9b70488798696155db7b46873ee1ecbbe5325e545dff7bb",
+          "class_hash": "0x7eccaa39b0ce880604e8f2711b79d0791c1efbaaacbcb42bc1a69770df2add0",
           "tag": "s2-GameRegistry",
           "selector": "0x42fb799cf6ef454237db3b350d6517f5d7e1d8505cf88955b2b4af830c34a34"
         },
@@ -3475,6 +4874,43 @@
               "key": true
             },
             {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": true
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u256",
+              "key": false
+            },
+            {
+              "name": "metadata",
+              "type": "(core::felt252, core::felt252, core::felt252)",
+              "key": false
+            },
+            {
+              "name": "pass_kind",
+              "type": "core::integer::u8",
+              "key": false
+            },
+            {
+              "name": "registered",
+              "type": "core::bool",
+              "key": false
+            }
+          ],
+          "class_hash": "0x5fad360b074057ef23d4aa2d9e64bfea6cfd919c9b654f0c27b5ae7a0b68ceb",
+          "tag": "s2-LedgerRegistration",
+          "selector": "0x4a16b0e37431221727c1c549efa45817db09dc67f4ba17525ad96069536b1ad"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
               "name": "player",
               "type": "core::starknet::contract_address::ContractAddress",
               "key": true
@@ -3493,40 +4929,6 @@
           "class_hash": "0x6a27b76d18d45274952402c93dd45003eb6fb66fd1c9dd23d86b46ff9da0897",
           "tag": "s2-Liquidity",
           "selector": "0x2227cb9e194be1d4c70ee1f658115865da3d62a9b8fd13b1835c62c4c78b0dd"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
-              "name": "claimed_at",
-              "type": "core::integer::u64",
-              "key": false
-            }
-          ],
-          "class_hash": "0x5dfcfe8fe8906cc71ce83bcde22f317b789c4a608f537103fed6cff515b65b3",
-          "tag": "s2-MMRClaimed",
-          "selector": "0x35c60cca354f3a8178038e5badbf586c9b774e9a09a17c4f69223f1a550507d"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
-              "name": "game_median",
-              "type": "core::integer::u128",
-              "key": false
-            }
-          ],
-          "class_hash": "0x7a950b746522c5e18122ec4b486737d9e24cefa30a3d0ca6dd16b467bed428a",
-          "tag": "s2-MMRGameMeta",
-          "selector": "0x4aeb298a6cabcc0c2a6f1b2d8f2f9750ebef7cd70de891d3aa69d6b816a3dea"
         },
         {
           "members": [
@@ -3674,12 +5076,12 @@
               "key": false
             },
             {
-              "name": "paid",
-              "type": "core::bool",
+              "name": "chests",
+              "type": "core::integer::u16",
               "key": false
             }
           ],
-          "class_hash": "0x2ddc1fd2b35ef5ff0a04d41a43062134831b7bf9b0413fd8c0dbd6697a64c41",
+          "class_hash": "0x18c7c523615962f66a3f459513a6566da96c70053677dd42604f7182be4fbda",
           "tag": "s2-PlayerRank",
           "selector": "0x305bba153d96fbda9d844d2d0d7a40234d0898db8efd47929da4803a8612edf"
         },
@@ -3699,33 +5101,11 @@
               "name": "registered_points",
               "type": "core::integer::u128",
               "key": false
-            },
-            {
-              "name": "prize_claimed",
-              "type": "core::bool",
-              "key": false
             }
           ],
-          "class_hash": "0x67d11aaaca9c56f237d938696fbdd19d08da043c58d21824ea5fc209ef79b60",
+          "class_hash": "0x79f2c0596763494181ab60d2391b5fd203cce65847f6f35cc1f6de7b20c166f",
           "tag": "s2-PlayerRegisteredPoints",
           "selector": "0x1ae53ffaeedb26b02aa79fa8bdc3f82c57039f564e7d0ac62591dd3a90807db"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128",
-              "key": false
-            }
-          ],
-          "class_hash": "0xf667c2264e3b142be6d27e9082b0b7113857a30c14438ce0701c1489149fcc",
-          "tag": "s2-PlayersRankFinal",
-          "selector": "0x1ec53352076b245dccd2f21217ba0a26ebc688bd85552d02f689339f595b6b4"
         },
         {
           "members": [
@@ -3768,19 +5148,9 @@
               "name": "total_player_count_revealed",
               "type": "core::integer::u16",
               "key": false
-            },
-            {
-              "name": "total_prize_amount",
-              "type": "core::integer::u128",
-              "key": false
-            },
-            {
-              "name": "total_prize_amount_calculated",
-              "type": "core::integer::u128",
-              "key": false
             }
           ],
-          "class_hash": "0x35bc65cf3b9a874322e94260ece52a91aaeccd05f7ec6beaf8f8219c2bc6b3e",
+          "class_hash": "0xdc1dea1fb973b03825700edbce0a7594417646b959560ed3e08fc7d8c34a68",
           "tag": "s2-PlayersRankTrial",
           "selector": "0x6a748d9b4406e8c330f08c4b47047cb80c087408c4fd0c5058506eb3b4979b3"
         },
@@ -3904,18 +5274,8 @@
               "key": false
             },
             {
-              "name": "village_token_config",
-              "type": "eternum::models::config::VillageTokenConfig",
-              "key": false
-            },
-            {
               "name": "village_troop_config",
               "type": "eternum::models::config::VillageTroopConfig",
-              "key": false
-            },
-            {
-              "name": "season_addresses_config",
-              "type": "eternum::models::config::SeasonAddressesConfig",
               "key": false
             },
             {
@@ -3974,7 +5334,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x3d618787c03448704eda9329cc2e2038dcae02c2b82b4ea2991953e27521aa9",
+          "class_hash": "0x5ad909a0a29552dd944ec7a8c0cb14e090d2314879ea54cc22248848acfd967",
           "tag": "s2-PresetConfig",
           "selector": "0x61a2c7e6edb2c94333efe3a076a799645b6fba58a8fe3efccc70c30ea987a6f"
         },
@@ -4026,7 +5386,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x2a881e4ec4e35e03fe5156ad021a5a8094c123a9f9651702e353c9f8c2b5eec",
+          "class_hash": "0x50737ac0ff87fb9c741f5c3a0cf289cf4e0bc1db4d6066084f1c546d0ef6f71",
           "tag": "s2-PresetGameConfig",
           "selector": "0x7b0ded3a7f87aab513f6e0cd057778391f2bfdae79b995441af37dd6c1dfcd2"
         },
@@ -4375,17 +5735,12 @@
               "key": false
             },
             {
-              "name": "total_prize_amount",
-              "type": "core::integer::u128",
-              "key": false
-            },
-            {
               "name": "grant_elite_nft",
               "type": "core::bool",
               "key": false
             }
           ],
-          "class_hash": "0x21a09cb851613352fd511460767cfbbc0ffa9356cea8f135e853171f41c3016",
+          "class_hash": "0x532f3162932b62a579fb306905701e6b1b7c95fac27c53c2a9219848be0efb1",
           "tag": "s2-RankPrize",
           "selector": "0x4ccd81de11cfa27a544ef2fdb0c91ce9801817c4b658d9decd9e12fdfd08841"
         },
@@ -6048,7 +7403,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x39029d998352c42bc8cf11d9acff6f354e67ad4d6740fae01066f46ad0e14d0",
+          "class_hash": "0x6b7bc4f6281e215c86178d38c69c0dba3ce10631c7d706f7408f8423887d0df",
           "tag": "s2-WorldConfig",
           "selector": "0x27f890205071c9920bc03c5768b0ef83e679583f2f43422f7c07909814edf5c"
         },
@@ -6063,14 +7418,9 @@
               "name": "relic_record",
               "type": "eternum::models::record::RelicRecord",
               "key": false
-            },
-            {
-              "name": "blitz_fee_split_record",
-              "type": "eternum::models::record::BlitzFeeSplitRecord",
-              "key": false
             }
           ],
-          "class_hash": "0x363fc703471944b06bf830bbec2b35f0d84f2f18b06c6985f46f7f587c44a98",
+          "class_hash": "0x71fa52b339fbed44213733fe3b431a44b502fa35ae5cb6cd4eb2598ac44e9f8",
           "tag": "s2-WorldRecord",
           "selector": "0xcd816166debe6e11c84fdfd61d1419a58a6a1b8bb11991d3b3a203ba547e55"
         }
@@ -6577,6 +7927,65 @@
               "key": true
             },
             {
+              "name": "trial_id",
+              "type": "core::integer::u128",
+              "key": true
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u16",
+              "key": true
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            },
+            {
+              "name": "rank",
+              "type": "core::integer::u16",
+              "key": false
+            },
+            {
+              "name": "chests",
+              "type": "core::integer::u16",
+              "key": false
+            }
+          ],
+          "class_hash": "0x52ae1d68bed858768e7f33ceb66a768dfab65100c38fac7da791d385fcd200f",
+          "tag": "s2-LedgerResultRowReady",
+          "selector": "0x5181ad768e57d8e18e868df084f7314d42a17ed1dbc5cc6b3547b705428cc89"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "trial_id",
+              "type": "core::integer::u128",
+              "key": true
+            },
+            {
+              "name": "player_count",
+              "type": "core::integer::u16",
+              "key": false
+            }
+          ],
+          "class_hash": "0x628634793c20e34247723742d889a88795f5a5b0b27e01063d2a79117c58845",
+          "tag": "s2-LedgerResultsReady",
+          "selector": "0x534600c72e902629a86bf99d736460c24d9d25401e227532df0d6a04c7a0399"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
               "name": "bank_entity_id",
               "type": "core::integer::u32",
               "key": true
@@ -6629,48 +8038,6 @@
               "key": true
             },
             {
-              "name": "trial_id",
-              "type": "core::integer::u128",
-              "key": true
-            },
-            {
-              "name": "player_count",
-              "type": "core::integer::u16",
-              "key": false
-            },
-            {
-              "name": "game_median",
-              "type": "core::integer::u128",
-              "key": false
-            },
-            {
-              "name": "global_median",
-              "type": "core::integer::u128",
-              "key": false
-            },
-            {
-              "name": "committed_by",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "key": false
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "key": false
-            }
-          ],
-          "class_hash": "0x68d1c9e139e1e865b8ceb03850bcb4e9bd86d1d5882efd5b683f55a675ef417",
-          "tag": "s2-MMRGameCommitted",
-          "selector": "0x2a83551af10f9dcddbac61040b256e1846a7c9ee6909446557a90a3516440fe"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
               "name": "explorer_id",
               "type": "core::integer::u32",
               "key": true
@@ -6694,48 +8061,6 @@
           "class_hash": "0x658a05b4812842ae342b1fc5324177fdab6fc84478d934489f70312372f7e8",
           "tag": "s2-OpenRelicChestEvent",
           "selector": "0x1190607c24f72065536de4b8a1d2fc3d8b0931a3b73cbc25f644ed70b3f8463"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "key": true
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128",
-              "key": true
-            },
-            {
-              "name": "old_mmr",
-              "type": "core::integer::u128",
-              "key": false
-            },
-            {
-              "name": "new_mmr",
-              "type": "core::integer::u128",
-              "key": false
-            },
-            {
-              "name": "rank",
-              "type": "core::integer::u16",
-              "key": false
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "key": false
-            }
-          ],
-          "class_hash": "0x234e19262447b9cf2eb5fa44d1540fa78f280e41e6ac4bde4bfa65007486f5c",
-          "tag": "s2-PlayerMMRChanged",
-          "selector": "0x3ee77a8352a01a1c4a28618d2c390790c45f829dc11c96cbd163d5dbac4bb5e"
         },
         {
           "members": [
@@ -6797,7 +8122,7 @@
               "key": false
             }
           ],
-          "class_hash": "0x6e8516e8ac9b86553f1731ac0ad4e718dd9acb8b2781307575016e766ebfe0b",
+          "class_hash": "0x4898a8368add18841027ab8c183bec1e63df644a46334ec7b441f9ecda81329",
           "tag": "s2-StoryEvent",
           "selector": "0x4ebc65e029374e9dd66fca7a81d5294065a636dac3651f7ac3bc67470b5e7ec"
         },
@@ -7530,34 +8855,6 @@
             {
               "name": "high",
               "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::option::Option::<core::integer::u128>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "None",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::option::Option::<core::integer::u256>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "None",
-              "type": "()"
             }
           ]
         },
@@ -9829,42 +11126,6 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::config::BlitzEntryTokenRegister",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "token_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "issued",
-              "type": "core::bool"
-            },
-            {
-              "name": "registered",
-              "type": "core::bool"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::BlitzEntryTokenRegisterValue",
-          "members": [
-            {
-              "name": "issued",
-              "type": "core::bool"
-            },
-            {
-              "name": "registered",
-              "type": "core::bool"
-            }
-          ]
-        },
-        {
-          "type": "struct",
           "name": "eternum::models::config::BlitzExplorationConfig",
           "members": [
             {
@@ -9900,15 +11161,7 @@
           "name": "eternum::models::config::BlitzRegistrationGameConfig",
           "members": [
             {
-              "name": "fee_amount",
-              "type": "core::integer::u256"
-            },
-            {
               "name": "registration_count",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "issued_count",
               "type": "core::integer::u16"
             },
             {
@@ -10138,28 +11391,20 @@
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
+              "name": "ledger_operator_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "player_registry_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
               "name": "vrf_provider_address",
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
               "name": "agent_controller_config",
               "type": "eternum::models::config::AgentControllerConfig"
-            },
-            {
-              "name": "mmr_config",
-              "type": "eternum::models::mmr::MMRConfig"
-            },
-            {
-              "name": "fee_token",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "fee_recipient",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "entry_token_address",
-              "type": "core::starknet::contract_address::ContractAddress"
             },
             {
               "name": "collectibles_cosmetics_address",
@@ -10188,28 +11433,20 @@
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
+              "name": "ledger_operator_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "player_registry_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
               "name": "vrf_provider_address",
               "type": "core::starknet::contract_address::ContractAddress"
             },
             {
               "name": "agent_controller_config",
               "type": "eternum::models::config::AgentControllerConfig"
-            },
-            {
-              "name": "mmr_config",
-              "type": "eternum::models::mmr::MMRConfig"
-            },
-            {
-              "name": "fee_token",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "fee_recipient",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "entry_token_address",
-              "type": "core::starknet::contract_address::ContractAddress"
             },
             {
               "name": "collectibles_cosmetics_address",
@@ -10514,16 +11751,8 @@
               "type": "eternum::models::config::ResourceBridgeFeeSplitConfig"
             },
             {
-              "name": "village_token_config",
-              "type": "eternum::models::config::VillageTokenConfig"
-            },
-            {
               "name": "village_troop_config",
               "type": "eternum::models::config::VillageTroopConfig"
-            },
-            {
-              "name": "season_addresses_config",
-              "type": "eternum::models::config::SeasonAddressesConfig"
             },
             {
               "name": "quest_games",
@@ -10652,16 +11881,8 @@
               "type": "eternum::models::config::ResourceBridgeFeeSplitConfig"
             },
             {
-              "name": "village_token_config",
-              "type": "eternum::models::config::VillageTokenConfig"
-            },
-            {
               "name": "village_troop_config",
               "type": "eternum::models::config::VillageTroopConfig"
-            },
-            {
-              "name": "season_addresses_config",
-              "type": "eternum::models::config::SeasonAddressesConfig"
             },
             {
               "name": "quest_games",
@@ -11023,24 +12244,6 @@
           "members": [
             {
               "name": "token",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::SeasonAddressesConfig",
-          "members": [
-            {
-              "name": "season_pass_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "realms_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "lords_address",
               "type": "core::starknet::contract_address::ContractAddress"
             }
           ]
@@ -11457,20 +12660,6 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::config::VillageTokenConfig",
-          "members": [
-            {
-              "name": "token_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "mint_recipient_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "struct",
           "name": "eternum::models::config::VillageTroopConfig",
           "members": [
             {
@@ -11590,12 +12779,6 @@
         {
           "type": "event",
           "name": "eternum::models::config::m_BlitzCosmeticAttrsRegister::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::m_BlitzEntryTokenRegister::Event",
           "kind": "enum",
           "variants": []
         },
@@ -12287,24 +13470,6 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::events::PrizeDistributedStory",
-          "members": [
-            {
-              "name": "to_player_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "decimals",
-              "type": "core::integer::u8"
-            }
-          ]
-        },
-        {
-          "type": "struct",
           "name": "eternum::models::events::PrizeDistributionFinalStory",
           "members": [
             {
@@ -12486,10 +13651,6 @@
             {
               "name": "PrizeDistributionFinalStory",
               "type": "eternum::models::events::PrizeDistributionFinalStory"
-            },
-            {
-              "name": "PrizeDistributedStory",
-              "type": "eternum::models::events::PrizeDistributedStory"
             },
             {
               "name": "FaithPledgedStory",
@@ -13036,14 +14197,6 @@
             {
               "name": "seed",
               "type": "core::felt252"
-            },
-            {
-              "name": "fees_collected",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "fees_paid_out",
-              "type": "core::integer::u256"
             }
           ]
         },
@@ -13106,14 +14259,6 @@
             {
               "name": "seed",
               "type": "core::felt252"
-            },
-            {
-              "name": "fees_collected",
-              "type": "core::integer::u256"
-            },
-            {
-              "name": "fees_paid_out",
-              "type": "core::integer::u256"
             }
           ]
         },
@@ -13782,10 +14927,6 @@
             {
               "name": "registered_points",
               "type": "core::integer::u128"
-            },
-            {
-              "name": "prize_claimed",
-              "type": "core::bool"
             }
           ]
         },
@@ -13796,10 +14937,6 @@
             {
               "name": "registered_points",
               "type": "core::integer::u128"
-            },
-            {
-              "name": "prize_claimed",
-              "type": "core::bool"
             }
           ]
         },
@@ -13836,6 +14973,64 @@
         {
           "type": "event",
           "name": "eternum::models::hyperstructure::m_PlayerRegisteredPoints::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::ledger::LedgerRegistration",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "metadata",
+              "type": "(core::felt252, core::felt252, core::felt252)"
+            },
+            {
+              "name": "pass_kind",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "registered",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::ledger::LedgerRegistrationValue",
+          "members": [
+            {
+              "name": "realm_id",
+              "type": "core::integer::u256"
+            },
+            {
+              "name": "metadata",
+              "type": "(core::felt252, core::felt252, core::felt252)"
+            },
+            {
+              "name": "pass_kind",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "registered",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::ledger::m_LedgerRegistration::Event",
           "kind": "enum",
           "variants": []
         },
@@ -14120,108 +15315,6 @@
         {
           "type": "event",
           "name": "eternum::models::map::m_BiomeDiscovered::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::mmr::MMRClaimed",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "claimed_at",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::mmr::MMRClaimedValue",
-          "members": [
-            {
-              "name": "claimed_at",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::mmr::MMRConfig",
-          "members": [
-            {
-              "name": "enabled",
-              "type": "core::bool"
-            },
-            {
-              "name": "mmr_token_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "distribution_mean",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "spread_factor",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "max_delta",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "k_factor",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "lobby_split_weight_scaled",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "mean_regression_scaled",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "min_players",
-              "type": "core::integer::u8"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::mmr::MMRGameMeta",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "game_median",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::mmr::MMRGameMetaValue",
-          "members": [
-            {
-              "name": "game_median",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::mmr::m_MMRClaimed::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::mmr::m_MMRGameMeta::Event",
           "kind": "enum",
           "variants": []
         },
@@ -14746,8 +15839,8 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "paid",
-              "type": "core::bool"
+              "name": "chests",
+              "type": "core::integer::u16"
             }
           ]
         },
@@ -14760,32 +15853,8 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "paid",
-              "type": "core::bool"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::rank::PlayersRankFinal",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::rank::PlayersRankFinalValue",
-          "members": [
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128"
+              "name": "chests",
+              "type": "core::integer::u16"
             }
           ]
         },
@@ -14824,14 +15893,6 @@
             {
               "name": "total_player_count_revealed",
               "type": "core::integer::u16"
-            },
-            {
-              "name": "total_prize_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "total_prize_amount_calculated",
-              "type": "core::integer::u128"
             }
           ]
         },
@@ -14866,14 +15927,6 @@
             {
               "name": "total_player_count_revealed",
               "type": "core::integer::u16"
-            },
-            {
-              "name": "total_prize_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "total_prize_amount_calculated",
-              "type": "core::integer::u128"
             }
           ]
         },
@@ -14926,10 +15979,6 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "total_prize_amount",
-              "type": "core::integer::u128"
-            },
-            {
               "name": "grant_elite_nft",
               "type": "core::bool"
             }
@@ -14944,10 +15993,6 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "total_prize_amount",
-              "type": "core::integer::u128"
-            },
-            {
               "name": "grant_elite_nft",
               "type": "core::bool"
             }
@@ -14956,12 +16001,6 @@
         {
           "type": "event",
           "name": "eternum::models::rank::m_PlayerRank::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::rank::m_PlayersRankFinal::Event",
           "kind": "enum",
           "variants": []
         },
@@ -14985,28 +16024,6 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::record::BlitzFeeSplitRecord",
-          "members": [
-            {
-              "name": "total_sponsorship",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "creator_receives_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "velords_receives_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "players_receive_amount",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "struct",
           "name": "eternum::models::record::RelicRecord",
           "members": [
             {
@@ -15026,10 +16043,6 @@
             {
               "name": "relic_record",
               "type": "eternum::models::record::RelicRecord"
-            },
-            {
-              "name": "blitz_fee_split_record",
-              "type": "eternum::models::record::BlitzFeeSplitRecord"
             }
           ]
         },
@@ -15040,10 +16053,6 @@
             {
               "name": "relic_record",
               "type": "eternum::models::record::RelicRecord"
-            },
-            {
-              "name": "blitz_fee_split_record",
-              "type": "eternum::models::record::BlitzFeeSplitRecord"
             }
           ]
         },
@@ -20218,6 +21227,57 @@
         },
         {
           "type": "interface",
+          "name": "eternum::systems::entry::contracts::IEntrySystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "register_from_l2",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "realm_id",
+                  "type": "core::integer::u256"
+                },
+                {
+                  "name": "metadata",
+                  "type": "(core::felt252, core::felt252, core::felt252)"
+                },
+                {
+                  "name": "pass_kind",
+                  "type": "core::integer::u8"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::entry::contracts::entry_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "interface",
           "name": "eternum::systems::faith::contracts::IFaithSystems",
           "items": [
             {
@@ -20666,189 +21726,6 @@
         },
         {
           "type": "interface",
-          "name": "eternum::systems::mmr::contracts::IMMRSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "commit_game_mmr_meta",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "players",
-                  "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "claim_game_mmr",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "players",
-                  "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::contract::components::upgradeable::upgradeable_cpt::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "WorldProviderEvent",
-              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::MMRGameCommitted",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "player_count",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "game_median",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "global_median",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "committed_by",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::MMRGameCommittedValue",
-          "members": [
-            {
-              "name": "player_count",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "game_median",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "global_median",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "committed_by",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::PlayerMMRChanged",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "player",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "trial_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "old_mmr",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "new_mmr",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "rank",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::PlayerMMRChangedValue",
-          "members": [
-            {
-              "name": "old_mmr",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "new_mmr",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "rank",
-              "type": "core::integer::u16"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::e_MMRGameCommitted::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::mmr::contracts::mmr_systems::e_PlayerMMRChanged::Event",
-          "kind": "enum",
-          "variants": []
-        },
-        {
-          "type": "interface",
           "name": "eternum::systems::name::contracts::INameSystems",
           "items": [
             {
@@ -21014,38 +21891,6 @@
             },
             {
               "type": "function",
-              "name": "blitz_prize_claim_no_game",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "registered_player",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "blitz_prize_claim",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "players",
-                  "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
               "name": "blitz_prize_player_rank",
               "inputs": [
                 {
@@ -21090,35 +21935,7 @@
             },
             {
               "type": "function",
-              "name": "blitz_get_winner",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "core::option::Option::<core::integer::u256>"
-                }
-              ],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
               "name": "reset_trial",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "blitz_sweep_remaining_escrow",
               "inputs": [
                 {
                   "name": "game_id",
@@ -21146,6 +21963,94 @@
               "kind": "nested"
             }
           ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::LedgerResultRowReady",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "trial_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "rank",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "chests",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::LedgerResultRowReadyValue",
+          "members": [
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "rank",
+              "type": "core::integer::u16"
+            },
+            {
+              "name": "chests",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::LedgerResultsReady",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "trial_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "player_count",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::LedgerResultsReadyValue",
+          "members": [
+            {
+              "name": "player_count",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::e_LedgerResultRowReady::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::prize_distribution::contracts::prize_distribution_systems::e_LedgerResultsReady::Event",
+          "kind": "enum",
+          "variants": []
         },
         {
           "type": "interface",
@@ -21603,18 +22508,6 @@
           "items": [
             {
               "type": "function",
-              "name": "obtain_entry_token",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
               "name": "settle",
               "inputs": [
                 {
@@ -21624,10 +22517,6 @@
                 {
                   "name": "name",
                   "type": "core::felt252"
-                },
-                {
-                  "name": "entry_token_id",
-                  "type": "core::option::Option::<core::integer::u128>"
                 },
                 {
                   "name": "cosmetic_token_ids",
@@ -21784,10 +22673,6 @@
                 {
                   "name": "realm_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "frontend",
-                  "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
                   "name": "settlement",
@@ -22022,10 +22907,6 @@
             {
               "name": "registration_start_at",
               "type": "core::integer::u32"
-            },
-            {
-              "name": "fee_amount",
-              "type": "core::integer::u256"
             },
             {
               "name": "biome_climate_config",
@@ -22490,18 +23371,6 @@
                 {
                   "name": "amount",
                   "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "velords_claim",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
                 }
               ],
               "outputs": [],
