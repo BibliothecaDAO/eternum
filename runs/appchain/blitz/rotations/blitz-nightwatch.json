@@ -10,29 +10,29 @@
   "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/33784759177-1.json",
-  "latestLaunchRequestId": "33784759177-1",
+  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/33799997809-1.json",
+  "latestLaunchRequestId": "33799997809-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-08-18T20:26:43.697Z",
-  "updatedAt": "2026-09-03T17:30:01.507Z",
+  "updatedAt": "2026-09-03T20:04:19.870Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 33784759177,
+    "workflowRunId": 33799997809,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33784759177",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33799997809",
     "ref": "next",
     "sha": "67fc2ecc1dd6773393564139861d09018faf5acd"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-09-03T17:45:01.507Z"
+    "nextRetryAt": "2026-09-03T20:19:19.870Z"
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-09-03T18:00:01.507Z",
-    "lastEvaluatedAt": "2026-09-03T17:30:01.507Z"
+    "nextEvaluationAt": "2026-09-03T20:34:19.870Z",
+    "lastEvaluatedAt": "2026-09-03T20:04:19.870Z"
   },
   "steps": [
     {
@@ -40,19 +40,14 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-09-03T17:29:32.447Z",
-      "finishedAt": "2026-09-03T17:29:39.628Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-nightwatch-0015\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)",
-      "startedAt": "2026-09-03T17:29:44.164Z",
-      "finishedAt": "2026-09-03T17:30:01.507Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-nightwatch-0015\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)"
+      "latestEvent": "Creating games needs attention"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -639,6 +634,35 @@
         "startTimeIso": "2026-09-03T20:00:00.000Z",
         "durationSeconds": 3600,
         "seriesGameNumber": 16,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "blitz-nightwatch-0017",
+        "startTime": 1788552000,
+        "startTimeIso": "2026-09-04T20:00:00.000Z",
+        "durationSeconds": 3600,
+        "seriesGameNumber": 17,
         "currentStepId": null,
         "latestEvent": "Waiting to run",
         "status": "pending",
