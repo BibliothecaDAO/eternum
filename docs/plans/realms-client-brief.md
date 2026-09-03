@@ -1993,3 +1993,35 @@ address because `user.name` defaults to the address — address-valued names now
 test pins the credentialed POST. Sync, chip, landing-card, gameplay-truth and polling-discipline suites green;
 `apps/game` + `packages/identity` typecheck green. Live gate: the stranded user reloads play.realms.party —
 "Preparing account…" then the register button; app.realms.party profile flips to "● Bound".
+
+### Live incident — 24-minute spawn immunity in blitz (2026-09-03, fixed same day)
+
+**Evidence.** Two explorer-vs-explorer attacks in bltz-rush-379 reverted on-chain with "This entity can't be attacked
+until immunity period ends" (tx `0x27906b…87f9bc` 11:09:51 UTC, `0x7599bc…4917fd` 11:12:43 UTC; main start 11:00:00).
+Attacks on daydreams agents worked — the contract skips the cloak check for agents — which produced the confusing
+"some attacks work" pattern. Owner ruling: blitz has no immunity, ever.
+
+**Root cause.** `resolveBlitzChainConfig`'s madara branch returned `madaraBlitzConfig` without merging
+`STANDARD_BLITZ_CHAIN_CONFIG` (the appchain branch merges it), so the generated `blitz.madara.json` kept the base
+sheet's eternum-scale values, and the immutable registrar presets 6/7 were registered from it: `regular_immunity_ticks
+24` (24 min at the 60 s armies tick), day-scale settling offsets, 7-day point-registration close.
+
+**Fix.** `ecff2f2b1ea` merges the standard patch under madara's address zeroing and regenerates the sheet (immunity 0,
+2 h default, 600 s point close). Corrected presets registered on the L3: **8 = Regular Fast** (official-60, tx
+`0x2f08fca…`), **9 = Duel** (official-90, tx `0x604cabd…`). `4149967685c` flips every pointer in one change — client
+catalog (6→8, 7→9), launch-service schema `Literals(["8","9"])` + durable default "8", `DEFAULT_MADARA_PRESET_ID`,
+the daily rotation yaml — and fixes `rotation.ts` hardcoding `version: "6"` over the yaml (the fourth member of the
+launch-service override class closed this week: devModeOn schema/defaults/executor, then version, then this).
+
+**Verified invariants of the new presets.** 96-player cap kept (`registration_count_max: 96` in both; Duel's
+`twoPlayerMode` still forces 2 at creation). Settlement straight away kept — `resolveRegistrationSchedule` opens
+registration and settling at creation time regardless of sheet offsets; game creation reads only end-grace and
+point-close from season. Duration is profile-driven (60 min Fast, 90 min Duel). PvP opens exactly at `start_main_at`.
+Games created from presets 6/7 keep their baked immunity forever (per-game config at creation is immutable).
+
+**Rulebook of record.** Artifact `8f0cb733-7613-4562-b1b2-8c24efadc0db` — every value in presets 8/9, the 6→8
+divergence table, and the 125-row Fast-vs-Duel balance diff.
+
+**Gate.** Launch-service 19/19 + typecheck, client factory suites green, config tests 19/19 under bun, box
+launch-service restarted on `4149967685c`, client deploy 33753903382 green. Live acceptance: next created game — PvP
+from main start, 96 slots, settle at creation.
