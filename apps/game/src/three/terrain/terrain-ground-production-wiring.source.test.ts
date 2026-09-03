@@ -17,6 +17,15 @@ describe("procedural ground texture production wiring", () => {
     expect(hexception).toContain("retaining flat terrain");
   });
 
+  it("lets procedural terrain exclusively own Hexception's visible ground", () => {
+    const hexception = source("src/three/scenes/hexception.tsx");
+
+    expect(hexception).toContain("this.presentProceduralTerrain(terrainMatricesByBiome)");
+    expect(hexception).toContain("this.interactiveHexManager.setSurfaceVisibility(false)");
+    expect(hexception).not.toContain("this.pillars");
+    expect(hexception).not.toContain("BIOME_COLORS");
+  });
+
   it("keeps the worldmap on the full-detail terrain profile at every zoom", () => {
     const worldmap = source("src/three/scenes/worldmap.tsx");
     const terrain = source("src/three/terrain/procedural-terrain.ts");

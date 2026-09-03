@@ -1716,3 +1716,21 @@ a seeded WebGL2 verdict against the current 83-player game reached first terrain
 (`createRenderPipeline=38x/255ms`) versus the owner's 3,307 ms before (`owner_ms=3,167`), a 71% reduction. The new
 progress-guard test proves a second identical `asset_prewarm` failure cannot schedule another recovery until work marks
 progress.
+
+### Autonomous run record — Hexception procedural biome surface (2026-09-03)
+
+**Conviction.** Commit `f6b652c99775` (`feat(game): replace biome GLBs with procedural terrain`) added
+`presentProceduralTerrain` at `hexception.tsx:1251` but retained two older visible ground layers: the opaque instanced
+pillar mesh at `hexception.tsx:250-256,1254-1271`, and the 30%-opaque green interaction mesh over the buildable disc.
+Both occupied the same cells at nearly the same height as the procedural mesh. The owner screenshot's flat orange outer
+hexes were the legacy pillars; its flat green centre was the interaction hit surface. Lighting and the biome resolver
+were not at fault.
+
+**Fix.** Procedural terrain is now the sole visible ground owner in Hexception. The legacy pillar mesh, its biome-color
+loop and disposal path are deleted. The interaction mesh remains the click/raycast target but, as in Worldmap and Fast
+Travel, no longer writes color or depth; hover and placement highlights remain separate visible affordances.
+
+**Gate.** The focused source suite is 4/4 green and `apps/game` typecheck is green. A headless Brave capture of
+`bltz-clash-538/hex?col=0&row=6&spectate=true` shows textured ground, relief, vegetation and shaded structure pads
+across both the realm disc and its neighbouring biome. The source test pins one visible terrain owner by requiring the
+procedural presentation and hidden interaction surface while rejecting the retired pillar/`BIOME_COLORS` path.

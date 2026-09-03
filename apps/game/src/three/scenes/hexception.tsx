@@ -21,8 +21,6 @@ import {
   hyperstructureStageToModel,
   structureTypeToBuildingType,
 } from "@/three/constants";
-import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
-import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import {
   BuildingPreview,
   applyPendingBuildingMaterials,
@@ -99,9 +97,7 @@ import {
   AnimationClip,
   AnimationMixer,
   Color,
-  ExtrudeGeometry,
   Group,
-  InstancedMesh,
   Matrix4,
   Mesh,
   MeshStandardMaterial,
@@ -188,7 +184,6 @@ export default class HexceptionScene extends HexagonScene {
   private pendingBuildingKeys: Set<string> = new Set();
   private wonderInstances: Map<string, Group> = new Map();
   private buildingMixers: Map<string, AnimationMixer> = new Map();
-  private pillars: InstancedMesh | null = null;
   private buildings: HexceptionBuilding[] = [];
   centerColRow: number[] = [0, 0];
   private highlights: { col: number; row: number }[] = [];
@@ -246,14 +241,7 @@ export default class HexceptionScene extends HexagonScene {
     });
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
-
-    const pillarGeometry = new ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
-    pillarGeometry.rotateX(Math.PI / 2);
-    this.pillars = new InstancedMesh(pillarGeometry, new MeshStandardMaterial(), 1000);
-    this.pillars.instanceMatrix.needsUpdate = true;
-    this.pillars.position.y = 0.05;
-    this.pillars.count = 0;
-    this.scene.add(this.pillars);
+    this.interactiveHexManager.setSurfaceVisibility(false);
 
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
 
@@ -755,18 +743,6 @@ export default class HexceptionScene extends HexagonScene {
 
     // OPTIMIZED: Release any matrices back to the pool
 
-    // Dispose of pillars
-    if (this.pillars) {
-      this.scene.remove(this.pillars);
-      this.pillars.geometry.dispose();
-      if (Array.isArray(this.pillars.material)) {
-        this.pillars.material.forEach((m) => m.dispose());
-      } else {
-        this.pillars.material.dispose();
-      }
-      this.pillars = null;
-    }
-
     if (this.buildingPreview) {
       this.buildingPreview.dispose();
     }
@@ -1185,7 +1161,7 @@ export default class HexceptionScene extends HexagonScene {
     const mainStructureType = this.tileManager.structureType();
     this.updateCastleLevel();
 
-    const pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]> = {
+    const terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]> = {
       None: [],
       Ocean: [],
       DeepOcean: [],
@@ -1235,7 +1211,7 @@ export default class HexceptionScene extends HexagonScene {
                 dummy,
                 centers[center],
                 this.tileManager.getHexCoords(),
-                pillarMatricesByBiome,
+                terrainMatricesByBiome,
               );
             } else {
               this.computeNeighborHexMatrices(
@@ -1243,38 +1219,19 @@ export default class HexceptionScene extends HexagonScene {
                 dummy,
                 centers[center],
                 neighbors[Number(center) - 1],
-                pillarMatricesByBiome,
+                terrainMatricesByBiome,
               );
             }
           }
 
-          this.presentProceduralTerrain(pillarMatricesByBiome);
+          this.presentProceduralTerrain(terrainMatricesByBiome);
           this.reconcileAllBuildingInstances(mainStructureType);
-
-          // update neighbor hexes around the center hex
-          let pillarOffset = 0;
-          for (const [biome, matrices] of Object.entries(pillarMatricesByBiome)) {
-            matrices.forEach((matrix, index) => {
-              this.pillars!.setMatrixAt(index + pillarOffset, matrix);
-              // Use base biome type for color lookup (remove 'Alt' suffix if present)
-              const baseBiome = biome.endsWith("Alt") ? biome.slice(0, -3) : biome;
-              this.pillars!.setColorAt(index + pillarOffset, BIOME_COLORS[baseBiome as BiomeType]);
-            });
-            pillarOffset += matrices.length;
-            this.pillars!.position.y = -0.01;
-            this.pillars!.count = pillarOffset;
-            this.pillars!.computeBoundingSphere();
-          }
-          this.pillars!.instanceMatrix.needsUpdate = true;
-          if (this.pillars!.instanceColor) {
-            this.pillars!.instanceColor.needsUpdate = true;
-          }
           this.interactiveHexManager.renderAllHexes();
 
           // CRITICAL: Release all matrices back to the pool to prevent memory leaks
           const matrixPool = MatrixPool.getInstance();
           let totalMatricesReleased = 0;
-          for (const matrices of Object.values(pillarMatricesByBiome)) {
+          for (const matrices of Object.values(terrainMatricesByBiome)) {
             matrixPool.releaseAll(matrices);
             totalMatricesReleased += matrices.length;
             // Clear the array to prevent accidental reuse of released matrices
@@ -1294,12 +1251,12 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  private presentProceduralTerrain(pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void {
+  private presentProceduralTerrain(terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>): void {
     const fallbackBiome = configManager.getBiome(this.centerColRow[0], this.centerColRow[1]);
     const cellsByKey = new Map<string, TerrainCellInput>();
     const worldPosition = new Vector3();
 
-    Object.entries(pillarMatricesByBiome).forEach(([biomeKey, matrices]) => {
+    Object.entries(terrainMatricesByBiome).forEach(([biomeKey, matrices]) => {
       const biome = resolveHexceptionBiome(biomeKey, fallbackBiome);
       matrices.forEach((matrix) => {
         worldPosition.setFromMatrixPosition(matrix);
@@ -1589,7 +1546,7 @@ export default class HexceptionScene extends HexagonScene {
     targetHex: HexPosition,
     isMainHex: boolean,
     existingBuildings: any[],
-    pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     const biome = configManager.getBiome(targetHex.col, targetHex.row);
     const biomeVariant = biome;
@@ -1638,7 +1595,7 @@ export default class HexceptionScene extends HexagonScene {
 
         const tempMatrix = MatrixPool.getInstance().getMatrix();
         tempMatrix.copy(dummy.matrix);
-        pillarMatricesByBiome[buildableAreaBiome as BiomeType].push(tempMatrix);
+        terrainMatricesByBiome[buildableAreaBiome as BiomeType].push(tempMatrix);
       });
     }
 
@@ -1659,7 +1616,7 @@ export default class HexceptionScene extends HexagonScene {
       // OPTIMIZED: Use matrix pool instead of clone()
       const tempMatrix = MatrixPool.getInstance().getMatrix();
       tempMatrix.copy(dummy.matrix);
-      pillarMatricesByBiome[biomeVariant].push(tempMatrix);
+      terrainMatricesByBiome[biomeVariant].push(tempMatrix);
     });
   };
 
@@ -1668,7 +1625,7 @@ export default class HexceptionScene extends HexagonScene {
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
     const existingBuildings: any[] = this.tileManager.existingBuildings();
     const structureType = this.tileManager.structureType();
@@ -1683,7 +1640,7 @@ export default class HexceptionScene extends HexagonScene {
         paused: false,
       });
     }
-    this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, pillarMatricesByBiome);
+    this.computeHexMatrices(radius, dummy, center, targetHex, true, existingBuildings, terrainMatricesByBiome);
   };
 
   computeNeighborHexMatrices = (
@@ -1691,9 +1648,9 @@ export default class HexceptionScene extends HexagonScene {
     dummy: Object3D,
     center: number[],
     targetHex: HexPosition,
-    pillarMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
+    terrainMatricesByBiome: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
-    this.computeHexMatrices(radius, dummy, center, targetHex, false, [], pillarMatricesByBiome);
+    this.computeHexMatrices(radius, dummy, center, targetHex, false, [], terrainMatricesByBiome);
   };
 
   removeBuilding(innerCol: number, innerRow: number) {

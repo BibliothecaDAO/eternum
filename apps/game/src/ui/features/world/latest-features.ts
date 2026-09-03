@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Textured Realm Terrain",
+    description:
+      "Realm interiors now show their shaded procedural biome ground without the obsolete flat-color hex surface covering it.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-03",
     title: "Smoother World Loading",
     description:
       "Army and structure graphics now warm up against the active renderer before a terrain chunk appears, preventing stalled chunk retries and reducing the first large rendering hitch.",
