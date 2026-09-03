@@ -16,7 +16,7 @@ describe("terrain movement interaction production wiring", () => {
     expect(armyManager).toContain("interaction.isMoving = this.armyModel.isEntityMoving(entityId)");
     expect(armyManager).toContain('return "airborne"');
     expect(worldmap).toMatch(
-      /this\.armyManager\.update\(deltaTime, animationContext\);\s+this\.syncTerrainMovementInteractions\(\);/,
+      /this\.armyManager\.update\(deltaTime, animationContext\)\)?;\s+this\.syncTerrainMovementInteractions\(\);/,
     );
     expect(worldmap).toContain("this.proceduralTerrain.setMovementInteractions(this.terrainMovementInteractionBuffer)");
   });

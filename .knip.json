@@ -125,6 +125,16 @@
         ]
       }
     },
+    "apps/herald": {
+      "paths": {
+        "@bibliothecadao/eternum/game-sync": [
+          "../../packages/core/src/sync/index.ts"
+        ],
+        "@bibliothecadao/eternum/game-sync-models": [
+          "../../packages/core/src/sync/model-manifest.ts"
+        ]
+      }
+    },
     "apps/realtime-server": {
       "paths": {
         "@bibliothecadao/types": [
