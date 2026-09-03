@@ -55,7 +55,7 @@ Captured actions are selected from the active unit:
 
 ## Automated capture
 
-Run the reusable browser capture from `client/apps/game`:
+Run the reusable browser capture from `apps/game`:
 
 ```bash
 pnpm capture:character-animation \

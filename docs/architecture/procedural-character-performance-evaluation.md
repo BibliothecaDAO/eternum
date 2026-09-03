@@ -49,7 +49,7 @@ such a machine.
 Start the game client, then run:
 
 ```bash
-pnpm --dir client/apps/game benchmark:procedural-characters -- \
+pnpm --dir apps/game benchmark:procedural-characters -- \
   --base-url https://127.0.0.1:4174 \
   --renderer-mode webgpu-force-webgl \
   --headed \
@@ -60,7 +60,7 @@ On a display-limited automation window, confirm uncapped throughput with:
 
 ```bash
 AGENT_BROWSER_ARGS='--disable-frame-rate-limit,--disable-gpu-vsync,--disable-background-timer-throttling,--disable-renderer-backgrounding' \
-pnpm --dir client/apps/game benchmark:procedural-characters -- \
+pnpm --dir apps/game benchmark:procedural-characters -- \
   --base-url https://127.0.0.1:4174 \
   --renderer-mode webgpu-force-webgl \
   --headed \
@@ -86,7 +86,7 @@ The HUD adds biome, terrain-cell, prop, grounded-actor, surface-miss, and maximu
 requires all 100 walkers to remain on valid terrain with at most 0.025 m root error:
 
 ```bash
-pnpm --dir client/apps/game smoke:procedural-world-gym -- \
+pnpm --dir apps/game smoke:procedural-world-gym -- \
   --base-url https://127.0.0.1:4174 \
   --renderer-mode webgpu-force-webgl \
   --headed
@@ -95,7 +95,7 @@ pnpm --dir client/apps/game smoke:procedural-world-gym -- \
 Run the mixed lifecycle proof separately:
 
 ```bash
-pnpm --dir client/apps/game smoke:character-benchmark -- \
+pnpm --dir apps/game smoke:character-benchmark -- \
   --base-url https://127.0.0.1:4174 \
   --renderer-mode webgpu-force-webgl \
   --headed

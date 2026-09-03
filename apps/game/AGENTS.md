@@ -91,16 +91,17 @@ Use this runbook when validating spectator/game flow in a real browser session.
 Use this workflow before capturing screenshots or validating account-specific game UI:
 
 1. Start the game client with a supported Node runtime. The local shell may pick Node 21.x, which Vite rejects; prefer
-   Node 20.19+ or 22.12+.
+   Node 20.19+ or 22.12+. The dev environment is `madara.blitz`; copy `.env.madara.blitz.sample` to `.env.madara.blitz`
+   first.
 
 ```bash
-npx -y node@20.19.0 /opt/homebrew/bin/pnpm --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174 --mode mainnet.blitz
+npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174 --mode madara.blitz
 ```
 
 When debugging Three.js, world-map rendering, or graphics state, enable the graphics debug mode:
 
 ```bash
-VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 /opt/homebrew/bin/pnpm --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174 --mode mainnet.blitz
+VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174 --mode madara.blitz
 ```
 
 If `npx` reports duplicate workspace names from the monorepo, run the command from `/tmp` and pass the absolute `pnpm`
@@ -120,9 +121,8 @@ npx -y agent-browser --session game-check \
    `eternum_account_store.state.accountName`. If both are already present, do not wait for the user; proceed to the live
    game.
 
-4. Prefer `YOUR ACTIVE GAMES` with an `Enter` button on Slot or Mainnet. This is a live, playable game where the
-   logged-in account is registered. Use spectate or review only if the user explicitly asks for it or no playable
-   registered game exists.
+4. Prefer `YOUR ACTIVE GAMES` with an `Enter` button. This is a live, playable game where the logged-in account is
+   registered. Use spectate or review only if the user explicitly asks for it or no playable registered game exists.
 
 5. For requests about UI "in the game" or "current live game", enter the live match first and use in-game controls. Do
    not use landing routes such as `/leaderboard` unless the user explicitly asks for the global landing leaderboard.
@@ -131,9 +131,6 @@ npx -y agent-browser --session game-check \
    - In-game leaderboard: top-right social/leaderboard icon opens the `Leaderboard` popup.
    - Production window: selected realm left panel `PRODUCTION` card, then `MODIFY`.
    - Army view: press `Tab` to cycle/select a player army through the world-map shortcut logic.
-
-7. If a Cartridge modal appears while preparing a screenshot, close it or use `SKIP` when available. Do not submit or
-   update session permissions unless the user explicitly asks.
 
 ### Prerequisites
 
@@ -146,17 +143,17 @@ pnpm install --frozen-lockfile
 2. Ensure workspace packages consumed by `apps/game` are built:
 
 ```bash
-PATH="/Users/os/Library/pnpm:$PATH" pnpm -r --filter "@bibliothecadao/*" --if-present build
+pnpm -r --filter "@bibliothecadao/*" --if-present build
 ```
 
 3. Start game client on a fixed port:
 
 ```bash
 # If local node is already >=20.19
-PATH="/Users/os/Library/pnpm:$PATH" pnpm --dir apps/game dev --host 127.0.0.1 --port 4173
+pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 --mode madara.blitz
 
 # If local node is older (common in CI/agents), force a compatible runtime:
-npx -y node@20.19.0 $(which pnpm) --dir apps/game dev --host 127.0.0.1 --port 4173
+npx -y node@20.19.0 $(which pnpm) --dir apps/game dev --host 127.0.0.1 --port 4173 --mode madara.blitz
 ```
 
 ### Spectator Smoke Test (Autonomous)
@@ -198,7 +195,7 @@ Capture a full-page screenshot and copy to workspace artifacts:
 ```bash
 npx -y agent-browser --session spectator-check screenshot --full
 mkdir -p .context/spectator-browser
-cp /Users/os/.agent-browser/tmp/screenshots/<latest-file>.png .context/spectator-browser/spectator-map-full.png
+cp ~/.agent-browser/tmp/screenshots/<latest-file>.png .context/spectator-browser/spectator-map-full.png
 ```
 
 Optionally collect console diagnostics:

@@ -54,13 +54,13 @@ confirms that the implementation belongs in the existing `MeshStandardNodeMateri
 
 The procedural terrain already has the right ownership boundaries:
 
-- [`terrain-field.ts`](../../client/apps/game/src/three/terrain/terrain-field.ts) owns deterministic, continuous height,
-  biome influence, moisture, color, roughness, normals, and structure-pad behavior.
-- [`terrain-page-builder.ts`](../../client/apps/game/src/three/terrain/terrain-page-builder.ts) samples that field and
-  emits transferable indexed geometry buffers in a worker.
-- [`terrain-material.ts`](../../client/apps/game/src/three/terrain/terrain-material.ts) is one shallow
+- [`terrain-field.ts`](../../apps/game/src/three/terrain/terrain-field.ts) owns deterministic, continuous height, biome
+  influence, moisture, color, roughness, normals, and structure-pad behavior.
+- [`terrain-page-builder.ts`](../../apps/game/src/three/terrain/terrain-page-builder.ts) samples that field and emits
+  transferable indexed geometry buffers in a worker.
+- [`terrain-material.ts`](../../apps/game/src/three/terrain/terrain-material.ts) is one shallow
   `MeshStandardNodeMaterial` using vertex color and roughness.
-- [`procedural-terrain.ts`](../../client/apps/game/src/three/terrain/procedural-terrain.ts) shares that material across
+- [`procedural-terrain.ts`](../../apps/game/src/three/terrain/procedural-terrain.ts) shares that material across
   presented pages and owns disposal.
 - The production and hermetic debug scenes already exercise native WebGPU and forced WebGL2 through the same terrain
   presentation path.
@@ -198,7 +198,7 @@ download size alone, because ordinary PNG/JPEG compression does not reduce expan
 Use standalone KTX2 arrays rather than embedding them in the prop GLB:
 
 ```text
-client/public/textures/procedural-terrain/
+apps/game/public/textures/procedural-terrain/
   ground-albedo-height.ktx2
   ground-normal-material.ktx2
   ground-materials.json
@@ -408,7 +408,7 @@ Rules:
 ## Proposed code changes
 
 ```text
-client/apps/game/src/three/terrain/
+apps/game/src/three/terrain/
   terrain-ground-material-catalog.ts      # eight physical surfaces and sixteen biome recipes
   terrain-ground-texture-cache.ts         # KTX2 array loading, validation, ownership
   terrain-ground-nodes.ts                 # coordinate, selection, sampling, blend, normal helpers
@@ -418,11 +418,11 @@ client/apps/game/src/three/terrain/
   terrain-types.ts                        # buffer/sample contracts and style-version bump
   procedural-terrain.ts                   # binds shared arrays and exposes diagnostics
 
-client/apps/game/scripts/terrain-ground/
+apps/game/scripts/terrain-ground/
   build-ground-texture-arrays.mjs          # deterministic validation, packing, mips, KTX2
   ground-material-source.json              # scale, channel, license, hashes, layer order
 
-client/apps/game/src/three/terrain/verification/
+apps/game/src/three/terrain/verification/
   existing fixtures extended with texture diagnostics and texture-focused captures
 ```
 

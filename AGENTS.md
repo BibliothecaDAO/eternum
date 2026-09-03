@@ -20,7 +20,7 @@ client's sync runtime ingests updates into RECS, the single authoritative store 
 state comes only from Herald's pre-confirmed overlay.
 
 Key directories: `apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync runtime),
-`packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/appchain` (self-hosted chain infra —
+`packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/madara-lab` (self-hosted chain infra —
 read its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the fix, and a
 verifiable gate).
 

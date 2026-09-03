@@ -812,7 +812,7 @@ same contracts. The next implementation stages should evolve these seams:
 Proposed asset boundary:
 
 ```text
-client/public/models/characters/knight/
+apps/game/public/models/characters/knight/
   knight-body.glb
   knight-kit-t1.glb
   knight-kit-t2.glb

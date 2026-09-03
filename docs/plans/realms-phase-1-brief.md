@@ -43,8 +43,8 @@ Verified 2026-08-24/25; the source of each fact follows it in italics.
   `VITE_PUBLIC_ACCOUNT_CLASS_HASH=0x07dc78…` is **not declared** there — _`starknet_getClass`_
 - Peer dependencies pin the game to React 18 / starknet 8: `@starknet-react/core@5.0.3` (`react ^18.0`,
   `starknet ^8.1.2`, `pnpm-lock.yaml:5594`), `@dojoengine/react` and `@dojoengine/sdk` (`react ^18`, `starknet ^8.1.2`,
-  `:2196,2210`). React 19 for the game is part of the dojo.js-exit bundle (`client-legacy-purge-p7-codex-brief.md:161`)
-  — _lockfile_
+  `:2196,2210`). React 19 for the game is part of the dojo.js-exit bundle (P7 legacy-purge brief, since retired) —
+  _lockfile_
 - `@starknet-start/react@1.0.0` (the portal's connector layer) peers on `react >=19`, `starknet >=9`; no
   wallet-connector library spans both stacks — _`npm view`_
 - The game's Cartridge surface: 7 files import `@cartridge/*`; Controller-only mechanics: `policies.ts`,

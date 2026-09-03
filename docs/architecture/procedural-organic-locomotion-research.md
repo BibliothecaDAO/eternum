@@ -2,7 +2,7 @@
 
 **Research date:** 2026-08-22
 
-**Runtime scope:** `client/apps/game/src/three/characters`
+**Runtime scope:** `apps/game/src/three/characters`
 
 **Evidence policy:** biomechanical claims below come from peer-reviewed experimental or modelling papers; animation
 claims come from peer-reviewed graphics papers or official conference material; engine claims come from official
@@ -25,10 +25,10 @@ result of two rotating leg segments, its pelvis is corrected upward after the fa
 head respond with no temporal memory. The horse has better leg IK, but its body, neck, and tail are still sinusoidal;
 stance targets are recomputed every frame instead of being planted in world space; terrain normals are returned but
 ignored; and the mounted rider is rigidly copied onto the saddle. These facts are visible in
-[`procedural-character-pose.ts`](../../client/apps/game/src/three/characters/procedural-character-pose.ts),
-[`procedural-horse-gait.ts`](../../client/apps/game/src/three/characters/horse/procedural-horse-gait.ts),
-[`procedural-horse-pose.ts`](../../client/apps/game/src/three/characters/horse/procedural-horse-pose.ts), and
-[`procedural-unit-runtime.ts`](../../client/apps/game/src/three/characters/procedural-unit-runtime.ts).
+[`procedural-character-pose.ts`](../../apps/game/src/three/characters/procedural-character-pose.ts),
+[`procedural-horse-gait.ts`](../../apps/game/src/three/characters/horse/procedural-horse-gait.ts),
+[`procedural-horse-pose.ts`](../../apps/game/src/three/characters/horse/procedural-horse-pose.ts), and
+[`procedural-unit-runtime.ts`](../../apps/game/src/three/characters/procedural-unit-runtime.ts).
 
 The next pass should keep the existing skins, bone bindings, FABRIK solver, gym, shared Jolt world, and ragdoll handoff.
 It should replace the stateless oscillators with a small **stateful locomotion controller**:
@@ -59,8 +59,8 @@ replacement for foot planning and skeletal posing.
 
 ### Humanoid baseline
 
-[`resolveProceduralCharacterPose()`](../../client/apps/game/src/three/characters/procedural-character-pose.ts) currently
-has these structural limitations:
+[`resolveProceduralCharacterPose()`](../../apps/game/src/three/characters/procedural-character-pose.ts) currently has
+these structural limitations:
 
 - Phase is `elapsedSeconds × animationSpeed`, so it is not coupled to actor displacement.
 - Left and right hip angles are pure antiphase sinusoids, and knee flexion is just the positive half of the same wave.

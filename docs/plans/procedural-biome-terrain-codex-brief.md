@@ -136,14 +136,14 @@ RECS Tile entities
 
 Relevant evidence:
 
-- `client/apps/game/src/three/constants/scene-constants.ts` declares 22 biome render keys backed by 21 named biome
-  files, including the outline and alternates (`None` reuses `Bare`).
-- `client/apps/game/src/three/scenes/hexagon-scene.ts` loads every path and constructs one `InstancedBiome` per biome
-  for each scene.
-- `client/apps/game/src/three/scenes/worldmap.tsx` builds per-biome matrix buckets for explored tiles and an `Outline`
-  bucket for unexplored tiles, then recomposes those buffers as retained pages change.
+- `apps/game/src/three/constants/scene-constants.ts` declares 22 biome render keys backed by 21 named biome files,
+  including the outline and alternates (`None` reuses `Bare`).
+- `apps/game/src/three/scenes/hexagon-scene.ts` loads every path and constructs one `InstancedBiome` per biome for each
+  scene.
+- `apps/game/src/three/scenes/worldmap.tsx` builds per-biome matrix buckets for explored tiles and an `Outline` bucket
+  for unexplored tiles, then recomposes those buffers as retained pages change.
 - structure hexes are currently omitted from the terrain render rather than represented as a surface pad.
-- `client/apps/game/src/three/scenes/hexception.tsx` repeats the biome-matrix flow for roughly 750 local-view cells.
+- `apps/game/src/three/scenes/hexception.tsx` repeats the biome-matrix flow for roughly 750 local-view cells.
 - the repository contains about 11 MB of high-detail biome files and 780 KB of flat biome files. Parsed geometry,
   materials, textures, morph resources, and per-scene instance buffers cost more than their transfer size; the existing
   graphics audit already identifies biome residency as one of the largest fixed renderer costs.
@@ -195,8 +195,8 @@ both rendering backends one implementation.
 
 ### The external seam
 
-Add one deep `ProceduralTerrain` module under `client/apps/game/src/three/terrain/`. `WorldmapScene` and
-`HexceptionScene` know only its interface and opaque prepared-page results:
+Add one deep `ProceduralTerrain` module under `apps/game/src/three/terrain/`. `WorldmapScene` and `HexceptionScene` know
+only its interface and opaque prepared-page results:
 
 ```ts
 export interface TerrainCellInput {
@@ -257,7 +257,7 @@ Proposed layout:
 packages/core/src/utils/biome/
   biome.ts                         exact environment sample + classification
 
-client/apps/game/src/three/terrain/
+apps/game/src/three/terrain/
   procedural-terrain.ts            public interface, ownership, present/dispose flow
   terrain-page-builder.ts          typed-array geometry and page result construction
   terrain-surface.ts               continuous height/normal/pad sampling
@@ -269,7 +269,7 @@ client/apps/game/src/three/terrain/
   terrain-hash.ts                  signed-coordinate stable hash/PRNG
   terrain-diagnostics.ts           structured DEV measurements and fingerprints
 
-client/public/models/procedural-terrain/
+apps/game/public/models/procedural-terrain/
   ultimate-nature-props.glb        curated near/far meshes, one network request
   ultimate-nature-props.json       provenance, source names, hashes, budgets, license
   LICENSE-CC0.txt                  retained source license
@@ -495,7 +495,7 @@ Build one reproducible `ultimate-nature-props.glb` offline:
 10. commit only the optimized GLB, manifest, and CC0 license. Raw archives, FBX/OBJ/Blend sources, and conversion
     scratch files remain outside git.
 
-The import tool is versioned under `client/apps/game/scripts/terrain-props/` and requires an explicit source directory.
+The import tool is versioned under `apps/game/scripts/terrain-props/` and requires an explicit source directory.
 Production and CI never download from Quaternius or Google Drive.
 
 ### Runtime catalog

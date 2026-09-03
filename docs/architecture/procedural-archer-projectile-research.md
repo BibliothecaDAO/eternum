@@ -50,32 +50,31 @@ remains responsible for gameplay state
 
 The shared procedural runtime currently supports `knight`, `crossbowman`, `horse`, and `paladin`; a foot unit is a
 procedural humanoid plus lightweight equipment
-([procedural-unit-config.ts](../../client/apps/game/src/three/characters/procedural-unit-config.ts),
-[procedural-unit-runtime.ts](../../client/apps/game/src/three/characters/procedural-unit-runtime.ts)). The existing
+([procedural-unit-config.ts](../../apps/game/src/three/characters/procedural-unit-config.ts),
+[procedural-unit-runtime.ts](../../apps/game/src/three/characters/procedural-unit-runtime.ts)). The existing
 Crossbowman:
 
 - receives the same walk/idle procedural body pose as other foot units, with reduced arm swing;
 - gets a crude procedural crossbow positioned between `hand_l` and `hand_r`;
 - has no shot controller, target, bow/string state, socket API, arrow, or projectile lifecycle.
 
-Those facts are visible in
-[procedural-unit-runtime.ts](../../client/apps/game/src/three/characters/procedural-unit-runtime.ts) and
-[procedural-unit-equipment.ts](../../client/apps/game/src/three/characters/procedural-unit-equipment.ts).
+Those facts are visible in [procedural-unit-runtime.ts](../../apps/game/src/three/characters/procedural-unit-runtime.ts)
+and [procedural-unit-equipment.ts](../../apps/game/src/three/characters/procedural-unit-equipment.ts).
 
 The humanoid asset is capable of a substantially better archer pose. It contains `spine_01`, `spine_02`, `spine_03`,
 `neck_01`, left/right upper arms, lower arms, hands, and finger bones
-([quaternius-character-assets.ts](../../client/apps/game/src/three/characters/quaternius-character-assets.ts)). The
-current abstract rig, however, exposes one chest segment and two arm segments per side, and the avatar reapplies a fixed
+([quaternius-character-assets.ts](../../apps/game/src/three/characters/quaternius-character-assets.ts)). The current
+abstract rig, however, exposes one chest segment and two arm segments per side, and the avatar reapplies a fixed
 hand-roll correction after every pose
-([procedural-character-rig.ts](../../client/apps/game/src/three/characters/procedural-character-rig.ts),
-[procedural-character-avatar.ts](../../client/apps/game/src/three/characters/procedural-character-avatar.ts)). A
-convincing draw therefore requires an explicit hand-orientation/socket seam and distributed spine aim, not only new
-scalar parameters.
+([procedural-character-rig.ts](../../apps/game/src/three/characters/procedural-character-rig.ts),
+[procedural-character-avatar.ts](../../apps/game/src/three/characters/procedural-character-avatar.ts)). A convincing
+draw therefore requires an explicit hand-orientation/socket seam and distributed spine aim, not only new scalar
+parameters.
 
 Jolt is currently one shared fixed-step world containing a static ground body and ragdoll bodies. It exposes ragdoll
 creation, center-of-mass impulses, transforms, and statistics, but no public ray/shape query, body-to-entity metadata,
-or impulse-at-contact API ([jolt-ragdoll-world.ts](../../client/apps/game/src/three/characters/jolt-ragdoll-world.ts)).
-The installed `jolt-physics` package is the official Emscripten port and exposes `NarrowPhaseQuery`, ray collectors,
+or impulse-at-contact API ([jolt-ragdoll-world.ts](../../apps/game/src/three/characters/jolt-ragdoll-world.ts)). The
+installed `jolt-physics` package is the official Emscripten port and exposes `NarrowPhaseQuery`, ray collectors,
 shape-cast collectors, contact listeners, and `EMotionQuality_LinearCast`; the port explicitly says its interface
 mirrors the C++ API and that Emscripten allocations require manual destruction
 ([JoltPhysics.js README](https://github.com/jrouwe/JoltPhysics.js/),
@@ -84,12 +83,11 @@ mirrors the C++ API and that Emscripten allocations require manual destruction
 ### The art assets already support an archer
 
 The cosmetics registry already assigns a Hunter's Bow and Hunter's Quiver to the `TroopType.Crossbowman` family
-([registry.ts](../../client/apps/game/src/three/cosmetics/registry.ts),
-[cosmetics.data.ts](../../client/apps/game/src/ui/features/cosmetics/config/cosmetics.data.ts)). The checked-in files
-are:
+([registry.ts](../../apps/game/src/three/cosmetics/registry.ts),
+[cosmetics.data.ts](../../apps/game/src/ui/features/cosmetics/config/cosmetics.data.ts)). The checked-in files are:
 
-- `client/public/models/cosmetics/low-res/0x205010901.glb` — Hunter's Bow
-- `client/public/models/cosmetics/low-res/0x206010a01.glb` — Hunter's Quiver
+- `apps/game/public/models/cosmetics/low-res/0x205010901.glb` — Hunter's Bow
+- `apps/game/public/models/cosmetics/low-res/0x206010a01.glb` — Hunter's Quiver
 
 The bow is one static mesh node with no skin or animation, and the quiver is also static. Consequently, the bow can be
 used immediately for silhouette/material fidelity, but its limbs cannot be animated by rotating child nodes. A close-LOD
@@ -108,21 +106,21 @@ provisional world-map attack FX:
 
 - Quick Attack and Battle Lab create a provisional intent and call
   `startWorldmapProvisionalFx({ kind: "attack", attackerHex, targetHex }, intent)` before submitting the transaction
-  ([quick-attack-preview.tsx](../../client/apps/game/src/ui/features/military/battle/quick-attack-preview.tsx),
-  [battle-lab.tsx](../../client/apps/game/src/ui/features/military/battle/battle-lab/battle-lab.tsx)).
+  ([quick-attack-preview.tsx](../../apps/game/src/ui/features/military/battle/quick-attack-preview.tsx),
+  [battle-lab.tsx](../../apps/game/src/ui/features/military/battle/battle-lab/battle-lab.tsx)).
 - `Worldmap.startWorldmapProvisionalFx` currently creates attack/defense ground icons and removes them when the intent
-  settles ([worldmap-provisional-fx.ts](../../client/apps/game/src/three/scenes/worldmap-provisional-fx.ts),
-  [worldmap.tsx](../../client/apps/game/src/three/scenes/worldmap.tsx)).
+  settles ([worldmap-provisional-fx.ts](../../apps/game/src/three/scenes/worldmap-provisional-fx.ts),
+  [worldmap.tsx](../../apps/game/src/three/scenes/worldmap.tsx)).
 - `BattleEvent` contains attacker/defender IDs and owners, winner, coordinate, reward, and timestamp in Cairo; the core
   parser currently omits the coordinate and exposes no damage/category/weapon data
   ([troop_battle.cairo](../../contracts/l3/game/src/systems/combat/contracts/troop_battle.cairo),
   [world-update-listener.ts](../../packages/core/src/systems/world-update-listener.ts),
   [types.ts](../../packages/core/src/systems/types.ts)).
 - Worldmap consumes the indexed event for combat relationships, direction indicators, camera follow, and notifications,
-  not damage ([worldmap.tsx](../../client/apps/game/src/three/scenes/worldmap.tsx)).
+  not damage ([worldmap.tsx](../../apps/game/src/three/scenes/worldmap.tsx)).
 - The authoritative `ExplorerTroops` entity update changes troop counts. `ArmyManager` derives the count delta from the
   RECS component and plays floating damage/heal FX; removing a zero-count army drives defeat FX
-  ([army-manager.ts](../../client/apps/game/src/three/managers/army-manager.ts)).
+  ([army-manager.ts](../../apps/game/src/three/managers/army-manager.ts)).
 
 This is already the correct truth hierarchy. The projectile work should extend the provisional and event-driven
 presentation paths, not invent a parallel combat store.
@@ -152,7 +150,7 @@ presentation paths, not invent a parallel combat store.
 The world-level projectile system must not depend on having a promoted articulated actor. Most armies remain ordinary
 instances; they still need to fire a volley from a computed world muzzle. If a close actor exists, it supplies a live
 `arrowNock` socket and plays the full shot cycle. This keeps the promoted character layer optional, as designed in
-[procedural-army-character-layer.ts](../../client/apps/game/src/three/characters/procedural-army-character-layer.ts).
+[procedural-army-character-layer.ts](../../apps/game/src/three/characters/procedural-army-character-layer.ts).
 
 Recommended command boundary:
 
@@ -293,8 +291,8 @@ unrealistic poses; pole hemispheres and anatomical limits remain required
 ([Aristidou and Lasenby 2011](https://doi.org/10.1016/j.gmod.2011.05.003),
 [Aristidou et al. 2018](https://doi.org/10.1111/cgf.13310)). Eternum already uses constrained two-bone/FABRIK-style limb
 construction for procedural characters and horses, so this extends rather than replaces the pipeline
-([procedural-character-pose.ts](../../client/apps/game/src/three/characters/procedural-character-pose.ts),
-[procedural-horse-pose.ts](../../client/apps/game/src/three/characters/horse/procedural-horse-pose.ts)).
+([procedural-character-pose.ts](../../apps/game/src/three/characters/procedural-character-pose.ts),
+[procedural-horse-pose.ts](../../apps/game/src/three/characters/horse/procedural-horse-pose.ts)).
 
 For a right-handed archer:
 
@@ -330,8 +328,8 @@ interface CharacterSocketSnapshot {
 `ProceduralCharacterAvatar` should resolve bones once when a model is prepared, expose allocation-free world transforms,
 and accept optional hand/finger rotations from the action pose. This removes the current conflict in which
 `applyHandRollCorrections()` overwrites an archer's hand orientation
-([procedural-character-avatar.ts](../../client/apps/game/src/three/characters/procedural-character-avatar.ts)). It also
-gives swords, crossbows, future spellcasting, and projectiles one systemic attachment seam.
+([procedural-character-avatar.ts](../../apps/game/src/three/characters/procedural-character-avatar.ts)). It also gives
+swords, crossbows, future spellcasting, and projectiles one systemic attachment seam.
 
 ### Blend with locomotion
 
@@ -345,7 +343,7 @@ Use semantic layers rather than separate whole-body poses:
 Blend weights follow the shot state, but IK effectors are re-solved after blending. Linear interpolation of two
 already-solved arm poses will generally break the hand-to-bow constraint; re-solving preserves contact. The same rule is
 already implicit in Eternum's foot/hoof plant controller: world contacts must win over decorative motion
-([procedural-plant-controller.ts](../../client/apps/game/src/three/characters/procedural-plant-controller.ts)).
+([procedural-plant-controller.ts](../../apps/game/src/three/characters/procedural-plant-controller.ts)).
 
 ## Bow, string, and arrow socketing
 
@@ -542,8 +540,8 @@ Therefore, Jolt alone cannot answer “did this visual arrow hit army X?” The 
 1. **Logical world proxies:** target entity sphere/capsule/box derived from `ArmyManager`, structures, and flat terrain.
 2. **Jolt narrow phase:** optional swept query against active ragdoll/static bodies, with projectile/shooter filtering.
 3. **Ground/terrain:** current Worldmap uses flat `y = 0` hex positions, so a plane intersection is the production v1
-   terrain query ([utils.ts](../../client/apps/game/src/three/utils/utils.ts)); a later height sampler or static Jolt
-   terrain can replace it behind the interface.
+   terrain query ([utils.ts](../../apps/game/src/three/utils/utils.ts)); a later height sampler or static Jolt terrain
+   can replace it behind the interface.
 
 Recommended target API:
 
@@ -614,7 +612,7 @@ modified matrices/colors require marking their attributes for update
 ([InstancedMesh](https://threejs.org/docs/pages/InstancedMesh.html)). Use `DynamicDrawUsage` and update ranges for
 per-frame instance data ([BufferAttribute](https://threejs.org/docs/pages/BufferAttribute.html)). Reuse the repository's
 existing dirty-range helper rather than writing a second upload convention
-([instanced-attribute-update-range.ts](../../client/apps/game/src/three/utils/instanced-attribute-update-range.ts)).
+([instanced-attribute-update-range.ts](../../apps/game/src/three/utils/instanced-attribute-update-range.ts)).
 
 Do not spawn one visual arrow per onchain troop. One army model represents an aggregate, so render a seeded volley of
 roughly 3–9 arrows depending on camera distance, effect quality, and damage magnitude availability. That is a
@@ -633,11 +631,11 @@ and define overflow as “drop oldest/farthest cosmetic arrow,” never dynamic 
 Three.js `LOD` supports distance thresholds and hysteresis, but the project should use the existing scene
 visibility/camera policy as the authority and keep archer LOD decisions in one coordinator
 ([Three.js LOD](https://threejs.org/docs/pages/LOD.html),
-[procedural-army-character-layer.ts](../../client/apps/game/src/three/characters/procedural-army-character-layer.ts)).
+[procedural-army-character-layer.ts](../../apps/game/src/three/characters/procedural-army-character-layer.ts)).
 
 The existing benchmark caps at 100 actors and steps its crowd simulation at 30 Hz
-([procedural-character-benchmark-config.ts](../../client/apps/game/src/three/characters/benchmark/procedural-character-benchmark-config.ts),
-[procedural-character-benchmark-simulation.ts](../../client/apps/game/src/three/characters/benchmark/procedural-character-benchmark-simulation.ts)).
+([procedural-character-benchmark-config.ts](../../apps/game/src/three/characters/benchmark/procedural-character-benchmark-config.ts),
+[procedural-character-benchmark-simulation.ts](../../apps/game/src/three/characters/benchmark/procedural-character-benchmark-simulation.ts)).
 Add an “archer volley” workload rather than a separate benchmark. Measure against the checked-in baseline on the same
 machine/render backend; do not claim optimization from intuition.
 
@@ -705,9 +703,9 @@ Never fabricate a ranged weapon for an unresolved event.
 
 Event delivery is an accelerator, not required for correctness. If `ExplorerTroops` count decreases, existing floating
 damage FX still plays; if it reaches zero, existing removal/defeat presentation still plays
-([army-manager.ts](../../client/apps/game/src/three/managers/army-manager.ts)). The client may not know which missed
-event caused a late snapshot delta, so the fallback should not synthesize an attacker-specific arrow. Persistent state
-stays correct and the transient volley may be absent—exactly the intended entity/event hierarchy.
+([army-manager.ts](../../apps/game/src/three/managers/army-manager.ts)). The client may not know which missed event
+caused a late snapshot delta, so the fallback should not synthesize an attacker-specific arrow. Persistent state stays
+correct and the transient volley may be absent—exactly the intended entity/event hierarchy.
 
 ### What not to synchronize
 
@@ -730,7 +728,7 @@ Keep mechanics shared and style data-driven:
 
 Use `primaryColor`, `tier`, `runeGlow`, metalness, and roughness already present in `ProceduralCharacterConfig` rather
 than a parallel upgrade schema
-([procedural-character-config.ts](../../client/apps/game/src/three/characters/procedural-character-config.ts)). Instance
+([procedural-character-config.ts](../../apps/game/src/three/characters/procedural-character-config.ts)). Instance
 color/emissive strength should carry most variation so arrows remain in a few shared geometry/material buckets. A unique
 material per actor destroys batching.
 
@@ -812,19 +810,18 @@ archer/projectile panel only for ranged kinds.
 
 Add:
 
-- `client/apps/game/src/three/characters/archer/procedural-archer-config.ts`
-- `client/apps/game/src/three/characters/archer/procedural-archer-shot-cycle.ts`
-- `client/apps/game/src/three/characters/archer/procedural-archer-aim.ts`
-- `client/apps/game/src/three/characters/archer/procedural-archer-pose.ts`
-- `client/apps/game/src/three/projectiles/arrow-ballistics.ts`
+- `apps/game/src/three/characters/archer/procedural-archer-config.ts`
+- `apps/game/src/three/characters/archer/procedural-archer-shot-cycle.ts`
+- `apps/game/src/three/characters/archer/procedural-archer-aim.ts`
+- `apps/game/src/three/characters/archer/procedural-archer-pose.ts`
+- `apps/game/src/three/projectiles/arrow-ballistics.ts`
 - matching focused tests beside each file
 
 Change:
 
-- [procedural-unit-config.ts](../../client/apps/game/src/three/characters/procedural-unit-config.ts): add visual kind
-  `archer`.
-- [procedural-character-pose.ts](../../client/apps/game/src/three/characters/procedural-character-pose.ts): allow an
-  upper-body action layer or delegate it cleanly to the archer pose resolver.
+- [procedural-unit-config.ts](../../apps/game/src/three/characters/procedural-unit-config.ts): add visual kind `archer`.
+- [procedural-character-pose.ts](../../apps/game/src/three/characters/procedural-character-pose.ts): allow an upper-body
+  action layer or delegate it cleanly to the archer pose resolver.
 
 Gate: deterministic state-edge tests, finite constrained arm solves, static/moving/no-solution ballistic tests. No
 rendering or Jolt required.
@@ -833,18 +830,18 @@ rendering or Jolt required.
 
 Add:
 
-- `client/apps/game/src/three/characters/procedural-character-sockets.ts`
-- `client/apps/game/src/three/characters/archer/procedural-bow-equipment.ts`
-- `client/apps/game/src/three/characters/archer/procedural-archer-runtime.ts`
+- `apps/game/src/three/characters/procedural-character-sockets.ts`
+- `apps/game/src/three/characters/archer/procedural-bow-equipment.ts`
+- `apps/game/src/three/characters/archer/procedural-archer-runtime.ts`
 
 Change:
 
-- [procedural-character-avatar.ts](../../client/apps/game/src/three/characters/procedural-character-avatar.ts): cached
-  sockets, optional hand/finger pose, distributed spine bindings.
-- [procedural-unit-equipment.ts](../../client/apps/game/src/three/characters/procedural-unit-equipment.ts): delegate
-  ranged weapons to bow/crossbow equipment runtimes rather than one static midpoint placement.
-- [procedural-unit-runtime.ts](../../client/apps/game/src/three/characters/procedural-unit-runtime.ts): compose the
-  archer action controller.
+- [procedural-character-avatar.ts](../../apps/game/src/three/characters/procedural-character-avatar.ts): cached sockets,
+  optional hand/finger pose, distributed spine bindings.
+- [procedural-unit-equipment.ts](../../apps/game/src/three/characters/procedural-unit-equipment.ts): delegate ranged
+  weapons to bow/crossbow equipment runtimes rather than one static midpoint placement.
+- [procedural-unit-runtime.ts](../../apps/game/src/three/characters/procedural-unit-runtime.ts): compose the archer
+  action controller.
 - gym renderer/controls/view and smoke files under `characters/gym` and `ui/features/debug`.
 
 Reuse the registered Hunter's Bow/quiver; use generated segmented fallback if asset load/sockets are unavailable. Gate:
@@ -855,19 +852,19 @@ tolerance, and no hand orientation is overwritten.
 
 Add:
 
-- `client/apps/game/src/three/projectiles/arrow-projectile-config.ts`
-- `client/apps/game/src/three/projectiles/arrow-projectile-pool.ts`
-- `client/apps/game/src/three/projectiles/arrow-projectile-renderer.ts`
-- `client/apps/game/src/three/projectiles/arrow-projectile-system.ts`
-- `client/apps/game/src/three/projectiles/projectile-hit-query.ts`
+- `apps/game/src/three/projectiles/arrow-projectile-config.ts`
+- `apps/game/src/three/projectiles/arrow-projectile-pool.ts`
+- `apps/game/src/three/projectiles/arrow-projectile-renderer.ts`
+- `apps/game/src/three/projectiles/arrow-projectile-system.ts`
+- `apps/game/src/three/projectiles/projectile-hit-query.ts`
 - unit/performance/source-guard tests
 
 Change:
 
-- [jolt-ragdoll-world.ts](../../client/apps/game/src/three/characters/jolt-ragdoll-world.ts): generic filtered shape
-  query, body metadata, impulse at point.
-- [instanced-attribute-update-range.ts](../../client/apps/game/src/three/utils/instanced-attribute-update-range.ts):
-  reuse only; extend only if a measured missing primitive exists.
+- [jolt-ragdoll-world.ts](../../apps/game/src/three/characters/jolt-ragdoll-world.ts): generic filtered shape query,
+  body metadata, impulse at point.
+- [instanced-attribute-update-range.ts](../../apps/game/src/three/utils/instanced-attribute-update-range.ts): reuse
+  only; extend only if a measured missing primitive exists.
 
 Gate: swept-hit, earliest-hit, pool lifecycle, no-allocation, WASM cleanup, and 512-arrow benchmark targets.
 
@@ -875,22 +872,22 @@ Gate: swept-hit, earliest-hit, pool lifecycle, no-allocation, WASM cleanup, and 
 
 Add:
 
-- `client/apps/game/src/three/combat/ranged-combat-presentation-coordinator.ts`
+- `apps/game/src/three/combat/ranged-combat-presentation-coordinator.ts`
 - coordinator tests for provisional, failure, remote replay, dedupe, old replay, and snapshot fallback
 
 Change:
 
-- [worldmap-provisional-fx.ts](../../client/apps/game/src/three/scenes/worldmap-provisional-fx.ts): add IDs/actor
-  context to attack specs.
+- [worldmap-provisional-fx.ts](../../apps/game/src/three/scenes/worldmap-provisional-fx.ts): add IDs/actor context to
+  attack specs.
 - Quick Attack and Battle Lab call sites: pass the context they already own.
-- [worldmap.tsx](../../client/apps/game/src/three/scenes/worldmap.tsx): own/update/dispose the coordinator and route
+- [worldmap.tsx](../../apps/game/src/three/scenes/worldmap.tsx): own/update/dispose the coordinator and route
   `BattleEvent` to it.
 - [types.ts](../../packages/core/src/systems/types.ts) and
   [world-update-listener.ts](../../packages/core/src/systems/world-update-listener.ts): expose stable event identity and
   Cairo coordinate.
-- [army-manager.ts](../../client/apps/game/src/three/managers/army-manager.ts): allocation-free source/target
-  presentation snapshots, not a second state store.
-- [procedural-army-character-layer.ts](../../client/apps/game/src/three/characters/procedural-army-character-layer.ts):
+- [army-manager.ts](../../apps/game/src/three/managers/army-manager.ts): allocation-free source/target presentation
+  snapshots, not a second state store.
+- [procedural-army-character-layer.ts](../../apps/game/src/three/characters/procedural-army-character-layer.ts):
   optional action command and live socket snapshot for promoted actors.
 
 Gate: local attacks feel immediate; indexed echoes do not double-fire; remote ranged attacks replay; missing events do
@@ -911,10 +908,10 @@ buckets remain bounded.
 
 Change:
 
-- `client/apps/game/src/three/characters/benchmark/procedural-character-benchmark-config.ts`
-- `client/apps/game/src/three/characters/benchmark/procedural-character-benchmark-simulation.ts`
-- `client/apps/game/src/three/characters/benchmark/procedural-character-benchmark-renderer.ts`
-- `client/apps/game/src/ui/features/debug/procedural-character-benchmark-view.tsx`
+- `apps/game/src/three/characters/benchmark/procedural-character-benchmark-config.ts`
+- `apps/game/src/three/characters/benchmark/procedural-character-benchmark-simulation.ts`
+- `apps/game/src/three/characters/benchmark/procedural-character-benchmark-renderer.ts`
+- `apps/game/src/ui/features/debug/procedural-character-benchmark-view.tsx`
 - browser smoke scripts
 
 Add workload presets: `archer-volley`, `ranged-mix`, `512-arrows`, and `impact-ragdolls`. Record baseline and candidate

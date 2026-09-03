@@ -2,7 +2,7 @@
 
 **Research date:** 2026-08-27
 
-**Runtime scope:** `client/apps/game/src/three/characters`
+**Runtime scope:** `apps/game/src/three/characters`
 
 **Decision scope:** select a repeatable way to source more realistic horse and humanoid surfaces without replacing the
 project-owned procedural motion, rig semantics, gym, or runtime asset contract.
@@ -77,7 +77,7 @@ If “Image23JS” refers to a different private tool, its exact URL or reposito
 
 ## Repository evidence: why the current horse looks low-poly
 
-The current asset is [`horse.glb`](../../client/public/models/characters/quaternius-horse/horse.glb). Repository
+The current asset is [`horse.glb`](../../apps/game/public/models/characters/quaternius-horse/horse.glb). Repository
 inspection with `gltf-transform inspect` gives:
 
 | Property                 | Current horse      | Consequence                                                                 |
@@ -91,7 +91,7 @@ inspection with `gltf-transform inspect` gives:
 | Textures / UV detail     | none               | No base-color, normal, roughness, metallic, or AO detail                    |
 
 The asset provenance file confirms the 50-joint skin, eight flat-color materials, and 13 reference clips under CC0.
-[`LICENSE.asset.txt`](../../client/public/models/characters/quaternius-horse/LICENSE.asset.txt)
+[`LICENSE.asset.txt`](../../apps/game/public/models/characters/quaternius-horse/LICENSE.asset.txt)
 
 The runtime already has the harder reusable pieces:
 
@@ -108,9 +108,9 @@ Rodin-, or Meshy-specific branches to gait, pose, or Jolt code.
 
 Relevant current ownership:
 
-- [`quaternius-horse-assets.ts`](../../client/apps/game/src/three/characters/horse/quaternius-horse-assets.ts)
-- [`procedural-horse-rig.ts`](../../client/apps/game/src/three/characters/horse/procedural-horse-rig.ts)
-- [`procedural-horse-avatar.ts`](../../client/apps/game/src/three/characters/horse/procedural-horse-avatar.ts)
+- [`quaternius-horse-assets.ts`](../../apps/game/src/three/characters/horse/quaternius-horse-assets.ts)
+- [`procedural-horse-rig.ts`](../../apps/game/src/three/characters/horse/procedural-horse-rig.ts)
+- [`procedural-horse-avatar.ts`](../../apps/game/src/three/characters/horse/procedural-horse-avatar.ts)
 - [`procedural-character-pipeline.md`](./procedural-character-pipeline.md)
 - [`animation-evaluation.md`](./animation-evaluation.md)
 

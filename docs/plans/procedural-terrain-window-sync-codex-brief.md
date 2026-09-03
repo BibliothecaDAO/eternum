@@ -151,9 +151,9 @@ gates need. Keep the `setQualityTier(this.qualityTier)` constructor call and the
 ## Validation
 
 - Focused tests: `worldmap-procedural-terrain.test.ts`, `terrain-fog-mask.test.ts`, `terrain-fog-field.test.ts`,
-  `terrain-benchmark-fixture.test.ts`, `terrain-shroud-production-wiring.source.test.ts`; then the full
-  `client/apps/game` suite via `pnpm test` (known contention flakes: `instanced-model.material-semantics`,
-  `game-entry-preload`, `play-asset-manifest`); typecheck, `pnpm run format`, `pnpm run knip`.
+  `terrain-benchmark-fixture.test.ts`, `terrain-shroud-production-wiring.source.test.ts`; then the full `apps/game`
+  suite via `pnpm test` (known contention flakes: `instanced-model.material-semantics`, `game-entry-preload`,
+  `play-asset-manifest`); typecheck, `pnpm run format`, `pnpm run knip`.
 - Live gates: 16 procedural pages for a 4×4 window; biomes visible within one page build of landing while panning; fog
   on unexplored hexes only, crisp at the frontier at all three camera views; no growth in `getShroudStats().maskBytes`
   or prepared-page cache size across a 100-page traversal and return to origin.

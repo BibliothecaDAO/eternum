@@ -20,7 +20,7 @@ The answer is one machine-readable verdict, not a collection of console screensh
 every run.
 
 ```text
-pnpm --dir client/apps/game verify:terrain --suite quick
+pnpm --dir apps/game verify:terrain --suite quick
   -> deterministic captures
   -> structural invariants
   -> renderer and page metrics
@@ -99,22 +99,22 @@ owns policy and pass/fail. The agent owns semantic visual judgment. No layer sil
 ### Proposed files
 
 ```text
-client/apps/game/src/three/terrain/verification/
+apps/game/src/three/terrain/verification/
   terrain-verification-fixtures.ts       fixture inputs and required capture matrix
   terrain-verification-runtime.ts        readiness, clock freeze, snapshots, traces
   terrain-verification-contract.ts       browser snapshot and invariant types
   terrain-verification-diagnostics.ts    production terrain counters/timings
 
-client/apps/game/src/ui/features/debug/
+apps/game/src/ui/features/debug/
   procedural-terrain-debug-view.tsx      auth-free production terrain host
 
-client/apps/game/scripts/terrain-verification/
+apps/game/scripts/terrain-verification/
   run-terrain-verification.mjs           browser orchestration
   evaluate-terrain-verification.mjs      policy and baseline comparison
   create-terrain-contact-sheets.mjs      sharp-based evidence boards
   terrain-aesthetic-rubric.mjs           review schema and completeness checks
 
-client/apps/game/scripts/
+apps/game/scripts/
   run-terrain-verification.test.mjs
   evaluate-terrain-verification.test.mjs
 
@@ -578,16 +578,16 @@ Representative usage:
 
 ```bash
 # Fast local loop, one maintained fallback backend
-pnpm --dir client/apps/game verify:terrain --suite quick --renderer-modes webgpu-force-webgl
+pnpm --dir apps/game verify:terrain --suite quick --renderer-modes webgpu-force-webgl
 
 # Final local review, both modes, saved artifacts
-pnpm --dir client/apps/game verify:terrain \
+pnpm --dir apps/game verify:terrain \
   --suite full \
   --renderer-modes webgpu-auto,webgpu-force-webgl \
   --artifact-dir .context/terrain-verification/final
 
 # Compare against a base artifact captured on the same machine
-pnpm --dir client/apps/game verify:terrain \
+pnpm --dir apps/game verify:terrain \
   --suite full \
   --compare .context/terrain-verification/base/manifest.json
 ```

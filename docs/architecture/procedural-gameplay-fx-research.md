@@ -26,15 +26,15 @@ Build one **effect-description and lifecycle library** with two renderer impleme
    effect.
 
 This split follows Three's own platform state. The repository uses `three@^0.185.1`
-([package.json](../../client/apps/game/package.json)), matching the current
+([package.json](../../apps/game/package.json)), matching the current
 [Three r185 release](https://github.com/mrdoob/three.js/releases/tag/r185) from 1 July 2026. `WebGPURenderer`
 automatically selects WebGPU or a WebGL2 backend and exposes `forceWebGL` for testing, but Three's current manual still
 calls the renderer experimental and warns about missing features and differing performance
 ([WebGPURenderer API](https://threejs.org/docs/pages/WebGPURenderer.html),
 [WebGPURenderer manual](https://threejs.org/manual/en/webgpurenderer)). Eternum already owns startup fallback,
 device-loss diagnostics, and backend selection in
-[webgpu-renderer-backend.ts](../../client/apps/game/src/three/webgpu-renderer-backend.ts), so the FX library should
-consume that decision rather than probe or create another renderer.
+[webgpu-renderer-backend.ts](../../apps/game/src/three/webgpu-renderer-backend.ts), so the FX library should consume
+that decision rather than probe or create another renderer.
 
 The shortest useful first library is therefore not a general VFX graph. It is a small set of composable, deterministic
 primitives:
@@ -75,10 +75,10 @@ The underlying Three primitives are mature and backend-portable:
 
 The important Eternum-specific nuance is that “WebGL fallback” does **not** mean the legacy `WebGLRenderer`. The client
 aliases ordinary Three imports to the WebGPU build
-([three-webgpu-compat.ts](../../client/apps/game/src/three/three-webgpu-compat.ts)) and runs `WebGPURenderer` with
-either its WebGPU or WebGL2 backend. Three explicitly says `ShaderMaterial`, `RawShaderMaterial`, `onBeforeCompile`, and
-legacy `EffectComposer` are not supported by this renderer. Portable FX must therefore use node materials/TSL or
-unmodified built-in materials, even when the active backend is WebGL2
+([three-webgpu-compat.ts](../../apps/game/src/three/three-webgpu-compat.ts)) and runs `WebGPURenderer` with either its
+WebGPU or WebGL2 backend. Three explicitly says `ShaderMaterial`, `RawShaderMaterial`, `onBeforeCompile`, and legacy
+`EffectComposer` are not supported by this renderer. Portable FX must therefore use node materials/TSL or unmodified
+built-in materials, even when the active backend is WebGL2
 ([WebGPURenderer manual](https://threejs.org/manual/en/webgpurenderer)).
 
 ### What belongs behind capability gates
@@ -94,8 +94,8 @@ Post-processing is another independent capability. Three's modern stack composes
 nodes; selective emissive bloom is demonstrated by extracting an emissive MRT attachment and adding a bloom node
 ([selective bloom source](https://github.com/mrdoob/three.js/blob/r185/examples/webgpu_postprocessing_bloom_emissive.html)).
 Eternum's native post-process runtime is currently disabled and reports bloom/chromatic aberration/vignette as
-unsupported ([webgpu-renderer-backend.ts](../../client/apps/game/src/three/webgpu-renderer-backend.ts),
-[webgpu-postprocess-runtime.ts](../../client/apps/game/src/three/webgpu-postprocess-runtime.ts)). Every effect must read
+unsupported ([webgpu-renderer-backend.ts](../../apps/game/src/three/webgpu-renderer-backend.ts),
+[webgpu-postprocess-runtime.ts](../../apps/game/src/three/webgpu-postprocess-runtime.ts)). Every effect must read
 clearly without bloom; bloom, afterimage, refraction, and full-screen distortion are enhancements, not required layers.
 
 ### Browser and specification constraints
@@ -344,24 +344,24 @@ curves and use the in-house pooled batches. This preserves a reversible dependen
 
 Do not add another family of scene managers. FX ownership is currently spread across:
 
-- icon, ground, and text effects in [world-fx-backends.ts](../../client/apps/game/src/three/fx/world-fx-backends.ts),
-  [fx-manager.ts](../../client/apps/game/src/three/managers/fx-manager.ts), and
-  [resource-fx-manager.ts](../../client/apps/game/src/three/managers/resource-fx-manager.ts);
-- selected-hex particles and auras in [particles.ts](../../client/apps/game/src/three/managers/particles.ts) and
-  [aura.ts](../../client/apps/game/src/three/managers/aura.ts);
+- icon, ground, and text effects in [world-fx-backends.ts](../../apps/game/src/three/fx/world-fx-backends.ts),
+  [fx-manager.ts](../../apps/game/src/three/managers/fx-manager.ts), and
+  [resource-fx-manager.ts](../../apps/game/src/three/managers/resource-fx-manager.ts);
+- selected-hex particles and auras in [particles.ts](../../apps/game/src/three/managers/particles.ts) and
+  [aura.ts](../../apps/game/src/three/managers/aura.ts);
 - combat projectiles and impacts in
-  [arrow-projectile-system.ts](../../client/apps/game/src/three/projectiles/arrow-projectile-system.ts),
-  [melee-impact-system.ts](../../client/apps/game/src/three/combat/melee-impact-system.ts), and
-  [combat-presentation-coordinator.ts](../../client/apps/game/src/three/combat/combat-presentation-coordinator.ts); and
-- weather and movement flourishes in [rain-effect.ts](../../client/apps/game/src/three/effects/rain-effect.ts),
-  [lightning-effect-system.ts](../../client/apps/game/src/three/scenes/lightning-effect-system.ts),
-  [terrain-dust-interactions.ts](../../client/apps/game/src/three/terrain/terrain-dust-interactions.ts), and
-  [terrain-water-interactions.ts](../../client/apps/game/src/three/terrain/terrain-water-interactions.ts).
+  [arrow-projectile-system.ts](../../apps/game/src/three/projectiles/arrow-projectile-system.ts),
+  [melee-impact-system.ts](../../apps/game/src/three/combat/melee-impact-system.ts), and
+  [combat-presentation-coordinator.ts](../../apps/game/src/three/combat/combat-presentation-coordinator.ts); and
+- weather and movement flourishes in [rain-effect.ts](../../apps/game/src/three/effects/rain-effect.ts),
+  [lightning-effect-system.ts](../../apps/game/src/three/scenes/lightning-effect-system.ts),
+  [terrain-dust-interactions.ts](../../apps/game/src/three/terrain/terrain-dust-interactions.ts), and
+  [terrain-water-interactions.ts](../../apps/game/src/three/terrain/terrain-water-interactions.ts).
 
 The last two terrain pools are the strongest implementation precedent: bounded typed state, `InstancedMesh`, one draw
 per family, per-instance attributes, TSL node materials, explicit statistics, deterministic ordering, and idempotent
-disposal. The new library should generalize that pattern behind `client/apps/game/src/three/fx`, then migrate and delete
-the bespoke managers as each replacement becomes trustworthy.
+disposal. The new library should generalize that pattern behind `apps/game/src/three/fx`, then migrate and delete the
+bespoke managers as each replacement becomes trustworthy.
 
 The target is one deep **module** named `WorldFxRuntime`. Its **interface** is semantic; callers describe the gameplay
 cue, not particles, shaders, blend modes, or pool slots:

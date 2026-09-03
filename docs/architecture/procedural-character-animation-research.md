@@ -2,7 +2,7 @@
 
 **Research date:** 2026-08-21
 
-**Repository baseline:** `client/apps/game` on this workspace, Three.js `0.185.1`
+**Repository baseline:** `apps/game` on this workspace, Three.js `0.185.1`
 
 **Scope:** replace the current monolithic tier-specific unit GLBs with a procedurally assembled character system;
 support visible upgrades, high-fidelity movement, runtime ragdolls, crowd-scale rendering, and a standalone animation
@@ -76,7 +76,7 @@ the same production-facing actor runtime, while the default instanced army rende
   the guarded live-army promotion layer;
 - a deterministic browser smoke sequence (`animate → drop → strike → settle → evaluate`) that rejects missing bodies,
   non-finite pose/body/render transforms, missing render work, browser exceptions, and layout overflow;
-- a repeatable `pnpm --dir client/apps/game smoke:character-gym` promotion gate with structured JSON output.
+- a repeatable `pnpm --dir apps/game smoke:character-gym` promotion gate with structured JSON output.
 
 The crowd proof is available at `/debug/procedural-character-benchmark`. It uses the same actor runtime on a fully
 framed 10×10 instanced hex arena and adds:
@@ -128,46 +128,46 @@ only their input adapters and cameras differ.
 
 ### Repository facts observed on 2026-08-21
 
-- [`client/apps/game/package.json`](../../client/apps/game/package.json) requests Three.js `^0.185.1`; the lockfile
-  resolves `0.185.1`. The official npm package also identifies `0.185.1` as the current release at the time of this
-  research. [Three.js npm package](https://www.npmjs.com/package/three)
-- [`renderer-build-mode.ts`](../../client/apps/game/src/three/renderer-build-mode.ts) defaults to `webgpu-auto`.
-  [`webgpu-renderer-backend.ts`](../../client/apps/game/src/three/webgpu-renderer-backend.ts) constructs
+- [`apps/game/package.json`](../../apps/game/package.json) requests Three.js `^0.185.1`; the lockfile resolves
+  `0.185.1`. The official npm package also identifies `0.185.1` as the current release at the time of this research.
+  [Three.js npm package](https://www.npmjs.com/package/three)
+- [`renderer-build-mode.ts`](../../apps/game/src/three/renderer-build-mode.ts) defaults to `webgpu-auto`.
+  [`webgpu-renderer-backend.ts`](../../apps/game/src/three/webgpu-renderer-backend.ts) constructs
   `WebGPURenderer({ forceWebGL })`, records whether native WebGPU or WebGL2 fallback is active, and already has backend
-  diagnostics. [`vite.config.ts`](../../client/apps/game/vite.config.ts) splits `three/webgpu` into its own chunk.
-- [`army-constants.ts`](../../client/apps/game/src/three/constants/army-constants.ts) maps Knight, Crossbowman, and
-  Paladin at T1/T2/T3 to nine complete default GLBs. A local asset inspection measured those nine files at 6,590,792
-  bytes (6.29 MiB) total. Each contains one mesh/node, no skin or bones, no animation, and no morph targets, with
-  roughly 8.4k–17.6k vertices and 8.6k–19.7k triangles plus two 480×480 KTX2 textures.
+  diagnostics. [`vite.config.ts`](../../apps/game/vite.config.ts) splits `three/webgpu` into its own chunk.
+- [`army-constants.ts`](../../apps/game/src/three/constants/army-constants.ts) maps Knight, Crossbowman, and Paladin at
+  T1/T2/T3 to nine complete default GLBs. A local asset inspection measured those nine files at 6,590,792 bytes (6.29
+  MiB) total. Each contains one mesh/node, no skin or bones, no animation, and no morph targets, with roughly 8.4k–17.6k
+  vertices and 8.6k–19.7k triangles plus two 480×480 KTX2 textures.
 - The current thumbnails already establish a useful art direction: dark, readable tabletop-miniature silhouettes;
   visible tier progression; a winged Knight at T3; and Paladin progression from horse to pegasus to dragon-like mount.
   The new system should preserve these authored silhouette beats instead of randomizing them away.
-- [`ArmyModel`](../../client/apps/game/src/three/managers/army-model.ts) converts each source `Mesh` into an
-  `InstancedMesh`, reserves 1,024 slots, and only has a morph-weight animation path. It samples at 20 Hz, spreads work
-  over ten animation buckets, and exposes idle/moving state. Dropping in a conventional skinned GLB would therefore not
-  work without a new articulated character lane.
+- [`ArmyModel`](../../apps/game/src/three/managers/army-model.ts) converts each source `Mesh` into an `InstancedMesh`,
+  reserves 1,024 slots, and only has a morph-weight animation path. It samples at 20 Hz, spreads work over ten animation
+  buckets, and exposes idle/moving state. Dropping in a conventional skinned GLB would therefore not work without a new
+  articulated character lane.
 - `ArmyModel.initializeAnimationArrays()` currently assigns animation buckets with `Math.random()`. That is harmless
   visual phase noise but is not stable character generation.
-- [`army-model-materials.ts`](../../client/apps/game/src/three/managers/army-model-materials.ts) converts source
+- [`army-model-materials.ts`](../../apps/game/src/three/managers/army-model-materials.ts) converts source
   `MeshStandardMaterial` to pooled `MeshBasicMaterial`, so the unit path presently discards metallic/roughness lighting.
   A high-fidelity character material is not a small patch to the existing pool; it needs a bounded PBR node-material
   family and explicit ownership.
-- Cosmetics already have a [registry](../../client/apps/game/src/three/cosmetics/registry.ts),
-  [attachment slots and pooling](../../client/apps/game/src/three/cosmetics/attachment-manager.ts), signatures, and
-  [mount transforms](../../client/apps/game/src/three/managers/army-attachment-transforms.ts). The current army mount
+- Cosmetics already have a [registry](../../apps/game/src/three/cosmetics/registry.ts),
+  [attachment slots and pooling](../../apps/game/src/three/cosmetics/attachment-manager.ts), signatures, and
+  [mount transforms](../../apps/game/src/three/managers/army-attachment-transforms.ts). The current army mount
   transforms are root-space offsets, not bone sockets. They are a useful migration seam, but articulated equipment must
   bind to canonical bones/sockets.
 - Worldmap profiles use a 38° FOV at approximately 10/20/40 camera distance, army scale `0.3`, and close-view-only
   shadows. This strongly favors aggressive representation LOD: most units do not need hero articulation most of the
   time.
-- The [`/debug/three-chunks` route pattern](../../client/apps/game/src/app.tsx) is the right lazy-loading precedent. Its
-  [renderer](../../client/apps/game/src/three/debug/three-chunk-debug-renderer.ts) is a standalone `WebGLRenderer`; the
+- The [`/debug/three-chunks` route pattern](../../apps/game/src/app.tsx) is the right lazy-loading precedent. Its
+  [renderer](../../apps/game/src/three/debug/three-chunk-debug-renderer.ts) is a standalone `WebGLRenderer`; the
   character gym must instead call the
-  [production renderer-backend runtime](../../client/apps/game/src/three/renderer-backend-runtime.ts) so the same scene
-  can be exercised in native WebGPU and forced WebGL2 fallback.
-- `client/apps/game/package.json` now declares exact `jolt-physics@1.1.0`. The separate WASM import lives behind the
-  lazy `/debug/procedural-characters` route, so normal game boot does not initialize the 128 MiB Jolt heap measured by
-  the browser smoke.
+  [production renderer-backend runtime](../../apps/game/src/three/renderer-backend-runtime.ts) so the same scene can be
+  exercised in native WebGPU and forced WebGL2 fallback.
+- `apps/game/package.json` now declares exact `jolt-physics@1.1.0`. The separate WASM import lives behind the lazy
+  `/debug/procedural-characters` route, so normal game boot does not initialize the 128 MiB Jolt heap measured by the
+  browser smoke.
 
 ### Inference from the baseline
 
@@ -921,7 +921,7 @@ gates:
 Keep the top-level runtime readable and the dependencies one-way:
 
 ```text
-client/apps/game/src/three/characters/
+apps/game/src/three/characters/
   recipe/
     character-recipe.ts
     compile-character-recipe.ts
@@ -960,7 +960,7 @@ client/apps/game/src/three/characters/
     character-gym-scenarios.ts
     character-gym-metrics.ts
 
-client/apps/game/src/ui/features/debug/
+apps/game/src/ui/features/debug/
   procedural-character-gym-view.tsx
 ```
 
