@@ -23,6 +23,7 @@ import {
 
 interface RendererDiagnosticsSnapshot {
   activeMode: RendererInitDiagnostics["activeMode"] | null;
+  adapterInfo: RendererInitDiagnostics["adapterInfo"] | null;
   buildMode: RendererInitDiagnostics["buildMode"] | null;
   capabilities: RendererBackendCapabilities | null;
   degradations: RendererFeatureDegradation[];
@@ -44,6 +45,7 @@ interface RendererDiagnosticsWindow {
 
 const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   activeMode: null,
+  adapterInfo: null,
   buildMode: null,
   capabilities: null,
   degradations: [],
@@ -80,6 +82,7 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
   rendererDiagnosticsState = {
     ...rendererDiagnosticsState,
     activeMode: input.activeMode,
+    adapterInfo: input.adapterInfo ? { ...input.adapterInfo } : null,
     buildMode: input.buildMode,
     fallbackReason: input.fallbackReason,
     initTimeMs: input.initTimeMs,
@@ -180,6 +183,7 @@ export function incrementRendererDiagnosticError(type: "fallbacks" | "initErrors
 export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
   return {
     ...rendererDiagnosticsState,
+    adapterInfo: rendererDiagnosticsState.adapterInfo ? { ...rendererDiagnosticsState.adapterInfo } : null,
     capabilities: rendererDiagnosticsState.capabilities ? { ...rendererDiagnosticsState.capabilities } : null,
     degradations: rendererDiagnosticsState.degradations.map((degradation) => ({ ...degradation })),
     effectPlan: rendererDiagnosticsState.effectPlan

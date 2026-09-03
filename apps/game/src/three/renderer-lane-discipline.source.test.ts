@@ -32,12 +32,17 @@ describe("renderer lane discipline", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("bounds the adapter probe to one second and remembers the lane per profile", () => {
+  it("keeps renderer lane discovery bounded and fallback independent of the failure class", () => {
     const probe = readFileSync(join(srcRoot, "three", "webgpu-lane-probe.ts"), "utf8");
     expect(probe).toMatch(/WEBGPU_ADAPTER_PROBE_TIMEOUT_MS = 1_000/);
     expect(probe).toMatch(/RENDERER_LANE_STORAGE_KEY = "eternum-renderer-lane"/);
     const backend = readFileSync(join(srcRoot, "three", "webgpu-renderer-backend.ts"), "utf8");
     expect(backend).toMatch(/resolvedDependencies\.resolveLaneStart\(/);
+    const initBound = backend.match(/WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = ([\d_]+)/)?.[1];
+    expect(initBound).toBeDefined();
+    expect(Number(initBound?.replaceAll("_", ""))).toBeLessThanOrEqual(5_000);
+    expect(backend).not.toContain("isStalledWebGpuLane");
+    expect(backend).not.toContain('timedOutMode === "webgpu"');
     // WebGPU is parked: no automatic qualification or idle promotion exists anywhere.
     expect(backend).not.toContain("QUALIFICATION_TIMEOUT");
     expect(backend).not.toContain("idle:init-ok");

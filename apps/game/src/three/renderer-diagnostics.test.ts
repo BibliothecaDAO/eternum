@@ -77,6 +77,7 @@ describe("renderer-diagnostics", () => {
 
     expect(snapshotRendererDiagnostics()).toEqual({
       activeMode: "webgl2-fallback",
+      adapterInfo: null,
       buildMode: "webgpu-auto",
       capabilities: {
         supportsBloom: false,
@@ -166,6 +167,7 @@ describe("renderer-diagnostics", () => {
 
     expect((window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics).toEqual({
       activeMode: "webgl2-fallback",
+      adapterInfo: null,
       buildMode: "webgpu-force-webgl",
       capabilities: {
         supportsBloom: true,

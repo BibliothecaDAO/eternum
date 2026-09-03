@@ -6,12 +6,21 @@ import type { RendererBuildMode } from "./renderer-build-mode";
 export type RendererActiveMode = "webgpu" | "webgl2-fallback";
 export type RendererFallbackReason =
   | "webgpu-device-lost"
+  | `webgpu-init-error:${string}`
   | "webgpu-init-timeout"
+  | "webgpu-silent-fallback"
   | "webgpu-unproven"
   | "webgpu-probe-timeout"
   | "webgpu-remembered-fallback"
   | "webgpu-unavailable"
   | null;
+
+export interface RendererAdapterInfo {
+  architecture: string;
+  description: string;
+  isFallbackAdapter: boolean;
+  vendor: string;
+}
 
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
@@ -40,6 +49,7 @@ export interface RendererFeatureDegradation {
 
 export interface RendererInitDiagnostics {
   activeMode: RendererActiveMode;
+  adapterInfo?: RendererAdapterInfo;
   buildMode: RendererBuildMode;
   deviceStatus?: "ready";
   fallbackReason: RendererFallbackReason;
@@ -145,10 +155,11 @@ export class RendererInitTimeoutError extends Error {
 
 export function createRendererInitDiagnostics(
   input: Pick<RendererInitDiagnostics, "activeMode" | "buildMode" | "requestedMode"> &
-    Partial<Pick<RendererInitDiagnostics, "deviceStatus" | "fallbackReason" | "initTimeMs">>,
+    Partial<Pick<RendererInitDiagnostics, "adapterInfo" | "deviceStatus" | "fallbackReason" | "initTimeMs">>,
 ): RendererInitDiagnostics {
   return {
     activeMode: input.activeMode,
+    ...(input.adapterInfo ? { adapterInfo: { ...input.adapterInfo } } : {}),
     buildMode: input.buildMode,
     ...(input.deviceStatus ? { deviceStatus: input.deviceStatus } : {}),
     fallbackReason: input.fallbackReason ?? null,

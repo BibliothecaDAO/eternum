@@ -13,6 +13,7 @@ import {
   createRendererBackendCapabilities,
   createRendererInitDiagnostics,
   RendererInitTimeoutError,
+  type RendererAdapterInfo,
   type RendererActiveMode,
   type RendererBackendV2,
   type RendererDeviceLostEvent,
@@ -41,12 +42,13 @@ interface WebGPURendererSurface extends RendererSurfaceLike {
 }
 
 interface CreatedWebGPURenderer {
-  activeMode: RendererActiveMode;
-  fallbackReason?: RendererFallbackReason;
   renderer: WebGPURendererSurface;
 }
 
 interface InitializedRendererLane extends CreatedWebGPURenderer {
+  activeMode: RendererActiveMode;
+  adapterInfo?: RendererAdapterInfo;
+  fallbackReason?: RendererFallbackReason;
   device?: WebGPURendererDevice;
   releaseDeviceDiagnostics: () => void;
 }
@@ -62,6 +64,7 @@ interface WebGpuDeviceUncapturedErrorEvent {
 }
 
 interface WebGPURendererDevice {
+  adapterInfo?: RendererAdapterInfo;
   addEventListener?: (type: "uncapturederror", listener: (event: WebGpuDeviceUncapturedErrorEvent) => void) => void;
   lost?: Promise<WebGpuDeviceLostInfo>;
   removeEventListener?: (type: "uncapturederror", listener: (event: WebGpuDeviceUncapturedErrorEvent) => void) => void;
@@ -121,8 +124,6 @@ async function createDefaultWebGPURenderer(input: {
   }
 
   return {
-    activeMode: forceWebGL ? "webgl2-fallback" : "webgpu",
-    fallbackReason: null,
     renderer,
   };
 }
@@ -163,7 +164,9 @@ function resolveLaneStorage(): Storage | null {
 }
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
-const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
+// The only recorded successful remembered-lane init was 317 ms. Use roughly 10x that
+// observation until item 1 replaces it with a truthful multi-run p95.
+const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200;
 let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
@@ -229,8 +232,17 @@ function createWebGpuStartupTimeoutError(
   return new RendererInitTimeoutError(`Renderer startup timed out after ${timeoutMs}ms`, timedOutMode);
 }
 
-function isStalledWebGpuLane(error: unknown): boolean {
-  return error instanceof RendererInitTimeoutError && error.timedOutMode === "webgpu";
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function resolveWebGpuInitFailureReason(error: unknown): Exclude<RendererFallbackReason, null> {
+  if (error instanceof RendererInitTimeoutError) {
+    return "webgpu-init-timeout";
+  }
+
+  const errorClass = error instanceof Error && error.name ? error.name : "UnknownError";
+  return `webgpu-init-error:${errorClass}`;
 }
 
 function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURendererDevice | undefined {
@@ -241,6 +253,20 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
   };
 
   return rendererWithBackend.backend?.device;
+}
+
+function resolveWebGpuAdapterInfo(device?: WebGPURendererDevice): RendererAdapterInfo | undefined {
+  const adapterInfo = device?.adapterInfo;
+  if (!adapterInfo || typeof adapterInfo.isFallbackAdapter !== "boolean") {
+    return undefined;
+  }
+
+  return {
+    architecture: adapterInfo.architecture ?? "",
+    description: adapterInfo.description ?? "",
+    isFallbackAdapter: adapterInfo.isFallbackAdapter,
+    vendor: adapterInfo.vendor ?? "",
+  };
 }
 
 function attachWebGpuDeviceDiagnostics(input: {
@@ -429,13 +455,18 @@ export function createWebGPURendererBackend(
         const rendererInitStartedAt = resolvedDependencies.now();
         await createdRenderer.renderer.init();
         if (abortController.signal.aborted) {
-          throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS, createdRenderer.activeMode);
+          throw createWebGpuStartupTimeoutError(
+            WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
+            forceWebGL ? "webgl2-fallback" : "webgpu",
+          );
         }
         recordRendererStartupTiming("webgpu-renderer-init", resolvedDependencies.now() - rendererInitStartedAt);
 
-        const device = resolveWebGpuRendererDevice(createdRenderer.renderer);
+        const activeMode = resolveWebGpuRendererActiveMode(createdRenderer.renderer);
+        const device = activeMode === "webgpu" ? resolveWebGpuRendererDevice(createdRenderer.renderer) : undefined;
+        const adapterInfo = resolveWebGpuAdapterInfo(device);
         releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({ device, onDeviceLost: options.onDeviceLost });
-        return { ...createdRenderer, device, releaseDeviceDiagnostics };
+        return { ...createdRenderer, activeMode, adapterInfo, device, releaseDeviceDiagnostics };
       } catch (error) {
         disposeCreatedRenderer();
         throw error;
@@ -445,7 +476,7 @@ export function createWebGPURendererBackend(
     return waitForWebGpuBackendStartup({
       abortController,
       disposeCreatedRenderer,
-      resolveTimedOutMode: () => createdRenderer?.activeMode ?? null,
+      resolveTimedOutMode: () => (forceWebGL ? "webgl2-fallback" : "webgpu"),
       startupPromise,
       timeoutMs: WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
     });
@@ -458,21 +489,26 @@ export function createWebGPURendererBackend(
     });
     try {
       const lane = await startRendererLane(start.forceWebGL);
-      if (lane.activeMode === "webgpu") resolvedDependencies.rememberLane("webgpu", "init");
-      return { ...lane, fallbackReason: lane.fallbackReason ?? start.fallbackReason };
+      if (lane.activeMode === "webgpu") {
+        resolvedDependencies.rememberLane("webgpu", "init");
+        return { ...lane, fallbackReason: start.fallbackReason };
+      }
+
+      if (!start.forceWebGL) {
+        resolvedDependencies.rememberLane("webgl2", "webgpu-silent-fallback");
+        return { ...lane, fallbackReason: "webgpu-silent-fallback" };
+      }
+
+      return { ...lane, fallbackReason: start.fallbackReason };
     } catch (error) {
-      if (!isStalledWebGpuLane(error)) {
+      if (start.forceWebGL || isAbortError(error)) {
         throw error;
       }
 
-      // A WebGPU init that never answers is the browser's stall (a saturated GPU process,
-      // adapter probing), not a scene problem: WebGL2 is the lane that still renders — and this
-      // profile does not ask again.
-      console.warn(
-        `[WebGPURendererBackend] WebGPU init stalled for ${WEBGPU_BACKEND_STARTUP_TIMEOUT_MS}ms; continuing on WebGL2`,
-      );
-      resolvedDependencies.rememberLane("webgl2", "webgpu-init-timeout");
-      return { ...(await startRendererLane(true)), fallbackReason: "webgpu-init-timeout" };
+      const fallbackReason = resolveWebGpuInitFailureReason(error);
+      console.warn(`[WebGPURendererBackend] WebGPU init failed (${fallbackReason}); continuing on WebGL2`);
+      resolvedDependencies.rememberLane("webgl2", fallbackReason);
+      return { ...(await startRendererLane(true)), fallbackReason };
     }
   };
 
@@ -531,6 +567,7 @@ export function createWebGPURendererBackend(
 
         return createRendererInitDiagnostics({
           activeMode: lane.activeMode,
+          adapterInfo: lane.adapterInfo,
           buildMode: options.requestedMode,
           deviceStatus: lane.activeMode === "webgpu" && lane.device ? "ready" : undefined,
           fallbackReason: lane.fallbackReason,
