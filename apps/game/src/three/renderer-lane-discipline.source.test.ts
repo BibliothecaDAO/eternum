@@ -38,6 +38,8 @@ describe("renderer lane discipline", () => {
     expect(probe).toMatch(/RENDERER_LANE_STORAGE_KEY = "eternum-renderer-lane"/);
     const backend = readFileSync(join(srcRoot, "three", "webgpu-renderer-backend.ts"), "utf8");
     expect(backend).toMatch(/resolvedDependencies\.resolveLaneStart\(/);
-    expect(backend).toMatch(/rememberLane\("webgl2", "webgpu-init-timeout"\)/);
+    expect(backend).toContain("WEBGPU_BACKGROUND_QUALIFICATION_TIMEOUT_MS = 3_000");
+    expect(backend).toContain('rememberLane("webgpu", "idle:init-ok")');
+    expect(backend).toContain('rememberLane("webgl2", `idle:${reason}`)');
   });
 });

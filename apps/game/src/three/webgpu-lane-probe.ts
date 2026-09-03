@@ -10,9 +10,16 @@ export interface RendererLaneMemory {
 }
 
 export interface WebGpuLaneStart {
+  /** A fresh profile renders on WebGL2 now and proves WebGPU off the boot path for the next boot. */
+  readonly qualifyAtIdle?: boolean;
   readonly forceWebGL: boolean;
   /** Set when the lane came from memory or a failed probe; null when WebGPU is being attempted. */
-  readonly fallbackReason: "webgpu-remembered-fallback" | "webgpu-unavailable" | "webgpu-probe-timeout" | null;
+  readonly fallbackReason:
+    | "webgpu-remembered-fallback"
+    | "webgpu-unavailable"
+    | "webgpu-probe-timeout"
+    | "webgpu-unproven"
+    | null;
   readonly remembered: boolean;
 }
 
@@ -30,21 +37,13 @@ interface ProbeWebGpuAdapterInput {
 interface ResolveWebGpuLaneStartInput {
   forceReprobe: boolean;
   probe: () => Promise<WebGpuProbeVerdict>;
-  /** A more patient probe run once at idle after a soft verdict; defaults to `probe`. */
-  reprobe?: () => Promise<WebGpuProbeVerdict>;
   requestedMode: RendererBuildMode;
-  /** Runs work once the boot has settled; defaults to `requestIdleCallback` with a timer fallback. */
-  scheduleIdle?: (work: () => void) => void;
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | null;
 }
 
 export const RENDERER_LANE_STORAGE_KEY = "eternum-renderer-lane";
 /** The half-two class 2 bar: the lane question is answered within a second, then remembered per profile. */
 const WEBGPU_ADAPTER_PROBE_TIMEOUT_MS = 1_000;
-/** The idle re-probe after a soft verdict may wait longer: nothing is blocked on it. */
-export const WEBGPU_ADAPTER_REPROBE_TIMEOUT_MS = 5_000;
-const IDLE_REPROBE_FALLBACK_DELAY_MS = 10_000;
-const IDLE_REPROBE_MAX_WAIT_MS = 30_000;
 
 /**
  * Asks the browser for a WebGPU adapter, bounded. Three's capability addon does
@@ -99,24 +98,30 @@ export async function resolveWebGpuLaneStart(input: ResolveWebGpuLaneStartInput)
 
   const remembered = input.forceReprobe ? null : readRememberedRendererLane(input.storage);
   if (remembered) {
-    // A remembered soft verdict keeps asking at idle until the answer is hard, one probe per boot.
-    if (isSoftWebGpuVerdict(remembered.reason)) scheduleIdleReprobe(input);
     return {
       fallbackReason: remembered.lane === "webgl2" ? "webgpu-remembered-fallback" : null,
       forceWebGL: remembered.lane === "webgl2",
+      qualifyAtIdle: remembered.lane === "webgl2" && isSoftWebGpuVerdict(remembered.reason),
       remembered: true,
+    };
+  }
+
+  if (!input.forceReprobe) {
+    return {
+      fallbackReason: "webgpu-unproven",
+      forceWebGL: true,
+      qualifyAtIdle: true,
+      remembered: false,
     };
   }
 
   const verdict = await input.probe();
   const lane: RendererLane = verdict === "adapter" ? "webgpu" : "webgl2";
-  rememberRendererLane(input.storage, lane, verdict);
-  // A timeout during boot is a soft verdict: boot long-tasks can outlast the race on a capable machine, so this
-  // boot stays on WebGL2 (no stall) and one idle re-probe decides the next boot's lane.
-  if (isSoftWebGpuVerdict(verdict)) scheduleIdleReprobe(input);
+  if (lane === "webgl2") rememberRendererLane(input.storage, lane, verdict);
   return {
     fallbackReason: resolveProbeFallbackReason(verdict),
     forceWebGL: lane === "webgl2",
+    qualifyAtIdle: isSoftWebGpuVerdict(verdict),
     remembered: false,
   };
 }
@@ -124,27 +129,6 @@ export async function resolveWebGpuLaneStart(input: ResolveWebGpuLaneStartInput)
 /** `adapter-timeout` says nothing about the hardware; `no-adapter` and `no-navigator-gpu` do. */
 function isSoftWebGpuVerdict(verdict: string): boolean {
   return verdict === "adapter-timeout" || verdict === "idle:adapter-timeout";
-}
-
-function scheduleIdleReprobe(input: ResolveWebGpuLaneStartInput): void {
-  const reprobe = input.reprobe ?? input.probe;
-  const scheduleIdle = input.scheduleIdle ?? scheduleAfterBootSettles;
-  scheduleIdle(() => {
-    void reprobe().then((verdict) => {
-      // The lane only changes on the next boot: no renderer hot-swap, just the memory the next boot reads.
-      rememberRendererLane(input.storage, verdict === "adapter" ? "webgpu" : "webgl2", `idle:${verdict}`);
-    });
-  });
-}
-
-function scheduleAfterBootSettles(work: () => void): void {
-  const idle = (globalThis as { requestIdleCallback?: (fn: () => void, options?: { timeout: number }) => number })
-    .requestIdleCallback;
-  if (idle) {
-    idle(work, { timeout: IDLE_REPROBE_MAX_WAIT_MS });
-    return;
-  }
-  setTimeout(work, IDLE_REPROBE_FALLBACK_DELAY_MS);
 }
 
 function resolveProbeFallbackReason(verdict: WebGpuProbeVerdict): WebGpuLaneStart["fallbackReason"] {

@@ -1669,3 +1669,25 @@ What this changes in the halves above:
   200 ms), instead of surfacing only as a client tail sample.
 - Block-boundary pre-confirm waits (~500 ms worst case) are cadence, accepted — invisible once the ghost carries the
   pending state.
+
+### Autonomous run record — renderer lane: cold profiles never wait for WebGPU (2026-09-03)
+
+**Conviction.** `resolveWebGpuLaneStart` treated a returned adapter as proof of the lane, then
+`createWebGPURendererBackend` awaited Three's `renderer.init()` under the 15 s startup timer before it could create the
+WebGL2 fallback. The owner's control at `toji.github.io/webgpu-test` returns WebGPU immediately, which rules out missing
+browser support: the failing class is our Three renderer initialization competing with the game's saturated boot path,
+not `navigator.gpu` availability. Adapter discovery alone is also insufficient evidence to remember WebGPU.
+
+**Fix.** A profile with no renderer verdict starts WebGL2 immediately and schedules one disposable Three WebGPU renderer
+at idle. Only a completed `renderer.init()` records `webgpu` for the next boot; a failed or stalled init records the
+hard `webgl2` verdict. The qualification timeout is 3 s and is entirely outside the active renderer's startup. The
+existing 15 s recovery remains only for a previously proven/explicit WebGPU lane, preserving the brief's remembered-lane
+and `forceReprobe` behavior. The old adapter-only idle promotion path is deleted.
+
+**Gate.** Lane/backend/discipline suites: 30/30 green; `apps/game` typecheck green. Fresh-profile headless Brave against
+the current 83-player game: renderer init 285 ms, first terrain 11.627 s; the same profile with a remembered WebGL2
+verdict: renderer init 537 ms, first terrain 11.144 s. The cold path therefore adds no bounded WebGPU wait (terrain
+delta 483 ms, within the surrounding snapshot/model-load variance). Its idle Three init recorded
+`{"lane":"webgpu","reason":"idle:init-ok"}`; reloading the same profile then initialized the remembered WebGPU lane in
+317 ms and reached first terrain at 10.750 s. This proves the promotion is based on the client renderer that will run,
+not the adapter probe that the standalone test already showed was healthy.

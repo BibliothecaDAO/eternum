@@ -45,92 +45,84 @@ describe("resolveWebGpuLaneStart", () => {
     expect(storage.getItem(RENDERER_LANE_STORAGE_KEY)).toBeNull();
   });
 
-  it("probes a fresh profile once and remembers the answer", async () => {
+  it("boots a fresh profile on WebGL2 without waiting for the adapter probe", async () => {
     const storage = createStorage();
-    const probe = vi.fn(async () => "adapter-timeout" as const);
+    const probe = vi.fn(() => new Promise<"adapter">(() => {}));
     await expect(
       resolveWebGpuLaneStart({ forceReprobe: false, probe, requestedMode: "webgpu-auto", storage }),
-    ).resolves.toEqual({ fallbackReason: "webgpu-probe-timeout", forceWebGL: true, remembered: false });
-    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: "adapter-timeout" });
-
-    await expect(
-      resolveWebGpuLaneStart({ forceReprobe: false, probe, requestedMode: "webgpu-auto", storage }),
-    ).resolves.toEqual({ fallbackReason: "webgpu-remembered-fallback", forceWebGL: true, remembered: true });
-    expect(probe).toHaveBeenCalledTimes(1);
+    ).resolves.toEqual({
+      fallbackReason: "webgpu-unproven",
+      forceWebGL: true,
+      qualifyAtIdle: true,
+      remembered: false,
+    });
+    expect(probe).not.toHaveBeenCalled();
+    expect(readRememberedRendererLane(storage)).toBeNull();
   });
 
-  it("re-probes on an explicit renderer mode and overwrites the memory", async () => {
+  it("re-probes on an explicit renderer mode without promoting the profile before renderer init", async () => {
     const storage = createStorage({
       [RENDERER_LANE_STORAGE_KEY]: JSON.stringify({ lane: "webgl2", reason: "no-adapter", recordedAt: 1 }),
     });
     const probe = vi.fn(async () => "adapter" as const);
     await expect(
       resolveWebGpuLaneStart({ forceReprobe: true, probe, requestedMode: "webgpu-auto", storage }),
-    ).resolves.toEqual({ fallbackReason: null, forceWebGL: false, remembered: false });
-    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgpu", reason: "adapter" });
+    ).resolves.toEqual({ fallbackReason: null, forceWebGL: false, qualifyAtIdle: false, remembered: false });
+    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: "no-adapter" });
   });
 
-  it("treats a boot-time timeout as soft: WebGL2 now, one idle re-probe rewrites the lane for the next boot", async () => {
+  it("keeps an explicit probe timeout soft so renderer init can qualify it at idle", async () => {
     const storage = createStorage();
-    const idle: Array<() => void> = [];
-    const reprobe = vi.fn(async () => "adapter" as const);
     await expect(
       resolveWebGpuLaneStart({
-        forceReprobe: false,
+        forceReprobe: true,
         probe: async () => "adapter-timeout",
-        reprobe,
         requestedMode: "webgpu-auto",
-        scheduleIdle: (work) => void idle.push(work),
         storage,
       }),
-    ).resolves.toEqual({ fallbackReason: "webgpu-probe-timeout", forceWebGL: true, remembered: false });
+    ).resolves.toEqual({
+      fallbackReason: "webgpu-probe-timeout",
+      forceWebGL: true,
+      qualifyAtIdle: true,
+      remembered: false,
+    });
     expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: "adapter-timeout" });
-    expect(idle).toHaveLength(1);
-
-    idle[0]();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(reprobe).toHaveBeenCalledTimes(1);
-    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgpu", reason: "idle:adapter" });
   });
 
-  it("keeps hard verdicts hard: no-adapter and no-navigator-gpu schedule no re-probe", async () => {
+  it("keeps explicit hard verdicts hard", async () => {
     for (const verdict of ["no-adapter", "no-navigator-gpu"] as const) {
       const storage = createStorage();
-      const idle: Array<() => void> = [];
-      await resolveWebGpuLaneStart({
-        forceReprobe: false,
-        probe: async () => verdict,
-        requestedMode: "webgpu-auto",
-        scheduleIdle: (work) => void idle.push(work),
-        storage,
+      await expect(
+        resolveWebGpuLaneStart({
+          forceReprobe: true,
+          probe: async () => verdict,
+          requestedMode: "webgpu-auto",
+          storage,
+        }),
+      ).resolves.toEqual({
+        fallbackReason: "webgpu-unavailable",
+        forceWebGL: true,
+        qualifyAtIdle: false,
+        remembered: false,
       });
-      expect(idle).toHaveLength(0);
       expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: verdict });
     }
   });
 
-  it("re-probes at idle again when the remembered lane came from a soft verdict, until the answer is hard", async () => {
+  it("asks the backend to qualify a remembered soft fallback at idle", async () => {
     const storage = createStorage({
       [RENDERER_LANE_STORAGE_KEY]: JSON.stringify({ lane: "webgl2", reason: "idle:adapter-timeout", recordedAt: 1 }),
     });
-    const idle: Array<() => void> = [];
     const probe = vi.fn(async () => "adapter" as const);
     await expect(
       resolveWebGpuLaneStart({
         forceReprobe: false,
         probe,
         requestedMode: "webgpu-auto",
-        scheduleIdle: (work) => void idle.push(work),
         storage,
       }),
-    ).resolves.toMatchObject({ forceWebGL: true, remembered: true });
+    ).resolves.toMatchObject({ forceWebGL: true, qualifyAtIdle: true, remembered: true });
     expect(probe).not.toHaveBeenCalled();
-    expect(idle).toHaveLength(1);
-    idle[0]();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgpu" });
   });
 
   it("ignores corrupt memory", () => {

@@ -7,6 +7,7 @@ export type RendererActiveMode = "webgpu" | "webgl2-fallback";
 export type RendererFallbackReason =
   | "webgpu-device-lost"
   | "webgpu-init-timeout"
+  | "webgpu-unproven"
   | "webgpu-probe-timeout"
   | "webgpu-remembered-fallback"
   | "webgpu-unavailable"

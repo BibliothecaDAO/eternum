@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Faster First Map",
+    description:
+      "A fresh browser profile now opens the map on WebGL2 immediately while WebGPU is verified in the background for the next visit, avoiding a long black screen on drivers that delay renderer startup.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-03",
     title: "Quieter Selection",
     description:
       "Selecting a structure or army no longer rings every hex you own. Only the selection and its legal targets are emphasised; ownership is shown by colour, as it always was on the strategic markers.",
