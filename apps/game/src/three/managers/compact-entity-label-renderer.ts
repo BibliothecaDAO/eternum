@@ -6,10 +6,13 @@ import type { CompactEntityLabelVariant } from "./compact-entity-label-policy";
 interface ActiveCompactLabel {
   atlasRecord: CompactLabelAtlasRecord;
   batch: LabelBatch;
+  hovered: boolean;
   instanceId: number;
   position: THREE.Vector3;
   size: number;
 }
+
+type CompactEntityLabelKey = ID | string;
 
 /** One batched draw per atlas page: every label on that page is an instance of its text's quad. */
 interface LabelBatch {
@@ -21,12 +24,23 @@ interface LabelBatch {
 }
 
 export interface CompactEntityLabelInput {
-  entityId: ID;
+  entityId: CompactEntityLabelKey;
   position: THREE.Vector3;
   text: string;
   variant: CompactEntityLabelVariant;
   priority?: number;
   size?: number;
+}
+
+export interface CompactEntityLabelScope {
+  clear(): void;
+  clearHover(): void;
+  dispose(): void;
+  removeLabel(entityId: ID): void;
+  removeMany(entityIds: Iterable<ID>): void;
+  retainOnly(entityIds: Iterable<ID>): void;
+  setHover(entityId: ID): void;
+  setLabel(input: Omit<CompactEntityLabelInput, "entityId"> & { entityId: ID }): void;
 }
 
 const COMPACT_LABEL_RENDER_ORDER = 10_050;
@@ -45,14 +59,14 @@ const OPTIMIZE_AFTER_DELETED_GEOMETRIES = 128;
  * of one each. Materials stay the atlas pages' plain `MeshBasicMaterial`s — no custom shader, both render lanes.
  */
 export class CompactEntityLabelRenderer {
-  private readonly labels = new Map<ID, ActiveCompactLabel>();
+  private readonly labels = new Map<CompactEntityLabelKey, ActiveCompactLabel>();
   private readonly batches = new Map<THREE.Material, LabelBatch>();
   private readonly group = new THREE.Group();
   private readonly cameraQuaternion = new THREE.Quaternion();
   private readonly scratchMatrix = new THREE.Matrix4();
   private readonly scratchScale = new THREE.Vector3();
   private hasCameraQuaternion = false;
-  private hoveredEntityId?: ID;
+  private directHoveredEntityId: CompactEntityLabelKey | undefined;
 
   constructor(private readonly scene: THREE.Scene) {
     this.group.name = "compact-entity-labels";
@@ -87,6 +101,7 @@ export class CompactEntityLabelRenderer {
     const label: ActiveCompactLabel = {
       atlasRecord,
       batch,
+      hovered: false,
       instanceId,
       position: input.position.clone(),
       size,
@@ -95,17 +110,17 @@ export class CompactEntityLabelRenderer {
     this.writeInstance(label);
   }
 
-  public removeLabel(entityId: ID): void {
+  public removeLabel(entityId: CompactEntityLabelKey): void {
     const label = this.labels.get(entityId);
     if (label) this.releaseActiveLabel(entityId, label);
   }
 
-  public removeMany(entityIds: Iterable<ID>): void {
+  public removeMany(entityIds: Iterable<CompactEntityLabelKey>): void {
     for (const entityId of entityIds) this.removeLabel(entityId);
   }
 
   /** Keeps only the labels whose entity is still placed — the reconcile that hides a model hides its label too. */
-  public retainOnly(entityIds: Iterable<ID>): void {
+  public retainOnly(entityIds: Iterable<CompactEntityLabelKey>): void {
     const keep = new Set(entityIds);
     for (const entityId of Array.from(this.labels.keys())) {
       if (!keep.has(entityId)) this.removeLabel(entityId);
@@ -114,26 +129,26 @@ export class CompactEntityLabelRenderer {
 
   public clear(): void {
     for (const [entityId, label] of Array.from(this.labels)) this.releaseActiveLabel(entityId, label);
-    this.hoveredEntityId = undefined;
+    this.directHoveredEntityId = undefined;
   }
 
-  public setHover(entityId: ID): void {
-    if (this.hoveredEntityId === entityId) return;
+  public setHover(entityId: CompactEntityLabelKey): void {
+    if (this.directHoveredEntityId === entityId) return;
 
     this.clearHover();
-    const label = this.labels.get(entityId);
-    if (!label) return;
-
-    this.hoveredEntityId = entityId;
-    this.writeInstance(label);
+    if (!this.labels.has(entityId)) return;
+    this.directHoveredEntityId = entityId;
+    this.setLabelHovered(entityId, true);
   }
 
   public clearHover(): void {
-    if (this.hoveredEntityId === undefined) return;
+    if (this.directHoveredEntityId === undefined) return;
+    this.setLabelHovered(this.directHoveredEntityId, false);
+    this.directHoveredEntityId = undefined;
+  }
 
-    const label = this.labels.get(this.hoveredEntityId);
-    this.hoveredEntityId = undefined;
-    if (label) this.writeInstance(label);
+  public createScope(namespace: string): CompactEntityLabelScope {
+    return new NamespacedCompactEntityLabelScope(this, requireLabelNamespace(namespace));
   }
 
   public updateCamera(camera: THREE.Camera): void {
@@ -152,6 +167,13 @@ export class CompactEntityLabelRenderer {
   public dispose(): void {
     this.clear();
     if (this.group.parent) this.group.parent.remove(this.group);
+  }
+
+  public setLabelHovered(entityId: CompactEntityLabelKey, hovered: boolean): void {
+    const label = this.labels.get(entityId);
+    if (!label || label.hovered === hovered) return;
+    label.hovered = hovered;
+    this.writeInstance(label);
   }
 
   private resolveBatch(material: THREE.MeshBasicMaterial): LabelBatch {
@@ -202,8 +224,7 @@ export class CompactEntityLabelRenderer {
 
   private writeInstance(label: ActiveCompactLabel): void {
     const aspectRatio = label.atlasRecord.width / label.atlasRecord.height;
-    const hoverScale =
-      this.hoveredEntityId !== undefined && this.labels.get(this.hoveredEntityId) === label ? HOVER_LABEL_SCALE : 1;
+    const hoverScale = label.hovered ? HOVER_LABEL_SCALE : 1;
     this.scratchScale.set(label.size * aspectRatio * hoverScale, label.size * hoverScale, 1);
     this.scratchMatrix.compose(
       label.position,
@@ -213,14 +234,14 @@ export class CompactEntityLabelRenderer {
     label.batch.mesh.setMatrixAt(label.instanceId, this.scratchMatrix);
   }
 
-  private releaseActiveLabel(entityId: ID, label: ActiveCompactLabel): void {
+  private releaseActiveLabel(entityId: CompactEntityLabelKey, label: ActiveCompactLabel): void {
     const { batch } = label;
     batch.mesh.deleteInstance(label.instanceId);
     batch.labelCount -= 1;
     this.releaseGeometry(batch, label.atlasRecord.key);
     releaseCompactLabel(label.atlasRecord);
     this.labels.delete(entityId);
-    if (this.hoveredEntityId === entityId) this.hoveredEntityId = undefined;
+    if (this.directHoveredEntityId === entityId) this.directHoveredEntityId = undefined;
     if (batch.labelCount === 0) this.disposeBatch(batch);
   }
 
@@ -231,8 +252,72 @@ export class CompactEntityLabelRenderer {
   }
 }
 
+class NamespacedCompactEntityLabelScope implements CompactEntityLabelScope {
+  private readonly entityIds = new Set<ID>();
+  private hoveredEntityId: ID | undefined;
+
+  constructor(
+    private readonly renderer: CompactEntityLabelRenderer,
+    private readonly namespace: string,
+  ) {}
+
+  setLabel(input: Omit<CompactEntityLabelInput, "entityId"> & { entityId: ID }): void {
+    this.entityIds.add(input.entityId);
+    this.renderer.setLabel({ ...input, entityId: this.key(input.entityId) });
+  }
+
+  removeLabel(entityId: ID): void {
+    this.entityIds.delete(entityId);
+    if (this.hoveredEntityId === entityId) this.hoveredEntityId = undefined;
+    this.renderer.removeLabel(this.key(entityId));
+  }
+
+  removeMany(entityIds: Iterable<ID>): void {
+    for (const entityId of entityIds) this.removeLabel(entityId);
+  }
+
+  retainOnly(entityIds: Iterable<ID>): void {
+    const retainedEntityIds = new Set(entityIds);
+    for (const entityId of Array.from(this.entityIds)) {
+      if (!retainedEntityIds.has(entityId)) this.removeLabel(entityId);
+    }
+  }
+
+  clear(): void {
+    this.removeMany(Array.from(this.entityIds));
+  }
+
+  setHover(entityId: ID): void {
+    if (this.hoveredEntityId === entityId) return;
+    this.clearHover();
+    if (!this.entityIds.has(entityId)) return;
+    this.hoveredEntityId = entityId;
+    this.renderer.setLabelHovered(this.key(entityId), true);
+  }
+
+  clearHover(): void {
+    if (this.hoveredEntityId === undefined) return;
+    this.renderer.setLabelHovered(this.key(this.hoveredEntityId), false);
+    this.hoveredEntityId = undefined;
+  }
+
+  dispose(): void {
+    this.clear();
+  }
+
+  private key(entityId: ID): string {
+    return `${this.namespace}:${String(entityId)}`;
+  }
+}
+
 const IDENTITY_QUATERNION = new THREE.Quaternion();
 
 function normalizeLabelText(text: string): string {
   return text.trim().replace(/\s+/g, " ");
+}
+
+function requireLabelNamespace(namespace: string): string {
+  const normalized = namespace.trim();
+  if (!normalized || normalized.includes(":")) throw new Error(`Invalid compact-label namespace: ${namespace}`);
+  return normalized;
 }

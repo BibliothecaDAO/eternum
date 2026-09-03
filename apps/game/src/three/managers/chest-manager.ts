@@ -142,6 +142,7 @@ export class ChestManager {
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
     if (this.chestModel) this.chestModel.group.visible = ladder.structureModels;
+    this.pointsRenderer?.setEnabled(ladder.entityIcons);
     this.labelsGroup.visible = ladder.textLabels !== "none";
   }
 
@@ -167,6 +168,7 @@ export class ChestManager {
           1.3, // Hover brightness multiplier
           false, // sizeAttenuation: false = fixed screen size (avoids WebGPU squish)
         );
+        this.pointsRenderer.setEnabled(this.contentLadder.entityIcons);
 
         // Re-render visible chests to populate points
         if (isCommittedManagerChunk(this.currentChunkKey)) {

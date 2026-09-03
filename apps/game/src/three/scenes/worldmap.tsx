@@ -113,6 +113,7 @@ import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
+import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
 import {
   StrategicMarkerLayer,
   type StrategicArmyMarkerTier,
@@ -686,6 +687,7 @@ export default class WorldmapScene extends WarpTravel {
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
+  private compactEntityLabelRenderer!: CompactEntityLabelRenderer;
   private readonly terrainMovementInteractionBuffer: TerrainMovementInteraction[] = [];
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
@@ -1094,6 +1096,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapManagers(): void {
     this.worldSpatialProjection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
+    this.compactEntityLabelRenderer = new CompactEntityLabelRenderer(this.scene);
     this.armyLabelsGroup = new Group();
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
     this.structureLabelsGroup = new Group();
@@ -1105,6 +1108,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.renderChunkSize,
       this.worldSpatialProjection,
+      this.compactEntityLabelRenderer.createScope("army"),
       this.armyLabelsGroup,
       this,
       this.dojo,
@@ -1151,6 +1155,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.renderChunkSize,
       this.worldSpatialProjection,
+      this.compactEntityLabelRenderer.createScope("structure"),
       this.structureLabelsGroup,
       this,
       this.fxManager,
@@ -7324,6 +7329,7 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
+    this.compactEntityLabelRenderer.updateCamera(this.camera);
     runWithFrameWorkOwner("armies:update", () => this.armyManager.update(deltaTime, animationContext));
     this.syncTerrainMovementInteractions();
     this.proceduralTerrain.update(deltaTime);
@@ -7675,6 +7681,7 @@ export default class WorldmapScene extends WarpTravel {
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
     });
+    this.compactEntityLabelRenderer.dispose();
     this.updateCameraTargetHexThrottled?.cancel();
     this.refreshVisualTerrainWindowThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();

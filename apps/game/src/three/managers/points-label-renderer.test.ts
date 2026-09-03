@@ -41,6 +41,21 @@ describe("PointsLabelRenderer", () => {
     expect(colors.getZ(0)).toBeCloseTo(1);
   });
 
+  it("lets the shared content ladder disable and restore the icon layer", () => {
+    const scene = new THREE.Scene();
+    const subject = new PointsLabelRenderer(scene, new THREE.Texture());
+    const points = (subject as unknown as { points: THREE.Points }).points;
+
+    subject.setPoint({ entityId: 1, position: new THREE.Vector3() });
+    expect(points.visible).toBe(true);
+
+    subject.setEnabled(false);
+    expect(points.visible).toBe(false);
+
+    subject.setEnabled(true);
+    expect(points.visible).toBe(true);
+  });
+
   it("disposes geometry, material, and its sprite texture during teardown", () => {
     const scene = new THREE.Scene();
     const texture = new THREE.Texture();

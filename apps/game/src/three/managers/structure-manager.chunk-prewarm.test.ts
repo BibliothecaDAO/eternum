@@ -143,12 +143,6 @@ vi.mock("./manager-update-convergence", () => ({
   waitForVisualSettle: vi.fn(async () => {}),
 }));
 
-vi.mock("./points-label-renderer", () => ({
-  PointsLabelRenderer: class MockPointsLabelRenderer {
-    dispose() {}
-  },
-}));
-
 const { StructureManager } = await import("./structure-manager");
 
 function createSubject() {

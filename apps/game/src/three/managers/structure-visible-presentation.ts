@@ -8,12 +8,6 @@ interface VisibleStructureLabel {
   position: Vector3;
 }
 
-interface VisibleStructurePointRenderer<TEntityId> {
-  hasPoint(entityId: TEntityId): boolean;
-  removePoint(entityId: TEntityId): void;
-  setPoint(input: { entityId: TEntityId; position: Vector3 }): void;
-}
-
 interface ApplyVisibleStructurePresentationInput<
   TStructure extends {
     entityId: TEntityId;
@@ -24,22 +18,19 @@ interface ApplyVisibleStructurePresentationInput<
   TAttachmentTemplate,
   TMountTransforms,
   TLabel extends VisibleStructureLabel = VisibleStructureLabel,
-  TRenderer extends VisibleStructurePointRenderer<TEntityId> = VisibleStructurePointRenderer<TEntityId>,
 > {
-  previousStructure?: TStructure;
   structure: TStructure;
   rotationY: number;
   dummy: Object3D;
   scratchPosition: Vector3;
   scratchLabelPosition: Vector3;
-  scratchIconPosition: Vector3;
+  scratchCompactLabelPosition: Vector3;
   tempCosmeticPosition: Vector3;
   tempCosmeticRotation: Euler;
   getWorldPositionForHexCoordsInto: (col: number, row: number, target: Vector3) => void;
   getLabel: (entityId: TEntityId) => TLabel | undefined;
   updateLabel: (structure: TStructure, label: TLabel) => void;
   syncCompactLabel?: (structure: TStructure, position: Vector3) => void;
-  getRendererForStructure: (structure: TStructure) => TRenderer | null;
   resolveAttachments: (structure: TStructure) => TAttachmentTemplate[];
   getAttachmentSignature: (templates: TAttachmentTemplate[]) => string;
   activeAttachmentEntities: Set<number>;
@@ -68,16 +59,8 @@ export function applyVisibleStructurePresentation<
   TAttachmentTemplate,
   TMountTransforms,
   TLabel extends VisibleStructureLabel = VisibleStructureLabel,
-  TRenderer extends VisibleStructurePointRenderer<TEntityId> = VisibleStructurePointRenderer<TEntityId>,
 >(
-  input: ApplyVisibleStructurePresentationInput<
-    TStructure,
-    TEntityId,
-    TAttachmentTemplate,
-    TMountTransforms,
-    TLabel,
-    TRenderer
-  >,
+  input: ApplyVisibleStructurePresentationInput<TStructure, TEntityId, TAttachmentTemplate, TMountTransforms, TLabel>,
 ): void {
   const { col, row } = input.structure.hexCoords;
   input.getWorldPositionForHexCoordsInto(col, row, input.scratchPosition);
@@ -94,23 +77,9 @@ export function applyVisibleStructurePresentation<
     label.position.copy(input.scratchLabelPosition);
   }
 
-  const previousRenderer = input.previousStructure ? input.getRendererForStructure(input.previousStructure) : null;
-  const nextRenderer = input.getRendererForStructure(input.structure);
-  if (previousRenderer && previousRenderer !== nextRenderer && previousRenderer.hasPoint(input.structure.entityId)) {
-    previousRenderer.removePoint(input.structure.entityId);
-  }
-  if (nextRenderer) {
-    input.scratchIconPosition.copy(input.scratchPosition);
-    input.scratchIconPosition.y += 2;
-    nextRenderer.setPoint({
-      entityId: input.structure.entityId,
-      position: input.scratchIconPosition,
-    });
-  }
-
-  input.scratchIconPosition.copy(input.scratchPosition);
-  input.scratchIconPosition.y += COMPACT_LABEL_LIFT;
-  input.syncCompactLabel?.(input.structure, input.scratchIconPosition);
+  input.scratchCompactLabelPosition.copy(input.scratchPosition);
+  input.scratchCompactLabelPosition.y += COMPACT_LABEL_LIFT;
+  input.syncCompactLabel?.(input.structure, input.scratchCompactLabelPosition);
 
   const entityNumericId = Number(input.structure.entityId);
   const templates = input.resolveAttachments(input.structure);

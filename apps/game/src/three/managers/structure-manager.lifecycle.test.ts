@@ -159,12 +159,6 @@ vi.mock("./manager-update-convergence", () => ({
   waitForVisualSettle: vi.fn(async () => {}),
 }));
 
-vi.mock("./points-label-renderer", () => ({
-  PointsLabelRenderer: class MockPointsLabelRenderer {
-    dispose() {}
-  },
-}));
-
 const { StructureManager } = await import("./structure-manager");
 const { isCommittedManagerChunk } = await import("./manager-update-convergence");
 const { createCoalescedAsyncUpdateRunner: createActualCoalescedAsyncUpdateRunner } =
@@ -219,8 +213,6 @@ function createStructureManagerSubject() {
   const labelA = { id: "a" };
   const labelB = { id: "b" };
   const removeLabelFromGroup = vi.fn();
-  const disposePointsA = vi.fn();
-  const disposePointsB = vi.fn();
   const disposeCompactLabels = vi.fn();
   const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
 
@@ -295,10 +287,6 @@ function createStructureManagerSubject() {
   subject.previousVisibleIds = new Set([1]);
   subject.structureInfoCache = new Map([[1, { entityId: 1 }]]);
   subject.visibleStructureWindow = { chunkKey: "0,0", bounds: {}, structures: new Map([[1, {}]]) };
-  subject.pointsRenderers = {
-    a: { dispose: disposePointsA },
-    b: { dispose: disposePointsB },
-  };
   subject.compactLabelRenderer = {
     dispose: disposeCompactLabels,
   };
@@ -320,8 +308,6 @@ function createStructureManagerSubject() {
     structureModelParentRemove,
     cosmeticModelDispose,
     cosmeticModelParentRemove,
-    disposePointsA,
-    disposePointsB,
     disposeCompactLabels,
     clearIntervalSpy,
   };
@@ -348,7 +334,6 @@ function createVisibleStructurePassSubject() {
   subject.structureInstanceFreeSlots = new Map();
   subject.structureModelDrawCounts = new Map();
   subject.dummy = { matrix: {} };
-  subject.pointsRenderers = undefined;
   subject.activeStructureAttachmentEntities = new Set();
   subject.structureAttachmentSignatures = new Map();
   subject.entityIdLabels = new Map();
@@ -709,8 +694,6 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.structureModelParentRemove).toHaveBeenCalledTimes(1);
     expect(fixture.cosmeticModelDispose).toHaveBeenCalledTimes(1);
     expect(fixture.cosmeticModelParentRemove).toHaveBeenCalledTimes(1);
-    expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
-    expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
     expect(fixture.disposeCompactLabels).toHaveBeenCalledTimes(1);
     expect(fixture.subject.compactLabelIds.size).toBe(0);
     expect(fixture.subject.structureModels.size).toBe(0);
@@ -741,8 +724,6 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.removeCameraViewListener).toHaveBeenCalledTimes(1);
     expect(fixture.structureModelDispose).toHaveBeenCalledTimes(1);
     expect(fixture.cosmeticModelDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
-    expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
     expect(fixture.disposeCompactLabels).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("StructureManager already destroyed, skipping cleanup");
   });
@@ -763,7 +744,6 @@ describe("StructureManager destroy lifecycle", () => {
     subject.entityIdMaps = new Map();
     subject.cosmeticEntityIdMaps = new Map();
     subject.wonderEntityIdMaps = new Map();
-    subject.pointsRenderers = undefined;
     subject.activeStructureAttachmentEntities = new Set();
     subject.entityIdLabels = new Map();
     subject.previousVisibleIds = new Set();

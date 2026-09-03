@@ -109,23 +109,13 @@ import { syncArmyLabelPresentationState } from "./army-label-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
-import { resolveArmyPointLabelSize } from "./army-point-label-policy";
-import {
-  clearArmyPointHoverState,
-  removeArmyPointIconState,
-  resolveArmyPointRendererKey,
-  setArmyPointHoverState,
-  syncArmyPointIconState,
-} from "./army-point-visuals";
-import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
+import type { CompactEntityLabelScope } from "./compact-entity-label-renderer";
 import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { createManagerVisibilityDiff } from "./manager-visibility-diff";
-import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
-import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import {
   auditArmyRenderIntegrity,
@@ -248,13 +238,7 @@ export class ArmyManager {
   private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
-  private pointsRenderers?: {
-    player: PointsLabelRenderer;
-    enemy: PointsLabelRenderer;
-    ally: PointsLabelRenderer;
-    agent: PointsLabelRenderer;
-  };
-  private compactLabelRenderer: CompactEntityLabelRenderer;
+  private compactLabelRenderer: CompactEntityLabelScope;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private labelRenderDistance = Infinity;
@@ -307,7 +291,7 @@ export class ArmyManager {
 
   // Reusable objects for memory optimization
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
-  private readonly tempIconPosition: Vector3 = new Vector3();
+  private readonly tempCompactLabelPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
   private readonly setProceduralFallbackAttachmentVisibility = (entityId: number, visible: boolean) =>
     this.attachmentManager.setAttachmentSlotsVisible(entityId, PROCEDURAL_CHARACTER_ATTACHMENT_SLOTS, visible);
@@ -318,6 +302,7 @@ export class ArmyManager {
     scene: Scene,
     renderChunkSize: { width: number; height: number },
     worldSpatialProjection: WorldSpatialProjection,
+    compactLabelRenderer: CompactEntityLabelScope,
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     dojoContext?: SetupResult,
@@ -381,9 +366,7 @@ export class ArmyManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
-    // Initialize points-based icon renderers
-    this.initializePointsRenderers();
-    this.compactLabelRenderer = new CompactEntityLabelRenderer(scene);
+    this.compactLabelRenderer = compactLabelRenderer;
 
     // Initialize path renderer for movement visualization
     this.pathRenderer = new PathRenderer();
@@ -924,12 +907,6 @@ export class ArmyManager {
       this.updateArmyLabelData(params.entityId, army, label);
     }
 
-    if (ownerChanged || ownershipVisualChanged) {
-      this.removeArmyPointIcon(params.entityId);
-      const position = this.getArmyWorldPosition(params.entityId, army.hexCoords);
-      this.updateArmyPointIcon(army, position);
-    }
-
     const slot = this.visibleArmyIndices.get(params.entityId);
     if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
       const numericId = this.toNumericId(params.entityId);
@@ -1282,7 +1259,7 @@ export class ArmyManager {
 
   private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3) {
     this.syncArmyLabelPresentation(army, position);
-    this.syncArmyPointPresentation(army, position);
+    this.updateArmyCompactLabel(army, position);
   }
 
   private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
@@ -1290,11 +1267,6 @@ export class ArmyManager {
       label: this.entityIdLabels.get(army.entityId),
       position,
     });
-  }
-
-  private syncArmyPointPresentation(army: ArmyData, position: Vector3) {
-    this.updateArmyPointIcon(army, position);
-    this.updateArmyCompactLabel(army, position);
   }
 
   private removeVisibleArmy(entityId: ID, options?: { notifyMovementVisualCancel?: boolean }): number | null {
@@ -1313,7 +1285,6 @@ export class ArmyManager {
     );
 
     this.armyPaths.delete(entityId);
-    this.removeArmyPointIcon(entityId);
     this.removeArmyCompactLabel(entityId);
     this.removeEntityIdLabel(entityId);
 
@@ -1344,36 +1315,18 @@ export class ArmyManager {
     return slot;
   }
 
-  private updateArmyPointIcon(army: ArmyData, position: Vector3): void {
-    const iconPosition = this.tempIconPosition.copy(position);
-    iconPosition.y += 2.1; // Match CSS2D label height
-    syncArmyPointIconState({
-      renderers: this.pointsRenderers,
-      rendererKey: resolveArmyPointRendererKey(army),
-      entityId: army.entityId,
-      position: iconPosition,
-    });
-  }
-
   private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
     if (!this.shouldShowArmyCompactLabel(army)) {
       this.compactLabelRenderer.removeLabel(army.entityId);
       return;
     }
-    const labelPosition = this.tempIconPosition.copy(position);
+    const labelPosition = this.tempCompactLabelPosition.copy(position);
     labelPosition.y += 2.78;
     this.compactLabelRenderer.setLabel({
       entityId: army.entityId,
       position: labelPosition,
       text: this.contentLadder.armyTierGlyphs ? army.tier : resolveArmyCompactEntityLabel(army),
       variant: resolveCompactEntityLabelVariant(army),
-    });
-  }
-
-  private removeArmyPointIcon(entityId: ID): void {
-    removeArmyPointIconState({
-      renderers: this.pointsRenderers,
-      entityId,
     });
   }
 
@@ -2016,7 +1969,6 @@ export class ArmyManager {
     const removedSlot = this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true });
     if (removedSlot === null) {
       this.runMovementVisualCancelListeners(numericEntityId);
-      this.removeArmyPointIcon(entityId);
       this.removeArmyCompactLabel(entityId);
       this.removeEntityIdLabel(entityId);
     }
@@ -2488,7 +2440,6 @@ export class ArmyManager {
     this.requestMovingArmyShadowRefresh();
     this.armyModel.updateAnimations(deltaTime, animationContext);
     this.updateProceduralArmyCharacters(deltaTime, animationContext);
-    this.updateCompactLabelCamera();
 
     // Update FX
     this.fxManager.update(deltaTime);
@@ -2505,9 +2456,8 @@ export class ArmyManager {
       }
     }
 
-    // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, compact labels, and attachment transforms.
-    this.updateVisibleArmiesBatched();
+    // One pass owns moving labels and attachment transforms.
+    this.updateVisibleArmyPresentation();
     this.syncArmyBoundsForMovementState();
     this.armyModel.flushInstanceUploads();
 
@@ -2750,13 +2700,6 @@ export class ArmyManager {
     }
   }
 
-  private updateCompactLabelCamera(): void {
-    const camera = this.hexagonScene?.getCamera();
-    if (camera) {
-      this.compactLabelRenderer.updateCamera(camera);
-    }
-  }
-
   private requestMovingArmyShadowRefresh(): void {
     if (this.currentCameraView !== CameraView.Close || !this.hasMovingArmies()) {
       return;
@@ -2804,61 +2747,26 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  /**
-   * Batched update for all visible army per-frame operations.
-   * Consolidates point icon updates, compact labels, and attachment transforms
-   * into a single iteration over visibleArmies to reduce iteration overhead.
-   */
-  private updateVisibleArmiesBatched() {
-    const hasPointsRenderers = this.pointsRenderers !== undefined;
+  /** Moving labels and attachments follow the same live model instances in one pass. */
+  private updateVisibleArmyPresentation() {
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
     const hasMovingArmies = this.hasMovingArmies();
 
-    // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasMovingArmies) {
+    if (!hasActiveAttachments && !hasMovingArmies) {
       return;
     }
 
-    let pointsBatchStarted = false;
-    const startPointsBatch = () => {
-      if (!hasPointsRenderers || pointsBatchStarted || !this.pointsRenderers) {
-        return;
-      }
-      pointsBatchStarted = true;
-      this.pointsRenderers.player.beginBatch();
-      this.pointsRenderers.enemy.beginBatch();
-      this.pointsRenderers.ally.beginBatch();
-      this.pointsRenderers.agent.beginBatch();
-    };
-
-    // Single pass over visible armies
     for (let i = 0; i < this.visibleArmies.length; i++) {
       const army = this.visibleArmies[i];
       const numericEntityId = this.toNumericId(army.entityId);
       const instanceData = this.armyModel.getInstanceData(numericEntityId);
 
-      // 1. Update point icon positions for moving armies
-      if (hasPointsRenderers && instanceData?.isMoving) {
-        startPointsBatch();
-        const iconPosition = this.tempIconPosition.copy(instanceData.position);
-        iconPosition.y += 2.1; // Match CSS2D label height
-
-        syncArmyPointIconState({
-          renderers: this.pointsRenderers,
-          rendererKey: resolveArmyPointRendererKey(army),
-          entityId: army.entityId,
-          position: iconPosition,
-        });
-      }
-
       if (instanceData?.isMoving) {
         this.updateArmyCompactLabel(army, instanceData.position);
       }
 
-      // 2. Update attachment transforms. Phase 3.2: only attachment-bearing armies
-      // need the sync (the callee early-returns for non-members), so hoist the
-      // membership check here to avoid allocating the input object + delegate
-      // closures for every visible army each frame.
+      // Only attachment-bearing armies need the sync, so hoist the membership check here to avoid allocating the
+      // input object and delegate closures for every visible army each frame.
       if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
         syncArmyAttachmentTransformState({
           entityId: numericEntityId,
@@ -2878,13 +2786,6 @@ export class ArmyManager {
             this.attachmentManager.updateAttachmentTransforms(trackedEntityId, baseTransform, mountTransforms),
         });
       }
-    }
-
-    if (pointsBatchStarted && this.pointsRenderers) {
-      this.pointsRenderers.player.endBatch();
-      this.pointsRenderers.enemy.endBatch();
-      this.pointsRenderers.ally.endBatch();
-      this.pointsRenderers.agent.endBatch();
     }
   }
 
@@ -3034,7 +2935,7 @@ export class ArmyManager {
       label.visible = true;
       label.element.style.display = "";
       this.updateArmyLabelData(entityId, army, label);
-      this.highlightArmyPointHover(entityId, army);
+      this.compactLabelRenderer.setHover(entityId);
       if (wasDetached || wasHidden) {
         this.frustumVisibilityDirty = true;
         return { status: "reattached" };
@@ -3043,14 +2944,14 @@ export class ArmyManager {
     }
 
     this.addEntityIdLabel(army, position);
-    this.highlightArmyPointHover(entityId, army);
+    this.compactLabelRenderer.setHover(entityId);
     this.frustumVisibilityDirty = true;
     return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
-    this.clearArmyPointHoverIcons();
+    this.compactLabelRenderer.clearHover();
     this.frustumVisibilityDirty = true;
   }
 
@@ -3060,7 +2961,7 @@ export class ArmyManager {
       shouldRetainLabel: () => false,
       removeEntityIdLabel: (armyId) => this.removeEntityIdLabel(armyId),
     });
-    this.clearArmyPointHoverIcons();
+    this.compactLabelRenderer.clearHover();
     this.frustumVisibilityDirty = true;
   }
 
@@ -3091,22 +2992,6 @@ export class ArmyManager {
     });
   }
 
-  private highlightArmyPointHover(entityId: ID, army: Pick<ArmyData, "isDaydreamsAgent" | "isMine">): void {
-    setArmyPointHoverState({
-      renderers: this.pointsRenderers,
-      rendererKey: resolveArmyPointRendererKey(army),
-      entityId,
-    });
-    this.compactLabelRenderer.setHover(entityId);
-  }
-
-  private clearArmyPointHoverIcons() {
-    clearArmyPointHoverState({
-      renderers: this.pointsRenderers,
-    });
-    this.compactLabelRenderer.clearHover();
-  }
-
   removeLabelsFromScene() {
     this.armyModel.removeLabelsFromScene();
   }
@@ -3129,93 +3014,6 @@ export class ArmyManager {
     this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
     this.frustumVisibilityDirty = true;
-  }
-
-  private initializePointsRenderers(): void {
-    const textureLoader = new THREE.TextureLoader();
-
-    // Load all 3 army icon textures (agent uses player texture as fallback)
-    const texturePaths = {
-      player: "/images/labels/army.png",
-      enemy: "/images/labels/enemy_army.png",
-      ally: "/images/labels/allies_army.png",
-    };
-
-    const loadedTextures: Partial<Record<keyof typeof texturePaths, THREE.Texture>> = {};
-    let loadedCount = 0;
-    const totalTextures = Object.keys(texturePaths).length;
-
-    Object.entries(texturePaths).forEach(([key, path]) => {
-      textureLoader.load(
-        path,
-        (texture) => {
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.flipY = resolvePointLabelTextureFlipY(snapshotRendererDiagnostics().activeMode);
-
-          loadedTextures[key as keyof typeof texturePaths] = texture;
-          loadedCount++;
-
-          // When all textures are loaded, create the renderers
-          if (loadedCount === totalTextures) {
-            const scaledPointSize = resolveArmyPointLabelSize();
-            // Use player texture for agent as fallback
-            this.pointsRenderers = {
-              player: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.player!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-              ),
-              enemy: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.enemy!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-              ),
-              ally: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.ally!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-              ),
-              agent: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.player!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-              ),
-            };
-
-            // Re-render visible armies to populate points
-            if (isCommittedManagerChunk(this.currentChunkKey)) {
-              this.renderVisibleArmies(this.currentChunkKey);
-            }
-          }
-        },
-        undefined,
-        (error) => {
-          console.error(`[ArmyManager] Failed to load army icon texture (${key}):`, error);
-        },
-      );
-    });
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -3606,13 +3404,6 @@ ${
     this.activeArmyAttachmentEntities.clear();
     this.armyAttachmentSignatures.clear();
 
-    // Clean up points renderers
-    if (this.pointsRenderers) {
-      this.pointsRenderers.player.dispose();
-      this.pointsRenderers.enemy.dispose();
-      this.pointsRenderers.ally.dispose();
-      this.pointsRenderers.agent.dispose();
-    }
     this.compactLabelRenderer.dispose();
 
     // Clean up any other resources...

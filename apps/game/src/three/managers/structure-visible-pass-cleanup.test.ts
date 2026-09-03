@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 
 describe("cleanupVisibleStructurePass", () => {
-  it("removes stale attachments, labels, and points, then returns the next visible set", () => {
+  it("removes stale attachments and both label surfaces, then returns the next visible set", () => {
     const activeAttachmentEntities = new Set([1, 2, 3]);
     const attachmentSignatures = new Map([
       [1, "one"],
@@ -13,7 +13,6 @@ describe("cleanupVisibleStructurePass", () => {
     const removeAttachments = vi.fn();
     const removeEntityIdLabel = vi.fn();
     const removeStructureCompactLabel = vi.fn();
-    const removeStructurePoint = vi.fn();
     const visibleStructureIds = new Set([1, 4]);
     const previousVisibleIds = new Set([2, 4, 5]);
 
@@ -27,8 +26,6 @@ describe("cleanupVisibleStructurePass", () => {
       removeEntityIdLabel,
       removeStructureCompactLabel,
       previousVisibleIds,
-      getStructureByEntityId: (entityId) => (entityId === 2 ? { entityId } : entityId === 5 ? undefined : { entityId }),
-      removeStructurePoint,
     });
 
     expect(removeAttachments).toHaveBeenCalledTimes(2);
@@ -39,8 +36,6 @@ describe("cleanupVisibleStructurePass", () => {
     expect(removeEntityIdLabel).toHaveBeenCalledTimes(2);
     expect(removeEntityIdLabel).toHaveBeenCalledWith(2);
     expect(removeEntityIdLabel).toHaveBeenCalledWith(6);
-    expect(removeStructurePoint).toHaveBeenCalledTimes(1);
-    expect(removeStructurePoint).toHaveBeenCalledWith(2, { entityId: 2 });
     expect(removeStructureCompactLabel).toHaveBeenCalledTimes(2);
     expect(removeStructureCompactLabel).toHaveBeenCalledWith(2);
     expect(removeStructureCompactLabel).toHaveBeenCalledWith(5);
@@ -53,7 +48,6 @@ describe("cleanupVisibleStructurePass", () => {
     const removeAttachments = vi.fn();
     const removeEntityIdLabel = vi.fn();
     const removeStructureCompactLabel = vi.fn();
-    const removeStructurePoint = vi.fn();
     const visibleStructureIds = new Set([1, 2]);
 
     const nextVisibleIds = cleanupVisibleStructurePass({
@@ -66,14 +60,11 @@ describe("cleanupVisibleStructurePass", () => {
       removeEntityIdLabel,
       removeStructureCompactLabel,
       previousVisibleIds: new Set([1, 2]),
-      getStructureByEntityId: (entityId) => ({ entityId }),
-      removeStructurePoint,
     });
 
     expect(removeAttachments).not.toHaveBeenCalled();
     expect(removeEntityIdLabel).not.toHaveBeenCalled();
     expect(removeStructureCompactLabel).not.toHaveBeenCalled();
-    expect(removeStructurePoint).not.toHaveBeenCalled();
     expect(nextVisibleIds).toBe(visibleStructureIds);
   });
 });

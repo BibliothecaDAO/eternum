@@ -13,24 +13,8 @@ type LabelStub = {
   position: Vector3;
 };
 
-type RendererStub = {
-  hasPoint: ReturnType<typeof vi.fn>;
-  removePoint: ReturnType<typeof vi.fn>;
-  setPoint: ReturnType<typeof vi.fn>;
-};
-
 describe("applyVisibleStructurePresentation", () => {
-  it("updates label, point, rotation, and attachments for the rendered structure", () => {
-    const previousRenderer: RendererStub = {
-      hasPoint: vi.fn(() => true),
-      removePoint: vi.fn(),
-      setPoint: vi.fn(),
-    };
-    const nextRenderer: RendererStub = {
-      hasPoint: vi.fn(() => false),
-      removePoint: vi.fn(),
-      setPoint: vi.fn(),
-    };
+  it("updates the one persistent label, rotation, and attachments for the rendered structure", () => {
     const label: LabelStub = { position: new Vector3() };
     const dummy = new Object3D();
     const activeAttachmentEntities = new Set<number>();
@@ -44,13 +28,12 @@ describe("applyVisibleStructurePresentation", () => {
     const resolveMountTransforms = vi.fn(() => ({ mounted: true }));
 
     applyVisibleStructurePresentation({
-      previousStructure: { entityId: 7, structureType: "Village", hexCoords: { col: 1, row: 2 } },
       structure: { entityId: 7, structureType: "Bank", hexCoords: { col: 4, row: 5 } },
       rotationY: 1.25,
       dummy,
       scratchPosition: new Vector3(),
       scratchLabelPosition: new Vector3(),
-      scratchIconPosition: new Vector3(),
+      scratchCompactLabelPosition: new Vector3(),
       tempCosmeticPosition: new Vector3(),
       tempCosmeticRotation: new Euler(),
       getWorldPositionForHexCoordsInto: (col, row, target) => {
@@ -59,7 +42,6 @@ describe("applyVisibleStructurePresentation", () => {
       getLabel: () => label,
       updateLabel,
       syncCompactLabel,
-      getRendererForStructure: (structure) => (structure.structureType === "Village" ? previousRenderer : nextRenderer),
       resolveAttachments: () => [{ id: "banner" }],
       getAttachmentSignature: () => "banner",
       activeAttachmentEntities,
@@ -78,11 +60,6 @@ describe("applyVisibleStructurePresentation", () => {
       label,
     );
     expect(label.position.toArray()).toEqual([40, 52, 0]);
-    expect(previousRenderer.removePoint).toHaveBeenCalledWith(7);
-    expect(nextRenderer.setPoint).toHaveBeenCalledWith({
-      entityId: 7,
-      position: expect.any(Vector3),
-    });
     expect(syncCompactLabel).toHaveBeenCalledWith(
       { entityId: 7, structureType: "Bank", hexCoords: { col: 4, row: 5 } },
       expect.any(Vector3),
@@ -106,7 +83,7 @@ describe("applyVisibleStructurePresentation", () => {
       dummy: new Object3D(),
       scratchPosition: new Vector3(),
       scratchLabelPosition: new Vector3(),
-      scratchIconPosition: new Vector3(),
+      scratchCompactLabelPosition: new Vector3(),
       tempCosmeticPosition: new Vector3(),
       tempCosmeticRotation: new Euler(),
       getWorldPositionForHexCoordsInto: (col, row, target) => {
@@ -115,7 +92,6 @@ describe("applyVisibleStructurePresentation", () => {
       getLabel: () => undefined,
       updateLabel: vi.fn(),
       syncCompactLabel: vi.fn(),
-      getRendererForStructure: () => null,
       resolveAttachments: () => [],
       getAttachmentSignature: () => "",
       activeAttachmentEntities,

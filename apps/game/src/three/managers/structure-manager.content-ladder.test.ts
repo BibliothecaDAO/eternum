@@ -90,7 +90,7 @@ vi.mock("../utils/chunk-geometry", () => ({
 
 vi.mock("../utils", () => ({
   getWorldPositionForHex: vi.fn(() => ({ x: 0, y: 0, z: 0 })),
-  getWorldPositionForHexCoordsInto: vi.fn(),
+  getWorldPositionForHexCoordsInto: vi.fn((_col: number, _row: number, target: THREE.Vector3) => target.set(0, 0, 0)),
   hashCoordinates: vi.fn(() => 0),
 }));
 
@@ -129,12 +129,6 @@ vi.mock("./manager-update-convergence", () => ({
   waitForVisualSettle: vi.fn(async () => {}),
 }));
 
-vi.mock("./points-label-renderer", () => ({
-  PointsLabelRenderer: class MockPointsLabelRenderer {
-    dispose() {}
-  },
-}));
-
 const { StructureManager } = await import("./structure-manager");
 const { CameraView } = await import("@/three/scenes/hexagon-scene");
 const { EMPTY_LABEL_PRIORITY_CONTEXT } = await import("@/three/scenes/worldmap-content-ladder");
@@ -149,10 +143,6 @@ function createModel() {
     setWorldBounds: vi.fn(),
     updateAnimations: vi.fn(),
   };
-}
-
-function createPointsRenderer() {
-  return { beginBatch: vi.fn(), endBatch: vi.fn(), clear: vi.fn(), clearHover: vi.fn(), dispose: vi.fn() };
 }
 
 /** Stands in for a CSS2DObject: a real Object3D (so the labels group accepts it) carrying a DOM-ish element. */
@@ -222,6 +212,7 @@ function createLiveManager(structures = PRIORITY_STRUCTURES) {
     new THREE.Scene(),
     { width: 48, height: 48 },
     worldSpatialProjection as never,
+    {} as never,
     labelsGroup,
     hexagonScene as never,
   ) as any;
@@ -231,7 +222,6 @@ function createLiveManager(structures = PRIORITY_STRUCTURES) {
   manager.cosmeticStructureModels = new Map([["skin", [models.skin]]]);
   manager.attachmentManager = { setVisible: vi.fn(), clear: vi.fn(), removeAttachments: vi.fn() };
   manager.compactLabelRenderer = { setLabel: vi.fn(), removeLabel: vi.fn(), clear: vi.fn(), dispose: vi.fn() };
-  manager.pointsRenderers = { myRealm: createPointsRenderer(), enemyRealm: createPointsRenderer() };
   manager.refreshTrackedStructureLabelOrPrune = vi.fn();
   manager.entityIdLabels.set(6, createHoverLabel(6));
   manager.visibleStructureWindow = {
@@ -267,7 +257,7 @@ afterEach(() => {
 });
 
 describe("StructureManager content ladder", () => {
-  it("far band hides every model group and the attachment layer, drops all text, and keeps the point icons", () => {
+  it("far band hides every model group and drops every near/mid label", () => {
     const live = createLiveManager();
     live.seedShownLabels();
 
@@ -278,10 +268,6 @@ describe("StructureManager content ladder", () => {
     expect(live.manager.compactLabelRenderer.clear).toHaveBeenCalledTimes(1);
     expect(live.manager.compactLabelIds.size).toBe(0);
     expect(live.labelsGroup.visible).toBe(false);
-    Object.values(live.manager.pointsRenderers).forEach((renderer: any) => {
-      expect(renderer.clear).not.toHaveBeenCalled();
-      expect(renderer.dispose).not.toHaveBeenCalled();
-    });
     expect(live.manager.getStructureManagerMetrics()).toMatchObject({ hiddenModelGroups: 3, compactLabelsShown: 0 });
 
     live.manager.updateAnimations(0.016);
@@ -390,7 +376,6 @@ function createFullRefreshSubject(structureCount: number) {
   subject.structureInstanceFreeSlots = new Map();
   subject.structureModelDrawCounts = new Map();
   subject.dummy = { matrix: {} };
-  subject.pointsRenderers = undefined;
   subject.activeStructureAttachmentEntities = new Set();
   subject.structureAttachmentSignatures = new Map();
   subject.entityIdLabels = new Map();

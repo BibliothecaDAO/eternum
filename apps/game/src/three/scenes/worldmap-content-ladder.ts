@@ -29,6 +29,7 @@ export interface WorldmapContentLadder {
   readonly proceduralCharacters: boolean;
   readonly fx: boolean;
   readonly textLabels: WorldmapTextLabelTier;
+  readonly entityIcons: boolean;
   readonly armyTierGlyphs: boolean;
 }
 
@@ -42,6 +43,7 @@ const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
   proceduralCharacters: PROCEDURAL_CHARACTERS_ENABLED,
   fx: true,
   textLabels: "full",
+  entityIcons: false,
   armyTierGlyphs: false,
 });
 
@@ -53,6 +55,7 @@ const MID_LADDER: WorldmapContentLadder = Object.freeze({
   proceduralCharacters: PROCEDURAL_CHARACTERS_ENABLED,
   fx: true,
   textLabels: "priority",
+  entityIcons: false,
   armyTierGlyphs: true,
 });
 
@@ -64,6 +67,7 @@ const FAR_LADDER: WorldmapContentLadder = Object.freeze({
   proceduralCharacters: false,
   fx: false,
   textLabels: "none",
+  entityIcons: true,
   armyTierGlyphs: false,
 });
 

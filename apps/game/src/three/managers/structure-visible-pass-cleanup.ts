@@ -1,4 +1,4 @@
-interface CleanupVisibleStructurePassInput<TEntityId extends string | number | bigint, TStructure> {
+interface CleanupVisibleStructurePassInput<TEntityId extends string | number | bigint> {
   retainedAttachmentEntities: Set<number>;
   activeAttachmentEntities: Set<number>;
   attachmentSignatures: Map<number, string>;
@@ -8,12 +8,10 @@ interface CleanupVisibleStructurePassInput<TEntityId extends string | number | b
   removeEntityIdLabel: (entityId: TEntityId) => void;
   removeStructureCompactLabel: (entityId: TEntityId) => void;
   previousVisibleIds: Set<TEntityId>;
-  getStructureByEntityId: (entityId: TEntityId) => TStructure | undefined;
-  removeStructurePoint: (entityId: TEntityId, structure: TStructure) => void;
 }
 
-export function cleanupVisibleStructurePass<TEntityId extends string | number | bigint, TStructure>(
-  input: CleanupVisibleStructurePassInput<TEntityId, TStructure>,
+export function cleanupVisibleStructurePass<TEntityId extends string | number | bigint>(
+  input: CleanupVisibleStructurePassInput<TEntityId>,
 ): Set<TEntityId> {
   if (input.activeAttachmentEntities.size > 0) {
     const staleAttachmentEntities: number[] = [];
@@ -42,11 +40,6 @@ export function cleanupVisibleStructurePass<TEntityId extends string | number | 
     }
 
     input.removeStructureCompactLabel(entityId);
-
-    const structure = input.getStructureByEntityId(entityId);
-    if (structure) {
-      input.removeStructurePoint(entityId, structure);
-    }
   }
 
   return input.visibleStructureIds;

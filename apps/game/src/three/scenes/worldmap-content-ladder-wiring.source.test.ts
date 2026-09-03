@@ -56,6 +56,27 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(/isSpectator: isExplicitSpectateSession\(\)/);
   });
 
+  it("owns one namespaced compact-label renderer for both entity managers", () => {
+    const source = read("worldmap.tsx");
+    expect(source.match(/new CompactEntityLabelRenderer\(this\.scene\)/g)).toHaveLength(1);
+    expect(source).toContain('this.compactEntityLabelRenderer.createScope("army")');
+    expect(source).toContain('this.compactEntityLabelRenderer.createScope("structure")');
+    expect(source).toContain("this.compactEntityLabelRenderer.updateCamera(this.camera)");
+    expect(source).toContain("this.compactEntityLabelRenderer.dispose()");
+  });
+
+  it("retires duplicate army and structure point-label layers", () => {
+    const army = read("../managers/army-manager.ts");
+    const structure = read("../managers/structure-manager.ts");
+
+    expect(army).not.toContain("PointsLabelRenderer");
+    expect(army).not.toContain("pointsRenderers");
+    expect(army).not.toContain("/images/labels/");
+    expect(structure).not.toContain("PointsLabelRenderer");
+    expect(structure).not.toContain("pointsRenderers");
+    expect(structure).not.toContain("/images/labels/");
+  });
+
   it("gates army models, procedural characters and compact labels from the same table", () => {
     const source = read("../managers/army-manager.ts");
     expect(source).toMatch(/this\.applyContentLadder\(resolveWorldmapContentLadder\(view\)\)/);

@@ -51,7 +51,7 @@ describe("army manager delta pipeline wiring", () => {
 
     expect(source).toMatch(/syncArmyAuxiliaryPresentation\(/);
     expect(source).toMatch(/syncArmyLabelPresentation\(/);
-    expect(source).toMatch(/syncArmyPointPresentation\(/);
+    expect(source).toMatch(/updateArmyCompactLabel\(/);
   });
 
   it("routes label visibility and label retirement through shared helpers", () => {
@@ -66,16 +66,6 @@ describe("army manager delta pipeline wiring", () => {
 
     expect(source).toMatch(/syncArmyAttachmentState\(/);
     expect(source).toMatch(/removeArmyAttachmentsIfTracked\(/);
-  });
-
-  it("routes point icon lifecycle through shared helpers", () => {
-    const source = readArmyManagerSource();
-
-    expect(source).toMatch(/resolveArmyPointRendererKey\(/);
-    expect(source).toMatch(/syncArmyPointIconState\(/);
-    expect(source).toMatch(/removeArmyPointIconState\(/);
-    expect(source).toMatch(/setArmyPointHoverState\(/);
-    expect(source).toMatch(/clearArmyPointHoverState\(/);
   });
 
   it("does not route deprecated ownership dot refresh through army presentation", () => {

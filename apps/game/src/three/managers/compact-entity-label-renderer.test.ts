@@ -175,4 +175,38 @@ describe("CompactEntityLabelRenderer", () => {
     const labels = (renderer as unknown as { labels: Map<number, unknown> }).labels;
     expect([...labels.keys()]).toEqual([2]);
   });
+
+  it("shares one batch across namespaced manager scopes without entity-id collisions", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    const armies = renderer.createScope("army");
+    const structures = renderer.createScope("structure");
+
+    armies.setLabel({ entityId: 1, position: new THREE.Vector3(), text: "T1", variant: "mine" });
+    structures.setLabel({ entityId: 1, position: new THREE.Vector3(2, 0, 0), text: "Realm", variant: "mine" });
+
+    expect(renderer.drawCount).toBe(1);
+    expect(Array.from((renderer as unknown as { labels: Map<string, unknown> }).labels.keys()).toSorted()).toEqual([
+      "army:1",
+      "structure:1",
+    ]);
+  });
+
+  it("removes each label type with its owning reconcile and leaves sibling scopes intact", () => {
+    const scene = new THREE.Scene();
+    const renderer = createRenderer(scene);
+    const armies = renderer.createScope("army");
+    const structures = renderer.createScope("structure");
+    armies.setLabel({ entityId: 7, position: new THREE.Vector3(), text: "T2", variant: "enemy" });
+    structures.setLabel({ entityId: 7, position: new THREE.Vector3(), text: "Village", variant: "enemy" });
+
+    armies.retainOnly([]);
+    expect(Array.from((renderer as unknown as { labels: Map<string, unknown> }).labels.keys())).toEqual([
+      "structure:7",
+    ]);
+
+    structures.removeLabel(7);
+    expect((renderer as unknown as { labels: Map<string, unknown> }).labels.size).toBe(0);
+    expect(renderer.drawCount).toBe(0);
+  });
 });

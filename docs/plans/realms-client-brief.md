@@ -1834,3 +1834,47 @@ cache stays at 64 and evicts least-recently-used work; the supersession test pro
 to the worker. Fresh headless WebGL2 captures on `bltz-clash-538` show fully textured terrain 100 ms after a two-drag
 pan (`/tmp/terrain-cache-fresh-edge-100ms.png`) and still-textured terrain 100 ms after the reverse pan
 (`/tmp/terrain-cache-return-100ms-fixed.png`), with no flat-color interval in either return capture.
+
+### Autonomous run record — label-system remake (2026-09-03)
+
+**Inventory and target design (written before implementation).** The persistent world-map text is already atlas-based,
+but it is not one renderer: `ArmyManager` and `StructureManager` each construct and own a `CompactEntityLabelRenderer`,
+producing duplicate groups, batches and camera reconciliation. Army glyph/name plates and
+structure/village/hyperstructure plates are the persistent text facts; they belong in one world-map atlas renderer with
+namespaced manager scopes so equal numeric entity ids cannot collide and each manager's reconcile removes only its own
+labels. The managers also own four army and nine structure `PointsLabelRenderer` instances, despite
+`StrategicMarkerLayer` already projecting every army and structure from the whole-world index in the far band. Those 13
+renderers are duplicate persistent representations, not a second required label system. The chest point icon has no
+strategic-marker equivalent and remains the sole point-label consumer. Rich `CSS2DObject` cards in `ArmyManager`,
+`StructureManager` and `ChestManager` exist only for the currently hovered hex through `HoverLabelManager`; the atlas
+cannot express their live battle/resource layouts, so they remain on the existing change-driven 16 ms-floor CSS2D path.
+Hexception's hex hover/paused-building labels, Navigator's route distance and `world-fx-backends`' short-lived effect
+captions are scene-local transient feedback, not persistent world-map labels. Minimap text is DOM/canvas-adjacent UI and
+owns no entity-label state.
+
+The target is therefore one world-map `CompactEntityLabelRenderer`, owned and disposed by `WorldmapScene`; army and
+structure receive isolated scopes whose `set/remove/retain/hover/clear` operations are driven by the same visible-entity
+reconciles that place and despawn their models. The existing `worldmap-content-ladder.ts` remains the only distance
+ladder: close = all atlas plates plus models, medium = priority plates plus models, far = biome tint/strategic markers
+and the chest icon with no text. No parallel label store or timer is added. CSS2D stays only for the transient rich
+surfaces named above.
+
+**Fix and deletion.** `WorldmapScene` now owns one atlas renderer, updates its camera once per frame and gives army and
+structure managers namespaced scopes. The scopes isolate identical numeric ids while sharing atlas pages and batches;
+their existing visible-set reconcile owns removal, including despawn in the same pass. The single content ladder now
+also owns far-icon visibility. Army and structure point layers were deleted: 13 renderer instances, 12 texture-loading
+paths, both army point-policy/visual helper modules, the separate structure point wiring test, duplicate hover writes
+and the per-frame moving point-icon update all disappeared. The chest point icon remains because the strategic marker
+layer does not contain chests, and it is now enabled only in the far band.
+
+**Gate.** The 11 focused suites covering the shared renderer, both manager lifecycles, the distance ladder and retired
+source paths pass 83/83; `apps/game` typecheck and repository format pass. Repository knip reaches only its two existing
+generated declaration findings (`packages/amm-sdk/dist/index.d.ts`, `packages/torii/dist/index.d.ts`) and exits 1; no
+label path is reported. Headless WebGL2 captures at distances 10, 25 and 45 are `/tmp/labels-remake-distance-10.png`,
+`/tmp/labels-remake-distance-25.png` and `/tmp/labels-remake-distance-45.png`; the close capture shows full atlas plates
+and the far capture has no entity text. The scope-collision test proves equal army/structure ids coexist, and its
+retain/remove assertions prove one manager's despawn cannot remove the other's label. The source gate proves one
+renderer construction/disposal and no remaining army/structure point-label path. The live close-band scene measured 68
+WebGL draws, still above the requested 60; its 16 detailed terrain pages and active combat make the absolute total
+content-dependent. Label rendering itself is one atlas draw. I did not hide terrain or gameplay content to manufacture
+the number, so the ≤60 whole-scene draw gate remains open.

@@ -27,12 +27,14 @@ describe("resolveWorldmapContentLadder", () => {
       proceduralCharacters: false,
       fx: true,
       textLabels: "full",
+      entityIcons: false,
     });
     expect(resolveWorldmapContentLadder(CameraView.Medium)).toMatchObject({
       biomeUnderlay: true,
       structureModels: true,
       proceduralCharacters: false,
       textLabels: "priority",
+      entityIcons: false,
       armyTierGlyphs: true,
     });
     expect(resolveWorldmapContentLadder(CameraView.Far)).toMatchObject({
@@ -42,6 +44,7 @@ describe("resolveWorldmapContentLadder", () => {
       proceduralCharacters: false,
       fx: false,
       textLabels: "none",
+      entityIcons: true,
     });
   });
 });

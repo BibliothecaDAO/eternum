@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Cleaner Map Labels",
+    description:
+      "Army and settlement labels now share one map renderer, stay tied to their entities, and simplify as you zoom out.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-03",
     title: "Biomes Stay Ready",
     description:
       "Detailed biome terrain now stays prepared while you pan around the world, and newly visible ground loads first instead of waiting behind old map work.",

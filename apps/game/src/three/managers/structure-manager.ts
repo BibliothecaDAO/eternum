@@ -2,7 +2,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
-import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import InstancedModel, { LAND_NAME } from "@/three/managers/instanced-model";
 import {
   incrementWorldmapRenderCounter,
@@ -65,7 +64,6 @@ import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
-import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
 import {
@@ -84,9 +82,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
-import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
-import { PointsLabelRenderer } from "./points-label-renderer";
-import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
+import type { CompactEntityLabelScope } from "./compact-entity-label-renderer";
 import {
   resolveCompactEntityLabelVariant,
   resolveStructureCompactEntityLabel,
@@ -268,25 +264,14 @@ export class StructureManager {
   // Scratch vectors for performVisibleStructuresUpdate to avoid allocations
   private readonly scratchPosition: Vector3 = new Vector3();
   private readonly scratchLabelPosition: Vector3 = new Vector3();
-  private readonly scratchIconPosition: Vector3 = new Vector3();
+  private readonly scratchCompactLabelPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private animationCullDistance = 140;
   private labelRenderDistance = Infinity;
   private animationCameraPosition: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
-  private pointsRenderers?: {
-    myVillage: PointsLabelRenderer;
-    enemyVillage: PointsLabelRenderer;
-    allyVillage: PointsLabelRenderer;
-    myRealm: PointsLabelRenderer;
-    enemyRealm: PointsLabelRenderer;
-    allyRealm: PointsLabelRenderer;
-    hyperstructure: PointsLabelRenderer;
-    bank: PointsLabelRenderer;
-    fragmentMine: PointsLabelRenderer;
-  };
-  private compactLabelRenderer: CompactEntityLabelRenderer;
+  private compactLabelRenderer: CompactEntityLabelScope;
   // Ids the manager has asked the compact renderer to show; the label tier gate is re-evaluated against it.
   private readonly compactLabelIds = new Set<ID>();
   private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
@@ -329,6 +314,7 @@ export class StructureManager {
     scene: Scene,
     renderChunkSize: { width: number; height: number },
     worldSpatialProjection: WorldSpatialProjection,
+    compactLabelRenderer: CompactEntityLabelScope,
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
@@ -386,9 +372,7 @@ export class StructureManager {
       this.requestVisibleStructuresRefresh({ refreshExisting: true });
     });
 
-    // Initialize points-based icon renderers
-    this.initializePointsRenderers();
-    this.compactLabelRenderer = new CompactEntityLabelRenderer(scene);
+    this.compactLabelRenderer = compactLabelRenderer;
 
     // Start timed label updates
     this.startTimedLabelUpdates();
@@ -638,153 +622,6 @@ export class StructureManager {
     );
   }
 
-  private initializePointsRenderers(): void {
-    const textureLoader = new THREE.TextureLoader();
-    const texturePaths = {
-      myVillage: "/images/labels/village.png",
-      enemyVillage: "/images/labels/enemy_village.png",
-      allyVillage: "/images/labels/allies_village.png",
-      myRealm: "/images/labels/realm.png",
-      enemyRealm: "/images/labels/enemy_realm.png",
-      allyRealm: "/images/labels/allies_realm.png",
-      hyperstructure: "/images/labels/hyperstructure.png",
-      bank: "/images/labels/chest.png", // Using chest as placeholder for bank
-      fragmentMine: this.mode.assets.labels.fragmentMine,
-    };
-
-    const loadedTextures: Partial<Record<keyof typeof texturePaths, THREE.Texture>> = {};
-    let loadedCount = 0;
-    const totalTextures = Object.keys(texturePaths).length;
-
-    Object.entries(texturePaths).forEach(([key, path]) => {
-      textureLoader.load(
-        path,
-        (texture) => {
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.flipY = resolvePointLabelTextureFlipY(snapshotRendererDiagnostics().activeMode);
-
-          loadedTextures[key as keyof typeof texturePaths] = texture;
-          loadedCount++;
-
-          if (loadedCount === totalTextures) {
-            const scaledPointSize = 40;
-            this.pointsRenderers = {
-              myVillage: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.myVillage!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              enemyVillage: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.enemyVillage!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              allyVillage: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.allyVillage!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              myRealm: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.myRealm!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              enemyRealm: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.enemyRealm!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              allyRealm: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.allyRealm!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              hyperstructure: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.hyperstructure!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              bank: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.bank!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-              fragmentMine: new PointsLabelRenderer(
-                this.scene,
-                loadedTextures.fragmentMine!,
-                1000,
-                scaledPointSize,
-                0,
-                1.3,
-                false,
-                this.frustumManager,
-                this.visibilityManager,
-              ),
-            };
-
-            if (isCommittedManagerChunk(this.currentChunk)) {
-              this.requestVisibleStructuresRefresh({ refreshExisting: true });
-            }
-          }
-        },
-        undefined,
-        (error) => {
-          console.error(`[StructureManager] Failed to load structure icon texture (${key}):`, error);
-        },
-      );
-    });
-  }
-
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) {
       this.updateShadowFlags();
@@ -891,7 +728,7 @@ export class StructureManager {
   }
 
   private resolveStructureCompactLabelPosition(structure: StructureInfo): Vector3 {
-    const position = this.scratchIconPosition;
+    const position = this.scratchCompactLabelPosition;
     getWorldPositionForHexCoordsInto(structure.hexCoords.col, structure.hexCoords.row, position);
     placePositionOnTerrain(position, this.resolveTerrainSurface());
     position.y += STRUCTURE_SURFACE_LIFT + COMPACT_LABEL_LIFT;
@@ -988,7 +825,6 @@ export class StructureManager {
     this.structureInfoCache.clear();
     this.visibleStructureWindow = undefined;
 
-    this.forEachPointsRenderer((renderer) => renderer.dispose());
     this.compactLabelRenderer.dispose();
     this.compactLabelIds.clear();
 
@@ -1553,19 +1389,17 @@ export class StructureManager {
   }
 
   private syncVisibleStructurePresentation(
-    previous: StructureInfo | undefined,
-    next: StructureInfo,
+    structure: StructureInfo,
     rotationY: number,
     attachmentRetain?: Set<number>,
   ): void {
     applyVisibleStructurePresentation({
-      previousStructure: previous,
-      structure: next,
+      structure,
       rotationY,
       dummy: this.dummy,
       scratchPosition: this.scratchPosition,
       scratchLabelPosition: this.scratchLabelPosition,
-      scratchIconPosition: this.scratchIconPosition,
+      scratchCompactLabelPosition: this.scratchCompactLabelPosition,
       tempCosmeticPosition: this.tempCosmeticPosition,
       tempCosmeticRotation: this.tempCosmeticRotation,
       getWorldPositionForHexCoordsInto: (col, row, out) => {
@@ -1575,7 +1409,6 @@ export class StructureManager {
       getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
-      getRendererForStructure: (structure) => this.getRendererForStructure(structure),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
       getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
       activeAttachmentEntities: this.activeStructureAttachmentEntities,
@@ -1603,7 +1436,6 @@ export class StructureManager {
     }
 
     const pass = this.beginVisibleStructurePass(visibilityDiff);
-    this.beginVisibleStructureSlice();
     try {
       return commitManagerVisibilityDiff({
         diff: visibilityDiff,
@@ -1635,7 +1467,6 @@ export class StructureManager {
       schedule: (work, owner) => scheduleFrameBudgetWork(this.chunkWorkScheduler, lane, work, owner),
       owner: "manager:structure-full-refresh",
       sliceBudgetMs: FULL_REFRESH_SLICE_BUDGET_MS,
-      beginSlice: () => this.beginVisibleStructureSlice(),
       endSlice: (sliceMs) => {
         this.endVisibleStructureSlice(pass);
         this.recordFullRefreshSlice(sliceMs);
@@ -1656,14 +1487,9 @@ export class StructureManager {
     return { attachmentRetain, dirtyModels: new Set<InstancedModel>() };
   }
 
-  private beginVisibleStructureSlice(): void {
-    this.forEachPointsRenderer((renderer) => renderer.beginBatch());
-  }
-
   /** Each slice's structures become drawable at its end; only the world bounds wait for the whole pass. */
   private endVisibleStructureSlice(pass: VisibleStructurePassScratch): void {
     this.flushDirtyStructureModels(pass);
-    this.forEachPointsRenderer((renderer) => renderer.endBatch());
   }
 
   private flushDirtyStructureModels({ dirtyModels }: VisibleStructurePassScratch): void {
@@ -1684,19 +1510,13 @@ export class StructureManager {
     this.metrics.fullRefreshMaxSliceMs = Math.max(this.metrics.fullRefreshMaxSliceMs, sliceMs);
   }
 
-  private forEachPointsRenderer(callback: (renderer: PointsLabelRenderer) => void): void {
-    if (this.pointsRenderers) {
-      Object.values(this.pointsRenderers).forEach(callback);
-    }
-  }
-
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,
     dirtyModels: Set<InstancedModel>,
   ): void {
     const rotationY = this.resolveVisibleStructureRotationY(structure);
-    this.syncVisibleStructurePresentation(undefined, structure, rotationY, attachmentRetain);
+    this.syncVisibleStructurePresentation(structure, rotationY, attachmentRetain);
 
     const bindings = this.hasCosmeticSkin(structure)
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
@@ -1878,44 +1698,8 @@ export class StructureManager {
       removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
       removeStructureCompactLabel: (entityId) => this.removeStructureCompactLabel(entityId),
       previousVisibleIds: this.previousVisibleIds,
-      getStructureByEntityId: (entityId) => this.resolveStructureInfoByEntityId(entityId),
-      removeStructurePoint: (entityId, structure) => {
-        const renderer = this.getRendererForStructure(structure);
-        renderer?.removePoint(entityId);
-      },
     });
     this.frustumVisibilityDirty = true;
-  }
-
-  private getRendererForStructure(structure: StructureInfo): PointsLabelRenderer | null {
-    if (!this.pointsRenderers) return null;
-
-    const { structureType, isMine, isAlly } = structure;
-
-    if (isVillageLikeStructureCategory(structureType)) {
-      return isMine
-        ? this.pointsRenderers.myVillage
-        : isAlly
-          ? this.pointsRenderers.allyVillage
-          : this.pointsRenderers.enemyVillage;
-    }
-    if (structureType === StructureType.Realm) {
-      return isMine
-        ? this.pointsRenderers.myRealm
-        : isAlly
-          ? this.pointsRenderers.allyRealm
-          : this.pointsRenderers.enemyRealm;
-    }
-    if (structureType === StructureType.Hyperstructure) {
-      return this.pointsRenderers.hyperstructure;
-    }
-    if (structureType === StructureType.Bank) {
-      return this.pointsRenderers.bank;
-    }
-    if (structureType === StructureType.FragmentMine || structureType === StructureType.BitcoinMine) {
-      return this.pointsRenderers.fragmentMine;
-    }
-    return null;
   }
 
   /** The one place a compact label is created: the band's text tier gates it for every caller. */
@@ -2076,8 +1860,6 @@ export class StructureManager {
       return;
     }
 
-    this.updateCompactLabelCamera();
-
     if (this.contentLadder.structureModels) {
       const context = this.resolveAnimationVisibilityContext(visibility);
       this.forEachStructureModel((model) => model.updateAnimations(deltaTime, context));
@@ -2094,13 +1876,6 @@ export class StructureManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
-  }
-
-  private updateCompactLabelCamera(): void {
-    const camera = this.hexagonScene?.getCamera();
-    if (camera) {
-      this.compactLabelRenderer.updateCamera(camera);
-    }
   }
 
   private resolveAnimationVisibilityContext(
@@ -2256,7 +2031,7 @@ export class StructureManager {
       existingLabel.visible = true;
       existingLabel.element.style.display = "";
       this.refreshExistingStructureLabel(structure, existingLabel);
-      this.highlightStructurePointIcon(structure, normalizedEntityId);
+      this.compactLabelRenderer.setHover(normalizedEntityId);
       if (wasDetached || wasHidden) {
         this.frustumVisibilityDirty = true;
         return { status: "reattached" };
@@ -2265,14 +2040,14 @@ export class StructureManager {
     }
 
     this.addEntityIdLabel(structure, this.resolveStructureLabelPosition(structure));
-    this.highlightStructurePointIcon(structure, normalizedEntityId);
+    this.compactLabelRenderer.setHover(normalizedEntityId);
     this.frustumVisibilityDirty = true;
     return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
-    this.clearStructurePointHoverIcons();
+    this.compactLabelRenderer.clearHover();
     this.frustumVisibilityDirty = true;
   }
 
@@ -2282,7 +2057,7 @@ export class StructureManager {
       shouldRetainLabel: () => false,
       removeEntityIdLabel: (structureId) => this.removeEntityIdLabel(structureId),
     });
-    this.clearStructurePointHoverIcons();
+    this.compactLabelRenderer.clearHover();
     this.frustumVisibilityDirty = true;
   }
 
@@ -2319,24 +2094,6 @@ export class StructureManager {
     position.y += 1.95;
     label.position.copy(position);
     this.updateStructureLabelData(structure, label);
-  }
-
-  private highlightStructurePointIcon(structure: StructureInfo, entityId: ID) {
-    if (!this.pointsRenderers) {
-      this.compactLabelRenderer.setHover(entityId);
-      return;
-    }
-
-    const renderer = this.getRendererForStructure(structure);
-    if (renderer) {
-      renderer.setHover(entityId);
-    }
-    this.compactLabelRenderer.setHover(entityId);
-  }
-
-  private clearStructurePointHoverIcons() {
-    this.forEachPointsRenderer((renderer) => renderer.clearHover());
-    this.compactLabelRenderer.clearHover();
   }
 
   private removeOrphanedStructureSceneLabels() {

@@ -50,6 +50,7 @@ export class PointsLabelRenderer {
   private unsubscribeVisibility?: () => void;
   private boundsDirty = true;
   private batchMode = false; // When true, setPoint() skips refreshFrustumVisibility()
+  private enabled = true;
   private isDisposed = false;
 
   constructor(
@@ -121,6 +122,11 @@ export class PointsLabelRenderer {
   }
 
   private refreshFrustumVisibility(): void {
+    if (!this.enabled) {
+      this.points.visible = false;
+      return;
+    }
+
     if (this.visibilityManager) {
       if (this.currentCount === 0) {
         this.points.visible = false;
@@ -168,6 +174,13 @@ export class PointsLabelRenderer {
    */
   public endBatch(): void {
     this.batchMode = false;
+    this.refreshFrustumVisibility();
+  }
+
+  /** The content ladder owns whether this icon layer participates in the current band. */
+  public setEnabled(enabled: boolean): void {
+    if (this.enabled === enabled) return;
+    this.enabled = enabled;
     this.refreshFrustumVisibility();
   }
 
