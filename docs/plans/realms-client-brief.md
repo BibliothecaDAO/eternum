@@ -1916,15 +1916,14 @@ onto the resolver whenever either file is next touched.
 `Failed to update visible chunks during initial setup: Error: Chunk 0,0 synchronized without prepared terrain`, then
 `[SceneManager] Failed to set up scene map`. The chunk-recovery fix's "refuses to prepare terrain after a failed asset
 barrier" turned a slow prewarm into no boot: `prepareWorldmapChunkPresentation` returned
-`{projectionSyncSucceeded: true, preparedTerrain: null}` on prewarm timeout, and
-`warp-travel-chunk-switch-commit.ts:95` throws on null terrain during initial setup. The headless gate had passed
-because headless prewarm fits inside 12 s; the owner's machine (slow first shader compile, and prewarm now covering
-army models too) does not.
+`{projectionSyncSucceeded: true, preparedTerrain: null}` on prewarm timeout, and `warp-travel-chunk-switch-commit.ts:95`
+throws on null terrain during initial setup. The headless gate had passed because headless prewarm fits inside 12 s; the
+owner's machine (slow first shader compile, and prewarm now covering army models too) does not.
 
 **Fix.** Prewarm is an accelerator, never a gate — enforced at the one chokepoint. In the timed path a timed-out or
-failed prewarm proceeds to `prepareTerrainChunk` (un-prewarmed models compile on first draw); the `timedOutPhase`
-trace and recovery scheduling are unchanged. In the untimed path a prewarm rejection no longer rejects the
-preparation. The presentation test's prewarm-timeout case now pins terrain prepared plus the reported phase.
+failed prewarm proceeds to `prepareTerrainChunk` (un-prewarmed models compile on first draw); the `timedOutPhase` trace
+and recovery scheduling are unchanged. In the untimed path a prewarm rejection no longer rejects the preparation. The
+presentation test's prewarm-timeout case now pins terrain prepared plus the reported phase.
 
 **Gate.** Presentation suite 10/10; all 48 chunk/warp/recovery suites 332/332; `apps/game` typecheck green. Owner
 re-test on the deployed build is the live gate.
@@ -1932,85 +1931,87 @@ re-test on the deployed build is the live gate.
 ### Queued — boot contention: 50 s to playable on the owner's machine (2026-09-03)
 
 **Evidence.** After the prewarm-barrier fix (`b3bbc2e3a5c`) the owner's live boot on `bltz-clash-538` converges but
-takes ~50 s to playable. The log shows the whole first-chunk pipeline racing at once and every wall-clock timer
-blowing while work progresses: `asset_prewarm` 12 s, the 20 s chunk-transition hard timeout, then both critical
-manager catch-ups at 12 s each, with recovery churn and 130–150 FramePerf spike frames per 10 s throughout (worst
-531 ms `terrain:composite:present`).
+takes ~50 s to playable. The log shows the whole first-chunk pipeline racing at once and every wall-clock timer blowing
+while work progresses: `asset_prewarm` 12 s, the 20 s chunk-transition hard timeout, then both critical manager
+catch-ups at 12 s each, with recovery churn and 130–150 FramePerf spike frames per 10 s throughout (worst 531 ms
+`terrain:composite:present`).
 
 **The item (for the implementing agent).**
+
 1. Measure first: break the 50 s down from `__eternumGameEntryTimeline` and the recorded worldmap durations; name the
-   dominant costs in the record. Bisect the suspects: the 12→16 active-page raise and the army-model prewarm both
-   added upfront work (`e2cfb3e90ae`, the item-2 barrier) — state what each costs on a slow boot.
+   dominant costs in the record. Bisect the suspects: the 12→16 active-page raise and the army-model prewarm both added
+   upfront work (`e2cfb3e90ae`, the item-2 barrier) — state what each costs on a slow boot.
 2. Progress-based deadlines: critical catch-up and the transition hard timeout fail on "no progress for N seconds",
-   never on total duration; a generous absolute ceiling stays only as the stall detector. A timer that no longer
-   means failure does not `console.error`.
+   never on total duration; a generous absolute ceiling stays only as the stall detector. A timer that no longer means
+   failure does not `console.error`.
 3. Stage the first boot: terrain pages first, then critical entity models, then the rest — through the existing
    frame-budget and lane machinery, no new queues. Playable means map + own units; everything else streams after.
 4. Gates: unit tests for the progress deadline (progressing work at twice the old timeout is not failed; stalled work
-   is); headless first-terrain unchanged or better; the measured breakdown before/after in the record; the owner's
-   live boot is the acceptance — the record proposes the time-to-playable bar from the measured floor and the owner
-   rules on it.
+   is); headless first-terrain unchanged or better; the measured breakdown before/after in the record; the owner's live
+   boot is the acceptance — the record proposes the time-to-playable bar from the measured floor and the owner rules on
+   it.
 
 ### Review follow-up — automatic WebGPU deleted from the boot entirely (2026-09-03, commit pending)
 
 **Evidence.** The owner's live boots take ~50 s and their conviction is the WebGPU machinery ("with the webgl fallback
 it was loading instant"). The mechanism is real: the idle qualification promotes a profile to `webgpu` when a 3 s init
-succeeds on an idle GPU, and the next boot then attempts real WebGPU init under the 15 s remembered-lane window during
-a saturated boot — the one situation the qualification never tested. A promotion can therefore tax the very next boot
-with up to 15 s of stall before the WebGL2 fallback, on a machine the owner has already ruled runs the WebGL2 lane.
+succeeds on an idle GPU, and the next boot then attempts real WebGPU init under the 15 s remembered-lane window during a
+saturated boot — the one situation the qualification never tested. A promotion can therefore tax the very next boot with
+up to 15 s of stall before the WebGL2 fallback, on a machine the owner has already ruled runs the WebGL2 lane.
 
 **Fix — success is deletion.** WebGPU is parked by owner ruling, so the boot carries no automatic WebGPU path at all:
-the idle qualification, its 3 s timeout, the `idle:init-ok` promotion and the `scheduleIdle` dependency are deleted
-from `webgpu-renderer-backend.ts`, and `qualifyAtIdle` and the soft-verdict distinction are deleted from
+the idle qualification, its 3 s timeout, the `idle:init-ok` promotion and the `scheduleIdle` dependency are deleted from
+`webgpu-renderer-backend.ts`, and `qualifyAtIdle` and the soft-verdict distinction are deleted from
 `webgpu-lane-probe.ts`. Every profile boots WebGL2. A remembered `webgpu` lane whose reason starts with `idle:` is
-discarded on read, so already-promoted profiles heal themselves without clearing storage. The explicit
-`?rendererMode` query flag remains the only door to WebGPU, for deliberate testing when the parking ends.
+discarded on read, so already-promoted profiles heal themselves without clearing storage. The explicit `?rendererMode`
+query flag remains the only door to WebGPU, for deliberate testing when the parking ends.
 
 **Gate.** Lane, backend and discipline suites 30/30 (the discipline test now bans the qualification strings);
 `apps/game` typecheck green. The owner's next boots are the live gate: no WebGPU init anywhere on the boot path.
 
 ### Live-user blocker — gameplay account never binds for a fresh player (2026-09-03)
 
-**Evidence.** First outside player (wallet `0x15d9…4546`): full SIWS sign-in on app.realms.party (profile shows
-Session ● Signed in), full sign-in on play.realms.party (chip shows the session) — and the profile stays
-"Game account ○ Not bound yet" with the landing cards stuck on dead "Connect wallet" text. Code-proven dead end:
-`GameplayAccountSync` only provisioned+bound when `useActiveWorldProfile()` returned a profile, which only exists
-after entering or spectating a game; the landing's register button is gated on the gameplay account. Registration
-needed the account, the account needed an entered world, entering needed registration. The fields the sync needs
-(rpc, class hash, registry, authority) were always chain-level env facts copied into the profile from
-`world-directory.ts` — the profile dependency was pure indirection.
+**Evidence.** First outside player (wallet `0x15d9…4546`): full SIWS sign-in on app.realms.party (profile shows Session
+● Signed in), full sign-in on play.realms.party (chip shows the session) — and the profile stays "Game account ○ Not
+bound yet" with the landing cards stuck on dead "Connect wallet" text. Code-proven dead end: `GameplayAccountSync` only
+provisioned+bound when `useActiveWorldProfile()` returned a profile, which only exists after entering or spectating a
+game; the landing's register button is gated on the gameplay account. Registration needed the account, the account
+needed an entered world, entering needed registration. The fields the sync needs (rpc, class hash, registry, authority)
+were always chain-level env facts copied into the profile from `world-directory.ts` — the profile dependency was pure
+indirection.
 
-**Fix — the account is an identity-level fact.** `useGameplayWorldTarget` now reads `getDefaultWorld()` from the
-world directory; a signed-in user provisions and binds from the landing, before any world is entered.
-`useActiveWorldProfile` lost its last consumer and is deleted (wired-or-deleted). The card's dead text is replaced by
-`GameplayAccountGate`: anonymous → "Sign in to play" (opens the identity popover), signed-in → "Preparing account…",
-provisioning failure → the loud error. Two adjacent gaps closed in the same pass: the play client's identity chip had
-no sign-out at all (the "can't log out to try another wallet" report) — `identityClient.signOut` added to
-`packages/identity` and wired into the chip's signed-in panel; and a fresh user's chip showed their full 64-char
-address because `user.name` defaults to the address — address-valued names now render short-form.
+**Fix — the account is an identity-level fact.** `useGameplayWorldTarget` now reads `getDefaultWorld()` from the world
+directory; a signed-in user provisions and binds from the landing, before any world is entered. `useActiveWorldProfile`
+lost its last consumer and is deleted (wired-or-deleted). The card's dead text is replaced by `GameplayAccountGate`:
+anonymous → "Sign in to play" (opens the identity popover), signed-in → "Preparing account…", provisioning failure → the
+loud error. Two adjacent gaps closed in the same pass: the play client's identity chip had no sign-out at all (the
+"can't log out to try another wallet" report) — `identityClient.signOut` added to `packages/identity` and wired into the
+chip's signed-in panel; and a fresh user's chip showed their full 64-char address because `user.name` defaults to the
+address — address-valued names now render short-form.
 
-**Gate.** New sync test: a signed-in identity on the landing (no entered world) deploys and binds. Sign-out client
-test pins the credentialed POST. Sync, chip, landing-card, gameplay-truth and polling-discipline suites green;
-`apps/game` + `packages/identity` typecheck green. Live gate: the stranded user reloads play.realms.party —
-"Preparing account…" then the register button; app.realms.party profile flips to "● Bound".
+**Gate.** New sync test: a signed-in identity on the landing (no entered world) deploys and binds. Sign-out client test
+pins the credentialed POST. Sync, chip, landing-card, gameplay-truth and polling-discipline suites green; `apps/game` +
+`packages/identity` typecheck green. Live gate: the stranded user reloads play.realms.party — "Preparing account…" then
+the register button; app.realms.party profile flips to "● Bound".
 
 ### Live incident — 24-minute spawn immunity in blitz (2026-09-03, fixed same day)
 
 **Evidence.** Two explorer-vs-explorer attacks in bltz-rush-379 reverted on-chain with "This entity can't be attacked
 until immunity period ends" (tx `0x27906b…87f9bc` 11:09:51 UTC, `0x7599bc…4917fd` 11:12:43 UTC; main start 11:00:00).
-Attacks on daydreams agents worked — the contract skips the cloak check for agents — which produced the confusing
-"some attacks work" pattern. Owner ruling: blitz has no immunity, ever.
+Attacks on daydreams agents worked — the contract skips the cloak check for agents — which produced the confusing "some
+attacks work" pattern. Owner ruling: blitz has no immunity, ever.
 
 **Root cause.** `resolveBlitzChainConfig`'s madara branch returned `madaraBlitzConfig` without merging
 `STANDARD_BLITZ_CHAIN_CONFIG` (the appchain branch merges it), so the generated `blitz.madara.json` kept the base
-sheet's eternum-scale values, and the immutable registrar presets 6/7 were registered from it: `regular_immunity_ticks
-24` (24 min at the 60 s armies tick), day-scale settling offsets, 7-day point-registration close.
+sheet's eternum-scale values, and the immutable registrar presets 6/7 were registered from it:
+`regular_immunity_ticks 24` (24 min at the 60 s armies tick), day-scale settling offsets, 7-day point-registration
+close.
 
-**Fix.** `ecff2f2b1ea` merges the standard patch under madara's address zeroing and regenerates the sheet (immunity 0,
-2 h default, 600 s point close). Corrected presets registered on the L3: **8 = Regular Fast** (official-60, tx
+**Fix.** `ecff2f2b1ea` merges the standard patch under madara's address zeroing and regenerates the sheet (immunity 0, 2
+h default, 600 s point close). Corrected presets registered on the L3: **8 = Regular Fast** (official-60, tx
 `0x2f08fca…`), **9 = Duel** (official-90, tx `0x604cabd…`). `4149967685c` flips every pointer in one change — client
-catalog (6→8, 7→9), launch-service schema `Literals(["8","9"])` + durable default "8", `DEFAULT_MADARA_PRESET_ID`,
-the daily rotation yaml — and fixes `rotation.ts` hardcoding `version: "6"` over the yaml (the fourth member of the
+catalog (6→8, 7→9), launch-service schema `Literals(["8","9"])` + durable default "8", `DEFAULT_MADARA_PRESET_ID`, the
+daily rotation yaml — and fixes `rotation.ts` hardcoding `version: "6"` over the yaml (the fourth member of the
 launch-service override class closed this week: devModeOn schema/defaults/executor, then version, then this).
 
 **Verified invariants of the new presets.** 96-player cap kept (`registration_count_max: 96` in both; Duel's
@@ -2019,8 +2020,8 @@ registration and settling at creation time regardless of sheet offsets; game cre
 point-close from season. Duration is profile-driven (60 min Fast, 90 min Duel). PvP opens exactly at `start_main_at`.
 Games created from presets 6/7 keep their baked immunity forever (per-game config at creation is immutable).
 
-**Rulebook of record.** Artifact `8f0cb733-7613-4562-b1b2-8c24efadc0db` — every value in presets 8/9, the 6→8
-divergence table, and the 125-row Fast-vs-Duel balance diff.
+**Rulebook of record.** Artifact `8f0cb733-7613-4562-b1b2-8c24efadc0db` — every value in presets 8/9, the 6→8 divergence
+table, and the 125-row Fast-vs-Duel balance diff.
 
 **Gate.** Launch-service 19/19 + typecheck, client factory suites green, config tests 19/19 under bun, box
 launch-service restarted on `4149967685c`, client deploy 33753903382 green. Live acceptance: next created game — PvP
