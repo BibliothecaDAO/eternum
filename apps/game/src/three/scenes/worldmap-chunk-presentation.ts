@@ -55,7 +55,11 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   input: PrepareWorldmapChunkPresentationInput<TPreparedTerrain>,
 ): Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>> {
   if (input.phaseTimeoutMs === undefined || input.phaseTimeoutMs <= 0) {
-    const [projectionSyncSucceeded] = await Promise.all([input.projectionSyncPromise, input.assetPrewarmPromise]);
+    // Prewarm is an accelerator: its failure degrades to first-draw compiles, never to a chunk without terrain.
+    const [projectionSyncSucceeded] = await Promise.all([
+      input.projectionSyncPromise,
+      input.assetPrewarmPromise.catch(() => undefined),
+    ]);
 
     if (!projectionSyncSucceeded) {
       input.onChunkPrepared?.(input.chunkKey);
@@ -124,15 +128,8 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     };
   }
 
-  if (assetPrewarmResult.status !== "resolved") {
-    input.onChunkPrepared?.(input.chunkKey);
-    return {
-      projectionSyncSucceeded: true,
-      preparedTerrain: null,
-      ...(assetPrewarmResult.status === "timed_out" ? { timedOutPhase: "asset_prewarm" as const } : {}),
-    };
-  }
-
+  // Prewarm is an accelerator: a timed-out or failed prewarm degrades to first-draw
+  // compiles, never to a chunk without terrain. The timeout trace above still fires.
   const preparedTerrain = await input.prepareTerrainChunk(
     input.startRow,
     input.startCol,
@@ -144,6 +141,7 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   return {
     projectionSyncSucceeded: true,
     preparedTerrain,
+    ...(assetPrewarmResult.status === "timed_out" ? { timedOutPhase: "asset_prewarm" as const } : {}),
   };
 }
 

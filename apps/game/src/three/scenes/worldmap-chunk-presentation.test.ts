@@ -147,9 +147,9 @@ describe("prepareWorldmapChunkPresentation", () => {
     expect(projectionSync.pendingCount()).toBe(1);
   });
 
-  it("does not prepare terrain when the active-lane asset prewarm times out", async () => {
+  it("still prepares terrain when the active-lane asset prewarm times out", async () => {
     vi.useFakeTimers();
-    const prepareTerrainChunk = vi.fn();
+    const prepareTerrainChunk = vi.fn().mockResolvedValue("prepared-terrain");
     const onPhaseTimeout = vi.fn();
 
     const presentationPromise = prepareWorldmapChunkPresentation({
@@ -168,11 +168,11 @@ describe("prepareWorldmapChunkPresentation", () => {
 
     await expect(presentationPromise).resolves.toEqual({
       projectionSyncSucceeded: true,
-      preparedTerrain: null,
+      preparedTerrain: "prepared-terrain",
       timedOutPhase: "asset_prewarm",
     });
     expect(onPhaseTimeout).toHaveBeenCalledWith({ chunkKey: "0,0", phase: "asset_prewarm", timeoutMs: 25 });
-    expect(prepareTerrainChunk).not.toHaveBeenCalled();
+    expect(prepareTerrainChunk).toHaveBeenCalledTimes(1);
   });
 
   it("commits same-chunk refresh terrain and managers through one gate", () => {
