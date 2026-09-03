@@ -226,6 +226,32 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("does not queue the remaining worker pages from a superseded presentation", async () => {
+    const input = distantPagesInput();
+    const firstRequest = buildWorldmapTerrainPageRequests(input)[0];
+    let resolveFirstPage: (page: PreparedTerrainPage) => void = () => undefined;
+    const firstPage = new Promise<PreparedTerrainPage>((resolve) => {
+      resolveFirstPage = resolve;
+    });
+    const preparePageAsync = vi
+      .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockImplementation((request) =>
+        request.pageKey === firstRequest.pageKey ? firstPage : Promise.resolve(prepareTerrainPage(request)),
+      );
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+
+    const superseded = terrain.presentAsync(input);
+    await flushMicrotasks();
+    const latest = terrain.presentAsync({ ...singlePageInput(0), cells: [input.cells[0]] });
+    resolveFirstPage(prepareTerrainPage(firstRequest));
+
+    await expect(superseded).resolves.toBeNull();
+    await expect(latest).resolves.toMatchObject({ builtPages: 0, reusedPages: 1 });
+    expect(preparePageAsync.mock.calls.map(([request]) => request.pageKey)).toEqual([firstRequest.pageKey]);
+    terrain.dispose();
+  });
+
   it("rebuilds the pages whose halo or settlement influence changed", async () => {
     stubPageWorker();
     const terrain = new WorldmapProceduralTerrain();
@@ -246,13 +272,54 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.dispose();
   });
 
-  it("bounds prepared pages to the current and previous request sets", async () => {
+  it("reuses a prepared page after more than one intervening camera window", async () => {
     stubPageWorker();
     const terrain = new WorldmapProceduralTerrain();
 
     await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({ preparedCachePages: 1 });
     await expect(terrain.presentAsync(singlePageInput(10))).resolves.toMatchObject({ preparedCachePages: 2 });
-    await expect(terrain.presentAsync(singlePageInput(20))).resolves.toMatchObject({ preparedCachePages: 2 });
+    await expect(terrain.presentAsync(singlePageInput(20))).resolves.toMatchObject({ preparedCachePages: 3 });
+    await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({
+      builtPages: 0,
+      preparedCachePages: 3,
+      reusedPages: 1,
+    });
+    terrain.dispose();
+  });
+
+  it("bounds the prepared-page LRU while retaining recently visited pages", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+
+    for (let page = 0; page < 65; page += 1) {
+      await terrain.presentAsync(singlePageInput(page * 2));
+    }
+
+    await expect(terrain.presentAsync(singlePageInput(128))).resolves.toMatchObject({
+      builtPages: 0,
+      preparedCachePages: 64,
+      reusedPages: 1,
+    });
+    await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({
+      builtPages: 1,
+      preparedCachePages: 64,
+      reusedPages: 0,
+    });
+    terrain.dispose();
+  });
+
+  it("builds the newly focused page before the rest of the visible window", async () => {
+    const preparedPageKeys: string[] = [];
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) => {
+      preparedPageKeys.push(request.pageKey);
+      return Promise.resolve(prepareTerrainPage(request));
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+
+    await terrain.presentAsync({ ...distantPagesInput(), priorityPageKeys: ["0,10", "0,0", "0,10"] });
+
+    expect(preparedPageKeys).toEqual(["0,10", "0,0"]);
     terrain.dispose();
   });
 });

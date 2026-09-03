@@ -45,6 +45,7 @@ export interface WorldmapProceduralPresentationInput {
   pageHeight: number;
   pageOrigin: { col: number; row: number };
   pageWidth: number;
+  priorityPageKeys?: readonly string[];
   propDensityMultiplier?: number;
   roadAnchors?: readonly TerrainRoadAnchor[];
   settlementAnchors?: readonly TerrainSettlementAnchor[];
@@ -125,6 +126,9 @@ interface WorldBounds {
 }
 
 const BIOME_VALUES = new Set<string>(Object.values(BiomeType));
+// Four complete 4x4 camera windows let ordinary out-and-back pans reuse the expensive worker result. The GPU still
+// presents only the active window; this cache holds CPU-side typed arrays and evicts least-recently-used signatures.
+const PREPARED_PAGE_CACHE_LIMIT = 64;
 const ROAD_PAGE_PADDING = 1.5;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
   "terrain:present:fog": "presentFogMaxMs",
@@ -156,8 +160,7 @@ export class WorldmapProceduralTerrain {
     presentTaskMaxMs: 0,
     presentTasks: 0,
   };
-  private currentRequestSignatures = new Set<string>();
-  private previousRequestSignatures = new Set<string>();
+  private preparedCacheRevision = 0;
   private presentationRevision = 0;
   private visibleCellCount = 0;
 
@@ -260,16 +263,20 @@ export class WorldmapProceduralTerrain {
     const roadSegments = await this.runStep(run, "terrain:present:roads", () =>
       buildWorldmapTerrainRoadSegments(input, partition),
     );
-    const preparations = await Promise.all(
+    const unorderedPreparations = await Promise.all(
       partition.pages.map((page) =>
         this.runStep(run, "terrain:present:request", () =>
           signPageRequest(buildWorldmapTerrainPageRequest(input, partition, page, roadSegments)),
         ),
       ),
     );
-    this.retainRequestedPages(preparations);
+    const preparations = prioritizePagePreparations(unorderedPreparations, input.priorityPageKeys);
     const reuse = this.countPageReuse(preparations);
-    const preparedPages = await Promise.all(preparations.map((preparation) => this.resolvePreparedPage(preparation)));
+    const preparedPages: PreparedTerrainPage[] = [];
+    for (const preparation of preparations) {
+      this.requireCurrent(run);
+      preparedPages.push(await this.resolvePreparedPage(preparation));
+    }
     this.requireCurrent(run);
     const fogMask = await this.terrain.prepareFogMaskAsync(preparedPages);
     this.requireCurrent(run);
@@ -336,12 +343,6 @@ export class WorldmapProceduralTerrain {
     metrics[stepMetric] = Math.max(metrics[stepMetric], durationMs);
   }
 
-  private retainRequestedPages(preparations: readonly TerrainPagePreparation[]): void {
-    this.previousRequestSignatures = this.currentRequestSignatures;
-    this.currentRequestSignatures = new Set(preparations.map(({ signature }) => signature));
-    this.prunePreparedCache();
-  }
-
   private countPageReuse(preparations: readonly TerrainPagePreparation[]): TerrainPageReuse {
     const reusedPages = preparations.filter(
       ({ signature }) => this.preparedBySignature.has(signature) || this.pendingBySignature.has(signature),
@@ -351,15 +352,22 @@ export class WorldmapProceduralTerrain {
 
   private resolvePreparedPage(preparation: TerrainPagePreparation): Promise<PreparedTerrainPage> {
     const cached = this.preparedBySignature.get(preparation.signature);
-    if (cached) return Promise.resolve(cached);
+    if (cached) {
+      this.touchPreparedPage(preparation.signature, cached);
+      return Promise.resolve(cached);
+    }
     return this.pendingBySignature.get(preparation.signature) ?? this.preparePageAsync(preparation);
   }
 
   private preparePageAsync(preparation: TerrainPagePreparation): Promise<PreparedTerrainPage> {
+    const cacheRevision = this.preparedCacheRevision;
     const pending = this.terrain
       .preparePageAsync(preparation.request)
       .then((prepared) => {
-        this.retainPreparedPage(preparation.signature, prepared);
+        if (cacheRevision === this.preparedCacheRevision) {
+          this.touchPreparedPage(preparation.signature, prepared);
+          this.prunePreparedCache();
+        }
         return prepared;
       })
       .finally(() => {
@@ -371,26 +379,43 @@ export class WorldmapProceduralTerrain {
     return pending;
   }
 
-  private retainPreparedPage(signature: string, prepared: PreparedTerrainPage): void {
-    if (this.isRetainedRequest(signature)) this.preparedBySignature.set(signature, prepared);
+  private touchPreparedPage(signature: string, prepared: PreparedTerrainPage): void {
+    this.preparedBySignature.delete(signature);
+    this.preparedBySignature.set(signature, prepared);
   }
 
   private prunePreparedCache(): void {
-    for (const signature of this.preparedBySignature.keys()) {
-      if (!this.isRetainedRequest(signature)) this.preparedBySignature.delete(signature);
+    while (this.preparedBySignature.size > PREPARED_PAGE_CACHE_LIMIT) {
+      const oldestSignature = this.preparedBySignature.keys().next().value;
+      if (oldestSignature === undefined) return;
+      this.preparedBySignature.delete(oldestSignature);
     }
   }
 
-  private isRetainedRequest(signature: string): boolean {
-    return this.currentRequestSignatures.has(signature) || this.previousRequestSignatures.has(signature);
-  }
-
   private clearPreparedWork(): void {
+    this.preparedCacheRevision += 1;
     this.preparedBySignature.clear();
     this.pendingBySignature.clear();
-    this.currentRequestSignatures.clear();
-    this.previousRequestSignatures.clear();
   }
+}
+
+function prioritizePagePreparations(
+  preparations: readonly TerrainPagePreparation[],
+  priorityPageKeys: readonly string[] | undefined,
+): TerrainPagePreparation[] {
+  if (!priorityPageKeys?.length) return [...preparations];
+  const priorityByPageKey = new Map<string, number>();
+  priorityPageKeys.forEach((pageKey, index) => {
+    if (!priorityByPageKey.has(pageKey)) priorityByPageKey.set(pageKey, index);
+  });
+  return preparations
+    .map((preparation, index) => ({
+      index,
+      preparation,
+      priority: priorityByPageKey.get(preparation.request.pageKey) ?? Number.MAX_SAFE_INTEGER,
+    }))
+    .sort((left, right) => left.priority - right.priority || left.index - right.index)
+    .map(({ preparation }) => preparation);
 }
 
 /** The presentation's request build in one call: what `presentAsync` runs as partition, roads, and page steps. */

@@ -82,7 +82,7 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
       height: 24,
     },
     viewportMarginPages: 1,
-    maxCompositePages: 12,
+    maxCompositePages: 16,
     criticalPageImmediateBudget: 1,
     retainedPageMs: 350,
     cameraSampleThrottleMs: 66,

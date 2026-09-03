@@ -5471,6 +5471,9 @@ export default class WorldmapScene extends WarpTravel {
           pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
           pageOrigin: this.getVisualTerrainPageOrigin(),
           pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
+          priorityPageKeys: this.visualTerrainWindow
+            ? [this.visualTerrainWindow.centerPageKey, ...this.visualTerrainWindow.pageKeys]
+            : undefined,
           roadAnchors,
           settlementAnchors,
           subdivisions: 2,

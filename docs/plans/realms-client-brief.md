@@ -1745,25 +1745,25 @@ abstract abilities with nothing in the world to click; this game's action object
 (layout D), the composition table, the click budgets, the rail, and the minimap-bottom-left ruling survive.
 
 **The principle.** The entity is the interface. Every action whose object exists in the scene happens at the object: a
-world-anchored micro-card or ghost flow, not a screen-region panel. Panels survive only for objects with no scene
-anchor — market (Eternum), leaderboard, settings, feed, chat. The army interaction landed in run item 10 (left-click
-selects, right-click acts, ghost at click, Esc cancels) is the template, not an exception. Success is deletion: each
-item's old surface flow dies in the same change, and the end state has fewer surfaces than today — atomization was
-demolition, not the destination.
+world-anchored micro-card or ghost flow, not a screen-region panel. Panels survive only for objects with no scene anchor
+— market (Eternum), leaderboard, settings, feed, chat. The army interaction landed in run item 10 (left-click selects,
+right-click acts, ghost at click, Esc cancels) is the template, not an exception. Success is deletion: each item's old
+surface flow dies in the same change, and the end state has fewer surfaces than today — atomization was demolition, not
+the destination.
 
 **The method — finding the proper spot.** Each item below starts with a spot proposal: where the interaction lives and
 what the flow is, argued on a screenshot or live anchor of the current build, recorded here BEFORE implementation. The
 owner feels each feature on the deployed build before the next lands. Two defaults hold until a feature's record
-overrides them: reading stays on the right edge (the inspector remains the place selection detail is read), acting
-moves into the scene; and the Realms Deck story budgets are each item's click gate.
+overrides them: reading stays on the right edge (the inspector remains the place selection detail is read), acting moves
+into the scene; and the Realms Deck story budgets are each item's click gate.
 
 **Items** (each: spot proposal → implement → old flow deleted → gate; one item or small group per commit, records
 appended here):
 
 0. **Chrome recede.** The warm gold-on-brown chrome lives inside the terrain's own color family and camouflages into
-   desert/autumn biomes. Reskin the panel tokens cold-dark neutral (near-black smoke, slight cool bias), gold demoted
-   to a thin accent on interactive/selected only. Validate with screenshots against snow, desert, forest and water
-   biomes before landing. Small, global, first.
+   desert/autumn biomes. Reskin the panel tokens cold-dark neutral (near-black smoke, slight cool bias), gold demoted to
+   a thin accent on interactive/selected only. Validate with screenshots against snow, desert, forest and water biomes
+   before landing. Small, global, first.
 1. **World-anchored micro-card primitive + production pilot.** The Popover's screen-point anchor becomes a
    world-anchored micro-card that tracks its hex/entity through camera moves — small, no tabs. Pilot consumer: click a
    production building → recipe, rate, auto chip and queue at the building. The production surface's per-building flow
@@ -1776,14 +1776,14 @@ appended here):
 4. **Castle actions at the castle.** Upgrade (costs, shortfall named → transfer suggestion) and guard management at the
    structure. The side panel's action half dies; its reading half stays right-edge pending item 7.
 5. **Realm-to-realm transfer.** The spot genuinely needs finding — the record must argue two candidate flows before
-   picking: (a) select realm → Transfer → right-click target realm → inline amount at the target; (b) drag from rail
-   row onto the target realm/rail row. Story 15 gate: ≤ 3 clicks. Blitz has transfers (owner ruling); no market.
+   picking: (a) select realm → Transfer → right-click target realm → inline amount at the target; (b) drag from rail row
+   onto the target realm/rail row. Story 15 gate: ≤ 3 clicks. Blitz has transfers (owner ruling); no market.
 6. **Hyperstructure contribute at the tile.** Amount + confirm anchored to the tile. Story 26 gate: ≤ 3 clicks.
 7. **Inspector consolidation.** After items 1–6: the right-edge inspector is reading only — every action button in it
    has moved into the scene or died. Then the reading itself is weighed: what remains earns its place or goes.
 
-**Coordination.** Codex items 1–5 (renderer lane, chunk recovery, hexception terrain, far-band biomes, label remake)
-run on this branch in parallel; this pass is UI-side and collides mostly nowhere, but shared-worktree discipline holds:
+**Coordination.** Codex items 1–5 (renderer lane, chunk recovery, hexception terrain, far-band biomes, label remake) run
+on this branch in parallel; this pass is UI-side and collides mostly nowhere, but shared-worktree discipline holds:
 explicit-path commits only. The Realms Deck artifact (e835afd9) carries a supersession note for layouts A–C and the
 command card until it is redrawn per-feature as spots are found.
 
@@ -1808,3 +1808,29 @@ draw; no props, models, labels, composite pages or shroud rules changed.
 window. The surface remains two draws total (one shroud plus one instanced biome mesh), so the change's draw-count delta
 is zero and stays within the existing far-band budget. The unit and source tests pin the shared id resolver and color
 palette and reject local `BiomeIdToType` copies in both consumers.
+
+### Autonomous run record — biome page return-path correction (2026-09-03)
+
+**Evidence.** The owner's live screenshots exposed a separate lifecycle bug hidden by the far-surface color gate. A
+48×48 render window plus its one-page margin resolves to a 4×4 target (`resolveWorldmapVisualTerrainWindow` is pinned at
+16 pages), but `WORLD_CHUNK_CONFIG.visualPresentation.maxCompositePages` was 12. Four pages therefore had to fall
+through to the flat far surface even after their RECS biome data existed. The procedural cache compounded that gap:
+`WorldmapProceduralTerrain` retained only the current and immediately previous request sets, so an ordinary out-and-back
+pan discarded completed worker geometry. Finally, `Promise.all` submitted every page of a presentation before its
+revision could be superseded, leaving newly visible terrain behind stale worker work. This is the source-level
+conviction for the observed minute-scale edge fill and flat return state; 24×24 is only the page granularity, not an
+intended biome boundary.
+
+**Fix.** The active 4×4 target and composite cap now agree at 16. Completed procedural pages live in a 64-page LRU—four
+complete camera windows—while GPU presentation remains bounded to the current 16 pages. The worker resolves pages
+sequentially with the focused page first; a superseded presentation stops before queueing its remaining pages. Request
+signatures still include the complete terrain inputs, so a real biome, halo, road, structure, climate or style change
+rebuilds the page instead of serving stale geometry. The flat biome surface remains the deliberate far-zoom layer only;
+it is no longer the normal return state for a recently visited detailed page.
+
+**Gate.** Procedural-cache, visual-window and source-wiring suites: 27/27 green; `apps/game` typecheck green. The LRU
+test crosses more than the former two-window lifetime and returns with `builtPages: 0`; the 65-page traversal proves the
+cache stays at 64 and evicts least-recently-used work; the supersession test proves page two of stale work is never sent
+to the worker. Fresh headless WebGL2 captures on `bltz-clash-538` show fully textured terrain 100 ms after a two-drag
+pan (`/tmp/terrain-cache-fresh-edge-100ms.png`) and still-textured terrain 100 ms after the reverse pan
+(`/tmp/terrain-cache-return-100ms-fixed.png`), with no flat-color interval in either return capture.

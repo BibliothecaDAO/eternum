@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Biomes Stay Ready",
+    description:
+      "Detailed biome terrain now stays prepared while you pan around the world, and newly visible ground loads first instead of waiting behind old map work.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-03",
     title: "Biome-Colored Horizon",
     description:
       "Distant explored land now keeps the same biome colors as the minimap instead of falling back to generic ground, without adding terrain models or draw calls.",

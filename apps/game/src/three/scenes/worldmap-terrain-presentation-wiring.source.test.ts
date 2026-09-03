@@ -22,7 +22,7 @@ describe("worldmap terrain presentation wiring", () => {
     expect(configSource).toContain("maxCompositeChunks: 3");
     expect(configSource).toContain("rollingWindowEnabled: true");
     expect(configSource).toContain("visualPageSize");
-    expect(configSource).toContain("maxCompositePages: 12");
+    expect(configSource).toContain("maxCompositePages: 16");
     expect(configSource).toContain("provisionalShellEnabled: true");
     expect(configSource).toContain("previousExactRetainMs: 250");
     expect(worldmapSource).toMatch(
