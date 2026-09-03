@@ -189,11 +189,11 @@ games:
 
     expect(buildLaunchRotationRequest({ "config-path": configPath })).toMatchObject({
       environmentId: "madara.blitz",
-      rotationName: "madara-blitz-daily",
+      rotationName: "blitz-daily",
       advanceWindowGames: 1,
       evaluationIntervalMinutes: 30,
       durationSeconds: 3_600,
-      devModeOn: true,
+      devModeOn: false,
       version: "8",
     });
   });

@@ -1,16 +1,19 @@
-# One daily lab game at 11:00 UTC. The advance window keeps the next game
-# joinable for roughly 24 hours; the worker evaluates the rotation every 30 minutes.
+# One daily lab game at 11:00 UTC, dev mode off: a real game on the Regular Fast
+# preset. The advance window keeps the next game joinable for roughly 24 hours;
+# the worker evaluates the rotation every 30 minutes. Renamed from
+# madara-blitz-daily on 2026-09-03: its 0002 (game 20) was created dev-on and a
+# game cannot be deleted or renamed on chain, so the dev-off line starts fresh.
 launchKind: rotation
 environmentId: madara.blitz
-rotationName: madara-blitz-daily
-firstGameStartTime: 2026-09-02T11:00:00Z
+rotationName: blitz-daily
+firstGameStartTime: 2026-09-04T11:00:00Z
 maxGames: 365
 advanceWindowGames: 1
 evaluationIntervalMinutes: 30
 autoRetryEnabled: true
 autoRetryIntervalMinutes: 15
 durationSeconds: 3600
-devModeOn: true
+devModeOn: false
 version: "8"
 
 weeklyCadence:
