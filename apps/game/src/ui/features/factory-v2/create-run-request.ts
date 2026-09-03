@@ -4,6 +4,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type { CreateFactoryRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
+import { resolveLaunchDevModeOn } from "./launch-dev-mode";
 import type { FactoryGameMode, FactoryLaunchPreset } from "./types";
 
 export const buildFactoryCreateRunRequest = ({
@@ -41,7 +42,7 @@ export const buildFactoryCreateRunRequest = ({
   workflowRef,
   // Registered registrar preset the launch runs on (appchain).
   version: selectedPreset?.defaults.version,
-  devModeOn: selectedPreset?.defaults.devMode ?? false,
+  devModeOn: resolveLaunchDevModeOn(selectedPreset),
   twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,

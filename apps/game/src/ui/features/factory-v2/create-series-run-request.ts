@@ -4,6 +4,7 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type { CreateFactorySeriesRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
+import { resolveLaunchDevModeOn } from "./launch-dev-mode";
 import type {
   FactoryGameMode,
   FactoryLaunchPreset,
@@ -53,7 +54,7 @@ export const buildFactoryCreateSeriesRunRequest = ({
     seriesGameNumber: game.seriesGameNumber,
     biomeClimateOverrides: game.biomeClimateOverrides ?? biomeClimateOverrides,
   })),
-  devModeOn: selectedPreset?.defaults.devMode ?? false,
+  devModeOn: resolveLaunchDevModeOn(selectedPreset),
   twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,
