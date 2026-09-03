@@ -61,6 +61,33 @@ filter".
 succeeds; diagnostics carry the adapter identity; existing cases still green. Typecheck. This commit is independent of
 the rest and is also the prerequisite for the boot brief's tables.
 
+### Record — item 0 landed (2026-09-03)
+
+**Conviction.** Three chooses the active backend during `renderer.init()`, so the pre-init request could not identify
+the lane that ran. The 285 ms and 537 ms measurements cited above came from WebGL2 runs. The remaining 317 ms
+remembered-lane observation also predates truthful backend telemetry. It is not a measured WebGPU p95.
+
+**Fix.** `5058903bfb1` derives `activeMode` from the initialized backend, copies adapter identity into renderer
+diagnostics, and retries WebGL2 once after any WebGPU initialization failure. A silent fallback inside Three records
+`webgpu-silent-fallback` and remembers WebGL2. `6dfd0c06422` applies the provisional 3.2 s ceiling only to WebGPU.
+WebGL2 keeps the previous 15 s ceiling because no renderer lane remains behind it. Both values are pinned in the source
+test. The unused `AbortError` exception was deleted; the internal abort now carries the lane-specific timeout error.
+
+**Headless fixture smoke.** One fresh-profile load per explicit mode on `bltz-clash-538`, Brave 1280×720:
+
+| Requested mode       | Active mode       | Fallback reason      | Backend total | Three init | Entry ready |
+| -------------------- | ----------------- | -------------------- | ------------: | ---------: | ----------: |
+| `webgpu-force-webgl` | `webgl2-fallback` | none                 |         23 ms |      19 ms |   12,117 ms |
+| `webgpu-auto`        | `webgl2-fallback` | `webgpu-unavailable` |         58 ms |      29 ms |   10,471 ms |
+
+The headless browser exposed no WebGPU adapter, so `adapterInfo` was null. This smoke verifies truthful fallback and
+boot completion; it is not the item 1 lane comparison.
+
+**Gate.** The renderer backend, lane-discipline, diagnostics, and backend-v2 suites pass, 33 tests after the review
+follow-up. `apps/game` typecheck and scoped Prettier pass. The original item-0 worktree passed `knip`; the follow-up
+worktree is currently blocked by an unrelated shared-worktree export, `HyperstructureShare`. The full client run passed
+824 files and retained ten unrelated existing suite/file failures.
+
 ## 1. Measure before deciding — is WebGPU better on the machines that matter?
 
 Nothing about automatic selection is written until this table exists.
