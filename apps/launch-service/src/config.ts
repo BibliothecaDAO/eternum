@@ -1,7 +1,13 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 import { normalizeAddress } from "./address";
 import { BoundaryDecodeError } from "./errors";
+
+// Relative config paths are repo-relative facts, so they anchor to the repo root —
+// never the process cwd, which `pnpm --dir apps/launch-service` moves into the
+// package and silently breaks every repo-relative default.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
 const NonEmptyString = Schema.NonEmptyString;
 const EnvironmentSchema = Schema.Struct({
@@ -66,7 +72,7 @@ export const readLaunchServiceConfig = (
           launcherAllowlist: new Set(launcherEntries.filter((entry) => entry !== "*").map(normalizeAddress)),
           rpcUrl: raw.RPC_URL,
           heraldUrl: raw.HERALD_URL,
-          manifestPath: path.resolve(raw.GAME_MANIFEST_PATH),
+          manifestPath: path.resolve(REPO_ROOT, raw.GAME_MANIFEST_PATH),
           accountAddress: normalizeAddress(raw.DOJO_ACCOUNT_ADDRESS),
           privateKey: raw.DOJO_PRIVATE_KEY,
           port: positiveInteger(raw.PORT, 3006, "PORT"),
@@ -76,8 +82,9 @@ export const readLaunchServiceConfig = (
             raw.LAUNCH_ROTATION_CONFIGS ?? "config/deployer/clean/launch-configs/madara-blitz-daily.yaml"
           )
             .split(",")
-            .map((value) => path.resolve(value.trim()))
-            .filter(Boolean),
+            .map((value) => value.trim())
+            .filter(Boolean)
+            .map((value) => path.resolve(REPO_ROOT, value)),
         };
       }),
     ),
