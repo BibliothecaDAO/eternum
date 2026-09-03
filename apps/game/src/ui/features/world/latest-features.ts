@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Smoother World Loading",
+    description:
+      "Army and structure graphics now warm up against the active renderer before a terrain chunk appears, preventing stalled chunk retries and reducing the first large rendering hitch.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-03",
     title: "Faster First Map",
     description:
       "A fresh browser profile now opens the map on WebGL2 immediately while WebGPU is verified in the background for the next visit, avoiding a long black screen on drivers that delay renderer startup.",

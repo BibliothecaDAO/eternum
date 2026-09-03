@@ -354,6 +354,7 @@ import {
   resolveWorldmapChunkFromWorldPosition,
 } from "./worldmap-chunk-selection-policy";
 import { registerActiveWorldmapRecoveryHandle } from "./worldmap-reconnect-recovery-handle";
+import { createWorldmapChunkRecoveryProgress } from "./worldmap-chunk-recovery-progress";
 import {
   createReconnectRefreshQueueState,
   drainReconnectRefreshQueue,
@@ -919,6 +920,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkTraceBuffer = createWorldmapChunkTraceBuffer();
   private chunkRecoveryTimeout: number | null = null;
   private lastChunkRecoveryAtMs = 0;
+  private readonly chunkRecoveryProgress = createWorldmapChunkRecoveryProgress();
 
   // Label groups
   private armyLabelsGroup!: Group;
@@ -4269,7 +4271,7 @@ export default class WorldmapScene extends WarpTravel {
             startCol,
             renderSize: this.renderChunkSize,
             projectionSyncPromise: this.syncProjectionTilesForChunk(chunkKey),
-            assetPrewarmPromise: this.structureManager.prewarmChunkAssets(chunkKey),
+            assetPrewarmPromise: this.prewarmChunkAssets(chunkKey),
             prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
               this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width, "prefetch"),
             phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
@@ -5925,6 +5927,9 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    const recoverySignature = this.resolveChunkRecoverySignature(reason, chunkKey, details);
+    if (!this.chunkRecoveryProgress.claimRecovery(recoverySignature)) return;
+
     this.lastChunkRecoveryAtMs = now;
     this.traceChunk("chunk_recovery_scheduled", {
       reason,
@@ -5941,6 +5946,12 @@ export default class WorldmapScene extends WarpTravel {
       });
       this.requestChunkRefresh(true, refreshReason);
     }, 0);
+  }
+
+  private resolveChunkRecoverySignature(reason: string, chunkKey: string, details: Record<string, unknown>): string {
+    const phase = typeof details.phase === "string" ? details.phase : "";
+    const failingManagers = Array.isArray(details.failingManagers) ? details.failingManagers.join(",") : "";
+    return `${chunkKey}|${reason}|${phase}|${failingManagers}`;
   }
 
   private handleChunkTransitionHardTimeout(
@@ -6692,7 +6703,7 @@ export default class WorldmapScene extends WarpTravel {
       },
       onPhaseTimeout: (info) => this.handleChunkPresentationTimeout(info),
       phaseTimeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
-      prewarmChunkAssets: (targetChunkKey) => this.structureManager.prewarmChunkAssets(targetChunkKey),
+      prewarmChunkAssets: (targetChunkKey) => this.prewarmChunkAssets(targetChunkKey),
       prepareTerrainChunk: (targetStartRow, targetStartCol, height, width) =>
         this.prepareTerrainChunk(targetStartRow, targetStartCol, height, width),
       recordWorldmapRenderDuration: (metric, durationMs) =>
@@ -6715,6 +6726,8 @@ export default class WorldmapScene extends WarpTravel {
     if (!preparationResult.projectionSyncSucceeded || !preparationResult.preparedTerrain) {
       return;
     }
+
+    this.chunkRecoveryProgress.markProgress();
 
     recordWorldmapTerrainReadyDuration({
       diagnostics: this.chunkDiagnostics,
@@ -7257,6 +7270,14 @@ export default class WorldmapScene extends WarpTravel {
         });
       },
     });
+    if (failures.length === 0) this.chunkRecoveryProgress.markProgress();
+  }
+
+  private async prewarmChunkAssets(chunkKey: string): Promise<void> {
+    await Promise.all([
+      this.structureManager.prewarmChunkAssets(chunkKey),
+      this.armyManager.prewarmChunkAssets(chunkKey),
+    ]);
   }
 
   private async updateNonCriticalManagersForChunk(

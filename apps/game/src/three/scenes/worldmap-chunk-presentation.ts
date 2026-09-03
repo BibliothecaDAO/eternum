@@ -87,19 +87,24 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     });
   };
 
-  void settleWorldmapAsyncStage({
+  const assetPrewarmResultPromise = settleWorldmapAsyncStage({
     label: "asset_prewarm" as const,
     promise: input.assetPrewarmPromise,
     timeoutMs: input.phaseTimeoutMs,
     onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
   });
 
-  const projectionSyncResult = await settleWorldmapAsyncStage({
+  const projectionSyncResultPromise = settleWorldmapAsyncStage({
     label: "projection_sync" as const,
     promise: input.projectionSyncPromise,
     timeoutMs: input.phaseTimeoutMs,
     onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("projection_sync", timeoutMs),
   });
+
+  const [assetPrewarmResult, projectionSyncResult] = await Promise.all([
+    assetPrewarmResultPromise,
+    projectionSyncResultPromise,
+  ]);
 
   if (projectionSyncResult.status !== "resolved") {
     input.onChunkPrepared?.(input.chunkKey);
@@ -116,6 +121,15 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     return {
       projectionSyncSucceeded: false,
       preparedTerrain: null,
+    };
+  }
+
+  if (assetPrewarmResult.status !== "resolved") {
+    input.onChunkPrepared?.(input.chunkKey);
+    return {
+      projectionSyncSucceeded: true,
+      preparedTerrain: null,
+      ...(assetPrewarmResult.status === "timed_out" ? { timedOutPhase: "asset_prewarm" as const } : {}),
     };
   }
 

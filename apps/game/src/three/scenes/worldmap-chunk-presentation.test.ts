@@ -147,6 +147,34 @@ describe("prepareWorldmapChunkPresentation", () => {
     expect(projectionSync.pendingCount()).toBe(1);
   });
 
+  it("does not prepare terrain when the active-lane asset prewarm times out", async () => {
+    vi.useFakeTimers();
+    const prepareTerrainChunk = vi.fn();
+    const onPhaseTimeout = vi.fn();
+
+    const presentationPromise = prepareWorldmapChunkPresentation({
+      chunkKey: "0,0",
+      startRow: 0,
+      startCol: 0,
+      renderSize: { height: 80, width: 90 },
+      projectionSyncPromise: Promise.resolve(true),
+      assetPrewarmPromise: new Promise<void>(() => undefined),
+      prepareTerrainChunk,
+      phaseTimeoutMs: 25,
+      onPhaseTimeout,
+    });
+
+    await vi.advanceTimersByTimeAsync(25);
+
+    await expect(presentationPromise).resolves.toEqual({
+      projectionSyncSucceeded: true,
+      preparedTerrain: null,
+      timedOutPhase: "asset_prewarm",
+    });
+    expect(onPhaseTimeout).toHaveBeenCalledWith({ chunkKey: "0,0", phase: "asset_prewarm", timeoutMs: 25 });
+    expect(prepareTerrainChunk).not.toHaveBeenCalled();
+  });
+
   it("commits same-chunk refresh terrain and managers through one gate", () => {
     // When the refresh token is current and chunk matches, the commit decision
     // allows terrain to be applied atomically with managers

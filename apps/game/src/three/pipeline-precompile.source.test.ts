@@ -11,6 +11,16 @@ describe("pipeline precompile wiring", () => {
     const renderer = read("./game-renderer.ts");
     expect(renderer).toContain("createPipelineCompiler({");
     expect(renderer).toContain("compilePipelines: this.pipelineCompiler,");
+    const compiler = read("./pipeline-compiler.ts");
+    expect(compiler).toContain("input.getRenderer()");
+    expect(compiler).toContain("renderer.compileAsync(object, input.getCamera(), targetScene)");
+  });
+
+  it("the presentation barrier warms both structure and army models", () => {
+    const worldmap = read("./scenes/worldmap.tsx");
+    expect(worldmap).toContain("this.structureManager.prewarmChunkAssets(chunkKey)");
+    expect(worldmap).toContain("this.armyManager.prewarmChunkAssets(chunkKey)");
+    expect(worldmap).toContain("assetPrewarmPromise: this.prewarmChunkAssets(chunkKey)");
   });
 
   it("structure models compile before they attach", () => {

@@ -1691,3 +1691,28 @@ delta 483 ms, within the surrounding snapshot/model-load variance). Its idle Thr
 `{"lane":"webgpu","reason":"idle:init-ok"}`; reloading the same profile then initialized the remembered WebGPU lane in
 317 ms and reached first terrain at 10.750 s. This proves the promotion is based on the client renderer that will run,
 not the adapter probe that the standalone test already showed was healthy.
+
+### Autonomous run record — WebGL2 prewarm and progress-bounded chunk recovery (2026-09-03)
+
+**Conviction.** The item-15 compiler is lane-correct: `GameRenderer` resolves the current backend at call time and
+passes its renderer to `compileAsync`; Three 0.185's `WebGLBackend` uses `KHR_parallel_shader_compile` when the
+extension exists. The uncovered work was armies: `prepareChunkPresentation` supplied only
+`structureManager.prewarmChunkAssets`, while the critical army catch-up loaded and compiled its models afterward. The
+timed branch in `prepareWorldmapChunkPresentation` also started `settleWorldmapAsyncStage(asset_prewarm)` with `void`
+and awaited only projection sync, allowing terrain/catch-up to proceed while asset work remained unresolved. When that
+detached timer fired, `scheduleChunkRecoveryWithReason` knew only its 2 s cooldown; it did not check whether the
+previous attempt advanced any presentation or manager state. That is the identical 12 s recovery loop in the owner log.
+
+**Fix.** The presentation barrier now warms both structure and army models; both flow through the same compiler over the
+active WebGPU or WebGL2 renderer. The timed path awaits projection and asset results together and refuses to prepare
+terrain after a failed asset barrier. Chunk recovery claims one bounded failure signature
+`(chunk, reason, phase/managers)` and will not schedule that signature again until successful terrain preparation or
+critical-manager convergence marks forward progress. The cooldown remains only rate limiting, not the definition of
+progress.
+
+**Gate.** Compiler/presentation/catch-up/recovery suites: 31/31 green; `apps/game` typecheck green. Headless Brave with
+a seeded WebGL2 verdict against the current 83-player game reached first terrain at 9.687 s with zero
+`chunk_presentation_timeout` and zero critical catch-up failures. The worst boot `render:backend` spike was 971 ms
+(`createRenderPipeline=38x/255ms`) versus the owner's 3,307 ms before (`owner_ms=3,167`), a 71% reduction. The new
+progress-guard test proves a second identical `asset_prewarm` failure cannot schedule another recovery until work marks
+progress.

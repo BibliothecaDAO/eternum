@@ -1039,6 +1039,12 @@ export class ArmyManager {
     });
   }
 
+  public async prewarmChunkAssets(chunkKey: string): Promise<void> {
+    const [startRow, startCol] = chunkKey.split(",").map(Number);
+    if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) return;
+    await this.preloadMissingProjectedArmyModels(this.getProjectedArmiesForChunk(startRow, startCol));
+  }
+
   recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
     const { didApply } = recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
     if (!didApply) {
