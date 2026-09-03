@@ -167,30 +167,6 @@ describe("createWebGPURendererBackend", () => {
     expect(lane.rememberLane).toHaveBeenCalledWith("webgl2", "webgpu-silent-fallback");
   });
 
-  it("does not reinterpret an explicit abort as a renderer fallback", async () => {
-    const abortError = Object.assign(new Error("cancelled"), { name: "AbortError" });
-    const lane = webGpuLane();
-    const createRenderer = vi.fn(async () => ({
-      renderer: Object.assign(createRendererSurface(), {
-        init: vi.fn(async () => {
-          throw abortError;
-        }),
-      }),
-    }));
-    const backend = createWebGPURendererBackend(
-      {
-        isMobileDevice: false,
-        pixelRatio: 1,
-        requestedMode: "webgpu-auto",
-      },
-      { ...lane, createRenderer, now: vi.fn(() => 0) },
-    );
-
-    await expect(backend.initialize()).rejects.toBe(abortError);
-    expect(createRenderer).toHaveBeenCalledTimes(1);
-    expect(lane.rememberLane).not.toHaveBeenCalled();
-  });
-
   it("hands a stalled WebGPU lane over to WebGL2 instead of failing bootstrap", async () => {
     vi.useFakeTimers();
     const webGpuRenderer = Object.assign(createRendererSurface(), {
@@ -244,7 +220,7 @@ describe("createWebGPURendererBackend", () => {
 
     const initPromise = backend.initialize();
     const initExpectation = expect(initPromise).rejects.toThrow(RendererInitTimeoutError);
-    await vi.advanceTimersByTimeAsync(6_400);
+    await vi.advanceTimersByTimeAsync(18_200);
 
     await initExpectation;
     expect(renderers).toHaveLength(2);
@@ -269,8 +245,8 @@ describe("createWebGPURendererBackend", () => {
     );
 
     const initPromise = backend.initialize();
-    const initExpectation = expect(initPromise).rejects.toThrow("Renderer startup timed out after 3200ms");
-    await vi.advanceTimersByTimeAsync(3_200);
+    const initExpectation = expect(initPromise).rejects.toThrow("Renderer startup timed out after 15000ms");
+    await vi.advanceTimersByTimeAsync(15_000);
 
     await initExpectation;
     expect(createRenderer).toHaveBeenCalledTimes(1);

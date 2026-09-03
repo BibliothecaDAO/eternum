@@ -38,9 +38,8 @@ describe("renderer lane discipline", () => {
     expect(probe).toMatch(/RENDERER_LANE_STORAGE_KEY = "eternum-renderer-lane"/);
     const backend = readFileSync(join(srcRoot, "three", "webgpu-renderer-backend.ts"), "utf8");
     expect(backend).toMatch(/resolvedDependencies\.resolveLaneStart\(/);
-    const initBound = backend.match(/WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = ([\d_]+)/)?.[1];
-    expect(initBound).toBeDefined();
-    expect(Number(initBound?.replaceAll("_", ""))).toBeLessThanOrEqual(5_000);
+    expect(backend).toMatch(/WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200/);
+    expect(backend).toMatch(/WEBGL2_BACKEND_STARTUP_TIMEOUT_MS = 15_000/);
     expect(backend).not.toContain("isStalledWebGpuLane");
     expect(backend).not.toContain('timedOutMode === "webgpu"');
     // WebGPU is parked: no automatic qualification or idle promotion exists anywhere.

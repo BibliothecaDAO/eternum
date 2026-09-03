@@ -167,6 +167,9 @@ const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
 // The only recorded successful remembered-lane init was 317 ms. Use roughly 10x that
 // observation until item 1 replaces it with a truthful multi-run p95.
 const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200;
+// WebGL2 has no fallback behind it. Preserve the previous ceiling as a last-resort
+// stall detector instead of turning ordinary slow starts into hard bootstrap failures.
+const WEBGL2_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
 let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
@@ -222,7 +225,7 @@ function throwIfAborted(signal?: AbortSignal): void {
     return;
   }
 
-  throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
+  throw signal.reason;
 }
 
 function createWebGpuStartupTimeoutError(
@@ -230,10 +233,6 @@ function createWebGpuStartupTimeoutError(
   timedOutMode: RendererActiveMode | null = null,
 ): RendererInitTimeoutError {
   return new RendererInitTimeoutError(`Renderer startup timed out after ${timeoutMs}ms`, timedOutMode);
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
 }
 
 function resolveWebGpuInitFailureReason(error: unknown): Exclude<RendererFallbackReason, null> {
@@ -366,7 +365,7 @@ async function waitForWebGpuBackendStartup(input: {
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeoutFn(() => {
       timeoutError = createWebGpuStartupTimeoutError(input.timeoutMs, input.resolveTimedOutMode());
-      input.abortController.abort();
+      input.abortController.abort(timeoutError);
       input.disposeCreatedRenderer();
       reject(timeoutError);
     }, input.timeoutMs);
@@ -427,6 +426,7 @@ export function createWebGPURendererBackend(
   let disposed = false;
 
   const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
+    const startupTimeoutMs = forceWebGL ? WEBGL2_BACKEND_STARTUP_TIMEOUT_MS : WEBGPU_BACKEND_STARTUP_TIMEOUT_MS;
     const abortController = new AbortController();
     let createdRenderer: CreatedWebGPURenderer | undefined;
     let releaseDeviceDiagnostics: (() => void) | undefined;
@@ -446,7 +446,7 @@ export function createWebGPURendererBackend(
       });
       if (abortController.signal.aborted) {
         disposeCreatedRenderer();
-        throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
+        throwIfAborted(abortController.signal);
       }
 
       try {
@@ -454,12 +454,7 @@ export function createWebGPURendererBackend(
         createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
         const rendererInitStartedAt = resolvedDependencies.now();
         await createdRenderer.renderer.init();
-        if (abortController.signal.aborted) {
-          throw createWebGpuStartupTimeoutError(
-            WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
-            forceWebGL ? "webgl2-fallback" : "webgpu",
-          );
-        }
+        throwIfAborted(abortController.signal);
         recordRendererStartupTiming("webgpu-renderer-init", resolvedDependencies.now() - rendererInitStartedAt);
 
         const activeMode = resolveWebGpuRendererActiveMode(createdRenderer.renderer);
@@ -478,7 +473,7 @@ export function createWebGPURendererBackend(
       disposeCreatedRenderer,
       resolveTimedOutMode: () => (forceWebGL ? "webgl2-fallback" : "webgpu"),
       startupPromise,
-      timeoutMs: WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
+      timeoutMs: startupTimeoutMs,
     });
   };
 
@@ -501,7 +496,7 @@ export function createWebGPURendererBackend(
 
       return { ...lane, fallbackReason: start.fallbackReason };
     } catch (error) {
-      if (start.forceWebGL || isAbortError(error)) {
+      if (start.forceWebGL) {
         throw error;
       }
 
