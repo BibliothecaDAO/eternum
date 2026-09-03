@@ -267,18 +267,37 @@ export class PostgresLaunchStore implements LaunchServiceStore {
   }
 
   private async saveSummary(summary: LaunchSummary): Promise<LaunchSummary> {
+    const kind = summaryKind(summary);
+    const name = summaryName(summary);
     const result = await this.pool.query<{ id: string }>(
       "SELECT id FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3",
-      [summaryKind(summary), summary.environment, summaryName(summary)],
+      [kind, summary.environment, name],
     );
     const runId = result.rows[0]?.id;
-    if (!runId) throw new Error(`No queued launch owns summary ${summaryName(summary)}`);
-    const stored = { ...summary, outputPath: `postgres://launch_runs/${runId}/summary` };
-    await this.pool.query("UPDATE launch_runs SET summary = $2::jsonb, updated_at = now() WHERE id = $1", [
-      runId,
-      JSON.stringify(stored),
-    ]);
-    return stored;
+    if (runId) {
+      const stored = { ...summary, outputPath: `postgres://launch_runs/${runId}/summary` };
+      await this.pool.query("UPDATE launch_runs SET summary = $2::jsonb, updated_at = now() WHERE id = $1", [
+        runId,
+        JSON.stringify(stored),
+      ]);
+      return stored;
+    }
+    const parentId = kind === "game" ? await this.findParentRunId(summary.environment, name) : null;
+    if (!parentId) throw new Error(`No queued launch owns summary ${name}`);
+    return { ...summary, outputPath: `postgres://launch_runs/${parentId}/summary` };
+  }
+
+  // A rotation or series child has no row of its own. Its parent's games list is
+  // its record: the series runner folds the summary returned here into that list
+  // and persists the parent right after, and Herald answers whether the game
+  // exists on chain when the child step runs again.
+  private async findParentRunId(environment: string, gameName: string): Promise<string | null> {
+    const result = await this.pool.query<{ id: string }>(
+      `SELECT id FROM launch_runs
+       WHERE kind IN ('series', 'rotation') AND environment = $1 AND summary->'games' @> $2::jsonb`,
+      [environment, JSON.stringify([{ gameName }])],
+    );
+    return result.rows[0]?.id ?? null;
   }
 }
 

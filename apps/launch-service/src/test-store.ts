@@ -134,8 +134,14 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
   }
 
   async saveGame(summary: LaunchGameSummary): Promise<LaunchGameSummary> {
-    await this.attachSummary("game", summary.environment as "madara.blitz", summary.gameName, summary);
-    return summary;
+    const environment = summary.environment as "madara.blitz";
+    if (this.runs.has(this.key("game", environment, summary.gameName))) {
+      await this.attachSummary("game", environment, summary.gameName, summary);
+      return summary;
+    }
+    const parent = this.findParentRun(environment, summary.gameName);
+    if (!parent) throw new Error(`No run owns ${summary.gameName}`);
+    return { ...summary, outputPath: `memory://launch_runs/${parent.id}/summary` };
   }
 
   async loadSeries(
@@ -174,6 +180,17 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     const run = this.runs.get(key);
     if (!run) throw new Error(`No run owns ${name}`);
     this.runs.set(key, { ...run, summary });
+  }
+
+  private findParentRun(environment: "madara.blitz", gameName: string): LaunchRun | undefined {
+    return Array.from(this.runs.values()).find(
+      (run) =>
+        run.environment === environment &&
+        run.kind !== "game" &&
+        run.summary !== undefined &&
+        "games" in run.summary &&
+        run.summary.games.some((game) => game.gameName === gameName),
+    );
   }
 
   private key(kind: LaunchKind, environment: string, name: string): string {
