@@ -380,26 +380,26 @@ All three must be non-empty for the AMM UI to activate. The `useAmm` hook checks
 
 ## File Map
 
-| Path                                                            | Purpose                                                                                                                                 |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `contracts/amm/src/amm.cairo`                                   | Main AMM contract (pools, swaps, liquidity, admin)                                                                                      |
-| `contracts/amm/src/math.cairo`                                  | On-chain constant-product math                                                                                                          |
-| `contracts/amm/src/lp_token.cairo`                              | ERC-20 LP token contract                                                                                                                |
-| `contracts/amm/src/tests/`                                      | Cairo integration tests (snforge)                                                                                                       |
-| `contracts/amm/Scarb.toml`                                      | Cairo package config (eternum_amm v1.0.0)                                                                                               |
+| Path                                                     | Purpose                                                                                                                                 |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `contracts/amm/src/amm.cairo`                            | Main AMM contract (pools, swaps, liquidity, admin)                                                                                      |
+| `contracts/amm/src/math.cairo`                           | On-chain constant-product math                                                                                                          |
+| `contracts/amm/src/lp_token.cairo`                       | ERC-20 LP token contract                                                                                                                |
+| `contracts/amm/src/tests/`                               | Cairo integration tests (snforge)                                                                                                       |
+| `contracts/amm/Scarb.toml`                               | Cairo package config (eternum_amm v1.0.0)                                                                                               |
 | `apps/amm-indexer/api/app.ts`                            | Hono REST API definition (all endpoints)                                                                                                |
 | `apps/amm-indexer/src/schema.ts`                         | Drizzle ORM schema (pools, swaps, liquidity_events, price_candles, pool_snapshots, pool_fee_changes)                                    |
-| `packages/amm-sdk/src/index.ts`                                 | SDK entry point, `AmmClient` class, re-exports                                                                                          |
-| `packages/amm-sdk/src/api/client.ts`                            | `AmmApiClient` -- REST client for the indexer                                                                                           |
-| `packages/amm-sdk/src/transactions/swap.ts`                     | `SwapTransactions` -- builds Starknet swap Calls                                                                                        |
-| `packages/amm-sdk/src/transactions/liquidity.ts`                | `LiquidityTransactions` -- builds Starknet liquidity Calls                                                                              |
-| `packages/amm-sdk/src/transactions/admin.ts`                    | `AdminTransactions` -- builds Starknet admin Calls                                                                                      |
-| `packages/amm-sdk/src/utils/math.ts`                            | Constant-product math (TypeScript port of math.cairo)                                                                                   |
-| `packages/amm-sdk/src/utils/price.ts`                           | Price impact, minimum received, spot price helpers                                                                                      |
-| `packages/amm-sdk/src/utils/format.ts`                          | `formatTokenAmount`, `parseTokenAmount`                                                                                                 |
-| `packages/amm-sdk/src/standalone.ts`                            | Standalone AMM defaults and resource name registry                                                                                      |
-| `packages/amm-sdk/src/constants.ts`                             | Network configs, `DEFAULT_SLIPPAGE_BPS` (50 = 0.5%), `DEFAULT_DEADLINE_OFFSET` (1200s)                                                  |
-| `packages/amm-sdk/src/types.ts`                                 | TypeScript interfaces: `Pool`, `SwapEvent`, `LiquidityEvent`, `PriceCandle`, `PoolStats`, `SwapQuote`, `UserPosition`, `CandleInterval` |
+| `packages/amm-sdk/src/index.ts`                          | SDK entry point, `AmmClient` class, re-exports                                                                                          |
+| `packages/amm-sdk/src/api/client.ts`                     | `AmmApiClient` -- REST client for the indexer                                                                                           |
+| `packages/amm-sdk/src/transactions/swap.ts`              | `SwapTransactions` -- builds Starknet swap Calls                                                                                        |
+| `packages/amm-sdk/src/transactions/liquidity.ts`         | `LiquidityTransactions` -- builds Starknet liquidity Calls                                                                              |
+| `packages/amm-sdk/src/transactions/admin.ts`             | `AdminTransactions` -- builds Starknet admin Calls                                                                                      |
+| `packages/amm-sdk/src/utils/math.ts`                     | Constant-product math (TypeScript port of math.cairo)                                                                                   |
+| `packages/amm-sdk/src/utils/price.ts`                    | Price impact, minimum received, spot price helpers                                                                                      |
+| `packages/amm-sdk/src/utils/format.ts`                   | `formatTokenAmount`, `parseTokenAmount`                                                                                                 |
+| `packages/amm-sdk/src/standalone.ts`                     | Standalone AMM defaults and resource name registry                                                                                      |
+| `packages/amm-sdk/src/constants.ts`                      | Network configs, `DEFAULT_SLIPPAGE_BPS` (50 = 0.5%), `DEFAULT_DEADLINE_OFFSET` (1200s)                                                  |
+| `packages/amm-sdk/src/types.ts`                          | TypeScript interfaces: `Pool`, `SwapEvent`, `LiquidityEvent`, `PriceCandle`, `PoolStats`, `SwapQuote`, `UserPosition`, `CandleInterval` |
 | `apps/game/src/hooks/use-amm.ts`                         | React hook: creates `AmmClient`, provides `executeSwap`                                                                                 |
 | `apps/game/src/hooks/store/use-amm-store.ts`             | Zustand store: `selectedPool`, `slippageBps`                                                                                            |
 | `apps/game/src/ui/features/amm/amm-dashboard.tsx`        | Main AMM dashboard layout                                                                                                               |

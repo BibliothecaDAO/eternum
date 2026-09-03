@@ -32,7 +32,10 @@ export const EventFeedTicker = () => {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[120] flex flex-col items-center gap-2">
       {visible.map((row) => (
-        <div key={row.id} className={cn("pointer-events-auto w-[360px] max-w-[calc(100vw-2rem)] rounded-xl", OVERLAY_SURFACE_BASE)}>
+        <div
+          key={row.id}
+          className={cn("pointer-events-auto w-[360px] max-w-[calc(100vw-2rem)] rounded-xl", OVERLAY_SURFACE_BASE)}
+        >
           <FeedRowView row={row} />
         </div>
       ))}

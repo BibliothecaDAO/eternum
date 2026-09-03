@@ -14,8 +14,7 @@ export const useFeedRows = (): FeedRows => {
   const nowSeconds = useCurrentBlockTimestamp();
 
   return useMemo(
-    () =>
-      deriveFeedRows({ transactions, arrivals, notices, nowMs: Date.now(), nowSeconds, stuckThresholdMs }),
+    () => deriveFeedRows({ transactions, arrivals, notices, nowMs: Date.now(), nowSeconds, stuckThresholdMs }),
     [arrivals, notices, nowSeconds, stuckThresholdMs, transactions],
   );
 };

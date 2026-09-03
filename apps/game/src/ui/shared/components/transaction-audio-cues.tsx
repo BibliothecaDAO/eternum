@@ -44,7 +44,9 @@ export function TransactionAudioCues() {
         verboseLog("Transaction cancelled by user:", payload.type);
         return;
       }
-      console.error(`Transaction failed: ${formatReadableErrorForConsole(payload.error ?? payload.message, classified.reason ?? "Transaction failed.")}`);
+      console.error(
+        `Transaction failed: ${formatReadableErrorForConsole(payload.error ?? payload.message, classified.reason ?? "Transaction failed.")}`,
+      );
       AudioManager.getInstance().play("ui.tx_fail");
     };
 
