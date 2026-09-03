@@ -15,11 +15,11 @@ describe("resolveLaunchDevModeOn", () => {
     expect(resolveLaunchDevModeOn(presetWithDevMode(true))).toBe(true);
   });
 
-  it("omits the field for a non-dev preset — the launch service rejects a literal false", () => {
-    expect(resolveLaunchDevModeOn(presetWithDevMode(false))).toBeUndefined();
+  it("sends false for a non-dev preset — a real game respects start-time gates", () => {
+    expect(resolveLaunchDevModeOn(presetWithDevMode(false))).toBe(false);
   });
 
-  it("omits the field when no preset is selected", () => {
-    expect(resolveLaunchDevModeOn(null)).toBeUndefined();
+  it("sends false when no preset is selected", () => {
+    expect(resolveLaunchDevModeOn(null)).toBe(false);
   });
 });

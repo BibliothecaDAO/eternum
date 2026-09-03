@@ -52,7 +52,7 @@ const sharedRequest = (
   accountAddress: registrar.accountAddress,
   privateKey: registrar.privateKey,
   version: request.version ?? "6",
-  devModeOn: request.devModeOn ?? true,
+  devModeOn: request.devModeOn,
   twoPlayerMode: request.twoPlayerMode,
   singleRealmMode: request.singleRealmMode,
   durationSeconds: request.durationSeconds,

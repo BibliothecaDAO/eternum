@@ -7,7 +7,7 @@ const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema
 const SharedOptions = {
   environment: Schema.Literal("madara.blitz"),
   version: Schema.optional(Schema.Literal("6")),
-  devModeOn: Schema.optional(Schema.Literal(true)),
+  devModeOn: Schema.optional(Schema.Boolean),
   twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
   durationSeconds: Schema.optional(Schema.Number),
@@ -65,7 +65,7 @@ export const CreateRotationRequestSchema = Schema.Struct({
 interface SharedLaunchOptions {
   environment: "madara.blitz";
   version?: "6";
-  devModeOn?: true;
+  devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
@@ -118,7 +118,10 @@ export const applyDurableLaunchDefaults = (
   request: LaunchJobRequest,
   now = Date.now(),
 ): LaunchJobRequest => {
-  const shared = { ...request, version: "6" as const, devModeOn: true as const };
+  // devModeOn is honored from the request, not forced: a Sandbox preset launches
+  // dev-on, a real game (Regular Fast/Standard/Duel) launches dev-off so it respects
+  // registration and start-time gates. Rotations set devModeOn:true explicitly.
+  const shared = { ...request, version: "6" as const };
   if (kind === "game" && "gameName" in shared) {
     return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
   }

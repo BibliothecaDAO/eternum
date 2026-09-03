@@ -71,10 +71,9 @@ describe("factory launch defaults", () => {
     expect(request).toMatchObject({
       environment: "madara.blitz",
       version: "6",
+      devModeOn: false,
       durationSeconds: 3600,
     });
-    // Non-dev presets omit devModeOn — the launch service rejects a literal false.
-    expect(request.devModeOn).toBeUndefined();
     expect(request).not.toHaveProperty("seed");
     expect(request.blitzRegistrationOverrides).toBeUndefined();
   });
