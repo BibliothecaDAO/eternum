@@ -324,7 +324,7 @@ Goal: make app changes observable before production.
 
 Deliverables:
 
-- move preview deployment from `deploy/ci/github-preview.yml` into active `.github/workflows`
+- add a preview deployment workflow beside `deploy-client.yml` (the client ships to Cloudflare Pages)
 - stamp preview builds with commit SHA and release metadata
 - run smoke checks against preview URLs
 - surface preview links directly on PRs

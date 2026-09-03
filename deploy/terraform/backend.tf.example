@@ -1,6 +1,0 @@
-terraform {
-  backend "gcs" {
-    bucket = "<remote-state-bucket>"
-    prefix = "terraform/state"
-  }
-}
