@@ -1928,3 +1928,25 @@ preparation. The presentation test's prewarm-timeout case now pins terrain prepa
 
 **Gate.** Presentation suite 10/10; all 48 chunk/warp/recovery suites 332/332; `apps/game` typecheck green. Owner
 re-test on the deployed build is the live gate.
+
+### Queued — boot contention: 50 s to playable on the owner's machine (2026-09-03)
+
+**Evidence.** After the prewarm-barrier fix (`b3bbc2e3a5c`) the owner's live boot on `bltz-clash-538` converges but
+takes ~50 s to playable. The log shows the whole first-chunk pipeline racing at once and every wall-clock timer
+blowing while work progresses: `asset_prewarm` 12 s, the 20 s chunk-transition hard timeout, then both critical
+manager catch-ups at 12 s each, with recovery churn and 130–150 FramePerf spike frames per 10 s throughout (worst
+531 ms `terrain:composite:present`).
+
+**The item (for the implementing agent).**
+1. Measure first: break the 50 s down from `__eternumGameEntryTimeline` and the recorded worldmap durations; name the
+   dominant costs in the record. Bisect the suspects: the 12→16 active-page raise and the army-model prewarm both
+   added upfront work (`e2cfb3e90ae`, the item-2 barrier) — state what each costs on a slow boot.
+2. Progress-based deadlines: critical catch-up and the transition hard timeout fail on "no progress for N seconds",
+   never on total duration; a generous absolute ceiling stays only as the stall detector. A timer that no longer
+   means failure does not `console.error`.
+3. Stage the first boot: terrain pages first, then critical entity models, then the rest — through the existing
+   frame-budget and lane machinery, no new queues. Playable means map + own units; everything else streams after.
+4. Gates: unit tests for the progress deadline (progressing work at twice the old timeout is not failed; stalled work
+   is); headless first-terrain unchanged or better; the measured breakdown before/after in the record; the owner's
+   live boot is the acceptance — the record proposes the time-to-playable bar from the measured floor and the owner
+   rules on it.
