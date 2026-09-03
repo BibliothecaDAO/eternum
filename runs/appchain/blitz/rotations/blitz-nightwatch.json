@@ -10,29 +10,29 @@
   "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/33762829662-1.json",
-  "latestLaunchRequestId": "33762829662-1",
+  "inputPath": "inputs/appchain/blitz/rotations/blitz-nightwatch/33784759177-1.json",
+  "latestLaunchRequestId": "33784759177-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-08-18T20:26:43.697Z",
-  "updatedAt": "2026-09-03T13:46:00.577Z",
+  "updatedAt": "2026-09-03T17:29:25.679Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 33762829662,
+    "workflowRunId": 33784759177,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33762829662",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/33784759177",
     "ref": "next",
     "sha": "67fc2ecc1dd6773393564139861d09018faf5acd"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-09-03T14:01:00.577Z"
+    "nextRetryAt": "2026-09-03T17:44:25.679Z"
   },
   "evaluation": {
     "intervalMinutes": 30,
-    "nextEvaluationAt": "2026-09-03T14:16:00.577Z",
-    "lastEvaluatedAt": "2026-09-03T13:46:00.577Z"
+    "nextEvaluationAt": "2026-09-03T17:59:25.679Z",
+    "lastEvaluatedAt": "2026-09-03T17:29:25.679Z"
   },
   "steps": [
     {
@@ -40,19 +40,14 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-09-03T13:45:39.433Z",
-      "finishedAt": "2026-09-03T13:45:44.031Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "failed",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-nightwatch-0015\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)",
-      "startedAt": "2026-09-03T13:45:49.435Z",
-      "finishedAt": "2026-09-03T13:46:00.577Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"blitz-nightwatch-0015\" on appchain.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved preset 6 for appchain.blitz\nError: 1 rotation or series game failed during create-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:535:15)"
+      "latestEvent": "Creating games needs attention"
     },
     {
       "id": "wait-for-factory-indexes",
