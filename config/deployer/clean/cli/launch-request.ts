@@ -1,8 +1,6 @@
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
-  DEFAULT_APPCHAIN_PRESET_ID,
   DEFAULT_MADARA_PRESET_ID,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
@@ -15,22 +13,11 @@ import type {
   DeploymentEnvironment,
   ExecutionMode,
   LaunchGameRequest,
-  LaunchGameStepId,
   LaunchRotationRequest,
-  LaunchRotationStepId,
   LaunchRotationWeeklyCadenceEntry,
   LaunchSeriesRequest,
-  LaunchSeriesStepId,
   LaunchTargetKind,
 } from "../types";
-import type {
-  FactoryRotationRunRequestContext,
-  FactoryRunRequestContext,
-  FactorySeriesRunRequestContext,
-  LaunchWorkflowScope,
-  RotationLaunchWorkflowScope,
-  SeriesLaunchWorkflowScope,
-} from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
 import { resolveLaunchRequestArgs } from "./launch-config-file";
 import { requireRpcUrl } from "../shared/rpc";
@@ -501,22 +488,16 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
-  const version =
-    environment.chain === "madara"
-      ? DEFAULT_MADARA_PRESET_ID
-      : environment.gameType === "eternum"
-        ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID
-        : DEFAULT_APPCHAIN_PRESET_ID;
+function resolveSharedLaunchDefaults() {
   return {
-    version: String(version),
+    version: DEFAULT_MADARA_PRESET_ID,
     waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
     waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   };
 }
 
 function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEnvironment) {
-  const defaults = resolveSharedLaunchDefaults(environment);
+  const defaults = resolveSharedLaunchDefaults();
 
   return {
     rpcUrl: requireRpcUrl(args["rpc-url"] || process.env.RPC_URL, "--rpc-url or RPC_URL"),
@@ -643,97 +624,4 @@ export function buildLaunchRequest(args: Args): LaunchGameRequest | LaunchSeries
     default:
       return buildLaunchGameRequest(args);
   }
-}
-
-export function buildFactoryRunRequestContext(
-  args: Args,
-  requestedLaunchStep: LaunchWorkflowScope,
-): FactoryRunRequestContext {
-  const request = buildLaunchGameRequest(args);
-
-  return {
-    environmentId: request.environmentId,
-    gameName: request.gameName,
-    requestedLaunchStep,
-    request,
-  };
-}
-
-export function buildFactorySeriesRunRequestContext(
-  args: Args,
-  requestedLaunchStep: SeriesLaunchWorkflowScope,
-): FactorySeriesRunRequestContext {
-  const request = buildLaunchSeriesRequest(args);
-
-  return {
-    environmentId: request.environmentId,
-    seriesName: request.seriesName,
-    requestedLaunchStep,
-    request,
-  };
-}
-
-export function buildFactoryRotationRunRequestContext(
-  args: Args,
-  requestedLaunchStep: RotationLaunchWorkflowScope,
-): FactoryRotationRunRequestContext {
-  const request = buildLaunchRotationRequest(args);
-
-  return {
-    environmentId: request.environmentId,
-    rotationName: request.rotationName,
-    requestedLaunchStep,
-    request,
-  };
-}
-
-export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
-  switch (value) {
-    case "create-world":
-    case "wait-for-factory-index":
-      return value;
-    default:
-      throw new Error(`Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index`);
-  }
-}
-
-export function resolveLaunchSeriesStepId(value?: string): LaunchSeriesStepId {
-  switch (value) {
-    case "create-series":
-    case "create-worlds":
-    case "wait-for-factory-indexes":
-      return value;
-    default:
-      throw new Error(
-        `Unsupported series launch step "${value}". Expected one of: create-series, create-worlds, wait-for-factory-indexes`,
-      );
-  }
-}
-
-export function resolveLaunchRotationStepId(value?: string): LaunchRotationStepId {
-  return resolveLaunchSeriesStepId(value);
-}
-
-export function resolveLaunchWorkflowScope(value?: string): LaunchWorkflowScope {
-  if (value === undefined || value === "full") {
-    return "full";
-  }
-
-  return resolveLaunchGameStepId(value);
-}
-
-export function resolveSeriesLaunchWorkflowScope(value?: string): SeriesLaunchWorkflowScope {
-  if (value === undefined || value === "full") {
-    return "full";
-  }
-
-  return resolveLaunchSeriesStepId(value);
-}
-
-export function resolveRotationLaunchWorkflowScope(value?: string): RotationLaunchWorkflowScope {
-  if (value === undefined || value === "full") {
-    return "full";
-  }
-
-  return resolveLaunchRotationStepId(value);
 }

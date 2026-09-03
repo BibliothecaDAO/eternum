@@ -1,5 +1,5 @@
 launchKind: rotation
-environmentId: appchain.blitz
+environmentId: madara.blitz
 rotationName: blitz-rotation
 firstGameStartTime: 2026-04-20T01:00:00Z
 maxGames: 5200

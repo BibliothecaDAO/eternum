@@ -2,13 +2,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import {
-  buildFactoryRunRequestContext,
-  buildLaunchGameRequest,
-  buildLaunchRotationRequest,
-  buildLaunchSeriesRequest,
-  resolveLaunchGameStepId,
-} from "../cli/launch-request";
+import { buildLaunchGameRequest, buildLaunchRotationRequest, buildLaunchSeriesRequest } from "../cli/launch-request";
 
 const TEMP_DIRECTORIES: string[] = [];
 const ORIGINAL_RPC_URL = process.env.RPC_URL;
@@ -92,73 +86,24 @@ describe("launch request helpers", () => {
     });
   });
 
-  test("defaults launches to their preset and the GameRegistry poll budget", () => {
-    const blitzRequest = buildLaunchGameRequest({
-      environment: "appchain.blitz",
-      game: "bltz-test-1",
-      "start-time": "2026-03-18T10:00:00Z",
-    });
-    const eternumRequest = buildLaunchGameRequest({
-      environment: "appchain.eternum",
-      game: "etrn-test-1",
-      "start-time": "2026-03-18T10:00:00Z",
-    });
+  test("defaults launches to the madara preset and the GameRegistry poll budget", () => {
     const madaraRequest = buildLaunchGameRequest({
       environment: "madara.blitz",
       game: "bltz-test-2",
       "start-time": "2026-03-18T10:00:00Z",
     });
 
-    expect(blitzRequest).toMatchObject({
-      version: "6",
-      waitForFactoryIndexTimeoutMs: 120_000,
-      waitForFactoryIndexPollMs: 2_000,
-    });
-    expect(eternumRequest).toMatchObject({
-      version: "10",
-      waitForFactoryIndexTimeoutMs: 120_000,
-      waitForFactoryIndexPollMs: 2_000,
-    });
     expect(madaraRequest).toMatchObject({
-      version: "6",
+      version: "8",
       waitForFactoryIndexTimeoutMs: 120_000,
       waitForFactoryIndexPollMs: 2_000,
-    });
-  });
-
-  test("resolves supported launch step ids", () => {
-    expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
-    expect(resolveLaunchGameStepId("wait-for-factory-index")).toBe("wait-for-factory-index");
-  });
-
-  test("builds a run-store request context with the nested launch request intact", () => {
-    expect(
-      buildFactoryRunRequestContext(
-        {
-          environment: "appchain.blitz",
-          game: "bltz-test-1",
-          "start-time": "2026-03-18T10:00:00Z",
-          "two-player-mode": "true",
-        },
-        "full",
-      ),
-    ).toMatchObject({
-      environmentId: "appchain.blitz",
-      gameName: "bltz-test-1",
-      requestedLaunchStep: "full",
-      request: {
-        environmentId: "appchain.blitz",
-        gameName: "bltz-test-1",
-        startTime: "2026-03-18T10:00:00Z",
-        twoPlayerMode: true,
-      },
     });
   });
 
   test("parses targeted child game names for grouped recovery", () => {
     expect(
       buildLaunchRotationRequest({
-        environment: "appchain.blitz",
+        environment: "madara.blitz",
         "rotation-name": "bltz-knicker",
         "first-game-start-time": "2026-03-18T10:00:00Z",
         "game-interval-minutes": "60",
@@ -182,7 +127,7 @@ describe("launch request helpers", () => {
 
     expect(
       buildLaunchRotationRequest({
-        environment: "appchain.blitz",
+        environment: "madara.blitz",
         "rotation-name": "bltz-biome-loop",
         "first-game-start-time": "2026-03-18T10:00:00Z",
         "game-interval-minutes": "60",
@@ -203,7 +148,7 @@ describe("launch request helpers", () => {
   test("loads weekly series schedules from a YAML config file", () => {
     const configPath = writeLaunchConfig(`
 launchKind: series
-environmentId: appchain.blitz
+environmentId: madara.blitz
 seriesName: blitz-weekly-may-2026
 autoRetryEnabled: true
 autoRetryIntervalMinutes: 15
@@ -221,7 +166,7 @@ games:
       }),
     ).toMatchObject({
       launchKind: "series",
-      environmentId: "appchain.blitz",
+      environmentId: "madara.blitz",
       seriesName: "blitz-weekly-may-2026",
       autoRetryEnabled: true,
       autoRetryIntervalMinutes: 15,
@@ -249,7 +194,7 @@ games:
       evaluationIntervalMinutes: 30,
       durationSeconds: 3_600,
       devModeOn: true,
-      version: "6",
+      version: "8",
     });
   });
 
@@ -260,7 +205,7 @@ games:
 
     expect(request).toMatchObject({
       launchKind: "rotation",
-      environmentId: "appchain.blitz",
+      environmentId: "madara.blitz",
       rotationName: "blitz-rotation",
       firstGameStartTime: "2026-04-20T01:00:00Z",
       gameIntervalMinutes: 0,
@@ -290,7 +235,7 @@ games:
   test("lets explicit CLI overrides win over YAML shared launch options", () => {
     const configPath = writeLaunchConfig(`
 launchKind: series
-environmentId: appchain.blitz
+environmentId: madara.blitz
 seriesName: blitz-weekly-may-2026
 durationSeconds: 86400
 twoPlayerMode: false
@@ -309,10 +254,6 @@ games:
       durationSeconds: 3600,
       twoPlayerMode: true,
     });
-  });
-
-  test("rejects unsupported launch step ids", () => {
-    expect(() => resolveLaunchGameStepId("full")).toThrow('Unsupported launch step "full"');
   });
 
   test("requires an explicit L3 RPC", () => {

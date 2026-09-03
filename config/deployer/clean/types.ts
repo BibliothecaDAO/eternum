@@ -7,7 +7,7 @@ import type { GameChain } from "@realms-world/chain";
 
 export type DeploymentChain = GameChain;
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "madara.blitz" | "appchain.blitz" | "appchain.eternum";
+export type DeploymentEnvironmentId = "madara.blitz";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";

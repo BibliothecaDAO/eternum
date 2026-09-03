@@ -1,5 +1,5 @@
 launchKind: series
-environmentId: appchain.blitz
+environmentId: madara.blitz
 seriesName: blitz-weekly-example
 autoRetryEnabled: true
 autoRetryIntervalMinutes: 15

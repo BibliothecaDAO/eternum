@@ -3,7 +3,7 @@ import { expectedChainId } from "@realms-world/chain/chain-guard";
 import { RpcProvider } from "starknet";
 import type { LaunchSeriesRequest, LaunchSeriesStepId, SeriesLaunchGameSummary } from "../types";
 
-mock.module("../../../../contracts/l3/game/manifest_appchain_blitz.json", () => ({
+mock.module("../../../../contracts/l3/game/manifest_madara.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [
@@ -63,7 +63,7 @@ describe("grouped series-like runner", () => {
 
   test("skips wait-for-factory-indexes for children whose create-worlds step never succeeded", async () => {
     RpcProvider.prototype.getChainId = async () =>
-      expectedChainId("appchain") as Awaited<ReturnType<RpcProvider["getChainId"]>>;
+      expectedChainId("madara") as Awaited<ReturnType<RpcProvider["getChainId"]>>;
     process.env.HERALD_URL = "https://herald.example";
     const fetchCalls: string[] = [];
     globalThis.fetch = (async (url: Parameters<typeof fetch>[0]) => {
@@ -115,7 +115,7 @@ describe("grouped series-like runner", () => {
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "appchain.blitz",
+    environmentId: "madara.blitz",
     rpcUrl: "https://rpc.example",
     seriesName: "bltz-knicker",
     games: [

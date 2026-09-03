@@ -9,12 +9,12 @@ import { resolveSeriesLaunchSummaryRelativePath } from "../launch/series-io";
 import { resolveRepoPath } from "../shared/repo";
 import type { LaunchSeriesRequest, SeriesLaunchGameSummary } from "../types";
 
-const summaryPath = resolveRepoPath(resolveSeriesLaunchSummaryRelativePath("appchain.blitz", "bltz-weekend-cup"));
+const summaryPath = resolveRepoPath(resolveSeriesLaunchSummaryRelativePath("madara.blitz", "bltz-weekend-cup"));
 
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "appchain.blitz",
+    environmentId: "madara.blitz",
     rpcUrl: "https://rpc.example",
     seriesName: "bltz-weekend-cup",
     games: [

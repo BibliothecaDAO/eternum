@@ -4,10 +4,10 @@ This is the main game application for Eternum, built with React, TypeScript, and
 
 ## Running Locally
 
-The client targets the self-hosted dev appchain (see `deploy/appchain/README.md`):
+The client targets the self-hosted Madara appchain (see `deploy/madara-lab/README.md`):
 
-1. Copy `.env.appchain.blitz` to `.env.local` — it points at the live chain and Herald endpoints
-2. Run `pnpm run dev` to start the development server
+1. Copy `.env.madara.blitz.sample` to `.env.madara.blitz` — it points at the lab chain, identity and Herald endpoints
+2. Run `pnpm run dev -- --mode madara.blitz` to start the development server
 
 `.env.production` is the committed config the `deploy-client.yml` workflow builds tester releases from (Blitz only in
 phase 2).

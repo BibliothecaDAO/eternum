@@ -6,10 +6,4 @@ describe("preset balance profiles", () => {
     expect(() => validatePresetBalanceProfile("madara.blitz", "official-60")).not.toThrow();
     expect(() => validatePresetBalanceProfile("madara.blitz", "official-90")).not.toThrow();
   });
-
-  test("rejects Blitz profiles for Eternum", () => {
-    expect(() => validatePresetBalanceProfile("appchain.eternum", "official-60")).toThrow(
-      "--balance-profile only applies to Blitz environments",
-    );
-  });
 });

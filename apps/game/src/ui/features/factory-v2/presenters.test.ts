@@ -12,12 +12,12 @@ import type { FactoryRun } from "./types";
 
 function buildFactoryRun(overrides: Partial<FactoryRun> = {}): FactoryRun {
   return {
-    id: "appchain.blitz:bltz-test-1",
-    syncKey: "appchain.blitz:bltz-test-1|updated",
+    id: "madara.blitz:bltz-test-1",
+    syncKey: "madara.blitz:bltz-test-1|updated",
     kind: "game",
     mode: "blitz",
     name: "bltz-test-1",
-    environment: "appchain.blitz",
+    environment: "madara.blitz",
     owner: "Factory",
     presetId: "open",
     status: "attention",

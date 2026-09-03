@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("../../../../../env", () => ({
   env: {
-    VITE_PUBLIC_FACTORY_WORKER_URL: "https://worker.test/",
     VITE_PUBLIC_LAUNCH_SERVICE_URL: "https://launch.test/",
   },
 }));
@@ -24,33 +23,13 @@ describe("factory launch endpoint routing", () => {
       gameStartTime: "2026-09-01T17:00:00.000Z",
     });
 
-    expect(resolveFactoryEndpoint("madara.blitz")).toEqual({
+    expect(resolveFactoryEndpoint()).toEqual({
       baseUrl: "https://launch.test",
       credentials: "include",
     });
     expect(fetch).toHaveBeenCalledWith(
       "https://launch.test/api/factory/runs",
       expect.objectContaining({ credentials: "include", method: "POST" }),
-    );
-  });
-
-  test("keeps appchain on the existing serverless worker", async () => {
-    const fetch = vi.fn(async () => new Response("{}", { status: 202 }));
-    vi.stubGlobal("fetch", fetch);
-
-    await createFactoryRun({
-      environment: "appchain.blitz",
-      gameName: "bltz-worker-route",
-      gameStartTime: "2026-09-01T17:00:00.000Z",
-    });
-
-    expect(resolveFactoryEndpoint("appchain.blitz")).toEqual({
-      baseUrl: "https://worker.test",
-      credentials: "omit",
-    });
-    expect(fetch).toHaveBeenCalledWith(
-      "https://worker.test/api/factory/runs",
-      expect.objectContaining({ credentials: "omit", method: "POST" }),
     );
   });
 

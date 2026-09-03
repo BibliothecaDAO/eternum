@@ -34,18 +34,9 @@ describe("factory catalog environments", () => {
     expect(() => resolveFactoryEnvironmentForMode("eternum")).toThrow(/eternum/);
   });
 
-  it("keeps both appchain environments for an appchain build", () => {
-    publicEnv.VITE_PUBLIC_CHAIN = "appchain";
-
-    expect(getFactoryModeDefinitions().map((mode) => mode.id)).toEqual(["eternum", "blitz"]);
-    expect(resolveFactoryEnvironmentForMode("eternum").id).toBe("appchain.eternum");
-    expect(resolveFactoryEnvironmentForMode("blitz").chain).toBe("appchain");
-  });
-
   it("labels run-record environment ids by chain", () => {
     expect(resolveFactoryEnvironmentLabel("madara.blitz")).toBe("Madara");
-    expect(resolveFactoryEnvironmentLabel("appchain.eternum")).toBe("Appchain");
-    expect(resolveFactoryEnvironmentLabel("retired.blitz")).toBe("Unknown");
+    expect(resolveFactoryEnvironmentLabel("appchain.eternum")).toBe("Unknown");
   });
 });
 

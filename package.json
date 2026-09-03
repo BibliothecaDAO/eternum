@@ -22,7 +22,6 @@
     "config:sync:madara:blitz": "pnpm --dir ./config run sync:madara:blitz",
     "prefactory:deploy:madara:blitz": "pnpm run game:migrate:madara && pnpm run manifest:copy-abis:madara && pnpm run config:sync:madara:blitz",
     "contract:start:madara": "docker compose -f deploy/madara-lab/docker-compose.yml up -d --wait madara caddy && pnpm run game:migrate:madara && pnpm run config:deploy:madara:blitz",
-    "config:deploy:appchain:blitz": "pnpm run build:packages && CONFIG_BATCH=1 SKIP_CONFIRMATION=true pnpm --dir ./config run appchain:blitz",
     "config:sync:appchain": "pnpm --dir ./config run sync:appchain",
     "config:sync:appchain:blitz": "pnpm --dir ./config run sync:appchain:blitz",
     "config:sync:appchain:eternum": "pnpm --dir ./config run sync:appchain:eternum",

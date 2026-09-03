@@ -1,5 +1,9 @@
 # Box-native launch service — Codex brief
 
+> 2026-09-03: the AWS appchain and its GitHub launch path (`game-launch.yml`, `blitz-rotation-tick.yml`, the Cloudflare
+> run-store worker, `factory-run-store-prune.yml`) are deleted. The box launch service is the only launcher; mentions of
+> the old path below are history.
+
 ## Goal
 
 Replace the serverless launch stack for **madara** — the Cloudflare **run-store/dispatch worker**, the

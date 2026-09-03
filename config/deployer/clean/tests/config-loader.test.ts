@@ -8,7 +8,7 @@ type ConfigWithFactoryAddress = {
 
 describe("applyDeploymentConfigOverrides", () => {
   test("loads generated configs with neutral biome climate defaults", () => {
-    const config = loadEnvironmentConfiguration("appchain.blitz");
+    const config = loadEnvironmentConfiguration("madara.blitz");
 
     expect(config.biomeClimate).toEqual({
       elevationScaleBps: 10_000,
@@ -21,7 +21,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies launch-time boolean overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -42,7 +42,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects an invalid point-registration grace override", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
         startMainAt: 1_763_112_600,
@@ -53,7 +53,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies the inferred official 60-minute blitz profile before launch overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -84,7 +84,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("keeps the base blitz balance for custom durations", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -102,7 +102,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies validated map config overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.eternum");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -121,7 +121,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies validated blitz registration overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -134,7 +134,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies validated biome climate overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -159,7 +159,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects invalid biome climate overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -183,7 +183,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("lets explicit launch-time overrides win after the inferred blitz profile is applied", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -202,7 +202,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects mutually exclusive settlement modes", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -215,7 +215,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects invalid duration overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -227,7 +227,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects incomplete probability pair overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -241,7 +241,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects blitz registration overrides in two-player mode", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -253,19 +253,5 @@ describe("applyDeploymentConfigOverrides", () => {
         },
       }),
     ).toThrow("blitz registration overrides are not supported when two_player_mode is enabled");
-  });
-
-  test("ignores duration overrides for eternum environments", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.eternum");
-
-    const result = applyDeploymentConfigOverrides(baseConfig, {
-      startMainAt: 1_763_112_600,
-      factoryAddress: "0xabc",
-      durationSeconds: 0,
-    });
-
-    expect(result.season.startMainAt).toBe(1_763_112_600);
-    expect(result.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
-    expect(result.blitz.mode.on).toBe(false);
   });
 });

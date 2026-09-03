@@ -62,14 +62,14 @@ idempotent: retries top the game up only to the requested pool.
 ```sh
 bun config/deployer/clean/registrar/register-preset.ts \
   --preset-id <id> \
-  --environment appchain.blitz \
+  --environment madara.blitz \
   --balance-profile official-60 \
   --ledger <ledger-address> \
   --ledger-rpc-url <mainnet-rpc> \
   --sponsored
 
 bun config/deployer/clean/cli/create.ts \
-  --environment appchain.blitz \
+  --environment madara.blitz \
   --game <game-name> \
   --start-time <unix-or-iso> \
   --version <id> \

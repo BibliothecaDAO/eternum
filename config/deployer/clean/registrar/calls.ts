@@ -61,7 +61,7 @@ interface RegistrarContext {
   registrarAddress?: string;
 }
 
-const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "appchain.blitz";
+const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "madara.blitz";
 const APPCHAIN_NAMESPACE = "s2";
 
 function resolveEnvironmentManifest(deployment: WorldDeployment): RegistrarManifest {

@@ -5,8 +5,6 @@ import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "..
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
-  DEFAULT_APPCHAIN_PRESET_ID,
   DEFAULT_MADARA_PRESET_ID,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
@@ -76,14 +74,8 @@ function resolveSponsoredPool(request: LaunchGameRequest): bigint | undefined {
   return BigInt(request.sponsoredPoolLords) * LORDS_UNIT;
 }
 
-function resolvePresetId(version: string | undefined, environment: DeploymentEnvironment): number {
-  const configuredPresetId =
-    version ??
-    (environment.chain === "madara"
-      ? DEFAULT_MADARA_PRESET_ID
-      : environment.gameType === "eternum"
-        ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID
-        : DEFAULT_APPCHAIN_PRESET_ID);
+function resolvePresetId(version: string | undefined): number {
+  const configuredPresetId = version ?? DEFAULT_MADARA_PRESET_ID;
   const presetId = Number(configuredPresetId);
   if (!Number.isInteger(presetId) || presetId <= 0 || presetId > 0xffff_ffff) {
     throw new Error(`Preset id must be a positive u32, received "${configuredPresetId}"`);
@@ -99,7 +91,7 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     rpcUrl,
     startTime: parseStartTime(request.startTime),
-    presetId: resolvePresetId(request.version, environment),
+    presetId: resolvePresetId(request.version),
     progress: createProgressReporter(),
   };
 }

@@ -9,9 +9,9 @@ import type {
 const buildGameRunRecord = (overrides: Partial<FactoryWorkerGameRunRecord> = {}): FactoryWorkerGameRunRecord => ({
   version: 1,
   runId: "run-1",
-  environment: "appchain.eternum",
-  chain: "appchain",
-  gameType: "eternum",
+  environment: "madara.blitz",
+  chain: "madara",
+  gameType: "blitz",
   gameName: "etrn-test-9",
   status: "running",
   executionMode: "fast_trial",
@@ -22,7 +22,7 @@ const buildGameRunRecord = (overrides: Partial<FactoryWorkerGameRunRecord> = {})
   createdAt: "2026-03-18T10:00:00.000Z",
   updatedAt: "2026-03-18T10:01:00.000Z",
   workflow: {
-    workflowName: "game-launch.yml",
+    workflowName: "box-native",
   },
   recovery: {
     state: "active",
@@ -53,8 +53,8 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
   version: 1,
   kind: "series",
   runId: "series-run-1",
-  environment: "appchain.blitz",
-  chain: "appchain",
+  environment: "madara.blitz",
+  chain: "madara",
   gameType: "blitz",
   status: "running",
   executionMode: "fast_trial",
@@ -66,7 +66,7 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
   createdAt: "2026-03-18T10:00:00.000Z",
   updatedAt: "2026-03-18T10:01:00.000Z",
   workflow: {
-    workflowName: "game-launch.yml",
+    workflowName: "box-native",
   },
   recovery: {
     state: "stalled",
@@ -94,8 +94,8 @@ const buildSeriesRunRecord = (overrides: Partial<FactoryWorkerSeriesRunRecord> =
     },
   ],
   summary: {
-    environment: "appchain.blitz",
-    chain: "appchain",
+    environment: "madara.blitz",
+    chain: "madara",
     gameType: "blitz",
     seriesName: "bltz-cup",
     rpcUrl: "https://rpc.example",
@@ -140,8 +140,8 @@ const buildRotationRunRecord = (
     version: 1,
     kind: "rotation",
     runId: "rotation-run-1",
-    environment: "appchain.blitz",
-    chain: "appchain",
+    environment: "madara.blitz",
+    chain: "madara",
     gameType: "blitz",
     status: "running",
     executionMode: "fast_trial",
@@ -154,7 +154,7 @@ const buildRotationRunRecord = (
     createdAt: "2026-03-18T10:00:00.000Z",
     updatedAt: "2026-03-18T10:01:00.000Z",
     workflow: {
-      workflowName: "game-launch.yml",
+      workflowName: "box-native",
     },
     recovery: {
       state: "active",
@@ -187,8 +187,8 @@ const buildRotationRunRecord = (
       },
     ],
     summary: {
-      environment: "appchain.blitz",
-      chain: "appchain",
+      environment: "madara.blitz",
+      chain: "madara",
       gameType: "blitz",
       rotationName: "bltz-ladder-loop",
       seriesName: "bltz-ladder-loop",

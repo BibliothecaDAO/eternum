@@ -174,7 +174,7 @@ equipment in `ProceduralUnitRuntime`, its control in `PROCEDURAL_UNIT_KINDS`, an
 Start the client and open `https://127.0.0.1:4174/debug/procedural-characters`:
 
 ```bash
-pnpm --dir apps/game dev --host 127.0.0.1 --port 4174 --mode appchain.blitz
+pnpm --dir apps/game dev --host 127.0.0.1 --port 4174 --mode madara.blitz
 ```
 
 In the gym, prove idle, walk, run, the applicable attack/carry pose, Drop, Impulse, Reset, tier/appearance switching,

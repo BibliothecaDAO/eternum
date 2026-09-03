@@ -26,10 +26,6 @@ describe("registrar receipt parsing", () => {
     });
   });
 
-  test("pins the appchain tip without imposing lab bounds", () => {
-    expect(resolveRegistrarExecutionDetails("appchain.blitz")).toEqual({ version: 3, tip: 0 });
-  });
-
   test("reads a directly emitted GameCreated key", () => {
     const receipt = {
       events: [{ keys: ["0xabc", "0x7"], data: [] }],
@@ -76,10 +72,6 @@ describe("registrar receipt parsing", () => {
     expect(() => resolveRegistrarContractAddress("blitz_realm_systems", staleManifest)).toThrow(
       "blitz_realm_systems is missing",
     );
-  });
-
-  test("resolves the eternum world registrar now that both s2 worlds are deployed", () => {
-    expect(() => assertRegistrarAvailable("appchain.eternum")).not.toThrow();
   });
 
   test("resolves the Madara registrar from the deployed manifest", () => {

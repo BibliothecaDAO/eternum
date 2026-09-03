@@ -191,20 +191,22 @@ describe("Factory V2 map options", () => {
 
   it("includes map config overrides in the create-run payload", () => {
     const request = buildFactoryCreateRunRequest({
-      environmentId: "appchain.eternum",
-      gameName: "etrn-test-11",
+      environmentId: "madara.blitz",
+      gameName: "bltz-test-11",
       gameStartTime: "2026-03-18T10:00:00Z",
-      selectedMode: "eternum",
+      selectedMode: "blitz",
       selectedPreset: {
-        id: "eternum-ranked-season",
-        mode: "eternum",
-        name: "Standard world",
-        description: "The usual Eternum launch.",
+        id: "blitz-fast",
+        mode: "blitz",
+        name: "Regular Fast (1h)",
+        description: "The standard one-hour game.",
         defaults: {
           startRule: "next_hour",
+          durationMinutes: 60,
           devMode: false,
           twoPlayerMode: false,
           singleRealmMode: false,
+          version: "8",
         },
       },
       twoPlayerMode: false,
@@ -233,7 +235,7 @@ describe("Factory V2 map options", () => {
 
   it("includes blitz registration overrides in the create-run payload", () => {
     const request = buildFactoryCreateRunRequest({
-      environmentId: "appchain.blitz",
+      environmentId: "madara.blitz",
       gameName: "bltz-test-11",
       gameStartTime: "2026-03-18T10:00:00Z",
       selectedMode: "blitz",
@@ -267,7 +269,7 @@ describe("Factory V2 map options", () => {
     const workflowRef = "credence0x/blitz-hex-map";
 
     const gameRequest = buildFactoryCreateRunRequest({
-      environmentId: "appchain.blitz",
+      environmentId: "madara.blitz",
       gameName: "bltz-test-12",
       gameStartTime: "2026-03-18T10:00:00Z",
       workflowRef,
@@ -280,7 +282,7 @@ describe("Factory V2 map options", () => {
     });
 
     const seriesRequest = buildFactoryCreateSeriesRunRequest({
-      environmentId: "appchain.blitz",
+      environmentId: "madara.blitz",
       seriesName: "bltz-series-12",
       workflowRef,
       games: [
@@ -307,7 +309,7 @@ describe("Factory V2 map options", () => {
     expect(seriesRequest.games[0].biomeClimateOverrides).toEqual({ elevationSeed: 101 });
 
     const rotationRequest = buildFactoryCreateRotationRunRequest({
-      environmentId: "appchain.blitz",
+      environmentId: "madara.blitz",
       rotationName: "bltz-rotation-12",
       workflowRef,
       firstGameStartTime: "2026-03-18T10:00:00Z",

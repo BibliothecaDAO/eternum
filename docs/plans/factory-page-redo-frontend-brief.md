@@ -1,5 +1,8 @@
 # Factory page redo — frontend brief (Opus agent)
 
+> 2026-09-03: the AWS appchain and its GitHub launch path (`game-launch.yml`, the Cloudflare dispatch worker) are
+> deleted. The factory page talks only to the box launch service; mentions of the old path below are history.
+
 ## Goal
 
 Redo the factory page (`apps/game/src/ui/features/factory-v2`) so it (1) launches on the **madara lab**, not only the

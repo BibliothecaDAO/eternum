@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { buildLaunchGameRequest, parseArgs } from "./launch-request";
-import { DEFAULT_APPCHAIN_PRESET_ID, DEFAULT_MADARA_PRESET_ID } from "../constants";
+import { DEFAULT_MADARA_PRESET_ID } from "../constants";
 import { launchGame } from "../launch/runner";
 
 function usage(): void {
@@ -8,7 +8,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/create.ts --environment <madara.blitz|appchain.blitz|appchain.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/create.ts --environment madara.blitz --game <world-name> --start-time <unix|iso>",
       "  bun config/deployer/clean/cli/create.ts --config-path <path-to-launch.yaml>",
       "",
       "Optional env or flags:",
@@ -25,14 +25,12 @@ function usage(): void {
       "  MAP_CONFIG_OVERRIDES_JSON=<json> / --map-config-overrides-json <json>",
       "  BLITZ_REGISTRATION_OVERRIDES_JSON=<json> / --blitz-registration-overrides-json <json>",
       "  --mode <batched|sequential>",
-      `  --version <felt>              default: madara ${DEFAULT_MADARA_PRESET_ID}, appchain blitz ${DEFAULT_APPCHAIN_PRESET_ID}`,
+      `  --version <felt>              default: ${DEFAULT_MADARA_PRESET_ID}`,
       "  --series-name <value>",
       "  --series-game-number <number>",
       "  --dry-run",
       "",
       "Examples:",
-      "  bun config/deployer/clean/cli/create.ts --environment appchain.blitz --game bltz-fire-gate-42 --start-time 1763112600",
-      "  bun config/deployer/clean/cli/create.ts --environment appchain.eternum --game etrn-iron-mist-11 --start-time 2025-11-14T09:30:00Z",
       "  bun config/deployer/clean/cli/create.ts --environment madara.blitz --game bltz-lab-96 --start-time 2026-08-25T12:00:00Z",
       "",
     ].join("\n"),

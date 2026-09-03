@@ -75,11 +75,11 @@ const waitForAsyncWork = async () => {
 };
 
 const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
-  selectedMode: "eternum",
-  modeDefinition: { label: "Eternum" },
+  selectedMode: "blitz",
+  modeDefinition: { label: "Blitz" },
   environmentOptions: [],
-  selectedEnvironmentId: "appchain.eternum",
-  selectedEnvironment: { id: "appchain.eternum", label: "Appchain", chain: "appchain" },
+  selectedEnvironmentId: "madara.blitz",
+  selectedEnvironment: { id: "madara.blitz", label: "Madara", chain: "madara" },
   presets: [],
   selectedPresetId: "preset-1",
   selectedPreset: { id: "preset-1", defaults: {} },
@@ -190,7 +190,7 @@ describe("FactoryV2Content workflow selection", () => {
         selectedRun: {
           id: "run-1-updated",
           name: "etrn-sunrise-01",
-          environment: "appchain.eternum",
+          environment: "madara.blitz",
           status: "running",
         },
       }) as unknown as ReturnType<typeof useFactoryV2>,
@@ -214,7 +214,7 @@ describe("FactoryV2Content workflow selection", () => {
         selectedRun: {
           id: "pending:slot.eternum:etrn-sunrise-01",
           name: "etrn-sunrise-01",
-          environment: "appchain.eternum",
+          environment: "madara.blitz",
           status: "running",
         },
       }) as unknown as ReturnType<typeof useFactoryV2>,
@@ -234,7 +234,7 @@ describe("FactoryV2Content workflow selection", () => {
   it("keeps the start panel selected when the mode changes to one with an active deployment", async () => {
     vi.mocked(useFactoryV2).mockReturnValue(
       buildFactoryState({
-        selectedMode: "eternum",
+        selectedMode: "blitz",
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 
@@ -249,11 +249,11 @@ describe("FactoryV2Content workflow selection", () => {
       buildFactoryState({
         selectedMode: "blitz",
         modeDefinition: { label: "Blitz" },
-        selectedEnvironmentId: "appchain.blitz",
-        selectedEnvironment: { id: "appchain.blitz", label: "Appchain", chain: "appchain" },
+        selectedEnvironmentId: "madara.blitz",
+        selectedEnvironment: { id: "madara.blitz", label: "Madara", chain: "madara" },
         activeRunName: "bltz-rush-01",
         matchingRun: { id: "run-2", name: "bltz-rush-01" },
-        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "appchain.blitz", status: "running" },
+        selectedRun: { id: "run-2", name: "bltz-rush-01", environment: "madara.blitz", status: "running" },
       }) as unknown as ReturnType<typeof useFactoryV2>,
     );
 

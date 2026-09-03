@@ -44,7 +44,8 @@ jobs:
 
       - name: Start auth-free terrain host
         run: |
-          pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 --mode appchain.blitz > terrain-vite.log 2>&1 &
+          cp apps/game/.env.madara.blitz.sample apps/game/.env.madara.blitz
+          pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 --mode madara.blitz > terrain-vite.log 2>&1 &
           for attempt in $(seq 1 60); do
             curl --fail --silent http://127.0.0.1:4173/debug/procedural-terrain && exit 0
             sleep 1

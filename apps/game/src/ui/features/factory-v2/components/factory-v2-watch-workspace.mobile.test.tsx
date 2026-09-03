@@ -57,7 +57,7 @@ const buildRunBase = (): FactoryRun => ({
   kind: "game",
   mode: "blitz" as const,
   name: "bltz-sprint-01",
-  environment: "appchain.blitz",
+  environment: "madara.blitz",
   owner: "0x1",
   presetId: "preset-1",
   status: "running" as const,
@@ -281,7 +281,7 @@ describe("FactoryV2WatchWorkspace mobile layout", () => {
 
   it("shows the pending launch request as the first setup step", async () => {
     const pendingRun = buildRun({
-      id: "pending:appchain.blitz:bltz-sprint-01",
+      id: "pending:madara.blitz:bltz-sprint-01",
       steps: [
         {
           id: "launch-request" as const,

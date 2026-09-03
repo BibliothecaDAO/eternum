@@ -26,11 +26,6 @@ const envSchema = z
     // Optional public mainnet RPC handed to the cross-origin Controller keychain, which cannot fetch
     // a loopback host (Private Network Access); the lab therefore points it at a public node.
     VITE_PUBLIC_CONTROLLER_RPC_URL: z.string().url().optional(),
-    VITE_PUBLIC_FACTORY_WORKER_URL: z
-      .string()
-      .url()
-      .optional()
-      .default("https://realms-game-launch.zerocredence.workers.dev"),
     VITE_PUBLIC_LAUNCH_SERVICE_URL: optionalUrlOrEmpty.default(""),
     VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
     // Empty = no realtime-server for this deployment; consumers skip their

@@ -2,7 +2,6 @@
   "name": "eternum-config-deploy",
   "scripts": {
     "madara:blitz": "if [ -f ../apps/game/.env.madara.blitz ]; then bun --env-file=../apps/game/.env.madara.blitz run ./deployer/index.ts madara blitz; else bun --env-file=../apps/game/.env.madara.blitz.sample run ./deployer/index.ts madara blitz; fi",
-    "appchain:blitz": "bun --env-file=../apps/game/.env.appchain.blitz run ./deployer/index.ts appchain blitz",
     "sync:madara:blitz": "bun run ./scripts/run-sync.ts madara blitz",
     "sync:appchain": "bun run ./scripts/run-sync.ts appchain",
     "sync:appchain:blitz": "bun run ./scripts/run-sync.ts appchain blitz",

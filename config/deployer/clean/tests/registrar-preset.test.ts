@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 
-mock.module("../../../../contracts/l3/game/manifest_appchain_blitz.json", () => ({
+mock.module("../../../../contracts/l3/game/manifest_madara.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [
@@ -25,7 +25,7 @@ const { buildCreateGameParams, buildPresetRegistration, summarizePresetSideTable
   await import("../registrar/preset");
 
 describe("appchain registrar preset", () => {
-  const config = loadEnvironmentConfiguration("appchain.blitz");
+  const config = loadEnvironmentConfiguration("madara.blitz");
 
   test("builds stable preset side tables and calldata", () => {
     const payload = buildPresetRegistration(config, 1);
@@ -48,44 +48,6 @@ describe("appchain registrar preset", () => {
       registration_start_at: 0,
     });
     expect(buildRegisterPresetCalldata(payload)).toMatchSnapshot();
-  });
-
-  test("builds an Eternum preset and create-game payload without Blitz registration", () => {
-    const eternumConfig = loadEnvironmentConfiguration("appchain.eternum");
-    const payload = buildPresetRegistration(eternumConfig, 10);
-    const createGameInput = {
-      gameName: "etrn-w3",
-      presetId: 10,
-      startMainAt: 2_000_000_000,
-      durationSeconds: eternumConfig.season.durationSeconds,
-      devModeOn: true,
-      singleRealmMode: false,
-      twoPlayerMode: false,
-      useMapOverride: false,
-    };
-    const params = buildCreateGameParams(eternumConfig, createGameInput);
-
-    expect(payload.gameConfig).toMatchObject({ preset_id: 10, blitz_mode_on: false });
-    expect(payload.presetConfig).toMatchObject({
-      preset_id: 10,
-      bank_config: expect.any(Object),
-      trade_config: expect.any(Object),
-      quest_config: expect.any(Object),
-      faith_config: expect.objectContaining({ owner_share_percent: 3000 }),
-      bitcoin_mine_config: expect.any(Object),
-    });
-    expect(params).toMatchObject({ preset_id: 10, registration_count_max: 0, two_player_mode: false });
-    expect(() => buildCreateGameParams(eternumConfig, { ...createGameInput, twoPlayerMode: true })).toThrow(
-      "Eternum seasons do not support two-player mode",
-    );
-  });
-
-  test("requires addresses for enabled faith features", () => {
-    const faithConfig = structuredClone(loadEnvironmentConfiguration("appchain.eternum"));
-    delete (faithConfig.faith as Partial<NonNullable<typeof faithConfig.faith>>).reward_token;
-    expect(() => buildPresetRegistration(faithConfig, 10)).toThrow(
-      "faith reward token address must be explicit when the feature is enabled",
-    );
   });
 
   test("writes an explicit disabled address only for disabled features", () => {

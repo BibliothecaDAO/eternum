@@ -362,15 +362,11 @@ interface FactoryEndpoint {
   credentials: RequestCredentials;
 }
 
-export const resolveFactoryEndpoint = (environment: FactoryWorkerEnvironmentId): FactoryEndpoint => {
-  if (environment === "madara.blitz") {
-    if (!env.VITE_PUBLIC_LAUNCH_SERVICE_URL) {
-      throw new Error("VITE_PUBLIC_LAUNCH_SERVICE_URL is required for madara.blitz launches");
-    }
-    return { baseUrl: env.VITE_PUBLIC_LAUNCH_SERVICE_URL.replace(/\/$/, ""), credentials: "include" };
+export const resolveFactoryEndpoint = (): FactoryEndpoint => {
+  if (!env.VITE_PUBLIC_LAUNCH_SERVICE_URL) {
+    throw new Error("VITE_PUBLIC_LAUNCH_SERVICE_URL is required to launch games");
   }
-
-  return { baseUrl: env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/, ""), credentials: "omit" };
+  return { baseUrl: env.VITE_PUBLIC_LAUNCH_SERVICE_URL.replace(/\/$/, ""), credentials: "include" };
 };
 
 export class FactoryWorkerApiError extends Error {
@@ -661,7 +657,7 @@ async function fetchFactoryWorkerJson<ResponseBody>(
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  const endpoint = resolveFactoryEndpoint(environment);
+  const endpoint = resolveFactoryEndpoint();
   const response = await fetch(buildFactoryWorkerUrl(endpoint, pathname, options.query), {
     method: options.method ?? "GET",
     headers: requestHeaders,

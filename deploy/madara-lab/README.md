@@ -106,9 +106,8 @@ Create a game after Herald is running:
 RPC_URL=http://127.0.0.1:5050/rpc/v0_9_0 \
 DOJO_ACCOUNT_ADDRESS=0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d \
 DOJO_PRIVATE_KEY=0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07 \
-bun config/deployer/clean/cli/launch-step.ts \
-  --launch-kind game --step create-world --environment madara.blitz \
-  --game madara-phase1-96 --start-time 2026-08-25T19:00:00Z
+bun config/deployer/clean/cli/create.ts \
+  --environment madara.blitz --game madara-phase1-96 --start-time 2026-08-25T19:00:00Z
 ```
 
 ### Why these flags

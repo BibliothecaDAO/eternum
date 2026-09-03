@@ -2,7 +2,8 @@ import { Account, RpcProvider } from "starknet";
 import { assertProviderChain } from "@realms-world/chain";
 import { applyBlitzBalanceProfile, type BlitzBalanceProfileId } from "../../../source/blitz";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
-import { resolveDeploymentEnvironment } from "../environment";
+import { DEPLOYMENT_ENVIRONMENTS } from "../constants";
+import { isDeploymentEnvironmentId, resolveDeploymentEnvironment } from "../environment";
 import { createLedgerAdminAccount, registerLedgerPreset, type LedgerTarget } from "../ledger/calls";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 import { resolveAccountCredentials } from "../shared/credentials";
@@ -30,17 +31,17 @@ function readArgument(name: string): string | undefined {
 
 function parseOptions(): RegisterPresetOptions {
   const presetId = Number(readArgument("--preset-id"));
-  const environmentId = readArgument("--environment") ?? "appchain.blitz";
+  const environmentId = readArgument("--environment") ?? "madara.blitz";
   const balanceProfile = readArgument("--balance-profile") as BlitzBalanceProfileId | undefined;
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> --ledger <address> --ledger-rpc-url <mainnet RPC> [--environment madara.blitz|appchain.blitz|appchain.eternum] [--balance-profile official-60|official-90] [--sponsored] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> --ledger <address> --ledger-rpc-url <mainnet RPC> [--environment madara.blitz] [--balance-profile official-60|official-90] [--sponsored] [--dry-run]",
     );
   }
-  if (environmentId !== "madara.blitz" && environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
-    throw new Error("--environment must be madara.blitz, appchain.blitz, or appchain.eternum");
+  if (!isDeploymentEnvironmentId(environmentId)) {
+    throw new Error(`--environment must be one of: ${Object.keys(DEPLOYMENT_ENVIRONMENTS).join(", ")}`);
   }
-  validatePresetBalanceProfile(environmentId as DeploymentEnvironmentId, balanceProfile);
+  validatePresetBalanceProfile(environmentId, balanceProfile);
   return {
     presetId,
     environmentId,
@@ -68,7 +69,7 @@ function stringify(value: unknown): string {
 
 export function buildPresetDryRun(
   presetId: number,
-  environmentId: DeploymentEnvironmentId = "appchain.blitz",
+  environmentId: DeploymentEnvironmentId = "madara.blitz",
   balanceProfile?: BlitzBalanceProfileId,
   sponsored = false,
 ) {

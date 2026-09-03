@@ -67,7 +67,7 @@ describe("grouped series-like runner fail-fast behavior", () => {
 function buildSeriesRequest(overrides: Partial<LaunchSeriesRequest> = {}): LaunchSeriesRequest {
   return {
     launchKind: "series",
-    environmentId: "appchain.blitz",
+    environmentId: "madara.blitz",
     rpcUrl: "https://rpc.example",
     seriesName: "bltz-knicker",
     games: [

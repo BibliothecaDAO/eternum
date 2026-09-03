@@ -9,8 +9,6 @@ export type GameEnvironmentGameType = "blitz" | "eternum";
 
 export const GAME_ENVIRONMENTS = [
   { id: "madara.blitz", chain: "madara", gameType: "blitz" },
-  { id: "appchain.blitz", chain: "appchain", gameType: "blitz" },
-  { id: "appchain.eternum", chain: "appchain", gameType: "eternum" },
 ] as const satisfies readonly { id: string; chain: GameChain; gameType: GameEnvironmentGameType }[];
 
 export type GameEnvironment = (typeof GAME_ENVIRONMENTS)[number];

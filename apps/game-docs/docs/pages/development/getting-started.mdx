@@ -97,9 +97,8 @@ For the Madara client, start from the maintained sample instead of copying an ad
 cp apps/game/.env.madara.blitz.sample apps/game/.env
 ```
 
-The sample points browser traffic at the TLS endpoints served by `deploy/madara-lab/Caddyfile`. Appchain builds use the
-checked-in `.env.appchain.blitz` or `.env.appchain.eternum` file and require the development faucet credentials used for
-fee-token top-ups. Madara builds reject those master credentials.
+The sample points browser traffic at the TLS endpoints served by `deploy/madara-lab/Caddyfile`. The lab chain is
+fee-free, so the sample carries no master credentials.
 
 ## Project Structure
 

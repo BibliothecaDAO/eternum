@@ -15,29 +15,17 @@ import { Account, RpcProvider } from "starknet";
 // links the workspace package here — bun only resolves it inside apps/* and packages/* that declare the dep.
 // chain-guard.js is plain ESM (no build step), matching how the other madara-lab scripts import shared code.
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
-import {
-  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
-  DEFAULT_APPCHAIN_PRESET_ID,
-  DEFAULT_MADARA_PRESET_ID,
-} from "../../../config/deployer/clean/constants";
+import { DEFAULT_MADARA_PRESET_ID, DEPLOYMENT_ENVIRONMENTS } from "../../../config/deployer/clean/constants";
+import { isDeploymentEnvironmentId } from "../../../config/deployer/clean/environment";
 import type { DeploymentEnvironmentId } from "../../../config/deployer/clean/types";
-
-const ENVIRONMENT_IDS: DeploymentEnvironmentId[] = ["madara.blitz", "appchain.blitz", "appchain.eternum"];
 
 function resolveEnvironmentId(): DeploymentEnvironmentId {
   const index = process.argv.indexOf("--environment");
-  const value = index >= 0 ? process.argv[index + 1] : "appchain.blitz";
-  if (!ENVIRONMENT_IDS.includes(value as DeploymentEnvironmentId)) {
-    throw new Error(`--environment must be one of: ${ENVIRONMENT_IDS.join(", ")}`);
+  const value = index >= 0 ? process.argv[index + 1] : "madara.blitz";
+  if (!isDeploymentEnvironmentId(value)) {
+    throw new Error(`--environment must be one of: ${Object.keys(DEPLOYMENT_ENVIRONMENTS).join(", ")}`);
   }
-  return value as DeploymentEnvironmentId;
-}
-
-// Blitz preset 2 = Regular Fast (launch default; preset 1 is retired);
-// eternum preset 10 = the standard eternum season.
-function resolveDefaultPresetId(environmentId: DeploymentEnvironmentId): number {
-  if (environmentId === "madara.blitz") return Number(DEFAULT_MADARA_PRESET_ID);
-  return Number(environmentId === "appchain.eternum" ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID : DEFAULT_APPCHAIN_PRESET_ID);
+  return value;
 }
 
 function optionalEnvironmentAddress(name: string): string | undefined {
@@ -92,15 +80,7 @@ async function bootstrapRegistrar(params: {
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
   const environmentId = resolveEnvironmentId();
-  const sozoProfile =
-    environmentId === "madara.blitz"
-      ? "madara"
-      : environmentId === "appchain.eternum"
-        ? "appchain-eternum"
-        : "appchain-blitz";
-  console.log(
-    `World migration is reviewer-owned. Run: sozo build --profile ${sozoProfile} && sozo migrate --profile ${sozoProfile}`,
-  );
+  console.log("World migration is reviewer-owned. Run: sozo build --profile madara && sozo migrate --profile madara");
   assertRegistrarAvailable(environmentId);
 
   const environment = resolveDeploymentEnvironment(environmentId);
@@ -129,7 +109,7 @@ async function deployS2World(): Promise<void> {
     dryRun,
   });
   await registerEnvironmentPreset({
-    presetId: resolveDefaultPresetId(environmentId),
+    presetId: Number(DEFAULT_MADARA_PRESET_ID),
     environmentId,
     rpcUrl,
     sponsored: false,

@@ -8,7 +8,7 @@ export function isDeploymentEnvironmentId(value: string): value is DeploymentEnv
 export function resolveDeploymentEnvironment(value: string): DeploymentEnvironment {
   if (!isDeploymentEnvironmentId(value)) {
     throw new Error(
-      `Unsupported environment "${value}". Expected one of: madara.blitz, appchain.blitz, appchain.eternum`,
+      `Unsupported environment "${value}". Expected one of: ${Object.keys(DEPLOYMENT_ENVIRONMENTS).join(", ")}`,
     );
   }
 
