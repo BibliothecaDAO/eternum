@@ -1908,3 +1908,23 @@ They consume the shared `BIOME_COLORS`, so colors cannot diverge; they merely sk
 onto the resolver whenever either file is next touched.
 
 **Deploying** from this record's tip.
+
+### Review follow-up — the asset_prewarm barrier was fatal on a slow machine (2026-09-03, commit `b3bbc2e3a5c`)
+
+**Evidence.** The owner's live boot on `bltz-clash-538/map?col=0&row=6` (deployed `7de160de91f`) blocked forever behind
+"Waiting for world map": `chunk_presentation_timeout chunkKey="0,0" phase="asset_prewarm" timeoutMs=12000`, then
+`Failed to update visible chunks during initial setup: Error: Chunk 0,0 synchronized without prepared terrain`, then
+`[SceneManager] Failed to set up scene map`. The chunk-recovery fix's "refuses to prepare terrain after a failed asset
+barrier" turned a slow prewarm into no boot: `prepareWorldmapChunkPresentation` returned
+`{projectionSyncSucceeded: true, preparedTerrain: null}` on prewarm timeout, and
+`warp-travel-chunk-switch-commit.ts:95` throws on null terrain during initial setup. The headless gate had passed
+because headless prewarm fits inside 12 s; the owner's machine (slow first shader compile, and prewarm now covering
+army models too) does not.
+
+**Fix.** Prewarm is an accelerator, never a gate — enforced at the one chokepoint. In the timed path a timed-out or
+failed prewarm proceeds to `prepareTerrainChunk` (un-prewarmed models compile on first draw); the `timedOutPhase`
+trace and recovery scheduling are unchanged. In the untimed path a prewarm rejection no longer rejects the
+preparation. The presentation test's prewarm-timeout case now pins terrain prepared plus the reported phase.
+
+**Gate.** Presentation suite 10/10; all 48 chunk/warp/recovery suites 332/332; `apps/game` typecheck green. Owner
+re-test on the deployed build is the live gate.
