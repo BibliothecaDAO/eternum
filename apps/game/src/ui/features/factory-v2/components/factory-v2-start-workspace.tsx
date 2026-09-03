@@ -100,6 +100,7 @@ type FactoryV2StartWorkspaceProps = {
   durationOptions: FactoryDurationOption[];
   twoPlayerMode: boolean;
   singleRealmMode: boolean;
+  devModeOn: boolean;
   seriesSuggestions: Array<{
     name: string;
     lastGameNumber: number | null;
@@ -142,6 +143,7 @@ type FactoryV2StartWorkspaceProps = {
   onApplyBiomeClimateToAll: () => void;
   onToggleTwoPlayerMode: () => void;
   onToggleSingleRealmMode: () => void;
+  onToggleDevMode: () => void;
   onFandomizeGameName: () => void;
   chain: FactoryLaunchChain;
   onLaunch: () => void;
@@ -308,6 +310,7 @@ const FactoryV2ConfiguredStartWorkspace = ({
   durationOptions,
   twoPlayerMode,
   singleRealmMode,
+  devModeOn,
   seriesSuggestions,
   isLoadingSeries,
   seriesLookupError,
@@ -346,6 +349,7 @@ const FactoryV2ConfiguredStartWorkspace = ({
   onApplyBiomeClimateToAll,
   onToggleTwoPlayerMode,
   onToggleSingleRealmMode,
+  onToggleDevMode,
   onFandomizeGameName,
   chain,
   environmentLabel,
@@ -448,6 +452,7 @@ const FactoryV2ConfiguredStartWorkspace = ({
             maxPlayersField={maxPlayersField}
             blitzPlayStyleOptions={workspace.blitzPlayStyleOptions}
             selectedBlitzPlayStyleId={workspace.selectedBlitzPlayStyleId}
+            devModeOn={devModeOn}
             moreOptionSections={moreOptionSections}
             moreOptionDraft={moreOptionDraft}
             moreOptionErrors={moreOptionErrors}
@@ -462,6 +467,7 @@ const FactoryV2ConfiguredStartWorkspace = ({
             onSelectLaunchTargetKind={onSelectLaunchTargetKind}
             onDurationChange={onDurationChange}
             onSelectBlitzPlayStyle={selectBlitzPlayStyle}
+            onToggleDevMode={onToggleDevMode}
             onMapOptionValueChange={onMapOptionValueChange}
             onSelectBiomeClimateTarget={onSelectBiomeClimateTarget}
             onBiomeClimateValueChange={onBiomeClimateValueChange}

@@ -93,6 +93,7 @@ export const FactoryV2Content = () => {
               durationOptions={factory.durationOptions}
               twoPlayerMode={factory.twoPlayerMode}
               singleRealmMode={factory.singleRealmMode}
+              devModeOn={factory.devModeOn}
               seriesSuggestions={factory.seriesSuggestions}
               isLoadingSeries={factory.isLoadingSeries}
               seriesLookupError={factory.seriesLookupError}
@@ -131,6 +132,7 @@ export const FactoryV2Content = () => {
               onApplyBiomeClimateToAll={factory.applySelectedBiomeClimateToAll}
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
+              onToggleDevMode={factory.toggleDevMode}
               onFandomizeGameName={factory.fandomizeGameName}
               chain={factory.selectedEnvironment.chain}
               onLaunch={() => {

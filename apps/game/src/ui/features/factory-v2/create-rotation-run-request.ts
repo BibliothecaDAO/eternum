@@ -4,7 +4,6 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type { CreateFactoryRotationRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
-import { resolveLaunchDevModeOn } from "./launch-dev-mode";
 import type {
   FactoryGameMode,
   FactoryLaunchPreset,
@@ -23,6 +22,7 @@ export const buildFactoryCreateRotationRunRequest = ({
   evaluationIntervalMinutes,
   selectedMode,
   selectedPreset,
+  devModeOn,
   twoPlayerMode,
   singleRealmMode,
   durationMinutes,
@@ -44,6 +44,7 @@ export const buildFactoryCreateRotationRunRequest = ({
   evaluationIntervalMinutes: FactoryRotationEvaluationIntervalMinutes;
   selectedMode: FactoryGameMode;
   selectedPreset: FactoryLaunchPreset | null;
+  devModeOn: boolean;
   twoPlayerMode: boolean;
   singleRealmMode: boolean;
   durationMinutes: number | null;
@@ -63,7 +64,7 @@ export const buildFactoryCreateRotationRunRequest = ({
   maxGames,
   advanceWindowGames,
   evaluationIntervalMinutes,
-  devModeOn: resolveLaunchDevModeOn(selectedPreset),
+  devModeOn,
   twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,

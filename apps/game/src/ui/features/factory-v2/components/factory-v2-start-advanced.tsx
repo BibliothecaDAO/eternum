@@ -39,6 +39,7 @@ export const FactoryV2StartAdvanced = ({
   maxPlayersField,
   blitzPlayStyleOptions,
   selectedBlitzPlayStyleId,
+  devModeOn,
   moreOptionSections,
   moreOptionDraft,
   moreOptionErrors,
@@ -53,6 +54,7 @@ export const FactoryV2StartAdvanced = ({
   onSelectLaunchTargetKind,
   onDurationChange,
   onSelectBlitzPlayStyle,
+  onToggleDevMode,
   onMapOptionValueChange,
   onSelectBiomeClimateTarget,
   onBiomeClimateValueChange,
@@ -69,6 +71,7 @@ export const FactoryV2StartAdvanced = ({
   maxPlayersField: FactoryMoreOptionField | null;
   blitzPlayStyleOptions: ReturnType<typeof getBlitzPlayStyleOptions>;
   selectedBlitzPlayStyleId: BlitzPlayStyleId;
+  devModeOn: boolean;
   moreOptionSections: FactoryMoreOptionSection[];
   moreOptionDraft: FactoryMoreOptionsDraft;
   moreOptionErrors: FactoryMoreOptionsErrors;
@@ -83,6 +86,7 @@ export const FactoryV2StartAdvanced = ({
   onSelectLaunchTargetKind: (kind: FactoryLaunchTargetKind) => void;
   onDurationChange: (value: number) => void;
   onSelectBlitzPlayStyle: (playStyleId: BlitzPlayStyleId) => void;
+  onToggleDevMode: () => void;
   onMapOptionValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
   onSelectBiomeClimateTarget: (targetId: string) => void;
   onBiomeClimateValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
@@ -142,6 +146,31 @@ export const FactoryV2StartAdvanced = ({
               />
             </FactoryV2StartSectionCard>
           ) : null}
+
+          <FactoryV2StartSectionCard
+            title="Game mode"
+            description="A real game holds players to the registration window. Test mode lets anyone settle at any time, before the start and after it."
+            appearanceClassName={appearance.listItemClassName}
+          >
+            <div className="space-y-1.5">
+              <FactoryV2PlayStyleOption
+                label="Real game"
+                isEnabled={!devModeOn}
+                appearanceClassName={appearance.secondaryButtonClassName}
+                onClick={() => {
+                  if (devModeOn) onToggleDevMode();
+                }}
+              />
+              <FactoryV2PlayStyleOption
+                label="Test mode"
+                isEnabled={devModeOn}
+                appearanceClassName={appearance.secondaryButtonClassName}
+                onClick={() => {
+                  if (!devModeOn) onToggleDevMode();
+                }}
+              />
+            </div>
+          </FactoryV2StartSectionCard>
 
           {showsBlitzModes ? (
             <FactoryV2BlitzSetupSection

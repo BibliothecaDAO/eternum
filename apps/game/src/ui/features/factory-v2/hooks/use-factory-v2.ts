@@ -44,6 +44,7 @@ import {
   resolveFactoryEnvironmentForMode,
 } from "../catalog";
 import { buildFactoryCreateRotationRunRequest } from "../create-rotation-run-request";
+import { resolveLaunchDevModeOn } from "../launch-dev-mode";
 import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateSeriesRunRequest } from "../create-series-run-request";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
@@ -158,6 +159,7 @@ export const useFactoryV2 = () => {
   );
   const [twoPlayerMode, setTwoPlayerMode] = useState(initialPreset?.defaults.twoPlayerMode ?? false);
   const [singleRealmMode, setSingleRealmMode] = useState(initialPreset?.defaults.singleRealmMode ?? false);
+  const [devModeOn, setDevModeOn] = useState(resolveLaunchDevModeOn(initialPreset));
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
   const [acceptedRunState, setAcceptedRunState] = useState<AcceptedRunState | null>(null);
   const [guidedRecoveryState, setGuidedRecoveryState] = useState<GuidedRecoveryState | null>(null);
@@ -653,6 +655,10 @@ export const useFactoryV2 = () => {
     applyLaunchModes(nextModes);
   };
 
+  const toggleDevMode = () => {
+    setDevModeOn((current) => !current);
+  };
+
   const fandomizeGameName = () => {
     setDraftGameName(buildSuggestedGameName(selectedMode, modeRuns));
   };
@@ -1118,6 +1124,7 @@ export const useFactoryV2 = () => {
     durationOptions,
     twoPlayerMode,
     singleRealmMode,
+    devModeOn,
     seriesSuggestions,
     isLoadingSeries: ownedSeriesQuery.isLoading || ownedSeriesQuery.isFetching,
     seriesLookupError: ownedSeriesQuery.error?.message ?? null,
@@ -1162,6 +1169,7 @@ export const useFactoryV2 = () => {
     setSeriesGameStartAt,
     selectSeriesSuggestion,
     toggleTwoPlayerMode,
+    toggleDevMode,
     toggleSingleRealmMode,
     fandomizeGameName,
     selectBiomeClimateTarget: biomeClimate.selectTarget,
@@ -1181,6 +1189,7 @@ export const useFactoryV2 = () => {
   function applyPresetDefaults(preset: FactoryLaunchPreset | null) {
     setDraftStartAt(preset ? getPresetStartAtValue(preset) : "");
     setDraftDurationMinutes(preset?.defaults.durationMinutes ?? null);
+    setDevModeOn(resolveLaunchDevModeOn(preset));
     applyLaunchModes({
       twoPlayerMode: preset?.defaults.twoPlayerMode ?? false,
       singleRealmMode: preset?.defaults.singleRealmMode ?? false,
@@ -1524,6 +1533,7 @@ export const useFactoryV2 = () => {
       workflowRef: workflowRefOverride,
       selectedMode,
       selectedPreset,
+      devModeOn,
       twoPlayerMode,
       singleRealmMode,
       durationMinutes: draftDurationMinutes,
@@ -1542,6 +1552,7 @@ export const useFactoryV2 = () => {
       games: biomeClimateOptions.seriesGamesWithOverrides,
       selectedMode,
       selectedPreset,
+      devModeOn,
       twoPlayerMode,
       singleRealmMode,
       durationMinutes: draftDurationMinutes,
@@ -1566,6 +1577,7 @@ export const useFactoryV2 = () => {
       evaluationIntervalMinutes: draftRotationEvaluationIntervalMinutes,
       selectedMode,
       selectedPreset,
+      devModeOn,
       twoPlayerMode,
       singleRealmMode,
       durationMinutes: draftDurationMinutes,

@@ -121,6 +121,8 @@ const buildFactoryState = (overrides: Record<string, unknown> = {}) => ({
   setDraftStartAt: vi.fn(),
   setDraftDurationMinutes: vi.fn(),
   toggleTwoPlayerMode: vi.fn(),
+  toggleDevMode: vi.fn(),
+  devModeOn: false,
   toggleSingleRealmMode: vi.fn(),
   fandomizeGameName: vi.fn(),
   selectBiomeClimateTarget: vi.fn(),

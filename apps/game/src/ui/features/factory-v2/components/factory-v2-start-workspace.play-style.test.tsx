@@ -74,6 +74,7 @@ const buildProps = (
   showsDuration: false,
   durationOptions: [],
   twoPlayerMode: false,
+  devModeOn: false,
   singleRealmMode: false,
   seriesSuggestions: [],
   isLoadingSeries: false,
@@ -133,6 +134,7 @@ const buildProps = (
   onApplyBiomeClimateToAll: vi.fn(),
   onToggleTwoPlayerMode: vi.fn(),
   onToggleSingleRealmMode: vi.fn(),
+  onToggleDevMode: vi.fn(),
   onFandomizeGameName: vi.fn(),
   chain: "appchain",
   onLaunch: vi.fn(),
@@ -427,6 +429,28 @@ describe("FactoryV2StartWorkspace play style", () => {
 
     expect(onToggleTwoPlayerMode).toHaveBeenCalledTimes(1);
     expect(onToggleSingleRealmMode).not.toHaveBeenCalled();
+  });
+
+  it("offers the game mode toggle with the real game pressed by default", async () => {
+    const onToggleDevMode = vi.fn();
+
+    await act(async () => {
+      root.render(<FactoryV2StartWorkspace {...buildProps({ devModeOn: false, onToggleDevMode })} />);
+      await waitForAsyncWork();
+    });
+
+    await openAdvanced(container);
+
+    expect(findPlayStyleButton(container, "Real game")?.getAttribute("aria-pressed")).toBe("true");
+    const testModeButton = findPlayStyleButton(container, "Test mode");
+    expect(testModeButton?.getAttribute("aria-pressed")).toBe("false");
+
+    await act(async () => {
+      (testModeButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(onToggleDevMode).toHaveBeenCalledTimes(1);
   });
 
   it("keeps series launches enabled when a parent series run already exists", async () => {

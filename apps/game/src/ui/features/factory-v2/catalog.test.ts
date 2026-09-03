@@ -53,6 +53,7 @@ describe("factory launch defaults", () => {
       gameStartTime: "2026-09-01T12:00:00.000Z",
       selectedMode: "blitz",
       selectedPreset: getFactoryPresetById("blitz-fast"),
+      devModeOn: false,
       twoPlayerMode: false,
       singleRealmMode: false,
       durationMinutes: 60,
