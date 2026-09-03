@@ -1734,3 +1734,55 @@ Travel, no longer writes color or depth; hover and placement highlights remain s
 `bltz-clash-538/hex?col=0&row=6&spectate=true` shows textured ground, relief, vegetation and shaded structure pads
 across both the realm disc and its neighbouring biome. The source test pins one visible terrain owner by requiring the
 procedural presentation and hidden interaction surface while rejecting the retired pillar/`BIOME_COLORS` path.
+
+## Blitz scene-native pass — kill modal gaming (owner ruling, 2026-09-03)
+
+**The ruling.** The autonomous run killed the modal shells but kept the modal flow: an action is still click trigger →
+surface opens → operate the surface → return to the scene. That flow — "modal gaming" — is the thing to kill, and it is
+killed per feature, not in a big-bang rewrite. Scope is the Blitz player overlay first. The owner rejected the Realms
+Deck rev-2 layouts A–C (the bottom command band is dead — StarCraft needs a command card because its units carry
+abstract abilities with nothing in the world to click; this game's action objects are in the scene); the caster view
+(layout D), the composition table, the click budgets, the rail, and the minimap-bottom-left ruling survive.
+
+**The principle.** The entity is the interface. Every action whose object exists in the scene happens at the object: a
+world-anchored micro-card or ghost flow, not a screen-region panel. Panels survive only for objects with no scene
+anchor — market (Eternum), leaderboard, settings, feed, chat. The army interaction landed in run item 10 (left-click
+selects, right-click acts, ghost at click, Esc cancels) is the template, not an exception. Success is deletion: each
+item's old surface flow dies in the same change, and the end state has fewer surfaces than today — atomization was
+demolition, not the destination.
+
+**The method — finding the proper spot.** Each item below starts with a spot proposal: where the interaction lives and
+what the flow is, argued on a screenshot or live anchor of the current build, recorded here BEFORE implementation. The
+owner feels each feature on the deployed build before the next lands. Two defaults hold until a feature's record
+overrides them: reading stays on the right edge (the inspector remains the place selection detail is read), acting
+moves into the scene; and the Realms Deck story budgets are each item's click gate.
+
+**Items** (each: spot proposal → implement → old flow deleted → gate; one item or small group per commit, records
+appended here):
+
+0. **Chrome recede.** The warm gold-on-brown chrome lives inside the terrain's own color family and camouflages into
+   desert/autumn biomes. Reskin the panel tokens cold-dark neutral (near-black smoke, slight cool bias), gold demoted
+   to a thin accent on interactive/selected only. Validate with screenshots against snow, desert, forest and water
+   biomes before landing. Small, global, first.
+1. **World-anchored micro-card primitive + production pilot.** The Popover's screen-point anchor becomes a
+   world-anchored micro-card that tracks its hex/entity through camera moves — small, no tabs. Pilot consumer: click a
+   production building → recipe, rate, auto chip and queue at the building. The production surface's per-building flow
+   dies. (Automation presets stay reachable; their spot is decided in this item's record.)
+2. **Build on the hex.** Empty buildable hex in local view → building choices at the hex (costs shown, unaffordable
+   greyed with the shortfall named) → ghost follows → pre-confirm solidifies. The construction surface dies in local
+   view. Story 3 gate: ≤ 3 clicks.
+3. **Train at the building.** Troop production at the military buildings, same micro-card pattern. The military
+   surface's training flow dies.
+4. **Castle actions at the castle.** Upgrade (costs, shortfall named → transfer suggestion) and guard management at the
+   structure. The side panel's action half dies; its reading half stays right-edge pending item 7.
+5. **Realm-to-realm transfer.** The spot genuinely needs finding — the record must argue two candidate flows before
+   picking: (a) select realm → Transfer → right-click target realm → inline amount at the target; (b) drag from rail
+   row onto the target realm/rail row. Story 15 gate: ≤ 3 clicks. Blitz has transfers (owner ruling); no market.
+6. **Hyperstructure contribute at the tile.** Amount + confirm anchored to the tile. Story 26 gate: ≤ 3 clicks.
+7. **Inspector consolidation.** After items 1–6: the right-edge inspector is reading only — every action button in it
+   has moved into the scene or died. Then the reading itself is weighed: what remains earns its place or goes.
+
+**Coordination.** Codex items 1–5 (renderer lane, chunk recovery, hexception terrain, far-band biomes, label remake)
+run on this branch in parallel; this pass is UI-side and collides mostly nowhere, but shared-worktree discipline holds:
+explicit-path commits only. The Realms Deck artifact (e835afd9) carries a supersession note for layouts A–C and the
+command card until it is redrawn per-feature as spots are found.
