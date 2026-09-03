@@ -18,6 +18,8 @@ apps/game/minimap
 **/.claude/tsc-cache/
 .claude/worktrees/
 **/.claude/worktrees/
+.claude/cache/
+**/.claude/cache/
 thoughts/
 
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
