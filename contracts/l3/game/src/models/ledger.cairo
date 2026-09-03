@@ -29,6 +29,14 @@ pub struct LedgerRegistration {
 
 #[generate_trait]
 pub impl LedgerRegistrationImpl of LedgerRegistrationTrait {
+    /// The value plane exists on this chain only when a ledger operator is configured to
+    /// relay paid mainnet registrations. Without one, entry is open and results belong to
+    /// the player; `dev_mode_on` only relaxes the clock.
+    fn entry_requires_ledger(world: WorldStorage) -> bool {
+        let chain_config: ChainConfig = world.read_model(WORLD_CONFIG_ID);
+        chain_config.ledger_operator_address.is_non_zero()
+    }
+
     fn owner_for_account(world: WorldStorage, account: ContractAddress) -> ContractAddress {
         let chain_config: ChainConfig = world.read_model(WORLD_CONFIG_ID);
         assert!(chain_config.player_registry_address.is_non_zero(), "Eternum: player registry is not configured");

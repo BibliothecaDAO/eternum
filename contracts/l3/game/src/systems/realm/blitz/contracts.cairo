@@ -89,7 +89,7 @@ pub mod blitz_realm_systems {
 
             let existing_settlement: BlitzSettlement = world.read_model((game_id, caller));
             assert!(existing_settlement.structure_ids.len() == 0, "Eternum: Player is already settled");
-            if !season_config.dev_mode_on {
+            if LedgerRegistrationImpl::entry_requires_ledger(world) {
                 LedgerRegistrationImpl::for_account(world, game_id, caller);
             }
 

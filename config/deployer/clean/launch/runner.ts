@@ -193,8 +193,9 @@ function requireLedgerTarget(launch: PreparedLaunch): LedgerTarget {
 }
 
 function createLedgerGameTarget(launch: PreparedLaunch) {
-  const devModeOn = launch.request.devModeOn ?? launch.config.dev.mode.on;
-  if (!launch.request.ledgerAddress && !launch.request.ledgerRpcUrl && devModeOn) {
+  // No ledger configured means no value plane on this chain: the game opens without an
+  // L2 entry whatever its dev mode. A half-configured ledger is still a misconfiguration.
+  if (!launch.request.ledgerAddress && !launch.request.ledgerRpcUrl) {
     return undefined;
   }
   const target = requireLedgerTarget(launch);

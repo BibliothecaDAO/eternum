@@ -204,7 +204,7 @@ mod dispatcher_lifecycle {
         stop_cheat_caller_address,
     };
     use starknet::ContractAddress;
-    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes};
+    use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
         AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
         BlitzExplorationConfig, BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig,
@@ -420,6 +420,71 @@ mod dispatcher_lifecycle {
         assert!(game.status == GameStatus::Settled, "dev game was not settled");
     }
 
+    // A dev-off game created on a chain whose ledger operator is `ledger_operator`.
+    fn setup_dev_off_game(ledger_operator: ContractAddress) -> LifecycleContext {
+        let player = get_default_caller_address();
+        let world = spawn_lifecycle_world();
+        let registrar = registrar_dispatcher(world);
+        let blitz = blitz_dispatcher(world);
+        let resources = resource_dispatcher(world);
+
+        registrar.bootstrap_chain_config(chain_config_with_ledger_operator(player, ledger_operator));
+        registrar.register_preset(preset_config(), preset_game_config(), preset_side_tables());
+        registrar.register_series(SERIES_ID, player, 2, 0, 10_000);
+        let mut params = create_game_params(1, 111);
+        params.dev_mode_on = false;
+        registrar.create_game(params);
+
+        LifecycleContext { world, registrar, blitz, resources, player }
+    }
+
+    fn settle_inside_registration_window(context: @LifecycleContext) {
+        start_cheat_block_timestamp_global(150);
+        start_cheat_caller_address(*context.blitz.contract_address, *context.player);
+        (*context.blitz).settle(GAME_A, 'player-a', [].span(), false);
+        stop_cheat_caller_address(*context.blitz.contract_address);
+    }
+
+    #[test]
+    fn dev_off_game_settles_without_a_ledger_when_no_operator_is_configured() {
+        let context = setup_dev_off_game(Zero::zero());
+
+        settle_inside_registration_window(@context);
+
+        let settlement: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
+        assert!(settlement.structure_ids.len() > 0, "dev-off player could not settle without a ledger");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: player registry is not configured")]
+    fn dev_off_game_takes_the_ledger_path_when_an_operator_is_configured() {
+        let context = setup_dev_off_game('operator'.try_into().unwrap());
+
+        settle_inside_registration_window(@context);
+    }
+
+    #[test]
+    fn admin_clears_the_ledger_operator_to_open_entry() {
+        let context = setup_dev_off_game('operator'.try_into().unwrap());
+
+        context.registrar.set_ledger_operator(Zero::zero());
+        settle_inside_registration_window(@context);
+
+        let chain_config: ChainConfig = context.world.read_model(WORLD_CONFIG_ID);
+        assert!(chain_config.ledger_operator_address.is_zero(), "ledger operator was not cleared");
+        let settlement: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
+        assert!(settlement.structure_ids.len() > 0, "entry did not open after clearing the operator");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: caller is not admin")]
+    fn only_the_admin_changes_the_ledger_operator() {
+        let context = setup_dev_off_game('operator'.try_into().unwrap());
+
+        start_cheat_caller_address(context.registrar.contract_address, 'attacker'.try_into().unwrap());
+        context.registrar.set_ledger_operator(Zero::zero());
+    }
+
     #[test]
     #[should_panic(expected: "Eternum: registration must open before settling")]
     fn game_registration_must_open_before_settling() {
@@ -548,11 +613,16 @@ mod dispatcher_lifecycle {
         IPrizeDistributionSystemsDispatcher { contract_address: address }
     }
 
+    // The lab chain has no value plane: no ledger operator, so entry is open.
     fn chain_config(admin: ContractAddress) -> ChainConfig {
+        chain_config_with_ledger_operator(admin, Zero::zero())
+    }
+
+    fn chain_config_with_ledger_operator(admin: ContractAddress, ledger_operator: ContractAddress) -> ChainConfig {
         ChainConfig {
             config_id: 0,
             admin_address: admin,
-            ledger_operator_address: admin,
+            ledger_operator_address: ledger_operator,
             player_registry_address: Zero::zero(),
             vrf_provider_address: Zero::zero(),
             agent_controller_config: AgentControllerConfig { address: Zero::zero() },

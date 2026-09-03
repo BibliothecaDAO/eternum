@@ -134,10 +134,10 @@ describe("registrar game launch", () => {
     });
   });
 
-  test("keeps dev-mode games independent from the value plane", async () => {
+  test("opens a dev-off game without the value plane when no ledger is configured", async () => {
     const summary = await launchGame({
       ...buildRequest(),
-      devModeOn: true,
+      devModeOn: false,
       ledgerAddress: undefined,
       ledgerRpcUrl: undefined,
     });

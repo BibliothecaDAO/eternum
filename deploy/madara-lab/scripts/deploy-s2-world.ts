@@ -104,7 +104,8 @@ async function deployS2World(): Promise<void> {
     environmentId,
     account,
     adminAddress: credentials.accountAddress,
-    ledgerOperatorAddress: requiredEnvironmentAddress("S2_OPERATOR_ADDRESS"),
+    // No operator means no value plane: entry stays open until a mainnet ledger relays into this chain.
+    ledgerOperatorAddress: optionalEnvironmentAddress("S2_OPERATOR_ADDRESS") ?? "0x0",
     playerRegistryAddress: requiredEnvironmentAddress("PLAYER_REGISTRY_ADDRESS"),
     dryRun,
   });

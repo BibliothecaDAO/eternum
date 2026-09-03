@@ -98,8 +98,7 @@ pub mod realm_systems {
                 "Eternum: All spires must be created before creating new realms",
             );
 
-            let game = crate::models::game::GameRegistryImpl::get(world, game_id);
-            let (realm_id, wonder, order, resources) = if game.dev_mode_on {
+            let (realm_id, wonder, order, resources) = if !LedgerRegistrationImpl::entry_requires_ledger(world) {
                 (realm_id, 0, 0, array![])
             } else {
                 let registration = LedgerRegistrationImpl::for_season_account(world, game_id, caller);

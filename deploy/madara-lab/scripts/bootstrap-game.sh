@@ -23,7 +23,8 @@ bun "$LAB_DIR/scripts/deploy-gameplay-contracts.ts"
 # deploy-s2-world's ChainConfig needs the L3 operator (the register_from_l2 gate) and the PlayerRegistry just
 # deployed. The lab runs dev-mode games with no L2 relay, so the operator is inert here — default it to the
 # deployer account so the write-once ChainConfig holds a non-zero address until a real operator arrives with L2.
-export S2_OPERATOR_ADDRESS="${S2_OPERATOR_ADDRESS:-$DOJO_ACCOUNT_ADDRESS}"
+# No ledger operator on the lab: entry is open until a mainnet ledger relays into this chain.
+export S2_OPERATOR_ADDRESS="${S2_OPERATOR_ADDRESS:-0x0}"
 export PLAYER_REGISTRY_ADDRESS="${PLAYER_REGISTRY_ADDRESS:-$(jq -r '.playerRegistryAddress' "$LAB_DIR/.lab/gameplay-contracts.json")}"
 
 echo "==> bootstrap s2 ChainConfig and register Madara preset 1"

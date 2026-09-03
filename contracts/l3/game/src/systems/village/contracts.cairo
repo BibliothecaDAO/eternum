@@ -51,8 +51,7 @@ pub mod village_systems {
             SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
 
             let caller = starknet::get_caller_address();
-            let game = GameRegistryImpl::get(world, game_id);
-            if !game.dev_mode_on {
+            if LedgerRegistrationImpl::entry_requires_ledger(world) {
                 LedgerRegistrationImpl::for_village_account(world, game_id, caller, village_pass_token_id);
             }
 

@@ -58,6 +58,9 @@ pub trait IRegistrarSystems<T> {
     fn sync_game_status(ref self: T, game_id: u32);
     fn reset_trial(ref self: T, game_id: u32);
     fn mark_game_settled(ref self: T, game_id: u32);
+    /// The mainnet ledger operator that relays paid registrations into this chain. Zero
+    /// means the chain has no value plane: entry is open and results belong to the player.
+    fn set_ledger_operator(ref self: T, ledger_operator_address: starknet::ContractAddress);
 }
 
 
@@ -226,6 +229,14 @@ pub mod registrar_systems {
             );
             game.status = GameStatus::Settled;
             world.write_model(@game);
+        }
+
+        fn set_ledger_operator(ref self: ContractState, ledger_operator_address: ContractAddress) {
+            let mut world = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            let mut chain_config: ChainConfig = world.read_model(WORLD_CONFIG_ID);
+            chain_config.ledger_operator_address = ledger_operator_address;
+            world.write_model(@chain_config);
         }
     }
 

@@ -246,7 +246,7 @@ pub mod prize_distribution_systems {
                 player_rank.chests = chests;
                 world.write_model(@player_rank);
 
-                let owner = resolve_result_owner(world, trial.game_id, ranked.player);
+                let owner = resolve_result_owner(world, ranked.player);
                 world
                     .emit_event(
                         @LedgerResultRowReady {
@@ -321,8 +321,8 @@ pub mod prize_distribution_systems {
         WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"))
     }
 
-    fn resolve_result_owner(world: WorldStorage, game_id: u32, player: ContractAddress) -> ContractAddress {
-        if SeasonConfigImpl::get(world, game_id).dev_mode_on {
+    fn resolve_result_owner(world: WorldStorage, player: ContractAddress) -> ContractAddress {
+        if !LedgerRegistrationImpl::entry_requires_ledger(world) {
             return player;
         }
         LedgerRegistrationImpl::owner_for_account(world, player)
