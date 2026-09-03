@@ -41,6 +41,51 @@ item-2 barrier). State what each costs on a slow boot, by measurement, not by re
 
 **Gate:** the record names the dominant costs with numbers before any code in items 1–3 lands.
 
+### Measurement record — item 0, gate open (2026-09-04)
+
+**Local measurement blocker.** The supplied branch-tip server at `https://127.0.0.1:5174` returned
+`ERR_CONNECTION_REFUSED` before the first capture, and no process was listening on that port. It was not restarted. The
+numbers below are a supplemental capture from the public fixture. They do not satisfy the branch-tip or owner's-machine
+cells.
+
+**Deployed headless breakdown.** Three fresh Brave 1280×720 profiles, `dev=1`, forced WebGL2, against `bltz-clash-538`.
+Values are medians. Nested worldmap durations overlap and must not be added together.
+
+| Stage                             | Runs                        |    Median | Longest measured owner inside the stage |
+| --------------------------------- | --------------------------- | --------: | --------------------------------------- |
+| world selection                   | 446 / 692 / 598 ms          |    598 ms | world profile build                     |
+| initial sync                      | 1,971 / 2,416 / 2,785 ms    |  2,416 ms | snapshot apply, 1,825 ms median         |
+| renderer init                     | 537 / 626 / 688 ms          |    626 ms | scene preparation, 426 ms median        |
+| entry ready → overlay mounted     | 912 / 1,214 / 1,379 ms      |  1,214 ms | React route and overlay handoff         |
+| overlay mounted → first terrain   | 8,944 / 11,963 / 13,066 ms  | 11,963 ms | terrain preparation and model prewarm   |
+| first terrain → world interactive | 30 / 27 / 42 ms             |     30 ms | scene handoff                           |
+| start → world interactive         | 13,949 / 18,262 / 20,459 ms | 18,262 ms | worldmap boot                           |
+
+The recorded `worldmap-first-terrain` duration was 13,297 ms median. Inside it, the median maximums were 9,578 ms for
+terrain preparation, 5,888 ms for combined structure-and-army prewarm, 5,209 ms for manager catch-up, and 4,900 ms for
+`updateVisibleChunks`. These operations overlap. The largest attributed boot frame was `render:backend`, 3,042 ms median
+across the three logs. Initial sync and renderer construction are not the dominant delay on this headless fixture; the
+wait is scene preparation through first terrain.
+
+**Suspect check, not yet an A/B.** Source review corrects the first suspect: `e2cfb3e90ae` changed `maxCompositePages`
+from 12 to 16, increasing composite page slots and fixed prop-pool page slots by 33%; the visual window already queued
+16 pages. In a 50 ms sampled boot, the window queued 16 pages at 4,780 ms, reported 12 committed pages at 9,861 ms,
+became interactive at 13,589 ms, and reported 16 committed pages at 15,037 ms. This proves the last pages can finish
+after playability, but it does not measure the allocation and composite delta of a 12-page cap.
+
+The same sample completed 14 pipeline precompiles and the combined prewarm in 4,833 ms. The three initial army GLBs each
+took 1,651–1,717 ms over the network and the last response ended 186 ms before combined prewarm completed. Those
+requests overlap structure loading and compilation, so 1,903 ms is an observed army-path window, not the cost removed by
+disabling army prewarm.
+
+**Remaining gate.** Run three slow, fresh-profile branch-tip boots for each controlled variant: 16-page cap with both
+prewarms, 12-page cap with both prewarms, and 16-page cap with structure-only prewarm. The median differences provide
+the two marginal costs. The owner's machine still owes its ordinary baseline. Items 1–3 remain blocked until these four
+cells are recorded.
+
+**Owner console recipe.** After `world-interactive` on the `dev=1` fixture, run:
+`copy(JSON.stringify({renderer:window.__rendererDiagnostics,timeline:window.__eternumGameEntryTimeline,durations:window.__eternumGameEntryDurations,sync:window.__eternumSyncMetrics,worldmap:window.getWorldmapRenderDiagnostics?.(),chunks:window.getWorldmapChunkDiagnostics?.()},null,2))`.
+
 ## 1. Progress-based deadlines — a timer never means failure while work advances
 
 Every boot timer today is a wall-clock total: critical catch-up (12 s), chunk transition hard timeout (20 s), asset
