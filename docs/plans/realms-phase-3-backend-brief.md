@@ -409,6 +409,13 @@ Everything else in B.1–B.3, B.5 and C stands: the ledger economics, the MMR po
   with a committed-liability bound), ledger wiring (→ guardian out of the constructor, `register` emits and calls
   Piltover only when configured, Village Pass `DISTRIBUTOR_ROLE` granted to the ledger), stale gates (→ table, B.2, G
   and Cost aligned; settlement postponed). All accepted.
+- 2026-09-03, owner decision: `dev_mode_on` means the clock only (settle before registration opens and after the main
+  phase starts). The value plane is gated by the chain-level fact `ChainConfig.ledger_operator_address != 0`
+  (`LedgerRegistrationImpl::entry_requires_ledger`) in the blitz, season and village settle paths and in prize
+  attribution; the registrar gained `set_ledger_operator` (admin) because the `config_systems` setters are a retired
+  module outside the world. The lab runs with no operator, so real-clock games open without a ledger; wiring stage 1
+  later is `set_ledger_operator(<operator>)` plus the box `LEDGER_*` env, not a redesign. Every game created before this
+  (ids 10–20) is dev-on for that reason alone, balance is the preset either way. Commit `c2e8b487de6`.
 
 ## Out of this brief
 
