@@ -1,15 +1,27 @@
-import { IDENTITY_POPOVER_ID, useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import {
+  IDENTITY_POPOVER_ID,
+  identityClient,
+  useIdentitySession,
+  useIdentitySessionStore,
+} from "@/hooks/context/identity-session";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import type { Session } from "@realms-world/identity";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+// A user who has not claimed a name carries their address as `name` — show it short-form.
+const displayName = (session: Session): string => {
+  const name = session.user.name;
+  if (!name || name.toLowerCase() === session.user.id.toLowerCase()) return shortId(session.user.id);
+  return name;
+};
 
 const resolveChipLabel = (status: "loading" | "anonymous" | "signed-in", session: Session | null): string => {
   if (status === "loading") return "…";
-  if (status === "signed-in" && session) return session.user.name || shortId(session.user.id);
+  if (status === "signed-in" && session) return displayName(session);
   return "Sign in";
 };
 
@@ -58,12 +70,39 @@ export const LandingIdentityChip = () => {
   );
 };
 
-const SignedInPanel = ({ session }: { session: Session }) => (
-  <div className="flex flex-col gap-1">
-    <span className="text-sm font-semibold text-gold">{session.user.name || "Signed in"}</span>
-    <span className="font-mono text-xs text-gold/60">{shortId(session.user.id)}</span>
-  </div>
-);
+const SignedInPanel = ({ session }: { session: Session }) => {
+  const applySession = useIdentitySessionStore((state) => state.applySession);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    setError(null);
+    try {
+      await identityClient.signOut();
+      applySession(null);
+    } catch (signOutError) {
+      const message = signOutError instanceof Error ? signOutError.message : "Sign out failed";
+      console.error("identity_sign_out_failed", { error: message });
+      setError(message);
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-semibold text-gold">{displayName(session)}</span>
+        <span className="font-mono text-xs text-gold/60">{shortId(session.user.id)}</span>
+      </div>
+      <Button className="h-8 px-3" isLoading={signingOut} onClick={() => void handleSignOut()}>
+        Sign out
+      </Button>
+      {error && <span className="max-w-[240px] text-xs text-danger">{error}</span>}
+    </div>
+  );
+};
 
 const SignInPanel = ({ prompted }: { prompted: boolean }) => (
   <div className="flex flex-col gap-3">

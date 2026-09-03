@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configureGameplayAccountSubmits } from "@/account/gameplay-account-submit";
 import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
-import { useActiveWorldProfile } from "@/runtime/world/use-active-world";
+import { getDefaultWorld } from "@/runtime/world/world-directory";
 import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import {
   assertGameplayAccountClassDeclared,
@@ -24,29 +24,26 @@ const gameplayAccountApi = createGameplayAccountApi({ baseUrl: identityOrigin })
 interface GameplayWorldTarget {
   chain: GameChain;
   rpcUrl: string;
-  bindingAuthorityAddress?: string;
-  playerAccountClassHash?: string;
-  playerRegistryAddress?: string;
+  bindingAuthorityAddress: string;
+  playerAccountClassHash: string;
+  playerRegistryAddress: string;
 }
 
-// Keyed by value, not by profile object identity: a re-created profile for the same world must not null the
-// gameplay account mid-boot.
-const useGameplayWorldTarget = (): GameplayWorldTarget | null => {
-  const activeWorld = useActiveWorldProfile();
-  const chain = activeWorld?.chain;
-  const rpcUrl = activeWorld?.rpcUrl;
-  const bindingAuthorityAddress = activeWorld?.bindingAuthorityAddress;
-  const playerAccountClassHash = activeWorld?.playerAccountClassHash;
-  const playerRegistryAddress = activeWorld?.playerRegistryAddress;
-
-  return useMemo(
-    () =>
-      chain && rpcUrl
-        ? { chain: chain as GameChain, rpcUrl, bindingAuthorityAddress, playerAccountClassHash, playerRegistryAddress }
-        : null,
-    [bindingAuthorityAddress, chain, playerAccountClassHash, playerRegistryAddress, rpcUrl],
-  );
-};
+// The gameplay account is an identity-level fact of the chain, not per-game state. Its target comes from
+// the world directory (committed env), so a signed-in user provisions and binds from the landing — before
+// any world is entered. Gating this on the active world profile was the dead end that stranded fresh
+// players at "Connect wallet": registration needed the account, the account needed an entered world.
+const useGameplayWorldTarget = (): GameplayWorldTarget =>
+  useMemo(() => {
+    const world = getDefaultWorld();
+    return {
+      chain: world.chain,
+      rpcUrl: world.rpcUrl,
+      bindingAuthorityAddress: world.bindingAuthorityAddress,
+      playerAccountClassHash: world.playerAccountClassHash,
+      playerRegistryAddress: world.playerRegistryAddress,
+    };
+  }, []);
 
 export function GameplayAccountSync({ children }: { children: ReactNode }) {
   const worldTarget = useGameplayWorldTarget();
@@ -62,8 +59,6 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
     setGameplayAccount(null, null);
 
     const sync = async () => {
-      if (!worldTarget) return;
-
       try {
         const owner = resolveGameplayOwner(sessionOwner, connectedIdentityAddress);
         if (owner === null) return;

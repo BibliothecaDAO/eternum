@@ -1968,3 +1968,28 @@ discarded on read, so already-promoted profiles heal themselves without clearing
 
 **Gate.** Lane, backend and discipline suites 30/30 (the discipline test now bans the qualification strings);
 `apps/game` typecheck green. The owner's next boots are the live gate: no WebGPU init anywhere on the boot path.
+
+### Live-user blocker — gameplay account never binds for a fresh player (2026-09-03)
+
+**Evidence.** First outside player (wallet `0x15d9…4546`): full SIWS sign-in on app.realms.party (profile shows
+Session ● Signed in), full sign-in on play.realms.party (chip shows the session) — and the profile stays
+"Game account ○ Not bound yet" with the landing cards stuck on dead "Connect wallet" text. Code-proven dead end:
+`GameplayAccountSync` only provisioned+bound when `useActiveWorldProfile()` returned a profile, which only exists
+after entering or spectating a game; the landing's register button is gated on the gameplay account. Registration
+needed the account, the account needed an entered world, entering needed registration. The fields the sync needs
+(rpc, class hash, registry, authority) were always chain-level env facts copied into the profile from
+`world-directory.ts` — the profile dependency was pure indirection.
+
+**Fix — the account is an identity-level fact.** `useGameplayWorldTarget` now reads `getDefaultWorld()` from the
+world directory; a signed-in user provisions and binds from the landing, before any world is entered.
+`useActiveWorldProfile` lost its last consumer and is deleted (wired-or-deleted). The card's dead text is replaced by
+`GameplayAccountGate`: anonymous → "Sign in to play" (opens the identity popover), signed-in → "Preparing account…",
+provisioning failure → the loud error. Two adjacent gaps closed in the same pass: the play client's identity chip had
+no sign-out at all (the "can't log out to try another wallet" report) — `identityClient.signOut` added to
+`packages/identity` and wired into the chip's signed-in panel; and a fresh user's chip showed their full 64-char
+address because `user.name` defaults to the address — address-valued names now render short-form.
+
+**Gate.** New sync test: a signed-in identity on the landing (no entered world) deploys and binds. Sign-out client
+test pins the credentialed POST. Sync, chip, landing-card, gameplay-truth and polling-discipline suites green;
+`apps/game` + `packages/identity` typecheck green. Live gate: the stranded user reloads play.realms.party —
+"Preparing account…" then the register button; app.realms.party profile flips to "● Bound".

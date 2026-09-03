@@ -5,5 +5,4 @@ export * from "./manifest-patcher";
 export * from "./profile-builder";
 export * from "./selection";
 export * from "./ensure";
-export * from "./use-active-world";
 export * from "./use-selected-chain";

@@ -44,6 +44,13 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return readJson<Session | null>(response);
   };
 
+  const signOut = async (): Promise<void> => {
+    const response = await request("/sign-out", { method: "POST", body: JSON.stringify({}) });
+    if (!response.ok) {
+      throw new Error(`Identity request failed with status ${response.status}`);
+    }
+  };
+
   const signIn = async (options: SignInOptions): Promise<Session> => {
     const nonceResponse = await request("/siws/nonce", {
       method: "POST",
@@ -69,5 +76,5 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return session;
   };
 
-  return { getSession, signIn };
+  return { getSession, signIn, signOut };
 };

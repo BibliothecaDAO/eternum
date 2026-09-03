@@ -32,6 +32,16 @@ describe("identity client", () => {
     expect(fetch.mock.calls[0]?.[1]).toMatchObject({ credentials: "include", method: "POST" });
   });
 
+  it("posts the sign-out with credentials so the play client can end the session", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({ success: true }));
+    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+
+    await expect(client.signOut()).resolves.toBeUndefined();
+
+    expect(fetch.mock.calls[0]?.[0]).toBe("https://realms.test/api/auth/sign-out");
+    expect(fetch.mock.calls[0]?.[1]).toMatchObject({ credentials: "include", method: "POST" });
+  });
+
   it("returns null when no session exists", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(new Response(null, { status: 401 }));
     const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });

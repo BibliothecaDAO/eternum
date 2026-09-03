@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
 import { summaryToWorldConfigMeta } from "@/hooks/summary-to-world-config-meta";
 import { usePlayerWorldRegistrations, getWorldSummaryKey } from "@/hooks/use-player-world-registrations";
@@ -148,6 +149,42 @@ const EmptyGameGridState = ({ showCreateGameCta }: { showCreateGameCta: boolean 
         <Sparkles className="h-3.5 w-3.5" />
         Forge New Game
       </Link>
+    </div>
+  );
+};
+
+/**
+ * The card action shown before a gameplay account exists. The account derives from the identity
+ * session (GameplayAccountSync provisions it chain-wide), so this gate mirrors that pipeline:
+ * anonymous → sign in, signed in → provisioning, failed → the loud error. Never dead-end text.
+ */
+const GameplayAccountGate = () => {
+  const { status } = useIdentitySession();
+  const requestSignIn = useIdentitySessionStore((state) => state.requestSignIn);
+  const provisioningError = useAccountStore((state) => state.provisioningError);
+
+  if (status === "anonymous") {
+    return (
+      <button
+        onClick={() => requestSignIn()}
+        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 transition-colors"
+      >
+        <LogIn className="w-3 h-3" />
+        Sign in to play
+      </button>
+    );
+  }
+  if (provisioningError) {
+    return (
+      <div className="flex-1 text-center text-[10px] text-red-400 py-1" title={provisioningError}>
+        Account setup failed
+      </div>
+    );
+  }
+  return (
+    <div className="flex-1 flex items-center justify-center gap-1 py-1 text-[10px] text-white/40">
+      <Loader2 className="w-3 h-3 animate-spin" />
+      Preparing account…
     </div>
   );
 };
@@ -399,7 +436,7 @@ const GameCard = ({
               ) : null}
             </>
           ) : isBlitzMode && !playerAddress && !showRegistered && canRegisterPeriod ? (
-            <div className="flex-1 text-center text-[10px] text-white/40 py-1">Connect wallet</div>
+            <GameplayAccountGate />
           ) : null}
 
           {showEternumSettleShortcut && (
