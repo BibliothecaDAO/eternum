@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyDurableLaunchDefaults, type CreateGameRequest } from "./schemas";
 
-const gameRequest = (devModeOn?: boolean, version?: "6" | "7"): CreateGameRequest => ({
+const gameRequest = (devModeOn?: boolean, version?: "8" | "9"): CreateGameRequest => ({
   environment: "madara.blitz",
   gameName: "bltz-test",
   ...(devModeOn === undefined ? {} : { devModeOn }),
@@ -17,13 +17,13 @@ describe("applyDurableLaunchDefaults", () => {
     expect(applyDurableLaunchDefaults("game", gameRequest(true)).devModeOn).toBe(true);
   });
 
-  it("defaults an absent version to 6 and stamps a default game start time", () => {
+  it("defaults an absent version to 8 and stamps a default game start time", () => {
     const result = applyDurableLaunchDefaults("game", gameRequest(false), 0);
-    expect(result.version).toBe("6");
+    expect(result.version).toBe("8");
     expect("gameStartTime" in result && result.gameStartTime).toBeTruthy();
   });
 
-  it("keeps a Duel launch's version 7 instead of forcing preset 6", () => {
-    expect(applyDurableLaunchDefaults("game", gameRequest(false, "7")).version).toBe("7");
+  it("keeps a Duel launch version 9 instead of forcing the default", () => {
+    expect(applyDurableLaunchDefaults("game", gameRequest(false, "9")).version).toBe("9");
   });
 });

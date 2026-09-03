@@ -11,7 +11,7 @@ autoRetryEnabled: true
 autoRetryIntervalMinutes: 15
 durationSeconds: 3600
 devModeOn: true
-version: "6"
+version: "8"
 
 weeklyCadence:
   - { weekday: monday, utcTime: "11:00" }

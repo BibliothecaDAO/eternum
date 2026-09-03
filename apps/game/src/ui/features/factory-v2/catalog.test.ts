@@ -70,7 +70,7 @@ describe("factory launch defaults", () => {
 
     expect(request).toMatchObject({
       environment: "madara.blitz",
-      version: "6",
+      version: "8",
       devModeOn: false,
       durationSeconds: 3600,
     });

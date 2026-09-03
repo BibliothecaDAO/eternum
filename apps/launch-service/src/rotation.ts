@@ -19,7 +19,9 @@ const toRotationJobRequest = (request: LaunchRotationRequest): CreateRotationReq
   weeklyCadence: request.weeklyCadence as CreateRotationRequest["weeklyCadence"],
   biomeClimateOverridesByGameNumber:
     request.biomeClimateOverridesByGameNumber as CreateRotationRequest["biomeClimateOverridesByGameNumber"],
-  version: "6",
+  // The rotation config is the authority on its preset; absent, the durable
+  // default fills it. Rotations are autonomous bot games, so dev mode stays on.
+  version: request.version as CreateRotationRequest["version"],
   devModeOn: true,
   twoPlayerMode: request.twoPlayerMode,
   singleRealmMode: request.singleRealmMode,

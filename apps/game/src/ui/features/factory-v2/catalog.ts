@@ -47,10 +47,10 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       singleRealmMode: false,
     },
   },
-  // Blitz launches run on registered registrar presets: 6 = Regular Fast
-  // (official-60 profile), 7 = Duel (official-90 profile). Presets 2/3 carried
-  // local dev balance and 4/5 missed their balance profiles — all immutable,
-  // retired, not offered.
+  // Blitz launches run on registered registrar presets: 8 = Regular Fast
+  // (official-60 profile), 9 = Duel (official-90 profile). Retired immutable
+  // presets: 2/3 local dev balance, 4/5 missing balance profiles, 6/7 baked
+  // the base sheet's 24-tick spawn immunity — none offered.
   {
     id: "blitz-fast",
     mode: "blitz",
@@ -62,7 +62,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "6",
+      version: "8",
     },
   },
   {
@@ -76,7 +76,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: true,
       singleRealmMode: false,
-      version: "7",
+      version: "9",
     },
   },
   {
@@ -90,7 +90,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: true,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "6",
+      version: "8",
     },
   },
 ];
