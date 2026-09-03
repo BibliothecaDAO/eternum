@@ -1786,3 +1786,25 @@ appended here):
 run on this branch in parallel; this pass is UI-side and collides mostly nowhere, but shared-worktree discipline holds:
 explicit-path commits only. The Realms Deck artifact (e835afd9) carries a supersession note for layouts A–C and the
 command card until it is redrawn per-feature as spots are found.
+
+### Autonomous run record — far-band biome tint, one source (2026-09-03)
+
+**Evidence.** The gray-placeholder screenshot predates `00010bbb925`: this branch already owns far land with
+`WorldBiomeSurface`, one instanced hex mesh above one shroud plane, so the geometry and draw-budget half of the
+requested fix was present. The remaining violation was two truths. The minimap mapped `BiomeIdToType` into
+`BIOME_COLORS` (including a private Taiga override), the world scene separately mapped the same id while silently
+converting `None` or an unknown id to Grassland, and the far surface used a third palette (`TERRAIN_BIOME_DESCRIPTORS`).
+The same biome could therefore have different far-map and minimap colors, while malformed data looked like valid
+grassland.
+
+**Fix.** `biome-colors.ts` now owns id-to-biome resolution and the flat biome palette. The minimap and world projection
+both consume it; explored world tiles require a real biome loudly, while the minimap's absent or unknown tile remains
+its explicit gray unknown state. `WorldmapProceduralTerrain` still builds the real textured biome pages only around the
+camera. `WorldBiomeSurface` uses the real RECS tile's biome outside that window and retains its existing one instanced
+draw; no props, models, labels, composite pages or shroud rules changed.
+
+**Gate.** Far-surface and content-wiring suites: 23/23 green; `apps/game` typecheck green. The wide headless
+`bltz-clash-538` world capture shows snow, desert, forest, beach and water tints continuing outside the detailed page
+window. The surface remains two draws total (one shroud plus one instanced biome mesh), so the change's draw-count delta
+is zero and stays within the existing far-band budget. The unit and source tests pin the shared id resolver and color
+palette and reject local `BiomeIdToType` copies in both consumers.

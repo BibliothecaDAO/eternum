@@ -1,10 +1,10 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
 import { Color, InstancedMesh, type Material, Mesh, MeshBasicMaterial, type PlaneGeometry, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
+import { requireBiomeColor, requireBiomeTypeFromId, resolveBiomeTypeFromId } from "../managers/biome-colors";
 import { terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
 import { TERRAIN_DEEP_FOG_COLOR } from "./terrain-fog-style";
-import { TERRAIN_BIOME_DESCRIPTORS } from "./terrain-palette";
 import {
   WORLD_BIOME_SHROUD_HEIGHT,
   WORLD_BIOME_SHROUD_MARGIN_HEXES,
@@ -34,6 +34,18 @@ describe("WorldBiomeSurface", () => {
 
     expect(slotColor(surface, 0)).toEqual(paletteColor(BiomeType.Grassland));
     expect(slotColor(surface, 1)).toEqual(paletteColor(BiomeType.DeepOcean));
+    surface.dispose();
+  });
+
+  it("resolves far-band color from the same biome id contract as the minimap", () => {
+    const biome = requireBiomeTypeFromId(BiomeTypeToId[BiomeType.TemperateDesert]);
+    const surface = new WorldBiomeSurface();
+    surface.setTile(0, 0, biome);
+    surface.commit();
+
+    expect(slotColor(surface, 0)).toEqual(paletteColor(biome));
+    expect(resolveBiomeTypeFromId(-1)).toBeNull();
+    expect(() => requireBiomeTypeFromId(-1)).toThrow("Unknown explored-tile biome id -1");
     surface.dispose();
   });
 
@@ -275,7 +287,7 @@ function slotColor(surface: WorldBiomeSurface, slot: number): [number, number, n
 }
 
 function paletteColor(biome: BiomeType): [number, number, number] {
-  const color = new Color(TERRAIN_BIOME_DESCRIPTORS[biome].primary);
+  const color = requireBiomeColor(biome);
   return [Math.fround(color.r), Math.fround(color.g), Math.fround(color.b)];
 }
 

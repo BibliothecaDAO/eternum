@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeIdToType, BiomeType } from "@bibliothecadao/types";
 import * as THREE from "three";
 
 export const BIOME_COLORS: Record<BiomeType | "Empty", THREE.Color> = {
@@ -21,3 +21,21 @@ export const BIOME_COLORS: Record<BiomeType | "Empty", THREE.Color> = {
   TropicalRainForest: new THREE.Color("#8a714a"),
   Empty: new THREE.Color("#000000"),
 };
+
+export function resolveBiomeTypeFromId(biomeId: number | undefined): BiomeType | null {
+  if (biomeId === undefined) return null;
+  const biome = BiomeIdToType[biomeId];
+  return biome && biome !== BiomeType.None ? biome : null;
+}
+
+export function requireBiomeTypeFromId(biomeId: number): BiomeType {
+  const biome = resolveBiomeTypeFromId(biomeId);
+  if (!biome) throw new Error(`Unknown explored-tile biome id ${biomeId}`);
+  return biome;
+}
+
+export function requireBiomeColor(biome: BiomeType): THREE.Color {
+  const color = BIOME_COLORS[biome];
+  if (!color) throw new Error(`Missing biome color for ${biome}`);
+  return color;
+}

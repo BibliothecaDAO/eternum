@@ -14,10 +14,10 @@ import {
 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 
+import { requireBiomeColor } from "../managers/biome-colors";
 import { terrainHexCorners, terrainHexToWorld } from "./terrain-coordinates";
 import { hexCellKey } from "./hex-cell-key";
 import { TERRAIN_DEEP_FOG_COLOR } from "./terrain-fog-style";
-import { TERRAIN_BIOME_DESCRIPTORS } from "./terrain-palette";
 
 /**
  * Whole-world far-LOD ground: one flat hex per explored tile in its biome's
@@ -55,8 +55,6 @@ interface DirtySlotRange {
   max: number;
   min: number;
 }
-
-const BIOME_GROUND_COLORS = buildBiomeGroundColors();
 
 export class WorldBiomeSurface {
   readonly object3d = new Group();
@@ -211,16 +209,8 @@ export class WorldBiomeSurface {
   }
 }
 
-function buildBiomeGroundColors(): ReadonlyMap<BiomeType, Color> {
-  return new Map(
-    Object.values(BiomeType).map((biome) => [biome, new Color(TERRAIN_BIOME_DESCRIPTORS[biome].primary)] as const),
-  );
-}
-
 function requireBiomeGroundColor(biome: BiomeType): Color {
-  const color = BIOME_GROUND_COLORS.get(biome);
-  if (!color) throw new Error(`World biome surface has no ground colour for biome ${String(biome)}`);
-  return color;
+  return requireBiomeColor(biome);
 }
 
 function createBiomeHexMesh(): InstancedMesh<BufferGeometry, MeshStandardNodeMaterial> {

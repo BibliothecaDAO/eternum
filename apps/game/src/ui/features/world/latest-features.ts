@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-03",
+    title: "Biome-Colored Horizon",
+    description:
+      "Distant explored land now keeps the same biome colors as the minimap instead of falling back to generic ground, without adding terrain models or draw calls.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-03",
     title: "Textured Realm Terrain",
     description:
       "Realm interiors now show their shaded procedural biome ground without the obsolete flat-color hex surface covering it.",

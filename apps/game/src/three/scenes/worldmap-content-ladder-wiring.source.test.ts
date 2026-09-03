@@ -38,6 +38,18 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(/this\.strategicMarkers\.setViewPitch\(pitch\)/);
   });
 
+  it("uses the minimap's biome classification and color source for the far-band ground", () => {
+    const worldmap = read("worldmap.tsx");
+    const surface = read("../terrain/world-biome-surface.ts");
+    const minimap = read("../../ui/features/world/components/bottom-right-panel/hex-minimap.tsx");
+
+    expect(worldmap).toContain("requireBiomeTypeFromId(tile.biome)");
+    expect(minimap).toContain("resolveBiomeTypeFromId(biomeId)");
+    expect(surface).toContain("requireBiomeColor(biome)");
+    expect(worldmap).not.toContain("BiomeIdToType");
+    expect(minimap).not.toContain("BiomeIdToType");
+  });
+
   it("refreshes label priority on hover, hex leave and selection changes", () => {
     const source = read("worldmap.tsx");
     expect(source.match(/this\.refreshLabelPriorityContext\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(4);

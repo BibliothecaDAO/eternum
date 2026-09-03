@@ -1,7 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FELT_CENTER } from "@/ui/config";
-import { BIOME_COLORS } from "@/three/managers/biome-colors";
+import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import {
   getExplorerInfoFromTileOccupier,
   getStructureInfoFromTileOccupier,
@@ -9,7 +9,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { BiomeIdToType, BiomeType, HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 
 export interface MinimapTile {
@@ -104,11 +104,8 @@ const hexCorners = (center: { x: number; y: number }) => {
 };
 
 const getBiomeColor = (biomeId?: number) => {
-  if (biomeId === undefined) return "#4b5563";
-  const biomeType = BiomeIdToType[biomeId];
-  if (biomeType === BiomeType.Taiga) return "#ffffff";
-  const color = BIOME_COLORS[biomeType as keyof typeof BIOME_COLORS];
-  return color?.getStyle?.() ?? "#4b5563";
+  const biome = resolveBiomeTypeFromId(biomeId);
+  return biome ? requireBiomeColor(biome).getStyle() : "#4b5563";
 };
 
 const getOccupierColor = (tile: MinimapTile) => {

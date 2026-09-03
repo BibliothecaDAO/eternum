@@ -92,7 +92,6 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
-  BiomeIdToType,
   BiomeType,
   ContractAddress,
   Direction,
@@ -113,6 +112,7 @@ import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
+import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
 import {
   StrategicMarkerLayer,
   type StrategicArmyMarkerTier,
@@ -583,11 +583,6 @@ let worldmapInteractionDebugInstanceCounter = 0;
 function allocateWorldmapInteractionDebugInstanceId(): number {
   worldmapInteractionDebugInstanceCounter += 1;
   return worldmapInteractionDebugInstanceCounter;
-}
-
-function resolveTileBiomeType(biomeId: number): BiomeType {
-  const biome = BiomeIdToType[biomeId];
-  return biome === BiomeType.None ? BiomeType.Grassland : biome || BiomeType.Grassland;
 }
 
 function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActionLatencyPhase | undefined {
@@ -1314,7 +1309,7 @@ export default class WorldmapScene extends WarpTravel {
   private seedWorldBiomeSurface(): void {
     this.worldSpatialProjection.getTiles().forEach((tile) => {
       const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
-      this.worldBiomeSurface.setTile(normalized.x, normalized.y, resolveTileBiomeType(tile.biome));
+      this.worldBiomeSurface.setTile(normalized.x, normalized.y, requireBiomeTypeFromId(tile.biome));
     });
     this.commitWorldBiomeSurface();
   }
@@ -1428,7 +1423,7 @@ export default class WorldmapScene extends WarpTravel {
     if (current) this.completePendingExploreEffects(current.hexCoords);
 
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
-    this.worldBiomeSurface.setTile(normalized.x, normalized.y, current ? resolveTileBiomeType(current.biome) : null);
+    this.worldBiomeSurface.setTile(normalized.x, normalized.y, current ? requireBiomeTypeFromId(current.biome) : null);
     if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
       return;
     }
@@ -1443,7 +1438,7 @@ export default class WorldmapScene extends WarpTravel {
     current: TileSpatialProjectionChange["current"],
   ): Promise<void> {
     if (current) {
-      return this.writeExploredTileFromProjection(col, row, resolveTileBiomeType(current.biome));
+      return this.writeExploredTileFromProjection(col, row, requireBiomeTypeFromId(current.biome));
     }
 
     const rows = this.exploredTiles.get(col);
@@ -3281,7 +3276,7 @@ export default class WorldmapScene extends WarpTravel {
     this.worldSpatialProjection.getTiles().forEach((tile) => {
       const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, BiomeType>();
-      row.set(normalized.y, resolveTileBiomeType(tile.biome));
+      row.set(normalized.y, requireBiomeTypeFromId(tile.biome));
       index.set(normalized.x, row);
     });
     return index;
@@ -5761,7 +5756,7 @@ export default class WorldmapScene extends WarpTravel {
         retainedTileIds.add(tile.spatialId);
         const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
         exploredTiles.push({
-          biome: resolveTileBiomeType(tile.biome),
+          biome: requireBiomeTypeFromId(tile.biome),
           col: normalized.x,
           row: normalized.y,
         });
@@ -6115,7 +6110,7 @@ export default class WorldmapScene extends WarpTravel {
     let syncedTileCount = 0;
     for (const tile of tiles) {
       const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
-      const biome = resolveTileBiomeType(tile.biome);
+      const biome = requireBiomeTypeFromId(tile.biome);
       const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
       if (existingBiome === biome) {
         continue;
