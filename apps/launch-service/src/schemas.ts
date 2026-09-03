@@ -6,7 +6,9 @@ const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema
 
 const SharedOptions = {
   environment: Schema.Literal("madara.blitz"),
-  version: Schema.optional(Schema.Literal("6")),
+  // The registered registrar presets: 6 = Regular Fast, 7 = Duel. The client's
+  // preset catalog is the authority on which one a launch uses.
+  version: Schema.optional(Schema.Literals(["6", "7"])),
   devModeOn: Schema.optional(Schema.Boolean),
   twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
@@ -64,7 +66,7 @@ export const CreateRotationRequestSchema = Schema.Struct({
 
 interface SharedLaunchOptions {
   environment: "madara.blitz";
-  version?: "6";
+  version?: "6" | "7";
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
@@ -118,10 +120,10 @@ export const applyDurableLaunchDefaults = (
   request: LaunchJobRequest,
   now = Date.now(),
 ): LaunchJobRequest => {
-  // devModeOn is honored from the request, not forced: a Sandbox preset launches
-  // dev-on, a real game (Regular Fast/Standard/Duel) launches dev-off so it respects
-  // registration and start-time gates. Rotations set devModeOn:true explicitly.
-  const shared = { ...request, version: "6" as const };
+  // Request values are honored, never overwritten — the client's preset is the
+  // authority (devModeOn: Sandbox on, real games off; version: 6 = Regular Fast,
+  // 7 = Duel). Defaults here only fill absent fields, once, before persistence.
+  const shared = { ...request, version: request.version ?? ("6" as const) };
   if (kind === "game" && "gameName" in shared) {
     return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
   }

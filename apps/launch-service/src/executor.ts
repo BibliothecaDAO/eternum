@@ -51,7 +51,7 @@ const sharedRequest = (
   rpcUrl: rpc.url,
   accountAddress: registrar.accountAddress,
   privateKey: registrar.privateKey,
-  version: request.version ?? "6",
+  version: request.version,
   devModeOn: request.devModeOn,
   twoPlayerMode: request.twoPlayerMode,
   singleRealmMode: request.singleRealmMode,

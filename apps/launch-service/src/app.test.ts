@@ -94,7 +94,7 @@ describe("launch service authorization", () => {
     expect(disallowed.headers.get("access-control-allow-origin")).toBeNull();
   });
 
-  test("rejects a non-preset-6 Madara launch", async () => {
+  test("rejects an unregistered registrar preset", async () => {
     const { app } = createApp(identity(ALLOWED_ADDRESS));
     const request = launchRequest();
     request.headers.set("content-type", "application/json");
@@ -102,11 +102,30 @@ describe("launch service authorization", () => {
       body: JSON.stringify({
         environment: "madara.blitz",
         gameName: "bltz-invalid-profile",
-        version: "7",
+        version: "5",
       }),
     });
 
     expect((await app.request(invalid)).status).toBe(400);
+  });
+
+  test("launches a Duel on preset 7 and stores version:7", async () => {
+    const { app, store } = createApp(identity(ALLOWED_ADDRESS));
+    const request = launchRequest();
+    request.headers.set("content-type", "application/json");
+    const duel = new Request(request, {
+      body: JSON.stringify({
+        environment: "madara.blitz",
+        gameName: "bltz-duel-game",
+        version: "7",
+        twoPlayerMode: true,
+        devModeOn: false,
+      }),
+    });
+
+    expect((await app.request(duel)).status).toBe(202);
+    const run = await store.find("game", "madara.blitz", "bltz-duel-game");
+    expect(run?.request.version).toBe("7");
   });
 
   test("launches a real game dev-off and stores devModeOn:false", async () => {
