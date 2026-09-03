@@ -1950,3 +1950,21 @@ manager catch-ups at 12 s each, with recovery churn and 130–150 FramePerf spik
    is); headless first-terrain unchanged or better; the measured breakdown before/after in the record; the owner's
    live boot is the acceptance — the record proposes the time-to-playable bar from the measured floor and the owner
    rules on it.
+
+### Review follow-up — automatic WebGPU deleted from the boot entirely (2026-09-03, commit pending)
+
+**Evidence.** The owner's live boots take ~50 s and their conviction is the WebGPU machinery ("with the webgl fallback
+it was loading instant"). The mechanism is real: the idle qualification promotes a profile to `webgpu` when a 3 s init
+succeeds on an idle GPU, and the next boot then attempts real WebGPU init under the 15 s remembered-lane window during
+a saturated boot — the one situation the qualification never tested. A promotion can therefore tax the very next boot
+with up to 15 s of stall before the WebGL2 fallback, on a machine the owner has already ruled runs the WebGL2 lane.
+
+**Fix — success is deletion.** WebGPU is parked by owner ruling, so the boot carries no automatic WebGPU path at all:
+the idle qualification, its 3 s timeout, the `idle:init-ok` promotion and the `scheduleIdle` dependency are deleted
+from `webgpu-renderer-backend.ts`, and `qualifyAtIdle` and the soft-verdict distinction are deleted from
+`webgpu-lane-probe.ts`. Every profile boots WebGL2. A remembered `webgpu` lane whose reason starts with `idle:` is
+discarded on read, so already-promoted profiles heal themselves without clearing storage. The explicit
+`?rendererMode` query flag remains the only door to WebGPU, for deliberate testing when the parking ends.
+
+**Gate.** Lane, backend and discipline suites 30/30 (the discipline test now bans the qualification strings);
+`apps/game` typecheck green. The owner's next boots are the live gate: no WebGPU init anywhere on the boot path.

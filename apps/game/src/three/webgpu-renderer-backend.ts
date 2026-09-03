@@ -80,8 +80,6 @@ interface WebGPURendererBackendDependencies {
   rememberLane(lane: RendererLane, reason: string): void;
   /** Decides whether to try WebGPU at all — bounded probe or per-profile memory, never an unbounded adapter wait. */
   resolveLaneStart(input: { forceReprobe: boolean; requestedMode: RendererBuildMode }): Promise<WebGpuLaneStart>;
-  /** Runs renderer qualification after the active WebGL2 lane has finished booting. */
-  scheduleIdle(work: () => void): void;
 }
 
 interface WebGpuRendererModules {
@@ -149,18 +147,7 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
       probe: () => probeWebGpuAdapter({ gpu: resolveNavigatorGpu() }),
       storage: resolveLaneStorage(),
     }),
-  scheduleIdle: scheduleRendererQualification,
 };
-
-function scheduleRendererQualification(work: () => void): void {
-  const idle = (globalThis as { requestIdleCallback?: (fn: () => void, options?: { timeout: number }) => number })
-    .requestIdleCallback;
-  if (idle) {
-    idle(work, { timeout: 30_000 });
-    return;
-  }
-  setTimeout(work, 10_000);
-}
 
 function resolveNavigatorGpu(): { requestAdapter(): Promise<unknown | null> } | undefined {
   if (typeof navigator === "undefined") return undefined;
@@ -177,7 +164,6 @@ function resolveLaneStorage(): Storage | null {
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
 const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
-const WEBGPU_BACKGROUND_QUALIFICATION_TIMEOUT_MS = 3_000;
 let webGpuFrameRecoveryWarned = false;
 let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
@@ -414,10 +400,7 @@ export function createWebGPURendererBackend(
   let cleanupDeviceDiagnostics: (() => void) | undefined;
   let disposed = false;
 
-  const startRendererLane = async (
-    forceWebGL: boolean,
-    timeoutMs = WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
-  ): Promise<InitializedRendererLane> => {
+  const startRendererLane = async (forceWebGL: boolean): Promise<InitializedRendererLane> => {
     const abortController = new AbortController();
     let createdRenderer: CreatedWebGPURenderer | undefined;
     let releaseDeviceDiagnostics: (() => void) | undefined;
@@ -437,7 +420,7 @@ export function createWebGPURendererBackend(
       });
       if (abortController.signal.aborted) {
         disposeCreatedRenderer();
-        throw createWebGpuStartupTimeoutError(timeoutMs);
+        throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
       }
 
       try {
@@ -446,7 +429,7 @@ export function createWebGPURendererBackend(
         const rendererInitStartedAt = resolvedDependencies.now();
         await createdRenderer.renderer.init();
         if (abortController.signal.aborted) {
-          throw createWebGpuStartupTimeoutError(timeoutMs, createdRenderer.activeMode);
+          throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS, createdRenderer.activeMode);
         }
         recordRendererStartupTiming("webgpu-renderer-init", resolvedDependencies.now() - rendererInitStartedAt);
 
@@ -464,23 +447,7 @@ export function createWebGPURendererBackend(
       disposeCreatedRenderer,
       resolveTimedOutMode: () => createdRenderer?.activeMode ?? null,
       startupPromise,
-      timeoutMs,
-    });
-  };
-
-  const qualifyWebGpuLaneAtIdle = () => {
-    resolvedDependencies.scheduleIdle(() => {
-      if (disposed) return;
-      void startRendererLane(false, WEBGPU_BACKGROUND_QUALIFICATION_TIMEOUT_MS)
-        .then((lane) => {
-          lane.releaseDeviceDiagnostics();
-          lane.renderer.dispose();
-          resolvedDependencies.rememberLane("webgpu", "idle:init-ok");
-        })
-        .catch((error) => {
-          const reason = error instanceof RendererInitTimeoutError ? "webgpu-init-timeout" : "webgpu-init-error";
-          resolvedDependencies.rememberLane("webgl2", `idle:${reason}`);
-        });
+      timeoutMs: WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
     });
   };
 
@@ -491,7 +458,6 @@ export function createWebGPURendererBackend(
     });
     try {
       const lane = await startRendererLane(start.forceWebGL);
-      if (start.qualifyAtIdle) qualifyWebGpuLaneAtIdle();
       if (lane.activeMode === "webgpu") resolvedDependencies.rememberLane("webgpu", "init");
       return { ...lane, fallbackReason: lane.fallbackReason ?? start.fallbackReason };
     } catch (error) {

@@ -11,7 +11,6 @@ export interface RendererLaneMemory {
 
 export interface WebGpuLaneStart {
   /** A fresh profile renders on WebGL2 now and proves WebGPU off the boot path for the next boot. */
-  readonly qualifyAtIdle?: boolean;
   readonly forceWebGL: boolean;
   /** Set when the lane came from memory or a failed probe; null when WebGPU is being attempted. */
   readonly fallbackReason:
@@ -96,12 +95,13 @@ export async function resolveWebGpuLaneStart(input: ResolveWebGpuLaneStartInput)
     return { fallbackReason: null, forceWebGL: true, remembered: false };
   }
 
-  const remembered = input.forceReprobe ? null : readRememberedRendererLane(input.storage);
+  const stored = input.forceReprobe ? null : readRememberedRendererLane(input.storage);
+  // WebGPU is parked: an idle-era promotion is not proof boot-time init works, so it is discarded.
+  const remembered = stored && stored.lane === "webgpu" && stored.reason.startsWith("idle:") ? null : stored;
   if (remembered) {
     return {
       fallbackReason: remembered.lane === "webgl2" ? "webgpu-remembered-fallback" : null,
       forceWebGL: remembered.lane === "webgl2",
-      qualifyAtIdle: remembered.lane === "webgl2" && isSoftWebGpuVerdict(remembered.reason),
       remembered: true,
     };
   }
@@ -110,7 +110,6 @@ export async function resolveWebGpuLaneStart(input: ResolveWebGpuLaneStartInput)
     return {
       fallbackReason: "webgpu-unproven",
       forceWebGL: true,
-      qualifyAtIdle: true,
       remembered: false,
     };
   }
@@ -121,14 +120,8 @@ export async function resolveWebGpuLaneStart(input: ResolveWebGpuLaneStartInput)
   return {
     fallbackReason: resolveProbeFallbackReason(verdict),
     forceWebGL: lane === "webgl2",
-    qualifyAtIdle: isSoftWebGpuVerdict(verdict),
     remembered: false,
   };
-}
-
-/** `adapter-timeout` says nothing about the hardware; `no-adapter` and `no-navigator-gpu` do. */
-function isSoftWebGpuVerdict(verdict: string): boolean {
-  return verdict === "adapter-timeout" || verdict === "idle:adapter-timeout";
 }
 
 function resolveProbeFallbackReason(verdict: WebGpuProbeVerdict): WebGpuLaneStart["fallbackReason"] {

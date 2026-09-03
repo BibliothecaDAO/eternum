@@ -53,11 +53,21 @@ describe("resolveWebGpuLaneStart", () => {
     ).resolves.toEqual({
       fallbackReason: "webgpu-unproven",
       forceWebGL: true,
-      qualifyAtIdle: true,
       remembered: false,
     });
     expect(probe).not.toHaveBeenCalled();
     expect(readRememberedRendererLane(storage)).toBeNull();
+  });
+
+  it("discards an idle-promoted webgpu memory and boots WebGL2", async () => {
+    const storage = createStorage({
+      [RENDERER_LANE_STORAGE_KEY]: JSON.stringify({ lane: "webgpu", reason: "idle:init-ok", recordedAt: 1 }),
+    });
+    const probe = vi.fn(async () => "adapter" as const);
+    await expect(
+      resolveWebGpuLaneStart({ forceReprobe: false, probe, requestedMode: "webgpu-auto", storage }),
+    ).resolves.toEqual({ fallbackReason: "webgpu-unproven", forceWebGL: true, remembered: false });
+    expect(probe).not.toHaveBeenCalled();
   });
 
   it("re-probes on an explicit renderer mode without promoting the profile before renderer init", async () => {
@@ -67,11 +77,11 @@ describe("resolveWebGpuLaneStart", () => {
     const probe = vi.fn(async () => "adapter" as const);
     await expect(
       resolveWebGpuLaneStart({ forceReprobe: true, probe, requestedMode: "webgpu-auto", storage }),
-    ).resolves.toEqual({ fallbackReason: null, forceWebGL: false, qualifyAtIdle: false, remembered: false });
+    ).resolves.toEqual({ fallbackReason: null, forceWebGL: false, remembered: false });
     expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: "no-adapter" });
   });
 
-  it("keeps an explicit probe timeout soft so renderer init can qualify it at idle", async () => {
+  it("keeps an explicit probe timeout on WebGL2 with no qualification", async () => {
     const storage = createStorage();
     await expect(
       resolveWebGpuLaneStart({
@@ -83,7 +93,6 @@ describe("resolveWebGpuLaneStart", () => {
     ).resolves.toEqual({
       fallbackReason: "webgpu-probe-timeout",
       forceWebGL: true,
-      qualifyAtIdle: true,
       remembered: false,
     });
     expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: "adapter-timeout" });
@@ -102,14 +111,13 @@ describe("resolveWebGpuLaneStart", () => {
       ).resolves.toEqual({
         fallbackReason: "webgpu-unavailable",
         forceWebGL: true,
-        qualifyAtIdle: false,
         remembered: false,
       });
       expect(readRememberedRendererLane(storage)).toMatchObject({ lane: "webgl2", reason: verdict });
     }
   });
 
-  it("asks the backend to qualify a remembered soft fallback at idle", async () => {
+  it("keeps a remembered soft fallback on WebGL2 without qualification", async () => {
     const storage = createStorage({
       [RENDERER_LANE_STORAGE_KEY]: JSON.stringify({ lane: "webgl2", reason: "idle:adapter-timeout", recordedAt: 1 }),
     });
@@ -121,7 +129,7 @@ describe("resolveWebGpuLaneStart", () => {
         requestedMode: "webgpu-auto",
         storage,
       }),
-    ).resolves.toMatchObject({ forceWebGL: true, qualifyAtIdle: true, remembered: true });
+    ).resolves.toEqual({ fallbackReason: "webgpu-remembered-fallback", forceWebGL: true, remembered: true });
     expect(probe).not.toHaveBeenCalled();
   });
 

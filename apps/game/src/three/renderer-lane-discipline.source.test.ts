@@ -38,8 +38,9 @@ describe("renderer lane discipline", () => {
     expect(probe).toMatch(/RENDERER_LANE_STORAGE_KEY = "eternum-renderer-lane"/);
     const backend = readFileSync(join(srcRoot, "three", "webgpu-renderer-backend.ts"), "utf8");
     expect(backend).toMatch(/resolvedDependencies\.resolveLaneStart\(/);
-    expect(backend).toContain("WEBGPU_BACKGROUND_QUALIFICATION_TIMEOUT_MS = 3_000");
-    expect(backend).toContain('rememberLane("webgpu", "idle:init-ok")');
-    expect(backend).toContain('rememberLane("webgl2", `idle:${reason}`)');
+    // WebGPU is parked: no automatic qualification or idle promotion exists anywhere.
+    expect(backend).not.toContain("QUALIFICATION_TIMEOUT");
+    expect(backend).not.toContain("idle:init-ok");
+    expect(probe).not.toContain("qualifyAtIdle");
   });
 });
