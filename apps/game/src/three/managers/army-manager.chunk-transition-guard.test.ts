@@ -12,8 +12,9 @@ describe("ArmyManager chunk-transition guard", () => {
   it("executeRenderForChunk sets isArmyChunkTransitioning to true before try block", () => {
     const source = readSource("./army-manager.ts");
 
-    const transitionTrueIdx = source.indexOf("this.isArmyChunkTransitioning = true");
-    const startRowIdx = source.indexOf('const [startRow, startCol] = chunkKey.split(",")');
+    const renderStart = source.indexOf("private async executeRenderForChunk(");
+    const transitionTrueIdx = source.indexOf("this.isArmyChunkTransitioning = true", renderStart);
+    const startRowIdx = source.indexOf('const [startRow, startCol] = chunkKey.split(",")', renderStart);
 
     expect(transitionTrueIdx).toBeGreaterThan(-1);
     expect(startRowIdx).toBeGreaterThan(-1);
@@ -25,7 +26,7 @@ describe("ArmyManager chunk-transition guard", () => {
   it("routes finally cleanup through the winning-transition finalizer", () => {
     const source = readSource("./army-manager.ts");
 
-    const finallyIdx = source.indexOf("} finally {", source.indexOf("executeRenderForChunk"));
+    const finallyIdx = source.indexOf("} finally {", source.indexOf("private async executeRenderForChunk("));
     expect(finallyIdx).toBeGreaterThan(-1);
 
     const finalizerIdx = source.indexOf("finalizeArmyChunkTransition({", finallyIdx);
@@ -36,7 +37,7 @@ describe("ArmyManager chunk-transition guard", () => {
   it("hands both owned queues to the transition finalizer", () => {
     const source = readSource("./army-manager.ts");
 
-    const finallyIdx = source.indexOf("} finally {", source.indexOf("executeRenderForChunk"));
+    const finallyIdx = source.indexOf("} finally {", source.indexOf("private async executeRenderForChunk("));
     expect(finallyIdx).toBeGreaterThan(-1);
 
     const finalizerBlock = source.slice(finallyIdx, source.indexOf("recordWorldmapRenderDuration", finallyIdx));

@@ -16,7 +16,7 @@ describe("ArmyManager moving-bounds refresh", () => {
     expect(methodStart).toBeGreaterThan(-1);
 
     const methodBody = source.slice(methodStart, methodStart + 1200);
-    const batchedUpdatePos = methodBody.indexOf("this.updateVisibleArmiesBatched()");
+    const batchedUpdatePos = methodBody.indexOf("this.updateVisibleArmyPresentation()");
     const refreshPos = methodBody.indexOf("this.syncArmyBoundsForMovementState()");
 
     expect(batchedUpdatePos).toBeGreaterThan(-1);

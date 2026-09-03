@@ -76,7 +76,7 @@ const CAPTURED_WARN_ERROR_SITES = [
   },
   {
     path: "src/ui/shared/components/transaction-audio-cues.tsx",
-    required: "console.error(`Transaction failed: ${formatReadableErrorForConsole(",
+    required: "`Transaction failed: ${formatReadableErrorForConsole(",
     forbidden: 'console.error("Transaction failed:", reason, payload.error ?? payload.message)',
   },
   {

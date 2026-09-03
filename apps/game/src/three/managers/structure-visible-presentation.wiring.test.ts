@@ -12,9 +12,7 @@ describe("structure visible presentation wiring", () => {
   it("routes projected render passes through shared presentation helpers", () => {
     const source = readStructureManagerSource();
 
-    expect(source).toMatch(
-      /this\.syncVisibleStructurePresentation\(undefined, structure, rotationY, attachmentRetain\)/,
-    );
+    expect(source).toMatch(/this\.syncVisibleStructurePresentation\(structure, rotationY, attachmentRetain\)/);
     expect(source).toMatch(/private syncVisibleStructurePresentation\(/);
     expect(source).toMatch(/private resolveVisibleStructureRotationY\(/);
   });
