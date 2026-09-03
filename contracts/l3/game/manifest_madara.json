@@ -1551,7 +1551,7 @@
     },
     {
       "address": "0x24a29eca64b5968c56ea4109fc22ee791a9f9f5df641550724a95dadf1d44ce",
-      "class_hash": "0x556aa52b6801e2e2948ea509d2c3b9cf8e745b5832a64ddd898471937ac56d9",
+      "class_hash": "0x176507ce17a6546ddcdd538f51a3b6951e5b6b8f450259143036e42369cb6fa",
       "init_calldata": [],
       "tag": "s2-blitz_realm_systems",
       "selector": "0x2f457be35501fb088476ae8ad493f012f5b4bb4060d8a639a9b8fb45e6b8c3",
@@ -1742,7 +1742,7 @@
     },
     {
       "address": "0x362d9977c3a795d8fbabd37843efa82e2df47a7f16225648faefaecd5021052",
-      "class_hash": "0x721a76c8ae3852a245e3bdf05521dddb7b596ce4aba03de8c53bdb082af5a8b",
+      "class_hash": "0x7f8cebd0e76ccd69d64b97aafa7bb5c64c38d1f25fa8cd13646602fb59edf01",
       "init_calldata": [],
       "tag": "s2-prize_distribution_systems",
       "selector": "0x12aecde0aeb831c6bd68cd5136815edd4f4db05e9a55c4b734534601718437d",
@@ -1802,7 +1802,7 @@
     },
     {
       "address": "0x477eabbcf73904cb9734857241ad65d2f0f25e9f2d5dc8c70c9923f1aa82951",
-      "class_hash": "0x43427d95f889fb9fe4ae85f61b6ae7d74414c9c593c9aad9aca81efefcb1d61",
+      "class_hash": "0x5fe9de9c2bd92dddbdbaca88c6a7920c87fe9044fe99e41575adf02bdfaf307",
       "init_calldata": [],
       "tag": "s2-realm_systems",
       "selector": "0x15840f61f67edf5690ea72dd3e54dfe561477810b5684035e0476bef3436923",
@@ -1813,7 +1813,7 @@
     },
     {
       "address": "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
-      "class_hash": "0x242e40b4e8857a6222d65b019dde9504c4e532671a52dd64a7822c9a7f94c2e",
+      "class_hash": "0x1bdc6655b14a583738957fb6fcf666a7fef602500c2739e24e25dbf17209159",
       "init_calldata": [],
       "tag": "s2-registrar_systems",
       "selector": "0x4804d037c91147634be0c5239a0c366e59e0365a3dbb5da3c4c4c5e9cfd6014",
@@ -1825,6 +1825,7 @@
         "sync_game_status",
         "reset_trial",
         "mark_game_settled",
+        "set_ledger_operator",
         "upgrade"
       ]
     },
@@ -2007,7 +2008,7 @@
     },
     {
       "address": "0x20a8aa583cde37a57cc2c256bdaa46c37675b657e5bb9f1eace20b7e13d6e42",
-      "class_hash": "0x47dfca3f27a7e59f2e9824efe7bf8b94f542a7b3321c659657363fe200fbe0b",
+      "class_hash": "0x4cfa676db669ce45a5c3253d414c3e0c01415f6aa07077c55801513c67ed72b",
       "init_calldata": [],
       "tag": "s2-village_systems",
       "selector": "0x7edd79ed540ae459d77f2b23976b0539de02ccbc8b43d723de2564369d38f8c",
@@ -21284,6 +21285,18 @@
             {
               "name": "game_id",
               "type": "core::integer::u32"
+            }
+          ],
+          "outputs": [],
+          "state_mutability": "external"
+        },
+        {
+          "type": "function",
+          "name": "set_ledger_operator",
+          "inputs": [
+            {
+              "name": "ledger_operator_address",
+              "type": "core::starknet::contract_address::ContractAddress"
             }
           ],
           "outputs": [],
