@@ -1,3 +1,5 @@
+import { decodeHyperstructureShares } from "../utils/hyperstructure-shareholders";
+
 interface ShareholderPointRows {
   gameRegistry: readonly Record<string, unknown>[];
   hyperstructures: readonly Record<string, unknown>[];
@@ -30,17 +32,7 @@ const record = (value: unknown, field: string): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
-const normalizeAddress = (value: unknown): string => `0x${scalar(value, "shareholder address").toString(16)}`;
-
-const decodeShare = (value: unknown): readonly [string, bigint] => {
-  const tuple = Array.isArray(value)
-    ? value
-    : Array.isArray(record(value, "shareholder tuple").value)
-      ? (record(value, "shareholder tuple").value as unknown[])
-      : null;
-  if (!tuple || tuple.length !== 2) throw new Error("shareholder tuple must contain address and basis points");
-  return [normalizeAddress(tuple[0]), scalar(tuple[1], "shareholder basis points")];
-};
+const normalizeAddress = (value: bigint): string => `0x${value.toString(16)}`;
 
 const gameClock = (rows: ShareholderPointRows, gameId: bigint, nowSeconds: number) => {
   const game = rows.gameRegistry.find((row) => scalar(row.game_id, "GameRegistry.game_id") === gameId);
@@ -89,11 +81,9 @@ export const calculateUnregisteredShareholderPoints = (
     if (multiplier === undefined) throw new Error(`Hyperstructure row missing for shareholders ${hyperstructureId}`);
     const elapsed = clock.currentTimestamp - scalar(row.start_at, "HyperstructureShareholders.start_at");
     if (elapsed <= 0n) continue;
-    if (!Array.isArray(row.shareholders)) throw new Error("HyperstructureShareholders.shareholders is not an array");
-
     const shares = new Map<string, bigint>();
-    row.shareholders.forEach((share) => {
-      const [address, basisPoints] = decodeShare(share);
+    decodeHyperstructureShares(row.shareholders).forEach(({ playerAddress, basisPoints }) => {
+      const address = normalizeAddress(playerAddress);
       shares.set(address, (shares.get(address) ?? 0n) + basisPoints);
     });
     for (const [address, basisPoints] of shares) {

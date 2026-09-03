@@ -118,6 +118,58 @@ const compileRecordCoercer = (schema: Record<string, unknown>): ValueCoercer => 
   };
 };
 
+const tupleSpanMemberCount = (type: unknown): number | null => {
+  if (typeof type !== "string") return null;
+  const match = type.match(/^Span<\((.+)\)>$/);
+  return match ? match[1].split(",").length : null;
+};
+
+const unwrapTypedValue = (value: unknown): unknown =>
+  typeof value === "object" && value !== null && !Array.isArray(value) && Object.hasOwn(value, "value")
+    ? (value as { value: unknown }).value
+    : value;
+
+const compileTupleSpanCoercer =
+  (memberCount: number): ValueCoercer =>
+  (value) =>
+    requireGameSyncArray(value).map((entry) => {
+      const tuple = unwrapTypedValue(entry);
+      if (!Array.isArray(tuple) || tuple.length !== memberCount) {
+        throw new Error(`Game sync tuple must contain ${memberCount} members`);
+      }
+      // Tuple spans have no faithful primitive-array representation in RECS.
+      // Preserve Herald's tuple (or the legacy typed-value envelope) for the
+      // domain decoder instead of coercing the whole tuple to Number/NaN.
+      return entry;
+    });
+
+const countSchemaLeaves = (schema: unknown): number => {
+  if (typeof schema !== "object" || schema === null || Array.isArray(schema)) return 1;
+  return Object.values(schema).reduce((total, field) => total + countSchemaLeaves(field), 0);
+};
+
+const compileComponentCoercer = (component: Component): ValueCoercer => {
+  const metadataTypes = Array.isArray(component.metadata?.types) ? component.metadata.types : [];
+  let metadataIndex = 0;
+  const fields = Object.entries(component.schema as Record<string, unknown>).map(([field, fieldSchema]) => {
+    const fieldType = metadataTypes[metadataIndex];
+    metadataIndex += countSchemaLeaves(fieldSchema);
+    const tupleMemberCount = tupleSpanMemberCount(fieldType);
+    const coerce =
+      tupleMemberCount === null ? compileValueCoercer(fieldSchema) : compileTupleSpanCoercer(tupleMemberCount);
+    return [field, coerce] as const;
+  });
+
+  return (value) => {
+    const record = requireGameSyncRecord(value);
+    const coerced: Record<string, unknown> = {};
+    for (const [field, coerce] of fields) {
+      if (Object.hasOwn(record, field)) coerced[field] = coerce(record[field]);
+    }
+    return coerced;
+  };
+};
+
 const compilePrimitiveCoercer = (recsType: RecsType): ValueCoercer => {
   switch (recsType) {
     case RecsType.Number:
@@ -154,7 +206,7 @@ const createComponentCoercers = () => {
   return (component: Component): ValueCoercer => {
     let coercer = coercers.get(component);
     if (!coercer) {
-      coercer = compileRecordCoercer(component.schema as Record<string, unknown>);
+      coercer = compileComponentCoercer(component);
       coercers.set(component, coercer);
     }
     return coercer;

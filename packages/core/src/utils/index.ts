@@ -11,6 +11,7 @@ export * from "./entities";
 export * from "./entry-token";
 export * from "./guild";
 export * from "./hyperstructure";
+export * from "./hyperstructure-shareholders";
 export * from "./leaderboard";
 export * from "./packed-data";
 export * from "./players";

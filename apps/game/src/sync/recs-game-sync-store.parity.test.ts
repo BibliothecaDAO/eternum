@@ -47,4 +47,39 @@ describe("Herald RECS adapter parity", () => {
     }
     expect(Object.keys(fixture.expected)).toHaveLength(50);
   });
+
+  it("preserves tuple spans instead of coercing each tuple to NaN", () => {
+    const world = createWorld();
+    const components = defineContractComponents(world, "s2");
+    const store = createRecsGameSyncStore({ network: { contractComponents: components, world } } as never, [
+      "HyperstructureShareholders",
+    ]);
+    const shareholders = [["0xa", "0x1388"], { value: [{ value: "0xb" }, { value: 2_500 }] }];
+
+    store.applyEntityOperations([
+      {
+        type: "upsert",
+        entities: [
+          {
+            hashed_keys: "shareholder-row",
+            models: {
+              HyperstructureShareholders: {
+                game_id: "0x7",
+                hyperstructure_id: "0x2a",
+                start_at: "0x64",
+                shareholders,
+              },
+            },
+          },
+        ],
+      },
+    ]);
+
+    expect(getComponentValue(components.HyperstructureShareholders, "shareholder-row" as Entity)).toEqual({
+      game_id: 7,
+      hyperstructure_id: 42,
+      start_at: 100,
+      shareholders,
+    });
+  });
 });
