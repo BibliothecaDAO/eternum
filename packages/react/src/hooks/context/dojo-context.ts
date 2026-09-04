@@ -8,7 +8,6 @@ export interface DojoAccount {
 }
 
 export interface DojoContextType extends SetupResult {
-  masterAccount: Account | AccountInterface;
   account: DojoAccount;
 }
 
@@ -16,7 +15,6 @@ export interface DojoResult {
   setup: DojoContextType;
   account: DojoAccount;
   network: SetupNetworkResult;
-  masterAccount: Account | AccountInterface;
 }
 
 export const DojoContext = createContext<DojoContextType | null>(null);
@@ -29,6 +27,5 @@ export const useDojo = (): DojoResult => {
     setup: contextValue,
     account: contextValue.account,
     network: contextValue.network,
-    masterAccount: contextValue.masterAccount,
   };
 };

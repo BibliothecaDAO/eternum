@@ -70,10 +70,9 @@ map.
 
 ## Headless and measurement
 
-`pnpm --dir client/apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates
-the same `GameSyncRuntime`, a RECS world, the session-owned `WorldSpatialProjection`, and a Torii provider in Node. It
-hydrates every page and prints decoded occupancy, projected chest occupancy, and runtime metrics without DOM, React, or
-Three.js.
+`pnpm --dir apps/game smoke:game-sync-headless -- --help` documents the repeatable live smoke. It instantiates the same
+`GameSyncRuntime`, a RECS world, the session-owned `WorldSpatialProjection`, and a Torii provider in Node. It hydrates
+every page and prints decoded occupancy, projected chest occupancy, and runtime metrics without DOM, React, or Three.js.
 
 On 2026-08-13, game 13 against `https://torii.jcndata.com` hydrated 2,472 entities across five pages in 2,598 ms. The
 largest scheduled RECS batch took 23 ms, and the requested coordinate decoded correctly. The one-second observation

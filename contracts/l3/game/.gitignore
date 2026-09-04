@@ -1,0 +1,20 @@
+target/*
+torii.db
+logs/*
+pids/*
+.DS_Store
+
+torii.db-wal
+torii.db-shm
+
+dojo_prod.local.toml
+
+.env
+
+dojo_mainnet.toml
+
+# appchain M0 spike artifacts (deploy/appchain/spike/scripts/deploy-worlds.sh)
+dojo_spike.toml
+manifest_spike.json
+# Madara lab (deploy/madara-lab): generated per-machine manifest
+manifest_madara.json

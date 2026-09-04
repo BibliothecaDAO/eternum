@@ -1,2 +1,2 @@
-export * from "./Lords";
+export * from "./GameLedger";
 export * from "./SeasonPass";

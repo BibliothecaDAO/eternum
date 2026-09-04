@@ -6,14 +6,12 @@ import {
   type HexEntityInfo,
   type HexPosition,
   RESOURCE_PRECISION,
-  ResourcesIds,
   TileOccupier,
   TroopType,
 } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArmyActionManager } from "./army-action-manager";
 import { configManager } from "./config-manager";
-import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { ActionPaths, ActionType } from "../utils/action-paths";
 
@@ -431,94 +429,6 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 
     await expect(manager.moveArmy(signer, actionPath as any, false, 0)).rejects.toThrow(/drifted|position/i);
     expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
-  });
-});
-
-describe("ArmyActionManager.moveArmy provisional resource writes", () => {
-  beforeEach(() => {
-    vi.spyOn(configManager, "getResourceWeightKg").mockReturnValue(0);
-    vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
-      travelWheatBurnAmount: 2,
-      travelFishBurnAmount: 1,
-      exploreWheatBurnAmount: 5,
-      exploreFishBurnAmount: 2,
-    } as any);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("routes travel food through the session resource intent owner", async () => {
-    const systemCalls = {
-      explorer_travel: vi.fn().mockResolvedValue({}),
-      explorer_explore: vi.fn().mockResolvedValue({}),
-      toggle_alternate: vi.fn().mockResolvedValue({}),
-    };
-    const setup = createTestSetup(systemCalls);
-    const signer = { address: "0x123" } as any;
-    const submitProvisionalResourceTransaction = vi
-      .spyOn(ResourceManager.prototype, "submitProvisionalResourceTransaction")
-      .mockImplementation(async (_changes, _waiterSource, submit) => submit());
-    const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
-    const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
-      (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
-    )!;
-
-    await setup.manager.moveArmy(
-      signer,
-      [
-        { hex: setup.oldFeltStart, actionType: ActionType.Move },
-        { hex: firstStep, actionType: ActionType.Move },
-        { hex: secondStep, actionType: ActionType.Move },
-      ] as any,
-      true,
-      0,
-    );
-
-    expect(submitProvisionalResourceTransaction).toHaveBeenCalledWith(
-      [
-        { resourceId: ResourcesIds.Wheat, amount: -4 },
-        { resourceId: ResourcesIds.Fish, amount: -2 },
-      ],
-      signer,
-      expect.any(Function),
-    );
-    expect(systemCalls.explorer_travel).toHaveBeenCalledTimes(1);
-  });
-
-  it("routes exploration food through the same session resource intent owner", async () => {
-    const systemCalls = {
-      explorer_travel: vi.fn().mockResolvedValue({}),
-      explorer_explore: vi.fn().mockResolvedValue({}),
-      toggle_alternate: vi.fn().mockResolvedValue({}),
-    };
-    const setup = createTestSetup(systemCalls);
-    const signer = { address: "0x123" } as any;
-    const submitProvisionalResourceTransaction = vi
-      .spyOn(ResourceManager.prototype, "submitProvisionalResourceTransaction")
-      .mockImplementation(async (_changes, _waiterSource, submit) => submit());
-    const target = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
-
-    await setup.manager.moveArmy(
-      signer,
-      [
-        { hex: setup.oldFeltStart, actionType: ActionType.Explore },
-        { hex: target, actionType: ActionType.Explore },
-      ] as any,
-      false,
-      0,
-    );
-
-    expect(submitProvisionalResourceTransaction).toHaveBeenCalledWith(
-      [
-        { resourceId: ResourcesIds.Wheat, amount: -5 },
-        { resourceId: ResourcesIds.Fish, amount: -2 },
-      ],
-      signer,
-      expect.any(Function),
-    );
-    expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
   });
 });
 

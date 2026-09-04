@@ -1,13 +1,14 @@
 import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest } from "@contracts";
+import { assertProviderChain, type GameChain } from "@realms-world/chain";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
-import { logNetwork, saveResolvedConfigJson, type GameType, type NetworkType } from "../utils/environment";
-import { type Chain } from "../utils/utils";
+import { logNetwork, saveResolvedConfigJson, type GameType } from "../utils/environment";
 import { GameConfigDeployer, nodeReadConfig } from "./config";
 import { withBatching } from "./tx-batcher";
+import { requireRpcUrl } from "./clean/shared/rpc";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
+const VALID_NETWORKS: GameChain[] = ["madara", "appchain"];
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
 
 function printDeployerUsage(): void {
@@ -20,8 +21,8 @@ function printDeployerGameTypeUsage(): void {
   console.error(`  game_type must be one of: ${VALID_GAME_TYPES.join(", ")}`);
 }
 
-function resolveDeployerTarget(argv: string[]): { gameType: GameType; network: NetworkType } {
-  const network = argv[2] as NetworkType;
+function resolveDeployerTarget(argv: string[]): { gameType: GameType; network: GameChain } {
+  const network = argv[2] as GameChain;
   const gameType = argv[3] as GameType;
 
   if (!network || !VALID_NETWORKS.includes(network)) {
@@ -37,16 +38,27 @@ function resolveDeployerTarget(argv: string[]): { gameType: GameType; network: N
   return { gameType, network };
 }
 
-async function createDeployerProvider(network: NetworkType, gameType: GameType): Promise<EternumProvider> {
-  const manifest = await getGameManifest(network as Chain, gameType);
-  return new EternumProvider(manifest, process.env.VITE_PUBLIC_NODE_URL, process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS);
+async function createDeployerProvider(network: GameChain, gameType: GameType): Promise<EternumProvider> {
+  const manifest = await getGameManifest(network, gameType);
+  const provider = new EternumProvider(
+    manifest,
+    requireRpcUrl(process.env.RPC_URL, "RPC_URL"),
+    process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+  );
+  await assertProviderChain(provider.provider, network, "RPC_URL");
+  return provider;
 }
 
 function createDeployerAccount(provider: EternumProvider): Account {
+  const address = process.env.DOJO_ACCOUNT_ADDRESS;
+  const privateKey = process.env.DOJO_PRIVATE_KEY;
+  if (!address || !privateKey) {
+    throw new Error("DOJO_ACCOUNT_ADDRESS and DOJO_PRIVATE_KEY are required for config deployment");
+  }
   return new Account({
     provider: provider.provider,
-    address: process.env.VITE_PUBLIC_MASTER_ADDRESS!,
-    signer: process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY!,
+    address,
+    signer: privateKey,
   });
 }
 
@@ -60,9 +72,9 @@ function resolveBatchMode(): { immediateEntrypoints: string[]; isBatchMode: bool
   };
 }
 
-async function createConfigDeployer(network: NetworkType, gameType: GameType): Promise<GameConfigDeployer> {
+async function createConfigDeployer(network: GameChain, gameType: GameType): Promise<GameConfigDeployer> {
   await saveResolvedConfigJson(network, gameType);
-  const configuration = await nodeReadConfig(network as Chain, gameType);
+  const configuration = await nodeReadConfig(network, gameType);
   return new GameConfigDeployer(configuration, network);
 }
 

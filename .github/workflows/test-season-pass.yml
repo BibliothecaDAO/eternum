@@ -4,10 +4,8 @@ on:
   pull_request:
     paths-ignore:
       - "contracts/common/**"
-      - "contracts/game/**"
-      - "contracts/season_resources/**"
+      - "contracts/l3/game/**"
       - "contracts/utils/**"
-      - "contracts/world/**"
       - "client/**"
       - "**/manifest.json"
       - "config/**"
@@ -26,11 +24,11 @@ jobs:
           persist-credentials: false
       - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: contracts/season_pass/.tool-versions
+          tool-versions: contracts/l2/season_pass/.tool-versions
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          tool-versions: contracts/season_pass/.tool-versions
+          tool-versions: contracts/l2/season_pass/.tool-versions
       - run: scarb build
-        working-directory: contracts/season_pass
+        working-directory: contracts/l2/season_pass
       - run: snforge test
-        working-directory: contracts/season_pass
+        working-directory: contracts/l2/season_pass

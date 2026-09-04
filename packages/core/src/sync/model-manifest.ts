@@ -1,10 +1,10 @@
-type GameSyncChannel = "gamewide-entity" | "global-event";
+export type GameSyncChannel = "gamewide-entity" | "global-event";
 
-type GameSyncModelAvailability = "all" | "s2-only";
-type GameSyncRecoveryPolicy = "convergent-snapshot" | "event-deduped";
-type GameSyncDeletionPolicy = "component" | "event-ephemeral";
+export type GameSyncModelAvailability = "all" | "s2-only";
+export type GameSyncRecoveryPolicy = "convergent-snapshot" | "event-deduped";
+export type GameSyncDeletionPolicy = "component" | "event-ephemeral";
 
-interface GameSyncModelDefinition {
+export interface GameSyncModelDefinition {
   name: string;
   channels: readonly GameSyncChannel[];
   availability: GameSyncModelAvailability;
@@ -83,16 +83,20 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("ResourceBridgeWtlConfig", { s2Scope: "chain" }),
   globalEntity("StructureLevelConfig", { s2Scope: "chain" }),
   globalEntity("SeasonPrize"),
-  globalEntity("SeasonEnded"),
+  globalEntity("GameChestReward"),
+  globalEvent("SeasonEnded"),
   globalEntity("QuestLevels"),
   globalEntity("QuestTile"),
   globalEntity("AddressName", { s2Scope: "chain" }),
   globalEntity("PlayerRegisteredPoints"),
+  globalEntity("WonderFaith"),
+  globalEntity("FaithfulStructure"),
+  globalEntity("WonderFaithBlacklist"),
+  globalEntity("WonderFaithPrize"),
+  globalEntity("WonderFaithWinners"),
   globalEntity("BlitzSettlement"),
-  globalEntity("BlitzEntryTokenRegister"),
+  globalEntity("LedgerRegistration"),
   globalEntity("PlayersRankTrial"),
-  globalEntity("PlayersRankFinal"),
-  globalEntity("MMRGameMeta"),
   globalEntity("Guild"),
   globalEntity("GuildMember"),
   globalEntity("ResourceList", { s2Scope: "chain" }),
@@ -100,14 +104,23 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("RankPrize"),
   globalEntity("GuildWhitelist"),
   globalEntity("GameRegistry", { availability: "s2-only" }),
+  globalEntity("Series", { availability: "s2-only", s2Scope: "chain" }),
+  // The s2 rulebook: config-manager reads every balance number (stamina, capacity, tick, combat...) from the
+  // PresetConfig row the game points at, and chain-wide tuning from ChainConfig. Without them in the fold every
+  // lookup returns the silent zero default (Aug 2026 human gate: no stamina bar, "need more capacity" at 6/12).
+  globalEntity("ChainConfig", { availability: "s2-only", s2Scope: "chain" }),
+  globalEntity("PresetConfig", { availability: "s2-only", s2Scope: "chain" }),
   globalEvent("OpenRelicChestEvent"),
   spatial("TileOpt", "col", "row"),
   spatial("Structure", "base.coord_x", "base.coord_y"),
   spatial("StructureBuildings", "coord.x", "coord.y"),
+  globalEntity("StructureVillageSlots"),
   spatial("Building", "outer_col", "outer_row"),
   spatial("ExplorerTroops", "coord.x", "coord.y"),
   globalEvent("ExplorerRewardEvent"),
   globalEvent("BattleEvent"),
+  globalEvent("StoryEvent"),
+  globalEvent("SwapEvent"),
   globalEntity("ProductionBoostBonus"),
   globalEntity("Resource"),
   globalEntity("ResourceArrival"),
@@ -121,8 +134,10 @@ export const getGameSyncModelsForChannel = (
     (model) => model.channels.includes(channel) && (options.includeS2Only === true || model.availability !== "s2-only"),
   );
 
+const GAME_SYNC_MODELS_BY_NAME = new Map(GAME_SYNC_MODEL_MANIFEST.map((model) => [model.name, model]));
+
 export const findGameSyncModel = (name: string): GameSyncModelDefinition | undefined =>
-  GAME_SYNC_MODEL_MANIFEST.find((candidate) => candidate.name === name);
+  GAME_SYNC_MODELS_BY_NAME.get(name);
 
 export const getGameSyncModel = (name: string): GameSyncModelDefinition => {
   const model = findGameSyncModel(name);

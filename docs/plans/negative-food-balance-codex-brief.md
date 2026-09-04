@@ -11,7 +11,7 @@ How the bug works, end to end:
 1. Wheat/Fish display is extrapolated: `stored balance + rate × (tick − last_updated_at)`
    (`packages/core/src/managers/resource-manager.ts:146`). On-chain, accrual is lazy — any spend harvests pending
    production into the stored balance and resets `last_updated_at` first
-   (`contracts/game/src/models/resource/resource.cairo:78-94`). So the stored RECS balance is routinely far below the
+   (`contracts/l3/game/src/models/resource/resource.cairo:78-94`). So the stored RECS balance is routinely far below the
    displayed balance; the difference is un-harvested accrual.
 2. The optimistic patch is accrual-blind and absolute: `resolveOptimisticResourceChangesPatch`
    (`resource-manager.ts:207`) pins `WHEAT_BALANCE = raw stored balance + delta`. A spend validated against the

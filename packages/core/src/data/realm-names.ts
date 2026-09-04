@@ -1,4 +1,4 @@
-import realmNamesJson from "../../../../client/public/jsons/realm-names.json";
+import realmNamesJson from "./realm-names.json";
 
 const realmNames = realmNamesJson as Record<string, string>;
 

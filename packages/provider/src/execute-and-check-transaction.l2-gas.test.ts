@@ -32,6 +32,11 @@ const makeProvider = () => {
   provider.pendingTransactionSpans = new Map();
   provider.pendingVrfExecutionLocks = new Map();
   provider.cachedExploreExecutionDetails = new Map();
+  provider.transactionStreamWaiter = vi.fn().mockResolvedValue({
+    block: null,
+    hash: "0xabc",
+    status: "PRE_CONFIRMED",
+  });
   provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
   provider.FEE_ESTIMATE_TIMEOUT_MS = 5_000;
@@ -71,6 +76,36 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       tip: 0,
       resourceBounds: makeResourceBounds(150n),
     });
+  });
+
+  it("uses configured fixed bounds without estimating", async () => {
+    const provider = makeProvider();
+    const resourceBounds = makeResourceBounds(1_200_000_000n);
+    provider.executionResourceBounds = resourceBounds;
+    const signer = { estimateInvokeFee: vi.fn() };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "settle_realms",
+      calldata: [],
+    };
+
+    await provider.executeAndCheckTransaction(signer, call);
+
+    expect(signer.estimateInvokeFee).not.toHaveBeenCalled();
+    expect(provider.execute.mock.calls[0][3]).toEqual({ version: 3, tip: 0, resourceBounds });
+  });
+
+  it("reads the explorer id after scoped game calldata", () => {
+    const provider = makeProvider();
+    provider.gameId = 61;
+
+    expect(
+      provider.getExploreTransactionExplorerId({
+        contractAddress: "0x1",
+        entrypoint: "explorer_move",
+        calldata: [61, 259562, 1, 4, 1],
+      }),
+    ).toBe(`0x${BigInt(259562).toString(16)}`);
   });
 
   it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {
@@ -380,61 +415,10 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)?.error).toBe(submitError);
   });
 
-  it("carries the Cartridge error code on plain-object controller rejections", async () => {
-    const provider = makeProvider();
-    const controllerError = { code: 142, message: "session refresh required" };
-    provider.execute = vi.fn().mockRejectedValue(controllerError);
-
-    const signer = {
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const call: Call = {
-      contractAddress: "0x1",
-      entrypoint: "settle_realms",
-      calldata: [],
-    };
-
-    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeDefined();
-
-    expect(findTransactionFailedPayload(provider)).toMatchObject({
-      stage: "submit",
-      errorCode: 142,
-    });
-    expect(findTransactionFailedPayload(provider)?.error).toBe(controllerError);
-  });
-
-  it("keeps the user-cancel rejection (undefined) as the payload error", async () => {
-    const provider = makeProvider();
-    // Even with a stashed estimate error, a Cartridge popup close must stay recognizable.
-    provider.lastEstimateError = { error: new Error("estimate trace"), atMs: Date.now() };
-    provider.execute = vi.fn().mockRejectedValue(undefined);
-
-    const signer = {
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-    const call: Call = {
-      contractAddress: "0x1",
-      entrypoint: "settle_realms",
-      calldata: [],
-    };
-
-    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBeUndefined();
-
-    const payload = findTransactionFailedPayload(provider);
-    expect(payload).toMatchObject({ stage: "submit" });
-    expect(payload && Object.prototype.hasOwnProperty.call(payload, "error")).toBe(true);
-    expect(payload?.error).toBeUndefined();
-  });
-
   it("aborts the submit when the fee estimate proves a deterministic revert", async () => {
     const provider = makeProvider();
     const estimateError = {
-      code: 41,
-      message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
+      message: "Transaction execution error",
       data: {
         execution_error:
           "Execution failed. Failure reason: 0x506f70756c6174696f6e2065786365656473206361706163697479 ('Population exceeds capacity').",
@@ -453,12 +437,11 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toBe(estimateError);
 
     // The estimate already executed the calls and proved they revert — the
-    // doomed transaction must never reach the paymaster.
+    // doomed transaction must never reach the sequencer.
     expect(provider.execute).not.toHaveBeenCalled();
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       message: "Transaction failed to submit: Population exceeds capacity",
       stage: "submit",
-      errorCode: 41,
     });
   });
 
@@ -467,8 +450,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     provider.VRF_PROVIDER_ADDRESS = "0x999";
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const estimateError = {
-      code: 41,
-      message: "An error occurred (TRANSACTION_EXECUTION_ERROR)",
+      message: "Transaction execution error",
       data: {
         execution_error: "Execution failed. Failure reason: 0x0 ('Randomness not fulfilled').",
       },
@@ -510,7 +492,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     const provider = makeProvider();
     provider.VRF_PROVIDER_ADDRESS = "0x999";
     const estimateError = {
-      code: 41,
       message: "Transaction execution error",
       data: {
         execution_error:
@@ -545,7 +526,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       message: "Transaction failed to submit: Unknown error",
       stage: "submit",
-      errorCode: 41,
     });
     expect(findTransactionFailedPayload(provider)?.error).toBe(estimateError);
   });
@@ -684,12 +664,12 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
   it("emits revert payloads with transaction hash after submission", async () => {
     const provider = makeProvider();
-    provider.provider = {
-      waitForTransaction: vi.fn().mockResolvedValue({
-        isReverted: () => true,
-        execution_error: "Execution reverted: realm occupied",
-      }),
-    };
+    provider.transactionStreamWaiter = vi.fn().mockResolvedValue({
+      block: null,
+      hash: "0xabc",
+      status: "REVERTED",
+      revertReason: "Execution reverted: realm occupied",
+    });
     provider.waitForTransactionWithCheckInternal =
       EternumProvider.prototype["waitForTransactionWithCheckInternal"].bind(provider);
     provider.waitForTransactionWithTimeout = EternumProvider.prototype["waitForTransactionWithTimeout"].bind(provider);

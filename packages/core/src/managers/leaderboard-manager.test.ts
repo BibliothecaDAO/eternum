@@ -67,6 +67,5 @@ function seedRegisteredPoints(
     game_id: gameId,
     address,
     registered_points: points * POINTS_PRECISION,
-    prize_claimed: false,
   });
 }

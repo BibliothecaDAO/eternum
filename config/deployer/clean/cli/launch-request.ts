@@ -1,13 +1,7 @@
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  DEFAULT_APPCHAIN_ETERNUM_PRESET_ID,
-  DEFAULT_APPCHAIN_PRESET_ID,
-  DEFAULT_CARTRIDGE_API_BASE,
-  DEFAULT_FACTORY_INDEX_POLL_MS,
-  DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-  DEFAULT_NAMESPACE,
-  DEFAULT_VERSION,
+  DEFAULT_MADARA_PRESET_ID,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import type {
@@ -19,24 +13,14 @@ import type {
   DeploymentEnvironment,
   ExecutionMode,
   LaunchGameRequest,
-  LaunchGameStepId,
   LaunchRotationRequest,
-  LaunchRotationStepId,
   LaunchRotationWeeklyCadenceEntry,
   LaunchSeriesRequest,
-  LaunchSeriesStepId,
   LaunchTargetKind,
 } from "../types";
-import type {
-  FactoryRotationRunRequestContext,
-  FactoryRunRequestContext,
-  FactorySeriesRunRequestContext,
-  LaunchWorkflowScope,
-  RotationLaunchWorkflowScope,
-  SeriesLaunchWorkflowScope,
-} from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
 import { resolveLaunchRequestArgs } from "./launch-config-file";
+import { requireRpcUrl } from "../shared/rpc";
 
 export { parseArgs };
 
@@ -182,10 +166,6 @@ function validateBlitzRegistrationOverrideEntry(key: string, value: unknown): vo
     case "registration_count_max":
       validateBlitzRegistrationCountOverride(value);
       return;
-    case "fee_token":
-    case "fee_amount":
-      validateBlitzRegistrationStringOverride(key, value);
-      return;
     default:
       throw new Error(`Unsupported blitz registration overrides entry "${key}"`);
   }
@@ -194,12 +174,6 @@ function validateBlitzRegistrationOverrideEntry(key: string, value: unknown): vo
 function validateBlitzRegistrationCountOverride(value: unknown): void {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error('blitz registration overrides entry "registration_count_max" must be a finite number');
-  }
-}
-
-function validateBlitzRegistrationStringOverride(key: string, value: unknown): void {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`blitz registration overrides entry "${key}" must be a non-empty string`);
   }
 }
 
@@ -514,26 +488,23 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
-  return environment.chain === "appchain"
-    ? {
-        version: environment.gameType === "eternum" ? DEFAULT_APPCHAIN_ETERNUM_PRESET_ID : DEFAULT_APPCHAIN_PRESET_ID,
-        waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-        waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
-      }
-    : {
-        version: DEFAULT_VERSION,
-        waitForFactoryIndexTimeoutMs: DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
-        waitForFactoryIndexPollMs: DEFAULT_FACTORY_INDEX_POLL_MS,
-      };
+function resolveSharedLaunchDefaults() {
+  return {
+    version: DEFAULT_MADARA_PRESET_ID,
+    waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
+    waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
+  };
 }
 
 function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEnvironment) {
-  const defaults = resolveSharedLaunchDefaults(environment);
+  const defaults = resolveSharedLaunchDefaults();
 
   return {
-    rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
-    factoryAddress: args["factory-address"] || process.env.FACTORY_ADDRESS,
+    rpcUrl: requireRpcUrl(args["rpc-url"] || process.env.RPC_URL, "--rpc-url or RPC_URL"),
+    ledgerAddress: args.ledger || process.env.LEDGER_ADDRESS,
+    ledgerRpcUrl: args["ledger-rpc-url"] || process.env.LEDGER_RPC_URL,
+    lordsAddress: args.lords || process.env.LORDS_ADDRESS,
+    sponsoredPoolLords: args["sponsored-pool-lords"] || process.env.LEDGER_SPONSORED_POOL_LORDS,
     accountAddress: resolveOptionalArg(args, "account-address", ["DOJO_ACCOUNT_ADDRESS", "VITE_PUBLIC_MASTER_ADDRESS"]),
     privateKey: resolveOptionalArg(args, "private-key", ["DOJO_PRIVATE_KEY", "VITE_PUBLIC_MASTER_PRIVATE_KEY"]),
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),
@@ -561,13 +532,6 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
         "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
       ]),
     ),
-    cartridgeApiBase: args["cartridge-api-base"] || process.env.CARTRIDGE_API_BASE || DEFAULT_CARTRIDGE_API_BASE,
-    toriiNamespaces: args["torii-namespaces"] || process.env.TORII_NAMESPACES || DEFAULT_NAMESPACE,
-    vrfProviderAddress:
-      args["vrf-provider-address"] ||
-      process.env.VRF_PROVIDER_ADDRESS ||
-      process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS ||
-      "0x0",
     executionMode: resolveExecutionMode(args.mode),
     verboseConfigLogs: args["verbose-config-logs"] === "true" || process.env.VERBOSE_CONFIG_LOGS === "true",
     version: args.version || defaults.version,
@@ -575,12 +539,7 @@ function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEn
       resolveOptionalNumber(args["wait-timeout-ms"], "wait timeout") ?? defaults.waitForFactoryIndexTimeoutMs,
     waitForFactoryIndexPollMs:
       resolveOptionalNumber(args["wait-poll-ms"], "wait poll interval") ?? defaults.waitForFactoryIndexPollMs,
-    skipIndexer: args["skip-indexer"] === "true",
-    skipLootChestRoleGrant: args["skip-lootchest-role-grant"] === "true",
-    skipBanks: args["skip-banks"] === "true",
     dryRun: args["dry-run"] === "true",
-    workflowFile: args["workflow-file"],
-    ref: args.ref,
   };
 }
 
@@ -595,7 +554,6 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
     ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
-    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     seriesName: resolvedArgs["series-name"],
     seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
   };
@@ -613,7 +571,6 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     games: requiredArgs.games,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
-    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
     autoRetryIntervalMinutes:
@@ -647,7 +604,6 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
         "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
       ]),
     ),
-    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
     autoRetryIntervalMinutes:
@@ -668,113 +624,4 @@ export function buildLaunchRequest(args: Args): LaunchGameRequest | LaunchSeries
     default:
       return buildLaunchGameRequest(args);
   }
-}
-
-export function buildFactoryRunRequestContext(
-  args: Args,
-  requestedLaunchStep: LaunchWorkflowScope,
-): FactoryRunRequestContext {
-  const request = buildLaunchGameRequest(args);
-
-  return {
-    environmentId: request.environmentId,
-    gameName: request.gameName,
-    requestedLaunchStep,
-    request,
-  };
-}
-
-export function buildFactorySeriesRunRequestContext(
-  args: Args,
-  requestedLaunchStep: SeriesLaunchWorkflowScope,
-): FactorySeriesRunRequestContext {
-  const request = buildLaunchSeriesRequest(args);
-
-  return {
-    environmentId: request.environmentId,
-    seriesName: request.seriesName,
-    requestedLaunchStep,
-    request,
-  };
-}
-
-export function buildFactoryRotationRunRequestContext(
-  args: Args,
-  requestedLaunchStep: RotationLaunchWorkflowScope,
-): FactoryRotationRunRequestContext {
-  const request = buildLaunchRotationRequest(args);
-
-  return {
-    environmentId: request.environmentId,
-    rotationName: request.rotationName,
-    requestedLaunchStep,
-    request,
-  };
-}
-
-export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
-  switch (value) {
-    case "create-world":
-    case "wait-for-factory-index":
-    case "configure-world":
-    case "reserve-blitz-hyperstructures":
-    case "grant-lootchest-role":
-    case "grant-village-pass-role":
-    case "create-banks":
-    case "create-indexer":
-    case "sync-paymaster":
-      return value;
-    default:
-      throw new Error(
-        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, reserve-blitz-hyperstructures, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer, sync-paymaster`,
-      );
-  }
-}
-
-export function resolveLaunchSeriesStepId(value?: string): LaunchSeriesStepId {
-  switch (value) {
-    case "create-series":
-    case "create-worlds":
-    case "wait-for-factory-indexes":
-    case "configure-worlds":
-    case "reserve-blitz-hyperstructures":
-    case "grant-lootchest-roles":
-    case "grant-village-pass-roles":
-    case "create-banks":
-    case "create-indexers":
-    case "sync-paymaster":
-      return value;
-    default:
-      throw new Error(
-        `Unsupported series launch step "${value}". Expected one of: create-series, create-worlds, wait-for-factory-indexes, configure-worlds, reserve-blitz-hyperstructures, grant-lootchest-roles, grant-village-pass-roles, create-banks, create-indexers, sync-paymaster`,
-      );
-  }
-}
-
-export function resolveLaunchRotationStepId(value?: string): LaunchRotationStepId {
-  return resolveLaunchSeriesStepId(value);
-}
-
-export function resolveLaunchWorkflowScope(value?: string): LaunchWorkflowScope {
-  if (value === undefined || value === "full") {
-    return "full";
-  }
-
-  return resolveLaunchGameStepId(value);
-}
-
-export function resolveSeriesLaunchWorkflowScope(value?: string): SeriesLaunchWorkflowScope {
-  if (value === undefined || value === "full") {
-    return "full";
-  }
-
-  return resolveLaunchSeriesStepId(value);
-}
-
-export function resolveRotationLaunchWorkflowScope(value?: string): RotationLaunchWorkflowScope {
-  if (value === undefined || value === "full") {
-    return "full";
-  }
-
-  return resolveLaunchRotationStepId(value);
 }

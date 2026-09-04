@@ -36,10 +36,8 @@ export interface TransactionFailedPayload extends TransactionLifecycleMeta {
   providerState?: TransactionProviderState;
   hasTxHash?: boolean;
   retrySafety?: TransactionRetrySafety;
-  /** The original error, untouched — Cartridge rejects with plain objects or `undefined`, so this is `unknown`. */
+  /** The original error, untouched. */
   error?: unknown;
-  /** Cartridge controller ErrorCode when the error was a plain `{ code, message, data? }` object. */
-  errorCode?: number;
   /** Raw revert reason from the receipt, verbatim, when the transaction reverted on-chain. */
   revertReason?: string;
 }
@@ -51,6 +49,15 @@ export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta 
 }
 
 export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
+
+interface TransactionStreamStatus {
+  block: number | null;
+  hash: string;
+  revertReason?: string;
+  status: string;
+}
+
+export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
   // Exploration & Movement
@@ -168,7 +175,6 @@ export enum TransactionType {
   // Realms & Settlement
   SETTLE_REALMS = "settle_realms",
   ASSIGN_REALM_POSITIONS = "assign_realm_positions",
-  OBTAIN_ENTRY_TOKEN = "obtain_entry_token",
   REGISTER = "register",
   TOKEN_LOCK = "token_lock",
   MAKE_SPIRES = "make_spires",
@@ -197,12 +203,7 @@ export enum TransactionType {
   END_GAME = "end_game",
 
   // Blitz
-  BLITZ_PRIZE_CLAIM = "blitz_prize_claim",
   BLITZ_PRIZE_PLAYER_RANK = "blitz_prize_player_rank",
-  BLITZ_PRIZE_CLAIM_NO_GAME = "blitz_prize_claim_no_game",
-
-  // MMR
-  COMMIT_AND_CLAIM_MMR = "commit_and_claim_mmr",
 
   // Chests & Relics
   OPEN_CHEST = "open_chest",
@@ -227,7 +228,6 @@ export enum TransactionType {
   SET_VRF_CONFIG = "set_vrf_config",
   SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG = "set_resource_bridge_fee_split_config",
   SET_AGENT_CONFIG = "set_agent_config",
-  SET_VILLAGE_TOKEN_CONFIG = "set_village_token_config",
   SET_CAPACITY_CONFIG = "set_capacity_config",
   SET_DONKEY_SPEED_CONFIG = "set_donkey_speed_config",
   SET_RESOURCE_WEIGHT_CONFIG = "set_resource_weight_config",

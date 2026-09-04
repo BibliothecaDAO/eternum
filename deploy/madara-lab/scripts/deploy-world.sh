@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Builds the game contracts and migrates the s2 world onto the local Madara lab chain.
+#
+#   deploy/madara-lab/scripts/deploy-world.sh            # build + migrate
+#   deploy/madara-lab/scripts/deploy-world.sh --migrate-only
+#
+# Prereqs: `docker compose up -d` in deploy/madara-lab (madara healthy on :5050), sozo 1.8.7 via asdf.
+#
+# Two Madara-specific facts this script encodes (see README "Why these flags"):
+#   - Madara's chain protocol is 0.14.2, which hashes compiled (CASM) classes with blake2s. sozo 1.8.7 only
+#     auto-selects blake2s when the RPC URL contains "sepolia"/"testnet"; anywhere else it silently uses
+#     poseidon and the world declare fails with CompiledClassHashMismatch. The flag is mandatory here.
+#   - sozo 1.8.7 is built against Starknet RPC 0.9.0 and warns "version mismatch" against the 0.10.2 route, but
+#     it MUST use v0_10_2 here: on the nightly-e674321 pin, sozo's v0.9 client cannot deserialize a pre-confirmed
+#     block that holds a transaction ("data did not match any variant of untagged enum JsonRpcResponse"), so a
+#     fresh migrate dies at "Deploy the world". The v0.10.2 route serializes pre-confirmed blocks correctly and
+#     sozo parses them despite the warning; the whole 158-declare migrate then completes. (The old v0_9_0 default
+#     only ever worked on the alpha.9 pin, which the laptop world was deployed under before the nightly swap.)
+set -euo pipefail
+
+LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "$LAB_DIR/../.." && pwd)"
+GAME_DIR="$REPO_ROOT/contracts/l3/game"
+RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_10_2}"
+PROFILE="madara"
+OUT_DIR="$LAB_DIR/.lab"
+
+export ASDF_SOZO_VERSION="${ASDF_SOZO_VERSION:-1.8.7}"
+command -v sozo >/dev/null || { echo "sozo not found on PATH" >&2; exit 1; }
+command -v jq >/dev/null || { echo "jq not found on PATH" >&2; exit 1; }
+
+wait_for_chain() {
+  echo "==> waiting for madara at $RPC_URL"
+  for i in $(seq 1 30); do
+    if curl -sf -m 2 -X POST -H 'content-type: application/json' \
+        -d '{"jsonrpc":"2.0","id":1,"method":"starknet_chainId","params":[]}' "$RPC_URL" >/dev/null; then
+      return
+    fi
+    [ "$i" = 30 ] && { echo "madara unreachable at $RPC_URL" >&2; exit 1; }
+    sleep 2
+  done
+}
+
+build_contracts() {
+  echo "==> sozo build (profile $PROFILE)"
+  (cd "$GAME_DIR" && sozo -P "$PROFILE" build)
+}
+
+migrate_world() {
+  echo "==> sozo migrate (profile $PROFILE, blake2s casm hash)"
+  (cd "$GAME_DIR" && sozo -P "$PROFILE" migrate --rpc-url "$RPC_URL" --use-blake2s-casm-class-hash)
+}
+
+record_world_address() {
+  local manifest="$GAME_DIR/manifest_$PROFILE.json"
+  local world
+  world="$(jq -r '.world.address' "$manifest")"
+  # sozo 1.8.7 writes the manifest without the world ABI, which @dojoengine/core's DojoProvider
+  # requires to construct the world contract. Embed the world class ABI fetched from the chain.
+  python3 - "$GAME_DIR/manifest_madara.json" "$RPC_URL" <<'PYEOF'
+import json, sys, urllib.request
+manifest_path, rpc = sys.argv[1], sys.argv[2]
+m = json.load(open(manifest_path))
+if not m.get("world", {}).get("abi"):
+    req = urllib.request.Request(rpc, json.dumps({"jsonrpc": "2.0", "id": 1, "method": "starknet_getClass", "params": ["latest", m["world"]["class_hash"]]}).encode(), {"content-type": "application/json"})
+    abi = json.load(urllib.request.urlopen(req, timeout=30))["result"]["abi"]
+    if isinstance(abi, str):
+        abi = json.loads(abi)
+    m["world"]["abi"] = abi
+    json.dump(m, open(manifest_path, "w"), indent=2)
+    print("==> embedded world.abi (%d entries) into manifest_madara.json" % len(abi))
+else:
+    print("==> manifest_madara.json already carries world.abi")
+PYEOF
+
+  mkdir -p "$OUT_DIR"
+  printf '%s\n' "$world" > "$OUT_DIR/world-address"
+  echo "==> world $world (recorded in $OUT_DIR/world-address)"
+}
+
+wait_for_chain
+if [[ "${1:-}" != "--migrate-only" ]]; then
+  build_contracts
+fi
+migrate_world
+record_world_address

@@ -1,34 +1,14 @@
 import { shortString } from "starknet";
 
-type Chain = "local" | "sepolia" | "mainnet" | "appchain" | string;
-
 /**
- * Returns the Factory Torii SQL base URL for a given chain.
- * The Cartridge API base can be overridden; defaults to https://api.cartridge.gg.
+ * Returns the SQL endpoint for the Torii that indexes the appchain factory.
+ * Madara has one committed world and no factory discovery path.
  */
-export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): string {
-  const base =
-    cartridgeApiBase ||
-    (typeof process !== "undefined" ? (process as any).env?.CARTRIDGE_API_BASE : undefined) ||
-    "https://api.cartridge.gg";
-  switch (chain) {
-    case "mainnet":
-      return `${base}/x/eternum-factory-mainnet/torii/sql`;
-    case "sepolia":
-      return `${base}/x/eternum-factory-sepolia/torii/sql`;
-    case "appchain": {
-      // The appchain runs ONE torii indexing every world, factory included, so
-      // the factory SQL endpoint is just that torii. Without a configured
-      // torii return "" (≠ "/sql") so callers get their own "no factory
-      // configured" diagnostics instead of fetch() choking on a relative URL.
-      const appchainToriiBaseUrl = resolveAppchainToriiBaseUrl();
-      return appchainToriiBaseUrl ? `${appchainToriiBaseUrl}/sql` : "";
-    }
-    // "local" has no factory torii; callers treat "" as "no factory available"
-    // and skip factory-backed discovery.
-    default:
-      return "";
-  }
+export function getFactorySqlBaseUrl(chain: string, _retiredApiBase?: string): string {
+  if (chain !== "appchain") return "";
+
+  const appchainToriiBaseUrl = resolveAppchainToriiBaseUrl();
+  return appchainToriiBaseUrl ? `${appchainToriiBaseUrl}/sql` : "";
 }
 
 /** Shared torii for the appchain — env-driven so it follows the deployment. */

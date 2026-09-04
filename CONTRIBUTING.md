@@ -33,7 +33,7 @@ Common dev commands:
 
 There are two doc “homes”:
 
-- **Docs site (player + dev docs):** `client/apps/game-docs/docs/pages/`
+- **Docs site (player + dev docs):** `apps/game-docs/docs/pages/`
 - **Repo docs (architecture/notes):** `docs/`
 
 If you change docs, please run the docs dev server locally:

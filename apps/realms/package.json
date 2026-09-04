@@ -1,0 +1,44 @@
+{
+  "name": "@realms-world/realms",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm with-env vite dev",
+    "dev:server": "pnpm with-env bun run --watch server/main.ts",
+    "start:server": "pnpm with-env bun run server/main.ts",
+    "build": "pnpm with-env vite build",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "with-env": "dotenv -e ../../.env --"
+  },
+  "dependencies": {
+    "@realms-world/chain": "workspace:*",
+    "@realms-world/db": "workspace:*",
+    "@realms-world/identity": "workspace:*",
+    "@tanstack/react-router": "1.166.2",
+    "better-auth": "1.5.3",
+    "drizzle-orm": "catalog:web",
+    "effect": "4.0.0-rc.108",
+    "react": "catalog:web",
+    "react-dom": "catalog:web",
+    "starknet": "catalog:web",
+    "zod": "catalog:web"
+  },
+  "devDependencies": {
+    "@realms-world/eslint-config": "workspace:*",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "^22.19.13",
+    "@types/react": "catalog:web",
+    "@types/react-dom": "catalog:web",
+    "bun-types": "^1.2.2",
+    "@vitejs/plugin-react": "^4.7.0",
+    "dotenv-cli": "catalog:web",
+    "eslint": "catalog:web",
+    "tailwindcss": "catalog:web",
+    "typescript": "catalog:web",
+    "vite": "catalog:web",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.4"
+  }
+}

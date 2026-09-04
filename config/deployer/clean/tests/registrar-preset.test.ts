@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { loadEnvironmentConfiguration } from "../config/config-loader";
 
-mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
+mock.module("../../../../contracts/l3/game/manifest_madara.json", () => ({
   default: {
     world: { address: "0xsharedworld" },
     contracts: [
@@ -25,7 +25,7 @@ const { buildCreateGameParams, buildPresetRegistration, summarizePresetSideTable
   await import("../registrar/preset");
 
 describe("appchain registrar preset", () => {
-  const config = loadEnvironmentConfiguration("appchain.blitz");
+  const config = loadEnvironmentConfiguration("madara.blitz");
 
   test("builds stable preset side tables and calldata", () => {
     const payload = buildPresetRegistration(config, 1);
@@ -39,41 +39,24 @@ describe("appchain registrar preset", () => {
       resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_121);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_113);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
+    expect(payload.gameConfig.blitz_registration_config).toEqual({
+      registration_count: 0,
+      registration_count_max: config.blitz.registration.registration_count_max,
+      registration_start_at: 0,
+    });
     expect(buildRegisterPresetCalldata(payload)).toMatchSnapshot();
   });
 
-  test("builds an Eternum preset and create-game payload without Blitz registration", () => {
-    const eternumConfig = loadEnvironmentConfiguration("appchain.eternum");
-    const payload = buildPresetRegistration(eternumConfig, 10);
-    const createGameInput = {
-      gameName: "etrn-w3",
-      presetId: 10,
-      startMainAt: 2_000_000_000,
-      durationSeconds: eternumConfig.season.durationSeconds,
-      devModeOn: true,
-      singleRealmMode: false,
-      twoPlayerMode: false,
-      useMapOverride: false,
-    };
-    const params = buildCreateGameParams(eternumConfig, createGameInput);
+  test("writes an explicit disabled address only for disabled features", () => {
+    const blitzConfig = structuredClone(config);
+    delete blitzConfig.setup;
+    delete blitzConfig.faith;
 
-    expect(payload.gameConfig).toMatchObject({ preset_id: 10, blitz_mode_on: false });
-    expect(payload.presetConfig).toMatchObject({
-      preset_id: 10,
-      season_addresses_config: expect.any(Object),
-      bank_config: expect.any(Object),
-      trade_config: expect.any(Object),
-      quest_config: expect.any(Object),
-      faith_config: expect.objectContaining({ owner_share_percent: 3000 }),
-      bitcoin_mine_config: expect.any(Object),
-    });
-    expect(params).toMatchObject({ preset_id: 10, registration_count_max: 0, two_player_mode: false });
-    expect(() => buildCreateGameParams(eternumConfig, { ...createGameInput, twoPlayerMode: true })).toThrow(
-      "Eternum seasons do not support two-player mode",
-    );
+    const payload = buildPresetRegistration(blitzConfig, 1);
+    expect(payload.presetConfig).toMatchObject({ faith_config: { enabled: false, reward_token: "0x0" } });
   });
 
   test("keeps launch clocks and mode overrides in CreateGameParams", () => {
@@ -109,6 +92,7 @@ describe("appchain registrar preset", () => {
         end_grace_seconds: 86_400,
       });
       expect(BigInt(params.seed as string)).not.toBe(0n);
+      expect(params).not.toHaveProperty("fee_amount");
       expect(buildCreateGameCalldata(params)).toMatchSnapshot();
     } finally {
       Date.now = originalDateNow;
@@ -139,5 +123,27 @@ describe("appchain registrar preset", () => {
     } finally {
       Date.now = originalDateNow;
     }
+  });
+
+  test("accepts the 96-player Blitz capacity and rejects 97", () => {
+    const capacityConfig = structuredClone(config);
+    const createGameInput = {
+      gameName: "bltz-capacity",
+      presetId: 3,
+      startMainAt: 2_000_000_000,
+      durationSeconds: 3_600,
+      devModeOn: true,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    };
+
+    capacityConfig.blitz.registration.registration_count_max = 96;
+    expect(buildCreateGameParams(capacityConfig, createGameInput).registration_count_max).toBe(96);
+
+    capacityConfig.blitz.registration.registration_count_max = 97;
+    expect(() => buildCreateGameParams(capacityConfig, createGameInput)).toThrow(
+      "Blitz registration_count_max must be between 1 and 96",
+    );
   });
 });

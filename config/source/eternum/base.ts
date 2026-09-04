@@ -30,13 +30,8 @@ const eternumBlitzModeConfig: ConfigPatch = {
       rewards: [],
     },
     registration: {
-      fee_token: "0x0",
-      fee_recipient: "0x0",
-      fee_amount: 0n,
       registration_count_max: 0,
       registration_delay_seconds: 0,
-      entry_token_class_hash: "0x0",
-      entry_token_ipfs_cid: "",
       collectible_cosmetics_max_items: 0,
       collectible_cosmetics_address: "0x0",
       collectible_timelock_address: "0x0",

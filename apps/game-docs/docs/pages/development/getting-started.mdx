@@ -1,0 +1,141 @@
+---
+layout: docs
+---
+
+# Getting Started
+
+<img src="/images/covers/eternum-documentation.png" alt="Eternum Development" className="w-full rounded-lg my-6" />
+
+## Prerequisites
+
+- [Dojo onchain game engine](https://book.dojoengine.org) v1.0.4
+- [Node.js](https://nodejs.org/)
+- [pnpm](https://pnpm.io/) v9.12.3
+- [Bun](https://bun.sh/)
+
+## Setup
+
+Install Dojo via:
+
+```bash
+curl -L https://install.dojoengine.org | bash
+```
+
+Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. Install pnpm:
+
+```bash
+npm install -g pnpm
+```
+
+Install project dependencies:
+
+```bash
+pnpm install
+```
+
+Build shared packages:
+
+```bash
+pnpm run build:packages
+```
+
+## Development Scripts
+
+### Development
+
+- `pnpm dev` - Start game development server
+- `pnpm dev:docs` - Start documentation development server
+
+### Building
+
+- `pnpm build` - Build game client
+- `pnpm build:docs` - Build documentation
+- `pnpm build:packages` - Build shared packages
+
+### Testing & Linting
+
+- `pnpm test` - Run all tests
+- `pnpm lint` - Run linting
+- `pnpm format` - Format code
+- `pnpm format:check` - Check code formatting
+
+## Deployment environments
+
+Game worlds run on one of two supported chains:
+
+<div className="table-stretch-last">
+
+| Environment | Description                                     |
+| ----------- | ----------------------------------------------- |
+| Madara      | Self-run development and performance lab        |
+| Appchain    | Persistent hosted Blitz and Eternum game worlds |
+
+</div>
+
+The Madara lab owns its chain, world, indexer, TLS front, and smoke harness. Follow its checked-in runbook:
+
+```bash
+cd deploy/madara-lab
+docker compose up -d --wait
+./scripts/deploy-world.sh
+./scripts/bootstrap-game.sh
+```
+
+Use the game-launch workflow for appchain worlds. Generate a chain-specific configuration with the full environment id:
+
+```bash
+pnpm run config:sync:madara:blitz
+pnpm run config:sync:appchain:blitz
+pnpm run config:sync:appchain:eternum
+```
+
+## Environment Variables
+
+For the Madara client, start from the maintained sample instead of copying an address list from this page:
+
+```bash
+cp apps/game/.env.madara.blitz.sample apps/game/.env
+```
+
+The sample points browser traffic at the TLS endpoints served by `deploy/madara-lab/Caddyfile`. The lab chain is
+fee-free, so the sample carries no master credentials.
+
+## Project Structure
+
+- [Apps](https://github.com/BibliothecaDAO/eternum/tree/main/apps) - User-facing applications
+  - [Game](https://github.com/BibliothecaDAO/eternum/tree/main/apps/game) - Main game client with Three.js interface
+  - [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/apps/game-docs) - Game documentation
+- [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
+  - Game contracts
+  - Season Pass contracts
+  - Season Resources contracts
+- [Packages](https://github.com/BibliothecaDAO/eternum/tree/main/packages) - Shared libraries
+  - [Core](https://github.com/BibliothecaDAO/eternum/tree/main/packages/core) - Eternum SDK
+  - [React](https://github.com/BibliothecaDAO/eternum/tree/main/packages/react) - React hooks and components
+- [Config](https://github.com/BibliothecaDAO/eternum/tree/main/config) - Configuration and deployment scripts
+
+## Core Dependencies
+
+- [@dojoengine/react](https://www.npmjs.com/package/@dojoengine/react) - React integration for Dojo
+- [@dojoengine/recs](https://www.npmjs.com/package/@dojoengine/recs) - Entity Component System
+- [Starknet.js](https://www.npmjs.com/package/starknet) - Starknet interaction
+- [Vite](https://vitejs.dev/) - Frontend build tool
+
+## Stack
+
+<img src="/images/covers/08.png" alt="Eternum Technology Stack" className="w-full rounded-lg my-6" />
+
+- [Contracts](/development/contracts): built using the Dojo framework. This leverages the ECS model, allowing us to
+  build quick and ship fast. It revolves around 3 units: Entities, Components (called Models in Dojo) and Systems (more
+  about this in the Dojo book).
+- [Client](/development/client): our client is built using React with Typescript. We leverage Dojo by using DojoJS
+- [Eternum SDK](/development/sdk): our SDK contains most notably the getter and setter of the configuration of Eternum,
+  the EternumProvider and most of the constants/types of the world that needed to be transcribed to Typescript.
+- [Torii](https://book.dojoengine.org/toolchain/torii): Dojo's indexer, optimized for that particular framework and well
+  integrated into the stack. From our client, we have a gRPC subscription set up through DojoJS and recs to events.
+  Events are fired in the contracts as a way for the indexer to know what's going on in the world. Every time an entity
+  is created, updated, or deleted, an event is fired which updated Torii's record of the world.
+- [DojoJS and recs](https://github.com/dojoengine/dojo.js?tab=readme-ov-file#contributing-to-dojojs): DojoJS is the SDK
+  that allows easy integration of a Dojo app into your client/node backend. Recs are DojoJS's way of exposing the state
+  of the world to the client. This is done via queries to the Recs state using a simple query language, which doesn't
+  support complex queries yet (e.g. joins, gt, lt, etc...).

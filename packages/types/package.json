@@ -22,19 +22,20 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@dojoengine/recs": "catalog:",
-    "@dojoengine/core": "catalog:",
+    "@realms-world/chain": "workspace:*",
+    "@dojoengine/recs": "catalog:game",
+    "@dojoengine/core": "catalog:game",
     "@scure/starknet": "^1.1.0",
     "chalk": "^5.4.1",
     "eventemitter3": "^5.0.1",
-    "starknet": "catalog:",
+    "starknet": "catalog:game",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",
     "tsup": "^8.0.2",
-    "typedoc": "^0.26.11",
-    "typedoc-plugin-markdown": "^4.2.10",
+    "typedoc": "^0.28.15",
+    "typedoc-plugin-markdown": "^4.10.1",
     "typescript": "^5.4.4",
     "vitest": "^2.0.5"
   }

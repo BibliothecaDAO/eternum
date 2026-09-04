@@ -1,0 +1,31 @@
+---
+title: Gameplay accounts
+description: How Realms signs and submits game actions
+---
+
+# Gameplay accounts
+
+A Cartridge Controller is not required to play. Realms uses a small Starknet account dedicated to gameplay, so routine
+actions do not open a wallet approval dialog.
+
+When you enter a world, the client loads or creates a gameplay key in your browser and deploys the corresponding player
+account on that world's chain. The account can call game systems, but it does not replace the wallet or identity you use
+outside the game.
+
+## Identity and recovery
+
+Connect a supported Starknet wallet when the world requires an identity. The Realms account portal binds the gameplay
+account to that identity. If the browser key is lost or replaced, an authenticated session can rotate the bound account
+to the new key.
+
+Guest entry is available only on worlds that explicitly support it. A guest account is not bound to an identity, so
+clearing the browser's site data also removes its local key.
+
+## Security
+
+- The gameplay private key stays in browser storage.
+- The binding service can bind an identity or rotate its gameplay key; it cannot sign ordinary player actions.
+- The onchain registry permits one gameplay account per identity and one identity per gameplay account.
+
+Keep the wallet for your identity and assets secure. The gameplay account is deliberately limited to the selected game
+chain and can be replaced without moving those assets.

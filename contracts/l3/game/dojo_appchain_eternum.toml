@@ -1,0 +1,68 @@
+# Game world on the shared Realms appchain.
+[namespace]
+default = "s2"
+
+[lib_versions]
+"s2-combat_library" = "0_1_14"
+"s2-raid_library" = "0_1_0"
+"s2-rng_library" = "0_1_16"
+"s2-biome_library" = "0_1_13"
+"s2-structure_creation_library" = "0_1_18"
+
+[env]
+rpc_url = "http://52.54.98.119"
+world_address = "0x2c3d2792f28e27eea7bf500ed8bb6c0b78b4a6cb83d46df79f4e10faf84453f"
+
+[world]
+seed = "s2_eternum_1"
+name = "Realms: Eternum"
+description = "Persistent Realms seasons"
+cover_uri = "file://assets/bg.webp"
+website = "https://alpha-eternum.realms.world/"
+
+[writers]
+"s2" = [
+    "s2-agent_discovery_systems",
+    "s2-alt_movement_systems",
+    "s2-artificer_systems",
+    "s2-bank_systems",
+    "s2-bitcoin_mine_discovery_systems",
+    "s2-bitcoin_mine_systems",
+    "s2-blitz_realm_systems",
+    "s2-camp_discovery_systems",
+    "s2-dev_resource_systems",
+    "s2-entry_systems",
+    "s2-faith_prize_systems",
+    "s2-faith_systems",
+    "s2-guild_systems",
+    "s2-holysite_discovery_systems",
+    "s2-hyperstructure_create_systems",
+    "s2-hyperstructure_discovery_systems",
+    "s2-hyperstructure_systems",
+    "s2-liquidity_systems",
+    "s2-mine_discovery_systems",
+    "s2-name_systems",
+    "s2-ownership_systems",
+    "s2-point_systems",
+    "s2-prize_distribution_systems",
+    "s2-production_systems",
+    "s2-quest_systems",
+    "s2-realm_systems",
+    "s2-realm_internal_systems",
+    "s2-registrar_systems",
+    "s2-relic_chest_discovery_systems",
+    "s2-relic_systems",
+    "s2-resource_bridge_systems",
+    "s2-resource_systems",
+    "s2-season_systems",
+    "s2-spire_systems",
+    "s2-structure_systems",
+    "s2-swap_systems",
+    "s2-trade_systems",
+    "s2-troop_battle_systems",
+    "s2-troop_management_systems",
+    "s2-troop_movement_systems",
+    "s2-troop_movement_util_systems",
+    "s2-troop_raid_systems",
+    "s2-village_systems",
+]

@@ -1,8 +1,9 @@
 name: Deploy Client
 
-# Ships the game client to play.jcndata.com (S3 website bucket fronted by
-# Cloudflare). Manual dispatch keeps deploys deliberate; the build reads the
-# committed .env.production and stamps the version from the ref.
+# Ships the game client to play.realms.party as a Cloudflare Pages project
+# (project name in vars.CLOUDFLARE_PAGES_PROJECT; the custom domain is attached
+# in the Pages dashboard once). Manual dispatch keeps deploys deliberate; the
+# build reads the committed .env.production and stamps the version from the ref.
 on:
   workflow_dispatch:
     inputs:
@@ -11,7 +12,6 @@ on:
         required: false
 
 permissions:
-  id-token: write
   contents: read
 
 concurrency:
@@ -44,118 +44,44 @@ jobs:
         env:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
-        run: pnpm --dir client/apps/game build
+        run: pnpm --dir apps/game build
 
-      # Live renderer smokes gate the deploy, not PRs: they exercise the exact
-      # artifact about to ship against the real appchain (torii + katana), so
-      # a broken boot never reaches players and PR CI stays hermetic.
-      - name: Start game client preview server
-        env:
-          ETERNUM_DISABLE_MKCERT: "true"
-        run: |
-          pnpm --dir client/apps/game preview --host 127.0.0.1 --port 4173 > /tmp/eternum-game-preview.log 2>&1 &
-          echo $! > /tmp/eternum-game-preview.pid
-
-      - name: Wait for game client preview server
-        env:
-          GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
-        run: |
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent --show-error "$GAME_CLIENT_PREVIEW_URL" >/dev/null; then
-              exit 0
-            fi
-
-            sleep 2
-          done
-
-          echo "Game client preview server did not become ready" >&2
-          cat /tmp/eternum-game-preview.log >&2 || true
-          exit 1
-
-      - name: Run renderer scene smoke
-        env:
-          GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
-          TORII_URL: "https://torii.jcndata.com"
-        run: |
-          node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
-            --base-url "$GAME_CLIENT_PREVIEW_URL" \
-            --chain appchain \
-            --scenes map,hex \
-            --artifact-dir /tmp/renderer-scene-smoke-artifacts
-
-      - name: Upload renderer scene smoke artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: renderer-scene-smoke-artifacts
-          path: /tmp/renderer-scene-smoke-artifacts
-          if-no-files-found: ignore
-
-      - name: Run renderer debug smoke
-        env:
-          GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
-        run: |
-          node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs \
-            --base-url "$GAME_CLIENT_PREVIEW_URL" \
-            --scenarios baseline,stress \
-            --output /tmp/renderer-debug-smoke.json
-
-      - name: Upload renderer debug smoke result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: renderer-debug-smoke-result
-          path: /tmp/renderer-debug-smoke.json
-
-      - name: Stop game client preview server
-        if: always()
-        run: |
-          if [ -f /tmp/eternum-game-preview.pid ]; then
-            kill "$(cat /tmp/eternum-game-preview.pid)" || true
-          fi
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::061906581174:role/gha-appchain-client
-          aws-region: us-east-1
-
-      - name: Upload to S3
-        working-directory: client/apps/game
+      - name: Write cache headers
+        working-directory: apps/game
         run: |
           set -euo pipefail
           # Never ship sourcemaps publicly.
           find dist -name "*.js.map" -delete
-          # Three cache tiers. Only Vite's content-hashed assets/ may be
-          # immutable: a stable-path file cached immutable is unfixable in a
-          # browser for a year (the corrupt /basis/ wasm proved it). HTML +
-          # service-worker files revalidate every request — a stale sw.js is
+          # Three cache tiers, as a Pages _headers file. Only Vite's content-hashed
+          # assets/ may be immutable: a stable-path file cached immutable is
+          # unfixable in a browser for a year (the corrupt /basis/ wasm proved it).
+          # HTML + service-worker files revalidate every request — a stale sw.js is
           # the one file that can pin testers to an old build. Everything else
-          # (public/ passthrough: models, basis, images, sounds) revalidates
-          # after 5 minutes — cheap 304s, and asset updates actually reach
-          # returning testers.
-          aws s3 sync dist "s3://play.jcndata.com" \
-            --exclude "*" --include "assets/*" \
-            --cache-control "public,max-age=31536000,immutable"
-          aws s3 sync dist "s3://play.jcndata.com" \
-            --exclude "*" --include "*.html" --include "sw.js" --include "registerSW.js" --include "manifest.webmanifest" \
-            --cache-control "public,max-age=0,must-revalidate"
-          aws s3 sync dist "s3://play.jcndata.com" \
-            --exclude "assets/*" --exclude "*.html" --exclude "sw.js" --exclude "registerSW.js" --exclude "manifest.webmanifest" \
-            --cache-control "public,max-age=300,must-revalidate"
-          # Remove files from previous builds last, once the new set is live.
-          aws s3 sync dist "s3://play.jcndata.com" --delete
+          # (public/ passthrough: models, basis, images, sounds) revalidates after
+          # 5 minutes. Pages deploys are atomic and invalidate its cache, so no
+          # purge step is needed.
+          cat > dist/_headers <<'EOF'
+          /assets/*
+            Cache-Control: public, max-age=31536000, immutable
+          /*.html
+            Cache-Control: public, max-age=0, must-revalidate
+          /sw.js
+            Cache-Control: public, max-age=0, must-revalidate
+          /registerSW.js
+            Cache-Control: public, max-age=0, must-revalidate
+          /manifest.webmanifest
+            Cache-Control: public, max-age=0, must-revalidate
+          /*
+            Cache-Control: public, max-age=300, must-revalidate
+          EOF
 
-      - name: Purge Cloudflare cache
+      # wrangler-action@v3 auto-installs wrangler with `pnpm add`, which pnpm refuses at a workspace root
+      # (ERR_PNPM_ADDING_TO_ROOT). Run wrangler with `pnpm dlx` instead — isolated, no workspace mutation.
+      - name: Deploy to Cloudflare Pages
         env:
-          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_CACHE_PURGE_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "${CF_ZONE_ID}" ] || [ -z "${CF_API_TOKEN}" ]; then
-            echo "Cloudflare purge secrets not configured; skipping (stale index.html clears on its must-revalidate TTL)."
-            exit 0
-          fi
-          curl -sf -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}'
+          pnpm dlx wrangler@3 pages deploy apps/game/dist \
+            --project-name="${{ vars.CLOUDFLARE_PAGES_PROJECT }}" \
+            --branch=main --commit-hash="${{ github.sha }}"

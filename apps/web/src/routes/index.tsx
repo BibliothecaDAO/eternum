@@ -1,0 +1,125 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { ReactNode, Suspense, lazy, useEffect, useRef, useState } from "react";
+import { IntroSection } from "@/site/components/sections/IntroSection";
+import { generateMetaTags } from "@/site/lib/og-image";
+
+const HexExplorerSection = lazy(() =>
+  import("@/site/components/hex-explorer/HexExplorerSection").then((module) => ({
+    default: module.HexExplorerSection,
+  })),
+);
+const AgentNativeSection = lazy(() =>
+  import("@/site/components/sections/AgentNativeSection").then((module) => ({
+    default: module.AgentNativeSection,
+  })),
+);
+const EcosystemAtlasSection = lazy(() =>
+  import("@/site/components/sections/EcosystemAtlasSection").then((module) => ({
+    default: module.EcosystemAtlasSection,
+  })),
+);
+const EconomicsSection = lazy(() =>
+  import("@/site/components/sections/EconomicsSection").then((module) => ({
+    default: module.EconomicsSection,
+  })),
+);
+const PartnersSection = lazy(() =>
+  import("@/site/components/sections/PartnersSection").then((module) => ({
+    default: module.PartnersSection,
+  })),
+);
+
+function SectionFallback() {
+  return <div className="min-h-[220px] rounded-lg border border-border/40 bg-muted/20 animate-pulse" />;
+}
+
+function DeferredSection({ children, eager = false }: { children: ReactNode; eager?: boolean }) {
+  const [isVisible, setIsVisible] = useState(eager);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (isVisible) return;
+
+    const node = sectionRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px 0px" },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  return (
+    <div ref={sectionRef}>
+      {isVisible ? <Suspense fallback={<SectionFallback />}>{children}</Suspense> : <SectionFallback />}
+    </div>
+  );
+}
+
+export const Route = createFileRoute("/")({
+  component: HomePage,
+  head: () => ({
+    meta: generateMetaTags({
+      title: "Realms World - Onchain Games for Humans and Agents",
+      description:
+        "Explore onchain strategy games where humans and AI agents compete through verifiable rules and $LORDS-powered economies.",
+      path: "/",
+    }),
+  }),
+});
+
+function SectionDivider() {
+  return (
+    <div className="relative h-px mx-auto max-w-5xl">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+    </div>
+  );
+}
+
+function HomePage() {
+  return (
+    <>
+      <div id="hero">
+        <IntroSection />
+      </div>
+      <div id="hex-explorer">
+        <DeferredSection eager>
+          <HexExplorerSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="agent-native">
+        <DeferredSection eager>
+          <AgentNativeSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="games">
+        <DeferredSection eager>
+          <EcosystemAtlasSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="economics">
+        <DeferredSection>
+          <EconomicsSection />
+        </DeferredSection>
+      </div>
+      <SectionDivider />
+      <div id="partners">
+        <DeferredSection>
+          <PartnersSection />
+        </DeferredSection>
+      </div>
+    </>
+  );
+}

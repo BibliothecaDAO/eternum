@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "resolution": 512,
+  "layers": [
+    {
+      "assetId": "aerial_sand",
+      "assetUrl": "https://polyhaven.com/a/aerial_sand",
+      "id": "sand"
+    },
+    {
+      "assetId": "dry_ground_01",
+      "assetUrl": "https://polyhaven.com/a/dry_ground_01",
+      "id": "dry-earth"
+    },
+    {
+      "assetId": "brown_mud",
+      "assetUrl": "https://polyhaven.com/a/brown_mud",
+      "id": "soil"
+    },
+    {
+      "assetId": "sparse_grass",
+      "assetUrl": "https://polyhaven.com/a/sparse_grass",
+      "id": "grass"
+    },
+    {
+      "assetId": "dry_decay_leaves",
+      "assetUrl": "https://polyhaven.com/a/dry_decay_leaves",
+      "id": "litter"
+    },
+    {
+      "assetId": "aerial_ground_rock",
+      "assetUrl": "https://polyhaven.com/a/aerial_ground_rock",
+      "id": "stone"
+    },
+    {
+      "assetId": "snow_02",
+      "assetUrl": "https://polyhaven.com/a/snow_02",
+      "id": "snow"
+    },
+    {
+      "assetId": "burned_ground_01",
+      "assetUrl": "https://polyhaven.com/a/burned_ground_01",
+      "id": "ash"
+    }
+  ],
+  "license": {
+    "name": "CC0 1.0 Universal",
+    "url": "https://polyhaven.com/license"
+  },
+  "textures": {
+    "albedoHeight": {
+      "bytes": 789405,
+      "colorSpace": "srgb",
+      "file": "ground-albedo-height.ktx2",
+      "packing": "RGB=albedo,A=height",
+      "sha256": "82cdd6e637f3b8384ca1c0c56487bc1907a7c175224084620e287412fedf4e37"
+    },
+    "normalMaterial": {
+      "bytes": 2617072,
+      "colorSpace": "linear",
+      "file": "ground-normal-material.ktx2",
+      "packing": "RG=normalXY,B=roughness,A=ao",
+      "sha256": "032ea68ec98719251cd854d84817f9c8ee74262cfe5ea0c2b602b2a3ef0dc260"
+    }
+  }
+}

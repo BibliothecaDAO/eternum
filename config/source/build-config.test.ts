@@ -45,7 +45,7 @@ describe("buildConfig", () => {
   test("resolves the expected chain overlays for Blitz and Eternum", async () => {
     const appchainBlitz = await buildConfig({ chain: "appchain", gameType: "blitz" });
     const appchainEternum = await buildConfig({ chain: "appchain", gameType: "eternum" });
-    const localBlitz = await buildConfig({ chain: "local", gameType: "blitz" });
+    const madaraBlitz = await buildConfig({ chain: "madara", gameType: "blitz" });
 
     expect(appchainBlitz.setup?.chain).toBe("appchain");
     expect(appchainBlitz.battle.regularImmunityTicks).toBe(0);
@@ -91,12 +91,13 @@ describe("buildConfig", () => {
     expect(appchainEternum.troop.stamina.staminaExploreWheatCost).toBe(0.03);
     expect(appchainEternum.troop.stamina.staminaExploreFishCost).toBe(0.03);
     expect(appchainEternum.hyperstructures.hyperstructureConstructionCost.length).toBeGreaterThan(0);
-    expect(appchainEternum.mmr).toBeUndefined();
-
-    expect(localBlitz.dev.mode.on).toBe(true);
-    expect(localBlitz.speed.donkey_for_resources).toBe(0);
-    expect(localBlitz.speed.donkey_for_troops).toBe(0);
-    expect(localBlitz.mmr?.enabled).toBe(true);
+    expect(madaraBlitz.blitz.registration.registration_count_max).toBe(96);
+    expect(madaraBlitz.blitz.registration.collectible_cosmetics_address).toBe("0x0");
+    expect(madaraBlitz.blitz.registration.collectible_timelock_address).toBe("0x0");
+    expect(madaraBlitz.blitz.registration.collectibles_lootchest_address).toBe("0x0");
+    expect(madaraBlitz.blitz.registration.collectibles_elitenft_address).toBe("0x0");
+    expect(madaraBlitz.agent.controller_address).toBe("0x0");
+    expect(madaraBlitz.vrf.vrfProviderAddress).toBe("0x0");
   });
 
   test("applies the official Blitz profiles only for exact official durations", async () => {

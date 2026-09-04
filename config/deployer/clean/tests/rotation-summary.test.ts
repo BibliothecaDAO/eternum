@@ -10,7 +10,8 @@ import type { LaunchRotationRequest } from "../types";
 function buildWeeklyRotationRequest(overrides: Partial<LaunchRotationRequest> = {}): LaunchRotationRequest {
   return {
     launchKind: "rotation",
-    environmentId: "mainnet.blitz",
+    environmentId: "madara.blitz",
+    rpcUrl: "https://rpc.example",
     rotationName: "blitz-rotation",
     firstGameStartTime: "2026-04-20T01:00:00Z",
     gameIntervalMinutes: 0,
@@ -118,7 +119,7 @@ describe("rotation launch summary", () => {
           weekday: "saturday",
           utcTime: "12:00",
           blitzRegistrationOverrides: {
-            fee_amount: "1000000000000000000000",
+            registration_count_max: 96,
           },
         },
       ],
@@ -132,7 +133,7 @@ describe("rotation launch summary", () => {
     expect(summary.games[0]).toMatchObject({
       gameName: "weekend-gladiator-25-04-26-1200",
       blitzRegistrationOverrides: {
-        fee_amount: "1000000000000000000000",
+        registration_count_max: 96,
       },
     });
   });
@@ -158,14 +159,14 @@ describe("rotation launch summary", () => {
     ]);
   });
 
-  test("validates a retry request with the persisted weekly cadence", () => {
+  test("validates a retry request with the persisted weekly cadence", async () => {
     const persistedRequest = buildWeeklyRotationRequest();
     const retryRequest = buildWeeklyRotationRequest({
       weeklyCadence: undefined,
       resumeSummary: buildInitialRotationLaunchSummary(persistedRequest),
     });
 
-    const resolvedRequest = resolveRotationRequestWithPersistedSchedule(retryRequest);
+    const resolvedRequest = await resolveRotationRequestWithPersistedSchedule(retryRequest);
 
     expect(() => validateRotationLaunchRequest(resolvedRequest)).not.toThrow();
     expect(resolvedRequest.weeklyCadence).toEqual(persistedRequest.weeklyCadence);

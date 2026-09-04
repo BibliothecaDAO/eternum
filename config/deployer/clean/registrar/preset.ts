@@ -6,7 +6,8 @@ import {
   scaleResourceOutputs,
   type Config,
 } from "@bibliothecadao/types";
-import { hash, shortString, uint256 } from "starknet";
+import { hash, shortString } from "starknet";
+import { BLITZ_REGISTRATION_COUNT_CAP } from "../constants";
 
 type ConfigRecord<Value> = Record<number, Value> | Record<string, Value>;
 type ResourceAmount = { resource: number; amount: number };
@@ -34,11 +35,10 @@ export interface PresetRegistrationPayload {
 
 export interface ChainConfigOverrides {
   adminAddress: string;
+  ledgerOperatorAddress: string;
+  playerRegistryAddress: string;
   vrfProviderAddress?: string;
   agentControllerAddress?: string;
-  feeTokenAddress?: string;
-  feeRecipientAddress?: string;
-  entryTokenAddress?: string;
   cosmeticsAddress?: string;
   timelockAddress?: string;
   lootChestAddress?: string;
@@ -62,6 +62,16 @@ const BLITZ_PROFILE_IDS = {
   "official-60": 1,
   "official-90": 2,
 } as const;
+
+const DISABLED_CONTRACT_ADDRESS = "0x0";
+
+function resolveFeatureAddress(name: string, enabled: boolean, address: string | undefined): string {
+  if (!enabled) return DISABLED_CONTRACT_ADDRESS;
+  if (address === undefined) {
+    throw new Error(`${name} address must be explicit when the feature is enabled`);
+  }
+  return address;
+}
 
 function numericEntries<Value>(record: ConfigRecord<Value>): Array<[number, Value]> {
   return Object.entries(record)
@@ -239,21 +249,6 @@ function buildBlitzSettlementConfig(config: Config) {
   };
 }
 
-function buildMmrConfig(config: Config) {
-  const mmr = config.mmr;
-  return {
-    enabled: mmr?.enabled ?? false,
-    mmr_token_address: mmr?.mmr_token_address ?? "0x0",
-    distribution_mean: mmr?.distribution_mean ?? 1500,
-    spread_factor: mmr?.spread_factor ?? 450,
-    max_delta: mmr?.max_delta ?? 45,
-    k_factor: mmr?.k_factor ?? 50,
-    lobby_split_weight_scaled: mmr?.lobby_split_weight_scaled ?? 2500,
-    mean_regression_scaled: mmr?.mean_regression_scaled ?? 150,
-    min_players: mmr?.min_players ?? 6,
-  };
-}
-
 function addStartingResourceLists(config: Config, addResourceList: (rows: ResourceAmount[]) => ResourceListReference) {
   const precision = config.resources.resourcePrecision;
   const realm = addResourceList(
@@ -395,24 +390,16 @@ function buildPresetSideTables(config: Config): {
   };
 }
 
-function buildSeasonAddressesConfig(config: Config) {
-  const addresses = config.setup?.addresses;
-  return {
-    season_pass_address: addresses?.seasonPass ?? "0x0",
-    realms_address: addresses?.realms ?? "0x0",
-    lords_address: addresses?.lords ?? "0x0",
-  };
-}
-
 function buildFaithConfig(config: Config) {
+  const enabled = config.faith?.enabled ?? false;
   return {
-    enabled: config.faith?.enabled ?? false,
+    enabled,
     wonder_base_fp_per_sec: config.faith?.wonder_base_fp_per_sec ?? 0,
     holy_site_fp_per_sec: config.faith?.holy_site_fp_per_sec ?? 0,
     realm_fp_per_sec: config.faith?.realm_fp_per_sec ?? 0,
     village_fp_per_sec: config.faith?.village_fp_per_sec ?? 0,
     owner_share_percent: (config.faith?.owner_share_percent ?? 0) * 100,
-    reward_token: config.faith?.reward_token ?? "0x0",
+    reward_token: resolveFeatureAddress("faith reward token", enabled, config.faith?.reward_token),
   };
 }
 
@@ -502,12 +489,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         velords_fee_recipient: config.bridge.velords_fee_recipient,
         season_pool_fee_recipient: config.bridge.season_pool_fee_recipient,
       },
-      village_token_config: {
-        token_address: config.village.village_pass_nft_address,
-        mint_recipient_address: config.village.village_mint_initial_recipient,
-      },
       village_troop_config: { troop_delay_ticks: config.battle.delaySeconds },
-      season_addresses_config: buildSeasonAddressesConfig(config),
       quest_games: buildQuestGames(config),
       realm_start_resources_config: {
         resources_list_id: realmStart.id,
@@ -543,9 +525,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
       settlement_config: buildSettlementConfig(config),
       blitz_settlement_config: buildBlitzSettlementConfig(config),
       blitz_registration_config: {
-        fee_amount: uint256.bnToUint256(0),
         registration_count: 0,
-        issued_count: 0,
         registration_count_max: config.blitz.registration.registration_count_max,
         registration_start_at: 0,
       },
@@ -562,12 +542,10 @@ export function buildChainConfig(config: Config, overrides: ChainConfigOverrides
   return {
     config_id: 0,
     admin_address: overrides.adminAddress,
+    ledger_operator_address: overrides.ledgerOperatorAddress,
+    player_registry_address: overrides.playerRegistryAddress,
     vrf_provider_address: overrides.vrfProviderAddress ?? config.vrf.vrfProviderAddress,
     agent_controller_config: { address: overrides.agentControllerAddress ?? config.agent.controller_address },
-    mmr_config: buildMmrConfig(config),
-    fee_token: overrides.feeTokenAddress ?? config.blitz.registration.fee_token,
-    fee_recipient: overrides.feeRecipientAddress ?? config.blitz.registration.fee_recipient,
-    entry_token_address: overrides.entryTokenAddress ?? "0x0",
     collectibles_cosmetics_address:
       overrides.cosmeticsAddress ?? config.blitz.registration.collectible_cosmetics_address,
     collectibles_timelock_address: overrides.timelockAddress ?? config.blitz.registration.collectible_timelock_address,
@@ -595,8 +573,8 @@ function resolveRegistrationCountMax(config: Config, twoPlayerMode: boolean): nu
   }
 
   const registrationCountMax = twoPlayerMode ? 2 : config.blitz.registration.registration_count_max;
-  if (registrationCountMax < 1 || registrationCountMax > 24) {
-    throw new Error("Blitz registration_count_max must be between 1 and 24");
+  if (registrationCountMax < 1 || registrationCountMax > BLITZ_REGISTRATION_COUNT_CAP) {
+    throw new Error(`Blitz registration_count_max must be between 1 and ${BLITZ_REGISTRATION_COUNT_CAP}`);
   }
   return registrationCountMax;
 }
@@ -644,7 +622,6 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     two_player_mode: input.twoPlayerMode,
     registration_count_max: registrationCountMax,
     registration_start_at: registrationStartAt,
-    fee_amount: uint256.bnToUint256(config.blitz.registration.fee_amount),
     biome_climate_config: buildBiomeClimateConfig(config),
     use_map_override: input.useMapOverride,
     map_override: buildMapConfig(config),

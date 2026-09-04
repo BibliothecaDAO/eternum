@@ -8,17 +8,17 @@
  *   pnpm run manifest:copy-abis <target>
  *
  * Examples:
+ *   node scripts/copy-abis.mjs madara
  *   node scripts/copy-abis.mjs appchain-blitz
- *   pnpm run manifest:copy-abis mainnet
  *
- * Valid targets: local, appchain-blitz, appchain-eternum, sepolia, mainnet
+ * Valid targets: madara, appchain-blitz, appchain-eternum
  */
 
 // ====== Parse CLI arguments ======
 const args = process.argv.slice(2);
 const target = args[0];
 
-const VALID_TARGETS = ["local", "appchain-blitz", "appchain-eternum", "sepolia", "mainnet"];
+const VALID_TARGETS = ["madara", "appchain-blitz", "appchain-eternum"];
 
 if (!target) {
   console.error("Error: Target parameter is required");
@@ -34,8 +34,8 @@ if (!VALID_TARGETS.includes(target)) {
 }
 
 // ====== Parameters ======
-const FROM_JSON = "contracts/game/manifest_local.json";
-const TO_JSON = `contracts/game/manifest_${target.replace("-", "_")}.json`;
+const FROM_JSON = "contracts/l3/game/manifest_local.json";
+const TO_JSON = `contracts/l3/game/manifest_${target.replace("-", "_")}.json`;
 const WORLD_ONLY = false; // if true, copy only world.abi
 const CONTRACTS_ONLY = false; // if true, copy only contract ABIs by tag
 const DRY_RUN = false; // if true, do not write file

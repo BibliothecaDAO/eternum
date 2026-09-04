@@ -1,6 +1,4 @@
-import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
-import { readFactorySeriesState } from "../factory/series";
 import type {
   LaunchRotationRequest,
   LaunchRotationSummary,
@@ -9,9 +7,10 @@ import type {
   SeriesLaunchGameStepState,
   SeriesLaunchGameSummary,
 } from "../types";
-import { loadRotationLaunchSummaryIfPresent, writeRotationLaunchSummary } from "./rotation-io";
 import { resolveSeriesLaunchStepIds } from "./series-plan";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { parseStartTime, toIsoUtc } from "./time";
+import { requireRpcUrl } from "../shared/rpc";
 
 export const DEFAULT_ROTATION_AUTO_RETRY_INTERVAL_MINUTES = 15;
 export const DEFAULT_ROTATION_ADVANCE_WINDOW_GAMES = 5;
@@ -63,14 +62,15 @@ export function validateRotationLaunchRequest(request: LaunchRotationRequest): v
   parseStartTime(request.firstGameStartTime);
 }
 
-export function resolveRotationRequestWithPersistedSchedule<TRequest extends LaunchRotationRequest>(
+export async function resolveRotationRequestWithPersistedSchedule<TRequest extends LaunchRotationRequest>(
   request: TRequest,
-): TRequest {
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<TRequest> {
   if (hasRequestSchedule(request)) {
     return request;
   }
 
-  const summary = resolvePersistedRotationScheduleSummary(request);
+  const summary = await resolvePersistedRotationScheduleSummary(request, store);
   if (!summary) {
     return request;
   }
@@ -86,10 +86,11 @@ function hasRequestSchedule(request: LaunchRotationRequest): boolean {
   return hasWeeklyCadence(request) || isRotationPositiveInteger(request.gameIntervalMinutes);
 }
 
-function resolvePersistedRotationScheduleSummary(request: LaunchRotationRequest): LaunchRotationSummary | null {
-  return (
-    request.resumeSummary ?? loadRotationLaunchSummaryIfPresent(request.environmentId, request.rotationName.trim())
-  );
+async function resolvePersistedRotationScheduleSummary(
+  request: LaunchRotationRequest,
+  store: LaunchRunStore,
+): Promise<LaunchRotationSummary | null> {
+  return request.resumeSummary ?? store.loadRotation(request.environmentId, request.rotationName.trim());
 }
 
 function resolvePersistedRotationGameIntervalMinutes(
@@ -225,8 +226,7 @@ export function buildInitialRotationLaunchSummary(request: LaunchRotationRequest
     advanceWindowGames: resolveRotationAdvanceWindowGames(request),
     evaluationIntervalMinutes: request.evaluationIntervalMinutes,
     weeklyCadence: request.weeklyCadence,
-    rpcUrl: request.rpcUrl || environment.rpcUrl,
-    factoryAddress: request.factoryAddress || environment.factoryAddress || "",
+    rpcUrl: requireRpcUrl(request.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? true,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -242,8 +242,7 @@ function applyRotationRequestSettings(
 ): LaunchRotationSummary {
   return {
     ...summary,
-    rpcUrl: request.rpcUrl || summary.rpcUrl,
-    factoryAddress: request.factoryAddress || summary.factoryAddress,
+    rpcUrl: requireRpcUrl(request.rpcUrl || summary.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultRotationRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -271,7 +270,7 @@ function validatePersistedRotationGameNumbers(summary: LaunchRotationSummary): v
 }
 
 async function assignRotationGameNumbers(
-  request: LaunchRotationRequest,
+  _request: LaunchRotationRequest,
   summary: LaunchRotationSummary,
 ): Promise<LaunchRotationSummary> {
   validatePersistedRotationGameNumbers(summary);
@@ -280,20 +279,14 @@ async function assignRotationGameNumbers(
     return summary;
   }
 
-  const seriesState = await readFactorySeriesState({
-    chain: summary.chain,
-    seriesName: summary.seriesName,
-    cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-  });
+  const lastGameNumber = Math.max(0, ...summary.games.map((game) => game.seriesGameNumber));
   let nextGameNumber =
-    Math.max(
-      seriesState.lastGameNumber,
-      ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0)),
-    ) + 1;
+    Math.max(lastGameNumber, ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0))) +
+    1;
 
   return {
     ...summary,
-    seriesCreated: summary.seriesCreated || seriesState.exists,
+    seriesCreated: summary.seriesCreated,
     games: summary.games.map((game) => {
       if (game.seriesGameNumber > 0) {
         nextGameNumber = Math.max(nextGameNumber, game.seriesGameNumber + 1);
@@ -455,11 +448,14 @@ export function reconcileRotationLaunchSummary(
   );
 }
 
-export async function hydrateRotationLaunchSummary(request: LaunchRotationRequest): Promise<LaunchRotationSummary> {
+export async function hydrateRotationLaunchSummary(
+  request: LaunchRotationRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchRotationSummary> {
   const baseSummary = request.resumeSummary
     ? applyRotationRequestSettings(request.resumeSummary, request)
     : applyRotationRequestSettings(
-        loadRotationLaunchSummaryIfPresent(request.environmentId, request.rotationName.trim()) ||
+        (await store.loadRotation(request.environmentId, request.rotationName.trim())) ||
           buildInitialRotationLaunchSummary(request),
         request,
       );
@@ -467,9 +463,7 @@ export async function hydrateRotationLaunchSummary(request: LaunchRotationReques
   return assignRotationGameNumbers(request, baseSummary);
 }
 
-export function persistRotationLaunchSummary(summary: LaunchRotationSummary): LaunchRotationSummary {
-  return {
-    ...summary,
-    outputPath: writeRotationLaunchSummary(summary),
-  };
-}
+export const persistRotationLaunchSummary = (
+  summary: LaunchRotationSummary,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchRotationSummary> => store.saveRotation(summary);

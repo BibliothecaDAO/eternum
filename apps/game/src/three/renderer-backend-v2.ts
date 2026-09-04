@@ -1,0 +1,185 @@
+import type { Camera, Scene } from "three";
+
+import type { RendererSurfaceLike } from "./renderer-backend";
+import type { RendererBuildMode } from "./renderer-build-mode";
+
+export type RendererActiveMode = "webgpu" | "webgl2-fallback";
+export type RendererFallbackReason =
+  | "webgpu-device-lost"
+  | `webgpu-init-error:${string}`
+  | "webgpu-init-timeout"
+  | "webgpu-silent-fallback"
+  | "webgpu-unproven"
+  | "webgpu-probe-timeout"
+  | "webgpu-remembered-fallback"
+  | "webgpu-unavailable"
+  | null;
+
+export interface RendererAdapterInfo {
+  architecture: string;
+  description: string;
+  isFallbackAdapter: boolean;
+  vendor: string;
+}
+
+export interface RendererBackendCapabilities {
+  supportsEnvironmentIbl: boolean;
+  supportsToneMappingControl: boolean;
+  supportsColorGrade: boolean;
+  supportsBloom: boolean;
+  supportsVignette: boolean;
+  supportsChromaticAberration: boolean;
+  supportsWideLines: boolean;
+}
+
+export type RendererCapabilityFeature =
+  | "environmentIbl"
+  | "toneMappingControl"
+  | "colorGrade"
+  | "bloom"
+  | "vignette"
+  | "chromaticAberration"
+  | "wideLines";
+
+export interface RendererFeatureDegradation {
+  detail?: string;
+  feature: RendererCapabilityFeature;
+  reason: "disabled-by-profile" | "disabled-by-user" | "fallback-active" | "unsupported-backend";
+}
+
+export interface RendererInitDiagnostics {
+  activeMode: RendererActiveMode;
+  adapterInfo?: RendererAdapterInfo;
+  buildMode: RendererBuildMode;
+  deviceStatus?: "ready";
+  fallbackReason: RendererFallbackReason;
+  initTimeMs: number;
+  requestedMode: RendererBuildMode;
+}
+
+export interface RendererDeviceLostEvent {
+  activeMode: RendererActiveMode;
+  message?: string;
+}
+
+export interface RendererBackendV2 {
+  readonly capabilities: RendererBackendCapabilities;
+  readonly renderer?: RendererSurfaceLike;
+  applyEnvironment?(targets: unknown): Promise<void>;
+  applyPostProcessPlan?(plan: RendererPostProcessPlan): RendererPostProcessController;
+  applyRenderVisuals?(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void;
+  dispose?(): void;
+  initialize(): Promise<RendererInitDiagnostics>;
+  renderFrame?(pipeline: RendererFramePipeline): void;
+  resize?(width: number, height: number): void;
+}
+
+export interface RendererOverlayPass {
+  camera: Camera;
+  name?: string;
+  scene: Scene;
+}
+
+export interface RendererFramePipeline {
+  mainCamera: Camera;
+  mainScene: Scene;
+  overlayPasses?: RendererOverlayPass[];
+  sceneName?: string;
+}
+
+export interface RendererPostProcessPlan {
+  antiAlias: "fxaa" | "none";
+  bloom: {
+    enabled: boolean;
+    intensity: number;
+  };
+  chromaticAberration: {
+    enabled: boolean;
+  };
+  colorGrade: {
+    brightness: number;
+    contrast: number;
+    hue: number;
+    saturation: number;
+  };
+  toneMapping: {
+    exposure: number;
+    mode: "aces-filmic" | "cineon" | "linear" | "neutral" | "reinhard";
+    whitePoint: number;
+  };
+  vignette: {
+    darkness: number;
+    enabled: boolean;
+    offset: number;
+  };
+}
+
+export interface RendererPostProcessController {
+  setColorGrade(input: Partial<RendererPostProcessPlan["colorGrade"]>): void;
+  setVignette(input: Partial<Omit<RendererPostProcessPlan["vignette"], "enabled">>): void;
+}
+
+export interface RendererPostProcessRuntime {
+  dispose(): void;
+  renderFrame(pipeline: RendererFramePipeline): void;
+  setPlan(plan: RendererPostProcessPlan): RendererPostProcessController;
+  setSize(width: number, height: number): void;
+}
+
+export type RendererBackendV2Factory = (options: { isMobileDevice: boolean; pixelRatio: number }) => RendererBackendV2;
+
+export function createRendererBackendCapabilities(
+  input: Partial<RendererBackendCapabilities> = {},
+): RendererBackendCapabilities {
+  return {
+    supportsBloom: input.supportsBloom ?? false,
+    supportsChromaticAberration: input.supportsChromaticAberration ?? false,
+    supportsColorGrade: input.supportsColorGrade ?? false,
+    supportsEnvironmentIbl: input.supportsEnvironmentIbl ?? false,
+    supportsToneMappingControl: input.supportsToneMappingControl ?? false,
+    supportsVignette: input.supportsVignette ?? false,
+    supportsWideLines: input.supportsWideLines ?? false,
+  };
+}
+
+export class RendererInitTimeoutError extends Error {
+  /** Mode of the renderer that was created but never finished initializing; null when creation itself stalled. */
+  readonly timedOutMode: RendererActiveMode | null;
+
+  constructor(message: string, timedOutMode: RendererActiveMode | null = null) {
+    super(message);
+    this.name = "RendererInitTimeoutError";
+    this.timedOutMode = timedOutMode;
+  }
+}
+
+export function createRendererInitDiagnostics(
+  input: Pick<RendererInitDiagnostics, "activeMode" | "buildMode" | "requestedMode"> &
+    Partial<Pick<RendererInitDiagnostics, "adapterInfo" | "deviceStatus" | "fallbackReason" | "initTimeMs">>,
+): RendererInitDiagnostics {
+  return {
+    activeMode: input.activeMode,
+    ...(input.adapterInfo ? { adapterInfo: { ...input.adapterInfo } } : {}),
+    buildMode: input.buildMode,
+    ...(input.deviceStatus ? { deviceStatus: input.deviceStatus } : {}),
+    fallbackReason: input.fallbackReason ?? null,
+    initTimeMs: input.initTimeMs ?? 0,
+    requestedMode: input.requestedMode,
+  };
+}
+
+export async function initializeRendererBackendV2(
+  factory: RendererBackendV2Factory,
+  options: Parameters<RendererBackendV2Factory>[0],
+): Promise<{
+  backend: RendererBackendV2;
+  diagnostics: RendererInitDiagnostics;
+}> {
+  const backend = factory(options);
+  const diagnostics = await backend.initialize();
+
+  return {
+    backend,
+    diagnostics,
+  };
+}

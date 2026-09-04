@@ -1,0 +1,11 @@
+{
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096 --max-http-header-size=16384"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "VERCEL_ENV": "production"
+  }
+}

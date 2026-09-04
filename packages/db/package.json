@@ -1,0 +1,48 @@
+{
+  "name": "@realms-world/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./src/client.ts"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./src/schema/index.ts"
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc  --noEmit",
+    "dev": "tsc --watch",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "lint": "eslint",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "push": "pnpm with-env drizzle-kit push",
+    "studio": "pnpm with-env drizzle-kit studio",
+    "with-env": "dotenv -e ../../.env --"
+  },
+  "dependencies": {
+    "drizzle-orm": "catalog:web",
+    "drizzle-zod": "^0.8.3",
+    "pg": "^8.18.0",
+    "zod": "catalog:web"
+  },
+  "devDependencies": {
+    "@realms-world/eslint-config": "workspace:*",
+    "@types/node": "^22.19.11",
+    "@types/pg": "^8.16.0",
+    "dotenv-cli": "catalog:web",
+    "drizzle-kit": "catalog:web",
+    "eslint": "catalog:web",
+    "prettier": "catalog:web",
+    "postgres-range": "^1.1.4",
+    "typescript": "catalog:web"
+  }
+}

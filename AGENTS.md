@@ -12,17 +12,17 @@ Eternum is a fully onchain strategy game built with Dojo (Cairo). One codebase s
 **Blitz** (short, timed matches) and **Eternum** (long format). Games are rows keyed by `game_id` inside a persistent
 world, created through the factory (GameRegistry) with immutable balance presets — not separate deployments.
 
-The data pipeline, end to end: Cairo contracts (`contracts/game`) define the world (realms, buildings, resources,
+The data pipeline, end to end: Cairo contracts (`contracts/l3/game`) define the world (realms, buildings, resources,
 armies, exploration, battles, relics, hyperstructures, victory points) → transactions execute on a Starknet sequencer →
-Torii indexes the world and serves clients three ways (entity subscriptions for current state, event-message
-subscriptions for transient notifications, SQL for immutable history) → the client's sync runtime ingests updates into
-RECS, the single authoritative store → three.js scenes (`WorldmapScene`, `HexceptionScene`) and the React UI render from
-it. Player actions apply optimistically, then reconcile against the indexed echo.
+Herald folds confirmed blocks, maintains the pre-confirmed overlay, and streams snapshots plus ordered diffs → the
+client's sync runtime ingests updates into RECS, the single authoritative store → three.js scenes (`WorldmapScene`,
+`HexceptionScene`) and the React UI render from it. The acting UI may show a local pending indicator; shared provisional
+state comes only from Herald's pre-confirmed overlay.
 
-Key directories: `client/apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync
-runtime), `packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/appchain` (self-hosted chain
-infra — read its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the
-fix, and a verifiable gate).
+Key directories: `apps/game` (the game client — has its own `AGENTS.md`), `packages/core` (game logic and sync runtime),
+`packages/*` (Dojo/RECS bindings, shared types), `contracts/*` (Cairo), `deploy/madara-lab` (self-hosted chain infra —
+read its README before touching it), `docs/plans` (implementation briefs: each item states its evidence, the fix, and a
+verifiable gate).
 
 ## Engineering Principles
 
@@ -32,8 +32,8 @@ fix, and a verifiable gate).
    instance. If the same root cause can bite elsewhere (a signal derived ad-hoc in several places, a guard every call
    site must remember, an unbounded cache pattern), fix the root: create the single source of truth, move the guard to
    the chokepoint, and migrate the existing copies onto it. A fix that leaves siblings of the same bug alive is
-   incomplete. Example: spectator intent lives in `client/apps/game/src/utils/spectator-session.ts` — consumers import
-   it; nobody re-derives it from the URL or account heuristics.
+   incomplete. Example: spectator intent lives in `apps/game/src/utils/spectator-session.ts` — consumers import it;
+   nobody re-derives it from the URL or account heuristics.
 3. **Success of systemic work is deletion.** When a layer becomes trustworthy, the bespoke fallbacks, holds, TTLs, and
    timers stacked above it should disappear. A systemic "fix" that only adds code is suspect.
 4. **Evidence before optimization.** Instrument, convict, then fix what the data names. Performance and bug-fix changes
@@ -53,26 +53,26 @@ When changing workflows, deployer code, shared runtime packages, or observabilit
 
 ## Client State & Sync Guardrails
 
-Every client bug class in the Aug 2026 playtests traced to a violation of one of these rules. They apply to
-`client/apps/game` and `packages/*`.
+Every client bug class in the Aug 2026 playtests traced to a violation of one of these rules. They apply to `apps/game`
+and `packages/*`.
 
-1. **One truth, per fact.** Current authoritative game facts live in RECS only: anything fetched from torii that
-   represents current entity state is written into RECS — never held in a side store, react-query cache, or scene-local
-   map as the primary copy. Immutable history and query-derived aggregates that are not current entity truth (story
-   logs, battle logs, swaps, token transfers) may be SQL read models, but SQL must never provide an alternative or
-   fallback version of a fact that is also present in RECS. Do not add new direct-fetch read paths for live state; when
-   touching one, delete it.
-2. **Entities are state; events are ephemera.** Anything persistent renders from the entity stream. Event messages drive
-   only transient flourishes (toasts, FX triggers) — and every event-driven feature must survive a dead event stream via
-   a snapshot, replay, poll, or query-on-demand path. A subscription is an accelerator, not the source of truth.
+1. **One truth, per fact.** Current game facts live in RECS only: Herald's confirmed snapshot and ordered diffs are
+   written into RECS — never held in a side store, react-query cache, or scene-local map as the primary copy. Immutable
+   history and query-derived aggregates that are not current entity truth (story logs, battle logs, swaps, token
+   transfers) may be SQL read models, but SQL must never provide an alternative or fallback version of a fact that is
+   also present in RECS. Do not add new direct-fetch read paths for live state; when touching one, delete it.
+2. **Entities are state; events are ephemera.** Anything persistent renders from Herald's snapshot plus entity diffs.
+   Event messages drive only transient flourishes (toasts, FX triggers), and every event-driven feature must recover
+   through the snapshot, replay ring, or immutable history sink. Event delivery is an accelerator, not the source of
+   truth.
 3. **Spread ambient work; apply player events atomically.** Batching, slicing, and lane scheduling exist for
    bulk/ambient churn. One player-initiated or single logical event (a move, a placement, a provisioned realm) must
    become visible in one step: batching must never show in the result of one action.
 4. **No silent defaults.** A config or keyed lookup that misses must be loud in dev. Never let a silent fallback return
    a zero that gameplay math consumes.
-5. **Pending state expires, and lives in one place.** Optimistic/lock state is one record per entity with a TTL enforced
-   where the state is consumed — never parallel maps that must be cleaned in sync, never keyed by tx hash. Do not add
-   new bespoke optimistic channels; route provisional writes through the same update path as authoritative data.
+5. **Pre-confirmation is shared; click feedback is local.** Herald owns the one pre-confirmed overlay and resets it at
+   each confirmed head. The client never predicts or overrides RECS rows. An acting surface may keep local pending UI
+   state for its own click, but that state must not become an alternative game fact or a bespoke reconciliation channel.
 6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
    capability without its call site.
 
@@ -188,7 +188,7 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 ### Running Tests
 
 - Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it.
-- In `client/apps/game`, use `pnpm test [files]` (the wrapper script).
+- In `apps/game`, use `pnpm test [files]` (the wrapper script).
 - In `packages/core`, use `pnpm exec vitest run` — bare `pnpm test` there is watch mode and never exits.
 - Three load-sensitive files (`instanced-model.material-semantics`, `game-entry-preload`, `play-asset-manifest`) carry a
   30s `vi.setConfig` test timeout because full-suite contention starves them past the 5s default on green code. If one

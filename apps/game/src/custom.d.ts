@@ -1,0 +1,33 @@
+declare module "*.svg" {
+  import * as React from "react";
+
+  export const ReactComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement> & { title?: string }>;
+
+  export default ReactComponent;
+}
+
+declare module "jolt-physics/jolt-physics.wasm.wasm?url" {
+  const wasmUrl: string;
+  export default wasmUrl;
+}
+
+declare module "three/webgpu" {
+  export * from "three";
+  export { default as MeshStandardNodeMaterial } from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
+
+  import { Renderer } from "three";
+  import type { RendererParameters } from "three/addons/renderers/common/Renderer.js";
+  import PostProcessingClass from "three/src/renderers/common/PostProcessing.js";
+
+  export interface WebGPURendererParameters extends RendererParameters {
+    forceWebGL?: boolean;
+  }
+
+  export const PostProcessing: typeof PostProcessingClass;
+
+  export class WebGPURenderer extends Renderer {
+    constructor(parameters?: WebGPURendererParameters);
+    init(): Promise<void>;
+    outputBufferType?: number;
+  }
+}

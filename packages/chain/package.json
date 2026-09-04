@@ -1,0 +1,42 @@
+{
+  "name": "@realms-world/chain",
+  "version": "0.1.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./chain-guard": {
+      "types": "./chain-guard.d.ts",
+      "import": "./chain-guard.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "type": "module",
+  "files": [
+    "chain-guard.js",
+    "chain-guard.d.ts",
+    "dist/**",
+    "src/**"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --target esnext --format esm,cjs --dts --sourcemap --clean",
+    "lint": "eslint",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@realms-world/eslint-config": "workspace:*",
+    "@realms-world/prettier-config": "workspace:*",
+    "eslint": "catalog:web",
+    "prettier": "catalog:web",
+    "tsup": "^8.0.2",
+    "vitest": "^3.2.4"
+  },
+  "prettier": "@realms-world/prettier-config"
+}

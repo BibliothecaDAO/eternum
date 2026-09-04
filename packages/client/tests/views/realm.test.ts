@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ViewClient } from "../../src/views";
-import type { SqlApiLike } from "../../src/views";
+import type { GameReadApi as SqlApiLike } from "../../src/views";
 import { ViewCache } from "../../src/cache";
 import type { RealmView } from "../../src/types/views";
 
@@ -42,7 +42,6 @@ function createMockSql(overrides: Partial<SqlApiLike> = {}): SqlApiLike {
     ]),
     fetchAllStructuresMapData: vi.fn().mockResolvedValue([]),
     fetchAllTiles: vi.fn().mockResolvedValue([]),
-    fetchBattleLogs: vi.fn().mockResolvedValue([]),
     fetchHyperstructures: vi.fn().mockResolvedValue([]),
     fetchSwapEvents: vi.fn().mockResolvedValue([]),
     fetchPlayerLeaderboard: vi.fn().mockResolvedValue([]),

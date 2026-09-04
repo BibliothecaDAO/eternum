@@ -1,64 +1,73 @@
-# Eternum Documentation (Repo Index)
+# Eternum documentation (repo index)
 
-This page is a **map of the documentation inside this repository**.
+This page maps the documentation inside this repository.
 
-## I’m a player / community member
+## Players and community
 
-- The “official” docs site lives in: [`client/apps/game-docs`](../client/apps/game-docs)
-  - If you’re looking for gameplay and player-facing docs, start there.
+Player-facing docs live in [`apps/game-docs`](../apps/game-docs) and are published at
+[docs.realms.world](https://docs.realms.world).
 
-## I’m a developer
+## Developers
 
-### Quick links
+Read [`AGENTS.md`](../AGENTS.md) first. It is the coding and review standard for the whole repository. Then read the
+`AGENTS.md` of the directory you are working in, for example [`apps/game/AGENTS.md`](../apps/game/AGENTS.md).
+
+### Where things live
 
 - Contributing: [`CONTRIBUTING.md`](../CONTRIBUTING.md)
-- Deployment: [`deploy/README.md`](../deploy/README.md)
-- Config notes: [`config/README.md`](../config/README.md)
-- Contracts: [`contracts/`](../contracts)
-- Packages / SDK: [`packages/`](../packages)
+- Chain and box infrastructure (the self-hosted Madara L3):
+  [`deploy/madara-lab/README.md`](../deploy/madara-lab/README.md)
+- Game launch and balance config: [`config/deployer/clean/README.md`](../config/deployer/clean/README.md) and
+  [`config/README.md`](../config/README.md)
+- Herald (block folding, snapshots, ordered diffs): [`apps/herald/README.md`](../apps/herald/README.md)
+- Launch service: [`apps/launch-service/README.md`](../apps/launch-service/README.md)
+- Contracts: [`contracts/l3`](../contracts/l3) (game world and factory) and [`contracts/l2`](../contracts/l2) (ledger,
+  tokens, collectibles)
+- Packages and SDK: [`packages/README.md`](../packages/README.md)
+- Game client: [`apps/game/README.md`](../apps/game/README.md) and
+  [`apps/game/src/three/README.md`](../apps/game/src/three/README.md)
 
-### Repo docs (this folder)
+### Architecture (`docs/architecture`)
 
-- Architecture
-  - AI-first harness architecture:
-    [`docs/architecture/ai-first-harness-architecture.md`](./architecture/ai-first-harness-architecture.md)
-  - Runtime world profiles: [`docs/architecture/runtime-world-profiles.md`](./architecture/runtime-world-profiles.md)
-  - Torii selective subscriptions:
-    [`docs/architecture/torii-selective-subscriptions.md`](./architecture/torii-selective-subscriptions.md)
-- Plans
-  - [Appchain Phase 1](./plans/appchain-phase-1.md): sovereign AWS dev chain
-  - [Appchain Phase 2](./plans/appchain-phase-2.md): TEE settlement, provider research, recovery gates, and cost model
-- SQL notes
-  - Global SQL queries: [`docs/global-sql-queries.md`](./global-sql-queries.md)
+- [AI-first harness architecture](./architecture/ai-first-harness-architecture.md)
+- [Sync S2 recovery contract](./architecture/sync-s2-recovery-contract.md) and
+  [Sync S4 recovery proofs](./architecture/sync-s4-recovery-proofs.md)
+- [Procedural character pipeline](./architecture/procedural-character-pipeline.md): model onboarding, gym evaluation,
+  game promotion. The `procedural-*-research.md` files beside it are the research behind it.
+
+### Plans (`docs/plans`)
+
+Implementation briefs. Each item states its evidence, the fix, and a verifiable gate.
+
+- [Realms phase 1](./plans/realms-phase-1-brief.md): one repo, one login, Madara without Cartridge
+- [Realms phase 2](./plans/realms-phase-2-brief.md): own the data plane, take value seriously
+- [Realms phase 3, backend](./plans/realms-phase-3-backend-brief.md) with the
+  [value-plane design](./plans/realms-value-plane-design.md)
+- [Realms game client](./plans/realms-client-brief.md): the 96-player client rebuild and its ledger
+- [Realms web app](./plans/realms-webapp-brief.md): one app for everything but the map
+
+Codex briefs for in-flight work sit beside them as `*-codex-brief.md`. A brief is deleted once its gates are closed and
+what it decided lives in code or in an architecture doc.
+
+### Other
+
+- [The Agora, the Eternum AMM](./agora.md)
 
 ## Running the docs site locally
 
-The docs site lives at [`client/apps/game-docs`](../client/apps/game-docs) and is built with **Vocs**.
+The docs site lives at [`apps/game-docs`](../apps/game-docs) and is built with Vocs.
 
-### Recommended (from repo root)
+From the repo root:
 
 ```bash
 pnpm install
 pnpm dev:docs
 ```
 
-### Alternative (run from the docs app folder)
+Or from the docs app folder:
 
 ```bash
-cd client/apps/game-docs
+cd apps/game-docs
 pnpm install
 pnpm run dev
 ```
-
-If the above doesn’t work on your machine, follow the repo root `readme.md` and `client/apps/game-docs/README.md`.
-
----
-
-### Suggestions / improvements
-
-If you’re not a developer, the best kind of doc feedback is:
-
-- the page URL/file you were reading
-- what you expected to happen
-- what actually happened
-- the exact step where you got stuck

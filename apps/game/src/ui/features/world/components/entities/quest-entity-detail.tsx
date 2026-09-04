@@ -1,0 +1,140 @@
+import { useMemo } from "react";
+
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { QuestReward } from "@/ui/features/economy/resources";
+import { formatTime, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { ID } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { useComponentValue } from "@dojoengine/react";
+import { gameEntityKey } from "@/sync/game-scope";
+
+import {
+  EntityDetailLayoutVariant,
+  EntityDetailSection,
+  EntityDetailStat,
+  EntityDetailStatList,
+  getLayoutTextClasses,
+} from "./layout";
+
+interface QuestEntityDetailProps {
+  questEntityId: ID;
+  compact?: boolean;
+  className?: string;
+  layout?: "default" | "banner";
+  layoutVariant?: EntityDetailLayoutVariant;
+}
+
+interface QuestEntityDetailContentProps extends Omit<QuestEntityDetailProps, "layoutVariant" | "layout"> {
+  variant: EntityDetailLayoutVariant;
+}
+
+type QuestLevelInfo = {
+  target_score?: bigint | number | string;
+  time_limit?: bigint | number | string;
+};
+
+const QuestEntityDetailContent = ({
+  questEntityId,
+  className,
+  compact = false,
+  variant,
+}: QuestEntityDetailContentProps) => {
+  const {
+    setup: { components },
+  } = useDojo();
+
+  const quest = useComponentValue(components.QuestTile, gameEntityKey([BigInt(questEntityId)]));
+  const isBanner = variant === "banner";
+  const isCompactLayout = compact;
+
+  const slotsRemaining = useMemo(
+    () => (quest?.capacity ?? 0) - (quest?.participant_count ?? 0),
+    [quest?.capacity, quest?.participant_count],
+  );
+  const hasSlotsRemaining = useMemo(() => slotsRemaining > 0, [slotsRemaining]);
+
+  const questLevelsEntity = useMemo(
+    () => getComponentValue(components.QuestLevels, gameEntityKey([BigInt(quest?.game_address || 0)])),
+    [components, quest?.game_address],
+  );
+
+  const questLevels = questLevelsEntity?.levels as QuestLevelInfo[] | undefined;
+  const questLevel = questLevels?.[quest?.level ?? 0];
+  const questTimeLimitSeconds = Number(questLevel?.time_limit);
+  const questTimeLabel = Number.isFinite(questTimeLimitSeconds) ? formatTime(questTimeLimitSeconds) : "N/A";
+
+  if (!quest) return null;
+
+  const containerClasses = cn(
+    "flex flex-col",
+    isCompactLayout ? "gap-1.5" : "gap-2",
+    isBanner && "md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-3 items-start",
+    className,
+  );
+
+  const labelClass = cn(
+    "font-semibold uppercase tracking-[0.2em] text-gold/70",
+    getLayoutTextClasses(isCompactLayout, "title"),
+  );
+  const bodyClass = cn("text-gold/70", getLayoutTextClasses(isCompactLayout, "body"));
+
+  const statusLabel = hasSlotsRemaining ? (isBanner ? "Active" : "Slots Open") : isBanner ? "Full" : "Ended";
+  const statusTone = hasSlotsRemaining
+    ? "bg-ally/80 border border-ally text-lightest"
+    : "bg-danger/80 border border-danger text-lightest";
+  const questDescription = isBanner
+    ? "Interact with an explorer to start."
+    : "Interact with an explorer unit to start and claim quests.";
+
+  return (
+    <div className={containerClasses}>
+      <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-1")}>Quest</div>
+        <div className={cn(bodyClass, "mb-2")}>{`${isBanner ? "Lvl" : "Level"} ${(quest?.level ?? 0) + 1}`}</div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm text-gold/70">{questDescription}</span>
+          <div className={cn("rounded px-2 py-1 text-xs font-bold", statusTone)}>{statusLabel}</div>
+        </div>
+      </EntityDetailSection>
+
+      <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-2")}>Reward</div>
+        <QuestReward quest={quest} />
+      </EntityDetailSection>
+
+      <EntityDetailSection compact={compact} className={isBanner ? "md:col-span-2" : undefined}>
+        <div className={cn(labelClass, "mb-2")}>{isBanner ? "Details" : "Quest Requirements"}</div>
+        <EntityDetailStatList compact={compact} columns={isBanner ? 3 : 1}>
+          <EntityDetailStat
+            compact={compact}
+            label="Slots"
+            value={slotsRemaining}
+            emphasizeValue={!hasSlotsRemaining}
+          />
+          <EntityDetailStat compact={compact} label="Target" value={`${Number(questLevel?.target_score ?? 0)} XP`} />
+          <EntityDetailStat compact={compact} label="Time" value={questTimeLabel} />
+        </EntityDetailStatList>
+      </EntityDetailSection>
+    </div>
+  );
+};
+
+export const QuestEntityDetail = ({
+  questEntityId,
+  compact = false,
+  className,
+  layout = "default",
+  layoutVariant,
+}: QuestEntityDetailProps) => {
+  const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (layout === "banner" ? "banner" : "default");
+
+  return (
+    <QuestEntityDetailContent
+      questEntityId={questEntityId}
+      className={className}
+      compact={compact}
+      variant={resolvedVariant}
+    />
+  );
+};

@@ -1,0 +1,1 @@
+export const REALM_OWNERSHIP_FRESHNESS_WINDOW_MS: number;

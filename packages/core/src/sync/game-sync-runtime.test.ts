@@ -8,12 +8,12 @@ import {
   SupersededGameSyncStartError,
 } from "./game-sync-runtime";
 import type {
-  GameSyncAuthoritativeObservation,
   GameSyncEntity,
   GameSyncEntityStoreOperation,
   GameSyncSessionStart,
   GameSyncStore,
   GameSyncSubscriptionHandlers,
+  GameSyncTransaction,
   GameSyncWriter,
 } from "./game-sync-types";
 
@@ -30,33 +30,21 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 
   const store: GameSyncStore = {
     applyEntityOperations(nextOperations) {
-      const observations: GameSyncAuthoritativeObservation[] = [];
       operations.push(...nextOperations);
       nextOperations.forEach((operation) => {
         if (operation.type === "upsert") {
           operation.entities.forEach((update) => {
             rows.set(update.hashed_keys, { ...rows.get(update.hashed_keys), ...update.models });
-            Object.entries(update.models).forEach(([model, value]) => {
-              observations.push({
-                type: "model",
-                entityId: update.hashed_keys,
-                model,
-                value: value as Record<string, unknown>,
-              });
-            });
           });
         } else if (operation.type === "remove-components") {
           const models = rows.get(operation.entityId);
           operation.models.forEach((model) => {
             delete models?.[model];
-            observations.push({ type: "model", entityId: operation.entityId, model, value: null });
           });
         } else {
           rows.delete(operation.entityId);
-          observations.push({ type: "delete-entity", entityId: operation.entityId });
         }
       });
-      return observations;
     },
     applyEvent(eventUpdate) {
       events.push(eventUpdate);
@@ -72,6 +60,7 @@ const createMemoryStore = (initial: Record<string, Record<string, unknown>> = {}
 const createSessionHarness = (input: {
   pages?: Array<{ items: GameSyncEntity[]; nextCursor?: string }>;
   store?: GameSyncStore;
+  transactionStatusChannel?: true;
   onFetchPage?: (pageIndex: number, handlers: GameSyncSubscriptionHandlers) => void | Promise<void>;
 }) => {
   const order: string[] = [];
@@ -84,6 +73,7 @@ const createSessionHarness = (input: {
     snapshotModels: ["Position", "Stats"],
     store: input.store ?? createMemoryStore().store,
     transport: {
+      transactionStatusChannel: input.transactionStatusChannel,
       async subscribe(nextHandlers) {
         order.push("subscribe-active");
         handlers = nextHandlers;
@@ -103,8 +93,14 @@ const createSessionHarness = (input: {
     emitEntity(update: GameSyncEntity) {
       handlers?.onEntity(update);
     },
+    emitEntityBatch(batch: Parameters<NonNullable<GameSyncSubscriptionHandlers["onEntityBatch"]>>[0]) {
+      handlers?.onEntityBatch?.(batch);
+    },
     emitEvent(update: GameSyncEntity) {
       handlers?.onEvent(update);
+    },
+    emitTransaction(transaction: GameSyncTransaction) {
+      handlers?.onTransaction?.(transaction);
     },
     recordEventGapFill(replayedEventCount: number) {
       handlers?.onEventGapFill(replayedEventCount);
@@ -132,12 +128,15 @@ describe("GameSyncRuntime recovery", () => {
       ],
     });
     const runtime = new GameSyncRuntime();
+    const snapshotProgress = vi.fn();
+    harness.session.onSnapshotProgress = snapshotProgress;
 
     await runtime.startSession(harness.session);
 
     expect(harness.order).toEqual(["subscribe-active", "snapshot-page-1", "snapshot-page-2"]);
     expect([...memory.rows.keys()]).toEqual(["one", "two"]);
     expect(runtime.getMetrics()).toMatchObject({ snapshotEntityCount: 2, snapshotPageCount: 2 });
+    expect(snapshotProgress).toHaveBeenLastCalledWith({ completed: 2, phase: "applying", streaming: false, total: 2 });
     expect(runtime.getStatus()).toBe("running");
   });
 
@@ -154,6 +153,55 @@ describe("GameSyncRuntime recovery", () => {
       type: "upsert",
       entities: [entity("queried-army", { ExplorerTroops: { coord: { x: 12, y: 9 } } })],
     });
+  });
+
+  it("applies a submitted transaction on arrival and reports both latency boundaries", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store, transactionStatusChannel: true });
+    const received = vi.fn();
+    const applied = vi.fn();
+    harness.session.onTransactionEntitiesReceived = received;
+    harness.session.onTransactionEntitiesApplied = applied;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    runtime.recordSubmittedTransaction("0x0abc");
+
+    harness.emitEntityBatch({
+      entities: [entity("army", { ExplorerTroops: { x: 4 } }), entity("tile", { TileOpt: { biome: 2 } })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    await flushMicrotasks();
+
+    expect(memory.rows.get("army")).toEqual({ ExplorerTroops: { x: 4 } });
+    expect(memory.rows.get("tile")).toEqual({ TileOpt: { biome: 2 } });
+    expect(received).toHaveBeenCalledWith("0xabc");
+    expect(applied).toHaveBeenCalledWith("0xabc");
+  });
+
+  it("stops the live session and reports one actionable error when an atomic batch cannot apply", async () => {
+    const failure = new Error("RECS write failed");
+    const store = createMemoryStore().store;
+    store.applyEntityOperations = () => {
+      throw failure;
+    };
+    const harness = createSessionHarness({ store });
+    const onError = vi.fn();
+    harness.session.onError = onError;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    harness.emitEntityBatch({
+      entities: [entity("army", { ExplorerTroops: { x: 4 } })],
+      preconfirmed: true,
+      transactionHash: "0xabc",
+    });
+    await flushMicrotasks();
+
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(failure);
+    expect(harness.writers[0]?.cancel).toHaveBeenCalledOnce();
+    expect(runtime.getStatus()).toBe("stopped");
   });
 
   it("replays live updates in client receive order after the snapshot", async () => {
@@ -289,20 +337,14 @@ describe("GameSyncRuntime recovery", () => {
     harness.emitEvent(entity("same-participants", { BattleEvent: { timestamp: 100, winner: 1 } }));
     harness.emitEvent(
       entity("same-participants", {
-        BattleEvent: {
-          timestamp: { key: false, type: "primitive", type_name: "u64", value: 101 },
-          winner: 2,
-        },
+        BattleEvent: { timestamp: 101, winner: 2 },
       }),
     );
     await flushMicrotasks();
 
     expect(memory.events.map(({ models }) => models.BattleEvent)).toEqual([
       { timestamp: 100, winner: 1 },
-      {
-        timestamp: { key: false, type: "primitive", type_name: "u64", value: 101 },
-        winner: 2,
-      },
+      { timestamp: 101, winner: 2 },
     ]);
   });
 
@@ -339,10 +381,33 @@ describe("GameSyncRuntime recovery", () => {
 });
 
 describe("GameSyncRuntime lifecycle", () => {
+  it("resolves and rejects transaction waits from the stream channel", async () => {
+    const harness = createSessionHarness({ transactionStatusChannel: true });
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    const accepted = runtime.waitForTransaction("0x00abc");
+    harness.emitTransaction({ block: null, hash: "0xabc", status: "PRE_CONFIRMED" });
+    await expect(accepted).resolves.toMatchObject({ hash: "0xabc", status: "PRE_CONFIRMED" });
+    await expect(runtime.waitForTransaction("0xabc")).resolves.toMatchObject({ hash: "0xabc" });
+
+    const reverted = runtime.waitForTransaction("0xdef");
+    harness.emitTransaction({ block: null, hash: "0x0def", revertReason: "game rule", status: "REVERTED" });
+    await expect(reverted).rejects.toThrow("game rule");
+  });
+
+  it("refuses transaction waits when the transport has no status channel", async () => {
+    const harness = createSessionHarness({});
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+
+    await expect(runtime.waitForTransaction("0xabc")).rejects.toThrow("no transaction status channel");
+  });
+
   it("owns and replaces the session spatial projection", () => {
     const runtime = new GameSyncRuntime();
-    const first = { start: vi.fn(), dispose: vi.fn() };
-    const second = { start: vi.fn(), dispose: vi.fn() };
+    const first = { dispose: vi.fn(), start: vi.fn(), subscribe: vi.fn(() => () => undefined) };
+    const second = { dispose: vi.fn(), start: vi.fn(), subscribe: vi.fn(() => () => undefined) };
 
     runtime.installWorldSpatialProjection(first as never);
     runtime.installWorldSpatialProjection(second as never);
@@ -359,10 +424,11 @@ describe("GameSyncRuntime lifecycle", () => {
   it("does not retain a spatial projection that fails to start", () => {
     const runtime = new GameSyncRuntime();
     const projection = {
+      dispose: vi.fn(),
       start: vi.fn(() => {
         throw new Error("projection failed");
       }),
-      dispose: vi.fn(),
+      subscribe: vi.fn(() => () => undefined),
     };
 
     expect(() => runtime.installWorldSpatialProjection(projection as never)).toThrow("projection failed");

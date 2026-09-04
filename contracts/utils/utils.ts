@@ -1,12 +1,11 @@
+import type { GameChain } from "@realms-world/chain";
 import appchainSeasonAddresses from "../../contracts/common/addresses/appchain.json";
 import localSeasonAddresses from "../../contracts/common/addresses/local.json";
+import madaraSeasonAddresses from "../../contracts/common/addresses/madara.json";
 import mainnetSeasonAddresses from "../../contracts/common/addresses/mainnet.json";
 import sepoliaSeasonAddresses from "../../contracts/common/addresses/sepolia.json";
-import appchainBlitzGameManifest from "../../contracts/game/manifest_appchain_blitz.json";
-import appchainEternumGameManifest from "../../contracts/game/manifest_appchain_eternum.json";
-import localGameManifest from "../../contracts/game/manifest_local.json";
-import mainnetGameManifest from "../../contracts/game/manifest_mainnet.json";
-import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
+import appchainBlitzGameManifest from "../../contracts/l3/game/manifest_appchain_blitz.json";
+import appchainEternumGameManifest from "../../contracts/l3/game/manifest_appchain_eternum.json";
 
 /**
  * Interface representing season contract addresses and resources
@@ -15,9 +14,11 @@ import sepoliaGameManifest from "../../contracts/game/manifest_sepolia.json";
 export interface SeasonAddresses {
   "Collectibles: Realms: Loot Chest": string;
   "Collectibles: Realms: Cosmetic Items": string;
-  /** New loot chest contract key used on some chains (mainnet). */
+  /** Canonical loot chest contract key. */
   lootChests?: string;
-  /** New cosmetics contract key used on some chains (mainnet). */
+  /** Canonical elite invite contract key. */
+  eliteInvite?: string;
+  /** Canonical cosmetics contract key. */
   cosmetics?: string;
   "Collectibles: Timelock Maker": string;
   "Collectibles: Realms: Elite Invite": string;
@@ -33,6 +34,8 @@ export interface SeasonAddresses {
   lords: string;
   /** Address of the STRK token contract */
   strk: string;
+  /** Address whose balance funds factory game deployment. */
+  factoryDeployer?: string;
   /** Map of resource name to [resourceId, contractAddress] */
   resources: {
     [key: string]: (string | number)[];
@@ -45,8 +48,6 @@ export interface SeasonAddresses {
   mmrToken: string;
 }
 
-/** Valid chain identifiers */
-export type Chain = "sepolia" | "mainnet" | "local" | "appchain";
 export type AppchainGameType = "blitz" | "eternum";
 
 /**
@@ -55,23 +56,80 @@ export type AppchainGameType = "blitz" | "eternum";
  * @returns The contract addresses for the specified chain
  * @throws Error if addresses cannot be loaded
  */
-export function getSeasonAddresses(chain: Chain): SeasonAddresses {
+export function getSeasonAddresses(chain: string): SeasonAddresses {
   try {
+    let addresses: unknown;
     switch (chain) {
       case "sepolia":
-        return sepoliaSeasonAddresses;
+        addresses = sepoliaSeasonAddresses;
+        break;
       case "mainnet":
-        return mainnetSeasonAddresses;
+        addresses = mainnetSeasonAddresses;
+        break;
       case "local":
-        return localSeasonAddresses as any;
+        addresses = localSeasonAddresses;
+        break;
+      case "madara":
+        addresses = madaraSeasonAddresses;
+        break;
       case "appchain":
-        return appchainSeasonAddresses as any;
+        addresses = appchainSeasonAddresses;
+        break;
       default:
         throw new Error(`Invalid chain: ${chain}`);
     }
+    return requireAddressTable(chain, addresses);
   } catch (error) {
     throw new Error(`Failed to load season addresses for chain ${chain}: ${error}`);
   }
+}
+
+const REQUIRED_ADDRESS_KEYS: Record<string, readonly string[]> = {
+  appchain: ["strk", "factoryDeployer"],
+  local: ["strk"],
+  madara: ["strk", "factoryDeployer"],
+  mainnet: ["strk", "lords", "seasonPass", "villagePass", "realms"],
+  sepolia: ["strk", "lords", "seasonPass", "villagePass", "realms"],
+};
+const KNOWN_ADDRESS_KEYS = new Set([
+  "Collectibles: Realms: Loot Chest",
+  "Collectibles: Realms: Cosmetic Items",
+  "Collectibles: Timelock Maker",
+  "Collectibles: Realms: Elite Invite",
+  "collectiblesClassHash",
+  "villagePass",
+  "seasonPass",
+  "realms",
+  "lords",
+  "strk",
+  "factoryDeployer",
+  "resources",
+  "marketplace",
+  "cosmeticsClaim",
+  "mmrToken",
+  "lootChests",
+  "eliteInvite",
+  "cosmetics",
+]);
+
+function requireAddressTable(chain: string, value: unknown): SeasonAddresses {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(`${chain} address table is not an object`);
+  }
+  const addresses = value as Record<string, unknown>;
+  for (const key of REQUIRED_ADDRESS_KEYS[chain] ?? []) {
+    if (typeof addresses[key] !== "string" || addresses[key] === "") {
+      throw new Error(`${chain} address table is missing ${key}`);
+    }
+  }
+  return new Proxy(addresses, {
+    get(target, key) {
+      if (typeof key === "string" && KNOWN_ADDRESS_KEYS.has(key) && !(key in target)) {
+        throw new Error(`${chain} address table does not define ${key}`);
+      }
+      return Reflect.get(target, key);
+    },
+  }) as unknown as SeasonAddresses;
 }
 
 /**
@@ -88,15 +146,11 @@ interface GameManifest {
  * @returns The game manifest configuration
  * @throws Error if manifest cannot be loaded
  */
-export function getGameManifest(chain: Chain, appchainGameType: AppchainGameType = "blitz"): GameManifest {
+export function getGameManifest(chain: GameChain, appchainGameType: AppchainGameType = "blitz"): GameManifest {
   try {
     switch (chain) {
-      case "sepolia":
-        return sepoliaGameManifest;
-      case "mainnet":
-        return mainnetGameManifest;
-      case "local":
-        return localGameManifest;
+      case "madara":
+        return loadMadaraGameManifest();
       case "appchain":
         return appchainGameType === "blitz" ? appchainBlitzGameManifest : appchainEternumGameManifest;
       default:
@@ -105,4 +159,20 @@ export function getGameManifest(chain: Chain, appchainGameType: AppchainGameType
   } catch (error) {
     throw new Error(`Failed to load game manifest for chain ${chain}: ${error}`);
   }
+}
+
+function loadMadaraGameManifest(): GameManifest {
+  try {
+    const manifests = import.meta.glob<{ default: GameManifest }>("../l3/game/manifest_madara.json", { eager: true });
+    const manifest = manifests["../l3/game/manifest_madara.json"]?.default;
+    if (manifest) return manifest;
+  } catch {
+    // import.meta.glob is supplied by Vite; Bun uses the runtime path below.
+  }
+
+  const runtimeRequire = (import.meta as ImportMeta & { require?: (path: string) => unknown }).require;
+  if (runtimeRequire) {
+    return runtimeRequire("../l3/game/manifest_madara.json") as GameManifest;
+  }
+  throw new Error("contracts/l3/game/manifest_madara.json does not exist; deploy the Madara world first");
 }

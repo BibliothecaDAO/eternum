@@ -4,7 +4,7 @@
  * @throws {Error} If deployment is cancelled by user
  */
 export function confirmNonLocalDeployment(chain: string): void {
-  if (chain === "local") return;
+  if (chain === "madara") return;
 
   // Skip confirmation if environment variable is set (useful for CI/CD)
   if (process.env.SKIP_CONFIRMATION === "true" || process.env.CI === "true") {
@@ -14,8 +14,6 @@ export function confirmNonLocalDeployment(chain: string): void {
 
   // Color mapping for different chains
   const chainColors: Record<string, string> = {
-    mainnet: "31", // Red
-    sepolia: "34", // Blue
     appchain: "35", // Magenta
     default: "33", // Yellow
   };

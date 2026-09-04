@@ -1,0 +1,236 @@
+import { useUISound } from "@/audio";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import clsx from "clsx";
+import { memo, useCallback, useMemo } from "react";
+
+type CircleButtonProps = {
+  onClick: () => void;
+  children?: React.ReactNode;
+  className?: string;
+  size: "xs" | "sm" | "md" | "lg" | "xl" | "topbar";
+  disabled?: boolean;
+  active?: boolean;
+  label?: string;
+  image?: string;
+  /**
+   * "default" keeps the legacy wooden chrome (modals, in-panel uses).
+   * "hud" applies the shared Etched Bronze HUD surface so view-switcher
+   * + alert-cluster icons feel like part of the same family as pills.
+   */
+  variant?: "default" | "hud" | "action";
+  tooltipLocation?: "top" | "bottom" | "left" | "right";
+  primaryNotification?: {
+    value: number;
+    color?: "green" | "red" | "blue" | "yellow" | "gold" | "orange";
+    location?: "topleft" | "topright" | "bottomleft" | "bottomright";
+  };
+  secondaryNotification?: {
+    value: number;
+    color?: "green" | "red" | "blue" | "yellow" | "gold" | "orange";
+    location?: "topleft" | "topright" | "bottomleft" | "bottomright";
+  };
+} & React.ComponentPropsWithRef<"button">;
+
+const sizes = {
+  xs: "w-6 h-6 md:w-6 md:h-6 rounded-full",
+  sm: "w-7 h-7 md:w-8 md:h-8 rounded-full",
+  md: "w-8 h-8 md:w-10 md:h-10 rounded-full",
+  lg: "w-10 h-10 md:w-12 md:h-12 rounded-full",
+  xl: "w-12 h-12 md:w-16 md:h-16 rounded-xl",
+  // Fixed h-9 / w-9 to align with the h-9 pills in the top bar (TOP_PILL).
+  topbar: "w-9 h-9 rounded-full",
+};
+
+const notificationPositions = {
+  topleft: "-top-0.5 -left-0.5",
+  topright: "-top-0.5 -right-0.5",
+  bottomleft: "-bottom-0.5 -left-0.5",
+  bottomright: "-bottom-0.5 -right-0.5",
+};
+
+type NotificationColor = Exclude<NonNullable<CircleButtonProps["primaryNotification"]>["color"], undefined>;
+
+const notificationToneStyles: Record<
+  NotificationColor,
+  {
+    background: string;
+    border: string;
+    text: string;
+    shadow: string;
+  }
+> = {
+  green: {
+    background: "bg-progress-bar-good/90",
+    border: "border-progress-bar-good/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(16,185,129,0.45)]",
+  },
+  red: {
+    background: "bg-progress-bar-danger/90",
+    border: "border-progress-bar-danger/80",
+    text: "text-lightest",
+    shadow: "shadow-[0_0_10px_rgba(239,68,68,0.4)]",
+  },
+  blue: {
+    background: "bg-blueish/90",
+    border: "border-blueish/80",
+    text: "text-lightest",
+    shadow: "shadow-[0_0_10px_rgba(107,127,215,0.4)]",
+  },
+  yellow: {
+    background: "bg-yellow/90",
+    border: "border-yellow/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(250,255,0,0.45)]",
+  },
+  gold: {
+    background: "bg-gold/90",
+    border: "border-gold/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(223,170,84,0.45)]",
+  },
+  orange: {
+    background: "bg-orange/90",
+    border: "border-orange/80",
+    text: "text-dark",
+    shadow: "shadow-[0_0_10px_rgba(254,153,60,0.45)]",
+  },
+};
+
+const getToneClasses = (color: NotificationColor | undefined, fallback: NotificationColor) => {
+  const tone = notificationToneStyles[color ?? fallback];
+  return clsx(tone.background, tone.border, tone.text, tone.shadow);
+};
+
+const CircleButton = ({
+  onClick,
+  children,
+  className,
+  size,
+  disabled,
+  active,
+  label,
+  image,
+  variant = "default",
+  tooltipLocation = "bottom",
+  primaryNotification,
+  secondaryNotification,
+  ...props
+}: CircleButtonProps) => {
+  const playHoverClick = useUISound("ui.hover");
+  const playClick = useUISound("ui.click");
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
+
+  const tooltipContent = useMemo(
+    () => (label ? <span className="whitespace-nowrap pointer-events-none text-xs md:text-base">{label}</span> : null),
+    [label],
+  );
+
+  const handleMouseEnter = useCallback(() => {
+    playHoverClick();
+    if (tooltipContent) {
+      setTooltip({
+        position: tooltipLocation,
+        content: tooltipContent,
+      });
+    }
+  }, [playHoverClick, setTooltip, tooltipContent, tooltipLocation]);
+
+  const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
+
+  const handleClick = useCallback(() => {
+    if (!disabled) {
+      onClick();
+      playClick();
+    }
+  }, [disabled, onClick, playClick]);
+
+  return (
+    <div className="relative">
+      <button
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        className={clsx(
+          "flex cursor-pointer items-center justify-center fill-current text-gold group",
+          variant === "action"
+            ? clsx(
+                // Golden top fading to brown bottom + dark-brown border — matches
+                // the HUD's brown/gold palette (#dfaa54 gold) rather than the
+                // saturated amber/orange that read as off-theme.
+                "border border-[#4a3115] bg-gradient-to-b from-[#e6c074] to-[#9a6c30] text-[#241708] shadow-[0_1px_6px_rgba(0,0,0,0.45)] transition-all duration-150",
+                !disabled && "hover:from-[#f0d089] hover:to-[#ab7a39]",
+              )
+            : variant === "hud"
+              ? clsx(
+                  OVERLAY_SURFACE_BASE,
+                  !disabled && "hover:border-gold/55",
+                  active && !disabled && OVERLAY_SURFACE_ACTIVE,
+                )
+              : clsx(
+                  "transition-all duration-150 hover:border-gold shadow-2xl hover:bg-gold border border-gold/40 btn-bronze",
+                  active ? "bg-gold !border-gold sepia-0" : "bg-black/40",
+                ),
+          // Hover/active grow — makes the icons feel tactile and emphasizes the
+          // current selection without changing layout. Disabled icons stay flat.
+          !disabled && "hover:scale-110 active:scale-95",
+          active &&
+            !disabled &&
+            variant === "default" &&
+            "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
+          active && !disabled && variant === "hud" && "scale-110",
+          active && !disabled && variant === "action" && "ring-2 ring-gold/70 brightness-110",
+          className,
+          sizes[size],
+          { "cursor-not-allowed": disabled },
+        )}
+        disabled={disabled}
+        {...props}
+      >
+        {children}
+        {image && (
+          <div className="w-full h-full">
+            <img
+              className={clsx(
+                "p-1.5 w-full h-full object-contain",
+                // Action buttons sit on a bright gold fill where the gold raster
+                // art washes out. Knock it to a silhouette and let ~20% of the
+                // warm gold bleed through (opacity-80) so it reads as very dark
+                // brown rather than stark black — matching the chat icon + theme.
+                variant === "action" && "brightness-0 opacity-80",
+              )}
+              src={image}
+              alt="icon"
+            />
+          </div>
+        )}
+        {disabled && <div className="absolute inset-0 bg-brown opacity-50 rounded-full"></div>}
+      </button>
+      {primaryNotification && primaryNotification.value > 0 && !disabled && (
+        <div
+          className={clsx(
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
+            notificationPositions[primaryNotification.location || "topleft"],
+            getToneClasses(primaryNotification.color, "green"),
+          )}
+        >
+          {primaryNotification.value}
+        </div>
+      )}
+      {secondaryNotification && secondaryNotification.value > 0 && !disabled && (
+        <div
+          className={clsx(
+            "absolute min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full border text-[9px] leading-none z-[100] font-bold animate-bounce transition-shadow duration-200",
+            notificationPositions[secondaryNotification.location || "topright"],
+            getToneClasses(secondaryNotification.color, "blue"),
+          )}
+        >
+          {secondaryNotification.value}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default memo(CircleButton);

@@ -37,8 +37,11 @@ export function resolveContractsCommonEnvFile(repoRoot, networkName) {
   return path.join(repoRoot, "contracts", "common", `.env.${networkName}`);
 }
 
-export function loadNetworkEnvironment(envFilePath, networkName) {
+export function loadNetworkEnvironment(envFilePath, networkName, secretEnvFilePath) {
   printRuntimeStep(`Loading ${networkName} environment configuration...`);
   applyEnvironmentVariablesFromFile(envFilePath);
+  if (secretEnvFilePath && fs.existsSync(secretEnvFilePath)) {
+    applyEnvironmentVariablesFromFile(secretEnvFilePath);
+  }
   process.env.STARKNET_NETWORK = networkName;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import fullRealms from "../../../../client/public/jsons/realms.json";
+import fullRealms from "./full-realms.json";
 import { getRealmNameById } from "./realm-names";
 
 describe("realm-names parity", () => {

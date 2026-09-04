@@ -1,0 +1,380 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { reportClientTransactionFailure } from "@/observability/transaction-failure-reporting";
+import {
+  DEFAULT_FACTORY_NAMESPACE,
+  getFactoryExplorerTxUrl,
+  loadFactoryConfigManifest,
+  resolveFactoryAddress,
+  resolveFactoryConfigDefaultVersion,
+} from "@/ui/features/factory/shared/factory-metadata";
+import { getChainLabel } from "@/ui/utils/network-switch";
+import { extractTransactionHash, resolveTransactionFromGameStream } from "@/ui/utils/transactions";
+import { buildFactoryConfigMulticall } from "../developer/factory-config-multicall";
+import { buildFactoryConfigSections, listAllFactoryConfigSectionIds } from "../developer/factory-config-sections";
+import type {
+  FactoryConfigSectionId,
+  FactoryDeveloperConfigExecutionState,
+  FactoryDeveloperConfigDraft,
+} from "../developer/types";
+import type { FactoryGameMode, FactoryLaunchChain } from "../types";
+
+type FactoryConfigManifestState = {
+  status: "loading" | "ready" | "error";
+  errorMessage: string | null;
+  manifestLoaded: boolean;
+  manifest: Awaited<ReturnType<typeof loadFactoryConfigManifest>> | null;
+};
+
+function buildIdleExecutionState(): FactoryDeveloperConfigExecutionState {
+  return { status: "idle" };
+}
+
+function buildLoadingManifestState(): FactoryConfigManifestState {
+  return {
+    status: "loading",
+    errorMessage: null,
+    manifestLoaded: false,
+    manifest: null,
+  };
+}
+
+function buildReadyManifestState(
+  manifest: Awaited<ReturnType<typeof loadFactoryConfigManifest>>,
+): FactoryConfigManifestState {
+  return {
+    status: "ready",
+    errorMessage: null,
+    manifestLoaded: true,
+    manifest,
+  };
+}
+
+function resolveFactoryConfigLoadErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unable to load the factory manifest for this chain.";
+}
+
+function buildManifestLoadErrorState(error: unknown): FactoryConfigManifestState {
+  return {
+    status: "error",
+    errorMessage: resolveFactoryConfigLoadErrorMessage(error),
+    manifestLoaded: false,
+    manifest: null,
+  };
+}
+
+function resolveFactoryConfigExecutionErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Factory config multicall failed.";
+}
+
+function resolveFactoryConfigConfirmationErrorMessage(error: unknown): string {
+  const details = error instanceof Error ? error.message : "confirmation could not be verified";
+  return `Submitted, but confirmation could not be verified: ${details}`;
+}
+
+async function submitFactoryConfigMulticall({
+  account,
+  multicall,
+  chain,
+}: {
+  account: NonNullable<ReturnType<typeof useAccountStore.getState>["account"]>;
+  multicall: ReturnType<typeof buildFactoryConfigMulticall>;
+  chain: FactoryLaunchChain;
+}) {
+  const result = await executeObservedClientTransaction({
+    account,
+    calls: multicall,
+    surface: "factory",
+    operation: "factory_config_multicall",
+    chain,
+    waitForConfirmation: false,
+  });
+  const txHash = extractTransactionHash(result);
+
+  if (!txHash) {
+    throw new Error("Factory config multicall did not return a transaction hash.");
+  }
+
+  return txHash;
+}
+
+async function confirmFactoryConfigMulticall({ txHash }: { txHash: string }) {
+  await resolveTransactionFromGameStream({
+    txHash,
+    label: "factory config multicall",
+  });
+}
+
+function buildFactoryDeveloperConfigDraft({
+  factoryAddress,
+  version,
+  sections,
+}: {
+  factoryAddress: string;
+  version: string;
+  sections: FactoryDeveloperConfigDraft["sections"];
+}): FactoryDeveloperConfigDraft {
+  return {
+    factoryAddress,
+    version,
+    namespace: DEFAULT_FACTORY_NAMESPACE,
+    sections,
+  };
+}
+
+function resolveSelectedFactoryConfigSections({
+  sections,
+  selectedSectionIds,
+}: {
+  sections: FactoryDeveloperConfigDraft["sections"];
+  selectedSectionIds: FactoryConfigSectionId[];
+}) {
+  return sections.filter((section) => selectedSectionIds.includes(section.id));
+}
+
+function buildSubmittedExecutionState(txHash: string): FactoryDeveloperConfigExecutionState {
+  return {
+    status: "submitted",
+    txHash,
+  };
+}
+
+function buildConfirmedExecutionState(txHash: string): FactoryDeveloperConfigExecutionState {
+  return {
+    status: "confirmed",
+    txHash,
+  };
+}
+
+function buildExecutionErrorState(error: unknown, txHash?: string): FactoryDeveloperConfigExecutionState {
+  return {
+    status: "error",
+    message: txHash
+      ? resolveFactoryConfigConfirmationErrorMessage(error)
+      : resolveFactoryConfigExecutionErrorMessage(error),
+    txHash,
+  };
+}
+
+function isPendingFactoryConfigExecutionState(
+  state: FactoryDeveloperConfigExecutionState,
+  txHash: string,
+): state is Extract<FactoryDeveloperConfigExecutionState, { status: "submitted"; txHash: string }> {
+  return state.status === "submitted" && state.txHash === txHash;
+}
+
+export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGameMode; chain: FactoryLaunchChain }) => {
+  const account = useAccountStore((state) => state.account);
+  const defaultVersion = resolveFactoryConfigDefaultVersion(mode);
+  const factoryAddress = resolveFactoryAddress(chain);
+  const [version, setVersion] = useState(defaultVersion);
+  const [selectedSectionIds, setSelectedSectionIds] =
+    useState<FactoryConfigSectionId[]>(listAllFactoryConfigSectionIds);
+  const [manifestState, setManifestState] = useState<FactoryConfigManifestState>(buildLoadingManifestState);
+  const [executionState, setExecutionState] = useState<FactoryDeveloperConfigExecutionState>(buildIdleExecutionState);
+  const executionAttemptRef = useRef(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setVersion(defaultVersion);
+    setSelectedSectionIds(listAllFactoryConfigSectionIds());
+    setExecutionState(buildIdleExecutionState());
+    setManifestState(buildLoadingManifestState());
+
+    void loadFactoryConfigManifest(chain)
+      .then((manifest) => {
+        if (cancelled) {
+          return;
+        }
+
+        setManifestState(buildReadyManifestState(manifest));
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setManifestState(buildManifestLoadErrorState(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chain, defaultVersion]);
+
+  const clearExecutionState = () => {
+    setExecutionState((currentState) => (currentState.status === "sending" ? currentState : buildIdleExecutionState()));
+  };
+
+  const sections = useMemo(() => {
+    if (!manifestState.manifest) {
+      return [];
+    }
+
+    return buildFactoryConfigSections({
+      manifest: manifestState.manifest,
+      version,
+      namespace: DEFAULT_FACTORY_NAMESPACE,
+      defaultNamespaceWriterAll: true,
+    });
+  }, [manifestState.manifest, version]);
+
+  const draft: FactoryDeveloperConfigDraft = useMemo(
+    () =>
+      buildFactoryDeveloperConfigDraft({
+        factoryAddress,
+        version,
+        sections,
+      }),
+    [factoryAddress, sections, version],
+  );
+
+  const selectedSections = useMemo(
+    () =>
+      resolveSelectedFactoryConfigSections({
+        sections,
+        selectedSectionIds,
+      }),
+    [sections, selectedSectionIds],
+  );
+
+  const multicall = useMemo(
+    () =>
+      factoryAddress
+        ? buildFactoryConfigMulticall({
+            factoryAddress,
+            sections,
+            selectedSectionIds,
+          })
+        : [],
+    [factoryAddress, sections, selectedSectionIds],
+  );
+
+  const canSubmit =
+    !!account &&
+    !!factoryAddress &&
+    manifestState.status === "ready" &&
+    selectedSectionIds.length > 0 &&
+    executionState.status !== "sending";
+
+  const isVersionCustomized = version !== defaultVersion;
+  const executionTxHash =
+    executionState.status === "submitted" || executionState.status === "confirmed" || executionState.status === "error"
+      ? executionState.txHash
+      : undefined;
+  const txExplorerUrl = executionTxHash ? getFactoryExplorerTxUrl(chain, executionTxHash) : null;
+  const targetChainLabel = getChainLabel(chain);
+
+  const toggleSection = (sectionId: FactoryConfigSectionId) => {
+    clearExecutionState();
+    setSelectedSectionIds((currentSectionIds) =>
+      currentSectionIds.includes(sectionId)
+        ? currentSectionIds.filter((currentSectionId) => currentSectionId !== sectionId)
+        : [...currentSectionIds, sectionId],
+    );
+  };
+
+  const selectAllSections = () => {
+    clearExecutionState();
+    setSelectedSectionIds(listAllFactoryConfigSectionIds());
+  };
+
+  const clearSections = () => {
+    clearExecutionState();
+    setSelectedSectionIds([]);
+  };
+
+  const updateVersion = (nextVersion: string) => {
+    clearExecutionState();
+    setVersion(nextVersion);
+  };
+
+  const confirmSubmittedMulticall = (txHash: string, attemptId: number) => {
+    if (!account) {
+      return;
+    }
+
+    void confirmFactoryConfigMulticall({
+      txHash,
+    })
+      .then(() => {
+        if (executionAttemptRef.current !== attemptId) {
+          return;
+        }
+
+        setExecutionState((currentState) =>
+          isPendingFactoryConfigExecutionState(currentState, txHash)
+            ? buildConfirmedExecutionState(txHash)
+            : currentState,
+        );
+      })
+      .catch((error) => {
+        void reportClientTransactionFailure({
+          error,
+          context: {
+            surface: "factory",
+            operation: "factory_config_multicall_confirmation",
+            stage: "confirmation",
+            transactionHash: txHash,
+            chain,
+            walletAddress: account.address,
+          },
+        });
+        if (executionAttemptRef.current !== attemptId) {
+          return;
+        }
+
+        setExecutionState((currentState) =>
+          isPendingFactoryConfigExecutionState(currentState, txHash)
+            ? buildExecutionErrorState(error, txHash)
+            : currentState,
+        );
+      });
+  };
+
+  const submitMulticall = async () => {
+    if (!account || !canSubmit || multicall.length === 0) {
+      return;
+    }
+
+    const attemptId = executionAttemptRef.current + 1;
+    executionAttemptRef.current = attemptId;
+    setExecutionState({ status: "sending" });
+
+    try {
+      const txHash = await submitFactoryConfigMulticall({
+        account,
+        multicall,
+        chain,
+      });
+
+      setExecutionState(buildSubmittedExecutionState(txHash));
+      confirmSubmittedMulticall(txHash, attemptId);
+    } catch (error) {
+      setExecutionState(buildExecutionErrorState(error));
+    }
+  };
+
+  return {
+    account,
+    draft,
+    defaultVersion,
+    selectedSectionIds,
+    selectedSections,
+    isManifestLoading: manifestState.status === "loading",
+    manifestErrorMessage: manifestState.errorMessage,
+    executionState,
+    canSubmit,
+    isVersionCustomized,
+    txExplorerUrl,
+    targetChainLabel,
+    toggleSection,
+    selectAllSections,
+    clearSections,
+    setVersion: updateVersion,
+    submitMulticall,
+  };
+};

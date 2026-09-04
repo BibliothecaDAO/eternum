@@ -1,35 +1,65 @@
 packages:
-  - client
-  - client/apps/game
-  - client/apps/realtime-server
-  - client/apps/game-docs
-  - client/apps/heavy-load
-  - client/apps/eternum-mobile
-  - client/apps/onchain-agent
-  - client/apps/amm-indexerv2
+  - apps/*
   - config
   - packages/*
-  - contracts/season_pass/ext/scripts/deployment
-  - contracts/season_resources/ext/scripts/deployment
+  - tooling/*
+  - contracts/l2/season_pass/ext/scripts/deployment
+  - contracts/l2/ledger/scripts
   - scripts/lords-distribution
 
 autoInstallPeers: true
+resolvePeersFromWorkspaceRoot: false
 
-catalog:
-  "@cartridge/connector": ^0.13.12
-  "@cartridge/controller": ^0.13.12
-  "@dojoengine/core": 1.7.0-preview.3
-  "@dojoengine/predeployed-connector": 1.7.0-preview.3
-  "@dojoengine/react": 1.7.0-preview.3
+overrides:
+  "@latticexyz/schema-type>abitype": 1.1.0
   "@dojoengine/recs": 2.1.0
-  "@dojoengine/sdk": 1.7.0-preview.3
-  "@dojoengine/state": 1.7.0-preview.3
-  "@dojoengine/torii-client": 1.7.0-preview.3
-  "@dojoengine/torii-wasm": 1.7.0-preview.3
-  "@dojoengine/utils": 1.7.0-preview.3
-  "@starknet-react/chains": 5.0.3
-  "@starknet-react/core": 5.0.3
-  bignumber.js: ^9.3.0
-  react: ^18
-  react-dom: ^18
-  starknet: ^8.5.2
+  "vocs>@hono/node-server": 1.12.0
+
+packageExtensions:
+  "@dojoengine/state@1.7.0-preview.3":
+    dependencies:
+      "@vitest/ui": 1.6.1
+  "@graphql-tools/executor-graphql-ws@3.1.5":
+    dependencies:
+      crossws: ~0.3.5
+
+catalogs:
+  game:
+    "@cartridge/connector": ^0.13.12
+    "@cartridge/controller": ^0.13.12
+    "@dojoengine/core": 1.7.0-preview.3
+    "@dojoengine/react": 1.7.0-preview.3
+    "@dojoengine/recs": 2.1.0
+    "@dojoengine/sdk": 1.7.0-preview.3
+    "@dojoengine/state": 1.7.0-preview.3
+    "@dojoengine/torii-client": 1.7.0-preview.3
+    "@dojoengine/torii-wasm": 1.7.0-preview.3
+    "@dojoengine/utils": 1.7.0-preview.3
+    "@starknet-react/chains": 5.0.3
+    "@starknet-react/core": 5.0.3
+    "@types/react": ^18
+    "@types/react-dom": ^18
+    bignumber.js: ^9.3.0
+    react: ^18
+    react-dom: ^18
+    starknet: ^8.5.2
+    type-fest: ^2.19.0
+    viem: ^2.24.3
+    vite: ^5.4.21
+    zod: ^3.25.76
+  web:
+    "@types/react": ^19.2.14
+    "@types/react-dom": ^19.2.3
+    dotenv-cli: ^7.4.4
+    drizzle-kit: ^0.31.9
+    drizzle-orm: ^0.45.1
+    eslint: ^9.39.2
+    prettier: ^3.8.1
+    react: ^19.2.4
+    react-dom: ^19.2.4
+    starknet: ^9.2.1
+    tailwindcss: 4.2.1
+    typescript: ^5.9.3
+    viem: ^2.55.19
+    vite: ^7.3.1
+    zod: ^4.3.6

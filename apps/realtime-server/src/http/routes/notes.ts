@@ -1,0 +1,230 @@
+import { randomUUID } from "crypto";
+
+import { and, desc, eq, gt, isNull, lt, or, type SQL } from "drizzle-orm";
+import { Hono } from "hono";
+import { Effect } from "effect";
+
+import { noteCreateSchema, noteDeleteSchema, noteListQuerySchema, noteUpdateSchema } from "@bibliothecadao/types";
+import { notes } from "../../db/schema/notes";
+import { parseGameChannel } from "../../channels/channel";
+import type { MembershipResolver } from "../../channels/membership";
+import type { AppEnv } from "../middleware/auth";
+import { requirePlayerSession } from "../middleware/auth";
+import { formatZodError } from "../utils/zod";
+import { databaseEffect } from "../../effect/database";
+
+export const createNotesRoutes = (membership: MembershipResolver) => {
+  const notesRoutes = new Hono<AppEnv>();
+
+  notesRoutes.use("/*", requirePlayerSession);
+
+  notesRoutes.post("/", async (c) => {
+    const body = await c.req.json().catch(() => null);
+    const payloadResult = noteCreateSchema.safeParse(body);
+
+    if (!payloadResult.success) {
+      return c.json(formatZodError(payloadResult.error), 400);
+    }
+
+    const payload = payloadResult.data;
+    const player = c.get("playerSession")!;
+    if (!parseGameChannel(payload.zoneId)) return c.json({ error: "A valid game channel is required." }, 400);
+    if (
+      !player.membershipPlayerId ||
+      !(await Effect.runPromise(membership.isMember(player.membershipPlayerId, payload.zoneId)))
+    ) {
+      return c.json({ error: "Channel membership required." }, 403);
+    }
+    const now = new Date();
+
+    try {
+      const [created] = await Effect.runPromise(
+        databaseEffect("create game note", (database) =>
+          database
+            .insert(notes)
+            .values({
+              id: randomUUID(),
+              authorId: player.playerId,
+              zoneId: payload.zoneId,
+              title: payload.title,
+              content: payload.content,
+              location: payload.location,
+              metadata: payload.metadata ?? null,
+              visibility: payload.visibility,
+              expiresAt: payload.expiresAt
+                ? payload.expiresAt instanceof Date
+                  ? payload.expiresAt
+                  : new Date(payload.expiresAt)
+                : null,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .returning(),
+        ),
+      );
+
+      return c.json({ note: created }, 201);
+    } catch (error) {
+      console.error("Failed to create note", error);
+      return c.json({ error: "Failed to create note." }, 500);
+    }
+  });
+
+  notesRoutes.patch("/:id", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const payloadResult = noteUpdateSchema.safeParse({
+      ...body,
+      id: c.req.param("id"),
+    });
+
+    if (!payloadResult.success) {
+      return c.json(formatZodError(payloadResult.error), 400);
+    }
+
+    const payload = payloadResult.data;
+    const player = c.get("playerSession")!;
+
+    const authorAliases = player.aliases ?? [player.playerId];
+    const authorConditions = authorAliases.map((alias) => eq(notes.authorId, alias));
+    const authorFilter = authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
+
+    const [existing] = await Effect.runPromise(
+      databaseEffect("read owned game note", (database) =>
+        database
+          .select()
+          .from(notes)
+          .where(and(eq(notes.id, payload.id), authorFilter))
+          .limit(1),
+      ),
+    );
+
+    if (!existing) {
+      return c.json({ error: "Note not found." }, 404);
+    }
+    if (
+      !player.membershipPlayerId ||
+      !(await Effect.runPromise(membership.isMember(player.membershipPlayerId, existing.zoneId)))
+    ) {
+      return c.json({ error: "Channel membership required." }, 403);
+    }
+
+    const changes = {
+      title: payload.title ?? existing.title,
+      content: payload.content ?? existing.content,
+      expiresAt: payload.expiresAt
+        ? payload.expiresAt instanceof Date
+          ? payload.expiresAt
+          : new Date(payload.expiresAt)
+        : existing.expiresAt,
+      metadata: payload.metadata ?? existing.metadata,
+      updatedAt: new Date(),
+    };
+
+    const [updated] = await Effect.runPromise(
+      databaseEffect("update game note", (database) =>
+        database.update(notes).set(changes).where(eq(notes.id, payload.id)).returning(),
+      ),
+    );
+
+    return c.json({ note: updated });
+  });
+
+  notesRoutes.delete("/:id", async (c) => {
+    const payloadResult = noteDeleteSchema.safeParse({
+      id: c.req.param("id"),
+    });
+
+    if (!payloadResult.success) {
+      return c.json(formatZodError(payloadResult.error), 400);
+    }
+
+    const payload = payloadResult.data;
+    const player = c.get("playerSession")!;
+
+    const [existing] = await Effect.runPromise(
+      databaseEffect("read game note", (database) =>
+        database.select().from(notes).where(eq(notes.id, payload.id)).limit(1),
+      ),
+    );
+    if (!existing) return c.json({ error: "Note not found." }, 404);
+    if (
+      !player.membershipPlayerId ||
+      !(await Effect.runPromise(membership.isMember(player.membershipPlayerId, existing.zoneId)))
+    ) {
+      return c.json({ error: "Channel membership required." }, 403);
+    }
+
+    const authorAliases = player.aliases ?? [player.playerId];
+    const authorConditions = authorAliases.map((alias) => eq(notes.authorId, alias));
+    const authorFilter = authorConditions.length > 0 ? or(...authorConditions) : eq(notes.authorId, player.playerId);
+
+    const { rowCount } = await Effect.runPromise(
+      databaseEffect("delete game note", (database) =>
+        database.delete(notes).where(and(eq(notes.id, payload.id), authorFilter)),
+      ),
+    );
+
+    if (rowCount === 0) {
+      return c.json({ error: "Note not found." }, 404);
+    }
+
+    return c.body(null, 204);
+  });
+
+  notesRoutes.get("/", async (c) => {
+    const payloadResult = noteListQuerySchema.safeParse({
+      zoneId: c.req.query("zoneId"),
+      cursor: c.req.query("cursor"),
+      limit: c.req.query("limit") ? Number(c.req.query("limit")) : undefined,
+      since: c.req.query("since"),
+    });
+
+    if (!payloadResult.success) {
+      return c.json(formatZodError(payloadResult.error), 400);
+    }
+
+    const payload = payloadResult.data;
+    const player = c.get("playerSession")!;
+    if (!parseGameChannel(payload.zoneId)) return c.json({ error: "A valid game channel is required." }, 400);
+    if (
+      !player.membershipPlayerId ||
+      !(await Effect.runPromise(membership.isMember(player.membershipPlayerId, payload.zoneId)))
+    ) {
+      return c.json({ error: "Channel membership required." }, 403);
+    }
+    const filters: SQL[] = [eq(notes.zoneId, payload.zoneId)];
+    filters.push(or(isNull(notes.expiresAt), gt(notes.expiresAt, new Date()))!);
+    filters.push(or(eq(notes.visibility, "public"), eq(notes.authorId, player.playerId))!);
+
+    if (payload.since) {
+      const since = payload.since instanceof Date ? payload.since : new Date(payload.since);
+      filters.push(gt(notes.createdAt, since));
+    }
+
+    if (payload.cursor) {
+      const cursorDate = new Date(payload.cursor);
+      filters.push(lt(notes.createdAt, cursorDate));
+    }
+
+    const limit = payload.limit ?? 50;
+    const items = await Effect.runPromise(
+      databaseEffect("read game notes", (database) =>
+        database
+          .select()
+          .from(notes)
+          .where(and(...filters))
+          .orderBy(desc(notes.createdAt))
+          .limit(limit),
+      ),
+    );
+
+    const nextCursor = items.length === limit ? items[items.length - 1]?.createdAt?.toISOString() : null;
+
+    return c.json({
+      notes: items,
+      nextCursor,
+    });
+  });
+
+  return notesRoutes;
+};

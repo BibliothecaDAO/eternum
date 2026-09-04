@@ -4,10 +4,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/test-client.yml"
-      - "client/apps/game/**"
-      - "client/apps/onchain-agent/test/ci/test-client-workflow.test.ts"
+      - "apps/game/**"
       - "package.json"
-      - "client/package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "packages/**"
@@ -23,7 +21,6 @@ jobs:
       contents: read
     outputs:
       has_client_runtime_changes: ${{ steps.scope.outputs.has_client_runtime_changes }}
-      has_workflow_contract_changes: ${{ steps.scope.outputs.has_workflow_contract_changes }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,53 +33,18 @@ jobs:
           set -euo pipefail
 
           has_client_runtime_changes=false
-          has_workflow_contract_changes=false
 
           while IFS= read -r file; do
             [ -z "$file" ] && continue
 
             case "$file" in
-              .github/workflows/test-client.yml|client/apps/onchain-agent/test/ci/test-client-workflow.test.ts)
-                has_workflow_contract_changes=true
-                ;;
-            esac
-
-            case "$file" in
-              client/apps/game/*|client/apps/game/**|packages/*|packages/**|package.json|client/package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+              .github/workflows/test-client.yml|apps/game/*|apps/game/**|packages/*|packages/**|package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
                 has_client_runtime_changes=true
                 ;;
             esac
           done < <(git diff --name-only --diff-filter=ACMR "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
 
           echo "has_client_runtime_changes=$has_client_runtime_changes" >> "$GITHUB_OUTPUT"
-          echo "has_workflow_contract_changes=$has_workflow_contract_changes" >> "$GITHUB_OUTPUT"
-
-  workflow-contract:
-    runs-on: ubuntu-latest
-    needs: detect-scope
-    if: needs.detect-scope.outputs.has_workflow_contract_changes == 'true'
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify test-client workflow contract
-        run: pnpm --dir ./client/apps/onchain-agent exec vitest run test/ci/test-client-workflow.test.ts
 
   test-client:
     runs-on: ubuntu-latest
@@ -93,17 +55,15 @@ jobs:
     env:
       VITE_PUBLIC_MASTER_ADDRESS: "0x0"
       VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0"
-      VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
       VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
-      VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x009d838f2dB23aFD64e4A2A116EdA44a00Cda1b1C8Cb2CE9C11eB534E8Bc50E0"
       VITE_PUBLIC_CHAIN: "appchain"
-      # Shared appchain endpoints, baked in by env parsing during tests.
+      # Placeholder endpoints, baked in by env parsing during tests.
       # The live renderer smokes moved to deploy-client.yml: a PR gate must
-      # stay hermetic — external infra (a katana resize mid-run) must not be
+      # stay hermetic — external infra (a live node blip) must not be
       # able to fail it — and "does the built artifact boot" is a question
       # answered where the artifact ships.
-      VITE_PUBLIC_TORII: "https://torii.jcndata.com"
-      VITE_PUBLIC_NODE_URL: "https://katana.jcndata.com"
+      VITE_PUBLIC_HERALD_URL: "https://herald.realms.test"
+      VITE_PUBLIC_NODE_URL: "https://node.realms.test"
 
     steps:
       - name: Checkout repository
@@ -119,13 +79,16 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Check forbidden dependencies and browser endpoints
+        run: pnpm check:forbidden-hosts
 
       - name: Build packages
         run: pnpm run build:packages
 
       - name: Typecheck game client
-        run: pnpm --dir ./client/apps/game typecheck
+        run: pnpm --dir ./apps/game typecheck
 
       - name: Run game client tests
-        run: pnpm --dir ./client/apps/game test
+        run: pnpm --dir ./apps/game test

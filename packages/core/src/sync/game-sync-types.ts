@@ -5,7 +5,28 @@ export interface GameSyncEntity {
   models: Record<string, unknown>;
 }
 
-interface GameSyncSnapshotPage {
+export interface GameSyncEntityBatch {
+  entities: GameSyncEntity[];
+  preconfirmed: boolean;
+  transactionHash?: string;
+}
+
+export interface GameSyncSnapshotChunkProgress {
+  bytesReceived: number;
+  model: string;
+  modelsReceived: number;
+  rowsReceived: number;
+}
+
+export interface GameSyncSnapshotProgress {
+  completed: number;
+  phase: "receiving" | "applying";
+  /** True while more snapshot pages may still arrive, so `completed >= total` is not yet the end of the phase. */
+  streaming: boolean;
+  total: number;
+}
+
+export interface GameSyncSnapshotPage {
   items: GameSyncEntity[];
   nextCursor?: string;
 }
@@ -16,14 +37,31 @@ export interface GameSyncWriter {
 
 export interface GameSyncSubscriptionHandlers {
   onEntity: (entity: GameSyncEntity) => void;
+  onEntityBatch?: (batch: GameSyncEntityBatch) => void;
   onEvent: (event: GameSyncEntity) => void;
   onEventGapFill: (replayedEventCount: number) => void;
+  onHead?: (head: GameSyncHead) => void;
+  onSnapshotChunk?: (progress: GameSyncSnapshotChunkProgress) => void;
+  onTransaction?: (transaction: GameSyncTransaction) => void;
 }
 
 export interface GameSyncTransport {
   /** Resolves only after both entity and event subscriptions are active. */
   subscribe: (handlers: GameSyncSubscriptionHandlers) => Promise<GameSyncWriter>;
   fetchSnapshotPage: (cursor?: string) => Promise<GameSyncSnapshotPage>;
+  transactionStatusChannel?: true;
+}
+
+export interface GameSyncHead {
+  block: number;
+  timestamp: number;
+}
+
+export interface GameSyncTransaction {
+  block: number | null;
+  hash: string;
+  revertReason?: string;
+  status: string;
 }
 
 export type GameSyncEntityStoreOperation =
@@ -31,53 +69,10 @@ export type GameSyncEntityStoreOperation =
   | { type: "remove-components"; entityId: string; models: string[] }
   | { type: "delete-entity"; entityId: string };
 
-export type GameSyncAuthoritativeObservation =
-  | { type: "model"; entityId: string; model: string; value: Record<string, unknown> | null }
-  | { type: "delete-entity"; entityId: string };
-
-export interface GameSyncProvisionalWrite {
-  entityId: string;
-  model: string;
-  /** Optional optimistic overlay. Evidence-only writes omit it. */
-  patch?: Record<string, unknown> | null;
-  /** Deterministic authoritative subset that settles this write. Undefined means overlay-only. */
-  matchPatch?: Record<string, unknown> | null;
-  /** Optional legitimate no-op outcome, held briefly to distinguish it from a stale echo. */
-  sourcePatch?: Record<string, unknown>;
-  /** Top-level authoritative fields that settle once any differs from the creation-time base value. */
-  baselineDeltaFields?: readonly string[];
-}
-
-export interface GameSyncProvisionalIntentStalledInfo {
-  intentId: string;
-  transactionHash?: string;
-  unmatchedWrites: Array<{
-    entityId: string;
-    model: string;
-    matchPatch?: Record<string, unknown> | null;
-    sourcePatch?: Record<string, unknown>;
-    baselineDeltaFields?: readonly string[];
-  }>;
-}
-
-export interface GameSyncProvisionalIntentPhaseInfo {
-  phase: "created" | "transaction_hash" | "authoritative_echo" | "baseline_delta_before_hash";
-  intentId: string;
-  transactionHash?: string;
-  model?: string;
-  elapsedSinceCreatedMs: number;
-  elapsedSinceTransactionHashMs?: number;
-}
-
 export interface GameSyncStore {
-  applyEntityOperations: (
-    operations: readonly GameSyncEntityStoreOperation[],
-  ) => Promise<readonly GameSyncAuthoritativeObservation[] | void> | readonly GameSyncAuthoritativeObservation[] | void;
+  applyEntityOperations: (operations: readonly GameSyncEntityStoreOperation[]) => Promise<void> | void;
   applyEvent: (event: GameSyncEntity) => Promise<void> | void;
   listModelEntityIds: (model: string) => Iterable<string>;
-  readAuthoritativeModel?: (model: string, entityId: string) => Record<string, unknown> | null | undefined;
-  applyProvisionalWrites?: (intentId: string, writes: readonly GameSyncProvisionalWrite[]) => void;
-  removeProvisionalWrites?: (intentId: string) => void;
 }
 
 export interface GameSyncRuntimeMetrics {
@@ -85,10 +80,16 @@ export interface GameSyncRuntimeMetrics {
   eventGapFillReplayCount: number;
   lastRecoveryDurationMs: number;
   maxBatchApplyDurationMs: number;
+  /** Same as maxBatchApplyDurationMs over running-status slices only: neither the snapshot nor the boot replay hides the churn number. */
+  maxLiveBatchApplyDurationMs: number;
   peakLiveUpdatesPerSecond: number;
+  /** Spatial projection publishes; against appliedBatchCount it is the L4 gate (at most one per slice). */
+  projectionPublishCount: number;
   snapshotEntityCount: number;
   snapshotPageCount: number;
   totalLiveEntityUpdates: number;
+  /** Component writes the store performed for live rows (replay + running); with totalLiveEntityUpdates it is the L1 amplification ratio. */
+  totalLiveEntityOperationsApplied: number;
   totalLiveEventUpdates: number;
   totalReplayedEventUpdates: number;
 }
@@ -102,7 +103,12 @@ export interface GameSyncSessionStart {
   now?: () => number;
   onSubscriptionActive?: () => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
+  onError?: (error: Error) => void;
+  onEvent?: (event: GameSyncEntity) => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
-  onProvisionalIntentStalled?: (info: GameSyncProvisionalIntentStalledInfo) => void;
-  onProvisionalIntentPhase?: (info: GameSyncProvisionalIntentPhaseInfo) => void;
+  onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
+  onHead?: (head: GameSyncHead) => void;
+  onTransactionEntitiesApplied?: (transactionHash: string) => void;
+  onTransactionEntitiesReceived?: (transactionHash: string) => void;
+  onTransaction?: (transaction: GameSyncTransaction) => void;
 }

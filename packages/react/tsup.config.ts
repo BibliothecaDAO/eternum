@@ -9,5 +9,4 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   minify: true,
-  external: ["@dojoengine/torii-client"],
 });

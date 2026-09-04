@@ -14,13 +14,11 @@ let realms: {
 } = {};
 
 const loadRealms = async () => {
-  if (typeof window === "undefined") return;
   try {
-    const response = await fetch("/jsons/realms.json");
-    if (!response.ok) return;
-    realms = await response.json();
+    const { default: fullRealms } = await import("../data/full-realms.json");
+    realms = fullRealms;
   } catch {
-    // No base URL (e.g. jsdom) or asset unavailable — consumers fall back to bundled realmsJson.
+    // Consumers fall back to the smaller bundled realm index when the full dataset cannot load.
   }
 };
 

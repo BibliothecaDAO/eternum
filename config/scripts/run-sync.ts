@@ -2,15 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import type { GameType, NetworkType } from "../utils/environment";
+import type { GameChain } from "@realms-world/chain";
+import type { GameType } from "../utils/environment";
 
-const VALID_NETWORKS: NetworkType[] = ["local", "mainnet", "sepolia", "appchain"];
+const VALID_NETWORKS: GameChain[] = ["madara", "appchain"];
 const DEFAULT_GAME_TYPES: GameType[] = ["eternum", "blitz"];
 const VALID_GAME_TYPES: GameType[] = [...DEFAULT_GAME_TYPES];
 
 interface SyncTarget {
   gameTypes: GameType[];
-  network: NetworkType;
+  network: GameChain;
 }
 
 function printSyncUsage(): void {
@@ -19,8 +20,8 @@ function printSyncUsage(): void {
   console.error(`  game_type must be one of: ${VALID_GAME_TYPES.join(", ")}`);
 }
 
-function resolveSyncNetwork(argv: string[]): NetworkType {
-  const network = argv[2] as NetworkType;
+function resolveSyncNetwork(argv: string[]): GameChain {
+  const network = argv[2] as GameChain;
 
   if (!network || !VALID_NETWORKS.includes(network)) {
     printSyncUsage();
@@ -65,13 +66,13 @@ function resolveBunExecutable(): string {
   return process.platform === "win32" ? "bun.exe" : "bun";
 }
 
-function resolveEnvFilePath(configDirectory: string, network: NetworkType, gameType: GameType): string {
-  const envFilePath = path.resolve(configDirectory, `../client/apps/game/.env.${network}.${gameType}`);
+function resolveEnvFilePath(configDirectory: string, network: GameChain, gameType: GameType): string {
+  const envFilePath = path.resolve(configDirectory, `../apps/game/.env.${network}.${gameType}`);
   if (fs.existsSync(envFilePath)) {
     return envFilePath;
   }
 
-  if (network === "local") {
+  if (network === "madara") {
     const sampleEnvFilePath = `${envFilePath}.sample`;
     if (fs.existsSync(sampleEnvFilePath)) {
       return sampleEnvFilePath;
@@ -82,7 +83,7 @@ function resolveEnvFilePath(configDirectory: string, network: NetworkType, gameT
   process.exit(1);
 }
 
-function runSingleGameSync(configDirectory: string, network: NetworkType, gameType: GameType): void {
+function runSingleGameSync(configDirectory: string, network: GameChain, gameType: GameType): void {
   const envFilePath = resolveEnvFilePath(configDirectory, network, gameType);
   const result = spawnSync(
     resolveBunExecutable(),

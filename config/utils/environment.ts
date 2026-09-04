@@ -1,4 +1,5 @@
-export type NetworkType = "local" | "sepolia" | "mainnet" | "appchain";
+import type { GameChain } from "@realms-world/chain";
+
 export type GameType = "blitz" | "eternum";
 
 import fs from "fs";
@@ -11,7 +12,7 @@ function bigIntReplacer(_key: string, value: unknown) {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-export async function saveResolvedConfigJson(chain: NetworkType, gameType: GameType) {
+export async function saveResolvedConfigJson(chain: GameChain, gameType: GameType) {
   const configurationJson = await buildConfig({
     chain,
     gameType,
@@ -46,7 +47,7 @@ export async function saveResolvedConfigJson(chain: NetworkType, gameType: GameT
  * logNetwork('local'); // Displays green-colored local environment banner
  * ```
  */
-export function logNetwork(network: NetworkType): void {
+export function logNetwork(network: GameChain): void {
   interface NetworkStyle {
     colors: {
       primary: string;
@@ -56,14 +57,14 @@ export function logNetwork(network: NetworkType): void {
     label: string;
   }
 
-  const NETWORK_STYLES: Record<NetworkType, NetworkStyle> = {
-    local: {
+  const NETWORK_STYLES: Record<GameChain, NetworkStyle> = {
+    madara: {
       colors: {
         primary: "\x1b[38;5;83m",
         secondary: "\x1b[38;5;156m",
       },
       emoji: "🌿",
-      label: "LOCAL DEVELOPMENT",
+      label: "MADARA LAB",
     },
     appchain: {
       colors: {
@@ -72,22 +73,6 @@ export function logNetwork(network: NetworkType): void {
       },
       emoji: "⛓️",
       label: "REALMS APPCHAIN (DEV)",
-    },
-    sepolia: {
-      colors: {
-        primary: "\x1b[38;5;69m",
-        secondary: "\x1b[38;5;147m",
-      },
-      emoji: "💫",
-      label: "SEPOLIA TESTNET",
-    },
-    mainnet: {
-      colors: {
-        primary: "\x1b[38;5;196m",
-        secondary: "\x1b[38;5;203m",
-      },
-      emoji: "⚠️",
-      label: "MAINNET LIVE",
     },
   };
 

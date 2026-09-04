@@ -56,39 +56,40 @@ Think of Eternum as the sandbox. Blitz is the arena.
 
 ```
 eternum/
-├── client/                    # Frontend applications
-│   └── apps/
-│       ├── game/              # Main game client (React + Three.js)
-│       └── game-docs/         # Documentation site (Vocs)
-├── contracts/                 # Cairo/Dojo smart contracts
-├── packages/                  # Shared libraries & SDK
-│   ├── core/                  # @bibliothecadao/eternum (core SDK)
-│   ├── provider/              # Game contract interactions
-│   ├── react/                 # React hooks and components
-│   ├── torii/                 # Onchain data querying
-│   └── types/                 # Shared type definitions
-├── config/                    # Configuration & deployment scripts
-└── docs/                      # Architecture notes & internal docs
+├── apps/
+│   ├── game/                  # Game client (React + Three.js)
+│   ├── realms/                # Realms web app: sign-in, lobby, profile
+│   ├── herald/                # Block folding, snapshots and diff streams for the client
+│   ├── launch-service/        # Box-native game launch and rotation service
+│   ├── web/                   # realms.world website
+│   └── game-docs/             # Player documentation site (Vocs)
+├── contracts/
+│   ├── l3/                    # Game world and factory (Cairo/Dojo) on the Madara appchain
+│   └── l2/                    # Ledger, tokens and collectibles on Starknet
+├── packages/                  # Shared libraries & SDK (core, provider, react, types, chain, identity)
+├── config/                    # Balance presets, deployer and launch configs
+├── deploy/madara-lab/         # Self-hosted chain and box infrastructure
+└── docs/                      # Architecture notes and implementation briefs
 ```
 
 ## Tech Stack
 
-| Layer               | Tech                                                 |
-| ------------------- | ---------------------------------------------------- |
-| Blockchain          | [Starknet](https://starknet.io) (Cairo)              |
-| Game Engine         | [Dojo](https://dojoengine.org) v1.0.4                |
-| Frontend            | React, Vite, Three.js                                |
-| Onchain Queries     | [Torii](https://book.dojoengine.org/toolchain/torii) |
-| Account Abstraction | [Cartridge Controller](https://cartridge.gg)         |
-| Package Manager     | pnpm + Bun                                           |
+| Layer           | Tech                                                                             |
+| --------------- | -------------------------------------------------------------------------------- |
+| Blockchain      | [Starknet](https://starknet.io) L2 plus a self-hosted Madara L3 appchain (Cairo) |
+| Game Engine     | [Dojo](https://dojoengine.org) v1.8                                              |
+| Frontend        | React, Vite, Three.js                                                            |
+| Chain reads     | Herald (`apps/herald`): folded blocks, snapshots and ordered diffs               |
+| Accounts        | Gameplay accounts on the L3, bound to a Sign-in-with-Starknet identity           |
+| Package Manager | pnpm + Bun                                                                       |
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Dojo](https://book.dojoengine.org) v1.0.4
-- [Node.js](https://nodejs.org/) (v18+)
-- [pnpm](https://pnpm.io/) v9.12.3
+- [Dojo](https://book.dojoengine.org) v1.8
+- [Node.js](https://nodejs.org/) v20.19+
+- [pnpm](https://pnpm.io/) v10.25
 - [Bun](https://bun.sh/)
 
 ### Setup
@@ -122,12 +123,12 @@ pnpm dev
 
 ### Running Contracts Locally
 
-See the [Dojo book](https://book.dojoengine.org) for running a local Katana node and deploying contracts with Sozo.
+The game world lives in `contracts/l3/game`. `sozo build` compiles it; running the self-hosted Madara appchain and
+migrating onto it is covered in [`deploy/madara-lab/README.md`](./deploy/madara-lab/README.md).
 
 ```bash
-cd contracts
+cd contracts/l3/game
 sozo build
-sozo migrate
 ```
 
 ## Contributing
@@ -138,7 +139,7 @@ Key entry points for developers:
 
 - **Contracts** → [`contracts/`](./contracts) — Cairo game logic
 - **SDK** → [`packages/`](./packages) — shared libraries ([package docs](./packages/README.md))
-- **Game Client** → [`client/apps/game/`](./client/apps/game) — React/Three.js frontend
+- **Game Client** → [`apps/game/`](./apps/game) — React/Three.js frontend
 - **Architecture** → [`docs/`](./docs) — internal design notes
 
 ## Links

@@ -1,5 +1,5 @@
 launchKind: rotation
-environmentId: mainnet.blitz
+environmentId: madara.blitz
 rotationName: blitz-rotation
 firstGameStartTime: 2026-04-20T01:00:00Z
 maxGames: 5200
@@ -13,60 +13,36 @@ weeklyCadence:
   - gameNamePrefix: na-gladiator
     weekday: monday
     utcTime: "01:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: apac-gladiator
     weekday: tuesday
     utcTime: "11:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: na-gladiator
     weekday: wednesday
     utcTime: "02:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: eu-gladiator
     weekday: wednesday
     utcTime: "19:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: apac-gladiator
     weekday: thursday
     utcTime: "10:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: na-gladiator
     weekday: friday
     utcTime: "01:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: eu-gladiator
     weekday: friday
     utcTime: "18:00"
-    blitzRegistrationOverrides:
-      fee_amount: "500000000000000000000"
   - gameNamePrefix: apac-gladiator
     weekday: saturday
     utcTime: "12:00"
-    blitzRegistrationOverrides:
-      fee_amount: "1000000000000000000000"
   - gameNamePrefix: eu-gladiator
     weekday: saturday
     utcTime: "20:00"
-    blitzRegistrationOverrides:
-      fee_amount: "1000000000000000000000"
   - gameNamePrefix: na-gladiator
     weekday: sunday
     utcTime: "03:00"
-    blitzRegistrationOverrides:
-      fee_amount: "1000000000000000000000"
   - gameNamePrefix: apac-gladiator
     weekday: sunday
     utcTime: "11:00"
-    blitzRegistrationOverrides:
-      fee_amount: "1000000000000000000000"
   - gameNamePrefix: eu-gladiator
     weekday: sunday
     utcTime: "19:00"
-    blitzRegistrationOverrides:
-      fee_amount: "1000000000000000000000"

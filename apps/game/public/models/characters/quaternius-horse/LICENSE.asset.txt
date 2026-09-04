@@ -1,0 +1,24 @@
+Quaternius Ultimate Animated Animal Pack — provenance and license
+
+Creator: Quaternius (@Quaternius)
+Downloaded: 2026-08-21
+
+Original pack:
+- Ultimate Animated Animal Pack
+  https://quaternius.com/packs/ultimateanimatedanimals.html
+  Google Drive source file: Horse.gltf
+  Source SHA-256: 3deb61550dff1d2786d04b6e8559d63ad3907d6ab606ba28ce0af074ed96341b
+
+Runtime derivation:
+- horse.glb was converted losslessly from the embedded glTF with glTF-Transform 4.4.2.
+- The 50-joint skin, eight flat-color material slots, and 13 authored reference clips were preserved.
+- Runtime GLB SHA-256: 3cccb8c0ac6c77f7e6b59e2ee3743d148d4714a7b5a094258a36fa664fd602c5
+
+License published with the pack:
+
+CC0 1.0 Universal (CC0 1.0)
+Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Models by @Quaternius
+https://www.patreon.com/quaternius

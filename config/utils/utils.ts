@@ -5,37 +5,28 @@ import {
   resolveBlitzBalanceProfileIdFromDurationSeconds,
   type BlitzBalanceProfileId,
 } from "../source/blitz";
-import type { Chain, GameType } from "../source/common/types";
-export type { Chain, GameType };
+import type { GameType } from "../source/common/types";
+import type { GameChain } from "@realms-world/chain";
+export type { GameType };
 import blitzAppchainConfig from "../generated/blitz.appchain.json";
-import blitzLocalConfig from "../generated/blitz.local.json";
-import blitzMainnetConfig from "../generated/blitz.mainnet.json";
-import blitzSepoliaConfig from "../generated/blitz.sepolia.json";
+import blitzMadaraConfig from "../generated/blitz.madara.json";
 import eternumAppchainConfig from "../generated/eternum.appchain.json";
-import eternumLocalConfig from "../generated/eternum.local.json";
-import eternumMainnetConfig from "../generated/eternum.mainnet.json";
-import eternumSepoliaConfig from "../generated/eternum.sepolia.json";
 
 type NetworkConfigDocument = {
   configuration: any;
 };
 
-const configs: Record<GameType, Record<Chain, NetworkConfigDocument>> = {
+const configs: Record<GameType, Partial<Record<GameChain, NetworkConfigDocument>>> = {
   blitz: {
-    local: blitzLocalConfig,
-    mainnet: blitzMainnetConfig,
-    sepolia: blitzSepoliaConfig,
+    madara: blitzMadaraConfig,
     appchain: blitzAppchainConfig,
   },
   eternum: {
-    local: eternumLocalConfig,
-    mainnet: eternumMainnetConfig,
-    sepolia: eternumSepoliaConfig,
     appchain: eternumAppchainConfig,
   },
 };
 
-function resolveConfigDocument(chain: Chain, gameType: GameType): NetworkConfigDocument {
+function resolveConfigDocument(chain: GameChain, gameType: GameType): NetworkConfigDocument {
   const gameConfigs = configs[gameType];
   if (!gameConfigs) {
     throw new Error(`Invalid game type: ${gameType}. Must be "blitz" or "eternum".`);
@@ -49,11 +40,11 @@ function resolveConfigDocument(chain: Chain, gameType: GameType): NetworkConfigD
   return configDocument;
 }
 
-export function getConfigFromNetwork(chain: Chain, gameType: GameType) {
+export function getConfigFromNetwork(chain: GameChain, gameType: GameType) {
   return resolveConfigDocument(chain, gameType).configuration as any;
 }
 
-export function resolveBlitzConfigForDuration(chain: Chain, durationMinutes: number | null | undefined) {
+export function resolveBlitzConfigForDuration(chain: GameChain, durationMinutes: number | null | undefined) {
   const baseConfig = getConfigFromNetwork(chain, "blitz");
   const profileId = resolveBlitzBalanceProfileIdFromDurationMinutes(durationMinutes);
 
@@ -71,3 +62,10 @@ export {
   resolveBlitzBalanceProfileIdFromDurationSeconds,
 };
 export type { BlitzBalanceProfileId };
+export {
+  GAME_ENVIRONMENTS,
+  getGameEnvironmentsForChain,
+  isGameEnvironmentId,
+  type GameEnvironment,
+  type GameEnvironmentId,
+} from "../shared/game-environments";

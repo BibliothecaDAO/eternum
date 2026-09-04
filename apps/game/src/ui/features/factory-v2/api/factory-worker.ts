@@ -1,0 +1,721 @@
+import { env } from "../../../../../env";
+import type { GameChain } from "@realms-world/chain";
+import type { GameEnvironmentId } from "@config";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
+
+/** The worker accepts exactly the shared environment list. */
+export type FactoryWorkerEnvironmentId = GameEnvironmentId;
+type FactoryWorkerRunKind = "game" | "series" | "rotation";
+export type FactoryWorkerGameLaunchStepId = "create-world" | "wait-for-factory-index";
+export type FactoryWorkerSeriesLaunchStepId = "create-series" | "create-worlds" | "wait-for-factory-indexes";
+export type FactoryWorkerRotationLaunchStepId = FactoryWorkerSeriesLaunchStepId;
+export type FactoryWorkerLaunchStepId = FactoryWorkerGameLaunchStepId | FactoryWorkerSeriesLaunchStepId;
+export type FactoryWorkerGameLaunchScope = "full" | FactoryWorkerGameLaunchStepId;
+export type FactoryWorkerSeriesLaunchScope = "full" | FactoryWorkerSeriesLaunchStepId;
+export type FactoryWorkerRotationLaunchScope = "full" | FactoryWorkerRotationLaunchStepId;
+type FactoryWorkerRunStatus = "running" | "attention" | "complete";
+export type FactoryWorkerRunStepStatus = "pending" | "running" | "succeeded" | "failed";
+export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalled" | "failed" | "complete";
+const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
+
+const factoryAdminHeaders = (environment: FactoryWorkerEnvironmentId, adminSecret: string) =>
+  environment === "madara.blitz" ? {} : { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret };
+
+export interface FactoryWorkerRunRecovery {
+  state: FactoryWorkerRunRecoveryState;
+  canContinue: boolean;
+  continueStepId: FactoryWorkerLaunchStepId | null;
+}
+
+interface FactoryWorkerRunWorkflow {
+  workflowName: string;
+  workflowJob?: string;
+  workflowRunId?: number;
+  workflowRunAttempt?: number;
+  workflowUrl?: string;
+  ref?: string;
+  sha?: string;
+}
+
+interface FactoryWorkerGameArtifacts {
+  summaryPath?: string;
+  durationSeconds?: number;
+  worldAddress?: string;
+  /** Registrar-assigned game id inside the persistent world. */
+  gameId?: number;
+  createGameTxHash?: string;
+}
+
+interface FactoryWorkerRotationEvaluation {
+  intervalMinutes: number;
+  nextEvaluationAt?: string;
+  lastEvaluatedAt?: string;
+  lastNudgedAt?: string;
+}
+
+interface FactoryWorkerBaseRunRecord {
+  version: 1;
+  environment: FactoryWorkerEnvironmentId;
+  chain: GameChain;
+  gameType: "eternum" | "blitz";
+  status: FactoryWorkerRunStatus;
+  executionMode: "fast_trial" | "guided_recovery";
+  inputPath: string;
+  latestLaunchRequestId: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  workflow: FactoryWorkerRunWorkflow;
+  recovery?: FactoryWorkerRunRecovery;
+}
+
+export interface FactoryWorkerGameRunRecord extends FactoryWorkerBaseRunRecord {
+  kind?: "game";
+  runId: string;
+  gameName: string;
+  requestedLaunchStep: FactoryWorkerGameLaunchScope;
+  currentStepId: FactoryWorkerGameLaunchStepId | null;
+  activeLease?: {
+    launchRequestId: string;
+    workflowRunId?: number;
+    workflowRunAttempt?: number;
+    stepId: FactoryWorkerGameLaunchStepId;
+    acquiredAt: string;
+    expiresAt: string;
+  };
+  steps: Array<{
+    id: FactoryWorkerGameLaunchStepId;
+    title: string;
+    status: FactoryWorkerRunStepStatus;
+    workflowStepName: string;
+    latestEvent: string;
+    startedAt?: string;
+    finishedAt?: string;
+    errorMessage?: string;
+  }>;
+  artifacts: FactoryWorkerGameArtifacts;
+}
+
+export interface FactoryWorkerSeriesAutoRetry {
+  enabled: boolean;
+  intervalMinutes: number;
+  nextRetryAt?: string;
+  lastRetryAt?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+}
+
+export interface FactoryWorkerSeriesGameRecord {
+  gameName: string;
+  startTime: number;
+  startTimeIso: string;
+  durationSeconds?: number;
+  seriesGameNumber: number;
+  currentStepId: FactoryWorkerSeriesLaunchStepId | null;
+  latestEvent: string;
+  status: FactoryWorkerRunStepStatus;
+  steps?: Array<{
+    id: FactoryWorkerSeriesLaunchStepId;
+    status: FactoryWorkerRunStepStatus;
+    latestEvent: string;
+    updatedAt?: string;
+    errorMessage?: string;
+  }>;
+  artifacts: {
+    worldAddress?: string;
+  };
+}
+
+export interface FactoryWorkerSeriesRunRecord extends FactoryWorkerBaseRunRecord {
+  kind: "series";
+  runId: string;
+  seriesName: string;
+  requestedLaunchStep: FactoryWorkerSeriesLaunchScope;
+  currentStepId: FactoryWorkerSeriesLaunchStepId | null;
+  activeLease?: {
+    launchRequestId: string;
+    workflowRunId?: number;
+    workflowRunAttempt?: number;
+    stepId: FactoryWorkerSeriesLaunchStepId;
+    acquiredAt: string;
+    expiresAt: string;
+  };
+  autoRetry: FactoryWorkerSeriesAutoRetry;
+  steps: Array<{
+    id: FactoryWorkerSeriesLaunchStepId;
+    title: string;
+    status: FactoryWorkerRunStepStatus;
+    workflowStepName: string;
+    latestEvent: string;
+    startedAt?: string;
+    finishedAt?: string;
+    errorMessage?: string;
+  }>;
+  summary: {
+    environment: FactoryWorkerEnvironmentId;
+    chain: GameChain;
+    gameType: "eternum" | "blitz";
+    seriesName: string;
+    rpcUrl: string;
+    factoryAddress: string;
+    autoRetryEnabled: boolean;
+    autoRetryIntervalMinutes: number;
+    dryRun: boolean;
+    configMode: "batched" | "sequential";
+    seriesCreated: boolean;
+    seriesCreatedAt?: string;
+    games: FactoryWorkerSeriesGameRecord[];
+    outputPath?: string;
+  };
+  artifacts: {
+    summaryPath?: string;
+    seriesCreated?: boolean;
+    seriesCreatedAt?: string;
+  };
+}
+
+export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunRecord {
+  kind: "rotation";
+  runId: string;
+  rotationName: string;
+  seriesName: string;
+  requestedLaunchStep: FactoryWorkerRotationLaunchScope;
+  currentStepId: FactoryWorkerRotationLaunchStepId | null;
+  activeLease?: {
+    launchRequestId: string;
+    workflowRunId?: number;
+    workflowRunAttempt?: number;
+    stepId: FactoryWorkerRotationLaunchStepId;
+    acquiredAt: string;
+    expiresAt: string;
+  };
+  autoRetry: FactoryWorkerSeriesAutoRetry;
+  evaluation: FactoryWorkerRotationEvaluation;
+  steps: Array<{
+    id: FactoryWorkerRotationLaunchStepId;
+    title: string;
+    status: FactoryWorkerRunStepStatus;
+    workflowStepName: string;
+    latestEvent: string;
+    startedAt?: string;
+    finishedAt?: string;
+    errorMessage?: string;
+  }>;
+  summary: {
+    environment: FactoryWorkerEnvironmentId;
+    chain: GameChain;
+    gameType: "eternum" | "blitz";
+    rotationName: string;
+    seriesName: string;
+    firstGameStartTime: number;
+    firstGameStartTimeIso: string;
+    gameIntervalMinutes: number;
+    maxGames: number;
+    advanceWindowGames: number;
+    evaluationIntervalMinutes: number;
+    weeklyCadence?: Array<{
+      gameNamePrefix: string;
+      weekday: string;
+      utcTime: string;
+    }>;
+    rpcUrl: string;
+    factoryAddress: string;
+    autoRetryEnabled: boolean;
+    autoRetryIntervalMinutes: number;
+    dryRun: boolean;
+    configMode: "batched" | "sequential";
+    seriesCreated: boolean;
+    seriesCreatedAt?: string;
+    games: FactoryWorkerSeriesGameRecord[];
+    outputPath?: string;
+  };
+  artifacts: {
+    summaryPath?: string;
+    seriesCreated?: boolean;
+    seriesCreatedAt?: string;
+  };
+}
+
+export type FactoryWorkerRunRecord =
+  | FactoryWorkerGameRunRecord
+  | FactoryWorkerSeriesRunRecord
+  | FactoryWorkerRotationRunRecord;
+
+interface FactoryWorkerRunListResponse {
+  runs: FactoryWorkerRunRecord[];
+}
+
+export interface CreateFactoryRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  gameName: string;
+  gameStartTime: string;
+  workflowRef?: string;
+  /** Registered registrar preset id used by the persistent world. */
+  version?: string;
+  devModeOn?: boolean;
+  twoPlayerMode?: boolean;
+  singleRealmMode?: boolean;
+  durationSeconds?: number;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
+}
+
+export interface CreateFactorySeriesRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  workflowRef?: string;
+  games: Array<{
+    gameName: string;
+    startTime: string;
+    seriesGameNumber?: number;
+    biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  }>;
+  devModeOn?: boolean;
+  twoPlayerMode?: boolean;
+  singleRealmMode?: boolean;
+  durationSeconds?: number;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
+  autoRetryIntervalMinutes?: number;
+}
+
+export interface CreateFactoryRotationRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
+  workflowRef?: string;
+  firstGameStartTime: string;
+  gameIntervalMinutes: number;
+  maxGames: number;
+  advanceWindowGames?: number;
+  evaluationIntervalMinutes: number;
+  devModeOn?: boolean;
+  twoPlayerMode?: boolean;
+  singleRealmMode?: boolean;
+  durationSeconds?: number;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
+  autoRetryIntervalMinutes?: number;
+}
+
+interface ContinueFactoryRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  gameName: string;
+  launchStep?: FactoryWorkerGameLaunchScope;
+}
+
+interface ContinueFactorySeriesRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  launchStep?: FactoryWorkerSeriesLaunchScope;
+  gameNames?: string[];
+}
+
+interface ContinueFactoryRotationRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
+  launchStep?: FactoryWorkerRotationLaunchScope;
+  gameNames?: string[];
+}
+
+interface CancelFactorySeriesAutoRetryRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  adminSecret: string;
+  cancelReason?: string;
+}
+
+interface CancelFactoryRotationAutoRetryRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
+  adminSecret: string;
+  cancelReason?: string;
+}
+
+interface DeleteFactoryRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  gameName: string;
+  adminSecret: string;
+}
+
+interface DeleteFactorySeriesRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  seriesName: string;
+  adminSecret: string;
+}
+
+interface DeleteFactoryRotationRunRequest {
+  environment: FactoryWorkerEnvironmentId;
+  rotationName: string;
+  adminSecret: string;
+}
+
+interface FactoryEndpoint {
+  baseUrl: string;
+  credentials: RequestCredentials;
+}
+
+export const resolveFactoryEndpoint = (): FactoryEndpoint => {
+  if (!env.VITE_PUBLIC_LAUNCH_SERVICE_URL) {
+    throw new Error("VITE_PUBLIC_LAUNCH_SERVICE_URL is required to launch games");
+  }
+  return { baseUrl: env.VITE_PUBLIC_LAUNCH_SERVICE_URL.replace(/\/$/, ""), credentials: "include" };
+};
+
+export class FactoryWorkerApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly payload?: unknown,
+  ) {
+    super(message);
+    this.name = "FactoryWorkerApiError";
+  }
+}
+
+export async function listFactoryRuns(
+  environment: FactoryWorkerEnvironmentId,
+): Promise<FactoryWorkerRunRecord[] | null> {
+  try {
+    const response = await fetchFactoryWorkerJson<FactoryWorkerRunListResponse>(environment, "/api/factory/runs", {
+      query: { environment },
+    });
+
+    return response.runs;
+  } catch (error) {
+    if (isMissingListEndpoint(error)) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+async function readFactoryRun(
+  environment: FactoryWorkerEnvironmentId,
+  gameName: string,
+): Promise<FactoryWorkerGameRunRecord> {
+  return fetchFactoryWorkerJson<FactoryWorkerGameRunRecord>(environment, buildFactoryRunPath(environment, gameName));
+}
+
+async function readFactorySeriesRun(
+  environment: FactoryWorkerEnvironmentId,
+  seriesName: string,
+): Promise<FactoryWorkerSeriesRunRecord> {
+  return fetchFactoryWorkerJson<FactoryWorkerSeriesRunRecord>(
+    environment,
+    buildFactorySeriesRunPath(environment, seriesName),
+  );
+}
+
+async function readFactoryRotationRun(
+  environment: FactoryWorkerEnvironmentId,
+  rotationName: string,
+): Promise<FactoryWorkerRotationRunRecord> {
+  return fetchFactoryWorkerJson<FactoryWorkerRotationRunRecord>(
+    environment,
+    buildFactoryRotationRunPath(environment, rotationName),
+  );
+}
+
+export async function readFactoryRunIfPresent(
+  environment: FactoryWorkerEnvironmentId,
+  gameName: string,
+): Promise<FactoryWorkerGameRunRecord | null> {
+  try {
+    return await readFactoryRun(environment, gameName);
+  } catch (error) {
+    if (error instanceof FactoryWorkerApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+export async function readFactorySeriesRunIfPresent(
+  environment: FactoryWorkerEnvironmentId,
+  seriesName: string,
+): Promise<FactoryWorkerSeriesRunRecord | null> {
+  try {
+    return await readFactorySeriesRun(environment, seriesName);
+  } catch (error) {
+    if (error instanceof FactoryWorkerApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+export async function readFactoryRotationRunIfPresent(
+  environment: FactoryWorkerEnvironmentId,
+  rotationName: string,
+): Promise<FactoryWorkerRotationRunRecord | null> {
+  try {
+    return await readFactoryRotationRun(environment, rotationName);
+  } catch (error) {
+    if (error instanceof FactoryWorkerApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+export async function readFactoryRunByNameIfPresent(
+  environment: FactoryWorkerEnvironmentId,
+  runName: string,
+): Promise<FactoryWorkerRunRecord | null> {
+  const gameRun = await readFactoryRunIfPresent(environment, runName);
+  if (gameRun) {
+    return gameRun;
+  }
+
+  const seriesRun = await readFactorySeriesRunIfPresent(environment, runName);
+  if (seriesRun) {
+    return seriesRun;
+  }
+
+  return readFactoryRotationRunIfPresent(environment, runName);
+}
+
+export async function createFactoryRun(request: CreateFactoryRunRequest): Promise<void> {
+  await fetchFactoryWorkerJson(request.environment, "/api/factory/runs", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export async function createFactorySeriesRun(request: CreateFactorySeriesRunRequest): Promise<void> {
+  await fetchFactoryWorkerJson(request.environment, "/api/factory/series-runs", {
+    method: "POST",
+    body: JSON.stringify({
+      ...request,
+      autoRetryEnabled: true,
+    }),
+  });
+}
+
+export async function createFactoryRotationRun(request: CreateFactoryRotationRunRequest): Promise<void> {
+  await fetchFactoryWorkerJson(request.environment, "/api/factory/rotation-runs", {
+    method: "POST",
+    body: JSON.stringify({
+      ...request,
+      autoRetryEnabled: true,
+    }),
+  });
+}
+
+export async function continueFactoryRun(request: ContinueFactoryRunRequest): Promise<void> {
+  await fetchFactoryWorkerJson(
+    request.environment,
+    `${buildFactoryRunPath(request.environment, request.gameName)}/actions/continue`,
+    {
+      method: "POST",
+      body: JSON.stringify(request.launchStep ? { launchStep: request.launchStep } : {}),
+    },
+  );
+}
+
+export async function continueFactorySeriesRun(request: ContinueFactorySeriesRunRequest): Promise<void> {
+  await fetchFactoryWorkerJson(
+    request.environment,
+    `${buildFactorySeriesRunPath(request.environment, request.seriesName)}/actions/continue`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        ...(request.launchStep ? { launchStep: request.launchStep } : {}),
+        ...(request.gameNames ? { gameNames: request.gameNames } : {}),
+      }),
+    },
+  );
+}
+
+export async function continueFactoryRotationRun(request: ContinueFactoryRotationRunRequest): Promise<void> {
+  await fetchFactoryWorkerJson(
+    request.environment,
+    `${buildFactoryRotationRunPath(request.environment, request.rotationName)}/actions/continue`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        ...(request.launchStep ? { launchStep: request.launchStep } : {}),
+        ...(request.gameNames ? { gameNames: request.gameNames } : {}),
+      }),
+    },
+  );
+}
+
+export async function nudgeFactoryRotationRun(
+  environment: FactoryWorkerEnvironmentId,
+  rotationName: string,
+): Promise<void> {
+  await fetchFactoryWorkerJson(environment, `${buildFactoryRotationRunPath(environment, rotationName)}/actions/nudge`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function cancelFactorySeriesAutoRetry(request: CancelFactorySeriesAutoRetryRequest): Promise<void> {
+  const { adminSecret, environment, seriesName, cancelReason } = request;
+  await fetchFactoryWorkerJson(
+    environment,
+    `${buildFactorySeriesRunPath(environment, seriesName)}/actions/cancel-auto-retry`,
+    {
+      method: "POST",
+      headers: factoryAdminHeaders(environment, adminSecret),
+      body: JSON.stringify({ cancelReason }),
+    },
+  );
+}
+
+export async function cancelFactoryRotationAutoRetry(request: CancelFactoryRotationAutoRetryRequest): Promise<void> {
+  const { adminSecret, environment, rotationName, cancelReason } = request;
+  await fetchFactoryWorkerJson(
+    environment,
+    `${buildFactoryRotationRunPath(environment, rotationName)}/actions/cancel-auto-retry`,
+    {
+      method: "POST",
+      headers: factoryAdminHeaders(environment, adminSecret),
+      body: JSON.stringify({ cancelReason }),
+    },
+  );
+}
+
+export async function deleteFactoryRun(request: DeleteFactoryRunRequest): Promise<void> {
+  const { adminSecret, environment, gameName } = request;
+  await fetchFactoryWorkerJson(environment, `${buildFactoryRunPath(environment, gameName)}/actions/delete`, {
+    method: "POST",
+    headers: factoryAdminHeaders(environment, adminSecret),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function deleteFactorySeriesRun(request: DeleteFactorySeriesRunRequest): Promise<void> {
+  const { adminSecret, environment, seriesName } = request;
+  await fetchFactoryWorkerJson(environment, `${buildFactorySeriesRunPath(environment, seriesName)}/actions/delete`, {
+    method: "POST",
+    headers: factoryAdminHeaders(environment, adminSecret),
+    body: JSON.stringify({}),
+  });
+}
+
+export async function deleteFactoryRotationRun(request: DeleteFactoryRotationRunRequest): Promise<void> {
+  const { adminSecret, environment, rotationName } = request;
+  await fetchFactoryWorkerJson(
+    environment,
+    `${buildFactoryRotationRunPath(environment, rotationName)}/actions/delete`,
+    {
+      method: "POST",
+      headers: factoryAdminHeaders(environment, adminSecret),
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+function buildFactoryRunPath(environment: FactoryWorkerEnvironmentId, gameName: string) {
+  return `/api/factory/runs/${encodeURIComponent(environment)}/${encodeURIComponent(gameName)}`;
+}
+
+function buildFactorySeriesRunPath(environment: FactoryWorkerEnvironmentId, seriesName: string) {
+  return `/api/factory/series-runs/${encodeURIComponent(environment)}/${encodeURIComponent(seriesName)}`;
+}
+
+function buildFactoryRotationRunPath(environment: FactoryWorkerEnvironmentId, rotationName: string) {
+  return `/api/factory/rotation-runs/${encodeURIComponent(environment)}/${encodeURIComponent(rotationName)}`;
+}
+
+function isMissingListEndpoint(error: unknown) {
+  return error instanceof FactoryWorkerApiError && (error.status === 404 || error.status === 405);
+}
+
+async function fetchFactoryWorkerJson<ResponseBody>(
+  environment: FactoryWorkerEnvironmentId,
+  pathname: string,
+  options: {
+    method?: "GET" | "POST";
+    query?: Record<string, string | undefined>;
+    headers?: Record<string, string | undefined>;
+    body?: string;
+  } = {},
+): Promise<ResponseBody> {
+  const requestHeaders = new Headers();
+  for (const [name, value] of Object.entries(options.headers ?? {})) {
+    if (typeof value === "string") {
+      requestHeaders.set(name, value);
+    }
+  }
+
+  if (options.body) {
+    requestHeaders.set("Content-Type", "application/json");
+  }
+
+  const endpoint = resolveFactoryEndpoint();
+  const response = await fetch(buildFactoryWorkerUrl(endpoint, pathname, options.query), {
+    method: options.method ?? "GET",
+    headers: requestHeaders,
+    body: options.body,
+    credentials: endpoint.credentials,
+  });
+
+  const payload = await readFactoryWorkerPayload(response);
+
+  if (!response.ok) {
+    throw new FactoryWorkerApiError(
+      resolveFactoryWorkerErrorMessage(payload, response.status),
+      response.status,
+      payload,
+    );
+  }
+
+  return payload as ResponseBody;
+}
+
+function buildFactoryWorkerUrl(
+  endpoint: FactoryEndpoint,
+  pathname: string,
+  query?: Record<string, string | undefined>,
+) {
+  const url = new URL(`${endpoint.baseUrl}${pathname}`);
+
+  Object.entries(query ?? {}).forEach(([key, value]) => {
+    if (value) {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  return url.toString();
+}
+
+async function readFactoryWorkerPayload(response: Response) {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function resolveFactoryWorkerErrorMessage(payload: unknown, status: number) {
+  if (payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string") {
+    return payload.error;
+  }
+
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
+  }
+
+  return `Factory worker request failed (${status})`;
+}

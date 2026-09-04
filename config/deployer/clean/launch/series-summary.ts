@@ -1,6 +1,4 @@
-import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
-import { isMainnetDeploymentEnvironment, resolveDeploymentEnvironment } from "../environment";
-import { readFactorySeriesState } from "../factory/series";
+import { resolveDeploymentEnvironment } from "../environment";
 import type {
   LaunchSeriesGameRequest,
   LaunchSeriesRequest,
@@ -9,9 +7,10 @@ import type {
   SeriesLaunchGameStepState,
   SeriesLaunchGameSummary,
 } from "../types";
-import { loadSeriesLaunchSummaryIfPresent, writeSeriesLaunchSummary } from "./series-io";
 import { resolveSeriesLaunchStepIds } from "./series-plan";
+import { fileLaunchRunStore, type LaunchRunStore } from "./run-store";
 import { parseStartTime, toIsoUtc } from "./time";
+import { requireRpcUrl } from "../shared/rpc";
 
 export const DEFAULT_SERIES_AUTO_RETRY_INTERVAL_MINUTES = 15;
 
@@ -87,8 +86,7 @@ export function buildInitialSeriesLaunchSummary(request: LaunchSeriesRequest): L
     chain: environment.chain,
     gameType: environment.gameType,
     seriesName: request.seriesName.trim(),
-    rpcUrl: request.rpcUrl || environment.rpcUrl,
-    factoryAddress: request.factoryAddress || environment.factoryAddress || "",
+    rpcUrl: requireRpcUrl(request.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? true,
     autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -101,8 +99,7 @@ export function buildInitialSeriesLaunchSummary(request: LaunchSeriesRequest): L
 function applySeriesRequestSettings(summary: LaunchSeriesSummary, request: LaunchSeriesRequest): LaunchSeriesSummary {
   return {
     ...summary,
-    rpcUrl: request.rpcUrl || summary.rpcUrl,
-    factoryAddress: request.factoryAddress || summary.factoryAddress,
+    rpcUrl: requireRpcUrl(request.rpcUrl || summary.rpcUrl, "RPC_URL"),
     autoRetryEnabled: request.autoRetryEnabled ?? summary.autoRetryEnabled,
     autoRetryIntervalMinutes: resolveDefaultSeriesRetryIntervalMinutes(request),
     dryRun: request.dryRun === true,
@@ -173,7 +170,7 @@ function validatePersistedSeriesGameNumbers(summary: LaunchSeriesSummary): void 
 }
 
 export async function assignSeriesGameNumbers(
-  request: LaunchSeriesRequest,
+  _request: LaunchSeriesRequest,
   summary: LaunchSeriesSummary,
 ): Promise<LaunchSeriesSummary> {
   validatePersistedSeriesGameNumbers(summary);
@@ -182,26 +179,14 @@ export async function assignSeriesGameNumbers(
     return summary;
   }
 
-  const environment = resolveDeploymentEnvironment(request.environmentId);
-  const seriesState = isMainnetDeploymentEnvironment(environment)
-    ? await readFactorySeriesState({
-        chain: summary.chain,
-        seriesName: summary.seriesName,
-        cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
-      })
-    : {
-        exists: summary.seriesCreated,
-        lastGameNumber: Math.max(0, ...summary.games.map((game) => game.seriesGameNumber)),
-      };
+  const lastGameNumber = Math.max(0, ...summary.games.map((game) => game.seriesGameNumber));
   let nextGameNumber =
-    Math.max(
-      seriesState.lastGameNumber,
-      ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0)),
-    ) + 1;
+    Math.max(lastGameNumber, ...summary.games.map((game) => (game.seriesGameNumber > 0 ? game.seriesGameNumber : 0))) +
+    1;
 
   return {
     ...summary,
-    seriesCreated: summary.seriesCreated || seriesState.exists,
+    seriesCreated: summary.seriesCreated,
     games: summary.games.map((game) => {
       if (game.seriesGameNumber > 0) {
         nextGameNumber = Math.max(nextGameNumber, game.seriesGameNumber + 1);
@@ -219,12 +204,15 @@ export async function assignSeriesGameNumbers(
   };
 }
 
-export async function hydrateSeriesLaunchSummary(request: LaunchSeriesRequest): Promise<LaunchSeriesSummary> {
+export async function hydrateSeriesLaunchSummary(
+  request: LaunchSeriesRequest,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchSeriesSummary> {
   if (request.resumeSummary) {
     return assignSeriesGameNumbers(request, applySeriesRequestSettings(request.resumeSummary, request));
   }
 
-  const existingSummary = loadSeriesLaunchSummaryIfPresent(request.environmentId, request.seriesName.trim());
+  const existingSummary = await store.loadSeries(request.environmentId, request.seriesName.trim());
   if (existingSummary) {
     return assignSeriesGameNumbers(request, appendRequestedSeriesGames(existingSummary, request));
   }
@@ -232,9 +220,7 @@ export async function hydrateSeriesLaunchSummary(request: LaunchSeriesRequest): 
   return assignSeriesGameNumbers(request, buildInitialSeriesLaunchSummary(request));
 }
 
-export function persistSeriesLaunchSummary(summary: LaunchSeriesSummary): LaunchSeriesSummary {
-  return {
-    ...summary,
-    outputPath: writeSeriesLaunchSummary(summary),
-  };
-}
+export const persistSeriesLaunchSummary = (
+  summary: LaunchSeriesSummary,
+  store: LaunchRunStore = fileLaunchRunStore,
+): Promise<LaunchSeriesSummary> => store.saveSeries(summary);

@@ -9,17 +9,29 @@ docs/dist
 ADW/
 unoptimized-*/
 CLAUDE.local.md
-client/apps/eternum-mobile/dist
 .env.local
 venv/
 __pycache__/
-client/apps/game/minimap
+apps/game/minimap
 .claude/ralph-loop.local.md
 .claude/tsc-cache/
 **/.claude/tsc-cache/
+.claude/worktrees/
+**/.claude/worktrees/
+.claude/cache/
+**/.claude/cache/
 thoughts/
-client/apps/bot/.env
 
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
 .context/
 .playwright-mcp/
+
+# Madara lab generated state (world address, rendered torii config, run manifests)
+deploy/madara-lab/.lab/
+
+# Local lab configuration for apps/web and packages/db (read via `pnpm with-env`); never committed.
+.env
+
+# Local animation captures and benchmark reports
+/output/
+.gstack/

@@ -1,0 +1,137 @@
+import type { GameChain as Chain } from "@realms-world/chain";
+
+import type { WorldSelectionInput } from "@/runtime/world";
+import { resolveSpectateIntent } from "@/utils/spectator-session";
+import {
+  buildEntryHref,
+  buildPlayHref,
+  parseEntryRoute,
+  parsePlayRoute,
+  type PlayScene,
+} from "@/play/navigation/play-route";
+
+export type EntryIntent = "play" | "settle" | "spectate";
+
+type LocationLike = Pick<Location, "pathname" | "search">;
+
+export interface ResolvedEntryContext {
+  chain: Chain;
+  worldName: string;
+  worldAddress?: string;
+  intent: EntryIntent;
+  autoSettle: boolean;
+  source: "landing" | "play-route";
+}
+
+interface LandingSelectionEntryContextInput {
+  selection: WorldSelectionInput;
+  intent: EntryIntent;
+  autoSettle?: boolean;
+}
+
+interface BuildPlayRouteFromEntryContextInput {
+  context: ResolvedEntryContext;
+  scene?: PlayScene;
+  col?: number | null;
+  row?: number | null;
+  spectate?: boolean;
+}
+
+export const isLandingPrimaryChain = (chain: Chain | null | undefined): chain is Chain => Boolean(chain);
+
+export const resolveEntryContextCacheKey = (context: Pick<ResolvedEntryContext, "chain" | "worldName">): string => {
+  return `${context.chain}:${context.worldName}`;
+};
+
+const resolveFallbackScene = (intent: EntryIntent): PlayScene => {
+  return intent === "spectate" ? "map" : "hex";
+};
+
+const resolveSpectateFlag = (intent: EntryIntent): boolean => {
+  return intent === "spectate";
+};
+
+const resolveLandingEntryChain = (chain: Chain | null | undefined): Chain | null => {
+  return isLandingPrimaryChain(chain) ? chain : null;
+};
+
+export const resolveEntryContextFromLandingSelection = ({
+  selection,
+  intent,
+  autoSettle = false,
+}: LandingSelectionEntryContextInput): ResolvedEntryContext | null => {
+  const resolvedChain = resolveLandingEntryChain(selection.chain);
+  if (!resolvedChain) {
+    return null;
+  }
+
+  return {
+    chain: resolvedChain,
+    worldName: selection.name,
+    worldAddress: selection.worldAddress,
+    intent,
+    autoSettle,
+    source: "landing",
+  };
+};
+
+export const resolveEntryContextFromEntryRoute = (location: LocationLike): ResolvedEntryContext | null => {
+  const route = parseEntryRoute(location);
+  if (!route) {
+    return null;
+  }
+
+  const resolvedChain = resolveLandingEntryChain(route.chain);
+  if (!resolvedChain) {
+    return null;
+  }
+
+  return {
+    chain: resolvedChain,
+    worldName: route.worldName,
+    intent: route.intent,
+    autoSettle: route.autoSettle,
+    source: "landing",
+  };
+};
+
+export const resolveEntryContextFromPlayRoute = (location: LocationLike): ResolvedEntryContext | null => {
+  const route = parsePlayRoute(location);
+  if (!route) {
+    return null;
+  }
+
+  return {
+    chain: route.chain,
+    worldName: route.worldName,
+    intent: resolveSpectateIntent(location) ? "spectate" : "play",
+    autoSettle: false,
+    source: "play-route",
+  };
+};
+
+export const buildEntryHrefFromEntryContext = (context: ResolvedEntryContext): string => {
+  return buildEntryHref({
+    chain: context.chain,
+    worldName: context.worldName,
+    intent: context.intent,
+    autoSettle: context.autoSettle,
+  });
+};
+
+export const buildPlayRouteFromEntryContext = ({
+  context,
+  scene = resolveFallbackScene(context.intent),
+  col = null,
+  row = null,
+  spectate = resolveSpectateFlag(context.intent),
+}: BuildPlayRouteFromEntryContextInput): string => {
+  return buildPlayHref({
+    chain: context.chain,
+    worldName: context.worldName,
+    scene,
+    col,
+    row,
+    spectate,
+  });
+};

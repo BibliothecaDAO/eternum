@@ -1,0 +1,20 @@
+{
+  "strk": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+  "factoryDeployer": "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+  "lords": "0x0",
+  "seasonPass": "0x0",
+  "villagePass": "0x0",
+  "realms": "0x0",
+  "marketplace": "0x0",
+  "mmrToken": "0x0",
+  "cosmetics": "0x0",
+  "cosmeticsClaim": "0x0",
+  "lootChests": "0x0",
+  "eliteInvite": "0x0",
+  "collectiblesClassHash": "0x0",
+  "resources": "0x0",
+  "Collectibles: Realms: Loot Chest": "0x0",
+  "Collectibles: Realms: Cosmetic Items": "0x0",
+  "Collectibles: Timelock Maker": "0x0",
+  "Collectibles: Realms: Elite Invite": "0x0"
+}

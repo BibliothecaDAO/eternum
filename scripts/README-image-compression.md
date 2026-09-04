@@ -6,7 +6,7 @@ This directory contains scripts to analyze and compress image assets to reduce b
 
 ### 1. `analyze-images.js` - Image Asset Analysis
 
-Analyzes all image assets in the client/public directory without making any changes.
+Analyzes all image assets in the apps/game/public directory without making any changes.
 
 **Features:**
 
@@ -83,7 +83,7 @@ pnpm add -D imagemin imagemin-optipng imagemin-mozjpeg imagemin-gifsicle
 3. **Create a backup:**
 
    ```bash
-   cp -r client/public client/public-backup
+   cp -r apps/game/public apps/game/public-backup
    ```
 
 4. **Run compression:**

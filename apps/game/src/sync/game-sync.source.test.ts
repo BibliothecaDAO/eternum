@@ -1,0 +1,52 @@
+// @vitest-environment node
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
+
+describe("network boot-regression guards", () => {
+  it("sync.ts resets the global handshake clock after a successful subscription handshake", () => {
+    const source = readSource("src/sync/game-sync.ts");
+
+    expect(source).toMatch(/const recordGamewideSubscriptionActive[\s\S]*?recordGlobalHandshake\(\)/);
+    expect(source).toContain("startSession");
+  });
+
+  it("the session runtime protects in-flight recovery from UI cancellation", () => {
+    const runtimeSource = readSource("../../packages/core/src/sync/game-sync-runtime.ts");
+
+    expect(runtimeSource).toMatch(/cancelGlobalWriter\(\)[\s\S]*?if \(this\.isStarting\(\)\)/);
+    expect(runtimeSource).toMatch(/dispose\(\)[\s\S]*?cancelWriterImmediately\(\)/);
+  });
+
+  it("has no legacy spatial bootstrap ownership path", () => {
+    const source = readSource("src/sync/game-sync.ts");
+    const manifestSource = readSource("../../packages/core/src/sync/model-manifest.ts");
+
+    expect(manifestSource).toContain('spatial("Structure", "base.coord_x", "base.coord_y")');
+    expect(manifestSource).not.toContain("spatial-bootstrap");
+    expect(source).not.toContain("syncGlobalSpatialBootstrapSnapshot");
+    expect(source).not.toContain("startLegacySession");
+  });
+
+  it("the active path owns every current fact with one game-wide recovery session", () => {
+    const source = readSource("src/sync/game-sync.ts");
+
+    expect(source).toContain('getGameSyncModelsForChannel("gamewide-entity"');
+    expect(source).toContain("createHeraldGameSyncSession");
+    expect(source).toContain("requireActiveGameSyncRuntime().recover()");
+    expect(source).not.toContain("LegacyBounded");
+    expect(source).toContain("installActiveWorldSpatialProjection(setup)");
+  });
+
+  it("routes reconnects through the active game sync runtime", () => {
+    const source = readSource("src/sync/game-sync.ts");
+
+    expect(source).toMatch(/recoverGameSyncSession[\s\S]*?requireActiveGameSyncRuntime\(\)\.recover\(\)/);
+    expect(source).not.toContain("connection-health-monitor");
+    expect(source).not.toContain("requestConnectionRecovery");
+  });
+});

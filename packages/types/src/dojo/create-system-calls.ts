@@ -32,18 +32,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
-  const blitz_realm_obtain_entry_token = async (
-    props: SystemProps.BlitzRealmObtainEntryTokenProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_obtain_entry_token(props);
-  };
-
-  const blitz_realm_register = async (
-    props: SystemProps.BlitzRealmRegisterProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_register(props);
-  };
-
   const blitz_realm_make_hyperstructures = async (
     props: SystemProps.BlitzRealmMakeHyperstructuresProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -268,22 +256,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     props: SystemProps.BlitzPrizePlayerRankProps,
   ): Promise<GetTransactionReceiptResponse> => {
     return await provider.blitz_prize_player_rank(props);
-  };
-
-  const blitz_prize_claim = async (props: SystemProps.BlitzPrizeClaimProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_prize_claim(props);
-  };
-
-  const blitz_prize_claim_no_game = async (
-    props: SystemProps.BlitzPrizeClaimNoGameProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_prize_claim_no_game(props);
-  };
-
-  const commit_and_claim_game_mmr = async (
-    props: SystemProps.CommitGameMMRProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.commit_and_claim_game_mmr(props);
   };
 
   const remove_guild_member = async (props: SystemProps.RemoveGuildMember): Promise<GetTransactionReceiptResponse> => {
@@ -539,8 +511,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   };
 
   const systemCalls = {
-    blitz_realm_obtain_entry_token: withAuth(blitz_realm_obtain_entry_token),
-    blitz_realm_register: withAuth(blitz_realm_register),
     blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
     spire_make_spires: withAuth(spire_make_spires),
     blitz_realm_assign_realm_positions: withAuth(blitz_realm_assign_realm_positions),
@@ -588,9 +558,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     claim_share_points: withAuth(claim_share_points),
     season_prize_claim: withAuth(season_prize_claim),
     blitz_prize_player_rank: withAuth(blitz_prize_player_rank),
-    blitz_prize_claim: withAuth(blitz_prize_claim),
-    blitz_prize_claim_no_game: withAuth(blitz_prize_claim_no_game),
-    commit_and_claim_game_mmr: withAuth(commit_and_claim_game_mmr),
 
     mint_resources: withAuth(mint_resources),
 

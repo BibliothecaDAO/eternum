@@ -1,9 +1,14 @@
 import "dotenv/config";
 import { Account, RpcProvider } from "starknet";
+import { assertExpectedChainId, assertProviderChain, encodeChainName } from "../../../packages/chain/chain-guard.js";
 import { readContractArtifacts } from "./artifacts.js";
 import { printRuntimeAction, printRuntimeSuccess, printRuntimeValue } from "./output.js";
 
 const NETWORKS = {
+  appchain: {
+    explorerUrl: "https://explorer-dev.realms.world",
+    rpcUrl: process.env.STARKNET_RPC,
+  },
   local: {
     explorerUrl: "http://localhost:3001",
     rpcUrl: process.env.STARKNET_RPC,
@@ -12,12 +17,12 @@ const NETWORKS = {
     explorerUrl: "https://voyager.online",
     rpcUrl: process.env.STARKNET_RPC,
   },
-  sepolia: {
-    explorerUrl: "https://sepolia.voyager.online",
+  madara: {
+    explorerUrl: "http://localhost:3001",
     rpcUrl: process.env.STARKNET_RPC,
   },
-  slot: {
-    explorerUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/explorer",
+  sepolia: {
+    explorerUrl: "https://sepolia.voyager.online",
     rpcUrl: process.env.STARKNET_RPC,
   },
   slottest: {
@@ -70,16 +75,30 @@ export function getNetworkConfig() {
   return NETWORKS[getSelectedNetworkName()];
 }
 
-export function getProvider() {
-  return new RpcProvider({ nodeUrl: requireEnv("STARKNET_RPC") });
+export async function getProvider() {
+  const provider = new RpcProvider({ nodeUrl: requireEnv("STARKNET_RPC") });
+  await assertSelectedProviderChain(provider);
+  return provider;
 }
 
-export function getAccount({ accountAddress } = {}) {
+export async function getAccount({ accountAddress, privateKey } = {}) {
   return new Account({
     address: resolveAccountAddress(accountAddress),
-    provider: getProvider(),
-    signer: requireEnv("STARKNET_ACCOUNT_PRIVATE_KEY"),
+    provider: await getProvider(),
+    signer: privateKey ?? requireEnv("STARKNET_ACCOUNT_PRIVATE_KEY"),
   });
+}
+
+export async function assertSelectedProviderChain(provider) {
+  const network = getSelectedNetworkName();
+  if (["mainnet", "sepolia", "appchain", "madara"].includes(network)) {
+    return assertProviderChain(provider, network, "STARKNET_RPC");
+  }
+  const actualChainId = await provider.getChainId();
+  const configuredChainId = requireEnv("STARKNET_EXPECTED_CHAIN_ID");
+  const expected = configuredChainId.startsWith("0x") ? configuredChainId : encodeChainName(configuredChainId);
+  assertExpectedChainId(actualChainId, expected, "STARKNET_RPC", network);
+  return actualChainId;
 }
 
 export function toUint256Calldata(value) {
@@ -96,8 +115,8 @@ function explorerTransactionUrl(transactionHash) {
   return `${getNetworkConfig().explorerUrl}/tx/${transactionHash}`;
 }
 
-export async function declareContract({ accountAddress, artifactPaths, label }) {
-  const account = getAccount({ accountAddress });
+export async function declareContract({ accountAddress, artifactPaths, label, privateKey }) {
+  const account = await getAccount({ accountAddress, privateKey });
   const artifacts = readContractArtifacts(artifactPaths);
 
   printRuntimeAction(`Declaring ${label}...`);
@@ -119,7 +138,7 @@ export async function declareContract({ accountAddress, artifactPaths, label }) 
 }
 
 export async function deployContract({ accountAddress, classHash, constructorCalldata, label }) {
-  const account = getAccount({ accountAddress });
+  const account = await getAccount({ accountAddress });
   account.deployer.address = UDC_ADDRESS;
   account.deployer.entryPoint = UDC_ENTRYPOINT;
 
@@ -136,7 +155,14 @@ export async function deployContract({ accountAddress, classHash, constructorCal
   return deployment.address;
 }
 
-export async function executeContractCall({ accountAddress, calldata, contractAddress, entrypoint, label }) {
+export async function executeContractCall({
+  accountAddress,
+  calldata,
+  contractAddress,
+  entrypoint,
+  label,
+  privateKey,
+}) {
   return executeContractCalls({
     accountAddress,
     calls: [
@@ -147,15 +173,16 @@ export async function executeContractCall({ accountAddress, calldata, contractAd
       },
     ],
     label,
+    privateKey,
   });
 }
 
-export async function executeContractCalls({ accountAddress, calls, label }) {
+export async function executeContractCalls({ accountAddress, calls, label, privateKey }) {
   if (!Array.isArray(calls) || calls.length === 0) {
     throw new Error("executeContractCalls requires at least one call");
   }
 
-  const account = getAccount({ accountAddress });
+  const account = await getAccount({ accountAddress, privateKey });
 
   printRuntimeAction(`Executing ${label}...`);
   const transaction = await account.execute(calls);
@@ -166,13 +193,14 @@ export async function executeContractCalls({ accountAddress, calls, label }) {
   return transaction.transaction_hash;
 }
 
-export async function upgradeContract({ accountAddress, contractAddress, label, newClassHash }) {
+export async function upgradeContract({ accountAddress, contractAddress, label, newClassHash, privateKey }) {
   return executeContractCall({
     accountAddress,
     calldata: [newClassHash],
     contractAddress,
     entrypoint: "upgrade",
     label: `${label} upgrade`,
+    privateKey,
   });
 }
 

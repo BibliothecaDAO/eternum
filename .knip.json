@@ -2,43 +2,54 @@
   "ignoreDependencies": [],
   "ignore": [
     "**/*.js",
-    "client/apps/game-docs/vocs.config.ts",
-    "client/apps/game-docs/docs/**",
-    "client/apps/game-docs/vite-plugin-llm-txt.mjs",
-    "client/apps/game-docs/env.ts",
-    "client/apps/eternum-mobile/**",
-    "client/apps/game/src/ui/shared/components/blitz-awards-hero-left-card.tsx",
-    "client/apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
+    "apps/game-docs/vocs.config.ts",
+    "apps/game-docs/docs/**",
+    "apps/game-docs/vite-plugin-llm-txt.mjs",
+    "apps/game-docs/env.ts",
+    "apps/game/src/ui/shared/components/blitz-awards-hero-left-card.tsx",
+    "apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
     "scripts/codemod-lucide-imports.mjs",
     "common/factory/endpoints.ts",
-    "deploy/appchain/torii-s2/**",
     "config/**",
     "contracts/**",
     "**/global.d.ts"
   ],
   "ignoreFiles": [
-    "client/apps/amm-indexerv2/apibara.config.ts",
-    "client/apps/amm-indexerv2/indexers/ammv2.indexer.ts",
-    "client/apps/amm-indexerv2/indexers/factory-client.ts",
-    "deploy/appchain/cdk/bin/appchain.ts",
-    "deploy/appchain/cdk/lib/**",
-    "deploy/appchain/cdk/lambda/**",
-    "deploy/appchain/cdk/cdk.out/**",
-    "deploy/appchain/scripts/**"
+    "apps/amm-indexer/apibara.config.ts",
+    "apps/amm-indexer/indexers/ammv2.indexer.ts",
+    "apps/amm-indexer/indexers/factory-client.ts",
+    "deploy/madara-lab/scripts/deploy-s2-world.ts",
+    "apps/indexer/drizzle.config.ts",
+    "packages/db/drizzle.config.ts"
   ],
   "ignoreWorkspaces": [
-    "packages/amm-sdk",
     "packages/ammv2-sdk",
     "packages/client",
     "packages/dojo",
-    "packages/game-agent",
-    "packages/world"
+    "packages/game-agent"
   ],
   "workspaces": {
-    "packages/core": {
+    "apps/realms": {
       "entry": [
-        "src/index.ts"
+        "src/main.tsx",
+        "server/main.ts"
       ],
+      "ignore": [
+        "dist/**"
+      ]
+    },
+    "apps/indexer": {
+      "drizzle": false,
+      "entry": [
+        "apibara.config.ts",
+        "indexers/*.indexer.ts",
+        "scripts/check-realm-ownership-indexer.mjs"
+      ]
+    },
+    "packages/db": {
+      "drizzle": false
+    },
+    "packages/core": {
       "project": [
         "src/**/*.ts"
       ],
@@ -50,32 +61,12 @@
         "@bibliothecadao/provider": [
           "../provider/src/index.ts"
         ],
-        "@bibliothecadao/torii": [
-          "../torii/src/index.ts"
-        ],
         "@bibliothecadao/types": [
           "../types/src/index.ts"
         ]
       }
     },
     "packages/provider": {
-      "entry": [
-        "src/index.ts"
-      ],
-      "project": [
-        "src/**/*.ts"
-      ],
-      "includeEntryExports": true,
-      "paths": {
-        "@bibliothecadao/types": [
-          "../types/src/index.ts"
-        ]
-      }
-    },
-    "packages/torii": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.ts"
       ],
@@ -87,9 +78,6 @@
       }
     },
     "packages/react": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.{ts,tsx}"
       ],
@@ -101,107 +89,63 @@
         "@bibliothecadao/eternum": [
           "../core/src/index.ts"
         ],
-        "@bibliothecadao/torii": [
-          "../torii/src/index.ts"
-        ],
         "@bibliothecadao/types": [
           "../types/src/index.ts"
         ]
       }
     },
     "packages/types": {
-      "entry": [
-        "src/index.ts"
-      ],
       "project": [
         "src/**/*.ts"
       ],
       "includeEntryExports": true
     },
-    "client/apps/game": {
+    "apps/game": {
       "paths": {
         "@bibliothecadao/dojo": [
-          "../../../packages/dojo/src/index.ts"
+          "../../packages/dojo/src/index.ts"
         ],
         "@bibliothecadao/eternum": [
-          "../../../packages/core/src/index.ts"
+          "../../packages/core/src/index.ts"
         ],
         "@bibliothecadao/eternum/game-entity-keys": [
-          "../../../packages/core/src/managers/game-entity-keys.ts"
+          "../../packages/core/src/managers/game-entity-keys.ts"
         ],
         "@bibliothecadao/eternum/game-sync": [
-          "../../../packages/core/src/sync/index.ts"
+          "../../packages/core/src/sync/index.ts"
         ],
         "@bibliothecadao/provider": [
-          "../../../packages/provider/src/index.ts"
+          "../../packages/provider/src/index.ts"
         ],
         "@bibliothecadao/react": [
-          "../../../packages/react/src/index.ts"
-        ],
-        "@bibliothecadao/torii": [
-          "../../../packages/torii/src/index.ts"
+          "../../packages/react/src/index.ts"
         ],
         "@bibliothecadao/types": [
-          "../../../packages/types/src/index.ts"
+          "../../packages/types/src/index.ts"
         ]
       }
     },
-    "client/apps/heavy-load": {
+    "apps/herald": {
       "paths": {
-        "@bibliothecadao/eternum": [
-          "../../../packages/core/src/index.ts"
+        "@bibliothecadao/eternum/game-sync": [
+          "../../packages/core/src/sync/index.ts"
         ],
-        "@bibliothecadao/provider": [
-          "../../../packages/provider/src/index.ts"
-        ],
-        "@bibliothecadao/torii": [
-          "../../../packages/torii/src/index.ts"
-        ],
-        "@bibliothecadao/types": [
-          "../../../packages/types/src/index.ts"
+        "@bibliothecadao/eternum/game-sync-models": [
+          "../../packages/core/src/sync/model-manifest.ts"
         ]
       }
     },
-    "client/apps/onchain-agent": {
+    "apps/realtime-server": {
       "paths": {
-        "@bibliothecadao/torii": [
-          "../../../packages/torii/src/index.ts"
-        ],
         "@bibliothecadao/types": [
-          "../../../packages/types/src/index.ts"
+          "../../packages/types/src/index.ts"
         ]
       }
     },
-    "client/apps/realtime-server": {
+    "apps/game-docs": {
       "paths": {
         "@bibliothecadao/types": [
-          "../../../packages/types/src/index.ts"
-        ]
-      }
-    },
-    "client/apps/game-docs": {
-      "paths": {
-        "@bibliothecadao/types": [
-          "../../../packages/types/src/index.ts"
-        ]
-      }
-    },
-    "client/apps/eternum-mobile": {
-      "paths": {
-        "@bibliothecadao/dojo": [
-          "../../../packages/dojo/src/index.ts"
-        ],
-        "@bibliothecadao/eternum": [
-          "../../../packages/core/src/index.ts"
-        ],
-        "@bibliothecadao/react": [
-          "../../../packages/react/src/index.ts"
-        ],
-        "@bibliothecadao/torii": [
-          "../../../packages/torii/src/index.ts"
-        ],
-        "@bibliothecadao/types": [
-          "../../../packages/types/src/index.ts"
+          "../../packages/types/src/index.ts"
         ]
       }
     },
@@ -217,113 +161,142 @@
     }
   },
   "ignoreIssues": {
-    "client/apps/game/src/three/geometry/path-geometry.ts": [
+    "apps/web/**": [
+      "exports",
+      "types"
+    ],
+    "apps/indexer/env.ts": [
+      "types"
+    ],
+    "packages/core/src/utils/entry-token.ts": [
+      "exports"
+    ],
+    "packages/db/env.ts": [
+      "types"
+    ],
+    "packages/db/src/int8range.ts": [
+      "exports"
+    ],
+    "packages/react/src/hooks/context/dojo-context.ts": [
+      "types"
+    ],
+    "packages/react/src/hooks/helpers/use-realm.ts": [
+      "exports"
+    ],
+    "packages/react/src/hooks/use-entry-token-balance.ts": [
+      "exports"
+    ],
+    "apps/web/src/gql/snapshot/graphql.ts": [
+      "exports",
+      "types"
+    ],
+    "apps/game/src/three/geometry/path-geometry.ts": [
       "files"
     ],
-    "client/apps/game/src/three/three-webgpu-type-guard.ts": [
+    "apps/game/src/three/three-webgpu-type-guard.ts": [
       "files",
       "types"
     ],
-    "client/apps/game/src/three/fx/world-fx-backends.ts": [
+    "apps/game/src/three/fx/world-fx-backends.ts": [
       "types"
     ],
-    "client/apps/game/src/three/game-renderer-debug-globals.ts": [
+    "apps/game/src/three/game-renderer-debug-globals.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/army-slot-compaction.ts": [
+    "apps/game/src/three/managers/army-slot-compaction.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/army-visible-order.ts": [
+    "apps/game/src/three/managers/army-visible-order.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/hover-hex-manager.ts": [
+    "apps/game/src/three/managers/hover-hex-manager.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/hover-hex-view-policy.ts": [
+    "apps/game/src/three/managers/hover-hex-view-policy.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/interactive-hex-manager.ts": [
+    "apps/game/src/three/managers/interactive-hex-manager.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/path-batching-policy.ts": [
+    "apps/game/src/three/managers/path-batching-policy.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/worldmap-highlight-view-policy.ts": [
+    "apps/game/src/three/managers/worldmap-highlight-view-policy.ts": [
       "types"
     ],
-    "client/apps/game/src/three/managers/worldmap-interaction-palette.ts": [
+    "apps/game/src/three/managers/worldmap-interaction-palette.ts": [
       "types"
     ],
-    "client/apps/game/src/three/perf/worldmap-render-diagnostics.ts": [
+    "apps/game/src/three/perf/worldmap-render-diagnostics.ts": [
       "types"
     ],
-    "client/apps/game/src/three/renderer-pass-scene.ts": [
+    "apps/game/src/three/renderer-pass-scene.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/fast-travel-chunk-loading-runtime.ts": [
+    "apps/game/src/three/scenes/fast-travel-chunk-loading-runtime.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/fast-travel-navigation-policy.ts": [
+    "apps/game/src/three/scenes/fast-travel-navigation-policy.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/hexagon-scene-camera-transition.ts": [
+    "apps/game/src/three/scenes/hexagon-scene-camera-transition.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/path-readability-policy.ts": [
+    "apps/game/src/three/scenes/path-readability-policy.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/warp-travel-chunk-hydration.ts": [
+    "apps/game/src/three/scenes/warp-travel-chunk-hydration.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/warp-travel-chunk-runtime.ts": [
+    "apps/game/src/three/scenes/warp-travel-chunk-runtime.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/warp-travel-manager-fanout.ts": [
+    "apps/game/src/three/scenes/warp-travel-manager-fanout.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/warp-travel.ts": [
+    "apps/game/src/three/scenes/warp-travel.ts": [
       "exports",
       "types"
     ],
-    "client/apps/game/src/three/scenes/worldmap-debug-hooks.ts": [
+    "apps/game/src/three/scenes/worldmap-debug-hooks.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/worldmap-zoom-controller.ts": [
+    "apps/game/src/three/scenes/worldmap-zoom-controller.ts": [
       "types"
     ],
-    "client/apps/game/src/three/scenes/worldmap-zoom-refresh-policy.ts": [
+    "apps/game/src/three/scenes/worldmap-zoom-refresh-policy.ts": [
       "types"
     ],
-    "client/apps/game/src/three/shaders/hover-hex-material.ts": [
+    "apps/game/src/three/shaders/hover-hex-material.ts": [
       "exports",
       "types"
     ],
-    "client/apps/game/src/three/types/path.ts": [
+    "apps/game/src/three/types/path.ts": [
       "exports"
     ],
-    "client/apps/game/src/three/utils/centralized-visibility-manager.ts": [
+    "apps/game/src/three/utils/centralized-visibility-manager.ts": [
       "exports"
     ],
-    "client/apps/game/src/three/utils/navigation.ts": [
+    "apps/game/src/three/utils/navigation.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/features/cosmetics/lib/dev-preview-cosmetics.ts": [
+    "apps/game/src/ui/features/cosmetics/lib/dev-preview-cosmetics.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/features/cosmetics/lib/loadout-scope.ts": [
+    "apps/game/src/ui/features/cosmetics/lib/loadout-scope.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/features/cosmetics/model/index.ts": [
+    "apps/game/src/ui/features/cosmetics/model/index.ts": [
       "exports",
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/model/use-cosmetic-loadout-store.ts": [
+    "apps/game/src/ui/features/cosmetics/model/use-cosmetic-loadout-store.ts": [
       "types"
     ],
-    "client/apps/game/src/hooks/use-world-preview-entry.ts": [
+    "apps/game/src/hooks/use-world-preview-entry.ts": [
       "types"
     ],
-    "client/apps/game/src/hooks/use-world-registration.ts": [
+    "apps/game/src/hooks/use-world-registration.ts": [
       "types"
     ],
     "packages/core/src/data/abi/SeasonPass.ts": [
@@ -429,26 +402,6 @@
     "packages/react/src/hooks/helpers/use-quests.ts": [
       "exports"
     ],
-    "packages/torii/src/parser/torii-client/quest.ts": [
-      "exports"
-    ],
-    "packages/torii/src/queries/sql/leaderboard-helpers.ts": [
-      "exports",
-      "types"
-    ],
-    "packages/torii/src/queries/sql/leaderboard.ts": [
-      "exports"
-    ],
-    "packages/torii/src/types/sql.ts": [
-      "enumMembers",
-      "types"
-    ],
-    "packages/torii/src/utils/leaderboard.ts": [
-      "types"
-    ],
-    "packages/torii/src/utils/sql.ts": [
-      "exports"
-    ],
     "packages/types/src/chat/client.ts": [
       "types"
     ],
@@ -523,160 +476,160 @@
     "packages/types/src/utils/tile.ts": [
       "exports"
     ],
-    "client/apps/game/src/hooks/use-resource-balance.tsx": [
+    "apps/game/src/hooks/use-resource-balance.tsx": [
       "files"
     ],
-    "client/apps/game/src/hooks/store/use-amm-store.ts": [
+    "apps/game/src/hooks/store/use-amm-store.ts": [
       "files"
     ],
-    "client/apps/game/src/hooks/store/use-loot-chest-opening-store.ts": [
+    "apps/game/src/hooks/store/use-loot-chest-opening-store.ts": [
       "files"
     ],
-    "client/apps/game/src/services/amm/game-amm-client.ts": [
+    "apps/game/src/services/amm/game-amm-client.ts": [
       "files"
     ],
-    "client/apps/game/src/services/amm/game-amm-math.ts": [
+    "apps/game/src/services/amm/game-amm-math.ts": [
       "files"
     ],
-    "client/apps/game/src/services/amm/index.ts": [
+    "apps/game/src/services/amm/index.ts": [
       "files"
     ],
-    "client/apps/game/src/services/leaderboard/use-score-to-beat.ts": [
+    "apps/game/src/services/leaderboard/use-score-to-beat.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/cosmetics-view.tsx": [
+    "apps/game/src/ui/features/cosmetics/cosmetics-view.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/index.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/index.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/chest-gallery.tsx": [
+    "apps/game/src/ui/features/cosmetics/components/chest-gallery.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/collection-progress.tsx": [
+    "apps/game/src/ui/features/cosmetics/components/collection-progress.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/cosmetic-gallery.tsx": [
+    "apps/game/src/ui/features/cosmetics/components/cosmetic-gallery.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/cosmetic-model-viewer.tsx": [
+    "apps/game/src/ui/features/cosmetics/components/cosmetic-model-viewer.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/cosmetic-showcase.tsx": [
+    "apps/game/src/ui/features/cosmetics/components/cosmetic-showcase.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/cosmetic-tile.tsx": [
+    "apps/game/src/ui/features/cosmetics/components/cosmetic-tile.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/components/index.ts": [
+    "apps/game/src/ui/features/cosmetics/components/index.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/providers/landing-dojo-provider.tsx": [
+    "apps/game/src/ui/features/cosmetics/providers/landing-dojo-provider.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/chest-card.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/chest-card.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/chest-opening-experience.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/chest-opening-experience.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/chest-stage-container.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/chest-stage-container.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/floating-open-button.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/floating-open-button.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/index.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/index.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/opening-stage.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/opening-stage.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/pending-overlay.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/pending-overlay.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/reveal-stage.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/reveal-stage.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/tilt-card.tsx": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/tilt-card.tsx": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/components/use-gsap-timeline.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/components/use-gsap-timeline.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/index.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/index.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/mock-data.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/mock-data.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-content.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-content.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-opening-flow.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-opening-flow.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-sounds.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-chest-sounds.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-open-chest.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-open-chest.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-owned-chests.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-owned-chests.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-reveal-share.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/hooks/use-reveal-share.ts": [
       "files"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/utils/index.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/utils/index.ts": [
       "files"
     ],
-    "client/apps/game/src/dojo/connection-health-monitor.ts": [
+    "apps/game/src/dojo/connection-health-monitor.ts": [
       "exports"
     ],
-    "client/apps/game/src/runtime/world/factory-resolver.ts": [
+    "apps/game/src/runtime/world/factory-resolver.ts": [
       "exports"
     ],
-    "client/apps/game/src/services/leaderboard/landing-leaderboard-service.ts": [
+    "apps/game/src/services/leaderboard/landing-leaderboard-service.ts": [
       "exports",
       "types"
     ],
-    "client/apps/game/src/services/blitz/blitz-settlement-sql.ts": [
+    "apps/game/src/services/blitz/blitz-settlement-sql.ts": [
       "exports"
     ],
-    "client/apps/game/src/utils/dev-mode.ts": [
+    "apps/game/src/utils/dev-mode.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/shared/lib/x-share-messages.ts": [
+    "apps/game/src/ui/shared/lib/x-share-messages.ts": [
       "exports"
     ],
-    "client/apps/game/src/runtime/world/use-selected-chain.ts": [
+    "apps/game/src/runtime/world/use-selected-chain.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/utils/network-switch.ts": [
+    "apps/game/src/ui/utils/network-switch.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/utils/cosmetics.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/utils/cosmetics.ts": [
       "exports",
       "types"
     ],
-    "client/apps/game/src/ui/features/cosmetics/lib/use-torii-cosmetics.ts": [
+    "apps/game/src/ui/features/cosmetics/lib/use-torii-cosmetics.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/services/index.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/services/index.ts": [
       "exports"
     ],
-    "client/apps/game/src/ui/features/factory/shared/biome-preview.ts": [
+    "apps/game/src/ui/features/factory/shared/biome-preview.ts": [
       "exports",
       "types"
     ],
-    "client/apps/game/src/ui/features/factory/shared/factory-config-calldata.ts": [
+    "apps/game/src/ui/features/factory/shared/factory-config-calldata.ts": [
       "types"
     ],
-    "client/apps/game/src/hooks/use-factory-series.ts": [
+    "apps/game/src/hooks/use-factory-series.ts": [
       "types"
     ],
-    "client/apps/game/src/ui/features/cosmetics/chest-opening/utils/types.ts": [
+    "apps/game/src/ui/features/cosmetics/chest-opening/utils/types.ts": [
       "types"
     ]
   }

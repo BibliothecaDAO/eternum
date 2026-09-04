@@ -1,4 +1,5 @@
 import type { Config } from "../../packages/types/src/types/common";
+import type { GameChain } from "@realms-world/chain";
 import {
   applyBlitzBalanceProfile,
   blitzBaseConfig,
@@ -11,18 +12,18 @@ import {
   type EnvironmentContext,
 } from "./common/environment";
 import { mergeConfigPatches } from "./common/merge-config";
-import type { BuildConfigOptions, Chain, GameType } from "./common/types";
+import type { BuildConfigOptions, GameType } from "./common/types";
 import { resolveBlitzChainConfig } from "./blitz/chains";
 import { eternumBaseConfig } from "./eternum/base";
 import { resolveEternumChainConfig } from "./eternum/chains";
 
-export type { BuildConfigOptions, Chain, GameType };
+export type { BuildConfigOptions, GameType };
 
 function resolveBaseGameConfig(gameType: GameType) {
   return gameType === "blitz" ? blitzBaseConfig : eternumBaseConfig;
 }
 
-function resolveGameChainConfig(gameType: GameType, chain: Chain, context: EnvironmentContext) {
+function resolveGameChainConfig(gameType: GameType, chain: GameChain, context: EnvironmentContext) {
   return gameType === "blitz" ? resolveBlitzChainConfig(chain, context) : resolveEternumChainConfig(chain, context);
 }
 

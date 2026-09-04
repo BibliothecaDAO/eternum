@@ -17,16 +17,10 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
-  TransactionFinalityStatus,
   uint256,
   UniversalDetails,
 } from "starknet";
-import {
-  classifyTransactionError,
-  extractErrorMessage,
-  formatErrorForConsole,
-  readCartridgeErrorCode,
-} from "./classify-transaction-error";
+import { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
@@ -41,6 +35,7 @@ import {
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
+  TransactionStreamWaiter,
   TransactionType,
 } from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
@@ -71,6 +66,7 @@ export type {
   TransactionSubmitFailureKind,
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
+  TransactionStreamWaiter,
 } from "./types";
 export type { VrfSource } from "./vrf";
 
@@ -84,20 +80,6 @@ const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const ESTIMATE_ERROR_TTL_MS = 60_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
-// Katana mines instantly, so PRE_CONFIRMED usually exists on the first or
-// second poll — 200 ms shaves ~150–300 ms off action feedback for ~2 extra
-// tiny receipt reads per tx.
-const TX_WAIT_RETRY_INTERVAL_MS = 200;
-// Resolve confirmation at PRE_CONFIRMED: the sequencer pre-confirms within
-// ~a second and the receipt already carries execution_status, so reverts are
-// detected immediately while the receipt poll loop drops from dozens of RPC
-// requests per tx (waiting for ACCEPTED_ON_L2 block inclusion) to one or two.
-// Game state itself arrives via torii sync, not this receipt.
-const TX_WAIT_SUCCESS_STATES = [
-  TransactionFinalityStatus.PRE_CONFIRMED,
-  TransactionFinalityStatus.ACCEPTED_ON_L2,
-  TransactionFinalityStatus.ACCEPTED_ON_L1,
-];
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const formatTimeoutDuration = (timeoutMs: number): string =>
@@ -196,18 +178,12 @@ type TransactionFailureError = Error & {
 
 /**
  * Structured error context for a TransactionFailedPayload: the original error
- * verbatim, the Cartridge error code when the error is a plain-object
- * controller rejection, and the raw revert reason when the error came off a
- * reverted receipt.
+ * and the raw revert reason when the error came off a reverted receipt.
  */
-const buildFailureDiagnostics = (
-  error: unknown,
-): Pick<TransactionFailedPayload, "error" | "errorCode" | "revertReason"> => {
-  const errorCode = readCartridgeErrorCode(error);
+const buildFailureDiagnostics = (error: unknown): Pick<TransactionFailedPayload, "error" | "revertReason"> => {
   const revertReason = error instanceof Error ? (error as TransactionFailureError).rawRevertReason : undefined;
   return {
     error,
-    ...(errorCode !== undefined ? { errorCode } : {}),
     ...(revertReason !== undefined ? { revertReason } : {}),
   };
 };
@@ -337,32 +313,43 @@ export class EternumProvider extends EnhancedDojoProvider {
   private lastEstimateError?: { error: unknown; atMs: number };
   private readonly retryConfig?: RetryConfig;
   private transactionSubmitGuard?: TransactionSubmitGuard;
+  private transactionStreamWaiter?: TransactionStreamWaiter;
+  private transactionStreamSubmitObserver?: (transactionHash: string) => void;
   /** Model/contract-tag namespace: "s2" on appchain worlds, "s1_eternum" on legacy worlds. */
   readonly namespace: string;
   /** Active game on an s2 appchain world; 0 on legacy worlds (no calldata rewrite). */
   private readonly gameId: number;
   /** Normalized addresses of this world's game-system contracts (game_id-prefixed entrypoints on s2). */
   private readonly gameContractAddresses: Set<string>;
+  /** Fixed bounds for a fee-free chain; undefined keeps the normal estimation path. */
+  private readonly executionResourceBounds?: ResourceBoundsBN;
 
   /**
    * Create a new EternumProvider instance
    *
    * @param katana - The katana manifest containing contract info
    * @param url - Optional RPC URL
-   * @param scope - s2 appchain-world scope; omit on legacy worlds
+   * @param scope - s2 world scope and optional fixed execution bounds
    */
   constructor(
     katana: Manifest,
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
     retryConfig?: RetryConfig,
-    scope?: { namespace?: string; gameId?: number },
+    scope?: {
+      namespace?: string;
+      gameId?: number;
+      executionResourceBounds?: ResourceBoundsBN;
+      transactionStreamWaiter?: TransactionStreamWaiter;
+    },
   ) {
     super(katana, url);
     this.manifest = katana;
     this.retryConfig = retryConfig;
     this.namespace = scope?.namespace ?? NAMESPACE;
     this.gameId = scope?.gameId ?? 0;
+    this.executionResourceBounds = scope?.executionResourceBounds;
+    this.transactionStreamWaiter = scope?.transactionStreamWaiter;
     this.gameContractAddresses = new Set(
       this.gameId > 0
         ? ((katana.contracts ?? []) as { address?: string }[])
@@ -379,6 +366,14 @@ export class EternumProvider extends EnhancedDojoProvider {
     // latency (and a merged multicall makes one revert fail unrelated actions). The queue
     // stays for per-signer serialization; a backlog still coalesces naturally.
     this.promiseQueue = new PromiseQueue(this, { batchDelayMs: 0 });
+  }
+
+  public setTransactionStreamWaiter(
+    waiter: TransactionStreamWaiter | undefined,
+    submitObserver?: (transactionHash: string) => void,
+  ): void {
+    this.transactionStreamWaiter = waiter;
+    this.transactionStreamSubmitObserver = submitObserver;
   }
 
   /**
@@ -526,7 +521,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       return undefined;
     }
 
-    const rawExplorerId = explorerCall.calldata[0] as BigNumberish | undefined;
+    const explorerIdIndex = this.gameId > 0 ? 1 : 0;
+    const rawExplorerId = explorerCall.calldata[explorerIdIndex] as BigNumberish | undefined;
     return this.normalizeAddress(rawExplorerId) ?? (rawExplorerId !== undefined ? String(rawExplorerId) : undefined);
   }
 
@@ -605,14 +601,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private shouldRefreshExecutionDetailsAfterSubmitError(error: unknown): boolean {
     const message = extractErrorMessage(error, "").toLowerCase();
-    return (
-      message.includes("nonce") ||
-      message.includes("max fee") ||
-      message.includes("fee too low") ||
-      message.includes("insufficient fee") ||
-      message.includes("resource bound") ||
-      message.includes("resource_bounds")
-    );
+    return message.includes("nonce") || classifyTransactionError(error).kind === "resource_bounds";
   }
 
   private createVrfExecutionLock(): VrfExecutionLock {
@@ -656,6 +645,9 @@ export class EternumProvider extends EnhancedDojoProvider {
     options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
     const details: UniversalDetails = { version: 3, tip: 0 };
+    if (this.executionResourceBounds) {
+      return { ...details, resourceBounds: this.executionResourceBounds };
+    }
     const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
     if (cached) {
       return { ...details, ...cached };
@@ -706,8 +698,8 @@ export class EternumProvider extends EnhancedDojoProvider {
   /**
    * A fee estimate that failed with an execution revert has already run the
    * calls and proven they fail deterministically — submitting anyway only
-   * lands a doomed transaction on the paymaster and buries the revert reason
-   * under the controller's generic wrapper. VRF multicalls are the one
+   * lands a doomed transaction and reports the same revert a second time.
+   * VRF multicalls are the one
    * exception: their consume_random can revert at estimate time (no
    * submit_random on chain yet) and still succeed at execution once the VRF
    * server front-runs it. A marginal tx that would pass one block later is
@@ -730,13 +722,11 @@ export class EternumProvider extends EnhancedDojoProvider {
   /**
    * The submit error the payload should carry: usually the submit error
    * itself, but when it decoded to nothing actionable and a recent fee
-   * estimate failed with a real trace, prefer that. Never overrides a user
-   * cancel (Cartridge rejects with `undefined` on popup close).
+   * estimate failed with a real trace, prefer that.
    */
   private resolveSubmitFailureError(error: unknown, extractedMessage: string): unknown {
     const estimateError = this.takeRecentEstimateError();
     if (estimateError === undefined) return error;
-    if (classifyTransactionError(error).kind === "user_cancelled") return error;
     return extractedMessage === "Unknown error" ? estimateError : error;
   }
 
@@ -858,6 +848,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+    this.transactionStreamSubmitObserver?.(transactionHash);
     this.emit("transactionSubmitted", {
       transactionHash,
       ...transactionMeta,
@@ -889,6 +880,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
         this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
         this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
+        if (!this.transactionStreamWaiter) return;
 
         return this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
           .then((receipt) => {
@@ -1041,10 +1033,21 @@ export class EternumProvider extends EnhancedDojoProvider {
     executionDetailsPromise?.catch(() => {});
 
     await this.runTransactionSubmitGuard(signer, transactionMeta);
+    if (txType === TransactionType.EXPLORE) {
+      this.emit("transactionProgress", {
+        stage: "explore_submit_guard_released",
+        type: txType,
+        explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+        signerAddress: transactionMeta.signerAddress,
+      });
+    }
 
     const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
+      // Explores of the same explorer (and VRF requests from the same source)
+      // serialise here by design: the next explore's calls are built from the
+      // position the previous one leaves behind. Every other action pipelines.
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
       if (txType === TransactionType.EXPLORE) {
         this.emit("transactionProgress", {
@@ -1067,6 +1070,20 @@ export class EternumProvider extends EnhancedDojoProvider {
         : await this.getV3ExecutionDetails(signer, transactionDetails, {
             cacheKey: executionDetailsCacheKey,
           });
+      if (txType === TransactionType.EXPLORE) {
+        this.emit("transactionProgress", {
+          stage: "explore_execution_details_ready",
+          type: txType,
+          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+          signerAddress: transactionMeta.signerAddress,
+        });
+        this.emit("transactionProgress", {
+          stage: "explore_sign_send_started",
+          type: txType,
+          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+          signerAddress: transactionMeta.signerAddress,
+        });
+      }
       submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails, {
         executionDetailsCacheKey,
       });
@@ -1106,6 +1123,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
     };
+    if (!this.transactionStreamWaiter) {
+      releaseVrfExecutionLock?.();
+      releaseVrfExecutionLock = undefined;
+      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: tx.transaction_hash,
+      } as unknown as GetTransactionReceiptResponse;
+    }
     const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(
       tx.transaction_hash,
       transactionMetaWithHash,
@@ -1191,82 +1217,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   async callAndReturnResult(signer: Account | AccountInterface, transactionDetails: DojoCall | Call) {
     const tx = await this.call(this.namespace ?? NAMESPACE, transactionDetails);
     return tx;
-  }
-
-  /**
-   * Register a player for Blitz Realm
-   *
-   * @param props - Properties for registration
-   * @param props.entryTokenAddress - Optional ERC721 contract address for entry tokens
-   * @param props.signer - Account executing the transaction
-   * @returns Transaction receipt
-   */
-  public async blitz_realm_obtain_entry_token(props: SystemProps.BlitzRealmObtainEntryTokenProps) {
-    const { signer, feeToken, feeAmount } = props;
-    const blitzRealmSystemsAddress = getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`);
-
-    const calls: Call[] = [];
-
-    if (feeToken && feeAmount !== undefined) {
-      try {
-        const amountBigInt = typeof feeAmount === "bigint" ? feeAmount : BigInt(feeAmount as any);
-        if (amountBigInt > 0n) {
-          const amountUint256 = uint256.bnToUint256(amountBigInt);
-          calls.push({
-            contractAddress: feeToken,
-            entrypoint: "approve",
-            calldata: CallData.compile([blitzRealmSystemsAddress, amountUint256.low, amountUint256.high]),
-          });
-        }
-      } catch (error) {
-        console.error("Failed to prepare approval for entry token fee", error);
-      }
-    }
-
-    calls.push({
-      contractAddress: blitzRealmSystemsAddress,
-      entrypoint: "obtain_entry_token",
-      calldata: [],
-    });
-
-    const callArgs: AllowArray<Call> = calls.length === 1 ? calls[0] : calls;
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: callArgs,
-      transactionType: TransactionType.OBTAIN_ENTRY_TOKEN,
-    });
-  }
-
-  public async blitz_realm_register(props: SystemProps.BlitzRealmRegisterProps) {
-    const { signer, name, tokenId, entryTokenAddress, lockId } = props;
-
-    const registerCall: Call = {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-blitz_realm_systems`),
-      entrypoint: "register",
-      calldata: [name, tokenId, 0],
-    };
-
-    if (entryTokenAddress) {
-      const tokenIdUint256 = uint256.bnToUint256(tokenId);
-      const entryTokenContractAddress =
-        typeof entryTokenAddress === "string" && entryTokenAddress.startsWith("0x")
-          ? entryTokenAddress
-          : `0x${BigInt(entryTokenAddress as string).toString(16)}`;
-
-      const tokenLockCall: Call = {
-        contractAddress: entryTokenContractAddress,
-        entrypoint: "token_lock",
-        calldata: CallData.compile([tokenIdUint256, lockId ?? 69]),
-      };
-
-      return await this.promiseQueue.enqueue({
-        signer,
-        calls: [tokenLockCall, registerCall],
-        transactionType: TransactionType.REGISTER,
-      });
-    }
-
-    return await this.promiseQueue.enqueue({ signer, calls: registerCall, transactionType: TransactionType.REGISTER });
   }
 
   /**
@@ -1439,47 +1389,22 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
-    transactionMeta?: TransactionLifecycleMeta,
+    _transactionMeta?: TransactionLifecycleMeta,
   ): Promise<GetTransactionReceiptResponse> {
-    let receipt;
-    const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
-    const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
-    try {
-      receipt = await this.provider.waitForTransaction(transactionHash, {
-        retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
-        successStates: TX_WAIT_SUCCESS_STATES,
-      });
-    } catch (error) {
-      console.error(`Error waiting for transaction ${transactionHash}`, {
-        error,
-        nodeUrl,
-        manifestRpcUrl,
-        worldAddress: this.manifest?.world?.address,
-      });
-      throw attachTransactionFailureStage(error, "confirmation");
+    if (!this.transactionStreamWaiter) {
+      return {
+        statusReceipt: "PENDING",
+        transaction_hash: transactionHash,
+      } as unknown as GetTransactionReceiptResponse;
     }
 
-    const receiptAny = receipt as any;
+    const transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
+      throw attachTransactionFailureStage(error, "confirmation");
+    });
 
-    // Check if the transaction was reverted and throw an error if it was
-    if (receipt.isReverted()) {
-      const revertReason = extractErrorMessage(
-        {
-          execution_error: receiptAny?.execution_error,
-          executionError: receiptAny?.executionError,
-          revert_reason: receiptAny?.revert_reason,
-          revertReason: receiptAny?.revertReason,
-          reason: receiptAny?.reason,
-          message: receiptAny?.message,
-          details: receiptAny?.details,
-        },
-        "Unknown revert reason",
-      );
-      // Keep the untouched receipt reason alongside the extracted one so the
-      // failure payload can carry the full trace verbatim.
-      const rawRevertReason = [receiptAny?.revert_reason, receiptAny?.execution_error].find(
-        (value): value is string => typeof value === "string" && value.length > 0,
-      );
+    if (transaction.status === "REVERTED") {
+      const rawRevertReason = transaction.revertReason;
+      const revertReason = extractErrorMessage(rawRevertReason, "Unknown revert reason");
       const message = `Transaction failed with reason: ${revertReason}`;
       const revertError = attachTransactionFailureStage(new Error(message), "revert", message);
       if (rawRevertReason !== undefined) {
@@ -1488,7 +1413,12 @@ export class EternumProvider extends EnhancedDojoProvider {
       throw revertError;
     }
 
-    return receipt;
+    return {
+      block_number: transaction.block,
+      finality_status: transaction.status,
+      statusReceipt: transaction.status,
+      transaction_hash: transaction.hash,
+    } as GetTransactionReceiptResponse;
   }
 
   public async bridge_withdraw_from_realm(props: SystemProps.BridgeWithdrawFromRealmProps) {
@@ -1753,15 +1683,9 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_village(props: SystemProps.CreateVillageProps) {
-    const { village_pass_token_id, connected_realm, direction, village_pass_address, signer } = props;
+    const { village_pass_token_id, connected_realm, direction, signer } = props;
 
     let callData: Call[] = [];
-
-    const approvalForAllCall: Call = {
-      contractAddress: village_pass_address,
-      entrypoint: "set_approval_for_all",
-      calldata: [getContractByName(this.manifest, `${this.namespace}-village_systems`), true],
-    };
 
     if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
       const requestRandomCall: Call = {
@@ -1781,7 +1705,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: [approvalForAllCall, ...callData, createCall],
+      calls: [...callData, createCall],
       transactionType: TransactionType.CREATE,
     });
   }
@@ -1826,41 +1750,21 @@ export class EternumProvider extends EnhancedDojoProvider {
    * ```
    */
   public async create_multiple_realms(props: SystemProps.CreateMultipleRealmsProps) {
-    let { realms, owner, frontend, signer, season_pass_address } = props;
+    const { realms, owner, signer } = props;
 
     const realmSystemsContractAddress = getContractByName(this.manifest, `${this.namespace}-realm_systems`);
-
-    const approvalForAllTx: QueueableTransaction = {
-      signer,
-      calls: {
-        contractAddress: season_pass_address,
-        entrypoint: "set_approval_for_all",
-        calldata: [realmSystemsContractAddress, true],
-      },
-      transactionType: TransactionType.CREATE,
-    };
 
     const createTxs: QueueableTransaction[] = realms.map((realm) => ({
       signer,
       calls: {
         contractAddress: realmSystemsContractAddress,
         entrypoint: "create",
-        calldata: [owner, realm.realm_id, frontend, realm.realm_settlement],
+        calldata: [owner, realm.realm_id, realm.realm_settlement],
       },
       transactionType: TransactionType.CREATE,
     }));
 
-    const approvalCloseForAllTx: QueueableTransaction = {
-      signer,
-      calls: {
-        contractAddress: season_pass_address,
-        entrypoint: "set_approval_for_all",
-        calldata: [realmSystemsContractAddress, false],
-      },
-      transactionType: TransactionType.CREATE,
-    };
-
-    const txs = [approvalForAllTx, ...createTxs, approvalCloseForAllTx];
+    const txs = createTxs;
     return await Promise.all(txs.map((tx) => this.promiseQueue.enqueue(tx)));
   }
 
@@ -3085,6 +2989,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [explorer_id],
     });
 
+    this.emit("transactionProgress", {
+      stage: "explore_calls_built",
+      type: TransactionType.EXPLORE,
+      explorerId: explorer_id,
+      signerAddress: this.getSignerAddress(signer),
+    });
+
     return await this.promiseQueue.enqueue({ signer, calls: callData, transactionType: TransactionType.EXPLORE });
   }
 
@@ -3609,37 +3520,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_mmr_config(props: SystemProps.SetMMRConfigProps) {
-    const {
-      enabled,
-      mmr_token_address,
-      distribution_mean,
-      spread_factor,
-      max_delta,
-      k_factor,
-      lobby_split_weight_scaled,
-      mean_regression_scaled,
-      min_players,
-      signer,
-    } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-config_systems`),
-      entrypoint: "set_mmr_config",
-      calldata: [
-        enabled,
-        mmr_token_address,
-        distribution_mean,
-        spread_factor,
-        max_delta,
-        k_factor,
-        lobby_split_weight_scaled,
-        mean_regression_scaled,
-        min_players,
-      ],
-    });
-  }
-
   public async set_travel_food_cost_config(props: SystemProps.SetTravelFoodCostConfigProps) {
     const {
       config_id,
@@ -3667,9 +3547,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_season_config(props: SystemProps.SetSeasonConfigProps) {
     const {
       dev_mode_on,
-      season_pass_address,
-      realms_address,
-      lords_address,
       start_settling_at,
       start_main_at,
       end_at,
@@ -3683,9 +3560,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_season_config",
       calldata: [
         dev_mode_on,
-        season_pass_address,
-        realms_address,
-        lords_address,
         start_settling_at,
         start_main_at,
         end_at,
@@ -3758,16 +3632,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         min_spawn_lords_amount,
         max_spawn_lords_amount,
       ],
-    });
-  }
-
-  public async set_village_token_config(props: SystemProps.SetVillageTokenProps) {
-    const { village_mint_initial_recipient, village_pass_nft_address, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-config_systems`),
-      entrypoint: "set_village_token_config",
-      calldata: [village_pass_nft_address, village_mint_initial_recipient],
     });
   }
 
@@ -4167,71 +4031,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async blitz_prize_claim(props: SystemProps.BlitzPrizeClaimProps) {
-    const { players, signer } = props;
-
-    const calls = [];
-    if (this.VRF_PROVIDER_ADDRESS !== undefined && Number(this.VRF_PROVIDER_ADDRESS) !== 0) {
-      const requestRandomCall: Call = {
-        contractAddress: this.VRF_PROVIDER_ADDRESS!,
-        entrypoint: "request_random",
-        calldata: [getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`), 0, signer.address],
-      };
-
-      calls.push(requestRandomCall);
-    }
-
-    calls.push({
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`),
-      entrypoint: "blitz_prize_claim",
-      calldata: [players.length, ...players],
-    });
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: calls,
-      transactionType: TransactionType.BLITZ_PRIZE_CLAIM,
-    });
-  }
-
-  // Blitz prize: single-registrant no-game claim
-  public async blitz_prize_claim_no_game(props: SystemProps.BlitzPrizeClaimNoGameProps) {
-    const { registered_player, signer } = props;
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-prize_distribution_systems`),
-        entrypoint: "blitz_prize_claim_no_game",
-        calldata: [registered_player],
-      },
-      transactionType: TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME,
-    });
-  }
-
-  // MMR system calls - commit and claim in a single transaction
-  public async commit_and_claim_game_mmr(props: SystemProps.CommitGameMMRProps) {
-    const { players, signer } = props;
-
-    const calls = [
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-mmr_systems`),
-        entrypoint: "commit_game_mmr_meta",
-        calldata: [players.length, ...players],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-mmr_systems`),
-        entrypoint: "claim_game_mmr",
-        calldata: [players.length, ...players],
-      },
-    ];
-
-    return await this.promiseQueue.enqueue({
-      signer,
-      calls: calls,
-      transactionType: TransactionType.COMMIT_AND_CLAIM_MMR,
-    });
-  }
-
   public async claim_construction_points(props: SystemProps.ClaimConstructionPointsProps) {
     const { hyperstructure_ids, player, signer } = props;
 
@@ -4312,30 +4111,10 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async grant_collectible_minter_role(props: {
-    collectible_address: string;
-    minter_address: string;
-    signer: Account | AccountInterface;
-  }) {
-    const { collectible_address, minter_address, signer } = props;
-    const MINTER_ROLE = "0x032df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6";
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: collectible_address,
-      entrypoint: "grant_role",
-      calldata: [MINTER_ROLE, minter_address],
-    });
-  }
-
   public async set_blitz_registration_config(props: SystemProps.SetBlitzRegistrationConfigProps) {
     const {
-      fee_token,
-      fee_recipient,
-      fee_amount,
       registration_count_max,
       registration_start_at,
-      entry_token_class_hash,
-      entry_token_deploy_calldata,
-      entry_token_ipfs_cid,
       collectibles_cosmetics_max,
       collectibles_cosmetics_address,
       collectibles_timelock_address,
@@ -4347,17 +4126,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, `${this.namespace}-config_systems`),
       entrypoint: "set_blitz_registration_config",
       calldata: [
-        fee_token,
-        fee_recipient,
-        fee_amount,
-        0,
         registration_count_max,
         registration_start_at,
-        entry_token_class_hash,
-        entry_token_deploy_calldata.length,
-        ...entry_token_deploy_calldata,
-        entry_token_ipfs_cid,
-
         collectibles_cosmetics_max,
         collectibles_cosmetics_address,
         collectibles_timelock_address,

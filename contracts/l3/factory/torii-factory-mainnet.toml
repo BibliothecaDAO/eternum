@@ -1,0 +1,34 @@
+# Please be mindful that changing the content of this file will impact the Eternum Launcher app
+
+rpc = "https://rpc.starknet.lava.build"
+
+world_address = "0x6ca129bc7a71e27c2d4584538b05acf44c4900e54b409d19f536909b2886a39"
+
+db_dir = "torii-mainnet"
+
+[indexing]
+events_chunk_size = 1024  # Size of events page to fetch
+blocks_chunk_size = 10240 # Blocks to process before DB commit
+
+pending = true # Enable indexing pending blocks
+
+polling_interval = 500 # Polling interval in milliseconds
+
+max_concurrent_tasks = 100 # Maximum concurrent indexing tasks
+
+transactions = true
+
+contracts = []
+
+namespaces = ["wf"]
+
+world_block = 0
+
+[sql]
+all_model_indices = false
+
+[server]
+http_cors_origins = ["*"]
+
+[events]
+raw = false

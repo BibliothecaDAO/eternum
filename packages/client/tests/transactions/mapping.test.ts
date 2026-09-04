@@ -486,14 +486,12 @@ describe("transaction payload mapping", () => {
       villagePassTokenId: 2,
       connectedRealm: 3,
       direction: 4,
-      villagePassAddress: "0xVillage",
     });
     expect(provider.create_village).toHaveBeenCalledWith({
       signer,
       village_pass_token_id: 2,
       connected_realm: 3,
       direction: 4,
-      village_pass_address: "0xVillage",
     });
 
     await tx.setName(signer, { entityId: 5, name: 6 });

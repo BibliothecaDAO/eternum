@@ -1,9 +1,4 @@
-import type {
-  GameSyncAuthoritativeObservation,
-  GameSyncEntity,
-  GameSyncEntityStoreOperation,
-  GameSyncStore,
-} from "./game-sync-types";
+import type { GameSyncEntity, GameSyncEntityStoreOperation, GameSyncStore } from "./game-sync-types";
 import type { GameSyncScheduler } from "./scheduler";
 
 type UpsertStep = {
@@ -43,6 +38,9 @@ interface DrainWaiter {
 
 export interface EntityIngestBatchInfo {
   applyDurationMs: number;
+  /** Event effects applied in the slice; kept apart so the entity count stays comparable with rows received. */
+  eventCount: number;
+  /** Entity component writes and removals applied in the slice. */
   operationCount: number;
 }
 
@@ -51,20 +49,20 @@ interface EntityIngestQueueOptions {
   store: GameSyncStore;
   now: () => number;
   onBatchApplied?: (info: EntityIngestBatchInfo) => void;
-  onAuthoritativeObservationsApplied?: (observations: readonly GameSyncAuthoritativeObservation[]) => void;
 }
 
 const isEmptyModel = (model: unknown): boolean =>
   typeof model === "object" && model !== null && !Array.isArray(model) && Object.keys(model).length === 0;
 
-const MAX_APPLY_SLICE_MS = 25;
+// One frame's budget, the same number the scene's work queue uses.
+const MAX_APPLY_SLICE_MS = 6;
 // The wall-clock slice is the normal yield boundary. This cap only protects
 // against a pathological delivery growing a single store write without bound.
 const MAX_ENTITY_CHANGES_PER_STORE_WRITE = 1_000;
 
 const mergeEntityModel = (entities: Map<string, GameSyncEntity>, entityId: string, model: string, value: unknown) => {
   const existing = entities.get(entityId);
-  // Torii deliveries are partial per model member. Coalescing two partials for
+  // StoreUpdateMember deliveries are partial per model member. Coalescing two partials for
   // the same entity+model must union their members — replacing wholesale drops
   // every earlier member of a same-frame burst (e.g. a provision tx) before it
   // ever reaches the store.
@@ -87,9 +85,6 @@ export class EntityIngestQueue {
   private readonly store: GameSyncStore;
   private readonly now: () => number;
   private readonly onBatchApplied?: (info: EntityIngestBatchInfo) => void;
-  private readonly onAuthoritativeObservationsApplied?: (
-    observations: readonly GameSyncAuthoritativeObservation[],
-  ) => void;
   private steps: IngestStep[] = [];
   private drainWaiters: DrainWaiter[] = [];
   private cancelScheduledFlush: (() => void) | null = null;
@@ -97,14 +92,14 @@ export class EntityIngestQueue {
   private disposed = false;
   private nextOperationId = 1;
   private appliedOperationId = 0;
+  private flushThroughOperationId = 0;
   private failure: Error | null = null;
 
-  constructor({ scheduler, store, now, onBatchApplied, onAuthoritativeObservationsApplied }: EntityIngestQueueOptions) {
+  constructor({ scheduler, store, now, onBatchApplied }: EntityIngestQueueOptions) {
     this.scheduler = scheduler;
     this.store = store;
     this.now = now;
     this.onBatchApplied = onBatchApplied;
-    this.onAuthoritativeObservationsApplied = onAuthoritativeObservationsApplied;
   }
 
   public enqueueEntity(entity: GameSyncEntity): void {
@@ -132,6 +127,40 @@ export class EntityIngestQueue {
     this.scheduleFlush();
   }
 
+  public enqueueEntityBatch(entities: readonly GameSyncEntity[], immediate = false): Promise<void> {
+    if (this.disposed || entities.length === 0) return Promise.resolve();
+
+    const step: UpsertStep = { type: "upsert", entities: new Map(), operationId: 0 };
+    const removals: Array<{ entityId: string; models: string[] }> = [];
+    entities.forEach((entity) => {
+      const entries = Object.entries(entity.models ?? {});
+      const removedModels = entries.filter(([, value]) => isEmptyModel(value)).map(([model]) => model);
+      entries
+        .filter(([, value]) => !isEmptyModel(value))
+        .forEach(([model, value]) => mergeEntityModel(step.entities, entity.hashed_keys, model, value));
+      if (removedModels.length > 0) removals.push({ entityId: entity.hashed_keys, models: removedModels });
+    });
+    if (step.entities.size > 0) {
+      step.operationId = this.nextOperationId++;
+      this.steps.push(step);
+    }
+    removals.forEach(({ entityId, models }) =>
+      this.enqueueEntityBarrier({ type: "remove-components", entityId, models }),
+    );
+
+    const operationId = this.nextOperationId - 1;
+    if (operationId <= this.appliedOperationId) return Promise.resolve();
+    if (immediate) {
+      this.flushThroughOperationId = Math.max(this.flushThroughOperationId, operationId);
+      this.cancelScheduledFlush?.();
+      this.cancelScheduledFlush = null;
+      void this.flush();
+    } else {
+      this.scheduleFlush();
+    }
+    return this.waitForOperation(operationId);
+  }
+
   public enqueueComponentRemoval(entityId: string, model: string): void {
     if (this.disposed) return;
     this.enqueueEntityBarrier({ type: "remove-components", entityId, models: [model] });
@@ -146,6 +175,10 @@ export class EntityIngestQueue {
 
   public drain(): Promise<void> {
     const operationId = this.nextOperationId - 1;
+    return this.waitForOperation(operationId);
+  }
+
+  private waitForOperation(operationId: number): Promise<void> {
     if (this.failure) return Promise.reject(this.failure);
     if (operationId <= this.appliedOperationId || this.disposed) return Promise.resolve();
 
@@ -193,22 +226,24 @@ export class EntityIngestQueue {
     this.flushing = true;
     const startedAt = this.now();
     let operationCount = 0;
+    let eventCount = 0;
 
     try {
       while (this.steps.length > 0) {
         const batch = this.takeNextApplyBatch();
         await this.applyBatch(batch);
-        operationCount += batch.operationCount;
+        if (batch.type === "event") eventCount += 1;
+        else operationCount += batch.operationCount;
         if (batch.completedOperationIds.length > 0) {
           this.appliedOperationId = Math.max(this.appliedOperationId, ...batch.completedOperationIds);
         }
-        if (this.now() - startedAt >= MAX_APPLY_SLICE_MS) {
+        if (this.now() - startedAt >= MAX_APPLY_SLICE_MS && this.appliedOperationId >= this.flushThroughOperationId) {
           break;
         }
       }
 
-      if (operationCount > 0) {
-        this.onBatchApplied?.({ applyDurationMs: this.now() - startedAt, operationCount });
+      if (operationCount > 0 || eventCount > 0) {
+        this.onBatchApplied?.({ applyDurationMs: this.now() - startedAt, eventCount, operationCount });
       }
     } catch (error) {
       this.failure = error instanceof Error ? error : new Error(String(error));
@@ -253,9 +288,12 @@ export class EntityIngestQueue {
       }
 
       const remainingCapacity = MAX_ENTITY_CHANGES_PER_STORE_WRITE - entityChangeCount;
-      const entries = [...step.entities.entries()].slice(0, remainingCapacity);
-      const entities = entries.map(([, entity]) => entity);
-      entries.forEach(([entityId]) => step.entities.delete(entityId));
+      const entities: GameSyncEntity[] = [];
+      for (const [entityId, entity] of step.entities) {
+        if (entities.length >= remainingCapacity) break;
+        entities.push(entity);
+        step.entities.delete(entityId);
+      }
       operations.push({ type: "upsert", entities });
       entityChangeCount += entities.length;
       operationCount += entities.reduce((count, entity) => count + Object.keys(entity.models).length, 0);
@@ -274,8 +312,7 @@ export class EntityIngestQueue {
       return;
     }
 
-    const observations = await this.store.applyEntityOperations(batch.operations);
-    this.onAuthoritativeObservationsApplied?.(observations ?? []);
+    await this.store.applyEntityOperations(batch.operations);
   }
 
   private resolveDrainWaiters(): void {

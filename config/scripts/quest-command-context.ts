@@ -1,16 +1,16 @@
 import { EternumProvider } from "@bibliothecadao/provider";
 import { getGameManifest } from "@contracts";
+import type { GameChain } from "@realms-world/chain";
 import { Account } from "starknet";
 import { confirmNonLocalDeployment } from "../utils/confirmation";
-import { logNetwork, saveResolvedConfigJson, type GameType, type NetworkType } from "../utils/environment";
-import { type Chain } from "../utils/utils";
+import { logNetwork, saveResolvedConfigJson, type GameType } from "../utils/environment";
 
 const VALID_GAME_TYPES: GameType[] = ["blitz", "eternum"];
 
 export interface QuestCommandContext {
   account: Account;
   gameType: GameType;
-  network: NetworkType;
+  network: GameChain;
   provider: EternumProvider;
 }
 
@@ -27,7 +27,7 @@ export function resolveQuestGameTypeArg(argv: string[]): GameType {
 }
 
 export async function createQuestCommandContext(gameType: GameType): Promise<QuestCommandContext> {
-  const network = process.env.VITE_PUBLIC_CHAIN as NetworkType;
+  const network = process.env.VITE_PUBLIC_CHAIN as GameChain;
   const accountAddress = process.env.VITE_PUBLIC_MASTER_ADDRESS;
   const privateKey = process.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
   const nodeUrl = process.env.VITE_PUBLIC_NODE_URL;
@@ -37,7 +37,7 @@ export async function createQuestCommandContext(gameType: GameType): Promise<Que
   await saveResolvedConfigJson(network, gameType);
   logNetwork(network);
 
-  const manifest = await getGameManifest(network as Chain, gameType);
+  const manifest = await getGameManifest(network, gameType);
   const provider = new EternumProvider(manifest, nodeUrl, vrfProviderAddress);
   const account = new Account({
     provider: provider.provider,

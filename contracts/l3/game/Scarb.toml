@@ -1,0 +1,68 @@
+[package]
+cairo-version = "2.13.1"
+name = "eternum"
+version = "1.0.0"
+edition = "2024_07"
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+starknet = "2.13.1"
+dojo = "1.8.0"
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
+alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
+achievement = { git = "https://github.com/cartridge-gg/arcade", rev = "817a0ef" }
+cubit = { git = "https://github.com/credence0x/cubit.git", branch = "feat/cairo-2.9.2" }
+#budokan = { git = "https://github.com/credence0x/tournaments.git", rev="0e58edb" }
+
+[dev-dependencies]
+snforge_std = "0.51.2"
+assert_macros = "2.13"
+dojo_snf_test = "1.8.0"
+openzeppelin_token = "2.0.0"
+openzeppelin = "2.0.0"
+
+[[target.starknet-contract]]
+casm = true
+build-external-contracts = [
+	"dojo::world::world_contract::world",
+	"achievement::events::index::e_TrophyCreation",
+	"achievement::events::index::e_TrophyProgression",
+#	"budokan::components::tests::mocks::game_mock::game_mock",
+#	"budokan::components::models::game::m_GameMetadata",
+#	"budokan::components::models::game::m_GameCounter",
+#	"budokan::components::models::game::m_TokenMetadata",
+#	"budokan::components::models::game::m_Score",
+#	"budokan::components::models::game::m_Settings",
+#	"budokan::components::models::game::m_SettingsCounter",
+#	"budokan::components::models::game::m_SettingsDetails",
+
+]
+
+[tool.scarb]
+allow-prebuilt-plugins = ["dojo_cairo_macros"]
+
+[scripts]
+test = "snforge test"
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120
+
+[profile.local]
+
+[profile.sepolia]
+
+[profile.mainnet]
+
+# appchain M0 spike (deploy/appchain/spike); dojo_spike.toml is generated + gitignored
+[profile.spike]
+
+# Shared Realms appchain builds; each profile deploys the same classes as a distinct world.
+[profile.appchain-blitz]
+
+[profile.appchain-eternum]
+
+# Madara lab (deploy/madara-lab); dojo_madara.toml targets the local Madara devnet.
+[profile.madara]

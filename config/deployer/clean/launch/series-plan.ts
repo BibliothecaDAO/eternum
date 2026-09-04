@@ -1,8 +1,3 @@
-import {
-  isEternumDeploymentEnvironment,
-  isMainnetDeploymentEnvironment,
-  resolveDeploymentEnvironment,
-} from "../environment";
 import type { DeploymentEnvironmentId, LaunchGameStepId, LaunchSeriesStepId } from "../types";
 
 export const SERIES_GAME_STEP_BY_GROUPED_STEP: Record<
@@ -11,45 +6,10 @@ export const SERIES_GAME_STEP_BY_GROUPED_STEP: Record<
 > = {
   "create-worlds": "create-world",
   "wait-for-factory-indexes": "wait-for-factory-index",
-  "configure-worlds": "configure-world",
-  "reserve-blitz-hyperstructures": "reserve-blitz-hyperstructures",
-  "grant-lootchest-roles": "grant-lootchest-role",
-  "grant-village-pass-roles": "grant-village-pass-role",
-  "create-banks": "create-banks",
-  "create-indexers": "create-indexer",
-  "sync-paymaster": "sync-paymaster",
 };
 
-export function resolveSeriesLaunchStepIds(environmentId: DeploymentEnvironmentId): LaunchSeriesStepId[] {
-  const environment = resolveDeploymentEnvironment(environmentId);
-  if (!isMainnetDeploymentEnvironment(environment)) {
-    return ["create-series", "create-worlds", "wait-for-factory-indexes"];
-  }
-
-  const stepIds: LaunchSeriesStepId[] = [
-    "create-series",
-    "create-worlds",
-    "wait-for-factory-indexes",
-    "configure-worlds",
-  ];
-
-  if (!isEternumDeploymentEnvironment(environment)) {
-    stepIds.push("reserve-blitz-hyperstructures");
-  }
-
-  stepIds.push("grant-lootchest-roles");
-
-  if (isEternumDeploymentEnvironment(environment)) {
-    stepIds.push("grant-village-pass-roles", "create-banks");
-  }
-
-  stepIds.push("create-indexers");
-
-  if (isMainnetDeploymentEnvironment(environment)) {
-    stepIds.push("sync-paymaster");
-  }
-
-  return stepIds;
+export function resolveSeriesLaunchStepIds(_environmentId: DeploymentEnvironmentId): LaunchSeriesStepId[] {
+  return ["create-series", "create-worlds", "wait-for-factory-indexes"];
 }
 
 export function resolveSeriesLaunchStepTitle(stepId: LaunchSeriesStepId): string {
@@ -60,19 +20,5 @@ export function resolveSeriesLaunchStepTitle(stepId: LaunchSeriesStepId): string
       return "Creating games";
     case "wait-for-factory-indexes":
       return "Waiting for games";
-    case "configure-worlds":
-      return "Applying settings";
-    case "reserve-blitz-hyperstructures":
-      return "Reserving hyperstructures";
-    case "grant-lootchest-roles":
-      return "Setting up loot chests";
-    case "grant-village-pass-roles":
-      return "Setting up village pass";
-    case "create-banks":
-      return "Preparing banks";
-    case "create-indexers":
-      return "Finishing setup";
-    case "sync-paymaster":
-      return "Setting up gas coverage";
   }
 }

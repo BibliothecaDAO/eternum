@@ -7,7 +7,6 @@ import {
   messageContentSchema,
   metadataSchema,
   playerIdSchema,
-  starknetAddressSchema,
   timestampSchema,
   zoneIdSchema,
 } from "./shared";
@@ -16,7 +15,6 @@ const MAX_MESSAGE_BATCH = 100;
 
 export const worldChatSenderSchema = z.object({
   playerId: playerIdSchema,
-  walletAddress: starknetAddressSchema.optional(),
   displayName: displayNameSchema.optional(),
   avatarUrl: z.string().url().optional(),
 });
@@ -39,7 +37,7 @@ export const worldChatPublishSchema = z.object({
 });
 
 export const worldChatHistoryQuerySchema = z.object({
-  zoneId: zoneIdSchema.optional(),
+  zoneId: zoneIdSchema,
   cursor: z.string().optional(),
   limit: z.number().int().min(1).max(MAX_MESSAGE_BATCH).optional(),
   since: timestampSchema.optional(),

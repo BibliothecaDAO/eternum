@@ -9,27 +9,8 @@ import {
   runQuery,
 } from "@dojoengine/recs";
 import { getGuildFromPlayerAddress, getRealmCountPerHyperstructure } from "../utils";
+import { decodeHyperstructureShares } from "../utils/hyperstructure-shareholders";
 import { belongsToActiveGame, ClientConfigManager, gameEntityKey } from "./config-manager";
-
-interface ContractAddressAndAmount {
-  key: false;
-  type: "tuple";
-  type_name: "(ContractAddress, u16)";
-  value: [
-    {
-      key: false;
-      type: "primitive";
-      type_name: "ContractAddress";
-      value: string;
-    },
-    {
-      key: false;
-      type: "primitive";
-      type_name: "u16";
-      value: number;
-    },
-  ];
-}
 
 interface PendingSharePointsClaim {
   claimedPoints: number;
@@ -68,8 +49,6 @@ export class LeaderboardManager {
     unregisteredShareholderPointsUpdateInterval: number = 10000,
   ) {
     this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
-    // Start the periodic update for unregistered shareholder points
-    this.startUnregisteredShareholderPointsUpdater();
   }
 
   public static instance(components: ClientComponents, unregisteredShareholderPointsUpdateInterval?: number) {
@@ -172,17 +151,6 @@ export class LeaderboardManager {
   }
 
   /**
-   * Start periodic updater for unregistered shareholder points
-   */
-  private startUnregisteredShareholderPointsUpdater() {
-    // Don't immediately update in constructor - let initialize() or updatePoints() handle initial population
-    // this.updateUnregisteredShareholderPointsCache();
-    setInterval(() => {
-      this.updateUnregisteredShareholderPointsCache();
-    }, this.unregisteredShareholderPointsUpdateInterval);
-  }
-
-  /**
    * Update unregistered shareholder points cache if enough time has passed
    */
   private updateUnregisteredShareholderPointsCacheIfNeeded() {
@@ -235,7 +203,7 @@ export class LeaderboardManager {
       }
 
       const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
-      const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
+      const shareholders = decodeHyperstructureShares(hyperstructureShareholders.shareholders);
       const startTimestamp = Number(hyperstructureShareholders.start_at);
       if (startTimestamp === 0) continue;
       const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
@@ -243,9 +211,8 @@ export class LeaderboardManager {
       // Aggregate shareholder percentages by player address to handle duplicates
       const playerShareholderMap = new Map<ContractAddress, number>();
 
-      for (const share of shareholders) {
-        const playerAddress = ContractAddress(share.value[0].value);
-        const shareholderPercentage = Number(share.value[1].value) / 10_000; // Convert from basis points to decimal
+      for (const { playerAddress, basisPoints } of shareholders) {
+        const shareholderPercentage = Number(basisPoints) / 10_000;
 
         // Add to existing percentage or set new percentage
         const existingPercentage = playerShareholderMap.get(playerAddress) || 0;
@@ -331,13 +298,12 @@ export class LeaderboardManager {
     );
     if (!hyperstructureShareholders) return;
 
-    const coOwners = (hyperstructureShareholders.shareholders as any).map((owner: any) => {
-      const [owner_address, percentage] = owner.value.map((value: any) => value.value);
-      return {
-        address: ContractAddress(owner_address),
-        percentage: Number(percentage),
-      };
-    });
+    const coOwners = decodeHyperstructureShares(hyperstructureShareholders.shareholders).map(
+      ({ playerAddress, basisPoints }) => ({
+        address: playerAddress,
+        percentage: Number(basisPoints),
+      }),
+    );
 
     return { coOwners, timestamp: Number(hyperstructureShareholders.start_at) };
   }
@@ -373,15 +339,15 @@ export class LeaderboardManager {
     for (const { value: hyperstructureShareholders } of this.activeGameRows(
       this.components.HyperstructureShareholders,
     )) {
-      const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
+      const shareholders = decodeHyperstructureShares(hyperstructureShareholders.shareholders);
       const startTimestamp = Number(hyperstructureShareholders.start_at);
 
       // Aggregate shareholder percentages for the specific player to handle duplicates
       let totalShareholderPercentage = 0;
 
       for (const share of shareholders) {
-        if (ContractAddress(share.value[0].value) === playerAddress) {
-          const shareholderPercentage = Number(share.value[1].value) / 10_000; // Convert from basis points to decimal
+        if (share.playerAddress === playerAddress) {
+          const shareholderPercentage = Number(share.basisPoints) / 10_000;
           totalShareholderPercentage += shareholderPercentage;
         }
       }
@@ -472,13 +438,11 @@ export class LeaderboardManager {
 
     if (!hyperstructureShareholders) return 0;
 
-    const shareholders = hyperstructureShareholders.shareholders as unknown as ContractAddressAndAmount[];
-
-    const playerShare = shareholders.find(
-      (share: ContractAddressAndAmount) => ContractAddress(share.value[0].value) === playerAddress,
+    const playerShare = decodeHyperstructureShares(hyperstructureShareholders.shareholders).find(
+      (share) => share.playerAddress === playerAddress,
     );
 
-    return playerShare ? Number(playerShare.value[1].value / 10_000) : 0;
+    return playerShare ? Number(playerShare.basisPoints) / 10_000 : 0;
   }
 
   public getHyperstructuresWithSharesFromPlayer = (address: ContractAddress) => {

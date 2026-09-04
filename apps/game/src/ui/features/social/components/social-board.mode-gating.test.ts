@@ -1,0 +1,17 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+describe("SocialBoard tab mode gating", () => {
+  it("gates blitz and faith tabs by resolved world mode", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/ui/features/social/components/social-board.tsx"), "utf8");
+
+    expect(source).toContain('const isBlitzMode = resolvedWorldMode === "blitz";');
+    expect(source).toContain('const isEternumMode = resolvedWorldMode === "eternum";');
+    expect(source).toContain("if (isEternumMode) {");
+    expect(source).toContain("if (isBlitzMode) {");
+    expect(source).not.toContain("mmrEnabled");
+    expect(source).not.toContain("hasPrizeInfra");
+  });
+});

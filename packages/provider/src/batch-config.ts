@@ -65,8 +65,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.REGISTER]: TransactionCostCategory.HIGH,
   [TransactionType.SEASON_CLOSE]: TransactionCostCategory.HIGH,
   [TransactionType.END_GAME]: TransactionCostCategory.HIGH,
-  [TransactionType.BLITZ_PRIZE_CLAIM]: TransactionCostCategory.HIGH,
-  [TransactionType.BLITZ_PRIZE_CLAIM_NO_GAME]: TransactionCostCategory.HIGH,
 
   // ============================================
   // MEDIUM COST (5) - State Writes, Transfers
@@ -194,7 +192,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
 
   // Settlement
   [TransactionType.ASSIGN_REALM_POSITIONS]: TransactionCostCategory.LOW,
-  [TransactionType.OBTAIN_ENTRY_TOKEN]: TransactionCostCategory.LOW,
   [TransactionType.TOKEN_LOCK]: TransactionCostCategory.LOW,
 
   // Quests
@@ -231,7 +228,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_VRF_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_RESOURCE_BRIDGE_FEE_SPLIT_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_AGENT_CONFIG]: TransactionCostCategory.LOW,
-  [TransactionType.SET_VILLAGE_TOKEN_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_CAPACITY_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_DONKEY_SPEED_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_RESOURCE_WEIGHT_CONFIG]: TransactionCostCategory.LOW,

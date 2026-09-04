@@ -3,7 +3,7 @@ name: test mmr
 on:
   pull_request:
     paths:
-      - "contracts/mmr/**"
+      - "contracts/l2/mmr/**"
       - ".github/workflows/test-mmr.yml"
 
 jobs:
@@ -18,4 +18,4 @@ jobs:
         with:
           tool-versions: .tool-versions
       - name: Run MMR tests
-        run: cd contracts/mmr && snforge test
+        run: cd contracts/l2/mmr && snforge test

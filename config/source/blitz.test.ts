@@ -32,7 +32,7 @@ function findBlitzExplorationReward(
 
 function extractContractRewardRows(functionName: string) {
   const contractSource = readFileSync(
-    new URL("../../contracts/game/src/systems/utils/blitz_exploration.cairo", import.meta.url),
+    new URL("../../contracts/l3/game/src/systems/utils/blitz_exploration.cairo", import.meta.url),
     "utf8",
   );
   const functionMatch = contractSource.match(
@@ -109,7 +109,7 @@ describe("Blitz balance profiles", () => {
     const baseConfig = getConfigFromNetwork("appchain", "blitz");
     const resolvedConfig = resolveBlitzConfigForDuration("appchain", 45);
 
-    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(200);
+    expect(baseConfig.troop.limit.mercenariesTroopUpperBound).toBe(1_600);
     expect(resolvedConfig.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
     expect(resolvedConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood]).toBe(
       baseConfig.resources.productionByComplexRecipeOutputs[ResourcesIds.Wood],

@@ -96,7 +96,7 @@ describe("EntityIngestQueue", () => {
 
   it("keeps a typical logical update burst in one store write", async () => {
     let nowMs = 0;
-    const appliedBatches: Array<{ applyDurationMs: number; operationCount: number }> = [];
+    const appliedBatches: Array<{ applyDurationMs: number; eventCount: number; operationCount: number }> = [];
     const applyEntityOperations = vi.fn(() => {
       nowMs += 30;
     });
@@ -137,7 +137,39 @@ describe("EntityIngestQueue", () => {
         ),
       ),
     ).toEqual([120]);
-    expect(appliedBatches).toEqual([{ applyDurationMs: 30, operationCount: 120 }]);
+    expect(appliedBatches).toEqual([{ applyDurationMs: 30, eventCount: 0, operationCount: 120 }]);
+  });
+
+  it("applies one local transaction batch immediately and atomically", async () => {
+    const scheduler = createManualGameSyncScheduler();
+    const applyEntityOperations = vi.fn();
+    const store: GameSyncStore = {
+      applyEntityOperations,
+      applyEvent: vi.fn(),
+      listModelEntityIds: () => [],
+    };
+    const queue = new EntityIngestQueue({ scheduler, store, now: () => 0 });
+
+    await queue.enqueueEntityBatch(
+      [
+        { hashed_keys: "tile", models: { TileOpt: { biome: 2 } } },
+        { hashed_keys: "army", models: { ExplorerTroops: { x: 3 }, PendingMove: {} } },
+      ],
+      true,
+    );
+
+    expect(scheduler.pendingCount()).toBe(0);
+    expect(applyEntityOperations).toHaveBeenCalledTimes(1);
+    expect(applyEntityOperations).toHaveBeenCalledWith([
+      {
+        type: "upsert",
+        entities: expect.arrayContaining([
+          { hashed_keys: "tile", models: { TileOpt: { biome: 2 } } },
+          { hashed_keys: "army", models: { ExplorerTroops: { x: 3 } } },
+        ]),
+      },
+      { type: "remove-components", entityId: "army", models: ["PendingMove"] },
+    ]);
   });
 
   it("retains a high runaway cap on individual store writes", async () => {

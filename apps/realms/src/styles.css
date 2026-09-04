@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* Design system from the "Realms Launcher" artifact (v3): the game client's
+   gold/brown palette and type (Cinzel headings, Exo 2 UI, JetBrains Mono data),
+   the brand kit's amber as the action color, Bokor for display moments only.
+   Single dark theme by design — a launcher owns its whole visual world. */
+@theme {
+  --color-void: #0c0a08;
+  --color-ground: #14100d;
+  --color-panel: rgba(20, 15, 10, 0.88);
+  --color-raised: rgba(33, 25, 15, 0.94);
+  --color-inset: rgba(10, 8, 6, 0.82);
+  --color-line: #46351c;
+  --color-line-soft: #261d10;
+  --color-parchment: #eadfc8;
+  --color-gold: #dfaa54;
+  --color-muted: #a2926f;
+  --color-faint: #6e6148;
+  --color-amber: #e39001;
+  --color-amber-hot: #f6ac1d;
+  --color-amber-deep: #8a5a06;
+  --color-ink: #1b1207;
+  --color-coral: #fc4c4c;
+  --color-sage: #b5bd75;
+  --color-steel: #7ea6c9;
+
+  --font-display: "Bokor", "Arial Black", sans-serif;
+  --font-heading: "Cinzel", serif;
+  --font-body: "Exo 2", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-flavor: "IM Fell English", Georgia, serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-void);
+  color: var(--color-parchment);
+  font: 400 14px/1.5 var(--font-body);
+  overflow-x: hidden;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+.cut {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+.cut-sm {
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+
+/* Per-screen painted backdrop with the scrim from the design artifact. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: var(--color-void);
+}
+.backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 28%;
+}
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(12, 10, 8, 0.95) 0%,
+      rgba(12, 10, 8, 0.7) 40%,
+      rgba(12, 10, 8, 0.35) 72%,
+      rgba(12, 10, 8, 0.6) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(12, 10, 8, 0.88) 0%,
+      rgba(12, 10, 8, 0.3) 26%,
+      rgba(12, 10, 8, 0.66) 78%,
+      rgba(12, 10, 8, 0.97) 100%
+    );
+}
+.backdrop.deep::after {
+  background:
+    rgba(12, 10, 8, 0.62),
+    linear-gradient(180deg, rgba(12, 10, 8, 0.9) 0%, rgba(12, 10, 8, 0.5) 30%, rgba(12, 10, 8, 0.97) 100%);
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  box-shadow: inset 0 0 240px 70px rgba(4, 3, 2, 0.8);
+}

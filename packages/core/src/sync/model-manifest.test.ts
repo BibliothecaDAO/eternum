@@ -10,7 +10,22 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
   it("puts all current entity truth in the gamewide channel", () => {
     const names = getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true }).map(({ name }) => name);
 
-    expect(names).toEqual(expect.arrayContaining(["GameRegistry", "Structure", "Resource", "ExplorerTroops"]));
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "GameRegistry",
+        "Structure",
+        "StructureVillageSlots",
+        "Resource",
+        "ExplorerTroops",
+        "GameChestReward",
+        "LedgerRegistration",
+        "WonderFaith",
+        "FaithfulStructure",
+        "WonderFaithBlacklist",
+        "WonderFaithPrize",
+        "WonderFaithWinners",
+      ]),
+    );
     expect(names).not.toEqual(expect.arrayContaining(["OpenRelicChestEvent", "ExplorerRewardEvent", "BattleEvent"]));
   });
 
@@ -26,15 +41,24 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
     expect(getGameSyncModel("TileOpt").s2Scope).toBe("game");
   });
 
-  it("adjudicates BattleEvent and ExplorerRewardEvent as events only", () => {
-    ["BattleEvent", "ExplorerRewardEvent"].forEach((name) => {
-      const event = getGameSyncModel(name);
-      expect(event.channels).toEqual(["global-event"]);
-      expect(event.recovery).toBe("event-deduped");
-      expect(event.deletion).toBe("event-ephemeral");
-    });
+  it("adjudicates manifest event messages as events only", () => {
+    ["SeasonEnded", "OpenRelicChestEvent", "BattleEvent", "ExplorerRewardEvent", "StoryEvent", "SwapEvent"].forEach(
+      (name) => {
+        const event = getGameSyncModel(name);
+        expect(event.channels).toEqual(["global-event"]);
+        expect(event.recovery).toBe("event-deduped");
+        expect(event.deletion).toBe("event-ephemeral");
+      },
+    );
     expect(getGameSyncModelsForChannel("gamewide-entity").map(({ name }) => name)).not.toEqual(
-      expect.arrayContaining(["BattleEvent", "ExplorerRewardEvent"]),
+      expect.arrayContaining([
+        "SeasonEnded",
+        "OpenRelicChestEvent",
+        "BattleEvent",
+        "ExplorerRewardEvent",
+        "StoryEvent",
+        "SwapEvent",
+      ]),
     );
   });
 

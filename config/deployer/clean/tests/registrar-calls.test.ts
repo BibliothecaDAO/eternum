@@ -1,24 +1,11 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import type { RegistrarManifest } from "../registrar/calls";
 
-mock.module("../../../../contracts/game/manifest_appchain_blitz.json", () => ({
-  default: {
-    world: { address: "0xsharedworld" },
-    contracts: [
-      {
-        tag: "s2-registrar_systems",
-        address: "0xregistrar",
-        systems: ["bootstrap_chain_config", "register_preset", "register_series", "create_game"],
-      },
-    ],
-    events: [{ tag: "s2-GameCreated", selector: "0xabc" }],
-  },
-}));
-
 const {
-  assertAppchainRegistrarAvailable,
-  resolveAppchainContractAddress,
-  resolveAppchainWorldAddress,
+  assertRegistrarAvailable,
+  resolveRegistrarExecutionDetails,
+  resolveRegistrarContractAddress,
+  resolveRegistrarWorldAddress,
   resolveCreatedGameId,
 } = await import("../registrar/calls");
 
@@ -27,6 +14,18 @@ const manifest: RegistrarManifest = {
 };
 
 describe("registrar receipt parsing", () => {
+  test("uses fixed zero-price bounds on the fee-free lab chain", () => {
+    expect(resolveRegistrarExecutionDetails("madara.blitz")).toEqual({
+      version: 3,
+      tip: 0,
+      resourceBounds: {
+        l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
+        l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
+        l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
+      },
+    });
+  });
+
   test("reads a directly emitted GameCreated key", () => {
     const receipt = {
       events: [{ keys: ["0xabc", "0x7"], data: [] }],
@@ -69,13 +68,15 @@ describe("registrar receipt parsing", () => {
       ],
     };
 
-    expect(() => resolveAppchainWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
-    expect(() => resolveAppchainContractAddress("blitz_realm_systems", staleManifest)).toThrow(
+    expect(() => resolveRegistrarWorldAddress(staleManifest)).toThrow("s2-registrar_systems is missing");
+    expect(() => resolveRegistrarContractAddress("blitz_realm_systems", staleManifest)).toThrow(
       "blitz_realm_systems is missing",
     );
   });
 
-  test("resolves the eternum world registrar now that both s2 worlds are deployed", () => {
-    expect(() => assertAppchainRegistrarAvailable("appchain.eternum")).not.toThrow();
+  test("resolves the Madara registrar from the deployed manifest", () => {
+    expect(resolveRegistrarContractAddress("registrar_systems", "madara.blitz")).toBe(
+      "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
+    );
   });
 });

@@ -1,16 +1,11 @@
 import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
 import type {
   GameSyncEntity,
-  GameSyncProvisionalWrite,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
+  GameSyncTransaction,
   GameSyncWriter,
 } from "./game-sync-types";
-import {
-  ProvisionalWriteManager,
-  type ProvisionalIntent,
-  type ProvisionalIntentLockUntil,
-} from "./provisional-write-manager";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
 
@@ -29,6 +24,7 @@ interface BufferedEntityUpdate {
 }
 
 const DEFAULT_EVENT_IDENTITY_LIMIT = 512;
+const DEFAULT_TRANSACTION_STATUS_LIMIT = 512;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
@@ -37,8 +33,7 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
     throw new Error(`Game sync event ${model} is missing its timestamp`);
   }
 
-  const timestampField = value.timestamp;
-  const timestamp = isRecord(timestampField) && "value" in timestampField ? timestampField.value : timestampField;
+  const timestamp = value.timestamp;
   if (!["bigint", "number", "string"].includes(typeof timestamp)) {
     throw new Error(`Game sync event ${model} has an invalid timestamp`);
   }
@@ -51,22 +46,18 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   eventGapFillReplayCount: 0,
   lastRecoveryDurationMs: 0,
   maxBatchApplyDurationMs: 0,
+  maxLiveBatchApplyDurationMs: 0,
   peakLiveUpdatesPerSecond: 0,
+  projectionPublishCount: 0,
   snapshotEntityCount: 0,
   snapshotPageCount: 0,
   totalLiveEntityUpdates: 0,
+  totalLiveEntityOperationsApplied: 0,
   totalLiveEventUpdates: 0,
   totalReplayedEventUpdates: 0,
 });
 
-/**
- * Owns the single session-scoped writer and convergent recovery lifecycle.
- *
- * Torii exposes no universal server revision on entity callbacks. Buffered
- * ordering is therefore explicit and honest: generation first, then client
- * receive sequence. Every reconnect reruns the same subscribe → paginated
- * snapshot → component diff → ordered replay routine.
- */
+/** Owns the session-scoped stream, snapshot hydration, and ordered RECS writes. */
 export class GameSyncRuntime {
   private generation = 0;
   private writer: GameSyncWriter | null = null;
@@ -74,11 +65,20 @@ export class GameSyncRuntime {
   private session: GameSyncSessionStart | null = null;
   private ingestQueue: EntityIngestQueue | null = null;
   private worldSpatialProjection: WorldSpatialProjection | null = null;
-  private provisionalWriteManager: ProvisionalWriteManager | null = null;
   private recentEventIdentities = new Map<string, true>();
-  private liveUpdateTimestamps: number[] = [];
+  private liveUpdateSamples: Array<{ at: number; count: number }> = [];
   private receiveSequence = 0;
   private metrics = createEmptyMetrics();
+  private recentTransactions = new Map<string, GameSyncTransaction>();
+  private localTransactions = new Map<string, true>();
+  private snapshotAppliedOperations = 0;
+  private snapshotExpectedOperations = 0;
+  private snapshotPagesPending = false;
+  private readonly sliceAppliedListeners = new Set<() => void>();
+  private transactionWaiters = new Map<
+    string,
+    Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
+  >();
 
   public getStatus(): GameSyncRuntimeStatus {
     return this.status;
@@ -92,17 +92,47 @@ export class GameSyncRuntime {
     return ["subscribing", "snapshotting", "replaying"].includes(this.status);
   }
 
+  public hasTransactionStatusChannel(): boolean {
+    return this.session?.transport.transactionStatusChannel === true;
+  }
+
+  public waitForTransaction(transactionHash: string): Promise<GameSyncTransaction> {
+    if (!this.hasTransactionStatusChannel()) {
+      return Promise.reject(new Error("The active game sync session has no transaction status channel"));
+    }
+    const identity = normalizeTransactionHash(transactionHash);
+    const known = this.recentTransactions.get(identity);
+    if (known) return settleTransaction(known);
+
+    return new Promise<GameSyncTransaction>((resolve, reject) => {
+      const waiters = this.transactionWaiters.get(identity) ?? [];
+      waiters.push({ reject, resolve });
+      this.transactionWaiters.set(identity, waiters);
+    });
+  }
+
+  public recordSubmittedTransaction(transactionHash: string): void {
+    const identity = normalizeTransactionHash(transactionHash);
+    this.localTransactions.delete(identity);
+    this.localTransactions.set(identity, true);
+    while (this.localTransactions.size > DEFAULT_TRANSACTION_STATUS_LIMIT) {
+      const oldest = this.localTransactions.keys().next().value;
+      if (oldest === undefined) break;
+      this.localTransactions.delete(oldest);
+    }
+  }
+
   public async startSession(input: GameSyncSessionStart): Promise<void> {
     this.disposeWorldSpatialProjection();
-    this.provisionalWriteManager?.dispose();
     this.session = input;
-    this.provisionalWriteManager = new ProvisionalWriteManager(input.store, {
-      onIntentStalled: input.onProvisionalIntentStalled,
-      onIntentPhase: input.onProvisionalIntentPhase,
-    });
     this.recentEventIdentities.clear();
-    this.liveUpdateTimestamps = [];
+    this.rejectTransactionWaiters("Game sync session was replaced");
+    this.recentTransactions.clear();
+    this.localTransactions.clear();
+    this.liveUpdateSamples = [];
     this.receiveSequence = 0;
+    this.snapshotAppliedOperations = 0;
+    this.snapshotExpectedOperations = 0;
     this.metrics = createEmptyMetrics();
     await this.runRecovery();
   }
@@ -121,6 +151,9 @@ export class GameSyncRuntime {
   public installWorldSpatialProjection(projection: WorldSpatialProjection): void {
     this.disposeWorldSpatialProjection();
     try {
+      projection.subscribe(() => {
+        this.metrics.projectionPublishCount += 1;
+      });
       projection.start();
       this.worldSpatialProjection = projection;
     } catch (error) {
@@ -140,26 +173,13 @@ export class GameSyncRuntime {
     return this.worldSpatialProjection;
   }
 
-  public createProvisionalIntent(
-    writes: readonly GameSyncProvisionalWrite[],
-    options: { lockUntil?: ProvisionalIntentLockUntil } = {},
-  ): ProvisionalIntent {
-    if (!this.provisionalWriteManager) {
-      throw new Error("GameSyncRuntime has no active provisional write manager");
-    }
-    return this.provisionalWriteManager.createIntent(writes, options);
-  }
-
-  public hasProvisionalInputLock(model: string, entityId: string): boolean {
-    return this.provisionalWriteManager?.hasInputLock(model, entityId) ?? false;
-  }
-
-  public isProvisionalOnly(model: string, entityId: string): boolean {
-    return this.provisionalWriteManager?.isProvisionalOnly(model, entityId) ?? false;
-  }
-
-  public subscribeProvisionalState(listener: () => void): () => void {
-    return this.provisionalWriteManager?.subscribe(listener) ?? (() => {});
+  /**
+   * Fires once per applied ingest slice, after the spatial projection flushed. Store bridges derive from RECS here,
+   * so a slice that touched a thousand rows costs the overlay one recompute, not a thousand.
+   */
+  public subscribeSliceApplied(listener: () => void): () => void {
+    this.sliceAppliedListeners.add(listener);
+    return () => this.sliceAppliedListeners.delete(listener);
   }
 
   public async applyAuthoritativeEntities(entities: readonly GameSyncEntity[]): Promise<void> {
@@ -173,12 +193,14 @@ export class GameSyncRuntime {
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
+    this.sliceAppliedListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
-    this.provisionalWriteManager?.dispose();
-    this.provisionalWriteManager = null;
     this.session = null;
+    this.rejectTransactionWaiters("Game sync runtime stopped");
+    this.recentTransactions.clear();
+    this.localTransactions.clear();
     this.status = "stopped";
   }
 
@@ -191,6 +213,8 @@ export class GameSyncRuntime {
     const bufferedUpdates: BufferedEntityUpdate[] = [];
     const existingEntitiesByModel = this.captureExistingEntities(session);
     const seenEntitiesByModel = new Map(session.snapshotModels.map((model) => [model, new Set<string>()]));
+    this.snapshotAppliedOperations = 0;
+    this.snapshotExpectedOperations = 0;
     this.ingestQueue = this.createIngestQueue(session);
 
     try {
@@ -198,13 +222,37 @@ export class GameSyncRuntime {
         onEntity: (entity) => {
           if (!this.isCurrentGeneration(generation)) return;
           const update = { entity, receiveSequence: ++this.receiveSequence };
-          this.recordLiveUpdate("entity");
+          this.recordLiveUpdates("entity", 1);
           if (this.status === "running") this.ingestQueue?.enqueueEntity(entity);
           else bufferedUpdates.push(update);
         },
+        onEntityBatch: (batch) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          this.recordLiveUpdates("entity", batch.entities.length);
+          if (this.status !== "running") {
+            batch.entities.forEach((entity) => {
+              bufferedUpdates.push({ entity, receiveSequence: ++this.receiveSequence });
+            });
+            return;
+          }
+
+          const transactionHash = batch.transactionHash;
+          if (transactionHash) session.onTransactionEntitiesReceived?.(transactionHash);
+          const isLocalTransaction = transactionHash
+            ? this.localTransactions.has(normalizeTransactionHash(transactionHash))
+            : false;
+          const queue = this.ingestQueue;
+          if (!queue) return;
+          void queue
+            .enqueueEntityBatch(batch.entities, batch.preconfirmed && isLocalTransaction)
+            .then(() => {
+              if (transactionHash) session.onTransactionEntitiesApplied?.(transactionHash);
+            })
+            .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
+        },
         onEvent: (event) => {
           if (!this.isCurrentGeneration(generation)) return;
-          this.recordLiveUpdate("event");
+          this.recordLiveUpdates("event", 1);
           this.enqueueEventOnce(event);
         },
         onEventGapFill: (replayedEventCount) => {
@@ -212,6 +260,23 @@ export class GameSyncRuntime {
           this.metrics.eventGapFillReplayCount += 1;
           this.metrics.totalReplayedEventUpdates += replayedEventCount;
           this.publishMetrics();
+        },
+        onHead: (head) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          session.onHead?.(head);
+        },
+        onSnapshotChunk: (progress) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          session.onSnapshotProgress?.({
+            completed: Math.min(progress.modelsReceived, session.snapshotModels.length),
+            phase: "receiving",
+            streaming: progress.modelsReceived < session.snapshotModels.length,
+            total: session.snapshotModels.length,
+          });
+        },
+        onTransaction: (transaction) => {
+          if (!this.isCurrentGeneration(generation)) return;
+          this.acceptTransaction(transaction);
         },
       });
       this.adoptWriter(generation, writer);
@@ -240,6 +305,15 @@ export class GameSyncRuntime {
     );
   }
 
+  private reportSnapshotApplyProgress(): void {
+    this.session?.onSnapshotProgress?.({
+      completed: Math.min(this.snapshotAppliedOperations, this.snapshotExpectedOperations),
+      phase: "applying",
+      streaming: this.snapshotPagesPending,
+      total: this.snapshotExpectedOperations,
+    });
+  }
+
   private async hydrateSnapshot(
     generation: number,
     session: GameSyncSessionStart,
@@ -247,12 +321,17 @@ export class GameSyncRuntime {
   ): Promise<void> {
     const visitedCursors = new Set<string>();
     let cursor: string | undefined;
+    this.snapshotPagesPending = true;
 
     do {
       const page = await session.transport.fetchSnapshotPage(cursor);
       this.assertCurrentGeneration(generation);
       this.metrics.snapshotPageCount += 1;
       this.metrics.snapshotEntityCount += page.items.length;
+      this.snapshotExpectedOperations += page.items.reduce(
+        (count, entity) => count + Object.keys(entity.models).length,
+        0,
+      );
 
       page.items.forEach((entity) => {
         Object.keys(entity.models).forEach((model) => seenEntitiesByModel.get(model)?.add(entity.hashed_keys));
@@ -266,6 +345,9 @@ export class GameSyncRuntime {
         visitedCursors.add(cursor);
       }
     } while (cursor);
+
+    this.snapshotPagesPending = false;
+    if (this.snapshotExpectedOperations > 0) this.reportSnapshotApplyProgress();
   }
 
   private reconcileAbsentSnapshotComponents(
@@ -304,6 +386,7 @@ export class GameSyncRuntime {
         if (oldest === undefined) break;
         this.recentEventIdentities.delete(oldest);
       }
+      session.onEvent?.({ hashed_keys: event.hashed_keys, models: { [model]: value } });
       this.ingestQueue?.enqueueEvent({ hashed_keys: event.hashed_keys, models: { [model]: value } });
     });
   }
@@ -314,27 +397,45 @@ export class GameSyncRuntime {
       store: session.store,
       now: session.now ?? (() => Date.now()),
       onBatchApplied: (info) => this.recordAppliedBatch(info),
-      onAuthoritativeObservationsApplied: (observations) =>
-        this.provisionalWriteManager?.observeAuthoritativeObservations(observations),
     });
   }
 
   private recordAppliedBatch(info: EntityIngestBatchInfo): void {
     this.metrics.appliedBatchCount += 1;
     this.metrics.maxBatchApplyDurationMs = Math.max(this.metrics.maxBatchApplyDurationMs, info.applyDurationMs);
+    if (this.status === "replaying" || this.status === "running") {
+      this.metrics.totalLiveEntityOperationsApplied += info.operationCount;
+    }
+    // The replay of the boot backlog is boot work; the live max is the churn number the gate asks for.
+    if (this.status === "running") {
+      this.metrics.maxLiveBatchApplyDurationMs = Math.max(
+        this.metrics.maxLiveBatchApplyDurationMs,
+        info.applyDurationMs,
+      );
+    }
+    if (this.status === "snapshotting" && this.snapshotExpectedOperations > 0) {
+      this.snapshotAppliedOperations += info.operationCount;
+      this.reportSnapshotApplyProgress();
+    }
+    this.worldSpatialProjection?.flush();
+    this.sliceAppliedListeners.forEach((listener) => listener());
+    this.publishMetrics();
   }
 
-  private recordLiveUpdate(kind: "entity" | "event"): void {
+  /** Liveness is a per-batch fact: one callback per delivery, however many rows it carried. */
+  private recordLiveUpdates(kind: "entity" | "event", count: number): void {
     const session = this.session;
-    if (!session) return;
+    if (!session || count === 0) return;
 
-    if (kind === "entity") this.metrics.totalLiveEntityUpdates += 1;
-    else this.metrics.totalLiveEventUpdates += 1;
+    if (kind === "entity") this.metrics.totalLiveEntityUpdates += count;
+    else this.metrics.totalLiveEventUpdates += count;
 
     const now = this.now();
-    this.liveUpdateTimestamps.push(now);
-    while (this.liveUpdateTimestamps[0] < now - 1_000) this.liveUpdateTimestamps.shift();
-    const nextPeak = Math.max(this.metrics.peakLiveUpdatesPerSecond, this.liveUpdateTimestamps.length);
+    this.liveUpdateSamples.push({ at: now, count });
+    while (this.liveUpdateSamples.length > 0 && this.liveUpdateSamples[0].at < now - 1_000)
+      this.liveUpdateSamples.shift();
+    const updatesInWindow = this.liveUpdateSamples.reduce((sum, sample) => sum + sample.count, 0);
+    const nextPeak = Math.max(this.metrics.peakLiveUpdatesPerSecond, updatesInWindow);
     const peakChanged = nextPeak !== this.metrics.peakLiveUpdatesPerSecond;
     this.metrics.peakLiveUpdatesPerSecond = nextPeak;
     session.onLiveUpdate?.(kind);
@@ -343,6 +444,30 @@ export class GameSyncRuntime {
 
   private publishMetrics(): void {
     this.session?.onMetrics?.(this.getMetrics());
+  }
+
+  private acceptTransaction(transaction: GameSyncTransaction): void {
+    const identity = normalizeTransactionHash(transaction.hash);
+    this.recentTransactions.delete(identity);
+    this.recentTransactions.set(identity, transaction);
+    while (this.recentTransactions.size > DEFAULT_TRANSACTION_STATUS_LIMIT) {
+      const oldest = this.recentTransactions.keys().next().value;
+      if (oldest === undefined) break;
+      this.recentTransactions.delete(oldest);
+    }
+    this.session?.onTransaction?.(transaction);
+    const waiters = this.transactionWaiters.get(identity);
+    if (!waiters) return;
+    this.transactionWaiters.delete(identity);
+    waiters.forEach(({ reject, resolve }) => {
+      if (transaction.status === "REVERTED") reject(transactionError(transaction));
+      else resolve(transaction);
+    });
+  }
+
+  private rejectTransactionWaiters(message: string): void {
+    this.transactionWaiters.forEach((waiters) => waiters.forEach(({ reject }) => reject(new Error(message))));
+    this.transactionWaiters.clear();
   }
 
   private now(): number {
@@ -375,7 +500,15 @@ export class GameSyncRuntime {
     this.cancelWriterImmediately();
     this.ingestQueue?.dispose();
     this.ingestQueue = null;
+    this.rejectTransactionWaiters("Game sync recovery failed");
     this.status = "stopped";
+  }
+
+  private stopAfterLiveBatchFailure(generation: number, error: unknown): void {
+    if (!this.isCurrentGeneration(generation) || this.status !== "running") return;
+    const failure = error instanceof Error ? error : new Error(String(error));
+    this.session?.onError?.(failure);
+    this.stopFailedRun(generation);
   }
 
   private isCurrentGeneration(generation: number): boolean {
@@ -417,4 +550,22 @@ export function installFreshGameSyncRuntime(): GameSyncRuntime {
 export function disposeActiveGameSyncRuntime(): void {
   activeGameSyncRuntime?.dispose();
   activeGameSyncRuntime = null;
+}
+
+function normalizeTransactionHash(transactionHash: string): string {
+  try {
+    return `0x${BigInt(transactionHash).toString(16)}`;
+  } catch {
+    return transactionHash.toLowerCase();
+  }
+}
+
+function transactionError(transaction: GameSyncTransaction): Error {
+  return new Error(transaction.revertReason ?? `Transaction ${transaction.hash} reverted`);
+}
+
+function settleTransaction(transaction: GameSyncTransaction): Promise<GameSyncTransaction> {
+  return transaction.status === "REVERTED"
+    ? Promise.reject(transactionError(transaction))
+    : Promise.resolve(transaction);
 }

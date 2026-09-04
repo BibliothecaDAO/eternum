@@ -1,4 +1,6 @@
-export type WorldSummaryChain = "mainnet" | "appchain";
+import type { GameChain } from "@realms-world/chain";
+
+export type WorldSummaryChain = GameChain;
 
 export type WorldSummaryMode = "blitz" | "eternum" | "unknown";
 
@@ -17,17 +19,12 @@ export interface WorldSummary {
   startMainAt: number | null;
   endAt: number | null;
   devModeOn: boolean | null;
-  mmrEnabled: boolean | null;
   singleRealmMode: boolean | null;
   twoPlayerMode: boolean | null;
 
   seasonPassAddress: string | null;
   villagePassAddress: string | null;
   worldAddress: string | null;
-  prizeDistributionAddress: string | null;
-  entryTokenAddress: string | null;
-  feeTokenAddress: string | null;
-  feeAmount: string | null;
 
   registrationCount: number | null;
   registrationCountMax: number | null;
@@ -36,6 +33,4 @@ export interface WorldSummary {
   settledPlayersCount: number | null;
   settledRealmsCount: number | null;
   settledVillagesCount: number | null;
-
-  winnerJackpotAmount: string | null;
 }

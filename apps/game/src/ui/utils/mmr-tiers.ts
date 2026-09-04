@@ -1,0 +1,31 @@
+type MMRTier = {
+  name: string;
+  minMMR: number;
+  maxMMR: number;
+  color: string;
+};
+
+export const MMR_TOKEN_DECIMALS = 10n ** 18n;
+
+const MMR_TIERS: MMRTier[] = [
+  { name: "Storm Lord", minMMR: 2400, maxMMR: Infinity, color: "text-relic2" },
+  { name: "Warlord", minMMR: 2000, maxMMR: 2400, color: "text-light-red" },
+  { name: "Conqueror", minMMR: 1600, maxMMR: 2000, color: "text-blueish" },
+  { name: "Marauder", minMMR: 1200, maxMMR: 1600, color: "text-brilliance" },
+  { name: "Raider", minMMR: 600, maxMMR: 1200, color: "text-gold" },
+  { name: "Scrapper", minMMR: 0, maxMMR: 600, color: "text-gray-gold" },
+];
+
+const toMmrInteger = (mmrRaw: bigint): number => Number(mmrRaw / MMR_TOKEN_DECIMALS);
+
+export const getMMRTier = (mmr: number): MMRTier => {
+  for (const tier of MMR_TIERS) {
+    if (mmr >= tier.minMMR) {
+      return tier;
+    }
+  }
+
+  return MMR_TIERS[MMR_TIERS.length - 1];
+};
+
+export const getMMRTierFromRaw = (mmrRaw: bigint): MMRTier => getMMRTier(toMmrInteger(mmrRaw));

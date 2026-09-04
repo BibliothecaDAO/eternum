@@ -1,4 +1,4 @@
-import { Account, AccountInterface, BigNumberish, ByteArray } from "starknet";
+import { Account, AccountInterface, BigNumberish } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
 import { Level, Resource } from "./common";
@@ -11,7 +11,6 @@ export interface CreateVillageProps extends SystemSigner {
   village_pass_token_id: BigNumberish;
   connected_realm: BigNumberish;
   direction: BigNumberish;
-  village_pass_address: string;
 }
 
 export interface ReceiveArmyGrantProps extends SystemSigner {
@@ -29,13 +28,6 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
   };
 }
 
-export interface BlitzRealmRegisterProps extends SystemSigner {
-  name: BigNumberish;
-  tokenId: BigNumberish;
-  entryTokenAddress?: string;
-  lockId?: BigNumberish;
-}
-
 export interface BlitzRealmMakeHyperstructuresProps extends SystemSigner {
   count: BigNumberish;
 }
@@ -49,11 +41,6 @@ export interface BlitzRealmAssignRealmPositionsProps extends SystemSigner {}
 
 export interface BlitzRealmSettleRealmsProps extends SystemSigner {
   settlement_count: BigNumberish;
-}
-
-export interface BlitzRealmObtainEntryTokenProps extends SystemSigner {
-  feeToken?: string;
-  feeAmount?: BigNumberish;
 }
 
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
@@ -165,8 +152,6 @@ export interface CreateMultipleRealmsProps extends SystemSigner {
       point: BigNumberish;
     };
   }[];
-  frontend: BigNumberish;
-  season_pass_address: string;
 }
 
 export interface CreateRealmDevProps extends SystemSigner {
@@ -439,18 +424,6 @@ export interface SetFactoryAddressProps extends SystemSigner {
   factory_address: BigNumberish;
 }
 
-export interface SetMMRConfigProps extends SystemSigner {
-  enabled: boolean;
-  mmr_token_address: BigNumberish;
-  distribution_mean: BigNumberish;
-  spread_factor: BigNumberish;
-  max_delta: BigNumberish;
-  k_factor: BigNumberish;
-  lobby_split_weight_scaled: BigNumberish;
-  mean_regression_scaled: BigNumberish;
-  min_players: BigNumberish;
-}
-
 export interface SetCampStartingResourcesConfigProps extends SystemSigner {
   resources: {
     resource: ResourcesIds;
@@ -490,11 +463,6 @@ export interface SetAgentConfigProps extends SystemSigner {
   max_current_count: BigNumberish;
   min_spawn_lords_amount: BigNumberish;
   max_spawn_lords_amount: BigNumberish;
-}
-
-export interface SetVillageTokenProps extends SystemSigner {
-  village_pass_nft_address: BigNumberish;
-  village_mint_initial_recipient: BigNumberish;
 }
 
 export interface SetTradeConfigProps extends SystemSigner {
@@ -648,9 +616,6 @@ export interface SetDonkeySpeedConfigProps extends SystemSigner {
 
 export interface SetSeasonConfigProps extends SystemSigner {
   dev_mode_on: boolean;
-  season_pass_address: BigNumberish;
-  realms_address: BigNumberish;
-  lords_address: BigNumberish;
   start_settling_at: BigNumberish;
   start_main_at: BigNumberish;
   end_at: BigNumberish;
@@ -762,23 +727,6 @@ export interface BlitzPrizePlayerRankProps extends SystemSigner {
   players_list: BigNumberish[]; // Array<ContractAddress>
 }
 
-export interface BlitzPrizeClaimProps extends SystemSigner {
-  players: BigNumberish[]; // Array<ContractAddress>
-}
-
-export interface BlitzPrizeClaimNoGameProps extends SystemSigner {
-  registered_player: BigNumberish; // ContractAddress of the only registered player
-}
-
-// MMR system calls
-export interface CommitGameMMRProps extends SystemSigner {
-  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
-}
-
-export interface ClaimGameMMRProps extends SystemSigner {
-  players: BigNumberish[]; // Array<ContractAddress> sorted by MMR ascending
-}
-
 export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: BigNumberish;
   max_stamina: BigNumberish;
@@ -803,9 +751,6 @@ export interface SetSettlementConfigProps extends SystemSigner {
   two_player_mode: boolean;
 }
 export interface SetBlitzRegistrationConfigProps extends SystemSigner {
-  fee_token: BigNumberish;
-  fee_recipient: BigNumberish;
-  fee_amount: BigNumberish;
   collectibles_cosmetics_max: BigNumberish;
   collectibles_cosmetics_address: BigNumberish;
   collectibles_timelock_address: BigNumberish;
@@ -813,9 +758,6 @@ export interface SetBlitzRegistrationConfigProps extends SystemSigner {
   collectibles_elitenft_address: BigNumberish;
   registration_count_max: BigNumberish;
   registration_start_at: BigNumberish;
-  entry_token_class_hash: BigNumberish;
-  entry_token_deploy_calldata: BigNumberish[];
-  entry_token_ipfs_cid: ByteArray;
 }
 
 export interface SetBlitzExplorationConfigProps extends SystemSigner {

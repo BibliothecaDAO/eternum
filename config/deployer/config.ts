@@ -47,9 +47,8 @@ try {
 }
 
 import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
-import { byteArray, type Account } from "starknet";
-import type { NetworkType } from "utils/environment";
-import type { Chain } from "utils/utils";
+import type { GameChain } from "@realms-world/chain";
+import { type Account } from "starknet";
 import { applyBiomeClimateDefaults } from "./biome-climate-defaults";
 import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum/banks";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
@@ -112,18 +111,18 @@ interface Config {
 
 export class GameConfigDeployer {
   public globalConfig: EternumConfig;
-  public network: NetworkType;
+  public network: GameChain;
   public skipSleeps: boolean = false;
   public worldConfigTxHash?: string;
 
-  constructor(config: EternumConfig, network: NetworkType) {
+  constructor(config: EternumConfig, network: GameChain) {
     this.globalConfig = config;
     this.network = network;
   }
 
   async sleepNonLocal() {
     if (this.skipSleeps) return;
-    if (this.network.toLowerCase() === "mainnet" || this.network.toLowerCase() === "sepolia") {
+    if (this.network === "appchain") {
       let sleepSeconds = 1;
       console.log(chalk.gray(`Sleeping for ${sleepSeconds} seconds...`));
       await new Promise((resolve) => setTimeout(resolve, sleepSeconds * 1000));
@@ -155,16 +154,7 @@ export class GameConfigDeployer {
     await setBlitzRegistrationConfig(config);
     await this.sleepNonLocal();
 
-    await grantCollectibleLootChestMinterRole(config);
-    await this.sleepNonLocal();
-
-    await grantCollectibleEliteNftMinterRole(config);
-    await this.sleepNonLocal();
-
     await setAgentConfig(config);
-    await this.sleepNonLocal();
-
-    await setVillageControllersConfig(config);
     await this.sleepNonLocal();
 
     await SetResourceFactoryConfig(config);
@@ -180,9 +170,6 @@ export class GameConfigDeployer {
     await this.sleepNonLocal();
 
     await setSeasonConfig(config);
-    await this.sleepNonLocal();
-
-    await setVRFConfig(config);
     await this.sleepNonLocal();
 
     await setResourceBridgeFeesConfig(config);
@@ -1142,31 +1129,6 @@ export const setAgentConfig = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Agent Configurations set `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setVillageControllersConfig = async (config: Config) => {
-  const calldata = {
-    signer: config.account,
-    village_pass_nft_address: config.config.village.village_pass_nft_address,
-    village_mint_initial_recipient: config.config.village.village_mint_initial_recipient,
-  };
-
-  console.log(
-    chalk.cyan(`
-  📦 Village Token Configuration
-  ═══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Village Token Config")}
-    │  ${chalk.gray("Village Pass Nft Address:")}         ${chalk.white(shortHexAddress(calldata.village_pass_nft_address))}
-    │  ${chalk.gray("Village Pass Initial Mint Recipient:")}         ${chalk.white(shortHexAddress(calldata.village_mint_initial_recipient))}
-    └────────────────────────────────`),
-  );
-
-  const villageTx = await config.provider.set_village_token_config(calldata);
-  console.log(chalk.green(`\n    ✔ Village Controllers configured `) + chalk.gray(villageTx.statusReceipt) + "\n");
-};
-
 export const setCapacityConfig = async (config: Config) => {
   const calldata = {
     signer: config.account,
@@ -1295,9 +1257,6 @@ export const setSeasonConfig = async (config: Config) => {
   const seasonCalldata = {
     signer: config.account,
     dev_mode_on: config.config.dev.mode.on,
-    season_pass_address: config.config.setup!.addresses.seasonPass,
-    realms_address: config.config.setup!.addresses.realms,
-    lords_address: config.config.setup!.addresses.lords,
     start_settling_at: startSettlingAt,
     start_main_at: startMainAt,
     end_at: 0,
@@ -1325,54 +1284,11 @@ export const setSeasonConfig = async (config: Config) => {
     )} UTC
     │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
     │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
-    │
-    │  ${chalk.yellow("Contract Addresses")}
-    │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
-    │  ${chalk.gray("Realms:")}            ${chalk.white(shortHexAddress(seasonCalldata.realms_address))}
-    │  ${chalk.gray("LORDS:")}             ${chalk.white(shortHexAddress(seasonCalldata.lords_address))}
     └────────────────────────────────`),
   );
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
-};
-
-export const setVRFConfig = async (config: Config) => {
-  if (config.config.setup?.chain !== "mainnet" && config.config.setup?.chain !== "sepolia") {
-    console.log(chalk.yellow("    ⚠ Skipping VRF configuration for local environment"));
-    return;
-  }
-
-  console.log(
-    chalk.cyan(`
-  🎲 VRF Configuration
-  ═══════════════════════`),
-  );
-
-  if (BigInt(config.config.vrf.vrfProviderAddress) === BigInt(0)) {
-    console.log(
-      chalk.cyan(`
-    ┌─ ${chalk.yellow("Status")}
-    │  ${chalk.gray("Provider:")}          ${chalk.red("Not configured")}
-    └────────────────────────────────`),
-    );
-    return;
-  }
-
-  const vrfCalldata = {
-    signer: config.account,
-    vrf_provider_address: config.config.vrf.vrfProviderAddress,
-  };
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("VRF Provider")}
-    │  ${chalk.gray("Address:")}           ${chalk.white(shortHexAddress(vrfCalldata.vrf_provider_address))}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_vrf_config(vrfCalldata);
-  console.log(chalk.green(`    ✔ VRF configured `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
 export const setResourceBridgeFeesConfig = async (config: Config) => {
@@ -1686,74 +1602,6 @@ export const setFactoryAddress = async (config: Config) => {
   console.log(chalk.green(`\n    ✔ Blitz factory address set `) + chalk.gray(tx.statusReceipt) + "\n");
 };
 
-export const setMMRConfig = async (config: Config) => {
-  // Read MMR config from configuration
-  // Note: initial_mmr and min_mmr are handled by the token contract, not the game contract
-  const mmrConfig = (config.config as any)?.mmr as
-    | {
-        enabled: boolean;
-        mmr_token_address: string;
-        distribution_mean?: number;
-        spread_factor?: number;
-        max_delta?: number;
-        k_factor?: number;
-        lobby_split_weight_scaled?: number;
-        mean_regression_scaled?: number;
-        min_players?: number;
-      }
-    | undefined;
-  if (!mmrConfig) {
-    console.log(chalk.gray("    ↪ No mmr config found; skipping MMR configuration"));
-    return;
-  }
-
-  console.log(
-    chalk.cyan(`
-  🎯 MMR Configuration
-  ═════════════════════`),
-  );
-
-  // Use defaults from the spec if not provided
-  const enabled = mmrConfig.enabled ?? false;
-  const mmr_token_address = mmrConfig.mmr_token_address ?? "0x0";
-  const distribution_mean = mmrConfig.distribution_mean ?? 1500;
-  const spread_factor = mmrConfig.spread_factor ?? 450;
-  const max_delta = mmrConfig.max_delta ?? 45;
-  const k_factor = mmrConfig.k_factor ?? 50;
-  const lobby_split_weight_scaled = mmrConfig.lobby_split_weight_scaled ?? 2500;
-  const mean_regression_scaled = mmrConfig.mean_regression_scaled ?? 150;
-  const min_players = mmrConfig.min_players ?? 6;
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("MMR Parameters")}
-    │  ${chalk.gray("Enabled:")} ${chalk.white(enabled)}
-    │  ${chalk.gray("Token Address:")} ${chalk.white(shortHexAddress(mmr_token_address))}
-    │  ${chalk.gray("Distribution Mean:")} ${chalk.white(distribution_mean)}
-    │  ${chalk.gray("Spread Factor:")} ${chalk.white(spread_factor)}
-    │  ${chalk.gray("Max Delta:")} ${chalk.white(max_delta)}
-    │  ${chalk.gray("K Factor:")} ${chalk.white(k_factor)}
-    │  ${chalk.gray("Lobby Split Weight:")} ${chalk.white(lobby_split_weight_scaled / 10000)}
-    │  ${chalk.gray("Mean Regression:")} ${chalk.white(mean_regression_scaled / 10000)}
-    │  ${chalk.gray("Min Players:")} ${chalk.white(min_players)}
-    └────────────────────────────────`),
-  );
-
-  const tx = await config.provider.set_mmr_config({
-    signer: config.account,
-    enabled,
-    mmr_token_address,
-    distribution_mean,
-    spread_factor,
-    max_delta,
-    k_factor,
-    lobby_split_weight_scaled,
-    mean_regression_scaled,
-    min_players,
-  });
-  console.log(chalk.green(`\n    ✔ MMR configured `) + chalk.gray(tx.statusReceipt) + "\n");
-};
-
 export const setVictoryPointsConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
@@ -1819,30 +1667,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const { registrationStartAt: registration_start_at, registrationEndAt: registration_end_at } =
     getBlitzRegistrationWindow(config);
 
-  const entryTokenClassHash = config.config.blitz.registration.entry_token_class_hash;
-  const entryTokenIpfsCid = byteArray.byteArrayFromString(config.config.blitz.registration.entry_token_ipfs_cid);
-  const entryTokenDeployCalldata = [
-    "0x0",
-    "0x5265616c6d733a204c6f6f74204368657374",
-    "0x12",
-    "0x0",
-    "0x524c43",
-    "0x3",
-    "0x0",
-    "0x0",
-    "0x0",
-    "0x0",
-    "0x4c6f6f7420436865737420666f72205265616c6d73",
-    "0x15",
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    getContractByName(config.provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
-    getContractByName(config.provider.manifest, `${NAMESPACE}-config_systems`),
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    "0x1f4",
-  ];
-
   const collectibles_cosmetics_max = config.config.blitz.registration.collectible_cosmetics_max_items;
   const collectibles_cosmetics_address = config.config.blitz.registration.collectible_cosmetics_address;
   const collectibles_timelock_address = config.config.blitz.registration.collectible_timelock_address;
@@ -1851,15 +1675,8 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
 
   const registrationCalldata = {
     signer: config.account,
-    fee_token: config.config.blitz.registration.fee_token,
-    fee_recipient: config.config.blitz.registration.fee_recipient,
-    fee_amount: config.config.blitz.registration.fee_amount,
     registration_count_max: config.config.blitz.registration.registration_count_max,
     registration_start_at: registration_start_at,
-    entry_token_class_hash: entryTokenClassHash,
-    entry_token_ipfs_cid: entryTokenIpfsCid,
-    entry_token_deploy_calldata: entryTokenDeployCalldata,
-
     collectibles_cosmetics_max,
     collectibles_cosmetics_address,
     collectibles_timelock_address,
@@ -1870,9 +1687,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   console.log(
     chalk.cyan(`
     ┌─ ${chalk.yellow("Blitz Registration Configuration")}
-    │  ${chalk.gray("Fee Token:")} ${chalk.white(registrationCalldata.fee_token)}
-    │  ${chalk.gray("Fee Recipient:")} ${chalk.white(registrationCalldata.fee_recipient)}
-    │  ${chalk.gray("Fee Amount:")} ${chalk.white(registrationCalldata.fee_amount)}
     │  ${chalk.gray("Registration Count Max:")} ${chalk.white(registrationCalldata.registration_count_max)}
     │  ${chalk.gray("Registration Start At:")} ${chalk.white(
       new Date(registrationCalldata.registration_start_at * 1000).toLocaleString("en-US", {
@@ -1881,11 +1695,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
         timeZone: "UTC",
       }),
     )} UTC
-    │  ${chalk.gray("Entry Token IPFS CID:")} ${chalk.white(byteArray.stringFromByteArray(registrationCalldata.entry_token_ipfs_cid))}
-    │  ${chalk.gray("Entry Token Class Hash:")} ${chalk.white(registrationCalldata.entry_token_class_hash)}
-    │  ${chalk.gray("Entry Token Deploy Calldata:")} ${chalk.white(
-      `[${registrationCalldata.entry_token_deploy_calldata.slice(0, 3).join(", ")}, ..., ${registrationCalldata.entry_token_deploy_calldata.slice(-3).join(", ")}]`,
-    )}
     │  ${chalk.gray("Collectible Cosmetics Max Items:")} ${chalk.white(registrationCalldata.collectibles_cosmetics_max)}
     │  ${chalk.gray("Collectible Cosmetics Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_cosmetics_address))}
     │  ${chalk.gray("Collectible Timelock Address:")} ${chalk.white(shortHexAddress(registrationCalldata.collectibles_timelock_address))}
@@ -1895,7 +1704,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     └────────────────────────────────`),
   );
 
-  // Grant MINTER_ROLE to prize_distribution_systems for loot chest minting
   const blitzRegistrationTx = await config.provider.set_blitz_registration_config(registrationCalldata);
   console.log(
     chalk.green(`\n    ✔ Blitz registration configured `) + chalk.gray(blitzRegistrationTx.statusReceipt) + "\n",
@@ -1910,9 +1718,6 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
   const seasonCalldata = {
     signer: config.account,
     dev_mode_on: config.config.dev.mode.on,
-    season_pass_address: "0x0",
-    realms_address: "0x0",
-    lords_address: config.config.setup!.addresses.lords,
     start_settling_at: registration_start_at,
     start_main_at: registration_end_at,
     end_at: registration_end_at + config.config.season.durationSeconds,
@@ -1940,94 +1745,11 @@ export const setBlitzRegistrationConfig = async (config: Config) => {
     )} UTC
     │  ${chalk.gray("Bridge Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.bridge_close_end_grace_seconds))} after game ends
     │  ${chalk.gray("Point Registration Closes:")}   ${chalk.white(hourMinutesSeconds(seasonCalldata.point_registration_grace_seconds))} after game ends
-    │
-    │  ${chalk.yellow("Contract Addresses")}
-    │  ${chalk.gray("Season Pass:")}       ${chalk.white(shortHexAddress(seasonCalldata.season_pass_address))}
-    │  ${chalk.gray("Realms:")}            ${chalk.white(shortHexAddress(seasonCalldata.realms_address))}
-    │  ${chalk.gray("LORDS:")}             ${chalk.white(shortHexAddress(seasonCalldata.lords_address))}
     └────────────────────────────────`),
   );
 
   const setSeasonTx = await config.provider.set_season_config(seasonCalldata);
   console.log(chalk.green(`    ✔ Season configured `) + chalk.gray(setSeasonTx.statusReceipt));
-};
-
-export const grantCollectibleLootChestMinterRole = async (config: Config) => {
-  if (!config.config.blitz?.mode?.on) {
-    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
-    return;
-  }
-
-  if (isUnsetAddress(config.config.blitz?.registration?.collectibles_lootchest_address)) {
-    console.log(chalk.yellow("⏭️  Skipping minter role grant (No loot chest address configured)"));
-    return;
-  }
-
-  console.log(
-    chalk.cyan(`\n
-  🎫 Grant Collectible Minter Role For Loot Chest
-  ═══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Granting Minter Role")}
-    │  ${chalk.gray("Granting minter role for Loot Chest Contract to prize_distribution_systems...")}
-    └────────────────────────────────`),
-  );
-
-  const collectibles_lootchest_address = config.config.blitz.registration.collectibles_lootchest_address;
-  const prizeDistributionSystemsAddr = getContractByName(
-    config.provider.manifest,
-    `${NAMESPACE}-prize_distribution_systems`,
-  );
-
-  const grantRoleTx = await config.provider.grant_collectible_minter_role({
-    signer: config.account,
-    collectible_address: collectibles_lootchest_address,
-    minter_address: prizeDistributionSystemsAddr,
-  });
-
-  console.log(chalk.green(`    ✔ Minter role granted `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
-};
-
-export const grantCollectibleEliteNftMinterRole = async (config: Config) => {
-  if (!config.config.blitz?.mode?.on) {
-    console.log(chalk.yellow("⏭️  Skipping minter role grant (Blitz mode is off)"));
-    return;
-  }
-
-  if (isUnsetAddress(config.config.blitz?.registration?.collectibles_elitenft_address)) {
-    console.log(chalk.yellow("⏭️  Skipping minter role grant (No elite NFT address configured)"));
-    return;
-  }
-
-  console.log(
-    chalk.cyan(`\n
-  🎫 Grant Collectible Minter Role For Elite NFT
-  ═══════════════════════════════`),
-  );
-
-  console.log(
-    chalk.cyan(`
-    ┌─ ${chalk.yellow("Granting Minter Role")}
-    │  ${chalk.gray("Granting minter role for Elite NFT Contract to prize_distribution_systems...")}
-    └────────────────────────────────`),
-  );
-
-  const collectibles_elitenft_address = config.config.blitz.registration.collectibles_elitenft_address;
-  const prizeDistributionSystemsAddr = getContractByName(
-    config.provider.manifest,
-    `${NAMESPACE}-prize_distribution_systems`,
-  );
-
-  const grantRoleTx = await config.provider.grant_collectible_minter_role({
-    signer: config.account,
-    collectible_address: collectibles_elitenft_address,
-    minter_address: prizeDistributionSystemsAddr,
-  });
-
-  console.log(chalk.green(`    ✔ Minter role granted for Elite NFT `) + chalk.gray(grantRoleTx.statusReceipt) + "\n");
 };
 
 export const createBanks = async (config: Config, worldConfigTxHash: string) => {
@@ -2166,7 +1888,7 @@ export const addLiquidity = async (config: Config) => {
   }
 };
 
-export const nodeReadConfig = async (chain: Chain, gameType: string) => {
+export const nodeReadConfig = async (chain: GameChain, gameType: string) => {
   if (!fs) {
     throw new Error("nodeReadConfig is only available in Node.js environment");
   }

@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@videos/*": ["src/assets/videos/*"],
+      "@bibliothecadao/provider": ["../../packages/provider/src/index.ts"],
+      "@bibliothecadao/provider/*": ["../../packages/provider/src/*"],
+      "@config": ["../../config/utils/utils"],
+      "@config-deployer/config": ["src/types/config-deployer-stub.d.ts"],
+      "@config-deployer/*": ["../../config/deployer/*"],
+      "@contracts": ["../../contracts/utils/utils"],
+      "@realms-world/chain": ["../../packages/chain/src/index.ts"],
+      "@manifests/*": ["../../contracts/l3/game/*"],
+      "@pm/*": ["src/pm/*"]
+    },
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext", "ES2023"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    // "noUnusedLocals": false,
+    "strictNullChecks": true,
+    // "noUnusedParameters": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vite-plugin-svgr/client", "@types/node"]
+  },
+  "include": [
+    "src",
+    "../../config/utils/utils",
+    "../../contracts/utils/utils",
+    "../../packages/core/src/systems/position.ts"
+  ],
+  "exclude": ["node_modules", "./node_modules", "./node_modules/*", "src/node_modules", "dist", "**/*.spec.ts"],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

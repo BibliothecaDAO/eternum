@@ -1,0 +1,53 @@
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
+import type { CreateFactoryRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
+import type { FactoryGameMode, FactoryLaunchPreset } from "./types";
+
+export const buildFactoryCreateRunRequest = ({
+  environmentId,
+  gameName,
+  gameStartTime,
+  workflowRef,
+  selectedMode,
+  selectedPreset,
+  devModeOn,
+  twoPlayerMode,
+  singleRealmMode,
+  durationMinutes,
+  showsDuration,
+  mapConfigOverrides,
+  biomeClimateOverrides,
+  blitzRegistrationOverrides,
+}: {
+  environmentId: FactoryWorkerEnvironmentId;
+  gameName: string;
+  gameStartTime: string;
+  workflowRef?: string;
+  selectedMode: FactoryGameMode;
+  selectedPreset: FactoryLaunchPreset | null;
+  devModeOn: boolean;
+  twoPlayerMode: boolean;
+  singleRealmMode: boolean;
+  durationMinutes: number | null;
+  showsDuration: boolean;
+  mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
+}): CreateFactoryRunRequest => ({
+  environment: environmentId,
+  gameName,
+  gameStartTime,
+  workflowRef,
+  // Registered registrar preset the launch runs on (appchain).
+  version: selectedPreset?.defaults.version,
+  devModeOn,
+  twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
+  singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
+  durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,
+  mapConfigOverrides,
+  biomeClimateOverrides,
+  blitzRegistrationOverrides: selectedMode === "blitz" ? blitzRegistrationOverrides : undefined,
+});

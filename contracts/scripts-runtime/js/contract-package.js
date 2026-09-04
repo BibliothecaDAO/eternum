@@ -42,6 +42,7 @@ function resolvePackageTaskContext({ actionName, networkName, packageLabel, pack
   return {
     actionLabel: actionLabelByName[actionName] ?? `Running ${actionName} for`,
     envFilePath: resolveContractsCommonEnvFile(repoRoot, networkName),
+    secretEnvFilePath: path.join(repoRoot, ".env"),
     manifestPath: path.join(absolutePackageRoot, "scripts", "commands", "deployment", "manifest.js"),
     networkName,
     packageLabel,
@@ -75,15 +76,15 @@ function buildContractPackage(packageRoot, packageLabel) {
 function installSharedRuntimeDependencies(runtimeRoot) {
   printRuntimeStep("Installing shared deployment runtime dependencies...");
   runRuntimeCommand({
-    args: ["install"],
+    args: ["install", "--frozen-lockfile"],
     command: "bun",
     cwd: runtimeRoot,
     label: "shared deployment runtime install",
   });
 }
 
-function loadPackageTaskEnvironment(envFilePath, networkName) {
-  loadNetworkEnvironment(envFilePath, networkName);
+function loadPackageTaskEnvironment(envFilePath, secretEnvFilePath, networkName) {
+  loadNetworkEnvironment(envFilePath, networkName, secretEnvFilePath);
 }
 
 async function executeContractPackageAction({ actionName, actionOptions, manifestPath, networkName }) {
@@ -138,6 +139,7 @@ export async function runContractPackageTask({
   networkName,
   packageLabel,
   packageRoot,
+  validateEnvironment,
 }) {
   const context = resolvePackageTaskContext({
     actionName,
@@ -152,7 +154,8 @@ export async function runContractPackageTask({
   printRuntimeBanner(`${context.actionLabel} ${context.packageLabel}`);
   buildContractPackage(context.packageRoot, context.packageLabel);
   installSharedRuntimeDependencies(context.runtimeRoot);
-  loadPackageTaskEnvironment(context.envFilePath, context.networkName);
+  loadPackageTaskEnvironment(context.envFilePath, context.secretEnvFilePath, context.networkName);
+  if (validateEnvironment) await validateEnvironment();
   await executeContractPackageAction({
     actionName,
     actionOptions,

@@ -146,7 +146,7 @@ export class WorldUpdateListener {
         defenderOwner: current.defender_owner,
         winnerId: current.winner_id,
         maxReward,
-        timestamp: current.timestamp,
+        timestamp: Number(current.timestamp),
       },
     };
   }

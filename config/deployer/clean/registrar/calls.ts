@@ -1,9 +1,9 @@
-import blitzManifest from "../../../../contracts/game/manifest_appchain_blitz.json";
-import eternumManifest from "../../../../contracts/game/manifest_appchain_eternum.json";
+import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { Account, CallData, type Call } from "starknet";
 import { resolveDeploymentEnvironment } from "../environment";
+import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
-import type { AppchainWorldDeployment, DeploymentEnvironmentId } from "../types";
+import type { DeploymentEnvironmentId, WorldDeployment } from "../types";
 
 type RegistrarEntrypoint = "bootstrap_chain_config" | "register_preset" | "register_series" | "create_game";
 
@@ -41,27 +41,32 @@ export interface RegistrarTransactionResult {
 
 export interface CreateRegistrarGameResult extends RegistrarTransactionResult {
   gameId?: number;
+  openLedgerTxHash?: string;
 }
 
-export type AppchainRegistrarEnvironmentId = "appchain.blitz" | "appchain.eternum";
-type RegistrarTarget = AppchainRegistrarEnvironmentId | RegistrarManifest;
+export interface RegistrarLedgerGameTarget {
+  account: Account;
+  target: LedgerTarget;
+  presetId: number;
+  start: number;
+  end: number;
+}
+
+export type RegistrarEnvironmentId = DeploymentEnvironmentId;
+type RegistrarTarget = RegistrarEnvironmentId | RegistrarManifest;
 
 interface RegistrarContext {
-  environmentId?: AppchainRegistrarEnvironmentId;
+  environmentId?: RegistrarEnvironmentId;
   manifest: RegistrarManifest;
   registrarAddress?: string;
 }
 
-const DEFAULT_ENVIRONMENT_ID: AppchainRegistrarEnvironmentId = "appchain.blitz";
+const DEFAULT_ENVIRONMENT_ID: RegistrarEnvironmentId = "madara.blitz";
 const APPCHAIN_NAMESPACE = "s2";
-const TRACKED_MANIFESTS: Record<string, RegistrarManifest> = {
-  "contracts/game/manifest_appchain_blitz.json": blitzManifest as RegistrarManifest,
-  "contracts/game/manifest_appchain_eternum.json": eternumManifest as RegistrarManifest,
-};
 
-function resolveEnvironmentManifest(deployment: AppchainWorldDeployment): RegistrarManifest {
-  const manifestPath = process.env.APPCHAIN_MANIFEST_PATH || deployment.manifestPath;
-  return TRACKED_MANIFESTS[manifestPath] ?? loadRepoJsonFile<RegistrarManifest>(manifestPath);
+function resolveEnvironmentManifest(deployment: WorldDeployment): RegistrarManifest {
+  const manifestPath = process.env.GAME_MANIFEST_PATH || deployment.manifestPath;
+  return loadRepoJsonFile<RegistrarManifest>(manifestPath);
 }
 
 function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): RegistrarContext {
@@ -70,13 +75,10 @@ function resolveRegistrarContext(target: RegistrarTarget = DEFAULT_ENVIRONMENT_I
   }
 
   const environment = resolveDeploymentEnvironment(target);
-  if (!environment.appchainWorld) {
-    throw new Error(`${target} does not define an appchain world deployment`);
-  }
   return {
     environmentId: target,
-    manifest: resolveEnvironmentManifest(environment.appchainWorld),
-    registrarAddress: process.env.APPCHAIN_MANIFEST_PATH ? undefined : environment.appchainWorld.registrarAddress,
+    manifest: resolveEnvironmentManifest(environment.world),
+    registrarAddress: process.env.GAME_MANIFEST_PATH ? undefined : environment.world.registrarAddress,
   };
 }
 
@@ -137,11 +139,36 @@ function transactionSucceeded(receipt: unknown): boolean {
   return !helper.execution_status || helper.execution_status === "SUCCEEDED";
 }
 
-async function executeRegistrarCall(account: Account, call: Call): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call);
+// The revert reason must ride in the thrown error: the idempotency matchers (isRegistrarAlreadyInitializedError,
+// isRegistrarAlreadyRegisteredError) test the message, so a bare "failed for transaction 0x…" hides the on-chain
+// assert and turns an expected already-initialized/-registered revert into a hard failure.
+function receiptRevertReason(receipt: unknown): string | undefined {
+  const reason = (receipt as { revert_reason?: unknown }).revert_reason;
+  return typeof reason === "string" && reason.length > 0 ? reason : undefined;
+}
+
+export function resolveRegistrarExecutionDetails(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID) {
+  const chain = typeof target === "string" ? resolveDeploymentEnvironment(target).chain : "appchain";
+  const resourceBounds = resolveGameTransactionResourceBounds(chain);
+  return {
+    version: 3 as const,
+    tip: 0,
+    ...(resourceBounds ? { resourceBounds } : {}),
+  };
+}
+
+async function executeRegistrarCall(
+  account: Account,
+  call: Call,
+  target: RegistrarTarget,
+): Promise<RegistrarTransactionResult> {
+  const transaction = await account.execute(call, resolveRegistrarExecutionDetails(target));
   const receipt = await account.waitForTransaction(transaction.transaction_hash);
   if (!transactionSucceeded(receipt)) {
-    throw new Error(`${call.entrypoint} failed for transaction ${transaction.transaction_hash}`);
+    const reason = receiptRevertReason(receipt);
+    throw new Error(
+      `${call.entrypoint} failed for transaction ${transaction.transaction_hash}${reason ? `: ${reason}` : ""}`,
+    );
   }
   return { transactionHash: transaction.transaction_hash, receipt };
 }
@@ -193,17 +220,17 @@ export function resolveCreatedGameId(
   return undefined;
 }
 
-export function resolveAppchainWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
+export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
   const context = resolveRegistrarContext(target);
   requireRegistrarContract(context, "create_game");
   const worldAddress = context.manifest.world?.address;
   if (!hasDeployedAddress(worldAddress)) {
-    throw new Error("World address is missing from the selected appchain manifest");
+    throw new Error("World address is missing from the selected manifest");
   }
   return worldAddress;
 }
 
-export function resolveAppchainContractAddress(
+export function resolveRegistrarContractAddress(
   contractName: string,
   target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
 ): string {
@@ -215,12 +242,7 @@ export function resolveAppchainContractAddress(
   return contractAddress;
 }
 
-export function resolveAppchainRegistrarEnvironmentId(
-  environmentId: DeploymentEnvironmentId,
-): AppchainRegistrarEnvironmentId {
-  if (environmentId !== "appchain.blitz" && environmentId !== "appchain.eternum") {
-    throw new Error(`${environmentId} is not an appchain registrar environment`);
-  }
+export function resolveRegistrarEnvironmentId(environmentId: DeploymentEnvironmentId): RegistrarEnvironmentId {
   return environmentId;
 }
 
@@ -236,7 +258,7 @@ export function buildCreateGameCalldata(params: unknown): string[] {
   return CallData.compile([params] as never);
 }
 
-export function assertAppchainRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
+export function assertRegistrarAvailable(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): void {
   const context = resolveRegistrarContext(target);
   const requiredEntrypoints: RegistrarEntrypoint[] = [
     "bootstrap_chain_config",
@@ -255,6 +277,7 @@ export async function bootstrapChainConfig(
   return executeRegistrarCall(
     account,
     buildRegistrarCall("bootstrap_chain_config", CallData.compile([chainConfig] as never), target),
+    target,
   );
 }
 
@@ -266,6 +289,7 @@ export async function registerPreset(
   return executeRegistrarCall(
     account,
     buildRegistrarCall("register_preset", buildRegisterPresetCalldata(payload), target),
+    target,
   );
 }
 
@@ -293,21 +317,30 @@ export async function registerSeries(
       ] as never),
       target,
     ),
+    target,
   );
 }
 
 export async function createRegistrarGame(
   account: Account,
   params: unknown,
-  target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID,
+  target: RegistrarTarget,
+  ledger?: RegistrarLedgerGameTarget,
 ): Promise<CreateRegistrarGameResult> {
   const result = await executeRegistrarCall(
     account,
     buildRegistrarCall("create_game", buildCreateGameCalldata(params), target),
+    target,
   );
+  const gameId = resolveCreatedGameId(result.receipt, target);
+  const ledgerResult =
+    gameId && ledger
+      ? await openLedgerGame(ledger.account, ledger.target, gameId, ledger.presetId, ledger.start, ledger.end)
+      : null;
   return {
     ...result,
-    gameId: resolveCreatedGameId(result.receipt, target),
+    gameId,
+    openLedgerTxHash: ledgerResult?.transactionHash,
   };
 }
 

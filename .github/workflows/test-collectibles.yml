@@ -4,12 +4,10 @@ on:
   pull_request:
     paths-ignore:
       - "contracts/common/**"
-      - "contracts/game/**"
-      - "contracts/season_resources/**"
-      - "contracts/season_pass/**"
-      - "contracts/village_pass/**"
+      - "contracts/l3/game/**"
+      - "contracts/l2/season_pass/**"
+      - "contracts/l2/village_pass/**"
       - "contracts/utils/**"
-      - "contracts/world/**"
       - "client/**"
       - "**/manifest.json"
       - "config/**"
@@ -26,11 +24,11 @@ jobs:
       - uses: actions/checkout@v3
       - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: contracts/collectibles/.tool-versions
+          tool-versions: contracts/l2/collectibles/.tool-versions
       - uses: foundry-rs/setup-snfoundry@v3
         with:
-          tool-versions: contracts/collectibles/.tool-versions
+          tool-versions: contracts/l2/collectibles/.tool-versions
       - run: scarb build
-        working-directory: contracts/collectibles
+        working-directory: contracts/l2/collectibles
       - run: snforge test
-        working-directory: contracts/collectibles
+        working-directory: contracts/l2/collectibles

@@ -1,0 +1,21 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Default",
+    "compilerOptions": {
+      "forceConsistentCasingInFileNames": true,
+      "target": "ES2022",
+      "lib": ["ES2023"],
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "skipLibCheck": true,
+      "types": ["node"],
+      "noEmit": true,
+      "strict": true,
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["./*"]
+      }
+    },
+    "include": [".", "./.apibara/types"],
+    "exclude": ["node_modules"]
+  }

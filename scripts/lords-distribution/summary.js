@@ -4,7 +4,8 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 
 // Configuration
-const RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
+const RPC_URL = process.env.STARKNET_RPC_URL;
+if (!RPC_URL) throw new Error("STARKNET_RPC_URL is required");
 const LORDS_DECIMALS = 18;
 const STRK_DECIMALS = 18;
 

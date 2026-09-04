@@ -15,23 +15,8 @@ import {
   getProducedResource,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import {
-  DEFAULT_COORD_ALT,
-  FELT_CENTER,
-  ResourceManager,
-  getBuildingCosts,
-  getBuildingCount,
-  getTileAt,
-  setBuildingCount,
-} from "..";
-import {
-  getActiveGameSyncRuntime,
-  trackProvisionalTransaction,
-  type GameSyncProvisionalWrite,
-  type ProvisionalIntent,
-} from "../sync";
-import { configManager, buildingEntityKey, gameEntityKey } from "./config-manager";
-import { getGameEntityKeyGameId } from "./game-entity-keys";
+import { DEFAULT_COORD_ALT, FELT_CENTER, getTileAt } from "..";
+import { buildingEntityKey, gameEntityKey } from "./config-manager";
 
 const BUILDING_SLOT_COORDINATES = [
   { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
@@ -90,7 +75,6 @@ export class TileManager {
     // Read every bounded local slot through the overridable component. Indexed
     // HasValue queries can omit override-only entities, while scanning the
     // whole streamed world component makes local redraw cost grow with the map.
-    const runtime = getActiveGameSyncRuntime();
     const buildings = BUILDING_SLOT_COORDINATES.flatMap(({ col, row }) => {
       const entity = buildingEntityKey(this.col, this.row, col, row);
       const value = getComponentValue(this.components.Building, entity);
@@ -113,10 +97,7 @@ export class TileManager {
           resource: getProducedResource(category),
           paused: value.paused,
           structureType: null,
-          // Row exists only as a provisional overlay — a placement whose tx has
-          // not echoed back yet. Renderers show it disabled; occupancy already
-          // counts it, which is what blocks double-submits on the same slot.
-          pending: runtime?.isProvisionalOnly("Building", entity) ?? false,
+          pending: false,
         },
       ];
     });
@@ -134,7 +115,8 @@ export class TileManager {
 
   isHexOccupied = (hexCoords: HexPosition) => {
     const { col, row } = hexCoords;
-    const building = getComponentValue(this.components.Building, buildingEntityKey(this.col, this.row, col, row));
+    const entity = buildingEntityKey(this.col, this.row, col, row);
+    const building = getComponentValue(this.components.Building, entity);
     return building !== undefined && building.category !== BuildingType.None;
   };
 
@@ -150,200 +132,6 @@ export class TileManager {
     }
   };
 
-  private getBonusFromNeighborBuildings = (col: number, row: number) => {
-    const neighborBuildingCoords = getNeighborHexes(col, row);
-
-    let bonusPercent = 0;
-    neighborBuildingCoords.map((coord) => {
-      const building = getComponentValue(
-        this.components.Building,
-        buildingEntityKey(this.col, this.row, coord.col, coord.row),
-      );
-
-      if (building?.category === BuildingType.ResourceWheat) bonusPercent += building.bonus_percent;
-    });
-
-    return bonusPercent;
-  };
-
-  private createBuildingProvisionalWrites = (
-    entityId: ID,
-    col: number,
-    row: number,
-    buildingType: BuildingType,
-    useSimpleCost: boolean,
-  ): GameSyncProvisionalWrite[] => {
-    const buildingEntity = buildingEntityKey(this.col, this.row, col, row);
-    const resourceChange = getBuildingCosts(entityId, this.components, buildingType, useSimpleCost);
-    const realmEntity = gameEntityKey([BigInt(entityId)]);
-    const structureBuildings = getComponentValue(this.components.StructureBuildings, realmEntity);
-    const buildingCount = getBuildingCount(buildingType, [
-      structureBuildings?.packed_counts_1 || 0n,
-      structureBuildings?.packed_counts_2 || 0n,
-      structureBuildings?.packed_counts_3 || 0n,
-    ]);
-
-    // Ensure array has values at all indices up to buildingType
-    const packedBuildingCount = setBuildingCount(
-      buildingType,
-      [
-        structureBuildings?.packed_counts_1 || 0n,
-        structureBuildings?.packed_counts_2 || 0n,
-        structureBuildings?.packed_counts_3 || 0n,
-      ],
-      buildingCount + 1,
-    );
-    const buildingConfig = configManager.getBuildingCategoryConfig(buildingType);
-    // The patch must carry EVERY schema field (including the key-derived
-    // game_id/alt): RECS returns undefined for an override-only row missing any
-    // non-optional field, which would make the pending building invisible to
-    // every read. entity_id is a placeholder — Cairo assigns a fresh uuid().
-    const buildingPatch = {
-      game_id: getGameEntityKeyGameId(),
-      alt: false,
-      outer_col: this.col,
-      outer_row: this.row,
-      inner_col: col,
-      inner_row: row,
-      category: buildingType,
-      bonus_percent: this.getBonusFromNeighborBuildings(col, row),
-      entity_id: entityId,
-      outer_entity_id: entityId,
-      paused: false,
-    };
-    const writes: GameSyncProvisionalWrite[] = [
-      {
-        entityId: buildingEntity,
-        model: "Building",
-        patch: buildingPatch,
-        // Match only what Cairo deterministically echoes: the row identity and
-        // category. entity_id (fresh uuid) and bonus_percent (never written by
-        // the contract) would make the intent permanently unreconcilable.
-        matchPatch: {
-          outer_col: this.col,
-          outer_row: this.row,
-          inner_col: col,
-          inner_row: row,
-          category: buildingType,
-        },
-      },
-      {
-        entityId: realmEntity,
-        model: "StructureBuildings",
-        patch: {
-          packed_counts_1: packedBuildingCount[0],
-          packed_counts_2: packedBuildingCount[1],
-          packed_counts_3: packedBuildingCount[2],
-          population: {
-            current: (structureBuildings?.population.current || 0) + (buildingConfig?.population_cost ?? 0),
-            max: (structureBuildings?.population.max || 0) + (buildingConfig?.capacity_grant ?? 0),
-          },
-        },
-        matchPatch: {
-          packed_counts_1: packedBuildingCount[0],
-          packed_counts_2: packedBuildingCount[1],
-          packed_counts_3: packedBuildingCount[2],
-        },
-      },
-    ];
-    const resourcePatch = new ResourceManager(this.components, entityId).resolveOptimisticResourceChangesPatch(
-      (resourceChange ?? []).map(({ resource, amount }) => ({ resourceId: resource, amount: -amount })),
-    );
-    if (resourcePatch) {
-      writes.push({ entityId: realmEntity, model: "Resource", patch: resourcePatch, matchPatch: undefined });
-    }
-    return writes;
-  };
-
-  private createDestroyProvisionalWrites = (entityId: ID, col: number, row: number): GameSyncProvisionalWrite[] => {
-    const realmBase = getComponentValue(this.components.Structure, gameEntityKey([BigInt(entityId)]))?.base;
-    const { coord_x: outercol, coord_y: outerrow } = realmBase || { coord_x: 0, coord_y: 0 };
-    // Building is keyed (game_id, alt, outer, outer, inner, inner) — the plain
-    // gameEntityKey misses the alt key and would target a nonexistent row.
-    const entity = buildingEntityKey(outercol, outerrow, col, row);
-    const currentBuilding = getComponentValue(this.components.Building, entity);
-    if (!currentBuilding) throw new Error(`Cannot destroy missing building at ${col},${row}`);
-    const type = currentBuilding.category as BuildingType;
-    const realmEntityId = gameEntityKey([BigInt(entityId)]);
-    const currentStructureBuildings = getComponentValue(this.components.StructureBuildings, realmEntityId);
-    const buildingCount = getBuildingCount(type, [
-      currentStructureBuildings?.packed_counts_1 || 0n,
-      currentStructureBuildings?.packed_counts_2 || 0n,
-      currentStructureBuildings?.packed_counts_3 || 0n,
-    ]);
-
-    const newCount = buildingCount > 0 ? buildingCount - 1 : 0;
-    const packedBuildingCount = setBuildingCount(
-      type,
-      [
-        currentStructureBuildings?.packed_counts_1 || 0n,
-        currentStructureBuildings?.packed_counts_2 || 0n,
-        currentStructureBuildings?.packed_counts_3 || 0n,
-      ],
-      newCount,
-    );
-    const buildingConfig = configManager.getBuildingCategoryConfig(type);
-    const buildingPatch = {
-      game_id: getGameEntityKeyGameId(),
-      alt: false,
-      outer_col: outercol,
-      outer_row: outerrow,
-      inner_col: col,
-      inner_row: row,
-      category: BuildingType.None,
-      bonus_percent: 0,
-      entity_id: 0,
-      outer_entity_id: 0,
-      paused: false,
-    };
-    return [
-      {
-        entityId: entity,
-        model: "Building",
-        patch: buildingPatch,
-        // Cairo erases the row; the echo is a deletion, which `null` matches.
-        matchPatch: null,
-      },
-      {
-        entityId: realmEntityId,
-        model: "StructureBuildings",
-        patch: {
-          packed_counts_1: packedBuildingCount[0],
-          packed_counts_2: packedBuildingCount[1],
-          packed_counts_3: packedBuildingCount[2],
-          population: {
-            current: (currentStructureBuildings?.population.current || 0) - buildingConfig.population_cost,
-            max: (currentStructureBuildings?.population.max || 0) - buildingConfig.capacity_grant,
-          },
-        },
-        matchPatch: {
-          packed_counts_1: packedBuildingCount[0],
-          packed_counts_2: packedBuildingCount[1],
-          packed_counts_3: packedBuildingCount[2],
-        },
-      },
-    ];
-  };
-
-  private createProductionProvisionalWrite = (col: number, row: number, paused: boolean): GameSyncProvisionalWrite => {
-    const entity = buildingEntityKey(this.col, this.row, col, row);
-    const building = getComponentValue(this.components.Building, entity);
-    if (!building) throw new Error(`Cannot update missing building at ${col},${row}`);
-    return { entityId: entity, model: "Building", patch: { paused }, matchPatch: { paused } };
-  };
-
-  private createProvisionalIntent = (writes: readonly GameSyncProvisionalWrite[]): ProvisionalIntent | null => {
-    return getActiveGameSyncRuntime()?.createProvisionalIntent(writes) ?? null;
-  };
-
-  private trackTransaction = (
-    intent: ProvisionalIntent | null,
-    signer: DojoAccount,
-    transactionResult: unknown,
-  ): void => {
-    if (intent) trackProvisionalTransaction(intent, signer, transactionResult);
-  };
-
   placeBuilding = async (
     signer: DojoAccount,
     structureEntityId: ID,
@@ -355,25 +143,19 @@ export class TileManager {
     if (this.isHexOccupied({ col, row })) {
       throw new Error(OCCUPIED_SPACE_REASON);
     }
+
     const startingPosition: [number, number] = [BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]];
     const endPosition: [number, number] = [col, row];
     const directions = getDirectionsArray(startingPosition, endPosition);
-    const intent = this.createProvisionalIntent(
-      this.createBuildingProvisionalWrites(structureEntityId, col, row, buildingType, useSimpleCost),
-    );
-
     try {
-      const result = await this.systemCalls.create_building({
+      return await this.systemCalls.create_building({
         signer,
         entity_id: structureEntityId,
-        directions: directions,
+        directions,
         building_category: buildingType,
         use_simple: useSimpleCost,
       });
-      this.trackTransaction(intent, signer, result);
-      return result;
     } catch (error) {
-      intent?.fail();
       console.error(error);
       if (isOccupiedSpaceError(error)) {
         throw new Error(OCCUPIED_SPACE_REASON);
@@ -383,65 +165,27 @@ export class TileManager {
   };
 
   destroyBuilding = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    const intent = this.createProvisionalIntent(this.createDestroyProvisionalWrites(structureEntityId, col, row));
-
-    try {
-      const result = await this.systemCalls.destroy_building({
-        signer,
-        entity_id: structureEntityId,
-        building_coord: {
-          alt: DEFAULT_COORD_ALT,
-          x: col,
-          y: row,
-        },
-      });
-      this.trackTransaction(intent, signer, result);
-    } catch (error) {
-      intent?.fail();
-      throw error;
-    }
+    await this.systemCalls.destroy_building({
+      signer,
+      entity_id: structureEntityId,
+      building_coord: { alt: DEFAULT_COORD_ALT, x: col, y: row },
+    });
   };
 
   pauseProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    const intent = this.createProvisionalIntent([this.createProductionProvisionalWrite(col, row, true)]);
-
-    try {
-      const result = await this.systemCalls.pause_production({
-        signer,
-        entity_id: structureEntityId,
-        building_coord: {
-          alt: DEFAULT_COORD_ALT,
-          x: col,
-          y: row,
-        },
-      });
-      this.trackTransaction(intent, signer, result);
-    } catch (error) {
-      intent?.fail();
-      console.error(error);
-      throw error;
-    }
+    await this.systemCalls.pause_production({
+      signer,
+      entity_id: structureEntityId,
+      building_coord: { alt: DEFAULT_COORD_ALT, x: col, y: row },
+    });
   };
 
   resumeProduction = async (signer: DojoAccount, structureEntityId: ID, col: number, row: number) => {
-    const intent = this.createProvisionalIntent([this.createProductionProvisionalWrite(col, row, false)]);
-
-    try {
-      const result = await this.systemCalls.resume_production({
-        signer,
-        entity_id: structureEntityId,
-        building_coord: {
-          alt: DEFAULT_COORD_ALT,
-          x: col,
-          y: row,
-        },
-      });
-      this.trackTransaction(intent, signer, result);
-    } catch (error) {
-      intent?.fail();
-      console.error(error);
-      throw error;
-    }
+    await this.systemCalls.resume_production({
+      signer,
+      entity_id: structureEntityId,
+      building_coord: { alt: DEFAULT_COORD_ALT, x: col, y: row },
+    });
   };
 }
 

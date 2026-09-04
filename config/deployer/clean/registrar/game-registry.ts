@@ -1,27 +1,26 @@
-import { fetchFactoryRows, getFactorySqlBaseUrl } from "../../../../common/factory/endpoints";
 import { setTimeout as sleep } from "node:timers/promises";
-import { shortString } from "starknet";
 
-export interface AppchainGameRegistryRow extends Record<string, unknown> {
+export interface GameRegistryRow extends Record<string, unknown> {
   gameId: number;
 }
 
-const GAME_REGISTRY_TABLE = '"s2-GameRegistry"';
-const CHAIN_CONFIG_TABLE = '"s2-ChainConfig"';
-const PRESET_TABLE = '"s2-Preset"';
+interface HeraldDirectoryTarget {
+  chain: string;
+  heraldUrl?: string;
+}
 
-function resolveToriiSqlUrl(cartridgeApiBase?: string): string {
-  const sqlUrl = getFactorySqlBaseUrl("appchain", cartridgeApiBase);
-  if (!sqlUrl) {
-    throw new Error("TORII_URL is required for appchain indexing checks");
-  }
-  return sqlUrl;
+function resolveHeraldDirectoryUrl(target: HeraldDirectoryTarget): string {
+  const baseUrl = target.heraldUrl || process.env.HERALD_URL || process.env.VITE_PUBLIC_HERALD_URL;
+  if (!baseUrl) throw new Error("HERALD_URL is required for GameRegistry checks");
+  const url = new URL(baseUrl);
+  const prefix = url.pathname.replace(/\/+$/, "");
+  url.pathname = `${prefix}/${target.chain}/games`;
+  url.search = "";
+  return url.toString();
 }
 
 function parseInteger(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isSafeInteger(value)) {
-    return value;
-  }
+  if (typeof value === "number" && Number.isSafeInteger(value)) return value;
   if (typeof value === "string" && value.trim()) {
     const parsed = Number(BigInt(value));
     return Number.isSafeInteger(parsed) ? parsed : undefined;
@@ -48,48 +47,41 @@ function readGameId(row: Record<string, unknown>): number | undefined {
   return parseInteger(row.game_id ?? row["key.game_id"] ?? readNestedData(row).game_id);
 }
 
-function toGameRegistryRow(row: Record<string, unknown>): AppchainGameRegistryRow | null {
+function toGameRegistryRow(row: Record<string, unknown>): GameRegistryRow | null {
   const gameId = readGameId(row);
   return gameId ? { ...row, gameId } : null;
 }
 
-async function fetchRows(query: string, cartridgeApiBase?: string): Promise<Record<string, unknown>[]> {
-  return fetchFactoryRows(resolveToriiSqlUrl(cartridgeApiBase), query, { timeoutMs: 10_000 });
+async function fetchGameDirectory(target: HeraldDirectoryTarget): Promise<GameRegistryRow[]> {
+  const response = await fetch(resolveHeraldDirectoryUrl(target), { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error(`Herald directory failed: ${response.status} ${response.statusText}`);
+  const payload = (await response.json()) as { games?: unknown };
+  if (!Array.isArray(payload.games)) throw new Error("Herald directory returned an unexpected payload");
+  return payload.games.flatMap((row) => {
+    if (typeof row !== "object" || row === null || Array.isArray(row)) return [];
+    const parsed = toGameRegistryRow(row as Record<string, unknown>);
+    return parsed ? [parsed] : [];
+  });
 }
 
-export async function findGameRegistryById(
+export const findGameRegistryById = async (
   gameId: number,
-  cartridgeApiBase?: string,
-): Promise<AppchainGameRegistryRow | null> {
-  const rows = await fetchRows(
-    `SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE game_id = ${gameId} LIMIT 1`,
-    cartridgeApiBase,
-  );
-  return rows[0] ? toGameRegistryRow(rows[0]) : null;
-}
+  target: HeraldDirectoryTarget,
+): Promise<GameRegistryRow | null> => (await fetchGameDirectory(target)).find((row) => row.gameId === gameId) ?? null;
 
-export async function findGameRegistryByName(
+export const findGameRegistryByName = async (
   gameName: string,
-  cartridgeApiBase?: string,
-): Promise<AppchainGameRegistryRow | null> {
-  // Torii stores felt columns 64-hex-char left-padded; an unpadded encodeShortString
-  // value never matches, which would silently disable duplicate-game protection.
-  const encodedName = shortString.encodeShortString(gameName);
-  const paddedName = `0x${encodedName.slice(2).padStart(64, "0")}`;
-  const rows = await fetchRows(
-    `SELECT * FROM ${GAME_REGISTRY_TABLE} WHERE name = "${paddedName}" LIMIT 1`,
-    cartridgeApiBase,
-  );
-  return rows[0] ? toGameRegistryRow(rows[0]) : null;
-}
+  target: HeraldDirectoryTarget,
+): Promise<GameRegistryRow | null> => (await fetchGameDirectory(target)).find((row) => row.name === gameName) ?? null;
 
 export async function waitForGameRegistryById(params: {
   gameId: number;
-  cartridgeApiBase?: string;
+  chain: string;
+  heraldUrl?: string;
   timeoutMs?: number;
   pollIntervalMs?: number;
   onRetry?: (attempt: number, elapsedMs: number) => void;
-}): Promise<AppchainGameRegistryRow> {
+}): Promise<GameRegistryRow> {
   const timeoutMs = params.timeoutMs ?? 120_000;
   const pollIntervalMs = params.pollIntervalMs ?? 2_000;
   const startedAt = Date.now();
@@ -97,24 +89,11 @@ export async function waitForGameRegistryById(params: {
 
   while (Date.now() - startedAt <= timeoutMs) {
     attempt += 1;
-    const row = await findGameRegistryById(params.gameId, params.cartridgeApiBase).catch(() => null);
-    if (row) {
-      return row;
-    }
+    const row = await findGameRegistryById(params.gameId, params).catch(() => null);
+    if (row) return row;
     params.onRetry?.(attempt, Date.now() - startedAt);
     await sleep(pollIntervalMs);
   }
 
-  throw new Error(`Timed out waiting for s2-GameRegistry row ${params.gameId}`);
-}
-
-export async function isChainConfigInitialized(cartridgeApiBase?: string): Promise<boolean> {
-  return (await fetchRows(`SELECT * FROM ${CHAIN_CONFIG_TABLE} LIMIT 1`, cartridgeApiBase)).length > 0;
-}
-
-export async function isPresetRegistered(presetId: number, cartridgeApiBase?: string): Promise<boolean> {
-  return (
-    (await fetchRows(`SELECT * FROM ${PRESET_TABLE} WHERE preset_id = ${presetId} LIMIT 1`, cartridgeApiBase)).length >
-    0
-  );
+  throw new Error(`Timed out waiting for Herald GameRegistry row ${params.gameId}`);
 }

@@ -8,7 +8,7 @@ type ConfigWithFactoryAddress = {
 
 describe("applyDeploymentConfigOverrides", () => {
   test("loads generated configs with neutral biome climate defaults", () => {
-    const config = loadEnvironmentConfiguration("appchain.blitz");
+    const config = loadEnvironmentConfiguration("madara.blitz");
 
     expect(config.biomeClimate).toEqual({
       elevationScaleBps: 10_000,
@@ -21,7 +21,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies launch-time boolean overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -29,18 +29,31 @@ describe("applyDeploymentConfigOverrides", () => {
       singleRealmMode: true,
       twoPlayerMode: false,
       durationSeconds: 1_800,
+      pointRegistrationGraceSeconds: 5,
     });
 
     expect(result.season.startMainAt).toBe(1_763_112_600);
     expect(result.season.durationSeconds).toBe(1_800);
+    expect(result.season.pointRegistrationCloseAfterEndSeconds).toBe(5);
     expect((result as ConfigWithFactoryAddress).factory_address).toBe("0xabc");
     expect(result.dev?.mode?.on).toBe(true);
     expect(result.settlement?.single_realm_mode).toBe(true);
     expect(result.settlement?.two_player_mode).toBe(false);
   });
 
+  test("rejects an invalid point-registration grace override", () => {
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
+    expect(() =>
+      applyDeploymentConfigOverrides(baseConfig, {
+        startMainAt: 1_763_112_600,
+        factoryAddress: "0xabc",
+        pointRegistrationGraceSeconds: -1,
+      }),
+    ).toThrow("pointRegistrationGraceSeconds must be an integer between 0 and 4294967295");
+  });
+
   test("applies the inferred official 60-minute blitz profile before launch overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -71,7 +84,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("keeps the base blitz balance for custom durations", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -89,7 +102,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies validated map config overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.eternum");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -108,24 +121,20 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("applies validated blitz registration overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
       blitzRegistrationOverrides: {
         registration_count_max: 12,
-        fee_token: "0x1234",
-        fee_amount: "40000",
       },
     });
 
     expect(result.blitz.registration.registration_count_max).toBe(12);
-    expect(result.blitz.registration.fee_token).toBe("0x1234");
-    expect(result.blitz.registration.fee_amount).toBe(40000n);
   });
 
   test("applies validated biome climate overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -150,7 +159,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects invalid biome climate overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -174,7 +183,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("lets explicit launch-time overrides win after the inferred blitz profile is applied", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
       startMainAt: 1_763_112_600,
       factoryAddress: "0xabc",
@@ -184,18 +193,16 @@ describe("applyDeploymentConfigOverrides", () => {
       },
       blitzRegistrationOverrides: {
         registration_count_max: 24,
-        fee_amount: "250000000000000000000",
       },
     });
 
     expect(result.season.durationSeconds).toBe(3_600);
     expect(result.exploration.relicDiscoveryIntervalSeconds).toBe(420);
     expect(result.blitz.registration.registration_count_max).toBe(24);
-    expect(result.blitz.registration.fee_amount).toBe(250000000000000000000n);
   });
 
   test("rejects mutually exclusive settlement modes", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -208,7 +215,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects invalid duration overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -220,7 +227,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects incomplete probability pair overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -234,7 +241,7 @@ describe("applyDeploymentConfigOverrides", () => {
   });
 
   test("rejects blitz registration overrides in two-player mode", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
+    const baseConfig = loadEnvironmentConfiguration("madara.blitz");
 
     expect(() =>
       applyDeploymentConfigOverrides(baseConfig, {
@@ -246,47 +253,5 @@ describe("applyDeploymentConfigOverrides", () => {
         },
       }),
     ).toThrow("blitz registration overrides are not supported when two_player_mode is enabled");
-  });
-
-  test("rejects invalid blitz prize token overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
-
-    expect(() =>
-      applyDeploymentConfigOverrides(baseConfig, {
-        startMainAt: 1_763_112_600,
-        factoryAddress: "0xabc",
-        blitzRegistrationOverrides: {
-          fee_token: "lords",
-        },
-      }),
-    ).toThrow('blitzRegistrationOverrides.fee_token must be a non-empty "0x" address');
-  });
-
-  test("rejects invalid blitz prize amount overrides", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.blitz");
-
-    expect(() =>
-      applyDeploymentConfigOverrides(baseConfig, {
-        startMainAt: 1_763_112_600,
-        factoryAddress: "0xabc",
-        blitzRegistrationOverrides: {
-          fee_amount: "25.5",
-        },
-      }),
-    ).toThrow("blitzRegistrationOverrides.fee_amount must be a non-negative integer string");
-  });
-
-  test("ignores duration overrides for eternum environments", () => {
-    const baseConfig = loadEnvironmentConfiguration("appchain.eternum");
-
-    const result = applyDeploymentConfigOverrides(baseConfig, {
-      startMainAt: 1_763_112_600,
-      factoryAddress: "0xabc",
-      durationSeconds: 0,
-    });
-
-    expect(result.season.startMainAt).toBe(1_763_112_600);
-    expect(result.season.durationSeconds).toBe(baseConfig.season.durationSeconds);
-    expect(result.blitz.mode.on).toBe(false);
   });
 });

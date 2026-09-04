@@ -6,16 +6,14 @@ import { resolveOptionalArg } from "./args";
 
 const SHARED_STRING_FIELDS = [
   ["rpcUrl", "rpc-url"],
-  ["factoryAddress", "factory-address"],
+  ["ledgerAddress", "ledger"],
+  ["ledgerRpcUrl", "ledger-rpc-url"],
+  ["lordsAddress", "lords"],
+  ["sponsoredPoolLords", "sponsored-pool-lords"],
   ["accountAddress", "account-address"],
   ["privateKey", "private-key"],
-  ["cartridgeApiBase", "cartridge-api-base"],
-  ["toriiNamespaces", "torii-namespaces"],
-  ["vrfProviderAddress", "vrf-provider-address"],
   ["executionMode", "mode"],
   ["version", "version"],
-  ["workflowFile", "workflow-file"],
-  ["ref", "ref"],
 ] as const;
 
 const SHARED_BOOLEAN_FIELDS = [
@@ -23,15 +21,11 @@ const SHARED_BOOLEAN_FIELDS = [
   ["singleRealmMode", "single-realm-mode"],
   ["twoPlayerMode", "two-player-mode"],
   ["verboseConfigLogs", "verbose-config-logs"],
-  ["skipIndexer", "skip-indexer"],
-  ["skipLootChestRoleGrant", "skip-lootchest-role-grant"],
-  ["skipBanks", "skip-banks"],
   ["dryRun", "dry-run"],
 ] as const;
 
 const SHARED_NUMBER_FIELDS = [
   ["durationSeconds", "duration-seconds"],
-  ["maxActions", "max-actions"],
   ["waitForFactoryIndexTimeoutMs", "wait-timeout-ms"],
   ["waitForFactoryIndexPollMs", "wait-poll-ms"],
 ] as const;

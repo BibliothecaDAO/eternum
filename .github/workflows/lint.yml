@@ -20,12 +20,10 @@ jobs:
         with:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v1
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 9.7.0
+      - uses: pnpm/action-setup@v4
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --frozen-lockfile
 
       - name: Collect changed files
         id: changed-files

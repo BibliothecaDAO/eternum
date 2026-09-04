@@ -1,0 +1,2693 @@
+{
+  "capturedFrom": "wss://herald.realms.party/madara/games/11",
+  "capturedAt": "2026-09-01T21:10:04.642Z",
+  "entities": [
+    {
+      "hashed_keys": "0x4533cf8322e4e8109cf9479dfb8d5425a5b33b2e8ea09b780760b6ebefaf1c",
+      "models": {
+        "WorldConfig": {
+          "game_id": "0xb",
+          "map_center_offset": "0x19fc224a",
+          "biome_climate_config": {
+            "elevation_scale_bps": "0x2710",
+            "moisture_scale_bps": "0x2710",
+            "elevation_bias_bps": "0x2710",
+            "moisture_bias_bps": "0x2710",
+            "elevation_seed": "0x0",
+            "moisture_seed": "0x0"
+          },
+          "settlement_config": {
+            "center": "0x7ffffffe",
+            "base_distance": "0x8",
+            "layers_skipped": "0x2",
+            "layer_max": "0x6",
+            "layer_capacity_increment": "0x6",
+            "layer_capacity_bps": "0x1f40",
+            "spires_layer_distance": "0x0",
+            "spires_max_count": "0x0",
+            "spires_settled_count": "0x0"
+          },
+          "blitz_mode_on": true,
+          "blitz_settlement_config": {
+            "base_distance": "0x8",
+            "side": "0x0",
+            "step": "0x4",
+            "point": "0x5",
+            "open_settlement_count": "0x0",
+            "single_realm_mode": false,
+            "two_player_mode": false
+          },
+          "blitz_hypers_settlement_config": {
+            "max_ring_count": "0x4",
+            "current_ring_count": "0x5",
+            "point": "0x1",
+            "side": "0x0"
+          },
+          "blitz_registration_config": {
+            "registration_count": "0x60",
+            "registration_count_max": "0x60",
+            "registration_start_at": "0x6a962022"
+          },
+          "realm_count_config": {
+            "count": "0x120"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0xcc5b34e43b115030972ea35845b393d74c5a6b7d4f02d5296cec4f4395e5",
+      "models": {
+        "WeightConfig": {
+          "preset_id": "0x6",
+          "resource_type": "0x1c",
+          "weight_gram": "0x1388"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x36982ec61b814391963933dab046789022998702beef72835ebad7fe409ba8c",
+      "models": {
+        "WeightConfig": {
+          "preset_id": "0x7",
+          "resource_type": "0x7",
+          "weight_gram": "0x3e8"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7f9973e515e6eadfbb43cd5ac577d8817b9daf6f2cd4d2f19301882b39191fb",
+      "models": {
+        "WeightConfig": {
+          "preset_id": "0x6",
+          "resource_type": "0x16",
+          "weight_gram": "0x3e8"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0xcc5b34e43b115030972ea35845b393d74c5a6b7d4f02d5296cec4f4395e5",
+      "models": {
+        "ResourceFactoryConfig": {
+          "preset_id": "0x6",
+          "resource_type": "0x1c",
+          "realm_output_per_second": "0x2540be400",
+          "village_output_per_second": "0x12a05f200",
+          "labor_output_per_resource": "0x0",
+          "output_per_simple_input": "0x2540be400",
+          "output_per_complex_input": "0x2540be400",
+          "simple_input_list_id": "0x39",
+          "complex_input_list_id": "0x3a",
+          "simple_input_list_count": "0x0",
+          "complex_input_list_count": "0x5"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x36982ec61b814391963933dab046789022998702beef72835ebad7fe409ba8c",
+      "models": {
+        "ResourceFactoryConfig": {
+          "preset_id": "0x7",
+          "resource_type": "0x7",
+          "realm_output_per_second": "0x3b9aca00",
+          "village_output_per_second": "0x1dcd6500",
+          "labor_output_per_resource": "0x12a05f200",
+          "output_per_simple_input": "0x3b9aca00",
+          "output_per_complex_input": "0x3b9aca00",
+          "simple_input_list_id": "0xf",
+          "complex_input_list_id": "0x10",
+          "simple_input_list_count": "0x2",
+          "complex_input_list_count": "0x3"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7f9973e515e6eadfbb43cd5ac577d8817b9daf6f2cd4d2f19301882b39191fb",
+      "models": {
+        "ResourceFactoryConfig": {
+          "preset_id": "0x6",
+          "resource_type": "0x16",
+          "realm_output_per_second": "0x77359400",
+          "village_output_per_second": "0x3b9aca00",
+          "labor_output_per_resource": "0x9502f9000",
+          "output_per_simple_input": "0x77359400",
+          "output_per_complex_input": "0x77359400",
+          "simple_input_list_id": "0x2d",
+          "complex_input_list_id": "0x2e",
+          "simple_input_list_count": "0x2",
+          "complex_input_list_count": "0x3"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0xcc5b34e43b115030972ea35845b393d74c5a6b7d4f02d5296cec4f4395e5",
+      "models": {
+        "BuildingCategoryConfig": {
+          "preset_id": "0x6",
+          "category": "0x1c",
+          "complex_erection_cost_id": "0x87",
+          "complex_erection_cost_count": "0x3",
+          "simple_erection_cost_id": "0x88",
+          "simple_erection_cost_count": "0x1",
+          "population_cost": "0x3",
+          "capacity_grant": "0x0"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x37fd72a3c14408c3e0c632a659a4846d541d94c2152baf9615d3be42a1211eb",
+      "models": {
+        "BuildingCategoryConfig": {
+          "preset_id": "0x1",
+          "category": "0x13",
+          "complex_erection_cost_id": "0x75",
+          "complex_erection_cost_count": "0x0",
+          "simple_erection_cost_id": "0x76",
+          "simple_erection_cost_count": "0x0",
+          "population_cost": "0x2",
+          "capacity_grant": "0x0"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7f9973e515e6eadfbb43cd5ac577d8817b9daf6f2cd4d2f19301882b39191fb",
+      "models": {
+        "BuildingCategoryConfig": {
+          "preset_id": "0x6",
+          "category": "0x16",
+          "complex_erection_cost_id": "0x7b",
+          "complex_erection_cost_count": "0x0",
+          "simple_erection_cost_id": "0x7c",
+          "simple_erection_cost_count": "0x0",
+          "population_cost": "0x2",
+          "capacity_grant": "0x0"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x968234fbb6665e8af097acbd454de214fc7a453f69c2a0452d26911d476892",
+      "models": {
+        "StructureLevelConfig": {
+          "preset_id": "0x6",
+          "level": "0x2",
+          "required_resources_id": "0x9f",
+          "required_resource_count": "0x4"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x371cb6995ea5e7effcd2e174de264b5b407027a75a231a70c2c8d196107f0e7",
+      "models": {
+        "StructureLevelConfig": {
+          "preset_id": "0x1",
+          "level": "0x2",
+          "required_resources_id": "0xa0",
+          "required_resource_count": "0x4"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x6a868cf582720e6b150b5d93bfd1a5a880548a26eb43675d60adbabe3f4747d",
+      "models": {
+        "StructureLevelConfig": {
+          "preset_id": "0x6",
+          "level": "0x3",
+          "required_resources_id": "0xa0",
+          "required_resource_count": "0x6"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x4533cf8322e4e8109cf9479dfb8d5425a5b33b2e8ea09b780760b6ebefaf1c",
+      "models": {
+        "SeasonPrize": {
+          "game_id": "0xb",
+          "total_registered_points": "0x24bb3a900",
+          "total_lords_pool": "0x0"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x5216c2d1da6ad4895d9aa9db47cbed96fab1933a841d16f127c30c4a82837c1",
+      "models": {
+        "QuestLevels": {
+          "game_id": "0xb",
+          "game_address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
+          "levels": [
+            {
+              "target_score": "0x1a",
+              "settings_id": "0x3",
+              "time_limit": "0x15180"
+            },
+            {
+              "target_score": "0x1a",
+              "settings_id": "0x6",
+              "time_limit": "0x15180"
+            },
+            {
+              "target_score": "0x1a",
+              "settings_id": "0x4",
+              "time_limit": "0x15180"
+            },
+            {
+              "target_score": "0x33",
+              "settings_id": "0x1",
+              "time_limit": "0x15180"
+            },
+            {
+              "target_score": "0x65",
+              "settings_id": "0x5",
+              "time_limit": "0x15180"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x48a5ce5dc85a6ca7b49e545c89c377010bb673ff9f62edf1c2bcb02a4b1f9",
+      "models": {
+        "AddressName": {
+          "address": "0x55b2ac0abd45b27b6b5151b14290fd18c62ee49cabb6828833338a0e108e094",
+          "name": "0x626f742d303335"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x415955afbce30d15cd6e04faf6dd17e46993527d5fc957595bbddbf35515c6d",
+      "models": {
+        "AddressName": {
+          "address": "0x7b8158eabfce3e9a4fbc81a81e268ed78e2a26a254013b67b472fba7f6fcd76",
+          "name": "0x626f742d303034"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7fc9ad43d5036cd7a27bc4d9cd537dfc8abfafc6b247a678fe50e7b040a92cc",
+      "models": {
+        "AddressName": {
+          "address": "0x6dc8882ad7d992a85cadeae395c1c642f4fe8373b7e6b903964d3b41502a1a3",
+          "name": "0x626f742d303133"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x21e56493bae66c8703b42c343eb5dfe3d4399ff976a59b73c715384ab2304",
+      "models": {
+        "PlayerRegisteredPoints": {
+          "game_id": "0xb",
+          "address": "0x2975894a4b160811415652ff0f2f7ce250ba1e2380722c9e075d4eca98bfe96",
+          "registered_points": "0x5f5e100"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x41f36808a6aed69a72438d8c19bde68e9d4373b76860e1db5f70c1453929243",
+      "models": {
+        "PlayerRegisteredPoints": {
+          "game_id": "0xb",
+          "address": "0x2ba365d9fa8cf40dd7d88c28b1ec691be647aef028e9b0c4388abf2f70e07ab",
+          "registered_points": "0x5f5e100"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7e93af8c12bb5ce1a2aec963cce021a95c640c2c668f0ad257818561f19b7d3",
+      "models": {
+        "PlayerRegisteredPoints": {
+          "game_id": "0xb",
+          "address": "0x685e4973dc0491e7d767eb5b4aea677e727242e1489562c06f2787f4747fb3d",
+          "registered_points": "0x68e7780"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x21e56493bae66c8703b42c343eb5dfe3d4399ff976a59b73c715384ab2304",
+      "models": {
+        "BlitzSettlement": {
+          "game_id": "0xb",
+          "player": "0x2975894a4b160811415652ff0f2f7ce250ba1e2380722c9e075d4eca98bfe96",
+          "structure_ids": [
+            "0xd12e",
+            "0xd131",
+            "0xd134"
+          ]
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x41f36808a6aed69a72438d8c19bde68e9d4373b76860e1db5f70c1453929243",
+      "models": {
+        "BlitzSettlement": {
+          "game_id": "0xb",
+          "player": "0x2ba365d9fa8cf40dd7d88c28b1ec691be647aef028e9b0c4388abf2f70e07ab",
+          "structure_ids": [
+            "0xcfab",
+            "0xcfae",
+            "0xcfb1"
+          ]
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7e93af8c12bb5ce1a2aec963cce021a95c640c2c668f0ad257818561f19b7d3",
+      "models": {
+        "BlitzSettlement": {
+          "game_id": "0xb",
+          "player": "0x685e4973dc0491e7d767eb5b4aea677e727242e1489562c06f2787f4747fb3d",
+          "structure_ids": [
+            "0xd09e",
+            "0xd0a1",
+            "0xd0a4"
+          ]
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x6168273493a6adb84ebbf062adf5a7a7e3ed54cdfc28b1c418e779de06541",
+      "models": {
+        "ResourceList": {
+          "preset_id": "0x6",
+          "entity_id": "0x57",
+          "index": "0x0",
+          "resource_type": "0x17",
+          "amount": "0x6fc23ac00"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x433aee12e9de35287eaa0439d72bf5d8f7bcc186be7076d46af760317854d96",
+      "models": {
+        "ResourceList": {
+          "preset_id": "0x6",
+          "entity_id": "0x61",
+          "index": "0x0",
+          "resource_type": "0x17",
+          "amount": "0x1bf08eb000"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7fc34ee4697116838b1c1e12c88580260cf5adb5781ec05a0d0bbfba2ab4c64",
+      "models": {
+        "ResourceList": {
+          "preset_id": "0x6",
+          "entity_id": "0x46",
+          "index": "0x1",
+          "resource_type": "0x21",
+          "amount": "0x4a817c800"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x4533cf8322e4e8109cf9479dfb8d5425a5b33b2e8ea09b780760b6ebefaf1c",
+      "models": {
+        "GameRegistry": {
+          "game_id": "0xb",
+          "name": "0x6c61622d6d74687934356733",
+          "series_id": "0x0",
+          "game_number_in_series": "0x0",
+          "preset_id": "0x1",
+          "creator": "0x55be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+          "status": "Live",
+          "dev_mode_on": true,
+          "start_settling_at": "0x6a962023",
+          "start_main_at": "0x6a96205f",
+          "end_at": "0x6a9630c7",
+          "end_grace_seconds": "0x15180",
+          "registration_grace_seconds": "0x93a80",
+          "final_trial_id": "0x0",
+          "seed": "0x54fef5584d45a094c40e5fd52175875be6680f52275300fb6fbebd9a999f498"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0xf0c19834917f627ed3f409437d921569a00124be612f755bff8e7c0e681c18",
+      "models": {
+        "ChainConfig": {
+          "config_id": "0xffffffff",
+          "admin_address": "0x55be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+          "ledger_operator_address": "0x55be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d",
+          "player_registry_address": "0x47d5db2930b9a3270d9cb0e31e3eed2645602c5b51419207f730f3a7f8fafe0",
+          "vrf_provider_address": "0x0",
+          "agent_controller_config": {
+            "address": "0x0"
+          },
+          "collectibles_cosmetics_address": "0x0",
+          "collectibles_timelock_address": "0x0",
+          "collectibles_lootchest_address": "0x0",
+          "collectibles_elitenft_address": "0x0"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x579e8877c7755365d5ec1ec7d3a94a457eff5d1f40482bbe9729c064cdead2",
+      "models": {
+        "PresetConfig": {
+          "preset_id": "0x1",
+          "hyperstructure_config": {
+            "initialize_shards_amount": "0x0"
+          },
+          "hyperstructure_cost_config": {
+            "construction_resources_ids": []
+          },
+          "speed_config": {
+            "donkey_sec_per_km": "0x9",
+            "donkey_sec_per_km_troops": "0x1b"
+          },
+          "map_config": {
+            "reward_resource_amount": "0x2ee",
+            "shards_mines_win_probability": "0x3e8",
+            "shards_mines_fail_probability": "0xbf68",
+            "agent_discovery_prob": "0x0",
+            "agent_discovery_fail_prob": "0x64",
+            "camp_win_probability": "0x5dc",
+            "camp_fail_probability": "0xbd74",
+            "holysite_win_probability": "0x0",
+            "holysite_fail_probability": "0x1",
+            "bitcoin_mine_win_probability": "0x0",
+            "bitcoin_mine_fail_probability": "0x1",
+            "hyps_win_prob": "0x0",
+            "hyps_fail_prob": "0x1",
+            "hyps_fail_prob_increase_p_hex": "0x265c",
+            "hyps_fail_prob_increase_p_fnd": "0x1",
+            "relic_discovery_interval_sec": "0x12c",
+            "relic_hex_dist_from_center": "0xa",
+            "relic_chest_relics_per_chest": "0x3"
+          },
+          "tick_config": {
+            "armies_tick_in_seconds": "0x3c",
+            "delivery_tick_in_seconds": "0xb4",
+            "bitcoin_phase_in_seconds": "0x258"
+          },
+          "structure_max_level_config": {
+            "realm_max": "0x3",
+            "village_max": "0x0"
+          },
+          "building_config": {
+            "base_population": "0x6",
+            "base_cost_percent_increase": "0x3e8"
+          },
+          "troop_damage_config": {
+            "damage_raid_percent_num": "0x3e8",
+            "damage_biome_bonus_num": "0xbb8",
+            "damage_beta_small": "0x4000000000000000",
+            "damage_beta_large": "0x1eb851eb851eb851",
+            "damage_scaling_factor": "0x20000000000000000",
+            "damage_c0": "0x186a00000000000000000",
+            "damage_delta": "0xc3500000000000000000",
+            "t1_damage_value": "0x640000000000000000",
+            "t2_damage_multiplier": "0x30000000000000000",
+            "t3_damage_multiplier": "0x90000000000000000"
+          },
+          "troop_stamina_config": {
+            "stamina_gain_per_tick": "0x1e",
+            "stamina_initial": "0x14",
+            "stamina_bonus_value": "0xa",
+            "stamina_knight_max": "0x78",
+            "stamina_paladin_max": "0x78",
+            "stamina_crossbowman_max": "0x78",
+            "stamina_attack_req": "0x32",
+            "stamina_defense_req": "0x28",
+            "stamina_explore_stamina_cost": "0x1e",
+            "stamina_travel_stamina_cost": "0x14",
+            "stamina_explore_wheat_cost": "0x1c9c380",
+            "stamina_explore_fish_cost": "0x0",
+            "stamina_travel_wheat_cost": "0x1c9c380",
+            "stamina_travel_fish_cost": "0x0"
+          },
+          "troop_limit_config": {
+            "guard_resurrection_delay": "0x258",
+            "mercenaries_troop_lower_bound": "0x320",
+            "mercenaries_troop_upper_bound": "0x640",
+            "agents_troop_lower_bound": "0x1f4",
+            "agents_troop_upper_bound": "0x3a98",
+            "settlement_deployment_cap": "0xbb8",
+            "city_deployment_cap": "0x3a98",
+            "kingdom_deployment_cap": "0xafc8",
+            "empire_deployment_cap": "0x15f90",
+            "t1_tier_strength": "0x1",
+            "t2_tier_strength": "0x3",
+            "t3_tier_strength": "0x9",
+            "t1_tier_modifier": "0x32",
+            "t2_tier_modifier": "0x64",
+            "t3_tier_modifier": "0x96"
+          },
+          "capacity_config": {
+            "structure_capacity": "0x0",
+            "troop_capacity": "0x2710",
+            "donkey_capacity": "0xc350",
+            "storehouse_boost_capacity": "0x0"
+          },
+          "battle_config": {
+            "regular_immunity_ticks": "0x18",
+            "village_immunity_ticks": "0x0",
+            "village_raid_immunity_ticks": "0x18"
+          },
+          "bank_config": {
+            "lp_fee_num": "0x0",
+            "lp_fee_denom": "0x64",
+            "owner_fee_num": "0x0",
+            "owner_fee_denom": "0x64"
+          },
+          "trade_config": {
+            "max_count": "0x0"
+          },
+          "quest_config": {
+            "quest_discovery_prob": "0x1",
+            "quest_discovery_fail_prob": "0x63"
+          },
+          "faith_config": {
+            "enabled": false,
+            "wonder_base_fp_per_sec": "0x0",
+            "holy_site_fp_per_sec": "0x0",
+            "realm_fp_per_sec": "0x0",
+            "village_fp_per_sec": "0x0",
+            "owner_share_percent": "0x0",
+            "reward_token": "0x0"
+          },
+          "bitcoin_mine_config": {
+            "enabled": false,
+            "prize_per_phase": "0x0",
+            "min_labor_per_contribution": "0x1"
+          },
+          "resource_bridge_config": {
+            "deposit_paused": false,
+            "withdraw_paused": false
+          },
+          "res_bridge_fee_split_config": {
+            "velords_fee_on_dpt_percent": "0xfa",
+            "velords_fee_on_wtdr_percent": "0xfa",
+            "season_pool_fee_on_dpt_percent": "0xfa",
+            "season_pool_fee_on_wtdr_percent": "0xfa",
+            "client_fee_on_dpt_percent": "0xfa",
+            "client_fee_on_wtdr_percent": "0xfa",
+            "realm_fee_dpt_percent": "0x1f4",
+            "realm_fee_wtdr_percent": "0x1f4",
+            "velords_fee_recipient": "0x45c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
+            "season_pool_fee_recipient": "0x4cd21aa3e634e36d6379bdbb3fef78f7e0a882eb8a048624c4b02eead1bc553"
+          },
+          "village_troop_config": {
+            "troop_delay_ticks": "0x0"
+          },
+          "quest_games": [
+            {
+              "address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
+              "levels": [
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x3",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x6",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x4",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x33",
+                  "settings_id": "0x1",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x65",
+                  "settings_id": "0x5",
+                  "time_limit": "0x15180"
+                }
+              ]
+            }
+          ],
+          "realm_start_resources_config": {
+            "resources_list_id": "0x1",
+            "resources_list_count": "0x9"
+          },
+          "village_start_resources_config": {
+            "resources_list_id": "0x2",
+            "resources_list_count": "0x3"
+          },
+          "village_find_resources_config": {
+            "resources_mm_list_id": "0x1",
+            "resources_mm_list_count": "0x3"
+          },
+          "structure_capacity_config": {
+            "realm_capacity": "0xffffffffffffffff",
+            "village_capacity": "0xffffffffffffffff",
+            "hyperstructure_capacity": "0xffffffffffffffff",
+            "fragment_mine_capacity": "0xffffffffffffffff",
+            "bank_structure_capacity": "0xffffffffffffffff",
+            "holysite_capacity": "0xffffffffffffffff",
+            "camp_capacity": "0xffffffffffffffff",
+            "bitcoin_mine_capacity": "0xffffffffffffffff"
+          },
+          "victory_points_grant_config": {
+            "hyp_points_per_second": "0xf4240",
+            "claim_hyperstructure_points": "0xb2d05e00",
+            "claim_otherstructure_points": "0x1dcd6500",
+            "explore_tiles_points": "0x989680",
+            "relic_open_points": "0x3b9aca00"
+          },
+          "victory_points_win_config": {
+            "points_for_win": "0x0"
+          },
+          "blitz_exploration_config": {
+            "reward_profile_id": "0x2"
+          },
+          "artificer_config": {
+            "research_cost_for_relic": "0x0"
+          },
+          "blitz_registration_rules_config": {
+            "collectibles_cosmetics_max": "0x5"
+          },
+          "mercenaries_name": "0x5468652056616e6775617264"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x2d3a12d984d95f8cf584cd788ff7ef098a9a8c2d6eb9d5d9a89ef4d6df3d7f8",
+      "models": {
+        "PresetConfig": {
+          "preset_id": "0x6",
+          "hyperstructure_config": {
+            "initialize_shards_amount": "0x0"
+          },
+          "hyperstructure_cost_config": {
+            "construction_resources_ids": []
+          },
+          "speed_config": {
+            "donkey_sec_per_km": "0x9",
+            "donkey_sec_per_km_troops": "0x1b"
+          },
+          "map_config": {
+            "reward_resource_amount": "0x2ee",
+            "shards_mines_win_probability": "0x3e8",
+            "shards_mines_fail_probability": "0xbf68",
+            "agent_discovery_prob": "0x0",
+            "agent_discovery_fail_prob": "0x64",
+            "camp_win_probability": "0x5dc",
+            "camp_fail_probability": "0xbd74",
+            "holysite_win_probability": "0x0",
+            "holysite_fail_probability": "0x1",
+            "bitcoin_mine_win_probability": "0x0",
+            "bitcoin_mine_fail_probability": "0x1",
+            "hyps_win_prob": "0x0",
+            "hyps_fail_prob": "0x1",
+            "hyps_fail_prob_increase_p_hex": "0x265c",
+            "hyps_fail_prob_increase_p_fnd": "0x1",
+            "relic_discovery_interval_sec": "0x12c",
+            "relic_hex_dist_from_center": "0xa",
+            "relic_chest_relics_per_chest": "0x3"
+          },
+          "tick_config": {
+            "armies_tick_in_seconds": "0x3c",
+            "delivery_tick_in_seconds": "0xb4",
+            "bitcoin_phase_in_seconds": "0x258"
+          },
+          "structure_max_level_config": {
+            "realm_max": "0x3",
+            "village_max": "0x0"
+          },
+          "building_config": {
+            "base_population": "0x6",
+            "base_cost_percent_increase": "0x3e8"
+          },
+          "troop_damage_config": {
+            "damage_raid_percent_num": "0x3e8",
+            "damage_biome_bonus_num": "0xbb8",
+            "damage_beta_small": "0x4000000000000000",
+            "damage_beta_large": "0x1eb851eb851eb851",
+            "damage_scaling_factor": "0x20000000000000000",
+            "damage_c0": "0x186a00000000000000000",
+            "damage_delta": "0xc3500000000000000000",
+            "t1_damage_value": "0x640000000000000000",
+            "t2_damage_multiplier": "0x30000000000000000",
+            "t3_damage_multiplier": "0x90000000000000000"
+          },
+          "troop_stamina_config": {
+            "stamina_gain_per_tick": "0x1e",
+            "stamina_initial": "0x1e",
+            "stamina_bonus_value": "0xa",
+            "stamina_knight_max": "0x78",
+            "stamina_paladin_max": "0x78",
+            "stamina_crossbowman_max": "0x78",
+            "stamina_attack_req": "0x32",
+            "stamina_defense_req": "0x28",
+            "stamina_explore_stamina_cost": "0x1e",
+            "stamina_travel_stamina_cost": "0x14",
+            "stamina_explore_wheat_cost": "0x1c9c380",
+            "stamina_explore_fish_cost": "0x0",
+            "stamina_travel_wheat_cost": "0x1c9c380",
+            "stamina_travel_fish_cost": "0x0"
+          },
+          "troop_limit_config": {
+            "guard_resurrection_delay": "0x258",
+            "mercenaries_troop_lower_bound": "0x320",
+            "mercenaries_troop_upper_bound": "0x640",
+            "agents_troop_lower_bound": "0x1f4",
+            "agents_troop_upper_bound": "0x3a98",
+            "settlement_deployment_cap": "0xbb8",
+            "city_deployment_cap": "0x3a98",
+            "kingdom_deployment_cap": "0xafc8",
+            "empire_deployment_cap": "0x15f90",
+            "t1_tier_strength": "0x1",
+            "t2_tier_strength": "0x3",
+            "t3_tier_strength": "0x9",
+            "t1_tier_modifier": "0x32",
+            "t2_tier_modifier": "0x64",
+            "t3_tier_modifier": "0x96"
+          },
+          "capacity_config": {
+            "structure_capacity": "0x0",
+            "troop_capacity": "0x2710",
+            "donkey_capacity": "0xc350",
+            "storehouse_boost_capacity": "0x0"
+          },
+          "battle_config": {
+            "regular_immunity_ticks": "0x18",
+            "village_immunity_ticks": "0x0",
+            "village_raid_immunity_ticks": "0x18"
+          },
+          "bank_config": {
+            "lp_fee_num": "0x0",
+            "lp_fee_denom": "0x64",
+            "owner_fee_num": "0x0",
+            "owner_fee_denom": "0x64"
+          },
+          "trade_config": {
+            "max_count": "0x0"
+          },
+          "quest_config": {
+            "quest_discovery_prob": "0x1",
+            "quest_discovery_fail_prob": "0x63"
+          },
+          "faith_config": {
+            "enabled": false,
+            "wonder_base_fp_per_sec": "0x0",
+            "holy_site_fp_per_sec": "0x0",
+            "realm_fp_per_sec": "0x0",
+            "village_fp_per_sec": "0x0",
+            "owner_share_percent": "0x0",
+            "reward_token": "0x0"
+          },
+          "bitcoin_mine_config": {
+            "enabled": false,
+            "prize_per_phase": "0x0",
+            "min_labor_per_contribution": "0x1"
+          },
+          "resource_bridge_config": {
+            "deposit_paused": false,
+            "withdraw_paused": false
+          },
+          "res_bridge_fee_split_config": {
+            "velords_fee_on_dpt_percent": "0xfa",
+            "velords_fee_on_wtdr_percent": "0xfa",
+            "season_pool_fee_on_dpt_percent": "0xfa",
+            "season_pool_fee_on_wtdr_percent": "0xfa",
+            "client_fee_on_dpt_percent": "0xfa",
+            "client_fee_on_wtdr_percent": "0xfa",
+            "realm_fee_dpt_percent": "0x1f4",
+            "realm_fee_wtdr_percent": "0x1f4",
+            "velords_fee_recipient": "0x45c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
+            "season_pool_fee_recipient": "0x4cd21aa3e634e36d6379bdbb3fef78f7e0a882eb8a048624c4b02eead1bc553"
+          },
+          "village_troop_config": {
+            "troop_delay_ticks": "0x0"
+          },
+          "quest_games": [
+            {
+              "address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
+              "levels": [
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x3",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x6",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x4",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x33",
+                  "settings_id": "0x1",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x65",
+                  "settings_id": "0x5",
+                  "time_limit": "0x15180"
+                }
+              ]
+            }
+          ],
+          "realm_start_resources_config": {
+            "resources_list_id": "0x1",
+            "resources_list_count": "0x9"
+          },
+          "village_start_resources_config": {
+            "resources_list_id": "0x2",
+            "resources_list_count": "0x3"
+          },
+          "village_find_resources_config": {
+            "resources_mm_list_id": "0x1",
+            "resources_mm_list_count": "0x3"
+          },
+          "structure_capacity_config": {
+            "realm_capacity": "0xffffffffffffffff",
+            "village_capacity": "0xffffffffffffffff",
+            "hyperstructure_capacity": "0xffffffffffffffff",
+            "fragment_mine_capacity": "0xffffffffffffffff",
+            "bank_structure_capacity": "0xffffffffffffffff",
+            "holysite_capacity": "0xffffffffffffffff",
+            "camp_capacity": "0xffffffffffffffff",
+            "bitcoin_mine_capacity": "0xffffffffffffffff"
+          },
+          "victory_points_grant_config": {
+            "hyp_points_per_second": "0xf4240",
+            "claim_hyperstructure_points": "0x3b9aca00",
+            "claim_otherstructure_points": "0xee6b280",
+            "explore_tiles_points": "0x4c4b40",
+            "relic_open_points": "0xee6b280"
+          },
+          "victory_points_win_config": {
+            "points_for_win": "0x0"
+          },
+          "blitz_exploration_config": {
+            "reward_profile_id": "0x1"
+          },
+          "artificer_config": {
+            "research_cost_for_relic": "0x0"
+          },
+          "blitz_registration_rules_config": {
+            "collectibles_cosmetics_max": "0x5"
+          },
+          "mercenaries_name": "0x5468652056616e6775617264"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x647ec7114541c9ec11e29d532f000b42f601e3d2529a08ad2073fc6121c3d53",
+      "models": {
+        "PresetConfig": {
+          "preset_id": "0x7",
+          "hyperstructure_config": {
+            "initialize_shards_amount": "0x0"
+          },
+          "hyperstructure_cost_config": {
+            "construction_resources_ids": []
+          },
+          "speed_config": {
+            "donkey_sec_per_km": "0x9",
+            "donkey_sec_per_km_troops": "0x1b"
+          },
+          "map_config": {
+            "reward_resource_amount": "0x2ee",
+            "shards_mines_win_probability": "0x3e8",
+            "shards_mines_fail_probability": "0xbf68",
+            "agent_discovery_prob": "0x0",
+            "agent_discovery_fail_prob": "0x64",
+            "camp_win_probability": "0x5dc",
+            "camp_fail_probability": "0xbd74",
+            "holysite_win_probability": "0x0",
+            "holysite_fail_probability": "0x1",
+            "bitcoin_mine_win_probability": "0x0",
+            "bitcoin_mine_fail_probability": "0x1",
+            "hyps_win_prob": "0x0",
+            "hyps_fail_prob": "0x1",
+            "hyps_fail_prob_increase_p_hex": "0x265c",
+            "hyps_fail_prob_increase_p_fnd": "0x1",
+            "relic_discovery_interval_sec": "0x12c",
+            "relic_hex_dist_from_center": "0xa",
+            "relic_chest_relics_per_chest": "0x3"
+          },
+          "tick_config": {
+            "armies_tick_in_seconds": "0x3c",
+            "delivery_tick_in_seconds": "0xb4",
+            "bitcoin_phase_in_seconds": "0x258"
+          },
+          "structure_max_level_config": {
+            "realm_max": "0x3",
+            "village_max": "0x0"
+          },
+          "building_config": {
+            "base_population": "0x6",
+            "base_cost_percent_increase": "0x3e8"
+          },
+          "troop_damage_config": {
+            "damage_raid_percent_num": "0x3e8",
+            "damage_biome_bonus_num": "0xbb8",
+            "damage_beta_small": "0x4000000000000000",
+            "damage_beta_large": "0x1eb851eb851eb851",
+            "damage_scaling_factor": "0x20000000000000000",
+            "damage_c0": "0x186a00000000000000000",
+            "damage_delta": "0xc3500000000000000000",
+            "t1_damage_value": "0x640000000000000000",
+            "t2_damage_multiplier": "0x30000000000000000",
+            "t3_damage_multiplier": "0x90000000000000000"
+          },
+          "troop_stamina_config": {
+            "stamina_gain_per_tick": "0x1e",
+            "stamina_initial": "0x14",
+            "stamina_bonus_value": "0xa",
+            "stamina_knight_max": "0x78",
+            "stamina_paladin_max": "0x78",
+            "stamina_crossbowman_max": "0x78",
+            "stamina_attack_req": "0x32",
+            "stamina_defense_req": "0x28",
+            "stamina_explore_stamina_cost": "0x1e",
+            "stamina_travel_stamina_cost": "0x14",
+            "stamina_explore_wheat_cost": "0x1c9c380",
+            "stamina_explore_fish_cost": "0x0",
+            "stamina_travel_wheat_cost": "0x1c9c380",
+            "stamina_travel_fish_cost": "0x0"
+          },
+          "troop_limit_config": {
+            "guard_resurrection_delay": "0x258",
+            "mercenaries_troop_lower_bound": "0x320",
+            "mercenaries_troop_upper_bound": "0x640",
+            "agents_troop_lower_bound": "0x1f4",
+            "agents_troop_upper_bound": "0x3a98",
+            "settlement_deployment_cap": "0xbb8",
+            "city_deployment_cap": "0x3a98",
+            "kingdom_deployment_cap": "0xafc8",
+            "empire_deployment_cap": "0x15f90",
+            "t1_tier_strength": "0x1",
+            "t2_tier_strength": "0x3",
+            "t3_tier_strength": "0x9",
+            "t1_tier_modifier": "0x32",
+            "t2_tier_modifier": "0x64",
+            "t3_tier_modifier": "0x96"
+          },
+          "capacity_config": {
+            "structure_capacity": "0x0",
+            "troop_capacity": "0x2710",
+            "donkey_capacity": "0xc350",
+            "storehouse_boost_capacity": "0x0"
+          },
+          "battle_config": {
+            "regular_immunity_ticks": "0x18",
+            "village_immunity_ticks": "0x0",
+            "village_raid_immunity_ticks": "0x18"
+          },
+          "bank_config": {
+            "lp_fee_num": "0x0",
+            "lp_fee_denom": "0x64",
+            "owner_fee_num": "0x0",
+            "owner_fee_denom": "0x64"
+          },
+          "trade_config": {
+            "max_count": "0x0"
+          },
+          "quest_config": {
+            "quest_discovery_prob": "0x1",
+            "quest_discovery_fail_prob": "0x63"
+          },
+          "faith_config": {
+            "enabled": false,
+            "wonder_base_fp_per_sec": "0x0",
+            "holy_site_fp_per_sec": "0x0",
+            "realm_fp_per_sec": "0x0",
+            "village_fp_per_sec": "0x0",
+            "owner_share_percent": "0x0",
+            "reward_token": "0x0"
+          },
+          "bitcoin_mine_config": {
+            "enabled": false,
+            "prize_per_phase": "0x0",
+            "min_labor_per_contribution": "0x1"
+          },
+          "resource_bridge_config": {
+            "deposit_paused": false,
+            "withdraw_paused": false
+          },
+          "res_bridge_fee_split_config": {
+            "velords_fee_on_dpt_percent": "0xfa",
+            "velords_fee_on_wtdr_percent": "0xfa",
+            "season_pool_fee_on_dpt_percent": "0xfa",
+            "season_pool_fee_on_wtdr_percent": "0xfa",
+            "client_fee_on_dpt_percent": "0xfa",
+            "client_fee_on_wtdr_percent": "0xfa",
+            "realm_fee_dpt_percent": "0x1f4",
+            "realm_fee_wtdr_percent": "0x1f4",
+            "velords_fee_recipient": "0x45c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5",
+            "season_pool_fee_recipient": "0x4cd21aa3e634e36d6379bdbb3fef78f7e0a882eb8a048624c4b02eead1bc553"
+          },
+          "village_troop_config": {
+            "troop_delay_ticks": "0x0"
+          },
+          "quest_games": [
+            {
+              "address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
+              "levels": [
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x3",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x6",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x1a",
+                  "settings_id": "0x4",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x33",
+                  "settings_id": "0x1",
+                  "time_limit": "0x15180"
+                },
+                {
+                  "target_score": "0x65",
+                  "settings_id": "0x5",
+                  "time_limit": "0x15180"
+                }
+              ]
+            }
+          ],
+          "realm_start_resources_config": {
+            "resources_list_id": "0x1",
+            "resources_list_count": "0x9"
+          },
+          "village_start_resources_config": {
+            "resources_list_id": "0x2",
+            "resources_list_count": "0x3"
+          },
+          "village_find_resources_config": {
+            "resources_mm_list_id": "0x1",
+            "resources_mm_list_count": "0x3"
+          },
+          "structure_capacity_config": {
+            "realm_capacity": "0xffffffffffffffff",
+            "village_capacity": "0xffffffffffffffff",
+            "hyperstructure_capacity": "0xffffffffffffffff",
+            "fragment_mine_capacity": "0xffffffffffffffff",
+            "bank_structure_capacity": "0xffffffffffffffff",
+            "holysite_capacity": "0xffffffffffffffff",
+            "camp_capacity": "0xffffffffffffffff",
+            "bitcoin_mine_capacity": "0xffffffffffffffff"
+          },
+          "victory_points_grant_config": {
+            "hyp_points_per_second": "0xf4240",
+            "claim_hyperstructure_points": "0xb2d05e00",
+            "claim_otherstructure_points": "0x1dcd6500",
+            "explore_tiles_points": "0x989680",
+            "relic_open_points": "0x3b9aca00"
+          },
+          "victory_points_win_config": {
+            "points_for_win": "0x0"
+          },
+          "blitz_exploration_config": {
+            "reward_profile_id": "0x2"
+          },
+          "artificer_config": {
+            "research_cost_for_relic": "0x0"
+          },
+          "blitz_registration_rules_config": {
+            "collectibles_cosmetics_max": "0x5"
+          },
+          "mercenaries_name": "0x5468652056616e6775617264"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x5f9272b22977e72ded161cfd1ac17b1dcde8fe54bf1943485fc98cfdb583",
+      "models": {
+        "TileOpt": {
+          "game_id": "0xb",
+          "alt": false,
+          "col": "0x6603ddc6",
+          "row": "0x6603dd83",
+          "data": "0xcc07bb8ccc07bb06120000000000"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x4077396c8c6aa7bb642359dfb148fb873009074dca40a8661040ded3a551d85",
+      "models": {
+        "TileOpt": {
+          "game_id": "0xb",
+          "alt": false,
+          "col": "0x6603ddd4",
+          "row": "0x6603dd84",
+          "data": "0xcc07bba8cc07bb08040000000000"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7ff4826137223b3121b1f5b65e86458ce2eac13f9a5678ad7eb65c24ddeacae",
+      "models": {
+        "TileOpt": {
+          "game_id": "0xb",
+          "alt": false,
+          "col": "0x6603dd9a",
+          "row": "0x6603dd9a",
+          "data": "0x2cc07bb34cc07bb34040000000000"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x5a9d7d36ee165f2e1694c60c45500dbb22319a7a7f4902388fad32e822a4e",
+      "models": {
+        "Structure": {
+          "game_id": "0xb",
+          "entity_id": "0xd22d",
+          "owner": "0x7f7b26db160a69ff7b3d59e80f68fd903b0c49b7404c91fca4b8b4906d56742",
+          "base": {
+            "troop_guard_count": "0x1",
+            "troop_explorer_count": "0x1",
+            "troop_max_guard_count": "0x1",
+            "troop_max_explorer_count": "0x1",
+            "created_at": "0x6a962067",
+            "category": "0x1",
+            "coord_x": "0x6603dd95",
+            "coord_y": "0x6603dd83",
+            "level": "0x0",
+            "starting_troops_granted": true
+          },
+          "troop_guards": {
+            "delta": {
+              "category": "Paladin",
+              "tier": "T1",
+              "count": "0x15d3ef79800",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x1c6c4ce"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "charlie": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "bravo": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "alpha": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "delta_destroyed_tick": "0x0",
+            "charlie_destroyed_tick": "0x0",
+            "bravo_destroyed_tick": "0x0",
+            "alpha_destroyed_tick": "0x0"
+          },
+          "troop_explorers": [
+            "0xd68e"
+          ],
+          "resources_packed": "0x30204050b07130916",
+          "metadata": {
+            "realm_id": "0xf2",
+            "order": "0x0",
+            "has_wonder": false,
+            "villages_count": "0x0",
+            "village_realm": "0x0"
+          },
+          "category": "0x1"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x4254d2c44e256c7242a8c33aa8862e51846e163dbf70971829b33b2eda7a884",
+      "models": {
+        "Structure": {
+          "game_id": "0xb",
+          "entity_id": "0xd176",
+          "owner": "0x66ae4de65a797739713093e96af5be72e659a25e92434abda60eb1d28d5c324",
+          "base": {
+            "troop_guard_count": "0x1",
+            "troop_explorer_count": "0x1",
+            "troop_max_guard_count": "0x1",
+            "troop_max_explorer_count": "0x1",
+            "created_at": "0x6a962061",
+            "category": "0x1",
+            "coord_x": "0x6603ddd1",
+            "coord_y": "0x6603dd8b",
+            "level": "0x0",
+            "starting_troops_granted": true
+          },
+          "troop_guards": {
+            "delta": {
+              "category": "Paladin",
+              "tier": "T1",
+              "count": "0x15d3ef79800",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x1c6c4ce"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "charlie": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "bravo": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "alpha": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "delta_destroyed_tick": "0x0",
+            "charlie_destroyed_tick": "0x0",
+            "bravo_destroyed_tick": "0x0",
+            "alpha_destroyed_tick": "0x0"
+          },
+          "troop_explorers": [
+            "0xd5cc"
+          ],
+          "resources_packed": "0x30204050b07130916",
+          "metadata": {
+            "realm_id": "0xb5",
+            "order": "0x0",
+            "has_wonder": false,
+            "villages_count": "0x0",
+            "village_realm": "0x0"
+          },
+          "category": "0x1"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7f641a5306edaf8cff61e1999c606f5770dfb49c410422f088ccc1923cfcbd7",
+      "models": {
+        "Structure": {
+          "game_id": "0xb",
+          "entity_id": "0xd086",
+          "owner": "0x81e9fa2d35593d2ac04d87e2f55323d0b10121acd387cd75530275e11d0f76",
+          "base": {
+            "troop_guard_count": "0x1",
+            "troop_explorer_count": "0x1",
+            "troop_max_guard_count": "0x1",
+            "troop_max_explorer_count": "0x1",
+            "created_at": "0x6a962057",
+            "category": "0x1",
+            "coord_x": "0x6603ddae",
+            "coord_y": "0x6603ddce",
+            "level": "0x0",
+            "starting_troops_granted": true
+          },
+          "troop_guards": {
+            "delta": {
+              "category": "Crossbowman",
+              "tier": "T1",
+              "count": "0x15d3ef79800",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x1c6c4ce"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "charlie": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "bravo": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "alpha": {
+              "category": "Knight",
+              "tier": "T1",
+              "count": "0x0",
+              "stamina": {
+                "amount": "0x0",
+                "updated_tick": "0x0"
+              },
+              "boosts": {
+                "incr_damage_dealt_percent_num": "0x0",
+                "incr_damage_dealt_end_tick": "0x0",
+                "decr_damage_gotten_percent_num": "0x0",
+                "decr_damage_gotten_end_tick": "0x0",
+                "incr_stamina_regen_percent_num": "0x0",
+                "incr_stamina_regen_tick_count": "0x0",
+                "incr_explore_reward_percent_num": "0x0",
+                "incr_explore_reward_end_tick": "0x0"
+              },
+              "battle_cooldown_end": "0x0"
+            },
+            "delta_destroyed_tick": "0x0",
+            "charlie_destroyed_tick": "0x0",
+            "bravo_destroyed_tick": "0x0",
+            "alpha_destroyed_tick": "0x0"
+          },
+          "troop_explorers": [
+            "0xd45a"
+          ],
+          "resources_packed": "0x30204050b07130916",
+          "metadata": {
+            "realm_id": "0x65",
+            "order": "0x0",
+            "has_wonder": false,
+            "villages_count": "0x0",
+            "village_realm": "0x0"
+          },
+          "category": "0x1"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x5a9d7d36ee165f2e1694c60c45500dbb22319a7a7f4902388fad32e822a4e",
+      "models": {
+        "StructureBuildings": {
+          "game_id": "0xb",
+          "entity_id": "0xd22d",
+          "packed_counts_1": "0x0",
+          "packed_counts_2": "0x10000000000000000",
+          "packed_counts_3": "0x0",
+          "population": {
+            "current": "0x0",
+            "max": "0x0"
+          },
+          "coord": {
+            "alt": false,
+            "x": "0x6603dd95",
+            "y": "0x6603dd83"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x4254d2c44e256c7242a8c33aa8862e51846e163dbf70971829b33b2eda7a884",
+      "models": {
+        "StructureBuildings": {
+          "game_id": "0xb",
+          "entity_id": "0xd176",
+          "packed_counts_1": "0x0",
+          "packed_counts_2": "0x10000000000000000",
+          "packed_counts_3": "0x0",
+          "population": {
+            "current": "0x0",
+            "max": "0x0"
+          },
+          "coord": {
+            "alt": false,
+            "x": "0x6603ddd1",
+            "y": "0x6603dd8b"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7f641a5306edaf8cff61e1999c606f5770dfb49c410422f088ccc1923cfcbd7",
+      "models": {
+        "StructureBuildings": {
+          "game_id": "0xb",
+          "entity_id": "0xd086",
+          "packed_counts_1": "0x0",
+          "packed_counts_2": "0x10000000000000000",
+          "packed_counts_3": "0x0",
+          "population": {
+            "current": "0x0",
+            "max": "0x0"
+          },
+          "coord": {
+            "alt": false,
+            "x": "0x6603ddae",
+            "y": "0x6603ddce"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x578a9f5ed146ef61c8d176916fb2c8b0842ee9fd018b49e3916a222c9cdcc",
+      "models": {
+        "Building": {
+          "game_id": "0xb",
+          "alt": false,
+          "outer_col": "0x6603dd95",
+          "outer_row": "0x6603dde5",
+          "inner_col": "0xa",
+          "inner_row": "0xa",
+          "category": "0x19",
+          "bonus_percent": "0x0",
+          "entity_id": "0xd6cc",
+          "outer_entity_id": "0xd278",
+          "paused": false
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x3f81c12a13813fdf109ed2eedd73e19266bf96dd0e4351c15c6a0eac26d6a7e",
+      "models": {
+        "Building": {
+          "game_id": "0xb",
+          "alt": false,
+          "outer_col": "0x6603ddab",
+          "outer_row": "0x6603dd92",
+          "inner_col": "0xa",
+          "inner_row": "0xa",
+          "category": "0x19",
+          "bonus_percent": "0x0",
+          "entity_id": "0xd3f2",
+          "outer_entity_id": "0xd056",
+          "paused": false
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7d748d93e819e6abae64c61cad7934c9b7ab3c1ba2cc8f47e94613f249e1ec3",
+      "models": {
+        "Building": {
+          "game_id": "0xb",
+          "alt": false,
+          "outer_col": "0x6603dd8d",
+          "outer_row": "0x6603dd9a",
+          "inner_col": "0xa",
+          "inner_row": "0xa",
+          "category": "0x19",
+          "bonus_percent": "0x0",
+          "entity_id": "0xd516",
+          "outer_entity_id": "0xd12b",
+          "paused": false
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x277f40d3ccc6de648554f8a44410ec543f95ba681e3d4690a4602d2ee744df",
+      "models": {
+        "ExplorerTroops": {
+          "game_id": "0xb",
+          "explorer_id": "0xd49e",
+          "owner": "0xd0c8",
+          "troops": {
+            "category": "Crossbowman",
+            "tier": "T1",
+            "count": "0x2540be400",
+            "stamina": {
+              "amount": "0x50",
+              "updated_tick": "0x1c6c4d9"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "0x0",
+              "incr_damage_dealt_end_tick": "0x0",
+              "decr_damage_gotten_percent_num": "0x0",
+              "decr_damage_gotten_end_tick": "0x0",
+              "incr_stamina_regen_percent_num": "0x0",
+              "incr_stamina_regen_tick_count": "0x0",
+              "incr_explore_reward_percent_num": "0x0",
+              "incr_explore_reward_end_tick": "0x0"
+            },
+            "battle_cooldown_end": "0x0"
+          },
+          "coord": {
+            "alt": false,
+            "x": "0x6603ddcf",
+            "y": "0x6603dd93"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x3e97b1ecd77962fc0209cc04675f563b78b2a6db5bf7e9ef4a129e56d5b43aa",
+      "models": {
+        "ExplorerTroops": {
+          "game_id": "0xb",
+          "explorer_id": "0xd6d4",
+          "owner": "0xd27b",
+          "troops": {
+            "category": "Paladin",
+            "tier": "T1",
+            "count": "0x2540be400",
+            "stamina": {
+              "amount": "0x32",
+              "updated_tick": "0x1c6c4d9"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "0x0",
+              "incr_damage_dealt_end_tick": "0x0",
+              "decr_damage_gotten_percent_num": "0x0",
+              "decr_damage_gotten_end_tick": "0x0",
+              "incr_stamina_regen_percent_num": "0x0",
+              "incr_stamina_regen_tick_count": "0x0",
+              "incr_explore_reward_percent_num": "0x0",
+              "incr_explore_reward_end_tick": "0x0"
+            },
+            "battle_cooldown_end": "0x0"
+          },
+          "coord": {
+            "alt": false,
+            "x": "0x6603dd8c",
+            "y": "0x6603ddc9"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7fd31bd2b51f0e1aa5f9232695f0ac63f12ac37cfd11e3da0321793083ab9a2",
+      "models": {
+        "ExplorerTroops": {
+          "game_id": "0xb",
+          "explorer_id": "0xd650",
+          "owner": "0xd1fd",
+          "troops": {
+            "category": "Crossbowman",
+            "tier": "T1",
+            "count": "0x2540be400",
+            "stamina": {
+              "amount": "0x3c",
+              "updated_tick": "0x1c6c4d9"
+            },
+            "boosts": {
+              "incr_damage_dealt_percent_num": "0x0",
+              "incr_damage_dealt_end_tick": "0x0",
+              "decr_damage_gotten_percent_num": "0x0",
+              "decr_damage_gotten_end_tick": "0x0",
+              "incr_stamina_regen_percent_num": "0x0",
+              "incr_stamina_regen_tick_count": "0x0",
+              "incr_explore_reward_percent_num": "0x0",
+              "incr_explore_reward_end_tick": "0x0"
+            },
+            "battle_cooldown_end": "0x0"
+          },
+          "coord": {
+            "alt": false,
+            "x": "0x6603dd90",
+            "y": "0x6603dd96"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x5a9d7d36ee165f2e1694c60c45500dbb22319a7a7f4902388fad32e822a4e",
+      "models": {
+        "Resource": {
+          "game_id": "0xb",
+          "entity_id": "0xd22d",
+          "STONE_BALANCE": "0x0",
+          "COAL_BALANCE": "0x1bf08eb000",
+          "WOOD_BALANCE": "0x29e8d60800",
+          "COPPER_BALANCE": "0xdf8475800",
+          "IRONWOOD_BALANCE": "0x0",
+          "OBSIDIAN_BALANCE": "0x0",
+          "GOLD_BALANCE": "0x0",
+          "SILVER_BALANCE": "0x0",
+          "MITHRAL_BALANCE": "0x0",
+          "ALCHEMICAL_SILVER_BALANCE": "0x0",
+          "COLD_IRON_BALANCE": "0x0",
+          "DEEP_CRYSTAL_BALANCE": "0x0",
+          "RUBY_BALANCE": "0x0",
+          "DIAMONDS_BALANCE": "0x0",
+          "HARTWOOD_BALANCE": "0x0",
+          "IGNIUM_BALANCE": "0x0",
+          "TWILIGHT_QUARTZ_BALANCE": "0x0",
+          "TRUE_ICE_BALANCE": "0x0",
+          "ADAMANTINE_BALANCE": "0x0",
+          "SAPPHIRE_BALANCE": "0x0",
+          "ETHEREAL_SILICA_BALANCE": "0x0",
+          "DRAGONHIDE_BALANCE": "0x0",
+          "LABOR_BALANCE": "0x191489af300",
+          "EARTHEN_SHARD_BALANCE": "0x0",
+          "DONKEY_BALANCE": "0x2e90edd000",
+          "KNIGHT_T1_BALANCE": "0xe8d4a51000",
+          "KNIGHT_T2_BALANCE": "0x0",
+          "KNIGHT_T3_BALANCE": "0x0",
+          "CROSSBOWMAN_T1_BALANCE": "0xe8d4a51000",
+          "CROSSBOWMAN_T2_BALANCE": "0x0",
+          "CROSSBOWMAN_T3_BALANCE": "0x0",
+          "PALADIN_T1_BALANCE": "0x15aeaebb400",
+          "PALADIN_T2_BALANCE": "0x0",
+          "PALADIN_T3_BALANCE": "0x0",
+          "WHEAT_BALANCE": "0xe76f045400",
+          "FISH_BALANCE": "0x0",
+          "LORDS_BALANCE": "0x0",
+          "ESSENCE_BALANCE": "0xae9f7bcc00",
+          "RELIC_E1_BALANCE": "0x0",
+          "RELIC_E2_BALANCE": "0x0",
+          "RELIC_E3_BALANCE": "0x0",
+          "RELIC_E4_BALANCE": "0x0",
+          "RELIC_E5_BALANCE": "0x0",
+          "RELIC_E6_BALANCE": "0x0",
+          "RELIC_E7_BALANCE": "0x0",
+          "RELIC_E8_BALANCE": "0x0",
+          "RELIC_E9_BALANCE": "0x0",
+          "RELIC_E10_BALANCE": "0x0",
+          "RELIC_E11_BALANCE": "0x0",
+          "RELIC_E12_BALANCE": "0x0",
+          "RELIC_E13_BALANCE": "0x0",
+          "RELIC_E14_BALANCE": "0x0",
+          "RELIC_E15_BALANCE": "0x0",
+          "RELIC_E16_BALANCE": "0x0",
+          "RELIC_E17_BALANCE": "0x0",
+          "RELIC_E18_BALANCE": "0x0",
+          "RESEARCH_BALANCE": "0x0",
+          "SATOSHI_BALANCE": "0x0",
+          "weight": {
+            "capacity": "0x3b9ac9ffffffffffc4653600",
+            "weight": "0x46043b0ac4d800"
+          },
+          "STONE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9620a1"
+          },
+          "WOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0xb2d05e00",
+            "last_updated_at": "0x6a9622ae"
+          },
+          "COPPER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9620a1"
+          },
+          "IRONWOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "OBSIDIAN_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "GOLD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SILVER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "MITHRAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ALCHEMICAL_SILVER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COLD_IRON_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DEEP_CRYSTAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "RUBY_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DIAMONDS_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "HARTWOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "IGNIUM_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "TWILIGHT_QUARTZ_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "TRUE_ICE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ADAMANTINE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SAPPHIRE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ETHEREAL_SILICA_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DRAGONHIDE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "LABOR_PRODUCTION": {
+            "building_count": "0x1",
+            "production_rate": "0x3b9aca00",
+            "output_amount_left": "0xffffffffffffffffffffff85c38fbdff",
+            "last_updated_at": "0x6a9622ae"
+          },
+          "EARTHEN_SHARD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DONKEY_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9620a1"
+          },
+          "KNIGHT_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a962290"
+          },
+          "KNIGHT_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a96212a"
+          },
+          "CROSSBOWMAN_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9620a3"
+          },
+          "PALADIN_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "WHEAT_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9622ea"
+          },
+          "FISH_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9622ea"
+          },
+          "LORDS_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ESSENCE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x6a9621de"
+          },
+          "RESEARCH_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SATOSHI_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x3f936bfab1fd4106935930f9fc7ad7aaefa550fe73676f633321131d1468ffb",
+      "models": {
+        "Resource": {
+          "game_id": "0xb",
+          "entity_id": "0xd4aa",
+          "STONE_BALANCE": "0x0",
+          "COAL_BALANCE": "0x0",
+          "WOOD_BALANCE": "0x0",
+          "COPPER_BALANCE": "0x0",
+          "IRONWOOD_BALANCE": "0x0",
+          "OBSIDIAN_BALANCE": "0x0",
+          "GOLD_BALANCE": "0x0",
+          "SILVER_BALANCE": "0x0",
+          "MITHRAL_BALANCE": "0x0",
+          "ALCHEMICAL_SILVER_BALANCE": "0x0",
+          "COLD_IRON_BALANCE": "0x0",
+          "DEEP_CRYSTAL_BALANCE": "0x0",
+          "RUBY_BALANCE": "0x0",
+          "DIAMONDS_BALANCE": "0x0",
+          "HARTWOOD_BALANCE": "0x0",
+          "IGNIUM_BALANCE": "0x0",
+          "TWILIGHT_QUARTZ_BALANCE": "0x0",
+          "TRUE_ICE_BALANCE": "0x0",
+          "ADAMANTINE_BALANCE": "0x0",
+          "SAPPHIRE_BALANCE": "0x0",
+          "ETHEREAL_SILICA_BALANCE": "0x0",
+          "DRAGONHIDE_BALANCE": "0x0",
+          "LABOR_BALANCE": "0x0",
+          "EARTHEN_SHARD_BALANCE": "0x0",
+          "DONKEY_BALANCE": "0x0",
+          "KNIGHT_T1_BALANCE": "0x0",
+          "KNIGHT_T2_BALANCE": "0x0",
+          "KNIGHT_T3_BALANCE": "0x0",
+          "CROSSBOWMAN_T1_BALANCE": "0x0",
+          "CROSSBOWMAN_T2_BALANCE": "0x0",
+          "CROSSBOWMAN_T3_BALANCE": "0x0",
+          "PALADIN_T1_BALANCE": "0x0",
+          "PALADIN_T2_BALANCE": "0x0",
+          "PALADIN_T3_BALANCE": "0x0",
+          "WHEAT_BALANCE": "0x0",
+          "FISH_BALANCE": "0x0",
+          "LORDS_BALANCE": "0x0",
+          "ESSENCE_BALANCE": "0x0",
+          "RELIC_E1_BALANCE": "0x0",
+          "RELIC_E2_BALANCE": "0x0",
+          "RELIC_E3_BALANCE": "0x0",
+          "RELIC_E4_BALANCE": "0x0",
+          "RELIC_E5_BALANCE": "0x0",
+          "RELIC_E6_BALANCE": "0x0",
+          "RELIC_E7_BALANCE": "0x0",
+          "RELIC_E8_BALANCE": "0x0",
+          "RELIC_E9_BALANCE": "0x0",
+          "RELIC_E10_BALANCE": "0x0",
+          "RELIC_E11_BALANCE": "0x0",
+          "RELIC_E12_BALANCE": "0x0",
+          "RELIC_E13_BALANCE": "0x0",
+          "RELIC_E14_BALANCE": "0x0",
+          "RELIC_E15_BALANCE": "0x0",
+          "RELIC_E16_BALANCE": "0x0",
+          "RELIC_E17_BALANCE": "0x0",
+          "RELIC_E18_BALANCE": "0x0",
+          "RESEARCH_BALANCE": "0x0",
+          "SATOSHI_BALANCE": "0x0",
+          "weight": {
+            "capacity": "0x5af3107a4000",
+            "weight": "0x0"
+          },
+          "STONE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "WOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COPPER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "IRONWOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "OBSIDIAN_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "GOLD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SILVER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "MITHRAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ALCHEMICAL_SILVER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COLD_IRON_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DEEP_CRYSTAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "RUBY_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DIAMONDS_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "HARTWOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "IGNIUM_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "TWILIGHT_QUARTZ_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "TRUE_ICE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ADAMANTINE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SAPPHIRE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ETHEREAL_SILICA_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DRAGONHIDE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "LABOR_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "EARTHEN_SHARD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DONKEY_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "WHEAT_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "FISH_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "LORDS_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ESSENCE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "RESEARCH_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SATOSHI_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          }
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x7fd31bd2b51f0e1aa5f9232695f0ac63f12ac37cfd11e3da0321793083ab9a2",
+      "models": {
+        "Resource": {
+          "game_id": "0xb",
+          "entity_id": "0xd650",
+          "STONE_BALANCE": "0x0",
+          "COAL_BALANCE": "0x0",
+          "WOOD_BALANCE": "0x0",
+          "COPPER_BALANCE": "0x0",
+          "IRONWOOD_BALANCE": "0x0",
+          "OBSIDIAN_BALANCE": "0x0",
+          "GOLD_BALANCE": "0x0",
+          "SILVER_BALANCE": "0x0",
+          "MITHRAL_BALANCE": "0x0",
+          "ALCHEMICAL_SILVER_BALANCE": "0x0",
+          "COLD_IRON_BALANCE": "0x0",
+          "DEEP_CRYSTAL_BALANCE": "0x0",
+          "RUBY_BALANCE": "0x0",
+          "DIAMONDS_BALANCE": "0x0",
+          "HARTWOOD_BALANCE": "0x0",
+          "IGNIUM_BALANCE": "0x0",
+          "TWILIGHT_QUARTZ_BALANCE": "0x0",
+          "TRUE_ICE_BALANCE": "0x0",
+          "ADAMANTINE_BALANCE": "0x0",
+          "SAPPHIRE_BALANCE": "0x0",
+          "ETHEREAL_SILICA_BALANCE": "0x0",
+          "DRAGONHIDE_BALANCE": "0x0",
+          "LABOR_BALANCE": "0x0",
+          "EARTHEN_SHARD_BALANCE": "0x0",
+          "DONKEY_BALANCE": "0x0",
+          "KNIGHT_T1_BALANCE": "0x0",
+          "KNIGHT_T2_BALANCE": "0x0",
+          "KNIGHT_T3_BALANCE": "0x0",
+          "CROSSBOWMAN_T1_BALANCE": "0x0",
+          "CROSSBOWMAN_T2_BALANCE": "0x0",
+          "CROSSBOWMAN_T3_BALANCE": "0x0",
+          "PALADIN_T1_BALANCE": "0x0",
+          "PALADIN_T2_BALANCE": "0x0",
+          "PALADIN_T3_BALANCE": "0x0",
+          "WHEAT_BALANCE": "0x0",
+          "FISH_BALANCE": "0x0",
+          "LORDS_BALANCE": "0x0",
+          "ESSENCE_BALANCE": "0x0",
+          "RELIC_E1_BALANCE": "0x0",
+          "RELIC_E2_BALANCE": "0x0",
+          "RELIC_E3_BALANCE": "0x0",
+          "RELIC_E4_BALANCE": "0x0",
+          "RELIC_E5_BALANCE": "0x0",
+          "RELIC_E6_BALANCE": "0x0",
+          "RELIC_E7_BALANCE": "0x0",
+          "RELIC_E8_BALANCE": "0x0",
+          "RELIC_E9_BALANCE": "0x0",
+          "RELIC_E10_BALANCE": "0x0",
+          "RELIC_E11_BALANCE": "0x0",
+          "RELIC_E12_BALANCE": "0x0",
+          "RELIC_E13_BALANCE": "0x0",
+          "RELIC_E14_BALANCE": "0x0",
+          "RELIC_E15_BALANCE": "0x0",
+          "RELIC_E16_BALANCE": "0x0",
+          "RELIC_E17_BALANCE": "0x0",
+          "RELIC_E18_BALANCE": "0x0",
+          "RESEARCH_BALANCE": "0x0",
+          "SATOSHI_BALANCE": "0x0",
+          "weight": {
+            "capacity": "0x5af3107a4000",
+            "weight": "0x0"
+          },
+          "STONE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "WOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COPPER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "IRONWOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "OBSIDIAN_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "GOLD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SILVER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "MITHRAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ALCHEMICAL_SILVER_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "COLD_IRON_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DEEP_CRYSTAL_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "RUBY_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DIAMONDS_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "HARTWOOD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "IGNIUM_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "TWILIGHT_QUARTZ_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "TRUE_ICE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ADAMANTINE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SAPPHIRE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ETHEREAL_SILICA_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DRAGONHIDE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "LABOR_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "EARTHEN_SHARD_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "DONKEY_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "KNIGHT_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "CROSSBOWMAN_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T1_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T2_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "PALADIN_T3_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "WHEAT_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "FISH_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "LORDS_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "ESSENCE_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "RESEARCH_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          },
+          "SATOSHI_PRODUCTION": {
+            "building_count": "0x0",
+            "production_rate": "0x0",
+            "output_amount_left": "0x0",
+            "last_updated_at": "0x0"
+          }
+        }
+      }
+    }
+  ],
+  "partials": [
+    {
+      "hashed_keys": "0x5f9272b22977e72ded161cfd1ac17b1dcde8fe54bf1943485fc98cfdb583",
+      "models": {
+        "TileOpt": {
+          "data": "0x1"
+        }
+      }
+    },
+    {
+      "hashed_keys": "0x5a9d7d36ee165f2e1694c60c45500dbb22319a7a7f4902388fad32e822a4e",
+      "models": {
+        "Structure": {
+          "game_id": "0xb"
+        }
+      }
+    }
+  ],
+  "fixturePurpose": "Captured Herald rows used to verify the manifest-generated RECS schemas and ingest coercion."
+}

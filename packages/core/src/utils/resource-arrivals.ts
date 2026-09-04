@@ -9,7 +9,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { isMilitaryResource } from "./resources";
 import { divideByPrecision } from "./utils";
 
@@ -139,23 +139,8 @@ export const formatArrivals = (arrivals: ComponentValue<ClientComponents["Resour
       if (Array.isArray(rawSlotResources)) {
         for (const item of rawSlotResources) {
           if (Array.isArray(item) && item.length >= 2) {
-            const resourceIdObj = item[0];
-            const resourceId =
-              resourceIdObj && typeof resourceIdObj === "object" && "value" in resourceIdObj
-                ? Number(resourceIdObj.value)
-                : 0;
-
-            const amountObj = item[1];
-            let amount = 0;
-
-            if (amountObj && typeof amountObj === "object" && "value" in amountObj) {
-              const amountValue = amountObj.value;
-              if (typeof amountValue === "string" && amountValue.startsWith("0x")) {
-                amount = Number(BigInt(amountValue));
-              } else {
-                amount = Number(amountValue);
-              }
-            }
+            const resourceId = Number(item[0]);
+            const amount = Number(item[1]);
 
             if (amount >= 0) {
               resources.push({
