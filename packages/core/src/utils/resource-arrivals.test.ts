@@ -1,17 +1,52 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ResourcesIds, TroopTier, TroopType, type ResourceArrivalInfo } from "@bibliothecadao/types";
-import { resolveTroopDescriptorFromResourceId, summarizeIncomingTroopArrivals } from "./resource-arrivals";
+import { configManager } from "../managers/config-manager";
+import {
+  formatArrivals,
+  resolveTroopDescriptorFromResourceId,
+  summarizeIncomingTroopArrivals,
+} from "./resource-arrivals";
 
 const makeArrival = (overrides: Partial<ResourceArrivalInfo> = {}): ResourceArrivalInfo => ({
   structureEntityId: 101,
   resources: [],
   arrivesAt: 120n,
-  day: 0,
+  day: 0n,
   slot: 1n,
   ...overrides,
 });
 
 describe("resource-arrivals troop summaries", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("reads tuple arrays stored by the Herald ingest chokepoint", () => {
+    vi.spyOn(configManager, "getTick").mockReturnValue(30);
+
+    expect(
+      formatArrivals([
+        {
+          structure_id: 144_614,
+          day: 206_998n,
+          slot_46: [
+            ["0x17", "0x1955bafc200"],
+            ["0x19", "0x2e90edd000"],
+          ],
+        } as never,
+      ]),
+    ).toEqual([
+      {
+        structureEntityId: 144_614,
+        resources: [
+          { resourceId: 23, amount: Number(0x1955bafc200n) },
+          { resourceId: 25, amount: Number(0x2e90edd000n) },
+        ],
+        arrivesAt: 206_998n * 30n * 48n + 46n * 30n,
+        day: 206_998n,
+        slot: 46n,
+      },
+    ]);
+  });
+
   it("resolves troop descriptors from military resource ids", () => {
     expect(resolveTroopDescriptorFromResourceId(ResourcesIds.KnightT2)).toEqual({
       troopType: TroopType.Knight,

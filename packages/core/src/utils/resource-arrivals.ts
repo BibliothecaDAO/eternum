@@ -9,7 +9,7 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { configManager } from "../managers";
+import { configManager } from "../managers/config-manager";
 import { isMilitaryResource } from "./resources";
 import { divideByPrecision } from "./utils";
 

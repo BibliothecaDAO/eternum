@@ -337,20 +337,14 @@ describe("GameSyncRuntime recovery", () => {
     harness.emitEvent(entity("same-participants", { BattleEvent: { timestamp: 100, winner: 1 } }));
     harness.emitEvent(
       entity("same-participants", {
-        BattleEvent: {
-          timestamp: { key: false, type: "primitive", type_name: "u64", value: 101 },
-          winner: 2,
-        },
+        BattleEvent: { timestamp: 101, winner: 2 },
       }),
     );
     await flushMicrotasks();
 
     expect(memory.events.map(({ models }) => models.BattleEvent)).toEqual([
       { timestamp: 100, winner: 1 },
-      {
-        timestamp: { key: false, type: "primitive", type_name: "u64", value: 101 },
-        winner: 2,
-      },
+      { timestamp: 101, winner: 2 },
     ]);
   });
 

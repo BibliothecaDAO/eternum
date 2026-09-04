@@ -4,6 +4,7 @@ import type {
   GameSyncSessionStart,
   GameSyncStore,
 } from "@bibliothecadao/eternum/game-sync";
+import { cairoTupleMembers } from "@bibliothecadao/eternum/game-sync";
 import type { Component, ComponentValue, Entity, Metadata, Schema } from "@dojoengine/recs";
 import {
   getComponentEntities,
@@ -118,21 +119,23 @@ const compileRecordCoercer = (schema: Record<string, unknown>): ValueCoercer => 
   };
 };
 
-const tupleSpanMemberCount = (type: unknown): number | null => {
+interface CairoTupleType {
+  memberCount: number;
+  span: boolean;
+}
+
+const parseCairoTupleType = (type: unknown): CairoTupleType | null => {
   if (typeof type !== "string") return null;
-  const match = type.match(/^Span<\((.+)\)>$/);
-  return match ? match[1].split(",").length : null;
+  const span = type.match(/^Span<\((.+)\)>$/);
+  if (span) return { memberCount: span[1].split(",").length, span: true };
+  const bare = type.match(/^\((.+)\)$/);
+  return bare ? { memberCount: bare[1].split(",").length, span: false } : null;
 };
 
-const compileTupleSpanCoercer =
-  (memberCount: number): ValueCoercer =>
-  (value) =>
-    requireGameSyncArray(value).map((entry) => {
-      if (!Array.isArray(entry) || entry.length !== memberCount) {
-        throw new Error(`Game sync tuple must contain ${memberCount} members`);
-      }
-      return entry;
-    });
+const compileTupleCoercer = ({ memberCount, span }: CairoTupleType): ValueCoercer =>
+  span
+    ? (value) => requireGameSyncArray(value).map((tuple) => cairoTupleMembers(tuple, memberCount))
+    : (value) => cairoTupleMembers(value, memberCount);
 
 const countSchemaLeaves = (schema: unknown): number => {
   if (typeof schema !== "object" || schema === null || Array.isArray(schema)) return 1;
@@ -145,9 +148,8 @@ const compileComponentCoercer = (component: Component): ValueCoercer => {
   const fields = Object.entries(component.schema as Record<string, unknown>).map(([field, fieldSchema]) => {
     const fieldType = metadataTypes[metadataIndex];
     metadataIndex += countSchemaLeaves(fieldSchema);
-    const tupleMemberCount = tupleSpanMemberCount(fieldType);
-    const coerce =
-      tupleMemberCount === null ? compileValueCoercer(fieldSchema) : compileTupleSpanCoercer(tupleMemberCount);
+    const tupleType = parseCairoTupleType(fieldType);
+    const coerce = tupleType ? compileTupleCoercer(tupleType) : compileValueCoercer(fieldSchema);
     return [field, coerce] as const;
   });
 

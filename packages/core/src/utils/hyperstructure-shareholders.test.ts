@@ -3,8 +3,13 @@ import { describe, expect, it } from "vitest";
 import { decodeHyperstructureShares } from "./hyperstructure-shareholders";
 
 describe("decodeHyperstructureShares", () => {
-  it("decodes Herald tuples and legacy typed-value envelopes", () => {
-    expect(decodeHyperstructureShares([["0xa", "0x1388"], { value: [{ value: "0xb" }, { value: 2_500 }] }])).toEqual([
+  it("decodes tuple arrays stored in RECS", () => {
+    expect(
+      decodeHyperstructureShares([
+        ["0xa", "0x1388"],
+        ["0xb", 2_500],
+      ]),
+    ).toEqual([
       { playerAddress: 10n, basisPoints: 5_000n },
       { playerAddress: 11n, basisPoints: 2_500n },
     ]);

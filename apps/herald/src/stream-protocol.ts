@@ -1,5 +1,7 @@
 import type { FoldDelete, FoldRow, FoldSet } from "./types";
 
+// Model values retain starknet.js' decoded wire shape. In particular, Cairo tuples
+// are records keyed "0" through "n-1"; Herald does not normalize them to arrays.
 interface StreamMessageBase {
   epoch: string;
   seq: number;

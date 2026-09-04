@@ -16,7 +16,11 @@ describe("calculateUnregisteredShareholderPoints", () => {
       {
         game_id: "0x7",
         hyperstructure_id: "0x2a",
-        shareholders: [["0xa", "0x1388"], { value: [{ value: "0xa" }, { value: 2_500 }] }, ["0xb", "0x9c4"]],
+        shareholders: [
+          ["0xa", "0x1388"],
+          ["0xa", 2_500],
+          ["0xb", "0x9c4"],
+        ],
         start_at: "0x64",
       },
     ],
