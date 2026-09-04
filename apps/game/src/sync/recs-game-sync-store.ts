@@ -124,22 +124,13 @@ const tupleSpanMemberCount = (type: unknown): number | null => {
   return match ? match[1].split(",").length : null;
 };
 
-const unwrapTypedValue = (value: unknown): unknown =>
-  typeof value === "object" && value !== null && !Array.isArray(value) && Object.hasOwn(value, "value")
-    ? (value as { value: unknown }).value
-    : value;
-
 const compileTupleSpanCoercer =
   (memberCount: number): ValueCoercer =>
   (value) =>
     requireGameSyncArray(value).map((entry) => {
-      const tuple = unwrapTypedValue(entry);
-      if (!Array.isArray(tuple) || tuple.length !== memberCount) {
+      if (!Array.isArray(entry) || entry.length !== memberCount) {
         throw new Error(`Game sync tuple must contain ${memberCount} members`);
       }
-      // Tuple spans have no faithful primitive-array representation in RECS.
-      // Preserve Herald's tuple (or the legacy typed-value envelope) for the
-      // domain decoder instead of coercing the whole tuple to Number/NaN.
       return entry;
     });
 

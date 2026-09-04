@@ -13,11 +13,11 @@ const useGetQuests = (gameAddress: string, questTileId: number) => {
         ? [
             Has(components.Quest),
             HasValue(components.Quest, {
-              game_address: gameAddress,
+              game_address: BigInt(gameAddress),
               quest_tile_id: questTileId,
             }),
           ]
-        : [HasValue(components.Quest, { game_address: "0x0" })],
+        : [HasValue(components.Quest, { game_address: 0n })],
     [components, gameAddress, questTileId],
   );
 

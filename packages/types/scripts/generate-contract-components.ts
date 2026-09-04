@@ -1,40 +1,48 @@
 #!/usr/bin/env bun
 /**
- * Regenerates src/dojo/contract-components.ts from the s2 appchain manifest.
+ * Regenerates src/dojo/contract-components.ts from the current Madara manifest.
  *
- * Strategy (A4 P1):
- * - Reads the COMMITTED (git HEAD) file as the splice baseline, so the tool is deterministic.
- * - Models/events whose only change vs the baseline is a leading `game_id` key are SPLICED
- *   (existing per-field encodings are proven — keep them byte-identical).
- * - New or restructured models are generated from the manifest's ABI struct/enum registry
- *   (unknown types fail loudly rather than emit a wrong encoding).
- * - Baseline-only models/events (s1/mainnet-only, e.g. Market/Trade/SwapEvent) are carried
- *   verbatim so the mainnet arm keeps compiling.
- * - The namespace becomes a parameter of defineContractComponents (appchain -> "s2",
- *   mainnet -> "s1_eternum"), chosen at bootstrap.
+ * The manifest is the schema authority. Every model and event is generated on
+ * every run, and an unknown Cairo type fails instead of producing a fallback.
  */
-import { $ } from "bun";
 import path from "node:path";
+import { format, resolveConfig } from "prettier";
 
 const ROOT = path.resolve(import.meta.dir, "../../..");
-const MANIFEST_PATH = path.join(ROOT, "contracts/l3/game/manifest_appchain_blitz.json");
+const MANIFEST_PATH = path.join(ROOT, "contracts/l3/game/manifest_madara.json");
 const TARGET_REL = "packages/types/src/dojo/contract-components.ts";
-const TARGET_PATH = path.join(ROOT, TARGET_REL);
+const COMMITTED_TARGET_PATH = path.join(ROOT, TARGET_REL);
+const TARGET_PATH = process.env.CONTRACT_COMPONENTS_OUTPUT
+  ? path.resolve(process.env.CONTRACT_COMPONENTS_OUTPUT)
+  : COMMITTED_TARGET_PATH;
 
 interface ManifestMember {
   name: string;
   type: string;
   key: boolean;
 }
+
 interface AbiEntry {
   type: string;
   name?: string;
   members?: { name: string; type: string }[];
   variants?: { name: string; type: string }[];
 }
+
 interface ManifestModelLike {
   tag: string;
   members: ManifestMember[];
+}
+
+interface RecsMapping {
+  schema: string;
+  optionalSchema?: string;
+  typeLabel: string;
+}
+
+interface EmittedField {
+  schema: string;
+  types: { label: string; comment: string }[];
 }
 
 const manifest = (await Bun.file(MANIFEST_PATH).json()) as {
@@ -43,93 +51,156 @@ const manifest = (await Bun.file(MANIFEST_PATH).json()) as {
   abis?: AbiEntry[];
 };
 
-// ---- ABI struct/enum registry -------------------------------------------------
 const structs = new Map<string, { name: string; type: string }[]>();
-const enums = new Set<string>();
+const enums = new Map<string, { name: string; type: string }[]>();
+
 for (const entry of manifest.abis ?? []) {
-  if (entry.type === "struct" && entry.name && entry.members) structs.set(entry.name, entry.members);
-  else if (entry.type === "enum" && entry.name) enums.add(entry.name);
+  if (entry.type === "struct" && entry.name && entry.members) {
+    structs.set(entry.name, entry.members);
+  } else if (entry.type === "enum" && entry.name && entry.variants) {
+    enums.set(entry.name, entry.variants);
+  }
 }
 
 const shortName = (type: string) => type.split("::").pop() ?? type;
 
-const PRIMITIVE_RECS: Record<string, string> = {
-  bool: "RecsType.Boolean",
-  u8: "RecsType.Number",
-  u16: "RecsType.Number",
-  u32: "RecsType.Number",
-  u64: "RecsType.Number",
-  u128: "RecsType.BigInt",
-  u256: "RecsType.BigInt",
-  felt252: "RecsType.BigInt",
-  ContractAddress: "RecsType.BigInt",
-  ClassHash: "RecsType.BigInt",
+const PRIMITIVE_MAPPINGS: Record<string, RecsMapping> = {
+  bool: { schema: "RecsType.Boolean", typeLabel: "bool" },
+  u8: { schema: "RecsType.Number", optionalSchema: "RecsType.OptionalNumber", typeLabel: "u8" },
+  u16: { schema: "RecsType.Number", optionalSchema: "RecsType.OptionalNumber", typeLabel: "u16" },
+  u32: { schema: "RecsType.Number", optionalSchema: "RecsType.OptionalNumber", typeLabel: "u32" },
+  u64: { schema: "RecsType.BigInt", optionalSchema: "RecsType.OptionalBigInt", typeLabel: "u64" },
+  u128: { schema: "RecsType.BigInt", optionalSchema: "RecsType.OptionalBigInt", typeLabel: "u128" },
+  u256: { schema: "RecsType.BigInt", optionalSchema: "RecsType.OptionalBigInt", typeLabel: "u256" },
+  felt252: { schema: "RecsType.BigInt", optionalSchema: "RecsType.OptionalBigInt", typeLabel: "felt252" },
+  ContractAddress: {
+    schema: "RecsType.BigInt",
+    optionalSchema: "RecsType.OptionalBigInt",
+    typeLabel: "ContractAddress",
+  },
+  ClassHash: { schema: "RecsType.BigInt", optionalSchema: "RecsType.OptionalBigInt", typeLabel: "ClassHash" },
 };
 
-const spanInner = (type: string): string | null => {
-  const match = type.match(/^core::array::Span::<(.+)>$/) ?? type.match(/^core::array::Array::<(.+)>$/);
-  return match ? match[1] : null;
+const genericInner = (type: string, generic: "Span" | "Array" | "Option"): string | null => {
+  const namespace = generic === "Option" ? "core::option" : "core::array";
+  const match = type.match(new RegExp(`^${namespace}::${generic}::<(.+)>$`));
+  return match?.[1] ?? null;
 };
 
-interface EmittedField {
-  schema: string;
-  types: { short: string; comment: string }[];
-  customTypes: string[];
-}
+const splitTupleMembers = (type: string): string[] | null => {
+  if (!type.startsWith("(") || !type.endsWith(")")) return null;
 
-const emitMember = (name: string, type: string, structContext: string | null): EmittedField => {
-  const leaf = shortName(type);
-  const comment = structContext ? `${structContext} ${name}` : name;
-
-  const inner = spanInner(type);
-  if (inner) {
-    if (inner.startsWith("(")) {
-      // Tuple spans follow the existing convention: NumberArray with the tuple type string.
-      const tupleShort = inner.replace(/core::integer::|core::felt252/g, (m) =>
-        m === "core::felt252" ? "felt252" : "",
-      );
-      return {
-        schema: `${name}: RecsType.NumberArray`,
-        types: [{ short: `Span<${tupleShort}>`, comment }],
-        customTypes: [],
-      };
+  const members: string[] = [];
+  let start = 1;
+  let depth = 0;
+  for (let index = 1; index < type.length - 1; index++) {
+    const character = type[index];
+    if (character === "(" || character === "<") depth++;
+    if (character === ")" || character === ">") depth--;
+    if (character === "," && depth === 0) {
+      members.push(type.slice(start, index).trim());
+      start = index + 1;
     }
-    const innerLeaf = shortName(inner);
-    const recsArray =
-      PRIMITIVE_RECS[innerLeaf] === "RecsType.BigInt"
-        ? "RecsType.BigIntArray"
-        : PRIMITIVE_RECS[innerLeaf] === "RecsType.Number"
-          ? "RecsType.NumberArray"
-          : "RecsType.StringArray";
-    return { schema: `${name}: ${recsArray}`, types: [{ short: `Span<${innerLeaf}>`, comment }], customTypes: [] };
   }
-  // The hand-written Troops consumer type (and the spliced ExplorerTroops encoding)
-  // treats Stamina fields as bigint despite their u64 Cairo width — stay consistent.
-  if (structContext === "Stamina") {
-    return { schema: `${name}: RecsType.BigInt`, types: [{ short: leaf, comment }], customTypes: [] };
-  }
-  if (leaf === "u256") {
-    // core::integer::u256 appears in the ABI struct registry — primitives win.
-    return { schema: `${name}: RecsType.BigInt`, types: [{ short: "u256", comment }], customTypes: [] };
-  }
+  members.push(type.slice(start, -1).trim());
+  return members;
+};
+
+const tupleTypeLabel = (type: string): string | null => {
+  const members = splitTupleMembers(type);
+  return members ? `(${members.map(shortName).join(", ")})` : null;
+};
+
+const isUnitEnum = (type: string): boolean => enums.get(type)?.every((variant) => variant.type === "()") ?? false;
+
+const atomicMapping = (type: string): RecsMapping | null => {
+  const primitive = PRIMITIVE_MAPPINGS[shortName(type)];
+  if (primitive) return primitive;
   if (type === "core::byte_array::ByteArray") {
-    // Existing convention: ByteArray is atomic — String schema, "BytesArray" type label.
-    return { schema: `${name}: RecsType.String`, types: [{ short: "BytesArray", comment }], customTypes: [] };
+    return { schema: "RecsType.String", optionalSchema: "RecsType.OptionalString", typeLabel: "BytesArray" };
   }
-  if (PRIMITIVE_RECS[leaf] && !structs.has(type)) {
-    return { schema: `${name}: ${PRIMITIVE_RECS[leaf]}`, types: [{ short: leaf, comment }], customTypes: [] };
+  if (isUnitEnum(type)) {
+    return { schema: "RecsType.String", optionalSchema: "RecsType.OptionalString", typeLabel: "enum" };
   }
   if (enums.has(type)) {
-    return { schema: `${name}: RecsType.String`, types: [{ short: "enum", comment }], customTypes: [leaf] };
+    return { schema: "RecsType.T", typeLabel: "enum" };
   }
+  return null;
+};
+
+const emitOption = (name: string, inner: string, comment: string): EmittedField => {
+  const mapping = atomicMapping(inner);
+  if (!mapping?.optionalSchema) {
+    throw new Error(`No optional RECS mapping for member "${name}" of type "${inner}"`);
+  }
+  return {
+    schema: `${name}: ${mapping.optionalSchema}`,
+    types: [{ label: `Option<${shortName(inner)}>`, comment }],
+  };
+};
+
+const emitSpan = (name: string, inner: string, comment: string): EmittedField => {
+  const tupleLabel = tupleTypeLabel(inner);
+  if (tupleLabel) {
+    return {
+      schema: `${name}: RecsType.NumberArray`,
+      types: [{ label: `Span<${tupleLabel}>`, comment }],
+    };
+  }
+
+  const mapping = atomicMapping(inner);
+  if (mapping) {
+    const schema =
+      mapping.schema === "RecsType.BigInt"
+        ? "RecsType.BigIntArray"
+        : mapping.schema === "RecsType.Number"
+          ? "RecsType.NumberArray"
+          : mapping.schema === "RecsType.String"
+            ? "RecsType.StringArray"
+            : null;
+    if (!schema) throw new Error(`No array RECS mapping for member "${name}" of type "${inner}"`);
+    return { schema: `${name}: ${schema}`, types: [{ label: `Span<${shortName(inner)}>`, comment }] };
+  }
+
+  if (structs.has(inner)) {
+    return {
+      schema: `${name}: RecsType.T`,
+      types: [{ label: `Span<${shortName(inner)}>`, comment }],
+    };
+  }
+  throw new Error(`No span RECS mapping for member "${name}" of type "${inner}"`);
+};
+
+const emitMember = (name: string, type: string, structContext: string | null): EmittedField => {
+  const comment = structContext ? `${structContext} ${name}` : name;
+  const spanInner = genericInner(type, "Span") ?? genericInner(type, "Array");
+  if (spanInner) return emitSpan(name, spanInner, comment);
+
+  const optionInner = genericInner(type, "Option");
+  if (optionInner) return emitOption(name, optionInner, comment);
+
+  const tupleLabel = tupleTypeLabel(type);
+  if (tupleLabel) {
+    return {
+      schema: `${name}: RecsType.BigIntArray`,
+      types: [{ label: tupleLabel, comment }],
+    };
+  }
+
+  const mapping = atomicMapping(type);
+  if (mapping) {
+    return {
+      schema: `${name}: ${mapping.schema}`,
+      types: [{ label: mapping.typeLabel, comment }],
+    };
+  }
+
   const nested = structs.get(type);
   if (nested) {
-    const parts = nested.map((member) => emitMember(member.name, member.type, leaf));
-    const innerSchema = parts.map((part) => `${part.schema},`).join(" ");
+    const parts = nested.map((member) => emitMember(member.name, member.type, shortName(type)));
     return {
-      schema: `${name}: { ${innerSchema} }`,
+      schema: `${name}: { ${parts.map((part) => `${part.schema},`).join(" ")} }`,
       types: parts.flatMap((part) => part.types),
-      customTypes: [leaf, ...parts.flatMap((part) => part.customTypes)],
     };
   }
   throw new Error(`No RECS mapping for member "${name}" of type "${type}"`);
@@ -140,10 +211,9 @@ const generateBlock = (modelName: string, members: ManifestMember[], indent: str
   const schemaLines = parts.map((part) => `${indent}      ${part.schema},`).join("\n");
   const typeLines = parts
     .flatMap((part) => part.types)
-    .map((t) => `${indent}          "${t.short}", // ${t.comment}`)
+    .map(({ label, comment }) => `${indent}          "${label}", // ${comment}`)
     .join("\n");
-  const customTypes = [...new Set(parts.flatMap((part) => part.customTypes))];
-  const customTypesLiteral = customTypes.length ? `["${customTypes.join('", "')}"]` : "[]";
+
   return `${indent}${modelName}: (() => {
 ${indent}  return defineComponent(
 ${indent}    world,
@@ -157,118 +227,22 @@ ${indent}        name: "${modelName}",
 ${indent}        types: [
 ${typeLines}
 ${indent}        ],
-${indent}        customTypes: ${customTypesLiteral},
 ${indent}      } satisfies ContractComponentMetadata,
 ${indent}    },
 ${indent}  );
 ${indent}})(),`;
 };
 
-// ---- Baseline (git HEAD) parsing ---------------------------------------------
-// The splice baseline is the last PRE-MIGRATION file (s1 encodings). After the first
-// regeneration lands, HEAD contains generated output — pin the true baseline instead.
-const BASELINE_REF = process.env.BASELINE_REF ?? "a38f092db0";
-const baseline = await $`git -C ${ROOT} show ${BASELINE_REF}:${TARGET_REL}`.text();
-const mainBlocks = new Map<string, string>();
-const eventBlocks = new Map<string, string>();
-{
-  const lines = baseline.split("\n");
-  let inEvents = false;
-  for (let i = 0; i < lines.length; i++) {
-    if (/^ {4}events: \{$/.test(lines[i])) {
-      inEvents = true;
-      continue;
-    }
-    const match = lines[i].match(/^( {4}| {6})(\w+): \(\(\) => \{$/);
-    if (!match) continue;
-    const name = match[2];
-    let depth = 0;
-    for (let j = i; j < lines.length; j++) {
-      depth += (lines[j].match(/\{/g) ?? []).length - (lines[j].match(/\}/g) ?? []).length;
-      if (j > i && depth === 0) {
-        (match[1].length === 6 || inEvents ? eventBlocks : mainBlocks).set(name, lines.slice(i, j + 1).join("\n"));
-        i = j;
-        break;
-      }
-    }
-  }
-}
-
-const schemaOpenIndent = (block: string): number => {
-  const match = block.match(/^(\s*)\{\s*$/m);
-  return match ? match[1].length : 8;
-};
-
-const topLevelSchemaKeys = (block: string): string[] => {
-  const fieldIndent = schemaOpenIndent(block) + 2;
-  const schemaPart = block.slice(0, block.indexOf("metadata:"));
-  return [...schemaPart.matchAll(new RegExp(`^ {${fieldIndent}}(\\w+):`, "gm"))].map((m) => m[1]);
-};
-
-const spliceGameId = (block: string): string => {
-  const open = schemaOpenIndent(block);
-  const field = " ".repeat(open + 2);
-  const withKey = block.replace(/^(\s*\{\n)/m, `$1${field}game_id: RecsType.Number,\n`);
-  const multiline = withKey.replace(
-    /(^\s*types: \[\n)(\s*)/m,
-    (all, head: string, lead: string) => `${head}${lead}"u32", // game_id\n${lead}`,
-  );
-  if (multiline !== withKey) return multiline;
-  // Single-line arrays: types: ["ContractAddress", ...] and types: [].
-  return withKey.replace(/(^\s*types: \[)(?!\n)(\]?)/m, (all, head: string, close: string) =>
-    close ? `${head}"u32"${close}` : `${head}"u32", `,
-  );
-};
-
-// ---- Assemble one group -------------------------------------------------------
-const stats = { spliced: 0, generated: 0, carried: 0 };
-const assembleGroup = (
-  manifestEntries: ManifestModelLike[],
-  baselineMap: Map<string, string>,
-  indent: string,
-): string[] => {
-  const entries = manifestEntries
+const generateGroup = (entries: ManifestModelLike[], indent: string): string[] =>
+  entries
     .map((entry) => ({ name: entry.tag.replace(/^s2-/, ""), members: entry.members }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const s2Names = new Set(entries.map((entry) => entry.name));
-  const blocks: string[] = [];
-  for (const entry of entries) {
-    const block = baselineMap.get(entry.name);
-    const manifestKeys = entry.members.map((member) => member.name);
-    if (block) {
-      const existingKeys = topLevelSchemaKeys(block);
-      const gameIdFirst = manifestKeys[0] === "game_id";
-      const restMatches =
-        gameIdFirst &&
-        manifestKeys.slice(1).length === existingKeys.length &&
-        manifestKeys.slice(1).every((key, index) => key === existingKeys[index]);
-      if (restMatches) {
-        blocks.push(spliceGameId(block));
-        stats.spliced++;
-        continue;
-      }
-      if (manifestKeys.length === existingKeys.length && manifestKeys.every((key, i) => key === existingKeys[i])) {
-        blocks.push(block);
-        stats.spliced++;
-        continue;
-      }
-    }
-    blocks.push(generateBlock(entry.name, entry.members, indent));
-    stats.generated++;
-  }
-  for (const [name, block] of baselineMap) {
-    if (!s2Names.has(name)) {
-      blocks.push(block);
-      stats.carried++;
-    }
-  }
-  return blocks;
-};
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .map((entry) => generateBlock(entry.name, entry.members, indent));
 
-const modelBlocks = assembleGroup(manifest.models, mainBlocks, "    ");
-const eventGroupBlocks = assembleGroup(manifest.events, eventBlocks, "      ");
+const modelBlocks = generateGroup(manifest.models, "    ");
+const eventBlocks = generateGroup(manifest.events, "      ");
 
-const header = `/* Autogenerated by packages/types/scripts/generate-contract-components.ts. Do not edit manually. */
+const output = `/* Autogenerated by packages/types/scripts/generate-contract-components.ts. Do not edit manually. */
 
 import { defineComponent, Type as RecsType, type World } from "@dojoengine/recs";
 
@@ -278,31 +252,25 @@ type ContractComponentMetadata = {
   namespace: string;
   name: string;
   types: string[];
-  customTypes: string[];
-};
-
-type QuestLevelsSchema = {
-  game_id: typeof RecsType.Number;
-  game_address: typeof RecsType.String;
-  levels: typeof RecsType.T;
 };
 
 /**
- * namespace: "s2" on appchain worlds, "s1_eternum" on legacy mainnet worlds.
- * Models absent from the active chain simply never receive data.
+ * The namespace identifies the active Dojo world's model namespace.
+ * Models absent from that world simply never receive data.
  */
 export function defineContractComponents(world: World, namespace: string) {
   return {
 ${modelBlocks.join("\n")}
     events: {
-${eventGroupBlocks.join("\n")}
+${eventBlocks.join("\n")}
     },
   };
 }
 `;
 
-const output = header.replaceAll('namespace: "s1_eternum",', "namespace,");
-await Bun.write(TARGET_PATH, output);
+const prettierConfig = (await resolveConfig(COMMITTED_TARGET_PATH)) ?? {};
+const formattedOutput = await format(output, { ...prettierConfig, filepath: COMMITTED_TARGET_PATH });
+await Bun.write(TARGET_PATH, formattedOutput);
 console.log(
-  `contract-components.ts regenerated: ${stats.spliced} spliced/unchanged, ${stats.generated} generated, ${stats.carried} carried (baseline-only).`,
+  `contract-components.ts regenerated from manifest_madara.json: ${modelBlocks.length} models, ${eventBlocks.length} events.`,
 );

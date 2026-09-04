@@ -8,18 +8,11 @@ type ContractComponentMetadata = {
   namespace: string;
   name: string;
   types: string[];
-  customTypes: string[];
-};
-
-type QuestLevelsSchema = {
-  game_id: typeof RecsType.Number;
-  game_address: typeof RecsType.String;
-  levels: typeof RecsType.T;
 };
 
 /**
- * namespace: "s2" on appchain worlds, "s1_eternum" on legacy mainnet worlds.
- * Models absent from the active chain simply never receive data.
+ * The namespace identifies the active Dojo world's model namespace.
+ * Models absent from that world simply never receive data.
  */
 export function defineContractComponents(world: World, namespace: string) {
   return {
@@ -38,7 +31,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // address
               "felt252", // name
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -64,7 +56,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // min_spawn_lords_amount
               "u8", // max_spawn_lords_amount
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -84,7 +75,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // game_id
               "u16", // count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -104,7 +94,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // game_id
               "u16", // count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -124,7 +113,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // game_id
               "u32", // amount
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -146,7 +134,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // explorer_id
               "ContractAddress", // address
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -170,7 +157,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // tx_hash
               "bool", // used
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -192,7 +178,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // biome
               "bool", // discovered
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -202,7 +187,7 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           game_id: RecsType.Number,
-          phase_id: RecsType.Number,
+          phase_id: RecsType.BigInt,
           mine_id: RecsType.Number,
           labor_contributed: RecsType.BigInt,
           claimed: RecsType.Boolean,
@@ -218,7 +203,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // labor_contributed
               "bool", // claimed
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -228,12 +212,12 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           game_id: RecsType.Number,
-          phase_id: RecsType.Number,
+          phase_id: RecsType.BigInt,
           prize_pool: RecsType.BigInt,
           total_labor: RecsType.BigInt,
           participant_count: RecsType.Number,
           claim_count: RecsType.Number,
-          reward_receiver_phase: RecsType.Number,
+          reward_receiver_phase: RecsType.BigInt,
         },
         {
           metadata: {
@@ -248,7 +232,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // claim_count
               "u64", // reward_receiver_phase
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -265,9 +248,12 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "BlitzCosmeticAttrsRegister",
-            types: ["u32", "ContractAddress", "Span<u128>"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "ContractAddress", // player
+              "Span<u128>", // attrs
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -283,9 +269,12 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "BlitzSettlement",
-            types: ["u32", "ContractAddress", "Span<u32>"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "ContractAddress", // player
+              "Span<u32>", // structure_ids
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -295,7 +284,7 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           settlement_number: RecsType.Number,
-          coords: RecsType.StringArray,
+          coords: RecsType.T,
         },
         {
           metadata: {
@@ -306,7 +295,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // settlement_number
               "Span<Coord>", // coords
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -344,7 +332,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // outer_entity_id
               "bool", // paused
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -376,7 +363,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // population_cost
               "u8", // capacity_grant
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -412,7 +398,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // collectibles_lootchest_address
               "ContractAddress", // collectibles_elitenft_address
             ],
-            customTypes: ["AgentControllerConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -434,7 +419,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // entity_id
               "felt252", // name
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -450,10 +434,7 @@ export function defineContractComponents(world: World, namespace: string) {
             category: RecsType.String,
             tier: RecsType.String,
             count: RecsType.BigInt,
-            stamina: {
-              amount: RecsType.BigInt,
-              updated_tick: RecsType.BigInt,
-            },
+            stamina: { amount: RecsType.BigInt, updated_tick: RecsType.BigInt },
             boosts: {
               incr_damage_dealt_percent_num: RecsType.Number,
               incr_damage_dealt_end_tick: RecsType.Number,
@@ -466,11 +447,7 @@ export function defineContractComponents(world: World, namespace: string) {
             },
             battle_cooldown_end: RecsType.Number,
           },
-          coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
+          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
         },
         {
           metadata: {
@@ -478,28 +455,27 @@ export function defineContractComponents(world: World, namespace: string) {
             name: "ExplorerTroops",
             types: [
               "u32", // game_id
-              "u32",
-              "u32",
-              "enum",
-              "enum",
-              "u128",
-              "u128",
-              "u128",
-              "u16",
-              "u32",
-              "u16",
-              "u32",
-              "u16",
-              "u8",
-              "u16",
-              "u32",
-              "u32",
-              "bool",
-              "u32",
-              "u32",
+              "u32", // explorer_id
+              "u32", // owner
+              "enum", // Troops category
+              "enum", // Troops tier
+              "u128", // Troops count
+              "u64", // Stamina amount
+              "u64", // Stamina updated_tick
+              "u16", // TroopBoosts incr_damage_dealt_percent_num
+              "u32", // TroopBoosts incr_damage_dealt_end_tick
+              "u16", // TroopBoosts decr_damage_gotten_percent_num
+              "u32", // TroopBoosts decr_damage_gotten_end_tick
+              "u16", // TroopBoosts incr_stamina_regen_percent_num
+              "u8", // TroopBoosts incr_stamina_regen_tick_count
+              "u16", // TroopBoosts incr_explore_reward_percent_num
+              "u32", // TroopBoosts incr_explore_reward_end_tick
+              "u32", // Troops battle_cooldown_end
+              "bool", // Coord alt
+              "u32", // Coord x
+              "u32", // Coord y
             ],
-            customTypes: ["Troops", "Coord"],
-          },
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -510,7 +486,7 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           structure_id: RecsType.Number,
           wonder_id: RecsType.Number,
-          faithful_since: RecsType.Number,
+          faithful_since: RecsType.BigInt,
           fp_to_wonder_owner_per_sec: RecsType.Number,
           fp_to_struct_owner_per_sec: RecsType.Number,
           last_recorded_owner: RecsType.BigInt,
@@ -528,7 +504,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // fp_to_struct_owner_per_sec
               "ContractAddress", // last_recorded_owner
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -550,7 +525,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // allocated_chests
               "u16", // distributed_chests
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -570,7 +544,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // id
               "u32", // next_game_id
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -626,7 +599,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // MapConfig relic_hex_dist_from_center
               "u8", // MapConfig relic_chest_relics_per_chest
             ],
-            customTypes: ["MapConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -643,9 +615,9 @@ export function defineContractComponents(world: World, namespace: string) {
           creator: RecsType.BigInt,
           status: RecsType.String,
           dev_mode_on: RecsType.Boolean,
-          start_settling_at: RecsType.Number,
-          start_main_at: RecsType.Number,
-          end_at: RecsType.Number,
+          start_settling_at: RecsType.BigInt,
+          start_main_at: RecsType.BigInt,
+          end_at: RecsType.BigInt,
           end_grace_seconds: RecsType.Number,
           registration_grace_seconds: RecsType.Number,
           final_trial_id: RecsType.BigInt,
@@ -672,7 +644,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // final_trial_id
               "felt252", // seed
             ],
-            customTypes: ["GameStatus"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -691,9 +662,14 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Guild",
-            types: ["u32", "ContractAddress", "bool", "felt252", "u16"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "ContractAddress", // guild_id
+              "bool", // public
+              "felt252", // name
+              "u16", // member_count
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -714,7 +690,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // member
               "ContractAddress", // guild_id
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -738,7 +713,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // address
               "bool", // whitelisted
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -749,7 +723,7 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           preset_id: RecsType.Number,
           resource_type: RecsType.Number,
-          resource_contribution_points: RecsType.Number,
+          resource_contribution_points: RecsType.BigInt,
           min_amount: RecsType.Number,
           max_amount: RecsType.Number,
         },
@@ -764,7 +738,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // min_amount
               "u32", // max_amount
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -785,9 +758,16 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Hyperstructure",
-            types: ["u32", "u32", "bool", "bool", "enum", "felt252", "u8"],
-            customTypes: ["ConstructionAccess"],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // hyperstructure_id
+              "bool", // initialized
+              "bool", // completed
+              "enum", // access
+              "felt252", // randomness
+              "u8", // points_multiplier
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -808,7 +788,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // created_count
               "u32", // completed_count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -851,35 +830,34 @@ export function defineContractComponents(world: World, namespace: string) {
             name: "HyperstructureRequirements",
             types: [
               "u32", // game_id
-              "u32",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
-              "u128",
+              "u32", // hyperstructure_id
+              "u128", // stone_amount_current
+              "u128", // coal_amount_current
+              "u128", // wood_amount_current
+              "u128", // copper_amount_current
+              "u128", // ironwood_amount_current
+              "u128", // obsidian_amount_current
+              "u128", // gold_amount_current
+              "u128", // silver_amount_current
+              "u128", // mithral_amount_current
+              "u128", // alchemicsilver_amount_current
+              "u128", // coldiron_amount_current
+              "u128", // deepcrystal_amount_current
+              "u128", // ruby_amount_current
+              "u128", // diamonds_amount_current
+              "u128", // hartwood_amount_current
+              "u128", // ignium_amount_current
+              "u128", // twilightquartz_amount_current
+              "u128", // trueice_amount_current
+              "u128", // adamantine_amount_current
+              "u128", // sapphire_amount_current
+              "u128", // etherealsilica_amount_current
+              "u128", // dragonhide_amount_current
+              "u128", // labor_amount_current
+              "u128", // current_resource_total
+              "u128", // needed_resource_total
             ],
-            customTypes: [],
-          },
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -889,16 +867,20 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           hyperstructure_id: RecsType.Number,
-          start_at: RecsType.Number,
+          start_at: RecsType.BigInt,
           shareholders: RecsType.NumberArray,
         },
         {
           metadata: {
             namespace,
             name: "HyperstructureShareholders",
-            types: ["u32", "u32", "u64", "Span<(u32, u16)>"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // hyperstructure_id
+              "u64", // start_at
+              "Span<(ContractAddress, u16)>", // shareholders
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -917,8 +899,14 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "LedgerRegistration",
-            types: ["u32", "ContractAddress", "u256", "(felt252, felt252, felt252)", "u8", "bool"],
-            customTypes: [],
+            types: [
+              "u32", // game_id
+              "ContractAddress", // owner
+              "u256", // realm_id
+              "(felt252, felt252, felt252)", // metadata
+              "u8", // pass_kind
+              "bool", // registered
+            ],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -936,9 +924,13 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Liquidity",
-            types: ["u32", "ContractAddress", "u8", "u128"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "ContractAddress", // player
+              "u8", // resource_type
+              "u128", // shares
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -956,9 +948,14 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Market",
-            types: ["u32", "u8", "u128", "u128", "u128"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u8", // resource_type
+              "u128", // lords_amount
+              "u128", // resource_amount
+              "u128", // total_shares
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -981,7 +978,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // hyperstructure_id
               "u128", // unregistered_points
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -996,7 +992,7 @@ export function defineContractComponents(world: World, namespace: string) {
           points_claimed: RecsType.BigInt,
           points_per_sec_as_owner: RecsType.Number,
           points_per_sec_as_pledger: RecsType.Number,
-          last_updated_at: RecsType.Number,
+          last_updated_at: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1011,7 +1007,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // points_per_sec_as_pledger
               "u64", // last_updated_at
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1035,7 +1030,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // wonder_id
               "bool", // claimed
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1059,7 +1053,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // rank
               "u16", // chests
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1076,9 +1069,12 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "PlayerRegisteredPoints",
-            types: ["u32", "ContractAddress", "u128"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "ContractAddress", // address
+              "u128", // registered_points
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1109,7 +1105,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // total_player_count_committed
               "u16", // total_player_count_revealed
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1129,7 +1124,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // preset_id
               "bool", // registered
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1163,17 +1157,17 @@ export function defineContractComponents(world: World, namespace: string) {
             relic_chest_relics_per_chest: RecsType.Number,
           },
           tick_config: {
-            armies_tick_in_seconds: RecsType.Number,
-            delivery_tick_in_seconds: RecsType.Number,
-            bitcoin_phase_in_seconds: RecsType.Number,
+            armies_tick_in_seconds: RecsType.BigInt,
+            delivery_tick_in_seconds: RecsType.BigInt,
+            bitcoin_phase_in_seconds: RecsType.BigInt,
           },
           structure_max_level_config: { realm_max: RecsType.Number, village_max: RecsType.Number },
           building_config: { base_population: RecsType.Number, base_cost_percent_increase: RecsType.Number },
           troop_damage_config: {
             damage_raid_percent_num: RecsType.Number,
             damage_biome_bonus_num: RecsType.Number,
-            damage_beta_small: RecsType.Number,
-            damage_beta_large: RecsType.Number,
+            damage_beta_small: RecsType.BigInt,
+            damage_beta_large: RecsType.BigInt,
             damage_scaling_factor: RecsType.BigInt,
             damage_c0: RecsType.BigInt,
             damage_delta: RecsType.BigInt,
@@ -1261,7 +1255,7 @@ export function defineContractComponents(world: World, namespace: string) {
             season_pool_fee_recipient: RecsType.BigInt,
           },
           village_troop_config: { troop_delay_ticks: RecsType.Number },
-          quest_games: RecsType.StringArray,
+          quest_games: RecsType.T,
           realm_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_find_resources_config: {
@@ -1269,14 +1263,14 @@ export function defineContractComponents(world: World, namespace: string) {
             resources_mm_list_count: RecsType.Number,
           },
           structure_capacity_config: {
-            realm_capacity: RecsType.Number,
-            village_capacity: RecsType.Number,
-            hyperstructure_capacity: RecsType.Number,
-            fragment_mine_capacity: RecsType.Number,
-            bank_structure_capacity: RecsType.Number,
-            holysite_capacity: RecsType.Number,
-            camp_capacity: RecsType.Number,
-            bitcoin_mine_capacity: RecsType.Number,
+            realm_capacity: RecsType.BigInt,
+            village_capacity: RecsType.BigInt,
+            hyperstructure_capacity: RecsType.BigInt,
+            fragment_mine_capacity: RecsType.BigInt,
+            bank_structure_capacity: RecsType.BigInt,
+            holysite_capacity: RecsType.BigInt,
+            camp_capacity: RecsType.BigInt,
+            bitcoin_mine_capacity: RecsType.BigInt,
           },
           victory_points_grant_config: {
             hyp_points_per_second: RecsType.Number,
@@ -1428,36 +1422,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // BlitzRegistrationRulesConfig collectibles_cosmetics_max
               "felt252", // mercenaries_name
             ],
-            customTypes: [
-              "HyperstructureConfig",
-              "HyperstructureCostConfig",
-              "SpeedConfig",
-              "MapConfig",
-              "TickConfig",
-              "StructureMaxLevelConfig",
-              "BuildingConfig",
-              "TroopDamageConfig",
-              "TroopStaminaConfig",
-              "TroopLimitConfig",
-              "CapacityConfig",
-              "BattleConfig",
-              "BankConfig",
-              "TradeConfig",
-              "QuestConfig",
-              "FaithConfig",
-              "BitcoinMineConfig",
-              "ResourceBridgeConfig",
-              "ResourceBridgeFeeSplitConfig",
-              "VillageTroopConfig",
-              "StartingResourcesConfig",
-              "VillageFoundResourcesConfig",
-              "StructureCapacityConfig",
-              "VictoryPointsGrantConfig",
-              "VictoryPointsWinConfig",
-              "BlitzExplorationConfig",
-              "ArtificerConfig",
-              "BlitzRegistrationRulesConfig",
-            ],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1529,7 +1493,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // agent_min_spawn_lords_amount
               "u8", // agent_max_spawn_lords_amount
             ],
-            customTypes: ["SettlementConfig", "BlitzSettlementConfig", "BlitzRegistrationGameConfig"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1547,19 +1510,27 @@ export function defineContractComponents(world: World, namespace: string) {
           incr_resource_rate_end_tick: RecsType.Number,
           incr_labor_rate_end_tick: RecsType.Number,
           incr_troop_rate_end_tick: RecsType.Number,
-          coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
+          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
         },
         {
           metadata: {
             namespace,
             name: "ProductionBoostBonus",
-            types: ["u32", "u32", "u16", "u16", "u16", "u16", "u32", "u32", "u32", "bool", "u32", "u32"],
-            customTypes: ["Coord"],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // structure_id
+              "u16", // wonder_incr_percent_num
+              "u16", // incr_resource_rate_percent_num
+              "u16", // incr_labor_rate_percent_num
+              "u16", // incr_troop_rate_percent_num
+              "u32", // incr_resource_rate_end_tick
+              "u32", // incr_labor_rate_end_tick
+              "u32", // incr_troop_rate_end_tick
+              "bool", // Coord alt
+              "u32", // Coord x
+              "u32", // Coord y
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1580,7 +1551,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // entity_id
               "u128", // value
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1602,7 +1572,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // entity_id
               "u128", // count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1613,7 +1582,7 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           game_token_id: RecsType.BigInt,
-          game_address: RecsType.String,
+          game_address: RecsType.BigInt,
           quest_tile_id: RecsType.Number,
           explorer_id: RecsType.Number,
           completed: RecsType.Boolean,
@@ -1622,9 +1591,15 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Quest",
-            types: ["u32", "u64", "ContractAddress", "u32", "u32", "bool"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u64", // game_token_id
+              "ContractAddress", // game_address
+              "u32", // quest_tile_id
+              "u32", // explorer_id
+              "bool", // completed
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1645,7 +1620,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // key
               "bool", // enabled
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1667,26 +1641,28 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // key
               "Span<ContractAddress>", // games
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
     })(),
     QuestLevels: (() => {
-      return defineComponent<QuestLevelsSchema, ContractComponentMetadata, unknown[]>(
+      return defineComponent(
         world,
         {
           game_id: RecsType.Number,
-          game_address: RecsType.String,
+          game_address: RecsType.BigInt,
           levels: RecsType.T,
         },
         {
           metadata: {
             namespace,
             name: "QuestLevels",
-            types: ["u32", "ContractAddress", "Span<Level>"],
-            customTypes: ["Level"],
-          },
+            types: [
+              "u32", // game_id
+              "ContractAddress", // game_address
+              "Span<Level>", // levels
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1697,7 +1673,7 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           quest_tile_id: RecsType.Number,
           realm_or_village_id: RecsType.Number,
-          game_token_id: RecsType.Number,
+          game_token_id: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1709,7 +1685,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // realm_or_village_id
               "u64", // game_token_id
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1720,12 +1695,8 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           id: RecsType.Number,
-          game_address: RecsType.String,
-          coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
+          game_address: RecsType.BigInt,
+          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
           level: RecsType.Number,
           resource_type: RecsType.Number,
           amount: RecsType.BigInt,
@@ -1736,9 +1707,20 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "QuestTile",
-            types: ["u32", "u32", "ContractAddress", "u32", "u32", "u8", "u8", "u128", "u16", "u16"],
-            customTypes: ["Coord"],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // id
+              "ContractAddress", // game_address
+              "bool", // Coord alt
+              "u32", // Coord x
+              "u32", // Coord y
+              "u8", // level
+              "u8", // resource_type
+              "u128", // amount
+              "u16", // capacity
+              "u16", // participant_count
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -1761,7 +1743,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // index
               "ContractAddress", // player
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1785,7 +1766,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // total_players_same_rank_count
               "bool", // grant_elite_nft
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -1857,241 +1837,241 @@ export function defineContractComponents(world: World, namespace: string) {
           weight: { capacity: RecsType.BigInt, weight: RecsType.BigInt },
           STONE_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           COAL_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           WOOD_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           COPPER_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           IRONWOOD_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           OBSIDIAN_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           GOLD_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           SILVER_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           MITHRAL_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           ALCHEMICAL_SILVER_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           COLD_IRON_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           DEEP_CRYSTAL_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           RUBY_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           DIAMONDS_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           HARTWOOD_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           IGNIUM_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           TWILIGHT_QUARTZ_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           TRUE_ICE_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           ADAMANTINE_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           SAPPHIRE_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           ETHEREAL_SILICA_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           DRAGONHIDE_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           LABOR_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           EARTHEN_SHARD_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           DONKEY_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           KNIGHT_T1_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           KNIGHT_T2_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           KNIGHT_T3_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           CROSSBOWMAN_T1_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           CROSSBOWMAN_T2_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           CROSSBOWMAN_T3_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           PALADIN_T1_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           PALADIN_T2_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           PALADIN_T3_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           WHEAT_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           FISH_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           LORDS_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           ESSENCE_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           RESEARCH_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
           SATOSHI_PRODUCTION: {
             building_count: RecsType.Number,
-            production_rate: RecsType.Number,
+            production_rate: RecsType.BigInt,
             output_amount_left: RecsType.BigInt,
             last_updated_at: RecsType.Number,
           },
@@ -2324,7 +2304,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // Production output_amount_left
               "u32", // Production last_updated_at
             ],
-            customTypes: ["Weight", "Production"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2343,9 +2322,14 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "ResourceAllowance",
-            types: ["u32", "u32", "u32", "u8", "u128"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // owner_entity_id
+              "u32", // approved_entity_id
+              "u8", // resource_type
+              "u128", // amount
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -2356,56 +2340,55 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           structure_id: RecsType.Number,
           day: RecsType.BigInt,
-          slot_1: RecsType.StringArray,
-          slot_2: RecsType.StringArray,
-          slot_3: RecsType.StringArray,
-          slot_4: RecsType.StringArray,
-          slot_5: RecsType.StringArray,
-          slot_6: RecsType.StringArray,
-          slot_7: RecsType.StringArray,
-          slot_8: RecsType.StringArray,
-          slot_9: RecsType.StringArray,
-          slot_10: RecsType.StringArray,
-          slot_11: RecsType.StringArray,
-          slot_12: RecsType.StringArray,
-          slot_13: RecsType.StringArray,
-          slot_14: RecsType.StringArray,
-          slot_15: RecsType.StringArray,
-          slot_16: RecsType.StringArray,
-          slot_17: RecsType.StringArray,
-          slot_18: RecsType.StringArray,
-          slot_19: RecsType.StringArray,
-          slot_20: RecsType.StringArray,
-          slot_21: RecsType.StringArray,
-          slot_22: RecsType.StringArray,
-          slot_23: RecsType.StringArray,
-          slot_24: RecsType.StringArray,
-          slot_25: RecsType.StringArray,
-          slot_26: RecsType.StringArray,
-          slot_27: RecsType.StringArray,
-          slot_28: RecsType.StringArray,
-          slot_29: RecsType.StringArray,
-          slot_30: RecsType.StringArray,
-          slot_31: RecsType.StringArray,
-          slot_32: RecsType.StringArray,
-          slot_33: RecsType.StringArray,
-          slot_34: RecsType.StringArray,
-          slot_35: RecsType.StringArray,
-          slot_36: RecsType.StringArray,
-          slot_37: RecsType.StringArray,
-          slot_38: RecsType.StringArray,
-          slot_39: RecsType.StringArray,
-          slot_40: RecsType.StringArray,
-          slot_41: RecsType.StringArray,
-          slot_42: RecsType.StringArray,
-          slot_43: RecsType.StringArray,
-          slot_44: RecsType.StringArray,
-          slot_45: RecsType.StringArray,
-          slot_46: RecsType.StringArray,
-          slot_47: RecsType.StringArray,
-          slot_48: RecsType.StringArray,
+          slot_1: RecsType.NumberArray,
+          slot_2: RecsType.NumberArray,
+          slot_3: RecsType.NumberArray,
+          slot_4: RecsType.NumberArray,
+          slot_5: RecsType.NumberArray,
+          slot_6: RecsType.NumberArray,
+          slot_7: RecsType.NumberArray,
+          slot_8: RecsType.NumberArray,
+          slot_9: RecsType.NumberArray,
+          slot_10: RecsType.NumberArray,
+          slot_11: RecsType.NumberArray,
+          slot_12: RecsType.NumberArray,
+          slot_13: RecsType.NumberArray,
+          slot_14: RecsType.NumberArray,
+          slot_15: RecsType.NumberArray,
+          slot_16: RecsType.NumberArray,
+          slot_17: RecsType.NumberArray,
+          slot_18: RecsType.NumberArray,
+          slot_19: RecsType.NumberArray,
+          slot_20: RecsType.NumberArray,
+          slot_21: RecsType.NumberArray,
+          slot_22: RecsType.NumberArray,
+          slot_23: RecsType.NumberArray,
+          slot_24: RecsType.NumberArray,
+          slot_25: RecsType.NumberArray,
+          slot_26: RecsType.NumberArray,
+          slot_27: RecsType.NumberArray,
+          slot_28: RecsType.NumberArray,
+          slot_29: RecsType.NumberArray,
+          slot_30: RecsType.NumberArray,
+          slot_31: RecsType.NumberArray,
+          slot_32: RecsType.NumberArray,
+          slot_33: RecsType.NumberArray,
+          slot_34: RecsType.NumberArray,
+          slot_35: RecsType.NumberArray,
+          slot_36: RecsType.NumberArray,
+          slot_37: RecsType.NumberArray,
+          slot_38: RecsType.NumberArray,
+          slot_39: RecsType.NumberArray,
+          slot_40: RecsType.NumberArray,
+          slot_41: RecsType.NumberArray,
+          slot_42: RecsType.NumberArray,
+          slot_43: RecsType.NumberArray,
+          slot_44: RecsType.NumberArray,
+          slot_45: RecsType.NumberArray,
+          slot_46: RecsType.NumberArray,
+          slot_47: RecsType.NumberArray,
+          slot_48: RecsType.NumberArray,
           initialized: RecsType.Boolean,
-          // just used to track if any resources are in the arrival
           total_amount: RecsType.BigInt,
         },
         {
@@ -2414,61 +2397,60 @@ export function defineContractComponents(world: World, namespace: string) {
             name: "ResourceArrival",
             types: [
               "u32", // game_id
-              "u32",
-              "u64",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "array",
-              "bool",
-              "u128",
+              "u32", // structure_id
+              "u64", // day
+              "Span<(u8, u128)>", // slot_1
+              "Span<(u8, u128)>", // slot_2
+              "Span<(u8, u128)>", // slot_3
+              "Span<(u8, u128)>", // slot_4
+              "Span<(u8, u128)>", // slot_5
+              "Span<(u8, u128)>", // slot_6
+              "Span<(u8, u128)>", // slot_7
+              "Span<(u8, u128)>", // slot_8
+              "Span<(u8, u128)>", // slot_9
+              "Span<(u8, u128)>", // slot_10
+              "Span<(u8, u128)>", // slot_11
+              "Span<(u8, u128)>", // slot_12
+              "Span<(u8, u128)>", // slot_13
+              "Span<(u8, u128)>", // slot_14
+              "Span<(u8, u128)>", // slot_15
+              "Span<(u8, u128)>", // slot_16
+              "Span<(u8, u128)>", // slot_17
+              "Span<(u8, u128)>", // slot_18
+              "Span<(u8, u128)>", // slot_19
+              "Span<(u8, u128)>", // slot_20
+              "Span<(u8, u128)>", // slot_21
+              "Span<(u8, u128)>", // slot_22
+              "Span<(u8, u128)>", // slot_23
+              "Span<(u8, u128)>", // slot_24
+              "Span<(u8, u128)>", // slot_25
+              "Span<(u8, u128)>", // slot_26
+              "Span<(u8, u128)>", // slot_27
+              "Span<(u8, u128)>", // slot_28
+              "Span<(u8, u128)>", // slot_29
+              "Span<(u8, u128)>", // slot_30
+              "Span<(u8, u128)>", // slot_31
+              "Span<(u8, u128)>", // slot_32
+              "Span<(u8, u128)>", // slot_33
+              "Span<(u8, u128)>", // slot_34
+              "Span<(u8, u128)>", // slot_35
+              "Span<(u8, u128)>", // slot_36
+              "Span<(u8, u128)>", // slot_37
+              "Span<(u8, u128)>", // slot_38
+              "Span<(u8, u128)>", // slot_39
+              "Span<(u8, u128)>", // slot_40
+              "Span<(u8, u128)>", // slot_41
+              "Span<(u8, u128)>", // slot_42
+              "Span<(u8, u128)>", // slot_43
+              "Span<(u8, u128)>", // slot_44
+              "Span<(u8, u128)>", // slot_45
+              "Span<(u8, u128)>", // slot_46
+              "Span<(u8, u128)>", // slot_47
+              "Span<(u8, u128)>", // slot_48
+              "bool", // initialized
+              "u128", // total_amount
             ],
-            customTypes: [],
-          },
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -2483,9 +2465,11 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "ResourceBridgeWtlConfig",
-            types: ["ContractAddress", "u8"],
-            customTypes: [],
-          },
+            types: [
+              "ContractAddress", // token
+              "u8", // resource_type
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -2495,11 +2479,11 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           preset_id: RecsType.Number,
           resource_type: RecsType.Number,
-          realm_output_per_second: RecsType.Number,
-          village_output_per_second: RecsType.Number,
-          labor_output_per_resource: RecsType.Number,
-          output_per_simple_input: RecsType.Number,
-          output_per_complex_input: RecsType.Number,
+          realm_output_per_second: RecsType.BigInt,
+          village_output_per_second: RecsType.BigInt,
+          labor_output_per_resource: RecsType.BigInt,
+          output_per_simple_input: RecsType.BigInt,
+          output_per_complex_input: RecsType.BigInt,
           simple_input_list_id: RecsType.Number,
           complex_input_list_id: RecsType.Number,
           simple_input_list_count: RecsType.Number,
@@ -2522,7 +2506,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // simple_input_list_count
               "u8", // complex_input_list_count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2548,7 +2531,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // resource_type
               "u128", // amount
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2576,7 +2558,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // min_amount
               "u128", // max_amount
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2596,7 +2577,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // resource_type
               "ContractAddress", // token
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2616,7 +2596,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // tx_hash
               "u256", // seed
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2638,7 +2617,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // total_registered_points
               "u256", // total_lords_pool
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2666,7 +2644,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // total_chests
               "u128", // cap_ratio_bps
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2702,7 +2679,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // soft_supply
               "u128", // overspend_remaining
             ],
-            customTypes: ["RecentRing", "AnchorRing"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2898,16 +2874,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // StructureMetadata village_realm
               "u8", // category
             ],
-            customTypes: [
-              "StructureBase",
-              "GuardTroops",
-              "Troops",
-              "TroopType",
-              "TroopTier",
-              "Stamina",
-              "TroopBoosts",
-              "StructureMetadata",
-            ],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2921,23 +2887,26 @@ export function defineContractComponents(world: World, namespace: string) {
           packed_counts_1: RecsType.BigInt,
           packed_counts_2: RecsType.BigInt,
           packed_counts_3: RecsType.BigInt,
-          population: {
-            current: RecsType.Number,
-            max: RecsType.Number,
-          },
-          coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
+          population: { current: RecsType.Number, max: RecsType.Number },
+          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
         },
         {
           metadata: {
             namespace,
             name: "StructureBuildings",
-            types: ["u32", "u32", "u128", "u128", "u128", "u32", "u32", "bool", "u32", "u32"],
-            customTypes: ["Population", "Coord"],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // entity_id
+              "u128", // packed_counts_1
+              "u128", // packed_counts_2
+              "u128", // packed_counts_3
+              "u32", // Population current
+              "u32", // Population max
+              "bool", // Coord alt
+              "u32", // Coord x
+              "u32", // Coord y
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -2960,7 +2929,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // required_resources_id
               "u8", // required_resource_count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -2982,7 +2950,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // owner
               "u32", // structures_num
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3006,7 +2973,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // Coord y
               "bool", // reserved
             ],
-            customTypes: ["Coord"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3018,20 +2984,23 @@ export function defineContractComponents(world: World, namespace: string) {
           game_id: RecsType.Number,
           connected_realm_entity_id: RecsType.Number,
           connected_realm_id: RecsType.Number,
-          connected_realm_coord: {
-            alt: RecsType.Boolean,
-            x: RecsType.Number,
-            y: RecsType.Number,
-          },
-          directions_left: RecsType.NumberArray,
+          connected_realm_coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
+          directions_left: RecsType.StringArray,
         },
         {
           metadata: {
             namespace,
             name: "StructureVillageSlots",
-            types: ["u32", "u32", "u16", "Span<u8>", "u32", "u32"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // connected_realm_entity_id
+              "u16", // connected_realm_id
+              "bool", // Coord alt
+              "u32", // Coord x
+              "u32", // Coord y
+              "Span<Direction>", // directions_left
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -3049,9 +3018,14 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "TileOpt",
-            types: ["u32", "bool", "u32", "u32", "bool", "u128"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "bool", // alt
+              "u32", // col
+              "u32", // row
+              "u128", // data
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -3074,9 +3048,19 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "Trade",
-            types: ["u32", "u32", "u32", "u32", "u32", "u8", "u8", "u64", "u64", "u64"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // trade_id
+              "u32", // maker_id
+              "u32", // taker_id
+              "u32", // expires_at
+              "u8", // maker_gives_resource_type
+              "u8", // taker_pays_resource_type
+              "u64", // maker_gives_min_resource_amount
+              "u64", // taker_pays_min_resource_amount
+              "u64", // maker_gives_max_count
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -3097,7 +3081,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // structure_id
               "u8", // count
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3108,7 +3091,7 @@ export function defineContractComponents(world: World, namespace: string) {
         {
           game_id: RecsType.Number,
           village_id: RecsType.Number,
-          last_raided_at: RecsType.Number,
+          last_raided_at: RecsType.BigInt,
         },
         {
           metadata: {
@@ -3119,7 +3102,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // village_id
               "u64", // last_raided_at
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3136,9 +3118,12 @@ export function defineContractComponents(world: World, namespace: string) {
           metadata: {
             namespace,
             name: "VillageTroop",
-            types: ["u32", "bool"],
-            customTypes: [],
-          },
+            types: [
+              "u32", // game_id
+              "u32", // village_id
+              "bool", // claimed
+            ],
+          } satisfies ContractComponentMetadata,
         },
       );
     })(),
@@ -3159,7 +3144,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u8", // resource_type
               "u128", // weight_gram
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3185,7 +3169,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // Coord y
               "u16", // realm_id
             ],
-            customTypes: ["Coord"],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3199,7 +3182,7 @@ export function defineContractComponents(world: World, namespace: string) {
           last_recorded_owner: RecsType.BigInt,
           claimed_points: RecsType.BigInt,
           claim_per_sec: RecsType.Number,
-          claim_last_at: RecsType.Number,
+          claim_last_at: RecsType.BigInt,
           owner_claim_per_sec: RecsType.Number,
           num_structures_pledged: RecsType.Number,
         },
@@ -3217,7 +3200,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // owner_claim_per_sec
               "u32", // num_structures_pledged
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3241,7 +3223,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "felt252", // blocked_id
               "bool", // is_blocked
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3263,7 +3244,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // wonder_id
               "u128", // amount_won
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3285,7 +3265,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // high_score
               "Span<u32>", // wonder_ids
             ],
-            customTypes: [],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3377,14 +3356,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // BlitzRegistrationGameConfig registration_start_at
               "u16", // RealmCountConfig count
             ],
-            customTypes: [
-              "BiomeClimateConfig",
-              "SettlementConfig",
-              "BlitzSettlementConfig",
-              "BlitzHypersSettlementConfig",
-              "BlitzRegistrationGameConfig",
-              "RealmCountConfig",
-            ],
           } satisfies ContractComponentMetadata,
         },
       );
@@ -3394,13 +3365,7 @@ export function defineContractComponents(world: World, namespace: string) {
         world,
         {
           game_id: RecsType.Number,
-          relic_record: { last_discovered_at: RecsType.Number },
-          blitz_fee_split_record: {
-            total_sponsorship: RecsType.BigInt,
-            creator_receives_amount: RecsType.BigInt,
-            velords_receives_amount: RecsType.BigInt,
-            players_receive_amount: RecsType.BigInt,
-          },
+          relic_record: { last_discovered_at: RecsType.BigInt },
         },
         {
           metadata: {
@@ -3409,87 +3374,8 @@ export function defineContractComponents(world: World, namespace: string) {
             types: [
               "u32", // game_id
               "u64", // RelicRecord last_discovered_at
-              "u128", // BlitzFeeSplitRecord total_sponsorship
-              "u128", // BlitzFeeSplitRecord creator_receives_amount
-              "u128", // BlitzFeeSplitRecord velords_receives_amount
-              "u128", // BlitzFeeSplitRecord players_receive_amount
             ],
-            customTypes: ["RelicRecord", "BlitzFeeSplitRecord"],
           } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    Message: (() => {
-      return defineComponent(
-        world,
-        {
-          identity: RecsType.BigInt,
-          channel: RecsType.BigInt,
-          salt: RecsType.BigInt,
-          content: RecsType.String,
-          timestamp: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "Message",
-            types: ["felt252", "felt252", "felt252", "BytesArray", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BlitzRealmPlayerRegister: (() => {
-      return defineComponent(
-        world,
-        {
-          player: RecsType.BigInt,
-          once_registered: RecsType.Boolean,
-          registered: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "BlitzRealmPlayerRegister",
-            types: ["ContractAddress", "bool", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BlitzRealmPositionRegister: (() => {
-      return defineComponent(
-        world,
-        {
-          spot_number: RecsType.Number,
-          coords: RecsType.NumberArray,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "BlitzRealmPositionRegister",
-            types: ["u16", "Span<Coord>"],
-            customTypes: ["Coord"],
-          },
-        },
-      );
-    })(),
-    BlitzRealmSettleFinish: (() => {
-      return defineComponent(
-        world,
-        {
-          player: RecsType.BigInt,
-          coords: RecsType.NumberArray,
-          structure_ids: RecsType.NumberArray,
-          labor_prod_started: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "BlitzRealmSettleFinish",
-            types: ["ContractAddress", "Span<Coord>", "Span<u32>", "bool"],
-            customTypes: ["Coord"],
-          },
         },
       );
     })(),
@@ -3503,15 +3389,21 @@ export function defineContractComponents(world: World, namespace: string) {
             maker_id: RecsType.Number,
             id: RecsType.Number,
             trade_id: RecsType.Number,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "AcceptOrder",
-              types: ["u32", "u32", "u32", "u32", "u32", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // taker_id
+                "u32", // maker_id
+                "u32", // id
+                "u32", // trade_id
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3524,7 +3416,7 @@ export function defineContractComponents(world: World, namespace: string) {
             troop_type: RecsType.String,
             troop_tier: RecsType.String,
             troop_amount: RecsType.BigInt,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3538,7 +3430,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u128", // troop_amount
                 "u64", // timestamp
               ],
-              customTypes: ["TroopType", "TroopTier"],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3553,21 +3444,28 @@ export function defineContractComponents(world: World, namespace: string) {
             attacker_owner: RecsType.Number,
             defender_owner: RecsType.Number,
             winner_id: RecsType.Number,
-            coord: {
-              alt: RecsType.Boolean,
-              x: RecsType.Number,
-              y: RecsType.Number,
-            },
-            max_reward: RecsType.StringArray,
-            timestamp: RecsType.Number,
+            coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
+            max_reward: RecsType.NumberArray,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "BattleEvent",
-              types: ["u32", "u32", "u32", "u32", "u32", "u32", "bool", "u32", "u32", "Span<(u8, u128)>", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // attacker_id
+                "u32", // defender_id
+                "u32", // attacker_owner
+                "u32", // defender_owner
+                "u32", // winner_id
+                "bool", // Coord alt
+                "u32", // Coord x
+                "u32", // Coord y
+                "Span<(u8, u128)>", // max_reward
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3577,7 +3475,7 @@ export function defineContractComponents(world: World, namespace: string) {
           {
             game_id: RecsType.Number,
             player: RecsType.BigInt,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3588,7 +3486,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "ContractAddress", // player
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3601,15 +3498,20 @@ export function defineContractComponents(world: World, namespace: string) {
             player_address: RecsType.BigInt,
             entity_id: RecsType.Number,
             amount: RecsType.BigInt,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "BurnDonkey",
-              types: ["u32", "ContractAddress", "u32", "u128", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "ContractAddress", // player_address
+                "u32", // entity_id
+                "u128", // amount
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3620,7 +3522,7 @@ export function defineContractComponents(world: World, namespace: string) {
             game_id: RecsType.Number,
             structure_id: RecsType.Number,
             relic_type: RecsType.Number,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3632,7 +3534,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u8", // relic_type
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3645,7 +3546,7 @@ export function defineContractComponents(world: World, namespace: string) {
             taker_id: RecsType.Number,
             maker_id: RecsType.Number,
             trade_id: RecsType.Number,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3658,7 +3559,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u32", // trade_id
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3671,7 +3571,7 @@ export function defineContractComponents(world: World, namespace: string) {
             taker_id: RecsType.Number,
             maker_id: RecsType.Number,
             trade_id: RecsType.Number,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3684,7 +3584,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u32", // trade_id
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3697,7 +3596,7 @@ export function defineContractComponents(world: World, namespace: string) {
             entity_id: RecsType.Number,
             entity_owner_id: RecsType.Number,
             resources: RecsType.NumberArray,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3710,7 +3609,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "Span<(u8, u128)>", // resources
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3722,17 +3620,23 @@ export function defineContractComponents(world: World, namespace: string) {
             game_id: RecsType.Number,
             explorer_id: RecsType.Number,
             explorer_structure_id: RecsType.Number,
-            explorer_owner_address: RecsType.String,
-            explore_find: RecsType.Number,
-            timestamp: RecsType.Number,
+            explorer_owner_address: RecsType.BigInt,
+            explore_find: RecsType.String,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "ExplorerMoveEvent",
-              types: ["u32", "u32", "u32", "ContractAddress", "ExploreFind", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // explorer_id
+                "u32", // explorer_structure_id
+                "ContractAddress", // explorer_owner_address
+                "enum", // explore_find
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3745,7 +3649,7 @@ export function defineContractComponents(world: World, namespace: string) {
             structure_id: RecsType.Number,
             explorer_owner_id: RecsType.Number,
             success: RecsType.Boolean,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3759,7 +3663,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "bool", // success
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3772,15 +3675,20 @@ export function defineContractComponents(world: World, namespace: string) {
             explorer_id: RecsType.Number,
             structure_id: RecsType.Number,
             success: RecsType.Boolean,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "ExplorerRaidEvent",
-              types: ["u32", "u32", "u32", "bool", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // explorer_id
+                "u32", // structure_id
+                "bool", // success
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3791,23 +3699,29 @@ export function defineContractComponents(world: World, namespace: string) {
             game_id: RecsType.Number,
             explorer_id: RecsType.Number,
             explorer_structure_id: RecsType.Number,
-            explorer_owner_address: RecsType.String,
+            explorer_owner_address: RecsType.BigInt,
             reward_resource_id: RecsType.Number,
             reward_resource_amount: RecsType.BigInt,
-            coord: {
-              alt: RecsType.Boolean,
-              x: RecsType.Number,
-              y: RecsType.Number,
-            },
-            timestamp: RecsType.Number,
+            coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "ExplorerRewardEvent",
-              types: ["u32", "u32", "u32", "ContractAddress", "u8", "u128", "bool", "u32", "u32", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // explorer_id
+                "u32", // explorer_structure_id
+                "ContractAddress", // explorer_owner_address
+                "u8", // reward_resource_id
+                "u128", // reward_resource_amount
+                "bool", // Coord alt
+                "u32", // Coord x
+                "u32", // Coord y
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3819,8 +3733,8 @@ export function defineContractComponents(world: World, namespace: string) {
             preset_id: RecsType.Number,
             series_id: RecsType.BigInt,
             creator: RecsType.BigInt,
-            start_main_at: RecsType.Number,
-            end_at: RecsType.Number,
+            start_main_at: RecsType.BigInt,
+            end_at: RecsType.BigInt,
           },
           {
             metadata: {
@@ -3834,7 +3748,54 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u64", // start_main_at
                 "u64", // end_at
               ],
-              customTypes: [],
+            } satisfies ContractComponentMetadata,
+          },
+        );
+      })(),
+      LedgerResultRowReady: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            trial_id: RecsType.BigInt,
+            index: RecsType.Number,
+            owner: RecsType.BigInt,
+            rank: RecsType.Number,
+            chests: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "LedgerResultRowReady",
+              types: [
+                "u32", // game_id
+                "u128", // trial_id
+                "u16", // index
+                "ContractAddress", // owner
+                "u16", // rank
+                "u16", // chests
+              ],
+            } satisfies ContractComponentMetadata,
+          },
+        );
+      })(),
+      LedgerResultsReady: (() => {
+        return defineComponent(
+          world,
+          {
+            game_id: RecsType.Number,
+            trial_id: RecsType.BigInt,
+            player_count: RecsType.Number,
+          },
+          {
+            metadata: {
+              namespace,
+              name: "LedgerResultsReady",
+              types: [
+                "u32", // game_id
+                "u128", // trial_id
+                "u16", // player_count
+              ],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3857,38 +3818,17 @@ export function defineContractComponents(world: World, namespace: string) {
             metadata: {
               namespace,
               name: "LiquidityEvent",
-              types: ["u32", "u32", "u32", "u8", "u128", "u128", "u128", "bool", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-      MMRGameCommitted: (() => {
-        return defineComponent(
-          world,
-          {
-            game_id: RecsType.Number,
-            trial_id: RecsType.BigInt,
-            player_count: RecsType.Number,
-            game_median: RecsType.BigInt,
-            global_median: RecsType.BigInt,
-            committed_by: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "MMRGameCommitted",
               types: [
                 "u32", // game_id
-                "u128", // trial_id
-                "u16", // player_count
-                "u128", // game_median
-                "u128", // global_median
-                "ContractAddress", // committed_by
+                "u32", // bank_entity_id
+                "u32", // entity_id
+                "u8", // resource_type
+                "u128", // lords_amount
+                "u128", // resource_amount
+                "u128", // resource_price
+                "bool", // add
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -3899,21 +3839,24 @@ export function defineContractComponents(world: World, namespace: string) {
           {
             game_id: RecsType.Number,
             explorer_id: RecsType.Number,
-            chest_coord: {
-              alt: RecsType.Boolean,
-              x: RecsType.Number,
-              y: RecsType.Number,
-            },
+            chest_coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
             relics: RecsType.NumberArray,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "OpenRelicChestEvent",
-              types: ["u32", "u32", "u32", "u32", "Span<u8>", "u64"],
-              customTypes: ["Coord"],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // explorer_id
+                "bool", // Coord alt
+                "u32", // Coord x
+                "u32", // Coord y
+                "Span<u8>", // relics
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3923,15 +3866,18 @@ export function defineContractComponents(world: World, namespace: string) {
           {
             game_id: RecsType.Number,
             winner_address: RecsType.BigInt,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "SeasonEnded",
-              types: ["u32", "ContractAddress", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "ContractAddress", // winner_address
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3941,19 +3887,26 @@ export function defineContractComponents(world: World, namespace: string) {
           {
             game_id: RecsType.Number,
             id: RecsType.Number,
-            owner: RecsType.OptionalString,
+            owner: RecsType.OptionalBigInt,
             entity_id: RecsType.OptionalNumber,
-            tx_hash: RecsType.String,
+            tx_hash: RecsType.BigInt,
             story: RecsType.T,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "StoryEvent",
-              types: ["u32", "u32", "Option<ContractAddress>", "Option<u32>", "felt252", "Story", "u64"],
-              customTypes: ["Story"],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // id
+                "Option<ContractAddress>", // owner
+                "Option<u32>", // entity_id
+                "felt252", // tx_hash
+                "enum", // story
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3972,15 +3925,27 @@ export function defineContractComponents(world: World, namespace: string) {
             lp_fees: RecsType.BigInt,
             resource_price: RecsType.BigInt,
             buy: RecsType.Boolean,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
               namespace,
               name: "SwapEvent",
-              types: ["u32", "u32", "u32", "u32", "u8", "u128", "u128", "u128", "u128", "u128", "bool", "u64"],
-              customTypes: [],
-            },
+              types: [
+                "u32", // game_id
+                "u32", // bank_entity_id
+                "u32", // entity_id
+                "u32", // id
+                "u8", // resource_type
+                "u128", // lords_amount
+                "u128", // resource_amount
+                "u128", // bank_owner_fees
+                "u128", // lp_fees
+                "u128", // resource_price
+                "bool", // buy
+                "u64", // timestamp
+              ],
+            } satisfies ContractComponentMetadata,
           },
         );
       })(),
@@ -3993,7 +3958,7 @@ export function defineContractComponents(world: World, namespace: string) {
             sending_realm_id: RecsType.Number,
             sender_structure_id: RecsType.Number,
             resources: RecsType.NumberArray,
-            timestamp: RecsType.Number,
+            timestamp: RecsType.BigInt,
           },
           {
             metadata: {
@@ -4007,7 +3972,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "Span<(u8, u128)>", // resources
                 "u64", // timestamp
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -4020,13 +3984,13 @@ export function defineContractComponents(world: World, namespace: string) {
             hidden: RecsType.Boolean,
             index: RecsType.Number,
             points: RecsType.Number,
-            start: RecsType.Number,
-            end: RecsType.Number,
+            start: RecsType.BigInt,
+            end: RecsType.BigInt,
             group: RecsType.BigInt,
             icon: RecsType.BigInt,
             title: RecsType.BigInt,
             description: RecsType.String,
-            tasks: RecsType.StringArray,
+            tasks: RecsType.T,
             data: RecsType.String,
           },
           {
@@ -4047,7 +4011,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "Span<Task>", // tasks
                 "BytesArray", // data
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
           },
         );
@@ -4059,7 +4022,7 @@ export function defineContractComponents(world: World, namespace: string) {
             player_id: RecsType.BigInt,
             task_id: RecsType.BigInt,
             count: RecsType.BigInt,
-            time: RecsType.Number,
+            time: RecsType.BigInt,
           },
           {
             metadata: {
@@ -4071,75 +4034,7 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u128", // count
                 "u64", // time
               ],
-              customTypes: [],
             } satisfies ContractComponentMetadata,
-          },
-        );
-      })(),
-      CollectibleClaimed: (() => {
-        return defineComponent(
-          world,
-          {
-            token_address: RecsType.BigInt,
-            attributes_raw: RecsType.BigInt,
-            token_recipient: RecsType.BigInt,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "CollectibleClaimed",
-              types: ["ContractAddress", "u128", "ContractAddress", "u64"],
-              customTypes: [],
-            },
-          },
-        );
-      })(),
-      SettleRealmData: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.Number,
-            event_id: RecsType.String,
-            entity_id: RecsType.Number,
-            owner_address: RecsType.BigInt,
-            owner_name: RecsType.BigInt,
-            realm_name: RecsType.BigInt,
-            produced_resources: RecsType.BigInt,
-            cities: RecsType.Number,
-            harbors: RecsType.Number,
-            rivers: RecsType.Number,
-            regions: RecsType.Number,
-            wonder: RecsType.Number,
-            order: RecsType.Number,
-            x: RecsType.Number,
-            y: RecsType.Number,
-            timestamp: RecsType.Number,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "SettleRealmData",
-              types: [
-                "u32",
-                "EventType",
-                "u32",
-                "ContractAddress",
-                "felt252",
-                "felt252",
-                "u128",
-                "u8",
-                "u8",
-                "u8",
-                "u8",
-                "u8",
-                "u8",
-                "u32",
-                "u32",
-                "u64",
-              ],
-              customTypes: [],
-            },
           },
         );
       })(),

@@ -11,15 +11,11 @@ const POINTS_PRECISION = 1_000_000n;
 const SHARE_BASIS_POINTS = 10_000n;
 
 const scalar = (value: unknown, field: string): bigint => {
-  const unwrapped =
-    typeof value === "object" && value !== null && !Array.isArray(value) && Object.hasOwn(value, "value")
-      ? (value as { value: unknown }).value
-      : value;
-  if (!["bigint", "number", "string"].includes(typeof unwrapped)) {
+  if (!["bigint", "number", "string"].includes(typeof value)) {
     throw new Error(`${field} is not a scalar`);
   }
   try {
-    return BigInt(unwrapped as bigint | number | string);
+    return BigInt(value as bigint | number | string);
   } catch {
     throw new Error(`${field} is not an integer`);
   }

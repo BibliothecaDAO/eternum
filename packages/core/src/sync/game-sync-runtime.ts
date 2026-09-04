@@ -33,8 +33,7 @@ const resolveEventTimestamp = (model: string, value: unknown): string => {
     throw new Error(`Game sync event ${model} is missing its timestamp`);
   }
 
-  const timestampField = value.timestamp;
-  const timestamp = isRecord(timestampField) && "value" in timestampField ? timestampField.value : timestampField;
+  const timestamp = value.timestamp;
   if (!["bigint", "number", "string"].includes(typeof timestamp)) {
     throw new Error(`Game sync event ${model} has an invalid timestamp`);
   }

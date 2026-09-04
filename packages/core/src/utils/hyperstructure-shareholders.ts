@@ -5,40 +5,32 @@ interface HyperstructureShare {
   basisPoints: bigint;
 }
 
-const unwrapValue = (value: unknown): unknown =>
-  typeof value === "object" && value !== null && !Array.isArray(value) && Object.hasOwn(value, "value")
-    ? (value as { value: unknown }).value
-    : value;
-
 const decodeInteger = (value: unknown, field: string): bigint => {
-  const scalar = unwrapValue(value);
-  if (!["bigint", "number", "string"].includes(typeof scalar)) {
+  if (!["bigint", "number", "string"].includes(typeof value)) {
     throw new Error(`${field} is not a scalar`);
   }
 
   try {
-    return BigInt(scalar as bigint | number | string);
+    return BigInt(value as bigint | number | string);
   } catch {
     throw new Error(`${field} is not an integer`);
   }
 };
 
 const decodeShareholderTuple = (value: unknown): HyperstructureShare => {
-  const tuple = unwrapValue(value);
-  if (!Array.isArray(tuple) || tuple.length !== 2) {
+  if (!Array.isArray(value) || value.length !== 2) {
     throw new Error("Hyperstructure shareholder tuple must contain address and basis points");
   }
 
   return {
-    playerAddress: ContractAddress(decodeInteger(tuple[0], "Hyperstructure shareholder address")),
-    basisPoints: decodeInteger(tuple[1], "Hyperstructure shareholder basis points"),
+    playerAddress: ContractAddress(decodeInteger(value[0], "Hyperstructure shareholder address")),
+    basisPoints: decodeInteger(value[1], "Hyperstructure shareholder basis points"),
   };
 };
 
 export const decodeHyperstructureShares = (value: unknown): HyperstructureShare[] => {
-  const shares = unwrapValue(value);
-  if (!Array.isArray(shares)) {
+  if (!Array.isArray(value)) {
     throw new Error("HyperstructureShareholders.shareholders is not an array");
   }
-  return shares.map(decodeShareholderTuple);
+  return value.map(decodeShareholderTuple);
 };

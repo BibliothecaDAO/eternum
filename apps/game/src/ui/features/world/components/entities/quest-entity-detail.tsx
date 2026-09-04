@@ -30,14 +30,8 @@ interface QuestEntityDetailContentProps extends Omit<QuestEntityDetailProps, "la
 }
 
 type QuestLevelInfo = {
-  value?: {
-    target_score?: {
-      value?: number;
-    };
-    time_limit?: {
-      value?: number;
-    };
-  };
+  target_score?: bigint | number | string;
+  time_limit?: bigint | number | string;
 };
 
 const QuestEntityDetailContent = ({
@@ -65,12 +59,10 @@ const QuestEntityDetailContent = ({
     [components, quest?.game_address],
   );
 
-  const questLevel = questLevelsEntity?.levels[quest?.level ?? 0] as QuestLevelInfo | undefined;
-  const questTimeLimitSeconds = questLevel?.value?.time_limit?.value;
-  const questTimeLabel =
-    typeof questTimeLimitSeconds === "number" && Number.isFinite(questTimeLimitSeconds)
-      ? formatTime(questTimeLimitSeconds)
-      : "N/A";
+  const questLevels = questLevelsEntity?.levels as QuestLevelInfo[] | undefined;
+  const questLevel = questLevels?.[quest?.level ?? 0];
+  const questTimeLimitSeconds = Number(questLevel?.time_limit);
+  const questTimeLabel = Number.isFinite(questTimeLimitSeconds) ? formatTime(questTimeLimitSeconds) : "N/A";
 
   if (!quest) return null;
 
@@ -120,11 +112,7 @@ const QuestEntityDetailContent = ({
             value={slotsRemaining}
             emphasizeValue={!hasSlotsRemaining}
           />
-          <EntityDetailStat
-            compact={compact}
-            label="Target"
-            value={`${questLevel?.value?.target_score?.value ?? 0} XP`}
-          />
+          <EntityDetailStat compact={compact} label="Target" value={`${Number(questLevel?.target_score ?? 0)} XP`} />
           <EntityDetailStat compact={compact} label="Time" value={questTimeLabel} />
         </EntityDetailStatList>
       </EntityDetailSection>
