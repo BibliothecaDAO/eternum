@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { ICY_DRAGON_ASSET_URL } from "./icy-dragon-assets";
 
-const publicDirectory = fileURLToPath(new URL("../../../../../../public/", import.meta.url));
+const publicDirectory = fileURLToPath(new URL("../../../../public/", import.meta.url));
 const assetPath = `${publicDirectory}${ICY_DRAGON_ASSET_URL.slice(1)}`;
 const assetDirectory = `${publicDirectory}models/characters/icy-dragon/`;
 

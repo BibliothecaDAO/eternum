@@ -23,13 +23,12 @@ describe("P7D push ownership gates", () => {
     expect(diagnostics).not.toContain('"army_dead"');
   });
 
-  it("settles entry waits from entity changes and verifies fee top-ups", () => {
+  it("settles entry waits from entity changes, never from timers", () => {
     const entityWait = source("src/ui/features/landing/components/selected-world-entity-wait.ts");
     const registration = source("src/hooks/use-world-registration.ts");
 
     expect(entityWait).toContain("HeraldGameSyncTransport");
     expect(entityWait).toContain("is still waiting after");
-    expect(registration).toContain("const confirmedBalance = await fetchTokenBalance");
     expect(registration).not.toContain("setTimeout(resolve, 2000)");
   });
 

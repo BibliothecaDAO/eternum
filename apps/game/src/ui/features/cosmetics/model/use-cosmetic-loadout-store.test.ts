@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@bibliothecadao/types", () => ({
+vi.mock("@bibliothecadao/types", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/types")>()),
   TroopType: {
     Knight: "Knight",
     Crossbowman: "Crossbowman",

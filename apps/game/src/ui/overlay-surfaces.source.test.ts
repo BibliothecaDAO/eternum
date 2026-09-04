@@ -68,6 +68,9 @@ describe("overlay surfaces", () => {
       .filter((path) => /requestSignIn\(/.test(readFileSync(path, "utf8")))
       .map((path) => relative(SOURCE_ROOT, path))
       .toSorted();
-    expect(prompts).toEqual(["ui/features/landing/views/play-view.tsx"]);
+    expect(prompts).toEqual([
+      "ui/features/landing/components/game-selector/game-card-grid.tsx",
+      "ui/features/landing/views/play-view.tsx",
+    ]);
   });
 });

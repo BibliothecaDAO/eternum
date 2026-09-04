@@ -189,6 +189,7 @@ describe("GameRenderer backend seam", () => {
     await subject.initializeRendererBackend();
 
     expect(createWebGPURendererBackendMock).toHaveBeenCalledWith({
+      forceReprobe: false,
       isMobileDevice: false,
       onDeviceLost: expect.any(Function),
       pixelRatio: 1,

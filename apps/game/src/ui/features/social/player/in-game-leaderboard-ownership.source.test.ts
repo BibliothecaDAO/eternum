@@ -44,9 +44,9 @@ describe("in-game leaderboard fact ownership", () => {
     expect(playerListSource).not.toContain("LandingLeaderboardEntry");
     expect(playerListSource).not.toContain("leaderboardRankOverride");
     expect(playerListSource).not.toContain("leaderboardPointsOverride");
-    expect(activityServiceSource).toContain("row.activityBreakdown");
-    expect(activityServiceSource).toContain("row.totalPoints");
-    expect(activityServiceSource).not.toContain("row.registeredPoints");
+    expect(activityServiceSource).toContain("activityBreakdown");
+    expect(activityServiceSource).toContain("totalPoints:");
+    expect(activityServiceSource).not.toContain("registeredPoints");
   });
 
   it("builds the Blitz player list from the active game's settlement membership", () => {

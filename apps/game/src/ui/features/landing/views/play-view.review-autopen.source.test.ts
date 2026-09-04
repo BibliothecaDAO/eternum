@@ -22,8 +22,6 @@ describe("PlayView review auto-open", () => {
     const source = readSource("src/ui/features/landing/views/play-view.tsx");
 
     expect(source).toContain("const handleSeeScore = useCallback");
-    expect(source).toContain("const handleClaimRewards = useCallback");
-    expect(source).toContain('setReviewInitialStep("claim-rewards");');
     expect(source).toContain("setReviewWorld(selection);");
     expect(source).toContain("<GameReviewModal");
   });

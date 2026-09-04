@@ -12,7 +12,7 @@ describe("Worldmap interactive refresh", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
     expect(source).toContain("commitCriticalPass: () => this.commitCriticalWorldmapPass(phase)");
-    expect(source).toContain("return completeWorldmapInteractiveRefresh({");
+    expect(source).toContain("await completeWorldmapInteractiveRefresh({");
     expect(source).toContain('const phase: WorldmapWarpTravelPhase = this.hasInitialized ? "resume" : "initial";');
     expect(source).toMatch(
       /private async refreshVisibleChunksForWarpTravel\(phase: WorldmapWarpTravelPhase\): Promise<boolean> \{[\s\S]*waitForChunkTransitionToSettle/,

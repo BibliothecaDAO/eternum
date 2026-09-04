@@ -24,8 +24,10 @@ describe("factory start time helpers", () => {
   });
 
   it("formats date and time labels for the visible picker surface", () => {
-    expect(formatFactoryStartDateLabel("2026-03-18")).not.toBe("2026-03-18");
-    expect(formatFactoryStartTimeLabel("12:00")).not.toBe("12:00");
+    // The labels follow the machine locale (en_GB renders "12:00" as-is), so assert the parts, not a shape.
+    expect(formatFactoryStartDateLabel("2026-03-18")).toMatch(/18/);
+    expect(formatFactoryStartDateLabel("2026-03-18")).toMatch(/2026/);
+    expect(formatFactoryStartTimeLabel("12:00")).toMatch(/12/);
     expect(formatFactoryStartDateLabel("")).toBe("Pick a date");
     expect(formatFactoryStartTimeLabel("")).toBe("Pick a time");
   });
