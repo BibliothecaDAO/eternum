@@ -116,6 +116,11 @@ const makeWallet = Effect.gen(function* () {
 
   const disconnect = Effect.gen(function* () {
     connectedAccount = null;
+    try {
+      localStorage.removeItem(LAST_WALLET_KEY);
+    } catch {
+      // An unavailable storage API must not keep the in-memory wallet connected.
+    }
     yield* SubscriptionRef.set(session, null);
   });
 

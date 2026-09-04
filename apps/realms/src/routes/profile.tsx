@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { HeraldClient } from "@/services/herald";
 import { IdentityApi } from "@/services/identity";
 import { IdentityUnreachable } from "@/services/platform/errors";
+import { Wallet } from "@/services/platform/wallet";
 import { MmrClient, mmrTier, mmrToInteger } from "@/services/mmr";
 import { portraitUrl, shortAddress } from "@/ui/format";
 import { useMutation, useQuery } from "@/ui/hooks";
@@ -95,7 +96,14 @@ function BindingStatus() {
 function SignedInProfile({ address }: { address: string }) {
   const { session, refresh } = useSession();
   const [editingPortrait, setEditingPortrait] = useState(false);
-  const signOut = useMutation(() => Effect.flatMap(IdentityApi, (identity) => identity.signOut));
+  const signOut = useMutation(() =>
+    Effect.gen(function* () {
+      const identity = yield* IdentityApi;
+      yield* identity.signOut;
+      const wallet = yield* Wallet;
+      yield* wallet.disconnect;
+    }),
+  );
 
   const rating = useQuery(() => Effect.flatMap(MmrClient, (mmr) => mmr.rating(address)), [address]);
   const directory = useQuery(() => Effect.flatMap(HeraldClient, (herald) => herald.directory), []);

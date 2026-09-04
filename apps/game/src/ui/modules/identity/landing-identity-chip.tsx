@@ -9,6 +9,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import type { Session } from "@realms-world/identity";
+import { useDisconnect } from "@starknet-react/core";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -26,6 +27,20 @@ const resolveChipLabel = (status: "loading" | "anonymous" | "signed-in", session
 };
 
 const shortId = (id: string): string => `${id.slice(0, 6)}…${id.slice(-4)}`;
+
+const reportSignOutFailure = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : "Sign out failed";
+  console.error("identity_sign_out_failed", { error: message });
+  return message;
+};
+
+const disconnectSignedOutWallet = async (disconnect: () => Promise<unknown>): Promise<void> => {
+  try {
+    await disconnect();
+  } catch (error) {
+    reportSignOutFailure(error);
+  }
+};
 
 /**
  * The landing's identity chip: the one sign-in surface. A surface that needs a session calls `requestSignIn`,
@@ -72,6 +87,8 @@ export const LandingIdentityChip = () => {
 
 const SignedInPanel = ({ session }: { session: Session }) => {
   const applySession = useIdentitySessionStore((state) => state.applySession);
+  const closePopover = usePopoverStore((state) => state.close);
+  const { disconnectAsync } = useDisconnect();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,11 +97,11 @@ const SignedInPanel = ({ session }: { session: Session }) => {
     setError(null);
     try {
       await identityClient.signOut();
+      await disconnectSignedOutWallet(disconnectAsync);
       applySession(null);
-    } catch (signOutError) {
-      const message = signOutError instanceof Error ? signOutError.message : "Sign out failed";
-      console.error("identity_sign_out_failed", { error: message });
-      setError(message);
+      closePopover(IDENTITY_POPOVER_ID);
+    } catch (error) {
+      setError(reportSignOutFailure(error));
     } finally {
       setSigningOut(false);
     }

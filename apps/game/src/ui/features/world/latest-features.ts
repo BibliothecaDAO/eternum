@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-04",
+    title: "Switch Wallets After Sign-Out",
+    description: "Sign out now disconnects the wallet so you can sign in with another one.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-04",
     title: "Anonymous Spectating Restored",
     description:
       "Spectate from your active games works again without signing in, and world-loading failures no longer send you to sign-in.",
