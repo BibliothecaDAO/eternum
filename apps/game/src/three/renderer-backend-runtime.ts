@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react";
+import { verboseLog } from "@/utils/dev-mode";
 import {
   incrementRendererDiagnosticError,
   setRendererDiagnosticCapabilities,
@@ -43,10 +44,16 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
     envBuildMode: input.envBuildMode,
     search: input.search,
   });
+  const forceReprobe = hasExplicitRendererMode(input.search);
   removeRetiredRendererModePreference(getBrowserStorage());
+  verboseLog("[RendererDebug]", {
+    event: "renderer-init-requested",
+    explicitOverride: forceReprobe,
+    requestedMode,
+  });
 
   const backend = createWebGPURendererBackend({
-    forceReprobe: hasExplicitRendererMode(input.search),
+    forceReprobe,
     isMobileDevice: input.isMobileDevice,
     onDeviceLost: input.onDeviceLost,
     pixelRatio: input.pixelRatio,
@@ -92,6 +99,15 @@ function completeRendererBackendInitialization(
   syncRendererBackendDiagnostics(diagnostics);
   setRendererDiagnosticCapabilities(backend.capabilities);
   setRendererDiagnosticDegradations([]);
+  verboseLog("[RendererDebug]", {
+    activeMode: diagnostics.activeMode,
+    adapterInfo: diagnostics.adapterInfo ?? null,
+    capabilities: backend.capabilities,
+    event: "renderer-init-completed",
+    fallbackReason: diagnostics.fallbackReason,
+    initTimeMs: Math.round(diagnostics.initTimeMs),
+    requestedMode: diagnostics.requestedMode,
+  });
   // Resolved backend rides every Sentry report — the webgl2-fallback question
   // stays answerable from error data now that product analytics is gone.
   Sentry.getCurrentScope().setTags({

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildRendererDebugUrl,
   DEFAULT_RENDERER_BUILD_MODE,
   removeRetiredRendererModePreference,
   resolveRendererBuildMode,
@@ -31,5 +32,21 @@ describe("renderer build mode", () => {
     const removeItem = vi.fn();
     removeRetiredRendererModePreference({ removeItem });
     expect(removeItem).toHaveBeenCalledWith("RENDERER_MODE");
+  });
+
+  it("builds an explicit renderer reload without dropping spectator intent", () => {
+    const result = new URL(
+      buildRendererDebugUrl(
+        "https://game.test/play/madara/iron-age/map?spectate=true&col=4#world",
+        "webgpu-force-webgl",
+      ),
+    );
+
+    expect(result.pathname).toBe("/play/madara/iron-age/map");
+    expect(result.searchParams.get("spectate")).toBe("true");
+    expect(result.searchParams.get("col")).toBe("4");
+    expect(result.searchParams.get("rendererMode")).toBe("webgpu-force-webgl");
+    expect(result.searchParams.get("logs")).toBe("1");
+    expect(result.hash).toBe("#world");
   });
 });

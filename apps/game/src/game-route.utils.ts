@@ -1,6 +1,6 @@
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
 
-type GameRouteView = "loading" | "ready" | "reconnect" | "redirect";
+type GameRouteView = "error" | "loading" | "ready" | "reconnect" | "redirect";
 
 export const resolveGameRouteView = ({
   phase,
@@ -13,6 +13,10 @@ export const resolveGameRouteView = ({
   hasAccount: boolean;
   isReconnectRequired?: boolean;
 }): GameRouteView => {
+  if (phase === "error") {
+    return "error";
+  }
+
   if (hasSetupResult && hasAccount) {
     return "ready";
   }
@@ -21,7 +25,7 @@ export const resolveGameRouteView = ({
     return "redirect";
   }
 
-  if (phase === "error" || isReconnectRequired) {
+  if (isReconnectRequired) {
     return "reconnect";
   }
 

@@ -19,23 +19,12 @@ vi.mock("@/ui/modules/identity/identity-login", () => ({
   IdentityLogin: () => <div data-testid="identity-login">identity login</div>,
 }));
 
-const renderReconnectScreen = ({
-  reconnectError = null,
-  showRetry = true,
-}: { reconnectError?: string | null; showRetry?: boolean } = {}) => {
-  const onRetry = vi.fn();
+const renderReconnectScreen = ({ reconnectError = null }: { reconnectError?: string | null } = {}) => {
   const onReturnToDashboard = vi.fn();
   act(() => {
-    root.render(
-      <PlayRouteReconnectScreen
-        onRetry={onRetry}
-        onReturnToDashboard={onReturnToDashboard}
-        reconnectError={reconnectError}
-        showRetry={showRetry}
-      />,
-    );
+    root.render(<PlayRouteReconnectScreen onReturnToDashboard={onReturnToDashboard} reconnectError={reconnectError} />);
   });
-  return { onRetry, onReturnToDashboard };
+  return { onReturnToDashboard };
 };
 
 let container: HTMLDivElement;
@@ -63,20 +52,18 @@ describe("PlayRouteReconnectScreen", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("signs in on the route itself, with retry and the dashboard as the other ways out", () => {
+  it("signs in on the route itself and keeps the dashboard as the other way out", () => {
     const actions = renderReconnectScreen();
 
     expect(container.textContent).toContain("Sign in to Continue");
     expect(container.querySelector('[data-testid="identity-login"]')).not.toBeNull();
 
-    act(() => getButton("Retry Bootstrap").click());
-    expect(actions.onRetry).toHaveBeenCalledOnce();
     act(() => getButton("Return to Dashboard").click());
     expect(actions.onReturnToDashboard).toHaveBeenCalledOnce();
   });
 
-  it("shows the provisioning failure and hides retry when bootstrap did not fail", () => {
-    renderReconnectScreen({ reconnectError: "account class is not declared", showRetry: false });
+  it("shows the provisioning failure without presenting a bootstrap action", () => {
+    renderReconnectScreen({ reconnectError: "account class is not declared" });
 
     expect(container.querySelector('[role="alert"]')?.textContent).toBe("account class is not declared");
     expect([...container.querySelectorAll("button")].map((button) => button.textContent)).toEqual([

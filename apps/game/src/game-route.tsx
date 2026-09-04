@@ -7,11 +7,11 @@ import { EventFeedTicker } from "@/ui/features/event-feed/event-feed-ticker";
 import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-cues";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
-import { env } from "../env";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { DojoProvider } from "./hooks/context/dojo-context";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
+import { PlayRouteBootstrapErrorScreen } from "./ui/layouts/play-route-bootstrap-error-screen";
 import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventToastBridge } from "./ui/features/story-events";
@@ -72,6 +72,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     progress,
     setupResult,
     account,
+    error,
     retry,
     isReconnectRequired,
     currentTask,
@@ -97,15 +98,12 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     return <Navigate to="/" replace />;
   }
 
+  if (routeView === "error") {
+    return <PlayRouteBootstrapErrorScreen error={error} onRetry={retry} onReturnToDashboard={() => navigate("/")} />;
+  }
+
   if (routeView === "reconnect") {
-    return (
-      <PlayRouteReconnectScreen
-        onRetry={retry}
-        onReturnToDashboard={() => navigate("/")}
-        reconnectError={reconnectError}
-        showRetry={phase === "error"}
-      />
-    );
+    return <PlayRouteReconnectScreen onReturnToDashboard={() => navigate("/")} reconnectError={reconnectError} />;
   }
 
   if (routeView === "loading") {

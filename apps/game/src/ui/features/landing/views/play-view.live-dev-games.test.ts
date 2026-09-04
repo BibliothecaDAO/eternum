@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("PlayView live games dev visibility", () => {
-  it("aliases active-game spectate to the play flow", () => {
+  it("keeps active-game spectate on the anonymous spectator flow", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
     const activeGamesStart = source.indexOf("const RegisteredActiveGamesBar = ({");
     const playTabStart = source.indexOf("/**\n * Play tab content layered as:");
@@ -12,7 +12,8 @@ describe("PlayView live games dev visibility", () => {
 
     expect(activeGamesStart).toBeGreaterThan(-1);
     expect(playTabStart).toBeGreaterThan(activeGamesStart);
-    expect(activeGamesBlock).toContain("onSpectate={onPlayGame}");
+    expect(activeGamesBlock).toContain("onSpectate={onSpectate}");
+    expect(activeGamesBlock).not.toContain("onSpectate={onPlayGame}");
   });
 
   it("does not hard-filter the open games grid to production only", () => {

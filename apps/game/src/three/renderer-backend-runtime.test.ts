@@ -8,8 +8,10 @@ const syncRendererBackendDiagnostics = vi.fn();
 const setRendererDiagnosticCapabilities = vi.fn();
 const setRendererDiagnosticDegradations = vi.fn();
 const createWebGPURendererBackend = vi.fn();
+const verboseLog = vi.fn();
 
 vi.mock("@sentry/react", () => ({ getCurrentScope: () => ({ setTags: setSentryScopeTags }) }));
+vi.mock("@/utils/dev-mode", () => ({ verboseLog }));
 vi.mock("./renderer-diagnostics", () => ({
   incrementRendererDiagnosticError,
   syncRendererBackendDiagnostics,
@@ -83,6 +85,20 @@ describe("renderer backend runtime", () => {
       renderer_backend: "webgpu",
       renderer_build_mode: "webgpu-auto",
     });
+    expect(verboseLog).toHaveBeenCalledWith("[RendererDebug]", {
+      event: "renderer-init-requested",
+      explicitOverride: false,
+      requestedMode: "webgpu-auto",
+    });
+    expect(verboseLog).toHaveBeenCalledWith(
+      "[RendererDebug]",
+      expect.objectContaining({
+        activeMode: "webgpu",
+        event: "renderer-init-completed",
+        fallbackReason: null,
+        requestedMode: "webgpu-auto",
+      }),
+    );
     expect(result).toEqual({ backend, renderer: backend.renderer });
   });
 

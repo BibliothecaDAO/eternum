@@ -5,6 +5,7 @@ export type RendererBuildMode = (typeof RENDERER_BUILD_MODES)[number];
 export const DEFAULT_RENDERER_BUILD_MODE: RendererBuildMode = "webgpu-auto";
 
 const RENDERER_MODE_QUERY_PARAM = "rendererMode";
+const VERBOSE_LOGS_QUERY_PARAM = "logs";
 const RETIRED_RENDERER_MODE_STORAGE_KEY = "RENDERER_MODE";
 const RETIRED_AUTO_MODE = ["experimental", "webgpu", "auto"].join("-");
 const RETIRED_FORCE_WEBGL_MODE = ["experimental", "webgpu", "force", "webgl"].join("-");
@@ -36,6 +37,14 @@ export function resolveRendererBuildModeFromSearch(input: {
 /** True when the URL names a renderer mode, which asks for a fresh lane probe. */
 export function hasExplicitRendererMode(search: string): boolean {
   return new URLSearchParams(search).has(RENDERER_MODE_QUERY_PARAM);
+}
+
+/** Builds a reload URL for an explicit renderer trial and turns on the diagnostics emitted during that boot. */
+export function buildRendererDebugUrl(href: string, mode: RendererBuildMode): string {
+  const url = new URL(href);
+  url.searchParams.set(RENDERER_MODE_QUERY_PARAM, mode);
+  url.searchParams.set(VERBOSE_LOGS_QUERY_PARAM, "1");
+  return url.toString();
 }
 
 export function removeRetiredRendererModePreference(storage: Pick<Storage, "removeItem"> | null): void {

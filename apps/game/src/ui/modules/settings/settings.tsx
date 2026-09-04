@@ -8,6 +8,7 @@ import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
+import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
@@ -171,6 +172,7 @@ const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) 
           <p className="text-xs leading-relaxed text-gray-gold/70">
             Battery reduces idle and distant update frequency without changing visual detail.
           </p>
+          <RendererDebugControl className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
         </section>
 
         {/* Camera — persisted zoom per scene. Changes apply immediately to the

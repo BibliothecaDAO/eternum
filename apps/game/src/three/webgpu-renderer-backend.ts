@@ -5,7 +5,7 @@ import {
   NeutralToneMapping,
   ReinhardToneMapping,
 } from "three";
-import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 
 import type { RendererSurfaceLike } from "./renderer-backend";
 import { markRendererDiagnosticDeviceLost, recordRendererDiagnosticUncapturedError } from "./renderer-diagnostics";
@@ -33,6 +33,7 @@ import {
   rememberRendererLane,
   resolveWebGpuLaneStart,
   type RendererLane,
+  type WebGpuProbeVerdict,
   type WebGpuLaneStart,
 } from "./webgpu-lane-probe";
 
@@ -145,7 +146,7 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
   resolveLaneStart: (input) =>
     resolveWebGpuLaneStart({
       ...input,
-      probe: () => probeWebGpuAdapter({ gpu: resolveNavigatorGpu() }),
+      probe: probeDefaultWebGpuAdapter,
       storage: resolveLaneStorage(),
     }),
 };
@@ -161,6 +162,15 @@ function resolveLaneStorage(): Storage | null {
   } catch {
     return null;
   }
+}
+
+async function probeDefaultWebGpuAdapter(): Promise<WebGpuProbeVerdict> {
+  const verdict = await probeWebGpuAdapter({ gpu: resolveNavigatorGpu() });
+  verboseLog("[RendererDebug]", {
+    event: "webgpu-adapter-probe-completed",
+    verdict,
+  });
+  return verdict;
 }
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
@@ -482,6 +492,14 @@ export function createWebGPURendererBackend(
       forceReprobe: options.forceReprobe ?? false,
       requestedMode: options.requestedMode,
     });
+    verboseLog("[RendererDebug]", {
+      event: "renderer-lane-selected",
+      fallbackReason: start.fallbackReason,
+      forceReprobe: options.forceReprobe ?? false,
+      forceWebGL: start.forceWebGL,
+      remembered: start.remembered,
+      requestedMode: options.requestedMode,
+    });
     try {
       const lane = await startRendererLane(start.forceWebGL);
       if (lane.activeMode === "webgpu") {
@@ -502,6 +520,11 @@ export function createWebGPURendererBackend(
 
       const fallbackReason = resolveWebGpuInitFailureReason(error);
       console.warn(`[WebGPURendererBackend] WebGPU init failed (${fallbackReason}); continuing on WebGL2`);
+      verboseLog("[RendererDebug]", {
+        error,
+        event: "webgpu-init-failed",
+        fallbackReason,
+      });
       resolvedDependencies.rememberLane("webgl2", fallbackReason);
       return { ...(await startRendererLane(true)), fallbackReason };
     }

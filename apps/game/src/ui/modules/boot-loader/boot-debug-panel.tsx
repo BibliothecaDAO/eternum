@@ -5,6 +5,7 @@ import {
   getGameEntryTimelineSnapshot,
   type GameEntryTimelineSnapshot,
 } from "@/ui/layouts/game-entry-timeline";
+import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
 
 const TICK_INTERVAL_MS = 250;
 
@@ -143,6 +144,8 @@ export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: Boo
           </div>
         </details>
       ) : null}
+
+      <RendererDebugControl className="mt-2" />
     </div>
   );
 };

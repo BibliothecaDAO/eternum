@@ -87,6 +87,7 @@ vi.mock("./ui/layouts/world", () => ({
 
 vi.mock("../env", () => ({
   env: {
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "webgpu-auto",
     VITE_TRACING_ENABLED: false,
   },
 }));
@@ -165,6 +166,35 @@ describe("GameRoute", () => {
     });
 
     expect(container.textContent).toContain("Sign in to Continue");
+  });
+
+  it("reports a spectator bootstrap failure without asking the viewer to sign in", async () => {
+    usePlayRouteBootControllerMock.mockReturnValue({
+      phase: "error",
+      progress: 0,
+      setupResult: null,
+      account: { address: "0x0" },
+      error: new Error("Renderer startup failed"),
+      retry: vi.fn(),
+      isReconnectRequired: false,
+      currentTask: "renderer",
+      tasks: [{ id: "renderer", label: "Preparing graphics", status: "error" }],
+      bootToken: 1,
+      reconnectError: null,
+      reconnectStatus: "connected",
+    });
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/madara/iron-age/map?spectate=true"]}>
+          <GameRoute backgroundImage="bg.png" />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.textContent).toContain("Unable to Start");
+    expect(container.textContent).toContain("Renderer startup failed");
+    expect(container.textContent).not.toContain("Sign in to Continue");
   });
 
   it("shows automatic gameplay-account restoration as restoring", async () => {

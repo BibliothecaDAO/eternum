@@ -639,7 +639,7 @@ const RegisteredActiveGamesBar = ({
         onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
         onAutoSettleGame={onAutoSettleGame}
-        onSpectate={onPlayGame}
+        onSpectate={onSpectate}
         onRegistrationComplete={onRegistrationComplete}
         // No mode filter: your active games stay visible even when the hero
         // is on the other mode — a blitz player browsing Seasons must still

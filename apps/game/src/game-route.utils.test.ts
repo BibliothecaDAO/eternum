@@ -30,8 +30,9 @@ describe("resolveGameRouteView", () => {
     ).toBe("reconnect");
   });
 
-  it("returns reconnect when play bootstrap enters an error state", () => {
-    expect(resolveGameRouteView({ phase: "error", hasSetupResult: false, hasAccount: false })).toBe("reconnect");
+  it("keeps bootstrap failures separate from account recovery", () => {
+    expect(resolveGameRouteView({ phase: "error", hasSetupResult: false, hasAccount: false })).toBe("error");
+    expect(resolveGameRouteView({ phase: "error", hasSetupResult: true, hasAccount: true })).toBe("error");
   });
 
   it("returns loading while bootstrap/account are still converging", () => {
