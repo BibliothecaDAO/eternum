@@ -1,12 +1,20 @@
-import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
+import {
+  WORLDMAP_CHUNK_DIAGNOSTICS_CONTRACT_VERSION,
+  type WorldmapChunkDiagnostics,
+} from "./worldmap-chunk-diagnostics";
 
-export type ChunkSwitchP95RegressionMetric = "switch_duration" | "first_visible_commit";
+export type ChunkSwitchP95RegressionMetric =
+  | "switch_duration"
+  | "terrain_first_complete_page"
+  | "terrain_window_convergence"
+  | "terrain_first_rendered_frame";
 
 interface EvaluateChunkSwitchP95RegressionInput {
   baseline: WorldmapChunkDiagnostics;
   current: WorldmapChunkDiagnostics;
   allowedRegressionFraction?: number;
   metric?: ChunkSwitchP95RegressionMetric;
+  minimumSamples?: number;
 }
 
 interface ChunkSwitchP95RegressionBaseResult {
@@ -59,8 +67,12 @@ function resolveRegressionSamples(
   metric: ChunkSwitchP95RegressionMetric,
 ): number[] {
   switch (metric) {
-    case "first_visible_commit":
-      return diagnostics.firstVisibleCommitDurationMsSamples;
+    case "terrain_first_complete_page":
+      return diagnostics.terrainFirstCompletePageDurationMsSamples;
+    case "terrain_window_convergence":
+      return diagnostics.terrainWindowConvergenceDurationMsSamples;
+    case "terrain_first_rendered_frame":
+      return diagnostics.terrainFirstRenderedFrameDurationMsSamples;
     case "switch_duration":
     default:
       return diagnostics.switchDurationMsSamples;
@@ -68,22 +80,54 @@ function resolveRegressionSamples(
 }
 
 function getMetricLabel(metric: ChunkSwitchP95RegressionMetric): string {
-  return metric === "first_visible_commit" ? "first-visible-commit" : "chunk-switch";
+  switch (metric) {
+    case "terrain_first_complete_page":
+      return "terrain-first-complete-page";
+    case "terrain_window_convergence":
+      return "terrain-window-convergence";
+    case "terrain_first_rendered_frame":
+      return "terrain-first-rendered-frame";
+    case "switch_duration":
+      return "chunk-switch";
+  }
 }
 
 export function evaluateChunkSwitchP95Regression(
   input: EvaluateChunkSwitchP95RegressionInput,
 ): ChunkSwitchP95RegressionResult {
   const metric = input.metric ?? "switch_duration";
+  const minimumSamples = Math.max(1, Math.floor(input.minimumSamples ?? 1));
   const allowedRegressionFraction = Math.max(0, input.allowedRegressionFraction ?? 0.1);
-  const baselineP95Ms = getP95(resolveRegressionSamples(input.baseline, metric));
-  const currentP95Ms = getP95(resolveRegressionSamples(input.current, metric));
+  const baselineSamples = toSortedFiniteSamples(resolveRegressionSamples(input.baseline, metric));
+  const currentSamples = toSortedFiniteSamples(resolveRegressionSamples(input.current, metric));
+  const baselineP95Ms = getP95(baselineSamples);
+  const currentP95Ms = getP95(currentSamples);
   const metricLabel = getMetricLabel(metric);
 
-  if (baselineP95Ms === null || currentP95Ms === null) {
+  if (
+    input.baseline.contractVersion !== WORLDMAP_CHUNK_DIAGNOSTICS_CONTRACT_VERSION ||
+    input.current.contractVersion !== WORLDMAP_CHUNK_DIAGNOSTICS_CONTRACT_VERSION
+  ) {
     return {
       status: "pending",
-      reason: `Insufficient ${metricLabel} samples for p95 comparison.`,
+      reason: `Chunk diagnostics contract mismatch; expected version ${WORLDMAP_CHUNK_DIAGNOSTICS_CONTRACT_VERSION}.`,
+      metric,
+      baselineP95Ms: null,
+      currentP95Ms: null,
+      allowedRegressionFraction,
+      regressionFraction: null,
+    };
+  }
+
+  if (
+    baselineSamples.length < minimumSamples ||
+    currentSamples.length < minimumSamples ||
+    baselineP95Ms === null ||
+    currentP95Ms === null
+  ) {
+    return {
+      status: "pending",
+      reason: `Insufficient ${metricLabel} samples for p95 comparison; need ${minimumSamples} finite observations.`,
       metric,
       baselineP95Ms,
       currentP95Ms,

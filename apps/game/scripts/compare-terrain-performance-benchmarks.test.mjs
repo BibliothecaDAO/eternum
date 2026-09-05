@@ -40,6 +40,24 @@ describe("terrain performance comparison", () => {
 
     expect(compareTerrainPerformanceSummaries(baseline, candidate)).toMatchObject({ ok: true, reasons: [] });
   });
+
+  it("keeps contract mismatches and non-finite observations inconclusive", () => {
+    const baseline = summary(10, 10, 4, 2_000_000);
+    const candidate = summary(9, 9, 3, 1_500_000);
+    candidate.results[0].snapshot.chunks.workerBuildP95Ms = Number.NaN;
+
+    expect(compareTerrainPerformanceSummaries(baseline, candidate)).toMatchObject({
+      ok: false,
+      status: "inconclusive",
+    });
+
+    candidate.results[0].snapshot.chunks.workerBuildP95Ms = 4;
+    candidate.results[0].snapshot.contractVersion = 1;
+    expect(compareTerrainPerformanceSummaries(baseline, candidate)).toMatchObject({
+      ok: false,
+      status: "inconclusive",
+    });
+  });
 });
 
 function summary(staticP95Ms, motionP95Ms, commitP95Ms, triangles) {
@@ -49,9 +67,23 @@ function summary(staticP95Ms, motionP95Ms, commitP95Ms, triangles) {
         rendererMode: "webgpu-auto",
         variant: "production",
         snapshot: {
-          chunks: { commitP95Ms },
+          contractVersion: 2,
+          chunks: {
+            commitP95Ms,
+            commitSamples: 10,
+            firstCompletePageP95Ms: 6,
+            firstCompletePageSamples: 10,
+            firstRenderedFrameP95Ms: 8,
+            firstRenderedFrameSamples: 10,
+            queueWaitP95Ms: 2,
+            queueWaitSamples: 10,
+            windowConvergenceP95Ms: 7,
+            windowConvergenceSamples: 10,
+            workerBuildP95Ms: 5,
+            workerBuildSamples: 10,
+          },
           frames: { motion: { p95Ms: motionP95Ms }, static: { p95Ms: staticP95Ms } },
-          render: { drawCalls: 20, firstRenderMs: 80, propInstances: 5_000, triangles },
+          render: { drawCalls: 20, firstTerrainFrameMs: 80, propInstances: 5_000, triangles },
         },
       },
     ],

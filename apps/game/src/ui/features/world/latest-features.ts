@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-05",
+    title: "Reliable Terrain Updates",
+    description:
+      "Terrain, props and fog stay together as the map updates, nearby ground appears sooner while panning, and roads and settlement terrain refresh when structures change.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-09-04",
     title: "Switch Wallets After Sign-Out",
     description: "Sign out now disconnects the wallet so you can sign in with another one.",

@@ -35,6 +35,7 @@
     "smoke:renderer-debug": "node ./scripts/run-renderer-debug-smoke.mjs",
     "smoke:renderer-scenes": "node ./scripts/run-renderer-scene-smoke.mjs",
     "verify:terrain:evaluate": "node ./scripts/terrain-verification/evaluate-terrain-verification.mjs",
+    "verify:terrain:worldmap": "node ./scripts/terrain-verification/run-worldmap-terrain-verification.mjs",
     "verify:terrain:gallery": "node ./scripts/terrain-verification/run-terrain-gallery-verification.mjs",
     "verify:terrain:contact-sheet": "node ./scripts/terrain-verification/create-terrain-contact-sheet.mjs",
     "test": "node ./scripts/run-vitest.mjs",

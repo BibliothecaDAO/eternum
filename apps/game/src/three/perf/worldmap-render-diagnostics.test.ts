@@ -24,7 +24,6 @@ describe("worldmap-render-diagnostics", () => {
     recordWorldmapRenderDuration("chunkTerrainCommitMs" as any, 2);
     recordWorldmapRenderDuration("chunkManagerCatchUpMs" as any, 7);
     recordWorldmapRenderDuration("structureAssetPrewarmMs", 4);
-    recordWorldmapRenderDuration("presentationCommittedMs", 23);
     recordWorldmapRenderDuration("presentationSkewMs", 0.5);
     setWorldmapRenderGauge("activePaths", 17);
     setWorldmapRenderGauge("visibleArmies", 301);
@@ -62,7 +61,6 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations).toHaveProperty("chunkManagerCatchUpMs");
     expect((snapshot.durations as any).chunkManagerCatchUpMs.samples).toEqual([7]);
     expect(snapshot.durations.structureAssetPrewarmMs.samples).toEqual([4]);
-    expect(snapshot.durations.presentationCommittedMs.samples).toEqual([23]);
     expect(snapshot.durations.presentationSkewMs.samples).toEqual([0.5]);
     expect(snapshot.gauges.activePaths).toBe(17);
     expect(snapshot.gauges.visibleArmies).toBe(301);
@@ -116,6 +114,18 @@ describe("worldmap-render-diagnostics", () => {
     expect(snapshot.durations.performChunkSwitch.samples[511]).toBe(600);
   });
 
+  it("keeps missing and non-finite durations out of samples", () => {
+    recordWorldmapRenderDuration("terrainWorkerBuildMs", Number.NaN);
+    recordWorldmapRenderDuration("terrainWorkerBuildMs", Number.POSITIVE_INFINITY);
+    recordWorldmapRenderDuration("terrainWorkerBuildMs", -1);
+
+    expect(snapshotWorldmapRenderDiagnostics().durations.terrainWorkerBuildMs).toMatchObject({
+      count: 0,
+      samples: [],
+      totalMs: 0,
+    });
+  });
+
   it("summarizes zoom telemetry counters for a close-medium-far sequence", () => {
     incrementWorldmapRenderCounter("controlsChangeEvents", 9);
     incrementWorldmapRenderCounter("chunkRefreshRequests", 2);
@@ -131,20 +141,6 @@ describe("worldmap-render-diagnostics", () => {
     expect(summary.zoomTransitions.started).toBe(2);
     expect(summary.zoomTransitions.completed).toBe(2);
     expect(summary.zoomTransitions.cancelled).toBe(0);
-  });
-
-  it("tracks terrain visible commit count via dedicated counter", () => {
-    // Stage 0: new counter type for terrain commits to the visible scene.
-    // This counter is critical for verifying that biome deltas actually
-    // result in a terrain commit rather than being silently dropped.
-    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
-    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
-    incrementWorldmapRenderCounter("terrainVisibleCommits" as any);
-
-    const snapshot = snapshotWorldmapRenderDiagnostics();
-
-    // The counter type must be added to WorldmapRenderCounter union
-    expect(snapshot.counters).toHaveProperty("terrainVisibleCommits", 3);
   });
 
   it("initializes all forceRefreshReasons keys as finite numbers", () => {

@@ -85,7 +85,7 @@ describe("terrain performance benchmark", () => {
     result.snapshot.frames.motion = frameStats({ p95Ms: 500, sampleCount: 5 });
     result.snapshot.frames.static = frameStats({ p95Ms: 500, sampleCount: 5 });
     result.snapshot.longTasks.maxMs = 500;
-    result.snapshot.render.firstRenderMs = 2_000;
+    result.snapshot.render.firstTerrainFrameMs = 2_000;
 
     expect(
       evaluateTerrainPerformanceResults([result], {
@@ -105,6 +105,28 @@ describe("terrain performance benchmark", () => {
       }).reasons,
     ).toContain("webgpu-force-webgl/production: terrain did not cover every sampled screen position");
   });
+
+  it("keeps missing, non-finite, and stale-contract metrics inconclusive", () => {
+    const missing = passingResult("webgpu-auto", "production");
+    missing.snapshot.chunks.workerBuildP95Ms = Number.NaN;
+    expect(
+      evaluateTerrainPerformanceResults([missing], {
+        renderers: ["webgpu-auto"],
+        runMode: "quick",
+        variants: ["production"],
+      }),
+    ).toMatchObject({ ok: false, status: "inconclusive" });
+
+    const stale = passingResult("webgpu-auto", "production");
+    stale.snapshot.contractVersion = 1;
+    expect(
+      evaluateTerrainPerformanceResults([stale], {
+        renderers: ["webgpu-auto"],
+        runMode: "quick",
+        variants: ["production"],
+      }),
+    ).toMatchObject({ ok: false, status: "inconclusive" });
+  });
 });
 
 function passingResult(rendererMode, variant) {
@@ -122,17 +144,33 @@ function passingResult(rendererMode, variant) {
       assets: { groundArrayRequests: textured ? 2 : 0, propCatalogRequests: props ? 1 : 0 },
       chunks: {
         builtPages: 30,
+        cachePages: 100,
         commitMaxMs: 5,
         commitP95Ms: 4,
-        committedWindows: 14,
+        commitSamples: 14,
+        convergedWindows: 14,
+        firstCompletePageMaxMs: 100,
+        firstCompletePageP95Ms: 80,
+        firstCompletePageSamples: 14,
+        firstRenderedFrameMaxMs: 120,
+        firstRenderedFrameP95Ms: 90,
+        firstRenderedFrameSamples: 14,
         lifecyclePagesVisited: 100,
-        prepareMaxMs: 100,
-        prepareP95Ms: 80,
+        queueWaitMaxMs: 30,
+        queueWaitP95Ms: 20,
+        queueWaitSamples: 14,
         requestedWindows: 14,
         reusedPages: 120,
+        sharedInFlightPages: 20,
         staleWindows: 0,
+        windowConvergenceMaxMs: 200,
+        windowConvergenceP95Ms: 160,
+        windowConvergenceSamples: 14,
+        workerBuildMaxMs: 80,
+        workerBuildP95Ms: 70,
+        workerBuildSamples: 14,
       },
-      contractVersion: 1,
+      contractVersion: 2,
       densityMultiplier: 1.75,
       coverage: { checks: 17, missingFrames: 0, missingSamples: 0, samples: 425 },
       fixture: {
@@ -150,7 +188,7 @@ function passingResult(rendererMode, variant) {
       longTasks: { count: 0, maxMs: 0 },
       render: {
         drawCalls: props ? 28 : 12,
-        firstRenderMs: 80,
+        firstTerrainFrameMs: 80,
         geometries: 20,
         pixelRatio: 1,
         propInstances: props ? 4_000 : 0,

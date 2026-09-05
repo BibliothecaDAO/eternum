@@ -15,6 +15,7 @@ import { resolveWebGpuRendererActiveMode } from "@/three/webgpu-renderer-backend
 import { WebGPURenderer } from "three/webgpu";
 
 import type { RendererSurfaceLike } from "@/three/renderer-backend";
+import { FrameBudgetWorkQueue } from "@/three/frame-budget-work-queue";
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import {
   TERRAIN_BENCHMARK_CONTRACT_VERSION,
@@ -44,7 +45,6 @@ import {
 import { TerrainBenchmarkRecorder } from "@/three/terrain/verification/terrain-benchmark-recorder";
 import {
   WorldmapProceduralTerrain,
-  type WorldmapProceduralPresentationDiagnostics,
   type WorldmapProceduralPresentationInput,
 } from "@/three/terrain/worldmap-procedural-terrain";
 import { configureGltfTextureSupport } from "@/three/utils/utils";
@@ -103,7 +103,6 @@ interface TerrainBenchmarkRuntime {
   densityMultiplier: number;
   explorationMode: TerrainBenchmarkExplorationMode;
   error: string | null;
-  firstRenderMs: number;
   fixture: TerrainBenchmarkFixture;
   forceWebGL: boolean;
   frameWaiters: Array<{ framesRemaining: number; resolve: () => void }>;
@@ -118,6 +117,7 @@ interface TerrainBenchmarkRuntime {
   scene: Scene;
   status: TerrainBenchmarkSnapshot["status"];
   terrain: WorldmapProceduralTerrain;
+  workQueue: FrameBudgetWorkQueue;
   traceMode: TerrainBenchmarkTraceMode;
   variant: TerrainBenchmarkVariant;
 }
@@ -134,7 +134,7 @@ type TerrainBenchmarkWindow = Window & {
     getSnapshot: () => TerrainBenchmarkSnapshot;
     start: () => Promise<TerrainBenchmarkSnapshot>;
     status: TerrainBenchmarkSnapshot["status"];
-    version: 1;
+    version: 2;
   };
 };
 
@@ -183,7 +183,6 @@ async function createBenchmarkRuntime(
     densityMultiplier: input.densityMultiplier,
     explorationMode: input.explorationMode,
     error: null,
-    firstRenderMs: 0,
     fixture,
     forceWebGL: input.forceWebGL,
     frameWaiters: [],
@@ -198,6 +197,7 @@ async function createBenchmarkRuntime(
     scene,
     status: "ready",
     terrain,
+    workQueue: new FrameBudgetWorkQueue(),
     traceMode: input.traceMode,
     variant: input.variant,
   };
@@ -206,9 +206,8 @@ async function createBenchmarkRuntime(
   scene.add(terrain.object3d);
   positionCamera(runtime, INITIAL_FOCUS, CAMERA_DISTANCE.medium);
   await presentBenchmarkWindow(runtime, INITIAL_FOCUS, { settleFrames: false });
-  const firstRenderStartedAt = performance.now();
   renderer.render(scene, camera);
-  runtime.firstRenderMs = performance.now() - firstRenderStartedAt;
+  runtime.recorder.recordRenderedFrame(performance.now());
   return runtime;
 }
 
@@ -384,30 +383,23 @@ async function presentBenchmarkWindow(
     densityMultiplier: runtime.densityMultiplier,
     explorationMode: runtime.explorationMode,
   });
-  runtime.recorder.recordWindowRequest();
   if (options.lifecycleVisit) runtime.recorder.recordLifecyclePageVisit();
-  const presentation = await runtime.terrain.presentAsync(input);
+  const presentation = await runtime.terrain.presentAsync(
+    { ...input, commitMode: "ambient" },
+    runtime.workQueue,
+    (event) => runtime.recorder.recordTerrainEvent(event),
+  );
   if (!presentation) {
     runtime.recorder.recordStaleWindow();
     return;
   }
-  recordPresentation(runtime, input, presentation);
+  recordPresentation(runtime, input);
   if (options.settleFrames !== false) await waitForFrames(runtime, 2);
   if (options.verifyCoverage !== false) recordCoverage(runtime);
 }
 
-function recordPresentation(
-  runtime: TerrainBenchmarkRuntime,
-  input: WorldmapProceduralPresentationInput,
-  presentation: WorldmapProceduralPresentationDiagnostics,
-): void {
+function recordPresentation(runtime: TerrainBenchmarkRuntime, input: WorldmapProceduralPresentationInput): void {
   runtime.activeCellKeys = new Set(input.cells.map(({ col, row }) => terrainCellKey(col, row)));
-  runtime.recorder.recordWindowCommit({
-    builtPages: presentation.builtPages,
-    commitMs: presentation.commitMs,
-    prepareMs: presentation.prepareMs,
-    reusedPages: presentation.reusedPages,
-  });
 }
 
 function setBenchmarkPhase(runtime: TerrainBenchmarkRuntime, phase: TerrainBenchmarkPhase): void {
@@ -422,6 +414,7 @@ function startAnimation(runtime: TerrainBenchmarkRuntime): void {
     runtime.recorder.recordFrame(time);
     runtime.controls.update();
     runtime.renderer.render(runtime.scene, runtime.camera);
+    runtime.recorder.recordRenderedFrame(performance.now());
     runtime.maxDrawCalls = Math.max(runtime.maxDrawCalls, readDrawCalls(runtime.renderer));
     runtime.maxTriangles = Math.max(runtime.maxTriangles, runtime.renderer.info.render.triangles);
     resolveFrameWaiters(runtime);
@@ -567,7 +560,7 @@ function readBenchmarkSnapshot(runtime: TerrainBenchmarkRuntime): TerrainBenchma
     longTasks: recorder.longTasks,
     render: {
       drawCalls: runtime.maxDrawCalls || readDrawCalls(runtime.renderer),
-      firstRenderMs: runtime.firstRenderMs,
+      firstTerrainFrameMs: runtime.recorder.getFirstRenderedFrameMs(),
       geometries: memory.geometries,
       pixelRatio: runtime.renderer.getPixelRatio(),
       propInstances,
@@ -627,6 +620,7 @@ function disposeBenchmarkRuntime(
   runtime.cameraMotion = null;
   resizeObserver.disconnect();
   runtime.controls.dispose();
+  runtime.workQueue.dispose();
   runtime.terrain.dispose();
   runtime.scene.clear();
   runtime.renderer.dispose();

@@ -3,10 +3,20 @@ import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { FrameBudgetWorkLane, FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
+import { terrainHexToWorld } from "./terrain-coordinates";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import type { PreparedTerrainPage } from "./terrain-types";
-import { WorldmapProceduralTerrain, buildWorldmapTerrainPageRequests } from "./worldmap-procedural-terrain";
+import {
+  WorldmapProceduralTerrain,
+  buildWorldmapTerrainPageRequests,
+  type TerrainPresentationEvent,
+} from "./worldmap-procedural-terrain";
+
+vi.mock("./terrain-prop-asset-cache", async () => {
+  const { createTerrainPropCatalogFixture } = await import("./verification/terrain-prop-catalog-fixture");
+  return { loadTerrainPropCatalog: () => Promise.resolve({ scene: createTerrainPropCatalogFixture() }) };
+});
 
 describe("WorldmapProceduralTerrain", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -126,11 +136,13 @@ describe("WorldmapProceduralTerrain", () => {
       builtPages: 1,
       commitMs: expect.any(Number),
       pages: 1,
+      prepareMs: expect.any(Number),
       reusedPages: 0,
     });
     await expect(terrain.presentAsync(input)).resolves.toMatchObject({
       builtPages: 0,
       commitMs: expect.any(Number),
+      prepareMs: 0,
       reusedPages: 1,
     });
     await expect(
@@ -138,15 +150,15 @@ describe("WorldmapProceduralTerrain", () => {
     ).resolves.toMatchObject({ builtPages: 1, reusedPages: 0 });
     expect(terrain.getVisibleCellCount()).toBe(1);
     const metrics = terrain.getPresentMetrics();
-    // 7 + 5 + 7: each changed page is a geometry task and a writes task; the reused page schedules neither.
-    expect(metrics.presentTasks).toBe(19);
+    // 4 + 3 + 4: each coherent changed page is one task; the reused page schedules none.
+    expect(metrics.presentTasks).toBe(11);
     expect(metrics.presentTaskMaxMs).toBeGreaterThanOrEqual(
-      Math.max(metrics.presentFogMaxMs, metrics.presentPageTaskMaxMs, metrics.presentRequestsMaxMs),
+      Math.max(metrics.presentPageTaskMaxMs, metrics.presentRequestsMaxMs),
     );
     terrain.dispose();
   });
 
-  it("commits one composite as partition, roads, a request per page, release, geometry and writes per page, and fog", async () => {
+  it("commits an authoritative composite as one coherent page group", async () => {
     stubPageWorker();
     const scheduler = createRecordingScheduler();
     const terrain = new WorldmapProceduralTerrain();
@@ -163,12 +175,7 @@ describe("WorldmapProceduralTerrain", () => {
       "terrain:present:roads",
       "terrain:present:request",
       "terrain:present:request",
-      "terrain:present:release",
       "terrain:present:page",
-      "terrain:present:page-writes",
-      "terrain:present:page",
-      "terrain:present:page-writes",
-      "terrain:present:fog",
     ]);
     terrain.dispose();
   });
@@ -218,15 +225,12 @@ describe("WorldmapProceduralTerrain", () => {
       "terrain:present:partition",
       "terrain:present:roads",
       "terrain:present:request",
-      "terrain:present:release",
       "terrain:present:page",
-      "terrain:present:page-writes",
-      "terrain:present:fog",
     ]);
     terrain.dispose();
   });
 
-  it("does not queue the remaining worker pages from a superseded presentation", async () => {
+  it("does not queue remaining worker pages after a presentation is superseded", async () => {
     const input = distantPagesInput();
     const firstRequest = buildWorldmapTerrainPageRequests(input)[0];
     let resolveFirstPage: (page: PreparedTerrainPage) => void = () => undefined;
@@ -322,6 +326,268 @@ describe("WorldmapProceduralTerrain", () => {
     expect(preparedPageKeys).toEqual(["0,10", "0,0"]);
     terrain.dispose();
   });
+
+  it("commits a complete page before a matching presentation supersedes its queued work", async () => {
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) =>
+      Promise.resolve(prepareTerrainPage(request)),
+    );
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const scheduler = createControlledScheduler();
+    const terrain = new WorldmapProceduralTerrain();
+    const input = singlePageInput(0);
+
+    const first = terrain.presentAsync(input, scheduler);
+    await scheduler.runUntil("terrain:present:page");
+
+    expect(terrain.getShroudStats().instances).toBe(1);
+
+    const second = terrain.presentAsync(input, scheduler);
+    await scheduler.runAll();
+
+    await expect(first).resolves.toBeNull();
+    await expect(second).resolves.toMatchObject({ pages: 1, reusedPages: 1 });
+    expect(terrain.getShroudStats().instances).toBe(1);
+    terrain.dispose();
+  });
+
+  it("presents a ready focus page while an unrelated cold page is still preparing", async () => {
+    let resolveCold: (page: PreparedTerrainPage) => void = () => undefined;
+    let coldRequest: Parameters<typeof prepareTerrainPage>[0] | undefined;
+    const coldPage = new Promise<PreparedTerrainPage>((resolve) => {
+      resolveCold = resolve;
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) => {
+      if (request.pageKey === "0,10") {
+        coldRequest = request;
+        return coldPage;
+      }
+      return Promise.resolve(prepareTerrainPage(request));
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+
+    const presentation = terrain.presentAsync({
+      ...distantPagesInput(),
+      commitMode: "ambient",
+      priorityPageKeys: ["0,0"],
+    });
+    await flushMicrotasks();
+
+    const focus = terrainHexToWorld(0, 0);
+    expect(coldRequest).toBeDefined();
+    expect(terrain.sampleSurface(focus.x, focus.z).biome).toBe(BiomeType.Grassland);
+    expect(terrain.getVisibleCellCount()).toBe(1);
+
+    resolveCold(prepareTerrainPage(coldRequest!));
+    await expect(presentation).resolves.toMatchObject({ pages: 2 });
+    terrain.dispose();
+  });
+
+  it("finishes each ambient page's fog before requesting the next page from the shared worker", async () => {
+    const workerOrder: string[] = [];
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) => {
+      workerOrder.push(`page:${request.pageKey}`);
+      return Promise.resolve(prepareTerrainPage(request));
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockImplementation(async (pages) => {
+      workerOrder.push(`fog:${pages.map(({ request }) => request.pageKey).join("+")}`);
+      return null;
+    });
+    const terrain = new WorldmapProceduralTerrain();
+    await terrain.presentAsync({ ...distantPagesInput(), commitMode: "ambient", priorityPageKeys: ["0,0"] });
+
+    expect(workerOrder).toEqual(["page:0,0", "fog:0,0", "page:0,10", "fog:0,0+0,10"]);
+    terrain.dispose();
+  });
+
+  it("settles a fully stalled superseded request without starting further worker work", async () => {
+    const never = new Promise<PreparedTerrainPage>(() => undefined);
+    const preparePage = vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) => {
+      if (request.pageKey === "0,0") return never;
+      return Promise.resolve(prepareTerrainPage(request));
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const superseded = terrain.presentAsync({
+      ...distantPagesInput(),
+      cells: [...distantPagesInput().cells, worldCell(20, 0, BiomeType.Taiga)],
+      commitMode: "ambient",
+    });
+    await flushMicrotasks();
+    expect(preparePage.mock.calls.map(([request]) => request.pageKey)).toEqual(["0,0"]);
+
+    const latest = terrain.presentAsync(singlePageInput(30));
+
+    await expect(superseded).resolves.toBeNull();
+    await expect(latest).resolves.toMatchObject({ pages: 1 });
+    expect(preparePage.mock.calls.map(([request]) => request.pageKey)).toEqual(["0,0", "0,30"]);
+    terrain.dispose();
+  });
+
+  it("settles stalled callers when cleared or disposed", async () => {
+    for (const stop of ["clear", "dispose"] as const) {
+      vi.restoreAllMocks();
+      vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockReturnValue(
+        new Promise<PreparedTerrainPage>(() => undefined),
+      );
+      const terrain = new WorldmapProceduralTerrain();
+      const presentation = terrain.presentAsync(singlePageInput(0));
+      await flushMicrotasks();
+
+      terrain[stop]();
+
+      await expect(presentation).resolves.toBeNull();
+      expect(terrain.getPresentationCoverage().pages).toEqual([]);
+      if (stop === "clear") terrain.dispose();
+    }
+  });
+
+  it("propagates a worker rejection and allows the same target to retry", async () => {
+    const preparePage = vi
+      .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockRejectedValueOnce(new Error("injected worker failure"))
+      .mockImplementation((request) => Promise.resolve(prepareTerrainPage(request)));
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+
+    await expect(terrain.presentAsync(singlePageInput(0))).rejects.toThrow("injected worker failure");
+    await expect(terrain.presentAsync(singlePageInput(0))).resolves.toMatchObject({ builtPages: 1, pages: 1 });
+    expect(preparePage).toHaveBeenCalledTimes(2);
+    terrain.dispose();
+  });
+
+  it("commits every page affected by one authoritative boundary change in one task", async () => {
+    stubPageWorker();
+    const scheduler = createRecordingScheduler();
+    const commitPages = vi.spyOn(ProceduralTerrain.prototype, "commitPages");
+    const terrain = new WorldmapProceduralTerrain();
+    const input = twoPageInput();
+    await terrain.presentAsync(input, scheduler);
+    scheduler.owners.length = 0;
+
+    const changed = { ...input, cells: [worldCell(1, 0, BiomeType.Taiga), input.cells[1]] };
+    await terrain.presentAsync(changed, scheduler);
+
+    expect(scheduler.owners.filter(isPageStep)).toEqual(["terrain:present:page"]);
+    expect(commitPages.mock.lastCall?.[0].map(({ request }) => request.pageKey)).toEqual(["0,0", "0,2"]);
+    const west = terrainHexToWorld(1, 0);
+    const east = terrainHexToWorld(2, 0);
+    expect(terrain.sampleSurface(west.x, west.z).biome).toBe(BiomeType.Taiga);
+    expect(terrain.sampleSurface(east.x, east.z).biome).toBe(BiomeType.Beach);
+    terrain.dispose();
+  });
+
+  it("reports requested, source-ready, complete-page, and converged-window milestones", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+    const events: TerrainPresentationEvent[] = [];
+
+    const presentation = terrain.presentAsync(singlePageInput(0), undefined, (event) => events.push(event));
+    expect(events).toEqual([expect.objectContaining({ kind: "requested", revision: 1 })]);
+    await presentation;
+
+    expect(events.map(({ kind }) => kind)).toEqual(["requested", "source_ready", "page_complete", "window_complete"]);
+    const sourceReady = events.find((event) => event.kind === "source_ready");
+    const pageComplete = events.find((event) => event.kind === "page_complete");
+    expect(sourceReady).toMatchObject({ requestedPages: [{ fingerprint: null, pageKey: "0,0" }] });
+    expect(pageComplete).toMatchObject({
+      completedPageKeys: ["0,0"],
+      coverage: { fog: true, geometry: true, props: "stored" },
+      pageKey: "0,0",
+      requiredPageKeys: ["0,0"],
+      work: { source: "built" },
+    });
+    if (pageComplete?.kind === "page_complete") {
+      expect(pageComplete.fingerprint.length).toBeLessThan(100);
+      expect(Number.isFinite(pageComplete.completedAtMs)).toBe(true);
+      expect(Number.isFinite(pageComplete.sourceReadyAtMs)).toBe(true);
+    }
+    expect(terrain.getPresentationCoverage()).toMatchObject({
+      pages: [{ coverage: { props: "stored" }, pageKey: "0,0" }],
+      revision: 1,
+    });
+    terrain.dispose();
+  });
+
+  it("keeps a missing worker duration missing in page, window, and public diagnostics", async () => {
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
+      const page = prepareTerrainPage(request);
+      return { ...page, diagnostics: { ...page.diagnostics, prepareMs: Number.NaN } };
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const events: TerrainPresentationEvent[] = [];
+
+    const diagnostics = await terrain.presentAsync(singlePageInput(0), undefined, (event) => events.push(event));
+
+    expect(diagnostics?.prepareMs).toBe(Number.NaN);
+    expect(events.find((event) => event.kind === "page_complete")).toMatchObject({
+      work: { workerBuildMs: null },
+    });
+    expect(events.find((event) => event.kind === "window_complete")).toMatchObject({
+      work: { workerBuildMs: null },
+    });
+    terrain.dispose();
+  });
+
+  it("reports known no-op work as zero in a mixed cached and built atomic window", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+    const input = distantPagesInput();
+    await terrain.presentAsync(input);
+    const events: TerrainPresentationEvent[] = [];
+    const changed = { ...input, cells: [input.cells[0], { ...input.cells[1], occupied: true }] };
+
+    await terrain.presentAsync(changed, undefined, (event) => events.push(event));
+
+    const pageEvents = events.filter((event) => event.kind === "page_complete");
+    expect(pageEvents).toHaveLength(2);
+    expect(pageEvents.find((event) => event.pageKey === "0,0")).toMatchObject({
+      commitCpuMs: 0,
+      work: { queueWaitMs: 0, source: "cache", workerBuildMs: 0 },
+    });
+    const built = pageEvents.find((event) => event.pageKey === "0,10");
+    expect(built).toMatchObject({ work: { source: "built" } });
+    if (built?.kind === "page_complete") {
+      expect(Number.isFinite(built.commitCpuMs)).toBe(true);
+      expect(Number.isFinite(built.work.queueWaitMs)).toBe(true);
+    }
+    expect(events.find((event) => event.kind === "window_complete")).toMatchObject({
+      work: {
+        builtPages: 1,
+        queueWaitMs: expect.any(Number),
+        reusedPages: 1,
+        workerBuildMs: expect.any(Number),
+      },
+    });
+    terrain.dispose();
+  });
+
+  it("keeps a full ambient window bounded while replacing all sixteen pages", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+    await terrain.loadProps();
+    const inputForColumns = (startCol: number) => ({
+      cells: Array.from({ length: 16 }, (_, offset) => worldCell(startCol + offset, 0, BiomeType.Grassland)),
+      climate: NEUTRAL_BIOME_CLIMATE,
+      commitMode: "ambient" as const,
+      mapCenter: 0,
+      pageHeight: 1,
+      pageOrigin: { col: 0, row: 0 },
+      pageWidth: 1,
+      subdivisions: 1,
+    });
+    await terrain.presentAsync(inputForColumns(0));
+    await terrain.presentAsync(inputForColumns(16));
+
+    const coverage = terrain.getPresentationCoverage();
+    expect(coverage.pages).toHaveLength(16);
+    expect(new Set(coverage.pages.map(({ pageKey }) => pageKey))).toEqual(
+      new Set(Array.from({ length: 16 }, (_, offset) => `0,${16 + offset}`)),
+    );
+    expect(coverage.pages.every(({ coverage: page }) => page.props === "uploaded")).toBe(true);
+    terrain.dispose();
+  });
 });
 
 /** Builds pages on the calling thread: jsdom has no Worker, and the fog mask never needs one for these windows. */
@@ -346,6 +612,48 @@ function createRecordingScheduler(): FrameBudgetWorkScheduler & { lanes: Set<Fra
       } catch (error) {
         return Promise.reject(error);
       }
+    },
+  };
+}
+
+function createControlledScheduler(): FrameBudgetWorkScheduler & {
+  runAll(): Promise<void>;
+  runUntil(owner: string): Promise<void>;
+} {
+  const tasks: Array<{ owner: string; run(): Promise<void> }> = [];
+  const runNext = async () => {
+    await flushMicrotasks();
+    const task = tasks.shift();
+    if (!task) return null;
+    await task.run();
+    return task.owner;
+  };
+  return {
+    schedule(_lane, work, owner) {
+      return new Promise((resolve, reject) => {
+        tasks.push({
+          owner: owner ?? "",
+          async run() {
+            try {
+              resolve(await work());
+            } catch (error) {
+              reject(error);
+            }
+          },
+        });
+      });
+    },
+    async runAll() {
+      for (let idlePasses = 0; idlePasses < 3; ) {
+        if (await runNext()) idlePasses = 0;
+        else idlePasses += 1;
+      }
+    },
+    async runUntil(owner) {
+      for (let attempts = 0; attempts < 50; attempts += 1) {
+        if ((await runNext()) === owner) return;
+      }
+      throw new Error(`Scheduled terrain task did not run: ${owner}`);
     },
   };
 }
