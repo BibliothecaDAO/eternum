@@ -16,6 +16,8 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
   attribute,
   color,
+  float,
+  instanceIndex,
   mix,
   normalGeometry,
   positionGeometry,
@@ -148,7 +150,6 @@ export class TerrainPropPools {
   setLod(lod: TerrainPropLod): void {
     if (lod === this.lod) return;
     this.lod = lod;
-    this.windStrength.value = lod === "near" ? 1 : 0.35;
     this.pools.forEach((pool, archetype) => {
       pool.mesh.geometry = this.requireCatalogMesh(archetype, lod).geometry;
       pool.mesh.visible = pool.mesh.count > 0 && isTerrainPropVisibleAtLod(archetype, lod);
@@ -397,13 +398,19 @@ function createTerrainPropMaterial(
     .clamp(0, 1);
   const mossMask = ecology.y.mul(verticality.mul(0.5).add(0.35)).mul(snowMask.mul(0.8).oneMinus()).clamp(0, 1);
   const mossyColor = mix(vertexColor().rgb, color("#627858"), mossMask.mul(0.48));
-  material.colorNode = mix(mossyColor, color("#d8e0df"), snowMask.mul(0.78));
+  const canopyLight = foliageWeight.mul(smoothstep(0.1, 0.85, normalGeometry.y)).mul(0.18);
+  const foliageColor = mix(mossyColor, color("#afc675"), canopyLight);
+  material.colorNode = mix(foliageColor, color("#d8e0df"), snowMask.mul(0.78));
   if (!animated) return material;
 
   const heightMask = smoothstep(0.08, 1.1, positionGeometry.y);
-  const phase = time.mul(0.72).add(positionLocal.x.mul(0.41)).add(positionLocal.z.mul(0.57));
-  const mainSway = phase.sin().mul(0.018);
-  const detailSway = phase.mul(1.73).add(positionGeometry.y.mul(2.4)).sin().mul(0.009);
+  const phase = time
+    .mul(0.72)
+    .add(positionLocal.x.mul(0.41))
+    .add(positionLocal.z.mul(0.57))
+    .add(float(instanceIndex).mul(2.399));
+  const mainSway = phase.sin().mul(0.045);
+  const detailSway = phase.mul(1.73).add(positionGeometry.y.mul(2.4)).sin().mul(0.018);
   const displacement = heightMask.mul(foliageWeight).mul(ecology.x).mul(windStrength);
   material.positionNode = positionLocal.add(vec3(mainSway.mul(displacement), 0, detailSway.mul(displacement)));
   return material;

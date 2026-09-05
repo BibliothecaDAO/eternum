@@ -86,14 +86,11 @@ const VIEW_WIDTH = 1440;
 const VIEW_HEIGHT = 900;
 const NOISE_SCALE = 0.0018;
 const STEP_SIZE = 12;
-const DRIFT_GROUPS = ["a", "b", "c", "d", "e"] as const;
 
 type FlowLine = {
   path: string;
   strokeWidth: number;
   opacity: number;
-  animDelay: number;
-  driftGroup: string;
   isShort: boolean;
 };
 
@@ -164,8 +161,6 @@ const generateFlowField = (seed: number): FlowLine[] => {
       path,
       strokeWidth: 0.5 + rand * 1.3,
       opacity: 0.08 + srand(s + 2) * 0.32,
-      animDelay: -(i * 1.1 + srand(s + 3) * 5),
-      driftGroup: DRIFT_GROUPS[i % DRIFT_GROUPS.length],
       isShort: false,
     });
   }
@@ -186,8 +181,6 @@ const generateFlowField = (seed: number): FlowLine[] => {
       path,
       strokeWidth: 0.3 + rand * 0.5,
       opacity: 0.05 + srand(s + 3) * 0.14,
-      animDelay: -(i * 2.1 + srand(s + 4) * 6),
-      driftGroup: DRIFT_GROUPS[(i + 2) % DRIFT_GROUPS.length],
       isShort: true,
     });
   }
@@ -197,15 +190,16 @@ const generateFlowField = (seed: number): FlowLine[] => {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-type ContourMapAnimationProps = {
+type ContourMapProps = {
   className?: string;
 };
 
-export const ContourMapAnimation = ({ className }: ContourMapAnimationProps) => {
+export const ContourMap = ({ className }: ContourMapProps) => {
   const vignetteId = `${useId()}-boot-vignette`;
   const glowId = `${useId()}-boot-glow`;
-  // Seed from timestamp — unique flow field every page load
-  const lines = useMemo(() => generateFlowField(Date.now()), []);
+  // Keep the loading background static: animating every SVG path can stall
+  // WebGPU device initialization on Chromium/NVIDIA while the loader is mounted.
+  const lines = useMemo(() => generateFlowField(217), []);
 
   return (
     <div className={clsx("boot-loader-contours absolute inset-0 overflow-hidden", className)} aria-hidden="true">
@@ -225,12 +219,11 @@ export const ContourMapAnimation = ({ className }: ContourMapAnimationProps) => 
         <rect x="0" y="0" width="1440" height="900" fill={`url(#${glowId})`} />
 
         {lines.map((line, index) => (
-          <g key={index} className={`boot-loader-contour-group boot-loader-contour-group-${line.driftGroup}`}>
+          <g key={index}>
             <path
               d={line.path}
               className={clsx("boot-loader-contour-line", line.isShort && "boot-loader-contour-particle")}
               style={{
-                animationDelay: `${line.animDelay}s`,
                 opacity: line.opacity,
                 strokeWidth: line.strokeWidth,
               }}
@@ -241,7 +234,6 @@ export const ContourMapAnimation = ({ className }: ContourMapAnimationProps) => 
                 className="boot-loader-contour-line boot-loader-contour-line-echo"
                 style={{
                   transform: `translateY(${6 + srand(index * 13) * 10}px)`,
-                  animationDelay: `${line.animDelay - 2}s`,
                   opacity: line.opacity * 0.35,
                   strokeWidth: line.strokeWidth * 0.6,
                 }}

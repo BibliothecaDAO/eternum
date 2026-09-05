@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-05",
+    title: "Clearer World, Faster Entry",
+    description:
+      "Enter the world without the stalled loading handoff. Explore brighter biomes, moving coastlines, and clearer fog borders; choose soft mist or reduced ambient motion in Settings. World panels leave the center of the map open.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-09-04",
     title: "Switch Wallets After Sign-Out",
     description: "Sign out now disconnects the wallet so you can sign in with another one.",

@@ -253,7 +253,7 @@ function result(rendererMode, activeMode, groundMode) {
       fogMaskBytes: 0,
       fogMaskHeight: 0,
       fogMaskWidth: 0,
-      fogOpacity: 0.84,
+      fogOpacity: 1,
       fogTerrainCells: 0,
       frontierPreviewCells: 0,
       frameP50Ms: 16.6,

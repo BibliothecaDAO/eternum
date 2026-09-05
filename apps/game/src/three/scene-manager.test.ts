@@ -58,6 +58,58 @@ function createScene(overrides: Partial<HexagonScene> = {}) {
 }
 
 describe("SceneManager transitions", () => {
+  it("renders the preparing scene without releasing input while its GPU work is pending", async () => {
+    const setup = createDeferred<void>();
+    const { fadeOuts, sceneManager } = createTransitionHarness();
+    const activateInputSurface = vi.fn();
+    sceneManager.addScene(SceneName.WorldMap, createScene({ setup: () => setup.promise, activateInputSurface }));
+
+    sceneManager.switchScene(SceneName.WorldMap);
+    await completeFade(fadeOuts[0]);
+
+    expect(sceneManager.getRenderingScene()).toBe(SceneName.WorldMap);
+    expect(sceneManager.getCurrentScene()).toBeUndefined();
+    expect(activateInputSurface).not.toHaveBeenCalled();
+
+    setup.resolve();
+    await flushTransitionWork();
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
+    expect(activateInputSurface).toHaveBeenCalledOnce();
+  });
+
+  it("renders the incoming scene during an established scene switch while input stays uncommitted", async () => {
+    const setup = createDeferred<void>();
+    const { fadeOuts, sceneManager } = createTransitionHarness();
+    sceneManager.addScene(SceneName.WorldMap, createScene());
+    sceneManager.addScene(SceneName.Hexception, createScene({ setup: () => setup.promise }));
+    sceneManager._updateCurrentScene(SceneName.WorldMap);
+    sceneManager.switchScene(SceneName.Hexception);
+    await completeFade(fadeOuts[0]);
+    expect(sceneManager.getRenderingScene()).toBe(SceneName.Hexception);
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.WorldMap);
+    setup.resolve();
+    await flushTransitionWork();
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+  });
+
+  it("releases a failed bootstrap render candidate", async () => {
+    const { fadeOuts, sceneManager } = createTransitionHarness();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    sceneManager.addScene(
+      SceneName.WorldMap,
+      createScene({
+        setup: async () => {
+          throw new Error("failed");
+        },
+      }),
+    );
+    sceneManager.switchScene(SceneName.WorldMap);
+    await completeFade(fadeOuts[0]);
+    expect(sceneManager.getRenderingScene()).toBeUndefined();
+    expect(sceneManager.getCurrentScene()).toBeUndefined();
+    error.mockRestore();
+  });
+
   it("starts setup with fade-out and waits for the fade when setup is faster", async () => {
     const events: string[] = [];
     const { fadeOuts, sceneManager, transitionManager } = createTransitionHarness(events);

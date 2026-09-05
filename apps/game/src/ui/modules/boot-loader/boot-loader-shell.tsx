@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
-import { ContourMapAnimation } from "./contour-map-animation";
+import { ContourMap } from "./contour-map";
 import { SegmentedBracketLoader, type LoaderProgressMode } from "./segmented-bracket-loader";
 
 type BootLoaderShellProps = {
@@ -37,12 +37,12 @@ export const BootLoaderShell = ({
         className,
       )}
     >
-      <ContourMapAnimation />
+      <ContourMap />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(201,169,96,0.08),transparent_54%)]" />
       <div className="relative z-10 flex min-h-full items-center justify-center px-6 py-10">
         <div
           className={clsx(
-            "w-full max-w-[34rem] rounded-2xl border border-gold/20 bg-[rgba(7,10,12,0.75)] px-6 py-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55),0_0_1px_rgba(201,169,96,0.15)] backdrop-blur-[22px]",
+            "w-full max-w-[34rem] rounded-2xl border border-gold/20 bg-[rgba(7,10,12,0.75)] px-6 py-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.55),0_0_1px_rgba(201,169,96,0.15)]",
             panelClassName,
           )}
         >

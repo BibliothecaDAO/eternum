@@ -1,3 +1,4 @@
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { Group, InstancedMesh, Mesh } from "three";
@@ -141,6 +142,26 @@ describe("ProceduralTerrain", () => {
     expect(terrain.getUploadMetrics()).toMatchObject({ propPoolFullRewrites: 1, propPoolPageWrites: 2 });
     expect(terrain.getPropStats().instances).toBeGreaterThan(0);
     terrain.dispose();
+  });
+
+  it("applies ambient motion preferences across LOD changes and releases its subscription", async () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(unknownRequest())]);
+    await terrain.loadProps();
+    const setWind = vi.spyOn(TerrainPropPools.prototype, "setWindStrength");
+    const fogBefore = terrain.getShroudStats();
+    useWorldAppearanceStore.getState().setReducedMotion(true);
+    terrain.setQualityTier("overview");
+    terrain.setQualityTier("detail");
+    expect(setWind).toHaveBeenLastCalledWith(0);
+    useWorldAppearanceStore.getState().setFogStyle("mist");
+    expect(terrain.getShroudStats()).toEqual(fogBefore);
+    terrain.dispose();
+    setWind.mockClear();
+    useWorldAppearanceStore.getState().setReducedMotion(false);
+    useWorldAppearanceStore.getState().setFogStyle("clear");
+    expect(setWind).not.toHaveBeenCalled();
+    setWind.mockRestore();
   });
 
   it("retains a requested quality tier while the catalog loads", async () => {

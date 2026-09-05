@@ -537,7 +537,7 @@ export default class GameRenderer {
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
-          currentScene: this.sceneManager?.getCurrentScene(),
+          currentScene: this.sceneManager?.getRenderingScene(),
           currentTime,
           cycleProgress,
           deltaTime,

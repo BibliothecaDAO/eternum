@@ -26,7 +26,7 @@ import {
   type TerrainFogMaskBounds,
   type TerrainFogMaskLayout,
 } from "./terrain-fog-mask";
-import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "./terrain-fog-style";
+import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY, type TerrainFogStyle } from "./terrain-fog-style";
 import type { TerrainShroudInstance } from "./terrain-types";
 
 export const TERRAIN_FOG_CELL_CAPACITY = 12_288;
@@ -56,6 +56,7 @@ interface ActiveReveal {
 }
 
 interface FogMaterialSet {
+  clarity: UniformNode<"float", number>;
   material: MeshBasicNodeMaterial;
   maskTexture: TextureNode;
   mistStrength: UniformNode<"float", number>;
@@ -162,6 +163,10 @@ export class TerrainFogField {
     completed.forEach((instance) => this.releaseRenderedCell(instance));
     this.markDirty(completed);
     this.commit();
+  }
+
+  setStyle(style: TerrainFogStyle): void {
+    this.materials.clarity.value = style === "clear" ? 1 : 0;
   }
 
   setQuality(motionStrength: number, mistStrength: number): void {
@@ -289,6 +294,7 @@ function createFogMaskTexture(data: Uint8Array, width: number, height: number): 
 }
 
 function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
+  const clarity = uniform(1, "float");
   const motionStrength = uniform(1, "float");
   const mistStrength = uniform(1, "float");
   const material = new MeshBasicNodeMaterialConstructor();
@@ -298,30 +304,27 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   material.depthWrite = false;
   material.toneMapped = false;
 
-  const primaryFlow = positionWorld.x
-    .mul(0.095)
-    .add(positionWorld.z.mul(0.061))
-    .add(time.mul(0.024).mul(motionStrength));
-  const crossFlow = positionWorld.x
-    .mul(-0.047)
-    .add(positionWorld.z.mul(0.113))
-    .sub(time.mul(0.017).mul(motionStrength));
-  const detailFlow = positionWorld.x
-    .mul(0.181)
-    .add(positionWorld.z.mul(-0.157))
-    .add(time.mul(0.011).mul(motionStrength));
+  const primaryFlow = positionWorld.x.mul(0.32).add(positionWorld.z.mul(0.23)).add(time.mul(0.024).mul(motionStrength));
+  const crossFlow = positionWorld.x.mul(-0.21).add(positionWorld.z.mul(0.38)).sub(time.mul(0.017).mul(motionStrength));
+  const detailFlow = positionWorld.x.mul(0.72).add(positionWorld.z.mul(-0.48)).add(time.mul(0.011).mul(motionStrength));
   const mistNoise = primaryFlow.sin().mul(0.2).add(crossFlow.sin().mul(0.2)).add(detailFlow.sin().mul(0.1)).add(0.5);
   const maskTextureNode = texture(maskTexture, uv());
   const mask = maskTextureNode.r;
-  const edgeBand = smoothstep(0.08, 0.54, mask).mul(float(1).sub(smoothstep(0.58, 0.96, mask)));
-  const cloudVeil = smoothstep(0.25, 0.76, mistNoise).mul(mistStrength).mul(0.2);
-  const edgeLight = edgeBand.mul(mistStrength).mul(0.16).add(cloudVeil);
-  material.colorNode = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#7d8882"), edgeLight.clamp(0, 0.36));
-  const opacityMotion = mistNoise.sub(0.5).mul(mistStrength).mul(0.1).add(0.94);
-  const frontierOpacity = mask.mul(opacityMotion).clamp(0, TERRAIN_DEEP_FOG_OPACITY);
+  // Compress the veil toward unexplored ground so known coastlines and units stay legible.
+  // Both treatments share the same authoritative mask and fully covered interior.
+  const edgeBand = smoothstep(0.18, 0.55, mask).mul(float(1).sub(smoothstep(0.6, 0.94, mask)));
+  const cloudVeil = smoothstep(0.15, 0.85, mistNoise)
+    .mul(mistStrength.mul(1.2).add(0.1))
+    .mul(mix(1, 0.6, clarity));
+  const edgeLight = edgeBand.mul(0.04).add(cloudVeil);
+  material.colorNode = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#9da9ab"), edgeLight.clamp(0, 0.4));
+  const coverage = smoothstep(mix(0.04, 0.28, clarity), mix(0.96, 0.8, clarity), mask);
+  const opacityMotion = mistNoise.sub(0.5).mul(mistStrength).mul(0.06).add(0.98);
+  const frontierOpacity = coverage.mul(opacityMotion).clamp(0, TERRAIN_DEEP_FOG_OPACITY);
   const deepFog = smoothstep(0.9, 0.985, mask);
   material.opacityNode = mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog);
   return {
+    clarity,
     material,
     maskTexture: maskTextureNode,
     mistStrength,

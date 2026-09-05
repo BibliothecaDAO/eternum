@@ -74,7 +74,6 @@ describe("renderer backend runtime", () => {
     });
 
     expect(createWebGPURendererBackend).toHaveBeenCalledWith({
-      forceReprobe: false,
       isMobileDevice: true,
       onDeviceLost: undefined,
       pixelRatio: 1.5,

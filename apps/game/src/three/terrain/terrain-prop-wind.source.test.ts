@@ -12,6 +12,6 @@ describe("terrain prop wind", () => {
     expect(source).toContain("instance.appearance.windAmplitude");
     expect(source).toContain("material.colorNode");
     expect(source).toContain("material.positionNode");
-    expect(source).toContain('lod === "near" ? 1 : 0.35');
+    expect(source).toContain("float(instanceIndex)");
   });
 });

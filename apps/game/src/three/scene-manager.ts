@@ -18,6 +18,7 @@ interface SceneSetupOwnership {
 
 export class SceneManager {
   private currentScene: SceneName | undefined = undefined;
+  private preparingScene: { name: SceneName; token: number } | undefined;
   private scenes = new Map<SceneName, HexagonScene>();
   private transitionInProgress = false;
   private transitionRequestToken = 0;
@@ -26,6 +27,11 @@ export class SceneManager {
 
   getCurrentScene() {
     return this.currentScene;
+  }
+
+  /** Draw behind the loading overlay so GPU compilation can finish before setup releases input. */
+  getRenderingScene(): SceneName | undefined {
+    return this.preparingScene?.name ?? this.currentScene;
   }
 
   getSceneByName(name: SceneName) {
@@ -79,6 +85,7 @@ export class SceneManager {
     previousScene?.onSwitchOff(sceneNameToTransition);
 
     this.transitionInProgress = true;
+    this.preparingScene = { name: sceneNameToTransition, token: transitionToken };
     const fadeOutCompletion = this.transitionManager.fadeOut();
     const setupOwnership = this.createSetupOwnership(transitionToken);
     const sceneSetupCompletion = this.setupScene(sceneNameToTransition, pendingScene, setupOwnership.context);
@@ -165,6 +172,7 @@ export class SceneManager {
     } catch (error) {
       console.error(`[SceneManager] Failed to set up scene ${sceneName}: ${formatReadableErrorForConsole(error)}`);
     } finally {
+      if (this.preparingScene?.token === transitionToken) this.preparingScene = undefined;
       if (!setupSucceeded) {
         setupOwnership.release();
       }

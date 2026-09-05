@@ -32,8 +32,8 @@ describe("continuous exploration fog production wiring", () => {
 
     expect(debugRenderer).toContain("TERRAIN_DEEP_FOG_COLOR");
     expect(fogField).toContain("TERRAIN_DEEP_FOG_COLOR");
-    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#101416"');
-    expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 0.84");
+    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#3b464b"');
+    expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 1");
   });
 
   it("reports the worst reveal commit instead of summing separate presentation frames", () => {

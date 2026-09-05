@@ -898,7 +898,10 @@ export const BottomRightPanel = memo(() => {
       )}
       {showTileDetails && (
         <div
-          className="pointer-events-auto fixed right-3 top-1/2 z-30 flex w-[280px] max-h-[calc(100vh-32px)] -translate-y-1/2 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
+          className={cn(
+            "pointer-events-auto fixed right-3 z-30 flex w-[300px] flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+            isMapView ? "bottom-4 max-h-[calc(100vh-88px)]" : "top-1/2 max-h-[calc(100vh-32px)] -translate-y-1/2",
+          )}
           aria-label="Tile details"
         >
           {isMapView ? <MapTilePanel /> : <LocalTilePanel />}

@@ -105,12 +105,11 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   return {
     plugins: plugins as unknown as PluginOption[],
     // The lab fronts the dev server with Caddy on https://play.realms.test (deploy/madara-lab/Caddyfile):
-    // listen beyond loopback so the container reaches us, accept the proxied Host, and point the HMR socket
-    // at the TLS port. Direct localhost:5173 still serves; only its hot reload goes through the proxy port.
+    // listen beyond loopback so the container reaches us. Let HMR follow the browser URL
+    // so both the TLS proxy and direct localhost ports work.
     server: {
       host: true,
       allowedHosts: ["play.realms.test"],
-      hmr: { clientPort: 443 },
     },
     resolve: {
       alias: [

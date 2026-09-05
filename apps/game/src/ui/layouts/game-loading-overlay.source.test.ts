@@ -16,17 +16,17 @@ describe("GameLoadingOverlay source", () => {
     expect(source).not.toContain("consumePlayRouteHandoff");
   });
 
-  it("keeps the loading shell open on safety timeout instead of dismissing into a dead map", () => {
+  it("does not declare failure or completion from elapsed time", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 
-    expect(source).toContain("setDidSafetyTimeout(true);");
-    expect(source).toContain('"World map startup is still blocked."');
+    expect(source).not.toContain("setDidSafetyTimeout");
+    expect(source).not.toContain("setInterval");
   });
 
   it("renders actual boot progress and keeps structured diagnostics out of the console", () => {
     const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
 
-    expect(source).toContain("snapshot.progress");
+    expect(source).toContain('mode="indeterminate"');
     expect(source).toContain("<BootDebugPanel");
     expect(source).not.toContain("Math.max(snapshot.progress");
   });

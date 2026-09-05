@@ -63,10 +63,10 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   material.positionNode = positionLocal.add(vec3(0, waves.height, 0));
   material.normalNode = normalMap(vec3(waves.normal.x, waves.normal.z, waves.normal.y).mul(0.5).add(0.5));
 
-  const bathymetryColor = mix(color("#3c8e88"), color("#0d3045"), depthBlend);
-  const shorelineColor = mix(bathymetryColor, color("#66aaa1"), shore.mul(shallowEdge).mul(0.18));
+  const bathymetryColor = mix(color("#469e97"), color("#17435b"), depthBlend);
+  const shorelineColor = mix(bathymetryColor, color("#83c3b1"), shore.mul(shallowEdge).mul(0.18));
   const fresnel = normalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(3).mul(depthMotion);
-  const reflectiveColor = mix(shorelineColor, color("#a8d1cd"), fresnel.mul(0.28));
+  const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.28));
   const foam = createTerrainWaterFoam(shore, shallowEdge, waterMotion);
   material.colorNode = mix(reflectiveColor, color("#d9e1d7"), foam.mul(0.78));
   const waterRoughness = mix(0.4, 0.2, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
@@ -81,16 +81,16 @@ function createTerrainWaterWaves(
   const primaryPhase = time.mul(0.68).add(positionLocal.x.mul(0.54)).add(positionLocal.z.mul(0.39));
   const crossPhase = time.mul(0.43).add(positionLocal.x.mul(-0.31)).add(positionLocal.z.mul(0.47));
   const motion = waterMotion.mul(depthMotion);
-  const height = primaryPhase.sin().mul(0.0045).add(crossPhase.sin().mul(0.0025)).mul(motion);
+  const height = primaryPhase.sin().mul(0.014).add(crossPhase.sin().mul(0.008)).mul(motion);
   const slopeX = primaryPhase
     .cos()
-    .mul(0.0045 * 0.54)
-    .add(crossPhase.cos().mul(0.0025 * -0.31))
+    .mul(0.014 * 0.54)
+    .add(crossPhase.cos().mul(0.008 * -0.31))
     .mul(motion);
   const slopeZ = primaryPhase
     .cos()
-    .mul(0.0045 * 0.39)
-    .add(crossPhase.cos().mul(0.0025 * 0.47))
+    .mul(0.014 * 0.39)
+    .add(crossPhase.cos().mul(0.008 * 0.47))
     .mul(motion);
   return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
 }

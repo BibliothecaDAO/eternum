@@ -3,13 +3,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-/**
- * three's capability addon answers "is WebGPU available" with a top-level
- * `await navigator.gpu.requestAdapter()`: unbounded, and it turns every chunk
- * that imports it into an async module (the preload chunk's "r is not a
- * function"). The bounded, remembered probe in `webgpu-lane-probe.ts` is the
- * one place that asks.
- */
+// Adapter discovery belongs to the bounded renderer initialization, never module evaluation.
 const srcRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function collectSourceFiles(dir: string, files: string[] = []): string[] {
@@ -33,18 +27,13 @@ describe("renderer lane discipline", () => {
   });
 
   it("keeps renderer lane discovery bounded and fallback independent of the failure class", () => {
-    const probe = readFileSync(join(srcRoot, "three", "webgpu-lane-probe.ts"), "utf8");
-    expect(probe).toMatch(/WEBGPU_ADAPTER_PROBE_TIMEOUT_MS = 1_000/);
-    expect(probe).toMatch(/RENDERER_LANE_STORAGE_KEY = "eternum-renderer-lane"/);
     const backend = readFileSync(join(srcRoot, "three", "webgpu-renderer-backend.ts"), "utf8");
-    expect(backend).toMatch(/resolvedDependencies\.resolveLaneStart\(/);
+    expect(backend).not.toContain("requestAdapter(");
     expect(backend).toMatch(/WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200/);
     expect(backend).toMatch(/WEBGL2_BACKEND_STARTUP_TIMEOUT_MS = 15_000/);
     expect(backend).not.toContain("isStalledWebGpuLane");
     expect(backend).not.toContain('timedOutMode === "webgpu"');
-    // WebGPU is parked: no automatic qualification or idle promotion exists anywhere.
     expect(backend).not.toContain("QUALIFICATION_TIMEOUT");
     expect(backend).not.toContain("idle:init-ok");
-    expect(probe).not.toContain("qualifyAtIdle");
   });
 });

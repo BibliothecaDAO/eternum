@@ -1,3 +1,4 @@
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
   BufferAttribute,
   BufferGeometry,
@@ -93,6 +94,7 @@ export class ProceduralTerrain {
   private readonly fogField = new TerrainFogField();
   private readonly movementEffects: TerrainMovementEffects;
   private disposed = false;
+  private readonly releaseAppearance: () => void;
 
   constructor() {
     this.object3d.name = "procedural-terrain";
@@ -103,6 +105,7 @@ export class ProceduralTerrain {
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
     this.setQualityTier(this.qualityTier);
+    this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
 
   preparePage(request: TerrainPageRequest): PreparedTerrainPage {
@@ -142,7 +145,7 @@ export class ProceduralTerrain {
       this.writeRetainedPagesToPools(pools);
     }
     pools.setLod(this.propLod);
-    pools.setWindStrength(TERRAIN_QUALITY_PROFILES[this.qualityTier].windStrength);
+    this.applyAppearance();
   }
 
   async loadGroundTextures(): Promise<void> {
@@ -175,10 +178,18 @@ export class ProceduralTerrain {
     this.qualityTier = tier;
     this.setPropLod(profile.propLod);
     this.setGroundTextureDetailEnabled(profile.groundTextureDetail);
-    this.propPools?.setWindStrength(profile.windStrength);
-    this.fogField.setQuality(profile.fogMotionStrength, profile.fogMistStrength);
+    this.applyAppearance();
     this.movementEffects.setQuality(profile.waterInteractionStrength, profile.dustInteractionStrength);
-    this.materials.waterMotion.value = profile.waterMotion;
+  }
+
+  private applyAppearance(): void {
+    const { fogStyle, reducedMotion } = useWorldAppearanceStore.getState();
+    const profile = TERRAIN_QUALITY_PROFILES[this.qualityTier];
+    const motion = reducedMotion ? 0 : 1;
+    this.fogField.setStyle(fogStyle);
+    this.fogField.setQuality(profile.fogMotionStrength * motion, profile.fogMistStrength);
+    this.propPools?.setWindStrength(profile.windStrength * motion);
+    this.materials.waterMotion.value = profile.waterMotion * motion;
   }
 
   getQualityTier(): TerrainQualityTier {
@@ -317,6 +328,7 @@ export class ProceduralTerrain {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.releaseAppearance();
     this.pages.forEach(disposePageGeometry);
     this.pages.clear();
     this.presentationGroup.clear();

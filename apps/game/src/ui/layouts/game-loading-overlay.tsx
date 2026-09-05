@@ -8,12 +8,8 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { BootDebugPanel, BootLoaderShell } from "@/ui/modules/boot-loader";
 import { Position } from "@bibliothecadao/eternum";
 import { usePlayerStructures } from "@bibliothecadao/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
-const SAFETY_TIMEOUT_MS = 15_000;
-const SLOW_THRESHOLD_MS = 8_000;
-const TICK_INTERVAL_MS = 250;
 
 export const GameLoadingOverlay = () => {
   const snapshot = usePlayRouteBootSnapshot();
@@ -22,9 +18,6 @@ export const GameLoadingOverlay = () => {
   const playerStructures = usePlayerStructures();
   const navigate = useNavigate();
   const location = useLocation();
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [didSafetyTimeout, setDidSafetyTimeout] = useState(false);
-  const startedAt = useRef(0);
   const worldmapReadyMilestoneRef = useRef(false);
   const finalReadyMilestoneRef = useRef(false);
   const handoffStartedRef = useRef(false);
@@ -63,17 +56,6 @@ export const GameLoadingOverlay = () => {
   useEffect(() => {
     markGameEntryMilestone("overlay-mounted");
   }, []);
-
-  useEffect(() => {
-    startedAt.current = Date.now();
-    const intervalId = window.setInterval(() => {
-      setElapsedMs(Date.now() - startedAt.current);
-    }, TICK_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [snapshot.bootToken]);
 
   useEffect(() => {
     if (playRoute == null || snapshot.resolvedRequest == null || snapshot.resolvedRequest.entryMode !== "player") {
@@ -174,64 +156,33 @@ export const GameLoadingOverlay = () => {
     dismissOverlay();
   }, [dismissOverlay, isReady]);
 
-  useEffect(() => {
-    setDidSafetyTimeout(false);
-    const timeoutId = window.setTimeout(() => {
-      if (!overlayDismissedRef.current) {
-        setDidSafetyTimeout(true);
-      }
-    }, SAFETY_TIMEOUT_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [snapshot.bootToken]);
-
-  const isSlow = !isReady && elapsedMs >= SLOW_THRESHOLD_MS;
-  const progress = Math.max(0, Math.min(100, snapshot.progress));
-  const statements = useMemo(() => {
-    if (isReady) {
-      return ["Your realm awaits."];
-    }
-
-    if (didSafetyTimeout) {
-      return ["World map startup is still blocked."];
-    }
-
-    if (isHandingOffScene) {
-      return ["Crossing into the requested scene..."];
-    }
-
-    if (isSlow) {
-      return ["The realm is vast — still gathering intel..."];
-    }
-
-    if (isWaitingForWorldmap) {
-      return ["Assembling the known world..."];
-    }
-
-    return ["Charting the world state..."];
-  }, [didSafetyTimeout, isHandingOffScene, isReady, isSlow, isWaitingForWorldmap]);
+  const activeStatement = isReady
+    ? "Your realm awaits."
+    : isHandingOffScene
+      ? "Preparing your destination…"
+      : isWaitingForWorldmap
+        ? "Preparing terrain and units…"
+        : "Connecting to the world…";
 
   const tasks = snapshot.tasks.length > 0 ? snapshot.tasks : [];
   const currentTaskLabel = tasks.find((task) => task.status === "running")?.label ?? snapshot.currentTask;
   const overlayTitle = "Entering the Realm";
-  const activeStatement = statements[0] ?? "Rendering the world map...";
 
   return (
     <BootLoaderShell
       className="absolute inset-0 z-[110]"
       panelClassName="max-w-[30rem] px-6 py-7 sm:px-8 sm:py-8"
-      mode="determinate"
-      progress={progress}
+      mode="indeterminate"
       title={overlayTitle}
       subtitle={activeStatement}
       caption="World Sync"
       detail={
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-gold/10 pb-3 font-['Space_Grotesk',ui-sans-serif,system-ui,sans-serif] text-xs uppercase tracking-[0.28em] text-gold/45">
-            <span>World handoff</span>
-            <span className="tabular-nums">{Math.max(0, Math.min(100, Math.round(progress)))}%</span>
+            <span>Preparing the world</span>
+            <span className="tabular-nums">
+              {tasks.filter((task) => task.status === "complete").length} / {tasks.length}
+            </span>
           </div>
           <div className="space-y-2.5">
             {tasks.map((task) => {
@@ -264,13 +215,7 @@ export const GameLoadingOverlay = () => {
               );
             })}
           </div>
-          {didSafetyTimeout ? (
-            <p className="text-xs leading-relaxed text-red-200/80">
-              The world is still blocked. This usually means world map readiness or the final scene handoff did not
-              complete.
-            </p>
-          ) : null}
-          {import.meta.env.DEV || isSlow ? <BootDebugPanel currentTaskLabel={currentTaskLabel} /> : null}
+          {import.meta.env.DEV ? <BootDebugPanel currentTaskLabel={currentTaskLabel} /> : null}
         </div>
       }
     />

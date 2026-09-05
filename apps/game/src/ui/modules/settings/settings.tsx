@@ -4,6 +4,7 @@ import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
@@ -172,6 +173,7 @@ const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) 
           <p className="text-xs leading-relaxed text-gray-gold/70">
             Battery reduces idle and distant update frequency without changing visual detail.
           </p>
+          <WorldAppearanceControls />
           <RendererDebugControl className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
         </section>
 
@@ -342,3 +344,42 @@ const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) 
 };
 
 // ScrollingTrackName moved to MusicPlayer component
+
+const WorldAppearanceControls = () => {
+  const { fogStyle, reducedMotion, setFogStyle, setReducedMotion } = useWorldAppearanceStore();
+  return (
+    <fieldset className="space-y-3 border-t border-gold/15 pt-3">
+      <legend className="text-xs text-gray-gold">World atmosphere</legend>
+      <div className="flex gap-2" role="group" aria-label="Fog appearance">
+        {(
+          [
+            ["clear", "Clear frontier"],
+            ["mist", "Soft mist"],
+          ] as const
+        ).map(([style, label]) => (
+          <Button
+            key={style}
+            size="xs"
+            variant={fogStyle === style ? "success" : "outline"}
+            aria-pressed={fogStyle === style}
+            onClick={() => setFogStyle(style)}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+      <p className="text-xs leading-relaxed text-gray-gold/70">
+        Keep explored terrain clear or soften the frontier with mist. Unexplored territory stays hidden.
+      </p>
+      <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-gold">
+        <input
+          type="checkbox"
+          checked={reducedMotion}
+          onChange={(event) => setReducedMotion(event.target.checked)}
+          className="accent-gold"
+        />
+        Reduce ambient motion
+      </label>
+    </fieldset>
+  );
+};

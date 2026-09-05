@@ -14,16 +14,6 @@ const threeWebGpuMock = vi.hoisted(() => ({
   rendererParameters: [] as Array<{ forceWebGL: boolean }>,
 }));
 
-/** The lane question is answered by an injected probe; production reads navigator.gpu with a bound. */
-const webGpuLane = () => ({
-  rememberLane: vi.fn(),
-  resolveLaneStart: vi.fn(async ({ requestedMode }: { requestedMode: string }) => ({
-    fallbackReason: null,
-    forceWebGL: requestedMode === "webgpu-force-webgl",
-    remembered: false,
-  })),
-});
-
 vi.mock("three/webgpu", () => ({
   ACESFilmicToneMapping: 4,
   HalfFloatType: 1016,
@@ -87,7 +77,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(),
         now: vi.fn(() => 100),
       },
@@ -113,7 +102,6 @@ describe("createWebGPURendererBackend", () => {
     const webGlRenderer = Object.assign(createRendererSurface("webgl2-fallback"), {
       init: vi.fn(async () => {}),
     });
-    const lane = webGpuLane();
     const backend = createWebGPURendererBackend(
       {
         isMobileDevice: false,
@@ -121,7 +109,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...lane,
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
           renderer: forceWebGL ? webGlRenderer : webGpuRenderer,
         })),
@@ -139,11 +126,9 @@ describe("createWebGPURendererBackend", () => {
     expect(webGpuRenderer.dispose).toHaveBeenCalledTimes(1);
     expect(webGlRenderer.dispose).not.toHaveBeenCalled();
     expect(backend.renderer).toBe(webGlRenderer);
-    expect(lane.rememberLane).toHaveBeenCalledWith("webgl2", "webgpu-init-error:TypeError");
   });
 
   it("reports and remembers Three's silent WebGL2 fallback from a WebGPU request", async () => {
-    const lane = webGpuLane();
     const renderer = Object.assign(createRendererSurface("webgl2-fallback"), { init: vi.fn(async () => {}) });
     const backend = createWebGPURendererBackend(
       {
@@ -152,7 +137,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...lane,
         createRenderer: vi.fn(async () => ({ renderer })),
         now: vi.fn(() => 0),
       },
@@ -164,7 +148,6 @@ describe("createWebGPURendererBackend", () => {
         fallbackReason: "webgpu-silent-fallback",
       }),
     );
-    expect(lane.rememberLane).toHaveBeenCalledWith("webgl2", "webgpu-silent-fallback");
   });
 
   it("hands a stalled WebGPU lane over to WebGL2 instead of failing bootstrap", async () => {
@@ -186,7 +169,7 @@ describe("createWebGPURendererBackend", () => {
         pixelRatio: 1,
         requestedMode: "webgpu-auto",
       },
-      { ...webGpuLane(), createRenderer, now: vi.fn(() => 0) },
+      { createRenderer, now: vi.fn(() => 0) },
     );
 
     const initPromise = backend.initialize();
@@ -198,6 +181,39 @@ describe("createWebGPURendererBackend", () => {
     expect(createRenderer.mock.calls.map(([input]) => input.forceWebGL)).toEqual([false, true]);
     expect(webGpuRenderer.dispose).toHaveBeenCalledTimes(1);
     expect(backend.renderer).toBe(webGlRenderer);
+    vi.useRealTimers();
+  });
+
+  it("releases a device created after initialization timed out without replacing the fallback", async () => {
+    vi.useFakeTimers();
+    let finishInit!: () => void;
+    let hasDevice = false;
+    const destroyDevice = vi.fn();
+    const gpuRenderer = Object.assign(createRendererSurface(), {
+      init: () =>
+        new Promise<void>((resolve) => {
+          finishInit = () => {
+            hasDevice = true;
+            resolve();
+          };
+        }),
+      dispose: vi.fn(() => {
+        if (hasDevice) destroyDevice();
+      }),
+    });
+    const glRenderer = Object.assign(createRendererSurface("webgl2-fallback"), { init: vi.fn(async () => {}) });
+    const backend = createWebGPURendererBackend(
+      { isMobileDevice: false, pixelRatio: 1, requestedMode: "webgpu-auto" },
+      { createRenderer: async ({ forceWebGL }) => ({ renderer: forceWebGL ? glRenderer : gpuRenderer }) },
+    );
+    const initialization = backend.initialize();
+    await vi.advanceTimersByTimeAsync(3_200);
+    await initialization;
+    expect(destroyDevice).not.toHaveBeenCalled();
+    finishInit();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(destroyDevice).toHaveBeenCalledOnce();
+    expect(backend.renderer).toBe(glRenderer);
     vi.useRealTimers();
   });
 
@@ -215,7 +231,7 @@ describe("createWebGPURendererBackend", () => {
         pixelRatio: 1,
         requestedMode: "webgpu-auto",
       },
-      { ...webGpuLane(), createRenderer, now: vi.fn(() => 0) },
+      { createRenderer, now: vi.fn(() => 0) },
     );
 
     const initPromise = backend.initialize();
@@ -241,7 +257,7 @@ describe("createWebGPURendererBackend", () => {
         pixelRatio: 1,
         requestedMode: "webgpu-force-webgl",
       },
-      { ...webGpuLane(), createRenderer, now: vi.fn(() => 0) },
+      { createRenderer, now: vi.fn(() => 0) },
     );
 
     const initPromise = backend.initialize();
@@ -255,7 +271,7 @@ describe("createWebGPURendererBackend", () => {
     vi.useRealTimers();
   });
 
-  it("builds the WebGL2 backend directly when the bounded probe says no adapter", async () => {
+  it("tries the real WebGPU renderer on a fresh automatic boot", async () => {
     const backend = createWebGPURendererBackend(
       {
         isMobileDevice: false,
@@ -263,67 +279,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
-        now: vi.fn(() => 0),
-        resolveLaneStart: vi.fn(async () => ({
-          fallbackReason: "webgpu-unavailable" as const,
-          forceWebGL: true,
-          remembered: false,
-        })),
-      },
-    );
-
-    const diagnostics = await backend.initialize();
-
-    expect(threeWebGpuMock.rendererParameters).toEqual([{ forceWebGL: true }]);
-    expect(diagnostics).toEqual(
-      expect.objectContaining({ activeMode: "webgl2-fallback", fallbackReason: "webgpu-unavailable" }),
-    );
-  });
-
-  it("boots a cold profile on WebGL2 and never starts WebGPU work", async () => {
-    const lane = webGpuLane();
-    const webGlRenderer = Object.assign(createRendererSurface("webgl2-fallback"), { init: vi.fn(async () => {}) });
-    const createRenderer = vi.fn(async ({ forceWebGL }: { forceWebGL: boolean }) => ({
-      activeMode: forceWebGL ? ("webgl2-fallback" as const) : ("webgpu" as const),
-      renderer: webGlRenderer,
-    }));
-    const backend = createWebGPURendererBackend(
-      {
-        isMobileDevice: false,
-        pixelRatio: 1,
-        requestedMode: "webgpu-auto",
-      },
-      {
-        ...lane,
-        createRenderer,
-        now: vi.fn(() => 0),
-        resolveLaneStart: vi.fn(async () => ({
-          fallbackReason: "webgpu-unproven" as const,
-          forceWebGL: true,
-          remembered: false,
-        })),
-      },
-    );
-
-    await expect(backend.initialize()).resolves.toEqual(
-      expect.objectContaining({ activeMode: "webgl2-fallback", fallbackReason: "webgpu-unproven" }),
-    );
-    expect(createRenderer.mock.calls.map(([input]) => input.forceWebGL)).toEqual([true]);
-    expect(lane.rememberLane).not.toHaveBeenCalled();
-  });
-
-  it("builds the WebGPU backend when the probe found an adapter and remembers the lane that started", async () => {
-    const lane = webGpuLane();
-    const backend = createWebGPURendererBackend(
-      {
-        isMobileDevice: false,
-        pixelRatio: 1,
-        requestedMode: "webgpu-auto",
-      },
-      {
-        ...webGpuLane(),
-        ...lane,
         now: vi.fn(() => 0),
       },
     );
@@ -332,7 +287,6 @@ describe("createWebGPURendererBackend", () => {
 
     expect(threeWebGpuMock.rendererParameters).toEqual([{ forceWebGL: false }]);
     expect(diagnostics).toEqual(expect.objectContaining({ activeMode: "webgpu", fallbackReason: null }));
-    expect(lane.rememberLane).toHaveBeenCalledWith("webgpu", "init");
   });
 
   it("falls back when WebGPU renderer creation never resolves", async () => {
@@ -355,7 +309,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer,
         now: vi.fn().mockReturnValueOnce(0).mockReturnValue(3_200),
       },
@@ -389,7 +342,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(({ forceWebGL, signal }: { forceWebGL: boolean; signal: AbortSignal }) => {
           if (forceWebGL) {
             return Promise.resolve({ renderer: webGlRenderer });
@@ -448,7 +400,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer,
@@ -505,7 +456,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
           activeMode: forceWebGL ? ("webgl2-fallback" as const) : ("webgpu" as const),
           renderer: Object.assign(renderer, { init }),
@@ -542,7 +492,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-force-webgl",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async ({ forceWebGL }) => ({
           activeMode: forceWebGL ? ("webgl2-fallback" as const) : ("webgpu" as const),
           renderer: Object.assign(createRendererSurface("webgl2-fallback"), {
@@ -570,12 +519,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
-        resolveLaneStart: vi.fn(async () => ({
-          fallbackReason: "webgpu-unavailable" as const,
-          forceWebGL: true,
-          remembered: false,
-        })),
         createRenderer: vi.fn(async () => ({
           renderer: Object.assign(createRendererSurface("webgl2-fallback"), {
             init: vi.fn(async () => {}),
@@ -588,7 +531,7 @@ describe("createWebGPURendererBackend", () => {
     await expect(backend.initialize()).resolves.toEqual(
       expect.objectContaining({
         activeMode: "webgl2-fallback",
-        fallbackReason: "webgpu-unavailable",
+        fallbackReason: "webgpu-silent-fallback",
       }),
     );
   });
@@ -602,7 +545,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer: Object.assign(renderer, {
@@ -700,7 +642,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer: Object.assign(renderer, {
@@ -760,7 +701,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer: Object.assign(renderer, {
@@ -793,7 +733,6 @@ describe("createWebGPURendererBackend", () => {
         requestedMode: "webgpu-auto",
       },
       {
-        ...webGpuLane(),
         createRenderer: vi.fn(async () => ({
           activeMode: "webgpu" as const,
           renderer: Object.assign(renderer, {
