@@ -111,6 +111,8 @@ import { Account, AccountInterface } from "starknet";
 import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
+import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
+import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
@@ -316,6 +318,12 @@ import {
   type WorldmapForceRefreshReason,
   type WorldmapRenderDurationMetric,
 } from "../perf/worldmap-render-diagnostics";
+import {
+  getActiveWorldmapTerrainPresentationMetrics,
+  recordWorldmapTerrainPresentationEvent,
+  recordWorldmapTerrainRenderedFrame,
+  syncWorldmapTerrainPresentationCoverage,
+} from "../perf/worldmap-terrain-presentation-metrics";
 import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
 import {
@@ -364,6 +372,11 @@ import {
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
+import {
+  bindWorldmapTerrainEcologyRefresh,
+  collectWorldmapTerrainEcologyAnchors,
+} from "./worldmap-terrain-ecology-refresh-runtime";
+import { WorldmapTerrainContent } from "./worldmap-terrain-content";
 import { gameEntityKey } from "@/sync/game-scope";
 import {
   WORLDMAP_CAMERA_ZOOM,
@@ -472,12 +485,14 @@ interface VisualTerrainPagePhaseTimings {
   totalMs: number;
 }
 
+type TerrainCompositeCommitMode = "atomic" | "ambient";
+
 type WorldmapChunkSwitchP95RegressionDebugResult = {
   baselineLabel: string | null;
   result: ChunkSwitchP95RegressionResult;
 };
 
-type WorldmapChunkFirstVisibleCommitP95RegressionDebugResult = {
+type WorldmapChunkFirstRenderedFrameP95RegressionDebugResult = {
   baselineLabel: string | null;
   result: ChunkSwitchP95RegressionResult;
 };
@@ -513,10 +528,10 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     baselineLabel?: string,
     allowedRegressionFraction?: number,
   ) => WorldmapChunkSwitchP95RegressionDebugResult;
-  evaluateWorldmapChunkFirstVisibleCommitP95Regression?: (
+  evaluateWorldmapChunkFirstRenderedFrameP95Regression?: (
     baselineLabel?: string,
     allowedRegressionFraction?: number,
-  ) => WorldmapChunkFirstVisibleCommitP95RegressionDebugResult;
+  ) => WorldmapChunkFirstRenderedFrameP95RegressionDebugResult;
   evaluateWorldmapProjectionSyncVolumeRegression?: (
     baselineLabel?: string,
     allowedIncreaseFraction?: number,
@@ -597,6 +612,8 @@ function resolveExploreClientLatencyPhase(stage: string | undefined): ClientActi
 
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
+  private readonly terrainMetricsSceneId = `game:${configManager.getActiveGameId()}:worldmap:${this.interactionDebugInstanceId}`;
+  private previousSuccessfulFrameAtMs: number | null = null;
   // Single source of truth for chunk geometry to avoid drift across fetch/render/visibility.
   private readonly chunkGeometry = {
     size: WORLDMAP_CHUNK_POLICY.chunkSize,
@@ -640,6 +657,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly visualTerrainPageRevisions = new Map<string, number>();
   private readonly liveTilePageRebuilds = new Map<string, Promise<void>>();
   private pendingVisualTerrainCompositeCommit: Promise<WorldmapTerrainPresentationComposite | null> | null = null;
+  private readonly terrainContent = new WorldmapTerrainContent();
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
@@ -1278,19 +1296,15 @@ export default class WorldmapScene extends WarpTravel {
         }
       });
       this.reconcileHoverLabelsForProjectionChanges(changes);
-      this.scheduleTerrainEcologyRefresh();
       this.syncStructureMarkers(changes);
     });
-    const structureEcologySubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
-      const [current, previous] = value;
-      if (
-        current?.owner !== previous?.owner ||
-        current?.base.category !== previous?.base.category ||
-        current?.base.level !== previous?.base.level
-      ) {
-        this.scheduleTerrainEcologyRefresh();
-        if (current) this.refreshStructureMarkersForEntity(current.entity_id);
-      }
+    const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
+      onStructureComponentChanged: (current) => {
+        if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(current.entity_id);
+      },
+      projection: this.worldSpatialProjection,
+      requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
+      structureComponent: this.dojo.components.Structure,
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
       this.syncProjectedArmyPathfinding(changes);
@@ -1300,7 +1314,7 @@ export default class WorldmapScene extends WarpTravel {
     this.unsubscribeWorldSpatialProjection = () => {
       unsubscribeTiles();
       unsubscribeStructures();
-      structureEcologySubscription.unsubscribe();
+      unsubscribeTerrainEcology();
       unsubscribeArmies();
     };
   }
@@ -3827,6 +3841,8 @@ export default class WorldmapScene extends WarpTravel {
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
     this.clearWorldmapVisibilityRuntimeForSwitchOff();
+    getActiveWorldmapTerrainPresentationMetrics().disposeScene(this.terrainMetricsSceneId);
+    this.previousSuccessfulFrameAtMs = null;
 
     const runtimeState = applyWorldmapSwitchOffRuntimeState({
       pinnedChunkKeys: this.pinnedChunkKeys,
@@ -4306,6 +4322,8 @@ export default class WorldmapScene extends WarpTravel {
       return Promise.resolve();
     }
 
+    // Read the whole authoritative batch when the composite runs, before ambient page rebuilds can split it.
+    void this.requestVisualTerrainCompositeCommit("atomic");
     const nextRevision = this.getVisualTerrainPageRevision(pageKey) + 1;
     this.visualTerrainPageRevisions.set(pageKey, nextRevision);
     incrementWorldmapRenderCounter("liveTilePageInvalidated");
@@ -5406,7 +5424,10 @@ export default class WorldmapScene extends WarpTravel {
     void this.requestVisualTerrainCompositeCommit();
   }
 
-  private rebuildTerrainPresentationComposite(targetChunkKey: string | null = this.currentChunk): void {
+  private rebuildTerrainPresentationComposite(
+    targetChunkKey: string | null = this.currentChunk,
+    commitMode: TerrainCompositeCommitMode = "ambient",
+  ): void {
     const previousPresentations = [...this.visualTerrainPresentationState.presentations];
     const targetCoverageKeys = this.getVisualTerrainTargetCoverageKeys();
     const maxPresentations = WORLDMAP_CHUNK_POLICY.visualPresentation.rollingWindowEnabled
@@ -5421,11 +5442,14 @@ export default class WorldmapScene extends WarpTravel {
     }).slice(0, maxPresentations);
 
     this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
-    void this.requestVisualTerrainCompositeCommit();
+    void this.requestVisualTerrainCompositeCommit(commitMode);
   }
 
   /** One composite per batch of page applies, committed in the frame-budget critical lane. */
-  private requestVisualTerrainCompositeCommit(): Promise<WorldmapTerrainPresentationComposite | null> {
+  private requestVisualTerrainCompositeCommit(
+    commitMode: TerrainCompositeCommitMode = "ambient",
+  ): Promise<WorldmapTerrainPresentationComposite | null> {
+    if (commitMode === "atomic") this.terrainContent.invalidate();
     if (this.pendingVisualTerrainCompositeCommit) {
       return this.pendingVisualTerrainCompositeCommit;
     }
@@ -5443,6 +5467,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private commitVisualTerrainComposite(): WorldmapTerrainPresentationComposite {
+    const transitionToken = this.chunkTransitionToken;
     const composite = composeWorldmapTerrainPresentations({
       authoritativeChunkKey: this.currentChunk === "null" ? null : this.currentChunk,
       maxCells: this.getTerrainCompositeCellCapacity(),
@@ -5453,25 +5478,30 @@ export default class WorldmapScene extends WarpTravel {
     });
     // Composing and presenting are separate budgeted tasks so neither alone exceeds the frame budget.
     void this.chunkWorkQueue
-      .schedule("critical", () => this.applyTerrainPresentationComposite(composite), "terrain:composite:present")
+      .schedule(
+        "critical",
+        () => this.applyTerrainPresentationComposite(composite, transitionToken),
+        "terrain:composite:present",
+      )
       .catch((error: unknown) => {
         if (!isFrameBudgetWorkQueueDisposedError(error)) throw error;
       });
     return composite;
   }
 
-  private applyTerrainPresentationComposite(composite: WorldmapTerrainPresentationComposite): void {
-    const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
+  private applyTerrainPresentationComposite(
+    composite: WorldmapTerrainPresentationComposite,
+    transitionToken: number,
+  ): void {
+    if (this.isSwitchedOff || transitionToken !== this.chunkTransitionToken) return;
+    const content = this.captureTerrainPresentationContent(composite.cells);
+    const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(content.cells);
     const presentation = this.proceduralTerrain
       .presentAsync(
         {
-          cells: composite.cells.map((cell) => ({
-            biomeKey: cell.biomeKey,
-            col: cell.col,
-            occupied: this.isProjectedStructureHex(cell.col, cell.row),
-            row: cell.row,
-          })),
+          cells: content.cells,
           climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+          commitMode: content.commitMode,
           mapCenter: configManager.getMapCenter(),
           pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
           pageOrigin: this.getVisualTerrainPageOrigin(),
@@ -5484,10 +5514,11 @@ export default class WorldmapScene extends WarpTravel {
           subdivisions: 2,
         },
         this.chunkWorkQueue,
+        (event) => this.recordTerrainPresentationEvent(event),
       )
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
-        recordWorldmapRenderDuration("terrainPreparedMs", terrainDiagnostics.prepareMs);
+        this.terrainContent.presented(content);
         incrementWorldmapRenderCounter("biomeMismatchCount", terrainDiagnostics.biomeMismatchCount);
         this.traceChunk("terrain_composite_rebuilt", {
           capped: composite.capped,
@@ -5495,7 +5526,6 @@ export default class WorldmapScene extends WarpTravel {
           droppedCellCount: composite.droppedCellCount,
           proceduralBuiltPages: terrainDiagnostics.builtPages,
           proceduralPreparedCachePages: terrainDiagnostics.preparedCachePages,
-          proceduralPrepareMs: terrainDiagnostics.prepareMs,
           proceduralReusedPages: terrainDiagnostics.reusedPages,
           proceduralRoadSegments: terrainDiagnostics.roadSegments,
           proceduralTriangles: terrainDiagnostics.triangles + terrainDiagnostics.propTriangles,
@@ -5513,59 +5543,121 @@ export default class WorldmapScene extends WarpTravel {
     void presentation.catch(() => undefined);
   }
 
+  private captureTerrainPresentationContent(cells: readonly { biomeKey: string; col: number; row: number }[]) {
+    const center = FELT_CENTER();
+    return this.terrainContent.capture({
+      cells,
+      getProjectedBiome: (col, row) => {
+        const tile = this.worldSpatialProjection.getTileAtHex({ col: col + center, row: row + center });
+        return tile ? requireBiomeTypeFromId(tile.biome) : undefined;
+      },
+      isOccupied: (col, row) => this.isProjectedStructureHex(col, row),
+      simulateAllExplored: this.simulateAllExplored,
+    });
+  }
+
+  private recordTerrainPresentationEvent(event: TerrainPresentationEvent): void {
+    const milestone = recordWorldmapTerrainPresentationEvent(
+      getActiveWorldmapTerrainPresentationMetrics(),
+      this.terrainMetricsSceneId,
+      event,
+    );
+    this.traceTerrainPresentationEvent(event);
+    if (milestone.kind === "none" || milestone.durationMs === null) return;
+
+    const metricByMilestone = {
+      first_complete_page: "terrainFirstCompletePageMs",
+      source_ready: "terrainSourceReadyMs",
+      window_convergence: "terrainWindowConvergenceMs",
+    } as const;
+    const diagnosticEventByMilestone = {
+      first_complete_page: "terrain_first_complete_page_duration_recorded",
+      source_ready: "terrain_source_ready_duration_recorded",
+      window_convergence: "terrain_window_convergence_duration_recorded",
+    } as const;
+    recordWorldmapRenderDuration(metricByMilestone[milestone.kind], milestone.durationMs);
+    recordChunkDiagnosticsEvent(this.chunkDiagnostics, diagnosticEventByMilestone[milestone.kind], {
+      durationMs: milestone.durationMs,
+    });
+
+    if (milestone.kind === "window_convergence") {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_window_converged");
+    }
+  }
+
+  private traceTerrainPresentationEvent(event: TerrainPresentationEvent): void {
+    switch (event.kind) {
+      case "requested":
+        return;
+      case "source_ready":
+        this.traceChunk("terrain_source_ready", {
+          pageCount: event.requestedPages.length,
+          revision: event.revision,
+        });
+        return;
+      case "page_complete":
+        this.traceChunk("terrain_page_complete", {
+          commitCpuMs: event.commitCpuMs,
+          completedPageCount: event.completedPageKeys.length,
+          fingerprint: event.fingerprint,
+          pageKey: event.pageKey,
+          queueWaitMs: event.work.queueWaitMs,
+          requiredPageCount: event.requiredPageKeys.length,
+          revision: event.revision,
+          workerBuildMs: event.work.workerBuildMs,
+          workSource: event.work.source,
+        });
+        if (event.commitCpuMs !== null) recordWorldmapRenderDuration("terrainCommitCpuMs", event.commitCpuMs);
+        return;
+      case "window_complete":
+        this.traceChunk("terrain_window_converged", {
+          builtPages: event.work.builtPages,
+          completedPageCount: event.completedPageKeys.length,
+          queueWaitMs: event.work.queueWaitMs,
+          requiredPageCount: event.requiredPageKeys.length,
+          reusedPages: event.work.reusedPages,
+          revision: event.revision,
+          sharedInFlightPages: event.work.sharedInFlightPages,
+          workerBuildMs: event.work.workerBuildMs,
+        });
+        if (event.work.queueWaitMs !== null) recordWorldmapRenderDuration("terrainQueueWaitMs", event.work.queueWaitMs);
+        if (event.work.workerBuildMs !== null) {
+          recordWorldmapRenderDuration("terrainWorkerBuildMs", event.work.workerBuildMs);
+        }
+    }
+  }
+
   private collectVisibleTerrainEcologyAnchors(cells: readonly { biomeKey: string; col: number; row: number }[]): {
     roadAnchors: TerrainRoadAnchor[];
     settlementAnchors: TerrainSettlementAnchor[];
   } {
-    const visibleCells = new Set<number>();
-    const localBounds = {
-      maxCol: Number.NEGATIVE_INFINITY,
-      maxRow: Number.NEGATIVE_INFINITY,
-      minCol: Number.POSITIVE_INFINITY,
-      minRow: Number.POSITIVE_INFINITY,
-    };
-    for (const { biomeKey, col, row } of cells) {
-      if (biomeKey === "Outline" || biomeKey === "Empty") continue;
-      visibleCells.add(hexCellKey(col, row));
-      localBounds.maxCol = Math.max(localBounds.maxCol, col);
-      localBounds.maxRow = Math.max(localBounds.maxRow, row);
-      localBounds.minCol = Math.min(localBounds.minCol, col);
-      localBounds.minRow = Math.min(localBounds.minRow, row);
-    }
-    if (visibleCells.size === 0) return { roadAnchors: [], settlementAnchors: [] };
-
-    const roadAnchors: TerrainRoadAnchor[] = [];
-    const settlementAnchors: TerrainSettlementAnchor[] = [];
-    for (const structure of this.worldSpatialProjection.getStructuresInBounds(this.toContractBounds(localBounds))) {
-      if (structure.reserved || structure.entityId === null) continue;
-      const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
-      if (!visibleCells.has(hexCellKey(normalized.x, normalized.y))) continue;
-      const component = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(structure.entityId)]));
-      if (!component) continue;
-      const structureId = structure.entityId.toString();
-      settlementAnchors.push({
-        col: normalized.x,
-        level: component.base.level,
-        row: normalized.y,
-        structureId,
-        structureType: component.base.category as StructureType,
-      });
-      const owner = ContractAddress(component.owner);
-      if (owner === 0n) continue;
-      roadAnchors.push({
-        col: normalized.x,
-        owner: owner.toString(),
-        row: normalized.y,
-        structureId,
-      });
-    }
-    return { roadAnchors, settlementAnchors };
+    return collectWorldmapTerrainEcologyAnchors({
+      cells,
+      getStructureFacts: (entityId) => {
+        const component = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(entityId)]));
+        return component
+          ? {
+              base: {
+                category: component.base.category as StructureType,
+                level: component.base.level,
+              },
+              entity_id: component.entity_id,
+              owner: ContractAddress(component.owner),
+            }
+          : undefined;
+      },
+      normalizeStructureHex: (hex) => {
+        const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+        return { col: normalized.x, row: normalized.y };
+      },
+      projection: this.worldSpatialProjection,
+      toProjectionBounds: (bounds) => this.toContractBounds(bounds),
+    });
   }
 
   private scheduleTerrainEcologyRefresh(): void {
     if (this.visualTerrainPresentationState.presentations.length === 0) return;
-    if (this.refreshVisualTerrainWindowThrottled) this.refreshVisualTerrainWindowThrottled();
-    else this.rebuildTerrainPresentationComposite();
+    this.rebuildTerrainPresentationComposite(this.currentChunk, "atomic");
   }
 
   private scheduleTerrainPresentationRetentionCleanup(
@@ -5588,6 +5680,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.queuedVisualTerrainBuildPageKeys.clear();
     this.activeVisualTerrainBuildPageKeys.clear();
+    this.terrainContent.clear();
     this.visualTerrainPageRevisions.clear();
     this.liveTilePageRebuilds.clear();
     this.visualTerrainWindow = null;
@@ -6733,9 +6826,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chunkRecoveryProgress.markProgress();
 
     recordWorldmapTerrainReadyDuration({
-      diagnostics: this.chunkDiagnostics,
       nowMs: performance.now(),
-      recordChunkDiagnosticsEvent,
       recordWorldmapRenderDuration,
       startedAtMs,
     });
@@ -6772,10 +6863,8 @@ export default class WorldmapScene extends WarpTravel {
           now: () => performance.now(),
           phaseDurations: input.presentationRuntime.phaseDurations,
           preparedTerrain,
-          presentationStartedAtMs: input.chunkSwitchStartedAt,
           recordChunkDiagnosticsEvent,
           recordWorldmapRenderDuration,
-          incrementWorldmapRenderCounter,
         });
       },
     });
@@ -7038,10 +7127,8 @@ export default class WorldmapScene extends WarpTravel {
                 },
                 phaseDurations: presentationRuntime.phaseDurations,
                 preparedTerrain: nextPreparedTerrain,
-                presentationStartedAtMs: refreshStartedAt,
                 recordChunkDiagnosticsEvent,
                 recordWorldmapRenderDuration,
-                incrementWorldmapRenderCounter,
               });
             });
           },
@@ -7353,6 +7440,42 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  public onFrameRendered(renderedAtMs: number): void {
+    if (this.isSwitchedOff) return;
+    this.recordSuccessfulWorldmapFrameInterval(renderedAtMs);
+    const metrics = getActiveWorldmapTerrainPresentationMetrics();
+    const coverage = this.proceduralTerrain.getPresentationCoverage();
+    syncWorldmapTerrainPresentationCoverage(metrics, this.terrainMetricsSceneId, coverage, renderedAtMs);
+    const backend = getRendererDiagnosticActiveMode();
+    if (!backend) return;
+
+    const milestone = recordWorldmapTerrainRenderedFrame(metrics, {
+      atMs: renderedAtMs,
+      backend,
+      detailedTerrainVisible: this.proceduralTerrain.object3d.visible && coverage.pages.length > 0,
+      sceneId: this.terrainMetricsSceneId,
+    });
+    if (milestone.firstCompletePageRendered && milestone.firstCompletePageRenderedDurationMs !== null) {
+      recordWorldmapRenderDuration("terrainFirstCompletePageRenderedMs", milestone.firstCompletePageRenderedDurationMs);
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "terrain_first_rendered_frame_duration_recorded", {
+        durationMs: milestone.firstCompletePageRenderedDurationMs,
+      });
+      this.traceChunk("terrain_first_complete_page_rendered", { backend, revision: milestone.revision });
+    }
+    if (milestone.windowFullyRendered && milestone.windowFullyRenderedDurationMs !== null) {
+      recordWorldmapRenderDuration("terrainWindowFullyRenderedMs", milestone.windowFullyRenderedDurationMs);
+      this.traceChunk("terrain_window_fully_rendered", { backend, revision: milestone.revision });
+    }
+  }
+
+  private recordSuccessfulWorldmapFrameInterval(renderedAtMs: number): void {
+    if (!Number.isFinite(renderedAtMs)) return;
+    if (this.previousSuccessfulFrameAtMs !== null && renderedAtMs >= this.previousSuccessfulFrameAtMs) {
+      recordWorldmapRenderDuration("worldmapFrameMs", renderedAtMs - this.previousSuccessfulFrameAtMs);
+    }
+    this.previousSuccessfulFrameAtMs = renderedAtMs;
+  }
+
   private syncTerrainMovementInteractions(): void {
     this.armyManager.collectVisibleTerrainMovementInteractions(this.terrainMovementInteractionBuffer);
     this.proceduralTerrain.setMovementInteractions(this.terrainMovementInteractionBuffer);
@@ -7519,12 +7642,12 @@ export default class WorldmapScene extends WarpTravel {
     return this.evaluateChunkP95RegressionAgainstBaseline("switch_duration", baselineLabel, allowedRegressionFraction);
   }
 
-  private evaluateChunkFirstVisibleCommitP95RegressionAgainstBaseline(
+  private evaluateChunkFirstRenderedFrameP95RegressionAgainstBaseline(
     baselineLabel?: string,
     allowedRegressionFraction: number = 0.1,
-  ): WorldmapChunkFirstVisibleCommitP95RegressionDebugResult {
+  ): WorldmapChunkFirstRenderedFrameP95RegressionDebugResult {
     return this.evaluateChunkP95RegressionAgainstBaseline(
-      "first_visible_commit",
+      "terrain_first_rendered_frame",
       baselineLabel,
       allowedRegressionFraction,
     );
@@ -7591,10 +7714,10 @@ export default class WorldmapScene extends WarpTravel {
       baselineLabel?: string,
       allowedRegressionFraction?: number,
     ) => this.evaluateChunkSwitchP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
-    debugWindow.evaluateWorldmapChunkFirstVisibleCommitP95Regression = (
+    debugWindow.evaluateWorldmapChunkFirstRenderedFrameP95Regression = (
       baselineLabel?: string,
       allowedRegressionFraction?: number,
-    ) => this.evaluateChunkFirstVisibleCommitP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
+    ) => this.evaluateChunkFirstRenderedFrameP95RegressionAgainstBaseline(baselineLabel, allowedRegressionFraction);
     debugWindow.evaluateWorldmapProjectionSyncVolumeRegression = (
       baselineLabel?: string,
       allowedIncreaseFraction?: number,
@@ -7618,7 +7741,7 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.resetWorldmapRenderDiagnostics = undefined;
     debugWindow.captureWorldmapChunkBaseline = undefined;
     debugWindow.evaluateWorldmapChunkSwitchP95Regression = undefined;
-    debugWindow.evaluateWorldmapChunkFirstVisibleCommitP95Regression = undefined;
+    debugWindow.evaluateWorldmapChunkFirstRenderedFrameP95Regression = undefined;
     debugWindow.evaluateWorldmapProjectionSyncVolumeRegression = undefined;
   }
 

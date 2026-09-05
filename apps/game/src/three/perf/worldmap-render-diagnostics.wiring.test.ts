@@ -7,6 +7,10 @@ import {
   resetWorldmapRenderDiagnostics,
   snapshotWorldmapRenderDiagnostics,
 } from "./worldmap-render-diagnostics";
+import {
+  getActiveWorldmapTerrainPresentationMetrics,
+  recordWorldmapTerrainPresentationRequest,
+} from "./worldmap-terrain-presentation-metrics";
 
 describe("worldmap render diagnostics wiring", () => {
   beforeEach(() => {
@@ -70,6 +74,11 @@ describe("worldmap render diagnostics wiring", () => {
     recordWorldmapRenderDuration("updateVisibleChunks", 10);
     incrementWorldmapRenderCounter("chunkRefreshRequests", 5);
     incrementWorldmapRenderUploadBytes("cachedChunkReplay", 512);
+    recordWorldmapTerrainPresentationRequest(getActiveWorldmapTerrainPresentationMetrics(), {
+      requestedAtMs: 1,
+      revision: 1,
+      sceneId: "scene",
+    });
 
     resetWorldmapRenderDiagnostics();
 
@@ -78,5 +87,6 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.durations.updateVisibleChunks.count).toBe(0);
     expect(snapshot.counters.chunkRefreshRequests).toBe(0);
     expect(snapshot.uploadBytes.cachedChunkReplay).toBe(0);
+    expect(snapshot.terrainPresentation.current).toBeNull();
   });
 });

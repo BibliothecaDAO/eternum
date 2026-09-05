@@ -4,6 +4,7 @@ import { Group, InstancedMesh, Mesh } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
+import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { TerrainPropPools } from "./terrain-prop-pools";
 import type { TerrainCellInput } from "./terrain-types";
@@ -108,26 +109,66 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
   });
 
-  it("presents a page set step by step with the same page writes as one present", async () => {
+  it("commits ready pages incrementally with the same writes as one full presentation", async () => {
     const terrain = new ProceduralTerrain();
     await terrain.loadProps();
     const west = terrain.preparePage(blockRequest("west", 0));
     const east = terrain.preparePage(blockRequest("east", 10));
 
-    terrain.beginPresentation([west, east]);
     expect(terrain.isPagePresented(west)).toBe(false);
-    terrain.presentPage(west);
-    terrain.presentPage(east);
+    terrain.commitPages([west]);
+    terrain.commitPages([east]);
     expect(terrain.isPagePresented(west)).toBe(true);
-    const stepped = terrain.finishPresentation([west, east]);
+    const stepped = terrain.summarize([west, east]);
     const settled = terrain.getUploadMetrics();
     clearPropUploads(terrain);
 
     expect(stepped.pages).toBe(2);
-    expect(settled).toMatchObject({ fogMaskFullRebuilds: 1, propPoolFullRewrites: 0, propPoolPageWrites: 2 });
+    expect(settled).toMatchObject({ fogMaskFullRebuilds: 2, propPoolFullRewrites: 0, propPoolPageWrites: 2 });
     expect(terrain.present([west, east])).toEqual(stepped);
     expect(terrain.getUploadMetrics()).toEqual(settled);
     expect(collectPropUploads(terrain)).toHaveLength(0);
+    terrain.dispose();
+  });
+
+  it("restores the prior complete presentation when a grouped page write fails", () => {
+    const terrain = new ProceduralTerrain();
+    const previous = terrain.preparePage(request(BiomeType.Grassland, false));
+    terrain.present([previous]);
+    const previousMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
+    const disposePrevious = vi.spyOn(previousMesh.geometry, "dispose");
+    const replacement = terrain.preparePage(request(BiomeType.Taiga, false));
+    const added = terrain.preparePage({
+      ...request(BiomeType.Beach, false),
+      cells: [{ biome: null, col: 10, explored: false, occupied: false, previewBiome: BiomeType.Beach, row: 0 }],
+      pageKey: "added",
+    });
+    const setPage = TerrainFogField.prototype.setPage;
+    let rejectAddedPage = true;
+    vi.spyOn(TerrainFogField.prototype, "setPage").mockImplementation(function (
+      this: TerrainFogField,
+      pageKey,
+      instances,
+    ) {
+      if (pageKey === "added" && rejectAddedPage) {
+        rejectAddedPage = false;
+        throw new Error("injected fog write failure");
+      }
+      return setPage.call(this, pageKey, instances);
+    });
+
+    expect(() => terrain.commitPages([replacement, added])).toThrow("injected fog write failure");
+
+    const center = terrainHexToWorld(0, 0);
+    expect(terrain.isPagePresented(previous)).toBe(true);
+    expect(terrain.isPagePresented(replacement)).toBe(false);
+    expect(terrain.sampleSurface(center.x, center.z).biome).toBe(BiomeType.Grassland);
+    expect(disposePrevious).not.toHaveBeenCalled();
+    expect(terrain.object3d.getObjectByName("procedural-terrain-land")).toBe(previousMesh);
+
+    terrain.commitPages([replacement, added]);
+    expect(terrain.isPagePresented(replacement)).toBe(true);
+    expect(disposePrevious).toHaveBeenCalledOnce();
     terrain.dispose();
   });
 

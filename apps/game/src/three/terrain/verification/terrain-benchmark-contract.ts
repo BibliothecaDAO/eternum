@@ -1,4 +1,4 @@
-export const TERRAIN_BENCHMARK_CONTRACT_VERSION = 1;
+export const TERRAIN_BENCHMARK_CONTRACT_VERSION = 2;
 
 export const TERRAIN_BENCHMARK_VARIANTS = Object.freeze(["geometry", "material", "props", "production"] as const);
 export const TERRAIN_BENCHMARK_EXPLORATION_MODES = Object.freeze(["explored", "frontier"] as const);
@@ -35,17 +35,33 @@ export interface TerrainBenchmarkSnapshot {
   };
   chunks: {
     builtPages: number;
+    cachePages: number;
     commitMaxMs: number;
     commitP95Ms: number;
-    committedWindows: number;
+    commitSamples: number;
+    convergedWindows: number;
+    firstCompletePageMaxMs: number;
+    firstCompletePageP95Ms: number;
+    firstCompletePageSamples: number;
+    firstRenderedFrameMaxMs: number;
+    firstRenderedFrameP95Ms: number;
+    firstRenderedFrameSamples: number;
     lifecyclePagesVisited: number;
-    prepareMaxMs: number;
-    prepareP95Ms: number;
+    queueWaitMaxMs: number;
+    queueWaitP95Ms: number;
+    queueWaitSamples: number;
     requestedWindows: number;
     reusedPages: number;
+    sharedInFlightPages: number;
     staleWindows: number;
+    windowConvergenceMaxMs: number;
+    windowConvergenceP95Ms: number;
+    windowConvergenceSamples: number;
+    workerBuildMaxMs: number;
+    workerBuildP95Ms: number;
+    workerBuildSamples: number;
   };
-  contractVersion: 1;
+  contractVersion: 2;
   densityMultiplier: number;
   coverage: {
     checks: number;
@@ -74,7 +90,7 @@ export interface TerrainBenchmarkSnapshot {
   };
   render: {
     drawCalls: number;
-    firstRenderMs: number;
+    firstTerrainFrameMs: number | null;
     geometries: number;
     pixelRatio: number;
     propInstances: number;

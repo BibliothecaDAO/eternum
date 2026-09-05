@@ -5,13 +5,21 @@ on:
     paths:
       - "apps/game/src/three/terrain/**"
       - "apps/game/src/three/scenes/worldmap.tsx"
+      - "apps/game/src/three/scenes/worldmap-*.ts"
+      - "apps/game/src/three/constants/world-chunk-config.ts"
+      - "apps/game/src/three/frame-budget-work-queue*.ts"
+      - "apps/game/src/three/perf/worldmap-*.ts"
+      - "apps/game/src/three/renderer-frame-runtime*.ts"
       - "apps/game/src/three/scenes/hexception.tsx"
       - "apps/game/src/three/managers/**"
       - "apps/game/src/ui/features/debug/**"
       - "apps/game/scripts/terrain-*/**"
+      - "apps/game/scripts/*worldmap-terrain*.mjs"
+      - "apps/game/src/sync/recs-game-sync-store*.ts"
       - "apps/game/public/models/procedural-terrain/**"
       - "apps/game/public/textures/procedural-terrain/**"
       - "packages/core/src/utils/biome/**"
+      - "packages/core/src/sync/world-spatial-projection*.ts"
       - "apps/game/package.json"
       - "pnpm-lock.yaml"
       - ".github/workflows/verify-terrain.yml"
@@ -41,6 +49,11 @@ jobs:
 
       - name: Verify terrain contracts
         run: pnpm --dir apps/game test src/three/terrain scripts
+
+      - name: Verify worldmap presentation and authoritative update integration
+        run: >-
+          pnpm --dir apps/game test src/three/scenes/worldmap src/three/renderer-frame-runtime.test.ts
+          src/three/frame-budget-work-queue.test.ts src/three/utils/chunk-geometry.test.ts src/three/perf/worldmap
 
       - name: Start auth-free terrain host
         run: |

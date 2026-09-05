@@ -27,7 +27,9 @@ describe("worldmap frame-budget work queue wiring", () => {
     expect(worldmapSource).not.toContain("requestAnimationFrame(processFrame)");
     // Army manager, structure manager, chest manager and the terrain present pipeline share the one queue.
     expect(worldmapSource.match(/this\.chunkWorkQueue,/g)).toHaveLength(4);
-    expect(worldmapSource).toMatch(/subdivisions: 2,\s*\},\s*this\.chunkWorkQueue,?\s*\)/);
+    expect(worldmapSource).toMatch(
+      /subdivisions: 2,\s*\},\s*this\.chunkWorkQueue,\s*\(event\) => this\.recordTerrainPresentationEvent\(event\)/,
+    );
     expect(armyManagerSource).toContain('"manager:army-projection"');
     expect(armyManagerSource).toContain('"manager:army-visibility"');
     expect(armyManagerSource).toContain('"manager:army-entering"');
@@ -42,5 +44,16 @@ describe("worldmap frame-budget work queue wiring", () => {
     );
     expect(structureManagerSource).toContain('"manager:structure-visibility-diff"');
     expect(chestManagerSource).toContain('"manager:chest-visibility"');
+  });
+
+  it("rejects queued presentation work after scene switch-off or transition ownership changes", () => {
+    const start = worldmapSource.indexOf("  private applyTerrainPresentationComposite(");
+    const end = worldmapSource.indexOf("  private captureTerrainPresentationContent(", start);
+    const apply = worldmapSource.slice(start, end);
+    expect(worldmapSource).toContain("this.applyTerrainPresentationComposite(composite, transitionToken)");
+    expect(apply.indexOf("this.isSwitchedOff || transitionToken !== this.chunkTransitionToken")).toBeGreaterThan(-1);
+    expect(apply.indexOf("this.isSwitchedOff || transitionToken !== this.chunkTransitionToken")).toBeLessThan(
+      apply.indexOf("this.captureTerrainPresentationContent"),
+    );
   });
 });

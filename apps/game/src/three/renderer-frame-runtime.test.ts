@@ -19,6 +19,7 @@ function createScene(name: string, view = 1) {
     getInteractionOverlayScene: vi.fn(() => `${name}-interaction-overlay`),
     getScene: vi.fn(() => `${name}-scene`),
     hasActiveLabelAnimations: vi.fn(() => false),
+    onFrameRendered: vi.fn(),
     setWeatherAtmosphereState: vi.fn(),
     update: vi.fn(),
   };
@@ -117,6 +118,7 @@ describe("runRendererFrame", () => {
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
       effectsBridgeRuntime,
+      now: () => 135,
       worldmapScene: worldmapScene as never,
     });
 
@@ -145,10 +147,38 @@ describe("runRendererFrame", () => {
       ],
       sceneName: SceneName.WorldMap,
     });
+    expect(worldmapScene.onFrameRendered).toHaveBeenCalledWith(135);
     expect(labelRuntime.render).toHaveBeenNthCalledWith(2, "hud-scene", "hud-camera");
     expect(effectsBridgeRuntime.updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
     expect(captureStatsSample).toHaveBeenCalledTimes(1);
     expect(snapshotRendererDiagnostics().sceneName).toBe(SceneName.WorldMap);
+  });
+
+  it("does not publish a rendered-frame observation when the backend throws", () => {
+    const hudScene = createHudScene();
+    const worldmapScene = createScene("worldmap", 1);
+    const hexceptionScene = createScene("hexception");
+    const backend = createBackend();
+    backend.renderFrame.mockImplementation(() => {
+      throw new Error("render failed");
+    });
+
+    expect(() =>
+      runRendererFrame({
+        backend: backend as never,
+        camera: "camera" as never,
+        captureStatsSample: vi.fn(),
+        currentScene: SceneName.WorldMap,
+        currentTime: 100,
+        cycleProgress: 0.25,
+        deltaTime: 0.016,
+        hexceptionScene: hexceptionScene as never,
+        hudScene: hudScene as never,
+        labelRuntime: { render: vi.fn(), shouldRender: vi.fn(() => false) } as never,
+        worldmapScene: worldmapScene as never,
+      }),
+    ).toThrow("render failed");
+    expect(worldmapScene.onFrameRendered).not.toHaveBeenCalled();
   });
 
   it("routes fast-travel rendering and label activity through the travel scene when available", () => {
