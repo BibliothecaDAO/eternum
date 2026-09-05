@@ -7,6 +7,7 @@ import {
   attribute,
   color,
   float,
+  fwidth,
   int,
   mix,
   normalMap,
@@ -36,6 +37,7 @@ export interface TerrainMaterials {
   land: MeshStandardNodeMaterial;
   water: MeshStandardNodeMaterial;
   waterMotion: UniformNode<"float", number>;
+  groundMotion: UniformNode<"float", number>;
 }
 
 export function createTerrainMaterials(): TerrainMaterials {
@@ -46,6 +48,7 @@ export function createTerrainMaterials(): TerrainMaterials {
     land: flatLand,
     water: createTerrainWaterMaterial(waterMotion),
     waterMotion,
+    groundMotion: uniform(1, "float"),
   };
 }
 
@@ -107,7 +110,10 @@ function createTerrainWaterFoam(
   return shore.mul(shallowEdge).mul(breakerBand).mul(breakup).clamp(0, 1);
 }
 
-export function createTerrainGroundMaterial(textures: TerrainGroundTextures): MeshStandardNodeMaterial {
+export function createTerrainGroundMaterial(
+  textures: TerrainGroundTextures,
+  groundMotion: UniformNode<"float", number>,
+): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.95 });
   material.name = "terrain-land-ground-textured";
   const absoluteWorldUv = uv();
@@ -125,14 +131,40 @@ export function createTerrainGroundMaterial(textures: TerrainGroundTextures): Me
   const sampledAlbedo = mix(secondaryAlbedoHeight.rgb, primaryAlbedoHeight.rgb, primaryBlend);
   const terrainColor = attribute<"vec3">("terrainColor", "vec3");
   const terrainTint = terrainColor.mul(1.75);
-  material.colorNode = mix(sampledAlbedo.mul(terrainTint), terrainColor, 0.34);
+  const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
+  material.colorNode = mix(sampledAlbedo.mul(terrainTint), terrainColor, 0.34).mul(detail.shade);
   const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
   material.roughnessNode = sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.45, 1);
   material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
-  const detailedNormal = normalMap(sampledNormalMaterial.rgb, vec2(0.34));
+  const detailedNormal = normalMap(
+    vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
+    vec2(0.34),
+  );
   detailedNormal.unpackNormalMode = NormalRGPacking;
   material.normalNode = detailedNormal;
   return material;
+}
+
+// Wind ripples and derivative filtering adapted from James Addison’s Inkwell WebGPU Sand (MIT).
+// See inkwell-LICENSE. World-space signals stay continuous across page and biome boundaries.
+function createGroundSurfaceDetail(
+  weights0: Node<"vec4">,
+  weights1: Node<"vec4">,
+  motion: UniformNode<"float", number>,
+): { shade: Node<"float">; rippleNormal: Node<"vec2"> } {
+  const ground = positionLocal.xz;
+  const wind = vec2(0.93, 0.37).normalize();
+  const warp = ground.x.mul(0.27).sin().add(ground.y.mul(0.19).sin()).mul(0.7);
+  const phase = ground.dot(wind).mul(17).add(warp);
+  const confidence = smoothstep(0.42, 1.36, fwidth(phase)).oneMinus();
+  const looseGround = weights0.x.add(weights1.z.mul(0.65)).clamp(0, 1);
+  const ripples = phase.sin().mul(confidence).mul(looseGround);
+  const gust = ground.dot(vec2(0.72, 0.28)).mul(0.8).sub(time.mul(0.55));
+  const meadowShade = gust.sin().mul(0.025).mul(weights0.w).mul(motion);
+  return {
+    shade: float(1).add(ripples.mul(0.08)).add(meadowShade),
+    rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)),
+  };
 }
 
 function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {

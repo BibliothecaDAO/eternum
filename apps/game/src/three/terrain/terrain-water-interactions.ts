@@ -8,10 +8,9 @@ import {
   Quaternion,
   Vector3,
 } from "three";
-import * as ThreeWebGPU from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, time, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
 
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 
@@ -33,9 +32,6 @@ export interface TerrainWaterInteractionStats {
 
 const WATER_INTERACTION_ATTRIBUTE = "terrainWaterInteraction";
 const WATER_INTERACTION_Y = TERRAIN_WATER_LEVEL + 0.012;
-const MeshBasicNodeMaterialConstructor = (
-  ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
-).MeshBasicNodeMaterial;
 
 export class TerrainWaterInteractionPool {
   readonly object3d = new Group();
@@ -144,7 +140,7 @@ function createTerrainWaterInteractionGeometry(): PlaneGeometry {
 }
 
 function createTerrainWaterInteractionMaterial(strength: UniformNode<"float", number>): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterialConstructor();
+  const material = new MeshBasicNodeMaterial();
   material.name = "terrain-water-interactions";
   material.transparent = true;
   material.depthWrite = false;

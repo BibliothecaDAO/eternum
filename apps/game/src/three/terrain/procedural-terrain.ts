@@ -1,9 +1,11 @@
+import { createTerrainWildlife, createTerrainWildlifeMaterial } from "./terrain-wildlife";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
   BufferAttribute,
   BufferGeometry,
   Box3,
   Group,
+  InstancedMesh,
   Mesh,
   Sphere,
   Vector3,
@@ -78,6 +80,7 @@ export interface TerrainUploadMetrics {
 export class ProceduralTerrain {
   readonly object3d = new Group();
   private readonly materials: TerrainMaterials;
+  private readonly wildlifeMaterial = createTerrainWildlifeMaterial();
   private readonly pages = new Map<string, PresentedTerrainPage>();
   private readonly pagesAwaitingWrites = new Set<string>();
   private readonly presentationGroup = new Group();
@@ -158,7 +161,7 @@ export class ProceduralTerrain {
     }
     if (this.groundTextureHandle) return;
     this.groundTextureHandle = handle;
-    this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures);
+    this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
     this.refreshGroundMaterial();
   }
 
@@ -190,6 +193,8 @@ export class ProceduralTerrain {
     this.fogField.setQuality(profile.fogMotionStrength * motion, profile.fogMistStrength);
     this.propPools?.setWindStrength(profile.windStrength * motion);
     this.materials.waterMotion.value = profile.waterMotion * motion;
+    this.materials.groundMotion.value = profile.windStrength * motion;
+    this.wildlifeMaterial.visible = this.qualityTier === "detail" && !reducedMotion;
   }
 
   getQualityTier(): TerrainQualityTier {
@@ -339,6 +344,7 @@ export class ProceduralTerrain {
     this.propPools = null;
     this.fogField.dispose();
     this.movementEffects.dispose();
+    this.wildlifeMaterial.dispose();
     new Set(
       [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
     ).forEach((material) => material!.dispose());
@@ -370,8 +376,11 @@ export class ProceduralTerrain {
     if (preparedPage.waterBuffers) {
       group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
     }
+    const field = new TerrainField(preparedPage.request);
+    const wildlife = createTerrainWildlife(preparedPage.request.cells, field, this.wildlifeMaterial);
+    if (wildlife) group.add(wildlife);
     return {
-      field: new TerrainField(preparedPage.request),
+      field,
       fingerprint: preparedPage.fingerprint,
       group,
       propInstances: preparedPage.propInstances,
@@ -445,6 +454,7 @@ function disableTerrainRaycast(raycaster: Raycaster, intersects: Intersection<Ob
 
 function disposePageGeometry(page: PresentedTerrainPage): void {
   page.group.traverse((object) => {
+    if (object instanceof InstancedMesh) object.dispose();
     if (object instanceof Mesh) object.geometry.dispose();
   });
   page.group.clear();

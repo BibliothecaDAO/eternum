@@ -1,3 +1,4 @@
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -119,17 +120,23 @@ const RealmVillageDetails = () => {
 };
 
 export const RealmUpgradeCompact = () => {
-  const dojo = useDojo();
+  const isSpectating = useUIStore((state) => state.isSpectating);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  const structure = useMemo(
-    () => getStructure(structureEntityId, ContractAddress(dojo.account.account.address), dojo.setup.components),
-    [structureEntityId, dojo.account.account.address, dojo.setup.components],
-  );
-
   const upgradeInfo = useStructureUpgrade(structureEntityId);
+  if (!upgradeInfo) return null;
 
-  if (!structure || !upgradeInfo) return null;
+  if (!upgradeInfo.isOwner || isSpectating || isExplicitSpectateSession()) {
+    return (
+      <div className="space-y-2">
+        <SectionRow label="Settlement level">
+          <span className={CHIP_BASE}>{upgradeInfo.currentLevelName}</span>
+        </SectionRow>
+        <p className="text-[11px] leading-relaxed text-gold/70">
+          Select a building to inspect this settlement’s economy.
+        </p>
+      </div>
+    );
+  }
 
   if (upgradeInfo.isMaxLevel) {
     return (

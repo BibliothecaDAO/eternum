@@ -60,13 +60,13 @@ export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchety
   conifer: 560, // measured 371
   "dead-tree": 144, // measured 88
   "fallen-log": 96, // measured 64
-  fern: 160, // measured 98
-  "grass-tuft": 112, // measured 66
+  fern: 512, // measured 340
+  "grass-tuft": 352, // measured 231
   palm: 352, // measured 229
-  reed: 80, // measured 44
+  reed: 208, // measured 129
   shrub: 464, // measured 306
   stump: 112, // measured 72
-  wildflower: 64, // measured 37
+  wildflower: 160, // measured 103
   willow: 368, // measured 239
 });
 
@@ -152,6 +152,7 @@ export class TerrainPropPools {
     this.lod = lod;
     this.pools.forEach((pool, archetype) => {
       pool.mesh.geometry = this.requireCatalogMesh(archetype, lod).geometry;
+      pool.mesh.castShadow = lod === "near" && getTerrainPropRole(archetype) === "canopy";
       pool.mesh.visible = pool.mesh.count > 0 && isTerrainPropVisibleAtLod(archetype, lod);
     });
   }
@@ -214,9 +215,8 @@ export class TerrainPropPools {
     mesh.name = `terrain-prop-pool:${archetype}`;
     mesh.count = 0;
     mesh.visible = false;
-    // A full-screen forest otherwise submits every prop geometry again to the
-    // shadow pass. The ground and structures retain authored shadows.
-    mesh.castShadow = false;
+    // Canopy shadows anchor close forests; overview skips their extra geometry pass.
+    mesh.castShadow = this.lod === "near" && getTerrainPropRole(archetype) === "canopy";
     mesh.receiveShadow = true;
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     mesh.raycast = disablePropRaycast;

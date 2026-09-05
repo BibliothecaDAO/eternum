@@ -1,8 +1,10 @@
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -74,6 +76,8 @@ import {
   getBuildingCosts,
   getRealmInfo,
   getStructureStage,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import {
   BUILDINGS_CENTER,
@@ -244,6 +248,8 @@ export default class HexceptionScene extends HexagonScene {
     this.interactiveHexManager.setSurfaceVisibility(false);
 
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
+    this.applyAmbienceAppearance();
+    this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
 
     this.loadBuildingModels();
 
@@ -560,8 +566,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   setup() {
-    this.isEntered = true;
-    this.bootstrapSceneOwnership();
+    this.isEntered = false;
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
     const contractPosition = routeTarget.hexRealmPosition;
@@ -569,6 +574,10 @@ export default class HexceptionScene extends HexagonScene {
     if (routeWorldPosition == null || contractPosition == null) {
       return;
     }
+
+    this.selectRouteStructure(contractPosition);
+    this.isEntered = true;
+    this.bootstrapSceneOwnership();
 
     const { col, row } = routeWorldPosition;
     const realmKey = `${contractPosition.col},${contractPosition.row}`;
@@ -623,8 +632,8 @@ export default class HexceptionScene extends HexagonScene {
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
-    // Setup ambience system at grid center (origin for the main hex)
-    this.ambienceSystem?.setup(new Vector3(0, 0, 0), this.hexceptionRadius);
+    const settlementCenter = getWorldPositionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
+    this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
     this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
     this.controls.enablePan = false;
@@ -761,9 +770,14 @@ export default class HexceptionScene extends HexagonScene {
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
 
-    // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
+    const canConstruct = !!account && !useUIStore.getState().isSpectating && !isExplicitSpectateSession();
     if (buildingType) {
+      if (!canConstruct || !account) {
+        this.clearBuildingMode();
+        return;
+      }
+
       const useSimpleCost = this.state.useSimpleCost;
       const structureEntityId = useUIStore.getState().structureEntityId;
       const realm = getRealmInfo(gameEntityKey([BigInt(structureEntityId)]), this.dojo.components);
@@ -795,7 +809,7 @@ export default class HexceptionScene extends HexagonScene {
       this.clearBuildingMode();
       try {
         await this.tileManager.placeBuilding(
-          account!,
+          account,
           structureEntityId,
           buildingType.type,
           normalizedCoords,
@@ -803,9 +817,7 @@ export default class HexceptionScene extends HexagonScene {
         );
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
-        console.error("[Hexception] building placement failed; removing provisional building", error);
-        this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
-        this.updateBuildingHighlight(normalizedCoords, false);
+        console.error("[Hexception] building placement failed", error);
       }
     } else {
       // if not building mode
@@ -850,7 +862,7 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
-        this.state.setLeftNavigationView(LeftView.ConstructionView);
+        this.state.setLeftNavigationView(canConstruct ? LeftView.ConstructionView : LeftView.EntityView);
       }
     }
   }
@@ -1035,6 +1047,26 @@ export default class HexceptionScene extends HexagonScene {
         <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />
       ),
     });
+  }
+
+  private selectRouteStructure(position: HexPosition): void {
+    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, position.col, position.row);
+    const structure = tile?.occupier_is_structure
+      ? getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(tile.occupier_id)]))
+      : undefined;
+    if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
+    useUIStore.getState().setStructureEntityId(structure.entity_id, { worldMapPosition: position });
+  }
+
+  private applyAmbienceAppearance(): void {
+    const { fogStyle, reducedMotion } = useWorldAppearanceStore.getState();
+    this.ambienceSystem?.setFogEnabled(fogStyle === "mist");
+    this.ambienceSystem?.setEdgeMistEnabled(fogStyle === "mist");
+    this.ambienceSystem?.setReducedMotion(reducedMotion);
+  }
+
+  protected override shouldCreateGroundMesh(): boolean {
+    return false;
   }
 
   public moveCameraToURLLocation() {

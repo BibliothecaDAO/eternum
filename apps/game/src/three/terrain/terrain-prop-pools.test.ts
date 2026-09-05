@@ -28,6 +28,16 @@ describe("TerrainPropPools", () => {
     }
   });
 
+  it("casts canopy shadows only at close zoom and leaves ground cover out of the shadow pass", () => {
+    pools.setLod("near");
+    expect(poolMesh(pools, "broadleaf").castShadow).toBe(true);
+    expect(poolMesh(pools, "grass-tuft").castShadow).toBe(false);
+    pools.setLod("far");
+    expect(poolMesh(pools, "broadleaf").castShadow).toBe(false);
+    pools.setLod("near");
+    expect(poolMesh(pools, "broadleaf").castShadow).toBe(true);
+  });
+
   it("writes a page into its own slot sub-range and uploads only that range", () => {
     pools.writePage("east", instances("conifer", 3));
     pools.writePage("west", instances("conifer", 2));

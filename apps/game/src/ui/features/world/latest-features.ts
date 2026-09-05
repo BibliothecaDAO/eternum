@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-06",
+    title: "Closer Settlements, Richer Ground",
+    description:
+      "Local view opens closer to your settlement, with building details at the screen edge and production status updated from live game state. Opening a local link selects the correct realm. Close forests gain canopy shadows and circling birds, sand and snow show wind ripples, and clear fog and reduced motion settings also apply to local ambience.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-09-05",
     title: "Clearer World, Faster Entry",
     description:

@@ -8,10 +8,9 @@ import {
   RedFormat,
   UnsignedByteType,
 } from "three";
-import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
 import type TextureNode from "three/src/nodes/accessors/TextureNode.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import * as ThreeWebGPU from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { color, float, mix, positionWorld, smoothstep, texture, time, uniform, uv } from "three/tsl";
 
 import { terrainCellKey } from "./terrain-coordinates";
@@ -65,9 +64,6 @@ interface FogMaterialSet {
 
 const FOG_MESH_NAME = "terrain-exploration-fog-field";
 const FOG_PLANE_HEIGHT = 0.24;
-const MeshBasicNodeMaterialConstructor = (
-  ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
-).MeshBasicNodeMaterial;
 
 /**
  * One mist sheet over every unexplored cell of the presented pages. Pages hand in their shroud cells; a commit
@@ -297,7 +293,7 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const clarity = uniform(1, "float");
   const motionStrength = uniform(1, "float");
   const mistStrength = uniform(1, "float");
-  const material = new MeshBasicNodeMaterialConstructor();
+  const material = new MeshBasicNodeMaterial();
   material.name = "terrain-exploration-mist";
   material.transparent = true;
   material.depthTest = false;

@@ -164,6 +164,30 @@ describe("ProceduralTerrain", () => {
     setWind.mockRestore();
   });
 
+  it("hides wildlife for overview and reduced motion, then releases it with its terrain page", () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(request(BiomeType.TemperateRainForest, false))]);
+    const flock = terrain.object3d.getObjectByName("terrain-wildlife") as InstancedMesh;
+    expect(flock).toBeDefined();
+    const material = Array.isArray(flock.material) ? flock.material[0] : flock.material;
+    const disposeGeometry = vi.spyOn(flock.geometry, "dispose");
+    const disposeInstances = vi.spyOn(flock, "dispose");
+    const disposeMaterial = vi.spyOn(material, "dispose");
+    expect(material.visible).toBe(true);
+    terrain.setQualityTier("overview");
+    expect(material.visible).toBe(false);
+    terrain.setQualityTier("detail");
+    expect(material.visible).toBe(true);
+    useWorldAppearanceStore.getState().setReducedMotion(true);
+    expect(material.visible).toBe(false);
+    terrain.present([]);
+    expect(disposeGeometry).toHaveBeenCalledOnce();
+    expect(disposeInstances).toHaveBeenCalledOnce();
+    terrain.dispose();
+    expect(disposeMaterial).toHaveBeenCalledOnce();
+    useWorldAppearanceStore.getState().setReducedMotion(false);
+  });
+
   it("retains a requested quality tier while the catalog loads", async () => {
     const pools = {
       dispose: vi.fn(),

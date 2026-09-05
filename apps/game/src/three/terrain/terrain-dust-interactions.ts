@@ -8,10 +8,9 @@ import {
   Quaternion,
   Vector3,
 } from "three";
-import * as ThreeWebGPU from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
 
 export const TERRAIN_DUST_INTERACTION_CAPACITY = 128;
 export const TERRAIN_DUST_EMITTER_CAPACITY = 256;
@@ -68,9 +67,6 @@ interface DustSurfaceProfile {
 }
 
 const DUST_ATTRIBUTE = "terrainDustInteraction";
-const MeshBasicNodeMaterialConstructor = (
-  ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
-).MeshBasicNodeMaterial;
 const DUST_SURFACE_PROFILES: Readonly<Record<TerrainDustSurface, DustSurfaceProfile>> = Object.freeze({
   damp: { emissionIntervalSeconds: 0.24, opacity: 0.22, size: 0.2, tone: 0 },
   dry: { emissionIntervalSeconds: 0.13, opacity: 0.72, size: 0.3, tone: 1 },
@@ -278,7 +274,7 @@ function createDustGeometry(): PlaneGeometry {
 }
 
 function createDustMaterial(strength: UniformNode<"float", number>): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterialConstructor();
+  const material = new MeshBasicNodeMaterial();
   material.name = "terrain-dust-interactions";
   material.transparent = true;
   material.depthWrite = false;
