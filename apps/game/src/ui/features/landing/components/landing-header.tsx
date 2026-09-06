@@ -1,9 +1,14 @@
 import { ReactComponent as RealmsLogo } from "@/assets/icons/rw-logo.svg";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Bug, Home, Menu, Settings, X } from "lucide-react";
+import { Menu, Settings, X } from "lucide-react";
 import { useState, useCallback } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { getSectionFromPath, getActiveSubItem, getSubItemHref } from "../context/navigation-config";
+import {
+  NAVIGATION_SECTIONS,
+  getSectionFromPath,
+  getActiveSubItem,
+  getSubItemHref,
+} from "../context/navigation-config";
 import { resolveLandingSurfacePath, type LandingEntryRouteState } from "../lib/landing-entry-state";
 
 interface LandingHeaderProps {
@@ -18,15 +23,11 @@ interface MobileNavItem {
   path: string;
 }
 
-const mobileNavItems: MobileNavItem[] = [{ icon: Home, label: "Play", path: "/" }, ...buildDebugMobileNavItems()];
-
-function buildDebugMobileNavItems(): MobileNavItem[] {
-  if (!import.meta.env.DEV) {
-    return [];
-  }
-
-  return [{ icon: Bug, label: "Debug", path: "/debug/three-chunks" }];
-}
+const mobileNavItems: MobileNavItem[] = NAVIGATION_SECTIONS.map((section) => ({
+  icon: section.icon,
+  label: section.id === "home" ? "Play" : section.label,
+  path: section.subMenu[0].href,
+}));
 
 /**
  * Mobile hamburger menu drawer

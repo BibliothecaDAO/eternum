@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Labs in the Sidebar",
+    type: "improvement",
+    description:
+      "Open the Biome Lab and Local Lab from their tree and castle icons in the left sidebar, or from the menu on mobile.",
+  },
+  {
+    date: "2026-09-06",
     title: "Game Lighting in Labs",
     type: "improvement",
     description:

@@ -34,13 +34,6 @@ describe("MobileBottomNav", () => {
     });
 
     const links = Array.from(container.querySelectorAll("a"));
-    expect(links.map((link) => link.getAttribute("href"))).toEqual([
-      "/",
-      "/learn",
-      "/news",
-      "/biome-lab",
-      "/local-lab",
-      "/factory",
-    ]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/learn", "/news", "/factory"]);
   });
 });
