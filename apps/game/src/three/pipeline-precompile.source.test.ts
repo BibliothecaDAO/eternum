@@ -25,9 +25,7 @@ describe("pipeline precompile wiring", () => {
 
   it("structure models compile before they attach", () => {
     const manager = read("./managers/structure-manager.ts");
-    expect(manager).toContain(
-      "await this.compileModelPipelines(models);\n        this.structureModels.set(structureType, models);",
-    );
+    expect(manager).toContain("await this.compileModelPipelines([model]);");
     expect(manager).toContain(
       "await this.compileModelPipelines(models);\n        this.cosmeticStructureModels.set(cosmeticId, models);",
     );

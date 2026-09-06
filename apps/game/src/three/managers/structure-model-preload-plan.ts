@@ -1,5 +1,5 @@
 export interface StructureModelPreloadPlan<TStructureType> {
-  missingStructureModels: TStructureType[];
+  missingStructureModels: Array<{ structureType: TStructureType; modelIndex: number }>;
   missingCosmeticModels: Array<{ cosmeticId: string; assetPaths: string[] }>;
 }
 
@@ -13,7 +13,8 @@ interface BuildStructureModelPreloadPlanInput<
 > {
   visibleStructures: TStructure[];
   hasCosmeticSkin: (structure: TStructure) => boolean;
-  hasStructureModel: (structureType: TStructureType) => boolean;
+  getStructureModelIndices: (structure: TStructure) => readonly number[];
+  hasStructureModel: (structureType: TStructureType, modelIndex: number) => boolean;
   hasCosmeticModel: (cosmeticId: string) => boolean;
 }
 
@@ -25,9 +26,9 @@ export function buildStructureModelPreloadPlan<
   },
   TStructureType,
 >(input: BuildStructureModelPreloadPlanInput<TStructure, TStructureType>): StructureModelPreloadPlan<TStructureType> {
-  const missingStructureModels: TStructureType[] = [];
+  const missingStructureModels: StructureModelPreloadPlan<TStructureType>["missingStructureModels"] = [];
   const missingCosmeticModels: Array<{ cosmeticId: string; assetPaths: string[] }> = [];
-  const requestedStructureModels = new Set<TStructureType>();
+  const requestedStructureModels = new Map<TStructureType, Set<number>>();
   const requestedCosmeticModels = new Set<string>();
 
   input.visibleStructures.forEach((structure) => {
@@ -46,10 +47,13 @@ export function buildStructureModelPreloadPlan<
       return;
     }
 
-    if (!input.hasStructureModel(structure.structureType) && !requestedStructureModels.has(structure.structureType)) {
-      missingStructureModels.push(structure.structureType);
-      requestedStructureModels.add(structure.structureType);
+    const requestedIndices = requestedStructureModels.get(structure.structureType) ?? new Set<number>();
+    for (const modelIndex of input.getStructureModelIndices(structure)) {
+      if (input.hasStructureModel(structure.structureType, modelIndex) || requestedIndices.has(modelIndex)) continue;
+      missingStructureModels.push({ structureType: structure.structureType, modelIndex });
+      requestedIndices.add(modelIndex);
     }
+    requestedStructureModels.set(structure.structureType, requestedIndices);
   });
 
   return { missingCosmeticModels, missingStructureModels };

@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-06",
     title: "Lighter World Loading",
     type: "improvement",
-    description: "Reduced terrain loading overhead and contact-shadow startup work when entering a game.",
+    description: "Reduced loading delays when entering a game, including terrain and building preparation.",
   },
   {
     date: "2026-09-06",

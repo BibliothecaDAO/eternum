@@ -206,6 +206,65 @@ describe("WorldmapProceduralTerrain", () => {
     terrain.dispose();
   });
 
+  it("prepares only the next page while the current page waits for its fog commit", async () => {
+    const input = distantPagesInput();
+    input.cells.push(worldCell(20, 0, BiomeType.Taiga));
+    const requests = buildWorldmapTerrainPageRequests(input);
+    const prepare = vi
+      .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockImplementation(async (request) => prepareTerrainPage(request));
+    let releaseFog!: () => void;
+    const fogReady = new Promise<null>((resolve) => {
+      releaseFog = () => resolve(null);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockReturnValueOnce(fogReady).mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const presentation = terrain.presentAsync(input);
+    await flushMicrotasks();
+    expect(prepare.mock.calls.map(([request]) => request.pageKey)).toEqual(requests.slice(0, 2).map((r) => r.pageKey));
+    expect(terrain.getPresentedPageKeys()).toEqual([]);
+    releaseFog();
+    await expect(presentation).resolves.toMatchObject({ pages: 3 });
+    terrain.dispose();
+  });
+
+  it("propagates a failed lookahead preparation when the active run reaches it", async () => {
+    const input = distantPagesInput();
+    const requests = buildWorldmapTerrainPageRequests(input);
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
+      if (request.pageKey === requests[1].pageKey) throw new Error("Page preparation failed");
+      return prepareTerrainPage(request);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    await expect(terrain.presentAsync(input)).rejects.toThrow("Page preparation failed");
+    expect(terrain.getPresentedPageKeys()).toEqual([requests[0].pageKey]);
+    terrain.dispose();
+  });
+
+  it("stops queuing pages when a presentation is superseded during its fog commit", async () => {
+    const input = distantPagesInput();
+    input.cells.push(worldCell(20, 0, BiomeType.Taiga));
+    const prepare = vi
+      .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockImplementation(async (request) => prepareTerrainPage(request));
+    let releaseFog!: () => void;
+    const fogReady = new Promise<null>((resolve) => {
+      releaseFog = () => resolve(null);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockReturnValueOnce(fogReady).mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const superseded = terrain.presentAsync(input);
+    await flushMicrotasks();
+    expect(prepare).toHaveBeenCalledTimes(2);
+    await expect(terrain.presentAsync({ ...input, cells: [input.cells[0]] })).resolves.toMatchObject({ pages: 1 });
+    releaseFog();
+    await expect(superseded).resolves.toBeNull();
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(terrain.getPresentedPageKeys()).toEqual([buildWorldmapTerrainPageRequests(input)[0].pageKey]);
+    terrain.dispose();
+  });
+
   it("releases camera readiness while an optional margin page is still preparing", async () => {
     const input = distantPagesInput();
     const requests = buildWorldmapTerrainPageRequests(input);

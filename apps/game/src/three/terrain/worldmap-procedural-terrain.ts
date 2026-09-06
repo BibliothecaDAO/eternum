@@ -282,16 +282,23 @@ export class WorldmapProceduralTerrain {
     const preparedPages: PreparedTerrainPage[] = [];
     this.notifyCriticalPagesReady(run, input, preparations);
     let commitMs = 0;
+    let pendingPage: Promise<PreparedTerrainPage> | undefined;
     // New camera coverage streams immediately. Replacements of existing pages commit together, so one game
     // update affecting a shared edge or settlement never exposes a partially updated result.
-    for (const preparation of preparations) {
+    for (const [index, preparation] of preparations.entries()) {
       this.requireCurrent(run);
-      const prepared = await this.resolvePreparedPage(preparation);
+      const prepared = await (pendingPage ?? this.resolvePreparedPage(preparation));
       this.requireCurrent(run);
       preparedPages.push(prepared);
+      let commit: Promise<TerrainPresentationDiagnostics & { commitMs: number }> | undefined;
       if (!visiblePages.has(prepared.request.pageKey)) {
         visiblePages.set(prepared.request.pageKey, prepared);
-        const result = await this.commitPreparedPages(run, Array.from(visiblePages.values()));
+        commit = this.commitPreparedPages(run, Array.from(visiblePages.values()));
+      }
+      // Queue only one page ahead, after the current fog job, so preparation can overlap the main-thread commit.
+      pendingPage = this.prepareNextPage(preparations[index + 1]);
+      if (commit) {
+        const result = await commit;
         commitMs += result.commitMs;
         this.notifyCriticalPagesReady(run, input, preparations);
       }
@@ -396,6 +403,15 @@ export class WorldmapProceduralTerrain {
       return Promise.resolve(cached);
     }
     return this.pendingBySignature.get(preparation.signature) ?? this.preparePageAsync(preparation);
+  }
+
+  private prepareNextPage(preparation: TerrainPagePreparation | undefined): Promise<PreparedTerrainPage> | undefined {
+    if (!preparation) return undefined;
+    const pending = this.resolvePreparedPage(preparation);
+    // A superseded commit may exit before awaiting this page. Keep its rejection handled;
+    // the original promise still propagates the error when the active run consumes it.
+    void pending.catch(() => undefined);
+    return pending;
   }
 
   private preparePageAsync(preparation: TerrainPagePreparation): Promise<PreparedTerrainPage> {

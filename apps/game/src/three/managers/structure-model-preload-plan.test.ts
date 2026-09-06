@@ -20,12 +20,13 @@ describe("buildStructureModelPreloadPlan", () => {
         { structureType: "Realm", cosmeticId: "cached", cosmeticAssetPaths: ["cached.glb"] },
       ],
       hasCosmeticSkin: (structure) => Boolean(structure.cosmeticId),
+      getStructureModelIndices: () => [0],
       hasStructureModel: (structureType) => structureType === "Bank",
       hasCosmeticModel: (cosmeticId) => cosmeticId === "cached",
     });
 
     expect(plan).toEqual({
-      missingStructureModels: ["Village"],
+      missingStructureModels: [{ structureType: "Village", modelIndex: 0 }],
       missingCosmeticModels: [{ cosmeticId: "gold", assetPaths: ["gold.glb"] }],
     });
   });
@@ -34,6 +35,7 @@ describe("buildStructureModelPreloadPlan", () => {
     const plan = buildStructureModelPreloadPlan<VisibleStructureStub, string>({
       visibleStructures: [{ structureType: "Village", cosmeticId: "empty", cosmeticAssetPaths: [] }],
       hasCosmeticSkin: () => true,
+      getStructureModelIndices: () => [0],
       hasStructureModel: () => false,
       hasCosmeticModel: () => false,
     });

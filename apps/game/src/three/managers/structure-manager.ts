@@ -215,8 +215,8 @@ function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSp
 
 export class StructureManager {
   private scene: Scene;
-  private structureModels: Map<StructureType, InstancedModel[]> = new Map();
-  private structureModelPromises: Map<StructureType, Promise<InstancedModel[]>> = new Map();
+  private structureModels: Map<StructureType, Map<number, InstancedModel>> = new Map();
+  private structureModelPromises: Map<string, Promise<InstancedModel>> = new Map();
   private structureModelPaths: Record<string, string[]>;
   // Cosmetic skin models keyed by cosmeticId
   private cosmeticStructureModels: Map<string, InstancedModel[]> = new Map();
@@ -835,28 +835,7 @@ export class StructureManager {
 
     const prewarmPromise = (async () => {
       const visibleStructures = this.queryStructureInfosInChunk(startRow, startCol);
-      const structureTypes = new Set<StructureType>();
-      const cosmeticAssets = new Map<string, string[]>();
-
-      visibleStructures.forEach((structure) => {
-        if (this.hasCosmeticSkin(structure)) {
-          const cosmeticId = structure.cosmeticId ?? "";
-          const assetPaths = structure.cosmeticAssetPaths ?? [];
-          if (cosmeticId && assetPaths.length > 0 && !cosmeticAssets.has(cosmeticId)) {
-            cosmeticAssets.set(cosmeticId, assetPaths);
-          }
-          return;
-        }
-
-        structureTypes.add(structure.structureType);
-      });
-
-      await Promise.all([
-        ...Array.from(structureTypes, (structureType) => this.ensureStructureModels(structureType)),
-        ...Array.from(cosmeticAssets.entries(), ([cosmeticId, assetPaths]) =>
-          this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
-        ),
-      ]);
+      await this.preloadStructureModels(this.createStructureModelPreloadPlan(visibleStructures));
     })().finally(() => {
       this.chunkAssetPrewarmPromises.delete(chunkKey);
     });
@@ -865,35 +844,30 @@ export class StructureManager {
     return prewarmPromise;
   }
 
-  private async ensureStructureModels(structureType: StructureType): Promise<InstancedModel[]> {
-    if (this.structureModels.has(structureType)) {
-      return this.structureModels.get(structureType)!;
-    }
+  private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<InstancedModel> {
+    const cached = this.structureModels.get(structureType)?.get(modelIndex);
+    if (cached) return cached;
 
-    let pending = this.structureModelPromises.get(structureType);
-    if (pending) {
-      return pending;
-    }
+    const key = `${structureType}:${modelIndex}`;
+    const existing = this.structureModelPromises.get(key);
+    if (existing) return existing;
 
-    const modelPaths = this.structureModelPaths[String(structureType)] ?? [];
-    if (modelPaths.length === 0) {
-      const empty: InstancedModel[] = [];
-      this.structureModels.set(structureType, empty);
-      return empty;
-    }
+    const modelPath = this.structureModelPaths[String(structureType)]?.[modelIndex];
+    if (!modelPath) throw new Error(`Missing structure model for type ${structureType}, stage ${modelIndex}`);
 
-    pending = Promise.all(modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)))
-      .then(async (models) => {
-        await this.compileModelPipelines(models);
-        this.structureModels.set(structureType, models);
-        this.attachStructureModelsToScene(models);
-        return models;
+    const pending = this.loadStructureModel(structureType, modelPath)
+      .then(async (model) => {
+        await this.compileModelPipelines([model]);
+        const variants = this.structureModels.get(structureType) ?? new Map<number, InstancedModel>();
+        variants.set(modelIndex, model);
+        this.structureModels.set(structureType, variants);
+        this.attachStructureModelsToScene([model]);
+        return model;
       })
       .finally(() => {
-        this.structureModelPromises.delete(structureType);
+        this.structureModelPromises.delete(key);
       });
-
-    this.structureModelPromises.set(structureType, pending);
+    this.structureModelPromises.set(key, pending);
     return pending;
   }
 
@@ -967,7 +941,20 @@ export class StructureManager {
 
   // Pipelines compile before the group joins the scene, so the first frame that shows a chunk draws terrain only.
   private async compileModelPipelines(models: InstancedModel[]): Promise<void> {
-    for (const model of models) await this.compilePipelines?.(model.group, this.scene);
+    try {
+      for (const model of models) {
+        this.requireActiveModelOwner();
+        await this.compilePipelines?.(model.group, this.scene);
+      }
+      this.requireActiveModelOwner();
+    } catch (error) {
+      models.forEach((model) => model.dispose());
+      throw error;
+    }
+  }
+
+  private requireActiveModelOwner(): void {
+    if (this.isDestroyed) throw new Error("Structure manager was destroyed while preparing a model");
   }
 
   // Models load after the band may have hidden the layer, so a freshly loaded group takes the ladder's state.
@@ -1240,16 +1227,16 @@ export class StructureManager {
       return this.cosmeticStructureModels.get(structure.cosmeticId ?? "")?.[0];
     }
 
-    const models = this.structureModels.get(structure.structureType);
-    if (!models || models.length === 0) {
-      return undefined;
-    }
+    return this.structureModels.get(structure.structureType)?.get(this.getBaseStructureModelIndex(structure));
+  }
 
-    if (structure.structureType === StructureType.Realm) {
-      return models[structure.level];
-    }
+  private getBaseStructureModelIndex(structure: StructureInfo): number {
+    return structure.structureType === StructureType.Realm ? structure.level : structure.stage;
+  }
 
-    return models[structure.stage];
+  private getStructureModelIndices(structure: StructureInfo): number[] {
+    const base = this.getBaseStructureModelIndex(structure);
+    return structure.structureType === StructureType.Realm && structure.hasWonder ? [base, WONDER_MODEL_INDEX] : [base];
   }
 
   private async performVisibleStructuresUpdate(options: VisibleStructureRefreshOptions = {}): Promise<boolean> {
@@ -1321,7 +1308,9 @@ export class StructureManager {
     return buildStructureModelPreloadPlan<StructureInfo, StructureType>({
       visibleStructures,
       hasCosmeticSkin: (structure) => this.hasCosmeticSkin(structure),
-      hasStructureModel: (structureType) => this.structureModels.has(structureType),
+      getStructureModelIndices: (structure) => this.getStructureModelIndices(structure),
+      hasStructureModel: (structureType, modelIndex) =>
+        this.structureModels.get(structureType)?.has(modelIndex) ?? false,
       hasCosmeticModel: (cosmeticId) => this.cosmeticStructureModels.has(cosmeticId),
     });
   }
@@ -1345,7 +1334,9 @@ export class StructureManager {
 
   private async preloadStructureModels(preloadPlan: StructureModelPreloadPlan<StructureType>): Promise<void> {
     const preloadPromises: Promise<unknown>[] = [
-      ...preloadPlan.missingStructureModels.map((structureType) => this.ensureStructureModels(structureType)),
+      ...preloadPlan.missingStructureModels.map(({ structureType, modelIndex }) =>
+        this.ensureStructureModel(structureType, modelIndex),
+      ),
       ...preloadPlan.missingCosmeticModels.map(({ cosmeticId, assetPaths }) =>
         this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
       ),
@@ -1519,8 +1510,7 @@ export class StructureManager {
       return [];
     }
 
-    const modelIndex = structure.structureType === StructureType.Realm ? structure.level : structure.stage;
-    const model = models[modelIndex];
+    const model = models.get(this.getBaseStructureModelIndex(structure));
     if (!model) {
       return [];
     }
@@ -1528,7 +1518,7 @@ export class StructureManager {
     const entityIdsByInstance = this.getOrCreateStructureEntityIdMap(structure.structureType);
     const bindings = [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
     if (structure.structureType === StructureType.Realm && structure.hasWonder) {
-      const wonderModel = models[WONDER_MODEL_INDEX];
+      const wonderModel = models.get(WONDER_MODEL_INDEX);
       if (wonderModel) {
         bindings.push(
           this.bindStructureInstance(wonderModel, structure.entityId, this.wonderEntityIdMaps, dirtyModels),
