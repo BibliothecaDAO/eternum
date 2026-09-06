@@ -975,7 +975,7 @@ export abstract class HexagonScene {
       position.y - target.position.y,
       position.z - target.position.z,
     ]);
-    if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000, renderProfile.shadows.minimumRefreshIntervalMs)) {
+    if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000)) {
       this.mainDirectionalLight.shadow.needsUpdate = true;
     }
   }

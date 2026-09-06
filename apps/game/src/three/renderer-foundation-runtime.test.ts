@@ -31,7 +31,6 @@ describe("createRendererFoundationRuntime", () => {
     const runtime = createRendererFoundationRuntime({
       isMobileDevice: false,
       onControlsChange: vi.fn(),
-      onInteraction: vi.fn(),
       warn,
     });
 
@@ -65,7 +64,6 @@ describe("createRendererFoundationRuntime", () => {
     createRendererFoundationRuntime({
       isMobileDevice: true,
       onControlsChange: vi.fn(),
-      onInteraction: vi.fn(),
       warn,
     });
 

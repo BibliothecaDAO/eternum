@@ -1,4 +1,4 @@
-export type RenderMode = "quality" | "battery";
+export type RenderMode = "uncapped" | "capped";
 
 export interface RenderVisualProfile {
   animationCullDistance: number;
@@ -14,29 +14,19 @@ export interface RenderVisualProfile {
   vignette: boolean;
 }
 
-export interface RenderProfile {
-  animation: {
-    distantBucketStrideMultiplier: number;
-    distantIntervalMultiplier: number;
-  };
+interface RenderProfile {
   mode: RenderMode;
-  pacing: {
-    idleAfterMs: number;
-    idleFps: number | null;
-    maxFps: number;
-  };
-  prefetch: {
-    areaBoundaryLookaheadLimit: number;
-    forwardDepthLimit: number;
-    maxAheadLimit: number;
-    maxConcurrentLimit: number;
-    sideRadiusLimit: number;
-  };
-  shadows: {
-    minimumRefreshIntervalMs: number;
-  };
+  maxFps: number | null;
   visuals: RenderVisualProfile;
 }
+
+export const RENDER_MODE_OPTIONS: ReadonlyArray<{ label: string; mode: RenderMode }> = [
+  { label: "Uncapped", mode: "uncapped" },
+  { label: "60 FPS", mode: "capped" },
+];
+
+export const RENDER_MODE_DESCRIPTION =
+  "Choose display refresh or a 60 FPS limit. Visual detail stays the same. Changing mode reloads the page.";
 
 export const RENDER_MODE_STORAGE_KEY = "RENDER_MODE";
 export const RENDERER_PIXEL_RATIO_CAP = 1.25;
@@ -59,7 +49,7 @@ const QUALITY_VISUALS: RenderVisualProfile = {
 
 export function readRenderMode(storage: Pick<Storage, "getItem" | "removeItem" | "setItem"> | null): RenderMode {
   if (!storage) {
-    return "quality";
+    return "uncapped";
   }
 
   // Read once before deletion so old clients complete the migration even when
@@ -70,14 +60,14 @@ export function readRenderMode(storage: Pick<Storage, "getItem" | "removeItem" |
   storage.removeItem(LEGACY_DEVICE_CHECK_STORAGE_KEY);
 
   const storedMode = storage.getItem(RENDER_MODE_STORAGE_KEY);
-  if (storedMode === "quality" || storedMode === "battery") {
+  if (storedMode === "uncapped" || storedMode === "capped") {
     return storedMode;
   }
 
-  // Every retired tier maps to Quality. The migration is deliberately one-way:
-  // Battery is an explicit player choice, never a hardware recommendation.
-  storage.setItem(RENDER_MODE_STORAGE_KEY, "quality");
-  return "quality";
+  // Preserve a frame limit for players who previously chose Battery.
+  const mode = storedMode === "battery" ? "capped" : "uncapped";
+  storage.setItem(RENDER_MODE_STORAGE_KEY, mode);
+  return mode;
 }
 
 export function writeRenderMode(storage: Pick<Storage, "setItem"> | null, mode: RenderMode): void {
@@ -85,35 +75,7 @@ export function writeRenderMode(storage: Pick<Storage, "setItem"> | null, mode: 
 }
 
 export function createRenderProfile(mode: RenderMode): RenderProfile {
-  const isBattery = mode === "battery";
-  const unlimited = Number.POSITIVE_INFINITY;
-
-  return {
-    animation: {
-      distantBucketStrideMultiplier: isBattery ? 2 : 1,
-      distantIntervalMultiplier: isBattery ? 2 : 1,
-    },
-    mode,
-    pacing: {
-      idleAfterMs: 2_000,
-      idleFps: isBattery ? 30 : null,
-      // Both modes cap at 60: above that, high-refresh displays spend the
-      // whole frame budget re-rendering and starve streaming/compile work,
-      // which reads as unsteady fps rather than extra smoothness.
-      maxFps: 60,
-    },
-    prefetch: {
-      areaBoundaryLookaheadLimit: isBattery ? 1 : unlimited,
-      forwardDepthLimit: isBattery ? 1 : unlimited,
-      maxAheadLimit: isBattery ? 2 : unlimited,
-      maxConcurrentLimit: isBattery ? 1 : unlimited,
-      sideRadiusLimit: isBattery ? 0 : unlimited,
-    },
-    shadows: {
-      minimumRefreshIntervalMs: isBattery ? 250 : 100,
-    },
-    visuals: QUALITY_VISUALS,
-  };
+  return { mode, maxFps: mode === "uncapped" ? null : 60, visuals: QUALITY_VISUALS };
 }
 
 const browserStorage = typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;

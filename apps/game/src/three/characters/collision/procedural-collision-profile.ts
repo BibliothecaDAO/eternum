@@ -75,10 +75,7 @@ export function createProceduralCollisionProfile(kind: ProceduralUnitKind, world
   };
 }
 
-export function createProceduralCollisionBudget(mode: "battery" | "benchmark" | "quality"): ProceduralCollisionBudget {
-  if (mode === "battery") {
-    return { maxActivePresentationBodies: 64, maxActiveRagdolls: 4, maxNeighborsPerBody: 8, maxPairResolutions: 512 };
-  }
+export function createProceduralCollisionBudget(mode: "benchmark" | "quality"): ProceduralCollisionBudget {
   if (mode === "benchmark") {
     return {
       maxActivePresentationBodies: 100,
