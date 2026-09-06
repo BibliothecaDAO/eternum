@@ -35,6 +35,18 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Lighter World Rendering",
+    type: "improvement",
+    description: "Removed redundant screen passes while preserving world detail and selection overlays.",
+  },
+  {
+    date: "2026-09-06",
+    title: "Lighter Terrain Placement",
+    type: "improvement",
+    description: "Reduced terrain sampling work when positioning armies and buildings on world tiles.",
+  },
+  {
+    date: "2026-09-06",
     title: "Choose Your Frame Limit",
     type: "improvement",
     description:

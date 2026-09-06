@@ -352,10 +352,9 @@ async function waitForWebGpuBackendStartup(input: {
 
 function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
   renderer.info.reset();
-  renderer.clear();
 
   try {
-    renderer.render(pipeline.mainScene, pipeline.mainCamera);
+    renderClearedMainScene(renderer, pipeline);
     return;
   } catch (error) {
     if (!isRecoverableWebGpuFrameError(error)) {
@@ -365,13 +364,24 @@ function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: Re
     recordRendererDiagnosticUncapturedError((error as TypeError).message);
     logRecoverableWebGpuFrameError(error as TypeError);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.clear();
 
     try {
-      renderer.render(pipeline.mainScene, pipeline.mainCamera);
+      renderClearedMainScene(renderer, pipeline);
     } catch (retryError) {
       recordRendererDiagnosticUncapturedError(retryError instanceof Error ? retryError.message : String(retryError));
     }
+  }
+}
+
+function renderClearedMainScene(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
+  const previousAutoClear = renderer.autoClear;
+  // A manual clear also presents Three.js's output target. Clear inside the main
+  // render pass instead, then restore the overlay policy even when rendering fails.
+  renderer.autoClear = true;
+  try {
+    renderer.render(pipeline.mainScene, pipeline.mainCamera);
+  } finally {
+    renderer.autoClear = previousAutoClear;
   }
 }
 

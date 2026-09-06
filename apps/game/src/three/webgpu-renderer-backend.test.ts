@@ -635,6 +635,8 @@ describe("createWebGPURendererBackend", () => {
 
   it("owns quality, resize, frame rendering, and disposal once initialized", async () => {
     const renderer = createRendererSurface();
+    const clearPolicies: boolean[] = [];
+    renderer.render.mockImplementation(() => clearPolicies.push(renderer.autoClear));
     const backend = createWebGPURendererBackend(
       {
         isMobileDevice: false,
@@ -679,7 +681,9 @@ describe("createWebGPURendererBackend", () => {
     expect(renderer.setSize).toHaveBeenNthCalledWith(2, 640, 360);
     expect(renderer.setSize).toHaveBeenNthCalledWith(3, 800, 450);
     expect(renderer.info.reset).toHaveBeenCalledTimes(1);
-    expect(renderer.clear).toHaveBeenCalledTimes(1);
+    expect(renderer.clear).not.toHaveBeenCalled();
+    expect(clearPolicies).toEqual([true, false]);
+    expect(renderer.autoClear).toBe(false);
     expect(renderer.clearDepth).toHaveBeenCalledTimes(1);
     expect(renderer.render).toHaveBeenCalledTimes(2);
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
@@ -688,12 +692,14 @@ describe("createWebGPURendererBackend", () => {
 
   it("recovers from a transient webgpu depth texture frame failure by resizing and retrying once", async () => {
     const renderer = createRendererSurface();
+    const clearPolicies: boolean[] = [];
     renderer.render = vi
       .fn()
       .mockImplementationOnce(() => {
+        clearPolicies.push(renderer.autoClear);
         throw new TypeError("Cannot read properties of null (reading 'depthTexture')");
       })
-      .mockImplementation(() => {});
+      .mockImplementation(() => clearPolicies.push(renderer.autoClear));
     const backend = createWebGPURendererBackend(
       {
         isMobileDevice: false,
@@ -722,7 +728,37 @@ describe("createWebGPURendererBackend", () => {
 
     expect(renderer.setSize).toHaveBeenCalledWith(window.innerWidth, window.innerHeight);
     expect(renderer.render).toHaveBeenCalledTimes(2);
+    expect(clearPolicies).toEqual([true, true]);
+    expect(renderer.autoClear).toBe(false);
+    expect(renderer.clear).not.toHaveBeenCalled();
   });
+
+  it.each(["webgpu", "webgl2-fallback"] as const)(
+    "restores the %s clear policy when a frame cannot be recovered",
+    async (activeMode) => {
+      const renderer = createRendererSurface(activeMode);
+      const failure = new Error("Frame failed");
+      renderer.render.mockImplementation(() => {
+        expect(renderer.autoClear).toBe(true);
+        throw failure;
+      });
+      const backend = createWebGPURendererBackend(
+        { isMobileDevice: false, pixelRatio: 1, requestedMode: "webgpu-auto" },
+        {
+          createRenderer: vi.fn(async () => ({
+            activeMode,
+            renderer: Object.assign(renderer, { init: vi.fn(async () => {}) }),
+          })),
+          now: vi.fn(() => 0),
+        },
+      );
+      await backend.initialize();
+
+      expect(() => backend.renderFrame?.({ mainCamera: {} as never, mainScene: {} as never })).toThrow(failure);
+      expect(renderer.autoClear).toBe(false);
+      expect(renderer.clear).not.toHaveBeenCalled();
+    },
+  );
 
   it("resolves neutral tone mapping to NeutralToneMapping, distinct from aces-filmic", async () => {
     const renderer = createRendererSurface();
