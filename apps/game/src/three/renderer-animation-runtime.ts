@@ -1,11 +1,10 @@
-import type { RenderProfile } from "./render-profile";
-
 interface RunRendererAnimationTickInput {
   getCurrentTime: () => number;
   getCycleProgress: () => number;
   isDestroyed: boolean;
   isLabelRuntimeReady: boolean;
   lastTime: number;
+  lastFrameTime: number;
   logDestroyed?: (message: string) => void;
   onFrameError?: (error: unknown) => void;
   onFrameSuccess?: () => void;
@@ -20,6 +19,7 @@ interface RendererAnimationFrameState {
   currentTime: number;
   deltaTime: number;
   lastTime: number;
+  lastFrameTime: number;
   shouldSkipFrame: boolean;
 }
 
@@ -34,24 +34,27 @@ export interface RendererFrameFailureCircuit {
 export const RENDERER_FRAME_FAILURE_REPORT_INTERVAL = 60;
 const RENDERER_FRAME_FAILURE_MAX_REPORT_INTERVAL = 3_600;
 
-export function runRendererAnimationTick(input: RunRendererAnimationTickInput): number {
+export function runRendererAnimationTick(input: RunRendererAnimationTickInput): {
+  lastTime: number;
+  lastFrameTime: number;
+} {
+  const timing = { lastTime: input.lastTime, lastFrameTime: input.lastFrameTime };
   if (shouldStopRendererAnimation(input)) {
     input.logDestroyed?.("GameRenderer destroyed, stopping animation loop");
-    return input.lastTime;
+    return timing;
   }
 
   if (shouldWaitForRendererLabels(input)) {
     input.requestNextFrame();
-    return input.lastTime;
+    return timing;
   }
-
-  let nextLastTime = input.lastTime;
 
   try {
     const frameState = resolveRendererAnimationFrameState(input);
-    nextLastTime = frameState.lastTime;
+    timing.lastTime = frameState.lastTime;
+    timing.lastFrameTime = frameState.lastFrameTime;
     if (frameState.shouldSkipFrame) {
-      return nextLastTime;
+      return timing;
     }
 
     input.updateStatsPanel?.();
@@ -77,7 +80,7 @@ export function runRendererAnimationTick(input: RunRendererAnimationTickInput): 
     input.requestNextFrame();
   }
 
-  return nextLastTime;
+  return timing;
 }
 
 export function createRendererFrameFailureCircuit(): RendererFrameFailureCircuit {
@@ -129,18 +132,6 @@ function createRendererFrameFailureFingerprint(error: unknown): string {
   return `${typeof error}:${String(error)}`;
 }
 
-export function resolveRendererPacedFps(input: {
-  currentTime: number;
-  lastInteractionTime: number;
-  profile: Pick<RenderProfile, "pacing">;
-}): number | null {
-  const { idleFps, idleAfterMs, maxFps } = input.profile.pacing;
-  if (!idleFps || input.currentTime - input.lastInteractionTime < idleAfterMs) {
-    return maxFps;
-  }
-  return Math.min(idleFps, maxFps);
-}
-
 function shouldStopRendererAnimation(input: Pick<RunRendererAnimationTickInput, "isDestroyed">): boolean {
   return input.isDestroyed;
 }
@@ -150,42 +141,34 @@ function shouldWaitForRendererLabels(input: Pick<RunRendererAnimationTickInput, 
 }
 
 function resolveRendererAnimationFrameState(
-  input: Pick<RunRendererAnimationTickInput, "getCurrentTime" | "lastTime" | "targetFPS">,
+  input: Pick<RunRendererAnimationTickInput, "getCurrentTime" | "lastTime" | "lastFrameTime" | "targetFPS">,
 ): RendererAnimationFrameState {
   const currentTime = input.getCurrentTime();
   const baselineTime = input.lastTime === 0 ? currentTime : input.lastTime;
+  const previousFrameTime = input.lastFrameTime === 0 ? currentTime : input.lastFrameTime;
 
-  if (shouldThrottleRendererAnimationFrame({ currentTime, lastTime: baselineTime, targetFPS: input.targetFPS })) {
+  const frameTime = input.targetFPS ? 1000 / input.targetFPS : 0;
+  // Absorb floating-point rounding at exact refresh boundaries (for example 60 FPS on 60 Hz).
+  const completedIntervals = frameTime > 0 ? Math.floor((currentTime - baselineTime + 0.000001) / frameTime) : 0;
+  if (frameTime > 0 && completedIntervals === 0) {
     return {
       currentTime,
       deltaTime: 0,
       lastTime: baselineTime,
+      lastFrameTime: previousFrameTime,
       shouldSkipFrame: true,
     };
   }
 
-  const frameTime = input.targetFPS ? 1000 / input.targetFPS : 0;
-
   return {
     currentTime,
-    deltaTime: (currentTime - baselineTime) / 1000,
+    // Animation time follows actual frame intervals, never the pacing remainder.
+    deltaTime: (currentTime - previousFrameTime) / 1000,
+    lastFrameTime: currentTime,
     // Carry the sub-frame remainder: snapping lastTime to currentTime makes
     // the cap beat against the display refresh and quantises 60 down to
     // 30/40/41 fps on 60/120/165 Hz monitors.
-    lastTime: frameTime > 0 ? currentTime - ((currentTime - baselineTime) % frameTime) : currentTime,
+    lastTime: frameTime > 0 ? baselineTime + completedIntervals * frameTime : currentTime,
     shouldSkipFrame: false,
   };
-}
-
-function shouldThrottleRendererAnimationFrame(input: {
-  currentTime: number;
-  lastTime: number;
-  targetFPS: number | null;
-}): boolean {
-  if (!input.targetFPS) {
-    return false;
-  }
-
-  const frameTime = 1000 / input.targetFPS;
-  return input.currentTime - input.lastTime < frameTime;
 }

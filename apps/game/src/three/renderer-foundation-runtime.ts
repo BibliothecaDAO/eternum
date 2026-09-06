@@ -12,7 +12,6 @@ export interface RendererFoundationRuntime {
 interface CreateRendererFoundationRuntimeInput {
   isMobileDevice: boolean;
   onControlsChange: () => void;
-  onInteraction: () => void;
   warn: (message: string, error: unknown) => void;
 }
 
@@ -21,7 +20,6 @@ export function createRendererFoundationRuntime(
 ): RendererFoundationRuntime {
   const interactionRuntime = createRendererInteractionRuntime({
     onControlsChange: input.onControlsChange,
-    onInteraction: input.onInteraction,
   });
   const labelRuntime = createRendererLabelRuntime({
     isMobileDevice: input.isMobileDevice,

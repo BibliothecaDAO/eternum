@@ -163,7 +163,6 @@ describe("GameRenderer runtime harness", () => {
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((callback) => pendingFrames.push(callback));
     vi.spyOn(console, "error").mockImplementation(() => {});
-    subject.getTargetFps = vi.fn(() => null);
     harness.backend.renderFrame.mockImplementation(() => {
       throw frameError;
     });
@@ -231,12 +230,14 @@ describe("GameRenderer runtime harness", () => {
     subject.isRecoveringFromDeviceLoss = true;
     subject.isRendererRecoveryPaused = true;
     subject.lastTime = 100;
+    subject.lastFrameTime = 104;
 
     subject.handleDeviceLossFallbackFailure(new Error("fallback init failed"), "webgpu");
 
     expect(subject.isRecoveringFromDeviceLoss).toBe(false);
     expect(subject.isRendererRecoveryPaused).toBe(false);
     expect(subject.lastTime).toBe(0);
+    expect(subject.lastFrameTime).toBe(0);
     expect(animate).toHaveBeenCalledTimes(1);
     expect(sentry.captureException).toHaveBeenCalledWith(
       expect.any(Error),
@@ -255,7 +256,6 @@ describe("GameRenderer runtime harness", () => {
     const pendingFrames: FrameRequestCallback[] = [];
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => pendingFrames.push(callback));
-    subject.getTargetFps = vi.fn(() => null);
 
     harness.sceneManager.switchScene(SceneName.WorldMap);
     await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledOnce());

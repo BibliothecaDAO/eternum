@@ -38,7 +38,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
-import { renderProfile, type RenderVisualProfile } from "@/three/render-profile";
+import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -1136,7 +1136,6 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkWorkQueue,
       this.compilePipelines,
     );
-    this.armyManager.setProceduralCollisionMode(renderProfile.mode);
     this.combatPresentation = new CombatPresentationCoordinator(this.scene, {
       projectileHitQuery: {
         hasTarget: (entityId) => this.armyManager.hasProceduralProjectileTarget(entityId),

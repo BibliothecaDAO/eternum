@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-06",
+    title: "Choose Your Frame Limit",
+    type: "improvement",
+    description:
+      "Choose Uncapped or a 60 FPS limit in landing and in-game settings, with the same visual detail in both modes.",
+  },
+  {
     date: "2026-09-05",
     title: "Reliable Terrain Updates",
     description:

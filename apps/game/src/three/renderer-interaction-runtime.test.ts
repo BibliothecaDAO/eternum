@@ -75,10 +75,8 @@ describe("createRendererInteractionRuntime", () => {
 
   it("configures shared camera, picking primitives, and control change wiring", () => {
     const onControlsChange = vi.fn();
-    const onInteraction = vi.fn();
     const runtime = createRendererInteractionRuntime({
       onControlsChange,
-      onInteraction,
     });
 
     const surface = document.createElement("canvas");
@@ -98,8 +96,6 @@ describe("createRendererInteractionRuntime", () => {
 
     controls?.fireChange();
     expect(onControlsChange).toHaveBeenCalledTimes(1);
-    surface.dispatchEvent(new PointerEvent("pointerdown"));
-    expect(onInteraction).toHaveBeenCalledTimes(1);
   });
 
   it("removes document listeners and disposes controls once", () => {
@@ -107,7 +103,6 @@ describe("createRendererInteractionRuntime", () => {
     const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
     const runtime = createRendererInteractionRuntime({
       onControlsChange: vi.fn(),
-      onInteraction: vi.fn(),
     });
 
     runtime.attachSurface(document.createElement("canvas"));

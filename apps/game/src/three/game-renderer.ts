@@ -11,7 +11,6 @@ import { configureGltfTextureSupport, transitionDB } from "./utils/";
 import { trackGuiFolder, type TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import {
   createRendererFrameFailureCircuit,
-  resolveRendererPacedFps,
   runRendererAnimationTick,
   type RendererFrameFailureCircuit,
 } from "./renderer-animation-runtime";
@@ -91,9 +90,9 @@ export default class GameRenderer {
   private hudScene!: HUDScene;
 
   private lastTime: number = 0;
+  private lastFrameTime: number = 0;
   private animationFrameHandle: number | null = null;
   private isAnimationLoopRunning = false;
-  private lastInteractionTime = performance.now();
   private dojo: SetupResult;
   private sceneManager!: SceneManager;
   private cleanupIntervals: NodeJS.Timeout[] = [];
@@ -147,10 +146,8 @@ export default class GameRenderer {
     const foundationRuntime = createRendererFoundationRuntime({
       isMobileDevice: this.isMobileDevice,
       onControlsChange: () => {
-        this.markRendererInteraction();
         this.supportRuntimeRegistry.getControlBridge().handleInteractionChange();
       },
-      onInteraction: () => this.markRendererInteraction(),
       warn: (message, error) => console.warn(message, error),
     });
 
@@ -320,6 +317,7 @@ export default class GameRenderer {
     this.isRecoveringFromDeviceLoss = false;
     this.isRendererRecoveryPaused = false;
     this.lastTime = 0;
+    this.lastFrameTime = 0;
 
     if (this.hasPreparedRendererScenes()) {
       this.animate();
@@ -330,6 +328,7 @@ export default class GameRenderer {
     this.isRecoveringFromDeviceLoss = false;
     this.isRendererRecoveryPaused = false;
     this.lastTime = 0;
+    this.lastFrameTime = 0;
     reportRendererRecoveryFailure(error, lostMode);
 
     if (!this.isDestroyed && this.hasPreparedRendererScenes()) {
@@ -463,18 +462,6 @@ export default class GameRenderer {
     return Math.min(pixelRatio, resolveRendererPixelRatioCap());
   }
 
-  private markRendererInteraction(): void {
-    this.lastInteractionTime = performance.now();
-  }
-
-  private getTargetFps(): number | null {
-    return resolveRendererPacedFps({
-      currentTime: performance.now(),
-      lastInteractionTime: this.lastInteractionTime,
-      profile: renderProfile,
-    });
-  }
-
   handleKeyEvent(event: KeyboardEvent): void {
     const { key } = event;
 
@@ -519,12 +506,13 @@ export default class GameRenderer {
       startGpuBackendFrame();
     }
 
-    this.lastTime = runRendererAnimationTick({
+    const timing = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
       getCycleProgress: () => useUIStore.getState().cycleProgress || 0,
       isDestroyed: shouldStopAnimationLoop,
       isLabelRuntimeReady: this.labelRuntime?.isReady() ?? false,
       lastTime: this.lastTime,
+      lastFrameTime: this.lastFrameTime,
       logDestroyed: (message) => {
         if (this.isDestroyed) {
           console.warn(message);
@@ -552,12 +540,14 @@ export default class GameRenderer {
         return rendered;
       },
       requestNextFrame: () => this.scheduleNextAnimationFrame(),
-      targetFPS: this.getTargetFps(),
+      targetFPS: renderProfile.maxFps,
       updateControls: () => {
         this.controls?.update();
       },
       updateStatsPanel: () => this.sessionRuntime.updateStatsPanel(),
     });
+    this.lastTime = timing.lastTime;
+    this.lastFrameTime = timing.lastFrameTime;
 
     if (shouldStopAnimationLoop) {
       this.stopAnimationLoop();
