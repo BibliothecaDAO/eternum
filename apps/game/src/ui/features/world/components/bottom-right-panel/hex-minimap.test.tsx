@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -31,7 +31,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it("reuses unchanged tile elements while following the camera and still applies new tile facts immediately", async () => {
+it("keeps camera following alive after effect remounts without rebuilding unchanged tiles", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const frames = new Map<number, FrameRequestCallback>();
   let id = 0;
@@ -52,7 +52,9 @@ it("reuses unchanged tile elements while following the camera and still applies 
   const render = async (col: number) =>
     act(async () =>
       root.render(
-        <HexMinimap tiles={tiles} selectedHex={null} navigationTarget={null} cameraTargetHex={{ col, row: 0 }} />,
+        <StrictMode>
+          <HexMinimap tiles={tiles} selectedHex={null} navigationTarget={null} cameraTargetHex={{ col, row: 0 }} />
+        </StrictMode>,
       ),
     );
   try {
@@ -64,6 +66,15 @@ it("reuses unchanged tile elements while following the camera and still applies 
     await tick();
     expect(host.querySelector("svg")!.getAttribute("viewBox")).not.toBe(originalView);
     expect(resolveBiome).not.toHaveBeenCalled();
+    for (let frame = 0; frame < 40; frame += 1) await tick();
+    const settledView = host.querySelector("svg")!.getAttribute("viewBox");
+    const settledCircle = host.querySelector("circle")!.outerHTML;
+    for (let frame = 0; frame < 10; frame += 1) {
+      await render(1);
+      await tick();
+      expect(host.querySelector("svg")!.getAttribute("viewBox")).toBe(settledView);
+      expect(host.querySelector("circle")!.outerHTML).toBe(settledCircle);
+    }
     tiles = [{ col: 0, row: 0, biome: 2 }];
     await render(1);
     expect(host.querySelector("polygon")!.getAttribute("fill")).toBe("blue");

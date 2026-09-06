@@ -42,7 +42,7 @@ export class FrustumManager {
 
     this.camera.updateMatrixWorld(true);
     this.matrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
-    this.frustum.setFromProjectionMatrix(this.matrix);
+    this.frustum.setFromProjectionMatrix(this.matrix, this.camera.coordinateSystem);
     this.isDirty = false;
     this.notifyListeners();
   }

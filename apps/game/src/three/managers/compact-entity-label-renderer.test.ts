@@ -86,6 +86,24 @@ describe("CompactEntityLabelRenderer", () => {
     ).toBe(4);
   });
 
+  it("does not upload the atlas when removing a label, but uploads a reused slot", async () => {
+    const renderer = createRenderer(new THREE.Scene());
+    const position = new THREE.Vector3();
+    renderer.setLabel({ entityId: 1, position, text: "Keep", variant: "mine" });
+    renderer.setLabel({ entityId: 2, position, text: "Remove", variant: "mine" });
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    const texture = (batchesOf(renderer)[0].material as THREE.MeshBasicMaterial).map!;
+    const version = texture.version;
+    expect(texture.generateMipmaps).toBe(false);
+    renderer.removeLabel(2);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect(texture.version).toBe(version);
+    renderer.setLabel({ entityId: 3, position, text: "Replace", variant: "mine" });
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect((batchesOf(renderer)[0].material as THREE.MeshBasicMaterial).map).toBe(texture);
+    expect(texture.version).toBeGreaterThan(version);
+  });
+
   it("uses a compact default footprint and faces the active camera", () => {
     const scene = new THREE.Scene();
     const renderer = createRenderer(scene);

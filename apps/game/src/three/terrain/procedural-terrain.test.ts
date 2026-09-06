@@ -39,6 +39,29 @@ describe("ProceduralTerrain", () => {
     expect(replacementDispose).toHaveBeenCalledOnce();
   });
 
+  it("clears occupied prop tiles atomically and restores them without rebuilding terrain", async () => {
+    const terrain = new ProceduralTerrain();
+    await terrain.loadProps();
+    const page = terrain.preparePage(blockRequest("occupied", 0));
+    terrain.present([page]);
+    expect(page.propInstances.length).toBeGreaterThan(0);
+    const mesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
+    const geometry = mesh.geometry;
+    const owner = page.propInstances[0];
+    const occupied = (col: number, row: number) => col === owner.ownerCol && row === owner.ownerRow;
+    terrain.refreshPropOccupancy(occupied);
+    expect(terrain.getPropStats().instances).toBeLessThanOrEqual(
+      page.propInstances.filter((p) => !occupied(p.ownerCol, p.ownerRow)).length,
+    );
+    expect(mesh.geometry).toBe(geometry);
+    const metrics = terrain.getUploadMetrics();
+    terrain.refreshPropOccupancy(occupied);
+    expect(terrain.getUploadMetrics()).toEqual(metrics);
+    terrain.refreshPropOccupancy(() => false);
+    expect(terrain.getPropStats().instances).toBe(page.propInstances.length);
+    terrain.dispose();
+  });
+
   it("samples the presented surface and rejects use after disposal", () => {
     const terrain = new ProceduralTerrain();
     terrain.present([terrain.preparePage(request(BiomeType.Bare, true))]);

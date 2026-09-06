@@ -1,6 +1,7 @@
 export class ShadowRefreshPolicy {
   private cameraCellKey: string | null = null;
   private dirty = true;
+  private lightMoved = false;
   private elapsedSinceRefreshMs = Number.POSITIVE_INFINITY;
   private sunSignature: readonly number[] | null = null;
 
@@ -24,16 +25,18 @@ export class ShadowRefreshPolicy {
     }
 
     this.sunSignature = [...signature];
+    this.lightMoved = true;
     this.dirty = true;
   }
 
   consumeRefresh(deltaMs: number, minimumIntervalMs: number): boolean {
     this.elapsedSinceRefreshMs += deltaMs;
-    if (!this.dirty || this.elapsedSinceRefreshMs < minimumIntervalMs) {
+    if (!this.dirty || (!this.lightMoved && this.elapsedSinceRefreshMs < minimumIntervalMs)) {
       return false;
     }
 
     this.dirty = false;
+    this.lightMoved = false;
     this.elapsedSinceRefreshMs = 0;
     return true;
   }
@@ -44,5 +47,5 @@ function signaturesMatch(previous: readonly number[], next: readonly number[]): 
     return false;
   }
 
-  return previous.every((value, index) => Math.abs(value - next[index]) < 0.05);
+  return previous.every((value, index) => Math.abs(value - next[index]) < 0.0001);
 }

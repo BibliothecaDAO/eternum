@@ -127,12 +127,10 @@ class CompactEntityLabelAtlas {
     if (tracked.references > 0) return;
 
     tracked.geometry.dispose();
-    this.clearSlot(tracked.page, tracked.slot);
     this.releaseSlot(tracked.page, tracked.slot);
     tracked.page.recordCount -= 1;
     this.records.delete(tracked.key);
     if (tracked.page.recordCount === 0) this.disposePage(tracked.page);
-    else this.scheduleUpload(tracked.page);
   }
 
   private measureLabelWidth(text: string): number {
@@ -184,6 +182,7 @@ class CompactEntityLabelAtlas {
     context?.scale?.(this.pixelRatio, this.pixelRatio);
     const texture = new THREE.CanvasTexture(canvas);
     texture.name = `compact-label-atlas-${this.pages.length}`;
+    texture.generateMipmaps = false;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -234,10 +233,6 @@ class CompactEntityLabelAtlas {
       slot.x + width / 2,
       slot.y + LABEL_HEIGHT / 2 + 1,
     );
-  }
-
-  private clearSlot(page: AtlasPage, slot: AtlasSlot): void {
-    page.context?.clearRect(slot.x, slot.y, slot.cellCount * CELL_WIDTH, CELL_HEIGHT);
   }
 
   private scheduleUpload(page: AtlasPage): void {

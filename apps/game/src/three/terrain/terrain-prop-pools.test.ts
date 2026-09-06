@@ -79,38 +79,35 @@ describe("TerrainPropPools", () => {
     expect(poolMesh(pools, "broadleaf").castShadow).toBe(true);
   });
 
-  it("writes a page into its own slot sub-range and uploads only that range", () => {
+  it("packs pages into the live prefix and uploads only changed instances", () => {
     pools.writePage("east", instances("conifer", 3));
     pools.writePage("west", instances("conifer", 2));
     const mesh = poolMesh(pools, "conifer");
-    const capacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY.conifer;
+    const start = 3;
     clearUploads(pools);
 
     pools.writePage("west", instances("conifer", 5));
 
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ count: 5 * MATRIX_FLOATS, start: capacity * MATRIX_FLOATS }]);
-    expect(mesh.instanceColor?.updateRanges).toEqual([{ count: 5 * 3, start: capacity * 3 }]);
-    expect(ecologyRanges(mesh)).toEqual([{ count: 5 * 3, start: capacity * 3 }]);
-    expect(mesh.count).toBe(capacity + 5);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ count: 5 * MATRIX_FLOATS, start: start * MATRIX_FLOATS }]);
+    expect(mesh.instanceColor?.updateRanges).toEqual([{ count: 5 * 3, start: start * 3 }]);
+    expect(ecologyRanges(mesh)).toEqual([{ count: 5 * 3, start: start * 3 }]);
+    expect(mesh.count).toBe(8);
     expect(pools.getStats().instances).toBe(8);
-    expect(pools.getMetrics()).toMatchObject({ paddingInstances: capacity - 3, pageWrites: 3 });
+    expect(pools.getMetrics()).toMatchObject({ paddingInstances: 0, pageWrites: 3 });
     pools.releasePage("east");
     pools.releasePage("west");
   });
 
-  it("zero-scales the tail a shrinking page leaves behind and uploads it with the page", () => {
+  it("excludes a shrinking page tail from the draw without uploading discarded instances", () => {
     pools.writePage("only", instances("boulder", 4));
     const mesh = poolMesh(pools, "boulder");
     clearUploads(pools);
 
     pools.writePage("only", instances("boulder", 1));
 
-    expect(mesh.instanceMatrix.updateRanges).toEqual([{ count: 4 * MATRIX_FLOATS, start: 0 }]);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ count: MATRIX_FLOATS, start: 0 }]);
     expect(mesh.count).toBe(1);
-    const stale = new Matrix4();
-    mesh.getMatrixAt(3, stale);
-    expect(stale.elements.slice(0, 15).every((element) => element === 0)).toBe(true);
-    expect(pools.getMetrics().instancesUploaded).toBeGreaterThanOrEqual(8);
+    expect(pools.getMetrics().paddingInstances).toBe(0);
     pools.releasePage("only");
   });
 
@@ -118,8 +115,7 @@ describe("TerrainPropPools", () => {
     pools.writePage("first", instances("shrub", 2));
     pools.writePage("second", instances("shrub", 2));
     const mesh = poolMesh(pools, "shrub");
-    const capacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY.shrub;
-    expect(mesh.count).toBe(capacity + 2);
+    expect(mesh.count).toBe(4);
 
     pools.releasePage("second");
     expect(mesh.count).toBe(2);
@@ -132,6 +128,34 @@ describe("TerrainPropPools", () => {
     expect(mesh.count).toBe(1);
     expect(mesh.instanceMatrix.updateRanges).toEqual([{ count: MATRIX_FLOATS, start: 0 }]);
     pools.releasePage("third");
+  });
+
+  it("preserves following transforms and ecology when an earlier page grows, shrinks, leaves and returns", () => {
+    const follower = instances("shrub", 2).map((instance, index) => ({
+      ...instance,
+      worldX: 80 + index,
+      appearance: { moss: 0.7, snow: 0.9, tint: [0.2, 0.4, 0.8] as [number, number, number], windAmplitude: 0.3 },
+    }));
+    pools.writePage("early", instances("shrub", 1));
+    pools.writePage("later", follower);
+    const mesh = poolMesh(pools, "shrub");
+    const matrix = new Matrix4();
+    const color = mesh.instanceColor!.array.slice(3, 6);
+    const ecology = ecologyAttribute(mesh).array.slice(3, 6);
+    for (const size of [5, 2, 0, 3]) {
+      if (size === 0) pools.releasePage("early");
+      else pools.writePage("early", instances("shrub", size));
+      expect(mesh.count).toBe(size + 2);
+      for (let index = 0; index < 2; index++) {
+        mesh.getMatrixAt(size + index, matrix);
+        expect(matrix.elements[12]).toBe(80 + index);
+        expect(mesh.instanceColor!.array.slice((size + index) * 3, (size + index + 1) * 3)).toEqual(color);
+        expect(ecologyAttribute(mesh).array.slice((size + index) * 3, (size + index + 1) * 3)).toEqual(ecology);
+      }
+      expect(pools.getMetrics().paddingInstances).toBe(0);
+    }
+    pools.releasePage("early");
+    pools.releasePage("later");
   });
 
   it("fails loudly when a page outgrows its slot or the pool runs out of page slots", () => {

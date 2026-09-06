@@ -1,3 +1,4 @@
+import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -16,9 +17,13 @@ import {
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
+import { DEFAULT_TERRAIN_LAB_PREVIEW, type TerrainLabPreview } from "@/three/debug/terrain-lab-preview";
+import { MODEL_TYPE_TO_FILE } from "@/three/constants/army-constants";
+
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
   activeMode: "webgpu",
   biomeCount: 0,
+  buildingInstances: 0,
   cellCount: 0,
   commitMs: 0,
   drawCalls: 0,
@@ -77,16 +82,22 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   waterVertices: 0,
 };
 
-export const ProceduralTerrainDebugView = () => {
+export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: boolean }) => {
   const [searchParams] = useSearchParams();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
   const capture = searchParams.get("capture") === "1";
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const texturedGround = searchParams.get("groundMode") !== "flat";
-  const sceneId = resolveSceneId(searchParams.get("scene"));
+  const sceneId = localMode ? "temperate-grove" : resolveSceneId(searchParams.get("scene"));
+  const localRadius = localMode
+    ? Math.max(1, Math.min(5, Math.floor(Number(searchParams.get("radius")) || 2)))
+    : undefined;
+  const [buildingPath, setBuildingPath] = useState(TERRAIN_LAB_BUILDINGS[0].path);
+  const [buildingYaw, setBuildingYaw] = useState(0);
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
+  const [preview, setPreview] = useState<TerrainLabPreview>({ ...DEFAULT_TERRAIN_LAB_PREVIEW, grid: localMode });
   const [stats, setStats] = useState(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -104,11 +115,15 @@ export const ProceduralTerrainDebugView = () => {
       void mountProceduralTerrainDebugRenderer({
         canvas,
         captureMode: capture,
+        localRadius,
         forceWebGL,
         qualityTier,
         revealProgress,
         sceneId,
         texturedGround,
+        onError: (reason) => {
+          if (active) setError(String(reason));
+        },
         onReady: (nextStats) => {
           if (!active) return;
           setStats(nextStats);
@@ -136,7 +151,13 @@ export const ProceduralTerrainDebugView = () => {
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
-  }, [capture, forceWebGL, qualityTier, revealProgress, sceneId, texturedGround]);
+  }, [capture, forceWebGL, qualityTier, revealProgress, sceneId, texturedGround, localRadius]);
+
+  useEffect(() => {
+    if (!ready) return;
+    setError(null);
+    void rendererRef.current?.setPreview(preview).catch((reason) => setError(String(reason)));
+  }, [preview, ready]);
 
   const setRendererMode = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -181,17 +202,209 @@ export const ProceduralTerrainDebugView = () => {
         <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">Biome Lab</p>
-              <h1 className="mt-1 text-2xl font-semibold text-white">Living Biomes</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">
+                {localMode ? "Local Mode Lab" : "Biome Lab"}
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold text-white">
+                {localMode ? "Settlement Workshop" : "Living Biomes"}
+              </h1>
               <p className="mt-2 text-sm leading-5 text-stone-400">
-                A game-scale seeded field exercises every biome across hundreds of connected hexes. Drag to orbit,
-                scroll to zoom, and right-drag to pan. Offworld Trading Company is our visual reference.
+                {localMode
+                  ? "Preview a local settlement with the game’s buildable tiles and building models."
+                  : "A seeded field exercises every biome across connected hexes."}{" "}
+                Drag to pan, scroll to zoom, and right-drag to orbit. Offworld Trading Company is our visual reference.
               </p>
             </div>
             <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
               Exit
             </Link>
           </div>
+
+          <nav className="flex gap-3 text-sm" aria-label="Graphics labs">
+            <Link to="/biome-lab" className={!localMode ? "text-emerald-200" : "text-stone-400"}>
+              World biomes
+            </Link>
+            <Link to="/local-lab" className={localMode ? "text-emerald-200" : "text-stone-400"}>
+              Local mode
+            </Link>
+          </nav>
+          {localMode && (
+            <label className="flex flex-col gap-1 text-sm">
+              Buildable radius
+              <select
+                aria-label="Buildable radius"
+                className="bg-stone-900 p-2"
+                value={localRadius}
+                onChange={(event) => {
+                  const next = new URLSearchParams(searchParams);
+                  next.set("radius", event.target.value);
+                  window.location.search = next.toString();
+                }}
+              >
+                {[1, 2, 3, 4, 5].map((radius) => (
+                  <option key={radius} value={radius}>
+                    {radius} rings
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <fieldset className="flex flex-col gap-3 border border-white/15 p-3">
+            <legend className="px-1 text-sm text-emerald-200">Interaction preview</legend>
+            <p className="text-xs text-stone-400">
+              Click a tile to select it and place the army. Drag to move the camera.
+            </p>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                aria-label="Tile grid"
+                type="checkbox"
+                checked={preview.grid}
+                onChange={(event) => setPreview({ ...preview, grid: event.target.checked })}
+              />
+              Tile grid
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Biome
+              <select
+                aria-label="Preview biome"
+                value={preview.biome}
+                className="bg-stone-900 p-2"
+                onChange={(event) =>
+                  setPreview({ ...preview, biome: event.target.value as TerrainLabPreview["biome"] })
+                }
+              >
+                <option value="fixture">Scene biomes</option>
+                {TERRAIN_BIOME_ORDER.map((biome) => (
+                  <option key={biome} value={biome}>
+                    {TERRAIN_BIOME_DESCRIPTORS[biome].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Fog
+              <select
+                aria-label="Preview fog"
+                value={preview.fog}
+                className="bg-stone-900 p-2"
+                onChange={(event) => setPreview({ ...preview, fog: event.target.value as TerrainLabPreview["fog"] })}
+              >
+                <option value="fixture">Scene exploration</option>
+                <option value="clear">Clear all tiles</option>
+                <option value="frontier">Fog frontier at selected tile</option>
+                <option value="covered">Cover all tiles</option>
+              </select>
+            </label>
+            <label className="flex gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={preview.selection}
+                onChange={(event) => setPreview({ ...preview, selection: event.target.checked })}
+              />
+              Tile selection
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Army model
+              <select
+                aria-label="Army model"
+                value={preview.army}
+                className="bg-stone-900 p-2"
+                onChange={(event) => setPreview({ ...preview, army: event.target.value as TerrainLabPreview["army"] })}
+              >
+                <option value="none">None</option>
+                {Object.keys(MODEL_TYPE_TO_FILE).map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={preview.spin}
+                onChange={(event) => setPreview({ ...preview, spin: event.target.checked })}
+              />
+              Spin army
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Army rotation
+              <input
+                aria-label="Army rotation"
+                type="range"
+                min="0"
+                max={Math.PI * 2}
+                step="0.01"
+                value={preview.yaw}
+                onChange={(event) => setPreview({ ...preview, yaw: Number(event.target.value), spin: false })}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => rendererRef.current?.focusSelection()}
+              className="border border-emerald-300/35 bg-emerald-300/10 p-2 text-sm text-emerald-100"
+            >
+              Focus selected tile
+            </button>
+          </fieldset>
+          <fieldset className="flex flex-col gap-3 border border-white/15 p-3">
+            <legend className="px-1 text-sm text-emerald-200">Buildings and chests · {stats.buildingInstances}</legend>
+            <label className="flex flex-col gap-1 text-sm">
+              Model
+              <select
+                aria-label="Building model"
+                className="bg-stone-900 p-2"
+                value={buildingPath}
+                onChange={(event) => setBuildingPath(event.target.value)}
+              >
+                {TERRAIN_LAB_BUILDINGS.map(({ path, label }) => (
+                  <option key={path} value={path}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Building rotation
+              <input
+                aria-label="Building rotation"
+                type="range"
+                min={0}
+                max={Math.PI * 2}
+                step={Math.PI / 6}
+                value={buildingYaw}
+                onChange={(event) => setBuildingYaw(Number(event.target.value))}
+              />
+            </label>
+            <p className="text-xs text-stone-400">
+              Select a tile, then place a model. Placed buildings stay when you select another tile.
+            </p>
+            <button
+              className="border border-emerald-300/25 p-2 text-sm"
+              disabled={!ready}
+              onClick={() =>
+                void rendererRef.current
+                  ?.placeBuilding(buildingPath, buildingYaw)
+                  .catch((reason) => setError(String(reason)))
+              }
+            >
+              Place on selected tile
+            </button>
+            <button
+              className="border border-white/15 p-2 text-sm"
+              disabled={!ready}
+              onClick={() => void rendererRef.current?.removeBuilding().catch((reason) => setError(String(reason)))}
+            >
+              Remove from selected tile
+            </button>
+            <button
+              className="border border-white/15 p-2 text-sm"
+              disabled={!ready}
+              onClick={() => void rendererRef.current?.removeBuilding(true).catch((reason) => setError(String(reason)))}
+            >
+              Clear buildings
+            </button>
+          </fieldset>
 
           <div className="grid grid-cols-4 gap-1" aria-label="Biome atlas legend">
             {TERRAIN_BIOME_ORDER.map((biome) => {
@@ -225,35 +438,39 @@ export const ProceduralTerrainDebugView = () => {
             </select>
           </label>
 
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
-            Exploration
-            <select
-              value={String(revealProgress)}
-              onChange={(event) => setRevealProgress(event.target.value)}
-              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
-            >
-              <option value="0">Covered</option>
-              <option value="0.25">25%</option>
-              <option value="0.5">50%</option>
-              <option value="0.75">75%</option>
-              <option value="1">Revealed</option>
-            </select>
-          </label>
+          {!localMode && sceneId === "fog-reveal" && (
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+              Exploration
+              <select
+                value={String(revealProgress)}
+                onChange={(event) => setRevealProgress(event.target.value)}
+                className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+              >
+                <option value="0">Covered</option>
+                <option value="0.25">25%</option>
+                <option value="0.5">50%</option>
+                <option value="0.75">75%</option>
+                <option value="1">Revealed</option>
+              </select>
+            </label>
+          )}
 
-          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
-            Scene
-            <select
-              value={sceneId}
-              onChange={(event) => setSceneId(event.target.value)}
-              className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
-            >
-              {TERRAIN_VERIFICATION_SCENE_IDS.map((value) => (
-                <option key={value} value={value}>
-                  {formatSceneLabel(value)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!localMode && (
+            <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+              Scene
+              <select
+                value={sceneId}
+                onChange={(event) => setSceneId(event.target.value)}
+                className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
+              >
+                {TERRAIN_VERIFICATION_SCENE_IDS.map((value) => (
+                  <option key={value} value={value}>
+                    {formatSceneLabel(value)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             Renderer
@@ -281,7 +498,7 @@ export const ProceduralTerrainDebugView = () => {
 
           <dl className="grid grid-cols-3 gap-2 text-sm">
             <DebugMetric label="Backend" value={stats.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
-            <DebugMetric label="Scene" value={formatSceneLabel(stats.sceneId)} />
+            <DebugMetric label="Scene" value={localMode ? "Local settlement" : formatSceneLabel(stats.sceneId)} />
             <DebugMetric label="Quality" value={formatSceneLabel(stats.qualityTier)} />
             <DebugMetric label="Reveal" value={`${Math.round(stats.revealProgress * 100)}%`} />
             <DebugMetric label="Biomes" value={String(stats.biomeCount || "--")} />
@@ -356,7 +573,10 @@ export const ProceduralTerrainDebugView = () => {
           aria-label="Game-scale procedural terrain biome field"
         />
         {error && (
-          <div className="absolute inset-x-4 bottom-4 border border-red-300/40 bg-red-950/90 p-3 text-sm text-red-100">
+          <div
+            role="alert"
+            className="absolute inset-x-4 top-4 border border-red-300/40 bg-red-950/90 p-3 text-sm text-red-100"
+          >
             {error}
           </div>
         )}

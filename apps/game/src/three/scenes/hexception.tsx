@@ -1,3 +1,4 @@
+import { createHexceptionTerrainRequest, getLocalHexDisk } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -33,7 +34,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
-import type { TerrainCellInput, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   buildingKey,
   reconcileBuildingUpdate,
@@ -136,47 +137,12 @@ interface BuildingModelSelection {
   type: BUILDINGS_CATEGORIES_TYPES;
 }
 
-const generateHexPositions = (center: HexPosition, radius: number) => {
-  const color = new Color("gray");
-  const positions: any[] = [];
-  const positionSet = new Set(); // To track existing positions
-
-  // Helper function to add position if not already added
-  const addPosition = (col: number, row: number, isBorder: boolean) => {
-    const key = `${col},${row}`;
-    if (!positionSet.has(key)) {
-      const position = {
-        ...getWorldPositionForHex({ col, row }, false),
-        color,
-        col,
-        row,
-        isBorder,
-      };
-      positions.push(position);
-      positionSet.add(key);
-    }
-  };
-
-  // Add center position
-  addPosition(center.col, center.row, false);
-
-  // Generate positions in expanding hexagonal layers
-  let currentLayer = [center];
-  for (let i = 0; i < radius; i++) {
-    const nextLayer: any = [];
-    currentLayer.forEach((pos) => {
-      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
-        if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
-          addPosition(neighbor.col, neighbor.row, i === radius - 1);
-          nextLayer.push({ col: neighbor.col, row: neighbor.row });
-        }
-      });
-    });
-    currentLayer = nextLayer; // Move to the next layer
-  }
-
-  return positions;
-};
+const generateHexPositions = (center: HexPosition, radius: number) =>
+  getLocalHexDisk(center, radius).map((cell) => ({
+    ...getWorldPositionForHex(cell, false),
+    ...cell,
+    color: new Color("gray"),
+  }));
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
@@ -1311,17 +1277,13 @@ export default class HexceptionScene extends HexagonScene {
       });
     });
 
-    const prepared = this.proceduralTerrain.preparePage({
-      cells: Array.from(cellsByKey.values()).toSorted((left, right) => left.row - right.row || left.col - right.col),
-      climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-      halo: [],
-      mapCenter: 0,
-      pageKey: `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
-      roadSegments: [],
-      settlementAnchors: createHexceptionSettlementAnchors(cellsByKey.values()),
-      strictBiomeParity: false,
-      subdivisions: 2,
-    });
+    const prepared = this.proceduralTerrain.preparePage(
+      createHexceptionTerrainRequest(
+        cellsByKey.values(),
+        configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+        `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
+      ),
+    );
     this.proceduralTerrain.present([prepared]);
     this.buildings.forEach((building) => {
       worldPosition.setFromMatrixPosition(building.matrix);
@@ -1778,18 +1740,6 @@ export default class HexceptionScene extends HexagonScene {
   public hasActiveLabelAnimations(): boolean {
     return this.hoverLabelManager.hasActiveLabel();
   }
-}
-
-function createHexceptionSettlementAnchors(cells: Iterable<TerrainCellInput>): TerrainSettlementAnchor[] {
-  return Array.from(cells)
-    .filter(({ occupied }) => occupied)
-    .map(({ col, row }) => ({
-      col,
-      level: 1,
-      row,
-      structureId: `hexception:${col}:${row}`,
-      structureType: StructureType.Village,
-    }));
 }
 
 function resolveHexceptionBiome(biomeKey: string, fallback: BiomeType): BiomeType {

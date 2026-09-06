@@ -199,7 +199,9 @@ export abstract class HexagonScene {
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
-    this.interactiveHexManager = new InteractiveHexManager(this.scene);
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, {
+      sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z),
+    });
     this.worldUpdateListener = new WorldUpdateListener(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
@@ -972,9 +974,12 @@ export abstract class HexagonScene {
 
     const { position, target } = this.mainDirectionalLight;
     this.shadowRefreshPolicy.observeSun([
-      position.x - target.position.x,
-      position.y - target.position.y,
-      position.z - target.position.z,
+      position.x,
+      position.y,
+      position.z,
+      target.position.x,
+      target.position.y,
+      target.position.z,
     ]);
     if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000, renderProfile.shadows.minimumRefreshIntervalMs)) {
       this.mainDirectionalLight.shadow.needsUpdate = true;

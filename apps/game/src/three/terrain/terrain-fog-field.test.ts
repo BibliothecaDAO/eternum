@@ -1,4 +1,4 @@
-import { BufferAttribute, DataTexture, Mesh, Vector3 } from "three";
+import { BufferAttribute, DataTexture, Mesh, PerspectiveCamera, Scene, Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TERRAIN_FOG_CELL_CAPACITY, TERRAIN_FOG_REVEAL_DURATION_SECONDS, TerrainFogField } from "./terrain-fog-field";
@@ -7,6 +7,33 @@ import type { TerrainShroudInstance } from "./terrain-types";
 
 describe("TerrainFogField", () => {
   afterEach(() => vi.restoreAllMocks());
+
+  it("keeps the streaming backdrop inside a bounded camera neighbourhood while covering the far view", () => {
+    const fog = new TerrainFogField();
+    fog.enableStreaming();
+    const mesh = fog.object3d.children[0] as Mesh;
+    const camera = new PerspectiveCamera(50, 16 / 9, 0.1, 65);
+    const renderer = {} as Parameters<Mesh["onBeforeRender"]>[0];
+    for (const [x, z] of [
+      [0, 0],
+      [250, -150],
+      [-200, 400],
+    ]) {
+      camera.position.set(x, 30, z);
+      camera.lookAt(x, 0, z - 20);
+      camera.updateMatrixWorld();
+      mesh.onBeforeRender(renderer, new Scene(), camera, mesh.geometry, mesh.material as never, null!);
+      mesh.geometry.computeBoundingBox();
+      const bounds = mesh.geometry.boundingBox!.clone().applyMatrix4(mesh.matrixWorld);
+      expect(bounds.min.x).toBeLessThan(x - camera.far);
+      expect(bounds.max.x).toBeGreaterThan(x + camera.far);
+      expect(bounds.min.z).toBeLessThan(z - camera.far);
+      expect(bounds.max.z).toBeGreaterThan(z + camera.far);
+      expect(bounds.max.x - bounds.min.x).toBeLessThan(200);
+      expect(bounds.max.y).toBeLessThan(-0.7);
+    }
+    fog.dispose();
+  });
 
   it("keeps one fog sheet over unloaded ground even when all resident terrain is explored", () => {
     const fog = new TerrainFogField();
@@ -39,9 +66,23 @@ describe("TerrainFogField", () => {
     expect(fog.getMetrics()).toEqual({ fullRebuilds: 1, pageWrites: 0, texelsWritten: 0 });
     const meshes = fog.object3d.children.filter((child): child is Mesh => child instanceof Mesh);
     expect(meshes).toHaveLength(1);
-    expect(meshes[0]).toMatchObject({ frustumCulled: false, renderOrder: 10_000, visible: true });
-    expect(meshes[0].material).toMatchObject({ depthTest: false, depthWrite: false, transparent: true });
+    expect(meshes[0]).toMatchObject({ frustumCulled: false, renderOrder: -1_000, visible: true });
+    expect(meshes[0].material).toMatchObject({ depthTest: true, depthWrite: false, transparent: true });
+    expect(meshes[0].position.y).toBeLessThan(-0.7);
     expect(meshes[0].raycast.name).toBe("disableFogRaycast");
+    fog.dispose();
+  });
+
+  it("keeps tile coverage unchanged while ambient mist moves", () => {
+    const fog = new TerrainFogField();
+    fog.setPage("fixture", [instance(0, 0, true), instance(1, 0, false)]);
+    fog.commit();
+    const texture = (fog as unknown as { maskTexture: DataTexture }).maskTexture;
+    const before = Uint8Array.from(texture.image.data as Uint8Array);
+    const version = texture.version;
+    for (let frame = 0; frame < 120; frame += 1) fog.updateAnimation(1 / 60);
+    expect(texture.image.data).toEqual(before);
+    expect(texture.version).toBe(version);
     fog.dispose();
   });
 

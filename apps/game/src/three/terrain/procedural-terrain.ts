@@ -20,6 +20,7 @@ import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from ".
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
+import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_QUALITY_PROFILES, type TerrainQualityTier } from "./terrain-quality";
@@ -42,6 +43,7 @@ interface PresentedTerrainPage {
   fingerprint: string;
   group: Group;
   propInstances: PreparedTerrainPage["propInstances"];
+  visiblePropInstances?: PreparedTerrainPage["propInstances"];
 }
 
 export interface TerrainPresentationDiagnostics {
@@ -98,6 +100,7 @@ export class ProceduralTerrain {
   private readonly fogField = new TerrainFogField();
   private readonly movementEffects: TerrainMovementEffects;
   private disposed = false;
+  private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
   private readonly releaseAppearance: () => void;
 
   constructor({ streaming = false }: { streaming?: boolean } = {}) {
@@ -109,6 +112,8 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
+    this.fogField.applyToTerrain(this.materials.flatLand);
+    this.fogField.applyToTerrain(this.materials.water);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
@@ -147,7 +152,7 @@ export class ProceduralTerrain {
     if (!this.propPools) {
       this.propPools = pools;
       this.object3d.add(pools.object3d);
-      this.writeRetainedPagesToPools(pools);
+      this.writeRetainedPagesToPools();
     }
     pools.setLod(this.propLod);
     this.applyAppearance();
@@ -164,6 +169,7 @@ export class ProceduralTerrain {
     if (this.groundTextureHandle) return;
     this.groundTextureHandle = handle;
     this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
+    this.fogField.applyToTerrain(this.groundTextureMaterial);
     this.refreshGroundMaterial();
   }
 
@@ -314,7 +320,7 @@ export class ProceduralTerrain {
     const pageKey = preparedPage.request.pageKey;
     const page = this.pages.get(pageKey);
     if (!page || page.fingerprint !== preparedPage.fingerprint || !this.pagesAwaitingWrites.delete(pageKey)) return;
-    this.propPools?.writePage(pageKey, page.propInstances);
+    this.writeVisibleProps(pageKey, page);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
   }
 
@@ -327,6 +333,29 @@ export class ProceduralTerrain {
     this.fogField.commitLoadedPages(preparedPages.map((page) => page.request));
     this.fogField.commit(preparedFogMask);
     return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
+  }
+
+  refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
+    this.isPropTileOccupied = isOccupied;
+    this.pages.forEach((page, key) => this.writeVisibleProps(key, page));
+  }
+
+  private writeVisibleProps(pageKey: string, page: PresentedTerrainPage): void {
+    if (!this.propPools) return;
+    const occupancy = new Map<string, boolean>();
+    const isOccupied = (col: number, row: number) => {
+      const key = `${col}:${row}`;
+      if (!occupancy.has(key)) occupancy.set(key, this.isPropTileOccupied(col, row));
+      return occupancy.get(key)!;
+    };
+    const visible = page.propInstances.filter((instance) => isTerrainPropFootprintClear(instance, isOccupied));
+    if (
+      page.visiblePropInstances?.length === visible.length &&
+      visible.every((instance, index) => instance === page.visiblePropInstances?.[index])
+    )
+      return;
+    this.propPools.writePage(pageKey, visible);
+    page.visiblePropInstances = visible;
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
@@ -396,9 +425,12 @@ export class ProceduralTerrain {
     };
   }
 
-  private writeRetainedPagesToPools(pools: TerrainPropPools): void {
+  private writeRetainedPagesToPools(): void {
     if (this.pages.size === 0) return;
-    this.pages.forEach((page, pageKey) => pools.writePage(pageKey, page.propInstances));
+    this.pages.forEach((page, pageKey) => {
+      page.visiblePropInstances = undefined;
+      this.writeVisibleProps(pageKey, page);
+    });
     this.propPoolFullRewrites += 1;
   }
 

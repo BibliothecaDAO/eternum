@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "World and Local Labs",
+    type: "feature",
+    description:
+      "Test fog, tile selection, rotating armies, and placed buildings in the Biome Lab. The Local Lab previews settlement layouts. Spectate opens directly into the game loading flow.",
+  },
+  {
+    date: "2026-09-06",
+    title: "Mist Follows the Ground",
+    description:
+      "Unexplored tiles use warm, drifting ground mist. Known ground stays visible while panning, page edges blend into the mist, and minimap camera following recovers after a client refresh.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-06",
     title: "Smooth Fog and Biome Lab",
     description:
       "Unloaded world terrain stays under one mist layer and reveals as pages arrive. Open BIOME LAB from the landing page to explore biome previews and visual settings.",

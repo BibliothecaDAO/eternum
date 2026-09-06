@@ -217,6 +217,10 @@ export class WorldmapProceduralTerrain {
     this.terrain.setMovementInteractions(interactions);
   }
 
+  refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
+    this.terrain.refreshPropOccupancy(isOccupied);
+  }
+
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     return this.terrain.sampleSurface(worldX, worldZ);
   }

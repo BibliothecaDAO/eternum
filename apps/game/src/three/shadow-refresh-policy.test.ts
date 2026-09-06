@@ -27,16 +27,19 @@ describe("ShadowRefreshPolicy", () => {
     expect(policy.consumeRefresh(0, 100)).toBe(true);
   });
 
-  it("coalesces sun and content changes behind the profile refresh floor", () => {
+  it("refreshes moving light transforms in the same frame while coalescing static content", () => {
     const policy = new ShadowRefreshPolicy();
     policy.consumeRefresh(0, 250);
 
     policy.observeSun([1, 2, 3]);
     policy.markContentChanged();
-    expect(policy.consumeRefresh(100, 250)).toBe(false);
+    expect(policy.consumeRefresh(16, 250)).toBe(true);
 
     policy.observeSun([1.01, 2, 3]);
-    expect(policy.consumeRefresh(150, 250)).toBe(true);
+    expect(policy.consumeRefresh(16, 250)).toBe(true);
+    policy.markContentChanged();
+    expect(policy.consumeRefresh(16, 250)).toBe(false);
+    expect(policy.consumeRefresh(250, 250)).toBe(true);
     expect(policy.consumeRefresh(250, 250)).toBe(false);
   });
 });

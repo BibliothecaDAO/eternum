@@ -22,8 +22,12 @@ import {
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { primeGameEntry } from "@/game-entry-preload";
-import { buildEntryHrefFromEntryContext, resolveEntryContextFromLandingSelection } from "@/game-entry/context";
-import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
+import {
+  buildEntryHrefFromEntryContext,
+  buildPlayRouteFromEntryContext,
+  resolveEntryContextFromLandingSelection,
+} from "@/game-entry/context";
+import { startGameEntryTimeline, markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { getWorldById } from "@/runtime/world/world-directory";
@@ -921,12 +925,15 @@ export const PlayView = ({
 
   const handleSpectate = useCallback(
     (selection: WorldSelection) => {
-      // Open game entry modal in spectate mode (no account required)
+      const context = resolveEntryContextFromLandingSelection({ selection, intent: "spectate", autoSettle: false });
+      if (!context) return;
+      // Spectators have no settlement prerequisites. The play bootstrap owns world validation and loading.
       startGameEntryTimeline();
+      markGameEntryMilestone("enter-game-started");
       primeGameEntry("entry");
-      navigateToEntryRoute(selection, "spectate", false);
+      navigate(buildPlayRouteFromEntryContext({ context, scene: "map" }));
     },
-    [navigateToEntryRoute],
+    [navigate],
   );
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {

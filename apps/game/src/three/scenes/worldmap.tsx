@@ -130,7 +130,7 @@ import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
-import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction } from "@/three/terrain/terrain-movement-effects";
 import { env } from "../../../env";
@@ -1027,6 +1027,7 @@ export default class WorldmapScene extends WarpTravel {
   private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
     this.proceduralTerrain = new WorldmapProceduralTerrain();
+    this.refreshTerrainPropOccupancy();
     this.scene.add(this.proceduralTerrain.object3d);
     this.strategicMarkers = new StrategicMarkerLayer();
     this.scene.add(this.strategicMarkers.object3d);
@@ -1287,6 +1288,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       this.reconcileHoverLabelsForProjectionChanges(changes);
       this.scheduleTerrainEcologyRefresh();
+      this.refreshTerrainPropOccupancy();
       this.syncStructureMarkers(changes);
     });
     const structureEcologySubscription = this.dojo.components.Structure.update$.subscribe(({ value }) => {
@@ -1304,12 +1306,15 @@ export default class WorldmapScene extends WarpTravel {
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
+      this.refreshTerrainPropOccupancy();
     });
+    const unsubscribeChests = this.worldSpatialProjection.subscribeChests(() => this.refreshTerrainPropOccupancy());
     this.unsubscribeWorldSpatialProjection = () => {
       unsubscribeTiles();
       unsubscribeStructures();
       structureEcologySubscription.unsubscribe();
       unsubscribeArmies();
+      unsubscribeChests();
     };
   }
 
@@ -3488,6 +3493,18 @@ export default class WorldmapScene extends WarpTravel {
     return { col: normalized.x, row: normalized.y };
   }
 
+  private refreshTerrainPropOccupancy(): void {
+    this.proceduralTerrain.refreshPropOccupancy((col, row) => {
+      const contract = new Position({ x: col, y: row }).getContract();
+      const hex = { col: contract.x, row: contract.y };
+      return (
+        this.worldSpatialProjection.getStructuresAtHex(hex).length > 0 ||
+        this.worldSpatialProjection.getArmiesAtHex(hex).length > 0 ||
+        this.worldSpatialProjection.getChestsAtHex(hex).length > 0
+      );
+    });
+  }
+
   private isProjectedStructureHex(col: number, row: number): boolean {
     const contract = new Position({ x: col, y: row }).getContract();
     return this.worldSpatialProjection.getStructuresAtHex({ col: contract.x, row: contract.y }).length > 0;
@@ -5432,7 +5449,7 @@ export default class WorldmapScene extends WarpTravel {
     const criticalReady = new Promise<void>((resolve) => {
       onCriticalPagesReady = resolve;
     });
-    const { roadAnchors, settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(composite.cells);
+    const settlementAnchors = this.collectVisibleTerrainSettlementAnchors(composite.cells);
     const presentation = this.proceduralTerrain
       .presentAsync(
         {
@@ -5453,7 +5470,7 @@ export default class WorldmapScene extends WarpTravel {
           priorityPageKeys: this.visualTerrainWindow
             ? [this.visualTerrainWindow.centerPageKey, ...this.visualTerrainWindow.pageKeys]
             : undefined,
-          roadAnchors,
+          // Structure paths are disabled until their art direction is revised.
           settlementAnchors,
           subdivisions: 2,
         },
@@ -5487,10 +5504,9 @@ export default class WorldmapScene extends WarpTravel {
     void this.terrainPresentationPromise.catch(() => undefined);
   }
 
-  private collectVisibleTerrainEcologyAnchors(cells: readonly { biomeKey: string; col: number; row: number }[]): {
-    roadAnchors: TerrainRoadAnchor[];
-    settlementAnchors: TerrainSettlementAnchor[];
-  } {
+  private collectVisibleTerrainSettlementAnchors(
+    cells: readonly { biomeKey: string; col: number; row: number }[],
+  ): TerrainSettlementAnchor[] {
     const visibleCells = new Set<number>();
     const localBounds = {
       maxCol: Number.NEGATIVE_INFINITY,
@@ -5506,9 +5522,8 @@ export default class WorldmapScene extends WarpTravel {
       localBounds.minCol = Math.min(localBounds.minCol, col);
       localBounds.minRow = Math.min(localBounds.minRow, row);
     }
-    if (visibleCells.size === 0) return { roadAnchors: [], settlementAnchors: [] };
+    if (visibleCells.size === 0) return [];
 
-    const roadAnchors: TerrainRoadAnchor[] = [];
     const settlementAnchors: TerrainSettlementAnchor[] = [];
     for (const structure of this.worldSpatialProjection.getStructuresInBounds(this.toContractBounds(localBounds))) {
       if (structure.reserved || structure.entityId === null) continue;
@@ -5524,16 +5539,8 @@ export default class WorldmapScene extends WarpTravel {
         structureId,
         structureType: component.base.category as StructureType,
       });
-      const owner = ContractAddress(component.owner);
-      if (owner === 0n) continue;
-      roadAnchors.push({
-        col: normalized.x,
-        owner: owner.toString(),
-        row: normalized.y,
-        structureId,
-      });
     }
-    return { roadAnchors, settlementAnchors };
+    return settlementAnchors;
   }
 
   private scheduleTerrainEcologyRefresh(): void {

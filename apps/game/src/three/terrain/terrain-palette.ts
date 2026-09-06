@@ -38,7 +38,7 @@ export const TERRAIN_BIOME_DESCRIPTORS: Readonly<Record<BiomeType, TerrainBiomeD
   [BiomeType.DeepOcean]: descriptor("Deep Ocean", "#173b50", "#0d2638", -0.34, 0.04, 0.01, 0.34, 0, 0, 0, 0),
   [BiomeType.Ocean]: descriptor("Ocean", "#24647a", "#163f59", -0.2, 0.04, 0.012, 0.3, 0, 0, 0, 0),
   [BiomeType.Beach]: descriptor("Beach", "#d6bd85", "#af925e", 0.008, 0.025, 0.008, 0.82, 0.04, 0.06, 0, 1),
-  [BiomeType.Scorched]: descriptor("Scorched", "#5e5147", "#352e2c", 0.18, 0.26, 0.07, 0.96, 0.01, 0.9, 0, 0),
+  [BiomeType.Scorched]: descriptor("Scorched", "#34373b", "#77736c", 0.18, 0.26, 0.07, 0.96, 0.01, 0.9, 0, 0),
   [BiomeType.Bare]: descriptor("Bare", "#827b6c", "#544f48", 0.16, 0.23, 0.055, 0.92, 0.01, 0.82, 0, 0),
   [BiomeType.Tundra]: descriptor("Tundra", "#8c8a76", "#686b60", 0.13, 0.18, 0.035, 0.95, 0.08, 0.48, 0.3, 0),
   [BiomeType.Snow]: descriptor("Snow", "#e4e7df", "#aebbc0", 0.2, 0.24, 0.045, 0.76, 0.02, 0.35, 1, 0),

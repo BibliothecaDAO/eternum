@@ -28,7 +28,7 @@ const BIOME_GROUND_RECIPES: Readonly<Record<BiomeType, TerrainGroundWeights>> = 
   [BiomeType.DeepOcean]: weights(0.1, 0, 0.5, 0, 0, 0.4, 0, 0),
   [BiomeType.Ocean]: weights(0.35, 0, 0.45, 0, 0, 0.2, 0, 0),
   [BiomeType.Beach]: weights(0.82, 0, 0.1, 0, 0, 0.08, 0, 0),
-  [BiomeType.Scorched]: weights(0, 0.15, 0, 0, 0, 0.35, 0, 0.5),
+  [BiomeType.Scorched]: weights(0, 0, 0, 0, 0, 0.4, 0, 0.6),
   [BiomeType.Bare]: weights(0, 0.22, 0.08, 0, 0, 0.7, 0, 0),
   [BiomeType.Tundra]: weights(0, 0.3, 0.15, 0, 0, 0.3, 0.25, 0),
   [BiomeType.Snow]: weights(0, 0, 0.05, 0, 0, 0.2, 0.75, 0),

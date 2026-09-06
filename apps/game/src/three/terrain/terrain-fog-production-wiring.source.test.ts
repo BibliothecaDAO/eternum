@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("continuous exploration fog production wiring", () => {
-  it("renders one texture-backed mist sheet without per-cell shroud meshes", () => {
+  it("shares the fog with terrain materials without per-cell shroud meshes", () => {
     const fogField = source("src/three/terrain/terrain-fog-field.ts");
 
     expect(fogField).toContain("new PlaneGeometry(1, 1, 1, 1)");
@@ -14,6 +14,13 @@ describe("continuous exploration fog production wiring", () => {
     expect(fogField).not.toContain("uv().add(");
     expect(fogField).not.toContain("InstancedMesh");
     expect(fogField).not.toContain("terrain-exploration-shroud-frontier");
+  });
+
+  it("shades flat ground, textured ground and water with the same fog field", () => {
+    const terrain = source("src/three/terrain/procedural-terrain.ts");
+    expect(terrain).toContain("this.fogField.applyToTerrain(this.materials.flatLand)");
+    expect(terrain).toContain("this.fogField.applyToTerrain(this.materials.water)");
+    expect(terrain).toContain("this.fogField.applyToTerrain(this.groundTextureMaterial)");
   });
 
   it("keeps mask animation in the fog field while terrain authority remains external", () => {
@@ -32,7 +39,7 @@ describe("continuous exploration fog production wiring", () => {
 
     expect(debugRenderer).toContain("TERRAIN_DEEP_FOG_COLOR");
     expect(fogField).toContain("TERRAIN_DEEP_FOG_COLOR");
-    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#3b464b"');
+    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#55534c"');
     expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 1");
   });
 
@@ -43,7 +50,7 @@ describe("continuous exploration fog production wiring", () => {
     expect(debugRenderer).not.toContain("commitMs += performance.now() - commitStartedAt");
   });
 
-  it("prepares the global distance mask on the terrain worker before the atomic worldmap commit", () => {
+  it("prepares the global coverage mask on the terrain worker before the atomic worldmap commit", () => {
     const worldmapTerrain = source("src/three/terrain/worldmap-procedural-terrain.ts");
     const prepareMask = worldmapTerrain.indexOf("await this.terrain.prepareFogMaskAsync(preparedPages)");
     const commit = worldmapTerrain.indexOf("this.terrain.beginPresentation(preparedPages)");

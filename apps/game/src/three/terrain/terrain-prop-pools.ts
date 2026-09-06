@@ -44,7 +44,7 @@ import {
 } from "./terrain-prop-catalog";
 import type { TerrainPropInstance } from "./terrain-types";
 
-/** Every pool holds one fixed sub-range per visual page the worldmap can compose at once. */
+/** Every pool holds bounded page ownership; live instances are packed into its drawn prefix. */
 export const TERRAIN_PROP_POOL_PAGE_SLOTS = WORLD_CHUNK_CONFIG.visualPresentation.maxCompositePages;
 
 /**
@@ -75,8 +75,6 @@ const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
 const MATRIX_FLOATS = 16;
 const VEC3_FLOATS = 3;
 const EMPTY_INSTANCES: readonly TerrainPropInstance[] = Object.freeze([]);
-// Slot tails and released slots stay in the drawn prefix; a zero scale collapses them to nothing.
-const ZERO_SCALE_MATRIX = new Matrix4().makeScale(0, 0, 0);
 
 export interface TerrainPropPoolStats {
   groundCoverInstances: number;
@@ -85,10 +83,10 @@ export interface TerrainPropPoolStats {
 }
 
 export interface TerrainPropPoolMetrics {
-  /** Instance matrices uploaded by page writes, including the zeroed tails of shrinking slots. */
+  /** Instance matrices uploaded by page writes, including relocated live instances. */
   instancesUploaded: number;
   pageWrites: number;
-  /** Zero-scaled instances inside the drawn prefix right now: the vertex cost of fixed slots. */
+  /** Unused instances inside the submitted draw range; packed pools keep this at zero. */
   paddingInstances: number;
 }
 
@@ -136,7 +134,7 @@ export class TerrainPropPools {
     return new TerrainPropPools(catalog.scene);
   }
 
-  /** Writes one page's props into its slot of every archetype pool; only those sub-ranges are uploaded. */
+  /** Updates one page and shifts any following live ranges; unused capacity never enters a draw. */
   writePage(pageKey: string, instances: readonly TerrainPropInstance[]): void {
     const instancesByArchetype = groupByArchetype(instances);
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
@@ -239,14 +237,15 @@ export class TerrainPropPools {
     if (slotIndex === -1) return;
     requireSlotCapacity(pool, archetype, pageKey, instances.length);
     const slot = pool.slots[slotIndex];
-    const start = slotIndex * pool.slotCapacity;
+    const start = pool.slots.slice(0, slotIndex).reduce((sum, entry) => sum + entry.count, 0);
+    this.metrics.instancesUploaded += moveFollowingInstances(pool, start, slot.count, instances.length);
     this.metrics.instancesUploaded += this.writeSlotInstances(pool, archetype, start, slot, instances);
     slot.count = instances.length;
     slot.pageKey = instances.length > 0 ? pageKey : null;
     this.refreshPoolExtent(pool, archetype);
   }
 
-  /** Writes the instances from the slot start, zeroes the tail the slot previously used, and queues the uploads. */
+  /** Writes only live instances after the surrounding ranges have been packed. */
   private writeSlotInstances(
     pool: PropPool,
     archetype: TerrainPropArchetypeId,
@@ -273,10 +272,7 @@ export class TerrainPropPools {
       pool.ecology.setXYZ(index, instance.appearance.windAmplitude, instance.appearance.moss, instance.appearance.snow);
       slot.radius = Math.max(slot.radius, pool.catalogRadius * instance.scale);
     });
-    for (let index = start + instances.length; index < start + slot.count; index += 1) {
-      mesh.setMatrixAt(index, ZERO_SCALE_MATRIX);
-    }
-    const written = Math.max(instances.length, slot.count);
+    const written = instances.length;
     if (written === 0) return 0;
     uploadSubRange(mesh.instanceMatrix, start, written, MATRIX_FLOATS);
     if (instances.length > 0) {
@@ -290,9 +286,9 @@ export class TerrainPropPools {
     let count = 0;
     let radius = 0;
     this.extent.makeEmpty();
-    pool.slots.forEach((slot, index) => {
+    pool.slots.forEach((slot) => {
       if (slot.count === 0) return;
-      count = index * pool.slotCapacity + slot.count;
+      count += slot.count;
       radius = Math.max(radius, slot.radius);
       this.extent.union(slot.bounds);
     });
@@ -322,6 +318,19 @@ export class TerrainPropPools {
       resolveCatalogMeshRadius(this.requireCatalogMesh(archetype, "far")),
     );
   }
+}
+
+function moveFollowingInstances(pool: PropPool, start: number, previousCount: number, nextCount: number): number {
+  const source = start + previousCount;
+  const destination = start + nextCount;
+  const count = pool.mesh.count - source;
+  if (source === destination || count === 0) return 0;
+  for (const attribute of [pool.mesh.instanceMatrix, requireInstanceColor(pool.mesh), pool.ecology]) {
+    const size = attribute.itemSize;
+    attribute.array.copyWithin(destination * size, source * size, (source + count) * size);
+    uploadSubRange(attribute, destination, count, size);
+  }
+  return count;
 }
 
 function groupByArchetype(
@@ -371,7 +380,7 @@ function countPoolInstances(pool: PropPool): number {
 function uploadSubRange(attribute: BufferAttribute, start: number, count: number, itemFloats: number): void {
   const rangeStart = start * itemFloats;
   const rangeCount = count * itemFloats;
-  // Slot starts are fixed, so ranges queued for the same slot before a draw merge instead of piling up.
+  // Coalesce repeated writes before the renderer consumes the upload ranges.
   const queued = attribute.updateRanges.find((range) => range.start === rangeStart);
   if (queued) queued.count = Math.max(queued.count, rangeCount);
   else attribute.addUpdateRange(rangeStart, rangeCount);

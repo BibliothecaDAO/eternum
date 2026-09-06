@@ -23,7 +23,7 @@ import {
   terrainNeighborCoordinates,
 } from "./terrain-coordinates";
 import type { TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
-import { isTerrainWaterBiome } from "./terrain-water";
+import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
 interface CellFieldSample {
   baseHeight: number;
@@ -188,6 +188,10 @@ export class TerrainField {
     if (candidates.length === 0) return createUnknownSample();
 
     let totalWeight = 0;
+    let visualWeightSum = 0;
+    const nearestDistanceSquared = Math.min(
+      ...candidates.map((candidate) => (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2),
+    );
     let height = 0;
     let roughness = 0;
     let red = 0;
@@ -208,15 +212,18 @@ export class TerrainField {
       const weight = terrainBlendWeight(distanceSquared);
       if (weight === 0) continue;
       totalWeight += weight;
+      // Equal distance is the actual hex boundary. Restrict material blending to its narrow verge.
+      const visualWeight = Math.exp(-(distanceSquared - nearestDistanceSquared) / 0.24);
+      visualWeightSum += visualWeight;
       height += candidate.baseHeight * weight;
       roughness += candidate.descriptor.roughness * weight;
       relief += candidate.descriptor.relief * weight;
       macroTintStrength += candidate.direction.material.macroTintStrength * weight;
       shoreWetness += candidate.direction.material.shoreWetness * weight;
-      blendTerrainGroundWeights(groundWeights, candidate.groundWeights, weight);
-      red += (candidate.primary[0] + (candidate.secondary[0] - candidate.primary[0]) * colorMix) * weight;
-      green += (candidate.primary[1] + (candidate.secondary[1] - candidate.primary[1]) * colorMix) * weight;
-      blue += (candidate.primary[2] + (candidate.secondary[2] - candidate.primary[2]) * colorMix) * weight;
+      blendTerrainGroundWeights(groundWeights, candidate.groundWeights, visualWeight);
+      red += (candidate.primary[0] + (candidate.secondary[0] - candidate.primary[0]) * colorMix) * visualWeight;
+      green += (candidate.primary[1] + (candidate.secondary[1] - candidate.primary[1]) * colorMix) * visualWeight;
+      blue += (candidate.primary[2] + (candidate.secondary[2] - candidate.primary[2]) * colorMix) * visualWeight;
 
       if (weight > strongestWeight) {
         strongestWeight = weight;
@@ -228,6 +235,7 @@ export class TerrainField {
     if (totalWeight === 0) return createUnknownSample();
 
     const inverseWeight = 1 / totalWeight;
+    const inverseVisualWeight = 1 / visualWeightSum;
     const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
     const paddedHeight = this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
     const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
@@ -249,7 +257,7 @@ export class TerrainField {
     const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
     const albedoFactor = macroFactor * (1 - wetness * 0.16) * (1 - road * 0.08);
     const disturbedColorBlend = Math.max(road * 0.72, vegetation.disturbanceStrength * 0.5, structurePad * 0.78);
-    const baseColor = [red * inverseWeight, green * inverseWeight, blue * inverseWeight] as const;
+    const baseColor = [red * inverseVisualWeight, green * inverseVisualWeight, blue * inverseVisualWeight] as const;
 
     return {
       biome: strongestBiome,
@@ -282,7 +290,11 @@ export class TerrainField {
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
-    return this.sampleVertex(worldX, worldZ);
+    const sample = this.sampleVertex(worldX, worldZ);
+    if (isTerrainWaterCovered(sample.height) && (isTerrainWaterBiome(sample.biome) || sample.shore > 0)) {
+      return { biome: sample.biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] };
+    }
+    return sample;
   }
 
   samplePropDensityContext(

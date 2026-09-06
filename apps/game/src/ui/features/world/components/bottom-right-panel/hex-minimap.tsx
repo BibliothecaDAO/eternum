@@ -612,9 +612,15 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
 
   useEffect(
     () => () => {
-      for (const frame of [followRafRef.current, rafRef.current, cameraMoveRafRef.current]) {
-        if (frame !== null) cancelAnimationFrame(frame);
+      // StrictMode and Fast Refresh replay effects while preserving refs. A cancelled handle must not
+      // keep the next effect from scheduling its animation.
+      for (const frameRef of [followRafRef, rafRef, cameraMoveRafRef]) {
+        if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
       }
+      followTargetRef.current = null;
+      pendingViewRef.current = null;
+      pendingCameraMoveRef.current = null;
     },
     [],
   );

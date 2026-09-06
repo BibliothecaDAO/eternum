@@ -10,6 +10,8 @@ import * as THREE from "three";
 import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils/utils";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
+import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
+
 const INTERACTIVE_HEX_Y = 0.1;
 const INTERACTIVE_PICK_Y = 0;
 const RAY_PARALLEL_EPSILON = 1e-6;
@@ -52,10 +54,10 @@ export class InteractiveHexManager {
   private visibleHexCoordsCapacity: number = 0;
   private surfaceVisible = true;
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, terrain: TerrainSurface = FLAT_TERRAIN_SURFACE) {
     this.scene = scene;
     this.hoverAura = new Aura();
-    this.hoverHexManager = new HoverHexManager(scene);
+    this.hoverHexManager = new HoverHexManager(scene, terrain);
     this.instanceMaterial = interactiveHexMaterial.clone();
     this.hexGeometryPool = HexGeometryPool.getInstance();
     this.onMouseMove = this.onMouseMove.bind(this);

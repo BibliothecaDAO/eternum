@@ -527,7 +527,7 @@ export class CentralizedVisibilityManager {
 
     this.camera.updateMatrixWorld(true);
     this.matrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
-    this.frustum.setFromProjectionMatrix(this.matrix);
+    this.frustum.setFromProjectionMatrix(this.matrix, this.camera.coordinateSystem);
 
     // Cache camera position
     this.camera.getWorldPosition(this.cameraPosition);

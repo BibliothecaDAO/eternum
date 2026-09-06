@@ -1,6 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types";
 
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
+import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
@@ -343,6 +344,24 @@ function buildTerrainPropCandidate(
     context.moistureSeed,
     `prop-${layer}-scale-v2`,
   );
+  const scale = resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext);
+  if (
+    !isTerrainPropFootprintClear(
+      {
+        archetype,
+        scale,
+        ownerCol: site.owner.col,
+        ownerRow: site.owner.row,
+        worldX: site.worldX,
+        worldZ: site.worldZ,
+      },
+      (col, row) => {
+        const cell = context.eligibleByKey.get(terrainCellKey(col, row));
+        return !cell || cell.occupied;
+      },
+    )
+  )
+    return null;
   const tintValue = hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-tint-v2`);
   return {
     appearance: resolveTerrainPropAppearance(archetype, tintValue, accepted.densityContext),
@@ -355,7 +374,7 @@ function buildTerrainPropCandidate(
     latticeZ,
     layer,
     priority: hashUnit(latticeX, latticeZ, context.elevationSeed, context.moistureSeed, `prop-${layer}-priority-v2`),
-    scale: resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext),
+    scale,
     worldX: site.worldX,
     worldY: accepted.surface.height,
     worldZ: site.worldZ,
@@ -372,7 +391,7 @@ function resolveTerrainPropAppearance(
   const climate = resolveTerrainPropClimate(context.biomeInfluences);
   const snow = clampUnit(climate.snow * (0.75 + context.elevation * 0.25));
   const mossSupport =
-    smoothstep(0.3, 0.8, context.moisture) * (0.25 + context.canopyCover * 0.5 + context.debrisCover * 0.25);
+    smoothstep(0.3, 0.8, context.moisture) * (0.3 + context.canopyCover * 0.6 + context.debrisCover * 0.25);
 
   return {
     moss: clampUnit(mossSupport * (1 - snow * 0.85)),
