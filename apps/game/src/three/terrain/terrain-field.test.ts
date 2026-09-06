@@ -288,6 +288,19 @@ describe("TerrainField", () => {
     });
   });
 
+  it("anchors overlays to fog geometry without revealing the preview biome", () => {
+    const covered = unknownCell(1, 0, BiomeType.Snow);
+    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.Grassland), covered]));
+    const center = terrainHexToWorld(covered.col, covered.row);
+    for (let corner = 0; corner < 6; corner += 1) {
+      const angle = (corner * Math.PI) / 3 + Math.PI / 6;
+      const x = center.x + Math.cos(angle) * 0.95;
+      const z = center.z + Math.sin(angle) * 0.95;
+      const preview = field.sampleFogPreviewVertex(x, z, covered);
+      expect(field.sampleSurface(x, z)).toEqual({ biome: null, height: preview.height, normal: preview.normal });
+    }
+  });
+
   it("can make projected/environment mismatches fatal at the explicit production seam", () => {
     expect(() => new TerrainField({ ...createRequest([cell(0, 0, BiomeType.Snow)]), strictBiomeParity: true })).toThrow(
       "fixture has 1 projected biome/environment mismatch(es)",

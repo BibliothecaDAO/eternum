@@ -8,9 +8,9 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
 
 describe("prepareTerrainPage", () => {
-  it("preserves the all-biome terrain buffers and placements through sampling optimizations", () => {
+  it("tracks the reviewed all-biome terrain and placement style", () => {
     const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
-    expect(prepared.fingerprint).toMatchInlineSnapshot(`"8b1684d9"`);
+    expect(prepared.fingerprint).toMatchInlineSnapshot(`"38eda20f"`);
   });
 
   it("builds deterministic indexed terrain and frontier buffers", () => {

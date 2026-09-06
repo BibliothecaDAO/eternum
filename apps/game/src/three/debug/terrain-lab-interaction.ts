@@ -1,4 +1,3 @@
-import { TerrainLabGrid } from "./terrain-lab-grid";
 import { TERRAIN_LAB_BUILDINGS, type TerrainLabBuilding } from "./terrain-lab-buildings";
 import { Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 } from "three";
 
@@ -10,12 +9,12 @@ import { findNearestTerrainHex, terrainHexToWorld } from "@/three/terrain/terrai
 import type { PreparedTerrainPage, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { isTerrainWaterBiome } from "@/three/terrain/terrain-water";
 import { gltfLoader } from "@/three/utils/utils";
+import { getArmyGroundOffset, groundModelMatrix } from "@/three/utils/model-grounding";
 
 import { DEFAULT_TERRAIN_LAB_PREVIEW, buildTerrainLabRequest, type TerrainLabPreview } from "./terrain-lab-preview";
 
 /** Lab inputs change the fixture; terrain, selection and models use production renderers. */
 export class TerrainLabInteraction {
-  private readonly grid: TerrainLabGrid;
   private readonly hover: HoverHexManager;
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
@@ -28,14 +27,12 @@ export class TerrainLabInteraction {
   private selected: { col: number; row: number };
   private preview = DEFAULT_TERRAIN_LAB_PREVIEW;
   private army: InstancedModel | null = null;
+  private armyType: TerrainLabPreview["army"] = "none";
   private revision = 0;
   private disposed = false;
   private pointerDown: { x: number; y: number } | null = null;
   private spinAngle = 0;
   private selectionDirty = true;
-  private gridDirty = true;
-  private presentedRequest: TerrainPageRequest;
-  private presentedFingerprint: string | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -48,10 +45,6 @@ export class TerrainLabInteraction {
     private readonly localMode = false,
   ) {
     this.hover = new HoverHexManager(scene, terrain);
-    this.grid = new TerrainLabGrid(terrain, localMode);
-    this.presentedRequest = request;
-    this.grid.object3d.visible = false;
-    scene.add(this.grid.object3d);
     this.selected = chooseInitialTile(request);
     canvas.addEventListener("pointerdown", this.beginPick);
     canvas.addEventListener("pointerup", this.finishPick);
@@ -62,8 +55,6 @@ export class TerrainLabInteraction {
       preview.fog !== this.preview.fog || preview.army !== this.preview.army || preview.biome !== this.preview.biome;
     this.selectionDirty = true;
     this.preview = preview;
-    this.grid.object3d.visible = preview.grid;
-    this.refreshGrid();
     this.spinAngle = preview.yaw;
     if (rebuild) await this.presentFixture();
     this.update(0);
@@ -75,7 +66,7 @@ export class TerrainLabInteraction {
     const moved = this.selectionDirty;
     if (moved) {
       const center = terrainHexToWorld(this.selected.col, this.selected.row);
-      this.armyPosition.set(center.x, this.terrain.sampleSurface(center.x, center.z).height + 0.025, center.z);
+      this.armyPosition.set(center.x, this.terrain.sampleSurface(center.x, center.z).height, center.z);
       if (this.preview.selection) this.hover.showHover(center.x, center.z);
       else this.hover.hideHover();
       this.selectionDirty = false;
@@ -88,7 +79,11 @@ export class TerrainLabInteraction {
     if (moved || this.preview.spin) {
       this.matrix.makeRotationY(this.spinAngle);
       this.matrix.setPosition(this.armyPosition);
-      this.army.setMatrixAt(0, this.matrix);
+      groundModelMatrix(
+        this.matrix,
+        getArmyGroundOffset(this.army.instancedMeshes, this.armyType === "none" ? undefined : this.armyType),
+      );
+      this.army.setMatrixAt(0, this.matrix, this.armyPosition.y);
       this.army.needsUpdate();
     }
     this.army.updateAnimations(delta);
@@ -130,7 +125,6 @@ export class TerrainLabInteraction {
     this.canvas.removeEventListener("pointerdown", this.beginPick);
     this.canvas.removeEventListener("pointerup", this.finishPick);
     this.hover.dispose();
-    this.grid.dispose();
     for (const model of this.models.values()) {
       this.scene.remove(model.group);
       model.dispose();
@@ -153,29 +147,16 @@ export class TerrainLabInteraction {
         : await this.loadModel(preview.army, buildArmyModelAssetPath(preview.army), 1, preview.army);
     if (this.disposed || revision !== this.revision) return;
     const commitStarted = performance.now();
-    this.terrain.refreshPropOccupancy(
-      (col, row) =>
-        (preview.army !== "none" && col === selected.col && row === selected.row) ||
-        this.buildings.has(`${col}:${row}`),
-    );
+    this.terrain.refreshPropOccupancy((col, row) => this.buildings.has(`${col}:${row}`));
     this.terrain.present([prepared], fog);
-    this.gridDirty ||= this.presentedFingerprint !== prepared.fingerprint;
-    this.presentedFingerprint = prepared.fingerprint;
-    this.presentedRequest = request;
-    this.refreshGrid();
     this.onPresented(prepared, performance.now() - commitStarted);
     this.selectionDirty = true;
     if (this.army) this.army.group.visible = false;
     this.army = model;
+    this.armyType = preview.army;
     if (model) model.group.visible = true;
     this.updateBuildings(buildings);
     this.update(0);
-  }
-
-  private refreshGrid(): void {
-    if (!this.preview.grid || !this.gridDirty) return;
-    this.grid.update(this.presentedRequest);
-    this.gridDirty = false;
   }
 
   private updateBuildings(buildings: readonly TerrainLabBuilding[]): void {

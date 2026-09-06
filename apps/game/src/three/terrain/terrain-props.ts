@@ -1,6 +1,7 @@
 import { BiomeType } from "@bibliothecadao/types/terrain";
 
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
+import { isTerrainArmySpaceClear } from "./terrain-army-clearance";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
@@ -89,14 +90,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.DeepOcean]: profile(0),
   [BiomeType.Ocean]: profile(0),
   [BiomeType.Beach]: profile(0.14, ["palm", 5], ["boulder", 2], ["fallen-log", 1], ["grass-tuft", 8], ["reed", 2]),
-  [BiomeType.Scorched]: profile(
-    0.14,
-    ["dead-tree", 4],
-    ["boulder", 4],
-    ["cactus", 1],
-    ["grass-tuft", 2],
-    ["wildflower", 1],
-  ),
+  [BiomeType.Scorched]: profile(0.14, ["dead-tree", 4], ["boulder", 6], ["stump", 2], ["fallen-log", 1]),
   [BiomeType.Bare]: profile(0.17, ["boulder", 6], ["dead-tree", 2], ["stump", 1], ["grass-tuft", 2]),
   [BiomeType.Tundra]: profile(
     0.14,
@@ -293,6 +287,8 @@ function resolveTerrainPropCandidateSite(
   const ownerKey = terrainCellKey(ownerCoordinate.col, ownerCoordinate.row);
   const owner = context.eligibleByKey.get(ownerKey);
   if (!owner || owner.occupied) return null;
+  const center = terrainHexToWorld(owner.col, owner.row);
+  if (!isTerrainArmySpaceClear(worldX - center.x, worldZ - center.z)) return null;
   const propProfile = BIOME_PROP_PROFILES[owner.biome];
   const layerWeights = propProfile.weights.filter(({ archetype }) => getTerrainPropPlacementLayer(archetype) === layer);
   if (layerWeights.length === 0) return null;
@@ -345,6 +341,15 @@ function buildTerrainPropCandidate(
     `prop-${layer}-scale-v2`,
   );
   const scale = resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext);
+  const center = terrainHexToWorld(site.owner.col, site.owner.row);
+  if (
+    !isTerrainArmySpaceClear(
+      site.worldX - center.x,
+      site.worldZ - center.z,
+      resolveArmyClearanceFootprint(archetype) * scale,
+    )
+  )
+    return null;
   if (
     !isTerrainPropFootprintClear(
       {
@@ -383,6 +388,35 @@ function buildTerrainPropCandidate(
   };
 }
 
+function resolveArmyClearanceFootprint(archetype: TerrainPropArchetypeId): number {
+  // Low solid props use their catalog XZ bounds. Trees reserve their trunk, allowing crowns above the routes.
+  switch (archetype) {
+    case "boulder":
+      return 0.21;
+    case "stump":
+      return 0.31;
+    case "fallen-log":
+      return 0.34;
+    case "shrub":
+      return 0.28;
+    case "cactus":
+      return 0.24;
+    case "grass-tuft":
+    case "fern":
+    case "reed":
+    case "wildflower":
+      return 0.04;
+    case "broadleaf":
+    case "birch":
+    case "willow":
+    case "conifer":
+    case "palm":
+    case "dead-tree":
+      return 0.08;
+  }
+  throw new Error(`Missing army clearance footprint for terrain prop: ${archetype}`);
+}
+
 function resolveTerrainPropAppearance(
   archetype: TerrainPropArchetypeId,
   tintVariation: number,
@@ -394,7 +428,7 @@ function resolveTerrainPropAppearance(
     smoothstep(0.3, 0.8, context.moisture) * (0.3 + context.canopyCover * 0.6 + context.debrisCover * 0.25);
 
   return {
-    moss: clampUnit(mossSupport * (1 - snow * 0.85)),
+    moss: clampUnit(mossSupport * (1 - snow * 0.85) * (1 - resolveScorchedCoverage(context))),
     snow,
     tint: resolveTerrainPropTint(archetype, tintVariation, context),
     windAmplitude: clampUnit(climate.windAmplitude),
@@ -532,7 +566,8 @@ function resolveTerrainPropScale(
   if (role === "canopy") return 0.76 + shapedValue * 0.48;
   if (role === "groundcover") return 0.72 + shapedValue * 0.5;
   if (role === "understory") return 0.54 + shapedValue * 0.42;
-  return 0.68 + shapedValue * 0.44;
+  const volcanicStone = archetype === "boulder" ? resolveScorchedCoverage(vegetation) : 0;
+  return (0.68 + shapedValue * 0.44) * (1 + volcanicStone * 0.5);
 }
 
 function resolveTerrainPropTint(
@@ -554,8 +589,16 @@ function resolveTerrainPropTint(
     if (archetype === "wildflower") return [0.9 + value * 0.08, 0.94 + value * 0.05, 0.82 + value * 0.12];
     return [0.8 + dryness * 0.12, 0.9 - dryness * 0.14 + value * 0.05, 0.68 - dryness * 0.08];
   }
-  const neutral = 0.9 + value * 0.1;
-  return [neutral, neutral, neutral];
+  const scorched = resolveScorchedCoverage(vegetation);
+  const neutral = (0.9 + value * 0.1) * (1 - scorched * 0.62);
+  return [neutral * (1 - scorched * 0.08), neutral, neutral * (1 + scorched * 0.06)];
+}
+
+function resolveScorchedCoverage(context: TerrainPropDensityContext): number {
+  return context.biomeInfluences.reduce(
+    (weight, influence) => weight + (influence.biome === BiomeType.Scorched ? influence.weight : 0),
+    0,
+  );
 }
 
 export function resolveEffectiveTerrainPropDensity(

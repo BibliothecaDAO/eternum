@@ -99,6 +99,7 @@ const SETTLEMENT_REGROWTH_PEAK_RADIUS = 1.18;
 const SETTLEMENT_REGROWTH_OUTER_RADIUS = 1.9;
 
 export class TerrainField {
+  private readonly ownedCellKeys = new Set<string>();
   private readonly cellByKey = new Map<string, TerrainCellInput>();
   private readonly sampleByKey = new Map<string, CellFieldSample>();
   private readonly candidatesByKey = new Map<string, CellFieldSample[]>();
@@ -119,7 +120,11 @@ export class TerrainField {
     request.halo.forEach(requireConsistentTerrainCellExploration);
     request.cells.forEach(requireConsistentTerrainCellExploration);
     request.halo.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
-    request.cells.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
+    request.cells.forEach((cell) => {
+      const key = terrainCellKey(cell.col, cell.row);
+      this.cellByKey.set(key, cell);
+      this.ownedCellKeys.add(key);
+    });
     this.noise = new TerrainNoise(
       resolveSeed(request.climate.elevation_seed),
       resolveSeed(request.climate.moisture_seed),
@@ -289,8 +294,18 @@ export class TerrainField {
     };
   }
 
+  ownsCell(col: number, row: number): boolean {
+    return this.ownedCellKeys.has(terrainCellKey(col, row));
+  }
+
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
-    const sample = this.sampleVertex(worldX, worldZ);
+    const owner = findNearestTerrainHex(worldX, worldZ);
+    if (this.getCell(owner.col, owner.row)?.explored === false) {
+      const preview = this.sampleFogPreviewVertex(worldX, worldZ, owner);
+      // Match the covered geometry without exposing its procedural preview as a known biome.
+      return { biome: null, height: preview.height, normal: preview.normal };
+    }
+    const sample = this.sampleVertex(worldX, worldZ, owner);
     if (isTerrainWaterCovered(sample.height) && (isTerrainWaterBiome(sample.biome) || sample.shore > 0)) {
       return { biome: sample.biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] };
     }

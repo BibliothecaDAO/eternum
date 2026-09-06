@@ -48,6 +48,7 @@ import { isAnimationPositionVisible } from "../utils/animation-visibility";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
 import { getContactShadowResources } from "../utils/contact-shadow";
+import { getArmyGroundOffset, groundModelMatrix } from "../utils/model-grounding";
 import { MaterialPool } from "../utils/material-pool";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
@@ -1127,7 +1128,6 @@ export class ArmyModel {
 
   private updateInstanceTransform(position: Vector3, scale: Vector3, rotation?: Euler): void {
     this.dummyObject.position.copy(position);
-    this.dummyObject.position.y += 0.15;
     this.dummyObject.scale.copy(scale);
     if (rotation) {
       this.dummyObject.rotation.copy(rotation);
@@ -1142,6 +1142,13 @@ export class ArmyModel {
     position: Vector3,
     color?: Color,
   ): void {
+    groundModelMatrix(
+      this.dummyObject.matrix,
+      getArmyGroundOffset(
+        modelData.instancedMeshes,
+        this.activeBaseModelByEntity.get(entityId) ?? this.entityModelMap.get(entityId),
+      ),
+    );
     modelData.instancedMeshes.forEach((mesh) => {
       mesh.setMatrixAt(index, this.dummyObject.matrix);
 

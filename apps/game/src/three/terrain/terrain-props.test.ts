@@ -3,6 +3,7 @@ import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { TerrainField, type TerrainPropDensityContext } from "./terrain-field";
+import { terrainHexToWorld } from "./terrain-coordinates";
 import {
   getTerrainPropCanopyExclusionRadius,
   getTerrainPropDisturbanceAffinity,
@@ -12,6 +13,27 @@ import { prepareTerrainPropInstances, resolveEffectiveTerrainPropDensity } from 
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
 describe("terrain prop placement", () => {
+  it("keeps stable prop bases off army destinations and center-to-neighbor routes", () => {
+    for (const biome of [BiomeType.Scorched, BiomeType.TropicalRainForest, BiomeType.Grassland]) {
+      const cells = Array.from({ length: 400 }, (_, index) =>
+        cell((index % 20) - 10, Math.floor(index / 20) - 10, biome),
+      );
+      const page = request(cells, "army-clearance");
+      const instances = prepareTerrainPropInstances(page, new TerrainField(page));
+      expect(instances.length).toBeGreaterThan(10);
+      for (const prop of instances) {
+        const center = terrainHexToWorld(prop.ownerCol, prop.ownerRow);
+        const x = prop.worldX - center.x;
+        const z = prop.worldZ - center.z;
+        expect(Math.hypot(x, z)).toBeGreaterThanOrEqual(0.34);
+        for (let direction = 0; direction < 3; direction++) {
+          const angle = (direction * Math.PI) / 3;
+          expect(Math.abs(x * Math.sin(angle) - z * Math.cos(angle))).toBeGreaterThanOrEqual(0.22 - 1e-9);
+        }
+      }
+    }
+  });
+
   it("is deterministic and independent of cell traversal order", () => {
     const cells = [cell(0, 0, BiomeType.TemperateRainForest), cell(1, 0, BiomeType.Taiga)];
     const forward = request(cells);
@@ -31,6 +53,16 @@ describe("terrain prop placement", () => {
     const page = request(cells);
 
     expect(prepareTerrainPropInstances(page, new TerrainField(page))).toEqual([]);
+  });
+
+  it("keeps scorched terrain barren across its full ecology placement pipeline", () => {
+    const cells = Array.from({ length: 64 }, (_, index) => cell(index % 8, Math.floor(index / 8), BiomeType.Scorched));
+    const page = request(cells, "scorched-identity");
+    const instances = prepareTerrainPropInstances(page, new TerrainField(page));
+    expect(instances.length).toBeGreaterThan(0);
+    expect(
+      instances.every(({ archetype }) => ["dead-tree", "boulder", "stump", "fallen-log"].includes(archetype)),
+    ).toBe(true);
   });
 
   it("derives dense near-view ground cover from the same vegetation field", () => {
@@ -154,8 +186,9 @@ describe("terrain prop placement", () => {
   });
 
   it("grows larger mature crowns and biases regenerating gaps toward pioneer trees", () => {
-    const cells = Array.from({ length: 225 }, (_, index) =>
-      cell(index % 15, Math.floor(index / 15), BiomeType.TemperateDeciduousForest),
+    // Standing/travel clearance reduces the eligible area; sample enough cells to compare ecological populations.
+    const cells = Array.from({ length: 2500 }, (_, index) =>
+      cell(index % 50, Math.floor(index / 50), BiomeType.TemperateDeciduousForest),
     );
     const page = request(cells, "forest-succession");
     const field = new TerrainField(page);
@@ -183,11 +216,11 @@ describe("terrain prop placement", () => {
   });
 
   it("carries climate-conditioned moss, snow, and wind presentation into the shared prop pools", () => {
-    const snowyCells = Array.from({ length: 100 }, (_, index) =>
-      cell(index % 10, Math.floor(index / 10), BiomeType.Snow),
+    const snowyCells = Array.from({ length: 900 }, (_, index) =>
+      cell(index % 30, Math.floor(index / 30), BiomeType.Snow),
     );
-    const rainforestCells = Array.from({ length: 100 }, (_, index) =>
-      cell(index % 10, Math.floor(index / 10), BiomeType.TropicalRainForest),
+    const rainforestCells = Array.from({ length: 900 }, (_, index) =>
+      cell(index % 30, Math.floor(index / 30), BiomeType.TropicalRainForest),
     );
     const snowyRequest = request(snowyCells, "snowy-props");
     const rainforestRequest = request(rainforestCells, "rainforest-props");
@@ -211,10 +244,12 @@ describe("terrain prop placement", () => {
   });
 
   it("biases settlement regrowth edges toward pioneer cover and deadwood", () => {
-    const occupiedSites = new Set(["6:6", "12:12", "18:18"]);
-    const cells = Array.from({ length: 25 * 25 }, (_, index) => {
-      const col = index % 25;
-      const row = Math.floor(index / 25);
+    const occupiedSites = new Set(
+      Array.from({ length: 36 }, (_, index) => `${6 + (index % 6) * 7}:${6 + Math.floor(index / 6) * 7}`),
+    );
+    const cells = Array.from({ length: 50 * 50 }, (_, index) => {
+      const col = index % 50;
+      const row = Math.floor(index / 50);
       return cell(col, row, BiomeType.TemperateDeciduousForest, occupiedSites.has(`${col}:${row}`));
     });
     const page = request(cells, "settlement-regrowth");

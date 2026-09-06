@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Clearer Terrain And Daylight",
+    type: "improvement",
+    description:
+      "See hex boundaries across terrain and darker frontier fog, with balanced daylight, flowing lava and charred vegetation. Armies stand in clear space without making nearby plants disappear, and buildings cast sunlight shadows.",
+  },
+  {
+    date: "2026-09-06",
     title: "Choose Your Frame Limit",
     type: "improvement",
     description:

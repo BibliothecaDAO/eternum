@@ -1298,7 +1298,6 @@ export default class WorldmapScene extends WarpTravel {
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
-      this.refreshTerrainPropOccupancy();
     });
     const unsubscribeChests = this.worldSpatialProjection.subscribeChests(() => this.refreshTerrainPropOccupancy());
     this.unsubscribeWorldSpatialProjection = () => {
@@ -3491,7 +3490,6 @@ export default class WorldmapScene extends WarpTravel {
       const hex = { col: contract.x, row: contract.y };
       return (
         this.worldSpatialProjection.getStructuresAtHex(hex).length > 0 ||
-        this.worldSpatialProjection.getArmiesAtHex(hex).length > 0 ||
         this.worldSpatialProjection.getChestsAtHex(hex).length > 0
       );
     });

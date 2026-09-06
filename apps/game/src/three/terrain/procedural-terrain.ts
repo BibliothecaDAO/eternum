@@ -14,6 +14,7 @@ import {
   type Raycaster,
 } from "three";
 
+import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
@@ -357,9 +358,9 @@ export class ProceduralTerrain {
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     this.requireActive();
+    const owner = findNearestTerrainHex(worldX, worldZ);
     for (const page of this.pages.values()) {
-      const sample = page.field.sampleSurface(worldX, worldZ);
-      if (sample.biome !== null) return sample;
+      if (page.field.ownsCell(owner.col, owner.row)) return page.field.sampleSurface(worldX, worldZ);
     }
     return { biome: null, height: 0, normal: [0, 1, 0] };
   }
