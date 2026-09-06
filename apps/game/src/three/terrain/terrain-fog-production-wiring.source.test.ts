@@ -16,6 +16,13 @@ describe("continuous exploration fog production wiring", () => {
     expect(fogField).not.toContain("terrain-exploration-shroud-frontier");
   });
 
+  it("clips resident fog to the exact unexplored geometry instead of the blurred neighborhood mask", () => {
+    const fogField = source("src/three/terrain/terrain-fog-field.ts");
+    expect(fogField).toContain('float(1).sub(attribute<"float">("terrainExplored", "float"))');
+    expect(fogField).toContain("mix(output.rgb, this.materials.surfaceColor, unexplored)");
+    expect(fogField).not.toContain("surfaceOpacity.max(unexplored)");
+  });
+
   it("shades flat ground, textured ground and water with the same fog field", () => {
     const terrain = source("src/three/terrain/procedural-terrain.ts");
     expect(terrain).toContain("this.fogField.applyToTerrain(this.materials.flatLand)");
@@ -39,7 +46,7 @@ describe("continuous exploration fog production wiring", () => {
 
     expect(debugRenderer).toContain("TERRAIN_DEEP_FOG_COLOR");
     expect(fogField).toContain("TERRAIN_DEEP_FOG_COLOR");
-    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#55534c"');
+    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#242629"');
     expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 1");
   });
 
