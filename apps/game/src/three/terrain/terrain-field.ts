@@ -1,6 +1,6 @@
-import { Biome } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
-import { Color } from "three";
+import { Biome } from "@bibliothecadao/eternum/biome";
+import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
+import { Color } from "three/src/math/Color.js";
 
 import { TerrainNoise } from "./terrain-noise";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";

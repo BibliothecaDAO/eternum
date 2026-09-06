@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType } from "@bibliothecadao/types/terrain";
 
 import { findNearestTerrainHex, terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
 import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";

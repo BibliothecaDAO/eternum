@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./terrain": {
+      "types": "./dist/terrain.d.ts",
+      "import": "./dist/terrain.js",
+      "require": "./dist/terrain.cjs"
     }
   },
   "main": "./dist/index.cjs",

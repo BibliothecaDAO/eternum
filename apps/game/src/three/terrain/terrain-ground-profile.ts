@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType } from "@bibliothecadao/types/terrain";
 
 import type { TerrainVegetationField } from "./terrain-field";
 

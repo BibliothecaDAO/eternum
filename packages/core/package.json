@@ -21,6 +21,10 @@
     "./game-sync-models": {
       "types": "./dist/sync/model-manifest.d.ts",
       "import": "./dist/sync/model-manifest.js"
+    },
+    "./biome": {
+      "types": "./dist/utils/biome/biome.d.ts",
+      "import": "./dist/utils/biome/biome.js"
     }
   },
   "main": "./dist/index.js",

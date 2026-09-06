@@ -1,4 +1,4 @@
-import { CanvasTexture, LinearFilter, MeshBasicMaterial, PlaneGeometry } from "three";
+import { DataTexture, LinearFilter, MeshBasicMaterial, PlaneGeometry } from "three";
 
 interface ContactShadowResources {
   geometry: PlaneGeometry;
@@ -7,34 +7,21 @@ interface ContactShadowResources {
 
 let cachedResources: ContactShadowResources | null = null;
 
-function createContactShadowTexture(size: number): CanvasTexture | null {
-  if (typeof document === "undefined") {
-    return null;
+function createContactShadowTexture(size: number): DataTexture {
+  // A CPU mask avoids WebGPU's first canvas-copy pipeline stall during game entry.
+  const pixels = new Uint8Array(size * size * 4);
+  const radius = size / 2;
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      const distance = Math.hypot(col + 0.5 - radius, row + 0.5 - radius) / radius;
+      const alpha = distance < 0.35 ? 1 - (distance / 0.35) * 0.65 : ((1 - distance) / 0.65) * 0.35;
+      const offset = (row * size + col) * 4;
+      pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = 255;
+      pixels[offset + 3] = Math.round(Math.max(0, alpha) * 255);
+    }
   }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return null;
-  }
-
-  const center = size * 0.5;
-  const radius = size * 0.5;
-
-  ctx.clearRect(0, 0, size, size);
-
-  const gradient = ctx.createRadialGradient(center, center, 0, center, center, radius);
-  gradient.addColorStop(0.0, "rgba(255,255,255,1.0)");
-  gradient.addColorStop(0.35, "rgba(255,255,255,0.35)");
-  gradient.addColorStop(1.0, "rgba(255,255,255,0.0)");
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-
-  const texture = new CanvasTexture(canvas);
+  const texture = new DataTexture(pixels, size, size);
+  texture.name = "contact-shadow";
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
   texture.needsUpdate = true;
@@ -51,7 +38,7 @@ export function getContactShadowResources(): ContactShadowResources {
   geometry.rotateX(-Math.PI / 2);
 
   const material = new MeshBasicMaterial({
-    map: texture ?? undefined,
+    map: texture,
     color: 0x000000,
     transparent: true,
     opacity: 0.28,

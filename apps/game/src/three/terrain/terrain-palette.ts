@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType } from "@bibliothecadao/types/terrain";
 
 export interface TerrainBiomeDescriptor {
   baseHeight: number;

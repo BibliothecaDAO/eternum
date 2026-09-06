@@ -1,5 +1,5 @@
-import { BiomeType } from "@bibliothecadao/types";
-import { Color } from "three";
+import { BiomeType } from "@bibliothecadao/types/terrain";
+import { Color } from "three/src/math/Color.js";
 
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
