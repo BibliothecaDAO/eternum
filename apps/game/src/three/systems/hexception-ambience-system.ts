@@ -71,6 +71,7 @@ export class HexceptionAmbienceSystem {
 
   // Master state
   private enabled = true;
+  private reducedMotion = false;
   private timeProgress = 50; // 0-100
   private weatherIntensity = 0; // 0-1
 
@@ -108,14 +109,6 @@ export class HexceptionAmbienceSystem {
   private mistGridCenter = new Vector3(0, 0, 0);
   private mistGridRadius = 10;
 
-  // Feature 5: Hex Seam Glow
-  private seamGlowMesh: Mesh | null = null;
-  private seamGlowTexture: DataTexture | null = null;
-  private seamGlowMaterial: MeshBasicMaterial | null = null;
-  private seamGlowGeometry: PlaneGeometry | null = null;
-  private seamGlowEnabled = true;
-  private seamGlowElapsed = 0;
-
   // Feature 6: Subtle Background
   private backgroundMesh: Mesh | null = null;
   private backgroundTexture: DataTexture | null = null;
@@ -133,7 +126,6 @@ export class HexceptionAmbienceSystem {
     this.initSettlementLight();
     this.initRadialGradient();
     this.initGroundFog();
-    this.initSeamGlow();
     this.initBackground();
   }
 
@@ -363,11 +355,8 @@ export class HexceptionAmbienceSystem {
     this.mistPoints = new Points(this.mistGeometry, this.mistMaterial);
     this.mistPoints.frustumCulled = false;
 
-    // Apply current enabled state
-    const active = this.enabled && this.mistEnabled;
-    this.mistPoints.visible = active;
-
     this.scene.add(this.mistPoints);
+    this.applyMistState();
   }
 
   private updateEdgeMist(deltaTime: number): void {
@@ -403,148 +392,6 @@ export class HexceptionAmbienceSystem {
       this.mistColors = null;
       this.mistStates = [];
     }
-  }
-
-  // ───────── Feature 5: Hex Seam Glow ─────────
-
-  /** Hexagon SDF: returns distance from point (px,py) to a regular hexagon of given radius centered at origin */
-  private static sdHexagon(px: number, py: number, radius: number): number {
-    // Map to first quadrant
-    let qx = Math.abs(px);
-    let qy = Math.abs(py);
-    // Hex constants: cos(30°) ≈ 0.8660254, sin(30°) = 0.5
-    const k = 0.8660254;
-    // Reflect across hex edge normals
-    const dot = 2.0 * Math.min(-k * qx + 0.5 * qy, 0.0);
-    qx -= dot * -k;
-    qy -= dot * 0.5;
-    // Clamp to hex half-width
-    qx -= clamp01(qx / (k * radius)) * k * radius;
-    // Shift for hex flat side
-    qy -= radius;
-    return Math.sqrt(qx * qx + Math.max(qy, 0) * Math.max(qy, 0)) * Math.sign(qy);
-  }
-
-  /** Find nearest hex center in a tiled hex grid and return SDF distance to that hex boundary */
-  private static hexGridSDF(wx: number, wy: number, hexRadius: number): number {
-    // Hex grid: pointy-top layout
-    // Horizontal spacing = sqrt(3) * r, vertical spacing = 1.5 * r
-    const sqrt3 = Math.sqrt(3);
-    const hSpacing = sqrt3 * hexRadius;
-    const vSpacing = 1.5 * hexRadius;
-
-    // Convert to hex axial coordinates (approximate)
-    const row = Math.round(wy / vSpacing);
-    const colOffset = row % 2 !== 0 ? hSpacing * 0.5 : 0;
-    const col = Math.round((wx - colOffset) / hSpacing);
-
-    // Check this and neighboring hex centers, find nearest
-    let minDist = Infinity;
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        const r = row + dr;
-        const c = col + dc;
-        const cOff = r % 2 !== 0 ? hSpacing * 0.5 : 0;
-        const cx = c * hSpacing + cOff;
-        const cy = r * vSpacing;
-        const d = HexceptionAmbienceSystem.sdHexagon(wx - cx, wy - cy, hexRadius);
-        if (Math.abs(d) < Math.abs(minDist)) {
-          minDist = d;
-        }
-      }
-    }
-    return minDist;
-  }
-
-  private initSeamGlow(): void {
-    const size = 256;
-    const data = new Uint8Array(size * size * 4);
-    const worldExtent = 14; // covers ~14x14 world units
-    const hexRadius = 1.0; // hex radius in world units
-
-    // Base color: 0x6644aa (purple), accent: 0xaa88ff
-    const baseR = 0x66 / 255;
-    const baseG = 0x44 / 255;
-    const baseB = 0xaa / 255;
-    const accentR = 0xaa / 255;
-    const accentG = 0x88 / 255;
-    const accentB = 0xff / 255;
-
-    for (let py = 0; py < size; py++) {
-      for (let px = 0; px < size; px++) {
-        // Map pixel to world coordinates centered at origin
-        const wx = (px / size - 0.5) * worldExtent;
-        const wy = (py / size - 0.5) * worldExtent;
-
-        const d = HexceptionAmbienceSystem.hexGridSDF(wx, wy, hexRadius);
-        const absDist = Math.abs(d);
-
-        // Bright at SDF boundary (edge distance near 0), dark away from edges
-        let intensity = 0;
-        if (absDist < 0.06) {
-          // Peak brightness at edge (absDist=0), fading out to 0.06
-          intensity = 1.0 - absDist / 0.06;
-        }
-        // else intensity stays 0
-
-        // Mix base and accent colors
-        const t = intensity;
-        const r = lerp(baseR, accentR, t) * intensity;
-        const g = lerp(baseG, accentG, t) * intensity;
-        const b = lerp(baseB, accentB, t) * intensity;
-
-        const idx = (py * size + px) * 4;
-        data[idx] = Math.round(r * 255);
-        data[idx + 1] = Math.round(g * 255);
-        data[idx + 2] = Math.round(b * 255);
-        data[idx + 3] = Math.round(intensity * 255);
-      }
-    }
-
-    this.seamGlowTexture = new DataTexture(data, size, size, RGBAFormat, UnsignedByteType);
-    this.seamGlowTexture.needsUpdate = true;
-
-    this.seamGlowMaterial = new MeshBasicMaterial({
-      map: this.seamGlowTexture,
-      transparent: true,
-      depthWrite: false,
-      blending: AdditiveBlending,
-      opacity: 0.04, // default day opacity
-    });
-
-    this.seamGlowGeometry = new PlaneGeometry(14, 14);
-    this.seamGlowMesh = new Mesh(this.seamGlowGeometry, this.seamGlowMaterial);
-    this.seamGlowMesh.rotation.x = -Math.PI / 2;
-    this.seamGlowMesh.position.y = 0.02;
-    this.seamGlowMesh.renderOrder = 1;
-    this.scene.add(this.seamGlowMesh);
-  }
-
-  private updateSeamGlow(deltaTime: number): void {
-    if (!this.seamGlowMesh || !this.seamGlowMaterial) return;
-
-    this.seamGlowElapsed += deltaTime;
-
-    // Subtle pulse via sine wave, period ~4s
-    const pulse = 0.5 + 0.5 * Math.sin((this.seamGlowElapsed * Math.PI * 2) / 4.0);
-
-    // Time-of-day: brighter at night (0.15), dimmer at day (0.04)
-    const nightFactor = this.getNightFactor();
-    const baseOpacity = lerp(0.04, 0.15, nightFactor);
-
-    // Modulate with pulse (±20%)
-    this.seamGlowMaterial.opacity = baseOpacity * (0.8 + 0.2 * pulse);
-  }
-
-  private updateSeamGlowOpacity(): void {
-    if (!this.seamGlowMaterial) return;
-    const nightFactor = this.getNightFactor();
-    this.seamGlowMaterial.opacity = lerp(0.04, 0.15, nightFactor);
-  }
-
-  private applySeamGlowState(): void {
-    if (!this.seamGlowMesh) return;
-    this.seamGlowMesh.visible = this.enabled && this.seamGlowEnabled;
   }
 
   // ───────── Feature 6: Subtle Background ─────────
@@ -639,10 +486,14 @@ export class HexceptionAmbienceSystem {
     this.initEdgeMist(gridCenter, gridRadius);
   }
 
+  setReducedMotion(reduced: boolean): void {
+    this.reducedMotion = reduced;
+  }
+
   update(deltaTime: number): void {
+    if (!this.enabled || this.reducedMotion) return;
     this.updateGroundFog(deltaTime);
     this.updateEdgeMist(deltaTime);
-    this.updateSeamGlow(deltaTime);
   }
 
   setTimeProgress(progress: number): void {
@@ -651,7 +502,6 @@ export class HexceptionAmbienceSystem {
     this.updateRadialOpacity();
     this.updateBackgroundOpacity();
     this.updateFogTimeOfDay();
-    this.updateSeamGlowOpacity();
   }
 
   setWeatherIntensity(intensity: number): void {
@@ -670,7 +520,6 @@ export class HexceptionAmbienceSystem {
     this.applyBackgroundState();
     this.applyFogState();
     this.applyMistState();
-    this.applySeamGlowState();
   }
 
   setSettlementLightEnabled(enabled: boolean): void {
@@ -696,11 +545,6 @@ export class HexceptionAmbienceSystem {
   setEdgeMistEnabled(enabled: boolean): void {
     this.mistEnabled = enabled;
     this.applyMistState();
-  }
-
-  setSeamGlowEnabled(enabled: boolean): void {
-    this.seamGlowEnabled = enabled;
-    this.applySeamGlowState();
   }
 
   dispose(): void {
@@ -730,16 +574,6 @@ export class HexceptionAmbienceSystem {
       this.fogStates = [];
     }
     this.disposeEdgeMist();
-    if (this.seamGlowMesh) {
-      this.scene.remove(this.seamGlowMesh);
-      this.seamGlowGeometry?.dispose();
-      this.seamGlowMaterial?.dispose();
-      this.seamGlowTexture?.dispose();
-      this.seamGlowMesh = null;
-      this.seamGlowGeometry = null;
-      this.seamGlowMaterial = null;
-      this.seamGlowTexture = null;
-    }
     if (this.backgroundMesh) {
       this.scene.remove(this.backgroundMesh);
       this.backgroundGeometry?.dispose();

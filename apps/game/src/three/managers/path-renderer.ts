@@ -2,7 +2,6 @@ import {
   Box3,
   BufferGeometry,
   Color,
-  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   LineBasicMaterial,
@@ -427,8 +426,6 @@ export class PathRenderer {
   private createPersistentBatch(displayState: PathDisplayState): PathBatchObject {
     const positionAttribute = new Float32BufferAttribute(new Float32Array(this.config.maxSegments * 6), 3);
     const colorAttribute = new Float32BufferAttribute(new Float32Array(this.config.maxSegments * 6), 3);
-    positionAttribute.setUsage(DynamicDrawUsage);
-    colorAttribute.setUsage(DynamicDrawUsage);
 
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", positionAttribute);

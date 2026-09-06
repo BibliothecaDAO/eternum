@@ -189,14 +189,14 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
     if (
       expectsFog &&
-      (result.snapshot?.fogMaskWidth !== 64 ||
-        result.snapshot?.fogMaskHeight !== 64 ||
-        result.snapshot?.fogMaskBytes !== 4_096)
+      (!(result.snapshot?.fogMaskWidth > 0 && result.snapshot.fogMaskWidth <= 1_024) ||
+        !(result.snapshot?.fogMaskHeight > 0 && result.snapshot.fogMaskHeight <= 1_024) ||
+        result.snapshot?.fogMaskBytes !== result.snapshot?.fogMaskWidth * result.snapshot?.fogMaskHeight)
     ) {
-      reasons.push(`${label}: expected one bounded 64-square fog mask`);
+      reasons.push(`${label}: expected one bounded single-channel fog mask`);
     }
-    if (result.snapshot?.fogOpacity !== 0.84) {
-      reasons.push(`${label}: expected the configured 84-percent deep fog opacity`);
+    if (result.snapshot?.fogOpacity !== 1) {
+      reasons.push(`${label}: expected opaque unexplored territory`);
     }
     if (
       expectsFog &&

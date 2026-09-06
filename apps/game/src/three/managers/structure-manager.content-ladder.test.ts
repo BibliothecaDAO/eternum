@@ -218,7 +218,7 @@ function createLiveManager(structures = PRIORITY_STRUCTURES) {
   ) as any;
 
   const models = { realm: createModel(), wonder: createModel(), skin: createModel() };
-  manager.structureModels = new Map([["Realm", [models.realm, models.wonder]]]);
+  manager.structureModels = new Map([["Realm", new Map([models.realm, models.wonder].entries())]]);
   manager.cosmeticStructureModels = new Map([["skin", [models.skin]]]);
   manager.attachmentManager = { setVisible: vi.fn(), clear: vi.fn(), removeAttachments: vi.fn() };
   manager.compactLabelRenderer = { setLabel: vi.fn(), removeLabel: vi.fn(), clear: vi.fn(), dispose: vi.fn() };
@@ -366,7 +366,7 @@ function createFullRefreshSubject(structureCount: number) {
   subject.currentChunkBounds = undefined;
   subject.hasPendingModelBounds = false;
   subject.visibleStructurePassFence = createVisibleStructurePassFence();
-  subject.structureModels = new Map([["Village", [model]]]);
+  subject.structureModels = new Map([["Village", new Map([model].entries())]]);
   subject.cosmeticStructureModels = new Map();
   subject.entityIdMaps = new Map();
   subject.cosmeticEntityIdMaps = new Map();

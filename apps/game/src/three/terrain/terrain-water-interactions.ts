@@ -1,17 +1,8 @@
-import {
-  DynamicDrawUsage,
-  Group,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  PlaneGeometry,
-  Quaternion,
-  Vector3,
-} from "three";
-import * as ThreeWebGPU from "three/webgpu";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { Group, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3 } from "three";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, time, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
 
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 
@@ -33,16 +24,13 @@ export interface TerrainWaterInteractionStats {
 
 const WATER_INTERACTION_ATTRIBUTE = "terrainWaterInteraction";
 const WATER_INTERACTION_Y = TERRAIN_WATER_LEVEL + 0.012;
-const MeshBasicNodeMaterialConstructor = (
-  ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
-).MeshBasicNodeMaterial;
 
 export class TerrainWaterInteractionPool {
   readonly object3d = new Group();
   private readonly geometry = createTerrainWaterInteractionGeometry();
   private readonly strength = uniform(1, "float");
   private readonly material = createTerrainWaterInteractionMaterial(this.strength);
-  private readonly mesh = new InstancedMesh(this.geometry, this.material, TERRAIN_WATER_INTERACTION_CAPACITY);
+  private readonly mesh = createInstancedMesh(this.geometry, this.material, TERRAIN_WATER_INTERACTION_CAPACITY);
   private readonly interactionAttribute = new InstancedBufferAttribute(
     new Float32Array(TERRAIN_WATER_INTERACTION_CAPACITY * 2),
     2,
@@ -62,9 +50,7 @@ export class TerrainWaterInteractionPool {
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 2;
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.mesh.raycast = disableWaterInteractionRaycast;
-    this.interactionAttribute.setUsage(DynamicDrawUsage);
     this.geometry.setAttribute(WATER_INTERACTION_ATTRIBUTE, this.interactionAttribute);
     this.object3d.add(this.mesh);
   }
@@ -144,7 +130,7 @@ function createTerrainWaterInteractionGeometry(): PlaneGeometry {
 }
 
 function createTerrainWaterInteractionMaterial(strength: UniformNode<"float", number>): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterialConstructor();
+  const material = new MeshBasicNodeMaterial();
   material.name = "terrain-water-interactions";
   material.transparent = true;
   material.depthWrite = false;

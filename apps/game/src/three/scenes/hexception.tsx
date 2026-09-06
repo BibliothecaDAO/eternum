@@ -1,8 +1,11 @@
+import { createHexceptionTerrainRequest, getLocalHexDisk } from "./hexception-terrain";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -31,7 +34,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { TerrainSurface } from "@/three/terrain/terrain-surface";
-import type { TerrainCellInput, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
+import type { TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   buildingKey,
   reconcileBuildingUpdate,
@@ -74,6 +77,8 @@ import {
   getBuildingCosts,
   getRealmInfo,
   getStructureStage,
+  getTileAt,
+  DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import {
   BUILDINGS_CENTER,
@@ -132,47 +137,12 @@ interface BuildingModelSelection {
   type: BUILDINGS_CATEGORIES_TYPES;
 }
 
-const generateHexPositions = (center: HexPosition, radius: number) => {
-  const color = new Color("gray");
-  const positions: any[] = [];
-  const positionSet = new Set(); // To track existing positions
-
-  // Helper function to add position if not already added
-  const addPosition = (col: number, row: number, isBorder: boolean) => {
-    const key = `${col},${row}`;
-    if (!positionSet.has(key)) {
-      const position = {
-        ...getWorldPositionForHex({ col, row }, false),
-        color,
-        col,
-        row,
-        isBorder,
-      };
-      positions.push(position);
-      positionSet.add(key);
-    }
-  };
-
-  // Add center position
-  addPosition(center.col, center.row, false);
-
-  // Generate positions in expanding hexagonal layers
-  let currentLayer = [center];
-  for (let i = 0; i < radius; i++) {
-    const nextLayer: any = [];
-    currentLayer.forEach((pos) => {
-      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
-        if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
-          addPosition(neighbor.col, neighbor.row, i === radius - 1);
-          nextLayer.push({ col: neighbor.col, row: neighbor.row });
-        }
-      });
-    });
-    currentLayer = nextLayer; // Move to the next layer
-  }
-
-  return positions;
-};
+const generateHexPositions = (center: HexPosition, radius: number) =>
+  getLocalHexDisk(center, radius).map((cell) => ({
+    ...getWorldPositionForHex(cell, false),
+    ...cell,
+    color: new Color("gray"),
+  }));
 
 export default class HexceptionScene extends HexagonScene {
   private hexceptionRadius = 4;
@@ -205,6 +175,7 @@ export default class HexceptionScene extends HexagonScene {
   private structureUpdateSubscription: any | null = null;
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
+  private localAssetsStarted = false;
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
   // Store Zustand unsubscribe functions to clean up on destroy
@@ -233,19 +204,13 @@ export default class HexceptionScene extends HexagonScene {
 
     this.proceduralTerrain = new ProceduralTerrain();
     this.scene.add(this.proceduralTerrain.object3d);
-    void this.proceduralTerrain.loadProps().catch((error) => {
-      console.warn("[Hexception] Optional procedural terrain props failed to load", error);
-    });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
-    });
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
     this.interactiveHexManager.setSurfaceVisibility(false);
 
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
-
-    this.loadBuildingModels();
+    this.applyAmbienceAppearance();
+    this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
 
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
@@ -559,9 +524,20 @@ export default class HexceptionScene extends HexagonScene {
     return this.buildingPreview;
   }
 
+  private startLocalAssets() {
+    if (this.localAssetsStarted) return;
+    this.localAssetsStarted = true;
+    void this.proceduralTerrain.loadProps().catch((error) => {
+      console.warn("[Hexception] Optional procedural terrain props failed to load", error);
+    });
+    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
+      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
+    });
+    this.loadBuildingModels();
+  }
+
   setup() {
-    this.isEntered = true;
-    this.bootstrapSceneOwnership();
+    this.isEntered = false;
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
     const contractPosition = routeTarget.hexRealmPosition;
@@ -569,6 +545,11 @@ export default class HexceptionScene extends HexagonScene {
     if (routeWorldPosition == null || contractPosition == null) {
       return;
     }
+
+    this.startLocalAssets();
+    this.selectRouteStructure(contractPosition);
+    this.isEntered = true;
+    this.bootstrapSceneOwnership();
 
     const { col, row } = routeWorldPosition;
     const realmKey = `${contractPosition.col},${contractPosition.row}`;
@@ -623,8 +604,8 @@ export default class HexceptionScene extends HexagonScene {
       this.updateHexceptionGrid(this.hexceptionRadius);
     }
 
-    // Setup ambience system at grid center (origin for the main hex)
-    this.ambienceSystem?.setup(new Vector3(0, 0, 0), this.hexceptionRadius);
+    const settlementCenter = getWorldPositionForHex({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] });
+    this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
     this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
     this.controls.enablePan = false;
@@ -761,9 +742,14 @@ export default class HexceptionScene extends HexagonScene {
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
     const buildingType = this.buildingPreview?.getPreviewBuilding();
 
-    // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
+    const canConstruct = !!account && !useUIStore.getState().isSpectating && !isExplicitSpectateSession();
     if (buildingType) {
+      if (!canConstruct || !account) {
+        this.clearBuildingMode();
+        return;
+      }
+
       const useSimpleCost = this.state.useSimpleCost;
       const structureEntityId = useUIStore.getState().structureEntityId;
       const realm = getRealmInfo(gameEntityKey([BigInt(structureEntityId)]), this.dojo.components);
@@ -795,7 +781,7 @@ export default class HexceptionScene extends HexagonScene {
       this.clearBuildingMode();
       try {
         await this.tileManager.placeBuilding(
-          account!,
+          account,
           structureEntityId,
           buildingType.type,
           normalizedCoords,
@@ -803,9 +789,7 @@ export default class HexceptionScene extends HexagonScene {
         );
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
-        console.error("[Hexception] building placement failed; removing provisional building", error);
-        this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
-        this.updateBuildingHighlight(normalizedCoords, false);
+        console.error("[Hexception] building placement failed", error);
       }
     } else {
       // if not building mode
@@ -850,7 +834,7 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
-        this.state.setLeftNavigationView(LeftView.ConstructionView);
+        this.state.setLeftNavigationView(canConstruct ? LeftView.ConstructionView : LeftView.EntityView);
       }
     }
   }
@@ -1035,6 +1019,26 @@ export default class HexceptionScene extends HexagonScene {
         <ProductionModal preSelectedResource={producedResource === ResourcesIds.Labor ? undefined : producedResource} />
       ),
     });
+  }
+
+  private selectRouteStructure(position: HexPosition): void {
+    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, position.col, position.row);
+    const structure = tile?.occupier_is_structure
+      ? getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(tile.occupier_id)]))
+      : undefined;
+    if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
+    useUIStore.getState().setStructureEntityId(structure.entity_id, { worldMapPosition: position });
+  }
+
+  private applyAmbienceAppearance(): void {
+    const { fogStyle, reducedMotion } = useWorldAppearanceStore.getState();
+    this.ambienceSystem?.setFogEnabled(fogStyle === "mist");
+    this.ambienceSystem?.setEdgeMistEnabled(fogStyle === "mist");
+    this.ambienceSystem?.setReducedMotion(reducedMotion);
+  }
+
+  protected override shouldCreateGroundMesh(): boolean {
+    return false;
   }
 
   public moveCameraToURLLocation() {
@@ -1273,17 +1277,13 @@ export default class HexceptionScene extends HexagonScene {
       });
     });
 
-    const prepared = this.proceduralTerrain.preparePage({
-      cells: Array.from(cellsByKey.values()).toSorted((left, right) => left.row - right.row || left.col - right.col),
-      climate: configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
-      halo: [],
-      mapCenter: 0,
-      pageKey: `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
-      roadSegments: [],
-      settlementAnchors: createHexceptionSettlementAnchors(cellsByKey.values()),
-      strictBiomeParity: false,
-      subdivisions: 2,
-    });
+    const prepared = this.proceduralTerrain.preparePage(
+      createHexceptionTerrainRequest(
+        cellsByKey.values(),
+        configManager.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE,
+        `hexception:${this.centerColRow[0]},${this.centerColRow[1]}`,
+      ),
+    );
     this.proceduralTerrain.present([prepared]);
     this.buildings.forEach((building) => {
       worldPosition.setFromMatrixPosition(building.matrix);
@@ -1740,18 +1740,6 @@ export default class HexceptionScene extends HexagonScene {
   public hasActiveLabelAnimations(): boolean {
     return this.hoverLabelManager.hasActiveLabel();
   }
-}
-
-function createHexceptionSettlementAnchors(cells: Iterable<TerrainCellInput>): TerrainSettlementAnchor[] {
-  return Array.from(cells)
-    .filter(({ occupied }) => occupied)
-    .map(({ col, row }) => ({
-      col,
-      level: 1,
-      row,
-      structureId: `hexception:${col}:${row}`,
-      structureType: StructureType.Village,
-    }));
 }
 
 function resolveHexceptionBiome(biomeKey: string, fallback: BiomeType): BiomeType {

@@ -37,7 +37,7 @@ describe("RendererDebugControl", () => {
       createRendererInitDiagnostics({
         activeMode: "webgl2-fallback",
         buildMode: "webgpu-auto",
-        fallbackReason: "webgpu-unavailable",
+        fallbackReason: "webgpu-silent-fallback",
         requestedMode: "webgpu-auto",
       }),
     );
@@ -45,7 +45,7 @@ describe("RendererDebugControl", () => {
     act(() => root.render(<RendererDebugControl />));
 
     expect(container.querySelector('[data-testid="renderer-active-mode"]')?.textContent).toBe("WebGL2");
-    expect(container.textContent).toContain("webgpu-unavailable");
+    expect(container.textContent).toContain("webgpu-silent-fallback");
     expect(container.querySelector('[aria-label="Reload with WebGPU"]')?.getAttribute("aria-current")).toBe("true");
   });
 

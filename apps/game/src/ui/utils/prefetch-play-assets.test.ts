@@ -20,13 +20,11 @@ const stubBrowserPreloadGlobals = () => {
 
 describe("prefetch-play-assets", () => {
   let prefetchDashboardPlayAssets: typeof prefetchPlayAssetsModule.prefetchDashboardPlayAssets;
-  let prefetchPlayEntryAssets: typeof prefetchPlayAssetsModule.prefetchPlayEntryAssets;
 
   beforeAll(async () => {
     stubBrowserPreloadGlobals();
     const module = await import("./prefetch-play-assets");
     prefetchDashboardPlayAssets = module.prefetchDashboardPlayAssets;
-    prefetchPlayEntryAssets = module.prefetchPlayEntryAssets;
   });
 
   beforeEach(() => {
@@ -68,16 +66,6 @@ describe("prefetch-play-assets", () => {
     expect(allPrefetched.some((href) => href?.endsWith(".png") || href?.endsWith(".svg"))).toBe(true);
   });
 
-  it("writes a dedicated entry session key", async () => {
-    vi.useFakeTimers();
-
-    prefetchPlayEntryAssets();
-
-    expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBeNull();
-    await vi.runAllTimersAsync();
-    expect(window.sessionStorage.getItem("playEntryAssetsPrefetched")).toBe("true");
-  });
-
   it("does not duplicate work while a session prefetch is already in flight", async () => {
     vi.useFakeTimers();
 
@@ -96,16 +84,6 @@ describe("prefetch-play-assets", () => {
     window.sessionStorage.setItem("playDashboardAssetsPrefetched", "true");
 
     prefetchDashboardPlayAssets();
-    await vi.runAllTimersAsync();
-
-    expect(document.head.querySelectorAll('link[rel="prefetch"]')).toHaveLength(0);
-  });
-
-  it("is a no-op once the entry session key is set", async () => {
-    vi.useFakeTimers();
-    window.sessionStorage.setItem("playEntryAssetsPrefetched", "true");
-
-    prefetchPlayEntryAssets();
     await vi.runAllTimersAsync();
 
     expect(document.head.querySelectorAll('link[rel="prefetch"]')).toHaveLength(0);

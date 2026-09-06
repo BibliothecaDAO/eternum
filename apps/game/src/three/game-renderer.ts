@@ -124,6 +124,8 @@ export default class GameRenderer {
     this.supportRuntimeRegistry = runtimeAssembly.supportRuntimeRegistry;
     this.sessionRuntime = runtimeAssembly.sessionRuntime;
     this.backendInitializationPromise = this.initializeRendererBackend();
+    // The handshake overlaps world sync; initScene still receives any initialization failure.
+    void this.backendInitializationPromise.catch(() => undefined);
     this.initializeFoundationRuntime();
   }
 
@@ -171,6 +173,10 @@ export default class GameRenderer {
       pixelRatio: this.getTargetPixelRatio(),
       search: window.location.search,
     });
+    if (this.isDestroyed) {
+      disposeRendererBackend(backend as RendererBackendRuntime);
+      return;
+    }
     this.backend = backend as RendererBackendRuntime;
     this.renderer = renderer;
     configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
@@ -525,7 +531,7 @@ export default class GameRenderer {
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
-          currentScene: this.sceneManager?.getCurrentScene(),
+          currentScene: this.sceneManager?.getRenderingScene(),
           currentTime,
           cycleProgress,
           deltaTime,

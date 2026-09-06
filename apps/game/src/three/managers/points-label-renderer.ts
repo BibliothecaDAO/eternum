@@ -1,7 +1,6 @@
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import type { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
-import { FrustumManager } from "../utils/frustum-manager";
 
 /**
  * Configuration for a single point label
@@ -44,8 +43,6 @@ export class PointsLabelRenderer {
   // Reusable arrays for buffer updates
   private positionsArray: Float32Array;
   private colorsArray: Float32Array;
-  private frustumManager?: FrustumManager;
-  private unsubscribeFrustum?: () => void;
   private visibilityManager?: Pick<CentralizedVisibilityManager, "isSphereVisible" | "onChange">;
   private unsubscribeVisibility?: () => void;
   private boundsDirty = true;
@@ -61,7 +58,6 @@ export class PointsLabelRenderer {
     _hoverScale = 1.2,
     hoverBrightness = 1.3,
     sizeAttenuation = false,
-    frustumManager?: FrustumManager,
     visibilityManager?: Pick<CentralizedVisibilityManager, "isSphereVisible" | "onChange">,
   ) {
     this.maxPoints = maxPoints;
@@ -106,15 +102,9 @@ export class PointsLabelRenderer {
       threshold: pointSize / 1.5, // Adjusted threshold for better hit detection
     };
 
-    this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
     if (this.visibilityManager) {
       this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
-        this.refreshFrustumVisibility();
-      });
-    }
-    if (this.frustumManager) {
-      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
         this.refreshFrustumVisibility();
       });
     }
@@ -142,22 +132,7 @@ export class PointsLabelRenderer {
       return;
     }
 
-    if (!this.frustumManager) {
-      this.points.visible = this.currentCount > 0;
-      return;
-    }
-
-    if (this.currentCount === 0) {
-      this.points.visible = false;
-      return;
-    }
-
-    if (this.boundsDirty || !this.geometry.boundingSphere) {
-      this.geometry.computeBoundingSphere();
-      this.boundsDirty = false;
-    }
-
-    this.points.visible = this.frustumManager.isSphereVisible(this.geometry.boundingSphere);
+    this.points.visible = this.currentCount > 0;
   }
 
   /**
@@ -436,10 +411,6 @@ export class PointsLabelRenderer {
     }
     this.isDisposed = true;
 
-    if (this.unsubscribeFrustum) {
-      this.unsubscribeFrustum();
-      this.unsubscribeFrustum = undefined;
-    }
     if (this.unsubscribeVisibility) {
       this.unsubscribeVisibility();
       this.unsubscribeVisibility = undefined;

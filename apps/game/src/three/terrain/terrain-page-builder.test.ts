@@ -8,6 +8,11 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
 
 describe("prepareTerrainPage", () => {
+  it("preserves the all-biome terrain buffers and placements through sampling optimizations", () => {
+    const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
+    expect(prepared.fingerprint).toMatchInlineSnapshot(`"8b1684d9"`);
+  });
+
   it("builds deterministic indexed terrain and frontier buffers", () => {
     const request = createRequest([cell(0, 0, BiomeType.Ocean)]);
     const first = prepareTerrainPage(request);
@@ -81,7 +86,7 @@ describe("prepareTerrainPage", () => {
     expect(hidden.shroudInstances[0].frontier).toBe(false);
     expect(hidden.diagnostics.frontierPreviewCells).toBe(0);
     expect(hidden.diagnostics.fogTerrainCells).toBe(1);
-    expect(hidden.buffers.positions.length).toBeGreaterThan(0);
+    expect(hidden.buffers.positions.length).toBe(0);
     expect(Array.from(hidden.buffers.explored).every((value) => value === 0)).toBe(true);
     expect(frontier.shroudInstances[0].frontier).toBe(true);
     expect(frontier.diagnostics.frontierPreviewCells).toBe(1);

@@ -1,10 +1,10 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   ACESFilmicToneMapping,
   AmbientLight,
   Color,
   CylinderGeometry,
   DirectionalLight,
-  DynamicDrawUsage,
   Group,
   InstancedMesh,
   Matrix4,
@@ -184,14 +184,13 @@ function createStage(positions: readonly Vector3[]): Group {
 
   const pedestalGeometry = new CylinderGeometry(0.48, 0.58, 0.16, 12);
   const pedestalMaterial = new MeshStandardMaterial({ color: "#44352b", metalness: 0.12, roughness: 0.78 });
-  const pedestals = new InstancedMesh(pedestalGeometry, pedestalMaterial, positions.length);
+  const pedestals = createInstancedMesh(pedestalGeometry, pedestalMaterial, positions.length);
   const matrix = new Matrix4();
   positions.forEach((position, index) => {
     matrix.makeTranslation(position.x, 0.05, position.z);
     pedestals.setMatrixAt(index, matrix);
   });
   pedestals.name = "world-fx-gym-pedestals";
-  pedestals.instanceMatrix.setUsage(DynamicDrawUsage);
   pedestals.instanceMatrix.needsUpdate = true;
   stage.add(pedestals);
   return stage;

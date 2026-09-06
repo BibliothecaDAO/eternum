@@ -39,6 +39,19 @@ describe("WorldmapProceduralTerrain", () => {
     expect(requests[1].cells[0].previewBiome).toBeNull();
   });
 
+  it("builds only camera pages while retaining neighbor cells for seamless edge samples", () => {
+    const requests = buildWorldmapTerrainPageRequests({
+      cells: [worldCell(0, 0, BiomeType.Grassland), worldCell(1, 0, BiomeType.Beach)],
+      mapCenter: 0,
+      pageHeight: 1,
+      pageWidth: 1,
+      pageOrigin: { col: 0, row: 0 },
+      visiblePageKeys: ["0,0"],
+    });
+    expect(requests.map((request) => request.pageKey)).toEqual(["0,0"]);
+    expect(requests[0].halo).toEqual([expect.objectContaining({ col: 1, row: 0, biome: BiomeType.Beach })]);
+  });
+
   it("maps a complete four-by-four visual window to the same sixteen page keys", () => {
     const pageOrigin = { col: -12, row: -12 };
     const pageStarts = [-36, -12, 12, 36];
@@ -177,6 +190,138 @@ describe("WorldmapProceduralTerrain", () => {
       "terrain:present:request",
       "terrain:present:page",
     ]);
+    terrain.dispose();
+  });
+
+  it("shows the first page with its fog before a slow second page is ready", async () => {
+    const input = distantPagesInput();
+    const requests = buildWorldmapTerrainPageRequests(input);
+    let resolveSecond!: (page: PreparedTerrainPage) => void;
+    const pendingSecond = new Promise<PreparedTerrainPage>((resolve) => {
+      resolveSecond = resolve;
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) =>
+      request.pageKey === requests[1].pageKey ? pendingSecond : Promise.resolve(prepareTerrainPage(request)),
+    );
+    const fog = vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const presentation = terrain.presentAsync(input);
+    await flushMicrotasks();
+    expect(terrain.getPresentedPageKeys()).toEqual([requests[0].pageKey]);
+    expect(terrain.getVisibleCellCount()).toBe(1);
+    expect(fog).toHaveBeenCalledWith([expect.objectContaining({ request: requests[0] })]);
+    resolveSecond(prepareTerrainPage(requests[1]));
+    await expect(presentation).resolves.toMatchObject({ pages: 2 });
+    expect(terrain.getPresentedPageKeys()).toEqual(requests.map((request) => request.pageKey));
+    terrain.dispose();
+  });
+
+  it("prepares only the next page while the current page waits for its fog commit", async () => {
+    const input = distantPagesInput();
+    input.cells.push(worldCell(20, 0, BiomeType.Taiga));
+    const requests = buildWorldmapTerrainPageRequests(input);
+    const prepare = vi
+      .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockImplementation(async (request) => prepareTerrainPage(request));
+    let releaseFog!: () => void;
+    const fogReady = new Promise<null>((resolve) => {
+      releaseFog = () => resolve(null);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockReturnValueOnce(fogReady).mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const presentation = terrain.presentAsync(input);
+    await flushMicrotasks();
+    expect(prepare.mock.calls.map(([request]) => request.pageKey)).toEqual(requests.slice(0, 2).map((r) => r.pageKey));
+    expect(terrain.getPresentedPageKeys()).toEqual([]);
+    releaseFog();
+    await expect(presentation).resolves.toMatchObject({ pages: 3 });
+    terrain.dispose();
+  });
+
+  it("propagates a failed lookahead preparation when the active run reaches it", async () => {
+    const input = distantPagesInput();
+    const requests = buildWorldmapTerrainPageRequests(input);
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation(async (request) => {
+      if (request.pageKey === requests[1].pageKey) throw new Error("Page preparation failed");
+      return prepareTerrainPage(request);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    await expect(terrain.presentAsync(input)).rejects.toThrow("Page preparation failed");
+    expect(terrain.getPresentedPageKeys()).toEqual([requests[0].pageKey]);
+    terrain.dispose();
+  });
+
+  it("stops queuing pages when a presentation is superseded during its fog commit", async () => {
+    const input = distantPagesInput();
+    input.cells.push(worldCell(20, 0, BiomeType.Taiga));
+    const prepare = vi
+      .spyOn(ProceduralTerrain.prototype, "preparePageAsync")
+      .mockImplementation(async (request) => prepareTerrainPage(request));
+    let releaseFog!: () => void;
+    const fogReady = new Promise<null>((resolve) => {
+      releaseFog = () => resolve(null);
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockReturnValueOnce(fogReady).mockResolvedValue(null);
+    const terrain = new WorldmapProceduralTerrain();
+    const superseded = terrain.presentAsync(input);
+    await flushMicrotasks();
+    expect(prepare).toHaveBeenCalledTimes(2);
+    await expect(terrain.presentAsync({ ...input, cells: [input.cells[0]] })).resolves.toMatchObject({ pages: 1 });
+    releaseFog();
+    await expect(superseded).resolves.toBeNull();
+    expect(prepare).toHaveBeenCalledTimes(2);
+    expect(terrain.getPresentedPageKeys()).toEqual([buildWorldmapTerrainPageRequests(input)[0].pageKey]);
+    terrain.dispose();
+  });
+
+  it("releases camera readiness while an optional margin page is still preparing", async () => {
+    const input = distantPagesInput();
+    const requests = buildWorldmapTerrainPageRequests(input);
+    let resolveMargin!: (page: PreparedTerrainPage) => void;
+    const margin = new Promise<PreparedTerrainPage>((resolve) => {
+      resolveMargin = resolve;
+    });
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockImplementation((request) =>
+      request.pageKey === requests[1].pageKey ? margin : Promise.resolve(prepareTerrainPage(request)),
+    );
+    vi.spyOn(ProceduralTerrain.prototype, "prepareFogMaskAsync").mockResolvedValue(null);
+    const ready = vi.fn();
+    const terrain = new WorldmapProceduralTerrain();
+    const presentation = terrain.presentAsync({
+      ...input,
+      criticalPageKeys: [requests[0].pageKey],
+      onCriticalPagesReady: ready,
+    });
+    await flushMicrotasks();
+    expect(terrain.getPresentedPageKeys()).toEqual([requests[0].pageKey]);
+    expect(ready).toHaveBeenCalledTimes(1);
+    resolveMargin(prepareTerrainPage(requests[1]));
+    await presentation;
+    expect(ready).toHaveBeenCalledTimes(1);
+    terrain.dispose();
+  });
+
+  it("retains pages still in view while preparing newly exposed terrain", async () => {
+    stubPageWorker();
+    const terrain = new WorldmapProceduralTerrain();
+    await terrain.presentAsync(distantPagesInput());
+    let resolveNew!: (page: PreparedTerrainPage) => void;
+    const pendingNew = new Promise<PreparedTerrainPage>((resolve) => {
+      resolveNew = resolve;
+    });
+    const input = {
+      ...distantPagesInput(),
+      cells: [worldCell(10, 0, BiomeType.Beach), worldCell(20, 0, BiomeType.Taiga)],
+    };
+    const request = buildWorldmapTerrainPageRequests(input)[1];
+    vi.spyOn(ProceduralTerrain.prototype, "preparePageAsync").mockReturnValue(pendingNew);
+    const presentation = terrain.presentAsync(input);
+    await flushMicrotasks();
+    expect(terrain.getPresentedPageKeys()).toContain("0,10");
+    resolveNew(prepareTerrainPage(request));
+    await presentation;
+    expect(terrain.getPresentedPageKeys()).toEqual(["0,10", "0,20"]);
     terrain.dispose();
   });
 
@@ -681,7 +826,11 @@ function twoPageInput() {
 
 /** Two pages too far apart to share a halo, so a change in one leaves the other's request identical. */
 function distantPagesInput() {
-  return { ...twoPageInput(), cells: [worldCell(0, 0, BiomeType.Grassland), worldCell(10, 0, BiomeType.Beach)] };
+  return {
+    commitMode: "ambient" as const,
+    ...twoPageInput(),
+    cells: [worldCell(0, 0, BiomeType.Grassland), worldCell(10, 0, BiomeType.Beach)],
+  };
 }
 
 function singlePageInput(col: number) {

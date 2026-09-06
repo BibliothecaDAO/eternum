@@ -1,3 +1,4 @@
+import { resolveRendererBuildMode, type RendererBuildMode } from "@/three/renderer-build-mode";
 import type { GameChain as Chain } from "@realms-world/chain";
 
 import type { WorldProfile } from "@/runtime/world/types";
@@ -13,6 +14,8 @@ export interface PlayRouteDescriptor {
   scene: PlayScene;
   col: number | null;
   row: number | null;
+  rendererMode?: RendererBuildMode;
+  verboseLogs?: boolean;
   bootMode?: PlayBootMode;
   resumeScene?: PlayScene | null;
 }
@@ -57,6 +60,16 @@ const buildSearch = (searchParams: URLSearchParams): string => {
   return queryString ? `?${queryString}` : "";
 };
 
+function parseRendererOptions(
+  searchParams: URLSearchParams,
+): Pick<PlayRouteDescriptor, "rendererMode" | "verboseLogs"> {
+  const rendererMode = searchParams.get("rendererMode");
+  return {
+    ...(rendererMode ? { rendererMode: resolveRendererBuildMode(rendererMode) } : {}),
+    ...(searchParams.get("logs") === "1" ? { verboseLogs: true } : {}),
+  };
+}
+
 export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | null => {
   const match = location.pathname.match(/^\/play\/([^/]+)\/([^/]+)\/([^/]+)\/?$/);
   if (!match) {
@@ -75,6 +88,7 @@ export const parsePlayRoute = (location: LocationLike): PlayRouteDescriptor | nu
   const resumeScene = bootMode === "map-first" && rawResumeScene && isPlayScene(rawResumeScene) ? rawResumeScene : null;
 
   return {
+    ...parseRendererOptions(searchParams),
     chain: rawChain,
     worldName: decodeURIComponent(rawWorldName),
     scene: rawScene,
@@ -110,6 +124,9 @@ export const buildPlayHref = (route: PlayHrefInput): string => {
   if (bootMode === "map-first" && resumeScene) {
     searchParams.set("resumeScene", resumeScene);
   }
+
+  if (route.rendererMode) searchParams.set("rendererMode", route.rendererMode);
+  if (route.verboseLogs) searchParams.set("logs", "1");
 
   return `/play/${route.chain}/${encodeURIComponent(route.worldName)}/${route.scene}${buildSearch(searchParams)}`;
 };
@@ -163,6 +180,7 @@ const resolveLegacySceneRoute = (location: LocationLike, fallbackWorld?: WorldPr
   const searchParams = new URLSearchParams(location.search);
 
   return buildPlayHref({
+    ...parseRendererOptions(searchParams),
     chain: fallbackWorld.chain,
     worldName: fallbackWorld.name,
     scene,
@@ -188,6 +206,7 @@ const resolveLegacyWorldRoute = (location: LocationLike, fallbackWorld?: WorldPr
   const searchParams = new URLSearchParams(location.search);
 
   return buildPlayHref({
+    ...parseRendererOptions(searchParams),
     chain: fallbackWorld.chain,
     worldName: candidateWorldName,
     scene: "map",
@@ -209,6 +228,7 @@ const resolveBareSceneRoute = (location: LocationLike, fallbackWorld?: WorldProf
   const searchParams = new URLSearchParams(location.search);
 
   return buildPlayHref({
+    ...parseRendererOptions(searchParams),
     chain: fallbackWorld.chain,
     worldName: fallbackWorld.name,
     scene,

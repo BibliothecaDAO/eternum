@@ -3,33 +3,7 @@ import { useEffect } from "react";
 type BootDocumentState = "booting" | "react-mounted" | "app-loading" | "app-ready";
 
 const BOOT_SHELL_ID = "boot-shell";
-const BOOT_SHELL_REMOVAL_DELAY_MS = 420;
-
-let bootShellRemovalTimeoutId: number | null = null;
-
 const TERMINAL_BOOT_STATES: ReadonlySet<BootDocumentState> = new Set(["app-loading", "app-ready"]);
-
-const clearBootShellRemovalTimeout = () => {
-  if (bootShellRemovalTimeoutId !== null) {
-    window.clearTimeout(bootShellRemovalTimeoutId);
-    bootShellRemovalTimeoutId = null;
-  }
-};
-
-const removeBootShell = () => {
-  const bootShell = document.getElementById(BOOT_SHELL_ID);
-  if (bootShell) {
-    bootShell.remove();
-  }
-};
-
-const scheduleBootShellRemoval = () => {
-  clearBootShellRemovalTimeout();
-  bootShellRemovalTimeoutId = window.setTimeout(() => {
-    removeBootShell();
-    clearBootShellRemovalTimeout();
-  }, BOOT_SHELL_REMOVAL_DELAY_MS);
-};
 
 export const markBootMilestone = (name: string) => {
   if (typeof window === "undefined" || typeof window.performance?.mark !== "function") {
@@ -56,7 +30,7 @@ export const setBootDocumentState = (state: BootDocumentState) => {
   rootElement.dataset.bootState = state;
 
   if (TERMINAL_BOOT_STATES.has(state)) {
-    scheduleBootShellRemoval();
+    document.getElementById(BOOT_SHELL_ID)?.remove();
   }
 };
 

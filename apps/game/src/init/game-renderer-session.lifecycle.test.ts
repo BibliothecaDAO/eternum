@@ -53,13 +53,15 @@ describe("game renderer session lifecycle", () => {
     const mockWindow = createMockWindow();
     mockWindow.onbeforeunload = previousBeforeUnload;
 
-    const session = await createGameRendererSession({
+    const session = createGameRendererSession({
       createRenderer: () => renderer,
       enableDevTools: true,
       setupResult: {} as never,
       windowObject: mockWindow,
     });
 
+    expect(renderer.initScene).not.toHaveBeenCalled();
+    await session.initialize();
     expect(renderer.initScene).toHaveBeenCalledTimes(1);
     expect(renderer.initStats).toHaveBeenCalledTimes(1);
     expect(mockWindow.addEventListener).toHaveBeenCalledWith("pagehide", expect.any(Function));
@@ -70,6 +72,37 @@ describe("game renderer session lifecycle", () => {
     expect(renderer.destroy).toHaveBeenCalledTimes(1);
     expect(mockWindow.removeEventListener).toHaveBeenCalledWith("pagehide", expect.any(Function));
     expect(mockWindow.onbeforeunload).toBe(previousBeforeUnload);
+  });
+
+  it("owns cleanup before scene initialization and refuses to start after cancellation", async () => {
+    const renderer = { destroy: vi.fn(), initScene: vi.fn(), initStats: vi.fn() };
+    const session = createGameRendererSession({
+      createRenderer: () => renderer,
+      enableDevTools: false,
+      setupResult: {} as never,
+      windowObject: createMockWindow(),
+    });
+    session.cleanup();
+    session.cleanup();
+    await expect(session.initialize()).rejects.toThrow("disposed before");
+    expect(renderer.initScene).not.toHaveBeenCalled();
+    expect(renderer.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases the renderer and browser handlers when scene initialization fails", async () => {
+    const error = new Error("device initialization failed");
+    const renderer = { destroy: vi.fn(), initScene: vi.fn().mockRejectedValue(error), initStats: vi.fn() };
+    const windowObject = createMockWindow();
+    const session = createGameRendererSession({
+      createRenderer: () => renderer,
+      enableDevTools: true,
+      setupResult: {} as never,
+      windowObject,
+    });
+    await expect(session.initialize()).rejects.toBe(error);
+    expect(renderer.destroy).toHaveBeenCalledTimes(1);
+    expect(renderer.initStats).not.toHaveBeenCalled();
+    expect(windowObject.onbeforeunload).toBeNull();
   });
 
   it("runs the previous unload handler before destroying the renderer", async () => {

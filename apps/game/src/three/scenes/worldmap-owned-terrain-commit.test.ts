@@ -28,7 +28,6 @@ function createTerrainCommitFixture() {
   const preparedTerrain = { chunkKey: "24,24" };
   const commitChunkAuthority = vi.fn();
   const applyPreparedTerrain = vi.fn();
-  const disposePreparedTerrain = vi.fn();
   let currentTransitionToken = 4;
   let recoveryTransitionToken: number | null = null;
   let switchedOff = false;
@@ -42,7 +41,6 @@ function createTerrainCommitFixture() {
       getRecoveryTransitionToken: () => recoveryTransitionToken,
       isSwitchedOff: () => switchedOff,
       scheduleCommit: queue.scheduleCommit,
-      disposePreparedTerrain,
       commitChunkAuthority,
       applyPreparedTerrain,
     });
@@ -51,7 +49,6 @@ function createTerrainCommitFixture() {
     applyPreparedTerrain,
     commit,
     commitChunkAuthority,
-    disposePreparedTerrain,
     preparedTerrain,
     queue,
     supersede: () => {
@@ -76,7 +73,6 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     fixture.queue.runPendingCommit();
 
     await expect(result).resolves.toBe(4);
-    expect(fixture.disposePreparedTerrain).not.toHaveBeenCalled();
     expect(fixture.commitChunkAuthority).toHaveBeenCalledWith("24,24");
     expect(fixture.applyPreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
   });
@@ -89,7 +85,6 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     fixture.queue.runPendingCommit();
 
     await expect(result).resolves.toBeNull();
-    expect(fixture.disposePreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
     expect(fixture.commitChunkAuthority).not.toHaveBeenCalled();
     expect(fixture.applyPreparedTerrain).not.toHaveBeenCalled();
   });
@@ -103,7 +98,6 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     fixture.queue.runPendingCommit();
 
     await expect(result).resolves.toBeNull();
-    expect(fixture.disposePreparedTerrain).toHaveBeenCalledWith(fixture.preparedTerrain);
     expect(fixture.commitChunkAuthority).not.toHaveBeenCalled();
     expect(fixture.applyPreparedTerrain).not.toHaveBeenCalled();
   });
@@ -116,7 +110,6 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     fixture.queue.runPendingCommit();
 
     await expect(result).resolves.toBeNull();
-    expect(fixture.disposePreparedTerrain).toHaveBeenCalledOnce();
     expect(fixture.commitChunkAuthority).not.toHaveBeenCalled();
     expect(fixture.applyPreparedTerrain).not.toHaveBeenCalled();
   });
@@ -135,6 +128,5 @@ describe("commitOwnedWorldmapPreparedTerrain", () => {
     expect(fixture.commitChunkAuthority.mock.invocationCallOrder[0]).toBeLessThan(
       fixture.applyPreparedTerrain.mock.invocationCallOrder[0],
     );
-    expect(fixture.disposePreparedTerrain).not.toHaveBeenCalled();
   });
 });

@@ -1,9 +1,15 @@
+import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
+import { configureRendererColorOutput } from "@/three/renderer-color-output";
+import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
+import { createLocalTerrainLabRequest } from "./local-terrain-lab";
 import { StructureType } from "@bibliothecadao/types";
 import {
   AmbientLight,
   Color,
   DirectionalLight,
-  Group,
+  HemisphereLight,
+  Fog,
+  PCFSoftShadowMap,
   InstancedMesh,
   Matrix4,
   PerspectiveCamera,
@@ -36,9 +42,13 @@ import { measureTerrainEcologyTransects } from "@/three/terrain/verification/ter
 import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "@/three/terrain/terrain-fog-style";
 import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/utils";
 
+import { TerrainLabInteraction } from "./terrain-lab-interaction";
+import type { TerrainLabPreview } from "./terrain-lab-preview";
+
 export interface ProceduralTerrainDebugStats {
   activeMode: "webgl2-fallback" | "webgpu";
   biomeCount: number;
+  buildingInstances: number;
   cellCount: number;
   commitMs: number;
   drawCalls: number;
@@ -101,16 +111,23 @@ export interface ProceduralTerrainDebugRendererHandle {
   dispose(): void;
   getStats(): ProceduralTerrainDebugStats;
   resetCamera(): void;
+  focusSelection(): void;
+  placeBuilding(path: string, yaw: number): Promise<void>;
+  removeBuilding(clearAll?: boolean): Promise<void>;
+  setPreview(preview: TerrainLabPreview): Promise<void>;
+  setCycleProgress(progress: number): void;
 }
 
 interface MountProceduralTerrainDebugRendererInput {
   canvas: HTMLCanvasElement;
   captureMode: boolean;
+  localRadius?: number;
   forceWebGL: boolean;
   qualityTier: TerrainQualityTier;
   revealProgress: number;
   sceneId: TerrainVerificationSceneId;
   texturedGround: boolean;
+  onError(error: unknown): void;
   onReady(stats: ProceduralTerrainDebugStats): void;
 }
 
@@ -127,9 +144,12 @@ type TerrainDebugRendererConstructor = new (options: {
 }) => TerrainDebugRendererSurface;
 
 interface TerrainDebugRuntime {
+  atmosphere: WorldAtmosphereController;
+  cycleProgress: number;
   camera: PerspectiveCamera;
   cameraFrame: TerrainDebugCameraFrame;
   controls: MapControls;
+  interaction: TerrainLabInteraction;
   firstRenderMs: number;
   frameSamplesMs: number[];
   renderer: TerrainDebugRendererSurface;
@@ -147,6 +167,7 @@ type TerrainVerificationWindow = Window & {
   __terrainVerification?: {
     error?: string;
     getSnapshot?: () => ProceduralTerrainDebugStats;
+    getInteraction?: () => ReturnType<TerrainLabInteraction["getState"]>;
     status: "booting" | "error" | "ready";
     version: 1;
   };
@@ -168,6 +189,7 @@ export async function mountProceduralTerrainDebugRenderer(
     const stats = readStats(runtime, input.forceWebGL, input.texturedGround);
     debugWindow.__terrainVerification = {
       getSnapshot: () => readStats(runtime, input.forceWebGL, input.texturedGround),
+      getInteraction: () => runtime.interaction.getState(),
       status: "ready",
       version: 1,
     };
@@ -178,13 +200,28 @@ export async function mountProceduralTerrainDebugRenderer(
         stopAnimation();
         resizeObserver.disconnect();
         runtime.controls.dispose();
+        runtime.interaction.dispose();
         runtime.realmModel?.dispose();
         runtime.terrain.dispose();
+        runtime.atmosphere.dispose();
         runtime.renderer.dispose();
         delete debugWindow.__terrainVerification;
       },
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
+      placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
+      removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
+      setPreview: (preview) => runtime.interaction.configure(preview),
+      setCycleProgress: (progress) => {
+        runtime.cycleProgress = progress;
+      },
+      focusSelection: () => {
+        const target = runtime.interaction.getSelectedPosition();
+        positionCamera(runtime.camera, runtime.controls, {
+          target,
+          position: target.clone().addScaledVector(CAMERA_DIRECTION, 8),
+        });
+      },
     };
   } catch (error) {
     debugWindow.__terrainVerification = {
@@ -199,17 +236,21 @@ export async function mountProceduralTerrainDebugRenderer(
 async function createRuntime(input: MountProceduralTerrainDebugRendererInput): Promise<TerrainDebugRuntime> {
   const Renderer = WebGPURenderer as unknown as TerrainDebugRendererConstructor;
   const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
-  const background = new Color(input.sceneId.startsWith("fog-") ? TERRAIN_DEEP_FOG_COLOR : "#d8d0ba");
-  renderer.outputColorSpace = "srgb";
+  const background = new Color(TERRAIN_DEEP_FOG_COLOR);
+  configureRendererColorOutput(renderer);
   renderer.setPixelRatio(1);
   renderer.setClearColor(background, 1);
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFSoftShadowMap;
   await renderer.init();
   configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
 
   const scene = new Scene();
   scene.background = background;
-  let request = createTerrainVerificationRequest(input.sceneId);
+  let request =
+    input.localRadius === undefined
+      ? createTerrainVerificationRequest(input.sceneId)
+      : createLocalTerrainLabRequest(input.localRadius);
   const camera = new PerspectiveCamera(36, 1, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
   controls.enableDamping = false;
@@ -218,7 +259,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const cameraFrame = createCameraFrame(camera, request.cells);
   positionCamera(camera, controls, cameraFrame);
 
-  const terrain = new ProceduralTerrain();
+  const terrain = new ProceduralTerrain({ streaming: true });
   await Promise.all([terrain.loadProps(), terrain.loadGroundTextures()]);
   terrain.setQualityTier(input.qualityTier);
   let prepared = await terrain.preparePageAsync(request);
@@ -248,6 +289,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const movementInteractionStats = terrain.getMovementInteractionStats();
   terrain.object3d.userData.verification = {
     biomeCount: new Set(prepared.request.cells.map(({ biome }) => biome).filter(Boolean)).size,
+    buildingInstances: 0,
     cellCount: prepared.request.cells.length,
     commitMs,
     fingerprint: prepared.fingerprint,
@@ -302,13 +344,67 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   >;
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
-  scene.add(createLights());
+  const atmosphere = createGameLighting(scene);
+  atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
   const firstRenderStartedAt = performance.now();
   renderer.render(scene, camera);
   const firstRenderMs = performance.now() - firstRenderStartedAt;
 
-  return { camera, cameraFrame, controls, frameSamplesMs: [], realmModel, renderer, scene, terrain, firstRenderMs };
+  const interaction = new TerrainLabInteraction(
+    input.canvas,
+    camera,
+    scene,
+    terrain,
+    request,
+    input.onError,
+    (page, duration) => updateTerrainVerification(terrain, page, duration, realmGeometry),
+    input.localRadius !== undefined,
+  );
+  return {
+    atmosphere,
+    cycleProgress: 50,
+    interaction,
+    camera,
+    cameraFrame,
+    controls,
+    frameSamplesMs: [],
+    realmModel,
+    renderer,
+    scene,
+    terrain,
+    firstRenderMs,
+  };
+}
+
+function updateTerrainVerification(
+  terrain: ProceduralTerrain,
+  prepared: PreparedTerrainPage,
+  commitMs: number,
+  realmGeometry: { triangles: number; vertices: number },
+): void {
+  const props = terrain.getPropStats();
+  const shroud = terrain.getShroudStats();
+  const movement = terrain.getMovementInteractionStats();
+  Object.assign(terrain.object3d.userData.verification, {
+    fingerprint: prepared.fingerprint,
+    biomeCount: new Set(prepared.request.cells.map((cell) => cell.biome).filter(Boolean)).size,
+    prepareMs: prepared.diagnostics.prepareMs,
+    commitMs,
+    fogTerrainCells: prepared.diagnostics.fogTerrainCells,
+    frontierPreviewCells: prepared.diagnostics.frontierPreviewCells,
+    groundCoverInstances: props.groundCoverInstances,
+    settlementSites: prepared.request.settlementAnchors.length,
+    triangles:
+      prepared.diagnostics.triangles +
+      props.triangles +
+      shroud.triangles +
+      realmGeometry.triangles +
+      movement.triangles,
+    vertices: prepared.diagnostics.vertices + realmGeometry.vertices,
+    ...measureWaterGeometry(prepared.waterBuffers),
+    ...measureTerrainEcologyTransects(prepared.request),
+  });
 }
 
 function createMovementInteractionVerification(
@@ -428,15 +524,15 @@ function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): 
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
-function createLights(): Group {
-  const lights = new Group();
-  lights.name = "procedural-terrain-debug-lights";
-  lights.add(new AmbientLight(0xdce6df, 1.7));
-  const sun = new DirectionalLight(0xffedca, 3.4);
-  sun.position.set(7, 11, 8);
-  sun.castShadow = true;
-  lights.add(sun);
-  return lights;
+function createGameLighting(scene: Scene): WorldAtmosphereController {
+  const ambient = new AmbientLight();
+  const hemisphere = new HemisphereLight();
+  const sun = new DirectionalLight();
+  configureWorldSunShadows(sun, true, 2048);
+  scene.add(ambient, hemisphere, sun, sun.target);
+  // The game controller also uses this detached fog object for atmosphere colors.
+  // Exploration coverage belongs to TerrainFogField, not Three.js distance fog.
+  return new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR));
 }
 
 function createCameraFrame(
@@ -486,7 +582,9 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
     }
     previousFrameTime = time;
     runtime.terrain.update(Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000)));
+    runtime.interaction.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000));
     runtime.controls.update();
+    runtime.atmosphere.update(runtime.cycleProgress, runtime.controls.target, { snap: true });
     runtime.renderer.render(runtime.scene, runtime.camera);
   });
   return () => runtime.renderer.setAnimationLoop(null);
@@ -503,6 +601,15 @@ function readStats(
   >;
   return {
     ...verification,
+    buildingInstances: runtime.interaction.getState().buildings.length,
+    propInstances: runtime.terrain.getPropStats().instances,
+    fogMaskBytes: runtime.terrain.getShroudStats().maskBytes,
+    fogMaskHeight: runtime.terrain.getShroudStats().maskHeight,
+    fogMaskWidth: runtime.terrain.getShroudStats().maskWidth,
+    shroudFrontierInstances: runtime.terrain.getShroudStats().frontierInstances,
+    shroudTriangles: runtime.terrain.getShroudStats().triangles,
+    shroudInstances: runtime.terrain.getShroudStats().instances,
+    shroudActiveReveals: runtime.terrain.getShroudStats().activeReveals,
     activeMode: resolveWebGpuRendererActiveMode(runtime.renderer),
     drawCalls: runtime.renderer.info.render.drawCalls ?? runtime.renderer.info.render.calls,
     firstRenderMs: runtime.firstRenderMs,

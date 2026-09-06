@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType } from "@bibliothecadao/types/terrain";
 
 export const TERRAIN_WATER_LEVEL = -0.055;
 export const TERRAIN_MIN_RENDERED_WATER_DEPTH = 0.002;

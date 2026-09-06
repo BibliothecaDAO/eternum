@@ -1,7 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PerspectiveCamera } from "three";
-import { FrustumManager } from "../utils/frustum-manager";
-import { getVisibilityManager } from "../utils/centralized-visibility-manager";
+import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { createHexagonSceneLifecycleFixture } from "./hexagon-scene-lifecycle-fixture";
 
 type ControlListener = () => void;
@@ -28,16 +27,11 @@ function createControlsHarness() {
 }
 
 describe("HexagonScene lifecycle", () => {
-  afterEach(() => {
-    getVisibilityManager().dispose();
-  });
-
-  it("disposes frustum and visibility managers during scene teardown", () => {
+  it("disposes the scene visibility manager during scene teardown", () => {
     const fixture = createHexagonSceneLifecycleFixture();
 
     fixture.destroy();
 
-    expect(fixture.disposeCalls.frustumManager).toBe(1);
     expect(fixture.disposeCalls.visibilityManager).toBe(1);
   });
 
@@ -45,18 +39,16 @@ describe("HexagonScene lifecycle", () => {
     const firstHarness = createControlsHarness();
     const secondHarness = createControlsHarness();
     const camera = new PerspectiveCamera();
-    const visibilityManager = getVisibilityManager();
-    const frustumManager = new FrustumManager(camera, firstHarness.controls as never);
+    const visibilityManager = new CentralizedVisibilityManager();
 
     visibilityManager.initialize(camera, firstHarness.controls as never);
-    expect(firstHarness.listenerCount("change")).toBe(2);
+    expect(firstHarness.listenerCount("change")).toBe(1);
 
     visibilityManager.initialize(camera, secondHarness.controls as never);
 
-    expect(firstHarness.listenerCount("change")).toBe(1);
+    expect(firstHarness.listenerCount("change")).toBe(0);
     expect(secondHarness.listenerCount("change")).toBe(1);
 
-    frustumManager.dispose();
     visibilityManager.dispose();
 
     expect(firstHarness.listenerCount("change")).toBe(0);

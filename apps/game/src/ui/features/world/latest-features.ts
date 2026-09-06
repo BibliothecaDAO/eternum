@@ -41,6 +41,77 @@ const allLatestFeatures: LatestFeature[] = [
       "Choose Uncapped or a 60 FPS limit in landing and in-game settings, with the same visual detail in both modes.",
   },
   {
+    date: "2026-09-06",
+    title: "Lighter World Loading",
+    type: "improvement",
+    description: "Reduced loading delays when entering a game, including terrain and building preparation.",
+  },
+  {
+    date: "2026-09-06",
+    title: "Lighter World Rendering",
+    type: "improvement",
+    description: "Improved rendering efficiency when viewing and panning the world map.",
+  },
+  {
+    date: "2026-09-06",
+    title: "Labs in the Sidebar",
+    type: "improvement",
+    description:
+      "Open the Biome Lab and Local Lab from their tree and castle icons in the left sidebar, or from the menu on mobile.",
+  },
+  {
+    date: "2026-09-06",
+    title: "Game Lighting in Labs",
+    type: "improvement",
+    description:
+      "Biome and local labs use game lighting and tone mapping, with a day-cycle slider to compare terrain, armies and buildings at different times of day.",
+  },
+  {
+    date: "2026-09-06",
+    title: "World and Local Labs",
+    type: "feature",
+    description:
+      "Test fog, tile selection, rotating armies, and placed buildings in the Biome Lab. The Local Lab previews settlement layouts. Spectate opens directly into the game loading flow.",
+  },
+  {
+    date: "2026-09-06",
+    title: "Mist Follows the Ground",
+    description:
+      "Unexplored tiles use warm, drifting ground mist. Known ground stays visible while panning, page edges blend into the mist, and minimap camera following recovers after a client refresh.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-06",
+    title: "Smooth Fog and Biome Lab",
+    description:
+      "Unloaded world terrain stays under one mist layer and reveals as pages arrive. Open BIOME LAB from the landing page to explore biome previews and visual settings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-06",
+    title: "Smoother World Entry and Exploration",
+    description:
+      "Enter the world through one loading screen. Terrain loads across your visible view with a margin beyond it, adapting as you pan, zoom, or resize. Ready pages appear progressively with their fog while nearby terrain stays visible. Small plants sway from their roots, and switching between world and local views keeps foliage intact.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-06",
+    title: "Closer Settlements, Richer Ground",
+    description:
+      "Local view opens closer to your settlement, with building details at the screen edge and production status updated from live game state. Opening a local link selects the correct realm. Close forests gain canopy shadows and circling birds, sand and snow show wind ripples, and clear fog and reduced motion settings also apply to local ambience.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-05",
+    title: "Clearer World, Faster Entry",
+    description:
+      "Enter the world without the stalled loading handoff. Explore brighter biomes, moving coastlines, and clearer fog borders; choose soft mist or reduced ambient motion in Settings. World panels leave the center of the map open.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-09-05",
     title: "Reliable Terrain Updates",
     description:

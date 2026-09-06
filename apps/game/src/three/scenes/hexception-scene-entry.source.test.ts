@@ -9,7 +9,7 @@ const source = readFileSync(resolve(__dirname, "./hexception.tsx"), "utf8");
 // map-first handoff on the map. The scene's entered fact is the one gate.
 describe("hexception scene entry gate", () => {
   it("owns an entered fact spanning setup to switch-off", () => {
-    expect(source).toContain("  setup() {\n    this.isEntered = true;");
+    expect(source).toContain("this.selectRouteStructure(contractPosition);\n    this.isEntered = true;");
     expect(source).toContain("  onSwitchOff(_nextSceneName?: SceneName) {\n    this.isEntered = false;");
   });
 

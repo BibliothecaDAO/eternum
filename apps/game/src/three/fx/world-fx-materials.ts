@@ -1,14 +1,9 @@
 import { AdditiveBlending, DoubleSide, NormalBlending } from "three";
 import type { Blending } from "three";
-import * as ThreeWebGPU from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, time, uv } from "three/tsl";
-import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
 
 export const WORLD_FX_PARTICLE_ATTRIBUTE = "worldFxParticle";
-
-const MeshBasicNodeMaterialConstructor = (
-  ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
-).MeshBasicNodeMaterial;
 
 export function createWorldFxAdditiveMaterial(): MeshBasicNodeMaterial {
   const material = createTransparentMaterial("world-fx-additive", AdditiveBlending);
@@ -62,7 +57,7 @@ export function createWorldFxRingMaterial(): MeshBasicNodeMaterial {
 }
 
 function createTransparentMaterial(name: string, blending: Blending): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterialConstructor();
+  const material = new MeshBasicNodeMaterial();
   material.name = name;
   material.blending = blending;
   material.depthTest = true;

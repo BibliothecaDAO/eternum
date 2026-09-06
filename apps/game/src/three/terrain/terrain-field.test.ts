@@ -17,6 +17,20 @@ describe("TerrainField", () => {
     expect(field.getBiomeMismatchCount()).toBeGreaterThan(0);
   });
 
+  it("returns the visible water surface for placement and preserves the seabed for terrain generation", () => {
+    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.DeepOcean)]));
+    expect(field.sampleVertex(0, 0).height).toBeLessThan(-0.055);
+    expect(field.sampleSurface(0, 0)).toMatchObject({ height: -0.055, normal: [0, 1, 0] });
+  });
+
+  it("keeps material brightness consistent inside a uniform biome", () => {
+    const field = new TerrainField(
+      createRequest([cell(0, 0, BiomeType.Beach), cell(1, 0, BiomeType.Beach), cell(0, 1, BiomeType.Beach)]),
+    );
+    const samples = [0, 0.25, 0.5, 0.75].map((x) => field.sampleVertex(x, 0).color[0]);
+    expect(Math.min(...samples)).toBeGreaterThan(Math.max(...samples) * 0.7);
+  });
+
   it("produces identical shared-edge samples from adjacent page ownership", () => {
     const leftCell = cell(0, 0, BiomeType.Grassland);
     const rightCell = cell(1, 0, BiomeType.TemperateDeciduousForest);

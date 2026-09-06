@@ -1,8 +1,11 @@
+import { createTerrainWildlife, createTerrainWildlifeMaterial } from "./terrain-wildlife";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
   BufferAttribute,
   BufferGeometry,
   Box3,
   Group,
+  InstancedMesh,
   Mesh,
   Sphere,
   Vector3,
@@ -17,6 +20,7 @@ import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from ".
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
 import { prepareTerrainPage } from "./terrain-page-builder";
 import { TerrainPageWorkerClient } from "./terrain-page-worker-client";
+import { isTerrainPropFootprintClear } from "./terrain-prop-footprint";
 import { TerrainPropPools, type TerrainPropPoolStats } from "./terrain-prop-pools";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import { TERRAIN_QUALITY_PROFILES, type TerrainQualityTier } from "./terrain-quality";
@@ -34,11 +38,13 @@ import type {
 } from "./terrain-types";
 
 interface PresentedTerrainPage {
+  prepared: PreparedTerrainPage;
   complete: boolean;
   field: TerrainField;
   fingerprint: string;
   group: Group;
   propInstances: PreparedTerrainPage["propInstances"];
+  visiblePropInstances?: PreparedTerrainPage["propInstances"];
   shroudInstances: PreparedTerrainPage["shroudInstances"];
 }
 
@@ -79,6 +85,7 @@ export interface TerrainUploadMetrics {
 export class ProceduralTerrain {
   readonly object3d = new Group();
   private readonly materials: TerrainMaterials;
+  private readonly wildlifeMaterial = createTerrainWildlifeMaterial();
   private readonly pages = new Map<string, PresentedTerrainPage>();
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
@@ -94,8 +101,11 @@ export class ProceduralTerrain {
   private readonly fogField = new TerrainFogField();
   private readonly movementEffects: TerrainMovementEffects;
   private disposed = false;
+  private isPropTileOccupied: (col: number, row: number) => boolean = () => false;
+  private readonly releaseAppearance: () => void;
 
-  constructor() {
+  constructor({ streaming = false }: { streaming?: boolean } = {}) {
+    if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
     this.movementEffects = new TerrainMovementEffects((worldX, worldZ) => this.sampleSurface(worldX, worldZ).biome);
@@ -103,7 +113,10 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
+    this.fogField.applyToTerrain(this.materials.flatLand);
+    this.fogField.applyToTerrain(this.materials.water);
     this.setQualityTier(this.qualityTier);
+    this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
 
   preparePage(request: TerrainPageRequest): PreparedTerrainPage {
@@ -140,10 +153,10 @@ export class ProceduralTerrain {
     if (!this.propPools) {
       this.propPools = pools;
       this.object3d.add(pools.object3d);
-      this.writeRetainedPagesToPools(pools);
+      this.writeRetainedPagesToPools();
     }
     pools.setLod(this.propLod);
-    pools.setWindStrength(TERRAIN_QUALITY_PROFILES[this.qualityTier].windStrength);
+    this.applyAppearance();
   }
 
   async loadGroundTextures(): Promise<void> {
@@ -156,7 +169,8 @@ export class ProceduralTerrain {
     }
     if (this.groundTextureHandle) return;
     this.groundTextureHandle = handle;
-    this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures);
+    this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
+    this.fogField.applyToTerrain(this.groundTextureMaterial);
     this.refreshGroundMaterial();
   }
 
@@ -176,10 +190,21 @@ export class ProceduralTerrain {
     this.qualityTier = tier;
     this.setPropLod(profile.propLod);
     this.setGroundTextureDetailEnabled(profile.groundTextureDetail);
-    this.propPools?.setWindStrength(profile.windStrength);
-    this.fogField.setQuality(profile.fogMotionStrength, profile.fogMistStrength);
+    this.applyAppearance();
     this.movementEffects.setQuality(profile.waterInteractionStrength, profile.dustInteractionStrength);
-    this.materials.waterMotion.value = profile.waterMotion;
+  }
+
+  private applyAppearance(): void {
+    const { fogStyle, reducedMotion } = useWorldAppearanceStore.getState();
+    const profile = TERRAIN_QUALITY_PROFILES[this.qualityTier];
+    const motion = reducedMotion ? 0 : 1;
+    this.fogField.setStyle(fogStyle);
+    this.fogField.setReducedMotion(reducedMotion);
+    this.fogField.setQuality(profile.fogMotionStrength * motion, profile.fogMistStrength);
+    this.propPools?.setWindStrength(profile.windStrength * motion);
+    this.materials.waterMotion.value = profile.waterMotion * motion;
+    this.materials.groundMotion.value = profile.windStrength * motion;
+    this.wildlifeMaterial.visible = this.qualityTier === "detail" && !reducedMotion;
   }
 
   getQualityTier(): TerrainQualityTier {
@@ -276,6 +301,7 @@ export class ProceduralTerrain {
     try {
       releasedPageKeys.forEach((pageKey) => this.releasePageWrites(pageKey));
       for (const { page, presented } of nextPages) this.writePageState(page, presented);
+      this.fogField.commitLoadedPages(this.resolveLoadedPageRequests(preparedPages, releasedPageKeys));
       this.fogField.commit(preparedFogMask);
     } catch (error) {
       try {
@@ -306,6 +332,29 @@ export class ProceduralTerrain {
     return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
   }
 
+  refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
+    this.isPropTileOccupied = isOccupied;
+    this.pages.forEach((page, key) => this.writeVisibleProps(key, page));
+  }
+
+  private writeVisibleProps(pageKey: string, page: PresentedTerrainPage): void {
+    if (!this.propPools) return;
+    const occupancy = new Map<string, boolean>();
+    const isOccupied = (col: number, row: number) => {
+      const key = `${col}:${row}`;
+      if (!occupancy.has(key)) occupancy.set(key, this.isPropTileOccupied(col, row));
+      return occupancy.get(key)!;
+    };
+    const visible = page.propInstances.filter((instance) => isTerrainPropFootprintClear(instance, isOccupied));
+    if (
+      page.visiblePropInstances?.length === visible.length &&
+      visible.every((instance, index) => instance === page.visiblePropInstances?.[index])
+    )
+      return;
+    this.propPools.writePage(pageKey, visible);
+    page.visiblePropInstances = visible;
+  }
+
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     this.requireActive();
     for (const page of this.pages.values()) {
@@ -318,6 +367,7 @@ export class ProceduralTerrain {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.releaseAppearance();
     this.pages.forEach(disposePageGeometry);
     this.pages.clear();
     this.presentationGroup.clear();
@@ -328,12 +378,23 @@ export class ProceduralTerrain {
     this.propPools = null;
     this.fogField.dispose();
     this.movementEffects.dispose();
+    this.wildlifeMaterial.dispose();
     new Set(
       [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
     ).forEach((material) => material!.dispose());
     this.groundTextureHandle?.release();
     this.groundTextureHandle = null;
     this.groundTextureMaterial = null;
+  }
+
+  private resolveLoadedPageRequests(
+    preparedPages: readonly PreparedTerrainPage[],
+    releasedPageKeys: readonly string[],
+  ): TerrainPageRequest[] {
+    const requests = new Map(Array.from(this.pages, ([key, page]) => [key, page.prepared.request]));
+    releasedPageKeys.forEach((key) => requests.delete(key));
+    preparedPages.forEach((page) => requests.set(page.request.pageKey, page.request));
+    return [...requests.values()];
   }
 
   private stagePresentedPages(
@@ -351,7 +412,7 @@ export class ProceduralTerrain {
 
   private writePageState(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
     const pageKey = preparedPage.request.pageKey;
-    this.propPools?.writePage(pageKey, presented.propInstances);
+    this.writeVisibleProps(pageKey, presented);
     this.fogField.setPage(pageKey, preparedPage.shroudInstances);
   }
 
@@ -382,13 +443,16 @@ export class ProceduralTerrain {
   private restorePageWrites(previousPages: ReadonlyMap<string, PresentedTerrainPage | undefined>): void {
     previousPages.forEach((page, pageKey) => {
       if (page) {
-        this.propPools?.writePage(pageKey, page.propInstances);
+        // A failed replacement may have overwritten the pool even when visibility is unchanged.
+        page.visiblePropInstances = undefined;
+        this.writeVisibleProps(pageKey, page);
         this.fogField.setPage(pageKey, page.shroudInstances);
       } else {
         this.propPools?.releasePage(pageKey);
         this.fogField.removePage(pageKey);
       }
     });
+    this.fogField.commitLoadedPages(this.resolveLoadedPageRequests([], []));
     this.fogField.commit();
   }
 
@@ -404,19 +468,26 @@ export class ProceduralTerrain {
       disposePageGroup(group);
       throw error;
     }
+    const field = new TerrainField(preparedPage.request);
+    const wildlife = createTerrainWildlife(preparedPage.request.cells, field, this.wildlifeMaterial);
+    if (wildlife) group.add(wildlife);
     return {
       complete: false,
-      field: new TerrainField(preparedPage.request),
+      field,
       fingerprint: preparedPage.fingerprint,
+      prepared: preparedPage,
       group,
       propInstances: preparedPage.propInstances,
       shroudInstances: preparedPage.shroudInstances,
     };
   }
 
-  private writeRetainedPagesToPools(pools: TerrainPropPools): void {
+  private writeRetainedPagesToPools(): void {
     if (this.pages.size === 0) return;
-    this.pages.forEach((page, pageKey) => pools.writePage(pageKey, page.propInstances));
+    this.pages.forEach((page, pageKey) => {
+      page.visiblePropInstances = undefined;
+      this.writeVisibleProps(pageKey, page);
+    });
     this.propPoolFullRewrites += 1;
   }
 
@@ -490,6 +561,7 @@ function disposePageGeometry(page: PresentedTerrainPage): void {
 
 function disposePageGroup(group: Group): void {
   group.traverse((object) => {
+    if (object instanceof InstancedMesh) object.dispose();
     if (object instanceof Mesh) object.geometry.dispose();
   });
   group.clear();

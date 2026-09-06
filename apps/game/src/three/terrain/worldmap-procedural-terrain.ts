@@ -48,6 +48,9 @@ export interface WorldmapProceduralPresentationInput {
   pageOrigin: { col: number; row: number };
   pageWidth: number;
   priorityPageKeys?: readonly string[];
+  visiblePageKeys?: readonly string[];
+  criticalPageKeys?: readonly string[];
+  onCriticalPagesReady?: () => void;
   propDensityMultiplier?: number;
   roadAnchors?: readonly TerrainRoadAnchor[];
   settlementAnchors?: readonly TerrainSettlementAnchor[];
@@ -151,6 +154,7 @@ interface PresentationRun {
   sharedInFlightPages: number;
   sourceReadyAtMs: number | null;
   taskMs: number;
+  criticalPagesReady: boolean;
   commitMs: number;
   workerBuildMs: number | null;
 }
@@ -200,8 +204,8 @@ const PREPARED_PAGE_CACHE_LIMIT = 64;
 const ROAD_PAGE_PADDING = 1.5;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
   "terrain:present:page": "presentPageTaskMaxMs",
-  "terrain:present:partition": "presentRequestsMaxMs",
   "terrain:present:release": "presentPageTaskMaxMs",
+  "terrain:present:partition": "presentRequestsMaxMs",
   "terrain:present:request": "presentRequestsMaxMs",
   "terrain:present:roads": "presentRequestsMaxMs",
 };
@@ -215,7 +219,7 @@ class SupersededPresentationError extends Error {
 
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
-  private readonly terrain = new ProceduralTerrain();
+  private readonly terrain = new ProceduralTerrain({ streaming: true });
   private readonly preparedBySignature = new Map<string, PreparedTerrainPage>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
   private readonly presentMetrics: TerrainPresentMetrics = {
@@ -240,7 +244,7 @@ export class WorldmapProceduralTerrain {
 
   /**
    * Presents the composite as a chain of critical-lane tasks — partition, roads, one request per page, worker
-   * builds, release, one commit per changed page, fog — so no single task outgrows the frame budget. Without a
+   * builds, then progressive page commits with matching fog. Without a
    * scheduler every step runs inline. Resolves null once a newer presentation, `clear`, or `dispose` supersedes
    * this one, or the queue is disposed; pages committed before that stay valid until a later presentation
    * replaces or releases them.
@@ -295,6 +299,10 @@ export class WorldmapProceduralTerrain {
     this.terrain.setMovementInteractions(interactions);
   }
 
+  refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
+    this.terrain.refreshPropOccupancy(isOccupied);
+  }
+
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     return this.terrain.sampleSurface(worldX, worldZ);
   }
@@ -305,6 +313,10 @@ export class WorldmapProceduralTerrain {
 
   getPresentMetrics(): TerrainPresentMetrics {
     return { ...this.presentMetrics };
+  }
+
+  getPresentedPageKeys(): string[] {
+    return [...this.presentedPages.keys()];
   }
 
   getVisibleCellCount(): number {
@@ -372,10 +384,12 @@ export class WorldmapProceduralTerrain {
       sourceReadyAtMs: run.sourceReadyAtMs,
     });
     const reuse = this.countPageReuse(preparations);
+    this.notifyCriticalPagesReady(run, input, preparations);
     const preparedPages =
       input.commitMode === "ambient"
-        ? await this.commitAmbientPages(run, preparations)
+        ? await this.commitAmbientPages(run, preparations, input)
         : await this.commitAtomicPages(run, preparations);
+    this.notifyCriticalPagesReady(run, input, preparations);
     await this.releaseObsoletePages(run, preparedPages);
     this.requireCurrent(run);
     const presentation = this.terrain.summarize(preparedPages);
@@ -389,6 +403,22 @@ export class WorldmapProceduralTerrain {
     };
     this.emitWindowComplete(run, reuse);
     return diagnostics;
+  }
+
+  private notifyCriticalPagesReady(
+    run: PresentationRun,
+    input: WorldmapProceduralPresentationInput,
+    preparations: readonly TerrainPagePreparation[],
+  ): void {
+    if (run.criticalPagesReady || !input.onCriticalPagesReady || !input.criticalPageKeys?.length) return;
+    const ready = input.criticalPageKeys.every((key) => {
+      const preparation = preparations.find(({ request }) => request.pageKey === key);
+      const prepared = preparation && this.preparedBySignature.get(preparation.signature);
+      return prepared !== undefined && this.terrain.isPagePresented(prepared);
+    });
+    if (!ready) return;
+    run.criticalPagesReady = true;
+    input.onCriticalPagesReady();
   }
 
   /** Commits one independent page or one atomic replacement group after its own fog prerequisites are ready. */
@@ -457,6 +487,7 @@ export class WorldmapProceduralTerrain {
     this.cancelActiveRun = cancelRun;
     const run = {
       builtPages: 0,
+      criticalPagesReady: false,
       cancelled,
       completedPageKeys: new Set<string>(),
       commitMs: 0,
@@ -659,12 +690,20 @@ export class WorldmapProceduralTerrain {
   private async commitAmbientPages(
     run: PresentationRun,
     preparations: readonly TerrainPagePreparation[],
+    input: WorldmapProceduralPresentationInput,
   ): Promise<PreparedTerrainPage[]> {
     const pages: PreparedTerrainPage[] = [];
-    for (const preparation of preparations) {
-      const resolved = await this.resolveCurrentPreparedPage(run, preparation);
-      await this.commitPreparedPages(run, [resolved]);
+    let pendingPage: Promise<ResolvedTerrainPage> | undefined;
+    for (const [index, preparation] of preparations.entries()) {
+      this.requireCurrent(run);
+      const resolved = await Promise.race([pendingPage ?? this.resolvePreparedPage(preparation), run.cancelled]);
+      this.requireCurrent(run);
+      const commit = this.commitPreparedPages(run, [resolved]);
+      // The current fog job is queued first; prepare only one page ahead while its commit waits.
+      pendingPage = this.prepareNextPage(preparations[index + 1]);
+      await commit;
       pages.push(resolved.page);
+      this.notifyCriticalPagesReady(run, input, preparations);
     }
     return pages;
   }
@@ -710,6 +749,15 @@ export class WorldmapProceduralTerrain {
       source: "built",
       workerBuildMs: finiteMetric(page.diagnostics.prepareMs),
     }));
+  }
+
+  private prepareNextPage(preparation: TerrainPagePreparation | undefined): Promise<ResolvedTerrainPage> | undefined {
+    if (!preparation) return undefined;
+    const pending = this.resolvePreparedPage(preparation);
+    // A superseded commit may exit before awaiting this page. Keep its rejection handled;
+    // the original promise still propagates the error when the active run consumes it.
+    void pending.catch(() => undefined);
+    return pending;
   }
 
   private preparePageAsync(preparation: TerrainPagePreparation): Promise<PreparedTerrainPage> {
@@ -793,9 +841,9 @@ function partitionWorldmapTerrainPages(input: WorldmapProceduralPresentationInpu
   return {
     cells,
     cellsByKey,
-    pages: Array.from(pagesByKey.values()).toSorted(
-      (left, right) => left.startRow - right.startRow || left.startCol - right.startCol,
-    ),
+    pages: Array.from(pagesByKey.values())
+      .filter((page) => !input.visiblePageKeys || input.visiblePageKeys.includes(page.pageKey))
+      .toSorted((left, right) => left.startRow - right.startRow || left.startCol - right.startCol),
   };
 }
 

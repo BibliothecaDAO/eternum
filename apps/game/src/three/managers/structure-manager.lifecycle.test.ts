@@ -201,7 +201,6 @@ function createVisibleStructurePassFence() {
 function createStructureManagerSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
 
-  const unsubscribeFrustum = vi.fn();
   const unsubscribeAccountStore = vi.fn();
   const unsubscribeVisibility = vi.fn();
   const unsubscribeProjection = vi.fn();
@@ -224,7 +223,6 @@ function createStructureManagerSubject() {
   subject.isDestroyed = false;
   subject.unsubscribeProjection = unsubscribeProjection;
   subject.recsUnsubscribes = [unsubscribeRecs];
-  subject.unsubscribeFrustum = unsubscribeFrustum;
   subject.unsubscribeAccountStore = unsubscribeAccountStore;
   subject.unsubscribeVisibility = unsubscribeVisibility;
   subject.hexagonScene = { removeCameraViewListener };
@@ -246,16 +244,18 @@ function createStructureManagerSubject() {
   subject.structureModels = new Map([
     [
       "realm",
-      [
-        {
-          dispose: structureModelDispose,
-          group: {
-            parent: {
-              remove: structureModelParentRemove,
+      new Map(
+        [
+          {
+            dispose: structureModelDispose,
+            group: {
+              parent: {
+                remove: structureModelParentRemove,
+              },
             },
           },
-        },
-      ],
+        ].entries(),
+      ),
     ],
   ]);
   subject.cosmeticStructureModels = new Map([
@@ -294,7 +294,6 @@ function createStructureManagerSubject() {
 
   return {
     subject,
-    unsubscribeFrustum,
     unsubscribeAccountStore,
     unsubscribeVisibility,
     unsubscribeProjection,
@@ -677,7 +676,6 @@ describe("StructureManager destroy lifecycle", () => {
 
     fixture.subject.destroy();
 
-    expect(fixture.unsubscribeFrustum).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeAccountStore).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeVisibility).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeProjection).toHaveBeenCalledTimes(1);
@@ -752,10 +750,11 @@ describe("StructureManager destroy lifecycle", () => {
         entityId: 1,
         hexCoords: { col: 0, row: 0 },
         structureType,
+        stage: 0,
       },
     ]);
     subject.hasCosmeticSkin = vi.fn(() => false);
-    subject.ensureStructureModels = vi.fn(
+    subject.ensureStructureModel = vi.fn(
       () =>
         new Promise((resolve) => {
           resolveModels = resolve;
@@ -764,12 +763,17 @@ describe("StructureManager destroy lifecycle", () => {
 
     const updatePromise = subject.performVisibleStructuresUpdate();
     subject.isDestroyed = true;
-    subject.structureModels.set(structureType, [
-      {
-        setMatrixAt,
-        setCount,
-      },
-    ]);
+    subject.structureModels.set(
+      structureType,
+      new Map(
+        [
+          {
+            setMatrixAt,
+            setCount,
+          },
+        ].entries(),
+      ),
+    );
     resolveModels?.([]);
     await updatePromise;
 
@@ -783,12 +787,13 @@ describe("StructureManager destroy lifecycle", () => {
     const setCount = vi.fn();
     let resolvePreload: (() => void) | undefined;
 
-    subject.structureModels.set(structureType, [{ setCount }]);
+    subject.structureModels.set(structureType, new Map([{ setCount }].entries()));
     subject.resolveVisibleStructuresForChunk = vi.fn(() => [
       {
         entityId: 1,
         hexCoords: { col: 0, row: 0 },
         structureType,
+        stage: 0,
         plannedCount: 1,
       },
     ]);
@@ -821,12 +826,13 @@ describe("StructureManager destroy lifecycle", () => {
         entityId: 1,
         hexCoords: { col: 0, row: 0 },
         structureType,
+        stage: 0,
         plannedCount: 1,
       },
     ];
 
     const model = {};
-    subject.structureModels.set(structureType, [model]);
+    subject.structureModels.set(structureType, new Map([model].entries()));
     subject.getModelForStructure = vi.fn(() => model);
     subject.resolveVisibleStructuresForChunk = vi.fn(() => visibleStructures);
     subject.preloadStructureModels = vi
@@ -854,6 +860,7 @@ describe("StructureManager destroy lifecycle", () => {
         entityId: 2,
         hexCoords: { col: 1, row: 1 },
         structureType,
+        stage: 0,
         plannedCount: 2,
       },
     ];
@@ -987,7 +994,7 @@ describe("StructureManager destroy lifecycle", () => {
       structureType: "Village",
     });
 
-    subject.structureModels.set("Village", [model]);
+    subject.structureModels.set("Village", new Map([model].entries()));
     subject.hasCosmeticSkin = vi.fn(() => false);
 
     subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
@@ -1061,7 +1068,7 @@ describe("StructureManager destroy lifecycle", () => {
       structureType: "Village",
     };
 
-    subject.structureModels.set("Village", [model]);
+    subject.structureModels.set("Village", new Map([model].entries()));
     subject.hasCosmeticSkin = vi.fn(() => false);
 
     subject.commitVisibleStructureDiff(subject.captureVisibleStructurePassSnapshot(), {
@@ -1112,7 +1119,7 @@ describe("StructureManager destroy lifecycle", () => {
       structureType: "Village",
     };
 
-    subject.structureModels.set("Village", [model]);
+    subject.structureModels.set("Village", new Map([model].entries()));
     subject.hasCosmeticSkin = vi.fn(() => false);
     subject.getModelForStructure = vi.fn(() => model);
     subject.resolveVisibleStructuresForChunk = vi.fn(() => [visibleStructure]);

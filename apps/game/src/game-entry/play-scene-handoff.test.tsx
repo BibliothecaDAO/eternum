@@ -80,17 +80,7 @@ vi.mock("react-router-dom", () => ({
   useLocation: () => useLocationMock(),
 }));
 
-vi.mock("@/ui/modules/boot-loader", () => ({
-  BootDebugPanel: () => <div>Boot diagnostics</div>,
-  BootLoaderShell: ({ title, subtitle }: { title?: string; subtitle?: string }) => (
-    <div>
-      <div>{title}</div>
-      <div>{subtitle}</div>
-    </div>
-  ),
-}));
-
-const { GameLoadingOverlay } = await import("./game-loading-overlay");
+const { PlaySceneHandoff } = await import("./play-scene-handoff");
 
 const flushTimers = async () => {
   await act(async () => {
@@ -100,7 +90,7 @@ const flushTimers = async () => {
   });
 };
 
-describe("GameLoadingOverlay", () => {
+describe("PlaySceneHandoff", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -145,11 +135,12 @@ describe("GameLoadingOverlay", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("dismisses once the shared worldmap readiness state is set", async () => {
+  it("completes entry only when the canonical boot phase is ready", async () => {
     readinessState.worldmapReady = true;
+    snapshotState.phase = "ready";
 
     await act(async () => {
-      root.render(<GameLoadingOverlay />);
+      root.render(<PlaySceneHandoff />);
     });
     await flushTimers();
 
@@ -173,7 +164,7 @@ describe("GameLoadingOverlay", () => {
     });
 
     await act(async () => {
-      root.render(<GameLoadingOverlay />);
+      root.render(<PlaySceneHandoff />);
     });
 
     expect(navigateMock).not.toHaveBeenCalled();
@@ -181,7 +172,7 @@ describe("GameLoadingOverlay", () => {
 
     readinessState.worldmapConverged = true;
     await act(async () => {
-      root.render(<GameLoadingOverlay />);
+      root.render(<PlaySceneHandoff />);
     });
 
     expect(navigateMock).toHaveBeenCalledWith(
@@ -212,7 +203,7 @@ describe("GameLoadingOverlay", () => {
     });
 
     await act(async () => {
-      root.render(<GameLoadingOverlay />);
+      root.render(<PlaySceneHandoff />);
     });
 
     expect(navigateMock).toHaveBeenCalledWith(

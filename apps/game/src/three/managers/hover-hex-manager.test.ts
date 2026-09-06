@@ -91,14 +91,32 @@ describe("HoverHexManager material ownership", () => {
     expect(material.transparent).toBe(true);
   });
 
-  it("lifts the hover fill above the terrain layer for readability", () => {
+  it("keeps the hover fill just above a flat surface", () => {
     const manager = new HoverHexManager(new THREE.Scene());
 
     manager.showHover(4, 8);
 
     const hoverHex = (manager as any).hoverHex as THREE.Mesh;
 
-    expect(hoverHex.position.y).toBeCloseTo(0.32);
+    expect(hoverHex.position.y).toBeCloseTo(0.03);
+  });
+
+  it("drapes every outline vertex over the sampled surface at its own world position", () => {
+    const manager = new HoverHexManager(new THREE.Scene(), {
+      sampleSurface: (x, z) => ({ biome: null, height: x * 0.2 - z * 0.1, normal: [0, 1, 0] }),
+    });
+    for (const [x, z] of [
+      [4, 8],
+      [-2, 3],
+    ]) {
+      manager.showHover(x, z);
+      const mesh = (manager as any).hoverHex as THREE.Mesh;
+      const vertices = mesh.geometry.getAttribute("position");
+      for (let index = 0; index < vertices.count; index++) {
+        expect(vertices.getZ(index)).toBeCloseTo((x + vertices.getX(index)) * 0.2 - (z - vertices.getY(index)) * 0.1);
+      }
+    }
+    manager.dispose();
   });
 
   it("keeps the glow halo attached while the fill hover is active", async () => {
@@ -114,31 +132,21 @@ describe("HoverHexManager material ownership", () => {
     expect(hoverHalo.parent).not.toBeNull();
   });
 
-  it("disposes the intermediate ShapeGeometry used to build the outline EdgesGeometry", () => {
-    const disposeSpy = vi.spyOn(THREE.ShapeGeometry.prototype, "dispose");
-    disposeSpy.mockClear();
-
-    new HoverHexManager(new THREE.Scene());
-
-    // createHoverHex builds two ShapeGeometries via createRingGeometry (glow + halo)
-    // and one more for the outline source. The outline source must be disposed immediately
-    // after the EdgesGeometry copies its data.
-    // The two ring geometries are NOT disposed during construction (they stay attached to meshes).
-    // So at least one dispose call must come from the outline source geometry.
-    expect(disposeSpy).toHaveBeenCalled();
-
-    disposeSpy.mockRestore();
-  });
-
-  it("produces a valid EdgesGeometry for the outline after disposing the source", () => {
-    const manager = new HoverHexManager(new THREE.Scene());
-    const hoverOutline = (manager as any).hoverOutline as THREE.LineSegments;
-
-    // The EdgesGeometry should still have valid position data even though
-    // the source ShapeGeometry was disposed after construction
-    const posAttr = hoverOutline.geometry.getAttribute("position");
-    expect(posAttr).toBeDefined();
-    expect(posAttr.count).toBeGreaterThan(0);
+  it("samples between corners so curved ground cannot leave the selection floating", () => {
+    const manager = new HoverHexManager(new THREE.Scene(), {
+      sampleSurface: (x, z) => ({ biome: null, height: 0.2 * Math.cos(x * 4) * Math.cos(z * 4), normal: [0, 1, 0] }),
+    });
+    manager.showHover(0, 0);
+    for (const object of [(manager as any).hoverHex, (manager as any).hoverOutline] as THREE.Mesh[]) {
+      const positions = object.geometry.getAttribute("position");
+      expect(positions.count).toBeGreaterThan(12);
+      for (let index = 0; index < positions.count; index++) {
+        expect(positions.getZ(index)).toBeCloseTo(
+          0.2 * Math.cos(positions.getX(index) * 4) * Math.cos(positions.getY(index) * 4),
+        );
+      }
+    }
+    manager.dispose();
   });
 
   it("disposes shader material and geometry ownership", () => {

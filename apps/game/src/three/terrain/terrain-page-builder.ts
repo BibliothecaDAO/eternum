@@ -85,10 +85,13 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
+    fogTerrainCells += 1;
+    // The opaque fog backdrop owns the interior. Only the frontier needs geometry
+    // to join the explored surface without cracks or exposed skirts.
+    if (!field.isFrontierCell(cell.col, cell.row)) continue;
     appendCellPatch(land, vertexSampler, cell, subdivisions);
     if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-    fogTerrainCells += 1;
-    if (field.isFrontierCell(cell.col, cell.row)) frontierPreviewCells += 1;
+    frontierPreviewCells += 1;
   }
 
   const buffers = finalizeGeometry(land);
@@ -96,8 +99,8 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const propInstances = prepareTerrainPropInstances(request, field);
   const shroudInstances = prepareTerrainShroudInstances(request, field);
   const geometryBytes = countGeometryBytes(buffers) + (waterBuffers ? countGeometryBytes(waterBuffers) : 0);
-  const prepareMs = performance.now() - startedAt;
   const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances, shroudInstances);
+  const prepareMs = performance.now() - startedAt;
 
   return {
     buffers,

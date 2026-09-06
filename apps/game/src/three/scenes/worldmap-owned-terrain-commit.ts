@@ -6,7 +6,6 @@ interface CommitOwnedWorldmapPreparedTerrainInput<TPreparedTerrain> {
   getRecoveryTransitionToken: (timedOutTransitionToken: number) => number | null;
   isSwitchedOff: () => boolean;
   scheduleCommit: (commit: () => number | null) => Promise<number | null>;
-  disposePreparedTerrain: (preparedTerrain: TPreparedTerrain) => void;
   commitChunkAuthority: (chunkKey: string) => void;
   applyPreparedTerrain: (preparedTerrain: TPreparedTerrain) => void;
 }
@@ -21,7 +20,6 @@ export function commitOwnedWorldmapPreparedTerrain<TPreparedTerrain>(
       input.isSwitchedOff() ||
       !canCommitPreparedTerrain(input.transitionToken, currentTransitionToken, recoveryTransitionToken)
     ) {
-      input.disposePreparedTerrain(input.preparedTerrain);
       return null;
     }
 

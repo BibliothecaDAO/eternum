@@ -1,17 +1,8 @@
-import {
-  DynamicDrawUsage,
-  Group,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  PlaneGeometry,
-  Quaternion,
-  Vector3,
-} from "three";
-import * as ThreeWebGPU from "three/webgpu";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { Group, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3 } from "three";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import type MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
 
 export const TERRAIN_DUST_INTERACTION_CAPACITY = 128;
 export const TERRAIN_DUST_EMITTER_CAPACITY = 256;
@@ -68,9 +59,6 @@ interface DustSurfaceProfile {
 }
 
 const DUST_ATTRIBUTE = "terrainDustInteraction";
-const MeshBasicNodeMaterialConstructor = (
-  ThreeWebGPU as unknown as { MeshBasicNodeMaterial: new () => MeshBasicNodeMaterial }
-).MeshBasicNodeMaterial;
 const DUST_SURFACE_PROFILES: Readonly<Record<TerrainDustSurface, DustSurfaceProfile>> = Object.freeze({
   damp: { emissionIntervalSeconds: 0.24, opacity: 0.22, size: 0.2, tone: 0 },
   dry: { emissionIntervalSeconds: 0.13, opacity: 0.72, size: 0.3, tone: 1 },
@@ -82,7 +70,7 @@ export class TerrainDustInteractionPool {
   private readonly geometry = createDustGeometry();
   private readonly strength = uniform(1, "float");
   private readonly material = createDustMaterial(this.strength);
-  private readonly mesh = new InstancedMesh(this.geometry, this.material, TERRAIN_DUST_INTERACTION_CAPACITY);
+  private readonly mesh = createInstancedMesh(this.geometry, this.material, TERRAIN_DUST_INTERACTION_CAPACITY);
   private readonly dustAttribute = new InstancedBufferAttribute(
     new Float32Array(TERRAIN_DUST_INTERACTION_CAPACITY * 3),
     3,
@@ -105,9 +93,7 @@ export class TerrainDustInteractionPool {
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 2;
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.mesh.raycast = disableDustRaycast;
-    this.dustAttribute.setUsage(DynamicDrawUsage);
     this.geometry.setAttribute(DUST_ATTRIBUTE, this.dustAttribute);
     this.object3d.add(this.mesh);
   }
@@ -278,7 +264,7 @@ function createDustGeometry(): PlaneGeometry {
 }
 
 function createDustMaterial(strength: UniformNode<"float", number>): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterialConstructor();
+  const material = new MeshBasicNodeMaterial();
   material.name = "terrain-dust-interactions";
   material.transparent = true;
   material.depthWrite = false;

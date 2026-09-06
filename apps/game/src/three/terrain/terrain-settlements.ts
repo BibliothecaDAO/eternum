@@ -1,4 +1,4 @@
-import { RealmLevels, StructureType } from "@bibliothecadao/types";
+import { RealmLevels, StructureType } from "@bibliothecadao/types/terrain";
 
 import type { TerrainSettlementAnchor } from "./terrain-types";
 

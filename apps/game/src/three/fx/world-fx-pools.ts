@@ -1,6 +1,6 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   Camera,
-  DynamicDrawUsage,
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
@@ -89,16 +89,14 @@ export class WorldFxParticlePool {
     readonly capacity: number,
   ) {
     const material = family === "additive" ? createWorldFxAdditiveMaterial() : createWorldFxSmokeMaterial();
-    this.mesh = new InstancedMesh(this.geometry, material, capacity);
+    this.mesh = createInstancedMesh(this.geometry, material, capacity);
     this.mesh.name = `world-fx-${family}-particles`;
     this.mesh.count = 0;
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = family === "additive" ? 31 : 30;
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.mesh.raycast = disableRaycast;
     this.particleAttribute = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
-    this.particleAttribute.setUsage(DynamicDrawUsage);
     this.geometry.setAttribute(WORLD_FX_PARTICLE_ATTRIBUTE, this.particleAttribute);
     this.slots = Array.from({ length: capacity }, createInactiveParticleSlot);
   }
@@ -226,16 +224,14 @@ export class WorldFxRingPool {
   private droppedCount = 0;
 
   constructor(readonly capacity: number) {
-    this.mesh = new InstancedMesh(this.geometry, createWorldFxRingMaterial(), capacity);
+    this.mesh = createInstancedMesh(this.geometry, createWorldFxRingMaterial(), capacity);
     this.mesh.name = "world-fx-rings";
     this.mesh.count = 0;
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 29;
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.mesh.raycast = disableRaycast;
     this.particleAttribute = new InstancedBufferAttribute(new Float32Array(capacity * 4), 4);
-    this.particleAttribute.setUsage(DynamicDrawUsage);
     this.geometry.setAttribute(WORLD_FX_PARTICLE_ATTRIBUTE, this.particleAttribute);
     this.slots = Array.from({ length: capacity }, createInactiveRingSlot);
   }

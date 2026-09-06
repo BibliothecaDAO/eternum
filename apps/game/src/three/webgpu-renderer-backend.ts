@@ -1,3 +1,4 @@
+import { configureRendererColorOutput } from "./renderer-color-output";
 import {
   ACESFilmicToneMapping,
   CineonToneMapping,
@@ -28,14 +29,6 @@ import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 import { instrumentGpuBackendHotPaths } from "./gpu-backend-hot-path-instrumentation";
-import {
-  probeWebGpuAdapter,
-  rememberRendererLane,
-  resolveWebGpuLaneStart,
-  type RendererLane,
-  type WebGpuProbeVerdict,
-  type WebGpuLaneStart,
-} from "./webgpu-lane-probe";
 
 interface WebGPURendererSurface extends RendererSurfaceLike {
   init(): Promise<void>;
@@ -80,10 +73,6 @@ interface WebGPURendererBackendDependencies {
     signal: AbortSignal;
   }): Promise<CreatedWebGPURenderer>;
   now(): number;
-  /** Remembers the lane that actually started, so the next boot on this profile skips the question. */
-  rememberLane(lane: RendererLane, reason: string): void;
-  /** Decides whether to try WebGPU at all — bounded probe or per-profile memory, never an unbounded adapter wait. */
-  resolveLaneStart(input: { forceReprobe: boolean; requestedMode: RendererBuildMode }): Promise<WebGpuLaneStart>;
 }
 
 interface WebGpuRendererModules {
@@ -100,7 +89,7 @@ async function createDefaultWebGPURenderer(input: {
   const { threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
   recordRendererStartupTiming("webgpu-module-import", performance.now() - moduleImportStartedAt);
 
-  const { ACESFilmicToneMapping, HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
+  const { HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
     threeWebGPUModule as typeof import("three/webgpu");
 
   throwIfAborted(input.signal);
@@ -111,8 +100,7 @@ async function createDefaultWebGPURenderer(input: {
   renderer.autoClear = false;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
-  renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.8;
+  configureRendererColorOutput(renderer);
   renderer.info.autoReset = false;
 
   if ("outputBufferType" in renderer) {
@@ -142,40 +130,11 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
   createPostProcessRuntime: createWebGPUPostProcessRuntime,
   createRenderer: createDefaultWebGPURenderer,
   now: () => performance.now(),
-  rememberLane: (lane, reason) => rememberRendererLane(resolveLaneStorage(), lane, reason),
-  resolveLaneStart: (input) =>
-    resolveWebGpuLaneStart({
-      ...input,
-      probe: probeDefaultWebGpuAdapter,
-      storage: resolveLaneStorage(),
-    }),
 };
 
-function resolveNavigatorGpu(): { requestAdapter(): Promise<unknown | null> } | undefined {
-  if (typeof navigator === "undefined") return undefined;
-  return (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown | null> } }).gpu;
-}
-
-function resolveLaneStorage(): Storage | null {
-  try {
-    return typeof localStorage === "undefined" ? null : localStorage;
-  } catch {
-    return null;
-  }
-}
-
-async function probeDefaultWebGpuAdapter(): Promise<WebGpuProbeVerdict> {
-  const verdict = await probeWebGpuAdapter({ gpu: resolveNavigatorGpu() });
-  verboseLog("[RendererDebug]", {
-    event: "webgpu-adapter-probe-completed",
-    verdict,
-  });
-  return verdict;
-}
-
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
-// The only recorded successful remembered-lane init was 317 ms. Use roughly 10x that
-// observation until item 1 replaces it with a truthful multi-run p95.
+// Native initialization takes under 700 ms in the NVIDIA startup captures after
+// removing the animated loading background. Bound a stalled driver.
 const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 3_200;
 // WebGL2 has no fallback behind it. Preserve the previous ceiling as a last-resort
 // stall detector instead of turning ordinary slow starts into hard bootstrap failures.
@@ -199,7 +158,8 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
 });
 
 async function importWebGpuRendererModules(): Promise<WebGpuRendererModules> {
-  // Only three's renderer module: the capability addon's top-level adapter await is replaced by the bounded probe.
+  // Let the real renderer request its adapter once; do not import the capability addon
+  // whose top-level adapter await can block module evaluation.
   const threeWebGPUModule = await import("three/webgpu");
   return { threeWebGPUModule: threeWebGPUModule as typeof import("three/webgpu") };
 }
@@ -266,7 +226,7 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
 
 function resolveWebGpuAdapterInfo(device?: WebGPURendererDevice): RendererAdapterInfo | undefined {
   const adapterInfo = device?.adapterInfo;
-  if (!adapterInfo || typeof adapterInfo.isFallbackAdapter !== "boolean") {
+  if (!adapterInfo) {
     return undefined;
   }
 
@@ -421,8 +381,6 @@ export function createWebGPURendererBackend(
     onDeviceLost?: (event: RendererDeviceLostEvent) => void;
     pixelRatio: number;
     requestedMode: RendererBuildMode;
-    /** An explicit `?rendererMode=` re-probes instead of trusting the remembered lane. */
-    forceReprobe?: boolean;
   },
   dependencies: Partial<WebGPURendererBackendDependencies> = defaultDependencies,
 ): RendererBackendV2 {
@@ -463,7 +421,14 @@ export function createWebGPURendererBackend(
         createdRenderer.renderer.setPixelRatio(options.pixelRatio);
         createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
         const rendererInitStartedAt = resolvedDependencies.now();
-        await createdRenderer.renderer.init();
+        const initializingRenderer = createdRenderer.renderer;
+        try {
+          await initializingRenderer.init();
+        } finally {
+          // Adapter/device requests cannot be cancelled. Dispose again if init creates
+          // GPU resources after the timeout already disposed the incomplete renderer.
+          if (abortController.signal.aborted) initializingRenderer.dispose();
+        }
         throwIfAborted(abortController.signal);
         recordRendererStartupTiming("webgpu-renderer-init", resolvedDependencies.now() - rendererInitStartedAt);
 
@@ -488,33 +453,20 @@ export function createWebGPURendererBackend(
   };
 
   const startRendererLaneWithWebGlFallback = async (): Promise<InitializedRendererLane> => {
-    const start = await resolvedDependencies.resolveLaneStart({
-      forceReprobe: options.forceReprobe ?? false,
-      requestedMode: options.requestedMode,
-    });
-    verboseLog("[RendererDebug]", {
-      event: "renderer-lane-selected",
-      fallbackReason: start.fallbackReason,
-      forceReprobe: options.forceReprobe ?? false,
-      forceWebGL: start.forceWebGL,
-      remembered: start.remembered,
-      requestedMode: options.requestedMode,
-    });
+    const forceWebGL = options.requestedMode === "webgpu-force-webgl";
     try {
-      const lane = await startRendererLane(start.forceWebGL);
+      const lane = await startRendererLane(forceWebGL);
       if (lane.activeMode === "webgpu") {
-        resolvedDependencies.rememberLane("webgpu", "init");
-        return { ...lane, fallbackReason: start.fallbackReason };
+        return { ...lane, fallbackReason: null };
       }
 
-      if (!start.forceWebGL) {
-        resolvedDependencies.rememberLane("webgl2", "webgpu-silent-fallback");
+      if (!forceWebGL) {
         return { ...lane, fallbackReason: "webgpu-silent-fallback" };
       }
 
-      return { ...lane, fallbackReason: start.fallbackReason };
+      return { ...lane, fallbackReason: null };
     } catch (error) {
-      if (start.forceWebGL) {
+      if (forceWebGL) {
         throw error;
       }
 
@@ -525,7 +477,6 @@ export function createWebGPURendererBackend(
         event: "webgpu-init-failed",
         fallbackReason,
       });
-      resolvedDependencies.rememberLane("webgl2", fallbackReason);
       return { ...(await startRendererLane(true)), fallbackReason };
     }
   };

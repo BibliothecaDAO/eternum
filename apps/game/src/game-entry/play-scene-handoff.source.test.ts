@@ -7,32 +7,24 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-describe("GameLoadingOverlay source", () => {
+describe("PlaySceneHandoff source", () => {
   it("reads the shared play-route boot snapshot and readiness store instead of session handoff state", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+    const source = readSource("src/game-entry/play-scene-handoff.tsx");
 
     expect(source).toContain("usePlayRouteBootSnapshot");
     expect(source).toContain("usePlayRouteReadinessStore");
     expect(source).not.toContain("consumePlayRouteHandoff");
   });
 
-  it("keeps the loading shell open on safety timeout instead of dismissing into a dead map", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+  it("does not declare failure or completion from elapsed time", () => {
+    const source = readSource("src/game-entry/play-scene-handoff.tsx");
 
-    expect(source).toContain("setDidSafetyTimeout(true);");
-    expect(source).toContain('"World map startup is still blocked."');
-  });
-
-  it("renders actual boot progress and keeps structured diagnostics out of the console", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
-
-    expect(source).toContain("snapshot.progress");
-    expect(source).toContain("<BootDebugPanel");
-    expect(source).not.toContain("Math.max(snapshot.progress");
+    expect(source).not.toContain("setDidSafetyTimeout");
+    expect(source).not.toContain("setInterval");
   });
 
   it("records canonical renderer and dismissal milestones around the shared boot readiness flow", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+    const source = readSource("src/game-entry/play-scene-handoff.tsx");
 
     expect(source).toContain("readiness.worldmapReady");
     expect(source).toContain("readiness.worldmapConverged");

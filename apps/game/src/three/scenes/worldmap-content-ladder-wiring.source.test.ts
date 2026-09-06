@@ -16,8 +16,6 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(
       /runWithFrameWorkOwner\("zoom:content-ladder", \(\) => \{\s*this\.applyContentLadder\(resolveWorldmapContentLadder\(view\)\)/,
     );
-    expect(source).toMatch(/this\.worldBiomeSurface\.setVisible\(ladder\.biomeUnderlay\)/);
-    expect(source).toMatch(/this\.proceduralTerrain\.object3d\.visible = ladder\.band !== CameraView\.Far/);
     expect(source).toMatch(/this\.fxManager\.setVisible\(ladder\.fx\)/);
     expect(source).toMatch(/this\.resourceFXManager\.setVisible\(ladder\.fx\)/);
     expect(source).toMatch(/this\.combatPresentation\?\.setVisible\(ladder\.fx\)/);
@@ -29,7 +27,7 @@ describe("worldmap content ladder wiring", () => {
   it("keeps the far band's subjects on the strategic marker layer fed from the whole-world projection", () => {
     const source = read("worldmap.tsx");
     expect(source).toMatch(/this\.strategicMarkers\.setVisible\(ladder\.band === CameraView\.Far\)/);
-    expect(source).toMatch(/this\.seedWorldBiomeSurface\(\);\s*this\.seedStrategicMarkers\(\);/);
+    expect(source).toContain("this.seedStrategicMarkers()");
     expect(source).toMatch(
       /this\.worldSpatialProjection\.getStructures\(\)\.forEach\(\(structure\) => this\.writeStructureMarker\(structure\)\)/,
     );
@@ -38,16 +36,12 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(/this\.strategicMarkers\.setViewPitch\(pitch\)/);
   });
 
-  it("uses the minimap's biome classification and color source for the far-band ground", () => {
+  it("keeps camera terrain at every zoom without a duplicate whole-world ground layer", () => {
     const worldmap = read("worldmap.tsx");
-    const surface = read("../terrain/world-biome-surface.ts");
-    const minimap = read("../../ui/features/world/components/bottom-right-panel/hex-minimap.tsx");
-
-    expect(worldmap).toContain("requireBiomeTypeFromId(tile.biome)");
-    expect(minimap).toContain("resolveBiomeTypeFromId(biomeId)");
-    expect(surface).toContain("requireBiomeColor(biome)");
-    expect(worldmap).not.toContain("BiomeIdToType");
-    expect(minimap).not.toContain("BiomeIdToType");
+    expect(worldmap).not.toContain("WorldBiomeSurface");
+    expect(worldmap).not.toContain("proceduralTerrain.object3d.visible = ladder.band");
+    const base = read("hexagon-scene.ts");
+    expect(base).toContain("this.sceneName !== SceneName.WorldMap && !IS_FLAT_MODE");
   });
 
   it("keeps biome-colors.ts the only source file resolving biome ids", () => {

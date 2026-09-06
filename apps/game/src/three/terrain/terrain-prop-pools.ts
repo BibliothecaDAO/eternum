@@ -1,7 +1,9 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   Box3,
+  BufferGeometry,
   Color,
-  DynamicDrawUsage,
+  Float32BufferAttribute,
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
@@ -16,9 +18,10 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 import {
   attribute,
   color,
+  float,
+  instanceIndex,
   mix,
   normalGeometry,
-  positionGeometry,
   positionLocal,
   smoothstep,
   time,
@@ -41,7 +44,7 @@ import {
 } from "./terrain-prop-catalog";
 import type { TerrainPropInstance } from "./terrain-types";
 
-/** Every pool holds one fixed sub-range per visual page the worldmap can compose at once. */
+/** Every pool holds bounded page ownership; live instances are packed into its drawn prefix. */
 export const TERRAIN_PROP_POOL_PAGE_SLOTS = WORLD_CHUNK_CONFIG.visualPresentation.maxCompositePages;
 
 /**
@@ -58,13 +61,13 @@ export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchety
   conifer: 560, // measured 371
   "dead-tree": 144, // measured 88
   "fallen-log": 96, // measured 64
-  fern: 160, // measured 98
-  "grass-tuft": 112, // measured 66
+  fern: 512, // measured 340
+  "grass-tuft": 352, // measured 231
   palm: 352, // measured 229
-  reed: 80, // measured 44
+  reed: 208, // measured 129
   shrub: 464, // measured 306
   stump: 112, // measured 72
-  wildflower: 64, // measured 37
+  wildflower: 160, // measured 103
   willow: 368, // measured 239
 });
 
@@ -72,8 +75,6 @@ const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";
 const MATRIX_FLOATS = 16;
 const VEC3_FLOATS = 3;
 const EMPTY_INSTANCES: readonly TerrainPropInstance[] = Object.freeze([]);
-// Slot tails and released slots stay in the drawn prefix; a zero scale collapses them to nothing.
-const ZERO_SCALE_MATRIX = new Matrix4().makeScale(0, 0, 0);
 
 export interface TerrainPropPoolStats {
   groundCoverInstances: number;
@@ -82,10 +83,10 @@ export interface TerrainPropPoolStats {
 }
 
 export interface TerrainPropPoolMetrics {
-  /** Instance matrices uploaded by page writes, including the zeroed tails of shrinking slots. */
+  /** Instance matrices uploaded by page writes, including relocated live instances. */
   instancesUploaded: number;
   pageWrites: number;
-  /** Zero-scaled instances inside the drawn prefix right now: the vertex cost of fixed slots. */
+  /** Unused instances inside the submitted draw range; packed pools keep this at zero. */
   paddingInstances: number;
 }
 
@@ -99,6 +100,7 @@ interface PropPoolSlot {
 interface PropPool {
   catalogRadius: number;
   ecology: InstancedBufferAttribute;
+  geometries: Record<TerrainPropLod, BufferGeometry>;
   mesh: InstancedMesh;
   slotCapacity: number;
   slots: PropPoolSlot[];
@@ -132,7 +134,7 @@ export class TerrainPropPools {
     return new TerrainPropPools(catalog.scene);
   }
 
-  /** Writes one page's props into its slot of every archetype pool; only those sub-ranges are uploaded. */
+  /** Updates one page and shifts any following live ranges; unused capacity never enters a draw. */
   writePage(pageKey: string, instances: readonly TerrainPropInstance[]): void {
     const instancesByArchetype = groupByArchetype(instances);
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
@@ -148,9 +150,9 @@ export class TerrainPropPools {
   setLod(lod: TerrainPropLod): void {
     if (lod === this.lod) return;
     this.lod = lod;
-    this.windStrength.value = lod === "near" ? 1 : 0.35;
     this.pools.forEach((pool, archetype) => {
-      pool.mesh.geometry = this.requireCatalogMesh(archetype, lod).geometry;
+      pool.mesh.geometry = pool.geometries[lod];
+      pool.mesh.castShadow = lod === "near" && getTerrainPropRole(archetype) === "canopy";
       pool.mesh.visible = pool.mesh.count > 0 && isTerrainPropVisibleAtLod(archetype, lod);
     });
   }
@@ -184,14 +186,10 @@ export class TerrainPropPools {
   }
 
   dispose(): void {
-    this.pools.forEach((pool, archetype) => {
-      for (const lod of ["near", "far"] as const) {
-        const geometry = this.requireCatalogMesh(archetype, lod).geometry;
-        if (geometry.getAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE) === pool.ecology) {
-          geometry.deleteAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE);
-        }
-      }
+    this.pools.forEach((pool) => {
       pool.mesh.dispose();
+      pool.geometries.near.dispose();
+      pool.geometries.far.dispose();
     });
     this.pools.clear();
     this.object3d.clear();
@@ -203,25 +201,23 @@ export class TerrainPropPools {
     const slotCapacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype];
     const capacity = slotCapacity * TERRAIN_PROP_POOL_PAGE_SLOTS;
     const ecology = new InstancedBufferAttribute(new Float32Array(capacity * VEC3_FLOATS), VEC3_FLOATS);
-    ecology.setUsage(DynamicDrawUsage);
-    for (const lod of ["near", "far"] as const) {
-      this.requireCatalogMesh(archetype, lod).geometry.setAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE, ecology);
-    }
-    const source = this.requireCatalogMesh(archetype, this.lod);
+    const geometries = {
+      near: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "near").geometry, ecology),
+      far: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "far").geometry, ecology),
+    };
     const material = getTerrainPropRole(archetype) === "rigid" ? this.rigidMaterial : this.windMaterial;
-    const mesh = new InstancedMesh(source.geometry, material, capacity);
+    const mesh = createInstancedMesh(geometries[this.lod], material, capacity);
     mesh.name = `terrain-prop-pool:${archetype}`;
     mesh.count = 0;
     mesh.visible = false;
-    // A full-screen forest otherwise submits every prop geometry again to the
-    // shadow pass. The ground and structures retain authored shadows.
-    mesh.castShadow = false;
+    // Canopy shadows anchor close forests; overview skips their extra geometry pass.
+    mesh.castShadow = this.lod === "near" && getTerrainPropRole(archetype) === "canopy";
     mesh.receiveShadow = true;
-    mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     mesh.raycast = disablePropRaycast;
     this.pools.set(archetype, {
       catalogRadius: this.resolveMaximumCatalogMeshRadius(archetype),
       ecology,
+      geometries,
       mesh,
       slotCapacity,
       slots: Array.from({ length: TERRAIN_PROP_POOL_PAGE_SLOTS }, createEmptySlot),
@@ -239,14 +235,15 @@ export class TerrainPropPools {
     if (slotIndex === -1) return;
     requireSlotCapacity(pool, archetype, pageKey, instances.length);
     const slot = pool.slots[slotIndex];
-    const start = slotIndex * pool.slotCapacity;
+    const start = pool.slots.slice(0, slotIndex).reduce((sum, entry) => sum + entry.count, 0);
+    this.metrics.instancesUploaded += moveFollowingInstances(pool, start, slot.count, instances.length);
     this.metrics.instancesUploaded += this.writeSlotInstances(pool, archetype, start, slot, instances);
     slot.count = instances.length;
     slot.pageKey = instances.length > 0 ? pageKey : null;
     this.refreshPoolExtent(pool, archetype);
   }
 
-  /** Writes the instances from the slot start, zeroes the tail the slot previously used, and queues the uploads. */
+  /** Writes only live instances after the surrounding ranges have been packed. */
   private writeSlotInstances(
     pool: PropPool,
     archetype: TerrainPropArchetypeId,
@@ -273,10 +270,7 @@ export class TerrainPropPools {
       pool.ecology.setXYZ(index, instance.appearance.windAmplitude, instance.appearance.moss, instance.appearance.snow);
       slot.radius = Math.max(slot.radius, pool.catalogRadius * instance.scale);
     });
-    for (let index = start + instances.length; index < start + slot.count; index += 1) {
-      mesh.setMatrixAt(index, ZERO_SCALE_MATRIX);
-    }
-    const written = Math.max(instances.length, slot.count);
+    const written = instances.length;
     if (written === 0) return 0;
     uploadSubRange(mesh.instanceMatrix, start, written, MATRIX_FLOATS);
     if (instances.length > 0) {
@@ -290,9 +284,9 @@ export class TerrainPropPools {
     let count = 0;
     let radius = 0;
     this.extent.makeEmpty();
-    pool.slots.forEach((slot, index) => {
+    pool.slots.forEach((slot) => {
       if (slot.count === 0) return;
-      count = index * pool.slotCapacity + slot.count;
+      count += slot.count;
       radius = Math.max(radius, slot.radius);
       this.extent.union(slot.bounds);
     });
@@ -322,6 +316,19 @@ export class TerrainPropPools {
       resolveCatalogMeshRadius(this.requireCatalogMesh(archetype, "far")),
     );
   }
+}
+
+function moveFollowingInstances(pool: PropPool, start: number, previousCount: number, nextCount: number): number {
+  const source = start + previousCount;
+  const destination = start + nextCount;
+  const count = pool.mesh.count - source;
+  if (source === destination || count === 0) return 0;
+  for (const attribute of [pool.mesh.instanceMatrix, requireInstanceColor(pool.mesh), pool.ecology]) {
+    const size = attribute.itemSize;
+    attribute.array.copyWithin(destination * size, source * size, (source + count) * size);
+    uploadSubRange(attribute, destination, count, size);
+  }
+  return count;
 }
 
 function groupByArchetype(
@@ -371,7 +378,7 @@ function countPoolInstances(pool: PropPool): number {
 function uploadSubRange(attribute: BufferAttribute, start: number, count: number, itemFloats: number): void {
   const rangeStart = start * itemFloats;
   const rangeCount = count * itemFloats;
-  // Slot starts are fixed, so ranges queued for the same slot before a draw merge instead of piling up.
+  // Coalesce repeated writes before the renderer consumes the upload ranges.
   const queued = attribute.updateRanges.find((range) => range.start === rangeStart);
   if (queued) queued.count = Math.max(queued.count, rangeCount);
   else attribute.addUpdateRange(rangeStart, rangeCount);
@@ -383,12 +390,31 @@ function requireInstanceColor(mesh: InstancedMesh): InstancedBufferAttribute {
   return mesh.instanceColor;
 }
 
+function createOwnedPropGeometry(source: BufferGeometry, ecology: InstancedBufferAttribute): BufferGeometry {
+  // World and local scenes share the catalog, but own their instance attributes and GPU buffer lifetimes.
+  const geometry = source.clone();
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox!;
+  const height = bounds.max.y - bounds.min.y;
+  if (!(height > 0)) throw new Error(`Terrain prop geometry ${source.name} has no measurable height`);
+  const positions = geometry.getAttribute("position");
+  const bend = new Float32Array(positions.count * 2);
+  for (let index = 0; index < positions.count; index++) {
+    bend[index * 2] = (positions.getY(index) - bounds.min.y) / height;
+    bend[index * 2 + 1] = height;
+  }
+  geometry.setAttribute("terrainPropBend", new Float32BufferAttribute(bend, 2));
+  geometry.setAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE, ecology);
+  return geometry;
+}
+
 function createTerrainPropMaterial(
   animated: boolean,
   windStrength: UniformNode<"float", number> = uniform(0, "float"),
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
   const foliageWeight = attribute<"float">("_wind_weight", "float").clamp(0, 1);
+  const plant = attribute<"vec2">("terrainPropBend", "vec2");
   const ecology = attribute<"vec3">("terrainPropEcology", "vec3").clamp(0, 1);
   const verticality = normalGeometry.y.mul(normalGeometry.y).oneMinus().clamp(0, 1);
   const snowMask = ecology.z
@@ -397,13 +423,20 @@ function createTerrainPropMaterial(
     .clamp(0, 1);
   const mossMask = ecology.y.mul(verticality.mul(0.5).add(0.35)).mul(snowMask.mul(0.8).oneMinus()).clamp(0, 1);
   const mossyColor = mix(vertexColor().rgb, color("#627858"), mossMask.mul(0.48));
-  material.colorNode = mix(mossyColor, color("#d8e0df"), snowMask.mul(0.78));
+  const canopyLight = foliageWeight.mul(smoothstep(0.1, 0.85, normalGeometry.y)).mul(0.18);
+  const foliageColor = mix(mossyColor, color("#afc675"), canopyLight);
+  material.colorNode = mix(foliageColor, color("#d8e0df"), snowMask.mul(0.78));
   if (!animated) return material;
 
-  const heightMask = smoothstep(0.08, 1.1, positionGeometry.y);
-  const phase = time.mul(0.72).add(positionLocal.x.mul(0.41)).add(positionLocal.z.mul(0.57));
-  const mainSway = phase.sin().mul(0.018);
-  const detailSway = phase.mul(1.73).add(positionGeometry.y.mul(2.4)).sin().mul(0.009);
+  const heightMask = smoothstep(0.05, 0.95, plant.x);
+  const amplitude = plant.y.mul(0.2).min(0.065);
+  const phase = time
+    .mul(0.72)
+    .add(positionLocal.x.mul(0.41))
+    .add(positionLocal.z.mul(0.57))
+    .add(float(instanceIndex).mul(2.399));
+  const mainSway = phase.sin().mul(amplitude);
+  const detailSway = phase.mul(1.73).add(plant.x.mul(2.4)).sin().mul(amplitude).mul(0.35);
   const displacement = heightMask.mul(foliageWeight).mul(ecology.x).mul(windStrength);
   material.positionNode = positionLocal.add(vec3(mainSway.mul(displacement), 0, detailSway.mul(displacement)));
   return material;

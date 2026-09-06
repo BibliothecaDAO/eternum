@@ -82,10 +82,7 @@ describe("debug navigation entry", () => {
     const headerSource = readSource("src/ui/features/landing/components/landing-header.tsx");
 
     expect(navigationSource).toContain("import.meta.env.DEV");
-    expect(headerSource).toContain("import.meta.env.DEV");
     expect(navigationSource).toContain("return [];");
-    expect(headerSource).toContain("return [];");
-    expect(headerSource).toContain('label: "Debug"');
-    expect(headerSource).toContain('path: "/debug/three-chunks"');
+    expect(headerSource).toContain("NAVIGATION_SECTIONS.map");
   });
 });

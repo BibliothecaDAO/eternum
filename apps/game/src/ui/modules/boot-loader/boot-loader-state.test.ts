@@ -29,10 +29,6 @@ describe("boot-loader-state", () => {
     setBootDocumentState("app-loading");
 
     expect(document.documentElement.dataset.bootState).toBe("app-loading");
-    expect(document.getElementById("boot-shell")).not.toBeNull();
-
-    vi.advanceTimersByTime(420);
-
     expect(document.getElementById("boot-shell")).toBeNull();
   });
 });

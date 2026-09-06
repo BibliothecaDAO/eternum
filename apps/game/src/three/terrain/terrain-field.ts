@@ -1,8 +1,8 @@
-import { Biome } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types";
-import { Color } from "three";
+import { Biome } from "@bibliothecadao/eternum/biome";
+import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
+import { Color } from "three/src/math/Color.js";
 
-import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
+import { TerrainNoise } from "./terrain-noise";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
   applyTerrainGroundRoad,
@@ -23,7 +23,7 @@ import {
   terrainNeighborCoordinates,
 } from "./terrain-coordinates";
 import type { TerrainCellInput, TerrainPageRequest, TerrainSurfaceSample } from "./terrain-types";
-import { isTerrainWaterBiome } from "./terrain-water";
+import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
 interface CellFieldSample {
   baseHeight: number;
@@ -37,6 +37,7 @@ interface CellFieldSample {
   elevation: number;
   groundWeights: TerrainGroundWeights;
   moisture: number;
+  occupied: boolean;
   primary: readonly [number, number, number];
   row: number;
   sampledBiome: BiomeType;
@@ -104,17 +105,30 @@ export class TerrainField {
   private readonly frontierByKey = new Map<string, boolean>();
   private readonly previewSampleByKey = new Map<string, CellFieldSample>();
   private readonly previewCandidatesByKey = new Map<string, CellFieldSample[]>();
-  private readonly elevationSeed: number;
-  private readonly moistureSeed: number;
+  private readonly noise: TerrainNoise;
   private biomeMismatchCount: number | null = null;
+  private readonly settlements: Array<{
+    centerX: number;
+    centerZ: number;
+    radiusScale: number;
+    disturbanceStrength: number;
+  }>;
+  private lastRoadSample: { x: number; z: number; distance: number } | null = null;
 
   constructor(private readonly request: TerrainPageRequest) {
     request.halo.forEach(requireConsistentTerrainCellExploration);
     request.cells.forEach(requireConsistentTerrainCellExploration);
     request.halo.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
     request.cells.forEach((cell) => this.cellByKey.set(terrainCellKey(cell.col, cell.row), cell));
-    this.elevationSeed = resolveSeed(request.climate.elevation_seed);
-    this.moistureSeed = resolveSeed(request.climate.moisture_seed);
+    this.noise = new TerrainNoise(
+      resolveSeed(request.climate.elevation_seed),
+      resolveSeed(request.climate.moisture_seed),
+    );
+
+    this.settlements = request.settlementAnchors.map((anchor) => {
+      const center = terrainHexToWorld(anchor.col, anchor.row);
+      return { centerX: center.x, centerZ: center.z, ...resolveTerrainSettlementInfluence(anchor) };
+    });
 
     if (request.strictBiomeParity && this.getBiomeMismatchCount() > 0) {
       throw new Error(
@@ -174,6 +188,10 @@ export class TerrainField {
     if (candidates.length === 0) return createUnknownSample();
 
     let totalWeight = 0;
+    let visualWeightSum = 0;
+    const nearestDistanceSquared = Math.min(
+      ...candidates.map((candidate) => (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2),
+    );
     let height = 0;
     let roughness = 0;
     let red = 0;
@@ -186,13 +204,7 @@ export class TerrainField {
     let strongestWeight = -1;
     let strongestBiome = candidates[0].biome;
     let strongestBiomeId = candidates[0].biomeId;
-    const macroMaterial = terrainValueNoise(
-      worldX * 0.42,
-      worldZ * 0.42,
-      this.elevationSeed,
-      this.moistureSeed,
-      "terrain-color-v1",
-    );
+    const macroMaterial = this.noise.sample(worldX * 0.42, worldZ * 0.42, "terrain-color-v1");
     const colorMix = 0.18 + macroMaterial * 0.28;
 
     for (const candidate of candidates) {
@@ -200,15 +212,18 @@ export class TerrainField {
       const weight = terrainBlendWeight(distanceSquared);
       if (weight === 0) continue;
       totalWeight += weight;
+      // Equal distance is the actual hex boundary. Restrict material blending to its narrow verge.
+      const visualWeight = Math.exp(-(distanceSquared - nearestDistanceSquared) / 0.24);
+      visualWeightSum += visualWeight;
       height += candidate.baseHeight * weight;
       roughness += candidate.descriptor.roughness * weight;
       relief += candidate.descriptor.relief * weight;
       macroTintStrength += candidate.direction.material.macroTintStrength * weight;
       shoreWetness += candidate.direction.material.shoreWetness * weight;
-      blendTerrainGroundWeights(groundWeights, candidate.groundWeights, weight);
-      red += (candidate.primary[0] + (candidate.secondary[0] - candidate.primary[0]) * colorMix) * weight;
-      green += (candidate.primary[1] + (candidate.secondary[1] - candidate.primary[1]) * colorMix) * weight;
-      blue += (candidate.primary[2] + (candidate.secondary[2] - candidate.primary[2]) * colorMix) * weight;
+      blendTerrainGroundWeights(groundWeights, candidate.groundWeights, visualWeight);
+      red += (candidate.primary[0] + (candidate.secondary[0] - candidate.primary[0]) * colorMix) * visualWeight;
+      green += (candidate.primary[1] + (candidate.secondary[1] - candidate.primary[1]) * colorMix) * visualWeight;
+      blue += (candidate.primary[2] + (candidate.secondary[2] - candidate.primary[2]) * colorMix) * visualWeight;
 
       if (weight > strongestWeight) {
         strongestWeight = weight;
@@ -220,6 +235,7 @@ export class TerrainField {
     if (totalWeight === 0) return createUnknownSample();
 
     const inverseWeight = 1 / totalWeight;
+    const inverseVisualWeight = 1 / visualWeightSum;
     const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
     const paddedHeight = this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
     const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
@@ -241,7 +257,7 @@ export class TerrainField {
     const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
     const albedoFactor = macroFactor * (1 - wetness * 0.16) * (1 - road * 0.08);
     const disturbedColorBlend = Math.max(road * 0.72, vegetation.disturbanceStrength * 0.5, structurePad * 0.78);
-    const baseColor = [red * inverseWeight, green * inverseWeight, blue * inverseWeight] as const;
+    const baseColor = [red * inverseVisualWeight, green * inverseVisualWeight, blue * inverseVisualWeight] as const;
 
     return {
       biome: strongestBiome,
@@ -274,7 +290,11 @@ export class TerrainField {
   }
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
-    return this.sampleVertex(worldX, worldZ);
+    const sample = this.sampleVertex(worldX, worldZ);
+    if (isTerrainWaterCovered(sample.height) && (isTerrainWaterBiome(sample.biome) || sample.shore > 0)) {
+      return { biome: sample.biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] };
+    }
+    return sample;
   }
 
   samplePropDensityContext(
@@ -475,25 +495,15 @@ export class TerrainField {
       { canopyCover: 0, clearingStrength: 0, clusterScale: 0, undergrowth: 0 },
     );
     const clusterScale = ecology.clusterScale || 0.2;
-    const canopyPatch = terrainValueNoise(
-      worldX * clusterScale,
-      worldZ * clusterScale,
-      this.elevationSeed,
-      this.moistureSeed,
-      "terrain-vegetation-canopy-v1",
-    );
-    const gapNoise = terrainValueNoise(
+    const canopyPatch = this.noise.sample(worldX * clusterScale, worldZ * clusterScale, "terrain-vegetation-canopy-v1");
+    const gapNoise = this.noise.sample(
       worldX * Math.max(0.05, clusterScale * 0.58),
       worldZ * Math.max(0.05, clusterScale * 0.58),
-      this.elevationSeed,
-      this.moistureSeed,
       "terrain-vegetation-gaps-v1",
     );
-    const debrisPatch = terrainValueNoise(
+    const debrisPatch = this.noise.sample(
       worldX * Math.max(0.08, clusterScale * 1.7),
       worldZ * Math.max(0.08, clusterScale * 1.7),
-      this.elevationSeed,
-      this.moistureSeed,
       "terrain-vegetation-debris-v1",
     );
     const gapThreshold = 0.7 - ecology.clearingStrength * 0.22;
@@ -636,6 +646,7 @@ export class TerrainField {
       elevation: environment.elevation,
       groundWeights: resolveTerrainGroundRecipe(biome, environment),
       moisture: environment.moisture,
+      occupied: this.getCell(col, row)?.occupied === true,
       primary: [primary.r, primary.g, primary.b] as const,
       row,
       sampledBiome: environment.biome,
@@ -653,8 +664,7 @@ export class TerrainField {
   ): number {
     let result = surfaceHeight;
     for (const candidate of candidates) {
-      const cell = this.cellByKey.get(terrainCellKey(candidate.col, candidate.row));
-      if (!cell?.occupied) continue;
+      if (!candidate.occupied) continue;
       const distance = Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ);
       const padWeight = 1 - smoothstep(PAD_INNER_RADIUS, PAD_OUTER_RADIUS, distance);
       result += (candidate.baseHeight - result) * padWeight;
@@ -663,23 +673,13 @@ export class TerrainField {
   }
 
   private resolveDetailedHeight(worldX: number, worldZ: number, baseHeight: number, relief: number): number {
-    const detail =
-      (terrainValueNoise(worldX * 0.7, worldZ * 0.7, this.elevationSeed, this.moistureSeed, "terrain-relief-v1") -
-        0.5) *
-      2 *
-      relief;
+    const detail = (this.noise.sample(worldX * 0.7, worldZ * 0.7, "terrain-relief-v1") - 0.5) * 2 * relief;
     return baseHeight + detail;
   }
 
   private resolveMacroLandformOffset(worldX: number, worldZ: number, direction: TerrainBiomeArtDirection): number {
     const { basinStrength, macroAmplitude, macroFrequency, ridgeStrength } = direction.landform;
-    const macroNoise = terrainValueNoise(
-      worldX * macroFrequency,
-      worldZ * macroFrequency,
-      this.elevationSeed,
-      this.moistureSeed,
-      "terrain-landform-v1",
-    );
+    const macroNoise = this.noise.sample(worldX * macroFrequency, worldZ * macroFrequency, "terrain-landform-v1");
     const signedMacro = macroNoise * 2 - 1;
     const ridge = 1 - Math.abs(signedMacro);
     const basin = 1 - smoothstep(0.18, 0.72, macroNoise);
@@ -724,10 +724,8 @@ export class TerrainField {
   private sampleSettlementInfluence(worldX: number, worldZ: number): { clearance: number; edgeStrength: number } {
     let clearance = 1;
     let edgeStrength = 0;
-    for (const anchor of this.request.settlementAnchors) {
-      const center = terrainHexToWorld(anchor.col, anchor.row);
-      const distance = Math.hypot(center.x - worldX, center.z - worldZ);
-      const influence = resolveTerrainSettlementInfluence(anchor);
+    for (const influence of this.settlements) {
+      const distance = Math.hypot(influence.centerX - worldX, influence.centerZ - worldZ);
       const scaledDistance = distance / influence.radiusScale;
       const candidateClearance = smoothstep(PROP_CLEARANCE_INNER_RADIUS, PROP_CLEARANCE_OUTER_RADIUS, scaledDistance);
       clearance = Math.min(clearance, 1 - (1 - candidateClearance) * influence.disturbanceStrength);
@@ -740,18 +738,19 @@ export class TerrainField {
   }
 
   private sampleRoadDistance(worldX: number, worldZ: number): number {
+    if (this.lastRoadSample?.x === worldX && this.lastRoadSample.z === worldZ) return this.lastRoadSample.distance;
     let nearest = Number.POSITIVE_INFINITY;
     for (const segment of this.request.roadSegments) {
       nearest = Math.min(nearest, pointToSegmentDistance(worldX, worldZ, segment.start, segment.end));
     }
+    this.lastRoadSample = { x: worldX, z: worldZ, distance: nearest };
     return nearest;
   }
 
   private resolveStructurePadWeight(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
     let weight = 0;
     for (const candidate of candidates) {
-      const cell = this.cellByKey.get(terrainCellKey(candidate.col, candidate.row));
-      if (!cell?.occupied) continue;
+      if (!candidate.occupied) continue;
       const distance = Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ);
       const candidateWeight = 1 - smoothstep(PAD_INNER_RADIUS, PAD_OUTER_RADIUS, distance);
       weight = Math.max(weight, candidateWeight);
@@ -837,24 +836,6 @@ function terrainBlendWeight(distanceSquared: number): number {
   if (distanceSquared >= 4) return 0;
   const support = 1 - distanceSquared / 4;
   return (support * support * support * support) / (0.04 + distanceSquared * distanceSquared);
-}
-
-function terrainValueNoise(x: number, z: number, elevationSeed: number, moistureSeed: number, salt: string): number {
-  const minX = Math.floor(x);
-  const minZ = Math.floor(z);
-  const fractionX = smoothstep(0, 1, x - minX);
-  const fractionZ = smoothstep(0, 1, z - minZ);
-  const bottomLeft = hashNoise(minX, minZ, elevationSeed, moistureSeed, salt);
-  const bottomRight = hashNoise(minX + 1, minZ, elevationSeed, moistureSeed, salt);
-  const topLeft = hashNoise(minX, minZ + 1, elevationSeed, moistureSeed, salt);
-  const topRight = hashNoise(minX + 1, minZ + 1, elevationSeed, moistureSeed, salt);
-  const bottom = bottomLeft + (bottomRight - bottomLeft) * fractionX;
-  const top = topLeft + (topRight - topLeft) * fractionX;
-  return bottom + (top - bottom) * fractionZ;
-}
-
-function hashNoise(col: number, row: number, elevationSeed: number, moistureSeed: number, salt: string): number {
-  return terrainHashToUnitFloat(hashTerrainCoordinates({ col, elevationSeed, moistureSeed, row, salt }));
 }
 
 function createUnknownSample(): TerrainVisualSample {

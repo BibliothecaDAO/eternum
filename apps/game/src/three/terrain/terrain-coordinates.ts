@@ -1,4 +1,4 @@
-import { getNeighborHexes } from "@bibliothecadao/types";
+import { getNeighborHexes } from "@bibliothecadao/types/terrain";
 
 const TERRAIN_HEX_RADIUS = 1;
 const TERRAIN_HEX_HORIZONTAL_SPACING = Math.sqrt(3) * TERRAIN_HEX_RADIUS;

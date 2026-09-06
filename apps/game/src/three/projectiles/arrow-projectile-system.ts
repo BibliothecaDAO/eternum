@@ -1,10 +1,10 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   BoxGeometry,
   BufferGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
-  DynamicDrawUsage,
   Group,
   IcosahedronGeometry,
   InstancedMesh,
@@ -631,9 +631,8 @@ function createProjectileMesh(
   capacity: number,
   name: string,
 ): InstancedMesh {
-  const mesh = new InstancedMesh(geometry, material, capacity);
+  const mesh = createInstancedMesh(geometry, material, capacity);
   mesh.name = name;
-  mesh.instanceMatrix.setUsage(DynamicDrawUsage);
   mesh.frustumCulled = false;
   mesh.castShadow = true;
   return mesh;

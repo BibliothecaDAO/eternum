@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
@@ -9,6 +10,8 @@ import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import * as THREE from "three";
 import { getHexForWorldPosition, getWorldPositionForHex, getWorldPositionForHexCoordsInto } from "../utils/utils";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
+
+import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 
 const INTERACTIVE_HEX_Y = 0.1;
 const INTERACTIVE_PICK_Y = 0;
@@ -52,10 +55,10 @@ export class InteractiveHexManager {
   private visibleHexCoordsCapacity: number = 0;
   private surfaceVisible = true;
 
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, terrain: TerrainSurface = FLAT_TERRAIN_SURFACE) {
     this.scene = scene;
     this.hoverAura = new Aura();
-    this.hoverHexManager = new HoverHexManager(scene);
+    this.hoverHexManager = new HoverHexManager(scene, terrain);
     this.instanceMaterial = interactiveHexMaterial.clone();
     this.hexGeometryPool = HexGeometryPool.getInstance();
     this.onMouseMove = this.onMouseMove.bind(this);
@@ -66,10 +69,7 @@ export class InteractiveHexManager {
   public setAuraVisibility(visible: boolean) {
     this.showAura = visible;
     if (!visible) {
-      if (this.hoverAura.isInScene(this.scene)) {
-        this.hoverAura.removeFromScene(this.scene);
-      }
-      this.hoverHexManager.hideHover();
+      this.clearHover();
     }
   }
 
@@ -86,7 +86,10 @@ export class InteractiveHexManager {
    */
   public setRimLighting(enabled: boolean) {
     this.useRimLighting = enabled;
-    // Hide current effects when switching
+    this.clearHover();
+  }
+
+  public clearHover(): void {
     if (this.hoverAura.isInScene(this.scene)) {
       this.hoverAura.removeFromScene(this.scene);
     }
@@ -162,11 +165,7 @@ export class InteractiveHexManager {
       return hoveredHex;
     }
 
-    // Hide both hover effects when not hovering
-    if (this.hoverAura.isInScene(this.scene)) {
-      this.hoverAura.removeFromScene(this.scene);
-    }
-    this.hoverHexManager.hideHover();
+    this.clearHover();
     return null;
   }
 
@@ -205,8 +204,7 @@ export class InteractiveHexManager {
     const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
     hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.ensureInstanceMeshCapacity");
 
-    const mesh = new THREE.InstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const mesh = createInstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
     mesh.instanceMatrix.needsUpdate = true;
     mesh.count = 0;
 

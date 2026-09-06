@@ -4,7 +4,7 @@ import { prepareWarpTravelChunk } from "./warp-travel-chunk-preparation";
 import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harness";
 
 describe("prepareWarpTravelChunk", () => {
-  it("prepares target terrain only after projection sync and asset prewarm are ready", async () => {
+  it("prepares target terrain after projection sync while asset prewarm is pending", async () => {
     const syncProjectionTiles = createControlledAsyncCall<[string], boolean>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<
@@ -39,11 +39,6 @@ describe("prepareWarpTravelChunk", () => {
     syncProjectionTiles.resolveNext(true);
     syncProjectionTiles.resolveNext(true);
     await flushMicrotasks(2);
-    expect(prepareTerrainChunk.calls).toEqual([]);
-
-    prewarmChunkAssets.resolveNext();
-    await flushMicrotasks(2);
-
     expect(prepareTerrainChunk.calls).toEqual([[24, 24, 80, 90]]);
     prepareTerrainChunk.resolveNext({
       chunkKey: "24,24",

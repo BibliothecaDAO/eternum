@@ -22,23 +22,12 @@ describe("terrain fog mask", () => {
     expect(Math.max(...first.data)).toBe(255);
   });
 
-  it("fades across only a frontier cell toward fully opaque deep fog", () => {
-    const frontier = fogCell(0, 0, true, [-1, 0]);
-    const deep = fogCell(1.732, 0, false);
-    const mask = buildTerrainFogMask([frontier, deep])!;
-    const towardExplored = sampleMask(mask, -0.62, 0);
-    const towardDeepFog = sampleMask(mask, 0.62, 0);
-
-    expect(towardExplored).toBeGreaterThan(0);
-    expect(towardExplored).toBeLessThan(towardDeepFog);
-    expect(towardDeepFog).toBeGreaterThan(180);
-    expect(sampleMask(mask, deep.worldX, deep.worldZ)).toBe(255);
-  });
-
-  it("overscans deep fog beyond concealed terrain so its perimeter cannot leak through", () => {
-    const mask = buildTerrainFogMask([fogCell(0, 0, false)])!;
-
-    expect(sampleMask(mask, 1.18, 0)).toBe(255);
+  it("covers the complete unexplored hex and feathers onto its neighbor without reaching the explored center", () => {
+    const mask = buildTerrainFogMask([fogCell(0, 0, true, [-1, 0])])!;
+    expect(sampleMask(mask, -0.8, 0)).toBeGreaterThan(240);
+    expect(sampleMask(mask, -1.12, 0)).toBeGreaterThan(0);
+    expect(sampleMask(mask, -1.12, 0)).toBeLessThan(240);
+    expect(sampleMask(mask, -1.732, 0)).toBe(0);
   });
 
   it("clears an organic center-out reveal without mutating the base mask", () => {
@@ -110,7 +99,8 @@ describe("terrain fog mask", () => {
         expect(coverage).toBeLessThanOrEqual(sampleLinearMask(mask, deepCenter.x, deepCenter.z));
       }
     }
-    expect(Math.max(...exploredCoverage)).toBe(0);
+    // Sub-byte interpolation at a corner stays below the material's clear-coverage threshold.
+    expect(Math.max(...exploredCoverage)).toBeLessThan(1);
     expect(Math.min(...deepCoverage)).toBeGreaterThanOrEqual(0.9 * 255);
     expect(Math.min(...frontierCoverage)).toBeGreaterThan(0);
   });

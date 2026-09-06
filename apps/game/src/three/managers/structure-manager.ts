@@ -60,7 +60,6 @@ import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinat
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft } from "../utils/combat-directions";
-import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
@@ -216,8 +215,8 @@ function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSp
 
 export class StructureManager {
   private scene: Scene;
-  private structureModels: Map<StructureType, InstancedModel[]> = new Map();
-  private structureModelPromises: Map<StructureType, Promise<InstancedModel[]>> = new Map();
+  private structureModels: Map<StructureType, Map<number, InstancedModel>> = new Map();
+  private structureModelPromises: Map<string, Promise<InstancedModel>> = new Map();
   private structureModelPaths: Record<string, string[]>;
   // Cosmetic skin models keyed by cosmeticId
   private cosmeticStructureModels: Map<string, InstancedModel[]> = new Map();
@@ -275,14 +274,12 @@ export class StructureManager {
   // Ids the manager has asked the compact renderer to show; the label tier gate is re-evaluated against it.
   private readonly compactLabelIds = new Set<ID>();
   private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
-  private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private chunkAssetPrewarmPromises: Map<string, Promise<void>> = new Map();
-  private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
   private hasPendingModelBounds = false;
@@ -319,7 +316,6 @@ export class StructureManager {
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
     dojoContext?: SetupResult,
-    frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
@@ -338,14 +334,7 @@ export class StructureManager {
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
-    this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
-    if (this.frustumManager) {
-      this.frustumVisibilityDirty = true;
-      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
-        this.frustumVisibilityDirty = true;
-      });
-    }
     if (this.visibilityManager) {
       this.frustumVisibilityDirty = true;
       this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
@@ -765,11 +754,6 @@ export class StructureManager {
     this.unsubscribeProjection();
     this.recsUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
 
-    if (this.unsubscribeFrustum) {
-      this.unsubscribeFrustum();
-      this.unsubscribeFrustum = undefined;
-    }
-
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;
@@ -851,28 +835,7 @@ export class StructureManager {
 
     const prewarmPromise = (async () => {
       const visibleStructures = this.queryStructureInfosInChunk(startRow, startCol);
-      const structureTypes = new Set<StructureType>();
-      const cosmeticAssets = new Map<string, string[]>();
-
-      visibleStructures.forEach((structure) => {
-        if (this.hasCosmeticSkin(structure)) {
-          const cosmeticId = structure.cosmeticId ?? "";
-          const assetPaths = structure.cosmeticAssetPaths ?? [];
-          if (cosmeticId && assetPaths.length > 0 && !cosmeticAssets.has(cosmeticId)) {
-            cosmeticAssets.set(cosmeticId, assetPaths);
-          }
-          return;
-        }
-
-        structureTypes.add(structure.structureType);
-      });
-
-      await Promise.all([
-        ...Array.from(structureTypes, (structureType) => this.ensureStructureModels(structureType)),
-        ...Array.from(cosmeticAssets.entries(), ([cosmeticId, assetPaths]) =>
-          this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
-        ),
-      ]);
+      await this.preloadStructureModels(this.createStructureModelPreloadPlan(visibleStructures));
     })().finally(() => {
       this.chunkAssetPrewarmPromises.delete(chunkKey);
     });
@@ -881,35 +844,30 @@ export class StructureManager {
     return prewarmPromise;
   }
 
-  private async ensureStructureModels(structureType: StructureType): Promise<InstancedModel[]> {
-    if (this.structureModels.has(structureType)) {
-      return this.structureModels.get(structureType)!;
-    }
+  private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<InstancedModel> {
+    const cached = this.structureModels.get(structureType)?.get(modelIndex);
+    if (cached) return cached;
 
-    let pending = this.structureModelPromises.get(structureType);
-    if (pending) {
-      return pending;
-    }
+    const key = `${structureType}:${modelIndex}`;
+    const existing = this.structureModelPromises.get(key);
+    if (existing) return existing;
 
-    const modelPaths = this.structureModelPaths[String(structureType)] ?? [];
-    if (modelPaths.length === 0) {
-      const empty: InstancedModel[] = [];
-      this.structureModels.set(structureType, empty);
-      return empty;
-    }
+    const modelPath = this.structureModelPaths[String(structureType)]?.[modelIndex];
+    if (!modelPath) throw new Error(`Missing structure model for type ${structureType}, stage ${modelIndex}`);
 
-    pending = Promise.all(modelPaths.map((modelPath) => this.loadStructureModel(structureType, modelPath)))
-      .then(async (models) => {
-        await this.compileModelPipelines(models);
-        this.structureModels.set(structureType, models);
-        this.attachStructureModelsToScene(models);
-        return models;
+    const pending = this.loadStructureModel(structureType, modelPath)
+      .then(async (model) => {
+        await this.compileModelPipelines([model]);
+        const variants = this.structureModels.get(structureType) ?? new Map<number, InstancedModel>();
+        variants.set(modelIndex, model);
+        this.structureModels.set(structureType, variants);
+        this.attachStructureModelsToScene([model]);
+        return model;
       })
       .finally(() => {
-        this.structureModelPromises.delete(structureType);
+        this.structureModelPromises.delete(key);
       });
-
-    this.structureModelPromises.set(structureType, pending);
+    this.structureModelPromises.set(key, pending);
     return pending;
   }
 
@@ -983,7 +941,20 @@ export class StructureManager {
 
   // Pipelines compile before the group joins the scene, so the first frame that shows a chunk draws terrain only.
   private async compileModelPipelines(models: InstancedModel[]): Promise<void> {
-    for (const model of models) await this.compilePipelines?.(model.group, this.scene);
+    try {
+      for (const model of models) {
+        this.requireActiveModelOwner();
+        await this.compilePipelines?.(model.group, this.scene);
+      }
+      this.requireActiveModelOwner();
+    } catch (error) {
+      models.forEach((model) => model.dispose());
+      throw error;
+    }
+  }
+
+  private requireActiveModelOwner(): void {
+    if (this.isDestroyed) throw new Error("Structure manager was destroyed while preparing a model");
   }
 
   // Models load after the band may have hidden the layer, so a freshly loaded group takes the ladder's state.
@@ -1256,16 +1227,16 @@ export class StructureManager {
       return this.cosmeticStructureModels.get(structure.cosmeticId ?? "")?.[0];
     }
 
-    const models = this.structureModels.get(structure.structureType);
-    if (!models || models.length === 0) {
-      return undefined;
-    }
+    return this.structureModels.get(structure.structureType)?.get(this.getBaseStructureModelIndex(structure));
+  }
 
-    if (structure.structureType === StructureType.Realm) {
-      return models[structure.level];
-    }
+  private getBaseStructureModelIndex(structure: StructureInfo): number {
+    return structure.structureType === StructureType.Realm ? structure.level : structure.stage;
+  }
 
-    return models[structure.stage];
+  private getStructureModelIndices(structure: StructureInfo): number[] {
+    const base = this.getBaseStructureModelIndex(structure);
+    return structure.structureType === StructureType.Realm && structure.hasWonder ? [base, WONDER_MODEL_INDEX] : [base];
   }
 
   private async performVisibleStructuresUpdate(options: VisibleStructureRefreshOptions = {}): Promise<boolean> {
@@ -1337,7 +1308,9 @@ export class StructureManager {
     return buildStructureModelPreloadPlan<StructureInfo, StructureType>({
       visibleStructures,
       hasCosmeticSkin: (structure) => this.hasCosmeticSkin(structure),
-      hasStructureModel: (structureType) => this.structureModels.has(structureType),
+      getStructureModelIndices: (structure) => this.getStructureModelIndices(structure),
+      hasStructureModel: (structureType, modelIndex) =>
+        this.structureModels.get(structureType)?.has(modelIndex) ?? false,
       hasCosmeticModel: (cosmeticId) => this.cosmeticStructureModels.has(cosmeticId),
     });
   }
@@ -1361,7 +1334,9 @@ export class StructureManager {
 
   private async preloadStructureModels(preloadPlan: StructureModelPreloadPlan<StructureType>): Promise<void> {
     const preloadPromises: Promise<unknown>[] = [
-      ...preloadPlan.missingStructureModels.map((structureType) => this.ensureStructureModels(structureType)),
+      ...preloadPlan.missingStructureModels.map(({ structureType, modelIndex }) =>
+        this.ensureStructureModel(structureType, modelIndex),
+      ),
       ...preloadPlan.missingCosmeticModels.map(({ cosmeticId, assetPaths }) =>
         this.ensureCosmeticStructureModels(cosmeticId, assetPaths),
       ),
@@ -1535,8 +1510,7 @@ export class StructureManager {
       return [];
     }
 
-    const modelIndex = structure.structureType === StructureType.Realm ? structure.level : structure.stage;
-    const model = models[modelIndex];
+    const model = models.get(this.getBaseStructureModelIndex(structure));
     if (!model) {
       return [];
     }
@@ -1544,7 +1518,7 @@ export class StructureManager {
     const entityIdsByInstance = this.getOrCreateStructureEntityIdMap(structure.structureType);
     const bindings = [this.bindStructureInstance(model, structure.entityId, entityIdsByInstance, dirtyModels)];
     if (structure.structureType === StructureType.Realm && structure.hasWonder) {
-      const wonderModel = models[WONDER_MODEL_INDEX];
+      const wonderModel = models.get(WONDER_MODEL_INDEX);
       if (wonderModel) {
         bindings.push(
           this.bindStructureInstance(wonderModel, structure.entityId, this.wonderEntityIdMaps, dirtyModels),
@@ -1846,13 +1820,7 @@ export class StructureManager {
     if (!this.currentChunkBounds) {
       return true;
     }
-    if (this.visibilityManager) {
-      return this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
-    }
-    if (!this.frustumManager) {
-      return true;
-    }
-    return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
+    return this.visibilityManager?.isBoxVisible(this.currentChunkBounds.box) ?? true;
   }
 
   updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
@@ -1899,13 +1867,11 @@ export class StructureManager {
     if (!this.animationVisibilityContext) {
       this.animationVisibilityContext = {
         visibilityManager: this.visibilityManager,
-        frustumManager: this.frustumManager,
         cameraPosition: this.animationCameraPosition,
         maxDistance: this.animationCullDistance,
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
-      this.animationVisibilityContext.frustumManager = this.frustumManager;
       this.animationVisibilityContext.cameraPosition = this.animationCameraPosition;
       this.animationVisibilityContext.maxDistance = this.animationCullDistance;
     }
@@ -2068,9 +2034,7 @@ export class StructureManager {
         return false;
       }
     }
-    return this.visibilityManager
-      ? this.visibilityManager.isPointVisible(label.position)
-      : (this.frustumManager?.isPointVisible(label.position) ?? true);
+    return this.visibilityManager?.isPointVisible(label.position) ?? true;
   }
 
   private revealStructureLabel(entityId: ID, label: CSS2DObject) {

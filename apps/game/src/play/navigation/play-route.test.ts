@@ -45,6 +45,18 @@ describe("play-route", () => {
     ).toBe("/play/madara/iron-age/travel?col=7&row=9");
   });
 
+  it("retains renderer diagnostics when switching scenes and finishing the loading handoff", () => {
+    const route = parsePlayRoute(
+      createLocation(
+        "/play/madara/iron-age/map",
+        "?col=1&row=2&boot=map-first&resumeScene=hex&rendererMode=webgpu-force-webgl&logs=1",
+      ),
+    )!;
+    expect(buildPlayHref({ ...route, scene: "hex", bootMode: "direct", resumeScene: null, spectate: false })).toBe(
+      "/play/madara/iron-age/hex?col=1&row=2&rendererMode=webgpu-force-webgl&logs=1",
+    );
+  });
+
   it("parses and builds canonical entry routes", () => {
     const route = parseEntryRoute(createLocation("/enter/appchain/aurora-blitz", "?intent=settle&autoSettle=true"));
 

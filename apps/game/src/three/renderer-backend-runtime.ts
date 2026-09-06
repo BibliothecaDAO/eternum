@@ -44,16 +44,15 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
     envBuildMode: input.envBuildMode,
     search: input.search,
   });
-  const forceReprobe = hasExplicitRendererMode(input.search);
+  const explicitOverride = hasExplicitRendererMode(input.search);
   removeRetiredRendererModePreference(getBrowserStorage());
   verboseLog("[RendererDebug]", {
     event: "renderer-init-requested",
-    explicitOverride: forceReprobe,
+    explicitOverride,
     requestedMode,
   });
 
   const backend = createWebGPURendererBackend({
-    forceReprobe,
     isMobileDevice: input.isMobileDevice,
     onDeviceLost: input.onDeviceLost,
     pixelRatio: input.pixelRatio,

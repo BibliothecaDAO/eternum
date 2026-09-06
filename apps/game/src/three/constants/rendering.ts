@@ -47,7 +47,7 @@ export const CONTROL_CONFIG = {
 export const LOCAL_CAMERA_ZOOM = {
   minDistance: CONTROL_CONFIG.minDistance,
   maxDistance: IS_FLAT_MODE ? 36 : 20,
-  defaultDistance: 20,
+  defaultDistance: 14,
   pitchRadians: (52 * Math.PI) / 180,
 };
 

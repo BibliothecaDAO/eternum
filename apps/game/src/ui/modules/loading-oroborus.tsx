@@ -1,19 +1,12 @@
-import { BootLoaderShell } from "@/ui/modules/boot-loader";
-
 export const LoadingOroborus = ({ loading }: { loading: boolean }) => {
-  if (!loading) {
-    return null;
-  }
-
+  if (!loading) return null;
   return (
-    <div className="absolute bottom-0 left-0 right-0 top-0 z-[10000] h-screen w-screen pointer-events-none">
-      <BootLoaderShell
-        className="absolute inset-0"
-        panelClassName="max-w-[30rem] px-6 py-7"
-        title="Charting the World"
-        subtitle="Reading contour lines and preparing the next handoff."
-        caption="Transition"
-      />
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed bottom-6 left-1/2 z-[110] -translate-x-1/2 rounded-full border border-gold/25 bg-dark-brown/95 px-4 py-2 text-sm text-gold"
+    >
+      Changing view…
     </div>
   );
 };

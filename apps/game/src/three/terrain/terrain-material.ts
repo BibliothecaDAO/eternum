@@ -7,6 +7,7 @@ import {
   attribute,
   color,
   float,
+  fwidth,
   int,
   mix,
   normalMap,
@@ -36,6 +37,7 @@ export interface TerrainMaterials {
   land: MeshStandardNodeMaterial;
   water: MeshStandardNodeMaterial;
   waterMotion: UniformNode<"float", number>;
+  groundMotion: UniformNode<"float", number>;
 }
 
 export function createTerrainMaterials(): TerrainMaterials {
@@ -46,6 +48,7 @@ export function createTerrainMaterials(): TerrainMaterials {
     land: flatLand,
     water: createTerrainWaterMaterial(waterMotion),
     waterMotion,
+    groundMotion: uniform(1, "float"),
   };
 }
 
@@ -63,10 +66,10 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   material.positionNode = positionLocal.add(vec3(0, waves.height, 0));
   material.normalNode = normalMap(vec3(waves.normal.x, waves.normal.z, waves.normal.y).mul(0.5).add(0.5));
 
-  const bathymetryColor = mix(color("#3c8e88"), color("#0d3045"), depthBlend);
-  const shorelineColor = mix(bathymetryColor, color("#66aaa1"), shore.mul(shallowEdge).mul(0.18));
+  const bathymetryColor = mix(color("#3c827b"), color("#102f42"), depthBlend);
+  const shorelineColor = mix(bathymetryColor, color("#83c3b1"), shore.mul(shallowEdge).mul(0.18));
   const fresnel = normalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(3).mul(depthMotion);
-  const reflectiveColor = mix(shorelineColor, color("#a8d1cd"), fresnel.mul(0.28));
+  const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.28));
   const foam = createTerrainWaterFoam(shore, shallowEdge, waterMotion);
   material.colorNode = mix(reflectiveColor, color("#d9e1d7"), foam.mul(0.78));
   const waterRoughness = mix(0.4, 0.2, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
@@ -81,16 +84,24 @@ function createTerrainWaterWaves(
   const primaryPhase = time.mul(0.68).add(positionLocal.x.mul(0.54)).add(positionLocal.z.mul(0.39));
   const crossPhase = time.mul(0.43).add(positionLocal.x.mul(-0.31)).add(positionLocal.z.mul(0.47));
   const motion = waterMotion.mul(depthMotion);
-  const height = primaryPhase.sin().mul(0.0045).add(crossPhase.sin().mul(0.0025)).mul(motion);
+  const ripplePhase = positionLocal.x.mul(4.3).add(positionLocal.z.mul(2.7)).sub(time.mul(1.1));
+  const height = primaryPhase
+    .sin()
+    .mul(0.014)
+    .add(crossPhase.sin().mul(0.008))
+    .add(ripplePhase.sin().mul(0.003))
+    .mul(motion);
   const slopeX = primaryPhase
     .cos()
-    .mul(0.0045 * 0.54)
-    .add(crossPhase.cos().mul(0.0025 * -0.31))
+    .mul(0.014 * 0.54)
+    .add(crossPhase.cos().mul(0.008 * -0.31))
+    .add(ripplePhase.cos().mul(0.003 * 4.3))
     .mul(motion);
   const slopeZ = primaryPhase
     .cos()
-    .mul(0.0045 * 0.39)
-    .add(crossPhase.cos().mul(0.0025 * 0.47))
+    .mul(0.014 * 0.39)
+    .add(crossPhase.cos().mul(0.008 * 0.47))
+    .add(ripplePhase.cos().mul(0.003 * 2.7))
     .mul(motion);
   return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
 }
@@ -107,7 +118,10 @@ function createTerrainWaterFoam(
   return shore.mul(shallowEdge).mul(breakerBand).mul(breakup).clamp(0, 1);
 }
 
-export function createTerrainGroundMaterial(textures: TerrainGroundTextures): MeshStandardNodeMaterial {
+export function createTerrainGroundMaterial(
+  textures: TerrainGroundTextures,
+  groundMotion: UniformNode<"float", number>,
+): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.95 });
   material.name = "terrain-land-ground-textured";
   const absoluteWorldUv = uv();
@@ -125,14 +139,40 @@ export function createTerrainGroundMaterial(textures: TerrainGroundTextures): Me
   const sampledAlbedo = mix(secondaryAlbedoHeight.rgb, primaryAlbedoHeight.rgb, primaryBlend);
   const terrainColor = attribute<"vec3">("terrainColor", "vec3");
   const terrainTint = terrainColor.mul(1.75);
-  material.colorNode = mix(sampledAlbedo.mul(terrainTint), terrainColor, 0.34);
+  const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
+  material.colorNode = mix(sampledAlbedo.mul(terrainTint), terrainColor, 0.34).mul(detail.shade);
   const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
   material.roughnessNode = sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.45, 1);
   material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
-  const detailedNormal = normalMap(sampledNormalMaterial.rgb, vec2(0.34));
+  const detailedNormal = normalMap(
+    vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
+    vec2(0.34),
+  );
   detailedNormal.unpackNormalMode = NormalRGPacking;
   material.normalNode = detailedNormal;
   return material;
+}
+
+// Wind ripples and derivative filtering adapted from James Addison’s Inkwell WebGPU Sand (MIT).
+// See inkwell-LICENSE. World-space signals stay continuous across page and biome boundaries.
+function createGroundSurfaceDetail(
+  weights0: Node<"vec4">,
+  weights1: Node<"vec4">,
+  motion: UniformNode<"float", number>,
+): { shade: Node<"float">; rippleNormal: Node<"vec2"> } {
+  const ground = positionLocal.xz;
+  const wind = vec2(0.93, 0.37).normalize();
+  const warp = ground.x.mul(0.27).sin().add(ground.y.mul(0.19).sin()).mul(0.7);
+  const phase = ground.dot(wind).mul(17).add(warp);
+  const confidence = smoothstep(0.42, 1.36, fwidth(phase)).oneMinus();
+  const looseGround = weights0.x.add(weights1.z.mul(0.65)).clamp(0, 1);
+  const ripples = phase.sin().mul(confidence).mul(looseGround);
+  const gust = ground.dot(vec2(0.72, 0.28)).mul(0.8).sub(time.mul(0.55));
+  const meadowShade = gust.sin().mul(0.025).mul(weights0.w).mul(motion);
+  return {
+    shade: float(1).add(ripples.mul(0.08)).add(meadowShade),
+    rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)),
+  };
 }
 
 function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {

@@ -47,23 +47,6 @@ describe("createPlayEntryRoutePrimer", () => {
   });
 });
 
-describe("createPlayEntryAssetPrimer", () => {
-  it("schedules the play asset prefetch independently of route preloading", async () => {
-    const { createPlayEntryAssetPrimer } = await import("./game-entry-preload");
-    vi.useFakeTimers();
-    const prefetchPlayAssets = vi.fn();
-
-    createPlayEntryAssetPrimer({
-      prefetchPlayAssets,
-    })();
-
-    expect(prefetchPlayAssets).not.toHaveBeenCalled();
-    await vi.runAllTimersAsync();
-    expect(prefetchPlayAssets).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
-  });
-});
-
 describe("createDashboardPlayAssetPrimer", () => {
   it("schedules the dashboard play asset prefetch independently of route preloading", async () => {
     const { createDashboardPlayAssetPrimer } = await import("./game-entry-preload");
@@ -87,12 +70,10 @@ describe("createGameEntryPrimer", () => {
     const primeDashboardPlayAssets = vi.fn();
     const primePlayEntryAssets = vi.fn();
     const primePlayEntryRoute = vi.fn();
-    const primeRendererReadyPlayAssets = vi.fn();
     const primeWebGpuRendererModules = vi.fn();
 
     createGameEntryPrimer({
       primeDashboardPlayAssets,
-      primeRendererReadyPlayAssets,
       primePlayEntryRoute,
       primeWebGpuRendererModules,
     })("dashboard");
@@ -100,28 +81,24 @@ describe("createGameEntryPrimer", () => {
     expect(primePlayEntryRoute).toHaveBeenCalledTimes(1);
     expect(primeDashboardPlayAssets).toHaveBeenCalledTimes(1);
     expect(primePlayEntryAssets).not.toHaveBeenCalled();
-    expect(primeRendererReadyPlayAssets).not.toHaveBeenCalled();
     expect(primeWebGpuRendererModules).not.toHaveBeenCalled();
   });
 
-  it("warms renderer-critical modules immediately and defers non-critical play assets for entry stage", async () => {
+  it("warms renderer modules without prefetching the entire asset catalog during entry", async () => {
     const { createGameEntryPrimer } = await import("./game-entry-preload");
     const primeDashboardPlayAssets = vi.fn();
     const primePlayEntryAssets = vi.fn();
     const primePlayEntryRoute = vi.fn();
-    const primeRendererReadyPlayAssets = vi.fn();
     const primeWebGpuRendererModules = vi.fn();
 
     createGameEntryPrimer({
       primeDashboardPlayAssets,
-      primeRendererReadyPlayAssets,
       primePlayEntryRoute,
       primeWebGpuRendererModules,
     })("entry");
 
     expect(primePlayEntryRoute).toHaveBeenCalledTimes(1);
     expect(primeWebGpuRendererModules).toHaveBeenCalledTimes(1);
-    expect(primeRendererReadyPlayAssets).toHaveBeenCalledTimes(1);
     expect(primeDashboardPlayAssets).not.toHaveBeenCalled();
     expect(primePlayEntryAssets).not.toHaveBeenCalled();
   });
@@ -178,35 +155,5 @@ describe("createPlayRouteEntryLoader", () => {
 
     rejectAccountRestoration(accountFailure);
     await expect(restoration).rejects.toBe(accountFailure);
-  });
-});
-
-describe("createRendererReadyPlayAssetPrimer", () => {
-  it("runs play asset prefetch once when renderer initialization completes", async () => {
-    const { createRendererReadyPlayAssetPrimer } = await import("./game-entry-preload");
-    const windowObject = new EventTarget() as Window;
-    const primeDashboardPlayAssets = vi.fn();
-    const primePlayEntryAssets = vi.fn();
-
-    createRendererReadyPlayAssetPrimer({
-      getTimelineSnapshot: () => ({ durations: {}, elapsedMs: 0, milestones: [] }),
-      primeDashboardPlayAssets,
-      primePlayEntryAssets,
-      windowObject,
-    })();
-
-    windowObject.dispatchEvent(
-      new CustomEvent("game-entry:milestone", {
-        detail: { name: "renderer-init-completed" },
-      }),
-    );
-    windowObject.dispatchEvent(
-      new CustomEvent("game-entry:milestone", {
-        detail: { name: "entry-ready" },
-      }),
-    );
-
-    expect(primeDashboardPlayAssets).toHaveBeenCalledTimes(1);
-    expect(primePlayEntryAssets).toHaveBeenCalledTimes(1);
   });
 });

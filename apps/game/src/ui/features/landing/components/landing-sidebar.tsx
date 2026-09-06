@@ -62,6 +62,7 @@ export const LandingSidebar = ({ onSettingsClick, className }: LandingSidebarPro
                 ],
               )}
               title={section.label}
+              aria-label={section.label}
             >
               <Icon
                 className={cn(

@@ -189,7 +189,6 @@ describe("GameRenderer backend seam", () => {
     await subject.initializeRendererBackend();
 
     expect(createWebGPURendererBackendMock).toHaveBeenCalledWith({
-      forceReprobe: false,
       isMobileDevice: false,
       onDeviceLost: expect.any(Function),
       pixelRatio: 1,
@@ -263,6 +262,7 @@ describe("GameRenderer backend seam", () => {
     };
     subject.sceneManager = {
       getCurrentScene: vi.fn(() => "map"),
+      getRenderingScene: vi.fn(() => "map"),
     };
     subject.sessionRuntime = {
       captureStatsSample: vi.fn(),

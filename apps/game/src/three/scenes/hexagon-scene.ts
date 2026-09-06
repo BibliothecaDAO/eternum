@@ -1,4 +1,6 @@
+import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
+import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
@@ -9,9 +11,8 @@ import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager"
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { AnimationVisibilityContext } from "@/three/types/animation";
-import { CentralizedVisibilityManager, getVisibilityManager } from "@/three/utils/centralized-visibility-manager";
+import { CentralizedVisibilityManager } from "@/three/utils/centralized-visibility-manager";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
-import { FrustumManager } from "@/three/utils/frustum-manager";
 import { LocationManager } from "@/three/utils/location-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
@@ -81,7 +82,6 @@ export abstract class HexagonScene {
   protected worldUpdateListener!: WorldUpdateListener;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
-  protected frustumManager!: FrustumManager;
   protected visibilityManager!: CentralizedVisibilityManager;
   protected thunderBoltManager!: ThunderBoltManager;
   protected worldAtmosphereController!: WorldAtmosphereController;
@@ -147,8 +147,7 @@ export abstract class HexagonScene {
       return;
     }
 
-    this.frustumManager = new FrustumManager(this.camera, this.controls);
-    this.visibilityManager = getVisibilityManager({
+    this.visibilityManager = new CentralizedVisibilityManager({
       debug: false,
       animationMaxDistance: this.animationVisibilityDistance,
     });
@@ -198,14 +197,16 @@ export abstract class HexagonScene {
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
-    this.interactiveHexManager = new InteractiveHexManager(this.scene);
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, {
+      sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z),
+    });
     this.worldUpdateListener = new WorldUpdateListener(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
-    this.scene.background = new Color(0x2a1a3e);
+    this.scene.background = new Color(this.sceneName === SceneName.WorldMap ? TERRAIN_DEEP_FOG_COLOR : 0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
-    this.fogVisualsEnabled = !IS_FLAT_MODE;
+    this.fogVisualsEnabled = this.sceneName !== SceneName.WorldMap && !IS_FLAT_MODE;
     this.fogEnabledByUser = true;
     if (this.fogVisualsEnabled && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
@@ -267,20 +268,10 @@ export abstract class HexagonScene {
   }
 
   private configureDirectionalLight(): void {
-    this.mainDirectionalLight.castShadow = this.shadowsEnabled;
-    // Re-rendering the shadow map every frame doubles the scene submission;
-    // a throttled refresh (see updateShadowRefresh) is visually equivalent.
+    configureWorldSunShadows(this.mainDirectionalLight, this.shadowsEnabled, this.shadowMapSize);
+    // ShadowRefreshPolicy owns refreshes as the camera, sun and scene contents change.
     this.mainDirectionalLight.shadow.autoUpdate = false;
     this.mainDirectionalLight.shadow.needsUpdate = true;
-    this.mainDirectionalLight.shadow.mapSize.width = this.shadowMapSize;
-    this.mainDirectionalLight.shadow.mapSize.height = this.shadowMapSize;
-    this.mainDirectionalLight.shadow.camera.left = -20;
-    this.mainDirectionalLight.shadow.camera.right = 20;
-    this.mainDirectionalLight.shadow.camera.top = 13;
-    this.mainDirectionalLight.shadow.camera.bottom = -13;
-    this.mainDirectionalLight.shadow.camera.far = 38;
-    this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.shadow.bias = -0.02;
     this.mainDirectionalLight.position.set(-15, 13, 8);
     this.mainDirectionalLight.target.position.set(0, 0, -5.2);
   }
@@ -333,7 +324,12 @@ export abstract class HexagonScene {
     this.inputManager.deactivate();
   }
 
-  private handleMouseMove(_event: MouseEvent, raycaster: Raycaster): void {
+  private handleMouseMove(event: MouseEvent, raycaster: Raycaster): void {
+    if (event.buttons !== 0) {
+      this.interactiveHexManager.clearHover();
+      this.onHexagonMouseMove(null);
+      return;
+    }
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
     if (hoveredHex) {
       this.onHexagonMouseMove(hoveredHex);
@@ -745,7 +741,7 @@ export abstract class HexagonScene {
       this.shadowMapSize = features.shadowMapSize;
     }
 
-    const nextFogEnabled = !IS_FLAT_MODE && features.pixelRatio > 1;
+    const nextFogEnabled = this.sceneName !== SceneName.WorldMap && !IS_FLAT_MODE && features.pixelRatio > 1;
     if (nextFogEnabled !== this.fogVisualsEnabled) {
       this.fogVisualsEnabled = nextFogEnabled;
       if (!this.fogVisualsEnabled) {
@@ -971,9 +967,12 @@ export abstract class HexagonScene {
 
     const { position, target } = this.mainDirectionalLight;
     this.shadowRefreshPolicy.observeSun([
-      position.x - target.position.x,
-      position.y - target.position.y,
-      position.z - target.position.z,
+      position.x,
+      position.y,
+      position.z,
+      target.position.x,
+      target.position.y,
+      target.position.z,
     ]);
     if (this.shadowRefreshPolicy.consumeRefresh(deltaTime * 1000)) {
       this.mainDirectionalLight.shadow.needsUpdate = true;
@@ -1031,13 +1030,11 @@ export abstract class HexagonScene {
     if (!this.animationVisibilityContext) {
       this.animationVisibilityContext = {
         visibilityManager: this.visibilityManager,
-        frustumManager: this.frustumManager, // Keep for backward compatibility
         cameraPosition: this.animationCameraTarget,
         maxDistance: this.getAnimationDistanceForView(), // View-scaled threshold
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
-      this.animationVisibilityContext.frustumManager = this.frustumManager;
       this.animationVisibilityContext.maxDistance = this.getAnimationDistanceForView();
     }
 
@@ -1187,7 +1184,6 @@ export abstract class HexagonScene {
     }
 
     destroyHexagonSceneOwnedManagers({
-      frustumManager: this.frustumManager,
       visibilityManager: this.visibilityManager,
     });
 

@@ -5,6 +5,9 @@
 import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
 import { EventFeedTicker } from "@/ui/features/event-feed/event-feed-ticker";
 import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-cues";
+import { useEffect } from "react";
+import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
+import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
@@ -36,6 +39,7 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
+        <PlaySceneHandoff />
         <StoryEventToastBridge />
         <NewsHeadlineBridge />
         <TransactionListenerBridge />
@@ -88,9 +92,13 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     isReconnectRequired,
   });
   useBootDocumentState(
-    routeView === "loading" ? "app-loading" : routeView === "ready" ? "app-ready" : null,
-    routeView === "ready" ? "boot_world_visible" : routeView === "loading" ? "boot_react_loader_visible" : undefined,
+    phase === "ready" ? "app-ready" : "app-loading",
+    phase === "ready" ? "boot_world_visible" : "boot_react_loader_visible",
   );
+
+  useEffect(() => {
+    markGameEntryMilestone("overlay-mounted");
+  }, [bootToken]);
 
   const currentTaskLabel = resolveCurrentTaskLabel({ currentTask, phase, tasks });
 
@@ -106,28 +114,22 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     return <PlayRouteReconnectScreen onReturnToDashboard={() => navigate("/")} reconnectError={reconnectError} />;
   }
 
-  if (routeView === "loading") {
-    return (
-      <LoadingScreen
-        progress={progress > 0 ? progress : undefined}
-        title="Charting the World"
-        subtitle="Following contour lines while world state comes online."
-        currentTaskLabel={currentTaskLabel}
-      />
-    );
-  }
-
-  if (!setupResult || !account) {
-    return (
-      <LoadingScreen
-        title="Charting the World"
-        subtitle="Resolving the last world details."
-        currentTaskLabel={currentTaskLabel}
-      />
-    );
-  }
-
-  return <ReadyApp key={bootToken} backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
+  const hasGameContext = routeView === "ready" && setupResult !== null && account !== null;
+  return (
+    <>
+      {phase !== "ready" && (
+        <LoadingScreen
+          title="Entering the World"
+          subtitle={hasGameContext ? "Preparing your view…" : "Connecting to the world…"}
+          progress={progress > 0 ? progress : undefined}
+          currentTaskLabel={currentTaskLabel}
+        />
+      )}
+      {hasGameContext && (
+        <ReadyApp key={bootToken} backgroundImage={backgroundImage} setupResult={setupResult} account={account} />
+      )}
+    </>
+  );
 };
 
 /** @public Lazy route entry consumed by app-level dynamic imports. */

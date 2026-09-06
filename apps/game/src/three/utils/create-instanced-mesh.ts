@@ -1,0 +1,35 @@
+import { DynamicDrawUsage, InstancedMesh, type BufferGeometry, type Material } from "three";
+import { StorageInstancedBufferAttribute } from "three/webgpu";
+
+/**
+ * Keep native WebGPU transforms out of per-draw uniform uploads.
+ * Ordinary instance matrices below the uniform limit are uploaded at full
+ * capacity on every draw. Storage attributes upload only when needsUpdate is
+ * set and honor dirty ranges. WebGL keeps its native instance attributes:
+ * three's storage-matrix fallback does not render correctly on that backend.
+ */
+export function createInstancedMesh<G extends BufferGeometry, M extends Material | Material[]>(
+  geometry: G,
+  material: M,
+  capacity: number,
+): InstancedMesh<G, M> {
+  const mesh = new InstancedMesh(geometry, material, capacity);
+  const beforeRender = mesh.onBeforeRender;
+  // onBeforeRender runs before shader compilation too. Resolve the actual
+  // renderer here so labs, fallback startup and gameplay use the same policy.
+  mesh.onBeforeRender = function (renderer, ...args) {
+    const backend = (renderer as unknown as { backend?: { isWebGPUBackend?: boolean } }).backend;
+    if (backend?.isWebGPUBackend) {
+      const matrices = new StorageInstancedBufferAttribute(mesh.instanceMatrix.array, 16);
+      matrices.name = mesh.instanceMatrix.name;
+      mesh.instanceMatrix = matrices;
+    } else {
+      // The WebGL matrix wrapper synchronizes its version after attribute
+      // uploads. Dynamic usage makes a changed transform visible this frame.
+      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+    }
+    mesh.onBeforeRender = beforeRender;
+    beforeRender.call(this, renderer, ...args);
+  };
+  return mesh;
+}

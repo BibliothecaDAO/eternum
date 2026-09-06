@@ -37,8 +37,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         id="world"
         className="world-selector fixed antialiased top-0 left-0 z-0 w-screen h-screen overflow-hidden ornate-borders pointer-events-none"
       >
-        <div className="vignette" />
-
         {/* Game systems */}
         <GameSystems backgroundImage={backgroundImage} />
 

@@ -13,7 +13,15 @@ declare module "jolt-physics/jolt-physics.wasm.wasm?url" {
 
 declare module "three/webgpu" {
   export * from "three";
+  export { default as MeshBasicNodeMaterial } from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
   export { default as MeshStandardNodeMaterial } from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
+
+  import { InstancedBufferAttribute, type TypedArray } from "three";
+
+  export class StorageInstancedBufferAttribute extends InstancedBufferAttribute {
+    readonly isStorageInstancedBufferAttribute: true;
+    constructor(count: number | TypedArray, itemSize: number);
+  }
 
   import { Renderer } from "three";
   import type { RendererParameters } from "three/addons/renderers/common/Renderer.js";

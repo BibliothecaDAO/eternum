@@ -50,9 +50,9 @@ const createMockWindow = () => {
   };
 };
 
-const { initializeGameRenderer } = await import("./game-renderer");
+const { prepareGameRenderer } = await import("./game-renderer");
 
-describe("initializeGameRenderer session ownership", () => {
+describe("prepareGameRenderer session ownership", () => {
   beforeEach(() => {
     rendererInitScene.mockClear();
     rendererInitStats.mockClear();
@@ -68,12 +68,14 @@ describe("initializeGameRenderer session ownership", () => {
     const mockWindow = createMockWindow();
     vi.stubGlobal("window", mockWindow);
 
-    const cleanup = await initializeGameRenderer({} as never, false);
+    const session = prepareGameRenderer({} as never, false);
+    expect(rendererInitScene).not.toHaveBeenCalled();
+    await session.initialize();
 
     expect(MockGameRenderer).toHaveBeenCalledTimes(1);
     expect(rendererInitScene).toHaveBeenCalledTimes(1);
     expect((window as { __cleanupGameRenderer?: unknown }).__cleanupGameRenderer).toBeUndefined();
 
-    cleanup();
+    session.cleanup();
   });
 });

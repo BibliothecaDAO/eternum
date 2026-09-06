@@ -34,7 +34,7 @@ export function resolveRendererBuildModeFromSearch(input: {
   return queryValue ? resolveRendererBuildMode(queryValue) : input.envBuildMode;
 }
 
-/** True when the URL names a renderer mode, which asks for a fresh lane probe. */
+/** True when the URL overrides the configured renderer mode. */
 export function hasExplicitRendererMode(search: string): boolean {
   return new URLSearchParams(search).has(RENDERER_MODE_QUERY_PARAM);
 }

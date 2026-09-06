@@ -9,7 +9,7 @@ describe("prepareWorldmapChunkPresentation", () => {
     vi.useRealTimers();
   });
 
-  it("does not prepare target terrain before projection sync and asset prewarm complete", async () => {
+  it("prepares terrain after projection sync while model prewarm is still pending", async () => {
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
     const projectionSync = createControlledAsyncCall<[], boolean>();
     const assetPrewarm = createControlledAsyncCall<[], void>();
@@ -30,11 +30,7 @@ describe("prepareWorldmapChunkPresentation", () => {
     projectionSync.resolveNext(true);
     await flushMicrotasks(2);
 
-    expect(prepareTerrainChunk.calls).toEqual([]);
     expect(preparedChunks).toEqual([]);
-
-    assetPrewarm.resolveNext();
-    await flushMicrotasks(2);
 
     expect(prepareTerrainChunk.calls).toEqual([[24, 24, 80, 90]]);
     prepareTerrainChunk.resolveNext({ chunkKey: "24,24" });
@@ -70,41 +66,6 @@ describe("prepareWorldmapChunkPresentation", () => {
       preparedTerrain: null,
     });
     expect(prepareTerrainChunk.calls).toEqual([]);
-  });
-
-  it("does not expose same-chunk prepared terrain before manager readiness completes", async () => {
-    const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
-    const projectionSync = createControlledAsyncCall<[], boolean>();
-    const assetPrewarm = createControlledAsyncCall<[], void>();
-
-    const presentationPromise = prepareWorldmapChunkPresentation({
-      chunkKey: "24,24",
-      startRow: 24,
-      startCol: 24,
-      renderSize: { height: 80, width: 90 },
-      projectionSyncPromise: projectionSync.fn(),
-      assetPrewarmPromise: assetPrewarm.fn(),
-      prepareTerrainChunk: prepareTerrainChunk.fn,
-    });
-
-    // Projection sync resolves, but asset prewarm is still pending.
-    await flushMicrotasks(2);
-    projectionSync.resolveNext(true);
-    await flushMicrotasks(2);
-
-    // Terrain should NOT be prepared yet - managers are not ready
-    expect(prepareTerrainChunk.calls).toEqual([]);
-
-    // Now resolve the remaining readiness barrier.
-    assetPrewarm.resolveNext();
-    await flushMicrotasks(2);
-
-    // Now terrain preparation should be triggered
-    expect(prepareTerrainChunk.calls).toEqual([[24, 24, 80, 90]]);
-    prepareTerrainChunk.resolveNext({ chunkKey: "24,24" });
-
-    const result = await presentationPromise;
-    expect(result.preparedTerrain).toEqual({ chunkKey: "24,24" });
   });
 
   it("times out a stalled presentation barrier instead of hanging the chunk switch forever", async () => {
@@ -147,7 +108,7 @@ describe("prepareWorldmapChunkPresentation", () => {
     expect(projectionSync.pendingCount()).toBe(1);
   });
 
-  it("still prepares terrain when the active-lane asset prewarm times out", async () => {
+  it("prepares terrain immediately even when asset prewarm never settles", async () => {
     vi.useFakeTimers();
     const prepareTerrainChunk = vi.fn().mockResolvedValue("prepared-terrain");
     const onPhaseTimeout = vi.fn();
@@ -164,14 +125,11 @@ describe("prepareWorldmapChunkPresentation", () => {
       onPhaseTimeout,
     });
 
-    await vi.advanceTimersByTimeAsync(25);
-
     await expect(presentationPromise).resolves.toEqual({
       projectionSyncSucceeded: true,
       preparedTerrain: "prepared-terrain",
-      timedOutPhase: "asset_prewarm",
     });
-    expect(onPhaseTimeout).toHaveBeenCalledWith({ chunkKey: "0,0", phase: "asset_prewarm", timeoutMs: 25 });
+    expect(onPhaseTimeout).not.toHaveBeenCalled();
     expect(prepareTerrainChunk).toHaveBeenCalledTimes(1);
   });
 
@@ -216,14 +174,9 @@ describe("prepareWorldmapChunkPresentation", () => {
 });
 
 describe("prewarmWorldmapChunkPresentation", () => {
-  // Phase 2.2: a prewarmed presentation that is dropped (stale token, or the chunk
-  // became hot after preparation) holds pooled InstancedBufferAttributes. The
-  // caller discards the return value, so these branches must release the prepared
-  // terrain or the pooled attributes leak.
-  it("disposes prepared terrain when the prewarm token is stale", async () => {
+  it("drops prepared terrain when the prewarm token is stale", async () => {
     const preparedTerrain = { chunkKey: "24,24" };
     const cachePreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
 
     const result = await prewarmWorldmapChunkPresentation<{ chunkKey: string }>({
       chunkKey: "24,24",
@@ -232,18 +185,15 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isPresentationHot: () => false,
       preparePresentation: async () => ({ projectionSyncSucceeded: true, preparedTerrain }),
       cachePreparedTerrain,
-      disposePreparedTerrain,
     });
 
     expect(result.status).toBe("stale_dropped");
     expect(cachePreparedTerrain).not.toHaveBeenCalled();
-    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
   });
 
-  it("disposes prepared terrain when the chunk became hot during preparation", async () => {
+  it("drops prepared terrain when the chunk became hot during preparation", async () => {
     const preparedTerrain = { chunkKey: "24,24" };
     const cachePreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
     let hotChecks = 0;
 
     const result = await prewarmWorldmapChunkPresentation<{ chunkKey: string }>({
@@ -254,18 +204,15 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isPresentationHot: () => hotChecks++ > 0,
       preparePresentation: async () => ({ projectionSyncSucceeded: true, preparedTerrain }),
       cachePreparedTerrain,
-      disposePreparedTerrain,
     });
 
     expect(result.status).toBe("skipped_hot");
     expect(cachePreparedTerrain).not.toHaveBeenCalled();
-    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
   });
 
-  it("caches (does not dispose) prepared terrain on a successful prewarm", async () => {
+  it("caches prepared terrain on a successful prewarm", async () => {
     const preparedTerrain = { chunkKey: "24,24" };
     const cachePreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
 
     const result = await prewarmWorldmapChunkPresentation<{ chunkKey: string }>({
       chunkKey: "24,24",
@@ -274,11 +221,9 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isPresentationHot: () => false,
       preparePresentation: async () => ({ projectionSyncSucceeded: true, preparedTerrain }),
       cachePreparedTerrain,
-      disposePreparedTerrain,
     });
 
     expect(result.status).toBe("prepared");
     expect(cachePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
-    expect(disposePreparedTerrain).not.toHaveBeenCalled();
   });
 });

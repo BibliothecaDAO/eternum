@@ -15,7 +15,7 @@ describe("worldmap frame-budget work queue wiring", () => {
   });
 
   it("routes terrain, manager catch-up, and prefetch preparation through that queue", () => {
-    expect(worldmapSource).toContain("this.schedulePreparedTerrainCommit(request.priority, preparedTerrain");
+    expect(worldmapSource).toContain("this.schedulePreparedTerrainCommit(request.priority, () =>");
     expect(worldmapSource).toContain("`terrain:${workLane}-page-build`");
     expect(worldmapSource).toContain("`terrain:${workLane}-commit`");
     expect(worldmapSource).toContain("`terrain:${workLane}-prepare`");

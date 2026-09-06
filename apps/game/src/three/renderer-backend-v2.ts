@@ -9,16 +9,12 @@ export type RendererFallbackReason =
   | `webgpu-init-error:${string}`
   | "webgpu-init-timeout"
   | "webgpu-silent-fallback"
-  | "webgpu-unproven"
-  | "webgpu-probe-timeout"
-  | "webgpu-remembered-fallback"
-  | "webgpu-unavailable"
   | null;
 
 export interface RendererAdapterInfo {
   architecture: string;
   description: string;
-  isFallbackAdapter: boolean;
+  isFallbackAdapter?: boolean;
   vendor: string;
 }
 

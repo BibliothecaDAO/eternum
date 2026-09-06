@@ -53,15 +53,6 @@ function findEdgeMist(scene: Scene): Points | undefined {
   return findPointsByColor(scene, 0x8866aa);
 }
 
-function findSeamGlowMesh(scene: Scene): Mesh | undefined {
-  return scene.children.find((c) => {
-    if (!(c instanceof Mesh)) return false;
-    if (!(c.geometry instanceof PlaneGeometry)) return false;
-    const mat = c.material as MeshBasicMaterial;
-    return mat.blending === AdditiveBlending && (c as Mesh).renderOrder === 1;
-  }) as Mesh | undefined;
-}
-
 // ───────── Feature 1: Central Settlement Light ─────────
 
 describe("CentralSettlementLight", () => {
@@ -535,103 +526,30 @@ describe("EdgeBoundaryMist", () => {
   });
 });
 
-// ───────── Feature 5: Hex Seam Glow ─────────
-
-describe("HexSeamGlow", () => {
-  it("creates a Mesh with PlaneGeometry added to scene", () => {
-    const { scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene);
-    expect(mesh).toBeDefined();
-    expect(mesh!.geometry).toBeInstanceOf(PlaneGeometry);
-  });
-
-  it("mesh is at y=0.02 (between ground and hex tiles)", () => {
-    const { scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-    expect(mesh.position.y).toBeCloseTo(0.02);
-  });
-
-  it("material uses AdditiveBlending and depthWrite:false", () => {
-    const { scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-    const mat = mesh.material as MeshBasicMaterial;
-    expect(mat.blending).toBe(AdditiveBlending);
-    expect(mat.depthWrite).toBe(false);
-  });
-
-  it("DataTexture has bright pixels at hex edge positions (SDF boundary)", () => {
-    const { scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-    const mat = mesh.material as MeshBasicMaterial;
-    const tex = mat.map as DataTexture;
-    const data = tex.image.data as Uint8Array;
-    const size = 256;
-
-    // Pixel (128,128) maps to world (0,0) which is exactly on a hex edge (SDF=0).
-    // This should be a bright pixel (edge glow).
-    const edgeIdx = (128 * size + 128) * 4;
-    const edgeBrightness = Math.max(data[edgeIdx], data[edgeIdx + 1], data[edgeIdx + 2]);
-
-    // Pixel (112,128) maps to a hex center (deepest inside a hex, SDF most negative).
-    // This should be a dark pixel.
-    const hexCenterIdx = (128 * size + 112) * 4;
-    const centerBrightness = Math.max(data[hexCenterIdx], data[hexCenterIdx + 1], data[hexCenterIdx + 2]);
-
-    expect(edgeBrightness).toBeGreaterThan(centerBrightness);
-  });
-
-  it("DataTexture has dark/zero pixels at hex centers", () => {
-    const { scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-    const mat = mesh.material as MeshBasicMaterial;
-    const tex = mat.map as DataTexture;
-    const data = tex.image.data as Uint8Array;
-    const size = 256;
-
-    // Pixel (112,128) is at a hex center (SDF most negative) — should be dark
-    const centerIdx = (128 * size + 112) * 4;
-    const r = data[centerIdx];
-    const g = data[centerIdx + 1];
-    const b = data[centerIdx + 2];
-    // All channels should be very low at hex center
-    expect(r).toBeLessThan(30);
-    expect(g).toBeLessThan(30);
-    expect(b).toBeLessThan(30);
-  });
-
-  it("glow color modulates with timeProgress — brighter at night", () => {
-    const { system, scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-    const mat = mesh.material as MeshBasicMaterial;
-
-    system.setTimeProgress(50); // day
-    const dayOpacity = mat.opacity;
-
-    system.setTimeProgress(0); // night
-    const nightOpacity = mat.opacity;
-
-    expect(nightOpacity).toBeGreaterThan(dayOpacity);
-  });
-
-  it("setEnabled(false) sets mesh.visible to false", () => {
-    const { system, scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-
-    system.setEnabled(false);
-    expect(mesh.visible).toBe(false);
-  });
-
-  it("dispose() cleans up mesh, geometry, material, texture", () => {
-    const { system, scene } = createFixture();
-    expect(findSeamGlowMesh(scene)).toBeDefined();
-
+describe("ambient motion preferences", () => {
+  it("freezes particle positions when motion is reduced and resumes without rebuilding", () => {
+    const { scene, system } = createFixture();
+    system.setup(new Vector3(17, 0, 15), 4);
+    system.update(1);
+    const particles = findAllPoints(scene);
+    const before = particles.map((points) => Array.from(points.geometry.attributes.position.array));
+    system.setReducedMotion(true);
+    system.update(10);
+    expect(particles.map((points) => Array.from(points.geometry.attributes.position.array))).toEqual(before);
+    system.setReducedMotion(false);
+    system.update(1);
+    expect(particles.map((points) => Array.from(points.geometry.attributes.position.array))).not.toEqual(before);
     system.dispose();
-    expect(findSeamGlowMesh(scene)).toBeUndefined();
   });
 
-  it("renderOrder is 1 (below biome tiles at 2-3)", () => {
-    const { scene } = createFixture();
-    const mesh = findSeamGlowMesh(scene)!;
-    expect(mesh.renderOrder).toBe(1);
+  it("preserves clear ambience when entering another settlement", () => {
+    const { scene, system } = createFixture();
+    system.setFogEnabled(false);
+    system.setEdgeMistEnabled(false);
+    system.setup(new Vector3(17, 0, 15), 4);
+    expect(findAllPoints(scene).every((points) => !points.visible)).toBe(true);
+    system.setup(new Vector3(17, 0, 15), 5);
+    expect(findAllPoints(scene).every((points) => !points.visible)).toBe(true);
+    system.dispose();
   });
 });

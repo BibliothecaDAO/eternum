@@ -3,14 +3,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { ContourMapAnimation } from "./contour-map-animation";
+import { ContourMap } from "./contour-map";
 
-describe("ContourMapAnimation", () => {
+describe("ContourMap", () => {
   it("uses a distinct vignette gradient id per instance", () => {
     const html = renderToStaticMarkup(
       <>
-        <ContourMapAnimation />
-        <ContourMapAnimation />
+        <ContourMap />
+        <ContourMap />
       </>,
     );
 

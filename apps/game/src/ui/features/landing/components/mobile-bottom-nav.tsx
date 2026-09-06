@@ -44,13 +44,13 @@ export const MobileBottomNav = ({ className }: MobileBottomNavProps) => {
             key={item.id}
             to={getSubItemHref(activeSection, item, searchParams)}
             className={cn(
-              "relative flex flex-col items-center gap-1 px-4 py-2 rounded-lg flex-1",
+              "relative flex flex-col items-center gap-1 px-2 py-2 rounded-lg flex-1 min-w-0",
               "transition-all duration-200",
               "active:scale-95",
               isActive ? "text-gold" : "text-gold/50 hover:text-gold/70",
             )}
           >
-            <span className={cn("text-xs font-semibold uppercase tracking-wide", isActive && "scale-105")}>
+            <span className={cn("text-[0.65rem] font-semibold uppercase tracking-wide", isActive && "scale-105")}>
               {item.label}
             </span>
             {/* Active indicator line */}

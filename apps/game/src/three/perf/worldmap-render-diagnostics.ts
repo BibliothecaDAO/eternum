@@ -20,7 +20,6 @@ export type WorldmapRenderDurationMetric =
   | "presentationSkewMs"
   | "frameBudgetLongTaskMs"
   | "visualTerrainWindowMs"
-  | "criticalTerrainPagesMs"
   | "criticalTerrainPageMs"
   | "terrainSourceReadyMs"
   | "terrainFirstCompletePageMs"
@@ -39,7 +38,6 @@ export type WorldmapRenderGauge =
   | "visibleArmies"
   | "visibleStructures"
   | "activeLabels"
-  | "worldBiomeSurfaceInstances"
   | "structureInfoCacheHits"
   | "structureInfoCacheMisses"
   | "visibleStructureBoundsQueries"
@@ -109,9 +107,7 @@ export type WorldmapRenderCounter =
   | "reservedSiteRebuilds"
   | "pipelinePrecompiles"
   | "biomeMismatchCount"
-  | "frameBudgetLongTasks"
-  | "worldBiomeSurfaceCommits"
-  | "worldBiomeSurfaceInstancesUploaded";
+  | "frameBudgetLongTasks";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -173,7 +169,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     presentationSkewMs: createDurationStats(),
     frameBudgetLongTaskMs: createDurationStats(),
     visualTerrainWindowMs: createDurationStats(),
-    criticalTerrainPagesMs: createDurationStats(),
     criticalTerrainPageMs: createDurationStats(),
     terrainSourceReadyMs: createDurationStats(),
     terrainFirstCompletePageMs: createDurationStats(),
@@ -192,7 +187,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
-    worldBiomeSurfaceInstances: 0,
     structureInfoCacheHits: 0,
     structureInfoCacheMisses: 0,
     visibleStructureBoundsQueries: 0,
@@ -265,8 +259,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     pipelinePrecompiles: 0,
     biomeMismatchCount: 0,
     frameBudgetLongTasks: 0,
-    worldBiomeSurfaceCommits: 0,
-    worldBiomeSurfaceInstancesUploaded: 0,
   },
   forceRefreshReasons: {
     default: 0,

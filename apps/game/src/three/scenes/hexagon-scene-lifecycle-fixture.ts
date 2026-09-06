@@ -2,7 +2,6 @@ import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-life
 
 interface HexagonSceneLifecycleFixture {
   disposeCalls: {
-    frustumManager: number;
     visibilityManager: number;
   };
   destroy(): void;
@@ -10,7 +9,6 @@ interface HexagonSceneLifecycleFixture {
 
 export function createHexagonSceneLifecycleFixture(): HexagonSceneLifecycleFixture {
   const disposeCalls = {
-    frustumManager: 0,
     visibilityManager: 0,
   };
 
@@ -18,11 +16,6 @@ export function createHexagonSceneLifecycleFixture(): HexagonSceneLifecycleFixtu
     disposeCalls,
     destroy() {
       destroyHexagonSceneOwnedManagers({
-        frustumManager: {
-          dispose: () => {
-            disposeCalls.frustumManager += 1;
-          },
-        },
         visibilityManager: {
           dispose: () => {
             disposeCalls.visibilityManager += 1;

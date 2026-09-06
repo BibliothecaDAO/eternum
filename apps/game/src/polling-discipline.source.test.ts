@@ -55,7 +55,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "ui",
     reason: "loading elapsed-time label",
   },
-  "apps/game/src/ui/layouts/game-loading-overlay.tsx": { class: "ui", reason: "loading progress animation" },
   "apps/game/src/ui/modules/boot-loader/boot-debug-panel.tsx": { class: "debug", reason: "boot metrics repaint" },
   "apps/game/src/ui/shared/components/block-timestamp-poller.tsx": {
     class: "clock",

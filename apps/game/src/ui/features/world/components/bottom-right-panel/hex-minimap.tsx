@@ -47,6 +47,7 @@ const HEX_SIZE = 7;
 const SQRT3 = Math.sqrt(3);
 const CAMERA_CIRCLE_SCREEN_RADIUS_PX = 60;
 const WORLD_CAMERA_DISTANCE_REFERENCE = 20;
+const TILE_WINDOW_STEP = HEX_SIZE * 8;
 const MINIMAP_SCALE_REFERENCE = 1.4;
 
 type TileMarker = {
@@ -267,13 +268,20 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
   const startFollowAnimation = useCallback(() => {
     if (followRafRef.current !== null) return;
 
-    const tick = () => {
+    let lastUpdate: number | null = null;
+    const tick = (now: number) => {
       followRafRef.current = null;
       const target = followTargetRef.current;
       if (!target || isDraggingRef.current) return;
 
+      const elapsed = lastUpdate === null ? 1000 / 60 : now - lastUpdate;
+      if (elapsed < 1000 / 60) {
+        followRafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      lastUpdate = now;
       const current = viewRef.current;
-      const lerp = 0.18;
+      const lerp = 1 - Math.exp(-elapsed / 80);
 
       const nextX = current.x + (target.x - current.x) * lerp;
       const nextY = current.y + (target.y - current.y) * lerp;
@@ -385,16 +393,16 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     return { centerPixel, radiusPx };
   }, [cameraTargetHex, view.scale]);
 
+  // Keep the tile layer stable while the viewBox animates inside a small padded window.
+  const minX = Math.floor(viewBox.minX / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE;
+  const maxX = Math.ceil((viewBox.minX + viewBox.width) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP + HEX_SIZE;
+  const minY = Math.floor(viewBox.minY / TILE_WINDOW_STEP) * TILE_WINDOW_STEP - HEX_SIZE;
+  const maxY = Math.ceil((viewBox.minY + viewBox.height) / TILE_WINDOW_STEP) * TILE_WINDOW_STEP + HEX_SIZE;
+
   const visibleTiles = useMemo(() => {
     if (!tiles.length) return [] as CenteredTileEntry[];
 
     const { vertDist, horizDist } = getGridMetrics();
-    const paddingPx = HEX_SIZE * 3;
-    const minX = viewBox.minX - paddingPx;
-    const maxX = viewBox.minX + viewBox.width + paddingPx;
-    const minY = viewBox.minY - paddingPx;
-    const maxY = viewBox.minY + viewBox.height + paddingPx;
-
     const minRow = Math.floor(minY / vertDist) - 2;
     const maxRow = Math.ceil(maxY / vertDist) + 2;
 
@@ -428,7 +436,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     }
 
     return result;
-  }, [tiles.length, centeredIndex.byCol, viewBox]);
+  }, [tiles.length, centeredIndex.byCol, minX, maxX, minY, maxY]);
 
   const getTileMarker = useCallback(
     (tile: MinimapTile) => {
@@ -488,6 +496,43 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       return null;
     },
     [ownedStructureIds, ownedExplorerIds, mode],
+  );
+
+  const tileElements = useMemo(
+    () =>
+      visibleTiles.map(({ tile, points, pixel }) => {
+        const marker = getTileMarker(tile);
+        const fill = getBiomeColor(tile.biome);
+        const occupierColor = getOccupierColor(tile);
+        const iconSize = marker ? HEX_SIZE * 2.2 * (marker.sizeMultiplier ?? 1) : 0;
+        return (
+          <g key={`${tile.col}:${tile.row}`}>
+            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
+            {occupierColor && !marker && (
+              <circle
+                cx={pixel.x}
+                cy={pixel.y}
+                r={HEX_SIZE * 0.45}
+                fill={occupierColor}
+                stroke="#0f0a07"
+                strokeWidth={0.8}
+              />
+            )}
+            {marker && (
+              <image
+                href={marker.iconSrc}
+                x={pixel.x - iconSize / 2}
+                y={pixel.y - iconSize / 2}
+                width={iconSize}
+                height={iconSize}
+                preserveAspectRatio="xMidYMid meet"
+                className="pointer-events-none select-none"
+              />
+            )}
+          </g>
+        );
+      }),
+    [visibleTiles, getTileMarker],
   );
 
   const dragRef = useRef<{
@@ -565,6 +610,21 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     scheduleViewUpdate({ ...initialView });
   }, [initialView, scheduleViewUpdate]);
 
+  useEffect(
+    () => () => {
+      // StrictMode and Fast Refresh replay effects while preserving refs. A cancelled handle must not
+      // keep the next effect from scheduling its animation.
+      for (const frameRef of [followRafRef, rafRef, cameraMoveRafRef]) {
+        if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+      followTargetRef.current = null;
+      pendingViewRef.current = null;
+      pendingCameraMoveRef.current = null;
+    },
+    [],
+  );
+
   return (
     <svg
       ref={svgRef}
@@ -578,38 +638,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       onPointerLeave={endDrag}
       onDoubleClick={handleDoubleClick}
     >
-      {visibleTiles.map(({ tile, points, pixel }) => {
-        const marker = getTileMarker(tile);
-        const fill = getBiomeColor(tile.biome);
-        const occupierColor = getOccupierColor(tile);
-        const iconSize = marker ? HEX_SIZE * 2.2 * (marker.sizeMultiplier ?? 1) : 0;
-        return (
-          <g key={`${tile.col}:${tile.row}`}>
-            <polygon points={points} fill={fill} stroke="#1f130a" strokeWidth={0.6} fillOpacity={0.92} />
-            {occupierColor && !marker && (
-              <circle
-                cx={pixel.x}
-                cy={pixel.y}
-                r={HEX_SIZE * 0.45}
-                fill={occupierColor}
-                stroke="#0f0a07"
-                strokeWidth={0.8}
-              />
-            )}
-            {marker && (
-              <image
-                href={marker.iconSrc}
-                x={pixel.x - iconSize / 2}
-                y={pixel.y - iconSize / 2}
-                width={iconSize}
-                height={iconSize}
-                preserveAspectRatio="xMidYMid meet"
-                className="pointer-events-none select-none"
-              />
-            )}
-          </g>
-        );
-      })}
+      {tileElements}
       {cameraCircle && (
         <g pointerEvents="none">
           <circle

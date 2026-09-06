@@ -1,3 +1,4 @@
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { Group, InstancedMesh, Mesh } from "three";
@@ -37,6 +38,29 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
     terrain.dispose();
     expect(replacementDispose).toHaveBeenCalledOnce();
+  });
+
+  it("clears occupied prop tiles atomically and restores them without rebuilding terrain", async () => {
+    const terrain = new ProceduralTerrain();
+    await terrain.loadProps();
+    const page = terrain.preparePage(blockRequest("occupied", 0));
+    terrain.present([page]);
+    expect(page.propInstances.length).toBeGreaterThan(0);
+    const mesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
+    const geometry = mesh.geometry;
+    const owner = page.propInstances[0];
+    const occupied = (col: number, row: number) => col === owner.ownerCol && row === owner.ownerRow;
+    terrain.refreshPropOccupancy(occupied);
+    expect(terrain.getPropStats().instances).toBeLessThanOrEqual(
+      page.propInstances.filter((p) => !occupied(p.ownerCol, p.ownerRow)).length,
+    );
+    expect(mesh.geometry).toBe(geometry);
+    const metrics = terrain.getUploadMetrics();
+    terrain.refreshPropOccupancy(occupied);
+    expect(terrain.getUploadMetrics()).toEqual(metrics);
+    terrain.refreshPropOccupancy(() => false);
+    expect(terrain.getPropStats().instances).toBe(page.propInstances.length);
+    terrain.dispose();
   });
 
   it("samples the presented surface and rejects use after disposal", () => {
@@ -131,10 +155,14 @@ describe("ProceduralTerrain", () => {
     terrain.dispose();
   });
 
-  it("restores the prior complete presentation when a grouped page write fails", () => {
+  it("restores the prior complete presentation when a grouped page write fails", async () => {
     const terrain = new ProceduralTerrain();
-    const previous = terrain.preparePage(request(BiomeType.Grassland, false));
+    await terrain.loadProps();
+    const writeProps = vi.spyOn(TerrainPropPools.prototype, "writePage");
+    const previous = terrain.preparePage(blockRequest("page", 0));
     terrain.present([previous]);
+    const previousProps = writeProps.mock.calls.at(-1)![1];
+    expect(previousProps.length).toBeGreaterThan(0);
     const previousMesh = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
     const disposePrevious = vi.spyOn(previousMesh.geometry, "dispose");
     const replacement = terrain.preparePage(request(BiomeType.Taiga, false));
@@ -157,7 +185,11 @@ describe("ProceduralTerrain", () => {
       return setPage.call(this, pageKey, instances);
     });
 
+    writeProps.mockClear();
     expect(() => terrain.commitPages([replacement, added])).toThrow("injected fog write failure");
+    const restoredProps = writeProps.mock.calls.filter(([key]) => key === previous.request.pageKey).at(-1)![1];
+    expect(restoredProps).toEqual(previousProps);
+    expect(terrain.getPropStats().instances).toBe(previousProps.length);
 
     const center = terrainHexToWorld(0, 0);
     expect(terrain.isPagePresented(previous)).toBe(true);
@@ -182,6 +214,50 @@ describe("ProceduralTerrain", () => {
     expect(terrain.getUploadMetrics()).toMatchObject({ propPoolFullRewrites: 1, propPoolPageWrites: 2 });
     expect(terrain.getPropStats().instances).toBeGreaterThan(0);
     terrain.dispose();
+  });
+
+  it("applies ambient motion preferences across LOD changes and releases its subscription", async () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(unknownRequest())]);
+    await terrain.loadProps();
+    const setWind = vi.spyOn(TerrainPropPools.prototype, "setWindStrength");
+    const fogBefore = terrain.getShroudStats();
+    useWorldAppearanceStore.getState().setReducedMotion(true);
+    terrain.setQualityTier("overview");
+    terrain.setQualityTier("detail");
+    expect(setWind).toHaveBeenLastCalledWith(0);
+    useWorldAppearanceStore.getState().setFogStyle("mist");
+    expect(terrain.getShroudStats()).toEqual(fogBefore);
+    terrain.dispose();
+    setWind.mockClear();
+    useWorldAppearanceStore.getState().setReducedMotion(false);
+    useWorldAppearanceStore.getState().setFogStyle("clear");
+    expect(setWind).not.toHaveBeenCalled();
+    setWind.mockRestore();
+  });
+
+  it("hides wildlife for overview and reduced motion, then releases it with its terrain page", () => {
+    const terrain = new ProceduralTerrain();
+    terrain.present([terrain.preparePage(request(BiomeType.TemperateRainForest, false))]);
+    const flock = terrain.object3d.getObjectByName("terrain-wildlife") as InstancedMesh;
+    expect(flock).toBeDefined();
+    const material = Array.isArray(flock.material) ? flock.material[0] : flock.material;
+    const disposeGeometry = vi.spyOn(flock.geometry, "dispose");
+    const disposeInstances = vi.spyOn(flock, "dispose");
+    const disposeMaterial = vi.spyOn(material, "dispose");
+    expect(material.visible).toBe(true);
+    terrain.setQualityTier("overview");
+    expect(material.visible).toBe(false);
+    terrain.setQualityTier("detail");
+    expect(material.visible).toBe(true);
+    useWorldAppearanceStore.getState().setReducedMotion(true);
+    expect(material.visible).toBe(false);
+    terrain.present([]);
+    expect(disposeGeometry).toHaveBeenCalledOnce();
+    expect(disposeInstances).toHaveBeenCalledOnce();
+    terrain.dispose();
+    expect(disposeMaterial).toHaveBeenCalledOnce();
+    useWorldAppearanceStore.getState().setReducedMotion(false);
   });
 
   it("retains a requested quality tier while the catalog loads", async () => {

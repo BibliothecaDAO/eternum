@@ -1,6 +1,6 @@
 import { HEX_SIZE } from "@/three/constants";
-import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import * as THREE from "three";
+import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 export type HoverVisualMode = "fill" | "outline";
@@ -13,7 +13,7 @@ export interface HoverHexDebugState {
   visualMode: HoverVisualMode;
 }
 
-const HOVER_FILL_Y = 0.32;
+const HOVER_SURFACE_OFFSET = 0.03;
 
 /**
  * Manages hover effects with rim lighting on hexagons
@@ -35,7 +35,10 @@ export class HoverHexManager {
   private readonly animatedColor = new THREE.Color();
   private currentCameraView = 2;
 
-  constructor(scene: THREE.Scene) {
+  constructor(
+    scene: THREE.Scene,
+    private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
+  ) {
     this.scene = scene;
     this.hoverMaterial = new THREE.MeshBasicMaterial({
       color: 0xff4fd8,
@@ -65,47 +68,67 @@ export class HoverHexManager {
     this.createHoverHex();
   }
 
-  private createRingGeometry(outerRadius: number, innerRadius: number): THREE.ShapeGeometry {
-    const shape = createHexagonShape(outerRadius);
-    const holePoints = this.getHexagonPoints(innerRadius).reverse();
-    shape.holes.push(new THREE.Path(holePoints));
-    return new THREE.ShapeGeometry(shape);
+  private createRingGeometry(outerRadius: number, innerRadius: number): THREE.BufferGeometry {
+    const outer = this.getHexagonPoints(outerRadius);
+    const inner = this.getHexagonPoints(innerRadius);
+    const positions: number[] = [];
+    const indices: number[] = [];
+    for (let index = 0; index < outer.length; index++) {
+      positions.push(outer[index].x, outer[index].y, 0, inner[index].x, inner[index].y, 0);
+      const start = index * 2;
+      const next = ((index + 1) % outer.length) * 2;
+      indices.push(start, next, start + 1, next, next + 1, start + 1);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    return geometry;
   }
 
   private getHexagonPoints(radius: number): THREE.Vector2[] {
     const points: THREE.Vector2[] = [];
-
-    for (let i = 0; i < 6; i += 1) {
-      const angle = (Math.PI / 3) * i - Math.PI / 2;
-      points.push(new THREE.Vector2(radius * Math.cos(angle), radius * Math.sin(angle)));
+    // Extra samples along straight hex edges follow curved shores and relief.
+    for (let edge = 0; edge < 6; edge++) {
+      const angle = (Math.PI / 3) * edge - Math.PI / 2;
+      const nextAngle = angle + Math.PI / 3;
+      const start = new THREE.Vector2(radius * Math.cos(angle), radius * Math.sin(angle));
+      const end = new THREE.Vector2(radius * Math.cos(nextAngle), radius * Math.sin(nextAngle));
+      for (let step = 0; step < 6; step++) points.push(start.clone().lerp(end, step / 6));
     }
-
     return points;
+  }
+
+  private createOutlineGeometry(): THREE.BufferGeometry {
+    const points = this.getHexagonPoints(HEX_SIZE * 1.02);
+    const positions: number[] = [];
+    for (let index = 0; index < points.length; index++) {
+      const next = points[(index + 1) % points.length];
+      positions.push(points[index].x, points[index].y, 0, next.x, next.y, 0);
+    }
+    return new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   }
 
   private createHoverHex(): void {
     const glowGeometry = this.createRingGeometry(HEX_SIZE * 1.08, HEX_SIZE * 0.96);
     const haloGeometry = this.createRingGeometry(HEX_SIZE * 1.14, HEX_SIZE * 0.9);
-    const outlineSourceGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_SIZE * 1.02));
-    const outlineGeometry = new THREE.EdgesGeometry(outlineSourceGeometry);
-    outlineSourceGeometry.dispose();
+    const outlineGeometry = this.createOutlineGeometry();
 
     this.hoverHex = new THREE.Mesh(glowGeometry, this.hoverMaterial);
-    this.hoverHex.position.y = HOVER_FILL_Y; // Lifted off the terrain enough to survive dense ground detail.
+    this.hoverHex.position.y = HOVER_SURFACE_OFFSET;
     this.hoverHex.rotation.x = -Math.PI / 2; // Rotate to face ground plane
     this.hoverHex.renderOrder = 50; // Lower render order to avoid interfering with labels
     this.hoverHex.raycast = () => {}; // Disable raycasting to prevent interference
     this.hoverHex.visible = false;
 
     this.hoverHalo = new THREE.Mesh(haloGeometry, this.hoverHaloMaterial);
-    this.hoverHalo.position.y = HOVER_FILL_Y - 0.002;
+    this.hoverHalo.position.y = HOVER_SURFACE_OFFSET - 0.002;
     this.hoverHalo.rotation.x = -Math.PI / 2;
     this.hoverHalo.renderOrder = 49;
     this.hoverHalo.raycast = () => {};
     this.hoverHalo.visible = false;
 
     this.hoverOutline = new THREE.LineSegments(outlineGeometry, this.hoverOutlineMaterial);
-    this.hoverOutline.position.y = HOVER_FILL_Y + 0.005;
+    this.hoverOutline.position.y = HOVER_SURFACE_OFFSET + 0.005;
     this.hoverOutline.rotation.x = -Math.PI / 2;
     this.hoverOutline.renderOrder = 51;
     this.hoverOutline.raycast = () => {};
@@ -141,15 +164,30 @@ export class HoverHexManager {
   public showHover(x: number, z: number): void {
     if (!this.hoverHex) return;
 
-    this.hoverHex.position.set(x, HOVER_FILL_Y, z);
+    this.hoverHex.position.set(x, HOVER_SURFACE_OFFSET, z);
     if (this.hoverHalo) {
-      this.hoverHalo.position.set(x, HOVER_FILL_Y - 0.002, z);
+      this.hoverHalo.position.set(x, HOVER_SURFACE_OFFSET - 0.002, z);
     }
     if (this.hoverOutline) {
-      this.hoverOutline.position.set(x, HOVER_FILL_Y + 0.005, z);
+      this.hoverOutline.position.set(x, HOVER_SURFACE_OFFSET + 0.005, z);
     }
+    this.drapeOnTerrain();
     this.attachHoverFill();
     this.isVisible = true;
+  }
+
+  private drapeOnTerrain(): void {
+    for (const object of [this.hoverHex, this.hoverHalo, this.hoverOutline]) {
+      if (!object) continue;
+      const positions = object.geometry.getAttribute("position");
+      for (let index = 0; index < positions.count; index++) {
+        const worldX = object.position.x + positions.getX(index);
+        const worldZ = object.position.z - positions.getY(index);
+        positions.setZ(index, this.terrain.sampleSurface(worldX, worldZ).height);
+      }
+      positions.needsUpdate = true;
+      object.geometry.computeBoundingSphere();
+    }
   }
 
   /**

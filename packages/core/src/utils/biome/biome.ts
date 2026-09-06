@@ -1,4 +1,4 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType } from "@bibliothecadao/types/terrain";
 import { Fixed, FixedTrait } from "./fixed-point";
 import { noise as snoise } from "./simplex-noise";
 import { Vec3 } from "./vec3";

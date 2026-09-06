@@ -31,18 +31,9 @@ interface TexelRect {
   minZ: number;
 }
 
-interface FogRaster {
-  coverage: Uint8Array;
-  distance: Float32Array;
-  height: number;
-  rect: TexelRect;
-  width: number;
-}
-
-const FOG_COVERAGE_RADIUS = 1.42;
-const FRONTIER_FOG_COVERAGE_RADIUS = 1;
-// Frontier seeds fade the mask over this distance; beyond it a texel reads as deep fog with or without a seed.
-const FOG_DISTANCE_REACH = 1.5;
+// Opaque across the actual hex, with a short feather onto neighboring ground.
+const FOG_EDGE_REACH = 0.55;
+const FOG_COVERAGE_RADIUS = 1 + FOG_EDGE_REACH;
 const MASK_MARGIN = 1.7;
 const TERRAIN_HEX_WIDTH = Math.sqrt(3);
 const TERRAIN_FOG_MASK_MIN_RESOLUTION = 32;
@@ -80,7 +71,7 @@ export function buildTerrainFogMask(instances: readonly TerrainShroudInstance[])
 
 /** The world area whose texels can change when these cells change: their coverage plus the frontier fade reach. */
 export function resolveTerrainFogInfluence(instances: Iterable<TerrainShroudInstance>): TerrainFogMaskBounds | null {
-  return resolveInstanceBounds(instances, FOG_COVERAGE_RADIUS + FOG_DISTANCE_REACH);
+  return resolveInstanceBounds(instances, FOG_COVERAGE_RADIUS);
 }
 
 /** Re-rasterises the texels inside `region` from every cell that reaches them; returns the texels written. */
@@ -91,10 +82,10 @@ export function writeTerrainFogMaskRegion(
 ): number {
   const target = resolveTexelRect(mask, region);
   if (!target) return 0;
-  const raster = createFogRaster(expandTexelRect(mask, target, FOG_DISTANCE_REACH));
-  for (const instance of instances) rasterizeFogCell(raster, mask, instance);
-  propagateFogDistance(raster, resolveTexelSteps(mask));
-  encodeFogDistanceMask(raster, mask, target);
+  for (let row = target.minZ; row <= target.maxZ; row += 1) {
+    mask.data.fill(0, row * mask.width + target.minX, row * mask.width + target.maxX + 1);
+  }
+  for (const instance of instances) rasterizeFogCell(mask, target, instance);
   return (target.maxX - target.minX + 1) * (target.maxZ - target.minZ + 1);
 }
 
@@ -138,13 +129,6 @@ function resolveBoundedMaskResolution(worldSpan: number): number {
   return Math.min(TERRAIN_FOG_MASK_MAX_RESOLUTION, Math.max(TERRAIN_FOG_MASK_MIN_RESOLUTION, resolution));
 }
 
-function resolveTexelSteps(layout: TerrainFogMaskLayout): { x: number; z: number } {
-  return {
-    x: (layout.bounds.maxX - layout.bounds.minX) / (layout.width - 1),
-    z: (layout.bounds.maxZ - layout.bounds.minZ) / (layout.height - 1),
-  };
-}
-
 function resolveTexelRect(layout: TerrainFogMaskLayout, region: TerrainFogMaskBounds): TexelRect | null {
   const { bounds, height, width } = layout;
   const rect = {
@@ -157,16 +141,6 @@ function resolveTexelRect(layout: TerrainFogMaskLayout, region: TerrainFogMaskBo
   return clampTexelRect(rect, layout);
 }
 
-function expandTexelRect(layout: TerrainFogMaskLayout, rect: TexelRect, worldRadius: number): TexelRect {
-  const steps = resolveTexelSteps(layout);
-  const texelsX = Math.ceil(worldRadius / steps.x);
-  const texelsZ = Math.ceil(worldRadius / steps.z);
-  return clampTexelRect(
-    { maxX: rect.maxX + texelsX, maxZ: rect.maxZ + texelsZ, minX: rect.minX - texelsX, minZ: rect.minZ - texelsZ },
-    layout,
-  );
-}
-
 function clampTexelRect(rect: TexelRect, layout: TerrainFogMaskLayout): TexelRect {
   return {
     maxX: clampPixel(rect.maxX, layout.width),
@@ -176,104 +150,19 @@ function clampTexelRect(rect: TexelRect, layout: TerrainFogMaskLayout): TexelRec
   };
 }
 
-function createFogRaster(rect: TexelRect): FogRaster {
-  const width = rect.maxX - rect.minX + 1;
-  const height = rect.maxZ - rect.minZ + 1;
-  const distance = new Float32Array(width * height);
-  distance.fill(Number.POSITIVE_INFINITY);
-  return { coverage: new Uint8Array(width * height), distance, height, rect, width };
-}
-
-function rasterizeFogCell(raster: FogRaster, layout: TerrainFogMaskLayout, instance: TerrainShroudInstance): void {
-  const coverageRadius = instance.frontier ? FRONTIER_FOG_COVERAGE_RADIUS : FOG_COVERAGE_RADIUS;
-  const pixelBounds = resolvePixelBounds(layout, instance.worldX, instance.worldZ, coverageRadius);
-  const minX = Math.max(pixelBounds.minX, raster.rect.minX);
-  const maxX = Math.min(pixelBounds.maxX, raster.rect.maxX);
-  const minZ = Math.max(pixelBounds.minZ, raster.rect.minZ);
-  const maxZ = Math.min(pixelBounds.maxZ, raster.rect.maxZ);
-  for (let pixelZ = minZ; pixelZ <= maxZ; pixelZ += 1) {
-    for (let pixelX = minX; pixelX <= maxX; pixelX += 1) {
-      const world = fogMaskPixelToWorld(layout, pixelX, pixelZ);
-      const localX = world.x - instance.worldX;
-      const localZ = world.z - instance.worldZ;
-      if (!isInsideFogHex(localX, localZ, coverageRadius)) continue;
-      const index = (pixelZ - raster.rect.minZ) * raster.width + (pixelX - raster.rect.minX);
-      raster.coverage[index] = 255;
-      if (isFrontierSeed(instance, localX, localZ, coverageRadius)) raster.distance[index] = 0;
+function rasterizeFogCell(mask: TerrainFogMask, target: TexelRect, instance: TerrainShroudInstance): void {
+  const pixels = resolvePixelBounds(mask, instance.worldX, instance.worldZ, FOG_COVERAGE_RADIUS);
+  for (let z = Math.max(pixels.minZ, target.minZ); z <= Math.min(pixels.maxZ, target.maxZ); z += 1) {
+    for (let x = Math.max(pixels.minX, target.minX); x <= Math.min(pixels.maxX, target.maxX); x += 1) {
+      const world = fogMaskPixelToWorld(mask, x, z);
+      const dx = Math.abs(world.x - instance.worldX);
+      const dz = Math.abs(world.z - instance.worldZ);
+      const edgeDistance = Math.max((dx * 2) / Math.sqrt(3), dz + dx / Math.sqrt(3)) - 1;
+      const coverage = Math.round((1 - smoothstep(0.06, FOG_EDGE_REACH, edgeDistance)) * 255);
+      const index = z * mask.width + x;
+      mask.data[index] = Math.max(mask.data[index], coverage);
     }
   }
-}
-
-function isInsideFogHex(localX: number, localZ: number, coverageRadius: number): boolean {
-  const absoluteX = Math.abs(localX);
-  const absoluteZ = Math.abs(localZ);
-  return absoluteX <= coverageRadius * Math.cos(Math.PI / 6) && absoluteZ + absoluteX / Math.sqrt(3) <= coverageRadius;
-}
-
-function isFrontierSeed(
-  instance: TerrainShroudInstance,
-  localX: number,
-  localZ: number,
-  coverageRadius: number,
-): boolean {
-  if (!instance.frontier) return false;
-  const towardExplored =
-    (localX * instance.frontierDirection[0] + localZ * instance.frontierDirection[1]) / coverageRadius;
-  return towardExplored >= 0.58;
-}
-
-function propagateFogDistance(raster: FogRaster, steps: { x: number; z: number }): void {
-  const { distance, height, width } = raster;
-  const diagonal = Math.hypot(steps.x, steps.z);
-  for (let z = 0; z < height; z += 1) {
-    for (let x = 0; x < width; x += 1) {
-      relaxFogDistance(distance, width, height, x, z, -1, 0, steps.x);
-      relaxFogDistance(distance, width, height, x, z, 0, -1, steps.z);
-      relaxFogDistance(distance, width, height, x, z, -1, -1, diagonal);
-      relaxFogDistance(distance, width, height, x, z, 1, -1, diagonal);
-    }
-  }
-  for (let z = height - 1; z >= 0; z -= 1) {
-    for (let x = width - 1; x >= 0; x -= 1) {
-      relaxFogDistance(distance, width, height, x, z, 1, 0, steps.x);
-      relaxFogDistance(distance, width, height, x, z, 0, 1, steps.z);
-      relaxFogDistance(distance, width, height, x, z, 1, 1, diagonal);
-      relaxFogDistance(distance, width, height, x, z, -1, 1, diagonal);
-    }
-  }
-}
-
-function relaxFogDistance(
-  distance: Float32Array,
-  width: number,
-  height: number,
-  x: number,
-  z: number,
-  offsetX: number,
-  offsetZ: number,
-  step: number,
-): void {
-  const neighborX = x + offsetX;
-  const neighborZ = z + offsetZ;
-  if (neighborX < 0 || neighborZ < 0 || neighborX >= width || neighborZ >= height) return;
-  const index = z * width + x;
-  const neighbor = distance[neighborZ * width + neighborX] + step;
-  if (neighbor < distance[index]) distance[index] = neighbor;
-}
-
-function encodeFogDistanceMask(raster: FogRaster, mask: TerrainFogMask, target: TexelRect): void {
-  for (let pixelZ = target.minZ; pixelZ <= target.maxZ; pixelZ += 1) {
-    for (let pixelX = target.minX; pixelX <= target.maxX; pixelX += 1) {
-      const index = (pixelZ - raster.rect.minZ) * raster.width + (pixelX - raster.rect.minX);
-      mask.data[pixelZ * mask.width + pixelX] = encodeFogTexel(raster.coverage[index], raster.distance[index]);
-    }
-  }
-}
-
-function encodeFogTexel(coverage: number, distance: number): number {
-  if (coverage === 0) return 0;
-  const depth = Number.isFinite(distance) ? smoothstep(0, FOG_DISTANCE_REACH, distance) : 1;
-  return Math.round((0.18 + depth * 0.82) * 255);
 }
 
 function clearFogReveal(data: Uint8Array, mask: TerrainFogMask, reveal: TerrainFogRevealMask): void {

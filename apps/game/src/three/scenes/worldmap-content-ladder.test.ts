@@ -20,7 +20,6 @@ const entity = (overrides: Partial<Parameters<typeof shouldShowTextLabel>[1]> = 
 describe("resolveWorldmapContentLadder", () => {
   it("renders everything near, gates text in the mid band and only icons far", () => {
     expect(resolveWorldmapContentLadder(CameraView.Close)).toMatchObject({
-      biomeUnderlay: true,
       structureModels: true,
       armyModels: true,
       // Legacy army models are the one representation while the procedural characters are iterated on.
@@ -30,7 +29,6 @@ describe("resolveWorldmapContentLadder", () => {
       entityIcons: false,
     });
     expect(resolveWorldmapContentLadder(CameraView.Medium)).toMatchObject({
-      biomeUnderlay: true,
       structureModels: true,
       proceduralCharacters: false,
       textLabels: "priority",
@@ -38,7 +36,6 @@ describe("resolveWorldmapContentLadder", () => {
       armyTierGlyphs: true,
     });
     expect(resolveWorldmapContentLadder(CameraView.Far)).toMatchObject({
-      biomeUnderlay: true,
       structureModels: false,
       armyModels: false,
       proceduralCharacters: false,

@@ -12,6 +12,8 @@ vi.mock("./game-entry/play-route-boot", () => ({
   usePlayRouteBootController: (...args: unknown[]) => usePlayRouteBootControllerMock(...args),
 }));
 
+vi.mock("./game-entry/play-scene-handoff", () => ({ PlaySceneHandoff: () => null }));
+
 vi.mock("./hooks/context/dojo-context", () => ({
   DojoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -138,7 +140,7 @@ describe("GameRoute", () => {
       );
     });
 
-    expect(container.textContent).toContain("Charting the World");
+    expect(container.textContent).toContain("Entering the World");
     expect(container.textContent).not.toContain("Sign in to Continue");
   });
 
@@ -228,7 +230,7 @@ describe("GameRoute", () => {
     const source = readFileSync(resolve(process.cwd(), "src/game-route.tsx"), "utf8");
 
     expect(source).toContain("bootToken");
-    expect(source).toContain("<ReadyApp key={bootToken}");
+    expect(source).toMatch(/<ReadyApp\s+key=\{bootToken\}/);
   });
 
   it("mounts the ready world once after the first readiness generation starts", async () => {

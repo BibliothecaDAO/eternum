@@ -63,6 +63,9 @@
         ],
         "@bibliothecadao/types": [
           "../types/src/index.ts"
+        ],
+        "@bibliothecadao/types/terrain": [
+          "../types/src/terrain.ts"
         ]
       }
     },
@@ -122,6 +125,12 @@
         ],
         "@bibliothecadao/types": [
           "../../packages/types/src/index.ts"
+        ],
+        "@bibliothecadao/types/terrain": [
+          "../../packages/types/src/terrain.ts"
+        ],
+        "@bibliothecadao/eternum/biome": [
+          "../../packages/core/src/utils/biome/biome.ts"
         ]
       }
     },

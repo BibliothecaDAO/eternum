@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 
@@ -136,7 +137,7 @@ const createChunkInstancedMesh = (fixture: DebugChunkFixture): THREE.InstancedMe
     metalness: 0.06,
     vertexColors: true,
   });
-  const mesh = new THREE.InstancedMesh(geometry, material, fixture.chunks.length);
+  const mesh = createInstancedMesh(geometry, material, fixture.chunks.length);
   const transform = new THREE.Object3D();
   const color = new THREE.Color();
 

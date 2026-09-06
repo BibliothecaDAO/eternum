@@ -148,8 +148,6 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
 
     if (this.postProcessingConfig) {
       this.rebuildPostProcessing(features);
-    } else {
-      setRendererDiagnosticDegradations([]);
     }
 
     this.input.scenes.worldmapScene.applyRenderVisualProfile(features);

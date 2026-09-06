@@ -1,3 +1,5 @@
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
@@ -18,11 +20,9 @@ import { MarketModal } from "@/ui/features/economy/trading";
 import {
   configManager,
   divideByPrecision,
-  getEntityIdFromKeys,
   getConsumedBy,
   getBuildingCosts,
   getBalance,
-  getBlockTimestamp,
   hasTileOccupier,
   isTileOccupierChest,
   isTileOccupierQuest,
@@ -41,7 +41,7 @@ import {
   TileOccupier,
   findResourceById,
 } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { useComponentValue } from "@dojoengine/react";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -202,6 +202,7 @@ const MapTilePanel = () => {
 const LocalTilePanel = () => {
   const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
+  const isSpectating = useUIStore((state) => state.isSpectating);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -211,40 +212,23 @@ const LocalTilePanel = () => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
 
+  const structureKey = gameEntityKey([BigInt(structureEntityId)]);
+  const liveStructure = useComponentValue(setup.components.Structure, structureKey);
+  // Affordability and open-plot checks below must update when their RECS inputs change.
+  useComponentValue(setup.components.Resource, structureKey);
+  useComponentValue(setup.components.StructureBuildings, structureKey);
   const selectedStructure = useMemo(() => {
-    const structure = playerStructures.find((entry) => entry.entityId === structureEntityId);
-    const base = structure?.structure?.base;
-    if (base && base.coord_x !== undefined && base.coord_y !== undefined) {
-      return {
-        outerCol: Number(base.coord_x),
-        outerRow: Number(base.coord_y),
-        category: normalizeStructureCategory(base.category),
-      };
-    }
-
-    let structureEntityKey: ReturnType<typeof getEntityIdFromKeys> | undefined;
-    try {
-      structureEntityKey = gameEntityKey([BigInt(structureEntityId)]);
-    } catch {
-      structureEntityKey = undefined;
-    }
-
-    const liveStructure = structureEntityKey ? getComponentValue(setup.components.Structure, structureEntityKey) : null;
-    const liveBase = liveStructure?.base;
-    const hasLiveCoords = liveBase?.coord_x !== undefined && liveBase?.coord_y !== undefined;
-    if (hasLiveCoords) {
-      return {
-        outerCol: Number(liveBase.coord_x),
-        outerRow: Number(liveBase.coord_y),
-        category: normalizeStructureCategory(liveBase.category),
-      };
-    }
-
-    return null;
-  }, [playerStructures, setup.components.Structure, structureEntityId]);
+    const base = liveStructure?.base;
+    if (!base) return null;
+    return {
+      outerCol: Number(base.coord_x),
+      outerRow: Number(base.coord_y),
+      category: normalizeStructureCategory(base.category),
+    };
+  }, [liveStructure]);
 
   useEffect(() => {
     if (!selectedStructure) return;
@@ -262,21 +246,17 @@ const LocalTilePanel = () => {
     }
   }, [selectedBuildingHex, selectedStructure, setSelectedBuildingHex]);
 
-  const building = useMemo(() => {
-    if (!selectedBuildingHex || !buildingComponent) return null;
-    // Building keys on s2 are (game_id, alt, outer_col, outer_row, inner_col,
-    // inner_row) — the dedicated helper inserts the alt key; a plain
-    // gameEntityKey lookup always missed, so every built tile read as empty.
-    return getComponentValue(
-      buildingComponent,
-      buildingEntityKey(
-        selectedBuildingHex.outerCol,
-        selectedBuildingHex.outerRow,
-        selectedBuildingHex.innerCol,
-        selectedBuildingHex.innerRow,
-      ),
-    );
-  }, [buildingComponent, selectedBuildingHex]);
+  const building = useComponentValue(
+    buildingComponent,
+    selectedBuildingHex
+      ? buildingEntityKey(
+          selectedBuildingHex.outerCol,
+          selectedBuildingHex.outerRow,
+          selectedBuildingHex.innerCol,
+          selectedBuildingHex.innerRow,
+        )
+      : undefined,
+  );
 
   const buildingCategory = useMemo(() => {
     if (!building) return null;
@@ -341,13 +321,10 @@ const LocalTilePanel = () => {
 
   const populationCost = populationConfig?.population_cost ?? 0;
   const populationCapacity = populationConfig?.capacity_grant ?? 0;
-  const [isPaused, setIsPaused] = useState<boolean>(!!building?.paused);
+  const isPaused = !!building?.paused;
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
 
-  useEffect(() => {
-    setIsPaused(!!building?.paused);
-  }, [building?.paused]);
   useEffect(() => {
     setShowDestroyConfirm(false);
   }, [
@@ -357,19 +334,17 @@ const LocalTilePanel = () => {
     selectedBuildingHex?.innerRow,
   ]);
 
-  const buildCost = useMemo<ResourceAmountEntry[]>(() => {
-    if (!hasBuilding || buildingCategory === null) return [];
-    const rawCost =
-      getBuildingCosts(structureEntityId ?? 0, setup.components, buildingCategory as BuildingType, useSimpleCost) ?? [];
-    return normalizeResourceEntries(rawCost);
-  }, [buildingCategory, hasBuilding, setup.components, structureEntityId, useSimpleCost]);
+  const buildCost =
+    hasBuilding && buildingCategory !== null
+      ? normalizeResourceEntries(
+          getBuildingCosts(structureEntityId, setup.components, buildingCategory as BuildingType, useSimpleCost) ?? [],
+        )
+      : [];
 
-  const isOwnedByPlayer = useMemo(() => {
-    if (!building) return false;
-    const ownerId =
-      typeof building.outer_entity_id === "bigint" ? Number(building.outer_entity_id) : building.outer_entity_id;
-    return playerStructures.some((structure) => structure.entityId === ownerId);
-  }, [building, playerStructures]);
+  const canManageBuilding =
+    !isSpectating &&
+    !isExplicitSpectateSession() &&
+    playerStructures.some((structure) => structure.entityId === structureEntityId);
 
   // Cancel any active "build another" preview when the player picks a
   // different tile. Otherwise the preview from one building leaks into the
@@ -399,7 +374,7 @@ const LocalTilePanel = () => {
     : "No Tile Selected";
 
   const handleToggleProduction = async () => {
-    if (!selectedBuildingHex) return;
+    if (!selectedBuildingHex || !canManageBuilding || isActionLoading) return;
     setIsActionLoading(true);
     try {
       const tileManager = new TileManager(setup.components, setup.systemCalls, {
@@ -413,7 +388,6 @@ const LocalTilePanel = () => {
           selectedBuildingHex.innerCol,
           selectedBuildingHex.innerRow,
         );
-        setIsPaused(false);
       } else {
         await tileManager.pauseProduction(
           account.account,
@@ -421,7 +395,6 @@ const LocalTilePanel = () => {
           selectedBuildingHex.innerCol,
           selectedBuildingHex.innerRow,
         );
-        setIsPaused(true);
       }
     } catch (error) {
       console.error("Failed to toggle production", error);
@@ -431,7 +404,7 @@ const LocalTilePanel = () => {
   };
 
   const handleDestroy = async () => {
-    if (!selectedBuildingHex) return;
+    if (!selectedBuildingHex || !canManageBuilding || isActionLoading) return;
     if (isCastleTile) return;
     if (!showDestroyConfirm) {
       setShowDestroyConfirm(true);
@@ -490,7 +463,11 @@ const LocalTilePanel = () => {
   if (!hasBuilding) {
     return (
       <InfoBubble title={panelTitle}>
-        <p className={HUD_BODY_MUTED}>Empty tile. Pick a building from the menu to start construction here.</p>
+        <p className={HUD_BODY_MUTED}>
+          {canManageBuilding
+            ? "Open building plot. Choose a building from the construction menu."
+            : "Open building plot. Select a completed building to inspect its production."}
+        </p>
       </InfoBubble>
     );
   }
@@ -544,7 +521,7 @@ const LocalTilePanel = () => {
   })();
 
   const canBuildAnother = (() => {
-    if (!isOwnedByPlayer) return false;
+    if (!canManageBuilding) return false;
     if (buildCost.length === 0) return false;
     if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
@@ -553,7 +530,7 @@ const LocalTilePanel = () => {
     });
   })();
 
-  const buildBlockedReason = !isOwnedByPlayer
+  const buildBlockedReason = !canManageBuilding
     ? "Not your structure"
     : !hasAvailableTile
       ? "No empty tiles available — destroy a building to free a slot"
@@ -567,20 +544,22 @@ const LocalTilePanel = () => {
           name + coords + Re-sync live in the bubble's title/cue. */}
       <InfoBubble title={panelTitle} icon={Factory}>
         <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
-          {isPaused && isOwnedByPlayer && (
+          {isPaused && (
             <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
                 ⚠️ Production paused
               </span>
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={isActionLoading}
-                onClick={handleToggleProduction}
-                className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
-              >
-                ▶ Resume
-              </Button>
+              {canManageBuilding && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  disabled={isActionLoading}
+                  onClick={handleToggleProduction}
+                  className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
+                >
+                  ▶ Resume
+                </Button>
+              )}
             </div>
           )}
 
@@ -659,7 +638,7 @@ const LocalTilePanel = () => {
           is always rendered (greyed out when constraints don't allow), so
           the player knows it's a real affordance and gets a tooltip with
           why it's disabled. */}
-      {isOwnedByPlayer && (
+      {canManageBuilding && (
         <InfoBubble title="Actions" icon={Hammer}>
           <div className="flex flex-col gap-2.5">
             {buildCost.length > 0 && (
@@ -898,7 +877,7 @@ export const BottomRightPanel = memo(() => {
       )}
       {showTileDetails && (
         <div
-          className="pointer-events-auto fixed right-3 top-1/2 z-30 flex w-[280px] max-h-[calc(100vh-32px)] -translate-y-1/2 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
+          className="pointer-events-auto fixed bottom-4 right-3 z-30 flex w-[300px] max-h-[calc(100vh-88px)] flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
           aria-label="Tile details"
         >
           {isMapView ? <MapTilePanel /> : <LocalTilePanel />}

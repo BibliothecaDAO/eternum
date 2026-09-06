@@ -21,6 +21,17 @@ describe("normalizePlayBootLocation", () => {
     ).toBe("/play/appchain/aurora-blitz/map?col=4&row=9&spectate=true&boot=map-first&resumeScene=hex");
   });
 
+  it("preserves an explicit renderer trial and its logs through local boot", () => {
+    expect(
+      normalizePlayBootLocation({
+        pathname: "/play/madara/iron-age/hex",
+        search: "?col=4&row=9&rendererMode=webgpu-force-webgl&logs=1",
+      }),
+    ).toBe(
+      "/play/madara/iron-age/map?col=4&row=9&boot=map-first&resumeScene=hex&rendererMode=webgpu-force-webgl&logs=1",
+    );
+  });
+
   it("does not rewrite in-progress map-first handoff routes back to the world map", () => {
     expect(
       normalizePlayBootLocation({
