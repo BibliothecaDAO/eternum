@@ -1,8 +1,8 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   Box3,
   BufferGeometry,
   Color,
-  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   InstancedBufferAttribute,
@@ -201,20 +201,18 @@ export class TerrainPropPools {
     const slotCapacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype];
     const capacity = slotCapacity * TERRAIN_PROP_POOL_PAGE_SLOTS;
     const ecology = new InstancedBufferAttribute(new Float32Array(capacity * VEC3_FLOATS), VEC3_FLOATS);
-    ecology.setUsage(DynamicDrawUsage);
     const geometries = {
       near: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "near").geometry, ecology),
       far: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "far").geometry, ecology),
     };
     const material = getTerrainPropRole(archetype) === "rigid" ? this.rigidMaterial : this.windMaterial;
-    const mesh = new InstancedMesh(geometries[this.lod], material, capacity);
+    const mesh = createInstancedMesh(geometries[this.lod], material, capacity);
     mesh.name = `terrain-prop-pool:${archetype}`;
     mesh.count = 0;
     mesh.visible = false;
     // Canopy shadows anchor close forests; overview skips their extra geometry pass.
     mesh.castShadow = this.lod === "near" && getTerrainPropRole(archetype) === "canopy";
     mesh.receiveShadow = true;
-    mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     mesh.raycast = disablePropRaycast;
     this.pools.set(archetype, {
       catalogRadius: this.resolveMaximumCatalogMeshRadius(archetype),

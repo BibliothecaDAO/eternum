@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { HEX_SIZE } from "@/three/constants";
 import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
 import { Aura } from "@/three/managers/aura";
@@ -68,10 +69,7 @@ export class InteractiveHexManager {
   public setAuraVisibility(visible: boolean) {
     this.showAura = visible;
     if (!visible) {
-      if (this.hoverAura.isInScene(this.scene)) {
-        this.hoverAura.removeFromScene(this.scene);
-      }
-      this.hoverHexManager.hideHover();
+      this.clearHover();
     }
   }
 
@@ -88,7 +86,10 @@ export class InteractiveHexManager {
    */
   public setRimLighting(enabled: boolean) {
     this.useRimLighting = enabled;
-    // Hide current effects when switching
+    this.clearHover();
+  }
+
+  public clearHover(): void {
     if (this.hoverAura.isInScene(this.scene)) {
       this.hoverAura.removeFromScene(this.scene);
     }
@@ -164,11 +165,7 @@ export class InteractiveHexManager {
       return hoveredHex;
     }
 
-    // Hide both hover effects when not hovering
-    if (this.hoverAura.isInScene(this.scene)) {
-      this.hoverAura.removeFromScene(this.scene);
-    }
-    this.hoverHexManager.hideHover();
+    this.clearHover();
     return null;
   }
 
@@ -207,8 +204,7 @@ export class InteractiveHexManager {
     const hexagonGeometry = this.hexGeometryPool.getGeometry("interactive");
     hexGeometryDebugger.trackSharedGeometryUsage("interactive", "InteractiveHexManager.ensureInstanceMeshCapacity");
 
-    const mesh = new THREE.InstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const mesh = createInstancedMesh(hexagonGeometry, this.instanceMaterial, requiredCapacity);
     mesh.instanceMatrix.needsUpdate = true;
     mesh.count = 0;
 

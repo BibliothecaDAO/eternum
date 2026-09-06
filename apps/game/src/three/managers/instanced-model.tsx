@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
@@ -88,7 +89,7 @@ interface AnimatedInstancedMesh extends InstancedMesh {
 }
 
 function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshStandardMaterial, capacity: number) {
-  const mesh = Object.assign(new InstancedMesh(geometry, material, capacity), {
+  const mesh = Object.assign(createInstancedMesh(geometry, material, capacity), {
     animated: false,
   }) as AnimatedInstancedMesh;
   mesh.instanceMatrix.needsUpdate = true;
@@ -223,7 +224,7 @@ export default class InstancedModel {
 
   private createContactShadowMesh(gltf: any): void {
     const { geometry, material } = getContactShadowResources();
-    this.contactShadowMesh = new InstancedMesh(geometry, material, this.capacity);
+    this.contactShadowMesh = createInstancedMesh(geometry, material, this.capacity);
     this.contactShadowMesh.renderOrder = 9;
     this.contactShadowMesh.castShadow = false;
     this.contactShadowMesh.receiveShadow = false;

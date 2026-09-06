@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../../utils/create-instanced-mesh";
 import {
   applyProceduralCharacterConfigPatch,
   applyProceduralUnitConfigPatch,
@@ -974,7 +975,7 @@ function createHexArena(): InstancedMesh {
     roughness: 0.88,
     vertexColors: true,
   });
-  const mesh = new InstancedMesh(geometry, material, BENCHMARK_HEX_CELLS.length);
+  const mesh = createInstancedMesh(geometry, material, BENCHMARK_HEX_CELLS.length);
   const matrix = new Matrix4();
   const color = new Color();
   BENCHMARK_HEX_CELLS.forEach((cell) => {

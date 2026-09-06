@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   CanvasTexture,
   Color,
@@ -205,7 +206,7 @@ export class StrategicMarkerLayer {
   private createPool(name: string, size: number, spec: MarkerPoolSpec): MarkerPool {
     const material = new MeshBasicMaterial({ transparent: true, alphaTest: 0.2, depthWrite: false, side: DoubleSide });
     material.name = name;
-    const mesh = new InstancedMesh(new PlaneGeometry(size, size), material, spec.capacity);
+    const mesh = createInstancedMesh(new PlaneGeometry(size, size), material, spec.capacity);
     mesh.name = name;
     mesh.count = 0;
     mesh.frustumCulled = false;
@@ -213,7 +214,6 @@ export class StrategicMarkerLayer {
     mesh.receiveShadow = false;
     // Marker icons render above the terrain and biome surface, under labels.
     mesh.renderOrder = 900;
-    mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     // Creating instanceColor through setColorAt here, before any draw, keeps the buffer immutable afterwards.
     mesh.setColorAt(0, this.scratchColor.set(0xffffff));
     requireInstanceColors(mesh).setUsage(DynamicDrawUsage);

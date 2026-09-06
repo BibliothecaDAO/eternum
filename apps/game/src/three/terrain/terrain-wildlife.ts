@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { BiomeType } from "@bibliothecadao/types";
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matrix4 } from "three";
 import { float, instanceIndex, positionGeometry, time, vec3 } from "three/tsl";
@@ -27,7 +28,7 @@ export function createTerrainWildlife(
 
   const center = terrainHexToWorld(habitat.col, habitat.row);
   const surface = field.sampleSurface(center.x, center.z);
-  const flock = new InstancedMesh(createBirdGeometry(), material, 3);
+  const flock = createInstancedMesh(createBirdGeometry(), material, 3);
   flock.name = "terrain-wildlife";
   // The orbit and wing tips fit inside the known habitat hex, including at fog borders.
   const origin = new Matrix4().makeTranslation(center.x, surface.height + 1.6, center.z);

@@ -4,7 +4,6 @@ import {
   Color,
   ConeGeometry,
   CylinderGeometry,
-  DynamicDrawUsage,
   Float32BufferAttribute,
   Group,
   Matrix4,
@@ -121,7 +120,6 @@ export class ProceduralBowEquipment {
     this.lowerString = new Mesh(this.resources.string, this.stringMaterial);
     this.grip = new Mesh(this.resources.grip, this.accentMaterial);
     const crowdBowAttribute = new Float32BufferAttribute(this.crowdBowPositions, 3);
-    crowdBowAttribute.setUsage(DynamicDrawUsage);
     this.crowdBowGeometry.setAttribute("position", crowdBowAttribute);
     this.crowdBow = new LineSegments(this.crowdBowGeometry, this.crowdBowMaterial);
     this.crowdBow.name = "procedural-longbow-crowd-lod";

@@ -1,13 +1,5 @@
-import {
-  DynamicDrawUsage,
-  Group,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  PlaneGeometry,
-  Quaternion,
-  Vector3,
-} from "three";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { Group, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, time, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
@@ -38,7 +30,7 @@ export class TerrainWaterInteractionPool {
   private readonly geometry = createTerrainWaterInteractionGeometry();
   private readonly strength = uniform(1, "float");
   private readonly material = createTerrainWaterInteractionMaterial(this.strength);
-  private readonly mesh = new InstancedMesh(this.geometry, this.material, TERRAIN_WATER_INTERACTION_CAPACITY);
+  private readonly mesh = createInstancedMesh(this.geometry, this.material, TERRAIN_WATER_INTERACTION_CAPACITY);
   private readonly interactionAttribute = new InstancedBufferAttribute(
     new Float32Array(TERRAIN_WATER_INTERACTION_CAPACITY * 2),
     2,
@@ -58,9 +50,7 @@ export class TerrainWaterInteractionPool {
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 2;
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.mesh.raycast = disableWaterInteractionRaycast;
-    this.interactionAttribute.setUsage(DynamicDrawUsage);
     this.geometry.setAttribute(WATER_INTERACTION_ATTRIBUTE, this.interactionAttribute);
     this.object3d.add(this.mesh);
   }

@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../../utils/create-instanced-mesh";
 import {
   applyProceduralUnitConfigPatch,
   type ProceduralUnitActor,
@@ -21,17 +22,7 @@ import type {
   ProjectileSweepHit,
   ProjectileSweepRequest,
 } from "@/three/projectiles/projectile-hit-query";
-import {
-  Color,
-  CylinderGeometry,
-  DynamicDrawUsage,
-  Group,
-  InstancedMesh,
-  Matrix4,
-  MeshBasicMaterial,
-  Quaternion,
-  Vector3,
-} from "three";
+import { Color, CylinderGeometry, Group, Matrix4, MeshBasicMaterial, Quaternion, Vector3 } from "three";
 
 import {
   applyProceduralCollisionGymConfigPatch,
@@ -87,7 +78,7 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
     opacity: 0.45,
     wireframe: true,
   });
-  private readonly debugMesh = new InstancedMesh(this.debugGeometry, this.debugMaterial, MAX_GYM_PROXIES);
+  private readonly debugMesh = createInstancedMesh(this.debugGeometry, this.debugMaterial, MAX_GYM_PROXIES);
   private readonly debugColor = new Color();
   private readonly debugMatrix = new Matrix4();
   private readonly debugQuaternion = new Quaternion();
@@ -119,7 +110,6 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
     this.config = applyProceduralCollisionGymConfigPatch(config, {});
     this.group.name = "procedural-collision-gym-stage";
     this.debugMesh.name = "procedural-collision-gym-proxies";
-    this.debugMesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.debugMesh.frustumCulled = false;
     this.projectiles = this.createProjectiles();
     this.group.add(this.debugMesh, this.projectiles.group);

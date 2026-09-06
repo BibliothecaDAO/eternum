@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { hexGeometryDebugger } from "@/three/utils/hex-geometry-debug";
 import { HexGeometryPool } from "@/three/utils/hex-geometry-pool";
 import { ActionHighlightDescriptor, ActionType } from "@bibliothecadao/eternum";
@@ -53,7 +54,7 @@ const createMesh = (
   material: MeshBasicMaterial,
   renderOrder: number,
 ): InstancedMesh => {
-  const mesh = new InstancedMesh(geometry, material, MAX_HIGHLIGHTS);
+  const mesh = createInstancedMesh(geometry, material, MAX_HIGHLIGHTS);
   mesh.count = 0;
   mesh.frustumCulled = true;
   mesh.renderOrder = renderOrder;

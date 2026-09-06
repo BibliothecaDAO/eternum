@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Lighter World Rendering",
+    type: "improvement",
+    description: "Improved rendering efficiency when viewing and panning the world map.",
+  },
+  {
+    date: "2026-09-06",
     title: "Labs in the Sidebar",
     type: "improvement",
     description:

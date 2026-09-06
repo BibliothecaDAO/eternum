@@ -1,13 +1,5 @@
-import {
-  DynamicDrawUsage,
-  Group,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  PlaneGeometry,
-  Quaternion,
-  Vector3,
-} from "three";
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
+import { Group, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, color, mix, smoothstep, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
@@ -78,7 +70,7 @@ export class TerrainDustInteractionPool {
   private readonly geometry = createDustGeometry();
   private readonly strength = uniform(1, "float");
   private readonly material = createDustMaterial(this.strength);
-  private readonly mesh = new InstancedMesh(this.geometry, this.material, TERRAIN_DUST_INTERACTION_CAPACITY);
+  private readonly mesh = createInstancedMesh(this.geometry, this.material, TERRAIN_DUST_INTERACTION_CAPACITY);
   private readonly dustAttribute = new InstancedBufferAttribute(
     new Float32Array(TERRAIN_DUST_INTERACTION_CAPACITY * 3),
     3,
@@ -101,9 +93,7 @@ export class TerrainDustInteractionPool {
     this.mesh.visible = false;
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 2;
-    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     this.mesh.raycast = disableDustRaycast;
-    this.dustAttribute.setUsage(DynamicDrawUsage);
     this.geometry.setAttribute(DUST_ATTRIBUTE, this.dustAttribute);
     this.object3d.add(this.mesh);
   }

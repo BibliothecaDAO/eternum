@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { TroopTier } from "@bibliothecadao/types";
 import {
   Color,
@@ -67,8 +68,8 @@ export class MeleeImpactSystem {
 
   public constructor(private readonly capacity = 128) {
     this.group.name = "melee-impact-system";
-    this.slashMesh = new InstancedMesh(this.slashGeometry, this.slashMaterial, capacity);
-    this.impactMesh = new InstancedMesh(this.impactGeometry, this.impactMaterial, capacity);
+    this.slashMesh = createInstancedMesh(this.slashGeometry, this.slashMaterial, capacity);
+    this.impactMesh = createInstancedMesh(this.impactGeometry, this.impactMaterial, capacity);
     this.slashMesh.name = "melee-slash-arcs";
     this.impactMesh.name = "melee-contact-rings";
     this.slashMesh.frustumCulled = false;

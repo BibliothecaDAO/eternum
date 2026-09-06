@@ -1,3 +1,4 @@
+import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
@@ -401,7 +402,7 @@ export class ArmyModel {
 
     const contactShadowScale = this.computeContactShadowScale(gltf);
     const { geometry, material } = getContactShadowResources();
-    const contactShadowMesh = new InstancedMesh(geometry, material, this.ARMY_INSTANCE_CAPACITY);
+    const contactShadowMesh = createInstancedMesh(geometry, material, this.ARMY_INSTANCE_CAPACITY);
     contactShadowMesh.frustumCulled = true;
     contactShadowMesh.castShadow = false;
     contactShadowMesh.receiveShadow = false;
@@ -500,7 +501,7 @@ export class ArmyModel {
   private createInstancedMesh(mesh: Mesh, animations: any[], meshIndex: number): AnimatedInstancedMesh {
     const geometry = mesh.geometry;
     const pooledMaterial = createPooledInstancedMaterial(mesh.material);
-    const instancedMesh = new InstancedMesh(
+    const instancedMesh = createInstancedMesh(
       geometry,
       pooledMaterial.material,
       this.ARMY_INSTANCE_CAPACITY,

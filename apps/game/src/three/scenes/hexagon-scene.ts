@@ -324,7 +324,12 @@ export abstract class HexagonScene {
     this.inputManager.deactivate();
   }
 
-  private handleMouseMove(_event: MouseEvent, raycaster: Raycaster): void {
+  private handleMouseMove(event: MouseEvent, raycaster: Raycaster): void {
+    if (event.buttons !== 0) {
+      this.interactiveHexManager.clearHover();
+      this.onHexagonMouseMove(null);
+      return;
+    }
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
     if (hoveredHex) {
       this.onHexagonMouseMove(hoveredHex);
