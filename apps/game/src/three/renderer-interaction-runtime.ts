@@ -13,7 +13,6 @@ export interface RendererInteractionRuntime {
 
 interface CreateRendererInteractionRuntimeInput {
   onControlsChange: () => void;
-  onInteraction: () => void;
 }
 
 export function createRendererInteractionRuntime(
@@ -28,8 +27,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   public readonly pointer = new Vector2();
   public controls?: MapControls;
   private hasDocumentKeyboardLifecycle = false;
-  private inputSurface?: HTMLElement;
-  private readonly handleSurfaceInteraction = () => this.input.onInteraction();
 
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -47,7 +44,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
 
   public attachSurface(surface: HTMLElement): void {
     this.disposeControls();
-    this.attachInteractionListeners(surface);
     this.controls = createConfiguredMapControls({
       camera: this.camera,
       onControlsChange: this.input.onControlsChange,
@@ -61,8 +57,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   }
 
   private disposeControls(): void {
-    this.detachInteractionListeners();
-
     if (this.hasDocumentKeyboardLifecycle) {
       document.removeEventListener("focus", this.handleDocumentFocus, true);
       document.removeEventListener("blur", this.handleDocumentBlur, true);
@@ -71,20 +65,6 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
 
     this.controls?.dispose();
     this.controls = undefined;
-  }
-
-  private attachInteractionListeners(surface: HTMLElement): void {
-    this.inputSurface = surface;
-    surface.addEventListener("pointerdown", this.handleSurfaceInteraction, { passive: true });
-    surface.addEventListener("pointermove", this.handleSurfaceInteraction, { passive: true });
-    surface.addEventListener("wheel", this.handleSurfaceInteraction, { passive: true });
-  }
-
-  private detachInteractionListeners(): void {
-    this.inputSurface?.removeEventListener("pointerdown", this.handleSurfaceInteraction);
-    this.inputSurface?.removeEventListener("pointermove", this.handleSurfaceInteraction);
-    this.inputSurface?.removeEventListener("wheel", this.handleSurfaceInteraction);
-    this.inputSurface = undefined;
   }
 
   private registerDocumentKeyboardLifecycle(): void {

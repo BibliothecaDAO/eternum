@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Choose Your Frame Limit",
+    type: "improvement",
+    description:
+      "Choose Uncapped or a 60 FPS limit in landing and in-game settings, with the same visual detail in both modes.",
+  },
+  {
+    date: "2026-09-06",
     title: "Lighter World Loading",
     type: "improvement",
     description: "Reduced loading delays when entering a game, including terrain and building preparation.",

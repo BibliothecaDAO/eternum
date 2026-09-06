@@ -4,8 +4,6 @@ import { gameWorkerManager } from "@/managers/game-worker-manager";
 import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
 import type { ProceduralImpactAuthority } from "@/three/characters/collision/procedural-impact";
-import { createProceduralCollisionBudget } from "@/three/characters/collision/procedural-collision-profile";
-import type { RenderMode } from "@/three/render-profile";
 import type { ProjectileSweepHit, ProjectileSweepRequest } from "@/three/projectiles/projectile-hit-query";
 import {
   ProceduralArmyCharacterLayer,
@@ -2217,10 +2215,6 @@ export class ArmyManager {
       fallbackRepresentationCount: Math.max(0, visibleArmyCount - this.activeProceduralArmyEntityIds.size),
       visibleArmyCount,
     };
-  }
-
-  public setProceduralCollisionMode(mode: RenderMode): void {
-    this.proceduralArmyCharacterLayer.setCollisionBudget(createProceduralCollisionBudget(mode));
   }
 
   public async startProceduralCharacterRagdoll(): Promise<void> {

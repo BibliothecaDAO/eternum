@@ -1,13 +1,14 @@
 import { AudioCategory, useAudio, useMusicPlayer, ScrollingTrackName } from "@/audio";
-import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
+import {
+  RENDER_MODE_OPTIONS,
+  RENDER_MODE_DESCRIPTION,
+  renderProfile,
+  type RenderMode,
+  writeRenderMode,
+} from "@/three/render-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Maximize2, Minimize2, Monitor, Music, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
-  { label: "Quality", mode: "quality" },
-  { label: "Battery", mode: "battery" },
-];
 
 interface DocumentWithFullscreen extends HTMLDocument {
   mozFullScreenElement?: Element;
@@ -290,6 +291,7 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
                 <button
                   key={mode}
                   type="button"
+                  aria-pressed={isActive}
                   disabled={isActive}
                   onClick={() => handleRenderModeChange(mode)}
                   className={cn(
@@ -304,9 +306,7 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
               );
             })}
           </div>
-          <p className="text-xs leading-relaxed text-gold/42">
-            Battery reduces idle work without changing visual detail. Changing mode reloads the page.
-          </p>
+          <p className="text-xs leading-relaxed text-gold/42">{RENDER_MODE_DESCRIPTION}</p>
         </LandingSettingsSection>
       </div>
 
