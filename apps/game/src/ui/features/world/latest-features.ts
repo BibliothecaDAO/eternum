@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Smooth Fog and Biome Lab",
+    description:
+      "Unloaded world terrain stays under one mist layer and reveals as pages arrive. Open BIOME LAB from the landing page to explore biome previews and visual settings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-06",
     title: "Smoother World Entry and Exploration",
     description:
       "Enter the world through one loading screen. Terrain loads across your visible view with a margin beyond it, adapting as you pan, zoom, or resize. Ready pages appear progressively with their fog while nearby terrain stays visible. Small plants sway from their roots, and switching between world and local views keeps foliage intact.",

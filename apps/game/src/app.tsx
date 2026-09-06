@@ -56,6 +56,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route
+          path="/biome-lab"
+          element={
+            <DebugRouteShell>
+              <DebugProceduralTerrainView />
+            </DebugRouteShell>
+          }
+        />
+        <Route
           path="/debug/three-chunks"
           element={
             <DebugRouteShell>

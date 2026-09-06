@@ -111,7 +111,6 @@ import { Account, AccountInterface } from "starknet";
 import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
-import { WorldBiomeSurface } from "@/three/terrain/world-biome-surface";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
 import {
@@ -523,7 +522,6 @@ type WorldmapChunkDiagnosticsDebugWindow = Window & {
     allowedIncreaseFraction?: number,
   ) => WorldmapProjectionSyncVolumeRegressionDebugResult;
   getWorldmapRenderDiagnostics?: () => ReturnType<typeof snapshotWorldmapRenderDiagnostics>;
-  getWorldBiomeSurface?: () => WorldBiomeSurface;
   getStrategicMarkers?: () => StrategicMarkerLayer;
   getTerrainUploadMetrics?: () => TerrainUploadMetrics;
   getTerrainPresentMetrics?: () => TerrainPresentMetrics;
@@ -815,7 +813,6 @@ export default class WorldmapScene extends WarpTravel {
   private unsubscribeWorldSpatialProjection?: () => void;
   private exploredTiles: Map<number, Map<number, BiomeType>> = new Map();
   private proceduralTerrain!: WorldmapProceduralTerrain;
-  private worldBiomeSurface!: WorldBiomeSurface;
   private strategicMarkers!: StrategicMarkerLayer;
   // normalized positions and if they are allied or not
 
@@ -1031,8 +1028,6 @@ export default class WorldmapScene extends WarpTravel {
     this.fxManager = new FXManager(this.scene, 1);
     this.proceduralTerrain = new WorldmapProceduralTerrain();
     this.scene.add(this.proceduralTerrain.object3d);
-    this.worldBiomeSurface = new WorldBiomeSurface();
-    this.scene.add(this.worldBiomeSurface.object3d);
     this.strategicMarkers = new StrategicMarkerLayer();
     this.scene.add(this.strategicMarkers.object3d);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2, {
@@ -1279,7 +1274,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private bindWorldSpatialProjectionLifecycle(): void {
-    this.seedWorldBiomeSurface();
     this.seedStrategicMarkers();
     const unsubscribeTiles = this.worldSpatialProjection.subscribeTiles((changes) => {
       this.handleProjectedTileChanges(changes);
@@ -1321,16 +1315,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private handleProjectedTileChanges(changes: readonly TileSpatialProjectionChange[]): void {
     changes.forEach((change) => this.applyProjectedTileChange(change));
-    this.commitWorldBiomeSurface();
-  }
-
-  /** The far-LOD biome surface paints every explored tile in the world, not just the render window. */
-  private seedWorldBiomeSurface(): void {
-    this.worldSpatialProjection.getTiles().forEach((tile) => {
-      const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
-      this.worldBiomeSurface.setTile(normalized.x, normalized.y, requireBiomeTypeFromId(tile.biome));
-    });
-    this.commitWorldBiomeSurface();
   }
 
   private syncStructureManagerGauges(): void {
@@ -1421,18 +1405,6 @@ export default class WorldmapScene extends WarpTravel {
     setWorldmapRenderGauge("strategicArmyMarkers", this.strategicMarkers.metrics.armies);
   }
 
-  private commitWorldBiomeSurface(): void {
-    const uploadedBefore = this.worldBiomeSurface.metrics.uploadedInstances;
-    this.worldBiomeSurface.commit();
-    const uploaded = this.worldBiomeSurface.metrics.uploadedInstances - uploadedBefore;
-    if (uploaded === 0) {
-      return;
-    }
-    incrementWorldmapRenderCounter("worldBiomeSurfaceCommits");
-    incrementWorldmapRenderCounter("worldBiomeSurfaceInstancesUploaded", uploaded);
-    setWorldmapRenderGauge("worldBiomeSurfaceInstances", this.worldBiomeSurface.metrics.instanceCount);
-  }
-
   private applyProjectedTileChange({ previous, current }: TileSpatialProjectionChange): void {
     const tile = current ?? previous;
     if (!tile) {
@@ -1442,7 +1414,6 @@ export default class WorldmapScene extends WarpTravel {
     if (current) this.completePendingExploreEffects(current.hexCoords);
 
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
-    this.worldBiomeSurface.setTile(normalized.x, normalized.y, current ? requireBiomeTypeFromId(current.biome) : null);
     if (!this.isHexInRetainedRenderArea(normalized.x, normalized.y)) {
       return;
     }
@@ -1565,9 +1536,6 @@ export default class WorldmapScene extends WarpTravel {
   /** The band table decides what the scene shows; managers apply their own rows from the same table. */
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     setWorldmapRenderGauge("contentBand", ladder.band);
-    // The whole-world biome surface underlies every band; the far band shows it alone, nearer bands composite the pages over it.
-    this.worldBiomeSurface.setVisible(ladder.biomeUnderlay);
-    this.proceduralTerrain.object3d.visible = ladder.band !== CameraView.Far;
     this.fxManager.setVisible(ladder.fx);
     this.resourceFXManager.setVisible(ladder.fx);
     this.combatPresentation?.setVisible(ladder.fx);
@@ -7587,7 +7555,6 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getWorldmapChunkTrace = () => this.getChunkTraceSnapshot();
     debugWindow.resetWorldmapChunkDiagnostics = () => this.resetChunkDiagnostics();
     debugWindow.getWorldmapRenderDiagnostics = () => snapshotWorldmapRenderDiagnostics();
-    debugWindow.getWorldBiomeSurface = () => this.worldBiomeSurface;
     debugWindow.getStrategicMarkers = () => this.strategicMarkers;
     debugWindow.getTerrainUploadMetrics = () => this.proceduralTerrain.getUploadMetrics();
     debugWindow.getTerrainPresentMetrics = () => this.proceduralTerrain.getPresentMetrics();
@@ -7630,7 +7597,6 @@ export default class WorldmapScene extends WarpTravel {
     debugWindow.getWorldmapChunkTrace = undefined;
     debugWindow.resetWorldmapChunkDiagnostics = undefined;
     debugWindow.getWorldmapRenderDiagnostics = undefined;
-    debugWindow.getWorldBiomeSurface = undefined;
     debugWindow.getStrategicMarkers = undefined;
     debugWindow.getTerrainUploadMetrics = undefined;
     debugWindow.getTerrainPresentMetrics = undefined;
@@ -7726,7 +7692,6 @@ export default class WorldmapScene extends WarpTravel {
     this.cosmeticsSubscriptionCleanup = undefined;
     this.chunkWorkQueue.dispose();
     this.proceduralTerrain.dispose();
-    this.worldBiomeSurface.dispose();
     this.strategicMarkers.dispose();
 
     super.destroy();

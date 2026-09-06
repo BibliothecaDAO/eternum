@@ -31,6 +31,7 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
       { id: "play", label: "PLAY", tab: null, href: "/" },
       { id: "learn", label: "LEARN", tab: "learn", href: "/learn" },
       { id: "news", label: "NEWS", tab: "news", href: "/news" },
+      { id: "biome-lab", label: "BIOME LAB", tab: null, href: "/biome-lab" },
       { id: "factory", label: "CREATE GAME", tab: "factory", href: "/factory", primary: true },
     ],
   },

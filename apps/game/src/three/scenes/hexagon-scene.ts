@@ -1,4 +1,5 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
+import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
@@ -202,10 +203,10 @@ export abstract class HexagonScene {
     this.worldUpdateListener = new WorldUpdateListener(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
-    this.scene.background = new Color(0x2a1a3e);
+    this.scene.background = new Color(this.sceneName === SceneName.WorldMap ? TERRAIN_DEEP_FOG_COLOR : 0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
-    this.fogVisualsEnabled = !IS_FLAT_MODE;
+    this.fogVisualsEnabled = this.sceneName !== SceneName.WorldMap && !IS_FLAT_MODE;
     this.fogEnabledByUser = true;
     if (this.fogVisualsEnabled && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
@@ -745,7 +746,7 @@ export abstract class HexagonScene {
       this.shadowMapSize = features.shadowMapSize;
     }
 
-    const nextFogEnabled = !IS_FLAT_MODE && features.pixelRatio > 1;
+    const nextFogEnabled = this.sceneName !== SceneName.WorldMap && !IS_FLAT_MODE && features.pixelRatio > 1;
     if (nextFogEnabled !== this.fogVisualsEnabled) {
       this.fogVisualsEnabled = nextFogEnabled;
       if (!this.fogVisualsEnabled) {

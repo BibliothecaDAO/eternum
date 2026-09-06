@@ -15,15 +15,13 @@ export type WorldmapTextLabelTier = "full" | "priority" | "none";
  *   procedural characters, no FX, no text. Parked: wheel zoom-out stops at the
  *   top of the mid band until a map-mode key asks for this band.
  *
- * The whole-world biome surface is an underlay on every row, so no band shows
- * void beyond the composite window; page terrain sits above it where it exists.
+ * Camera pages and their loading fog remain visible in every band.
  * Procedural army characters are off on every row while they are iterated on —
  * the legacy army models are the one representation; `?proceduralCharacters=1`
  * under dev mode re-enables them.
  */
 export interface WorldmapContentLadder {
   readonly band: CameraView;
-  readonly biomeUnderlay: boolean;
   readonly structureModels: boolean;
   readonly armyModels: boolean;
   readonly proceduralCharacters: boolean;
@@ -37,7 +35,6 @@ const PROCEDURAL_CHARACTERS_ENABLED = resolveProceduralCharactersOverride();
 
 const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
   band: CameraView.Close,
-  biomeUnderlay: true,
   structureModels: true,
   armyModels: true,
   proceduralCharacters: PROCEDURAL_CHARACTERS_ENABLED,
@@ -49,7 +46,6 @@ const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
 
 const MID_LADDER: WorldmapContentLadder = Object.freeze({
   band: CameraView.Medium,
-  biomeUnderlay: true,
   structureModels: true,
   armyModels: true,
   proceduralCharacters: PROCEDURAL_CHARACTERS_ENABLED,
@@ -61,7 +57,6 @@ const MID_LADDER: WorldmapContentLadder = Object.freeze({
 
 const FAR_LADDER: WorldmapContentLadder = Object.freeze({
   band: CameraView.Far,
-  biomeUnderlay: true,
   structureModels: false,
   armyModels: false,
   proceduralCharacters: false,

@@ -90,7 +90,10 @@ export const ProceduralTerrainDebugView = () => {
   const [stats, setStats] = useState(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  useBootDocumentState(ready ? "app-ready" : "app-loading", ready ? "procedural_terrain_debug_ready" : undefined);
+  useBootDocumentState(
+    ready || error ? "app-ready" : "app-loading",
+    ready ? "procedural_terrain_debug_ready" : undefined,
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -178,11 +181,11 @@ export const ProceduralTerrainDebugView = () => {
         <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">Terrain Lab</p>
-              <h1 className="mt-1 text-2xl font-semibold text-white">Living Biome Field</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">Biome Lab</p>
+              <h1 className="mt-1 text-2xl font-semibold text-white">Living Biomes</h1>
               <p className="mt-2 text-sm leading-5 text-stone-400">
                 A game-scale seeded field exercises every biome across hundreds of connected hexes. Drag to orbit,
-                scroll to zoom, and right-drag to pan.
+                scroll to zoom, and right-drag to pan. Offworld Trading Company is our visual reference.
               </p>
             </div>
             <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
@@ -223,7 +226,7 @@ export const ProceduralTerrainDebugView = () => {
           </label>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
-            Reveal proof
+            Exploration
             <select
               value={String(revealProgress)}
               onChange={(event) => setRevealProgress(event.target.value)}
@@ -238,7 +241,7 @@ export const ProceduralTerrainDebugView = () => {
           </label>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
-            Anchor scene
+            Scene
             <select
               value={sceneId}
               onChange={(event) => setSceneId(event.target.value)}

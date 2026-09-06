@@ -100,7 +100,8 @@ export class ProceduralTerrain {
   private disposed = false;
   private readonly releaseAppearance: () => void;
 
-  constructor() {
+  constructor({ streaming = false }: { streaming?: boolean } = {}) {
+    if (streaming) this.fogField.enableStreaming();
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
     this.movementEffects = new TerrainMovementEffects((worldX, worldZ) => this.sampleSurface(worldX, worldZ).biome);
@@ -191,6 +192,7 @@ export class ProceduralTerrain {
     const profile = TERRAIN_QUALITY_PROFILES[this.qualityTier];
     const motion = reducedMotion ? 0 : 1;
     this.fogField.setStyle(fogStyle);
+    this.fogField.setReducedMotion(reducedMotion);
     this.fogField.setQuality(profile.fogMotionStrength * motion, profile.fogMistStrength);
     this.propPools?.setWindStrength(profile.windStrength * motion);
     this.materials.waterMotion.value = profile.waterMotion * motion;
@@ -322,6 +324,7 @@ export class ProceduralTerrain {
     preparedFogMask: TerrainFogMask | null = null,
   ): TerrainPresentationDiagnostics {
     this.requireActive();
+    this.fogField.commitLoadedPages(preparedPages.map((page) => page.request));
     this.fogField.commit(preparedFogMask);
     return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
   }

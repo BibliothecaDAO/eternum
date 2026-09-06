@@ -8,6 +8,20 @@ import type { TerrainShroudInstance } from "./terrain-types";
 describe("TerrainFogField", () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it("keeps one fog sheet over unloaded ground even when all resident terrain is explored", () => {
+    const fog = new TerrainFogField();
+    fog.enableStreaming();
+    fog.setPage("fixture", [instance(0, 0, false)]);
+    fog.commit();
+    fog.removePage("fixture");
+    fog.commit();
+    expect(fog.getStats()).toMatchObject({ instances: 0, triangles: 2 });
+    expect(fog.object3d.children).toHaveLength(1);
+    const maskTexture = (fog as unknown as { maskTexture: DataTexture }).maskTexture;
+    expect(Array.from(maskTexture.image.data as Uint8Array).every((value) => value === 0)).toBe(true);
+    fog.dispose();
+  });
+
   it("renders every unexplored cell through one continuous bounded mist sheet", () => {
     const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, true), instance(1, 0, false)]);

@@ -7,12 +7,15 @@ import {
   PlaneGeometry,
   RedFormat,
   UnsignedByteType,
+  Vector4,
 } from "three";
 import type TextureNode from "three/src/nodes/accessors/TextureNode.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 import { MeshBasicNodeMaterial } from "three/webgpu";
-import { color, float, mix, positionWorld, smoothstep, texture, time, uniform, uv } from "three/tsl";
+import { color, float, mix, positionWorld, smoothstep, texture, time, uniform, vec2 } from "three/tsl";
 
+import { TerrainStreamCoverage } from "./terrain-stream-coverage";
+import type { TerrainPageRequest } from "./terrain-types";
 import { terrainCellKey } from "./terrain-coordinates";
 import {
   applyTerrainFogReveals,
@@ -55,6 +58,8 @@ interface ActiveReveal {
 }
 
 interface FogMaterialSet {
+  bounds: ReturnType<typeof createFogBounds>;
+  streaming: UniformNode<"float", number>;
   clarity: UniformNode<"float", number>;
   material: MeshBasicNodeMaterial;
   maskTexture: TextureNode;
@@ -76,7 +81,9 @@ export class TerrainFogField {
   private maskTexture = createFogMaskTexture(this.textureData, 1, 1);
   private maskTextureHeight = 1;
   private maskTextureWidth = 1;
-  private readonly materials = createFogMaterial(this.maskTexture);
+  private readonly streamCoverage = new TerrainStreamCoverage();
+  private readonly materials = createFogMaterial(this.maskTexture, this.streamCoverage);
+  private streaming = false;
   private readonly fogMesh = createFogMesh(this.materials.material);
   private readonly pages = new Map<string, readonly TerrainShroudInstance[]>();
   private readonly renderedInstances = new Map<string, TerrainShroudInstance>();
@@ -90,6 +97,22 @@ export class TerrainFogField {
   constructor() {
     this.object3d.name = "terrain-exploration-fog-field";
     this.object3d.add(this.fogMesh);
+  }
+
+  enableStreaming(): void {
+    this.streaming = true;
+    this.materials.streaming.value = 1;
+    this.fogMesh.position.set(0, FOG_PLANE_HEIGHT, 0);
+    this.fogMesh.scale.set(1_000_000, 1, 1_000_000);
+    this.fogMesh.visible = true;
+  }
+
+  commitLoadedPages(requests: readonly TerrainPageRequest[]): void {
+    if (this.streaming) this.streamCoverage.commit(requests);
+  }
+
+  setReducedMotion(reduced: boolean): void {
+    this.streamCoverage.setReducedMotion(reduced);
   }
 
   setPage(pageKey: string, instances: readonly TerrainShroudInstance[]): void {
@@ -115,7 +138,9 @@ export class TerrainFogField {
     if (!layout) {
       this.mask = null;
       this.dirtyRegions.length = 0;
-      this.fogMesh.visible = false;
+      this.textureData.fill(0);
+      this.maskTexture.needsUpdate = true;
+      this.fogMesh.visible = this.streaming;
       return;
     }
     if (this.mask && isSameTerrainFogMaskLayout(this.mask, layout)) this.writeDirtyRegions(this.mask);
@@ -143,6 +168,7 @@ export class TerrainFogField {
   }
 
   updateAnimation(deltaSeconds: number): void {
+    if (this.streaming) this.streamCoverage.update(deltaSeconds);
     if (this.activeReveals.size === 0) return;
     const boundedDelta = Math.min(0.05, Math.max(0, deltaSeconds));
     const completed: TerrainShroudInstance[] = [];
@@ -190,6 +216,7 @@ export class TerrainFogField {
     this.fogMesh.geometry.dispose();
     this.materials.material.dispose();
     this.maskTexture.dispose();
+    this.streamCoverage.dispose();
     this.activeReveals.clear();
     this.queuedReveals.clear();
     this.pages.clear();
@@ -248,6 +275,8 @@ export class TerrainFogField {
   }
 
   private positionFogMesh({ maxX, maxZ, minX, minZ }: TerrainFogMaskBounds): void {
+    this.materials.bounds.value.set(minX, minZ, maxX - minX, maxZ - minZ);
+    if (this.streaming) return;
     this.fogMesh.position.set((minX + maxX) / 2, FOG_PLANE_HEIGHT, (minZ + maxZ) / 2);
     this.fogMesh.scale.set(maxX - minX, 1, maxZ - minZ);
     this.fogMesh.visible = true;
@@ -289,7 +318,13 @@ function createFogMaskTexture(data: Uint8Array, width: number, height: number): 
   return mask;
 }
 
-function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
+function createFogBounds() {
+  return uniform(new Vector4(0, 0, 1, 1));
+}
+
+function createFogMaterial(maskTexture: DataTexture, streamCoverage: TerrainStreamCoverage): FogMaterialSet {
+  const bounds = createFogBounds();
+  const streaming = uniform(0, "float");
   const clarity = uniform(1, "float");
   const motionStrength = uniform(1, "float");
   const mistStrength = uniform(1, "float");
@@ -299,13 +334,26 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   material.depthTest = false;
   material.depthWrite = false;
   material.toneMapped = false;
+  material.fog = false;
 
   const primaryFlow = positionWorld.x.mul(0.32).add(positionWorld.z.mul(0.23)).add(time.mul(0.024).mul(motionStrength));
   const crossFlow = positionWorld.x.mul(-0.21).add(positionWorld.z.mul(0.38)).sub(time.mul(0.017).mul(motionStrength));
   const detailFlow = positionWorld.x.mul(0.72).add(positionWorld.z.mul(-0.48)).add(time.mul(0.011).mul(motionStrength));
   const mistNoise = primaryFlow.sin().mul(0.2).add(crossFlow.sin().mul(0.2)).add(detailFlow.sin().mul(0.1)).add(0.5);
-  const maskTextureNode = texture(maskTexture, uv());
-  const mask = maskTextureNode.r;
+  const worldUv = positionWorld.xz.sub(bounds.xy).div(bounds.zw);
+  const inside = worldUv.x
+    .greaterThanEqual(0)
+    .and(worldUv.x.lessThanEqual(1))
+    .and(worldUv.y.greaterThanEqual(0))
+    .and(worldUv.y.lessThanEqual(1));
+  const maskTextureNode = texture(maskTexture, vec2(worldUv.x, float(1).sub(worldUv.y)));
+  const exploration = inside.select(maskTextureNode.r, float(0));
+  const row = positionWorld.z.div(1.5);
+  const oddRow = row.add(0.5).floor().mod(2).abs();
+  const col = positionWorld.x.div(Math.sqrt(3)).add(oddRow.mul(0.5));
+  const loadedUv = vec2(col, row).sub(streamCoverage.bounds.xy).div(streamCoverage.bounds.zw);
+  const loaded = texture(streamCoverage.texture, vec2(loadedUv.x, float(1).sub(loadedUv.y))).r;
+  const mask = exploration.max(float(1).sub(loaded).mul(streaming));
   // Compress the veil toward unexplored ground so known coastlines and units stay legible.
   // Both treatments share the same authoritative mask and fully covered interior.
   const edgeBand = smoothstep(0.18, 0.55, mask).mul(float(1).sub(smoothstep(0.6, 0.94, mask)));
@@ -320,6 +368,8 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   const deepFog = smoothstep(0.9, 0.985, mask);
   material.opacityNode = mix(frontierOpacity, float(TERRAIN_DEEP_FOG_OPACITY), deepFog);
   return {
+    bounds,
+    streaming,
     clarity,
     material,
     maskTexture: maskTextureNode,

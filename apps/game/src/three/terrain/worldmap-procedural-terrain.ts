@@ -142,7 +142,7 @@ class SupersededPresentationError extends Error {
 
 export class WorldmapProceduralTerrain {
   readonly object3d: Group;
-  private readonly terrain = new ProceduralTerrain();
+  private readonly terrain = new ProceduralTerrain({ streaming: true });
   private readonly preparedBySignature = new Map<string, PreparedTerrainPage>();
   private readonly pendingBySignature = new Map<string, Promise<PreparedTerrainPage>>();
   private readonly presentMetrics: TerrainPresentMetrics = {
