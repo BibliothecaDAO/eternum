@@ -31,8 +31,8 @@ describe("renderer effects runtime", () => {
     const runtime = createRuntime(backend, scenes);
 
     await runtime.applyEnvironment();
-    runtime.setupPostProcessingEffects(createRenderProfile("quality").visuals);
-    runtime.applyRenderVisualProfile(createRenderProfile("battery").visuals);
+    runtime.setupPostProcessingEffects(createRenderProfile("uncapped").visuals);
+    runtime.applyRenderVisualProfile(createRenderProfile("capped").visuals);
 
     expect(backend.applyEnvironment).toHaveBeenCalledWith({
       fastTravelScene: scenes.fastTravelScene,

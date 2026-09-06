@@ -11,7 +11,7 @@ import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { renderProfile, type RenderMode, writeRenderMode } from "@/three/render-profile";
+import { RENDER_MODE_OPTIONS, RENDER_MODE_DESCRIPTION, renderProfile, writeRenderMode } from "@/three/render-profile";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
@@ -22,11 +22,6 @@ import { addressToNumber } from "@/ui/utils/utils";
 import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
 import { useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-
-const RENDER_MODE_OPTIONS: { label: string; mode: RenderMode }[] = [
-  { label: "Quality", mode: "quality" },
-  { label: "Battery", mode: "battery" },
-];
 
 export const SETTINGS_POPOVER_ID = "settings";
 
@@ -159,9 +154,10 @@ const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) 
             {RENDER_MODE_OPTIONS.map(({ label, mode: nextMode }) => (
               <Button
                 key={nextMode}
-                disabled={renderProfile.mode === nextMode}
+                aria-pressed={renderProfile.mode === nextMode}
                 variant={renderProfile.mode === nextMode ? "success" : "outline"}
                 onClick={() => {
+                  if (renderProfile.mode === nextMode) return;
                   writeRenderMode(localStorage, nextMode);
                   window.location.reload();
                 }}
@@ -170,9 +166,7 @@ const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) 
               </Button>
             ))}
           </div>
-          <p className="text-xs leading-relaxed text-gray-gold/70">
-            Battery reduces idle and distant update frequency without changing visual detail.
-          </p>
+          <p className="text-xs leading-relaxed text-gray-gold/70">{RENDER_MODE_DESCRIPTION}</p>
           <WorldAppearanceControls />
           <RendererDebugControl className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
         </section>

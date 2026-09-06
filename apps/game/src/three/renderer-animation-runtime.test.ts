@@ -1,23 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createRendererFrameFailureCircuit, resolveRendererPacedFps, runRendererAnimationTick } =
-  await import("./renderer-animation-runtime");
-
-describe("resolveRendererPacedFps", () => {
-  it("caps every mode at 60fps and drops idle Battery to 30", () => {
-    const quality = { pacing: { idleAfterMs: 2_000, idleFps: null, maxFps: 60 } };
-    const battery = { pacing: { idleAfterMs: 2_000, idleFps: 30, maxFps: 60 } };
-
-    expect(resolveRendererPacedFps({ currentTime: 10_000, lastInteractionTime: 0, profile: quality })).toBe(60);
-    expect(resolveRendererPacedFps({ currentTime: 1_999, lastInteractionTime: 0, profile: battery })).toBe(60);
-    expect(resolveRendererPacedFps({ currentTime: 2_000, lastInteractionTime: 0, profile: battery })).toBe(30);
-    expect(resolveRendererPacedFps({ currentTime: 2_001, lastInteractionTime: 2_000, profile: battery })).toBe(60);
-  });
-});
+const { createRendererFrameFailureCircuit, runRendererAnimationTick } = await import("./renderer-animation-runtime");
 
 describe("runRendererAnimationTick", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it.each(
+    [60, 120, 144, 165].flatMap((refreshRate) => [30, 60, null].map((targetFPS) => ({ refreshRate, targetFPS }))),
+  )("preserves elapsed animation time at $targetFPS FPS on a $refreshRate Hz display", ({ targetFPS, refreshRate }) => {
+    let timing = { lastTime: 100, lastFrameTime: 100 };
+    let elapsed = 0;
+    let frames = 0;
+    let renderedAt = 100;
+    for (let tick = 1; tick <= refreshRate * 10; tick++) {
+      const now = 100 + (tick * 1000) / refreshRate;
+      timing = runRendererAnimationTick({
+        getCurrentTime: () => now,
+        getCycleProgress: () => 0.5,
+        isDestroyed: false,
+        isLabelRuntimeReady: true,
+        ...timing,
+        targetFPS,
+        requestNextFrame: () => {},
+        renderFrame: ({ deltaTime }) => {
+          elapsed += deltaTime;
+          renderedAt = now;
+          frames++;
+          return true;
+        },
+      });
+    }
+    expect(frames).toBeGreaterThanOrEqual((targetFPS ?? refreshRate) * 10 - 1);
+    expect(frames).toBeLessThanOrEqual((targetFPS ?? refreshRate) * 10);
+    expect(elapsed).toBeCloseTo((renderedAt - 100) / 1000, 8);
   });
 
   it("stops the loop immediately when the renderer is destroyed", () => {
@@ -31,13 +48,14 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: true,
       isLabelRuntimeReady: true,
       lastTime: 42,
+      lastFrameTime: 42,
       logDestroyed,
       renderFrame,
       requestNextFrame,
       targetFPS: null,
     });
 
-    expect(lastTime).toBe(42);
+    expect(lastTime.lastTime).toBe(42);
     expect(logDestroyed).toHaveBeenCalledWith("GameRenderer destroyed, stopping animation loop");
     expect(renderFrame).not.toHaveBeenCalled();
     expect(requestNextFrame).not.toHaveBeenCalled();
@@ -53,12 +71,13 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: false,
       isLabelRuntimeReady: false,
       lastTime: 25,
+      lastFrameTime: 25,
       renderFrame,
       requestNextFrame,
       targetFPS: null,
     });
 
-    expect(lastTime).toBe(25);
+    expect(lastTime.lastTime).toBe(25);
     expect(renderFrame).not.toHaveBeenCalled();
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
   });
@@ -73,12 +92,13 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: false,
       isLabelRuntimeReady: true,
       lastTime: 0,
+      lastFrameTime: 0,
       renderFrame,
       requestNextFrame,
       targetFPS: 30,
     });
 
-    expect(lastTime).toBe(100);
+    expect(lastTime.lastTime).toBe(100);
     expect(renderFrame).not.toHaveBeenCalled();
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
   });
@@ -96,6 +116,7 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: false,
       isLabelRuntimeReady: true,
       lastTime: 100,
+      lastFrameTime: 100,
       onFrameSuccess,
       renderFrame,
       requestNextFrame,
@@ -104,7 +125,7 @@ describe("runRendererAnimationTick", () => {
       updateStatsPanel,
     });
 
-    expect(lastTime).toBe(116);
+    expect(lastTime.lastTime).toBe(116);
     expect(updateStatsPanel).toHaveBeenCalledTimes(1);
     expect(updateControls).toHaveBeenCalledTimes(1);
     expect(renderFrame).toHaveBeenCalledWith({
@@ -128,6 +149,7 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: false,
       isLabelRuntimeReady: true,
       lastTime: 100,
+      lastFrameTime: 100,
       onFrameError,
       onFrameSuccess,
       renderFrame: vi.fn(() => {
@@ -137,7 +159,7 @@ describe("runRendererAnimationTick", () => {
       targetFPS: null,
     });
 
-    expect(lastTime).toBe(116);
+    expect(lastTime.lastTime).toBe(116);
     expect(onFrameError).toHaveBeenCalledWith(frameError);
     expect(onFrameSuccess).not.toHaveBeenCalled();
     expect(requestNextFrame).toHaveBeenCalledTimes(1);
@@ -153,6 +175,7 @@ describe("runRendererAnimationTick", () => {
       isDestroyed: false,
       isLabelRuntimeReady: true,
       lastTime: 100,
+      lastFrameTime: 100,
       onFrameError: () => {
         throw new Error("reporter failed");
       },
@@ -163,7 +186,7 @@ describe("runRendererAnimationTick", () => {
       targetFPS: null,
     });
 
-    expect(lastTime).toBe(116);
+    expect(lastTime.lastTime).toBe(116);
     expect(requestNextFrame).toHaveBeenCalledOnce();
     expect(errorSpy).toHaveBeenCalledWith("[GameRenderer] Failed to report renderer frame error", expect.any(Error));
   });

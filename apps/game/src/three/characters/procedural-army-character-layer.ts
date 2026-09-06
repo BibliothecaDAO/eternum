@@ -128,12 +128,15 @@ export class ProceduralArmyCharacterLayer {
   private readonly hitTargetGeometry = new BoxGeometry(1, 1, 1);
   private readonly hitTargetMaterial = new MeshBasicMaterial({ colorWrite: false, depthWrite: false });
   private readonly raycastHits: Intersection[] = [];
-  private readonly separationSimulation = new ProceduralSeparationSimulation();
+  private readonly collisionBudget: ProceduralCollisionBudget = createProceduralCollisionBudget("quality");
+  private readonly separationSimulation = new ProceduralSeparationSimulation({
+    maxNeighborsPerBody: this.collisionBudget.maxNeighborsPerBody,
+    maxPairResolutions: this.collisionBudget.maxPairResolutions,
+  });
   private readonly impactRegistry = new CombatImpactRegistry();
   private readonly expectedProjectileImpacts = new Map<number, number>();
   private readonly collisionCandidates: ProceduralArmyCharacterPresentation[] = [];
   private readonly separationInputs: ProceduralSeparationInput[] = [];
-  private collisionBudget: ProceduralCollisionBudget = createProceduralCollisionBudget("quality");
   private readonly projectileTargetCenter = new Vector3();
   private readonly projectileHitPoint = new Vector3();
   private readonly projectileImpactDirection = new Vector3();
@@ -334,18 +337,6 @@ export class ProceduralArmyCharacterLayer {
         [...this.actors.values()].filter(({ actor }) => actor.mode === "sinking").length +
         this.defeatedActors.filter(({ actor }) => actor.mode === "sinking").length,
     };
-  }
-
-  public setCollisionBudget(budget: ProceduralCollisionBudget): void {
-    this.collisionBudget = { ...budget };
-    this.separationSimulation.updateConfig({
-      maxNeighborsPerBody: budget.maxNeighborsPerBody,
-      maxPairResolutions: budget.maxPairResolutions,
-    });
-    while (this.defeatedActors.length > Math.max(1, budget.maxActiveRagdolls)) {
-      const defeated = this.defeatedActors.shift();
-      if (defeated) this.disposeDefeatedActor(defeated);
-    }
   }
 
   public getCollisionSnapshots(): ProceduralSeparationBodySnapshot[] {

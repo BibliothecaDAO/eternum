@@ -8,7 +8,7 @@ describe("renderer effects bridge runtime", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("creates the effects runtime lazily and delegates setup, environment, and profile calls", () => {
-    const renderVisuals = createRenderProfile("quality").visuals;
+    const renderVisuals = createRenderProfile("uncapped").visuals;
     const effectsRuntime = createEffectsRuntimeStub();
     const createEffectsRuntime = vi.fn(() => effectsRuntime);
     const runtime = createRendererEffectsBridgeRuntime({
@@ -33,7 +33,7 @@ describe("renderer effects bridge runtime", () => {
     const createEffectsRuntime = vi.fn(() => effectsRuntime);
     const runtime = createRendererEffectsBridgeRuntime({
       createEffectsRuntime,
-      resolveRenderVisualProfile: () => createRenderProfile("quality").visuals,
+      resolveRenderVisualProfile: () => createRenderProfile("uncapped").visuals,
       resolveWeatherState: () => weatherState,
     });
 

@@ -29,7 +29,7 @@ export class ShadowRefreshPolicy {
     this.dirty = true;
   }
 
-  consumeRefresh(deltaMs: number, minimumIntervalMs: number): boolean {
+  consumeRefresh(deltaMs: number, minimumIntervalMs = 100): boolean {
     this.elapsedSinceRefreshMs += deltaMs;
     if (!this.dirty || (!this.lightMoved && this.elapsedSinceRefreshMs < minimumIntervalMs)) {
       return false;
