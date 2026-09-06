@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Smoother World Entry and Exploration",
+    description:
+      "Enter the world through one loading screen. Terrain loads across your visible view with a margin beyond it, adapting as you pan, zoom, or resize. Ready pages appear progressively with their fog while nearby terrain stays visible. Small plants sway from their roots, and switching between world and local views keeps foliage intact.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-09-06",
     title: "Closer Settlements, Richer Ground",
     description:
       "Local view opens closer to your settlement, with building details at the screen edge and production status updated from live game state. Opening a local link selects the correct realm. Close forests gain canopy shadows and circling birds, sand and snow show wind ripples, and clear fog and reduced motion settings also apply to local ambience.",

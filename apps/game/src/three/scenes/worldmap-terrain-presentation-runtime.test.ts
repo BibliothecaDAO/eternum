@@ -95,10 +95,10 @@ describe("worldmap terrain presentation runtime", () => {
       focusPoint: { x: -2.61, z: -2.49 },
       generation: 1,
       hexSize: 1,
-      marginPages: 0,
+      paddingHexes: 0,
+      groundBounds: { minX: -3, maxX: -2, minZ: -3, maxZ: -2 },
       pageOrigin: { col: 0, row: 0 },
       pageSize: { width: 1, height: 1 },
-      renderSize: { width: 1, height: 1 },
     });
 
     expect(window.centerPageKey).toBe("-1,-1");

@@ -90,22 +90,4 @@ describe("play-asset-manifest", () => {
     expect(dashboardAssets).not.toContain("/images/logos/braavos.svg");
     expect(dashboardAssets).not.toContain("/images/logos/daydreams.png");
   });
-
-  it("keeps the entry-only manifest free of dashboard-critical shared models", async () => {
-    const { ENTRY_ONLY_PLAY_ASSETS } = await import("./play-asset-manifest");
-    const { SHARED_ARMY_MODEL_PATHS } = await import("@/three/constants/army-constants");
-    const { SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } = await import("@/three/constants/scene-constants");
-
-    SHARED_ARMY_MODEL_PATHS.forEach((assetPath) => {
-      expect(ENTRY_ONLY_PLAY_ASSETS).not.toContain(assetPath);
-    });
-
-    SHARED_BUILDING_MODEL_PATHS.forEach((assetPath) => {
-      expect(ENTRY_ONLY_PLAY_ASSETS).not.toContain(assetPath);
-    });
-
-    SHARED_CHEST_MODEL_PATHS.forEach((assetPath) => {
-      expect(ENTRY_ONLY_PLAY_ASSETS).not.toContain(assetPath);
-    });
-  });
 });

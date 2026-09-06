@@ -27,7 +27,6 @@ import type {
 } from "./terrain-types";
 import type { TerrainPropLod } from "./terrain-prop-catalog";
 import type { TerrainQualityTier } from "./terrain-quality";
-import type { TerrainFogMask } from "./terrain-fog-mask";
 import type { TerrainFogFieldStats } from "./terrain-fog-field";
 import type { TerrainMovementInteraction } from "./terrain-movement-effects";
 
@@ -46,6 +45,9 @@ export interface WorldmapProceduralPresentationInput {
   pageOrigin: { col: number; row: number };
   pageWidth: number;
   priorityPageKeys?: readonly string[];
+  visiblePageKeys?: readonly string[];
+  criticalPageKeys?: readonly string[];
+  onCriticalPagesReady?: () => void;
   propDensityMultiplier?: number;
   roadAnchors?: readonly TerrainRoadAnchor[];
   settlementAnchors?: readonly TerrainSettlementAnchor[];
@@ -66,7 +68,6 @@ export interface WorldmapProceduralPresentationDiagnostics extends TerrainPresen
 export interface TerrainPresentMetrics {
   presentFogMaxMs: number;
   presentPageTaskMaxMs: number;
-  presentPageWritesMaxMs: number;
   presentRequestsMaxMs: number;
   presentTaskMaxMs: number;
   presentTasks: number;
@@ -76,21 +77,16 @@ type TerrainPresentStep =
   | "terrain:present:partition"
   | "terrain:present:roads"
   | "terrain:present:request"
-  | "terrain:present:release"
   | "terrain:present:page"
-  | "terrain:present:page-writes"
   | "terrain:present:fog";
 
-type TerrainPresentStepMetric =
-  | "presentFogMaxMs"
-  | "presentPageTaskMaxMs"
-  | "presentPageWritesMaxMs"
-  | "presentRequestsMaxMs";
+type TerrainPresentStepMetric = "presentFogMaxMs" | "presentPageTaskMaxMs" | "presentRequestsMaxMs";
 
 interface PresentationRun {
   readonly revision: number;
   readonly scheduler: FrameBudgetWorkScheduler | undefined;
   taskMs: number;
+  criticalPagesReady: boolean;
 }
 
 interface TerrainPagePreparation {
@@ -115,7 +111,6 @@ interface WorldmapTerrainPagePartition {
   cells: TerrainCellInput[];
   cellsByKey: ReadonlyMap<number, TerrainCellInput>;
   pages: WorldmapTerrainPageCells[];
-  visibleCellCount: number;
 }
 
 interface WorldBounds {
@@ -133,9 +128,7 @@ const ROAD_PAGE_PADDING = 1.5;
 const PRESENT_STEP_METRIC: Record<TerrainPresentStep, TerrainPresentStepMetric> = {
   "terrain:present:fog": "presentFogMaxMs",
   "terrain:present:page": "presentPageTaskMaxMs",
-  "terrain:present:page-writes": "presentPageWritesMaxMs",
   "terrain:present:partition": "presentRequestsMaxMs",
-  "terrain:present:release": "presentPageTaskMaxMs",
   "terrain:present:request": "presentRequestsMaxMs",
   "terrain:present:roads": "presentRequestsMaxMs",
 };
@@ -155,7 +148,6 @@ export class WorldmapProceduralTerrain {
   private readonly presentMetrics: TerrainPresentMetrics = {
     presentFogMaxMs: 0,
     presentPageTaskMaxMs: 0,
-    presentPageWritesMaxMs: 0,
     presentRequestsMaxMs: 0,
     presentTaskMaxMs: 0,
     presentTasks: 0,
@@ -171,7 +163,7 @@ export class WorldmapProceduralTerrain {
 
   /**
    * Presents the composite as a chain of critical-lane tasks — partition, roads, one request per page, worker
-   * builds, release, one commit per changed page, fog — so no single task outgrows the frame budget. Without a
+   * builds, then progressive page commits with matching fog. Without a
    * scheduler every step runs inline. Resolves null once a newer presentation, `clear`, or `dispose` supersedes
    * this one, or the queue is disposed; pages committed before that stay valid until a later presentation
    * replaces or releases them.
@@ -237,6 +229,10 @@ export class WorldmapProceduralTerrain {
     return { ...this.presentMetrics };
   }
 
+  getPresentedPageKeys(): string[] {
+    return this.terrain.getPresentedPages().map((page) => page.request.pageKey);
+  }
+
   getVisibleCellCount(): number {
     return this.visibleCellCount;
   }
@@ -272,47 +268,86 @@ export class WorldmapProceduralTerrain {
     );
     const preparations = prioritizePagePreparations(unorderedPreparations, input.priorityPageKeys);
     const reuse = this.countPageReuse(preparations);
+    const desiredKeys = new Set(preparations.map(({ request }) => request.pageKey));
+    const visiblePages = new Map(
+      this.terrain
+        .getPresentedPages()
+        .filter((page) => desiredKeys.has(page.request.pageKey))
+        .map((page) => [page.request.pageKey, page]),
+    );
     const preparedPages: PreparedTerrainPage[] = [];
+    this.notifyCriticalPagesReady(run, input, preparations);
+    let commitMs = 0;
+    // New camera coverage streams immediately. Replacements of existing pages commit together, so one game
+    // update affecting a shared edge or settlement never exposes a partially updated result.
     for (const preparation of preparations) {
       this.requireCurrent(run);
-      preparedPages.push(await this.resolvePreparedPage(preparation));
+      const prepared = await this.resolvePreparedPage(preparation);
+      this.requireCurrent(run);
+      preparedPages.push(prepared);
+      if (!visiblePages.has(prepared.request.pageKey)) {
+        visiblePages.set(prepared.request.pageKey, prepared);
+        const result = await this.commitPreparedPages(run, Array.from(visiblePages.values()));
+        commitMs += result.commitMs;
+        this.notifyCriticalPagesReady(run, input, preparations);
+      }
     }
-    this.requireCurrent(run);
-    const fogMask = await this.terrain.prepareFogMaskAsync(preparedPages);
-    this.requireCurrent(run);
-    const presentation = await this.commitPreparedPages(run, preparedPages, fogMask);
-    this.visibleCellCount = partition.visibleCellCount;
+    const presentation = await this.commitPreparedPages(run, preparedPages);
+    this.notifyCriticalPagesReady(run, input, preparations);
     return {
       ...presentation,
       ...reuse,
       ...summarizePreparedPages(preparedPages),
+      commitMs: commitMs + presentation.commitMs,
       preparedCachePages: this.preparedBySignature.size,
     };
   }
 
-  /** Release, then every changed page, then fog — queued together so the lane drains them in that order. */
+  private notifyCriticalPagesReady(
+    run: PresentationRun,
+    input: WorldmapProceduralPresentationInput,
+    preparations: readonly TerrainPagePreparation[],
+  ): void {
+    if (run.criticalPagesReady || !input.onCriticalPagesReady || !input.criticalPageKeys?.length) return;
+    const ready = input.criticalPageKeys.every((key) => {
+      const preparation = preparations.find(({ request }) => request.pageKey === key);
+      const prepared = preparation && this.preparedBySignature.get(preparation.signature);
+      return prepared !== undefined && this.terrain.isPagePresented(prepared);
+    });
+    if (!ready) return;
+    run.criticalPagesReady = true;
+    input.onCriticalPagesReady();
+  }
+
+  /** Prepare the matching mask before swapping geometry, props, and fog in one visible step. */
   private async commitPreparedPages(
     run: PresentationRun,
     preparedPages: PreparedTerrainPage[],
-    fogMask: TerrainFogMask | null,
   ): Promise<TerrainPresentationDiagnostics & { commitMs: number }> {
-    const taskMsBeforeCommit = run.taskMs;
+    const fogMask = await this.terrain.prepareFogMaskAsync(preparedPages);
+    this.requireCurrent(run);
     const changedPages = preparedPages.filter((page) => !this.terrain.isPagePresented(page));
-    const release = this.runStep(run, "terrain:present:release", () => this.terrain.beginPresentation(preparedPages));
-    const pages = changedPages.flatMap((page) => [
-      this.runStep(run, "terrain:present:page", () => this.terrain.presentPageGeometry(page)),
-      this.runStep(run, "terrain:present:page-writes", () => this.terrain.presentPageWrites(page)),
-    ]);
-    const presentation = this.runStep(run, "terrain:present:fog", () =>
-      this.terrain.finishPresentation(preparedPages, fogMask),
+    const taskMsBeforeCommit = run.taskMs;
+    const presentation = await this.runStep(
+      run,
+      changedPages.length ? "terrain:present:page" : "terrain:present:fog",
+      () => {
+        this.terrain.beginPresentation(preparedPages);
+        changedPages.forEach((page) => this.terrain.presentPage(page));
+        const result = this.terrain.finishPresentation(preparedPages, fogMask);
+        this.visibleCellCount = preparedPages.reduce(
+          (count, page) => count + page.request.cells.filter((cell) => cell.explored).length,
+          0,
+        );
+        return result;
+      },
     );
-    await Promise.all([release, ...pages, presentation]);
-    return { ...(await presentation), commitMs: run.taskMs - taskMsBeforeCommit };
+    return { ...presentation, commitMs: run.taskMs - taskMsBeforeCommit };
   }
 
   private beginPresentationRun(scheduler: FrameBudgetWorkScheduler | undefined): PresentationRun {
     this.presentationRevision += 1;
-    return { revision: this.presentationRevision, scheduler, taskMs: 0 };
+    return { revision: this.presentationRevision, scheduler, taskMs: 0, criticalPagesReady: false };
   }
 
   private runStep<T>(run: PresentationRun, step: TerrainPresentStep, work: () => T): Promise<T> {
@@ -432,20 +467,17 @@ function partitionWorldmapTerrainPages(input: WorldmapProceduralPresentationInpu
   const cells = input.cells.map(toTerrainCell);
   const pagesByKey = new Map<number, WorldmapTerrainPageCells>();
   const cellsByKey = new Map<number, TerrainCellInput>();
-  let visibleCellCount = 0;
   // Bucketing is linear; each page sorts its own cells inside its request task.
   for (const cell of cells) {
     resolvePageCells(pagesByKey, cell, input).cells.push(cell);
     cellsByKey.set(hexCellKey(cell.col, cell.row), cell);
-    if (cell.explored) visibleCellCount += 1;
   }
   return {
     cells,
     cellsByKey,
-    pages: Array.from(pagesByKey.values()).toSorted(
-      (left, right) => left.startRow - right.startRow || left.startCol - right.startCol,
-    ),
-    visibleCellCount,
+    pages: Array.from(pagesByKey.values())
+      .filter((page) => !input.visiblePageKeys || input.visiblePageKeys.includes(page.pageKey))
+      .toSorted((left, right) => left.startRow - right.startRow || left.startCol - right.startCol),
   };
 }
 

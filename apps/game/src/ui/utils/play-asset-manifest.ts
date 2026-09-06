@@ -86,5 +86,3 @@ export const DASHBOARD_SHARED_PLAY_IMAGE_ASSETS = Object.freeze([
   "/image-icons/relics.png",
   "/image-icons/latest-updates.png",
 ]);
-
-export const ENTRY_ONLY_PLAY_ASSETS = Object.freeze([] as string[]);

@@ -33,12 +33,10 @@ interface WorldChunkConfig {
     rollingWindowEnabled: boolean;
     /** Visual-only terrain page size, independent from authoritative chunk topology */
     visualPageSize: { width: number; height: number };
-    /** Number of visual pages retained around the current camera render window */
-    viewportMarginPages: number;
+    /** Extra hex rows/columns beyond the camera ground footprint, warmed before they enter view */
+    viewportPaddingHexes: number;
     /** Max visual pages composed into biome meshes */
     maxCompositePages: number;
-    /** Missing critical pages to build synchronously per camera window update */
-    criticalPageImmediateBudget: number;
     /** How long visual pages outside the active window remain available */
     retainedPageMs: number;
     /** Camera sampling throttle for rolling terrain updates */
@@ -81,9 +79,8 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
       width: 24,
       height: 24,
     },
-    viewportMarginPages: 1,
+    viewportPaddingHexes: 4,
     maxCompositePages: 16,
-    criticalPageImmediateBudget: 1,
     retainedPageMs: 350,
     cameraSampleThrottleMs: 66,
     provisionalShellEnabled: true,

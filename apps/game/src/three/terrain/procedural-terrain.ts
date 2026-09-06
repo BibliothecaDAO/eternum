@@ -37,6 +37,7 @@ import type {
 } from "./terrain-types";
 
 interface PresentedTerrainPage {
+  prepared: PreparedTerrainPage;
   field: TerrainField;
   fingerprint: string;
   group: Group;
@@ -274,6 +275,10 @@ export class ProceduralTerrain {
     this.releaseDroppedPages(preparedPages);
   }
 
+  getPresentedPages(): PreparedTerrainPage[] {
+    return Array.from(this.pages.values(), (page) => page.prepared);
+  }
+
   /** Whether this page is already on screen with this fingerprint, so presenting it again is a no-op. */
   isPagePresented(preparedPage: PreparedTerrainPage): boolean {
     return this.pages.get(preparedPage.request.pageKey)?.fingerprint === preparedPage.fingerprint;
@@ -382,6 +387,7 @@ export class ProceduralTerrain {
     return {
       field,
       fingerprint: preparedPage.fingerprint,
+      prepared: preparedPage,
       group,
       propInstances: preparedPage.propInstances,
     };

@@ -15,7 +15,6 @@ export type WorldmapRenderDurationMetric =
   | "presentationSkewMs"
   | "frameBudgetLongTaskMs"
   | "visualTerrainWindowMs"
-  | "criticalTerrainPagesMs"
   | "criticalTerrainPageMs"
   | "workerFindPath"
   | "createPath";
@@ -160,7 +159,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     presentationSkewMs: createDurationStats(),
     frameBudgetLongTaskMs: createDurationStats(),
     visualTerrainWindowMs: createDurationStats(),
-    criticalTerrainPagesMs: createDurationStats(),
     criticalTerrainPageMs: createDurationStats(),
     workerFindPath: createDurationStats(),
     createPath: createDurationStats(),

@@ -1,5 +1,5 @@
-import { BufferAttribute, InstancedMesh, Matrix4 } from "three";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { BufferAttribute, InstancedMesh, Matrix4, Mesh } from "three";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { TERRAIN_PROP_ARCHETYPE_IDS, type TerrainPropArchetypeId } from "./terrain-prop-catalog";
 import { TERRAIN_PROP_PAGE_SLOT_CAPACITY, TERRAIN_PROP_POOL_PAGE_SLOTS, TerrainPropPools } from "./terrain-prop-pools";
@@ -7,7 +7,11 @@ import type { TerrainPropInstance } from "./terrain-types";
 
 vi.mock("./terrain-prop-asset-cache", async () => {
   const { createTerrainPropCatalogFixture } = await import("./verification/terrain-prop-catalog-fixture");
-  return { loadTerrainPropCatalog: () => Promise.resolve({ scene: createTerrainPropCatalogFixture() }) };
+  const scene = createTerrainPropCatalogFixture();
+  for (const lod of ["near", "far"]) {
+    (scene.getObjectByName(`grass-tuft-${lod}`) as Mesh).geometry.scale(0.12, 0.12, 0.12);
+  }
+  return { loadTerrainPropCatalog: () => Promise.resolve({ scene }) };
 });
 
 const MATRIX_FLOATS = 16;
@@ -17,6 +21,43 @@ describe("TerrainPropPools", () => {
 
   beforeAll(async () => {
     pools = await TerrainPropPools.load();
+  });
+  afterAll(() => pools.dispose());
+
+  it("normalizes grass bend from root to tip using the plant’s actual height", () => {
+    const bend = poolMesh(pools, "grass-tuft").geometry.getAttribute("terrainPropBend");
+    const weights = Array.from({ length: bend.count }, (_, index) => bend.getX(index));
+    expect(Math.min(...weights)).toBe(0);
+    expect(Math.max(...weights)).toBe(1);
+    expect(bend.getY(0)).toBeCloseTo(0.12);
+  });
+
+  it("keeps world and local instance data isolated when they load the same cached catalog", async () => {
+    const world = await TerrainPropPools.load();
+    const local = await TerrainPropPools.load();
+    try {
+      const worldTree = poolMesh(world, "broadleaf");
+      const localTree = poolMesh(local, "broadleaf");
+      expect(worldTree.geometry).not.toBe(localTree.geometry);
+      expect(ecologyAttribute(worldTree)).not.toBe(ecologyAttribute(localTree));
+      world.writePage("forest", instances("broadleaf", 1));
+      local.writePage("snow", [
+        { ...instances("broadleaf", 1)[0], appearance: { moss: 0, snow: 1, tint: [1, 1, 1], windAmplitude: 0 } },
+      ]);
+      expect(ecologyAttribute(worldTree).getZ(0)).toBe(0);
+      expect(ecologyAttribute(localTree).getZ(0)).toBe(1);
+      local.setLod("far");
+      const disposeFar = vi.spyOn(localTree.geometry, "dispose");
+      local.dispose();
+      expect(disposeFar).toHaveBeenCalledOnce();
+      world.setLod("far");
+      expect(ecologyAttribute(worldTree).getZ(0)).toBe(0);
+      world.setLod("near");
+      expect(ecologyAttribute(worldTree).getZ(0)).toBe(0);
+    } finally {
+      world.dispose();
+      local.dispose();
+    }
   });
 
   it("sizes every pool as one fixed slot per composed page and never grows it", () => {

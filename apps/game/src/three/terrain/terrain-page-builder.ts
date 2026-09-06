@@ -96,8 +96,8 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const propInstances = prepareTerrainPropInstances(request, field);
   const shroudInstances = prepareTerrainShroudInstances(request, field);
   const geometryBytes = countGeometryBytes(buffers) + (waterBuffers ? countGeometryBytes(waterBuffers) : 0);
-  const prepareMs = performance.now() - startedAt;
   const fingerprint = fingerprintPreparedPage(request, buffers, waterBuffers, propInstances, shroudInstances);
+  const prepareMs = performance.now() - startedAt;
 
   return {
     buffers,

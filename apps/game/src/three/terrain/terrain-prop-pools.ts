@@ -1,7 +1,9 @@
 import {
   Box3,
+  BufferGeometry,
   Color,
   DynamicDrawUsage,
+  Float32BufferAttribute,
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
@@ -20,7 +22,6 @@ import {
   instanceIndex,
   mix,
   normalGeometry,
-  positionGeometry,
   positionLocal,
   smoothstep,
   time,
@@ -101,6 +102,7 @@ interface PropPoolSlot {
 interface PropPool {
   catalogRadius: number;
   ecology: InstancedBufferAttribute;
+  geometries: Record<TerrainPropLod, BufferGeometry>;
   mesh: InstancedMesh;
   slotCapacity: number;
   slots: PropPoolSlot[];
@@ -151,7 +153,7 @@ export class TerrainPropPools {
     if (lod === this.lod) return;
     this.lod = lod;
     this.pools.forEach((pool, archetype) => {
-      pool.mesh.geometry = this.requireCatalogMesh(archetype, lod).geometry;
+      pool.mesh.geometry = pool.geometries[lod];
       pool.mesh.castShadow = lod === "near" && getTerrainPropRole(archetype) === "canopy";
       pool.mesh.visible = pool.mesh.count > 0 && isTerrainPropVisibleAtLod(archetype, lod);
     });
@@ -186,14 +188,10 @@ export class TerrainPropPools {
   }
 
   dispose(): void {
-    this.pools.forEach((pool, archetype) => {
-      for (const lod of ["near", "far"] as const) {
-        const geometry = this.requireCatalogMesh(archetype, lod).geometry;
-        if (geometry.getAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE) === pool.ecology) {
-          geometry.deleteAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE);
-        }
-      }
+    this.pools.forEach((pool) => {
       pool.mesh.dispose();
+      pool.geometries.near.dispose();
+      pool.geometries.far.dispose();
     });
     this.pools.clear();
     this.object3d.clear();
@@ -206,12 +204,12 @@ export class TerrainPropPools {
     const capacity = slotCapacity * TERRAIN_PROP_POOL_PAGE_SLOTS;
     const ecology = new InstancedBufferAttribute(new Float32Array(capacity * VEC3_FLOATS), VEC3_FLOATS);
     ecology.setUsage(DynamicDrawUsage);
-    for (const lod of ["near", "far"] as const) {
-      this.requireCatalogMesh(archetype, lod).geometry.setAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE, ecology);
-    }
-    const source = this.requireCatalogMesh(archetype, this.lod);
+    const geometries = {
+      near: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "near").geometry, ecology),
+      far: createOwnedPropGeometry(this.requireCatalogMesh(archetype, "far").geometry, ecology),
+    };
     const material = getTerrainPropRole(archetype) === "rigid" ? this.rigidMaterial : this.windMaterial;
-    const mesh = new InstancedMesh(source.geometry, material, capacity);
+    const mesh = new InstancedMesh(geometries[this.lod], material, capacity);
     mesh.name = `terrain-prop-pool:${archetype}`;
     mesh.count = 0;
     mesh.visible = false;
@@ -223,6 +221,7 @@ export class TerrainPropPools {
     this.pools.set(archetype, {
       catalogRadius: this.resolveMaximumCatalogMeshRadius(archetype),
       ecology,
+      geometries,
       mesh,
       slotCapacity,
       slots: Array.from({ length: TERRAIN_PROP_POOL_PAGE_SLOTS }, createEmptySlot),
@@ -384,12 +383,31 @@ function requireInstanceColor(mesh: InstancedMesh): InstancedBufferAttribute {
   return mesh.instanceColor;
 }
 
+function createOwnedPropGeometry(source: BufferGeometry, ecology: InstancedBufferAttribute): BufferGeometry {
+  // World and local scenes share the catalog, but own their instance attributes and GPU buffer lifetimes.
+  const geometry = source.clone();
+  geometry.computeBoundingBox();
+  const bounds = geometry.boundingBox!;
+  const height = bounds.max.y - bounds.min.y;
+  if (!(height > 0)) throw new Error(`Terrain prop geometry ${source.name} has no measurable height`);
+  const positions = geometry.getAttribute("position");
+  const bend = new Float32Array(positions.count * 2);
+  for (let index = 0; index < positions.count; index++) {
+    bend[index * 2] = (positions.getY(index) - bounds.min.y) / height;
+    bend[index * 2 + 1] = height;
+  }
+  geometry.setAttribute("terrainPropBend", new Float32BufferAttribute(bend, 2));
+  geometry.setAttribute(TERRAIN_PROP_ECOLOGY_ATTRIBUTE, ecology);
+  return geometry;
+}
+
 function createTerrainPropMaterial(
   animated: boolean,
   windStrength: UniformNode<"float", number> = uniform(0, "float"),
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
   const foliageWeight = attribute<"float">("_wind_weight", "float").clamp(0, 1);
+  const plant = attribute<"vec2">("terrainPropBend", "vec2");
   const ecology = attribute<"vec3">("terrainPropEcology", "vec3").clamp(0, 1);
   const verticality = normalGeometry.y.mul(normalGeometry.y).oneMinus().clamp(0, 1);
   const snowMask = ecology.z
@@ -403,14 +421,15 @@ function createTerrainPropMaterial(
   material.colorNode = mix(foliageColor, color("#d8e0df"), snowMask.mul(0.78));
   if (!animated) return material;
 
-  const heightMask = smoothstep(0.08, 1.1, positionGeometry.y);
+  const heightMask = smoothstep(0.05, 0.95, plant.x);
+  const amplitude = plant.y.mul(0.2).min(0.065);
   const phase = time
     .mul(0.72)
     .add(positionLocal.x.mul(0.41))
     .add(positionLocal.z.mul(0.57))
     .add(float(instanceIndex).mul(2.399));
-  const mainSway = phase.sin().mul(0.045);
-  const detailSway = phase.mul(1.73).add(positionGeometry.y.mul(2.4)).sin().mul(0.018);
+  const mainSway = phase.sin().mul(amplitude);
+  const detailSway = phase.mul(1.73).add(plant.x.mul(2.4)).sin().mul(amplitude).mul(0.35);
   const displacement = heightMask.mul(foliageWeight).mul(ecology.x).mul(windStrength);
   material.positionNode = positionLocal.add(vec3(mainSway.mul(displacement), 0, detailSway.mul(displacement)));
   return material;

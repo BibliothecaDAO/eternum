@@ -1,6 +1,6 @@
 import { settleWorldmapAsyncStage } from "./worldmap-async-timeout";
 
-export type WorldmapChunkPresentationPhase = "projection_sync" | "asset_prewarm";
+export type WorldmapChunkPresentationPhase = "projection_sync";
 
 export interface WorldmapChunkPresentationTimeoutInfo {
   chunkKey: string;
@@ -54,82 +54,24 @@ interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
 export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
   input: PrepareWorldmapChunkPresentationInput<TPreparedTerrain>,
 ): Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>> {
-  if (input.phaseTimeoutMs === undefined || input.phaseTimeoutMs <= 0) {
-    // Prewarm is an accelerator: its failure degrades to first-draw compiles, never to a chunk without terrain.
-    const [projectionSyncSucceeded] = await Promise.all([
-      input.projectionSyncPromise,
-      input.assetPrewarmPromise.catch(() => undefined),
-    ]);
-
-    if (!projectionSyncSucceeded) {
-      input.onChunkPrepared?.(input.chunkKey);
-      return {
-        projectionSyncSucceeded: false,
-        preparedTerrain: null,
-      };
-    }
-
-    const preparedTerrain = await input.prepareTerrainChunk(
-      input.startRow,
-      input.startCol,
-      input.renderSize.height,
-      input.renderSize.width,
-    );
-    input.onChunkPrepared?.(input.chunkKey);
-
-    return {
-      projectionSyncSucceeded: true,
-      preparedTerrain,
-    };
-  }
-
-  const resolvePhaseTimeout = (phase: WorldmapChunkPresentationPhase, timeoutMs: number) => {
-    input.onPhaseTimeout?.({
-      chunkKey: input.chunkKey,
-      phase,
-      timeoutMs,
-    });
-  };
-
-  const assetPrewarmResultPromise = settleWorldmapAsyncStage({
-    label: "asset_prewarm" as const,
-    promise: input.assetPrewarmPromise,
-    timeoutMs: input.phaseTimeoutMs,
-    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
-  });
-
-  const projectionSyncResultPromise = settleWorldmapAsyncStage({
+  // Models can compile concurrently; terrain only depends on authoritative tile projection.
+  void input.assetPrewarmPromise.catch(() => undefined);
+  const projection = await settleWorldmapAsyncStage({
     label: "projection_sync" as const,
     promise: input.projectionSyncPromise,
     timeoutMs: input.phaseTimeoutMs,
-    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("projection_sync", timeoutMs),
+    onTimeout: ({ timeoutMs }) =>
+      input.onPhaseTimeout?.({ chunkKey: input.chunkKey, phase: "projection_sync", timeoutMs }),
   });
-
-  const [assetPrewarmResult, projectionSyncResult] = await Promise.all([
-    assetPrewarmResultPromise,
-    projectionSyncResultPromise,
-  ]);
-
-  if (projectionSyncResult.status !== "resolved") {
+  if (projection.status !== "resolved" || !projection.value) {
     input.onChunkPrepared?.(input.chunkKey);
     return {
       projectionSyncSucceeded: false,
       preparedTerrain: null,
-      timedOutPhase: "projection_sync",
+      ...(projection.status === "timed_out" ? { timedOutPhase: "projection_sync" as const } : {}),
     };
   }
 
-  const projectionSyncSucceeded = projectionSyncResult.value;
-  if (!projectionSyncSucceeded) {
-    input.onChunkPrepared?.(input.chunkKey);
-    return {
-      projectionSyncSucceeded: false,
-      preparedTerrain: null,
-    };
-  }
-
-  // Prewarm is an accelerator: a timed-out or failed prewarm degrades to first-draw
-  // compiles, never to a chunk without terrain. The timeout trace above still fires.
   const preparedTerrain = await input.prepareTerrainChunk(
     input.startRow,
     input.startCol,
@@ -137,12 +79,7 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     input.renderSize.width,
   );
   input.onChunkPrepared?.(input.chunkKey);
-
-  return {
-    projectionSyncSucceeded: true,
-    preparedTerrain,
-    ...(assetPrewarmResult.status === "timed_out" ? { timedOutPhase: "asset_prewarm" as const } : {}),
-  };
+  return { projectionSyncSucceeded: true, preparedTerrain };
 }
 
 export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(

@@ -16,8 +16,8 @@ interface LoadingScreenProps {
 
 export const LoadingScreen = ({
   progress,
-  title = "Forging the Realm",
-  subtitle = "Summoning terrain, armies, and ancient trade routes.",
+  title = "Entering the World",
+  subtitle = "Connecting to the world…",
   currentTaskLabel,
   hideDebugPanel = false,
 }: LoadingScreenProps) => {

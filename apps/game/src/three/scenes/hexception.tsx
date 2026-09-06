@@ -209,6 +209,7 @@ export default class HexceptionScene extends HexagonScene {
   private structureUpdateSubscription: any | null = null;
   private buildingUpdateUnsubscribe: (() => void) | null = null;
   private isInitialized = false;
+  private localAssetsStarted = false;
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
   // Store Zustand unsubscribe functions to clean up on destroy
@@ -237,12 +238,6 @@ export default class HexceptionScene extends HexagonScene {
 
     this.proceduralTerrain = new ProceduralTerrain();
     this.scene.add(this.proceduralTerrain.object3d);
-    void this.proceduralTerrain.loadProps().catch((error) => {
-      console.warn("[Hexception] Optional procedural terrain props failed to load", error);
-    });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
-      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
-    });
     this.mode = getGameModeConfig();
     this.hoverLabelManager = new HexHoverLabel(this.scene);
     this.interactiveHexManager.setSurfaceVisibility(false);
@@ -250,8 +245,6 @@ export default class HexceptionScene extends HexagonScene {
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();
     this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
-
-    this.loadBuildingModels();
 
     this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
@@ -565,6 +558,18 @@ export default class HexceptionScene extends HexagonScene {
     return this.buildingPreview;
   }
 
+  private startLocalAssets() {
+    if (this.localAssetsStarted) return;
+    this.localAssetsStarted = true;
+    void this.proceduralTerrain.loadProps().catch((error) => {
+      console.warn("[Hexception] Optional procedural terrain props failed to load", error);
+    });
+    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
+      console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
+    });
+    this.loadBuildingModels();
+  }
+
   setup() {
     this.isEntered = false;
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
@@ -575,6 +580,7 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
+    this.startLocalAssets();
     this.selectRouteStructure(contractPosition);
     this.isEntered = true;
     this.bootstrapSceneOwnership();

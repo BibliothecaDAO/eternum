@@ -22,7 +22,7 @@ import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/g
 import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
 import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
-import { initializeGameRenderer } from "./game-renderer";
+import { prepareGameRenderer } from "./game-renderer";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
@@ -106,12 +106,17 @@ const runBootstrap = async ({
   verboseLog("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup(worldContext.chain, worldNamespace, profile.gameId ?? 0);
-  await runInitialWorldSync(setupResult, stores);
-  configureGameSystems(setupResult, worldContext.chain);
-  // From here on an empty keyed config lookup is a bug, not a boot race —
-  // make it loud (guardrail #2, AGENTS.md "No silent defaults").
-  configManager.markConfigSynced();
-  await startGameRenderer(setupResult);
+  const rendererSession = prepareGameRenderer(setupResult, DEV_MODE_ENABLED);
+  bootstrapSession.replaceRendererCleanup(rendererSession.cleanup);
+  try {
+    await runInitialWorldSync(setupResult, stores);
+    configureGameSystems(setupResult, worldContext.chain);
+    configManager.markConfigSynced();
+    await startGameRenderer(rendererSession.initialize);
+  } catch (error) {
+    rendererSession.cleanup();
+    throw error;
+  }
   return {
     context,
     profile,
@@ -258,7 +263,7 @@ const configureGameSystems = (setupResult: SetupResult, chain: Chain) => {
   configManager.setDojo(setupResult.components, ETERNUM_CONFIG({ chain, components: setupResult.components }));
 };
 
-const startGameRenderer = async (setupResult: SetupResult) => {
+const startGameRenderer = async (initialize: () => Promise<void>) => {
   // Renderer init = Three.js scene/shader/texture compilation + spatial
   // bounds subscription. Often the slowest single step on a cold reload, and
   // previously had no breadcrumb between `initial-sync-completed` and
@@ -266,10 +271,9 @@ const startGameRenderer = async (setupResult: SetupResult) => {
   // a stuck initial sync.
   const rendererInitStartedAt = performance.now();
   markGameEntryMilestone("renderer-init-started");
-  const cleanup = await initializeGameRenderer(setupResult, DEV_MODE_ENABLED);
+  await initialize();
   markGameEntryMilestone("renderer-init-completed");
   recordGameEntryDuration("renderer-init", performance.now() - rendererInitStartedAt);
-  bootstrapSession.replaceRendererCleanup(cleanup);
 };
 
 const cancelActiveBootstrapSubscriptions = () => {

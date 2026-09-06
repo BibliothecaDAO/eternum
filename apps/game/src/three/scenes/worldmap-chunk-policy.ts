@@ -24,9 +24,8 @@ interface WorldmapChunkPolicy {
     maxCompositeChunks: number;
     rollingWindowEnabled: boolean;
     visualPageSize: { width: number; height: number };
-    viewportMarginPages: number;
+    viewportPaddingHexes: number;
     maxCompositePages: number;
-    criticalPageImmediateBudget: number;
     retainedPageMs: number;
     cameraSampleThrottleMs: number;
     provisionalShellEnabled: boolean;
@@ -58,9 +57,8 @@ interface WorldChunkPolicyInput {
     maxCompositeChunks: number;
     rollingWindowEnabled: boolean;
     visualPageSize: { width: number; height: number };
-    viewportMarginPages: number;
+    viewportPaddingHexes: number;
     maxCompositePages: number;
-    criticalPageImmediateBudget: number;
     retainedPageMs: number;
     cameraSampleThrottleMs: number;
     provisionalShellEnabled: boolean;
@@ -98,9 +96,8 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
       maxCompositeChunks: config.visualPresentation.maxCompositeChunks,
       rollingWindowEnabled: config.visualPresentation.rollingWindowEnabled,
       visualPageSize: config.visualPresentation.visualPageSize,
-      viewportMarginPages: config.visualPresentation.viewportMarginPages,
+      viewportPaddingHexes: config.visualPresentation.viewportPaddingHexes,
       maxCompositePages: config.visualPresentation.maxCompositePages,
-      criticalPageImmediateBudget: config.visualPresentation.criticalPageImmediateBudget,
       retainedPageMs: config.visualPresentation.retainedPageMs,
       cameraSampleThrottleMs: config.visualPresentation.cameraSampleThrottleMs,
       provisionalShellEnabled: config.visualPresentation.provisionalShellEnabled,

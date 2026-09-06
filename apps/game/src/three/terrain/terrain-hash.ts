@@ -24,13 +24,17 @@ export function terrainHashToUnitFloat(hash: number): number {
 }
 
 function requireTerrainHashInput(input: TerrainHashInput): void {
-  for (const [name, value] of Object.entries(input)) {
-    if (name === "salt") continue;
-    if (!Number.isSafeInteger(value)) {
-      throw new Error(`Terrain hash ${name} must be a safe integer, received ${String(value)}`);
-    }
-  }
+  requireSafeInteger("col", input.col);
+  requireSafeInteger("row", input.row);
+  requireSafeInteger("elevationSeed", input.elevationSeed);
+  requireSafeInteger("moistureSeed", input.moistureSeed);
   if (input.salt.length === 0) throw new Error("Terrain hash salt must not be empty");
+}
+
+function requireSafeInteger(name: string, value: number): void {
+  if (!Number.isSafeInteger(value)) {
+    throw new Error(`Terrain hash ${name} must be a safe integer, received ${String(value)}`);
+  }
 }
 
 function hashString(value: string, initialHash: number): number {

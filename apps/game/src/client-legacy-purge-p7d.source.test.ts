@@ -13,7 +13,7 @@ describe("P7D push ownership gates", () => {
   });
 
   it("removes superseded scene-ready events and orphan polling surfaces", () => {
-    const loadingHelpers = source("src/ui/layouts/game-loading-overlay.utils.ts");
+    const loadingHelpers = source("src/game-entry/play-scene-handoff.tsx");
     const polling = source("src/config/polling.ts");
     const diagnostics = source("src/three/perf/worldmap-render-diagnostics.ts");
 

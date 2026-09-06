@@ -2,11 +2,9 @@ import {
   DASHBOARD_SHARED_PLAY_FETCH_ASSETS,
   DASHBOARD_SHARED_PLAY_IMAGE_ASSETS,
   DASHBOARD_SHARED_PLAY_MODEL_ASSETS,
-  ENTRY_ONLY_PLAY_ASSETS,
 } from "./play-asset-manifest";
 
 const DASHBOARD_PREFETCH_KEY = "playDashboardAssetsPrefetched";
-const ENTRY_PREFETCH_KEY = "playEntryAssetsPrefetched";
 const FETCH_PREFETCH_BATCH_SIZE = 8;
 const MODEL_PREFETCH_BATCH_SIZE = 8;
 const IMAGE_PREFETCH_BATCH_SIZE = 20;
@@ -169,12 +167,5 @@ export const prefetchDashboardPlayAssets = (): void => {
       { assets: DASHBOARD_SHARED_PLAY_MODEL_ASSETS, batchSize: MODEL_PREFETCH_BATCH_SIZE },
       { assets: DASHBOARD_SHARED_PLAY_IMAGE_ASSETS, batchSize: IMAGE_PREFETCH_BATCH_SIZE },
     ],
-  });
-};
-
-export const prefetchPlayEntryAssets = (): void => {
-  prefetchAssetsForSession({
-    sessionKey: ENTRY_PREFETCH_KEY,
-    groups: [{ assets: ENTRY_ONLY_PLAY_ASSETS, batchSize: IMAGE_PREFETCH_BATCH_SIZE }],
   });
 };

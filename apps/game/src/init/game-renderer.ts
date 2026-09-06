@@ -1,30 +1,17 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
-
 import { createGameRendererSession, type GameRendererSession } from "./game-renderer-session";
 
 let activeGameRendererSession: GameRendererSession | null = null;
 
-export const initializeGameRenderer = async (setupResult: SetupResult, enableDevTools: boolean) => {
-  disposeActiveGameRendererSession();
-  const session = await createGameRendererSession({
-    enableDevTools,
-    setupResult,
-  });
+export const prepareGameRenderer = (setupResult: SetupResult, enableDevTools: boolean): GameRendererSession => {
+  activeGameRendererSession?.cleanup();
+  const session = createGameRendererSession({ enableDevTools, setupResult });
   activeGameRendererSession = session;
-
-  return () => {
-    session.cleanup();
-    if (activeGameRendererSession === session) {
-      activeGameRendererSession = null;
-    }
+  return {
+    initialize: session.initialize,
+    cleanup: () => {
+      session.cleanup();
+      if (activeGameRendererSession === session) activeGameRendererSession = null;
+    },
   };
 };
-
-function disposeActiveGameRendererSession() {
-  if (!activeGameRendererSession) {
-    return;
-  }
-
-  activeGameRendererSession.cleanup();
-  activeGameRendererSession = null;
-}

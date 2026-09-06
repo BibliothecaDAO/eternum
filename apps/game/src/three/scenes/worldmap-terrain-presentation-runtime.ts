@@ -1,4 +1,5 @@
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
+import type { WorldmapCameraGroundBounds } from "./worldmap-camera-ground-bounds";
 
 export type WorldmapTerrainPresentationKind = "exact" | "provisional";
 export type WorldmapTerrainPresentationCoverageKind = "chunk" | "visual_page";
@@ -98,12 +99,12 @@ interface ApplyWorldmapTerrainPresentationInput<TBiomeEntries, TBounds> extends 
 
 interface ResolveWorldmapVisualTerrainWindowInput {
   focusPoint: WorldmapPointLike;
+  groundBounds: WorldmapCameraGroundBounds;
   generation: number;
   hexSize: number;
-  marginPages: number;
+  paddingHexes: number;
   pageOrigin?: WorldmapTerrainPageOrigin;
   pageSize: WorldmapTerrainSize;
-  renderSize: WorldmapTerrainSize;
 }
 
 interface PartitionPreparedTerrainIntoVisualPagesInput<TBiomeEntries, TBounds> {
@@ -199,30 +200,56 @@ export function resolveWorldmapVisualTerrainWindow(
 ): WorldmapVisualTerrainWindow {
   const focusHex = worldPointToHex(input.focusPoint, input.hexSize);
   const centerPage = resolveWorldmapVisualTerrainPageKeyForHex(focusHex, input.pageSize, input.pageOrigin);
-  const pageColumns = Math.ceil(Math.max(1, input.renderSize.width) / Math.max(1, input.pageSize.width));
-  const pageRows = Math.ceil(Math.max(1, input.renderSize.height) / Math.max(1, input.pageSize.height));
-  const totalColumns = pageColumns + Math.max(0, input.marginPages) * 2;
-  const totalRows = pageRows + Math.max(0, input.marginPages) * 2;
-  const startColumnOffset = -Math.floor(totalColumns / 2) + (totalColumns % 2 === 0 ? 1 : 0);
-  const startRowOffset = -Math.floor(totalRows / 2) + (totalRows % 2 === 0 ? 1 : 0);
-  const pageKeys: WorldmapVisualTerrainPageKey[] = [];
-
-  for (let rowOffset = startRowOffset; rowOffset < startRowOffset + totalRows; rowOffset += 1) {
-    for (let columnOffset = startColumnOffset; columnOffset < startColumnOffset + totalColumns; columnOffset += 1) {
-      pageKeys.push(
-        `${centerPage.startRow + rowOffset * input.pageSize.height},${
-          centerPage.startCol + columnOffset * input.pageSize.width
-        }` as WorldmapVisualTerrainPageKey,
-      );
-    }
-  }
+  const criticalPageKeys = resolveGroundBoundsPages(input, 0);
+  const visible = new Set(criticalPageKeys);
+  const distance = (key: string) => {
+    const [row, col] = key.split(",").map(Number);
+    return (row + input.pageSize.height / 2 - focusHex.row) ** 2 + (col + input.pageSize.width / 2 - focusHex.col) ** 2;
+  };
+  const pageKeys = resolveGroundBoundsPages(input, input.paddingHexes).sort(
+    (left, right) =>
+      Number(visible.has(right)) - Number(visible.has(left)) ||
+      distance(left) - distance(right) ||
+      compareTerrainPageKeys(left, right),
+  );
 
   return {
     centerPageKey: centerPage.pageKey,
-    criticalPageKeys: [centerPage.pageKey],
+    criticalPageKeys: pageKeys.filter((key) => visible.has(key)),
     generation: input.generation,
     pageKeys,
   };
+}
+
+function resolveGroundBoundsPages(
+  input: ResolveWorldmapVisualTerrainWindowInput,
+  paddingHexes: number,
+): WorldmapVisualTerrainPageKey[] {
+  const width = Math.sqrt(3) * input.hexSize;
+  const height = 1.5 * input.hexSize;
+  const bounds = input.groundBounds;
+  // Half a column accounts for odd-row hex staggering; one cell covers the ground's outer vertices.
+  const min = resolveWorldmapVisualTerrainPageKeyForHex(
+    {
+      col: Math.floor(bounds.minX / width - 0.5) - paddingHexes - 1,
+      row: Math.floor(bounds.minZ / height) - paddingHexes - 1,
+    },
+    input.pageSize,
+    input.pageOrigin,
+  );
+  const max = resolveWorldmapVisualTerrainPageKeyForHex(
+    {
+      col: Math.ceil(bounds.maxX / width + 0.5) + paddingHexes + 1,
+      row: Math.ceil(bounds.maxZ / height) + paddingHexes + 1,
+    },
+    input.pageSize,
+    input.pageOrigin,
+  );
+  const pages: WorldmapVisualTerrainPageKey[] = [];
+  for (let row = min.startRow; row <= max.startRow; row += input.pageSize.height) {
+    for (let col = min.startCol; col <= max.startCol; col += input.pageSize.width) pages.push(`${row},${col}`);
+  }
+  return pages;
 }
 
 export function partitionPreparedTerrainIntoVisualPages<TBiomeEntries = unknown, TBounds = unknown>(

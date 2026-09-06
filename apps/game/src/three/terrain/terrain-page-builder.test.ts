@@ -8,6 +8,11 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
 
 describe("prepareTerrainPage", () => {
+  it("preserves the all-biome terrain buffers and placements through sampling optimizations", () => {
+    const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
+    expect(prepared.fingerprint).toMatchInlineSnapshot(`"5c0445e1"`);
+  });
+
   it("builds deterministic indexed terrain and frontier buffers", () => {
     const request = createRequest([cell(0, 0, BiomeType.Ocean)]);
     const first = prepareTerrainPage(request);

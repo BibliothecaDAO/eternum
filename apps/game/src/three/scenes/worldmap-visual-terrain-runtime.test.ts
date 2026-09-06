@@ -35,37 +35,20 @@ const pagePresentation = (
 });
 
 describe("worldmap visual terrain runtime", () => {
-  it("resolves a 48x48 camera window plus one 24x24 page margin into sixteen visual pages", () => {
+  it("prioritizes every page intersecting the viewport before its warm margin", () => {
     const window = resolveWorldmapVisualTerrainWindow({
       focusPoint: { x: 0, z: 0 },
+      groundBounds: { minX: -10, maxX: 10, minZ: -8, maxZ: 8 },
       generation: 3,
       hexSize: 1,
-      marginPages: 1,
+      paddingHexes: 4,
+      pageOrigin: { col: -12, row: -12 },
       pageSize: { width: 24, height: 24 },
-      renderSize: { width: 48, height: 48 },
     });
-
-    expect(window.centerPageKey).toBe("0,0");
-    expect(window.criticalPageKeys).toEqual(["0,0"]);
-    expect(window.pageKeys).toHaveLength(16);
-    expect(window.pageKeys).toEqual([
-      "-24,-24",
-      "-24,0",
-      "-24,24",
-      "-24,48",
-      "0,-24",
-      "0,0",
-      "0,24",
-      "0,48",
-      "24,-24",
-      "24,0",
-      "24,24",
-      "24,48",
-      "48,-24",
-      "48,0",
-      "48,24",
-      "48,48",
-    ]);
+    expect(window.centerPageKey).toBe("-12,-12");
+    expect(window.criticalPageKeys).toContain(window.centerPageKey);
+    expect(window.pageKeys.slice(0, window.criticalPageKeys.length)).toEqual(window.criticalPageKeys);
+    expect(window.pageKeys.length).toBeLessThan(16);
   });
 
   it("composes exact authoritative pages ahead of target provisional and retained pages", () => {

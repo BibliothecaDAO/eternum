@@ -32,7 +32,7 @@ export const BootLoaderShell = ({
   return (
     <div
       className={clsx(
-        "boot-loader-surface isolate overflow-hidden text-gold",
+        "boot-loader-surface z-[110] isolate overflow-hidden text-gold",
         showBackdrop ? "fixed inset-0 bg-black/95" : "absolute inset-0 bg-black/90",
         className,
       )}

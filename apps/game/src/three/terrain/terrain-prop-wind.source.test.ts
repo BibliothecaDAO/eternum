@@ -5,7 +5,8 @@ const source = readFileSync(new URL("./terrain-prop-pools.ts", import.meta.url),
 
 describe("terrain prop wind", () => {
   it("limits biome-scaled GPU motion to imported foliage and shades the same instances for climate", () => {
-    expect(source).toContain("positionGeometry.y");
+    expect(source).toContain('attribute<"vec2">("terrainPropBend", "vec2")');
+    expect(source).toContain("smoothstep(0.05, 0.95, plant.x)");
     expect(source).toContain('attribute<"float">("_wind_weight", "float")');
     expect(source).toContain('attribute<"vec3">("terrainPropEcology", "vec3")');
     expect(source).toContain("positionLocal.x.mul(0.41)");

@@ -20,20 +20,37 @@ interface CreateGameRendererSessionInput {
 
 export interface GameRendererSession {
   cleanup(): void;
+  initialize(): Promise<void>;
 }
 
-export async function createGameRendererSession(input: CreateGameRendererSessionInput): Promise<GameRendererSession> {
+export function createGameRendererSession(input: CreateGameRendererSessionInput): GameRendererSession {
+  // Construction starts the GPU handshake; scene initialization waits for synced game config.
   const renderer = (input.createRenderer ?? createDefaultGameRenderer)(input.setupResult);
-
-  await renderer.initScene();
-  if (input.enableDevTools) {
-    renderer.initStats();
-  }
-
-  return createBrowserManagedRendererSession({
+  let disposed = false;
+  const managed = createBrowserManagedRendererSession({
     renderer,
     windowObject: input.windowObject ?? window,
+    onDispose: () => {
+      disposed = true;
+    },
   });
+  let initialization: Promise<void> | undefined;
+  const cleanup = () => {
+    disposed = true;
+    managed.cleanup();
+  };
+  const initialize = async () => {
+    if (disposed) throw new Error("Renderer session was disposed before scene initialization");
+    try {
+      await renderer.initScene();
+      if (disposed) throw new Error("Renderer session was disposed during scene initialization");
+      if (input.enableDevTools) renderer.initStats();
+    } catch (error) {
+      cleanup();
+      throw error;
+    }
+  };
+  return { cleanup, initialize: () => (initialization ??= initialize()) };
 }
 
 function createDefaultGameRenderer(setupResult: SetupResult): GameRendererLike {
@@ -43,7 +60,8 @@ function createDefaultGameRenderer(setupResult: SetupResult): GameRendererLike {
 function createBrowserManagedRendererSession(input: {
   renderer: GameRendererLike;
   windowObject: GameRendererSessionWindow;
-}): GameRendererSession {
+  onDispose: () => void;
+}): Pick<GameRendererSession, "cleanup"> {
   const previousBeforeUnload = input.windowObject.onbeforeunload;
   let isDestroyed = false;
 
@@ -53,6 +71,7 @@ function createBrowserManagedRendererSession(input: {
     }
 
     isDestroyed = true;
+    input.onDispose();
 
     try {
       input.renderer.destroy();

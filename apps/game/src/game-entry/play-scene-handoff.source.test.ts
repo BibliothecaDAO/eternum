@@ -7,9 +7,9 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-describe("GameLoadingOverlay source", () => {
+describe("PlaySceneHandoff source", () => {
   it("reads the shared play-route boot snapshot and readiness store instead of session handoff state", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+    const source = readSource("src/game-entry/play-scene-handoff.tsx");
 
     expect(source).toContain("usePlayRouteBootSnapshot");
     expect(source).toContain("usePlayRouteReadinessStore");
@@ -17,22 +17,14 @@ describe("GameLoadingOverlay source", () => {
   });
 
   it("does not declare failure or completion from elapsed time", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+    const source = readSource("src/game-entry/play-scene-handoff.tsx");
 
     expect(source).not.toContain("setDidSafetyTimeout");
     expect(source).not.toContain("setInterval");
   });
 
-  it("renders actual boot progress and keeps structured diagnostics out of the console", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
-
-    expect(source).toContain('mode="indeterminate"');
-    expect(source).toContain("<BootDebugPanel");
-    expect(source).not.toContain("Math.max(snapshot.progress");
-  });
-
   it("records canonical renderer and dismissal milestones around the shared boot readiness flow", () => {
-    const source = readSource("src/ui/layouts/game-loading-overlay.tsx");
+    const source = readSource("src/game-entry/play-scene-handoff.tsx");
 
     expect(source).toContain("readiness.worldmapReady");
     expect(source).toContain("readiness.worldmapConverged");
