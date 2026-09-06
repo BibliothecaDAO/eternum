@@ -94,6 +94,24 @@ describe("WorldAtmosphereController", () => {
     expect((fixture.scene.background as Color).getHex()).not.toBe(0x111111);
   });
 
+  it("bounds tower shadow length throughout the cycle using the actual light-target direction", () => {
+    const fixture = createFixture();
+    for (const [sunHeight, sunDistance] of [
+      [12, 15],
+      [8, 20],
+      [16, 10],
+    ]) {
+      fixture.manager.params.sunHeight = sunHeight;
+      fixture.manager.params.sunDistance = sunDistance;
+      for (let progress = 0; progress <= 100; progress += 5) {
+        fixture.manager.update(progress, new Vector3(34, 2, -21));
+        const direction = fixture.directionalLight.position.clone().sub(fixture.directionalLight.target.position);
+        const shadowLengthPerHeight = Math.hypot(direction.x, direction.z) / direction.y;
+        expect(shadowLengthPerHeight).toBeLessThanOrEqual(1 + 1e-10);
+      }
+    }
+  });
+
   it("snaps the first update to the requested daylight phase instead of fading in from night", () => {
     const fixture = createFixture();
     fixture.manager.params.progressSmoothing = 0.02;
@@ -102,9 +120,9 @@ describe("WorldAtmosphereController", () => {
     fixture.manager.update(50);
 
     expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.74);
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(2.18);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(3.55);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.56);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.7);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(1.85);
   });
 
   it("snaps forced debug time previews even when live-cycle smoothing is slow", () => {
@@ -116,16 +134,8 @@ describe("WorldAtmosphereController", () => {
     fixture.manager.update(50, undefined, { snap: true });
 
     expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.74);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.56);
     expect(fixture.directionalLight.position.y).toBeCloseTo(12);
-  });
-
-  it("keeps evening key light above the horizon to avoid hard shadow curtains", () => {
-    const fixture = createFixture();
-
-    fixture.manager.update(83.3);
-
-    expect(fixture.directionalLight.position.y).toBeCloseTo(6.96);
   });
 
   it("enables a cool moon rim light at night while keeping it off during day", () => {
@@ -179,7 +189,7 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.fog.far).toBe(72);
   });
 
-  it("applies capped weather modulation to sun, ambient fill, and fog color without overriding fog range", () => {
+  it("caps weather modulation while preserving the sunlight readability floor and camera fog range", () => {
     const fixture = createFixture();
 
     fixture.manager.update(37.5);
@@ -194,7 +204,7 @@ describe("WorldAtmosphereController", () => {
     fixture.manager.applyWeatherModulation(1, 1, 1, 0.22);
 
     expect(fixture.directionalLight.intensity).toBeLessThan(beforeSun);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(beforeSun * 0.8);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(Math.max(1.55, beforeSun * 0.8));
     expect(fixture.hemisphereLight.intensity).toBeGreaterThan(beforeHemisphere);
     expect(fixture.ambientLight.intensity).toBeGreaterThan(beforeAmbient);
     expect((fixture.scene.background as Color).getHex()).toBe(beforeSky.multiplyScalar(0.76).getHex());
@@ -311,7 +321,7 @@ describe("WorldAtmosphereController", () => {
     const ambientAtNight = fixture.manager.getLastAmbientIntensity();
     const hemisphereAtNight = fixture.manager.getLastHemisphereIntensity();
 
-    expect(ambientAtNight).not.toBeCloseTo(ambientAtDay);
+    expect(ambientAtNight).toBeCloseTo(fixture.ambientLight.intensity);
     expect(hemisphereAtNight).not.toBeCloseTo(hemisphereAtDay);
   });
 

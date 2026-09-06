@@ -67,7 +67,8 @@ const WEATHER_LIMITS = {
   maxKeyLightDimming: 0.2,
 } as const;
 
-const KEY_LIGHT_MIN_HEIGHT_RATIO = 0.58;
+const KEY_LIGHT_TARGET_DEPTH_OFFSET = 5.2;
+const KEY_LIGHT_MIN_ELEVATION_RATIO = 1;
 const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
 
 export class WorldAtmosphereController {
@@ -141,7 +142,8 @@ export class WorldAtmosphereController {
     fogColor: Color;
   };
 
-  // Color stops for the six in-game day phases.
+  // Balance a restrained key light with diffuse sky fill. Stronger noon keys
+  // bleach PBR surfaces when the sun crosses the strategy camera reflection angle.
   private readonly timeOfDayPresets: { [key: string]: TimeOfDayColors } = {
     deepNight: {
       // 0, 100
@@ -164,7 +166,7 @@ export class WorldAtmosphereController {
       ambientColor: 0xb994b2,
       fogColor: 0xd4a8b0,
       hemisphereIntensity: 1.45,
-      sunIntensity: 3.05,
+      sunIntensity: 1.65,
       ambientIntensity: 0.6,
       fogNear: 22,
       fogFar: 58,
@@ -176,9 +178,9 @@ export class WorldAtmosphereController {
       sunColor: 0xfff5d5,
       ambientColor: 0xffecd3,
       fogColor: 0xd2e5f4,
-      hemisphereIntensity: 2.15,
-      sunIntensity: 3.8,
-      ambientIntensity: 0.76,
+      hemisphereIntensity: 1.65,
+      sunIntensity: 1.95,
+      ambientIntensity: 0.56,
       fogNear: 30,
       fogFar: 82,
     },
@@ -189,9 +191,9 @@ export class WorldAtmosphereController {
       sunColor: 0xfff2dc,
       ambientColor: 0xf2dfc7,
       fogColor: 0xd2e2f0,
-      hemisphereIntensity: 2.18,
-      sunIntensity: 3.55,
-      ambientIntensity: 0.74,
+      hemisphereIntensity: 1.7,
+      sunIntensity: 1.85,
+      ambientIntensity: 0.56,
       fogNear: 32,
       fogFar: 82,
     },
@@ -202,8 +204,8 @@ export class WorldAtmosphereController {
       sunColor: 0xffd8aa,
       ambientColor: 0xecc8b0,
       fogColor: 0xcbd2dc,
-      hemisphereIntensity: 1.92,
-      sunIntensity: 3.05,
+      hemisphereIntensity: 1.6,
+      sunIntensity: 1.65,
       ambientIntensity: 0.68,
       fogNear: 28,
       fogFar: 72,
@@ -216,7 +218,7 @@ export class WorldAtmosphereController {
       ambientColor: 0xc591aa,
       fogColor: 0xd39aab,
       hemisphereIntensity: 1.55,
-      sunIntensity: 2.85,
+      sunIntensity: 1.55,
       ambientIntensity: 0.6,
       fogNear: 24,
       fogFar: 62,
@@ -534,10 +536,15 @@ export class WorldAtmosphereController {
     // - progress=50 (noon): cos(0) = 1 → sun at peak
     const angle = (progress / 100) * Math.PI * 2 + Math.PI;
 
-    // Keep low-angle phases readable and avoid hard shadow-map curtains near the viewport edge.
     const offsetX = Math.sin(angle) * this.params.sunDistance;
-    const offsetY = Math.max(Math.abs(Math.cos(angle)) * this.params.sunHeight, this.getMinimumKeyLightHeight());
     const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
+    // Bound geometric shadow length to caster height. A floor based only on sunHeight
+    // ignored the horizontal orbit and made tall towers shadow five neighboring hexes.
+    const horizontalDistance = Math.hypot(offsetX, offsetZ - KEY_LIGHT_TARGET_DEPTH_OFFSET);
+    const offsetY = Math.max(
+      Math.abs(Math.cos(angle)) * this.params.sunHeight,
+      horizontalDistance * KEY_LIGHT_MIN_ELEVATION_RATIO,
+    );
 
     // Calculate target sun position and target
     const targetSunPosition = this.targetSunPosition;
@@ -549,11 +556,11 @@ export class WorldAtmosphereController {
         cameraTarget.y + Math.max(offsetY, 0.5),
         cameraTarget.z + offsetZ,
       );
-      targetSunTarget.set(cameraTarget.x, cameraTarget.y, cameraTarget.z + 5.2);
+      targetSunTarget.set(cameraTarget.x, cameraTarget.y, cameraTarget.z + KEY_LIGHT_TARGET_DEPTH_OFFSET);
     } else {
       // Default behavior - sun at world origin
       targetSunPosition.set(offsetX, Math.max(offsetY, 0.5), offsetZ);
-      targetSunTarget.set(0, 0, 5.2);
+      targetSunTarget.set(0, 0, KEY_LIGHT_TARGET_DEPTH_OFFSET);
     }
 
     if (snapPosition) {
@@ -569,10 +576,6 @@ export class WorldAtmosphereController {
     this.directionalLight.position.copy(this.currentSunPosition);
     this.directionalLight.target.position.copy(this.currentSunTarget);
     this.directionalLight.target.updateMatrixWorld();
-  }
-
-  private getMinimumKeyLightHeight(): number {
-    return this.params.sunHeight * KEY_LIGHT_MIN_HEIGHT_RATIO;
   }
 
   private updateMoonRimLighting(progress: number, cameraTarget?: Vector3): void {

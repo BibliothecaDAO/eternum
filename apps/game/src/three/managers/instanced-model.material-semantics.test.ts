@@ -4,6 +4,7 @@ import {
   Box3,
   BoxGeometry,
   Group,
+  InstancedMesh,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -95,6 +96,49 @@ describe("InstancedModel material semantics", () => {
     expect(resolvedMaterial.depthWrite).toBe(false);
     expect(resolvedMaterial.alphaTest).toBe(0);
     expect(resolvedMaterial.emissiveIntensity).toBe(1.5);
+  });
+
+  it.each(["castle", "knightlvl2", "chest"])(
+    "casts shadows for current %s assets without legacy mesh names",
+    async (name) => {
+      const { default: InstancedModel } = await import("./instanced-model");
+      const gltf = createInstancedModelTestGltf(new MeshStandardMaterial());
+      gltf.scene.children[0].name = name;
+      const model = new InstancedModel(gltf, 1, false, name);
+      expect(model.instancedMeshes[0].castShadow).toBe(true);
+      expect(model.instancedMeshes[0].receiveShadow).toBe(true);
+      model.dispose();
+    },
+  );
+
+  it("keeps terrain bases and blended glow cards out of the model shadow silhouette", async () => {
+    const { default: InstancedModel } = await import("./instanced-model");
+    const gltf = createInstancedModelTestGltf(new MeshStandardMaterial());
+    gltf.scene.children[0].name = "land";
+    const glow = new Mesh(new PlaneGeometry(1, 1), new MeshStandardMaterial({ transparent: true, depthWrite: false }));
+    glow.name = "building_glow";
+    gltf.scene.add(glow);
+    const leaves = new Mesh(new PlaneGeometry(1, 1), new MeshStandardMaterial({ transparent: true, alphaTest: 0.5 }));
+    leaves.name = "leaves";
+    gltf.scene.add(leaves);
+    const model = new InstancedModel(gltf, 1, false, "Chest");
+    expect(model.instancedMeshes.map((mesh) => mesh.castShadow)).toEqual([false, false, true]);
+    model.dispose();
+  });
+
+  it("keeps a grounded army's contact shadow on the surface when its authored origin is lowered", async () => {
+    const { default: InstancedModel } = await import("./instanced-model");
+    const model = new InstancedModel(createInstancedModelTestGltf(new MeshStandardMaterial()), 1, false, "Knight");
+    model.setMatrixAt(0, new Matrix4().makeTranslation(2, 3 - 0.166, 4), 3);
+
+    const shadow = model.group.children.find((child) => child.renderOrder === 9) as InstancedMesh;
+    const matrix = new Matrix4();
+    shadow.getMatrixAt(0, matrix);
+    expect(matrix.elements[13]).toBeGreaterThanOrEqual(3);
+    expect(matrix.elements[13]).toBeLessThan(3.03);
+    model.instancedMeshes[0].getMatrixAt(0, matrix);
+    expect(matrix.elements[13]).toBeCloseTo(2.834);
+    model.dispose();
   });
 
   it("applies authoritative world bounds to instanced mesh culling bounds", async () => {
