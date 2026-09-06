@@ -39,11 +39,13 @@ import type {
 
 interface PresentedTerrainPage {
   prepared: PreparedTerrainPage;
+  complete: boolean;
   field: TerrainField;
   fingerprint: string;
   group: Group;
   propInstances: PreparedTerrainPage["propInstances"];
   visiblePropInstances?: PreparedTerrainPage["propInstances"];
+  shroudInstances: PreparedTerrainPage["shroudInstances"];
 }
 
 export interface TerrainPresentationDiagnostics {
@@ -85,7 +87,6 @@ export class ProceduralTerrain {
   private readonly materials: TerrainMaterials;
   private readonly wildlifeMaterial = createTerrainWildlifeMaterial();
   private readonly pages = new Map<string, PresentedTerrainPage>();
-  private readonly pagesAwaitingWrites = new Set<string>();
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
   private groundTextureMaterial: TerrainMaterials["land"] | null = null;
@@ -218,6 +219,10 @@ export class ProceduralTerrain {
     return this.propPools?.getStats() ?? { groundCoverInstances: 0, instances: 0, triangles: 0 };
   }
 
+  arePropsLoaded(): boolean {
+    return this.propPools !== null;
+  }
+
   getGroundTextureStats(): TerrainGroundTextureStats {
     return {
       bytes: this.groundTextureHandle?.textures.bytes ?? 0,
@@ -262,76 +267,68 @@ export class ProceduralTerrain {
     this.movementEffects.update(deltaSeconds);
   }
 
-  /**
-   * Presents exactly these pages in one call. Pages whose fingerprint is retained are untouched; changed pages
-   * rewrite only their own geometry, prop slots, and fog sub-rects; dropped pages release theirs. The worldmap
-   * runs the same three steps as separate frame-budget tasks so one page at a time reaches the main thread.
-   */
+  /** Presents exactly these pages as one coherent geometry, props, sampling, and fog change. */
   present(
     preparedPages: readonly PreparedTerrainPage[],
     preparedFogMask: TerrainFogMask | null = null,
   ): TerrainPresentationDiagnostics {
-    this.beginPresentation(preparedPages);
-    preparedPages.forEach((preparedPage) => this.presentPage(preparedPage));
-    return this.finishPresentation(preparedPages, preparedFogMask);
+    const nextPageKeys = new Set(preparedPages.map((page) => page.request.pageKey));
+    const releasedPageKeys = Array.from(this.pages.keys()).filter((pageKey) => !nextPageKeys.has(pageKey));
+    this.commitPages(preparedPages, releasedPageKeys, preparedFogMask);
+    return this.summarize(preparedPages);
   }
 
-  /** Validates the page set and releases the pages it drops, freeing their prop slots and fog cells first. */
-  beginPresentation(preparedPages: readonly PreparedTerrainPage[]): void {
+  /**
+   * Commits a ready group without exposing a render boundary between geometry, prop storage, sampling, and fog.
+   * Pages become reusable only after every write and the fog upload complete, so a failed or superseded caller can
+   * retry the same fingerprint.
+   */
+  commitPages(
+    preparedPages: readonly PreparedTerrainPage[],
+    releasedPageKeys: readonly string[] = [],
+    preparedFogMask: TerrainFogMask | null = null,
+  ): void {
     this.requireActive();
     requireUniquePageKeys(preparedPages);
-    this.releaseDroppedPages(preparedPages);
-  }
+    requireDisjointPageKeys(preparedPages, releasedPageKeys);
+    const changedPages = preparedPages.filter((page) => !this.isPagePresented(page));
+    const nextPages = this.stagePresentedPages(changedPages);
+    const affectedPageKeys = new Set([...releasedPageKeys, ...changedPages.map(({ request }) => request.pageKey)]);
+    const previousPages = new Map(
+      Array.from(affectedPageKeys, (pageKey) => [pageKey, this.pages.get(pageKey)] as const),
+    );
 
-  getPresentedPages(): PreparedTerrainPage[] {
-    return Array.from(this.pages.values(), (page) => page.prepared);
-  }
-
-  /** Whether this page is already on screen with this fingerprint, so presenting it again is a no-op. */
-  isPagePresented(preparedPage: PreparedTerrainPage): boolean {
-    return this.pages.get(preparedPage.request.pageKey)?.fingerprint === preparedPage.fingerprint;
-  }
-
-  /** Adds or replaces one page: its old geometry leaves in the same step its new geometry arrives. */
-  presentPage(preparedPage: PreparedTerrainPage): void {
-    this.presentPageGeometry(preparedPage);
-    this.presentPageWrites(preparedPage);
-  }
-
-  /** Swaps the page's meshes and field in; a separate step from the pool and fog writes so neither exceeds a frame budget. */
-  presentPageGeometry(preparedPage: PreparedTerrainPage): void {
-    this.requireActive();
-    if (this.isPagePresented(preparedPage)) return;
-    const pageKey = preparedPage.request.pageKey;
-    const retained = this.pages.get(pageKey);
-    if (retained) {
-      this.presentationGroup.remove(retained.group);
-      disposePageGeometry(retained);
+    try {
+      releasedPageKeys.forEach((pageKey) => this.releasePageWrites(pageKey));
+      for (const { page, presented } of nextPages) this.writePageState(page, presented);
+      this.fogField.commitLoadedPages(this.resolveLoadedPageRequests(preparedPages, releasedPageKeys));
+      this.fogField.commit(preparedFogMask);
+    } catch (error) {
+      try {
+        this.restorePageWrites(previousPages);
+      } catch (rollbackError) {
+        throw new AggregateError([error, rollbackError], "Terrain page commit and rollback both failed");
+      } finally {
+        nextPages.forEach(({ presented }) => disposePageGeometry(presented));
+      }
+      throw error;
     }
-    const page = this.createPresentedPage(preparedPage);
-    this.pages.set(pageKey, page);
-    this.presentationGroup.add(page.group);
-    this.pagesAwaitingWrites.add(pageKey);
+
+    releasedPageKeys.forEach((pageKey) => this.releasePageGeometry(pageKey));
+    for (const { page, presented } of nextPages) this.installPageGeometry(page, presented);
+    nextPages.forEach(({ presented }) => {
+      presented.complete = true;
+    });
   }
 
-  /** Writes the prop slot and fog cells of a page whose geometry step ran; a no-op otherwise. */
-  presentPageWrites(preparedPage: PreparedTerrainPage): void {
-    this.requireActive();
-    const pageKey = preparedPage.request.pageKey;
-    const page = this.pages.get(pageKey);
-    if (!page || page.fingerprint !== preparedPage.fingerprint || !this.pagesAwaitingWrites.delete(pageKey)) return;
-    this.writeVisibleProps(pageKey, page);
-    this.fogField.setPage(pageKey, preparedPage.shroudInstances);
+  /** Whether this fingerprint has completed geometry, prop storage, sampling, and fog installation. */
+  isPagePresented(preparedPage: PreparedTerrainPage): boolean {
+    const page = this.pages.get(preparedPage.request.pageKey);
+    return page?.complete === true && page.fingerprint === preparedPage.fingerprint;
   }
 
-  /** Commits the fog changes the page steps made and summarises the presented set. */
-  finishPresentation(
-    preparedPages: readonly PreparedTerrainPage[],
-    preparedFogMask: TerrainFogMask | null = null,
-  ): TerrainPresentationDiagnostics {
+  summarize(preparedPages: readonly PreparedTerrainPage[]): TerrainPresentationDiagnostics {
     this.requireActive();
-    this.fogField.commitLoadedPages(preparedPages.map((page) => page.request));
-    this.fogField.commit(preparedFogMask);
     return summarizePresentation(preparedPages, this.getPropStats(), this.getShroudStats());
   }
 
@@ -390,38 +387,98 @@ export class ProceduralTerrain {
     this.groundTextureMaterial = null;
   }
 
-  private releaseDroppedPages(preparedPages: readonly PreparedTerrainPage[]): void {
-    const retainedKeys = new Set(preparedPages.map((page) => page.request.pageKey));
-    for (const [pageKey, page] of this.pages) {
-      if (!retainedKeys.has(pageKey)) this.releasePage(pageKey, page);
+  private resolveLoadedPageRequests(
+    preparedPages: readonly PreparedTerrainPage[],
+    releasedPageKeys: readonly string[],
+  ): TerrainPageRequest[] {
+    const requests = new Map(Array.from(this.pages, ([key, page]) => [key, page.prepared.request]));
+    releasedPageKeys.forEach((key) => requests.delete(key));
+    preparedPages.forEach((page) => requests.set(page.request.pageKey, page.request));
+    return [...requests.values()];
+  }
+
+  private stagePresentedPages(
+    preparedPages: readonly PreparedTerrainPage[],
+  ): Array<{ page: PreparedTerrainPage; presented: PresentedTerrainPage }> {
+    const staged: Array<{ page: PreparedTerrainPage; presented: PresentedTerrainPage }> = [];
+    try {
+      preparedPages.forEach((page) => staged.push({ page, presented: this.createPresentedPage(page) }));
+      return staged;
+    } catch (error) {
+      staged.forEach(({ presented }) => disposePageGeometry(presented));
+      throw error;
     }
   }
 
-  private releasePage(pageKey: string, page: PresentedTerrainPage): void {
-    this.pagesAwaitingWrites.delete(pageKey);
+  private writePageState(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
+    const pageKey = preparedPage.request.pageKey;
+    this.writeVisibleProps(pageKey, presented);
+    this.fogField.setPage(pageKey, preparedPage.shroudInstances);
+  }
+
+  private installPageGeometry(preparedPage: PreparedTerrainPage, presented: PresentedTerrainPage): void {
+    const pageKey = preparedPage.request.pageKey;
+    const retained = this.pages.get(pageKey);
+    if (retained) {
+      this.presentationGroup.remove(retained.group);
+      disposePageGeometry(retained);
+    }
+    this.pages.set(pageKey, presented);
+    this.presentationGroup.add(presented.group);
+  }
+
+  private releasePageWrites(pageKey: string): void {
+    this.propPools?.releasePage(pageKey);
+    this.fogField.removePage(pageKey);
+  }
+
+  private releasePageGeometry(pageKey: string): void {
+    const page = this.pages.get(pageKey);
+    if (!page) return;
     this.presentationGroup.remove(page.group);
     disposePageGeometry(page);
     this.pages.delete(pageKey);
-    this.propPools?.releasePage(pageKey);
-    this.fogField.removePage(pageKey);
+  }
+
+  private restorePageWrites(previousPages: ReadonlyMap<string, PresentedTerrainPage | undefined>): void {
+    previousPages.forEach((page, pageKey) => {
+      if (page) {
+        // A failed replacement may have overwritten the pool even when visibility is unchanged.
+        page.visiblePropInstances = undefined;
+        this.writeVisibleProps(pageKey, page);
+        this.fogField.setPage(pageKey, page.shroudInstances);
+      } else {
+        this.propPools?.releasePage(pageKey);
+        this.fogField.removePage(pageKey);
+      }
+    });
+    this.fogField.commitLoadedPages(this.resolveLoadedPageRequests([], []));
+    this.fogField.commit();
   }
 
   private createPresentedPage(preparedPage: PreparedTerrainPage): PresentedTerrainPage {
     const group = new Group();
     group.name = `terrain-page:${preparedPage.request.pageKey}`;
-    group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
-    if (preparedPage.waterBuffers) {
-      group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
+    try {
+      group.add(createTerrainMesh(preparedPage.buffers, this.materials.land, "land"));
+      if (preparedPage.waterBuffers) {
+        group.add(createTerrainMesh(preparedPage.waterBuffers, this.materials.water, "water"));
+      }
+    } catch (error) {
+      disposePageGroup(group);
+      throw error;
     }
     const field = new TerrainField(preparedPage.request);
     const wildlife = createTerrainWildlife(preparedPage.request.cells, field, this.wildlifeMaterial);
     if (wildlife) group.add(wildlife);
     return {
+      complete: false,
       field,
       fingerprint: preparedPage.fingerprint,
       prepared: preparedPage,
       group,
       propInstances: preparedPage.propInstances,
+      shroudInstances: preparedPage.shroudInstances,
     };
   }
 
@@ -463,22 +520,27 @@ function createTerrainMesh(
   layer: "land" | "water",
 ): Mesh {
   const geometry = new BufferGeometry();
-  geometry.name = `procedural-terrain-${layer}`;
-  geometry.setIndex(new BufferAttribute(buffers.indices, 1));
-  geometry.setAttribute("position", new BufferAttribute(buffers.positions, 3));
-  geometry.setAttribute("normal", new BufferAttribute(buffers.normals, 3));
-  geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
-  geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
-  geometry.setAttribute("terrainRoughness", new BufferAttribute(buffers.roughness, 1));
-  geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));
-  geometry.setAttribute("terrainBiomeId", new BufferAttribute(buffers.biomeIds, 1));
-  geometry.setAttribute("terrainExplored", new BufferAttribute(buffers.explored, 1));
-  geometry.setAttribute("terrainGroundWeights0", new BufferAttribute(buffers.groundWeights0, 4, true));
-  geometry.setAttribute("terrainGroundWeights1", new BufferAttribute(buffers.groundWeights1, 4, true));
-  geometry.setAttribute("terrainHeight", new BufferAttribute(buffers.heights, 1));
-  geometry.setAttribute("terrainWaterDepth", new BufferAttribute(buffers.waterDepth, 1));
-  geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));
-  geometry.boundingSphere = new Sphere(new Vector3(...buffers.bounds.sphereCenter), buffers.bounds.sphereRadius);
+  try {
+    geometry.name = `procedural-terrain-${layer}`;
+    geometry.setIndex(new BufferAttribute(buffers.indices, 1));
+    geometry.setAttribute("position", new BufferAttribute(buffers.positions, 3));
+    geometry.setAttribute("normal", new BufferAttribute(buffers.normals, 3));
+    geometry.setAttribute("uv", new BufferAttribute(buffers.uvs, 2));
+    geometry.setAttribute("terrainColor", new BufferAttribute(buffers.colors, 3));
+    geometry.setAttribute("terrainRoughness", new BufferAttribute(buffers.roughness, 1));
+    geometry.setAttribute("terrainShore", new BufferAttribute(buffers.shore, 1));
+    geometry.setAttribute("terrainBiomeId", new BufferAttribute(buffers.biomeIds, 1));
+    geometry.setAttribute("terrainExplored", new BufferAttribute(buffers.explored, 1));
+    geometry.setAttribute("terrainGroundWeights0", new BufferAttribute(buffers.groundWeights0, 4, true));
+    geometry.setAttribute("terrainGroundWeights1", new BufferAttribute(buffers.groundWeights1, 4, true));
+    geometry.setAttribute("terrainHeight", new BufferAttribute(buffers.heights, 1));
+    geometry.setAttribute("terrainWaterDepth", new BufferAttribute(buffers.waterDepth, 1));
+    geometry.boundingBox = new Box3(new Vector3(...buffers.bounds.boxMin), new Vector3(...buffers.bounds.boxMax));
+    geometry.boundingSphere = new Sphere(new Vector3(...buffers.bounds.sphereCenter), buffers.bounds.sphereRadius);
+  } catch (error) {
+    geometry.dispose();
+    throw error;
+  }
 
   const mesh = new Mesh(geometry, material);
   mesh.name = `procedural-terrain-${layer}`;
@@ -494,11 +556,15 @@ function disableTerrainRaycast(raycaster: Raycaster, intersects: Intersection<Ob
 }
 
 function disposePageGeometry(page: PresentedTerrainPage): void {
-  page.group.traverse((object) => {
+  disposePageGroup(page.group);
+}
+
+function disposePageGroup(group: Group): void {
+  group.traverse((object) => {
     if (object instanceof InstancedMesh) object.dispose();
     if (object instanceof Mesh) object.geometry.dispose();
   });
-  page.group.clear();
+  group.clear();
 }
 
 function requireUniquePageKeys(pages: readonly PreparedTerrainPage[]): void {
@@ -509,6 +575,12 @@ function requireUniquePageKeys(pages: readonly PreparedTerrainPage[]): void {
     }
     keys.add(page.request.pageKey);
   }
+}
+
+function requireDisjointPageKeys(pages: readonly PreparedTerrainPage[], releasedPageKeys: readonly string[]): void {
+  const changedPageKeys = new Set(pages.map(({ request }) => request.pageKey));
+  const overlap = releasedPageKeys.find((pageKey) => changedPageKeys.has(pageKey));
+  if (overlap) throw new Error(`Terrain page cannot be committed and released together: ${overlap}`);
 }
 
 function summarizePresentation(

@@ -1,3 +1,9 @@
+import {
+  resetActiveWorldmapTerrainPresentationMetrics,
+  snapshotActiveWorldmapTerrainPresentationMetrics,
+  type WorldmapTerrainPresentationMetricsSnapshot,
+} from "./worldmap-terrain-presentation-metrics";
+
 const MAX_DURATION_SAMPLES = 512;
 
 export type WorldmapRenderDurationMetric =
@@ -11,11 +17,19 @@ export type WorldmapRenderDurationMetric =
   | "chunkTerrainCommitMs"
   | "chunkManagerCatchUpMs"
   | "structureAssetPrewarmMs"
-  | "presentationCommittedMs"
   | "presentationSkewMs"
   | "frameBudgetLongTaskMs"
   | "visualTerrainWindowMs"
   | "criticalTerrainPageMs"
+  | "terrainSourceReadyMs"
+  | "terrainFirstCompletePageMs"
+  | "terrainWindowConvergenceMs"
+  | "terrainFirstCompletePageRenderedMs"
+  | "terrainWindowFullyRenderedMs"
+  | "terrainCommitCpuMs"
+  | "terrainWorkerBuildMs"
+  | "terrainQueueWaitMs"
+  | "worldmapFrameMs"
   | "workerFindPath"
   | "createPath";
 
@@ -47,7 +61,6 @@ export type WorldmapRenderCounter =
   | "zoomTransitionsStarted"
   | "zoomTransitionsCompleted"
   | "zoomTransitionsCancelled"
-  | "terrainVisibleCommits"
   | "liveTilePageInvalidated"
   | "liveTilePageRebuilt"
   | "terrainShellStarted"
@@ -130,6 +143,7 @@ export interface WorldmapRenderDiagnosticsSnapshot {
   uploadBytes: Record<WorldmapRenderUploadMetric, number>;
   counters: Record<WorldmapRenderCounter, number>;
   forceRefreshReasons: Record<WorldmapForceRefreshReason, number>;
+  terrainPresentation: WorldmapTerrainPresentationMetricsSnapshot;
   updatedAtMs: number;
 }
 
@@ -152,11 +166,19 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkTerrainCommitMs: createDurationStats(),
     chunkManagerCatchUpMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
-    presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
     frameBudgetLongTaskMs: createDurationStats(),
     visualTerrainWindowMs: createDurationStats(),
     criticalTerrainPageMs: createDurationStats(),
+    terrainSourceReadyMs: createDurationStats(),
+    terrainFirstCompletePageMs: createDurationStats(),
+    terrainWindowConvergenceMs: createDurationStats(),
+    terrainFirstCompletePageRenderedMs: createDurationStats(),
+    terrainWindowFullyRenderedMs: createDurationStats(),
+    terrainCommitCpuMs: createDurationStats(),
+    terrainWorkerBuildMs: createDurationStats(),
+    terrainQueueWaitMs: createDurationStats(),
+    worldmapFrameMs: createDurationStats(),
     workerFindPath: createDurationStats(),
     createPath: createDurationStats(),
   },
@@ -190,7 +212,6 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     zoomTransitionsStarted: 0,
     zoomTransitionsCompleted: 0,
     zoomTransitionsCancelled: 0,
-    terrainVisibleCommits: 0,
     liveTilePageInvalidated: 0,
     liveTilePageRebuilt: 0,
     terrainShellStarted: 0,
@@ -249,13 +270,15 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     reconnect: 0,
     manager_recovery: 0,
   },
+  terrainPresentation: snapshotActiveWorldmapTerrainPresentationMetrics(),
   updatedAtMs: Date.now(),
 });
 
 let diagnosticsState = createDiagnosticsState();
 
 export function recordWorldmapRenderDuration(metric: WorldmapRenderDurationMetric, durationMs: number): void {
-  const normalizedDuration = Number.isFinite(durationMs) ? Math.max(0, durationMs) : 0;
+  if (!Number.isFinite(durationMs) || durationMs < 0) return;
+  const normalizedDuration = durationMs;
   const stats = diagnosticsState.durations[metric];
   stats.count += 1;
   stats.totalMs += normalizedDuration;
@@ -307,6 +330,7 @@ export function snapshotWorldmapRenderDiagnostics(): WorldmapRenderDiagnosticsSn
     uploadBytes: { ...diagnosticsState.uploadBytes },
     counters: { ...diagnosticsState.counters },
     forceRefreshReasons: { ...diagnosticsState.forceRefreshReasons },
+    terrainPresentation: snapshotActiveWorldmapTerrainPresentationMetrics(),
     updatedAtMs: diagnosticsState.updatedAtMs,
   };
 }
@@ -327,5 +351,6 @@ export function createWorldmapZoomTelemetrySummary(
 }
 
 export function resetWorldmapRenderDiagnostics(): void {
+  resetActiveWorldmapTerrainPresentationMetrics();
   diagnosticsState = createDiagnosticsState();
 }

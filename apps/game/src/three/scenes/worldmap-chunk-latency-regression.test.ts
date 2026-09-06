@@ -9,9 +9,14 @@ const diagnosticsWithSamples = (samples: number[]) => {
   return diagnostics;
 };
 
-const diagnosticsWithFirstVisibleCommitSamples = (samples: number[]) => {
+const diagnosticsWithTerrainMilestoneSamples = (
+  metric: "first_complete_page" | "window_convergence" | "first_rendered_frame",
+  samples: number[],
+) => {
   const diagnostics = createWorldmapChunkDiagnostics();
-  diagnostics.firstVisibleCommitDurationMsSamples = [...samples];
+  if (metric === "first_complete_page") diagnostics.terrainFirstCompletePageDurationMsSamples = [...samples];
+  if (metric === "window_convergence") diagnostics.terrainWindowConvergenceDurationMsSamples = [...samples];
+  if (metric === "first_rendered_frame") diagnostics.terrainFirstRenderedFrameDurationMsSamples = [...samples];
   return diagnostics;
 };
 
@@ -65,42 +70,67 @@ describe("evaluateChunkSwitchP95Regression", () => {
     expect(result.reason).toContain("Insufficient chunk-switch samples");
   });
 
-  it("can compare first-visible-commit p95 independently from full switch duration", () => {
-    const baseline = diagnosticsWithFirstVisibleCommitSamples([50, 50, 50, 50, 50, 50, 50, 50, 50, 100]);
+  it("compares first-rendered-frame p95 independently from commit and convergence", () => {
+    const baseline = diagnosticsWithTerrainMilestoneSamples(
+      "first_rendered_frame",
+      [50, 50, 50, 50, 50, 50, 50, 50, 50, 100],
+    );
     baseline.switchDurationMsSamples = [100, 100, 100, 100, 100, 100, 100, 100, 100, 200];
-    const current = diagnosticsWithFirstVisibleCommitSamples([50, 50, 50, 50, 50, 50, 50, 50, 50, 105]);
+    const current = diagnosticsWithTerrainMilestoneSamples(
+      "first_rendered_frame",
+      [50, 50, 50, 50, 50, 50, 50, 50, 50, 105],
+    );
     current.switchDurationMsSamples = [100, 100, 100, 100, 100, 100, 100, 100, 100, 260];
 
     const result = evaluateChunkSwitchP95Regression({
       baseline,
       current,
-      metric: "first_visible_commit",
+      metric: "terrain_first_rendered_frame",
       allowedRegressionFraction: 0.1,
     });
 
     expect(result.status).toBe("pass");
-    expect(result.metric).toBe("first_visible_commit");
+    expect(result.metric).toBe("terrain_first_rendered_frame");
     expect(result.baselineP95Ms).toBe(100);
     expect(result.currentP95Ms).toBe(105);
     expect(result.regressionFraction).toBeCloseTo(0.05);
   });
 
-  it("returns pending when first-visible-commit samples are unavailable", () => {
+  it("returns pending when first-rendered-frame samples are unavailable", () => {
     const baseline = diagnosticsWithSamples([100]);
     const current = diagnosticsWithSamples([110]);
 
     const result = evaluateChunkSwitchP95Regression({
       baseline,
       current,
-      metric: "first_visible_commit",
+      metric: "terrain_first_rendered_frame",
       allowedRegressionFraction: 0.1,
     });
 
     expect(result.status).toBe("pending");
-    expect(result.metric).toBe("first_visible_commit");
+    expect(result.metric).toBe("terrain_first_rendered_frame");
     if (result.status !== "pending") {
       throw new Error(`Expected pending status, got ${result.status}`);
     }
-    expect(result.reason).toContain("first-visible-commit");
+    expect(result.reason).toContain("terrain-first-rendered-frame");
+  });
+
+  it("returns pending for contract mismatches and insufficient finite samples", () => {
+    const baseline = diagnosticsWithTerrainMilestoneSamples("window_convergence", [100, Number.NaN]);
+    const current = diagnosticsWithTerrainMilestoneSamples("window_convergence", [105, Number.POSITIVE_INFINITY]);
+
+    expect(
+      evaluateChunkSwitchP95Regression({
+        baseline,
+        current,
+        metric: "terrain_window_convergence",
+        minimumSamples: 2,
+      }),
+    ).toMatchObject({ status: "pending", reason: expect.stringContaining("finite observations") });
+
+    baseline.contractVersion = 1 as never;
+    expect(evaluateChunkSwitchP95Regression({ baseline, current, metric: "terrain_window_convergence" })).toMatchObject(
+      { status: "pending", reason: expect.stringContaining("contract mismatch") },
+    );
   });
 });

@@ -14,8 +14,8 @@ describe("worldmap hex-grid pass count", () => {
     const source = readWorldmapSource();
 
     expect(source).toContain("this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk)");
-    expect(source).toMatch(/cachedChunk\.set\("__meta__",/);
-    expect(source).toMatch(/cachedMetadata\?\.expectedExploredTerrainInstances/);
+    expect(source).toMatch(/this\.preparedTerrainCache\.set\(chunkKey,\s*\{\s*\.\.\.preparedTerrain,/);
+    expect(source).toContain("const expectedExploredTerrainInstances = cached.expectedExploredTerrainInstances");
     expect(source).not.toContain("cacheMatricesForChunk(");
   });
 });

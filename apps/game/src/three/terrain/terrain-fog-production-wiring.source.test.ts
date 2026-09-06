@@ -52,8 +52,8 @@ describe("continuous exploration fog production wiring", () => {
 
   it("prepares the global coverage mask on the terrain worker before the atomic worldmap commit", () => {
     const worldmapTerrain = source("src/three/terrain/worldmap-procedural-terrain.ts");
-    const prepareMask = worldmapTerrain.indexOf("await this.terrain.prepareFogMaskAsync(preparedPages)");
-    const commit = worldmapTerrain.indexOf("this.terrain.beginPresentation(preparedPages)");
+    const prepareMask = worldmapTerrain.indexOf("await this.terrain.prepareFogMaskAsync(nextPages)");
+    const commit = worldmapTerrain.indexOf("this.terrain.commitPages(", prepareMask);
 
     expect(prepareMask).toBeGreaterThan(0);
     expect(prepareMask).toBeLessThan(commit);

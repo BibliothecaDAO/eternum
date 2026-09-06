@@ -7,6 +7,7 @@ export function evaluateTerrainPerformanceResults(results, options = {}) {
   const requireLifecycle = options.runMode === "full";
   const enforceTiming = options.timingPolicy !== "informational";
   const reasons = [];
+  const inconclusiveReasons = [];
 
   for (const rendererMode of requiredRenderers) {
     for (const variant of requiredVariants) {
@@ -16,17 +17,18 @@ export function evaluateTerrainPerformanceResults(results, options = {}) {
     }
   }
 
-  for (const result of results) evaluateScenario(result, requireLifecycle, enforceTiming, reasons);
+  for (const result of results) evaluateScenario(result, requireLifecycle, enforceTiming, reasons, inconclusiveReasons);
   evaluateBackendParity(results, reasons);
 
   return {
-    ok: reasons.length === 0,
+    ok: reasons.length === 0 && inconclusiveReasons.length === 0,
+    status: reasons.length > 0 ? "fail" : inconclusiveReasons.length > 0 ? "inconclusive" : "pass",
     optimizationDeltas: createOptimizationDeltas(results),
-    reasons,
+    reasons: [...reasons, ...inconclusiveReasons],
   };
 }
 
-function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
+function evaluateScenario(result, requireLifecycle, enforceTiming, reasons, inconclusiveReasons) {
   const label = `${result.rendererMode}/${result.variant}`;
   const snapshot = result.snapshot;
   if (!result.routeMounted) reasons.push(`${label}: benchmark route did not mount`);
@@ -36,7 +38,10 @@ function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
     reasons.push(`${label}: benchmark snapshot is missing`);
     return;
   }
-  if (snapshot.contractVersion !== 1) reasons.push(`${label}: expected contract version 1`);
+  if (snapshot.contractVersion !== 2) {
+    inconclusiveReasons.push(`${label}: expected terrain benchmark contract version 2`);
+    return;
+  }
   if (snapshot.fixture?.fingerprint !== "fullscreen-balanced-v2") {
     reasons.push(`${label}: fixture fingerprint did not match fullscreen-balanced-v2`);
   }
@@ -51,13 +56,14 @@ function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
   if (snapshot.coverage?.missingFrames !== 0 || snapshot.coverage?.missingSamples !== 0) {
     reasons.push(`${label}: terrain did not cover every sampled screen position`);
   }
+  evaluateTerrainMilestones(label, snapshot, inconclusiveReasons);
   if (enforceTiming) {
     evaluateFrameStats(label, "static", snapshot.frames?.static, 20, reasons);
     evaluateFrameStats(label, "motion", snapshot.frames?.motion, 25, reasons);
     if (!(snapshot.chunks?.commitP95Ms >= 0 && snapshot.chunks.commitP95Ms <= 8)) {
       reasons.push(`${label}: page commit p95 exceeded 8 ms`);
     }
-    if (!(snapshot.render?.firstRenderMs >= 0 && snapshot.render.firstRenderMs <= 500)) {
+    if (!(snapshot.render?.firstTerrainFrameMs >= 0 && snapshot.render.firstTerrainFrameMs <= 500)) {
       reasons.push(`${label}: first terrain render exceeded 500 ms`);
     }
     if (snapshot.longTasks?.maxMs >= 50) reasons.push(`${label}: terrain-attributed long task reached 50 ms`);
@@ -87,6 +93,41 @@ function evaluateScenario(result, requireLifecycle, enforceTiming, reasons) {
       reasons.push(`${label}: renderer resources grew after returning to origin`);
     }
   }
+}
+
+function evaluateTerrainMilestones(label, snapshot, inconclusiveReasons) {
+  const requiredFiniteMetrics = [
+    ["page commit p95", snapshot.chunks?.commitP95Ms],
+    ["first complete page p95", snapshot.chunks?.firstCompletePageP95Ms],
+    ["window convergence p95", snapshot.chunks?.windowConvergenceP95Ms],
+    ["first rendered frame p95", snapshot.chunks?.firstRenderedFrameP95Ms],
+    ["worker build p95", snapshot.chunks?.workerBuildP95Ms],
+    ["queue wait p95", snapshot.chunks?.queueWaitP95Ms],
+    ["first terrain frame", snapshot.render?.firstTerrainFrameMs],
+  ];
+  requiredFiniteMetrics.forEach(([name, value]) => {
+    if (!isFiniteNonNegative(value)) inconclusiveReasons.push(`${label}: ${name} is unavailable or non-finite`);
+  });
+  const requiredSampleCounts = [
+    ["page commit", snapshot.chunks?.commitSamples],
+    ["first complete page", snapshot.chunks?.firstCompletePageSamples],
+    ["window convergence", snapshot.chunks?.windowConvergenceSamples],
+    ["first rendered frame", snapshot.chunks?.firstRenderedFrameSamples],
+    ["worker build", snapshot.chunks?.workerBuildSamples],
+    ["queue wait", snapshot.chunks?.queueWaitSamples],
+  ];
+  requiredSampleCounts.forEach(([name, count]) => {
+    if (!Number.isSafeInteger(count) || count <= 0)
+      inconclusiveReasons.push(`${label}: ${name} samples are unavailable`);
+  });
+  if (!(snapshot.chunks?.requestedWindows > 0)) inconclusiveReasons.push(`${label}: no terrain windows were requested`);
+  if (snapshot.chunks?.convergedWindows !== snapshot.chunks?.requestedWindows) {
+    inconclusiveReasons.push(`${label}: not every requested terrain window converged`);
+  }
+}
+
+function isFiniteNonNegative(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
 function evaluateFrameStats(label, phase, stats, p95BudgetMs, reasons) {
@@ -140,7 +181,18 @@ function createOptimizationDeltas(results) {
     return pairwise(TERRAIN_BENCHMARK_VARIANTS).flatMap(([baselineVariant, candidateVariant]) => {
       const baseline = byVariant[baselineVariant];
       const candidate = byVariant[candidateVariant];
-      if (!baseline || !candidate) return [];
+      if (!baseline || !candidate || baseline.contractVersion !== 2 || candidate.contractVersion !== 2) return [];
+      const comparable = [
+        baseline.render?.drawCalls,
+        candidate.render?.drawCalls,
+        baseline.frames?.motion?.p95Ms,
+        candidate.frames?.motion?.p95Ms,
+        baseline.frames?.static?.p95Ms,
+        candidate.frames?.static?.p95Ms,
+        baseline.render?.triangles,
+        candidate.render?.triangles,
+      ];
+      if (!comparable.every((value) => typeof value === "number" && Number.isFinite(value))) return [];
       return [
         {
           candidateVariant,

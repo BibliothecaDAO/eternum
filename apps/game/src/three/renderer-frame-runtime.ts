@@ -13,6 +13,7 @@ interface RendererFrameSceneController {
   getInteractionOverlayScene(): Scene;
   getScene(): Scene;
   hasActiveLabelAnimations(): boolean;
+  onFrameRendered?(atMs: number): void;
   setWeatherAtmosphereState(weatherState: unknown): void;
   update(deltaTime: number): void;
 }
@@ -55,6 +56,7 @@ interface RunRendererFrameInput {
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render" | "shouldRender">;
+  now?: () => number;
   worldmapScene: RendererFrameSceneController;
 }
 
@@ -89,6 +91,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     resolvedFrame,
     shouldRenderLabels,
   });
+  resolvedFrame.sceneController.onFrameRendered?.(input.now?.() ?? performance.now());
   input.effectsBridgeRuntime?.updateWeatherPostProcessing(weatherState);
   input.captureStatsSample();
 

@@ -225,14 +225,21 @@ function invokeAgentBrowser(session, commandArgs, { headed = false } = {}) {
     cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    timeout: 30_000,
+    killSignal: "SIGKILL",
   });
 }
 
-function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
+export function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const result = invokeAgentBrowser(session, commandArgs, { headed });
 
   if (result.status !== 0) {
-    throw new Error(result.stderr.trim() || result.stdout.trim() || `agent-browser failed for session ${session}`);
+    throw new Error(
+      result.error?.message ||
+        result.stderr.trim() ||
+        result.stdout.trim() ||
+        `agent-browser failed for session ${session}`,
+    );
   }
 
   return result.stdout.trim();
