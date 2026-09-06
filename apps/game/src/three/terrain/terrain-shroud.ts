@@ -4,7 +4,7 @@ import { Color } from "three/src/math/Color.js";
 import { TERRAIN_BIOME_ART_DIRECTIONS } from "./terrain-biome-art-direction";
 import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
 import type { TerrainField } from "./terrain-field";
-import { TERRAIN_DEEP_FOG_COLOR } from "./terrain-fog-style";
+import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
 import { hashTerrainCoordinates, terrainHashToUnitFloat } from "./terrain-hash";
 import type { TerrainCellInput, TerrainPageRequest, TerrainShroudInstance } from "./terrain-types";
 
@@ -50,7 +50,7 @@ function prepareTerrainShroudInstance(
     ),
     tint: resolveShroudTint(exploredNeighbors.map(({ biome }) => biome)),
     worldX: center.x,
-    worldY: field.sampleFogPreviewVertex(center.x, center.z, { col, row }).height + SHROUD_SURFACE_OFFSET,
+    worldY: TERRAIN_FOG_GROUND_HEIGHT + SHROUD_SURFACE_OFFSET,
     worldZ: center.z,
   };
 }

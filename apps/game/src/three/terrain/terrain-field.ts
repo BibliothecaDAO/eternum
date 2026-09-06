@@ -2,6 +2,7 @@ import { Biome } from "@bibliothecadao/eternum/biome";
 import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import { Color } from "three/src/math/Color.js";
 
+import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
 import { TerrainNoise } from "./terrain-noise";
 import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./terrain-biome-art-direction";
 import {
@@ -103,9 +104,6 @@ export class TerrainField {
   private readonly cellByKey = new Map<string, TerrainCellInput>();
   private readonly sampleByKey = new Map<string, CellFieldSample>();
   private readonly candidatesByKey = new Map<string, CellFieldSample[]>();
-  private readonly frontierByKey = new Map<string, boolean>();
-  private readonly previewSampleByKey = new Map<string, CellFieldSample>();
-  private readonly previewCandidatesByKey = new Map<string, CellFieldSample[]>();
   private readonly noise: TerrainNoise;
   private biomeMismatchCount: number | null = null;
   private readonly settlements: Array<{
@@ -151,33 +149,6 @@ export class TerrainField {
     return this.cellByKey.get(terrainCellKey(col, row));
   }
 
-  isFrontierCell(col: number, row: number): boolean {
-    const key = terrainCellKey(col, row);
-    const cached = this.frontierByKey.get(key);
-    if (cached !== undefined) return cached;
-    const cell = this.getCell(col, row);
-    const frontier = Boolean(
-      cell &&
-      !cell.explored &&
-      terrainNeighborCoordinates(col, row).some((neighbor) => this.getCell(neighbor.col, neighbor.row)?.explored),
-    );
-    this.frontierByKey.set(key, frontier);
-    return frontier;
-  }
-
-  getFogPreviewBiome(col: number, row: number): BiomeType | null {
-    return this.resolvePreviewCellSample(col, row)?.biome ?? null;
-  }
-
-  sampleFogPreviewVertex(
-    worldX: number,
-    worldZ: number,
-    owner: Pick<TerrainCellInput, "col" | "row">,
-  ): TerrainVisualSample {
-    if (this.getCell(owner.col, owner.row)?.explored !== false) return createUnknownSample();
-    return this.sampleVertexFromCandidates(worldX, worldZ, this.resolveFogPreviewCandidates(owner.col, owner.row), 0);
-  }
-
   sampleVisual(worldX: number, worldZ: number, owner?: Pick<TerrainCellInput, "col" | "row">): TerrainVisualSample {
     const ownerCoordinate = owner ?? findNearestTerrainHex(worldX, worldZ);
     const candidates = this.resolveExploredCandidates(ownerCoordinate.col, ownerCoordinate.row);
@@ -188,7 +159,6 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
-    explored = 1,
   ): TerrainVisualSample {
     if (candidates.length === 0) return createUnknownSample();
 
@@ -247,7 +217,7 @@ export class TerrainField {
     const vegetation = this.resolveVegetationField(worldX, worldZ, candidates, weightedEnvironment);
     const shore = this.sampleShoreProximity(worldX, worldZ, candidates);
     const groundEcology = resolveTerrainGroundEcology(normalizeTerrainGroundWeights(groundWeights), {
-      allowsVegetation: explored === 1 && !isTerrainWaterBiome(strongestBiome),
+      allowsVegetation: !isTerrainWaterBiome(strongestBiome),
       moisture: weightedEnvironment.moisture,
       shore,
       vegetation,
@@ -278,7 +248,7 @@ export class TerrainField {
           albedoFactor *
           groundEcology.tint[2],
       ],
-      explored,
+      explored: 1,
       groundWeights: paddedGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
@@ -301,9 +271,7 @@ export class TerrainField {
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     const owner = findNearestTerrainHex(worldX, worldZ);
     if (this.getCell(owner.col, owner.row)?.explored === false) {
-      const preview = this.sampleFogPreviewVertex(worldX, worldZ, owner);
-      // Match the covered geometry without exposing its procedural preview as a known biome.
-      return { biome: null, height: preview.height, normal: preview.normal };
+      return { biome: null, height: TERRAIN_FOG_GROUND_HEIGHT, normal: [0, 1, 0] };
     }
     const sample = this.sampleVertex(worldX, worldZ, owner);
     if (isTerrainWaterCovered(sample.height) && (isTerrainWaterBiome(sample.biome) || sample.shore > 0)) {
@@ -367,9 +335,8 @@ export class TerrainField {
     worldX: number,
     worldZ: number,
     candidates: readonly CellFieldSample[],
-    explored = 1,
   ): TerrainVisualSample {
-    const center = this.sampleVisualFromCandidates(worldX, worldZ, candidates, explored);
+    const center = this.sampleVisualFromCandidates(worldX, worldZ, candidates);
     if (center.biome === null) return center;
     const normal = this.sampleNormalFromCandidates(worldX, worldZ, candidates);
     return { ...center, groundWeights: applyTerrainGroundSlope(center.groundWeights, normal[1]), normal };
@@ -592,55 +559,21 @@ export class TerrainField {
     return candidates;
   }
 
-  private resolveFogPreviewCandidates(col: number, row: number): CellFieldSample[] {
-    const ownerKey = terrainCellKey(col, row);
-    const cached = this.previewCandidatesByKey.get(ownerKey);
-    if (cached) return cached;
-    const candidates = resolveTerrainCandidateCoordinates(col, row)
-      .map((coordinate) => this.resolvePresentationCellSample(coordinate.col, coordinate.row))
-      .filter((sample): sample is CellFieldSample => sample !== null)
-      .toSorted((left, right) => left.row - right.row || left.col - right.col);
-    this.previewCandidatesByKey.set(ownerKey, candidates);
-    return candidates;
-  }
-
-  private resolvePresentationCellSample(col: number, row: number): CellFieldSample | null {
-    const cell = this.getCell(col, row);
-    if (!cell) return null;
-    if (cell.explored) return this.resolveCellSample(col, row);
-    return this.resolvePreviewCellSample(col, row);
-  }
-
   private resolveCellSample(col: number, row: number): CellFieldSample | null {
     const key = terrainCellKey(col, row);
     const cached = this.sampleByKey.get(key);
     if (cached) return cached;
     const cell = this.cellByKey.get(key);
     if (!cell?.explored || !cell.biome) return null;
-    return this.createCellSample(col, row, cell.biome, this.sampleByKey);
+    return this.createCellSample(col, row, cell.biome);
   }
 
-  private resolvePreviewCellSample(col: number, row: number): CellFieldSample | null {
-    const key = terrainCellKey(col, row);
-    const cached = this.previewSampleByKey.get(key);
-    if (cached) return cached;
-    const cell = this.cellByKey.get(key);
-    if (!cell || cell.explored) return null;
-    return this.createCellSample(col, row, cell.previewBiome, this.previewSampleByKey);
-  }
-
-  private createCellSample(
-    col: number,
-    row: number,
-    previewBiome: BiomeType | null,
-    cache: Map<string, CellFieldSample>,
-  ): CellFieldSample {
+  private createCellSample(col: number, row: number, biome: BiomeType): CellFieldSample {
     const environment = Biome.sampleEnvironment(
       col + this.request.mapCenter,
       row + this.request.mapCenter,
       this.request.climate,
     );
-    const biome = previewBiome ?? environment.biome;
     const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
     const direction = TERRAIN_BIOME_ART_DIRECTIONS[biome];
     const center = terrainHexToWorld(col, row);
@@ -667,7 +600,7 @@ export class TerrainField {
       sampledBiome: environment.biome,
       secondary: [secondary.r, secondary.g, secondary.b] as const,
     };
-    cache.set(terrainCellKey(col, row), sample);
+    this.sampleByKey.set(terrainCellKey(col, row), sample);
     return sample;
   }
 

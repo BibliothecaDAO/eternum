@@ -38,7 +38,6 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   fogMaskWidth: 0,
   fogOpacity: 0,
   fogTerrainCells: 0,
-  frontierPreviewCells: 0,
   frameP50Ms: 0,
   frameP95Ms: 0,
   frameWorstMs: 0,
@@ -539,7 +538,6 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             <DebugMetric label="Dust movers" value={stats.dustEmitterCount.toLocaleString()} />
             <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
-            <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />
             <DebugMetric label="Fog terrain" value={stats.fogTerrainCells.toLocaleString()} />
             <DebugMetric
               label="Fog mask"

@@ -119,6 +119,27 @@ describe("HoverHexManager material ownership", () => {
     manager.dispose();
   });
 
+  it("keeps all selection layers inside their hex beside a raised neighbor", () => {
+    const inside = (x: number, z: number) =>
+      Math.max(Math.abs(x), 0.5 * Math.abs(x) + (Math.sqrt(3) / 2) * Math.abs(z)) < Math.sqrt(3) / 2;
+    const manager = new HoverHexManager(new THREE.Scene(), {
+      sampleSurface: (x, z) => ({ biome: null, height: inside(x, z) ? 0 : 0.4, normal: [0, 1, 0] }),
+    });
+    manager.showHover(0, 0);
+    for (const object of [
+      (manager as any).hoverHex,
+      (manager as any).hoverHalo,
+      (manager as any).hoverOutline,
+    ] as THREE.Mesh[]) {
+      const positions = object.geometry.getAttribute("position");
+      for (let index = 0; index < positions.count; index++) {
+        expect(inside(positions.getX(index), -positions.getY(index))).toBe(true);
+        expect(positions.getZ(index)).toBe(0);
+      }
+    }
+    manager.dispose();
+  });
+
   it("keeps the glow halo attached while the fill hover is active", async () => {
     const manager = new HoverHexManager(new THREE.Scene());
 

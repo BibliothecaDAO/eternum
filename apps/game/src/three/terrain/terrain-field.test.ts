@@ -263,41 +263,22 @@ describe("TerrainField", () => {
     expect(field.sampleSurface(20, 20).biome).toBeNull();
   });
 
-  it("samples deterministic biome terrain beneath every fog-covered cell", () => {
-    const frontier = unknownCell(1, 0, BiomeType.Snow);
-    const underFog = unknownCell(2, 0, BiomeType.Scorched);
-    const deep = unknownCell(3, 0, BiomeType.Bare);
-    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.Grassland), frontier, underFog, deep]));
-    const frontierCenter = terrainHexToWorld(frontier.col, frontier.row);
-    const underFogCenter = terrainHexToWorld(underFog.col, underFog.row);
-    const deepCenter = terrainHexToWorld(deep.col, deep.row);
-
-    expect(field.isFrontierCell(frontier.col, frontier.row)).toBe(true);
-    expect(field.sampleFogPreviewVertex(frontierCenter.x, frontierCenter.z, frontier)).toMatchObject({
-      biome: BiomeType.Snow,
-      explored: 0,
-    });
-    expect(field.sampleFogPreviewVertex(underFogCenter.x, underFogCenter.z, underFog)).toMatchObject({
-      biome: BiomeType.Scorched,
-      explored: 0,
-    });
-    expect(field.isFrontierCell(deep.col, deep.row)).toBe(false);
-    expect(field.sampleFogPreviewVertex(deepCenter.x, deepCenter.z, deep)).toMatchObject({
-      biome: BiomeType.Bare,
-      explored: 0,
-    });
-  });
-
-  it("anchors overlays to fog geometry without revealing the preview biome", () => {
-    const covered = unknownCell(1, 0, BiomeType.Snow);
-    const field = new TerrainField(createRequest([cell(0, 0, BiomeType.Grassland), covered]));
-    const center = terrainHexToWorld(covered.col, covered.row);
-    for (let corner = 0; corner < 6; corner += 1) {
-      const angle = (corner * Math.PI) / 3 + Math.PI / 6;
-      const x = center.x + Math.cos(angle) * 0.95;
-      const z = center.z + Math.sin(angle) * 0.95;
-      const preview = field.sampleFogPreviewVertex(x, z, covered);
-      expect(field.sampleSurface(x, z)).toEqual({ biome: null, height: preview.height, normal: preview.normal });
+  it("anchors every unknown hex to the same fog plane regardless of hidden biome or frontier", () => {
+    const cells = [
+      cell(0, 0, BiomeType.Grassland),
+      unknownCell(1, 0, BiomeType.Snow),
+      unknownCell(2, 0, BiomeType.Scorched),
+      unknownCell(3, 0, BiomeType.Ocean),
+    ];
+    const field = new TerrainField(createRequest(cells));
+    for (const covered of cells.filter((cell) => !cell.explored)) {
+      const center = terrainHexToWorld(covered.col, covered.row);
+      for (let corner = 0; corner < 6; corner += 1) {
+        const angle = (corner * Math.PI) / 3 + Math.PI / 6;
+        const x = center.x + Math.cos(angle) * 0.95;
+        const z = center.z + Math.sin(angle) * 0.95;
+        expect(field.sampleSurface(x, z)).toEqual({ biome: null, height: 0, normal: [0, 1, 0] });
+      }
     }
   });
 

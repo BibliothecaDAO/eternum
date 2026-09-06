@@ -5,6 +5,7 @@ import {
   snapTerrainCoordinate,
   type TerrainWorldCoordinate,
 } from "./terrain-coordinates";
+import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
 import { TerrainField, type TerrainVisualSample } from "./terrain-field";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER, prepareTerrainPropInstances } from "./terrain-props";
 import { prepareTerrainShroudInstances } from "./terrain-shroud";
@@ -53,7 +54,6 @@ class TerrainVertexSampler {
   constructor(private readonly field: TerrainField) {}
 
   sample(cell: TerrainCellInput, point: TerrainWorldCoordinate): TerrainVisualSample {
-    if (!cell.explored) return this.field.sampleFogPreviewVertex(point.x, point.z, cell);
     const key = `${point.x}:${point.z}`;
     const retained = this.exploredByCoordinate.get(key);
     if (retained) return retained;
@@ -76,7 +76,6 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
   const water = createGeometryAccumulator();
   let fogTerrainCells = 0;
   let frontierEdges = 0;
-  let frontierPreviewCells = 0;
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
@@ -86,12 +85,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       continue;
     }
     fogTerrainCells += 1;
-    // The opaque fog backdrop owns the interior. Only the frontier needs geometry
-    // to join the explored surface without cracks or exposed skirts.
-    if (!field.isFrontierCell(cell.col, cell.row)) continue;
-    appendCellPatch(land, vertexSampler, cell, subdivisions);
-    if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-    frontierPreviewCells += 1;
+    // Unknown space belongs to the single fog backdrop; no competing preview surface is built.
   }
 
   const buffers = finalizeGeometry(land);
@@ -109,7 +103,6 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       exploredSurfaceSamples: vertexSampler.exploredSamples,
       fogTerrainCells,
       frontierEdges,
-      frontierPreviewCells,
       geometryBytes,
       prepareMs,
       roadSegments: request.roadSegments.length,
@@ -154,7 +147,7 @@ function shouldAppendWaterCellPatch(field: TerrainField, cell: TerrainCellInput)
 function isPresentedWaterCell(field: TerrainField, col: number, row: number): boolean {
   const cell = field.getCell(col, row);
   if (!cell) return false;
-  return isTerrainWaterBiome(cell.explored ? cell.biome : field.getFogPreviewBiome(col, row));
+  return cell.explored && isTerrainWaterBiome(cell.biome);
 }
 
 function sampleWaterVertex(
@@ -315,7 +308,7 @@ function appendFrontierSkirts(target: GeometryAccumulator, field: TerrainField, 
   let edgeCount = 0;
 
   neighbors.forEach((neighbor, direction) => {
-    if (field.getCell(neighbor.col, neighbor.row)?.explored || field.isFrontierCell(neighbor.col, neighbor.row)) return;
+    if (field.getCell(neighbor.col, neighbor.row)?.explored) return;
     const start = corners[(direction + 5) % 6];
     const end = corners[direction];
     const startSample = field.sampleVertex(start.x, start.z);
@@ -326,10 +319,16 @@ function appendFrontierSkirts(target: GeometryAccumulator, field: TerrainField, 
       target,
       start,
       startSample,
-      startSample.height - FRONTIER_SKIRT_DEPTH,
+      Math.min(TERRAIN_FOG_GROUND_HEIGHT, startSample.height - FRONTIER_SKIRT_DEPTH),
       true,
     );
-    const bottomEnd = appendFrontierVertex(target, end, endSample, endSample.height - FRONTIER_SKIRT_DEPTH, true);
+    const bottomEnd = appendFrontierVertex(
+      target,
+      end,
+      endSample,
+      Math.min(TERRAIN_FOG_GROUND_HEIGHT, endSample.height - FRONTIER_SKIRT_DEPTH),
+      true,
+    );
     target.indices.push(topStart, topEnd, bottomStart, bottomStart, topEnd, bottomEnd);
     edgeCount += 1;
   });

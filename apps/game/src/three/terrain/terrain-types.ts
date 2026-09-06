@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 22;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 23;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
@@ -102,7 +102,6 @@ export interface TerrainPageDiagnostics {
   exploredSurfaceSamples: number;
   fogTerrainCells: number;
   frontierEdges: number;
-  frontierPreviewCells: number;
   geometryBytes: number;
   prepareMs: number;
   roadSegments: number;
