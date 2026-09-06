@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { findNearestTerrainHex, terrainHexToWorld } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
+import { isTerrainWaterBiome, isTerrainWaterCovered, TERRAIN_WATER_LEVEL } from "./terrain-water";
 
 describe("TerrainField", () => {
   it("is deterministic and keeps projected biome authoritative at cell centers", () => {
@@ -21,6 +22,36 @@ describe("TerrainField", () => {
     const field = new TerrainField(createRequest([cell(0, 0, BiomeType.DeepOcean)]));
     expect(field.sampleVertex(0, 0).height).toBeLessThan(-0.055);
     expect(field.sampleSurface(0, 0)).toMatchObject({ height: -0.055, normal: [0, 1, 0] });
+  });
+
+  it("matches generated terrain geometry for placement across biomes, boundaries and structure pads", () => {
+    const biomes = Object.values(BiomeType).filter((biome) => biome !== BiomeType.None);
+    const cells = biomes.map((biome, index) =>
+      cell((index % 5) - 2, Math.floor(index / 5) - 2, biome, index % 3 === 0),
+    );
+    const field = new TerrainField(createRequest(cells));
+    const offsets = [
+      [0, 0],
+      [0.5, -0.4],
+      [-0.86, 0.5],
+      [Math.sqrt(3) / 2, 0],
+      [20, 20],
+    ];
+
+    for (const owner of cells) {
+      const center = terrainHexToWorld(owner.col, owner.row);
+      for (const [offsetX, offsetZ] of offsets) {
+        const x = center.x + offsetX;
+        const z = center.z + offsetZ;
+        const vertex = field.sampleVertex(x, z);
+        const water = isTerrainWaterCovered(vertex.height) && (isTerrainWaterBiome(vertex.biome) || vertex.shore > 0);
+        expect(field.sampleSurface(x, z)).toEqual({
+          biome: vertex.biome,
+          height: water ? TERRAIN_WATER_LEVEL : vertex.height,
+          normal: water ? [0, 1, 0] : vertex.normal,
+        });
+      }
+    }
   });
 
   it("keeps material brightness consistent inside a uniform biome", () => {

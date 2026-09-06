@@ -83,6 +83,7 @@ export interface TerrainVisualSample extends TerrainSurfaceSample {
 }
 
 const NORMAL_SAMPLE_DISTANCE = 0.035;
+const TERRAIN_BLEND_RADIUS_SQUARED = 4;
 const PAD_INNER_RADIUS = 0.5;
 const PAD_OUTER_RADIUS = 0.82;
 const PROP_CLEARANCE_INNER_RADIUS = 0.68;
@@ -160,13 +161,12 @@ export class TerrainField {
     worldZ: number,
     candidates: readonly CellFieldSample[],
   ): TerrainVisualSample {
-    if (candidates.length === 0) return createUnknownSample();
+    const dominant = findDominantTerrainCandidate(worldX, worldZ, candidates);
+    if (!dominant) return createUnknownSample();
 
     let totalWeight = 0;
     let visualWeightSum = 0;
-    const nearestDistanceSquared = Math.min(
-      ...candidates.map((candidate) => (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2),
-    );
+    const nearestDistanceSquared = (dominant.centerX - worldX) ** 2 + (dominant.centerZ - worldZ) ** 2;
     let height = 0;
     let roughness = 0;
     let red = 0;
@@ -176,9 +176,7 @@ export class TerrainField {
     let macroTintStrength = 0;
     let shoreWetness = 0;
     const groundWeights = Array.from({ length: 8 }, () => 0);
-    let strongestWeight = -1;
-    let strongestBiome = candidates[0].biome;
-    let strongestBiomeId = candidates[0].biomeId;
+    const strongestBiome = dominant.biome;
     const macroMaterial = this.noise.sample(worldX * 0.42, worldZ * 0.42, "terrain-color-v1");
     const colorMix = 0.18 + macroMaterial * 0.28;
 
@@ -199,12 +197,6 @@ export class TerrainField {
       red += (candidate.primary[0] + (candidate.secondary[0] - candidate.primary[0]) * colorMix) * visualWeight;
       green += (candidate.primary[1] + (candidate.secondary[1] - candidate.primary[1]) * colorMix) * visualWeight;
       blue += (candidate.primary[2] + (candidate.secondary[2] - candidate.primary[2]) * colorMix) * visualWeight;
-
-      if (weight > strongestWeight) {
-        strongestWeight = weight;
-        strongestBiome = candidate.biome;
-        strongestBiomeId = candidate.biomeId;
-      }
     }
 
     if (totalWeight === 0) return createUnknownSample();
@@ -236,7 +228,7 @@ export class TerrainField {
 
     return {
       biome: strongestBiome,
-      biomeId: strongestBiomeId,
+      biomeId: dominant.biomeId,
       color: [
         (baseColor[0] + (TERRAIN_DISTURBED_GROUND_COLOR.r - baseColor[0]) * disturbedColorBlend) *
           albedoFactor *
@@ -273,11 +265,22 @@ export class TerrainField {
     if (this.getCell(owner.col, owner.row)?.explored === false) {
       return { biome: null, height: TERRAIN_FOG_GROUND_HEIGHT, normal: [0, 1, 0] };
     }
-    const sample = this.sampleVertex(worldX, worldZ, owner);
-    if (isTerrainWaterCovered(sample.height) && (isTerrainWaterBiome(sample.biome) || sample.shore > 0)) {
-      return { biome: sample.biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] };
+    const candidates = this.resolveExploredCandidates(owner.col, owner.row);
+    const dominant = findDominantTerrainCandidate(worldX, worldZ, candidates);
+    if (!dominant) {
+      return { biome: null, height: TERRAIN_BIOME_DESCRIPTORS[BiomeType.None].baseHeight, normal: [0, 1, 0] };
     }
-    return sample;
+
+    // Model placement needs geometry only; material and vegetation sampling belongs to page generation.
+    const height = this.sampleHeightFromCandidates(worldX, worldZ, candidates);
+    const biome = dominant.biome;
+    if (
+      isTerrainWaterCovered(height) &&
+      (isTerrainWaterBiome(biome) || this.sampleShoreProximity(worldX, worldZ, candidates) > 0)
+    ) {
+      return { biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] };
+    }
+    return { biome, height, normal: this.sampleNormalFromCandidates(worldX, worldZ, candidates) };
   }
 
   samplePropDensityContext(
@@ -780,9 +783,27 @@ function clampUnit(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+/** Blend weight decreases with distance; retain canonical candidate order at an exact hex boundary. */
+function findDominantTerrainCandidate(
+  worldX: number,
+  worldZ: number,
+  candidates: readonly CellFieldSample[],
+): CellFieldSample | null {
+  let nearest: CellFieldSample | null = null;
+  let nearestDistanceSquared = TERRAIN_BLEND_RADIUS_SQUARED;
+  for (const candidate of candidates) {
+    const distanceSquared = (candidate.centerX - worldX) ** 2 + (candidate.centerZ - worldZ) ** 2;
+    if (distanceSquared < nearestDistanceSquared) {
+      nearest = candidate;
+      nearestDistanceSquared = distanceSquared;
+    }
+  }
+  return nearest;
+}
+
 function terrainBlendWeight(distanceSquared: number): number {
-  if (distanceSquared >= 4) return 0;
-  const support = 1 - distanceSquared / 4;
+  if (distanceSquared >= TERRAIN_BLEND_RADIUS_SQUARED) return 0;
+  const support = 1 - distanceSquared / TERRAIN_BLEND_RADIUS_SQUARED;
   return (support * support * support * support) / (0.04 + distanceSquared * distanceSquared);
 }
 
