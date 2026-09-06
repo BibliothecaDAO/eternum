@@ -14,6 +14,7 @@ import {
   type Raycaster,
 } from "three";
 
+import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
@@ -50,7 +51,6 @@ interface PresentedTerrainPage {
 
 export interface TerrainPresentationDiagnostics {
   fogTerrainCells: number;
-  frontierPreviewCells: number;
   geometryBytes: number;
   groundCoverInstances: number;
   pages: number;
@@ -113,8 +113,6 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
-    this.fogField.applyToTerrain(this.materials.flatLand);
-    this.fogField.applyToTerrain(this.materials.water);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
@@ -170,7 +168,6 @@ export class ProceduralTerrain {
     if (this.groundTextureHandle) return;
     this.groundTextureHandle = handle;
     this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
-    this.fogField.applyToTerrain(this.groundTextureMaterial);
     this.refreshGroundMaterial();
   }
 
@@ -357,9 +354,9 @@ export class ProceduralTerrain {
 
   sampleSurface(worldX: number, worldZ: number): TerrainSurfaceSample {
     this.requireActive();
+    const owner = findNearestTerrainHex(worldX, worldZ);
     for (const page of this.pages.values()) {
-      const sample = page.field.sampleSurface(worldX, worldZ);
-      if (sample.biome !== null) return sample;
+      if (page.field.ownsCell(owner.col, owner.row)) return page.field.sampleSurface(worldX, worldZ);
     }
     return { biome: null, height: 0, normal: [0, 1, 0] };
   }
@@ -608,7 +605,6 @@ function summarizePresentation(
   >(
     (summary, page) => ({
       fogTerrainCells: summary.fogTerrainCells + page.diagnostics.fogTerrainCells,
-      frontierPreviewCells: summary.frontierPreviewCells + page.diagnostics.frontierPreviewCells,
       geometryBytes: summary.geometryBytes + page.diagnostics.geometryBytes,
       pages: summary.pages + 1,
       triangles: summary.triangles + page.diagnostics.triangles,
@@ -616,7 +612,6 @@ function summarizePresentation(
     }),
     {
       fogTerrainCells: 0,
-      frontierPreviewCells: 0,
       geometryBytes: 0,
       pages: 0,
       triangles: 0,

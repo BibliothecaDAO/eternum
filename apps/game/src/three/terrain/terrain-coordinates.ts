@@ -1,8 +1,8 @@
 import { getNeighborHexes } from "@bibliothecadao/types/terrain";
 
 const TERRAIN_HEX_RADIUS = 1;
-const TERRAIN_HEX_HORIZONTAL_SPACING = Math.sqrt(3) * TERRAIN_HEX_RADIUS;
-const TERRAIN_HEX_VERTICAL_SPACING = 1.5 * TERRAIN_HEX_RADIUS;
+export const TERRAIN_HEX_HORIZONTAL_SPACING = Math.sqrt(3) * TERRAIN_HEX_RADIUS;
+export const TERRAIN_HEX_VERTICAL_SPACING = 1.5 * TERRAIN_HEX_RADIUS;
 const TERRAIN_COORDINATE_PRECISION = 1_000_000;
 
 export interface TerrainWorldCoordinate {

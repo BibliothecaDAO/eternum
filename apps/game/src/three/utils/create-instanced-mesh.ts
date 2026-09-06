@@ -14,6 +14,7 @@ export function createInstancedMesh<G extends BufferGeometry, M extends Material
   capacity: number,
 ): InstancedMesh<G, M> {
   const mesh = new InstancedMesh(geometry, material, capacity);
+  initializeHiddenInstances(mesh);
   const beforeRender = mesh.onBeforeRender;
   // onBeforeRender runs before shader compilation too. Resolve the actual
   // renderer here so labs, fallback startup and gameplay use the same policy.
@@ -32,4 +33,14 @@ export function createInstancedMesh<G extends BufferGeometry, M extends Material
     beforeRender.call(this, renderer, ...args);
   };
   return mesh;
+}
+
+function initializeHiddenInstances(mesh: InstancedMesh): void {
+  // Sparse pools draw through their highest occupied slot. Three initializes
+  // unused slots to identity, which would draw phantom models at world origin.
+  const matrices = mesh.instanceMatrix.array;
+  matrices.fill(0);
+  for (let slot = 0; slot < mesh.instanceMatrix.count; slot++) {
+    matrices[slot * 16 + 15] = 1;
+  }
 }

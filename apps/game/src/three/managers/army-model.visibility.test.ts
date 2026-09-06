@@ -161,6 +161,13 @@ describe("ArmyModel visibility after async model load", () => {
 
     expect(modelData.activeInstances.has(slot)).toBe(true);
     expect(mesh.count).toBe(1);
+
+    const matrix = new Matrix4();
+    mesh.getMatrixAt(slot, matrix);
+    expect(new Vector3(0, -0.5, 0).applyMatrix4(matrix).y).toBeCloseTo(0);
+    subject.updateInstance(entityId, slot, new Vector3(1, 3, 1), new Vector3(1, 1, 1));
+    mesh.getMatrixAt(slot, matrix);
+    expect(new Vector3(0, -0.5, 0).applyMatrix4(matrix).y).toBeCloseTo(3);
   });
 
   it("preserves a promoted entity's live transform while its instanced representation is hidden", () => {

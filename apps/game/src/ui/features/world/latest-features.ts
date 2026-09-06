@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Clearer Terrain And Daylight",
+    type: "improvement",
+    description:
+      "See hex boundaries across terrain and darker frontier fog, with balanced daylight, flowing lava and charred vegetation. Armies stay grounded, vegetation stays stable, and buildings cast shorter shadows. Phantom units no longer appear inside structures.",
+  },
+  {
+    date: "2026-09-06",
     title: "Lighter World Rendering",
     type: "improvement",
     description: "Removed redundant screen passes while preserving world detail and selection overlays.",

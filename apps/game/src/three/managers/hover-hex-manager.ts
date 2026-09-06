@@ -99,7 +99,7 @@ export class HoverHexManager {
   }
 
   private createOutlineGeometry(): THREE.BufferGeometry {
-    const points = this.getHexagonPoints(HEX_SIZE * 1.02);
+    const points = this.getHexagonPoints(HEX_SIZE * 0.97);
     const positions: number[] = [];
     for (let index = 0; index < points.length; index++) {
       const next = points[(index + 1) % points.length];
@@ -109,8 +109,9 @@ export class HoverHexManager {
   }
 
   private createHoverHex(): void {
-    const glowGeometry = this.createRingGeometry(HEX_SIZE * 1.08, HEX_SIZE * 0.96);
-    const haloGeometry = this.createRingGeometry(HEX_SIZE * 1.14, HEX_SIZE * 0.9);
+    // Keep every layer inside its hex so neighboring cliffs cannot split or lift the selection.
+    const glowGeometry = this.createRingGeometry(HEX_SIZE * 0.98, HEX_SIZE * 0.9);
+    const haloGeometry = this.createRingGeometry(HEX_SIZE * 0.995, HEX_SIZE * 0.87);
     const outlineGeometry = this.createOutlineGeometry();
 
     this.hoverHex = new THREE.Mesh(glowGeometry, this.hoverMaterial);

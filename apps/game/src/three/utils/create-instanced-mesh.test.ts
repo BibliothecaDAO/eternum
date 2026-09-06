@@ -52,3 +52,49 @@ describe.each([0, 2, 1500])("instance capacity %i", (capacity) => {
     mesh.dispose();
   });
 });
+
+describe.each([true, false])("sparse instances with native WebGPU %s", (nativeWebGPU) => {
+  it("hides unassigned slots below the highest visible instance", () => {
+    const mesh = createInstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 8);
+    const placed = new Matrix4().makeScale(2, 3, 4).setPosition(10, 5, -7);
+    const hidden = new Matrix4().makeScale(0, 0, 0);
+    mesh.setMatrixAt(6, placed);
+    mesh.count = 7;
+    prepare(mesh, nativeWebGPU);
+
+    for (let slot = 0; slot < mesh.count; slot++) {
+      const actual = new Matrix4();
+      mesh.getMatrixAt(slot, actual);
+      expect(actual.elements).toEqual(slot === 6 ? placed.elements : hidden.elements);
+    }
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+    mesh.dispose();
+  });
+
+  it("keeps copied active transforms and hides new slots after capacity grows", () => {
+    const geometry = new BoxGeometry();
+    const material = new MeshBasicMaterial();
+    const original = createInstancedMesh(geometry, material, 4);
+    const placed = new Matrix4().makeTranslation(8, 2, -3);
+    original.setMatrixAt(2, placed);
+    prepare(original, nativeWebGPU);
+
+    const expanded = createInstancedMesh(geometry, material, 12);
+    expanded.instanceMatrix.array.set(original.instanceMatrix.array);
+    expanded.setMatrixAt(10, placed);
+    expanded.count = 11;
+    prepare(expanded, nativeWebGPU);
+
+    const hidden = new Matrix4().makeScale(0, 0, 0);
+    for (let slot = 0; slot < expanded.instanceMatrix.count; slot++) {
+      const actual = new Matrix4();
+      expanded.getMatrixAt(slot, actual);
+      expect(actual.elements).toEqual(slot === 2 || slot === 10 ? placed.elements : hidden.elements);
+    }
+    original.dispose();
+    expanded.dispose();
+    geometry.dispose();
+    material.dispose();
+  });
+});

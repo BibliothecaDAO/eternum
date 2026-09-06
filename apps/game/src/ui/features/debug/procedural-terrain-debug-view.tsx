@@ -38,7 +38,6 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   fogMaskWidth: 0,
   fogOpacity: 0,
   fogTerrainCells: 0,
-  frontierPreviewCells: 0,
   frameP50Ms: 0,
   frameP95Ms: 0,
   frameWorstMs: 0,
@@ -98,7 +97,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
   const [cycleProgress, setCycleProgress] = useState(50);
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
-  const [preview, setPreview] = useState<TerrainLabPreview>({ ...DEFAULT_TERRAIN_LAB_PREVIEW, grid: localMode });
+  const [preview, setPreview] = useState<TerrainLabPreview>(DEFAULT_TERRAIN_LAB_PREVIEW);
   const [stats, setStats] = useState(EMPTY_STATS);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -259,15 +258,6 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             <p className="text-xs text-stone-400">
               Click a tile to select it and place the army. Drag to move the camera.
             </p>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                aria-label="Tile grid"
-                type="checkbox"
-                checked={preview.grid}
-                onChange={(event) => setPreview({ ...preview, grid: event.target.checked })}
-              />
-              Tile grid
-            </label>
             <label className="flex flex-col gap-1 text-sm">
               Biome
               <select
@@ -548,7 +538,6 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             <DebugMetric label="Dust movers" value={stats.dustEmitterCount.toLocaleString()} />
             <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
             <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
-            <DebugMetric label="Preview" value={stats.frontierPreviewCells.toLocaleString()} />
             <DebugMetric label="Fog terrain" value={stats.fogTerrainCells.toLocaleString()} />
             <DebugMetric
               label="Fog mask"

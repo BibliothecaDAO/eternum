@@ -8,9 +8,9 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { createAllBiomesTerrainRequest } from "./verification/terrain-verification-fixtures";
 
 describe("prepareTerrainPage", () => {
-  it("preserves the all-biome terrain buffers and placements through sampling optimizations", () => {
+  it("tracks the reviewed all-biome terrain and placement style", () => {
     const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
-    expect(prepared.fingerprint).toMatchInlineSnapshot(`"8b1684d9"`);
+    expect(prepared.fingerprint).toMatchInlineSnapshot(`"d3e20cda"`);
   });
 
   it("builds deterministic indexed terrain and frontier buffers", () => {
@@ -84,19 +84,17 @@ describe("prepareTerrainPage", () => {
     const frontier = prepareTerrainPage({ ...createRequest([owned]), halo: [exploredNeighbor] });
 
     expect(hidden.shroudInstances[0].frontier).toBe(false);
-    expect(hidden.diagnostics.frontierPreviewCells).toBe(0);
     expect(hidden.diagnostics.fogTerrainCells).toBe(1);
     expect(hidden.buffers.positions.length).toBe(0);
     expect(Array.from(hidden.buffers.explored).every((value) => value === 0)).toBe(true);
     expect(frontier.shroudInstances[0].frontier).toBe(true);
-    expect(frontier.diagnostics.frontierPreviewCells).toBe(1);
     expect(frontier.diagnostics.fogTerrainCells).toBe(1);
-    expect(frontier.buffers.positions.length).toBeGreaterThan(0);
+    expect(frontier.buffers.positions.length).toBe(0);
     expect(Array.from(frontier.buffers.explored).every((value) => value === 0)).toBe(true);
     expect(frontier.fingerprint).not.toBe(hidden.fingerprint);
   });
 
-  it("builds continuous biome terrain beneath every fog cell instead of exposing hex silhouettes", () => {
+  it("builds only revealed land with skirts beside unknown hexes", () => {
     const page = prepareTerrainPage(
       createRequest([
         cell(0, 0, BiomeType.Grassland),
@@ -106,8 +104,10 @@ describe("prepareTerrainPage", () => {
       ]),
     );
 
-    expect(page.diagnostics.frontierPreviewCells).toBe(1);
     expect(page.diagnostics.fogTerrainCells).toBe(3);
+    expect(page.diagnostics.frontierEdges).toBe(6);
+    expect(new Set(page.buffers.explored)).toEqual(new Set([1]));
+    expect(page.waterBuffers).toBeNull();
   });
 
   it("rejects invalid topology instead of silently changing geometry density", () => {

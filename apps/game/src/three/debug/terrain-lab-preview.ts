@@ -9,7 +9,6 @@ export interface TerrainLabPreview {
   biome: BiomeType | "fixture";
   fog: "fixture" | "clear" | "frontier" | "covered";
   selection: boolean;
-  grid: boolean;
   army: ModelType | "none";
   spin: boolean;
   yaw: number;
@@ -19,7 +18,6 @@ export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
   biome: "fixture",
   fog: "fixture",
   selection: true,
-  grid: false,
   army: "none",
   spin: false,
   yaw: 0,

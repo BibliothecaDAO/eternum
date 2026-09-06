@@ -63,7 +63,6 @@ export interface ProceduralTerrainDebugStats {
   fogMaskWidth: number;
   fogOpacity: number;
   fogTerrainCells: number;
-  frontierPreviewCells: number;
   frameP50Ms: number;
   frameP95Ms: number;
   frameWorstMs: number;
@@ -295,7 +294,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     fingerprint: prepared.fingerprint,
     fogOpacity: TERRAIN_DEEP_FOG_OPACITY,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
-    frontierPreviewCells: prepared.diagnostics.frontierPreviewCells,
     fogMaskBytes: shroudStats.maskBytes,
     fogMaskHeight: shroudStats.maskHeight,
     fogMaskWidth: shroudStats.maskWidth,
@@ -392,7 +390,6 @@ function updateTerrainVerification(
     prepareMs: prepared.diagnostics.prepareMs,
     commitMs,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
-    frontierPreviewCells: prepared.diagnostics.frontierPreviewCells,
     groundCoverInstances: props.groundCoverInstances,
     settlementSites: prepared.request.settlementAnchors.length,
     triangles:

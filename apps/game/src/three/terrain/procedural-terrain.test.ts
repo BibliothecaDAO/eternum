@@ -5,6 +5,7 @@ import { Group, InstancedMesh, Mesh } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
+import { TerrainField } from "./terrain-field";
 import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { TerrainPropPools } from "./terrain-prop-pools";
@@ -71,6 +72,23 @@ describe("ProceduralTerrain", () => {
     expect(terrain.sampleSurface(center.x, center.z).biome).toBe(BiomeType.Bare);
     terrain.dispose();
     expect(() => terrain.sampleSurface(center.x, center.z)).toThrow("ProceduralTerrain has been disposed");
+  });
+
+  it("samples the owning resident page instead of an earlier page's halo", () => {
+    const terrain = new ProceduralTerrain();
+    const covered = { ...unknownRequest(), pageKey: "covered" };
+    const neighbor = {
+      ...request(BiomeType.Bare, false),
+      pageKey: "neighbor",
+      cells: request(BiomeType.Bare, false).cells.map((cell) => ({ ...cell, col: 1 })),
+      halo: request(BiomeType.Grassland, false).cells,
+    };
+    terrain.present([terrain.preparePage(neighbor), terrain.preparePage(covered)]);
+    const expected = new TerrainField(covered).sampleSurface(0, 0);
+    expect(terrain.sampleSurface(0, 0)).toEqual(expected);
+    expect(expected.biome).toBeNull();
+    expect(terrain.sampleSurface(-10, -10)).toEqual({ biome: null, height: 0, normal: [0, 1, 0] });
+    terrain.dispose();
   });
 
   it("keeps terrain out of the interaction raycast path", () => {

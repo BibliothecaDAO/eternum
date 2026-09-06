@@ -42,7 +42,7 @@ describe("terrain prop page slot capacity", () => {
       const capacity = TERRAIN_PROP_PAGE_SLOT_CAPACITY[archetype];
       const densest = maximum.get(archetype) ?? 0;
       expect(densest, `${archetype} densest page`).toBeLessThanOrEqual(capacity);
-      // Slots are drawn in full, so a slot far above its densest page is padding; re-measure the table instead.
+      // Draws are packed, but oversized slots still waste reserved GPU storage; re-measure after placement changes.
       // The table carries 1.5× the maximum over these fixtures and eight climate seed pairs, so this floor
       // trips only after a density retune, not on seed variance.
       expect(densest, `${archetype} slot headroom`).toBeGreaterThanOrEqual(capacity * 0.4);

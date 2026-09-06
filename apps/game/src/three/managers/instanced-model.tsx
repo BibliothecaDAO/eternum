@@ -168,6 +168,11 @@ export default class InstancedModel {
         material = InstancedModel.materialPool.getStandardMaterial(material);
         const tmp = createAnimatedInstancedMesh(child.geometry, material, this.capacity);
         tmp.renderOrder = 10;
+        const isGround = child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME);
+        // Current assets use names such as castle and knightlvl2, not the legacy building convention.
+        // Blended glow cards remain non-casters; solid and alpha-cutout model surfaces cast normally.
+        tmp.castShadow = !isGround && (!material.transparent || material.alphaTest > 0);
+        tmp.receiveShadow = true;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
           if (
@@ -185,17 +190,14 @@ export default class InstancedModel {
         }
 
         if (child.name.includes(BIG_DETAILS_NAME) || child.parent?.name.includes(BIG_DETAILS_NAME)) {
-          tmp.castShadow = true;
           tmp.name = BIG_DETAILS_NAME;
         }
 
         if (child.name.includes(BUILDING_NAME) || child.parent?.name.includes(BUILDING_NAME)) {
-          tmp.castShadow = true;
           tmp.name = BUILDING_NAME;
         }
 
-        if (child.name.includes(LAND_NAME) || child.parent?.name.includes(LAND_NAME)) {
-          tmp.receiveShadow = true;
+        if (isGround) {
           tmp.name = LAND_NAME;
         }
 
@@ -299,7 +301,7 @@ export default class InstancedModel {
     this.count = resolvedCount;
   }
 
-  setMatrixAt(index: number, matrix: Matrix4) {
+  setMatrixAt(index: number, matrix: Matrix4, groundHeight: number = matrix.elements[13]) {
     if (!this.isWithinCapacity(index + 1)) {
       return;
     }
@@ -316,7 +318,7 @@ export default class InstancedModel {
         this.contactShadowMatrix.makeScale(this.contactShadowScale, this.contactShadowScale, this.contactShadowScale);
         this.contactShadowMatrix.setPosition(
           this.contactShadowPosition.x,
-          this.contactShadowPosition.y + CONTACT_SHADOW_Y_OFFSET,
+          groundHeight + CONTACT_SHADOW_Y_OFFSET,
           this.contactShadowPosition.z,
         );
         this.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
