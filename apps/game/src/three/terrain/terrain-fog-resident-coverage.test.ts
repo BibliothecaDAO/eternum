@@ -6,8 +6,8 @@ import { terrainHexCorners, terrainHexToWorld, terrainNeighborCoordinates } from
 import { prepareTerrainPage } from "./terrain-page-builder";
 import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 
-// The resident shader interpolates this attribute, so every vertex of a logical hex must agree.
-// A blended sample at its edge would let fog eat the revealed tile even with correct shader clipping.
+// Resident geometry contains only revealed hexes; the separate backdrop owns every unknown hex.
+// Revealed geometry must reach its exact edges so the backdrop cannot eat into playable ground.
 describe("resident fog coverage", () => {
   it.each([BiomeType.Scorched, BiomeType.Grassland, BiomeType.Ocean])(
     "keeps the entire revealed %s hex clear beside six unknown neighbors",
@@ -35,12 +35,13 @@ describe("resident fog coverage", () => {
     },
   );
 
-  it("switches the whole resident hex atomically when its exploration commits", () => {
+  it("creates the whole resident hex only when its exploration commits", () => {
     const before = request(0, 0, BiomeType.Scorched, false);
     const hidden = prepareTerrainPage(before);
     const after = prepareTerrainPage({ ...before, cells: [cell(0, 0, BiomeType.Scorched, true)] });
-    expect(hidden.buffers.explored.length).toBeGreaterThan(0);
-    expect(new Set(hidden.buffers.explored)).toEqual(new Set([0]));
+    expect(hidden.buffers.positions).toHaveLength(0);
+    expect(hidden.waterBuffers).toBeNull();
+    expect(hidden.shroudInstances).toHaveLength(1);
     expect(new Set(after.buffers.explored)).toEqual(new Set([1]));
   });
 });

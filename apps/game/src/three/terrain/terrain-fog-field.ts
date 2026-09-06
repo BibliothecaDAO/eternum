@@ -14,16 +14,14 @@ import {
 import type Node from "three/src/nodes/core/Node.js";
 import type TextureNode from "three/src/nodes/accessors/TextureNode.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
-import { MeshBasicNodeMaterial, type MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import {
-  attribute,
   cameraPosition,
   color,
   float,
   fwidth,
   mix,
   mx_noise_float,
-  output,
   positionWorld,
   smoothstep,
   texture,
@@ -31,7 +29,6 @@ import {
   uniform,
   vec2,
   vec3,
-  vec4,
 } from "three/tsl";
 
 import { TerrainStreamCoverage } from "./terrain-stream-coverage";
@@ -49,7 +46,12 @@ import {
   type TerrainFogMaskBounds,
   type TerrainFogMaskLayout,
 } from "./terrain-fog-mask";
-import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY, type TerrainFogStyle } from "./terrain-fog-style";
+import {
+  TERRAIN_DEEP_FOG_COLOR,
+  TERRAIN_DEEP_FOG_OPACITY,
+  TERRAIN_FOG_GROUND_HEIGHT,
+  type TerrainFogStyle,
+} from "./terrain-fog-style";
 import type { TerrainShroudInstance } from "./terrain-types";
 
 export const TERRAIN_FOG_CELL_CAPACITY = 12_288;
@@ -79,7 +81,6 @@ interface ActiveReveal {
 }
 
 interface FogMaterialSet {
-  surfaceColor: Node<"vec3">;
   bounds: ReturnType<typeof createFogBounds>;
   streaming: UniformNode<"float", number>;
   clarity: UniformNode<"float", number>;
@@ -90,12 +91,12 @@ interface FogMaterialSet {
 }
 
 const FOG_MESH_NAME = "terrain-exploration-fog-field";
-// Below the deepest terrain skirt. Resident fog follows the terrain material, never a raised overlay.
+// Below terrain skirts for stable depth; the fog grid projects onto the canonical ground height.
 const FOG_PLANE_HEIGHT = -0.8;
 
 /**
- * A shared ground-fog mask shades resident terrain and a low backdrop covers unloaded ground. A commit
- * rebuilds the whole coverage mask only when the fog window moves and otherwise re-rasterises the sub-rects the
+ * One low backdrop covers unknown and unloaded ground; explored geometry always renders above it.
+ * A commit rebuilds the whole coverage mask only when the fog window moves and otherwise re-rasterises the sub-rects the
  * changed pages (or completed reveals) touched.
  */
 export class TerrainFogField {
@@ -120,13 +121,6 @@ export class TerrainFogField {
   constructor() {
     this.object3d.name = "terrain-exploration-fog-field";
     this.object3d.add(this.fogMesh);
-  }
-
-  applyToTerrain(material: MeshStandardNodeMaterial): void {
-    // Exploration is constant across each hex's triangles. A filtered neighborhood mask must never
-    // cover the edge of an explored hex, nor expose an unknown biome through its soft frontier.
-    const unexplored = float(1).sub(attribute<"float">("terrainExplored", "float"));
-    material.outputNode = vec4(mix(output.rgb, this.materials.surfaceColor, unexplored), output.a);
   }
 
   enableStreaming(): void {
@@ -375,10 +369,9 @@ function createFogMaterial(maskTexture: DataTexture, streamCoverage: TerrainStre
   material.fog = false;
 
   const drift = time.mul(motionStrength);
-  // Shade every fog surface at the same ground intersection. Different terrain heights must not draw
-  // different mist colors along page skirts where resident ground meets the backdrop.
+  // Anchor drifting color to the backdrop rather than screen coordinates.
   const viewRay = positionWorld.sub(cameraPosition);
-  const fogGround = cameraPosition.add(viewRay.mul(float(FOG_PLANE_HEIGHT).sub(cameraPosition.y).div(viewRay.y)));
+  const fogGround = positionWorld;
   const broadMist = mx_noise_float(
     vec3(fogGround.x.mul(0.16).add(drift.mul(0.06)), fogGround.z.mul(0.16).sub(drift.mul(0.04)), drift.mul(0.025)),
   );
@@ -412,10 +405,10 @@ function createFogMaterial(maskTexture: DataTexture, streamCoverage: TerrainStre
   const cloudVeil = smoothstep(0.18, 0.86, mistNoise).mul(mistStrength);
   const mistLight = cloudVeil.mul(edgeBand.mul(0.36).add(0.075));
   const fogColor = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#85877f"), mistLight);
-  // Resident hexes follow their real surface, just like the terrain and selection ring.
-  const surfaceColor = shadeFogHexBoundary(fogColor, positionWorld.xz);
-  // The backdrop sits below the skirts for depth stability; draw its grid at canonical ground height.
-  const backdropGround = cameraPosition.add(viewRay.mul(cameraPosition.y.negate().div(viewRay.y)));
+  // Match the logical surface used by unknown-tile selection, independent of the lower depth plane.
+  const backdropGround = cameraPosition.add(
+    viewRay.mul(float(TERRAIN_FOG_GROUND_HEIGHT).sub(cameraPosition.y).div(viewRay.y)),
+  );
   // Motion changes the mist's color, never the exploration boundary or coverage.
   const coverage = smoothstep(mix(0.04, 0.28, clarity), mix(0.96, 0.8, clarity), mask);
   const frontierOpacity = coverage.clamp(0, TERRAIN_DEEP_FOG_OPACITY);
@@ -424,7 +417,6 @@ function createFogMaterial(maskTexture: DataTexture, streamCoverage: TerrainStre
   material.colorNode = shadeFogHexBoundary(fogColor, backdropGround.xz);
   material.opacityNode = mix(surfaceOpacity, float(1), streaming);
   return {
-    surfaceColor,
     bounds,
     streaming,
     clarity,
