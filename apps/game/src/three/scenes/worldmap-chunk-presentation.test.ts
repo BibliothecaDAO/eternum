@@ -174,14 +174,9 @@ describe("prepareWorldmapChunkPresentation", () => {
 });
 
 describe("prewarmWorldmapChunkPresentation", () => {
-  // Phase 2.2: a prewarmed presentation that is dropped (stale token, or the chunk
-  // became hot after preparation) holds pooled InstancedBufferAttributes. The
-  // caller discards the return value, so these branches must release the prepared
-  // terrain or the pooled attributes leak.
-  it("disposes prepared terrain when the prewarm token is stale", async () => {
+  it("drops prepared terrain when the prewarm token is stale", async () => {
     const preparedTerrain = { chunkKey: "24,24" };
     const cachePreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
 
     const result = await prewarmWorldmapChunkPresentation<{ chunkKey: string }>({
       chunkKey: "24,24",
@@ -190,18 +185,15 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isPresentationHot: () => false,
       preparePresentation: async () => ({ projectionSyncSucceeded: true, preparedTerrain }),
       cachePreparedTerrain,
-      disposePreparedTerrain,
     });
 
     expect(result.status).toBe("stale_dropped");
     expect(cachePreparedTerrain).not.toHaveBeenCalled();
-    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
   });
 
-  it("disposes prepared terrain when the chunk became hot during preparation", async () => {
+  it("drops prepared terrain when the chunk became hot during preparation", async () => {
     const preparedTerrain = { chunkKey: "24,24" };
     const cachePreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
     let hotChecks = 0;
 
     const result = await prewarmWorldmapChunkPresentation<{ chunkKey: string }>({
@@ -212,18 +204,15 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isPresentationHot: () => hotChecks++ > 0,
       preparePresentation: async () => ({ projectionSyncSucceeded: true, preparedTerrain }),
       cachePreparedTerrain,
-      disposePreparedTerrain,
     });
 
     expect(result.status).toBe("skipped_hot");
     expect(cachePreparedTerrain).not.toHaveBeenCalled();
-    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
   });
 
-  it("caches (does not dispose) prepared terrain on a successful prewarm", async () => {
+  it("caches prepared terrain on a successful prewarm", async () => {
     const preparedTerrain = { chunkKey: "24,24" };
     const cachePreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
 
     const result = await prewarmWorldmapChunkPresentation<{ chunkKey: string }>({
       chunkKey: "24,24",
@@ -232,11 +221,9 @@ describe("prewarmWorldmapChunkPresentation", () => {
       isPresentationHot: () => false,
       preparePresentation: async () => ({ projectionSyncSucceeded: true, preparedTerrain }),
       cachePreparedTerrain,
-      disposePreparedTerrain,
     });
 
     expect(result.status).toBe("prepared");
     expect(cachePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
-    expect(disposePreparedTerrain).not.toHaveBeenCalled();
   });
 });

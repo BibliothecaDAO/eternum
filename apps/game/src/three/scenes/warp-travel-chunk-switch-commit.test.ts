@@ -110,12 +110,8 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(scheduleManagerCatchUp.calls).toEqual([]);
   });
 
-  // Phase 2.2: prepared terrain holds pooled InstancedBufferAttributes. On rollback
-  // and stale-drop the terrain is neither applied (which would transfer ownership to
-  // the matrix cache) nor disposed, leaking the pooled attributes permanently.
-  it("disposes prepared terrain on rollback instead of leaking the pooled attributes", async () => {
+  it("does not commit prepared terrain on rollback", async () => {
     const commitPreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
     const preparedTerrain = { chunkKey: "24,24" };
 
     const result = await finalizeWarpTravelChunkSwitch({
@@ -133,7 +129,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       transitionToken: 31,
       preparedTerrain,
       commitPreparedTerrain,
-      disposePreparedTerrain,
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
@@ -146,12 +141,10 @@ describe("finalizeWarpTravelChunkSwitch", () => {
 
     expect(result).toEqual({ status: "rolled_back" });
     expect(commitPreparedTerrain).not.toHaveBeenCalled();
-    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
   });
 
-  it("disposes prepared terrain on stale drop instead of leaking the pooled attributes", async () => {
+  it("does not commit prepared terrain on a stale drop", async () => {
     const commitPreparedTerrain = vi.fn();
-    const disposePreparedTerrain = vi.fn();
     const preparedTerrain = { chunkKey: "24,24" };
 
     const result = await finalizeWarpTravelChunkSwitch({
@@ -169,7 +162,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       transitionToken: 33,
       preparedTerrain,
       commitPreparedTerrain,
-      disposePreparedTerrain,
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
@@ -182,12 +174,10 @@ describe("finalizeWarpTravelChunkSwitch", () => {
 
     expect(result).toEqual({ status: "stale_dropped" });
     expect(commitPreparedTerrain).not.toHaveBeenCalled();
-    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
   });
 
-  it("applies (does not dispose) prepared terrain on a committed switch", async () => {
+  it("applies prepared terrain on a committed switch", async () => {
     const commitPreparedTerrain = vi.fn(() => 36);
-    const disposePreparedTerrain = vi.fn();
     const scheduleManagerCatchUp = vi.fn();
     const preparedTerrain = { chunkKey: "24,24" };
 
@@ -206,7 +196,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       transitionToken: 35,
       preparedTerrain,
       commitPreparedTerrain,
-      disposePreparedTerrain,
       updatePinnedChunks: vi.fn(),
       unregisterChunk: vi.fn(),
       restorePreviousChunkVisuals: async () => undefined,
@@ -219,7 +208,6 @@ describe("finalizeWarpTravelChunkSwitch", () => {
 
     expect(result).toEqual({ status: "committed" });
     expect(commitPreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
-    expect(disposePreparedTerrain).not.toHaveBeenCalled();
     expect(scheduleManagerCatchUp).toHaveBeenCalledWith("24,24", { force: false, transitionToken: 35 });
   });
 

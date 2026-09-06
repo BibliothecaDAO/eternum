@@ -501,6 +501,10 @@ export class CentralizedVisibilityManager {
     }
 
     this.chunkBounds.clear();
+    this.chunkRegistrationOrder.clear();
+    this.boxVisibilityCache = new WeakMap();
+    this.sphereVisibilityCache = new WeakMap();
+    this.pointVisibilityCache = new WeakMap();
     this.onChangeListeners.clear();
     this.frameState = this.createEmptyFrameState();
     this.currentVisibilityVersion = 0;
@@ -578,29 +582,5 @@ export class CentralizedVisibilityManager {
         );
       }
     }
-  }
-}
-
-// Singleton Instance
-
-let visibilityManagerInstance: CentralizedVisibilityManager | null = null;
-
-/**
- * Get or create the singleton visibility manager instance.
- */
-export function getVisibilityManager(config?: VisibilityManagerConfig): CentralizedVisibilityManager {
-  if (!visibilityManagerInstance) {
-    visibilityManagerInstance = new CentralizedVisibilityManager(config);
-  }
-  return visibilityManagerInstance;
-}
-
-/**
- * Reset the singleton instance (useful for testing or hot reload).
- */
-function resetVisibilityManager(): void {
-  if (visibilityManagerInstance) {
-    visibilityManagerInstance.dispose();
-    visibilityManagerInstance = null;
   }
 }

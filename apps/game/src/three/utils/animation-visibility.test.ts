@@ -37,17 +37,12 @@ describe("animation visibility", () => {
     ).toBe(false);
   });
 
-  it("uses the legacy frustum only when the centralized manager is unavailable", () => {
-    const centralized = { isPointVisible: vi.fn(() => true) };
-    const legacy = { isPointVisible: vi.fn(() => false) };
-
+  it("still applies distance culling without a frustum manager", () => {
     expect(
-      isAnimationPositionVisible(new Vector3(), {
-        frustumManager: legacy as never,
-        visibilityManager: centralized as never,
+      isAnimationPositionVisible(new Vector3(100, 0, 0), {
+        cameraPosition: new Vector3(),
+        maxDistance: 10,
       }),
-    ).toBe(true);
-    expect(centralized.isPointVisible).toHaveBeenCalledOnce();
-    expect(legacy.isPointVisible).not.toHaveBeenCalled();
+    ).toBe(false);
   });
 });

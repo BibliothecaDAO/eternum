@@ -201,7 +201,6 @@ function createVisibleStructurePassFence() {
 function createStructureManagerSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
 
-  const unsubscribeFrustum = vi.fn();
   const unsubscribeAccountStore = vi.fn();
   const unsubscribeVisibility = vi.fn();
   const unsubscribeProjection = vi.fn();
@@ -224,7 +223,6 @@ function createStructureManagerSubject() {
   subject.isDestroyed = false;
   subject.unsubscribeProjection = unsubscribeProjection;
   subject.recsUnsubscribes = [unsubscribeRecs];
-  subject.unsubscribeFrustum = unsubscribeFrustum;
   subject.unsubscribeAccountStore = unsubscribeAccountStore;
   subject.unsubscribeVisibility = unsubscribeVisibility;
   subject.hexagonScene = { removeCameraViewListener };
@@ -294,7 +292,6 @@ function createStructureManagerSubject() {
 
   return {
     subject,
-    unsubscribeFrustum,
     unsubscribeAccountStore,
     unsubscribeVisibility,
     unsubscribeProjection,
@@ -677,7 +674,6 @@ describe("StructureManager destroy lifecycle", () => {
 
     fixture.subject.destroy();
 
-    expect(fixture.unsubscribeFrustum).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeAccountStore).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeVisibility).toHaveBeenCalledTimes(1);
     expect(fixture.unsubscribeProjection).toHaveBeenCalledTimes(1);

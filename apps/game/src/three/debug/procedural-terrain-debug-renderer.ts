@@ -1,10 +1,15 @@
+import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
+import { configureRendererColorOutput } from "@/three/renderer-color-output";
+import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { createLocalTerrainLabRequest } from "./local-terrain-lab";
 import { StructureType } from "@bibliothecadao/types";
 import {
   AmbientLight,
   Color,
   DirectionalLight,
-  Group,
+  HemisphereLight,
+  Fog,
+  PCFSoftShadowMap,
   InstancedMesh,
   Matrix4,
   PerspectiveCamera,
@@ -110,6 +115,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   placeBuilding(path: string, yaw: number): Promise<void>;
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
+  setCycleProgress(progress: number): void;
 }
 
 interface MountProceduralTerrainDebugRendererInput {
@@ -138,6 +144,8 @@ type TerrainDebugRendererConstructor = new (options: {
 }) => TerrainDebugRendererSurface;
 
 interface TerrainDebugRuntime {
+  atmosphere: WorldAtmosphereController;
+  cycleProgress: number;
   camera: PerspectiveCamera;
   cameraFrame: TerrainDebugCameraFrame;
   controls: MapControls;
@@ -195,6 +203,7 @@ export async function mountProceduralTerrainDebugRenderer(
         runtime.interaction.dispose();
         runtime.realmModel?.dispose();
         runtime.terrain.dispose();
+        runtime.atmosphere.dispose();
         runtime.renderer.dispose();
         delete debugWindow.__terrainVerification;
       },
@@ -203,6 +212,9 @@ export async function mountProceduralTerrainDebugRenderer(
       placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
+      setCycleProgress: (progress) => {
+        runtime.cycleProgress = progress;
+      },
       focusSelection: () => {
         const target = runtime.interaction.getSelectedPosition();
         positionCamera(runtime.camera, runtime.controls, {
@@ -225,10 +237,11 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   const Renderer = WebGPURenderer as unknown as TerrainDebugRendererConstructor;
   const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
   const background = new Color(TERRAIN_DEEP_FOG_COLOR);
-  renderer.outputColorSpace = "srgb";
+  configureRendererColorOutput(renderer);
   renderer.setPixelRatio(1);
   renderer.setClearColor(background, 1);
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFSoftShadowMap;
   await renderer.init();
   configureGltfTextureSupport(renderer as Parameters<typeof configureGltfTextureSupport>[0]);
 
@@ -331,7 +344,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   >;
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
-  scene.add(createLights());
+  const atmosphere = createGameLighting(scene);
+  atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
   const firstRenderStartedAt = performance.now();
   renderer.render(scene, camera);
@@ -348,6 +362,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     input.localRadius !== undefined,
   );
   return {
+    atmosphere,
+    cycleProgress: 50,
     interaction,
     camera,
     cameraFrame,
@@ -508,15 +524,15 @@ function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): 
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
-function createLights(): Group {
-  const lights = new Group();
-  lights.name = "procedural-terrain-debug-lights";
-  lights.add(new AmbientLight(0xdce6df, 1.7));
-  const sun = new DirectionalLight(0xffedca, 3.4);
-  sun.position.set(7, 11, 8);
-  sun.castShadow = true;
-  lights.add(sun);
-  return lights;
+function createGameLighting(scene: Scene): WorldAtmosphereController {
+  const ambient = new AmbientLight();
+  const hemisphere = new HemisphereLight();
+  const sun = new DirectionalLight();
+  configureWorldSunShadows(sun, true, 2048);
+  scene.add(ambient, hemisphere, sun, sun.target);
+  // The game controller also uses this detached fog object for atmosphere colors.
+  // Exploration coverage belongs to TerrainFogField, not Three.js distance fog.
+  return new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR));
 }
 
 function createCameraFrame(
@@ -568,6 +584,7 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
     runtime.terrain.update(Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000)));
     runtime.interaction.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000));
     runtime.controls.update();
+    runtime.atmosphere.update(runtime.cycleProgress, runtime.controls.target, { snap: true });
     runtime.renderer.render(runtime.scene, runtime.camera);
   });
   return () => runtime.renderer.setAnimationLoop(null);

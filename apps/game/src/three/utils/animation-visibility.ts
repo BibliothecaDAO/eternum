@@ -8,9 +8,7 @@ export function isAnimationPositionVisible(
 ): boolean {
   if (!visibility) return true;
 
-  const isInFrustum = visibility.visibilityManager
-    ? visibility.visibilityManager.isPointVisible(position)
-    : (visibility.frustumManager?.isPointVisible(position) ?? true);
+  const isInFrustum = visibility.visibilityManager?.isPointVisible(position) ?? true;
   if (!isInFrustum) return false;
 
   if (!visibility.cameraPosition || visibility.maxDistance === undefined) return true;

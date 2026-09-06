@@ -21,7 +21,7 @@ interface PrepareWorldmapChunkSwitchRuntimeInput {
     startRow: number;
     targetChunkKey: string;
   }) => void;
-  removeCachedMatricesForChunk: (startRow: number, startCol: number) => void;
+  removePreparedTerrainForChunk: (startRow: number, startCol: number) => void;
   startCol: number;
   startRow: number;
   switchPosition: ChunkSwitchPosition | null;
@@ -73,7 +73,7 @@ export function prepareWorldmapChunkSwitchRuntime(
       includeSurroundingChunks: surroundingChunks,
     });
   } else if (effectiveForce) {
-    input.removeCachedMatricesForChunk(input.startRow, input.startCol);
+    input.removePreparedTerrainForChunk(input.startRow, input.startCol);
   }
 
   return {

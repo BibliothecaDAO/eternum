@@ -1,5 +1,5 @@
-import { PerspectiveCamera } from "three";
-import { describe, expect, it } from "vitest";
+import { Box3, PerspectiveCamera, Sphere, Vector3, WebGLCoordinateSystem, WebGPUCoordinateSystem } from "three";
+import { describe, expect, it, vi } from "vitest";
 
 import { CentralizedVisibilityManager } from "./centralized-visibility-manager";
 
@@ -46,6 +46,51 @@ describe("CentralizedVisibilityManager idle frames", () => {
     expect(notifications).toBe(1);
     expect(manager.getStats().frameId).toBe(3);
 
+    manager.dispose();
+  });
+  it.each([WebGLCoordinateSystem, WebGPUCoordinateSystem])(
+    "coalesces camera events and invalidates cached visibility for coordinate system %s",
+    (coordinateSystem) => {
+      const camera = new PerspectiveCamera(60, 1, 1, 100);
+      camera.coordinateSystem = coordinateSystem;
+      camera.updateProjectionMatrix();
+      const controls = new MockControls();
+      const manager = new CentralizedVisibilityManager();
+      manager.initialize(camera, controls as never);
+      const changed = vi.fn();
+      manager.onChange(changed);
+      manager.beginFrame();
+      const point = new Vector3(0, 0, -5);
+      expect(manager.isPointVisible(point)).toBe(true);
+      // Between the eye and near plane must stay culled on both backends.
+      expect(manager.isPointVisible(new Vector3(0, 0, -0.75))).toBe(false);
+      camera.position.x = 100;
+      for (let i = 0; i < 5; i++) controls.dispatchEvent({ type: "change" });
+      expect(changed).toHaveBeenCalledTimes(1);
+      manager.beginFrame();
+      expect(changed).toHaveBeenCalledTimes(2);
+      expect(manager.isPointVisible(point)).toBe(false);
+      manager.dispose();
+    },
+  );
+
+  it("does not reuse cached visibility or chunk registration after disposal", () => {
+    const camera = new PerspectiveCamera(60, 1, 1, 100);
+    const controls = new MockControls();
+    const manager = new CentralizedVisibilityManager({ maxRegisteredChunks: 1 });
+    manager.initialize(camera, controls as never);
+    const point = new Vector3(0, 0, -5);
+    const box = new Box3(point.clone().addScalar(-1), point.clone().addScalar(1));
+    manager.registerChunk("old", { box, sphere: new Sphere(point.clone(), 1) });
+    manager.beginFrame();
+    expect(manager.isPointVisible(point)).toBe(true);
+    manager.dispose();
+    camera.position.x = 100;
+    manager.initialize(camera, controls as never);
+    manager.registerChunk("new", { box, sphere: new Sphere(point.clone(), 1) });
+    manager.beginFrame();
+    expect(manager.getRegisteredChunks()).toEqual(["new"]);
+    expect(manager.isPointVisible(point)).toBe(false);
     manager.dispose();
   });
 });

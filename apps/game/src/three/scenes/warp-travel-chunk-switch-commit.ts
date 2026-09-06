@@ -15,12 +15,6 @@ interface FinalizeWarpTravelChunkSwitchInput {
   transitionToken: number;
   preparedTerrain: unknown;
   commitPreparedTerrain: (preparedTerrain: unknown) => boolean | number | null | Promise<boolean | number | null>;
-  /**
-   * Phase 2.2: release the pooled attributes held by prepared terrain that is
-   * dropped (rollback / stale) instead of applied. Without this the pooled
-   * InstancedBufferAttributes leak for the lifetime of the renderer.
-   */
-  disposePreparedTerrain?: (preparedTerrain: unknown) => void;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   unregisterChunk: (chunkKey: string) => void;
   restorePreviousChunkVisuals: (
@@ -46,14 +40,7 @@ export async function finalizeWarpTravelChunkSwitch(
     previousChunk: input.previousChunk,
   });
 
-  const disposeDroppedPreparedTerrain = () => {
-    if (input.preparedTerrain !== null && input.preparedTerrain !== undefined) {
-      input.disposePreparedTerrain?.(input.preparedTerrain);
-    }
-  };
-
   if (chunkSwitchActions.shouldRollback) {
-    disposeDroppedPreparedTerrain();
     input.updatePinnedChunks(input.previousPinnedChunks);
     input.unregisterChunk(input.targetChunk);
 
@@ -81,7 +68,6 @@ export async function finalizeWarpTravelChunkSwitch(
   }
 
   if (!chunkSwitchActions.shouldCommitManagers) {
-    disposeDroppedPreparedTerrain();
     if (input.currentChunk !== input.targetChunk) {
       input.unregisterChunk(input.targetChunk);
     }

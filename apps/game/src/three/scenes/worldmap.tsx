@@ -360,7 +360,7 @@ import {
   drainReconnectRefreshQueue,
   queueOrRunReconnectRefresh,
 } from "./worldmap-reconnect-refresh-queue";
-import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
+import { computeTerrainCacheEvictions } from "./worldmap-terrain-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { resolveWorldmapCameraGroundBounds } from "./worldmap-camera-ground-bounds";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
@@ -396,15 +396,6 @@ import {
   type WorldmapVisualTerrainWindow,
 } from "./worldmap-terrain-presentation-runtime";
 
-interface CachedTerrainEntry {
-  box?: Box3;
-  sphere?: Sphere;
-  expectedExploredTerrainInstances?: number;
-  terrainFingerprint?: string;
-  terrainCells?: WorldmapTerrainSourceCellRef[];
-  generation?: number;
-}
-
 interface PreparedTerrainChunk {
   chunkKey: string;
   startRow: number;
@@ -413,7 +404,6 @@ interface PreparedTerrainChunk {
   expectedExploredTerrainInstances: number;
   terrainFingerprint: string;
   terrainCells: WorldmapTerrainSourceCellRef[];
-  biomeEntries: Map<string, CachedTerrainEntry>;
 }
 
 type PreparedWorldmapChunkRuntime = Awaited<ReturnType<typeof prepareWorldmapChunkRuntime<PreparedTerrainChunk>>>;
@@ -425,18 +415,9 @@ interface WorldmapLocalBounds {
   maxRow: number;
 }
 
-type WorldmapTerrainPresentationEntry = WorldmapTerrainPresentation<
-  Map<string, CachedTerrainEntry>,
-  PreparedTerrainChunk["bounds"]
->;
-type WorldmapTerrainPresentationState = WorldmapTerrainPresentationRuntimeState<
-  Map<string, CachedTerrainEntry>,
-  PreparedTerrainChunk["bounds"]
->;
-type WorldmapTerrainPresentationComposite = WorldmapTerrainComposite<
-  Map<string, CachedTerrainEntry>,
-  PreparedTerrainChunk["bounds"]
->;
+type WorldmapTerrainPresentationEntry = WorldmapTerrainPresentation<PreparedTerrainChunk["bounds"]>;
+type WorldmapTerrainPresentationState = WorldmapTerrainPresentationRuntimeState<PreparedTerrainChunk["bounds"]>;
+type WorldmapTerrainPresentationComposite = WorldmapTerrainComposite<PreparedTerrainChunk["bounds"]>;
 
 interface WorldmapChunkSwitchTerrainShellInput {
   chunkKey: string;
@@ -900,9 +881,9 @@ export default class WorldmapScene extends WarpTravel {
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
   private exploredTilesGeneration = createTerrainCacheGeneration();
-  private cachedMatrices: Map<string, Map<string, CachedTerrainEntry>> = new Map();
-  private cachedMatrixOrder: string[] = [];
-  private readonly maxMatrixCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
+  private preparedTerrainCache = new Map<string, PreparedTerrainChunk & { generation: number }>();
+  private preparedTerrainCacheOrder: string[] = [];
+  private readonly maxPreparedTerrainCacheSize = WORLDMAP_CHUNK_POLICY.cache.recommendedMinSize;
   private pinnedChunkKeys: Set<string> = new Set();
   private updateHexagonGridPromise: Promise<void> | null = null;
   private currentHexGridTask: symbol | null = null;
@@ -1122,7 +1103,6 @@ export default class WorldmapScene extends WarpTravel {
       this.armyLabelsGroup,
       this,
       this.dojo,
-      this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
@@ -1170,7 +1150,6 @@ export default class WorldmapScene extends WarpTravel {
       this,
       this.fxManager,
       this.dojo,
-      this.frustumManager,
       this.visibilityManager,
       this.chunkSize,
       this.chunkWorkQueue,
@@ -3980,7 +3959,7 @@ export default class WorldmapScene extends WarpTravel {
       if (!Number.isFinite(startRow) || !Number.isFinite(startCol)) {
         return;
       }
-      this.removeCachedMatricesForChunk(startRow, startCol);
+      this.removePreparedTerrainForChunk(startRow, startCol);
     });
   }
 
@@ -3996,7 +3975,7 @@ export default class WorldmapScene extends WarpTravel {
       if (!Number.isFinite(chunkRow) || !Number.isFinite(chunkCol)) {
         return;
       }
-      this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+      this.removePreparedTerrainForChunk(chunkRow, chunkCol);
     });
   }
 
@@ -4054,14 +4033,14 @@ export default class WorldmapScene extends WarpTravel {
       row,
       renderSize: this.renderChunkSize,
       chunkSize: this.chunkSize,
-      hasChunkKey: (chunkKey) => this.cachedMatrices.has(chunkKey),
+      hasChunkKey: (chunkKey) => this.preparedTerrainCache.has(chunkKey),
     });
 
     if (overlappingChunkKeys.length > 0) {
       overlappingChunkKeys.forEach((chunkKey) => {
         const [chunkRow, chunkCol] = chunkKey.split(",").map(Number);
         if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
-          this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+          this.removePreparedTerrainForChunk(chunkRow, chunkCol);
         }
       });
       return;
@@ -4074,7 +4053,7 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     // Fallback: invalidate the containing stride chunk when no cached overlaps are found.
-    this.removeCachedMatricesForChunk(chunkRow, chunkCol);
+    this.removePreparedTerrainForChunk(chunkRow, chunkCol);
   }
 
   /**
@@ -4243,7 +4222,7 @@ export default class WorldmapScene extends WarpTravel {
       !chunkKey ||
       !this.directionalPresentationChunkKeys.has(chunkKey) ||
       this.activeDirectionalPresentationPrewarms.has(chunkKey) ||
-      this.cachedMatrices.has(chunkKey)
+      this.preparedTerrainCache.has(chunkKey)
     ) {
       return;
     }
@@ -4263,7 +4242,7 @@ export default class WorldmapScene extends WarpTravel {
           token === this.chunkTransitionToken &&
           this.directionalPresentationChunkKeys.has(chunkKey) &&
           !this.isSwitchedOff,
-        isPresentationHot: (targetChunkKey) => this.cachedMatrices.has(targetChunkKey),
+        isPresentationHot: (targetChunkKey) => this.preparedTerrainCache.has(targetChunkKey),
         preparePresentation: () =>
           prepareWorldmapChunkPresentation({
             chunkKey,
@@ -4279,8 +4258,6 @@ export default class WorldmapScene extends WarpTravel {
           }),
         cachePreparedTerrain: (preparedTerrain) =>
           this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
-        disposePreparedTerrain: (preparedTerrain) =>
-          this.disposePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
       });
     } finally {
       this.activeDirectionalPresentationPrewarms.delete(chunkKey);
@@ -4520,15 +4497,13 @@ export default class WorldmapScene extends WarpTravel {
         totalMs: 0,
       };
       if (!this.shouldApplyVisualTerrainPageBuild(request)) {
-        this.disposePreparedTerrainChunk(preparedTerrain);
         this.traceVisualTerrainPageStaleDrop(request, "stale_after_prepare");
         return;
       }
 
       const commitTimings = phaseTimings;
-      await this.schedulePreparedTerrainCommit(request.priority, preparedTerrain, () => {
+      await this.schedulePreparedTerrainCommit(request.priority, () => {
         if (!this.shouldApplyVisualTerrainPageBuild(request)) {
-          this.disposePreparedTerrainChunk(preparedTerrain);
           this.traceVisualTerrainPageStaleDrop(request, "stale_before_commit");
           return;
         }
@@ -4570,7 +4545,6 @@ export default class WorldmapScene extends WarpTravel {
     const presentation = this.createTerrainPresentationFromPreparedTerrain(preparedTerrain, {
       authoritative: existingPresentation?.cells.some((cell) => cell.authoritative) ?? false,
       authorityChunkKey: existingPresentation?.authorityChunkKey ?? null,
-      claimBiomeEntries: true,
       coverageKey: request.pageKey,
       coverageKind: "visual_page",
       generation: this.visualTerrainGeneration,
@@ -4704,7 +4678,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return {
-      biomeEntries: new Map(),
       bounds: this.computeChunkBounds(startRow, startCol),
       chunkKey: String(startRow) + "," + String(startCol),
       expectedExploredTerrainInstances,
@@ -4715,31 +4688,11 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private disposePreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
-    void preparedTerrain;
-  }
-
-  private async schedulePreparedTerrainCommit<TResult>(
+  private schedulePreparedTerrainCommit<TResult>(
     workLane: FrameBudgetWorkLane,
-    preparedTerrain: PreparedTerrainChunk,
     commit: () => TResult,
   ): Promise<TResult> {
-    let commitStarted = false;
-    try {
-      return await this.chunkWorkQueue.schedule(
-        workLane,
-        () => {
-          commitStarted = true;
-          return commit();
-        },
-        `terrain:${workLane}-commit`,
-      );
-    } catch (error) {
-      if (!commitStarted) {
-        this.disposePreparedTerrainChunk(preparedTerrain);
-      }
-      throw error;
-    }
+    return this.chunkWorkQueue.schedule(workLane, commit, `terrain:${workLane}-commit`);
   }
 
   private ensureCurrentExactTerrainPresentation(transitionToken: number): void {
@@ -4765,7 +4718,6 @@ export default class WorldmapScene extends WarpTravel {
     this.applyTerrainPresentation(
       this.createTerrainPresentationFromPreparedTerrain(preparedTerrain, {
         authoritative: true,
-        claimBiomeEntries: true,
         kind: "exact",
         transitionToken,
       }),
@@ -4822,7 +4774,7 @@ export default class WorldmapScene extends WarpTravel {
         this.renderChunkSize.width,
       ));
     const kind: WorldmapTerrainPresentationKind = cachedTerrain ? "exact" : "provisional";
-    await this.schedulePreparedTerrainCommit("critical", preparedTerrain, () =>
+    await this.schedulePreparedTerrainCommit("critical", () =>
       this.applyChunkSwitchTerrainShell(input, preparedTerrain, kind),
     );
   }
@@ -4839,7 +4791,6 @@ export default class WorldmapScene extends WarpTravel {
     const presentations = this.partitionPreparedTerrainIntoVisualPagesForPresentation(preparedTerrain, {
       authoritative: false,
       authorityChunkKey: kind === "exact" ? input.chunkKey : null,
-      claimBiomeEntries: true,
       generation: this.visualTerrainGeneration,
       kind,
       transitionToken: input.transitionToken,
@@ -4852,7 +4803,6 @@ export default class WorldmapScene extends WarpTravel {
           existingPresentation.cells.some((cell) => cell.authoritative),
       )
     ) {
-      presentations.forEach((presentation) => this.disposeTerrainPresentation(presentation));
       this.traceChunk("terrain_shell_stale_dropped", {
         chunkKey: input.chunkKey,
         reason: "authoritative_exact_already_committed",
@@ -4915,7 +4865,6 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     if (status === "stale_dropped") {
-      this.disposeTerrainPresentation(presentation);
       this.traceChunk("visual_page_stale_dropped", {
         coverageKey,
         currentGeneration: this.visualTerrainGeneration,
@@ -4926,7 +4875,7 @@ export default class WorldmapScene extends WarpTravel {
       return false;
     }
 
-    this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
+    this.recordDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
     this.traceChunk("visual_page_committed", {
       cellCount: presentation.cells.length,
       coverageKey,
@@ -5084,11 +5033,8 @@ export default class WorldmapScene extends WarpTravel {
   clearCache() {
     this.unregisterTrackedVisibilityChunks();
     this.clearVisualTerrainPresentations();
-    for (const chunkKey of this.cachedMatrices.keys()) {
-      this.disposeCachedMatrices(chunkKey);
-    }
-    this.cachedMatrices.clear();
-    this.cachedMatrixOrder = [];
+    this.preparedTerrainCache.clear();
+    this.preparedTerrainCacheOrder = [];
     this.exploredTiles.clear();
     this.exploredTilesGeneration.clear();
     gameWorkerManager.resetWorldState();
@@ -5177,56 +5123,52 @@ export default class WorldmapScene extends WarpTravel {
 
   private createPreparedTerrainChunkFromCache(startRow: number, startCol: number): PreparedTerrainChunk | null {
     const chunkKey = `${startRow},${startCol}`;
-    const cachedMatrices = this.cachedMatrices.get(chunkKey);
-    if (!cachedMatrices) {
+    const cached = this.preparedTerrainCache.get(chunkKey);
+    if (!cached) {
       return null;
     }
 
-    const cachedMetadata = cachedMatrices.get("__meta__");
-    const cachedTerrainCells = cachedMetadata?.terrainCells ?? [];
+    const cachedTerrainCells = cached.terrainCells;
     const totalCachedTerrainInstances = cachedTerrainCells.length;
     const cachedExploredTerrainInstances = cachedTerrainCells.filter((cell) => cell.biomeKey !== "Outline").length;
-    if (isTerrainCacheStale(cachedMetadata?.generation, this.exploredTilesGeneration.current(chunkKey))) {
-      this.removeCachedMatricesForChunk(startRow, startCol);
+    if (isTerrainCacheStale(cached.generation, this.exploredTilesGeneration.current(chunkKey))) {
+      this.removePreparedTerrainForChunk(startRow, startCol);
       return null;
     }
-    const expectedExploredTerrainInstances =
-      cachedMetadata?.expectedExploredTerrainInstances ?? this.getExpectedExploredTerrainInstances(startRow, startCol);
+    const expectedExploredTerrainInstances = cached.expectedExploredTerrainInstances;
     const terrainFingerprint = this.getTerrainFingerprintForChunk(startRow, startCol);
     if (
       this.shouldRejectTerrainCacheSnapshot(totalCachedTerrainInstances) ||
       this.shouldRejectExploredTerrainCacheSnapshot(cachedExploredTerrainInstances, expectedExploredTerrainInstances) ||
       shouldRejectCachedTerrainFingerprintMismatch({
-        cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
+        cachedTerrainFingerprint: cached.terrainFingerprint,
         currentTerrainFingerprint: terrainFingerprint,
       })
     ) {
       if (
         shouldRejectCachedTerrainFingerprintMismatch({
-          cachedTerrainFingerprint: cachedMetadata?.terrainFingerprint,
+          cachedTerrainFingerprint: cached.terrainFingerprint,
           currentTerrainFingerprint: terrainFingerprint,
         })
       ) {
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "cache_reject_fingerprint");
         incrementWorldmapRenderCounter("staleTerrainCacheFingerprintRejectCount");
       }
-      this.removeCachedMatricesForChunk(startRow, startCol);
+      this.removePreparedTerrainForChunk(startRow, startCol);
       return null;
     }
 
-    const cachedBounds = cachedMatrices.get("__bounds__");
     return {
       chunkKey,
       startRow,
       startCol,
       bounds: {
-        box: cachedBounds?.box?.clone() ?? this.computeChunkBounds(startRow, startCol).box,
-        sphere: cachedBounds?.sphere?.clone() ?? this.computeChunkBounds(startRow, startCol).sphere,
+        box: cached.bounds.box.clone(),
+        sphere: cached.bounds.sphere.clone(),
       },
       expectedExploredTerrainInstances,
-      terrainFingerprint: cachedMetadata?.terrainFingerprint ?? terrainFingerprint,
-      terrainCells: cachedMetadata?.terrainCells ?? [],
-      biomeEntries: new Map(),
+      terrainFingerprint: cached.terrainFingerprint,
+      terrainCells: cached.terrainCells,
     };
   }
 
@@ -5258,7 +5200,6 @@ export default class WorldmapScene extends WarpTravel {
     input: {
       authoritative: boolean;
       authorityChunkKey?: string | null;
-      claimBiomeEntries: boolean;
       coverageKey?: string;
       coverageKind?: "chunk" | "visual_page";
       generation?: number;
@@ -5278,7 +5219,6 @@ export default class WorldmapScene extends WarpTravel {
         box: preparedTerrain.bounds.box.clone(),
         sphere: preparedTerrain.bounds.sphere.clone(),
       },
-      biomeEntries: new Map(),
       cells: preparedTerrain.terrainCells.map((cell): WorldmapTerrainCellRef => {
         return {
           ...cell,
@@ -5293,7 +5233,6 @@ export default class WorldmapScene extends WarpTravel {
     input: {
       authoritative: boolean;
       authorityChunkKey: string | null;
-      claimBiomeEntries: boolean;
       generation: number;
       kind: WorldmapTerrainPresentationKind;
       transitionToken: number;
@@ -5301,7 +5240,6 @@ export default class WorldmapScene extends WarpTravel {
   ): WorldmapTerrainPresentationEntry[] {
     const pagePresentations = partitionPreparedTerrainIntoVisualPages({
       authorityChunkKey: input.authorityChunkKey,
-      biomeEntries: new Map<string, CachedTerrainEntry>(),
       bounds: {
         box: preparedTerrain.bounds.box.clone(),
         sphere: preparedTerrain.bounds.sphere.clone(),
@@ -5331,28 +5269,23 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private disposeTerrainPresentation(presentation: WorldmapTerrainPresentationEntry): void {
-    void presentation;
-  }
-
-  private disposeDroppedTerrainPresentations(
+  private recordDroppedTerrainPresentations(
     previousPresentations: readonly WorldmapTerrainPresentationEntry[],
     nextPresentations: readonly WorldmapTerrainPresentationEntry[],
   ): void {
-    const nextBiomeEntries = new Set(nextPresentations.map((presentation) => presentation.biomeEntries));
-    previousPresentations.forEach((presentation) => {
-      if (!nextBiomeEntries.has(presentation.biomeEntries)) {
-        if (presentation.coverageKind === "visual_page") {
-          this.traceChunk("visual_page_evicted", {
-            coverageKey: presentation.coverageKey ?? presentation.chunkKey,
-            generation: presentation.generation,
-            kind: presentation.kind,
-          });
-          incrementWorldmapRenderCounter("visualPageEvicted");
-        }
-        this.disposeTerrainPresentation(presentation);
-      }
-    });
+    const retainedCoverage = new Set(
+      nextPresentations.map((presentation) => presentation.coverageKey ?? presentation.chunkKey),
+    );
+    for (const presentation of previousPresentations) {
+      const coverageKey = presentation.coverageKey ?? presentation.chunkKey;
+      if (presentation.coverageKind !== "visual_page" || retainedCoverage.has(coverageKey)) continue;
+      this.traceChunk("visual_page_evicted", {
+        coverageKey,
+        generation: presentation.generation,
+        kind: presentation.kind,
+      });
+      incrementWorldmapRenderCounter("visualPageEvicted");
+    }
   }
 
   private applyTerrainPresentation(
@@ -5375,7 +5308,6 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     if (status === "stale_dropped") {
-      this.disposeTerrainPresentation(presentation);
       this.traceChunk("terrain_shell_stale_dropped", {
         chunkKey: presentation.chunkKey,
         kind: presentation.kind,
@@ -5386,7 +5318,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
+    this.recordDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
     void this.requestVisualTerrainCompositeCommit();
   }
 
@@ -5404,7 +5336,7 @@ export default class WorldmapScene extends WarpTravel {
       targetChunkKey,
     }).slice(0, maxPresentations);
 
-    this.disposeDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
+    this.recordDroppedTerrainPresentations(previousPresentations, this.visualTerrainPresentationState.presentations);
     void this.requestVisualTerrainCompositeCommit();
   }
 
@@ -5573,32 +5505,20 @@ export default class WorldmapScene extends WarpTravel {
     this.liveTilePageRebuilds.clear();
     this.visualTerrainWindow = null;
     this.visualTerrainWindowPageKeys.clear();
-    this.visualTerrainPresentationState.presentations.forEach((presentation) =>
-      this.disposeTerrainPresentation(presentation),
-    );
     this.visualTerrainPresentationState.presentations = [];
     this.proceduralTerrain.clear();
   }
 
   private cachePreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
     const chunkKey = preparedTerrain.chunkKey;
-    this.disposeCachedMatrices(chunkKey);
 
-    const cachedChunk = new Map<string, CachedTerrainEntry>();
-    cachedChunk.set("__bounds__", {
-      box: preparedTerrain.bounds.box.clone(),
-      sphere: preparedTerrain.bounds.sphere.clone(),
-    });
-    cachedChunk.set("__meta__", {
-      expectedExploredTerrainInstances: preparedTerrain.expectedExploredTerrainInstances,
-      terrainFingerprint: preparedTerrain.terrainFingerprint,
-      terrainCells: preparedTerrain.terrainCells,
+    this.preparedTerrainCache.set(chunkKey, {
+      ...preparedTerrain,
+      bounds: { box: preparedTerrain.bounds.box.clone(), sphere: preparedTerrain.bounds.sphere.clone() },
       generation: this.exploredTilesGeneration.current(chunkKey),
     });
-
-    this.cachedMatrices.set(chunkKey, cachedChunk);
-    this.touchMatrixCache(chunkKey);
-    this.ensureMatrixCacheLimit();
+    this.touchPreparedTerrainCache(chunkKey);
+    this.ensurePreparedTerrainCacheLimit();
   }
 
   private applyPreparedTerrainChunk(preparedTerrain: PreparedTerrainChunk): void {
@@ -5609,7 +5529,6 @@ export default class WorldmapScene extends WarpTravel {
     const exactPresentations = this.partitionPreparedTerrainIntoVisualPagesForPresentation(preparedTerrain, {
       authoritative: true,
       authorityChunkKey: preparedTerrain.chunkKey,
-      claimBiomeEntries: false,
       generation: this.visualTerrainGeneration,
       kind: "exact",
       transitionToken: this.chunkTransitionToken,
@@ -5713,7 +5632,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private retainActiveTerrainGenerations(): void {
     const retainedGenerationKeys = new Set([
-      ...this.cachedMatrices.keys(),
+      ...this.preparedTerrainCache.keys(),
       ...this.pinnedChunkKeys,
       ...this.directionalPresentationChunkKeys,
     ]);
@@ -6130,46 +6049,40 @@ export default class WorldmapScene extends WarpTravel {
     return this.invalidateVisualTerrainPageForLiveTile(col, row);
   }
 
-  private touchMatrixCache(chunkKey: string) {
-    const existingIndex = this.cachedMatrixOrder.indexOf(chunkKey);
+  private touchPreparedTerrainCache(chunkKey: string) {
+    const existingIndex = this.preparedTerrainCacheOrder.indexOf(chunkKey);
     if (existingIndex !== -1) {
-      this.cachedMatrixOrder.splice(existingIndex, 1);
+      this.preparedTerrainCacheOrder.splice(existingIndex, 1);
     }
-    this.cachedMatrixOrder.push(chunkKey);
+    this.preparedTerrainCacheOrder.push(chunkKey);
   }
 
-  private disposeCachedMatrices(chunkKey: string): void {
-    void chunkKey;
-  }
-
-  private removeCachedMatricesForChunk(startRow: number, startCol: number): void {
+  private removePreparedTerrainForChunk(startRow: number, startCol: number): void {
     const chunkKey = `${startRow},${startCol}`;
-    this.disposeCachedMatrices(chunkKey);
-    this.cachedMatrices.delete(chunkKey);
-    this.cachedMatrixOrder = this.cachedMatrixOrder.filter((key) => key !== chunkKey);
+    this.preparedTerrainCache.delete(chunkKey);
+    this.preparedTerrainCacheOrder = this.preparedTerrainCacheOrder.filter((key) => key !== chunkKey);
   }
 
-  private ensureMatrixCacheLimit() {
-    const { evictedKeys, limitedByPinning } = computeMatrixCacheEvictions(
-      this.cachedMatrixOrder,
+  private ensurePreparedTerrainCacheLimit() {
+    const { evictedKeys, limitedByPinning } = computeTerrainCacheEvictions(
+      this.preparedTerrainCacheOrder,
       this.pinnedChunkKeys,
-      this.maxMatrixCacheSize,
+      this.maxPreparedTerrainCacheSize,
     );
 
     for (const key of evictedKeys) {
-      this.disposeCachedMatrices(key);
-      this.cachedMatrices.delete(key);
+      this.preparedTerrainCache.delete(key);
     }
 
     // Rebuild the order array without evicted keys (preserves relative order).
     if (evictedKeys.length > 0) {
       const evictedSet = new Set(evictedKeys);
-      this.cachedMatrixOrder = this.cachedMatrixOrder.filter((k) => !evictedSet.has(k));
+      this.preparedTerrainCacheOrder = this.preparedTerrainCacheOrder.filter((k) => !evictedSet.has(k));
     }
 
     if (limitedByPinning) {
       console.warn(
-        `[CACHE] Unable to evict matrices below limit because pinned chunks exceed capacity (${this.maxMatrixCacheSize})`,
+        `[CACHE] Unable to evict prepared terrain below limit because pinned chunks exceed capacity (${this.maxPreparedTerrainCacheSize})`,
       );
     }
   }
@@ -6225,26 +6138,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return createWorldmapTerrainFingerprint(fingerprintEntries);
-  }
-
-  private getExpectedExploredTerrainInstances(startRow: number, startCol: number): number {
-    const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
-    let expectedExploredTerrainInstances = 0;
-
-    for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
-      for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
-        const isStructure = this.isProjectedStructureHex(col, row);
-        if (isStructure) {
-          continue;
-        }
-
-        if (this.simulateAllExplored || this.exploredTiles.get(col)?.has(row)) {
-          expectedExploredTerrainInstances += 1;
-        }
-      }
-    }
-
-    return expectedExploredTerrainInstances;
   }
 
   private computeChunkBounds(startRow: number, startCol: number) {
@@ -6741,8 +6634,7 @@ export default class WorldmapScene extends WarpTravel {
           : null;
       },
       isSwitchedOff: () => this.isSwitchedOff,
-      scheduleCommit: (commit) => this.schedulePreparedTerrainCommit("critical", input.preparedTerrain, commit),
-      disposePreparedTerrain: (preparedTerrain) => this.disposePreparedTerrainChunk(preparedTerrain),
+      scheduleCommit: (commit) => this.schedulePreparedTerrainCommit("critical", commit),
       commitChunkAuthority: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
       applyPreparedTerrain: (preparedTerrain) => {
         commitWorldmapPreparedTerrainPresentation({
@@ -6842,8 +6734,8 @@ export default class WorldmapScene extends WarpTravel {
             applySceneChunkBounds: (bounds) => this.applySceneChunkBounds(bounds),
           });
         },
-        removeCachedMatricesForChunk: (targetStartRow, targetStartCol) =>
-          this.removeCachedMatricesForChunk(targetStartRow, targetStartCol),
+        removePreparedTerrainForChunk: (targetStartRow, targetStartCol) =>
+          this.removePreparedTerrainForChunk(targetStartRow, targetStartCol),
         startCol,
         startRow,
         switchPosition: switchPosition
@@ -6906,8 +6798,6 @@ export default class WorldmapScene extends WarpTravel {
             presentationRuntime,
             transitionToken,
           }),
-        disposePreparedTerrain: (droppedPreparedTerrain) =>
-          this.disposePreparedTerrainChunk(droppedPreparedTerrain as PreparedTerrainChunk),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
         restorePreviousChunkVisuals: (oldStartRow, oldStartCol) =>
@@ -6991,7 +6881,7 @@ export default class WorldmapScene extends WarpTravel {
     const refreshAreaKey = this.getRenderAreaKeyForChunk(chunkKey);
 
     const surroundingChunks = this.getSurroundingChunkKeys(startRow, startCol);
-    this.removeCachedMatricesForChunk(startRow, startCol);
+    this.removePreparedTerrainForChunk(startRow, startCol);
     const refreshStartedAt = performance.now();
     const refreshCommitStatus = await runWorldmapRefreshRuntime({
       commitRefresh: async ({ preparedTerrain, projectionSyncSucceeded, presentationRuntime }) => {
@@ -7007,7 +6897,7 @@ export default class WorldmapScene extends WarpTravel {
           chunkKey,
           commitPreparedTerrain: (nextPreparedTerrain) => {
             const preparedTerrain = nextPreparedTerrain as PreparedTerrainChunk;
-            return this.schedulePreparedTerrainCommit("critical", preparedTerrain, () => {
+            return this.schedulePreparedTerrainCommit("critical", () => {
               commitWorldmapPreparedTerrainPresentation({
                 applyPreparedTerrain: (preparedTerrain) => {
                   this.applyPreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk);
@@ -7026,8 +6916,6 @@ export default class WorldmapScene extends WarpTravel {
               });
             });
           },
-          disposePreparedTerrain: (droppedPreparedTerrain) =>
-            this.disposePreparedTerrainChunk(droppedPreparedTerrain as PreparedTerrainChunk),
           diagnostics: this.chunkDiagnostics,
           force: true,
           preparedTerrain,

@@ -1,3 +1,4 @@
+import { configureRendererColorOutput } from "./renderer-color-output";
 import {
   ACESFilmicToneMapping,
   CineonToneMapping,
@@ -88,7 +89,7 @@ async function createDefaultWebGPURenderer(input: {
   const { threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
   recordRendererStartupTiming("webgpu-module-import", performance.now() - moduleImportStartedAt);
 
-  const { ACESFilmicToneMapping, HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
+  const { HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
     threeWebGPUModule as typeof import("three/webgpu");
 
   throwIfAborted(input.signal);
@@ -99,8 +100,7 @@ async function createDefaultWebGPURenderer(input: {
   renderer.autoClear = false;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
-  renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.8;
+  configureRendererColorOutput(renderer);
   renderer.info.autoReset = false;
 
   if ("outputBufferType" in renderer) {

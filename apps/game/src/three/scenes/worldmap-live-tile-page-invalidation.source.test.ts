@@ -36,7 +36,7 @@ describe("worldmap live tile page invalidation", () => {
   });
 
   it("invalidates hydrated writes through the same explored-tile chokepoint", () => {
-    const hydrate = extractMethod("  private syncExploredTilesFromProjection(", "  private touchMatrixCache(");
+    const hydrate = extractMethod("  private syncExploredTilesFromProjection(", "  private touchPreparedTerrainCache(");
 
     expect(hydrate).toContain("this.writeExploredTileFromProjection(normalized.x, normalized.y, biome)");
     expect(hydrate).toContain("this.invalidateVisualTerrainPageForLiveTile(col, row)");

@@ -12,9 +12,11 @@ function readWorldmapSource(): string {
 }
 
 describe("worldmap cache budget policy", () => {
-  it("drives worldmap matrix cache capacity from policy recommended minimum", () => {
+  it("drives worldmap prepared terrain cache capacity from policy recommended minimum", () => {
     const worldmapSource = readWorldmapSource();
-    expect(worldmapSource).toMatch(/maxMatrixCacheSize\s*=\s*WORLDMAP_CHUNK_POLICY\.cache\.recommendedMinSize/);
+    expect(worldmapSource).toMatch(
+      /maxPreparedTerrainCacheSize\s*=\s*WORLDMAP_CHUNK_POLICY\.cache\.recommendedMinSize/,
+    );
   });
 
   it("keeps recommended minimum cache capacity at or above pinned neighborhood floor", () => {

@@ -6,7 +6,7 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
   it("forces aggressive refresh on reversal and invalidates surrounding terrain caches", () => {
     const prepareBounds = vi.fn();
     const invalidateTerrainCaches = vi.fn();
-    const removeCachedMatricesForChunk = vi.fn();
+    const removePreparedTerrainForChunk = vi.fn();
 
     const result = prepareWorldmapChunkSwitchRuntime({
       chunkKey: "24,24",
@@ -17,7 +17,7 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
       lastChunkSwitchPosition: { x: 10, z: 10 },
       pinnedChunkKeys: new Set(["-24,24", "0,0"]),
       prepareBounds,
-      removeCachedMatricesForChunk,
+      removePreparedTerrainForChunk,
       startCol: 24,
       startRow: 24,
       switchPosition: { x: 0, z: 10 },
@@ -37,11 +37,11 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
     expect(invalidateTerrainCaches).toHaveBeenCalledWith("24,24", {
       includeSurroundingChunks: ["0,24", "24,0"],
     });
-    expect(removeCachedMatricesForChunk).not.toHaveBeenCalled();
+    expect(removePreparedTerrainForChunk).not.toHaveBeenCalled();
   });
 
   it("removes only the target chunk cache when refresh is forced without reversal", () => {
-    const removeCachedMatricesForChunk = vi.fn();
+    const removePreparedTerrainForChunk = vi.fn();
 
     const result = prepareWorldmapChunkSwitchRuntime({
       chunkKey: "48,48",
@@ -52,7 +52,7 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
       lastChunkSwitchPosition: null,
       pinnedChunkKeys: new Set<string>(),
       prepareBounds: vi.fn(),
-      removeCachedMatricesForChunk,
+      removePreparedTerrainForChunk,
       startCol: 48,
       startRow: 48,
       switchPosition: null,
@@ -60,7 +60,7 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
 
     expect(result.effectiveForce).toBe(true);
     expect(result.reversalRefreshDecision.shouldForceRefresh).toBe(false);
-    expect(removeCachedMatricesForChunk).toHaveBeenCalledWith(48, 48);
+    expect(removePreparedTerrainForChunk).toHaveBeenCalledWith(48, 48);
   });
 
   it("passes finite old chunk coordinates into bounds preparation when current chunk is valid", () => {
@@ -76,7 +76,7 @@ describe("prepareWorldmapChunkSwitchRuntime", () => {
       lastChunkSwitchPosition: null,
       pinnedChunkKeys: new Set(["24,48"]),
       prepareBounds,
-      removeCachedMatricesForChunk: vi.fn(),
+      removePreparedTerrainForChunk: vi.fn(),
       startCol: 72,
       startRow: 72,
       switchPosition: null,

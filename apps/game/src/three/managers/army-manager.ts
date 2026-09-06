@@ -38,7 +38,6 @@ import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/te
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
 import { ModelType } from "@/three/types/army";
-import { FrustumManager } from "@/three/utils/frustum-manager";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
@@ -239,7 +238,6 @@ export class ArmyManager {
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
   private compactLabelRenderer: CompactEntityLabelScope;
-  private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private labelRenderDistance = Infinity;
   private lastLabelVisibilityUpdate = 0;
@@ -248,7 +246,6 @@ export class ArmyManager {
   private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
   private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
   private hadMovingArmiesLastFrame = false;
-  private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
   private lastKnownArmiesTick: number = 0;
@@ -306,7 +303,6 @@ export class ArmyManager {
     labelsGroup?: Group,
     hexagonScene?: HexagonScene,
     dojoContext?: SetupResult,
-    frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
@@ -328,14 +324,7 @@ export class ArmyManager {
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
-    this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
-    if (this.frustumManager) {
-      this.frustumVisibilityDirty = true;
-      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
-        this.frustumVisibilityDirty = true;
-      });
-    }
     if (this.visibilityManager) {
       this.frustumVisibilityDirty = true;
       this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
@@ -2978,9 +2967,7 @@ export class ArmyManager {
         return false;
       }
     }
-    return this.visibilityManager
-      ? this.visibilityManager.isPointVisible(label.position)
-      : (this.frustumManager?.isPointVisible(label.position) ?? true);
+    return this.visibilityManager?.isPointVisible(label.position) ?? true;
   }
 
   private revealArmyLabel(entityId: ID, label: CSS2DObject) {
@@ -3341,11 +3328,6 @@ ${
     if (this.unsubscribeVisibility) {
       this.unsubscribeVisibility();
       this.unsubscribeVisibility = undefined;
-    }
-
-    if (this.unsubscribeFrustum) {
-      this.unsubscribeFrustum();
-      this.unsubscribeFrustum = undefined;
     }
 
     if (this.unsubscribeAccountStore) {

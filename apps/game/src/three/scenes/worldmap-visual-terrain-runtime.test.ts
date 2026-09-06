@@ -18,7 +18,7 @@ const pagePresentation = (
   generation: number,
   cells: Array<{ col: number; row: number; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
   authorityChunkKey: string | null = null,
-): WorldmapTerrainPresentation<Record<string, true>, string> => ({
+): WorldmapTerrainPresentation<string> => ({
   chunkKey: authorityChunkKey ?? coverageKey,
   coverageKey,
   coverageKind: "visual_page",
@@ -27,7 +27,6 @@ const pagePresentation = (
   generation,
   transitionToken: generation,
   bounds: `${coverageKey}:bounds`,
-  biomeEntries: { [coverageKey]: true },
   cells: cells.map((cell) => ({
     ...cell,
     authoritative: cell.authoritative ?? false,
@@ -83,7 +82,7 @@ describe("worldmap visual terrain runtime", () => {
   });
 
   it("drops stale visual page generations without mutating active presentation state", () => {
-    const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
+    const state = createWorldmapTerrainPresentationState<string>();
     const staleResult = applyWorldmapVisualTerrainPage(state, {
       latestGeneration: 2,
       maxCompositePages: 16,
@@ -110,7 +109,7 @@ describe("worldmap visual terrain runtime", () => {
   });
 
   it("drops stale transition-owned visual pages without mutating active presentation state", () => {
-    const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
+    const state = createWorldmapTerrainPresentationState<string>();
     const staleResult = applyWorldmapVisualTerrainPage(state, {
       latestGeneration: 2,
       latestTransitionToken: 3,
@@ -126,7 +125,7 @@ describe("worldmap visual terrain runtime", () => {
   });
 
   it("keeps the newly accepted page when a full visual window has equal-priority pages", () => {
-    const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
+    const state = createWorldmapTerrainPresentationState<string>();
     state.presentations = [
       pagePresentation("0,0", "provisional", 3, [{ col: 0, row: 0, biomeKey: "Outline", instanceIndex: 0 }]),
       pagePresentation("0,24", "provisional", 3, [{ col: 24, row: 0, biomeKey: "Outline", instanceIndex: 0 }]),
@@ -168,7 +167,6 @@ describe("worldmap visual terrain runtime", () => {
 
     const pages = partitionPreparedTerrainIntoVisualPages({
       authorityChunkKey: "0,0",
-      biomeEntries: { exact: true },
       bounds: "bounds",
       cells,
       kind: "exact",

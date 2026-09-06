@@ -60,7 +60,6 @@ import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinat
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft } from "../utils/combat-directions";
-import { FrustumManager } from "../utils/frustum-manager";
 import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
@@ -275,14 +274,12 @@ export class StructureManager {
   // Ids the manager has asked the compact renderer to show; the label tier gate is re-evaluated against it.
   private readonly compactLabelIds = new Set<ID>();
   private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
-  private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private chunkAssetPrewarmPromises: Map<string, Promise<void>> = new Map();
-  private unsubscribeFrustum?: () => void;
   private unsubscribeVisibility?: () => void;
   private chunkStride: number;
   private hasPendingModelBounds = false;
@@ -319,7 +316,6 @@ export class StructureManager {
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
     dojoContext?: SetupResult,
-    frustumManager?: FrustumManager,
     visibilityManager?: CentralizedVisibilityManager,
     chunkStride?: number,
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
@@ -338,14 +334,7 @@ export class StructureManager {
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.components = dojoContext?.components as ClientComponents | undefined;
-    this.frustumManager = frustumManager;
     this.visibilityManager = visibilityManager;
-    if (this.frustumManager) {
-      this.frustumVisibilityDirty = true;
-      this.unsubscribeFrustum = this.frustumManager.onChange(() => {
-        this.frustumVisibilityDirty = true;
-      });
-    }
     if (this.visibilityManager) {
       this.frustumVisibilityDirty = true;
       this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
@@ -764,11 +753,6 @@ export class StructureManager {
     this.isDestroyed = true;
     this.unsubscribeProjection();
     this.recsUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
-
-    if (this.unsubscribeFrustum) {
-      this.unsubscribeFrustum();
-      this.unsubscribeFrustum = undefined;
-    }
 
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
@@ -1846,13 +1830,7 @@ export class StructureManager {
     if (!this.currentChunkBounds) {
       return true;
     }
-    if (this.visibilityManager) {
-      return this.visibilityManager.isBoxVisible(this.currentChunkBounds.box);
-    }
-    if (!this.frustumManager) {
-      return true;
-    }
-    return this.frustumManager.isBoxVisible(this.currentChunkBounds.box);
+    return this.visibilityManager?.isBoxVisible(this.currentChunkBounds.box) ?? true;
   }
 
   updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
@@ -1899,13 +1877,11 @@ export class StructureManager {
     if (!this.animationVisibilityContext) {
       this.animationVisibilityContext = {
         visibilityManager: this.visibilityManager,
-        frustumManager: this.frustumManager,
         cameraPosition: this.animationCameraPosition,
         maxDistance: this.animationCullDistance,
       };
     } else {
       this.animationVisibilityContext.visibilityManager = this.visibilityManager;
-      this.animationVisibilityContext.frustumManager = this.frustumManager;
       this.animationVisibilityContext.cameraPosition = this.animationCameraPosition;
       this.animationVisibilityContext.maxDistance = this.animationCullDistance;
     }
@@ -2068,9 +2044,7 @@ export class StructureManager {
         return false;
       }
     }
-    return this.visibilityManager
-      ? this.visibilityManager.isPointVisible(label.position)
-      : (this.frustumManager?.isPointVisible(label.position) ?? true);
+    return this.visibilityManager?.isPointVisible(label.position) ?? true;
   }
 
   private revealStructureLabel(entityId: ID, label: CSS2DObject) {

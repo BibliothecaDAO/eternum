@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-06",
+    title: "Game Lighting in Labs",
+    type: "improvement",
+    description:
+      "Biome and local labs use game lighting and tone mapping, with a day-cycle slider to compare terrain, armies and buildings at different times of day.",
+  },
+  {
+    date: "2026-09-06",
     title: "World and Local Labs",
     type: "feature",
     description:

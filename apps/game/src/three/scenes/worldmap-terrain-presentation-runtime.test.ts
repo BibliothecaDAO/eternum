@@ -16,12 +16,11 @@ const presentation = (
   kind: "exact" | "provisional",
   transitionToken: number,
   cells: Array<{ col: number; row: number; biomeKey: string; instanceIndex: number; authoritative?: boolean }>,
-): WorldmapTerrainPresentation<Record<string, true>, string> => ({
+): WorldmapTerrainPresentation<string> => ({
   chunkKey,
   kind,
   transitionToken,
   bounds: `${chunkKey}:bounds`,
-  biomeEntries: { [chunkKey]: true },
   cells: cells.map((cell) => ({
     ...cell,
     authoritative: cell.authoritative ?? false,
@@ -105,7 +104,7 @@ describe("worldmap terrain presentation runtime", () => {
   });
 
   it("drops stale terrain shells and replaces provisional target terrain with exact authority", () => {
-    const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
+    const state = createWorldmapTerrainPresentationState<string>();
 
     const staleResult = applyWorldmapTerrainPresentation(state, {
       authoritativeChunkKey: "0,0",

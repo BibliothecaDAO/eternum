@@ -95,6 +95,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
     : undefined;
   const [buildingPath, setBuildingPath] = useState(TERRAIN_LAB_BUILDINGS[0].path);
   const [buildingYaw, setBuildingYaw] = useState(0);
+  const [cycleProgress, setCycleProgress] = useState(50);
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [preview, setPreview] = useState<TerrainLabPreview>({ ...DEFAULT_TERRAIN_LAB_PREVIEW, grid: localMode });
@@ -158,6 +159,10 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
     setError(null);
     void rendererRef.current?.setPreview(preview).catch((reason) => setError(String(reason)));
   }, [preview, ready]);
+
+  useEffect(() => {
+    if (ready) rendererRef.current?.setCycleProgress(cycleProgress);
+  }, [cycleProgress, ready]);
 
   const setRendererMode = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -405,6 +410,21 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
               Clear buildings
             </button>
           </fieldset>
+
+          <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
+            Game day cycle: {cycleProgress}%
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={cycleProgress}
+              onChange={(event) => setCycleProgress(Number(event.target.value))}
+            />
+            <span className="font-normal normal-case text-stone-400">
+              Uses game lighting and tone mapping. Match the in-game cycle percentage to compare biomes.
+            </span>
+          </label>
 
           <div className="grid grid-cols-4 gap-1" aria-label="Biome atlas legend">
             {TERRAIN_BIOME_ORDER.map((biome) => {
