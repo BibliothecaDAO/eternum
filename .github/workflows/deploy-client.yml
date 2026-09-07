@@ -3,7 +3,7 @@ name: Deploy Client
 # Ships the game client to play.realms.party as a Cloudflare Pages project
 # (project name in vars.CLOUDFLARE_PAGES_PROJECT; the custom domain is attached
 # in the Pages dashboard once). Manual dispatch keeps deploys deliberate; the
-# build reads the committed .env.production and stamps the version from the ref.
+# build reads .env.production plus the identity RPC secret and stamps the version from the ref.
 on:
   workflow_dispatch:
     inputs:
@@ -22,7 +22,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      VITE_PUBLIC_IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
+      VITE_PUBLIC_CONTROLLER_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
     steps:
+      - name: Validate identity RPC configuration
+        run: |
+          if [ -z "$VITE_PUBLIC_IDENTITY_RPC_URL" ]; then
+            echo "::error::CLIENT_IDENTITY_RPC_URL is required"
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 

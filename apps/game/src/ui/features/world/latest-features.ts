@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-07",
+    title: "Reliable Identity RPC",
+    description:
+      "Wallet initialization uses Alchemy’s mainnet RPC, restoring client startup after the previous endpoint stopped serving requests.",
+    type: "fix",
+  },
+  {
     date: "2026-09-06",
     title: "Clearer Terrain And Daylight",
     type: "improvement",
