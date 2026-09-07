@@ -41,7 +41,7 @@ describe("continuous exploration fog production wiring", () => {
 
     expect(debugRenderer).toContain("TERRAIN_DEEP_FOG_COLOR");
     expect(fogField).toContain("TERRAIN_DEEP_FOG_COLOR");
-    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#2d3942"');
+    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#191b1e"');
     expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 1");
   });
 
