@@ -370,6 +370,7 @@ import {
 } from "./worldmap-reconnect-refresh-queue";
 import { computeTerrainCacheEvictions } from "./worldmap-terrain-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
+import { subscribeWorldmapTileChanges } from "./worldmap-exploration-projection";
 import { resolveWorldmapCameraGroundBounds } from "./worldmap-camera-ground-bounds";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 import {
@@ -1272,8 +1273,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private bindWorldSpatialProjectionLifecycle(): void {
     this.seedStrategicMarkers();
-    const unsubscribeTiles = this.worldSpatialProjection.subscribeTiles((changes) => {
-      this.handleProjectedTileChanges(changes);
+    const unsubscribeTiles = subscribeWorldmapTileChanges(this.worldSpatialProjection, (change, source) => {
+      this.applyProjectedTileChange(change, source);
     });
     const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((changes) => {
       this.syncProjectedStructurePathfinding(changes);
@@ -1307,10 +1308,6 @@ export default class WorldmapScene extends WarpTravel {
       unsubscribeArmies();
       unsubscribeChests();
     };
-  }
-
-  private handleProjectedTileChanges(changes: readonly TileSpatialProjectionChange[]): void {
-    changes.forEach((change) => this.applyProjectedTileChange(change));
   }
 
   private syncStructureManagerGauges(): void {
@@ -1401,7 +1398,7 @@ export default class WorldmapScene extends WarpTravel {
     setWorldmapRenderGauge("strategicArmyMarkers", this.strategicMarkers.metrics.armies);
   }
 
-  private applyProjectedTileChange({ previous, current }: TileSpatialProjectionChange): void {
+  private applyProjectedTileChange({ previous, current }: TileSpatialProjectionChange, source?: WorldSpatialHex): void {
     const tile = current ?? previous;
     if (!tile) {
       return;
@@ -1414,6 +1411,14 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
+    if (!previous && current) {
+      const origin = source ? new Position({ x: source.col, y: source.row }).getNormalized() : undefined;
+      this.proceduralTerrain.queueShroudReveal(
+        normalized.x,
+        normalized.y,
+        origin ? { col: origin.x, row: origin.y } : undefined,
+      );
+    }
     const terrainPageRebuild = this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
     if (current) this.recordExploreRevealAfterRender(current.hexCoords, terrainPageRebuild);
   }
@@ -6136,8 +6141,6 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private writeExploredTileFromProjection(col: number, row: number, biome: BiomeType): Promise<void> {
-    const wasExplored = this.exploredTiles.get(col)?.has(row) ?? false;
-    if (!wasExplored) this.proceduralTerrain.queueShroudReveal(col, row);
     if (!this.exploredTiles.has(col)) {
       this.exploredTiles.set(col, new Map());
     }

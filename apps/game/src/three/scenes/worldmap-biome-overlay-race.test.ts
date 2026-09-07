@@ -20,7 +20,7 @@ describe("worldmap biome overlay race hardening", () => {
   it("fences live tile page rebuilds instead of appending into composed terrain", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/subscribeTiles/);
+    expect(source).toContain("subscribeWorldmapTileChanges");
     expect(source).toMatch(/visualTerrainPageRevisions/);
     expect(source).toMatch(/buildAndApplyVisualTerrainPage/);
     expect(source).not.toMatch(/terrainVisibleAppendCount/);
