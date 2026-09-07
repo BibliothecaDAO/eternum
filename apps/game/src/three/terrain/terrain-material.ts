@@ -66,7 +66,7 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   const depthMotion = smoothstep(TERRAIN_MIN_RENDERED_WATER_DEPTH, TERRAIN_SHALLOW_WATER_DEPTH, waterDepth)
     .mul(0.75)
     .add(0.25);
-  const waves = createTerrainWaterWaves(depthMotion, waterMotion);
+  const waves = createTerrainWaterWaves(waterDepth, depthMotion, waterMotion);
   material.positionNode = positionLocal.add(vec3(0, waves.height, 0));
   // Analytic slopes are in terrain object space, independent of the water mesh UV tangent basis.
   const waveNormalView = transformNormalToView(waves.normal);
@@ -86,48 +86,57 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
 }
 
 function createTerrainWaterWaves(
+  waterDepth: Node<"float">,
   depthMotion: Node<"float">,
   waterMotion: UniformNode<"float", number>,
 ): { height: Node<"float">; normal: Node<"vec3"> } {
   const waterTime = time.mul(waterMotion);
-  const primaryPhase = waterTime.mul(0.8).add(positionLocal.x.mul(1.15)).add(positionLocal.z.mul(0.64));
-  const crossPhase = waterTime.mul(0.51).add(positionLocal.x.mul(-0.42)).add(positionLocal.z.mul(0.81));
-  const motion = waterMotion.mul(depthMotion);
-  const ripplePhase = positionLocal.x.mul(4.3).add(positionLocal.z.mul(2.7)).sub(waterTime.mul(1.1));
+  // Broad crossing swells are resolved by the existing three subdivisions per hex.
+  // Crests stay at the gameplay water level; troughs use at most 80% of the available
+  // depth, keeping both the seabed and the static selection outline unobstructed.
+  const amplitude = waterDepth
+    .mul(0.4)
+    .min(0.12)
+    .mul(smoothstep(0.06, 0.2, waterDepth))
+    .mul(waterMotion);
+  const primaryPhase = positionLocal.x.mul(1.45).add(positionLocal.z.mul(0.58)).sub(waterTime.mul(1.05));
+  const crossPhase = positionLocal.x.mul(-0.63).add(positionLocal.z.mul(1.22)).sub(waterTime.mul(0.83));
+  const ripplePhase = positionLocal.x.mul(1.96).add(positionLocal.z.mul(-1.1)).sub(waterTime.mul(1.31));
   const height = primaryPhase
     .sin()
-    .mul(0.014)
-    .add(crossPhase.sin().mul(0.008))
-    .add(ripplePhase.sin().mul(0.003))
-    .mul(motion);
-  // Crossing wave trains bend with the swell; no repeated bright bands are painted into the water color.
+    .mul(0.62)
+    .add(crossPhase.sin().mul(0.28))
+    .add(ripplePhase.sin().mul(0.1))
+    .sub(1)
+    .mul(amplitude);
+  // Fine crossed ripples bend with the swell without painting bands into the albedo.
   const rippleWarp = primaryPhase.sin().mul(1.6).add(crossPhase.sin().mul(1.1));
   const capillaryPhase = positionLocal.x.mul(7.1).add(positionLocal.z.mul(5.3)).add(rippleWarp).sub(waterTime.mul(0.9));
   const capillaryFilter = smoothstep(0.7, 2.4, fwidth(capillaryPhase)).oneMinus();
-  const capillarySlope = capillaryPhase.cos().mul(capillaryFilter).mul(0.0004);
+  const capillarySlope = capillaryPhase.cos().mul(capillaryFilter).mul(0.0004).mul(depthMotion).mul(waterMotion);
   const crossRipplePhase = positionLocal.x
     .mul(-5.8)
     .add(positionLocal.z.mul(8.9))
     .sub(rippleWarp)
     .add(waterTime.mul(0.7));
   const crossRippleFilter = smoothstep(0.7, 2.4, fwidth(crossRipplePhase)).oneMinus();
-  const crossRippleSlope = crossRipplePhase.cos().mul(crossRippleFilter).mul(0.0003);
+  const crossRippleSlope = crossRipplePhase.cos().mul(crossRippleFilter).mul(0.0003).mul(depthMotion).mul(waterMotion);
   const slopeX = primaryPhase
     .cos()
-    .mul(0.014 * 1.15)
-    .add(crossPhase.cos().mul(0.008 * -0.42))
-    .add(ripplePhase.cos().mul(0.003 * 4.3))
+    .mul(0.62 * 1.45)
+    .add(crossPhase.cos().mul(0.28 * -0.63))
+    .add(ripplePhase.cos().mul(0.1 * 1.96))
+    .mul(amplitude)
     .add(capillarySlope.mul(7.1))
-    .add(crossRippleSlope.mul(-5.8))
-    .mul(motion);
+    .add(crossRippleSlope.mul(-5.8));
   const slopeZ = primaryPhase
     .cos()
-    .mul(0.014 * 0.64)
-    .add(crossPhase.cos().mul(0.008 * 0.81))
-    .add(ripplePhase.cos().mul(0.003 * 2.7))
+    .mul(0.62 * 0.58)
+    .add(crossPhase.cos().mul(0.28 * 1.22))
+    .add(ripplePhase.cos().mul(0.1 * -1.1))
+    .mul(amplitude)
     .add(capillarySlope.mul(5.3))
-    .add(crossRippleSlope.mul(8.9))
-    .mul(motion);
+    .add(crossRippleSlope.mul(8.9));
   return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
 }
 
@@ -187,7 +196,10 @@ export function createTerrainGroundMaterial(
     groundMotion,
   );
   const ashCoverage = smoothstep(0.05, 0.5, groundWeights1.w);
-  material.colorNode = shadeTerrainHexBoundary(mix(groundColor, volcanic.color, ashCoverage));
+  material.colorNode = shadeTerrainHexBoundary(
+    mix(groundColor, volcanic.color, ashCoverage),
+    smoothstep(0.25, 0.55, groundWeights0.w),
+  );
   material.emissiveNode = volcanic.embers.mul(ashCoverage);
   const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
   material.roughnessNode = mix(
@@ -297,16 +309,16 @@ function createWindblownGroundDetail(
 
 // Two offset rectangular lattices describe the same point-up hexes as terrainHexToWorld.
 // Drawing the border in the surface shader keeps it on the actual terrain and water heights.
-function shadeTerrainHexBoundary(surfaceColor: Node<"vec3">): Node<"vec3"> {
+function shadeTerrainHexBoundary(surfaceColor: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
   const edgeDistance = terrainHexEdgeDistance(positionLocal.xz);
   const pixelWidth = fwidth(edgeDistance).max(0.001);
   const border = smoothstep(0.008, pixelWidth.mul(1.2).add(0.008), edgeDistance).oneMinus();
   const luminance = surfaceColor.dot(vec3(0.2126, 0.7152, 0.0722));
-  // Contrast follows the actual textured surface: pale sand/snow need a dark
-  // boundary, while forest, basalt, and deep water need a lighter one.
-  const darkSurface = smoothstep(0.1, 0.3, luminance).oneMinus();
-  const borderColor = mix(vec3(0.025), vec3(0.3), darkSurface);
-  return mix(surfaceColor, borderColor, border.mul(0.6).mul(normalLocal.y.abs()));
+  const darkSurface = smoothstep(0.025, 0.12, luminance).oneMinus();
+  const originalBorderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
+  // Grass needs a muted lighter edge; other surfaces retain the subtle original grid.
+  const borderColor = mix(originalBorderColor, vec3(0.22, 0.26, 0.19), grassContrast.mul(0.65));
+  return mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs()));
 }
 
 function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {

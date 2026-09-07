@@ -44,7 +44,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-07",
     title: "Clearer Terrain and Ocean",
     description:
-      "Rocky deserts and sand dunes have distinct surface patterns, ocean waves are subtler, fog is dark charcoal, and hex borders adapt to the ground color.",
+      "Rocky deserts and sand dunes have distinct surface patterns, ocean swells rise and fall, fog is dark charcoal, and subtle hex borders gain extra contrast on grass.",
     type: "fix",
   },
   {
