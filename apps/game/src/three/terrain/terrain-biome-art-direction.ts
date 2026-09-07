@@ -108,26 +108,32 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
   }),
   [BiomeType.Scorched]: art("volcanic", { anchor: true, ecology: { canopyCover: 0.01 } }),
   [BiomeType.Bare]: art("cold", {
-    ecology: { canopyCover: 0.04, undergrowth: 0.04 },
+    ecology: { canopyCover: 0, undergrowth: 0.02 },
     landform: { ridgeStrength: 0.58 },
+    material: { macroTintStrength: 0.24 },
   }),
   [BiomeType.Tundra]: art("cold", {
-    ecology: { canopyCover: 0.08, undergrowth: 0.18 },
+    ecology: { canopyCover: 0, clusterScale: 0.26, undergrowth: 0.54 },
+    material: { macroTintStrength: 0.28 },
+    motion: { windAmplitude: 0.5 },
     landform: { macroAmplitude: 0.14 },
   }),
   [BiomeType.Snow]: art("cold", {
     anchor: true,
     atmosphere: { haze: 0.38 },
-    ecology: { canopyCover: 0.08 },
+    ecology: { canopyCover: 0, undergrowth: 0.01 },
+    material: { macroTintStrength: 0.08 },
     landform: { ridgeStrength: 0.56 },
   }),
   [BiomeType.TemperateDesert]: art("arid", {
-    ecology: { canopyCover: 0.03 },
+    ecology: { canopyCover: 0, undergrowth: 0.35 },
+    material: { macroTintStrength: 0.28 },
+    motion: { windAmplitude: 0.38 },
     landform: { basinStrength: 0.32, ridgeStrength: 0.3 },
   }),
   [BiomeType.Shrubland]: art("open", { ecology: { canopyCover: 0.12, clusterScale: 0.22, undergrowth: 0.46 } }),
   [BiomeType.Taiga]: art("cold", {
-    ecology: { canopyCover: 0.7, clusterScale: 0.13, undergrowth: 0.42 },
+    ecology: { canopyCover: 0.82, clusterScale: 0.15, undergrowth: 0.44 },
     motion: { windAmplitude: 0.3 },
   }),
   [BiomeType.Grassland]: art("open", {
@@ -143,7 +149,8 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
     ecology: { canopyCover: 0.9, clearingStrength: 0.16, clusterScale: 0.11, undergrowth: 0.76 },
   }),
   [BiomeType.SubtropicalDesert]: art("arid", {
-    ecology: { canopyCover: 0.03 },
+    ecology: { canopyCover: 0, undergrowth: 0.08 },
+    material: { macroTintStrength: 0.12 },
     landform: { basinStrength: 0.42, ridgeStrength: 0.22 },
   }),
   [BiomeType.TropicalSeasonalForest]: art("temperate", {

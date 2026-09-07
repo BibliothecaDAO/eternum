@@ -183,7 +183,9 @@ export function createTerrainGroundMaterial(
   const terrainColor = attribute<"vec3">("terrainColor", "vec3");
   const terrainTint = terrainColor.mul(1.75);
   const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
-  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, 0.34).mul(detail.shade);
+  // Powder buries sharp stone detail; otherwise snow reads as a pale cracked pavement.
+  const snowCover = smoothstep(0.35, 0.85, groundWeights1.z);
+  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.3).add(0.34)).mul(detail.shade);
   const volcanic = createScorchedSurface(
     sampledAlbedo,
     mix(secondaryAlbedoHeight.a, primaryAlbedoHeight.a, primaryBlend),
@@ -193,11 +195,15 @@ export function createTerrainGroundMaterial(
   material.colorNode = shadeTerrainHexBoundary(mix(groundColor, volcanic.color, ashCoverage));
   material.emissiveNode = volcanic.embers.mul(ashCoverage);
   const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
-  material.roughnessNode = sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.45, 1);
+  material.roughnessNode = mix(
+    sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.45, 1),
+    0.94,
+    snowCover,
+  );
   material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
   const detailedNormal = normalMap(
     vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
-    vec2(0.34),
+    vec2(snowCover.mul(-0.24).add(0.34)),
   );
   detailedNormal.unpackNormalMode = NormalRGPacking;
   material.normalNode = detailedNormal;
@@ -258,9 +264,37 @@ function createGroundSurfaceDetail(
   const ripples = phase.sin().mul(confidence).mul(looseGround);
   const gust = ground.dot(vec2(0.72, 0.28)).mul(0.8).sub(time.mul(0.55));
   const meadowShade = gust.sin().mul(0.025).mul(weights0.w).mul(motion);
+  const windblown = createWindblownGroundDetail(ground, weights0.x, weights1.z, motion);
   return {
-    shade: float(1).add(ripples.mul(0.08)).add(meadowShade),
-    rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)),
+    shade: float(1).add(ripples.mul(0.08)).add(meadowShade).add(windblown.shade),
+    rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)).add(windblown.normal),
+  };
+}
+
+function createWindblownGroundDetail(
+  ground: Node<"vec2">,
+  sand: Node<"float">,
+  snow: Node<"float">,
+  motion: UniformNode<"float", number>,
+): { shade: Node<"float">; normal: Node<"vec2"> } {
+  // Stable wind-carved banks carry moving powder; the surface itself never slides under units.
+  const looseCover = sand.add(snow).clamp(0, 1);
+  const direction = vec2(0.86, 0.51);
+  const acrossWind = ground.dot(direction);
+  const bankPhase = acrossWind.mul(2.4).add(ground.y.mul(0.53).sin().mul(0.85));
+  const bankFilter = smoothstep(0.6, 2.1, fwidth(bankPhase)).oneMinus();
+  const bankShade = bankPhase
+    .sin()
+    .mul(sand.mul(0.075).add(snow.mul(0.035)))
+    .mul(bankFilter);
+  const windTime = time.mul(0.7).mul(step(0.001, motion));
+  const powderPhase = acrossWind.mul(5.2).sub(windTime).add(ground.y.mul(1.7).sin());
+  const powderFilter = smoothstep(0.5, 1.8, fwidth(powderPhase)).oneMinus();
+  const streaks = smoothstep(0.68, 0.98, powderPhase.sin());
+  const gusts = ground.x.mul(0.43).add(ground.y.mul(0.31)).sub(windTime.mul(0.3)).sin().mul(0.5).add(0.5);
+  return {
+    shade: bankShade.add(streaks.mul(gusts).mul(powderFilter).mul(looseCover).mul(0.045)),
+    normal: direction.mul(bankPhase.cos().mul(bankFilter).mul(looseCover).mul(0.024)),
   };
 }
 
