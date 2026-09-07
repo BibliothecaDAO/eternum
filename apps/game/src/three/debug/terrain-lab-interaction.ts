@@ -5,7 +5,11 @@ import { buildArmyModelAssetPath } from "@/three/constants/army-constants";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import InstancedModel from "@/three/managers/instanced-model";
 import { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
-import { findNearestTerrainHex, terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import {
+  findNearestTerrainHex,
+  terrainHexToWorld,
+  terrainNeighborCoordinates,
+} from "@/three/terrain/terrain-coordinates";
 import type { PreparedTerrainPage, TerrainPageRequest } from "@/three/terrain/terrain-types";
 import { isTerrainWaterBiome } from "@/three/terrain/terrain-water";
 import { gltfLoader } from "@/three/utils/utils";
@@ -33,6 +37,13 @@ export class TerrainLabInteraction {
   private pointerDown: { x: number; y: number } | null = null;
   private spinAngle = 0;
   private selectionDirty = true;
+  private exploring = false;
+  private pendingExploration: {
+    prepared: PreparedTerrainPage;
+    source: { col: number; row: number };
+    revision: number;
+    coveredFrame: boolean;
+  } | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -51,8 +62,14 @@ export class TerrainLabInteraction {
   }
 
   async configure(preview: TerrainLabPreview): Promise<void> {
+    const wasExploring = this.exploring;
+    if (wasExploring) this.cancelExplorationPreview();
+    else this.terrain.cancelShroudReveals();
     const rebuild =
-      preview.fog !== this.preview.fog || preview.army !== this.preview.army || preview.biome !== this.preview.biome;
+      wasExploring ||
+      preview.fog !== this.preview.fog ||
+      preview.army !== this.preview.army ||
+      preview.biome !== this.preview.biome;
     this.selectionDirty = true;
     this.preview = preview;
     this.spinAngle = preview.yaw;
@@ -62,6 +79,7 @@ export class TerrainLabInteraction {
 
   update(delta: number): void {
     if (this.disposed) return;
+    this.advanceExplorationPreview();
     if (this.preview.spin) this.spinAngle += delta * 0.65;
     const moved = this.selectionDirty;
     if (moved) {
@@ -103,7 +121,25 @@ export class TerrainLabInteraction {
     };
   }
 
+  async previewExploration(entryEdge: number): Promise<void> {
+    const source = terrainNeighborCoordinates(this.selected.col, this.selected.row)[entryEdge];
+    if (!Number.isInteger(entryEdge) || !source) throw new Error(`Unknown exploration entry edge: ${entryEdge}`);
+    this.cancelExplorationPreview();
+    this.exploring = true;
+    const revision = this.revision;
+    const request = buildTerrainLabRequest(this.request, this.preview, this.selected, [...this.buildings.values()]);
+    const selected = { ...this.selected };
+    const [covered, revealed] = await Promise.all([
+      this.terrain.preparePageAsync(buildLabExplorationRequest(request, selected, false)),
+      this.terrain.preparePageAsync(buildLabExplorationRequest(request, selected, true)),
+    ]);
+    if (this.disposed || revision !== this.revision) return;
+    this.presentExplorationPage(covered);
+    this.pendingExploration = { prepared: revealed, source, revision, coveredFrame: false };
+  }
+
   async placeBuilding(path: string, yaw: number): Promise<void> {
+    this.cancelExplorationPreview();
     const asset = TERRAIN_LAB_BUILDINGS.find((building) => building.path === path);
     if (!asset) throw new Error(`Unknown lab building: ${path}`);
     const selected = { ...this.selected };
@@ -132,8 +168,37 @@ export class TerrainLabInteraction {
     this.models.clear();
   }
 
+  private cancelExplorationPreview(): void {
+    this.revision++;
+    this.exploring = false;
+    this.pendingExploration = null;
+    this.terrain.cancelShroudReveals();
+  }
+
+  private advanceExplorationPreview(): void {
+    const pending = this.pendingExploration;
+    if (!pending || pending.revision !== this.revision) return;
+    // The normal render loop presents one covered frame before the production sweep starts.
+    if (!pending.coveredFrame) {
+      pending.coveredFrame = true;
+      return;
+    }
+    this.pendingExploration = null;
+    this.terrain.queueShroudReveal(this.selected.col, this.selected.row, pending.source);
+    this.presentExplorationPage(pending.prepared);
+    this.selectionDirty = true;
+    this.updateBuildings([...this.buildings.values()]);
+  }
+
+  private presentExplorationPage(prepared: PreparedTerrainPage): void {
+    const started = performance.now();
+    this.terrain.present([prepared]);
+    this.onPresented(prepared, performance.now() - started);
+  }
+
   private async presentFixture(): Promise<void> {
-    const revision = ++this.revision;
+    this.cancelExplorationPreview();
+    const revision = this.revision;
     const preview = this.preview;
     const selected = this.selected;
     const buildings = [...this.buildings.values()];
@@ -238,4 +303,20 @@ function chooseInitialTile(request: TerrainPageRequest): { col: number; row: num
         (a.col - middleCol) ** 2 + (a.row - middleRow) ** 2 - (b.col - middleCol) ** 2 - (b.row - middleRow) ** 2,
     )[0] ?? request.cells[0]
   );
+}
+
+function buildLabExplorationRequest(
+  request: TerrainPageRequest,
+  selected: { col: number; row: number },
+  explored: boolean,
+): TerrainPageRequest {
+  return {
+    ...request,
+    cells: request.cells.map((cell) => {
+      if (cell.col !== selected.col || cell.row !== selected.row) return cell;
+      const biome = cell.biome ?? cell.previewBiome;
+      if (biome == null) throw new Error(`Lab tile ${cell.col},${cell.row} has no biome to reveal`);
+      return { ...cell, explored, biome: explored ? biome : null, previewBiome: biome };
+    }),
+  };
 }

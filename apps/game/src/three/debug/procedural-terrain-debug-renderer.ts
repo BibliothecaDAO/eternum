@@ -111,6 +111,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   getStats(): ProceduralTerrainDebugStats;
   resetCamera(): void;
   focusSelection(): void;
+  previewExploration(entryEdge: number): Promise<void>;
   placeBuilding(path: string, yaw: number): Promise<void>;
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
@@ -208,6 +209,7 @@ export async function mountProceduralTerrainDebugRenderer(
       },
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
+      previewExploration: (entryEdge) => runtime.interaction.previewExploration(entryEdge),
       placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),

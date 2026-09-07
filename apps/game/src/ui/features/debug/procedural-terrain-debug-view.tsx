@@ -95,6 +95,8 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
   const [buildingPath, setBuildingPath] = useState(TERRAIN_LAB_BUILDINGS[0].path);
   const [buildingYaw, setBuildingYaw] = useState(0);
   const [cycleProgress, setCycleProgress] = useState(50);
+  const [entryEdge, setEntryEdge] = useState(0);
+  const [preparingExploration, setPreparingExploration] = useState(false);
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [preview, setPreview] = useState<TerrainLabPreview>(DEFAULT_TERRAIN_LAB_PREVIEW);
@@ -290,6 +292,39 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
                 <option value="covered">Cover all tiles</option>
               </select>
             </label>
+            {!localMode && (
+              <>
+                <label className="flex flex-col gap-1 text-sm">
+                  Entry edge
+                  <select
+                    aria-label="Exploration entry edge"
+                    value={entryEdge}
+                    className="bg-stone-900 p-2"
+                    onChange={(event) => setEntryEdge(Number(event.target.value))}
+                  >
+                    {["East", "North east", "North west", "West", "South west", "South east"].map((label, index) => (
+                      <option key={label} value={index}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={!ready || preparingExploration}
+                  className="border border-emerald-300/35 bg-emerald-300/10 p-2 text-sm text-emerald-100 disabled:opacity-50"
+                  onClick={() => {
+                    setPreparingExploration(true);
+                    void rendererRef.current
+                      ?.previewExploration(entryEdge)
+                      .catch((reason) => setError(String(reason)))
+                      .finally(() => setPreparingExploration(false));
+                  }}
+                >
+                  {preparingExploration ? "Preparing exploration…" : "Preview exploration"}
+                </button>
+              </>
+            )}
             <label className="flex gap-2 text-sm">
               <input
                 type="checkbox"
