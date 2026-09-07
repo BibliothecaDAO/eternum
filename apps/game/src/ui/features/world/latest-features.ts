@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-07",
+    title: "A Glimpse Beneath",
+    description:
+      "Preview the textured Ethereal layer under fixed moonlight in the World Biome Lab, with tile selection, armies and buildings. Unexplored fog hints at its energy and dissolves in uneven wisps as explorers advance.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-07",
     title: "Reliable Identity RPC",
     description:
       "Wallet initialization uses Alchemy’s mainnet RPC, restoring client startup after the previous endpoint stopped serving requests.",

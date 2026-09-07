@@ -276,8 +276,18 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
                     {TERRAIN_BIOME_DESCRIPTORS[biome].label}
                   </option>
                 ))}
+                {localRadius === undefined && (
+                  <optgroup label="Secondary layers">
+                    <option value="ethereal">Ethereal / Underground</option>
+                  </optgroup>
+                )}
               </select>
             </label>
+            {preview.biome === "ethereal" && (
+              <p className="text-xs text-stone-400">
+                Ethereal / Underground — a separate world layer of fractured stone and flowing mineral energy.
+              </p>
+            )}
             <label className="flex flex-col gap-1 text-sm">
               Fog
               <select
@@ -437,36 +447,41 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
           </fieldset>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
-            Game day cycle: {cycleProgress}%
+            {preview.biome === "ethereal" ? "Fixed moonlit night" : `Game day cycle: ${cycleProgress}%`}
             <input
               type="range"
               min="0"
               max="100"
               step="1"
               value={cycleProgress}
+              disabled={preview.biome === "ethereal"}
               onChange={(event) => setCycleProgress(Number(event.target.value))}
             />
             <span className="font-normal normal-case text-stone-400">
-              Uses game lighting and tone mapping. Match the in-game cycle percentage to compare biomes.
+              {preview.biome === "ethereal"
+                ? "This layer keeps its cool moonlight glow throughout the game day."
+                : "Uses game lighting and tone mapping. Match the in-game cycle percentage to compare biomes."}
             </span>
           </label>
 
-          <div className="grid grid-cols-4 gap-1" aria-label="Biome atlas legend">
-            {TERRAIN_BIOME_ORDER.map((biome) => {
-              const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
-              return (
-                <div key={biome} className="min-h-20 border border-white/10 bg-white/[0.035] p-2">
-                  <span
-                    className="block h-5 w-full border border-white/10"
-                    style={{ background: `linear-gradient(135deg, ${descriptor.primary}, ${descriptor.secondary})` }}
-                  />
-                  <span className="mt-2 block text-[0.64rem] font-medium leading-3 text-stone-300">
-                    {descriptor.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {preview.biome !== "ethereal" && (
+            <div className="grid grid-cols-4 gap-1" aria-label="Biome atlas legend">
+              {TERRAIN_BIOME_ORDER.map((biome) => {
+                const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
+                return (
+                  <div key={biome} className="min-h-20 border border-white/10 bg-white/[0.035] p-2">
+                    <span
+                      className="block h-5 w-full border border-white/10"
+                      style={{ background: `linear-gradient(135deg, ${descriptor.primary}, ${descriptor.secondary})` }}
+                    />
+                    <span className="mt-2 block text-[0.64rem] font-medium leading-3 text-stone-300">
+                      {descriptor.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             Terrain quality

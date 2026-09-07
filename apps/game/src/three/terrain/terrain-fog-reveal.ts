@@ -1,5 +1,16 @@
 import { DataTexture, FloatType, NearestFilter, RGBAFormat, Vector4 } from "three";
-import { Fn, If, float, normalWorldGeometry, positionWorld, step, texture, uniform, vec2 } from "three/tsl";
+import {
+  Fn,
+  If,
+  float,
+  mx_noise_float,
+  normalWorldGeometry,
+  positionWorld,
+  step,
+  texture,
+  uniform,
+  vec2,
+} from "three/tsl";
 import type Node from "three/src/nodes/core/Node.js";
 import type NodeMaterial from "three/src/materials/nodes/NodeMaterial.js";
 
@@ -78,10 +89,11 @@ export class TerrainFogReveal {
         const inside = mapUv.greaterThanEqual(0).all().and(mapUv.lessThan(1).all());
         If(inside, () => {
           const reveal = texture(this.map, mapUv).level(float(0));
-          const progress = this.clock.sub(reveal.x).div(TERRAIN_FOG_REVEAL_DURATION_SECONDS).clamp(0, 1);
-          const front = progress.mul(2.2).sub(1.1);
-          const crossed = step(local.dot(reveal.yz), front);
-          visible.assign(reveal.w.greaterThan(0).select(crossed, float(1)));
+          If(reveal.w.greaterThan(0), () => {
+            const progress = this.clock.sub(reveal.x).div(TERRAIN_FOG_REVEAL_DURATION_SECONDS).clamp(0, 1);
+            const arrival = createFogDissolveThreshold(samplePosition, local, reveal.yz);
+            visible.assign(step(arrival, progress));
+          });
         });
       });
       return visible;
@@ -119,6 +131,24 @@ export class TerrainFogReveal {
     this.map.image = { data, width, height };
     this.map.needsUpdate = true;
   }
+}
+
+function createFogDissolveThreshold(
+  worldXZ: Node<"vec2">,
+  local: Node<"vec2">,
+  direction: Node<"vec2">,
+): Node<"float"> {
+  const distance = local.dot(direction).add(1).mul(0.5).clamp(0, 1);
+  // Fixed world-space noise gives each patch one arrival time: wisps disappear
+  // monotonically instead of swimming back across already revealed ground.
+  const billows = mx_noise_float(worldXZ.mul(3.2)).mul(0.5).add(0.5).clamp(0, 1);
+  const wisps = mx_noise_float(worldXZ.mul(vec2(11, 5.5)).add(vec2(17.3, 8.9)))
+    .mul(0.5)
+    .add(0.5)
+    .clamp(0, 1);
+  // The bounded threshold (0.04..0.96) guarantees full coverage at the start
+  // and no surviving fragments when the 300ms reveal record expires.
+  return distance.mul(0.42).add(billows.mul(0.38)).add(wisps.mul(0.12)).add(0.04);
 }
 
 export function resolveFogRevealDirection(

@@ -62,6 +62,9 @@ export class TerrainLabInteraction {
   }
 
   async configure(preview: TerrainLabPreview): Promise<void> {
+    if (this.localMode && preview.biome === "ethereal") {
+      throw new Error("The Ethereal layer preview belongs to the world biome lab");
+    }
     const wasExploring = this.exploring;
     if (wasExploring) this.cancelExplorationPreview();
     const rebuild =
@@ -212,6 +215,7 @@ export class TerrainLabInteraction {
         : await this.loadModel(preview.army, buildArmyModelAssetPath(preview.army), 1, preview.army);
     if (this.disposed || revision !== this.revision) return;
     const commitStarted = performance.now();
+    this.terrain.setSurfacePresentation(preview.biome === "ethereal" ? "ethereal" : "world");
     this.terrain.refreshPropOccupancy((col, row) => this.buildings.has(`${col}:${row}`));
     this.terrain.present([prepared], fog);
     this.onPresented(prepared, performance.now() - commitStarted);

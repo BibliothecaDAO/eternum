@@ -31,6 +31,7 @@ import {
 } from "three/tsl";
 
 import { terrainCellKey } from "./terrain-coordinates";
+import { createEtherealEnergy } from "./terrain-ethereal-material";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import {
   buildTerrainFogMask,
@@ -373,7 +374,8 @@ function createFogMaterial(maskTexture: DataTexture): FogMaterialSet {
   // Keep a little movement in the interior without turning it into a bright cloud-covered surface.
   const cloudVeil = smoothstep(0.18, 0.86, mistNoise).mul(mistStrength);
   const mistLight = cloudVeil.mul(edgeBand.mul(0.24).add(0.12));
-  const fogColor = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#85877f"), mistLight);
+  const etherealHint = createEtherealEnergy(fogGround.xz, drift, mistNoise).mul(0.012);
+  const fogColor = mix(color(TERRAIN_DEEP_FOG_COLOR), color("#85877f"), mistLight).add(etherealHint);
   // Motion changes the mist's color, never the exploration boundary or coverage.
   const coverage = smoothstep(mix(0.04, 0.28, clarity), mix(0.96, 0.8, clarity), mask);
   const frontierOpacity = coverage.clamp(0, TERRAIN_DEEP_FOG_OPACITY);

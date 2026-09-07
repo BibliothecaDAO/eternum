@@ -1,7 +1,7 @@
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType, StructureType } from "@bibliothecadao/types";
-import { Group, InstancedMesh, Mesh } from "three";
+import { CompressedArrayTexture, Group, InstancedMesh, Mesh, RGBA_S3TC_DXT5_Format } from "three";
 import { describe, expect, it, vi } from "vitest";
 
 import { terrainHexToWorld } from "./terrain-coordinates";
@@ -9,6 +9,7 @@ import { TerrainField } from "./terrain-field";
 import { TerrainFogField } from "./terrain-fog-field";
 import { ProceduralTerrain } from "./procedural-terrain";
 import { TerrainPropPools } from "./terrain-prop-pools";
+import * as groundTextures from "./terrain-ground-textures";
 import type { TerrainCellInput } from "./terrain-types";
 
 vi.mock("./terrain-prop-asset-cache", async () => {
@@ -17,6 +18,62 @@ vi.mock("./terrain-prop-asset-cache", async () => {
 });
 
 describe("ProceduralTerrain", () => {
+  it("requires texture readiness before changing to Ethereal presentation", () => {
+    const terrain = new ProceduralTerrain();
+    expect(() => terrain.setSurfacePresentation("ethereal")).toThrow("Load ground textures");
+    terrain.dispose();
+  });
+
+  it("reuses one ground mesh when switching layers and restores terrestrial decoration", async () => {
+    const handle = {
+      textures: {
+        albedoHeight: new CompressedArrayTexture([], 1, 1, 8, RGBA_S3TC_DXT5_Format),
+        normalMaterial: new CompressedArrayTexture([], 1, 1, 8, RGBA_S3TC_DXT5_Format),
+        bytes: 0,
+        layerCount: 8,
+      },
+      release: vi.fn(),
+    };
+    const acquire = vi.spyOn(groundTextures, "acquireTerrainGroundTextures").mockResolvedValue(handle);
+    const terrain = new ProceduralTerrain();
+    await Promise.all([terrain.loadGroundTextures(), terrain.loadProps()]);
+    terrain.present([terrain.preparePage(forestRequest())]);
+    const ground = terrain.object3d.getObjectByName("procedural-terrain-land") as Mesh;
+    const geometry = ground.geometry;
+    const worldMaterial = ground.material;
+    const pools = terrain.object3d.getObjectByName("terrain-prop-pools")!;
+    const wildlife = terrain.object3d.getObjectByName("terrain-wildlife") as Mesh;
+    const wildlifeMaterial = Array.isArray(wildlife.material) ? wildlife.material[0] : wildlife.material;
+    const beforeSurface = terrain.sampleSurface(0, 0);
+
+    terrain.setSurfacePresentation("ethereal");
+    const etherealMaterial = ground.material;
+    expect(etherealMaterial).not.toBe(worldMaterial);
+    expect(ground.geometry).toBe(geometry);
+    expect(terrain.sampleSurface(0, 0)).toEqual(beforeSurface);
+    expect(pools.visible).toBe(false);
+    expect(wildlifeMaterial.visible).toBe(false);
+    terrain.setQualityTier("overview");
+    terrain.setQualityTier("detail");
+    expect(ground.material).toBe(etherealMaterial);
+    expect(pools.visible).toBe(false);
+    expect(wildlifeMaterial.visible).toBe(false);
+
+    terrain.setSurfacePresentation("world");
+    expect(ground.material).toBe(worldMaterial);
+    expect(pools.visible).toBe(true);
+    expect(wildlifeMaterial.visible).toBe(true);
+    terrain.setSurfacePresentation("ethereal");
+    expect(ground.material).toBe(etherealMaterial);
+    const dispose = vi.spyOn(Array.isArray(etherealMaterial) ? etherealMaterial[0] : etherealMaterial, "dispose");
+    terrain.dispose();
+    expect(dispose).toHaveBeenCalledOnce();
+    expect(handle.release).toHaveBeenCalledOnce();
+    handle.textures.albedoHeight.dispose();
+    handle.textures.normalMaterial.dispose();
+    acquire.mockRestore();
+  });
+
   it("atomically presents, reuses, replaces, and disposes page geometry", () => {
     const terrain = new ProceduralTerrain();
     const first = terrain.preparePage(request(BiomeType.Grassland, false));
@@ -256,7 +313,7 @@ describe("ProceduralTerrain", () => {
 
   it("hides wildlife for overview and reduced motion, then releases it with its terrain page", () => {
     const terrain = new ProceduralTerrain();
-    terrain.present([terrain.preparePage(request(BiomeType.TemperateRainForest, false))]);
+    terrain.present([terrain.preparePage(forestRequest())]);
     const flock = terrain.object3d.getObjectByName("terrain-wildlife") as InstancedMesh;
     expect(flock).toBeDefined();
     const material = Array.isArray(flock.material) ? flock.material[0] : flock.material;
@@ -378,6 +435,18 @@ function unknownRequest() {
   return {
     ...request(BiomeType.None, false),
     cells: [{ biome: null, col: 0, explored: false, occupied: false, previewBiome: BiomeType.Grassland, row: 0 }],
+  };
+}
+
+function forestRequest() {
+  const source = blockRequest("forest", 0);
+  return {
+    ...source,
+    cells: source.cells.map((cell) => ({
+      ...cell,
+      biome: cell.explored ? BiomeType.TemperateRainForest : null,
+      previewBiome: BiomeType.TemperateRainForest,
+    })),
   };
 }
 

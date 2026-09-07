@@ -28,6 +28,7 @@ function createHarness() {
     cancelShroudReveals: vi.fn(),
     sampleSurface: vi.fn(() => ({ height: 0 })),
     refreshPropOccupancy: vi.fn(),
+    setSurfacePresentation: vi.fn(),
   };
   const canvas = { addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as HTMLCanvasElement;
   const interaction = new TerrainLabInteraction(
@@ -43,6 +44,36 @@ function createHarness() {
 }
 
 describe("lab exploration preview", () => {
+  it("switches Ethereal presentation with the committed page and restores world presentation", async () => {
+    const { terrain, interaction } = createHarness();
+    await interaction.configure({ ...DEFAULT_TERRAIN_LAB_PREVIEW, biome: "ethereal" });
+    expect(terrain.setSurfacePresentation).toHaveBeenLastCalledWith("ethereal");
+    expect(terrain.setSurfacePresentation.mock.invocationCallOrder[0]).toBeLessThan(
+      terrain.present.mock.invocationCallOrder[0],
+    );
+    await interaction.configure(DEFAULT_TERRAIN_LAB_PREVIEW);
+    expect(terrain.setSurfacePresentation).toHaveBeenLastCalledWith("world");
+    interaction.dispose();
+  });
+
+  it("does not switch presentation for stale asynchronous Ethereal preparation", async () => {
+    const { terrain, interaction } = createHarness();
+    let finish: (() => void) | undefined;
+    terrain.preparePageAsync.mockImplementationOnce(
+      (request) =>
+        new Promise((resolve) => {
+          finish = () => resolve({ request } as PreparedTerrainPage);
+        }),
+    );
+    const pending = interaction.configure({ ...DEFAULT_TERRAIN_LAB_PREVIEW, biome: "ethereal" });
+    await interaction.configure(DEFAULT_TERRAIN_LAB_PREVIEW);
+    finish!();
+    await pending;
+    expect(terrain.setSurfacePresentation).toHaveBeenCalledOnce();
+    expect(terrain.setSurfacePresentation).toHaveBeenCalledWith("world");
+    interaction.dispose();
+  });
+
   it("preserves existing fixture reveals during initial and default configuration", async () => {
     const { terrain, interaction } = createHarness();
     await interaction.configure(DEFAULT_TERRAIN_LAB_PREVIEW);

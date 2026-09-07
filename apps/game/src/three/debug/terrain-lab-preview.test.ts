@@ -7,6 +7,22 @@ import { ModelType } from "@/three/types/army";
 import { buildTerrainLabRequest, DEFAULT_TERRAIN_LAB_PREVIEW } from "./terrain-lab-preview";
 
 describe("terrain lab previews", () => {
+  it("uses Bare geometry for a dedicated Ethereal preview without changing gameplay biomes", () => {
+    const source = createTerrainVerificationRequest("tropical-coast");
+    const original = structuredClone(source);
+    const request = buildTerrainLabRequest(
+      source,
+      { ...DEFAULT_TERRAIN_LAB_PREVIEW, biome: "ethereal", fog: "frontier" },
+      { col: 5, row: 5 },
+    );
+    expect(() => new TerrainField(request)).not.toThrow();
+    expect(source).toEqual(original);
+    expect([...request.cells, ...request.halo].every((cell) => cell.previewBiome === BiomeType.Bare)).toBe(true);
+    expect(request.cells.every((cell) => cell.biome === (cell.explored ? BiomeType.Bare : null))).toBe(true);
+    expect(request.cells.some((cell) => cell.explored)).toBe(true);
+    expect(request.cells.some((cell) => !cell.explored)).toBe(true);
+  });
+
   it.each(["fixture", "clear", "frontier", "covered"] as const)(
     "builds a consistent %s exploration state without mutating the fixture",
     (fog) => {

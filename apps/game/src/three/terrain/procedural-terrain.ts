@@ -18,6 +18,7 @@ import { MeshStandardNodeMaterial } from "three/webgpu";
 
 import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
+import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
@@ -92,6 +93,8 @@ export class ProceduralTerrain {
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
   private groundTextureMaterial: TerrainMaterials["land"] | null = null;
+  private etherealMaterial: TerrainMaterials["land"] | null = null;
+  private surfacePresentation: "world" | "ethereal" = "world";
   private groundTextureHandle: TerrainGroundTextureHandle | null = null;
   private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
   private propLod: TerrainPropLod = "near";
@@ -196,6 +199,26 @@ export class ProceduralTerrain {
     this.refreshGroundMaterial();
   }
 
+  setSurfacePresentation(presentation: "world" | "ethereal"): void {
+    this.requireActive();
+    if (presentation === this.surfacePresentation) return;
+    if (presentation === "ethereal" && !this.etherealMaterial) {
+      if (!this.groundTextureHandle) throw new Error("Load ground textures before presenting the Ethereal layer");
+      this.etherealMaterial = createEtherealTerrainMaterial(
+        this.groundTextureHandle.textures,
+        this.materials.groundMotion,
+      );
+      this.fogField.applyRevealToMaterial(this.etherealMaterial);
+    }
+    this.surfacePresentation = presentation;
+    this.refreshGroundMaterial();
+    this.applyAppearance();
+  }
+
+  getSurfacePresentation(): "world" | "ethereal" {
+    return this.surfacePresentation;
+  }
+
   setQualityTier(tier: TerrainQualityTier): void {
     const profile = TERRAIN_QUALITY_PROFILES[tier];
     this.qualityTier = tier;
@@ -215,7 +238,10 @@ export class ProceduralTerrain {
     this.propPools?.setWindStrength(profile.windStrength * motion);
     this.materials.waterMotion.value = profile.waterMotion * motion;
     this.materials.groundMotion.value = profile.windStrength * motion;
-    this.wildlifeMaterial.visible = this.qualityTier === "detail" && !reducedMotion;
+    const worldSurface = this.surfacePresentation === "world";
+    if (this.propPools) this.propPools.object3d.visible = worldSurface;
+    this.movementEffects.object3d.visible = worldSurface;
+    this.wildlifeMaterial.visible = worldSurface && this.qualityTier === "detail" && !reducedMotion;
   }
 
   getQualityTier(): TerrainQualityTier {
@@ -394,7 +420,13 @@ export class ProceduralTerrain {
     this.movementEffects.dispose();
     this.wildlifeMaterial.dispose();
     new Set(
-      [this.materials.flatLand, this.materials.land, this.materials.water, this.groundTextureMaterial].filter(Boolean),
+      [
+        this.materials.flatLand,
+        this.materials.land,
+        this.materials.water,
+        this.groundTextureMaterial,
+        this.etherealMaterial,
+      ].filter(Boolean),
     ).forEach((material) => material!.dispose());
     this.groundTextureHandle?.release();
     this.groundTextureHandle = null;
@@ -506,9 +538,11 @@ export class ProceduralTerrain {
 
   private refreshGroundMaterial(): void {
     this.materials.land =
-      this.groundTextureDetailEnabled && this.groundTextureMaterial
-        ? this.groundTextureMaterial
-        : this.materials.flatLand;
+      this.surfacePresentation === "ethereal" && this.etherealMaterial
+        ? this.etherealMaterial
+        : this.groundTextureDetailEnabled && this.groundTextureMaterial
+          ? this.groundTextureMaterial
+          : this.materials.flatLand;
     this.applyLandMaterial();
   }
 
