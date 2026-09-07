@@ -37,6 +37,8 @@ export interface TerrainSettlementAnchor {
 export interface TerrainPageRequest {
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
+  /** A level tile surface at the fog plane, without landforms or frontier walls. */
+  flatSurface?: boolean;
   halo: readonly TerrainCellInput[];
   mapCenter: number;
   pageKey: string;

@@ -81,7 +81,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
     if (cell.explored && cell.biome) {
       appendCellPatch(land, vertexSampler, cell, subdivisions);
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-      frontierEdges += appendFrontierSkirts(land, field, cell);
+      if (!request.flatSurface) frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
     fogTerrainCells += 1;
@@ -490,6 +490,7 @@ function fingerprintPreparedPage(
     JSON.stringify({
       cells: canonicalCells(request.cells),
       climate: request.climate,
+      ...(request.flatSurface ? { flatSurface: true } : {}),
       halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
       pageKey: request.pageKey,

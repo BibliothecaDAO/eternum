@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-07",
     title: "A Glimpse Beneath",
     description:
-      "Preview the textured Ethereal layer under fixed moonlight in the World Biome Lab, with tile selection, armies and buildings. Unexplored fog hints at its energy and dissolves in uneven wisps as explorers advance.",
+      "Preview Ethereal’s flat, textured floor under fixed moonlight in the World Biome Lab, with tile selection, armies and buildings. Dark unexplored tiles carry visible hints of its flowing energy and dissolve in uneven wisps as explorers advance.",
     type: "feature",
   },
   {

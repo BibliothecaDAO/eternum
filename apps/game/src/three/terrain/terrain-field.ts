@@ -203,8 +203,13 @@ export class TerrainField {
 
     const inverseWeight = 1 / totalWeight;
     const inverseVisualWeight = 1 / visualWeightSum;
-    const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
-    const paddedHeight = this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
+    const paddedHeight = this.resolveSurfaceHeight(
+      worldX,
+      worldZ,
+      height * inverseWeight,
+      relief * inverseWeight,
+      candidates,
+    );
     const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
     const vegetation = this.resolveVegetationField(worldX, worldZ, candidates, weightedEnvironment);
     const shore = this.sampleShoreProximity(worldX, worldZ, candidates);
@@ -375,8 +380,7 @@ export class TerrainField {
     }
     if (totalWeight === 0) return TERRAIN_BIOME_DESCRIPTORS[BiomeType.None].baseHeight;
     const inverseWeight = 1 / totalWeight;
-    const shapedHeight = this.resolveDetailedHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight);
-    return this.applyStructurePad(worldX, worldZ, shapedHeight, candidates);
+    return this.resolveSurfaceHeight(worldX, worldZ, height * inverseWeight, relief * inverseWeight, candidates);
   }
 
   private sampleWeightedEnvironment(
@@ -623,9 +627,16 @@ export class TerrainField {
     return result;
   }
 
-  private resolveDetailedHeight(worldX: number, worldZ: number, baseHeight: number, relief: number): number {
+  private resolveSurfaceHeight(
+    worldX: number,
+    worldZ: number,
+    baseHeight: number,
+    relief: number,
+    candidates: readonly CellFieldSample[],
+  ): number {
+    if (this.request.flatSurface) return TERRAIN_FOG_GROUND_HEIGHT;
     const detail = (this.noise.sample(worldX * 0.7, worldZ * 0.7, "terrain-relief-v1") - 0.5) * 2 * relief;
-    return baseHeight + detail;
+    return this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
   }
 
   private resolveMacroLandformOffset(worldX: number, worldZ: number, direction: TerrainBiomeArtDirection): number {

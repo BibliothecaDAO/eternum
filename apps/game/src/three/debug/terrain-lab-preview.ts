@@ -54,6 +54,7 @@ export function buildTerrainLabRequest(
   const anchors = request.settlementAnchors.filter((anchor) => !occupied.has(`${anchor.col}:${anchor.row}`));
   return {
     ...request,
+    ...(preview.biome === "ethereal" ? { flatSurface: true } : {}),
     cells,
     halo:
       preview.biome === "ethereal"

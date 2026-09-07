@@ -1,12 +1,43 @@
 import { ChestModelPath, SHARED_BUILDING_MODEL_PATHS } from "@/three/constants/scene-constants";
 import { describe, expect, it } from "vitest";
 import { TerrainField } from "@/three/terrain/terrain-field";
+import { prepareTerrainPage } from "@/three/terrain/terrain-page-builder";
+import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
+import { TERRAIN_FOG_GROUND_HEIGHT } from "@/three/terrain/terrain-fog-style";
 import { createTerrainVerificationRequest } from "@/three/terrain/verification/terrain-verification-fixtures";
 import { BiomeType } from "@bibliothecadao/types";
 import { ModelType } from "@/three/types/army";
 import { buildTerrainLabRequest, DEFAULT_TERRAIN_LAB_PREVIEW } from "./terrain-lab-preview";
 
 describe("terrain lab previews", () => {
+  it("keeps underground geometry, occupied pads and sampled model heights on one flat plane", () => {
+    const source = createTerrainVerificationRequest("tropical-coast");
+    const selected = { col: 5, row: 5 };
+    const request = buildTerrainLabRequest(
+      source,
+      { ...DEFAULT_TERRAIN_LAB_PREVIEW, biome: "ethereal", fog: "frontier" },
+      selected,
+      [{ ...selected, path: SHARED_BUILDING_MODEL_PATHS[0], yaw: 0 }],
+    );
+    const prepared = prepareTerrainPage(request);
+    const field = new TerrainField(request);
+    expect(new Set(prepared.buffers.heights)).toEqual(new Set([TERRAIN_FOG_GROUND_HEIGHT]));
+    expect(
+      prepared.buffers.positions.every((value, index) => index % 3 !== 1 || value === TERRAIN_FOG_GROUND_HEIGHT),
+    ).toBe(true);
+    for (const cell of request.cells.filter((cell) => cell.explored)) {
+      const center = terrainHexToWorld(cell.col, cell.row);
+      for (const offset of [0, 0.4]) {
+        expect(field.sampleSurface(center.x + offset, center.z).height).toBe(TERRAIN_FOG_GROUND_HEIGHT);
+        expect(field.sampleSurface(center.x + offset, center.z).normal).toEqual([0, 1, 0]);
+      }
+    }
+    const natural = prepareTerrainPage({ ...request, flatSurface: false });
+    expect(new Set(natural.buffers.heights).size).toBeGreaterThan(1);
+    expect(natural.fingerprint).not.toBe(prepared.fingerprint);
+    expect(buildTerrainLabRequest(source, DEFAULT_TERRAIN_LAB_PREVIEW, selected).flatSurface).toBeUndefined();
+  });
+
   it("uses Bare geometry for a dedicated Ethereal preview without changing gameplay biomes", () => {
     const source = createTerrainVerificationRequest("tropical-coast");
     const original = structuredClone(source);
