@@ -9,7 +9,7 @@ import mkcert from "vite-plugin-mkcert";
 import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
-import { resolveRendererViteAlias } from "./src/three/renderer-vite-config";
+import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
@@ -21,7 +21,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const sentryOrg = process.env.SENTRY_ORG;
   const sentryProject = process.env.SENTRY_PROJECT;
   const sentryUploadEnabled = isBuild && Boolean(sentryAuthToken && sentryOrg && sentryProject);
-  const rendererViteAlias = resolveRendererViteAlias();
+  const rendererViteAliases = resolveRendererViteAliases();
   const sentryRelease =
     process.env.SENTRY_RELEASE ||
     process.env.VERCEL_GIT_COMMIT_SHA ||
@@ -112,8 +112,9 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       allowedHosts: ["play.realms.test"],
     },
     resolve: {
+      dedupe: ["three"],
       alias: [
-        rendererViteAlias,
+        ...rendererViteAliases,
         {
           find: "@/assets",
           replacement: path.resolve(__dirname, "./public/assets"),

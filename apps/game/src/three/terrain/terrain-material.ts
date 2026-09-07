@@ -79,8 +79,7 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   const fresnel = waveNormalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(4).mul(depthMotion);
   const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.14));
   const foam = createTerrainWaterFoam(shore, waterDepth, waterMotion);
-  const swellColor = mix(reflectiveColor, color("#7fb8bc"), waves.crest.mul(depthMotion).mul(0.065));
-  material.colorNode = shadeTerrainHexBoundary(mix(swellColor, color("#dce8de"), foam.mul(0.7)));
+  material.colorNode = shadeTerrainHexBoundary(mix(reflectiveColor, color("#dce8de"), foam.mul(0.7)));
   const waterRoughness = mix(0.5, 0.42, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
   material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.18, 0.78);
   return material;
@@ -89,7 +88,7 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
 function createTerrainWaterWaves(
   depthMotion: Node<"float">,
   waterMotion: UniformNode<"float", number>,
-): { crest: Node<"float">; height: Node<"float">; normal: Node<"vec3"> } {
+): { height: Node<"float">; normal: Node<"vec3"> } {
   const waterTime = time.mul(waterMotion);
   const primaryPhase = waterTime.mul(0.8).add(positionLocal.x.mul(1.15)).add(positionLocal.z.mul(0.64));
   const crossPhase = waterTime.mul(0.51).add(positionLocal.x.mul(-0.42)).add(positionLocal.z.mul(0.81));
@@ -101,42 +100,35 @@ function createTerrainWaterWaves(
     .add(crossPhase.sin().mul(0.008))
     .add(ripplePhase.sin().mul(0.003))
     .mul(motion);
-  // Fine ripples affect highlights without moving tile edges or requiring a denser water mesh.
-  const rippleWarp = positionLocal.x.mul(1.7).add(positionLocal.z.mul(2.1)).sin().mul(1.4);
-  const capillaryPhase = positionLocal.x
-    .mul(16.3)
-    .add(positionLocal.z.mul(-10.7))
-    .add(rippleWarp)
-    .sub(waterTime.mul(1.9));
+  // Crossing wave trains bend with the swell; no repeated bright bands are painted into the water color.
+  const rippleWarp = primaryPhase.sin().mul(1.6).add(crossPhase.sin().mul(1.1));
+  const capillaryPhase = positionLocal.x.mul(7.1).add(positionLocal.z.mul(5.3)).add(rippleWarp).sub(waterTime.mul(0.9));
   const capillaryFilter = smoothstep(0.7, 2.4, fwidth(capillaryPhase)).oneMinus();
-  const capillarySlope = capillaryPhase.cos().mul(capillaryFilter).mul(0.0012);
+  const capillarySlope = capillaryPhase.cos().mul(capillaryFilter).mul(0.0004);
   const crossRipplePhase = positionLocal.x
-    .mul(11.7)
-    .add(positionLocal.z.mul(18.9))
+    .mul(-5.8)
+    .add(positionLocal.z.mul(8.9))
     .sub(rippleWarp)
-    .add(waterTime.mul(1.3));
+    .add(waterTime.mul(0.7));
   const crossRippleFilter = smoothstep(0.7, 2.4, fwidth(crossRipplePhase)).oneMinus();
-  const crossRippleSlope = crossRipplePhase.cos().mul(crossRippleFilter).mul(0.0009);
+  const crossRippleSlope = crossRipplePhase.cos().mul(crossRippleFilter).mul(0.0003);
   const slopeX = primaryPhase
     .cos()
     .mul(0.014 * 1.15)
     .add(crossPhase.cos().mul(0.008 * -0.42))
     .add(ripplePhase.cos().mul(0.003 * 4.3))
-    .add(capillarySlope.mul(16.3))
-    .add(crossRippleSlope.mul(11.7))
+    .add(capillarySlope.mul(7.1))
+    .add(crossRippleSlope.mul(-5.8))
     .mul(motion);
   const slopeZ = primaryPhase
     .cos()
     .mul(0.014 * 0.64)
     .add(crossPhase.cos().mul(0.008 * 0.81))
     .add(ripplePhase.cos().mul(0.003 * 2.7))
-    .add(capillarySlope.mul(-10.7))
-    .add(crossRippleSlope.mul(18.9))
+    .add(capillarySlope.mul(5.3))
+    .add(crossRippleSlope.mul(8.9))
     .mul(motion);
-  const crest = smoothstep(0.87, 1.05, primaryPhase.sin().add(crossPhase.sin().mul(0.16))).mul(
-    smoothstep(0.5, 1.8, fwidth(primaryPhase)).oneMinus(),
-  );
-  return { crest, height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
+  return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
 }
 
 function createTerrainWaterFoam(
@@ -263,11 +255,13 @@ function createGroundSurfaceDetail(
   const warp = ground.x.mul(0.27).sin().add(ground.y.mul(0.19).sin()).mul(0.7);
   const phase = ground.dot(wind).mul(17).add(warp);
   const confidence = smoothstep(0.42, 1.36, fwidth(phase)).oneMinus();
-  const looseGround = weights0.x.add(weights1.z.mul(0.65)).clamp(0, 1);
+  // Trace sand only where it forms the surface; a little sand mixed into hardpan must not give both deserts dunes.
+  const looseSand = smoothstep(0.25, 0.7, weights0.x);
+  const looseGround = looseSand.add(weights1.z.mul(0.65)).clamp(0, 1);
   const ripples = phase.sin().mul(confidence).mul(looseGround);
   const gust = ground.dot(vec2(0.72, 0.28)).mul(0.8).sub(time.mul(0.55));
   const meadowShade = gust.sin().mul(0.025).mul(weights0.w).mul(motion);
-  const windblown = createWindblownGroundDetail(ground, weights0.x, weights1.z, motion);
+  const windblown = createWindblownGroundDetail(ground, looseSand, weights1.z, motion);
   return {
     shade: float(1).add(ripples.mul(0.08)).add(meadowShade).add(windblown.shade),
     rippleNormal: wind.mul(phase.cos().mul(confidence).mul(looseGround).mul(0.045)).add(windblown.normal),
@@ -308,9 +302,11 @@ function shadeTerrainHexBoundary(surfaceColor: Node<"vec3">): Node<"vec3"> {
   const pixelWidth = fwidth(edgeDistance).max(0.001);
   const border = smoothstep(0.008, pixelWidth.mul(1.2).add(0.008), edgeDistance).oneMinus();
   const luminance = surfaceColor.dot(vec3(0.2126, 0.7152, 0.0722));
-  const darkSurface = smoothstep(0.025, 0.12, luminance).oneMinus();
-  const borderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
-  return mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs()));
+  // Contrast follows the actual textured surface: pale sand/snow need a dark
+  // boundary, while forest, basalt, and deep water need a lighter one.
+  const darkSurface = smoothstep(0.1, 0.3, luminance).oneMinus();
+  const borderColor = mix(vec3(0.025), vec3(0.3), darkSurface);
+  return mix(surfaceColor, borderColor, border.mul(0.6).mul(normalLocal.y.abs()));
 }
 
 function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {
