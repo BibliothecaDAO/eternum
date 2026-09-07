@@ -10,7 +10,7 @@ import { createAllBiomesTerrainRequest } from "./verification/terrain-verificati
 describe("prepareTerrainPage", () => {
   it("tracks the reviewed all-biome terrain and placement style", () => {
     const prepared = prepareTerrainPage(createAllBiomesTerrainRequest());
-    expect(prepared.fingerprint).toMatchInlineSnapshot(`"d3e20cda"`);
+    expect(prepared.fingerprint).toMatchInlineSnapshot(`"77ef7b97"`);
   });
 
   it("builds deterministic indexed terrain and frontier buffers", () => {
@@ -116,16 +116,22 @@ describe("prepareTerrainPage", () => {
     );
   });
 
-  it("keeps height, normal, and color continuous at every duplicated shared position", () => {
+  it("keeps shared surface attributes continuous while allowing sharp frontier wall normals", () => {
     const page = prepareTerrainPage(createAllBiomesTerrainRequest());
     const attributesByPosition = new Map<string, number[]>();
+    const surfaceNormalsByPosition = new Map<string, number[]>();
 
     for (let vertex = 0; vertex < page.buffers.positions.length / 3; vertex += 1) {
       const position = readAttribute(page.buffers.positions, vertex, 3);
       const key = position.join(":");
+      const normal = readAttribute(page.buffers.normals, vertex, 3);
+      if (normal[1] > 0) {
+        const existingNormal = surfaceNormalsByPosition.get(key);
+        if (existingNormal) normal.forEach((value, index) => expect(value).toBeCloseTo(existingNormal[index], 5));
+        else surfaceNormalsByPosition.set(key, normal);
+      }
       const attributes = [
         position[1],
-        ...readAttribute(page.buffers.normals, vertex, 3),
         ...readAttribute(page.buffers.colors, vertex, 3),
         ...readAttribute(page.buffers.uvs, vertex, 2),
         ...readAttribute(page.buffers.groundWeights0, vertex, 4),

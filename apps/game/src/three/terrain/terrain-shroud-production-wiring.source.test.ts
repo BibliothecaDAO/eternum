@@ -5,15 +5,15 @@ import { describe, expect, it } from "vitest";
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("exploration shroud production wiring", () => {
-  it("queues a reveal at the shared projection writer used by live and hydrated tiles", () => {
+  it("queues discovery from live creation, without replaying it during hydration or panning", () => {
     const worldmap = source("src/three/scenes/worldmap.tsx");
-    const writerStart = worldmap.indexOf("private writeExploredTileFromProjection");
-    const writerEnd = worldmap.indexOf("private touchMatrixCache", writerStart);
-    const writer = worldmap.slice(writerStart, writerEnd);
-
-    expect(writer).toContain("this.proceduralTerrain.queueShroudReveal(col, row)");
-    expect(writer).toContain("this.invalidateVisualTerrainPageForLiveTile(col, row)");
-    expect(worldmap.match(/writeExploredTileFromProjection\(/g)).toHaveLength(3);
+    const writer = worldmap.slice(worldmap.indexOf("private writeExploredTileFromProjection("));
+    expect(writer).not.toContain("queueShroudReveal");
+    const start = worldmap.indexOf("private applyProjectedTileChange(");
+    const liveChange = worldmap.slice(start, worldmap.indexOf("private applyProjectedExploredTileChange(", start));
+    expect(liveChange).toContain("if (!previous && current)");
+    expect(liveChange).toContain("this.proceduralTerrain.queueShroudReveal(");
+    expect(liveChange).toContain("origin ? { col: origin.x, row: origin.y } : undefined");
   });
 
   it("routes hydration, live diffs and the player's own explore through the one explored-tile writer", () => {
@@ -29,13 +29,11 @@ describe("exploration shroud production wiring", () => {
     expect(body("syncExploredTilesFromProjection")).toContain("this.writeExploredTileFromProjection(");
     expect(body("applyProjectedExploredTileChange")).toContain("this.writeExploredTileFromProjection(");
     expect(worldmap.match(/this\.exploredTiles\.get\(col\)!\.set\(row, biome\)/g)).toHaveLength(1);
-    expect(worldmap.match(/this\.worldSpatialProjection\.subscribeTiles\(/g)).toHaveLength(1);
+    expect(worldmap.match(/subscribeWorldmapTileChanges\(this\.worldSpatialProjection/g)).toHaveLength(1);
   });
 
   it("finishes a reveal within the 300 ms interaction budget", () => {
-    const fogField = source("src/three/terrain/terrain-fog-field.ts");
-
-    expect(fogField).toContain("TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.25");
+    expect(source("src/three/terrain/terrain-fog-reveal.ts")).toContain("TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.3");
   });
 
   it("advances reveal presentation from the normal worldmap frame loop", () => {

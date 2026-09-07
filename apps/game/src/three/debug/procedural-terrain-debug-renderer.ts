@@ -45,6 +45,11 @@ import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/utils";
 import { TerrainLabInteraction } from "./terrain-lab-interaction";
 import type { TerrainLabPreview } from "./terrain-lab-preview";
 
+const LAB_LIGHTING_OPTIONS = {
+  world: { snap: true, environment: "world" },
+  ethereal: { snap: true, environment: "ethereal" },
+} as const;
+
 export interface ProceduralTerrainDebugStats {
   activeMode: "webgl2-fallback" | "webgpu";
   biomeCount: number;
@@ -111,6 +116,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   getStats(): ProceduralTerrainDebugStats;
   resetCamera(): void;
   focusSelection(): void;
+  previewExploration(entryEdge: number): Promise<void>;
   placeBuilding(path: string, yaw: number): Promise<void>;
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
@@ -208,6 +214,7 @@ export async function mountProceduralTerrainDebugRenderer(
       },
       getStats: () => readStats(runtime, input.forceWebGL, input.texturedGround),
       resetCamera: () => positionCamera(runtime.camera, runtime.controls, runtime.cameraFrame),
+      previewExploration: (entryEdge) => runtime.interaction.previewExploration(entryEdge),
       placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
@@ -581,7 +588,11 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
     runtime.terrain.update(Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000)));
     runtime.interaction.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000));
     runtime.controls.update();
-    runtime.atmosphere.update(runtime.cycleProgress, runtime.controls.target, { snap: true });
+    runtime.atmosphere.update(
+      runtime.cycleProgress,
+      runtime.controls.target,
+      LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
+    );
     runtime.renderer.render(runtime.scene, runtime.camera);
   });
   return () => runtime.renderer.setAnimationLoop(null);

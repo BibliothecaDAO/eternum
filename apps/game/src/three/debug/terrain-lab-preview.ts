@@ -1,12 +1,11 @@
 import { ChestModelPath } from "@/three/constants/scene-constants";
-import { StructureType } from "@bibliothecadao/types";
+import { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainLabBuilding } from "./terrain-lab-buildings";
-import type { BiomeType } from "@bibliothecadao/types";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import type { ModelType } from "@/three/types/army";
 
 export interface TerrainLabPreview {
-  biome: BiomeType | "fixture";
+  biome: BiomeType | "fixture" | "ethereal";
   fog: "fixture" | "clear" | "frontier" | "covered";
   selection: boolean;
   army: ModelType | "none";
@@ -36,7 +35,13 @@ export function buildTerrainLabRequest(
       preview.fog === "fixture"
         ? cell.explored
         : preview.fog === "clear" || (preview.fog === "frontier" && cell.col <= selected.col);
-    const biome = preview.biome === "fixture" ? (cell.biome ?? cell.previewBiome) : preview.biome;
+    // Ethereal is a visual layer, not a gameplay biome. Bare supplies its shared terrain geometry.
+    const biome =
+      preview.biome === "fixture"
+        ? (cell.biome ?? cell.previewBiome)
+        : preview.biome === "ethereal"
+          ? BiomeType.Bare
+          : preview.biome;
     if (explored && biome === null) throw new Error(`Lab tile ${cell.col},${cell.row} has no biome to reveal`);
     return {
       ...cell,
@@ -49,7 +54,16 @@ export function buildTerrainLabRequest(
   const anchors = request.settlementAnchors.filter((anchor) => !occupied.has(`${anchor.col}:${anchor.row}`));
   return {
     ...request,
+    ...(preview.biome === "ethereal" ? { flatSurface: true } : {}),
     cells,
+    halo:
+      preview.biome === "ethereal"
+        ? request.halo.map((cell) => ({
+            ...cell,
+            biome: cell.explored ? BiomeType.Bare : null,
+            previewBiome: BiomeType.Bare,
+          }))
+        : request.halo,
     settlementAnchors: [
       ...anchors,
       ...structures.map(({ col, row }) => ({

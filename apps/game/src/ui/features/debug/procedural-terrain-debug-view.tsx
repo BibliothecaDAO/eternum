@@ -95,6 +95,8 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
   const [buildingPath, setBuildingPath] = useState(TERRAIN_LAB_BUILDINGS[0].path);
   const [buildingYaw, setBuildingYaw] = useState(0);
   const [cycleProgress, setCycleProgress] = useState(50);
+  const [entryEdge, setEntryEdge] = useState(0);
+  const [preparingExploration, setPreparingExploration] = useState(false);
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [preview, setPreview] = useState<TerrainLabPreview>(DEFAULT_TERRAIN_LAB_PREVIEW);
@@ -274,8 +276,18 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
                     {TERRAIN_BIOME_DESCRIPTORS[biome].label}
                   </option>
                 ))}
+                {localRadius === undefined && (
+                  <optgroup label="Secondary layers">
+                    <option value="ethereal">Ethereal / Underground</option>
+                  </optgroup>
+                )}
               </select>
             </label>
+            {preview.biome === "ethereal" && (
+              <p className="text-xs text-stone-400">
+                Ethereal / Underground — a separate world layer of fractured stone and flowing mineral energy.
+              </p>
+            )}
             <label className="flex flex-col gap-1 text-sm">
               Fog
               <select
@@ -290,6 +302,39 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
                 <option value="covered">Cover all tiles</option>
               </select>
             </label>
+            {!localMode && (
+              <>
+                <label className="flex flex-col gap-1 text-sm">
+                  Entry edge
+                  <select
+                    aria-label="Exploration entry edge"
+                    value={entryEdge}
+                    className="bg-stone-900 p-2"
+                    onChange={(event) => setEntryEdge(Number(event.target.value))}
+                  >
+                    {["East", "North east", "North west", "West", "South west", "South east"].map((label, index) => (
+                      <option key={label} value={index}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={!ready || preparingExploration}
+                  className="border border-emerald-300/35 bg-emerald-300/10 p-2 text-sm text-emerald-100 disabled:opacity-50"
+                  onClick={() => {
+                    setPreparingExploration(true);
+                    void rendererRef.current
+                      ?.previewExploration(entryEdge)
+                      .catch((reason) => setError(String(reason)))
+                      .finally(() => setPreparingExploration(false));
+                  }}
+                >
+                  {preparingExploration ? "Preparing exploration…" : "Preview exploration"}
+                </button>
+              </>
+            )}
             <label className="flex gap-2 text-sm">
               <input
                 type="checkbox"
@@ -402,36 +447,41 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
           </fieldset>
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
-            Game day cycle: {cycleProgress}%
+            {preview.biome === "ethereal" ? "Fixed moonlit night" : `Game day cycle: ${cycleProgress}%`}
             <input
               type="range"
               min="0"
               max="100"
               step="1"
               value={cycleProgress}
+              disabled={preview.biome === "ethereal"}
               onChange={(event) => setCycleProgress(Number(event.target.value))}
             />
             <span className="font-normal normal-case text-stone-400">
-              Uses game lighting and tone mapping. Match the in-game cycle percentage to compare biomes.
+              {preview.biome === "ethereal"
+                ? "This layer keeps its cool moonlight glow throughout the game day."
+                : "Uses game lighting and tone mapping. Match the in-game cycle percentage to compare biomes."}
             </span>
           </label>
 
-          <div className="grid grid-cols-4 gap-1" aria-label="Biome atlas legend">
-            {TERRAIN_BIOME_ORDER.map((biome) => {
-              const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
-              return (
-                <div key={biome} className="min-h-20 border border-white/10 bg-white/[0.035] p-2">
-                  <span
-                    className="block h-5 w-full border border-white/10"
-                    style={{ background: `linear-gradient(135deg, ${descriptor.primary}, ${descriptor.secondary})` }}
-                  />
-                  <span className="mt-2 block text-[0.64rem] font-medium leading-3 text-stone-300">
-                    {descriptor.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {preview.biome !== "ethereal" && (
+            <div className="grid grid-cols-4 gap-1" aria-label="Biome atlas legend">
+              {TERRAIN_BIOME_ORDER.map((biome) => {
+                const descriptor = TERRAIN_BIOME_DESCRIPTORS[biome];
+                return (
+                  <div key={biome} className="min-h-20 border border-white/10 bg-white/[0.035] p-2">
+                    <span
+                      className="block h-5 w-full border border-white/10"
+                      style={{ background: `linear-gradient(135deg, ${descriptor.primary}, ${descriptor.secondary})` }}
+                    />
+                    <span className="mt-2 block text-[0.64rem] font-medium leading-3 text-stone-300">
+                      {descriptor.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             Terrain quality

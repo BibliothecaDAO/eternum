@@ -4,7 +4,7 @@ import { BufferGeometry, DoubleSide, Float32BufferAttribute, InstancedMesh, Matr
 import { float, instanceIndex, positionGeometry, time, vec3 } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";
 
-import { terrainHexToWorld } from "./terrain-coordinates";
+import { terrainCellKey, terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
 import type { TerrainField } from "./terrain-field";
 import { hashTerrainCoordinates } from "./terrain-hash";
 import type { TerrainCellInput } from "./terrain-types";
@@ -30,7 +30,7 @@ export function createTerrainWildlife(
   const surface = field.sampleSurface(center.x, center.z);
   const flock = createInstancedMesh(createBirdGeometry(), material, 3);
   flock.name = "terrain-wildlife";
-  // The orbit and wing tips fit inside the known habitat hex, including at fog borders.
+  // Elevated birds project beyond their ground hex; the habitat includes a forest margin.
   const origin = new Matrix4().makeTranslation(center.x, surface.height + 1.6, center.z);
   for (let index = 0; index < flock.count; index++) flock.setMatrixAt(index, origin);
   flock.instanceMatrix.needsUpdate = true;
@@ -56,13 +56,31 @@ export function createTerrainWildlifeMaterial(): MeshBasicNodeMaterial {
 }
 
 function selectForestHabitat(cells: readonly TerrainCellInput[]): TerrainCellInput | undefined {
-  return cells
-    .filter((cell) => cell.explored && !cell.occupied && cell.biome !== null && FOREST_BIOMES.has(cell.biome))
+  const forest = cells.filter(isForestHabitat);
+  const forestKeys = new Set(forest.map((cell) => terrainCellKey(cell.col, cell.row)));
+  return forest
+    .filter((cell) => isForestInterior(cell, forestKeys))
     .map((cell) => ({ cell, priority: habitatPriority(cell) }))
     .toSorted(
       (left, right) =>
         left.priority - right.priority || left.cell.row - right.cell.row || left.cell.col - right.cell.col,
     )[0]?.cell;
+}
+
+function isForestHabitat(cell: TerrainCellInput): boolean {
+  return cell.explored && !cell.occupied && cell.biome !== null && FOREST_BIOMES.has(cell.biome);
+}
+
+function isForestInterior(cell: TerrainCellInput, forestKeys: ReadonlySet<string>): boolean {
+  // Two rings keep the flock over forest in the normal oblique game view. Use presented
+  // cells only: known halo data may belong to a neighboring page that is not rendered yet.
+  return terrainNeighborCoordinates(cell.col, cell.row).every(
+    (neighbor) =>
+      forestKeys.has(terrainCellKey(neighbor.col, neighbor.row)) &&
+      terrainNeighborCoordinates(neighbor.col, neighbor.row).every((outer) =>
+        forestKeys.has(terrainCellKey(outer.col, outer.row)),
+      ),
+  );
 }
 
 function habitatPriority(cell: TerrainCellInput): number {

@@ -81,7 +81,7 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
     if (cell.explored && cell.biome) {
       appendCellPatch(land, vertexSampler, cell, subdivisions);
       if (shouldAppendWaterCellPatch(field, cell)) appendWaterCellPatch(water, vertexSampler, cell, subdivisions);
-      frontierEdges += appendFrontierSkirts(land, field, cell);
+      if (!request.flatSurface) frontierEdges += appendFrontierSkirts(land, field, cell);
       continue;
     }
     fogTerrainCells += 1;
@@ -311,8 +311,10 @@ function appendFrontierSkirts(target: GeometryAccumulator, field: TerrainField, 
     if (field.getCell(neighbor.col, neighbor.row)?.explored) return;
     const start = corners[(direction + 5) % 6];
     const end = corners[direction];
-    const startSample = field.sampleVertex(start.x, start.z);
-    const endSample = field.sampleVertex(end.x, end.z);
+    const length = Math.hypot(end.x - start.x, end.z - start.z);
+    const normal: [number, number, number] = [(end.z - start.z) / length, 0, (start.x - end.x) / length];
+    const startSample = { ...field.sampleVertex(start.x, start.z), normal };
+    const endSample = { ...field.sampleVertex(end.x, end.z), normal };
     const topStart = appendFrontierVertex(target, start, startSample, startSample.height, false);
     const topEnd = appendFrontierVertex(target, end, endSample, endSample.height, false);
     const bottomStart = appendFrontierVertex(
@@ -488,6 +490,7 @@ function fingerprintPreparedPage(
     JSON.stringify({
       cells: canonicalCells(request.cells),
       climate: request.climate,
+      ...(request.flatSurface ? { flatSurface: true } : {}),
       halo: canonicalCells(request.halo),
       mapCenter: request.mapCenter,
       pageKey: request.pageKey,

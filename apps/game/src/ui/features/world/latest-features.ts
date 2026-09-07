@@ -35,10 +35,31 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-07",
+    title: "A Glimpse Beneath",
+    description:
+      "Preview Ethereal’s flat, textured floor under fixed moonlight in the World Biome Lab, with tile selection, armies and buildings. Dark unexplored tiles carry visible hints of its flowing energy and dissolve in uneven wisps as explorers advance.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-07",
     title: "Reliable Identity RPC",
     description:
       "Wallet initialization uses Alchemy’s mainnet RPC, restoring client startup after the previous endpoint stopped serving requests.",
     type: "fix",
+  },
+  {
+    date: "2026-09-07",
+    title: "Clearer Terrain and Ocean",
+    description:
+      "Rocky deserts and sand dunes have distinct surface patterns, ocean swells rise and fall, fog is dark charcoal, and subtle hex borders gain extra contrast on grass.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-07",
+    title: "Distinct Biomes and Exploration",
+    description:
+      "Biomes gain distinct ground, vegetation, and water. Newly explored hexes clear from the explorer’s entry edge in 300 ms; replay the transition from any direction in the Biome Lab.",
+    type: "improvement",
   },
   {
     date: "2026-09-06",

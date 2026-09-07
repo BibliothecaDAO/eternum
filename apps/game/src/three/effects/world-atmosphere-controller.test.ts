@@ -32,6 +32,50 @@ function findMoonRimLight(scene: Scene, mainDirectionalLight: DirectionalLight):
 }
 
 describe("WorldAtmosphereController", () => {
+  it("preserves the existing moonlit night underground regardless of game cycle or weather", () => {
+    const fixture = createFixture();
+    const expected = createFixture();
+    const cameraTarget = new Vector3();
+    fixture.directionalLight.castShadow = true;
+    expected.directionalLight.castShadow = true;
+    expected.manager.update(0, cameraTarget);
+    fixture.manager.update(50, cameraTarget, { environment: "ethereal" });
+    const underground = readLighting(fixture);
+    expect(underground).toEqual(readLighting(expected));
+    for (const progress of [10, 40, 50, 60, 90, 100]) {
+      fixture.manager.update(progress, cameraTarget, { environment: "ethereal" });
+      fixture.manager.applyWeatherModulation(1, 1, 1, 1);
+      expect(readLighting(fixture)).toEqual(underground);
+      expect(fixture.manager.getLastAmbientIntensity()).toBe(underground.ambient);
+      expect(fixture.manager.getLastHemisphereIntensity()).toBe(underground.hemisphere);
+    }
+    fixture.manager.dispose();
+    expected.manager.dispose();
+  });
+
+  it.each([false, true])(
+    "restores current world lighting and the prior shadow setting %s on leaving underground",
+    (castsShadow) => {
+      const fixture = createFixture();
+      const expected = createFixture();
+      fixture.directionalLight.castShadow = castsShadow;
+      expected.directionalLight.castShadow = castsShadow;
+      fixture.manager.params.colorTransitionSpeed = 0.02;
+      fixture.manager.params.progressSmoothing = 0.02;
+      fixture.manager.update(0);
+      fixture.manager.update(50, undefined, { environment: "ethereal" });
+      fixture.manager.update(50);
+      expected.manager.update(0);
+      expected.manager.update(50);
+      expect(readLighting(fixture)).toEqual(readLighting(expected));
+      fixture.manager.applyWeatherModulation(1, 1, 1, 0.2);
+      expect(fixture.directionalLight.intensity).toBeGreaterThan(0);
+      expect(fixture.hemisphereLight.intensity).not.toBe(expected.hemisphereLight.intensity);
+      fixture.manager.dispose();
+      expected.manager.dispose();
+    },
+  );
+
   it("uses the readability-first night preset", () => {
     const fixture = createFixture();
     const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
@@ -368,3 +412,22 @@ describe("WorldAtmosphereController", () => {
     expect(warnSpy).toHaveBeenCalledWith("WorldAtmosphereController already disposed, skipping cleanup");
   });
 });
+
+function readLighting(fixture: ReturnType<typeof createFixture>) {
+  const rim = findMoonRimLight(fixture.scene, fixture.directionalLight)!;
+  return {
+    sun: fixture.directionalLight.intensity,
+    sunPosition: fixture.directionalLight.position.toArray(),
+    sunTarget: fixture.directionalLight.target.position.toArray(),
+    castsShadow: fixture.directionalLight.castShadow,
+    rim: rim.intensity,
+    rimPosition: rim.position.toArray(),
+    ambient: fixture.ambientLight.intensity,
+    ambientColor: fixture.ambientLight.color.getHex(),
+    hemisphere: fixture.hemisphereLight.intensity,
+    sky: fixture.hemisphereLight.color.getHex(),
+    ground: fixture.hemisphereLight.groundColor.getHex(),
+    background: (fixture.scene.background as Color).getHex(),
+    fog: fixture.fog.color.getHex(),
+  };
+}

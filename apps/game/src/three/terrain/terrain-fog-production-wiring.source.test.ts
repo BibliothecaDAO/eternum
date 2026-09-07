@@ -21,16 +21,16 @@ describe("continuous exploration fog production wiring", () => {
     const terrain = source("src/three/terrain/procedural-terrain.ts");
     expect(fogField).not.toContain("applyToTerrain");
     expect(terrain).not.toContain("fogField.applyToTerrain");
-    expect(fogField).toContain("float(TERRAIN_FOG_GROUND_HEIGHT).sub(cameraPosition.y)");
-    expect(fogField).toContain("material.colorNode = shadeFogHexBoundary(fogColor, backdropGround.xz)");
+    expect(fogField).toContain("const FOG_PLANE_HEIGHT = TERRAIN_FOG_GROUND_HEIGHT");
+    expect(fogField).toContain("material.colorNode = shadeFogHexBoundary(fogColor, fogGround.xz)");
   });
 
   it("keeps mask animation in the fog field while terrain authority remains external", () => {
     const fogField = source("src/three/terrain/terrain-fog-field.ts");
     const terrain = source("src/three/terrain/procedural-terrain.ts");
 
-    expect(fogField).toContain("applyTerrainFogReveals(this.mask, reveals, this.textureData)");
-    expect(terrain).toContain("this.fogField.queueReveal(col, row)");
+    expect(fogField).toContain("this.reveal.update(deltaSeconds)");
+    expect(terrain).toContain("this.fogField.queueReveal(col, row, source)");
     expect(terrain).toContain("this.fogField.updateAnimation(deltaSeconds)");
   });
 
@@ -41,7 +41,7 @@ describe("continuous exploration fog production wiring", () => {
 
     expect(debugRenderer).toContain("TERRAIN_DEEP_FOG_COLOR");
     expect(fogField).toContain("TERRAIN_DEEP_FOG_COLOR");
-    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#242629"');
+    expect(style).toContain('TERRAIN_DEEP_FOG_COLOR = "#191b1e"');
     expect(style).toContain("TERRAIN_DEEP_FOG_OPACITY = 1");
   });
 

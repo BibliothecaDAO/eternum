@@ -283,8 +283,8 @@ export class WorldmapProceduralTerrain {
     this.terrain.setQualityTier(tier);
   }
 
-  queueShroudReveal(col: number, row: number): void {
-    this.terrain.queueShroudReveal(col, row);
+  queueShroudReveal(col: number, row: number, source?: { col: number; row: number }): void {
+    this.terrain.queueShroudReveal(col, row, source);
   }
 
   update(deltaSeconds: number): void {

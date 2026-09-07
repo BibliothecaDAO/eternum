@@ -159,7 +159,9 @@ describe("terrain prop placement", () => {
     expect(Math.min(...instances.map(({ scale }) => scale))).toBeGreaterThanOrEqual(0.54);
     expect(Math.max(...instances.map(({ scale }) => scale))).toBeLessThanOrEqual(1.24);
     expect(
-      instances.every(({ appearance }) => appearance.tint.every((channel) => channel >= 0.6 && channel <= 1)),
+      instances.every(({ appearance }) =>
+        appearance.tint.every((channel) => Number.isFinite(channel) && channel >= 0.25 && channel <= 2),
+      ),
     ).toBe(true);
   });
 

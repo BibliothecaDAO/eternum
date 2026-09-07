@@ -37,6 +37,7 @@ interface WorldAtmosphereParams {
 
 interface WorldAtmosphereUpdateOptions {
   snap?: boolean;
+  environment?: "world" | "ethereal";
 }
 
 interface AtmosphereProgressFrame {
@@ -127,6 +128,7 @@ export class WorldAtmosphereController {
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
   private isDisposed = false;
+  private environment: "world" | "ethereal" = "world";
 
   // Store original lighting values to restore when disabled
   private originalLightingState: {
@@ -281,10 +283,13 @@ export class WorldAtmosphereController {
    */
   update(cycleProgress: number, cameraTarget?: Vector3, options: WorldAtmosphereUpdateOptions = {}): void {
     if (!this.params.enabled) return;
+    const environment = options.environment ?? "world";
+    const environmentChanged = environment !== this.environment;
+    this.environment = environment;
 
     // Apply cycle speed multiplier for testing
-    const adjustedProgress = (cycleProgress * this.params.cycleSpeed) % 100;
-    const progressFrame = this.resolveAtmosphereProgress(adjustedProgress, options.snap === true);
+    const adjustedProgress = this.environment === "ethereal" ? 0 : (cycleProgress * this.params.cycleSpeed) % 100;
+    const progressFrame = this.resolveAtmosphereProgress(adjustedProgress, options.snap === true || environmentChanged);
 
     // Get target colors for current time, then grade nighttime toward cooler tones
     const interpolatedColors = this.getInterpolatedTimeColors(progressFrame.progress);
@@ -625,7 +630,7 @@ export class WorldAtmosphereController {
    * @param ambientBoost - How much weather should brighten shadows (0-1)
    */
   applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0, ambientBoost = 0): void {
-    if (!this.params.enabled) return;
+    if (!this.params.enabled || this.environment === "ethereal") return;
 
     const haze = MathUtils.clamp(fogDensity, 0, WEATHER_LIMITS.maxHaze);
     const keyLightDimming = MathUtils.clamp(sunOcclusion, 0, 1) * WEATHER_LIMITS.maxKeyLightDimming;
@@ -681,6 +686,7 @@ export class WorldAtmosphereController {
    * Restore original lighting state
    */
   private restoreOriginalLighting(): void {
+    this.environment = "world";
     this.directionalLight.color.copy(this.originalLightingState.directionalColor);
     this.directionalLight.intensity = this.originalLightingState.directionalIntensity;
     this.directionalLight.position.copy(this.originalLightingState.directionalPosition);

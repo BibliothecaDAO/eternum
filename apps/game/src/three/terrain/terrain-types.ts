@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 23;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 24;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;
@@ -37,6 +37,8 @@ export interface TerrainSettlementAnchor {
 export interface TerrainPageRequest {
   cells: readonly TerrainCellInput[];
   climate: BiomeClimateConfig;
+  /** A level tile surface at the fog plane, without landforms or frontier walls. */
+  flatSurface?: boolean;
   halo: readonly TerrainCellInput[];
   mapCenter: number;
   pageKey: string;

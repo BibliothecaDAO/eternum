@@ -12,6 +12,16 @@ import { buildWorldmapTerrainPageRequests } from "./worldmap-procedural-terrain"
 const PAGE_SIZE = 24;
 const PAGE_ORIGIN = { col: -12, row: -12 };
 const HOMOGENEOUS_CENTER_PAGE_KEY = `${PAGE_ORIGIN.row},${PAGE_ORIGIN.col}`;
+const CAPACITY_CLIMATE_SEEDS = [
+  [137, 991],
+  [1, 1],
+  [13, 97],
+  [997, 123],
+  [4093, 8191],
+  [42, 4242],
+  [111, 777],
+  [6257, 3571],
+] as const;
 
 describe("terrain prop page slot capacity", () => {
   it("holds the densest balanced and homogeneous production pages with headroom, without runtime buffer growth", () => {
@@ -32,10 +42,13 @@ describe("terrain prop page slot capacity", () => {
     };
 
     measure(pageRequests(Array.from(fixture.pages.values()).flat(), fixture.climate));
-    for (const biome of Object.values(BiomeType)) {
-      if (biome === BiomeType.None) continue;
-      const block = pageRequests(homogeneousBlockCells(biome), fixture.climate);
-      measure(block.filter((request) => request.pageKey === HOMOGENEOUS_CENTER_PAGE_KEY));
+    for (const [elevationSeed, moistureSeed] of CAPACITY_CLIMATE_SEEDS) {
+      const climate = { ...fixture.climate, elevation_seed: elevationSeed, moisture_seed: moistureSeed };
+      for (const biome of Object.values(BiomeType)) {
+        if (biome === BiomeType.None) continue;
+        const block = pageRequests(homogeneousBlockCells(biome), climate);
+        measure(block.filter((request) => request.pageKey === HOMOGENEOUS_CENTER_PAGE_KEY));
+      }
     }
 
     for (const archetype of TERRAIN_PROP_ARCHETYPE_IDS) {
@@ -47,7 +60,7 @@ describe("terrain prop page slot capacity", () => {
       // trips only after a density retune, not on seed variance.
       expect(densest, `${archetype} slot headroom`).toBeGreaterThanOrEqual(capacity * 0.4);
     }
-  });
+  }, 60_000);
 });
 
 function pageRequests(

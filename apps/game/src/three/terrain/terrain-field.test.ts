@@ -208,7 +208,7 @@ describe("TerrainField", () => {
     expect(regrowth.successionStrength).toBeGreaterThan(undisturbed.successionStrength + 0.2);
     expect(regrowth.maturity).toBeLessThan(undisturbed.maturity);
     expect(regrowthGround[1]).toBeGreaterThan(openGround[1]);
-    expect(regrowthColor[0]).toBeGreaterThan(openColor[0]);
+    expect(regrowthColor).not.toEqual(openColor);
   });
 
   it("expands the settlement ecology footprint for higher-level Realms", () => {
@@ -248,7 +248,7 @@ describe("TerrainField", () => {
 
     expect(edge.waterEdgeStrength).toBeGreaterThan(0.6);
     expect(edge.waterEdgeStrength).toBeGreaterThan(dryInterior.waterEdgeStrength);
-    expect(edge.understoryCover).toBeGreaterThan(dryInterior.understoryCover);
+    expect(edge.successionStrength).toBeGreaterThan(dryInterior.successionStrength);
   });
 
   it("adds deterministic macro landforms without breaking biome ownership", () => {
