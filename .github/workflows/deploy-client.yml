@@ -50,40 +50,23 @@ jobs:
       - name: Build packages
         run: pnpm run build:packages
 
+      - name: Test deployment verification and chunk recovery
+        run: |
+          node --test apps/game/scripts/verify-client-deployment.test.mjs
+          pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts
+
       - name: Build client
         env:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
         run: pnpm --dir apps/game build
 
-      - name: Write cache headers
+      - name: Remove public sourcemaps
         working-directory: apps/game
         run: |
           set -euo pipefail
           # Never ship sourcemaps publicly.
           find dist -name "*.js.map" -delete
-          # Three cache tiers, as a Pages _headers file. Only Vite's content-hashed
-          # assets/ may be immutable: a stable-path file cached immutable is
-          # unfixable in a browser for a year (the corrupt /basis/ wasm proved it).
-          # HTML + service-worker files revalidate every request — a stale sw.js is
-          # the one file that can pin testers to an old build. Everything else
-          # (public/ passthrough: models, basis, images, sounds) revalidates after
-          # 5 minutes. Pages deploys are atomic and invalidate its cache, so no
-          # purge step is needed.
-          cat > dist/_headers <<'EOF'
-          /assets/*
-            Cache-Control: public, max-age=31536000, immutable
-          /*.html
-            Cache-Control: public, max-age=0, must-revalidate
-          /sw.js
-            Cache-Control: public, max-age=0, must-revalidate
-          /registerSW.js
-            Cache-Control: public, max-age=0, must-revalidate
-          /manifest.webmanifest
-            Cache-Control: public, max-age=0, must-revalidate
-          /*
-            Cache-Control: public, max-age=300, must-revalidate
-          EOF
 
       # wrangler-action@v3 auto-installs wrangler with `pnpm add`, which pnpm refuses at a workspace root
       # (ERR_PNPM_ADDING_TO_ROOT). Run wrangler with `pnpm dlx` instead — isolated, no workspace mutation.
@@ -95,3 +78,15 @@ jobs:
           pnpm dlx wrangler@3 pages deploy apps/game/dist \
             --project-name="${{ vars.CLOUDFLARE_PAGES_PROJECT }}" \
             --branch=main --commit-hash="${{ github.sha }}"
+
+      - name: Verify published client modules and routes
+        run:
+          node apps/game/scripts/verify-client-deployment.mjs apps/game/dist https://play.realms.party
+          client-deployment-check.json
+
+      - name: Upload deployment verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-deployment-check
+          path: client-deployment-check.json

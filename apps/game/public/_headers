@@ -1,0 +1,17 @@
+# Use Pages' default ETag revalidation for assets. Overlapping Cache-Control
+# rules are concatenated, and an asset wildcard also matches missing chunks.
+# Extensionless navigation must always obtain the current deployment's shell.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/play/*
+  Cache-Control: no-cache
+/enter/*
+  Cache-Control: no-cache
+/biome-lab
+  Cache-Control: no-cache
+/local-lab
+  Cache-Control: no-cache
+/debug/*
+  Cache-Control: no-cache
