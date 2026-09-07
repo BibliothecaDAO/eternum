@@ -1,6 +1,7 @@
 import { Position } from "@bibliothecadao/eternum";
 
-import { getBanksLocations, SettlementLocation } from "@/ui/features/settlement";
+import { getBanksLocations } from "@/ui/features/settlement/utils/settlement-utils";
+import type { SettlementLocation } from "@/ui/features/settlement/utils/settlement-types";
 import { ClientComponents } from "@bibliothecadao/types";
 import { create } from "zustand";
 

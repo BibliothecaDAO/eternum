@@ -1,7 +1,7 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { HintModal } from "@/ui/features/progression";
+import { HintModal } from "@/ui/features/progression/hints/hint-modal";
 
 type HintModalButtonProps = {
   section?: string;
