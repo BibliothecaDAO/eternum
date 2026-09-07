@@ -95,15 +95,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.Tundra]: profile(0.23, ["boulder", 4], ["shrub", 5], ["grass-tuft", 8], ["wildflower", 2]),
   [BiomeType.Snow]: profile(0.12, ["boulder", 8], ["dead-tree", 1]),
   [BiomeType.TemperateDesert]: profile(0.22, ["boulder", 5], ["shrub", 5], ["grass-tuft", 6], ["dead-tree", 1]),
-  [BiomeType.Shrubland]: profile(
-    0.22,
-    ["shrub", 6],
-    ["boulder", 2],
-    ["broadleaf", 1],
-    ["grass-tuft", 8],
-    ["wildflower", 3],
-    ["fern", 1],
-  ),
+  [BiomeType.Shrubland]: profile(0.22, ["shrub", 9], ["boulder", 3], ["grass-tuft", 8], ["wildflower", 4]),
   [BiomeType.Taiga]: profile(
     0.33,
     ["conifer", 12],
@@ -115,61 +107,71 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   ),
   [BiomeType.Grassland]: profile(
     0.15,
-    ["shrub", 5],
-    ["broadleaf", 2],
+    ["shrub", 2],
+    ["birch", 1],
     ["boulder", 1],
-    ["stump", 1],
-    ["grass-tuft", 12],
-    ["wildflower", 4],
-    ["reed", 2],
+    ["grass-tuft", 16],
+    ["wildflower", 7],
   ),
   [BiomeType.TemperateDeciduousForest]: profile(
     0.31,
-    ["broadleaf", 5],
+    ["broadleaf", 6],
     ["birch", 3],
     ["shrub", 2],
     ["stump", 1],
-    ["fern", 7],
-    ["grass-tuft", 3],
-    ["wildflower", 2],
-    ["reed", 1],
+    ["fallen-log", 1],
+    ["fern", 5],
+    ["wildflower", 3],
   ),
   [BiomeType.TemperateRainForest]: profile(
     0.32,
+    ["conifer", 4],
     ["willow", 5],
-    ["broadleaf", 4],
-    ["birch", 1],
+    ["broadleaf", 2],
     ["shrub", 2],
-    ["fallen-log", 1],
-    ["fern", 8],
-    ["grass-tuft", 2],
+    ["fallen-log", 2],
+    ["boulder", 1],
+    ["fern", 10],
     ["reed", 3],
   ),
   [BiomeType.SubtropicalDesert]: profile(0.16, ["cactus", 9], ["boulder", 3], ["grass-tuft", 2]),
   [BiomeType.TropicalSeasonalForest]: profile(
     0.3,
-    ["palm", 4],
-    ["broadleaf", 4],
-    ["shrub", 2],
+    ["palm", 6],
+    ["broadleaf", 3],
+    ["shrub", 3],
     ["fallen-log", 1],
-    ["fern", 6],
-    ["grass-tuft", 3],
-    ["wildflower", 1],
-    ["reed", 2],
+    ["grass-tuft", 7],
+    ["fern", 4],
+    ["wildflower", 2],
   ),
   [BiomeType.TropicalRainForest]: profile(
     0.34,
-    ["willow", 4],
-    ["palm", 3],
-    ["broadleaf", 3],
-    ["shrub", 2],
-    ["fallen-log", 1],
-    ["fern", 8],
-    ["grass-tuft", 2],
-    ["wildflower", 1],
-    ["reed", 3],
+    ["palm", 4],
+    ["willow", 3],
+    ["broadleaf", 5],
+    ["shrub", 3],
+    ["fallen-log", 2],
+    ["fern", 10],
+    ["reed", 4],
+    ["wildflower", 2],
   ),
 };
+// Linear multipliers preserve the imported leaf detail while making each forest readable at map scale.
+const BIOME_FOLIAGE_TINT: Partial<Record<BiomeType, readonly [number, number, number]>> = {
+  [BiomeType.Beach]: [0.85, 1.06, 1.12],
+  [BiomeType.Taiga]: [0.68, 0.88, 0.96],
+  [BiomeType.Tundra]: [0.98, 0.64, 0.38],
+  [BiomeType.TemperateDesert]: [0.92, 0.83, 0.62],
+  [BiomeType.SubtropicalDesert]: [0.92, 0.82, 0.53],
+  [BiomeType.Grassland]: [1.14, 1.1, 0.8],
+  [BiomeType.Shrubland]: [1.2, 1.04, 0.9],
+  [BiomeType.TemperateDeciduousForest]: [1.8, 0.85, 0.46],
+  [BiomeType.TemperateRainForest]: [0.75, 1.04, 1.3],
+  [BiomeType.TropicalSeasonalForest]: [1.4, 1.03, 0.64],
+  [BiomeType.TropicalRainForest]: [0.65, 1.17, 0.96],
+};
+
 const MAX_PROFILE_DENSITY_BY_LAYER: Readonly<Record<TerrainPropPlacementLayer, number>> = Object.freeze(
   Object.fromEntries(
     TERRAIN_PROP_PLACEMENT_LAYERS.map((layer) => [
@@ -416,7 +418,7 @@ function resolveTerrainPropAppearance(
   return {
     moss: clampUnit(mossSupport * (1 - snow * 0.85) * (1 - resolveScorchedCoverage(context))),
     snow,
-    tint: resolveTerrainPropTint(archetype, tintVariation, context),
+    tint: resolveBiomePropTint(archetype, tintVariation, context),
     windAmplitude: clampUnit(climate.windAmplitude),
   };
 }
@@ -554,6 +556,22 @@ function resolveTerrainPropScale(
   if (role === "understory") return 0.54 + shapedValue * 0.42;
   const volcanicStone = archetype === "boulder" ? resolveScorchedCoverage(vegetation) : 0;
   return (0.68 + shapedValue * 0.44) * (1 + volcanicStone * 0.5);
+}
+
+function resolveBiomePropTint(
+  archetype: TerrainPropArchetypeId,
+  value: number,
+  vegetation: TerrainPropDensityContext,
+): readonly [number, number, number] {
+  const base = resolveTerrainPropTint(archetype, value, vegetation);
+  if (getTerrainPropRole(archetype) === "rigid" && archetype !== "cactus") return base;
+
+  const tint: [number, number, number] = [0, 0, 0];
+  for (const { biome, weight } of vegetation.biomeInfluences) {
+    const biomeTint = BIOME_FOLIAGE_TINT[biome] ?? [1, 1, 1];
+    for (let channel = 0; channel < 3; channel++) tint[channel] += biomeTint[channel] * weight;
+  }
+  return [base[0] * tint[0], base[1] * tint[1], base[2] * tint[2]];
 }
 
 function resolveTerrainPropTint(

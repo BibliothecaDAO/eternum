@@ -429,7 +429,7 @@ function createTerrainPropMaterial(
   if (!animated) return material;
 
   const heightMask = smoothstep(0.05, 0.95, plant.x);
-  const amplitude = plant.y.mul(0.2).min(0.065);
+  const amplitude = plant.y.mul(0.2).min(0.095);
   const phase = time
     .mul(0.72)
     .add(positionLocal.x.mul(0.41))

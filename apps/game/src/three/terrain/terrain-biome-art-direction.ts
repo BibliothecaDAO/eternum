@@ -131,22 +131,30 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
     motion: { windAmplitude: 0.38 },
     landform: { basinStrength: 0.32, ridgeStrength: 0.3 },
   }),
-  [BiomeType.Shrubland]: art("open", { ecology: { canopyCover: 0.12, clusterScale: 0.22, undergrowth: 0.46 } }),
+  [BiomeType.Shrubland]: art("open", {
+    ecology: { canopyCover: 0.03, clearingStrength: 0.5, clusterScale: 0.28, undergrowth: 0.5 },
+    material: { macroTintStrength: 0.22 },
+    motion: { windAmplitude: 0.65 },
+  }),
   [BiomeType.Taiga]: art("cold", {
     ecology: { canopyCover: 0.82, clusterScale: 0.15, undergrowth: 0.44 },
     motion: { windAmplitude: 0.3 },
   }),
   [BiomeType.Grassland]: art("open", {
     anchor: true,
-    ecology: { canopyCover: 0.16, clearingStrength: 0.5, undergrowth: 0.88 },
+    ecology: { canopyCover: 0.06, clearingStrength: 0.6, clusterScale: 0.16, undergrowth: 0.95 },
+    motion: { windAmplitude: 0.8 },
   }),
   [BiomeType.TemperateDeciduousForest]: art("temperate", {
     ecology: { canopyCover: 0.84, clusterScale: 0.12, undergrowth: 0.6 },
+    material: { macroTintStrength: 0.2 },
+    motion: { windAmplitude: 0.58 },
   }),
   [BiomeType.TemperateRainForest]: art("temperate", {
     anchor: true,
     atmosphere: { haze: 0.28 },
-    ecology: { canopyCover: 0.9, clearingStrength: 0.16, clusterScale: 0.11, undergrowth: 0.76 },
+    ecology: { canopyCover: 0.9, clearingStrength: 0.2, clusterScale: 0.09, undergrowth: 0.84 },
+    motion: { windAmplitude: 0.46 },
   }),
   [BiomeType.SubtropicalDesert]: art("arid", {
     ecology: { canopyCover: 0, undergrowth: 0.08 },
@@ -155,7 +163,7 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
   }),
   [BiomeType.TropicalSeasonalForest]: art("temperate", {
     atmosphere: { haze: 0.24, tint: "#8fa878" },
-    ecology: { canopyCover: 0.74, clearingStrength: 0.22, clusterScale: 0.12, undergrowth: 0.68 },
+    ecology: { canopyCover: 0.64, clearingStrength: 0.34, clusterScale: 0.16, undergrowth: 0.6 },
     motion: { windAmplitude: 0.48 },
   }),
   [BiomeType.TropicalRainForest]: art("temperate", {

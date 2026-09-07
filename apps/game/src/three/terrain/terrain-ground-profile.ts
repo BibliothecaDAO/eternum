@@ -33,14 +33,14 @@ const BIOME_GROUND_RECIPES: Readonly<Record<BiomeType, TerrainGroundWeights>> = 
   [BiomeType.Tundra]: weights(0, 0.12, 0.1, 0.24, 0.14, 0.22, 0.18, 0),
   [BiomeType.Snow]: weights(0, 0, 0.02, 0, 0, 0.08, 0.9, 0),
   [BiomeType.TemperateDesert]: weights(0.08, 0.72, 0, 0, 0, 0.2, 0, 0),
-  [BiomeType.Shrubland]: weights(0.05, 0.3, 0.27, 0.28, 0, 0.1, 0, 0),
+  [BiomeType.Shrubland]: weights(0.08, 0.47, 0.16, 0.14, 0, 0.15, 0, 0),
   [BiomeType.Taiga]: weights(0, 0, 0.08, 0.06, 0.56, 0.12, 0.18, 0),
-  [BiomeType.Grassland]: weights(0, 0, 0.22, 0.7, 0, 0.08, 0, 0),
-  [BiomeType.TemperateDeciduousForest]: weights(0, 0, 0.12, 0.18, 0.65, 0.05, 0, 0),
-  [BiomeType.TemperateRainForest]: weights(0, 0, 0.15, 0.05, 0.72, 0.08, 0, 0),
+  [BiomeType.Grassland]: weights(0, 0.04, 0.16, 0.76, 0, 0.04, 0, 0),
+  [BiomeType.TemperateDeciduousForest]: weights(0, 0.08, 0.12, 0.06, 0.7, 0.04, 0, 0),
+  [BiomeType.TemperateRainForest]: weights(0, 0, 0.28, 0.28, 0.32, 0.12, 0, 0),
   [BiomeType.SubtropicalDesert]: weights(0.9, 0.04, 0, 0, 0, 0.06, 0, 0),
-  [BiomeType.TropicalSeasonalForest]: weights(0, 0, 0.15, 0.2, 0.6, 0.05, 0, 0),
-  [BiomeType.TropicalRainForest]: weights(0, 0, 0.16, 0.09, 0.7, 0.05, 0, 0),
+  [BiomeType.TropicalSeasonalForest]: weights(0, 0.28, 0.16, 0.16, 0.36, 0.04, 0, 0),
+  [BiomeType.TropicalRainForest]: weights(0, 0, 0.3, 0.16, 0.5, 0.04, 0, 0),
 });
 
 export function resolveTerrainGroundRecipe(
