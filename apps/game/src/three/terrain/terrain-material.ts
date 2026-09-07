@@ -55,7 +55,7 @@ export function createTerrainMaterials(): TerrainMaterials {
 }
 
 function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): MeshStandardNodeMaterial {
-  const material = new MeshPhysicalNodeMaterial({ metalness: 0, roughness: 0.38, ior: 1.333, specularIntensity: 0.55 });
+  const material = new MeshPhysicalNodeMaterial({ metalness: 0, roughness: 0.42, ior: 1.333, specularIntensity: 0.42 });
   material.name = "terrain-water";
   const shore = attribute<"float">("terrainShore", "float");
   const waterDepth = attribute<"float">("terrainWaterDepth", "float").max(TERRAIN_MIN_RENDERED_WATER_DEPTH);
@@ -71,14 +71,16 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   const waveNormalView = transformNormalToView(waves.normal);
   material.normalNode = waveNormalView;
 
-  const bathymetryColor = mix(color("#437e77"), color("#102e41"), depthBlend);
+  // Emerald shelf water and blue offshore water remain identifiable without relying on sun glare.
+  const shelfColor = mix(color("#709b90"), color("#377d88"), smoothstep(0.005, 0.1, waterDepth));
+  const bathymetryColor = mix(shelfColor, color("#24435c"), smoothstep(0.12, 0.31, waterDepth));
   const shorelineColor = mix(bathymetryColor, color("#819c83"), shore.mul(shallowEdge).mul(0.1));
   const fresnel = waveNormalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(4).mul(depthMotion);
-  const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.22));
-  const foamEdge = smoothstep(0.006, 0.038, waterDepth).oneMinus();
-  const foam = createTerrainWaterFoam(shore, foamEdge, waterMotion);
-  material.colorNode = shadeTerrainHexBoundary(mix(reflectiveColor, color("#d9e1d7"), foam.mul(0.78)));
-  const waterRoughness = mix(0.5, 0.38, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
+  const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.14));
+  const foam = createTerrainWaterFoam(shore, waterDepth, waterMotion);
+  const swellColor = mix(reflectiveColor, color("#7fb8bc"), waves.crest.mul(depthMotion).mul(0.065));
+  material.colorNode = shadeTerrainHexBoundary(mix(swellColor, color("#dce8de"), foam.mul(0.7)));
+  const waterRoughness = mix(0.5, 0.42, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
   material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.18, 0.78);
   return material;
 }
@@ -86,11 +88,12 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
 function createTerrainWaterWaves(
   depthMotion: Node<"float">,
   waterMotion: UniformNode<"float", number>,
-): { height: Node<"float">; normal: Node<"vec3"> } {
-  const primaryPhase = time.mul(0.68).add(positionLocal.x.mul(0.54)).add(positionLocal.z.mul(0.39));
-  const crossPhase = time.mul(0.43).add(positionLocal.x.mul(-0.31)).add(positionLocal.z.mul(0.47));
+): { crest: Node<"float">; height: Node<"float">; normal: Node<"vec3"> } {
+  const waterTime = time.mul(waterMotion);
+  const primaryPhase = waterTime.mul(0.8).add(positionLocal.x.mul(1.15)).add(positionLocal.z.mul(0.64));
+  const crossPhase = waterTime.mul(0.51).add(positionLocal.x.mul(-0.42)).add(positionLocal.z.mul(0.81));
   const motion = waterMotion.mul(depthMotion);
-  const ripplePhase = positionLocal.x.mul(4.3).add(positionLocal.z.mul(2.7)).sub(time.mul(1.1));
+  const ripplePhase = positionLocal.x.mul(4.3).add(positionLocal.z.mul(2.7)).sub(waterTime.mul(1.1));
   const height = primaryPhase
     .sin()
     .mul(0.014)
@@ -99,41 +102,63 @@ function createTerrainWaterWaves(
     .mul(motion);
   // Fine ripples affect highlights without moving tile edges or requiring a denser water mesh.
   const rippleWarp = positionLocal.x.mul(1.7).add(positionLocal.z.mul(2.1)).sin().mul(1.4);
-  const capillaryPhase = positionLocal.x.mul(16.3).add(positionLocal.z.mul(-10.7)).add(rippleWarp).sub(time.mul(1.9));
+  const capillaryPhase = positionLocal.x
+    .mul(16.3)
+    .add(positionLocal.z.mul(-10.7))
+    .add(rippleWarp)
+    .sub(waterTime.mul(1.9));
   const capillaryFilter = smoothstep(0.7, 2.4, fwidth(capillaryPhase)).oneMinus();
-  const capillarySlope = capillaryPhase.cos().mul(capillaryFilter).mul(0.00065);
-  const crossRipplePhase = positionLocal.x.mul(11.7).add(positionLocal.z.mul(18.9)).sub(rippleWarp).add(time.mul(1.3));
+  const capillarySlope = capillaryPhase.cos().mul(capillaryFilter).mul(0.0012);
+  const crossRipplePhase = positionLocal.x
+    .mul(11.7)
+    .add(positionLocal.z.mul(18.9))
+    .sub(rippleWarp)
+    .add(waterTime.mul(1.3));
   const crossRippleFilter = smoothstep(0.7, 2.4, fwidth(crossRipplePhase)).oneMinus();
-  const crossRippleSlope = crossRipplePhase.cos().mul(crossRippleFilter).mul(0.0005);
+  const crossRippleSlope = crossRipplePhase.cos().mul(crossRippleFilter).mul(0.0009);
   const slopeX = primaryPhase
     .cos()
-    .mul(0.014 * 0.54)
-    .add(crossPhase.cos().mul(0.008 * -0.31))
+    .mul(0.014 * 1.15)
+    .add(crossPhase.cos().mul(0.008 * -0.42))
     .add(ripplePhase.cos().mul(0.003 * 4.3))
     .add(capillarySlope.mul(16.3))
     .add(crossRippleSlope.mul(11.7))
     .mul(motion);
   const slopeZ = primaryPhase
     .cos()
-    .mul(0.014 * 0.39)
-    .add(crossPhase.cos().mul(0.008 * 0.47))
+    .mul(0.014 * 0.64)
+    .add(crossPhase.cos().mul(0.008 * 0.81))
     .add(ripplePhase.cos().mul(0.003 * 2.7))
     .add(capillarySlope.mul(-10.7))
     .add(crossRippleSlope.mul(18.9))
     .mul(motion);
-  return { height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
+  const crest = smoothstep(0.87, 1.05, primaryPhase.sin().add(crossPhase.sin().mul(0.16))).mul(
+    smoothstep(0.5, 1.8, fwidth(primaryPhase)).oneMinus(),
+  );
+  return { crest, height, normal: vec3(slopeX.negate(), 1, slopeZ.negate()).normalize() };
 }
 
 function createTerrainWaterFoam(
   shore: Node<"float">,
-  shallowEdge: Node<"float">,
+  waterDepth: Node<"float">,
   waterMotion: UniformNode<"float", number>,
 ): Node<"float"> {
-  const incomingPhase = positionLocal.x.mul(1.9).add(positionLocal.z.mul(1.35)).sub(time.mul(0.55).mul(waterMotion));
-  const breakupPhase = positionLocal.x.mul(-3.4).add(positionLocal.z.mul(2.7)).add(time.mul(0.23).mul(waterMotion));
-  const breakerBand = smoothstep(0.58, 0.86, incomingPhase.sin().mul(0.5).add(0.5));
-  const breakup = breakupPhase.sin().mul(0.5).add(0.5).mul(0.42).add(0.58);
-  return shore.mul(shallowEdge).mul(breakerBand).mul(breakup).clamp(0, 1);
+  const waterTime = time.mul(waterMotion);
+  const shoreWarp = positionLocal.x.mul(2.7).add(positionLocal.z.mul(1.8)).sin().mul(0.4);
+  // Phase travels up the depth contour, so breakers approach every coast instead of cutting across it.
+  const incomingPhase = waterDepth.mul(125).add(shoreWarp).add(waterTime.mul(1.25));
+  const foamWidth = fwidth(incomingPhase).max(0.08);
+  const breakerBand = smoothstep(float(0.8).sub(foamWidth), foamWidth.add(0.8), incomingPhase.sin());
+  const breakup = positionLocal.x
+    .mul(-5.4)
+    .add(positionLocal.z.mul(3.7))
+    .add(waterTime.mul(0.19))
+    .sin()
+    .mul(0.28)
+    .add(0.72);
+  const surfZone = smoothstep(0.012, 0.075, waterDepth).oneMinus();
+  const shorelineWash = smoothstep(0.003, 0.012, waterDepth).oneMinus().mul(0.2);
+  return shore.mul(surfZone.mul(breakerBand).mul(breakup).add(shorelineWash)).clamp(0, 1);
 }
 
 export function createTerrainGroundMaterial(

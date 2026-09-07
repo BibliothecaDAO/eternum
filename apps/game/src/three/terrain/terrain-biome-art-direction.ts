@@ -100,7 +100,12 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
   }),
   [BiomeType.DeepOcean]: art("marine", { landform: { basinStrength: 0.8, macroAmplitude: 0.02 } }),
   [BiomeType.Ocean]: art("marine", { landform: { basinStrength: 0.58, macroAmplitude: 0.025 } }),
-  [BiomeType.Beach]: art("coast", { anchor: true, ecology: { canopyCover: 0.24 } }),
+  [BiomeType.Beach]: art("coast", {
+    anchor: true,
+    ecology: { canopyCover: 0.24, clusterScale: 0.18, undergrowth: 0.1 },
+    material: { macroTintStrength: 0.1 },
+    motion: { windAmplitude: 0.4 },
+  }),
   [BiomeType.Scorched]: art("volcanic", { anchor: true, ecology: { canopyCover: 0.01 } }),
   [BiomeType.Bare]: art("cold", {
     ecology: { canopyCover: 0.04, undergrowth: 0.04 },

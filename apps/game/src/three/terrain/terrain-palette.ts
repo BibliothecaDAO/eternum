@@ -35,9 +35,9 @@ export const TERRAIN_BIOME_ORDER = Object.freeze([
 
 export const TERRAIN_BIOME_DESCRIPTORS: Readonly<Record<BiomeType, TerrainBiomeDescriptor>> = Object.freeze({
   [BiomeType.None]: descriptor("Unknown", "#303530", "#252a27", -0.04, 0, 0.01, 1, 0, 0, 0, 0),
-  [BiomeType.DeepOcean]: descriptor("Deep Ocean", "#173b50", "#0d2638", -0.34, 0.04, 0.01, 0.34, 0, 0, 0, 0),
-  [BiomeType.Ocean]: descriptor("Ocean", "#24647a", "#163f59", -0.2, 0.04, 0.012, 0.3, 0, 0, 0, 0),
-  [BiomeType.Beach]: descriptor("Beach", "#d6bd85", "#af925e", 0.008, 0.025, 0.008, 0.82, 0.04, 0.06, 0, 1),
+  [BiomeType.DeepOcean]: descriptor("Deep Ocean", "#214670", "#172c4b", -0.34, 0.04, 0.01, 0.34, 0, 0, 0, 0),
+  [BiomeType.Ocean]: descriptor("Ocean", "#368995", "#206777", -0.2, 0.04, 0.012, 0.3, 0, 0, 0, 0),
+  [BiomeType.Beach]: descriptor("Beach", "#e0d4af", "#baa87f", 0.008, 0.025, 0.008, 0.82, 0.04, 0.06, 0, 1),
   [BiomeType.Scorched]: descriptor("Scorched", "#34373b", "#77736c", 0.18, 0.26, 0.07, 0.96, 0.01, 0.9, 0, 0),
   [BiomeType.Bare]: descriptor("Bare", "#827b6c", "#544f48", 0.16, 0.23, 0.055, 0.92, 0.01, 0.82, 0, 0),
   [BiomeType.Tundra]: descriptor("Tundra", "#8c8a76", "#686b60", 0.13, 0.18, 0.035, 0.95, 0.08, 0.48, 0.3, 0),

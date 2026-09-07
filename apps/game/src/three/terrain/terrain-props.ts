@@ -89,7 +89,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
   [BiomeType.Ocean]: profile(0),
-  [BiomeType.Beach]: profile(0.14, ["palm", 5], ["boulder", 2], ["fallen-log", 1], ["grass-tuft", 8], ["reed", 2]),
+  [BiomeType.Beach]: profile(0.16, ["palm", 6], ["boulder", 2], ["fallen-log", 3], ["grass-tuft", 5], ["reed", 1]),
   [BiomeType.Scorched]: profile(0.14, ["dead-tree", 4], ["boulder", 6], ["stump", 2], ["fallen-log", 1]),
   [BiomeType.Bare]: profile(0.17, ["boulder", 6], ["dead-tree", 2], ["stump", 1], ["grass-tuft", 2]),
   [BiomeType.Tundra]: profile(
