@@ -6,6 +6,7 @@ import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 
 import App from "./app";
+import { recoverChunkLoad } from "./utils/chunk-load-recovery";
 import { resolveSentryRuntimeOptions } from "./sentry-config";
 import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 
@@ -16,6 +17,10 @@ declare global {
 }
 
 window.Buffer = Buffer;
+
+window.addEventListener("vite:preloadError", (event) => {
+  recoverChunkLoad(event, import.meta.env.VITE_PUBLIC_GAME_VERSION || "development");
+});
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

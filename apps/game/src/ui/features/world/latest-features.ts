@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-07",
+    title: "Recover After Client Updates",
+    description: "An outdated client refreshes once if a game module is no longer available after an update.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-07",
     title: "A Glimpse Beneath",
     description:
       "Preview Ethereal’s flat, textured floor under fixed moonlight in the World Biome Lab, with tile selection, armies and buildings. Dark unexplored tiles carry visible hints of its flowing energy and dissolve in uneven wisps as explorers advance.",
