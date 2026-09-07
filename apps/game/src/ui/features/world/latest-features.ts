@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-07",
+    title: "Reliable Identity RPC",
+    description:
+      "Wallet initialization uses Alchemy’s mainnet RPC, restoring client startup after the previous endpoint stopped serving requests.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-07",
     title: "Clearer Terrain and Reliable Startup",
     description:
       "Rocky deserts and sand dunes have distinct surface patterns, ocean waves are subtler, and hex borders adapt to the ground color.",
