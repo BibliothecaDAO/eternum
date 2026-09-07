@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { setTimeout } from "node:timers/promises";
 
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
@@ -104,14 +105,28 @@ async function checkMissingAsset(origin) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const [dist, origin, reportPath = "client-deployment-check.json"] = process.argv.slice(2);
   if (!dist || !origin) throw new Error("Usage: verify-client-deployment.mjs <dist> <origin> [report.json]");
-  const result = await verifyClientDeployment(dist, origin);
-  await writeFile(reportPath, JSON.stringify(result, null, 2));
-  console.log(
-    JSON.stringify(
-      { origin, ok: result.ok, modules: result.modules, failures: result.checks.filter((check) => !check.ok) },
-      null,
-      2,
-    ),
-  );
-  if (!result.ok) process.exitCode = 1;
+  const attempts = [];
+  // Pages can publish the shell before every edge can resolve its new chunks.
+  // Keep the failed attempts as evidence; success still requires the full build.
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const result = await verifyClientDeployment(dist, origin);
+    attempts.push(result);
+    await writeFile(reportPath, JSON.stringify({ ...result, attempts }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          attempt,
+          origin,
+          ok: result.ok,
+          modules: result.modules,
+          failures: result.checks.filter((check) => !check.ok),
+        },
+        null,
+        2,
+      ),
+    );
+    if (result.ok) break;
+    if (attempt < 5) await setTimeout(15_000);
+  }
+  if (!attempts.at(-1).ok) process.exitCode = 1;
 }
