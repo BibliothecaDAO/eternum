@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-07",
+    title: "Lighter Game Loading",
+    description:
+      "Game entry downloads less unused data. Construction and production panels load when opened, keeping more work out of startup.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-07",
     title: "Recover After Client Updates",
     description: "An outdated client refreshes once if a game module is no longer available after an update.",
     type: "fix",

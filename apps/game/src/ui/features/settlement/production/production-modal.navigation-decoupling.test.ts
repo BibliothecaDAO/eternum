@@ -10,7 +10,7 @@ const readSource = (relativePath: string) => {
 
 describe("Production modal navigation decoupling", () => {
   it("keeps realm selection local to the popup", () => {
-    const source = readSource("src/ui/features/settlement/production/production-modal.tsx");
+    const source = readSource("src/ui/features/settlement/production/production-modal-content.tsx");
 
     expect(source).toContain("preSelectedRealmId?: ID");
     expect(source).toContain("resolveInitialSelectedRealm");
