@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
 import {
-  applyTerrainFogReveals,
   buildTerrainFogMask,
   resolveTerrainFogInfluence,
   TERRAIN_FOG_MASK_TEXELS_PER_HEX_WIDTH,
@@ -28,18 +27,6 @@ describe("terrain fog mask", () => {
     expect(sampleMask(mask, -1.12, 0)).toBeGreaterThan(0);
     expect(sampleMask(mask, -1.12, 0)).toBeLessThan(240);
     expect(sampleMask(mask, -1.732, 0)).toBe(0);
-  });
-
-  it("clears an organic center-out reveal without mutating the base mask", () => {
-    const instance = fogCell(0, 0, true, [-1, 0]);
-    const mask = buildTerrainFogMask([instance])!;
-    const baseCenter = sampleMask(mask, 0, 0);
-    const mid = applyTerrainFogReveals(mask, [{ instance, progress: 0.5 }]);
-    const complete = applyTerrainFogReveals(mask, [{ instance, progress: 1 }]);
-
-    expect(sampleData(mid, mask, 0, 0)).toBeLessThan(baseCenter);
-    expect(sampleData(complete, mask, 0, 0)).toBe(0);
-    expect(sampleMask(mask, 0, 0)).toBe(baseCenter);
   });
 
   it("rewrites a region from every cell that reaches it exactly as a whole-window build would", () => {

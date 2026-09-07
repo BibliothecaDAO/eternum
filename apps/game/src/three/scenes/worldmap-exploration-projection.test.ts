@@ -1,5 +1,5 @@
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
-import { Type, createWorld, defineComponent, setComponent } from "@dojoengine/recs";
+import { Type, createWorld, defineComponent, setComponent, type Entity } from "@dojoengine/recs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { subscribeWorldmapTileChanges } from "./worldmap-exploration-projection";
@@ -102,13 +102,13 @@ function createHarness() {
   return {
     projection,
     writeArmy: (entityId: number, col: number, row: number) =>
-      setComponent(explorerTroops, String(entityId), {
+      setComponent(explorerTroops, String(entityId) as Entity, {
         explorer_id: entityId,
         troops: { category: "Knight", tier: "T1", count: 100n },
         coord: { alt: false, x: col, y: row },
       }),
     writeTile: (col: number, row: number, biome = 2) =>
-      setComponent(tileOpt, `${col},${row}`, {
+      setComponent(tileOpt, `${col},${row}` as Entity, {
         game_id: 13,
         alt: false,
         col,

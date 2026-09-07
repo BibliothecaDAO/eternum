@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-07",
+    title: "Distinct Biomes and Exploration",
+    description:
+      "Biomes gain distinct ground, vegetation, and water. Newly explored hexes clear from the explorer’s entry edge in 300 ms; replay the transition from any direction in the Biome Lab.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-06",
     title: "Clearer Terrain And Daylight",
     type: "improvement",

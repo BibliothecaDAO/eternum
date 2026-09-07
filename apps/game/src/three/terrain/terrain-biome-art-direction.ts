@@ -110,7 +110,7 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
   [BiomeType.Bare]: art("cold", {
     ecology: { canopyCover: 0, undergrowth: 0.02 },
     landform: { ridgeStrength: 0.58 },
-    material: { macroTintStrength: 0.24 },
+    material: { macroTintStrength: 0.3 },
   }),
   [BiomeType.Tundra]: art("cold", {
     ecology: { canopyCover: 0, clusterScale: 0.26, undergrowth: 0.54 },
@@ -122,7 +122,7 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
     anchor: true,
     atmosphere: { haze: 0.38 },
     ecology: { canopyCover: 0, undergrowth: 0.01 },
-    material: { macroTintStrength: 0.08 },
+    material: { macroTintStrength: 0.14 },
     landform: { ridgeStrength: 0.56 },
   }),
   [BiomeType.TemperateDesert]: art("arid", {
@@ -143,32 +143,36 @@ export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBio
   [BiomeType.Grassland]: art("open", {
     anchor: true,
     ecology: { canopyCover: 0.06, clearingStrength: 0.6, clusterScale: 0.16, undergrowth: 0.95 },
+    material: { macroTintStrength: 0.24 },
     motion: { windAmplitude: 0.8 },
   }),
   [BiomeType.TemperateDeciduousForest]: art("temperate", {
     ecology: { canopyCover: 0.84, clusterScale: 0.12, undergrowth: 0.6 },
-    material: { macroTintStrength: 0.2 },
+    material: { macroTintStrength: 0.28 },
     motion: { windAmplitude: 0.58 },
   }),
   [BiomeType.TemperateRainForest]: art("temperate", {
     anchor: true,
     atmosphere: { haze: 0.28 },
     ecology: { canopyCover: 0.9, clearingStrength: 0.2, clusterScale: 0.09, undergrowth: 0.84 },
+    material: { macroTintStrength: 0.26 },
     motion: { windAmplitude: 0.46 },
   }),
   [BiomeType.SubtropicalDesert]: art("arid", {
     ecology: { canopyCover: 0, undergrowth: 0.08 },
-    material: { macroTintStrength: 0.12 },
+    material: { macroTintStrength: 0.2 },
     landform: { basinStrength: 0.42, ridgeStrength: 0.22 },
   }),
   [BiomeType.TropicalSeasonalForest]: art("temperate", {
     atmosphere: { haze: 0.24, tint: "#8fa878" },
     ecology: { canopyCover: 0.64, clearingStrength: 0.34, clusterScale: 0.16, undergrowth: 0.6 },
+    material: { macroTintStrength: 0.26 },
     motion: { windAmplitude: 0.48 },
   }),
   [BiomeType.TropicalRainForest]: art("temperate", {
     atmosphere: { haze: 0.32, tint: "#6f9578" },
     ecology: { canopyCover: 0.94, clearingStrength: 0.12, clusterScale: 0.1, undergrowth: 0.84 },
+    material: { macroTintStrength: 0.26 },
     motion: { windAmplitude: 0.52 },
   }),
 });

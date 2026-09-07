@@ -2,7 +2,7 @@ import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 23;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 24;
 
 export interface TerrainCellInput {
   biome: BiomeType | null;

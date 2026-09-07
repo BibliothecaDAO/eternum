@@ -49,26 +49,26 @@ export const TERRAIN_PROP_POOL_PAGE_SLOTS = WORLD_CHUNK_CONFIG.visualPresentatio
 
 /**
  * Instances one 24×24 page may hold per archetype: 1.5× the measured per-page maximum, rounded up to a multiple of
- * 16. Measured 2026-09-06 at production density over the balanced benchmark fixture (144 pages), homogeneous
+ * 16. Measured 2026-09-07 at production density over the balanced benchmark fixture (144 pages), homogeneous
  * 3×3-page blocks of every biome, and eight climate seed pairs; `terrain-prop-pool-capacity.test.ts` re-measures
  * the fixtures against this table, so a density retune shows up there rather than as a live overflow.
  */
 export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
-  birch: 112, // measured 70
-  boulder: 96, // measured 56
-  broadleaf: 208, // measured 136
-  cactus: 96, // measured 54
-  conifer: 208, // measured 130
-  "dead-tree": 48, // measured 24
-  "fallen-log": 48, // measured 27
-  fern: 160, // measured 104
-  "grass-tuft": 128, // measured 75
-  palm: 144, // measured 92
-  reed: 80, // measured 45
-  shrub: 144, // measured 96
-  stump: 32, // measured 18
-  wildflower: 64, // measured 40
-  willow: 176, // measured 111
+  birch: 112, // measured 65
+  boulder: 144, // measured 88
+  broadleaf: 208, // measured 135
+  cactus: 112, // measured 73
+  conifer: 320, // measured 209
+  "dead-tree": 48, // measured 25
+  "fallen-log": 64, // measured 33
+  fern: 208, // measured 136
+  "grass-tuft": 160, // measured 103
+  palm: 176, // measured 109
+  reed: 96, // measured 55
+  shrub: 176, // measured 111
+  stump: 32, // measured 17
+  wildflower: 96, // measured 63
+  willow: 144, // measured 87
 });
 
 const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";

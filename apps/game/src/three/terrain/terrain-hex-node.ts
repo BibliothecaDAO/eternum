@@ -10,7 +10,7 @@ export function terrainHexEdgeDistance(worldXZ: Node<"vec2">): Node<"float"> {
   return float(inradius).sub(local.x.max(local.dot(vec2(0.5, Math.sqrt(3) / 2))));
 }
 
-function nearestHexLocalPosition(worldXZ: Node<"vec2">): Node<"vec2"> {
+export function nearestHexLocalPosition(worldXZ: Node<"vec2">): Node<"vec2"> {
   // Two offset rectangular lattices describe the canonical point-up hex centers.
   const period = vec2(TERRAIN_HEX_HORIZONTAL_SPACING, TERRAIN_HEX_VERTICAL_SPACING * 2);
   const even = worldXZ.sub(worldXZ.div(period).add(0.5).floor().mul(period));

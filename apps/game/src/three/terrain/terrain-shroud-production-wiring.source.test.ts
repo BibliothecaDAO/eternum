@@ -33,9 +33,7 @@ describe("exploration shroud production wiring", () => {
   });
 
   it("finishes a reveal within the 300 ms interaction budget", () => {
-    const fogField = source("src/three/terrain/terrain-fog-field.ts");
-
-    expect(fogField).toContain("TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.25");
+    expect(source("src/three/terrain/terrain-fog-reveal.ts")).toContain("TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.3");
   });
 
   it("advances reveal presentation from the normal worldmap frame loop", () => {

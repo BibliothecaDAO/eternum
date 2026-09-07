@@ -14,6 +14,8 @@ import {
   type Raycaster,
 } from "three";
 
+import { MeshStandardNodeMaterial } from "three/webgpu";
+
 import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import type { TerrainFogMask } from "./terrain-fog-mask";
@@ -113,6 +115,8 @@ export class ProceduralTerrain {
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
     this.materials = createTerrainMaterials();
+    this.fogField.applyRevealToMaterial(this.materials.flatLand);
+    this.fogField.applyRevealToMaterial(this.materials.water);
     this.setQualityTier(this.qualityTier);
     this.releaseAppearance = useWorldAppearanceStore.subscribe(() => this.applyAppearance());
   }
@@ -150,11 +154,20 @@ export class ProceduralTerrain {
     }
     if (!this.propPools) {
       this.propPools = pools;
+      this.applyPropExplorationReveal(pools);
       this.object3d.add(pools.object3d);
       this.writeRetainedPagesToPools();
     }
     pools.setLod(this.propLod);
     this.applyAppearance();
+  }
+
+  private applyPropExplorationReveal(pools: TerrainPropPools): void {
+    const materials = new Set<MeshStandardNodeMaterial>();
+    pools.object3d.traverse((object) => {
+      if (object instanceof Mesh && object.material instanceof MeshStandardNodeMaterial) materials.add(object.material);
+    });
+    materials.forEach((material) => this.fogField.applyRevealToMaterial(material));
   }
 
   async loadGroundTextures(): Promise<void> {
@@ -168,6 +181,7 @@ export class ProceduralTerrain {
     if (this.groundTextureHandle) return;
     this.groundTextureHandle = handle;
     this.groundTextureMaterial = createTerrainGroundMaterial(handle.textures, this.materials.groundMotion);
+    this.fogField.applyRevealToMaterial(this.groundTextureMaterial);
     this.refreshGroundMaterial();
   }
 
@@ -255,8 +269,12 @@ export class ProceduralTerrain {
     return this.movementEffects.getStats();
   }
 
-  queueShroudReveal(col: number, row: number): void {
-    this.fogField.queueReveal(col, row);
+  cancelShroudReveals(): void {
+    this.fogField.cancelReveals();
+  }
+
+  queueShroudReveal(col: number, row: number, source?: { col: number; row: number }): void {
+    this.fogField.queueReveal(col, row, source);
   }
 
   update(deltaSeconds: number): void {
@@ -298,7 +316,6 @@ export class ProceduralTerrain {
     try {
       releasedPageKeys.forEach((pageKey) => this.releasePageWrites(pageKey));
       for (const { page, presented } of nextPages) this.writePageState(page, presented);
-      this.fogField.commitLoadedPages(this.resolveLoadedPageRequests(preparedPages, releasedPageKeys));
       this.fogField.commit(preparedFogMask);
     } catch (error) {
       try {
@@ -384,16 +401,6 @@ export class ProceduralTerrain {
     this.groundTextureMaterial = null;
   }
 
-  private resolveLoadedPageRequests(
-    preparedPages: readonly PreparedTerrainPage[],
-    releasedPageKeys: readonly string[],
-  ): TerrainPageRequest[] {
-    const requests = new Map(Array.from(this.pages, ([key, page]) => [key, page.prepared.request]));
-    releasedPageKeys.forEach((key) => requests.delete(key));
-    preparedPages.forEach((page) => requests.set(page.request.pageKey, page.request));
-    return [...requests.values()];
-  }
-
   private stagePresentedPages(
     preparedPages: readonly PreparedTerrainPage[],
   ): Array<{ page: PreparedTerrainPage; presented: PresentedTerrainPage }> {
@@ -449,7 +456,6 @@ export class ProceduralTerrain {
         this.fogField.removePage(pageKey);
       }
     });
-    this.fogField.commitLoadedPages(this.resolveLoadedPageRequests([], []));
     this.fogField.commit();
   }
 

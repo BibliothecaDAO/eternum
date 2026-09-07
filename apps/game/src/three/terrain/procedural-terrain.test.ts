@@ -107,7 +107,7 @@ describe("ProceduralTerrain", () => {
 
     terrain.queueShroudReveal(0, 0);
     terrain.present([terrain.preparePage(request(BiomeType.Grassland, false))]);
-    expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 1, instances: 1 });
+    expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 1, instances: 0 });
     for (let frame = 0; frame < 20; frame += 1) terrain.update(0.05);
     expect(terrain.getShroudStats()).toMatchObject({ activeReveals: 0, instances: 0 });
     terrain.dispose();

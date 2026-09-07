@@ -19,11 +19,6 @@ export interface TerrainFogMask extends TerrainFogMaskLayout {
   data: Uint8Array;
 }
 
-export interface TerrainFogRevealMask {
-  instance: TerrainShroudInstance;
-  progress: number;
-}
-
 interface TexelRect {
   maxX: number;
   maxZ: number;
@@ -89,19 +84,6 @@ export function writeTerrainFogMaskRegion(
   return (target.maxX - target.minX + 1) * (target.maxZ - target.minZ + 1);
 }
 
-export function applyTerrainFogReveals(
-  mask: TerrainFogMask,
-  reveals: readonly TerrainFogRevealMask[],
-  target = new Uint8Array(mask.data.length),
-): Uint8Array {
-  if (target.length !== mask.data.length) {
-    throw new Error(`Terrain fog reveal target length ${target.length} did not match mask length ${mask.data.length}`);
-  }
-  target.set(mask.data);
-  reveals.forEach((reveal) => clearFogReveal(target, mask, reveal));
-  return target;
-}
-
 function resolveFogMaskBounds(instances: Iterable<TerrainShroudInstance>): TerrainFogMaskBounds | null {
   return resolveInstanceBounds(instances, MASK_MARGIN);
 }
@@ -163,29 +145,6 @@ function rasterizeFogCell(mask: TerrainFogMask, target: TexelRect, instance: Ter
       mask.data[index] = Math.max(mask.data[index], coverage);
     }
   }
-}
-
-function clearFogReveal(data: Uint8Array, mask: TerrainFogMask, reveal: TerrainFogRevealMask): void {
-  const progress = clampUnit(reveal.progress);
-  const clearRadius = 0.08 + progress * 1.42;
-  const edgeWidth = 0.18 + progress * 0.12;
-  const pixelBounds = resolvePixelBounds(mask, reveal.instance.worldX, reveal.instance.worldZ, clearRadius + edgeWidth);
-  for (let pixelZ = pixelBounds.minZ; pixelZ <= pixelBounds.maxZ; pixelZ += 1) {
-    for (let pixelX = pixelBounds.minX; pixelX <= pixelBounds.maxX; pixelX += 1) {
-      const world = fogMaskPixelToWorld(mask, pixelX, pixelZ);
-      const localX = world.x - reveal.instance.worldX;
-      const localZ = world.z - reveal.instance.worldZ;
-      const variation = revealEdgeVariation(localX, localZ, reveal.instance.seed);
-      const distance = Math.hypot(localX, localZ) + variation * 0.13;
-      const retained = smoothstep(clearRadius - edgeWidth, clearRadius + edgeWidth, distance);
-      const index = pixelZ * mask.width + pixelX;
-      data[index] = Math.round(data[index] * retained);
-    }
-  }
-}
-
-function revealEdgeVariation(localX: number, localZ: number, seed: number): number {
-  return Math.sin(localX * 4.7 + seed * 11.3) * 0.55 + Math.sin(localZ * 5.9 - seed * 7.1) * 0.45;
 }
 
 function resolvePixelBounds(layout: TerrainFogMaskLayout, worldX: number, worldZ: number, radius: number): TexelRect {

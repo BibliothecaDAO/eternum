@@ -64,7 +64,6 @@ export class TerrainLabInteraction {
   async configure(preview: TerrainLabPreview): Promise<void> {
     const wasExploring = this.exploring;
     if (wasExploring) this.cancelExplorationPreview();
-    else this.terrain.cancelShroudReveals();
     const rebuild =
       wasExploring ||
       preview.fog !== this.preview.fog ||
@@ -170,9 +169,10 @@ export class TerrainLabInteraction {
 
   private cancelExplorationPreview(): void {
     this.revision++;
+    // Initial configuration must leave animations owned by the verification fixture running.
+    if (this.exploring) this.terrain.cancelShroudReveals();
     this.exploring = false;
     this.pendingExploration = null;
-    this.terrain.cancelShroudReveals();
   }
 
   private advanceExplorationPreview(): void {

@@ -30,7 +30,7 @@ describe("TerrainFogField", () => {
       expect(bounds.min.z).toBeLessThan(z - camera.far);
       expect(bounds.max.z).toBeGreaterThan(z + camera.far);
       expect(bounds.max.x - bounds.min.x).toBeLessThan(200);
-      expect(bounds.max.y).toBeLessThan(-0.7);
+      expect(bounds.max.y).toBeCloseTo(0, 6);
     }
     fog.dispose();
   });
@@ -67,8 +67,8 @@ describe("TerrainFogField", () => {
     const meshes = fog.object3d.children.filter((child): child is Mesh => child instanceof Mesh);
     expect(meshes).toHaveLength(1);
     expect(meshes[0]).toMatchObject({ frustumCulled: false, renderOrder: -1_000, visible: true });
-    expect(meshes[0].material).toMatchObject({ depthTest: true, depthWrite: false, transparent: true });
-    expect(meshes[0].position.y).toBeLessThan(-0.7);
+    expect(meshes[0].material).toMatchObject({ depthTest: false, depthWrite: false, transparent: false });
+    expect(meshes[0].position.y).toBe(0);
     expect(meshes[0].raycast.name).toBe("disableFogRaycast");
     fog.dispose();
   });
@@ -101,7 +101,7 @@ describe("TerrainFogField", () => {
     fog.dispose();
   });
 
-  it("retains fog until an explored tile commit and removes it after the bounded reveal", () => {
+  it("starts a bounded material reveal only when the explored tile commits", () => {
     const fog = new TerrainFogField();
     fog.setPage("fixture", [instance(0, 0, true), instance(1, 0, false)]);
     fog.commit();
@@ -109,10 +109,10 @@ describe("TerrainFogField", () => {
     fog.setPage("fixture", [instance(1, 0, false)]);
     fog.commit();
 
-    expect(fog.getStats()).toMatchObject({ activeReveals: 1, instances: 2, triangles: 2 });
+    expect(fog.getStats()).toMatchObject({ activeReveals: 1, instances: 1, triangles: 2 });
     fog.updateAnimation(TERRAIN_FOG_REVEAL_DURATION_SECONDS / 2);
     expect(fog.getStats().activeReveals).toBe(1);
-    expect(fog.resolveIncomingFogCells([instance(1, 0, false)])).toHaveLength(2);
+    expect(fog.resolveIncomingFogCells([instance(1, 0, false)])).toHaveLength(1);
     for (let frame = 0; frame < 20; frame += 1) fog.updateAnimation(0.05);
     expect(fog.getStats()).toMatchObject({ activeReveals: 0, instances: 1, triangles: 2 });
     fog.removePage("fixture");
@@ -165,7 +165,7 @@ describe("TerrainFogField", () => {
     fog.dispose();
   });
 
-  it("finishes a reveal with a cell-sized rewrite instead of a whole-window rebuild", () => {
+  it("finishes a reveal without rewriting the atmosphere mask", () => {
     const fog = new TerrainFogField();
     const cells = block("fixture", 0, 5);
     fog.setPage("fixture", cells);
@@ -178,8 +178,8 @@ describe("TerrainFogField", () => {
 
     for (let frame = 0; frame < 20; frame += 1) fog.updateAnimation(0.05);
 
-    expect(fog.getMetrics()).toMatchObject({ fullRebuilds: 1, pageWrites: 2 });
-    expect(fog.getMetrics().texelsWritten - pageWrite).toBeLessThan(pageWrite);
+    expect(fog.getMetrics()).toMatchObject({ fullRebuilds: 1, pageWrites: 1 });
+    expect(fog.getMetrics().texelsWritten).toBe(pageWrite);
     expect(readMask(fog).data).toEqual(buildTerrainFogMask(revealed)!.data);
     fog.dispose();
   });

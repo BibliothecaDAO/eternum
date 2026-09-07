@@ -43,6 +43,42 @@ function createHarness() {
 }
 
 describe("lab exploration preview", () => {
+  it("preserves existing fixture reveals during initial and default configuration", async () => {
+    const { terrain, interaction } = createHarness();
+    await interaction.configure(DEFAULT_TERRAIN_LAB_PREVIEW);
+    await interaction.configure({ ...DEFAULT_TERRAIN_LAB_PREVIEW, yaw: 0.5 });
+    expect(terrain.cancelShroudReveals).not.toHaveBeenCalled();
+    expect(terrain.present).not.toHaveBeenCalled();
+    interaction.dispose();
+  });
+
+  it("replays a preview by cancelling only the previously owned sweep", async () => {
+    const { terrain, interaction } = createHarness();
+    await interaction.previewExploration(0);
+    expect(terrain.cancelShroudReveals).not.toHaveBeenCalled();
+    interaction.update(0.016);
+    interaction.update(0.016);
+    await interaction.previewExploration(3);
+    expect(terrain.cancelShroudReveals).toHaveBeenCalledTimes(1);
+    interaction.update(0.016);
+    interaction.update(0.016);
+    expect(terrain.queueShroudReveal).toHaveBeenCalledTimes(2);
+    interaction.dispose();
+  });
+
+  it("cancels a pending preview when buildings are removed without replaying it", async () => {
+    const { terrain, interaction } = createHarness();
+    await interaction.removeBuilding(true);
+    expect(terrain.cancelShroudReveals).not.toHaveBeenCalled();
+    await interaction.previewExploration(0);
+    await interaction.removeBuilding(true);
+    interaction.update(0.016);
+    interaction.update(0.016);
+    expect(terrain.cancelShroudReveals).toHaveBeenCalledTimes(1);
+    expect(terrain.queueShroudReveal).not.toHaveBeenCalled();
+    interaction.dispose();
+  });
+
   it.each([0, 1, 2, 3, 4, 5])("uses the production queue after one covered frame from entry edge %i", async (edge) => {
     const { terrain, interaction } = createHarness();
     const before = interaction.getState();

@@ -11,6 +11,7 @@ import {
   int,
   mix,
   normalMap,
+  normalLocal,
   positionLocal,
   positionViewDirection,
   smoothstep,
@@ -185,7 +186,9 @@ export function createTerrainGroundMaterial(
   const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
   // Powder buries sharp stone detail; otherwise snow reads as a pale cracked pavement.
   const snowCover = smoothstep(0.35, 0.85, groundWeights1.z);
-  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.3).add(0.34)).mul(detail.shade);
+  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.22).add(0.12)).mul(
+    detail.shade,
+  );
   const volcanic = createScorchedSurface(
     sampledAlbedo,
     mix(secondaryAlbedoHeight.a, primaryAlbedoHeight.a, primaryBlend),
@@ -196,14 +199,14 @@ export function createTerrainGroundMaterial(
   material.emissiveNode = volcanic.embers.mul(ashCoverage);
   const sampledNormalMaterial = mix(secondaryNormalMaterial, primaryNormalMaterial, primaryBlend);
   material.roughnessNode = mix(
-    sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.45, 1),
+    sampledNormalMaterial.b.mul(attribute<"float">("terrainRoughness", "float")).clamp(0.7, 1),
     0.94,
     snowCover,
   );
   material.aoNode = mix(1, sampledNormalMaterial.a, 0.35);
   const detailedNormal = normalMap(
     vec3(sampledNormalMaterial.rg.add(detail.rippleNormal), sampledNormalMaterial.b),
-    vec2(snowCover.mul(-0.24).add(0.34)),
+    vec2(snowCover.mul(-0.3).add(0.55)),
   );
   detailedNormal.unpackNormalMode = NormalRGPacking;
   material.normalNode = detailedNormal;
@@ -307,7 +310,7 @@ function shadeTerrainHexBoundary(surfaceColor: Node<"vec3">): Node<"vec3"> {
   const luminance = surfaceColor.dot(vec3(0.2126, 0.7152, 0.0722));
   const darkSurface = smoothstep(0.025, 0.12, luminance).oneMinus();
   const borderColor = mix(surfaceColor.mul(0.45), vec3(0.14), darkSurface);
-  return mix(surfaceColor, borderColor, border.mul(0.42));
+  return mix(surfaceColor, borderColor, border.mul(0.42).mul(normalLocal.y.abs()));
 }
 
 function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4">): Node<"vec4"> {
