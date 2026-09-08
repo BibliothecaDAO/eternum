@@ -1,21 +1,19 @@
 import { isMilitaryResource } from "@bibliothecadao/eternum";
 import { RealmInfo } from "@bibliothecadao/types";
 import { useState } from "react";
+import { useProductionBonuses } from "./use-production-bonuses";
 import { ResourceProductionControls } from "./resource-production-controls";
 
 export const ProductionControls = ({
   selectedResource,
   realm,
-  wonderBonus,
-  productionBonus,
-  troopsBonus,
+  compact = false,
 }: {
   selectedResource: number;
   realm: RealmInfo;
-  wonderBonus: number;
-  productionBonus: number;
-  troopsBonus: number;
+  compact?: boolean;
 }) => {
+  const { wonderBonus, productionBonus, troopsBonus } = useProductionBonuses(realm.entityId);
   const [useRawResources, setUseRawResources] = useState(true);
   const [productionAmount, setProductionAmount] = useState(1);
   const [ticks, setTicks] = useState<number | undefined>();
@@ -24,6 +22,7 @@ export const ProductionControls = ({
 
   return (
     <ResourceProductionControls
+      compact={compact}
       selectedResource={selectedResource}
       useRawResources={useRawResources}
       setUseRawResources={setUseRawResources}

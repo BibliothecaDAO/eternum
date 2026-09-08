@@ -569,9 +569,9 @@ export const RealmAutomationPanel = ({
               <button
                 key={preset.id}
                 type="button"
-                disabled
+                onClick={() => handlePresetSelect("custom")}
                 className={clsx(
-                  "px-3 py-1 rounded border text-xs transition-colors cursor-not-allowed",
+                  "px-3 py-1 rounded border text-xs transition-colors",
                   isActive ? "border-gold text-gold bg-gold/10" : "border-gold/15 text-gold/40",
                 )}
                 title={preset.description}
@@ -625,127 +625,129 @@ export const RealmAutomationPanel = ({
         )}
       </section>
 
-      <section className="grid grid-cols-4 gap-3">
-        {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
-          const label = resolveResourceLabel(resourceId);
-          const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
-          const simpleImpacted = gatherImpactedResources(simpleInputs.map((input) => input.resource));
-          const resourceUsage = aggregatedUsageRecord[resourceId] ?? 0;
-          const resourceOverBudget = resourceUsage > MAX_RESOURCE_ALLOCATION_PERCENT;
+      {activePresetId === "custom" && (
+        <section aria-label="Custom automation allocations" className="grid grid-cols-4 gap-3">
+          {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
+            const label = resolveResourceLabel(resourceId);
+            const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
+            const simpleImpacted = gatherImpactedResources(simpleInputs.map((input) => input.resource));
+            const resourceUsage = aggregatedUsageRecord[resourceId] ?? 0;
+            const resourceOverBudget = resourceUsage > MAX_RESOURCE_ALLOCATION_PERCENT;
 
-          const renderSlider = (
-            sliderLabel: string,
-            value: number,
-            onChange: (next: number) => void,
-            impactedResources: number[],
-          ) => {
-            const impactedTotals = impactedResources.map((id) => aggregatedUsageRecord[id] ?? 0);
-            const overBudgetResources = impactedResources.filter(
-              (id) => (aggregatedUsageRecord[id] ?? 0) > MAX_RESOURCE_ALLOCATION_PERCENT,
-            );
-            const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-              const next = clampPercent(Number(event.target.value));
-              onChange(next);
+            const renderSlider = (
+              sliderLabel: string,
+              value: number,
+              onChange: (next: number) => void,
+              impactedResources: number[],
+            ) => {
+              const impactedTotals = impactedResources.map((id) => aggregatedUsageRecord[id] ?? 0);
+              const overBudgetResources = impactedResources.filter(
+                (id) => (aggregatedUsageRecord[id] ?? 0) > MAX_RESOURCE_ALLOCATION_PERCENT,
+              );
+              const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+                const next = clampPercent(Number(event.target.value));
+                onChange(next);
+              };
+
+              return (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-gold/80">
+                    <span>{sliderLabel}</span>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={MAX_RESOURCE_ALLOCATION_PERCENT}
+                        step={sliderStep}
+                        value={value}
+                        onChange={handleInputChange}
+                        className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-xs text-gold focus:border-gold/60 focus:outline-none"
+                      />
+                      <span className="font-semibold text-gold">%</span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={MAX_RESOURCE_ALLOCATION_PERCENT}
+                    step={sliderStep}
+                    value={value}
+                    onChange={(event) => onChange(Number(event.target.value))}
+                    className="w-full accent-gold/80 bg-black/40"
+                  />
+                  {impactedResources.length > 0 && (
+                    <div className="space-y-1 text-xxs text-gold/60">
+                      <span className="font-semibold uppercase tracking-wide text-gold/50">Inputs</span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {impactedResources.map((impacted) => (
+                          <div
+                            key={`impact-${resourceId}-${impacted}`}
+                            className="flex items-center justify-center rounded border border-gold/20 bg-black/10 p-2"
+                            title={resolveResourceLabel(impacted)}
+                          >
+                            <ResourceIcon resource={ResourcesIds[impacted as ResourcesIds]} size="sm" />
+                          </div>
+                        ))}
+                      </div>
+                      {impactedTotals.length > 0 && (
+                        <span className="block text-right text-[10px] text-gold/50">
+                          Peak usage {Math.round(Math.max(...impactedTotals))}%
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {overBudgetResources.length > 0 && (
+                    <div className="text-[10px] text-danger/80">
+                      Over budget for {overBudgetResources.map((res) => resolveResourceLabel(res)).join(", ")}
+                    </div>
+                  )}
+                </div>
+              );
             };
 
+            const isDonkeyResource = resourceId === ResourcesIds.Donkey;
+            const laborDisabled = isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
+
             return (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-gold/80">
-                  <span>{sliderLabel}</span>
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      min={0}
-                      max={MAX_RESOURCE_ALLOCATION_PERCENT}
-                      step={sliderStep}
-                      value={value}
-                      onChange={handleInputChange}
-                      className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-xs text-gold focus:border-gold/60 focus:outline-none"
-                    />
-                    <span className="font-semibold text-gold">%</span>
+              <div
+                key={`automation-row-${resourceId}`}
+                className={clsx(
+                  "rounded border border-gold/20 bg-black/20 p-3 space-y-3",
+                  resourceOverBudget && "border-danger/60",
+                )}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="sm" />
+                    <div>
+                      <div className="text-sm font-semibold text-gold">{label}</div>
+                      {resourceOverBudget && (
+                        <div className="text-[11px] text-danger/80">{Math.round(resourceUsage)}% allocated</div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={MAX_RESOURCE_ALLOCATION_PERCENT}
-                  step={sliderStep}
-                  value={value}
-                  onChange={(event) => onChange(Number(event.target.value))}
-                  className="w-full accent-gold/80 bg-black/40"
-                />
-                {impactedResources.length > 0 && (
-                  <div className="space-y-1 text-xxs text-gold/60">
-                    <span className="font-semibold uppercase tracking-wide text-gold/50">Inputs</span>
-                    <div className="grid grid-cols-4 gap-1">
-                      {impactedResources.map((impacted) => (
-                        <div
-                          key={`impact-${resourceId}-${impacted}`}
-                          className="flex items-center justify-center rounded border border-gold/20 bg-black/10 p-2"
-                          title={resolveResourceLabel(impacted)}
-                        >
-                          <ResourceIcon resource={ResourcesIds[impacted as ResourcesIds]} size="sm" />
-                        </div>
-                      ))}
-                    </div>
-                    {impactedTotals.length > 0 && (
-                      <span className="block text-right text-[10px] text-gold/50">
-                        Peak usage {Math.round(Math.max(...impactedTotals))}%
-                      </span>
+
+                <div className="space-y-3">
+                  {renderSlider(
+                    "Resource",
+                    percentages.resourceToResource,
+                    (next) => handleSliderChange(resourceId, "resourceToResource", next),
+                    complexImpacted,
+                  )}
+                  {!laborDisabled &&
+                    renderSlider(
+                      "Labor",
+                      percentages.laborToResource,
+                      (next) => handleSliderChange(resourceId, "laborToResource", next),
+                      simpleImpacted,
                     )}
-                  </div>
-                )}
-                {overBudgetResources.length > 0 && (
-                  <div className="text-[10px] text-danger/80">
-                    Over budget for {overBudgetResources.map((res) => resolveResourceLabel(res)).join(", ")}
-                  </div>
-                )}
+                </div>
               </div>
             );
-          };
-
-          const isDonkeyResource = resourceId === ResourcesIds.Donkey;
-          const laborDisabled = isDonkeyResource || ARMY_T2_T3_RESOURCES.has(resourceId as ResourcesIds);
-
-          return (
-            <div
-              key={`automation-row-${resourceId}`}
-              className={clsx(
-                "rounded border border-gold/20 bg-black/20 p-3 space-y-3",
-                resourceOverBudget && "border-danger/60",
-              )}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="sm" />
-                  <div>
-                    <div className="text-sm font-semibold text-gold">{label}</div>
-                    {resourceOverBudget && (
-                      <div className="text-[11px] text-danger/80">{Math.round(resourceUsage)}% allocated</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {renderSlider(
-                  "Resource",
-                  percentages.resourceToResource,
-                  (next) => handleSliderChange(resourceId, "resourceToResource", next),
-                  complexImpacted,
-                )}
-                {!laborDisabled &&
-                  renderSlider(
-                    "Labor",
-                    percentages.laborToResource,
-                    (next) => handleSliderChange(resourceId, "laborToResource", next),
-                    simpleImpacted,
-                  )}
-              </div>
-            </div>
-          );
-        })}
-      </section>
+          })}
+        </section>
+      )}
     </div>
   );
 };

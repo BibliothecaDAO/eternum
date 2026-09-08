@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-08",
+    title: "Production beside your buildings",
+    description:
+      "Set production amounts on building and castle panels without leaving the map. Switch each realm between Smart, Idle, and Custom from its resource header.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
     title: "Build directly on a plot",
     description:
       "Click an open plot to choose and build immediately. Costs and blocked reasons stay beside the plot, with the map in view.",

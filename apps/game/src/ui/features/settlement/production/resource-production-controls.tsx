@@ -1,13 +1,12 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { canIssueOrders } from "@/utils/can-issue-orders";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useComponentValue } from "@dojoengine/react";
+import { gameEntityKey } from "@/sync/game-scope";
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
-import {
-  configManager,
-  divideByPrecision,
-  formatTime,
-  getBlockTimestamp,
-  getBuildingQuantity,
-} from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
@@ -24,6 +23,7 @@ export const ResourceProductionControls = ({
   ticks,
   setTicks,
   bonus,
+  compact = false,
 }: {
   selectedResource: number;
   useRawResources: boolean;
@@ -34,6 +34,7 @@ export const ResourceProductionControls = ({
   ticks: number | undefined;
   setTicks: (value: number) => void;
   bonus: number;
+  compact?: boolean;
 }) => {
   const {
     setup: {
@@ -44,6 +45,11 @@ export const ResourceProductionControls = ({
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const ordersAllowed = useUIStore(canIssueOrders);
+  const currentDefaultTick = useCurrentDefaultTick();
+  useComponentValue(components.Resource, gameEntityKey([BigInt(realm.entityId)]));
+  useComponentValue(components.StructureBuildings, gameEntityKey([BigInt(realm.entityId)]));
 
   const laborConfig = useMemo(() => configManager.getLaborConfig(selectedResource), [selectedResource]);
 
@@ -59,7 +65,8 @@ export const ResourceProductionControls = ({
   }, [selectedResource, bonus]);
 
   const handleRawResourcesProduce = async () => {
-    if (!ticks) return;
+    if (!canIssueOrders() || isDisabled || isLoading || !ticks) return;
+    setError(null);
     setIsLoading(true);
     const calldata = {
       from_entity_id: realm.entityId,
@@ -71,13 +78,15 @@ export const ResourceProductionControls = ({
       await burn_resource_for_resource_production(calldata);
     } catch (error) {
       console.error(error);
+      setError("Production could not start. Try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLaborResourcesProduce = async () => {
-    if (!laborConfig) return;
+    if (!canIssueOrders() || isDisabled || isLoading || !laborConfig) return;
+    setError(null);
     if (productionAmount > 0) {
       setIsLoading(true);
       const productionCycles = Math.floor(productionAmount / resourceOutputPerInputResourcesWithBonus);
@@ -91,6 +100,7 @@ export const ResourceProductionControls = ({
         await burn_labor_for_resource_production(calldata);
       } catch (error) {
         console.error(error);
+        setError("Production could not start. Try again.");
       } finally {
         setIsLoading(false);
       }
@@ -99,7 +109,7 @@ export const ResourceProductionControls = ({
 
   const resourceManager = useResourceManager(realm.entityId);
 
-  const resourceBalances = useMemo(() => {
+  const resourceBalances = (() => {
     if (!selectedResource) return {};
 
     const balances: Record<number, number> = {};
@@ -111,14 +121,12 @@ export const ResourceProductionControls = ({
       { resource: ResourcesIds.Fish, amount: 1 },
     ];
 
-    const { currentDefaultTick } = getBlockTimestamp();
-
     allResources.forEach((resource) => {
       const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource).balance;
       balances[resource.resource] = divideByPrecision(balance);
     });
     return balances;
-  }, [selectedResource, resourceManager]);
+  })();
 
   useEffect(() => {
     // don't take wonder bonus into account because production time is not affected by it
@@ -174,9 +182,7 @@ export const ResourceProductionControls = ({
     }
   }, [isOverBalance, useRawResources, ticks, laborConfig, productionAmount]);
 
-  const buildingCount = useMemo(() => {
-    return getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
-  }, [realm.entityId, selectedResource, components]);
+  const buildingCount = getBuildingQuantity(realm.entityId, getBuildingFromResource(selectedResource), components);
 
   // Only show the tabs that the user can actually select
   const selectableTabs = [
@@ -219,15 +225,60 @@ export const ResourceProductionControls = ({
     selectableTabs.findIndex((tab) => tab.isRaw === useRawResources),
   );
 
-  useEffect(() => {
-    // If labor panel isn't available, force resource production
-    if (!canUseLabor && !useRawResources) {
-      setUseRawResources(true);
-    }
-    // eslint-disable-next-line
-  }, [canUseLabor, useRawResources]);
-
   if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
+
+  if (compact)
+    return (
+      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-xs">
+        {canUseLabor && (
+          <div role="group" aria-label="Production recipe" className="flex gap-1">
+            <button
+              type="button"
+              aria-pressed={useRawResources}
+              onClick={() => setUseRawResources(true)}
+              className="rounded border border-gold/30 px-2 py-1"
+            >
+              Resources
+            </button>
+            <button
+              type="button"
+              aria-pressed={!useRawResources}
+              onClick={() => setUseRawResources(false)}
+              className="rounded border border-gold/30 px-2 py-1"
+            >
+              Labor
+            </button>
+          </div>
+        )}
+        <label className="block space-y-1">
+          Amount of {ResourcesIds[selectedResource]}
+          <NumberInput value={Math.round(productionAmount)} onChange={setProductionAmount} min={1} arrows={false} />
+        </label>
+        <p>
+          {currentInputs
+            .map(
+              (input) =>
+                `${Math.ceil(input.amount * productionAmount).toLocaleString()} ${ResourcesIds[input.resource]}`,
+            )
+            .join(" · ")}
+        </p>
+        {(error || isDisabled) && (
+          <p role="status">
+            {error ?? (isOverBalance ? "Not enough resources." : "Enter at least one production cycle.")}
+          </p>
+        )}
+        <Button
+          onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
+          disabled={!ordersAllowed || isDisabled || isLoading}
+          isLoading={isLoading}
+          variant="gold"
+          className="w-full"
+          size="xs"
+        >
+          Start Production
+        </Button>
+      </section>
+    );
 
   return (
     <div className="p-6 rounded-lg border border-gold/20 bg-black/30">
@@ -291,6 +342,7 @@ export const ResourceProductionControls = ({
         )}
       </div>
 
+      {error && <p role="status">{error}</p>}
       {/* Output */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-between gap-2">
@@ -319,7 +371,7 @@ export const ResourceProductionControls = ({
 
         <Button
           onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-          disabled={isDisabled}
+          disabled={!ordersAllowed || isDisabled || isLoading}
           isLoading={isLoading}
           variant={isDisabled ? "default" : "gold"}
           className="px-8 py-2"

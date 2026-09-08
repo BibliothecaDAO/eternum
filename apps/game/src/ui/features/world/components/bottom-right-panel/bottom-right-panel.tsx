@@ -1,8 +1,8 @@
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
+import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
@@ -49,7 +49,6 @@ import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-det
 import { ProductionModal } from "@/ui/features/settlement";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { TileManager } from "@bibliothecadao/eternum";
-import Bot from "lucide-react/dist/esm/icons/bot";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
@@ -202,14 +201,13 @@ const MapTilePanel = () => {
 const LocalTilePanel = () => {
   const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
-  const openSurface = usePopoverStore((state) => state.openSurface);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = useCurrentDefaultTick();
@@ -342,9 +340,7 @@ const LocalTilePanel = () => {
       : [];
 
   const canManageBuilding =
-    !isSpectating &&
-    !isExplicitSpectateSession() &&
-    playerStructures.some((structure) => structure.entityId === structureEntityId);
+    ordersAllowed && playerStructures.some((structure) => structure.entityId === structureEntityId);
 
   // Cancel any active "build another" preview when the player picks a
   // different tile. Otherwise the preview from one building leaks into the
@@ -456,6 +452,7 @@ const LocalTilePanel = () => {
     return (
       <InfoBubble title={panelTitle} bodyClassName="pt-0">
         <RealmUpgradeCompact />
+        {canManageBuilding && <InlineProduction entityId={structureEntityId} resource={ResourcesIds.Labor} />}
       </InfoBubble>
     );
   }
@@ -465,7 +462,7 @@ const LocalTilePanel = () => {
       <InfoBubble title={panelTitle}>
         <p className={HUD_BODY_MUTED}>
           {canManageBuilding
-            ? "Open building plot. Choose a building from the construction menu."
+            ? "Open building plot. Choose a building in the plot picker."
             : "Open building plot. Select a completed building to inspect its production."}
         </p>
       </InfoBubble>
@@ -634,6 +631,12 @@ const LocalTilePanel = () => {
         </div>
       </InfoBubble>
 
+      {canManageBuilding && canAddProduction && producedResource !== undefined && (
+        <InfoBubble title="Production" icon={Factory}>
+          <InlineProduction entityId={structureEntityId} resource={producedResource} />
+        </InfoBubble>
+      )}
+
       {/* Actions bubble — build cost + the live action buttons. Pickaxe
           is always rendered (greyed out when constraints don't allow), so
           the player knows it's a real affordance and gets a tooltip with
@@ -706,24 +709,6 @@ const LocalTilePanel = () => {
                     </button>
                   );
                 })()}
-              {canAddProduction && (
-                <button
-                  type="button"
-                  onClick={(event) =>
-                    openSurface({
-                      id: "production",
-                      content: <ProductionModal preSelectedResource={producedResource} />,
-                      anchor: surfaceAnchorFrom(event.currentTarget),
-                    })
-                  }
-                  disabled={isActionLoading}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gold/40 bg-gold/10 text-gold shadow transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Automate production"
-                  aria-label="Automate production"
-                >
-                  <Bot className="h-3.5 w-3.5" />
-                </button>
-              )}
               {buildingCategory !== BuildingType.WorkersHut && (
                 <button
                   type="button"
@@ -735,8 +720,8 @@ const LocalTilePanel = () => {
                       ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
                       : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
                   )}
-                  title={isPaused ? "Resume" : "Pause"}
-                  aria-label={isPaused ? "Resume" : "Pause"}
+                  title={isPaused ? "Resume" : "Stop"}
+                  aria-label={isPaused ? "Resume" : "Stop"}
                 >
                   {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
                 </button>
