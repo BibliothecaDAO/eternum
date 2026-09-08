@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-08",
+    title: "Detailed Fleets for Every Army",
+    type: "improvement",
+    description:
+      "Compare all nine detailed ships in the Model Lab: Knight cannon ships, Crossbowman ballista ships and Paladin sacred vessels. Each tier has its own silhouette, with player sail prints, sailing animation and the same hex footprint.",
+    readMore: "/model-lab",
+  },
+  {
     date: "2026-09-07",
     title: "Lighter Game Loading",
     description:
