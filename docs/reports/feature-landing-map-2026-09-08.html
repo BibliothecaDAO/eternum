@@ -139,7 +139,9 @@
         color: var(--text);
         margin-top: 6px;
       }
-      /* screen diagram */
+      .surf div.add {
+        border-color: #2c4258;
+      }
       .screen {
         position: relative;
         width: 100%;
@@ -152,29 +154,29 @@
         position: absolute;
         background: #1c1611ee;
         border: 1px solid #5a4728;
-        padding: 8px 10px;
-        font-size: 11.5px;
+        padding: 7px 9px;
+        font-size: 11px;
         line-height: 1.35;
         color: var(--muted);
         overflow: hidden;
       }
       .zone b {
         display: block;
-        font: 400 13px/1.2 var(--display);
+        font: 400 12.5px/1.2 var(--display);
         color: var(--peach);
-        margin-bottom: 4px;
+        margin-bottom: 3px;
       }
       .zone.scene {
         background: transparent;
         border: 1px dashed #5a4728;
         color: var(--text);
       }
+      .zone.add {
+        border-color: #2c4258;
+      }
       .zone ul {
         margin: 0;
         padding-left: 14px;
-      }
-      .zone li {
-        margin: 1px 0;
       }
       .two {
         display: grid;
@@ -188,7 +190,6 @@
         color: var(--faint);
         margin: 8px 0 4px;
       }
-      /* table */
       .wrap {
         overflow-x: auto;
         border: 1px solid var(--line-soft);
@@ -231,45 +232,11 @@
         color: var(--muted);
         margin: 1px 3px 1px 0;
       }
-      .pill.S {
-        color: var(--sage);
-        border-color: #4c5433;
-      }
-      .pill.L {
-        color: #cfd7a8;
-        border-color: #4c5433;
-      }
-      .pill.H {
-        color: var(--peach);
-        border-color: #6d5324;
-      }
-      .pill.R {
-        color: var(--peach);
-        border-color: #6d5324;
-      }
-      .pill.P {
-        color: var(--amber);
-        border-color: #6d4a1a;
-      }
-      .pill.D {
-        color: var(--amber);
-        border-color: #6d4a1a;
-      }
-      .pill.F {
+      .pill.add {
         color: var(--steel);
         border-color: #2c4258;
       }
-      .pill.M {
-        color: var(--steel);
-        border-color: #2c4258;
-      }
-      .pill.Q {
-        color: var(--muted);
-      }
-      .pill.W {
-        color: var(--faint);
-      }
-      .pill.X {
+      .pill.gone {
         color: var(--coral);
         border-color: #5a2a2a;
       }
@@ -315,6 +282,19 @@
       .st.cut {
         color: var(--coral);
         border-color: #5a2a2a;
+      }
+      td.sc {
+        font: 500 11px/1.5 var(--mono);
+        white-space: nowrap;
+      }
+      .ok {
+        color: var(--sage);
+      }
+      .bad {
+        color: var(--coral);
+      }
+      .warn {
+        color: var(--amber);
       }
       .filters {
         position: sticky;
@@ -401,17 +381,18 @@
     </style>
 
     <header class="col">
-      <div class="eyebrow">apps/game · design · feature placement · 2026-09-08</div>
+      <div class="eyebrow">apps/game · design · feature placement · v2 · 2026-09-08</div>
       <h1>Feature Landing Map</h1>
       <p class="standfirst">
-        Every feature the client has or needs, and the one surface it lives on in the target HUD. The surfaces come
-        first, because a feature only reads well when its surface matches its tempo. The order of work falls out of the
-        moves.
+        The frame is the HUD that ships today. Every feature keeps its home unless that home fails one of two tests: it
+        hides the map for a task the map has to finish, or it breaks at a hundred realms and twenty-two resources. A
+        feature that fails moves to the nearest existing surface. Two surfaces are added because nothing existing can
+        take their job.
       </p>
       <div class="meta">
-        features from the <b>Client Flow Database</b> (94 rows, verified on next) · surfaces from the
-        <b>Blitz Play Flow v0.3</b> · status: <b>stays</b> where it is today · <b>moves</b> to a new surface ·
-        <b>new</b> does not exist yet · <b>cut</b> goes away
+        frame <b>apps/game on next</b> · features from the <b>Client Flow Database</b> · tests: <b>map</b> stays visible
+        and clickable for map-completed tasks · <b>scale</b> holds at 100 realms and 22 resources · status:
+        <b>stays</b>, <b>moves</b> within the frame, <b>new</b>, <b>cut</b>
       </div>
       <div class="filters" role="group" aria-label="Filters">
         <label><input type="checkbox" data-mode="B" checked /> Blitz</label>
@@ -427,172 +408,175 @@
     </header>
 
     <section class="col">
-      <h2>The surfaces <span class="src">ten homes, each with one job and one tempo</span></h2>
+      <h2>The frame <span class="src">the surfaces the client has, named as the code names them</span></h2>
       <p class="lead">
-        These are the current HUD's surfaces, kept where they work and given a rule each. Two are new: the drawer and
-        the feed. Two go: the window and the toast.
+        Nothing here is invented. The two additions at the end exist because toasts and windows have no scaling
+        replacement in the current frame.
       </p>
       <div class="surf">
         <div>
-          <b>Scene <i>S</i></b
-          >What is where and whose. Terrain, models, ownership rings and tints, the selection, legal targets, ghosts for
-          move, build and spawn, fire, caravans.<em>If the eye can read it from the world, it does not get text.</em>
-        </div>
-        <div>
-          <b>Label <i>L</i></b
-          >What a thing is and how strong. Badge for kind, owner chrome, name, one number. Hover adds one row.<em
-            >Never an action, never a second number.</em
+          <b>Top header pills <i>HEADER</i></b
+          >Identity chip · suggestions pill · Local and World toggle · tick progress · start and end timers · follow
+          combat · leaderboard · activity · network · settings.<em
+            >Scale: holds whatever is per game, never anything per realm or per resource.</em
           >
         </div>
         <div>
-          <b>Header chips <i>H</i></b
-          >Time and standing, read at a glance. Identity with the one clock, six numbers, attention count and rank, the
-          utility icons.<em>Six numbers on screen, never more.</em>
-        </div>
-        <div>
-          <b>Left rail <i>R</i></b
-          >Mine. The realm list as it exists, growing into an outliner with counts at scale. Suggestions become a row in
-          it.<em>Five rows collapsed at three realms and at a hundred.</em>
-        </div>
-        <div>
-          <b>Right panel <i>P</i></b
-          >The selection and its primary actions. The tile panel that exists today, with the actions that today open
-          windows moved onto it as buttons and inline pickers.<em
-            >Everything about the selection, nothing about anything else.</em
+          <b>Structure list <i>LIST</i></b
+          >Every owned structure with favorite, level, population, tiles, attention, rename; category filter chips
+          including camps.<em
+            >Scale: at a hundred realms it needs search and counts per category. Same list, two additions.</em
           >
         </div>
         <div>
-          <b>Drawer <i>D</i></b
-          >A task that needs more than a button: a picker anchored to what was clicked, opening from the panel or from a
-          plot. The map stays clickable and a map click completes the task.<em>Replaces the window.</em>
-        </div>
-        <div>
-          <b>Minimap <i>M</i></b
-          >The far world. Pan, zoom, lens filters, pings for crates and captures.<em
-            >Where the eye goes when the ear hears something.</em
+          <b>Resource panel <i>RESOURCES</i></b
+          >Balances of the selected realm with production rings, timers and the build plus per resource; automation mode
+          in the cockpit header.<em
+            >Scale: already scoped to one realm, so twenty-two resources scroll and a hundred realms cost nothing.</em
           >
         </div>
         <div>
-          <b>Feed <i>F</i></b
-          >What happened. Activity, battles, arrivals with claim, my own orders turning gold, one chat line. Text on the
-          scene at the right edge, newest first, jump on click.<em>Replaces every toast.</em>
-        </div>
-        <div>
-          <b>Popover <i>Q</i></b
-          >Meta, opened and closed deliberately: standings and social, settings, hints, identity.<em
-            >Only for things a player does between fights.</em
+          <b>Quick actions row <i>ACTIONS</i></b
+          >Build · Production · Military · Transfer · Chat, Trade on Eternum.<em
+            >Stays as the entry to the catalogues. The common cases stop needing it.</em
           >
         </div>
         <div>
-          <b>Web app <i>W</i></b
-          >Before and after the game: lobby, seating, results, review, rating.<em>The client is play only.</em>
+          <b>Tile details panel <i>PANEL</i></b
+          >The selection: structure, army, building, plot, chest, quest, spire, reserved hyperstructure.<em
+            >Scale: one selection at a time, so it never grows. It gains the actions that today open windows.</em
+          >
         </div>
+        <div>
+          <b>Minimap <i>MINIMAP</i></b
+          >Pan, zoom, reset.<em>Scale: gains pings and a lens; never a list.</em>
+        </div>
+        <div>
+          <b>Popovers <i>POPOVER</i></b
+          >Leaderboard and social board · settings and shortcuts · hints · identity · latest features · game
+          finished.<em>Stay. Opened between fights, closed after. They cost the map nothing.</em>
+        </div>
+        <div>
+          <b>Scene and labels <i>SCENE</i></b
+          >Models, rings, highlights, ghosts, hover labels, hover tooltip with costs, right-click actions, double-click
+          to enter.<em>Scale: labels within a budget; models by size so labels can carry less.</em>
+        </div>
+        <div class="add">
+          <b>Anchored drawer <i>DRAWER, added</i></b
+          >A picker or short form anchored to what was clicked: a plot, a spawn hex, a guard slot, a panel button. The
+          map stays clickable and a map click completes the task.<em
+            >Takes the job of the Build, Military, Production and Logistics windows for the common case. The windows
+            remain as catalogues.</em
+          >
+        </div>
+        <div class="add">
+          <b>Feed <i>FEED, added</i></b
+          >Rows on the scene at the right edge: battles, captures, crates, arrivals with a claim, my own orders, the
+          chat line. Groups per tick at scale.<em
+            >Takes the job of toasts, the activity popover's list and the logistics arrivals tab.</em
+          >
+        </div>
+      </div>
+      <div class="rule">
+        <b>Placement rule:</b> per realm and per resource information lives on the surfaces scoped to a selection, the
+        resource panel and the tile panel. The header carries per game state only. Lists that grow with holdings get
+        search and counts, never chips.
       </div>
     </section>
 
     <section class="col">
-      <h2>Where things land <span class="src">the two screens of the game</span></h2>
+      <h2>Where things land <span class="src">the frame with the moves drawn in</span></h2>
       <div class="two">
         <div>
           <div class="cap">World map</div>
           <div class="screen" aria-label="World map layout">
-            <div class="zone" style="left: 1%; top: 2%; width: 26%; height: 12%">
-              <b>Identity · clock</b>name, spectating state, time left
+            <div class="zone" style="left: 1%; top: 2%; width: 98%; height: 11%">
+              <b>Top header pills</b>identity · suggestions · Local and World · one clock (was three) · follow combat ·
+              leaderboard · activity · network · settings
             </div>
-            <div class="zone" style="left: 29%; top: 2%; width: 42%; height: 12%">
-              <b>Holdings</b>six numbers: wheat, wood, labor, essence, armies ready, points
+            <div class="zone" style="left: 1%; top: 15%; width: 20%; height: 34%">
+              <b>Structure list</b>favorites, filters, attention, rename · search and counts at scale
             </div>
-            <div class="zone" style="left: 73%; top: 2%; width: 26%; height: 12%">
-              <b>Attention · rank</b>threats and arrivals · rank and gap · network, activity, settings
+            <div class="zone" style="left: 1%; top: 51%; width: 20%; height: 26%">
+              <b>Resource panel</b>selected realm balances, rings, timers, build plus · automation mode
             </div>
-            <div class="zone" style="left: 1%; top: 16%; width: 20%; height: 50%">
-              <b>Left rail</b>
+            <div class="zone" style="left: 1%; top: 79%; width: 20%; height: 6%">
+              <b>Quick actions</b>Build · Production · Military · Transfer · Chat
+            </div>
+            <div class="zone" style="left: 1%; top: 86%; width: 20%; height: 12%"><b>Minimap</b>pan, zoom · pings</div>
+            <div class="zone scene" style="left: 23%; top: 15%; width: 53%; height: 70%">
+              <b>Scene</b>
               <ul>
-                <li>realms with attention, favorite, rename</li>
-                <li>armies ready</li>
-                <li>camps, rifts, hyperstructures held</li>
-                <li>suggestions row</li>
-                <li>automation mode per realm</li>
+                <li>select, hover, right-click as today</li>
+                <li>highlights on the selection and its targets only</li>
+                <li>spawn hexes when a structure is selected</li>
+                <li>models by size, labels within budget</li>
               </ul>
             </div>
-            <div class="zone scene" style="left: 23%; top: 16%; width: 50%; height: 56%">
-              <b>Scene and labels</b>
-              <ul>
-                <li>models sized by troop bucket</li>
-                <li>owner rings, selection, legal targets only</li>
-                <li>move, explore, attack by right-click</li>
-                <li>spawn hexes for a new army</li>
-                <li>ghost path with cost</li>
-                <li>labels: badge, chrome, name, count</li>
-              </ul>
+            <div class="zone add" style="left: 23%; top: 60%; width: 24%; height: 22%">
+              <b>Drawer, when open</b>picker at a spawn hex · transfer form from the panel
             </div>
-            <div class="zone" style="left: 75%; top: 16%; width: 24%; height: 22%">
+            <div class="zone add" style="left: 78%; top: 15%; width: 21%; height: 22%">
               <b>Feed</b>battles · captures · crates · arrivals with claim · my orders · chat line
             </div>
-            <div class="zone" style="left: 75%; top: 40%; width: 24%; height: 46%">
-              <b>Right panel</b>
+            <div class="zone" style="left: 78%; top: 39%; width: 21%; height: 59%">
+              <b>Tile details panel</b>
               <ul>
-                <li>selection: owner, count, stamina with the 50 mark</li>
-                <li>army: create picker, guard picker, transfer troops</li>
-                <li>structure: upgrade with shortfall, guards, resources</li>
-                <li>attack preview: losses, remaining</li>
-                <li>biome bonus, simulate</li>
+                <li>
+                  army: owner, count, stamina with attack mark, target preview, transfer troops, disband, auto-explore
+                </li>
+                <li>structure: upgrade with shortfall, guards with slot picker, resources, biome, simulate</li>
                 <li>relics of the holder</li>
               </ul>
-            </div>
-            <div class="zone" style="left: 1%; top: 68%; width: 20%; height: 30%">
-              <b>Minimap</b>pan, zoom, lenses, pings
-            </div>
-            <div class="zone" style="left: 23%; top: 74%; width: 50%; height: 12%">
-              <b>Drawer, when open</b>anchored to the panel or the plot: transfer form, train form, market on Eternum
             </div>
           </div>
         </div>
         <div>
           <div class="cap">Realm view</div>
           <div class="screen" aria-label="Realm view layout">
-            <div class="zone" style="left: 1%; top: 2%; width: 26%; height: 12%"><b>Identity · clock</b>same</div>
-            <div class="zone" style="left: 29%; top: 2%; width: 42%; height: 12%">
-              <b>This realm</b>balances and rates for the realm in view, population, tiles
+            <div class="zone" style="left: 1%; top: 2%; width: 98%; height: 11%"><b>Top header pills</b>same</div>
+            <div class="zone" style="left: 1%; top: 15%; width: 20%; height: 34%">
+              <b>Structure list</b>same, this realm highlighted
             </div>
-            <div class="zone" style="left: 73%; top: 2%; width: 26%; height: 12%"><b>Attention · rank</b>same</div>
-            <div class="zone" style="left: 1%; top: 16%; width: 20%; height: 50%">
-              <b>Left rail</b>same, this realm highlighted
-            </div>
-            <div class="zone scene" style="left: 23%; top: 16%; width: 50%; height: 56%">
+            <div class="zone" style="left: 1%; top: 51%; width: 20%; height: 26%"><b>Resource panel</b>this realm</div>
+            <div class="zone" style="left: 1%; top: 79%; width: 20%; height: 6%"><b>Quick actions</b>same</div>
+            <div class="zone" style="left: 1%; top: 86%; width: 20%; height: 12%"><b>Minimap</b>same</div>
+            <div class="zone scene" style="left: 23%; top: 15%; width: 53%; height: 70%">
               <b>Scene</b>
               <ul>
-                <li>plots, buildings, the castle</li>
-                <li>click a plot: building picker at the plot</li>
+                <li>click a plot: picker at the plot</li>
                 <li>click a building: its panel</li>
+                <li>right-click a building: production inline on its panel</li>
                 <li>ghost building until confirmed</li>
               </ul>
             </div>
-            <div class="zone" style="left: 75%; top: 16%; width: 24%; height: 22%"><b>Feed</b>same</div>
-            <div class="zone" style="left: 75%; top: 40%; width: 24%; height: 46%">
-              <b>Right panel</b>
+            <div class="zone add" style="left: 23%; top: 60%; width: 24%; height: 22%">
+              <b>Drawer, when open</b>building picker at the plot · full catalogue on request
+            </div>
+            <div class="zone add" style="left: 78%; top: 15%; width: 21%; height: 22%"><b>Feed</b>same</div>
+            <div class="zone" style="left: 78%; top: 39%; width: 21%; height: 59%">
+              <b>Tile details panel</b>
               <ul>
-                <li>building: produces, consumes, population, pause, delete</li>
-                <li>production controls inline: recipe, amount, start</li>
-                <li>automation switch for the realm</li>
+                <li>building: produces, consumes, population, pause, delete, build another</li>
+                <li>production controls inline</li>
                 <li>castle: upgrade, provision, labor, wonder bonus</li>
               </ul>
-            </div>
-            <div class="zone" style="left: 1%; top: 68%; width: 20%; height: 30%"><b>Minimap</b>realm in the world</div>
-            <div class="zone" style="left: 23%; top: 74%; width: 50%; height: 12%">
-              <b>Drawer, when open</b>building picker at a plot; the full catalogue only on request
             </div>
           </div>
         </div>
       </div>
       <div class="rule">
-        <b>Spectator:</b> the same two screens. The right panel loses its action buttons, the left rail becomes the
-        followed lord's holdings, the identity chip gains a lord picker. Nothing else changes.
+        <b>Spectator:</b> the same frame. The quick actions row, the suggestions pill and the action buttons on the
+        panel are removed, as today. Added: a lord to follow in the identity chip, with the structure list showing that
+        lord's holdings.
       </div>
     </section>
 
     <section class="col">
-      <h2>The ledger <span class="src">one row per feature, one surface each</span></h2>
+      <h2>
+        The ledger
+        <span class="src">one row per feature, its home today, its home in the frame, and the two tests</span>
+      </h2>
       <h3>Time, standing, identity</h3>
       <div class="wrap">
         <table>
@@ -601,34 +585,35 @@
             <th>Modes</th>
             <th>Today</th>
             <th>Lands on</th>
+            <th>Map</th>
+            <th>Scale</th>
             <th>Status</th>
           </tr>
           <tr data-modes="B E S" data-status="moves">
-            <td>Time left<span class="why">one clock; day names and the percent pill go</span></td>
+            <td>Time left<span class="why">one pill; the percent and day names go</span></td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>three header pills</td>
-            <td><span class="pill H">H identity chip</span></td>
+            <td><span class="pill">HEADER one clock pill</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
-          </tr>
-          <tr data-modes="B E S" data-status="stays">
-            <td>Start countdown</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>header pill</td>
-            <td><span class="pill H">H identity chip, same clock</span></td>
-            <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E S" data-status="cut">
             <td>Day and phase names</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>tick progress pill</td>
-            <td><span class="pill X">gone</span></td>
+            <td><span class="pill gone">gone</span></td>
+            <td class="sc">—</td>
+            <td class="sc">—</td>
             <td><span class="st cut">cut</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
-            <td>Who I am, spectating, sign in, play</td>
+            <td>Identity, spectating, sign in, play</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>identity chip popover</td>
-            <td><span class="pill H">H identity chip</span></td>
+            <td>identity chip</td>
+            <td><span class="pill">HEADER identity chip</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="S" data-status="new">
@@ -636,50 +621,86 @@
             <td><span class="mode S">S</span></td>
             <td>none</td>
             <td>
-              <span class="pill H">H identity chip picker</span> <span class="pill R">R rail as their holdings</span>
+              <span class="pill">HEADER identity chip picker</span> <span class="pill">LIST as their holdings</span>
             </td>
-            <td><span class="st new">new</span></td>
-          </tr>
-          <tr data-modes="B E S" data-status="moves">
-            <td>Rank, points, gap to next</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>identity chip, leaderboard popover</td>
-            <td><span class="pill H">H attention chip</span></td>
-            <td><span class="st moves">moves</span></td>
-          </tr>
-          <tr data-modes="B E" data-status="new">
-            <td>Attention count and next</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>badges scattered</td>
-            <td><span class="pill H">H attention chip</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st new">new</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
-            <td>Standings, players, tribes, faith, prize</td>
+            <td>Rank and points</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>leaderboard popover</td>
-            <td><span class="pill Q">Q popover</span></td>
+            <td>identity chip</td>
+            <td><span class="pill">HEADER identity chip</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
-          <tr data-modes="B" data-status="moves">
-            <td>Register points after the end</td>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Leaderboard, players, tribes, faith, prize</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>leaderboard popover</td>
+            <td><span class="pill">POPOVER leaderboard</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Settings, shortcuts, camera zoom, sound</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>settings popover</td>
+            <td><span class="pill">POPOVER settings</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Hints, what's new, network, transactions</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>utility cluster</td>
+            <td><span class="pill">HEADER utility</span> <span class="pill">POPOVER</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>
+              Attention: threats, arrivals, idle<span class="why"
+                >one count in the header, one key to step through</span
+              >
+            </td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>badges on rows and on the Transfer button</td>
+            <td><span class="pill">HEADER attention pill</span> <span class="pill">LIST row marks</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B" data-status="stays">
+            <td>Register points</td>
             <td><span class="mode B">B</span></td>
             <td>prize panel, game finished popover</td>
-            <td><span class="pill H">H clock becomes the window with one button</span></td>
-            <td><span class="st moves">moves</span></td>
+            <td><span class="pill">POPOVER game finished</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Game finished, review</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>header pill with Review</td>
-            <td><span class="pill H">H banner</span> <span class="pill W">W review</span></td>
+            <td>header pill</td>
+            <td><span class="pill">HEADER pill</span> web review</td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
-          <tr data-modes="B E S" data-status="stays">
-            <td>Network, transactions, settings, hints, what's new</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>utility cluster</td>
-            <td><span class="pill H">H utility icons</span> <span class="pill Q">Q popovers</span></td>
+          <tr data-modes="B E" data-status="stays">
+            <td>Suggestions</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>header pill</td>
+            <td><span class="pill">HEADER suggestions pill</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
         </table>
@@ -693,139 +714,161 @@
             <th>Modes</th>
             <th>Today</th>
             <th>Lands on</th>
+            <th>Map</th>
+            <th>Scale</th>
             <th>Status</th>
           </tr>
-          <tr data-modes="B E S" data-status="moves">
-            <td>Balances<span class="why">six in the header, the rest on the realm's panel</span></td>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Balances, rings, timers of the selected realm</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>merged resource panel, balances tab</td>
-            <td><span class="pill H">H holdings</span> <span class="pill P">P realm panel</span></td>
+            <td>resource panel</td>
+            <td><span class="pill">RESOURCES</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>All balances across realms</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>logistics window tab</td>
+            <td><span class="pill">RESOURCES empire toggle</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc warn">needs sort and search</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
-            <td>Production rates and timers</td>
+            <td>Build a building<span class="why">picker at the plot; catalogue window on request</span></td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>resource chip rings</td>
-            <td><span class="pill P">P realm panel</span></td>
-            <td><span class="st moves">moves</span></td>
-          </tr>
-          <tr data-modes="B E" data-status="moves">
-            <td>Build a building<span class="why">picker at the plot; the catalogue window only on request</span></td>
-            <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>Build window, plot click, chip plus, build another</td>
-            <td><span class="pill D">D picker at the plot</span> <span class="pill S">S ghost</span></td>
+            <td>Build window, plot, chip plus, build another</td>
+            <td><span class="pill add">DRAWER at the plot</span> <span class="pill">SCENE ghost</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="stays">
-            <td>Build another of the same</td>
+            <td>Build from the resource chip plus, build another</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>building panel</td>
-            <td><span class="pill P">P building panel</span> <span class="pill S">S ghost</span></td>
+            <td>resource panel, building panel</td>
+            <td><span class="pill">RESOURCES</span> <span class="pill">PANEL</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
-            <td>Set production for a building</td>
+            <td>Production controls of a building</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>production popup</td>
-            <td><span class="pill P">P building panel, inline controls</span></td>
+            <td>production window</td>
+            <td><span class="pill">PANEL building, inline</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="stays">
-            <td>Pause, resume, delete a building</td>
+            <td>Pause, resume, delete, automate a building</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>building panel</td>
-            <td><span class="pill P">P building panel</span></td>
+            <td><span class="pill">PANEL building</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>
               Automation mode per realm<span class="why"
-                >Smart, Idle, Custom as a switch; sliders only under Custom</span
+                >the cockpit label becomes the switch; sliders under Custom</span
               >
             </td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>cockpit label, popup sliders</td>
-            <td><span class="pill R">R rail row</span> <span class="pill D">D under Custom</span></td>
+            <td>cockpit label, window sliders</td>
+            <td>
+              <span class="pill">RESOURCES cockpit switch</span> <span class="pill add">DRAWER under Custom</span>
+            </td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
-            <td>
-              Upgrade the realm<span class="why">the shortfall and the nearest stock replace "Need Resources"</span>
-            </td>
+            <td>Upgrade the realm<span class="why">shortfall and nearest stock replace "Need Resources"</span></td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>right panel block</td>
-            <td><span class="pill P">P castle panel</span></td>
+            <td>panel block</td>
+            <td><span class="pill">PANEL castle</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B" data-status="stays">
             <td>Provision a fresh realm</td>
             <td><span class="mode B">B</span></td>
-            <td>right panel block</td>
-            <td><span class="pill P">P castle panel</span></td>
+            <td>panel block</td>
+            <td><span class="pill">PANEL castle</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Produce labor</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>castle button to the popup</td>
-            <td><span class="pill P">P castle panel, inline</span></td>
+            <td>castle button to the window</td>
+            <td><span class="pill">PANEL castle, inline</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Transfer resources<span class="why">destination picked on the map, amounts in the drawer</span></td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>Logistics window</td>
-            <td><span class="pill D">D from the realm panel</span> <span class="pill S">S pick destination</span></td>
+            <td>logistics window</td>
+            <td>
+              <span class="pill add">DRAWER from the panel</span> <span class="pill">SCENE pick destination</span>
+            </td>
+            <td class="sc bad">fails today</td>
+            <td class="sc warn">destination search at 100</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Transfer automation</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>Logistics tab and advanced modal</td>
-            <td><span class="pill D">D from the realm panel</span></td>
+            <td>logistics tab and modal</td>
+            <td><span class="pill add">DRAWER from the panel</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
-            <td>Arrivals and claim</td>
+            <td>Arrivals and claim<span class="why">rows group per tick at scale</span></td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>Logistics window, badge</td>
-            <td><span class="pill F">F feed rows with claim</span></td>
+            <td>logistics window, badge</td>
+            <td><span class="pill add">FEED rows with claim</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok grouped</td>
             <td><span class="st moves">moves</span></td>
           </tr>
-          <tr data-modes="B E S" data-status="moves">
-            <td>All balances table</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>Logistics tab</td>
-            <td><span class="pill P">P realm panel, expand</span></td>
-            <td><span class="st moves">moves</span></td>
-          </tr>
-          <tr data-modes="E" data-status="moves">
+          <tr data-modes="E" data-status="stays">
             <td>Market, orders, history</td>
             <td><span class="mode E">E</span></td>
-            <td>market window at the right edge</td>
-            <td><span class="pill D">D ledger drawer</span></td>
-            <td><span class="st moves">moves</span></td>
-          </tr>
-          <tr data-modes="B E" data-status="stays">
-            <td>Rename a structure</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>rail row pencil</td>
-            <td><span class="pill R">R rail row</span></td>
+            <td>market at the right edge</td>
+            <td><span class="pill">ACTIONS Trade, right-edge surface</span></td>
+            <td class="sc warn">covers the right</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="stays">
-            <td>Favorites, category filter</td>
+            <td>Realm list: favorites, filter, attention, rename</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>rail rows</td>
-            <td><span class="pill R">R rail</span></td>
+            <td>structure list</td>
+            <td><span class="pill">LIST</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
-          <tr data-modes="B E" data-status="moves">
-            <td>Suggestions</td>
+          <tr data-modes="B E" data-status="new">
+            <td>Realm list at scale: search, counts per category, sort by attention</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>header pill</td>
-            <td><span class="pill R">R rail row</span></td>
-            <td><span class="st moves">moves</span></td>
+            <td>none</td>
+            <td><span class="pill">LIST</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc bad">fails today</td>
+            <td><span class="st new">new</span></td>
           </tr>
         </table>
       </div>
@@ -838,98 +881,125 @@
             <th>Modes</th>
             <th>Today</th>
             <th>Lands on</th>
+            <th>Map</th>
+            <th>Scale</th>
             <th>Status</th>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>
               Create a field army<span class="why"
-                >select the structure, spawn hexes light, right-click one, picker at the hex</span
+                >select the structure, spawn hexes light, right-click one, picker at the hex; the window stays as the
+                catalogue</span
               >
             </td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>Military window via four paths</td>
-            <td><span class="pill S">S spawn hexes</span> <span class="pill D">D picker at the hex</span></td>
+            <td><span class="pill">SCENE spawn hexes</span> <span class="pill add">DRAWER at the hex</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Add or replace a guard</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>slot Add to the window</td>
-            <td><span class="pill P">P guard slot picker</span></td>
+            <td><span class="pill">PANEL guard slot</span> <span class="pill add">DRAWER at the slot</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
-            <td>Armies list, disband</td>
+            <td>Armies list, jump, disband</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>Military window</td>
-            <td>
-              <span class="pill R">R rail, armies section</span> <span class="pill P">P disband on the army panel</span>
-            </td>
+            <td><span class="pill">LIST armies section</span> <span class="pill">PANEL disband</span></td>
+            <td class="sc bad">fails today</td>
+            <td class="sc warn">needs the list additions</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
-            <td>Select, read an army</td>
+            <td>Select and read an army</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>scene and right panel</td>
-            <td><span class="pill S">S</span> <span class="pill P">P army panel</span></td>
+            <td>scene, panel</td>
+            <td><span class="pill">SCENE</span> <span class="pill">PANEL army</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>
-              Readiness to travel, explore, attack<span class="why">one bar with the attack mark and one word</span>
+              Readiness to travel, explore, attack<span class="why"
+                >the stamina bar gets the attack mark; the three icons become one word</span
+              >
             </td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>three icons</td>
-            <td><span class="pill P">P army panel bar</span></td>
+            <td><span class="pill">PANEL army bar</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="stays">
-            <td>Move, explore with cost</td>
+            <td>Move and explore with cost</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>hover tooltip, right-click</td>
-            <td><span class="pill S">S ghost path</span></td>
+            <td><span class="pill">SCENE</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Attack preview and confirm</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>popover over the map</td>
-            <td><span class="pill P">P army panel, target section</span></td>
+            <td><span class="pill">PANEL army, target section</span></td>
+            <td class="sc warn">covers the map</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Action highlights<span class="why">selection and legal targets only; the banner goes</span></td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>rings on everything, banner</td>
-            <td><span class="pill S">S</span></td>
+            <td><span class="pill">SCENE</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc bad">fails at 30 armies</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Move troops or relics between adjacent units</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>help popover</td>
-            <td><span class="pill D">D from the army panel</span></td>
+            <td><span class="pill add">DRAWER from the panel</span></td>
+            <td class="sc warn">covers the map</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Open a relic crate</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>chest modal</td>
-            <td><span class="pill S">S right-click</span> <span class="pill F">F result row</span></td>
+            <td><span class="pill">SCENE right-click</span> <span class="pill add">FEED result</span></td>
+            <td class="sc warn">covers the map</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Take a hyperstructure</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>attack flow</td>
-            <td><span class="pill S">S</span> <span class="pill F">F capture row</span></td>
+            <td><span class="pill">SCENE</span> <span class="pill add">FEED capture row</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Simulate a battle</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>Battle button</td>
-            <td><span class="pill Q">Q from the panel</span></td>
+            <td><span class="pill">PANEL button to the simulator</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E S" data-status="moves">
@@ -937,49 +1007,66 @@
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>toast, story events</td>
             <td>
-              <span class="pill F">F row</span> <span class="pill S">S ring</span> <span class="pill R">R stripe</span>
+              <span class="pill add">FEED row</span> <span class="pill">SCENE ring</span>
+              <span class="pill">LIST mark</span>
             </td>
+            <td class="sc ok">ok</td>
+            <td class="sc bad">fails at 100</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E" data-status="stays">
             <td>Auto-explore per army</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>army panel control</td>
-            <td><span class="pill P">P army panel</span></td>
+            <td><span class="pill">PANEL army</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E" data-status="new">
             <td>Army size on the model</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>one model, fixed scale</td>
-            <td><span class="pill S">S figure count per bucket</span></td>
+            <td><span class="pill">SCENE figure count per bucket</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st new">new</span></td>
           </tr>
           <tr data-modes="B E S" data-status="moves">
-            <td>Labels<span class="why">badge, owner chrome, name, one number; owner name only once</span></td>
+            <td>
+              Labels<span class="why"
+                >badge, owner chrome, name, one number; the owner name no longer on every unit</span
+              >
+            </td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>owner name on every unit</td>
-            <td><span class="pill L">L</span></td>
+            <td><span class="pill">SCENE labels</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc bad">fails at 96 players</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Follow combat camera</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>header toggle</td>
-            <td><span class="pill H">H utility</span></td>
+            <td><span class="pill">HEADER</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="E" data-status="stays">
             <td>Spire travel</td>
             <td><span class="mode E">E</span></td>
             <td>spire panel, right-click</td>
-            <td><span class="pill P">P</span> <span class="pill S">S</span></td>
+            <td><span class="pill">PANEL</span> <span class="pill">SCENE</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
         </table>
       </div>
 
-      <h3>Objectives, relics, social</h3>
+      <h3>Objectives, relics, social, entry</h3>
       <div class="wrap">
         <table>
           <tr>
@@ -987,201 +1074,186 @@
             <th>Modes</th>
             <th>Today</th>
             <th>Lands on</th>
+            <th>Map</th>
+            <th>Scale</th>
             <th>Status</th>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Hyperstructure holder, points per second, guards</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>tile panel</td>
-            <td><span class="pill L">L</span> <span class="pill P">P</span></td>
+            <td><span class="pill">PANEL</span> <span class="pill">SCENE label</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
-          </tr>
-          <tr data-modes="B E S" data-status="new">
-            <td>Objectives lens</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>none</td>
-            <td><span class="pill M">M lens</span> <span class="pill L">L</span></td>
-            <td><span class="st new">new</span></td>
           </tr>
           <tr data-modes="B E S" data-status="new">
             <td>Crate spawns and captures ping</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>none</td>
-            <td><span class="pill M">M ping</span> <span class="pill F">F row</span></td>
+            <td><span class="pill">MINIMAP ping</span> <span class="pill add">FEED row</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st new">new</span></td>
           </tr>
           <tr data-modes="B E" data-status="moves">
             <td>Relics held and activation</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>tray and selector popover</td>
-            <td><span class="pill P">P section of the holder's panel</span></td>
+            <td>tray, selector popover</td>
+            <td><span class="pill">PANEL section of the holder</span></td>
+            <td class="sc warn">covers the map</td>
+            <td class="sc ok">ok</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="E" data-status="stays">
-            <td>Craft a relic</td>
+            <td>Craft a relic, found a hyperstructure, faith, wonder bonus</td>
             <td><span class="mode E">E</span></td>
-            <td>popup</td>
-            <td><span class="pill P">P realm panel</span></td>
-            <td><span class="st stays">stays</span></td>
-          </tr>
-          <tr data-modes="E" data-status="stays">
-            <td>Found a hyperstructure, faith, wonder bonus</td>
-            <td><span class="mode E">E</span></td>
-            <td>tile panels</td>
-            <td><span class="pill P">P</span></td>
+            <td>panels and popups</td>
+            <td><span class="pill">PANEL</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="E" data-status="new">
             <td>Contribute to a hyperstructure</td>
             <td><span class="mode E">E</span></td>
             <td>none on next</td>
-            <td><span class="pill D">D from the hyperstructure panel</span></td>
+            <td><span class="pill add">DRAWER from the hyperstructure panel</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st new">new</span></td>
           </tr>
           <tr data-modes="E" data-status="stays">
             <td>Tribes: create, join, invite, remove</td>
             <td><span class="mode E">E</span></td>
             <td>leaderboard popover</td>
-            <td><span class="pill Q">Q</span></td>
+            <td><span class="pill">POPOVER leaderboard</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
-          <tr data-modes="B E S" data-status="moves">
+          <tr data-modes="B E S" data-status="stays">
             <td>Chat</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>bubble and popover</td>
-            <td><span class="pill F">F one line, Enter opens</span></td>
-            <td><span class="st moves">moves</span></td>
+            <td><span class="pill">ACTIONS Chat</span> <span class="pill add">FEED last line</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
+            <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E S" data-status="moves">
             <td>Activity and battle logs</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>activity popover, story events view</td>
-            <td><span class="pill F">F</span></td>
+            <td><span class="pill add">FEED</span> <span class="pill">POPOVER full log</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok grouped</td>
             <td><span class="st moves">moves</span></td>
           </tr>
           <tr data-modes="B E S" data-status="cut">
             <td>Toasts, 93 call sites</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>everywhere</td>
-            <td><span class="pill F">F rows</span></td>
+            <td><span class="pill add">FEED rows</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc bad">fails at 100</td>
             <td><span class="st cut">cut</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Minimap pan, zoom</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>minimap</td>
-            <td><span class="pill M">M</span></td>
+            <td><span class="pill">MINIMAP</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
-          </tr>
-          <tr data-modes="B E" data-status="cut">
-            <td>Dead surfaces: header picker chip, army card, Bridge view, prediction remains</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>code only</td>
-            <td><span class="pill X">gone</span></td>
-            <td><span class="st cut">cut</span></td>
-          </tr>
-        </table>
-      </div>
-
-      <h3>Entry and realm view</h3>
-      <div class="wrap">
-        <table>
-          <tr>
-            <th>Feature</th>
-            <th>Modes</th>
-            <th>Today</th>
-            <th>Lands on</th>
-            <th>Status</th>
           </tr>
           <tr data-modes="B E" data-status="stays">
             <td>Settle, season pass, village pass</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
             <td>entry modal</td>
-            <td><span class="pill W">W</span> then one modal</td>
+            <td>entry modal, once</td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
           <tr data-modes="B E S" data-status="stays">
             <td>Enter the realm view</td>
             <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
             <td>V, toggle, double-click</td>
-            <td><span class="pill S">S double-click</span> <span class="pill H">H toggle</span></td>
+            <td><span class="pill">SCENE</span> <span class="pill">HEADER toggle</span></td>
+            <td class="sc ok">ok</td>
+            <td class="sc ok">ok</td>
             <td><span class="st stays">stays</span></td>
           </tr>
-          <tr data-modes="B E" data-status="moves">
-            <td>Realm in view: balances, population, tiles</td>
+          <tr data-modes="B E" data-status="cut">
+            <td>Dead surfaces: header picker chip, army card, Bridge view, prediction remains</td>
             <td><span class="mode B">B</span><span class="mode E">E</span></td>
-            <td>left panels</td>
-            <td><span class="pill H">H this-realm chip</span></td>
-            <td><span class="st moves">moves</span></td>
-          </tr>
-          <tr data-modes="B E S" data-status="stays">
-            <td>Boot, errors, reconnect</td>
-            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
-            <td>loader, network pill</td>
-            <td>loader, <span class="pill H">H utility</span></td>
-            <td><span class="st stays">stays</span></td>
+            <td>code only</td>
+            <td><span class="pill gone">gone</span></td>
+            <td class="sc">—</td>
+            <td class="sc">—</td>
+            <td><span class="st cut">cut</span></td>
           </tr>
         </table>
       </div>
     </section>
 
     <section class="col">
-      <h2>The way forward <span class="src">read off the moves, smallest first</span></h2>
-      <p class="lead">
-        Each step moves features onto a surface that already exists, so nothing has to be finished before the next step
-        starts. Material, colour and type come after step six as their own pass.
-      </p>
+      <h2>The way forward <span class="src">only the rows that fail a test move, smallest first</span></h2>
       <ol class="way">
         <li>
-          <b>Right panel takes the army actions.</b> Create a field army from spawn hexes with a picker at the hex;
-          guard picker on the slot; readiness as one bar; attack preview in the panel's target section.<small
-            >Moves 5 rows. Deletes the Military window's reason to open for the common case.</small
+          <b>Army creation finishes on the map.</b> Spawn hexes when a structure is selected, a picker at the hex, the
+          guard picker at the slot. The Military window stays as the catalogue.<small
+            >Fails the map test today. Moves 2 rows.</small
           >
         </li>
         <li>
-          <b>Drawer replaces the Build and Production windows.</b> Picker at the plot; production controls inline on the
-          building panel; the popover primitive learns to wait for a map click.<small
-            >Moves 4 rows. The 1320 px Build view survives only as the catalogue.</small
+          <b>Build finishes at the plot.</b> Picker anchored to the plot; the popover primitive learns to wait for a map
+          click. The Build window stays as the catalogue.<small
+            >Fails the map test today. Moves 1 row, fixes the class for every later drawer.</small
           >
         </li>
         <li>
-          <b>Feed replaces toasts and the logistics window.</b> Activity, battles, crate results, arrivals with claim,
-          my orders, one chat line. Space jumps to the last row.<small>Moves 6 rows, cuts 93 toast sites.</small>
+          <b>Production and labor go inline on the building and castle panels.</b
+          ><small>Fails the map test today. Moves 2 rows.</small>
         </li>
         <li>
-          <b>Header carries time and standing.</b> One clock, six numbers, attention count with next, rank with the gap.
-          Day names and the percent pill go.<small>Moves 5 rows, cuts 1.</small>
+          <b>The feed replaces toasts, arrivals and the activity list.</b> Rows group per tick.<small
+            >Fails at a hundred realms today. Moves 3 rows, cuts 93 call sites.</small
+          >
         </li>
         <li>
-          <b>Scene and labels carry whose and how strong.</b> Action highlights scoped to the selection; labels on the
-          ladder; army models by size bucket in the Model Lab.<small>Moves 2 rows, adds 1.</small>
+          <b>Scene highlights and labels scale.</b> Selection and targets only; label budget; owner name once.<small
+            >Fails at 30 armies and 96 players today. Moves 2 rows.</small
+          >
         </li>
         <li>
-          <b>Rail becomes the outliner.</b> Counts per kind with attention, suggestions as a row, automation as a
-          switch. Stress-tested at 10, 30 and 100 holdings.<small>Moves 3 rows.</small>
+          <b>The structure list scales.</b> Search, counts per category, sort by attention; armies as a section.<small
+            >Fails at a hundred realms today. Adds 1 row, moves 1.</small
+          >
         </li>
         <li>
-          <b>Spectator follows a lord.</b> Picker in the identity chip, rail as their holdings, labels relative to
-          them.<small>Adds 1 row, the largest single gap for casters.</small>
+          <b>One clock and one attention count in the header.</b
+          ><small>Three pills become one; attention badges become one count. Moves 2 rows, cuts 1.</small>
         </li>
         <li>
-          <b>Transfers and the market move to drawers.</b> Destination picked on the map, amounts in the drawer;
-          Eternum's ledger drawer.<small>Moves 4 rows.</small>
+          <b>Transfers, troop moves and relics go to drawers from the panel.</b
+          ><small>Fail the map test today. Moves 4 rows.</small>
         </li>
-        <li>
-          <b>Material pass.</b> Brand tokens, type, panel material, one token at a time on surfaces that now hold the
-          right features.
-        </li>
+        <li><b>Spectators follow a lord.</b><small>Adds 1 row.</small></li>
+        <li><b>Models by size.</b> Model Lab work, independent of the HUD.<small>Adds 1 row.</small></li>
       </ol>
       <div class="rule">
-        <b>How each step is judged:</b> the feature is on its surface, the map stays visible and clickable, the click
-        count is at or below the database's today column, and nothing that used to be readable stopped being readable.
+        <b>What does not move:</b> leaderboard, settings, hints, identity, suggestions, the resource panel, the minimap,
+        the quick actions row, the entry modal. Everything that already reads at scale and leaves the map alone stays
+        exactly where it is.
       </div>
     </section>
 
     <footer class="col">
-      Companion pages: Client Flow Database (today, 94 rows) · Blitz Play Flow v0.3 (surfaces and rulings) · Blitz User
-      Stories (needs). All three are on branch claude/client-flow-findings under docs/reports.
+      Companion pages on branch claude/client-flow-findings under docs/reports: Client Flow Database (today, 94 rows) ·
+      Blitz Play Flow v0.3 · Blitz User Stories.
     </footer>
     <script>
       (function () {
