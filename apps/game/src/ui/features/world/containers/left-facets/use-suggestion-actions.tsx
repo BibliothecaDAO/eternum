@@ -1,4 +1,3 @@
-import { useArmyDeploymentStore } from "@/hooks/store/use-army-deployment-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -111,7 +110,7 @@ export const useSuggestionActions = () => {
           return;
         case "deploy-explorer":
           usePopoverStore.getState().close();
-          useArmyDeploymentStore.getState().suggest(Number(suggestion.realmId));
+          useUIStore.getState().setSuggestedArmyDeploymentStructureId(Number(suggestion.realmId));
           return;
         case "garrison":
           setLeftNavigationView(LeftView.MilitaryView);

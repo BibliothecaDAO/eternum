@@ -1,4 +1,4 @@
-import { useArmyDeploymentStore } from "@/hooks/store/use-army-deployment-store";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
@@ -2431,7 +2431,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
-    if (useUIStore.getState().isSpectating || isExplicitSpectateSession()) return;
+    if (!canIssueOrders()) return;
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
@@ -2927,12 +2927,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private showSuggestedArmyDeployment(): void {
-    const intent = useArmyDeploymentStore.getState();
-    if (intent.suggestedStructureId === null) return;
-    const structure = this.worldSpatialProjection.getStructure(intent.suggestedStructureId);
+    const intent = useUIStore.getState();
+    if (intent.suggestedArmyDeploymentStructureId === null) return;
+    const structure = this.worldSpatialProjection.getStructure(intent.suggestedArmyDeploymentStructureId);
     if (!structure) return;
-    intent.clear();
-    if (useUIStore.getState().isSpectating || isExplicitSpectateSession()) return;
+    intent.setSuggestedArmyDeploymentStructureId(null);
+    if (!canIssueOrders()) return;
     const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
     this.onStructureSelection(structure.entityId, { col: normalized.x, row: normalized.y });
     const points = [...getLiveWorldmapEntityActions().actionPaths.values()]
@@ -3002,9 +3002,7 @@ export default class WorldmapScene extends WarpTravel {
     const playerAddress = useAccountStore.getState().account?.address;
 
     const canIssueStructureOrders =
-      !useUIStore.getState().isSpectating &&
-      !isExplicitSpectateSession() &&
-      Boolean(structureData && isAddressEqualToAccount(structureData.owner));
+      canIssueOrders() && Boolean(structureData && isAddressEqualToAccount(structureData.owner));
     if (!playerAddress || !canIssueStructureOrders) {
       this.updateEntityActionPaths(new Map());
       this.highlightHexManager.highlightHexes([]);
@@ -3037,7 +3035,7 @@ export default class WorldmapScene extends WarpTravel {
     const contract = new Position({ x: hex.col, y: hex.row }).getContract();
     this.state.setStructureEntityId(structureId, {
       worldMapPosition: { col: contract.x, row: contract.y },
-      spectator: useUIStore.getState().isSpectating || isExplicitSpectateSession(),
+      spectator: !canIssueOrders(),
     });
     const position = getWorldPositionForHex(hex);
     this.selectionPulseManager.showSelection(position.x, position.z, structureId);
@@ -8106,7 +8104,12 @@ export default class WorldmapScene extends WarpTravel {
         this.state.selectedHex = selectedHex;
       },
     });
-    this.storeSubscriptions.push(useArmyDeploymentStore.subscribe(() => this.showSuggestedArmyDeployment()));
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.suggestedArmyDeploymentStructureId,
+        () => this.showSuggestedArmyDeployment(),
+      ),
+    );
     this.storeSubscriptions.push(
       useUIStore.subscribe(
         (state) => state.isSpectating,

@@ -1,6 +1,5 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ActionPaths, ActionType, type ActionPath } from "@bibliothecadao/eternum";
 import type { HexPosition } from "@bibliothecadao/types";
 
@@ -10,14 +9,14 @@ export function resolveSpawnActionPath(
   hex: HexPosition | null,
   actionPaths: Map<string, ActionPath[]>,
 ): ActionPath[] | null {
-  if (!hex || useUIStore.getState().isSpectating || isExplicitSpectateSession()) return null;
+  if (!hex || !canIssueOrders()) return null;
   const path = actionPaths.get(ActionPaths.posKey(hex, true));
   return path && ActionPaths.getActionType(path) === ActionType.CreateArmy ? path : null;
 }
 
 export function showArmyDeploymentTooltip(point: { x: number; y: number } | null): void {
   const store = useTooltipStore.getState();
-  if (!point || useUIStore.getState().isSpectating || isExplicitSpectateSession()) {
+  if (!point || !canIssueOrders()) {
     if (store.tooltip?.content === DEPLOY_TOOLTIP) store.setTooltip(null);
     return;
   }

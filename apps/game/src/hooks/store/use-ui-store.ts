@@ -117,6 +117,9 @@ interface UIStore {
   openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
   pendingMilitaryAction: PendingMilitaryAction | null;
   setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
+  /** A suggestion's selection intent, consumed when the world map is ready. */
+  suggestedArmyDeploymentStructureId: number | null;
+  setSuggestedArmyDeploymentStructureId: (structureId: number | null) => void;
   // Bumped whenever a military mutation lands (create / disband) so the deploy
   // map can re-fetch tile occupancy. Plain RECS-side state isn't enough — the
   militaryMapVersion: number;
@@ -297,6 +300,9 @@ export const useUIStore = create(
       }),
     pendingMilitaryAction: null,
     setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
+    suggestedArmyDeploymentStructureId: null,
+    setSuggestedArmyDeploymentStructureId: (suggestedArmyDeploymentStructureId) =>
+      set({ suggestedArmyDeploymentStructureId }),
     militaryMapVersion: 0,
     bumpMilitaryMapVersion: () => set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
     ...createThreeStoreSlice(set, get),

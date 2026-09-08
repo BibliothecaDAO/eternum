@@ -36,6 +36,37 @@ export const TroopSelectionGrid = ({
     return `${selectedGuardCategory}-${selectedGuardTier}`;
   }, [isDefenseTroopLocked, selectedGuardCategory, selectedGuardTier]);
 
+  if (compact) {
+    return (
+      <div className="flex gap-2 overflow-x-auto p-1" role="group" aria-label="Available troops">
+        {options.flatMap((option) =>
+          option.tiers
+            .filter((tier) => tier.available > 0)
+            .map((tier) => {
+              const key = `${option.type}-${tier.tier}`;
+              const isSelected = selected.type === option.type && selected.tier === tier.tier;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  aria-label={`${option.label} ${tier.tier}: ${tier.available.toLocaleString()} available`}
+                  aria-pressed={isSelected}
+                  disabled={Boolean(lockedMap && lockedMap !== key)}
+                  className={clsx(
+                    "shrink-0 rounded border px-2 py-2 text-xs tabular-nums",
+                    isSelected ? "border-gold bg-gold/15" : "border-gold/25",
+                  )}
+                  onClick={() => onSelect(option.type, tier.tier)}
+                >
+                  {option.label} {tier.tier} · {tier.available.toLocaleString()}
+                </button>
+              );
+            }),
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={bare ? "p-1" : "rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm"}>
       <div className="grid grid-cols-3 gap-3">
@@ -55,27 +86,6 @@ export const TroopSelectionGrid = ({
                 const isLockedOption = Boolean(lockedMap && lockedMap !== lockedKey);
                 const canSelect = hasResources && !isLockedOption;
                 const isCollapsed = tierOption.available === 0;
-
-                if (compact) {
-                  return (
-                    <button
-                      key={lockedKey}
-                      type="button"
-                      aria-label={`${option.label} ${tierOption.tier}: ${tierOption.available.toLocaleString()} available`}
-                      aria-pressed={isSelected}
-                      disabled={isLockedOption}
-                      className={clsx(
-                        "flex items-center justify-between gap-1 rounded border px-2 py-2 text-xs tabular-nums",
-                        isSelected ? "border-gold bg-gold/15" : "border-gold/25",
-                        !hasResources && "opacity-50",
-                      )}
-                      onClick={() => onSelect(option.type, tierOption.tier)}
-                    >
-                      <span>{tierOption.tier}</span>
-                      <span>{Math.floor(tierOption.available).toLocaleString()}</span>
-                    </button>
-                  );
-                }
 
                 if (isCollapsed) {
                   // Collapsed Mini Card

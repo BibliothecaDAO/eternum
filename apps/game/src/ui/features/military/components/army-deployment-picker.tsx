@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ActionFooter } from "./unified-army-creation-modal/action-footer";
 import { TroopCountSelector } from "./unified-army-creation-modal/troop-count-selector";
 import { TroopSelectionGrid } from "./unified-army-creation-modal/troop-selection-grid";
@@ -9,12 +9,11 @@ import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation
 import type { ArmyDeploymentTarget } from "../utils/open-army-deployment-picker";
 
 export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {
-  const isSpectating = useUIStore((state) => state.isSpectating);
-  const spectator = isSpectating || isExplicitSpectateSession();
+  const ordersAllowed = useUIStore(canIssueOrders);
   useEffect(() => {
-    if (spectator) usePopoverStore.getState().close("army-deployment");
-  }, [spectator]);
-  if (spectator) return null;
+    if (!ordersAllowed) usePopoverStore.getState().close("army-deployment");
+  }, [ordersAllowed]);
+  if (!ordersAllowed) return null;
   return <ArmyDeploymentForm {...target} />;
 };
 
@@ -48,6 +47,11 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         bare
         compact
       />
+      {form.blockedReason && (
+        <p className="px-1 text-xs" role="status">
+          {form.blockedReason}
+        </p>
+      )}
       <TroopCountSelector
         troopCount={form.troopCount}
         maxAffordable={form.maxAffordable}
@@ -57,8 +61,9 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         embedded
         compact
       />
-      <p className="px-1 text-xs" role="status">
-        Cost: {form.troopCount.toLocaleString()} troops{form.blockedReason ? ` · ${form.blockedReason}` : ""}
+      <p className="px-1 text-xs">
+        Uses {form.troopCount.toLocaleString()} of {form.selectedAvailable.toLocaleString()}{" "}
+        {form.selectedTroopCombo.tier} {form.selectedTroopCombo.type}
       </p>
       <ActionFooter
         armyType={target.isExplorer}

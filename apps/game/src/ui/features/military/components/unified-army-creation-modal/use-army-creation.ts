@@ -445,6 +445,7 @@ export const useArmyCreation = ({
   return {
     troopOptions,
     selectedTroopCombo,
+    selectedAvailable,
     isDefenseTroopLocked,
     selectedGuardCategory,
     selectedGuardTier,

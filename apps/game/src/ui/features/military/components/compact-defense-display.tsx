@@ -1,6 +1,6 @@
 import { openArmyDeploymentPicker } from "../utils/open-army-deployment-picker";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -65,15 +65,13 @@ export const CompactDefenseDisplay = ({
   onRequestSlotAction,
   hideSlotSummary = false,
 }: CompactDefenseDisplayProps) => {
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const {
     setup: { components },
   } = useDojo();
   const currentArmiesTick = useCurrentArmiesTick();
   const isBanner = variant === "banner";
-  const canOpenPicker = Boolean(
-    canManageDefense && structureId && structureId > 0 && !isSpectating && !isExplicitSpectateSession(),
-  );
+  const canOpenPicker = Boolean(canManageDefense && structureId && structureId > 0 && ordersAllowed);
   const structureComponent = useMemo(() => {
     if (!structureId || !components?.Structure) {
       return null;

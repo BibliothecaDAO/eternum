@@ -1,7 +1,6 @@
 import { usePopoverStore, type PopoverMapClick, type SurfaceAnchor } from "@/hooks/store/use-popover-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import type { Direction } from "@bibliothecadao/types";
 import { ArmyDeploymentPicker } from "../components/army-deployment-picker";
 
@@ -18,7 +17,7 @@ export function openArmyDeploymentPicker(
   anchor: SurfaceAnchor,
   mapClick?: PopoverMapClick,
 ) {
-  if (useUIStore.getState().isSpectating || isExplicitSpectateSession()) return;
+  if (!canIssueOrders()) return;
   useTooltipStore.getState().setTooltip(null);
   usePopoverStore.getState().openSurface({
     id: "army-deployment",
