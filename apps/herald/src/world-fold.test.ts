@@ -179,6 +179,25 @@ describe("WorldFold", () => {
     expect(fold.snapshot(7, 12).models[0].rows).toEqual([]);
   });
 
+  it("treats a delete for a row it never held as a chain-legal no-op", () => {
+    const fold = new WorldFold(registry);
+    fold.apply(
+      decodeRequired(
+        registry,
+        rawEvent(WORLD_EVENT_SELECTORS.set, "0x101", ["0x2", "0x7", "0x2", "0x5", "0x3", "0x1", "0x4", "0x5", "0x2"]),
+      ),
+    );
+    const unknownRow = rawEvent(WORLD_EVENT_SELECTORS.delete, "0x101", []);
+    unknownRow.keys[2] = "0xfee";
+
+    expect(fold.apply(decodeRequired(registry, unknownRow))).toBeUndefined();
+    expect(fold.snapshot(7, 12).models[0].rows.map(({ key }) => key)).toEqual(["0xabc"]);
+
+    const overlay = new WorldFold(registry, fold);
+    expect(overlay.apply(decodeRequired(registry, unknownRow))).toBeUndefined();
+    expect(overlay.snapshot(7, 12).models[0].rows.map(({ key }) => key)).toEqual(["0xabc"]);
+  });
+
   it("decodes event messages without retaining them in the state fold", () => {
     const event = decodeRequired(
       registry,
