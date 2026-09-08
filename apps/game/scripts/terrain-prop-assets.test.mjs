@@ -8,14 +8,7 @@ import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { MeshoptDecoder } from "meshoptimizer";
 import { describe, expect, it } from "vitest";
 
-import {
-  ULTIMATE_NATURE_ARCHIVE_URL,
-  ULTIMATE_NATURE_CANOPY_IDS,
-  ULTIMATE_NATURE_LICENSE,
-  ULTIMATE_NATURE_MAX_GLB_BYTES,
-  ULTIMATE_NATURE_PROPS,
-  ULTIMATE_NATURE_SOURCE_PAGE,
-} from "./terrain-props/ultimate-nature-catalog.mjs";
+import { BIOME_KIT_CANOPY_IDS, BIOME_KIT_MAX_GLB_BYTES, BIOME_KIT_PROPS } from "./terrain-props/biome-kit-catalog.mjs";
 import {
   CANOPY_SILHOUETTE_MIN_RETENTION,
   extractCanopyGeometry,
@@ -23,32 +16,41 @@ import {
 } from "./terrain-props/terrain-prop-silhouette.mjs";
 
 const ASSET_DIRECTORY = new URL("../public/models/procedural-terrain/", import.meta.url);
-const MANIFEST_PATH = new URL("ultimate-nature-props.json", ASSET_DIRECTORY);
-const MODEL_PATH = new URL("ultimate-nature-props.glb", ASSET_DIRECTORY);
+const MANIFEST_PATH = new URL("biome-kit-props.json", ASSET_DIRECTORY);
+const MODEL_PATH = new URL("biome-kit-props.glb", ASSET_DIRECTORY);
 
-describe("generated Ultimate Nature terrain assets", () => {
+describe("generated Biome kit terrain assets", () => {
   it("matches its checked-in provenance and transfer contract", async () => {
     const [manifestBytes, modelBytes] = await Promise.all([readFile(MANIFEST_PATH), readFile(MODEL_PATH)]);
     const manifest = JSON.parse(manifestBytes.toString("utf8"));
 
     expect(manifest.source).toMatchObject({
-      sourcePage: ULTIMATE_NATURE_SOURCE_PAGE,
-      archiveUrl: ULTIMATE_NATURE_ARCHIVE_URL,
-      license: ULTIMATE_NATURE_LICENSE,
+      title: "BIOME / 16",
+      version: "1.0.0",
     });
-    expect(manifest.entries.map(({ id }) => id)).toEqual(ULTIMATE_NATURE_PROPS.map(({ id }) => id));
+    expect(manifest.entries.map(({ id }) => id)).toEqual(BIOME_KIT_PROPS.map(({ id }) => id));
     expect(manifest.output.bytes).toBe(modelBytes.byteLength);
-    expect(manifest.output.bytes).toBeLessThanOrEqual(ULTIMATE_NATURE_MAX_GLB_BYTES);
+    expect(manifest.output.bytes).toBeLessThanOrEqual(BIOME_KIT_MAX_GLB_BYTES);
     expect(manifest.output.sha256).toBe(sha256(modelBytes));
   });
 
   it("contains exactly the allowlisted LOD meshes and no texture payload", async () => {
     const gltf = readGlbJson(await readFile(MODEL_PATH));
-    const expectedMeshNames = ULTIMATE_NATURE_PROPS.flatMap(({ id }) => [`${id}-near`, `${id}-far`]);
+    const expectedMeshNames = BIOME_KIT_PROPS.flatMap(({ id }) => [`${id}-near`, `${id}-far`]);
 
     expect(gltf.meshes.map(({ name }) => name)).toEqual(expectedMeshNames);
     expect(gltf.nodes).toHaveLength(expectedMeshNames.length);
     expect(gltf.materials).toHaveLength(1);
+    expect(
+      gltf.meshes.every((mesh) =>
+        mesh.primitives.every(
+          ({ attributes }) =>
+            attributes.COLOR_0 !== undefined &&
+            attributes._WIND_WEIGHT !== undefined &&
+            attributes.NORMAL !== undefined,
+        ),
+      ),
+    ).toBe(true);
     expect(gltf.textures ?? []).toHaveLength(0);
     expect(gltf.images ?? []).toHaveLength(0);
     expect(gltf.extensionsRequired).toEqual(
@@ -69,7 +71,7 @@ describe("generated Ultimate Nature terrain assets", () => {
         .map((mesh) => [mesh.getName(), mesh]),
     );
 
-    for (const id of ULTIMATE_NATURE_CANOPY_IDS) {
+    for (const id of BIOME_KIT_CANOPY_IDS) {
       const near = meshesByName.get(`${id}-near`);
       const far = meshesByName.get(`${id}-far`);
       expect(near, `${id} near LOD`).toBeDefined();

@@ -8,6 +8,7 @@ describe("procedural character rig", () => {
     const base = resolveCharacterRig(createDefaultProceduralCharacterConfig());
     const originalLegLength = base.morphology.thighLength + base.morphology.shinLength;
     const calibrated = applyCharacterRigLimbLengths(base, {
+      foot: base.morphology.foot,
       forearmLength: 0.31,
       shinLength: 0.56,
       thighLength: 0.52,

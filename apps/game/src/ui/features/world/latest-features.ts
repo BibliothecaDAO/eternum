@@ -34,6 +34,34 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-09",
+    title: "Roaming Biome Wildlife",
+    description:
+      "Biome creatures wander through explored terrain, with native species and sparse populations of at most one animal per 8×8 region.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-08",
+    title: "Refreshed Biome Artwork",
+    description:
+      "Updated terrain vegetation, rocks and biome portraits with the new BIOME / 16 artwork, including forest canopies, mushrooms and cycads.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "More Grounded Character Walking",
+    description:
+      "Improved walking with heel-to-toe foot motion, weight acceptance and calmer upper-body movement, plus visible contact diagnostics in the gym.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Knight Animation Review Suite",
+    description:
+      "Added separate idle, run and sword-attack baselines, recovery captures and comparisons for animation timing changes.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-08",
     title: "Detailed Fleets for Every Army",
     type: "improvement",

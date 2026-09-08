@@ -60,9 +60,7 @@ describe("terrain prop placement", () => {
     const page = request(cells, "scorched-identity");
     const instances = prepareTerrainPropInstances(page, new TerrainField(page));
     expect(instances.length).toBeGreaterThan(0);
-    expect(
-      instances.every(({ archetype }) => ["dead-tree", "boulder", "stump", "fallen-log"].includes(archetype)),
-    ).toBe(true);
+    expect(instances.every(({ archetype }) => ["dead-tree", "boulder", "fallen-log"].includes(archetype))).toBe(true);
   });
 
   it("derives dense near-view ground cover from the same vegetation field", () => {
@@ -153,7 +151,9 @@ describe("terrain prop placement", () => {
     const instances = prepareTerrainPropInstances(page, new TerrainField(page));
     const archetypes = new Set(instances.map(({ archetype }) => archetype));
 
-    expect([...archetypes].some((archetype) => ["willow", "broadleaf", "birch"].includes(archetype))).toBe(true);
+    expect([...archetypes].some((archetype) => ["rainforest-canopy", "broadleaf", "birch"].includes(archetype))).toBe(
+      true,
+    );
     expect(archetypes.has("shrub")).toBe(true);
     expect(archetypes.has("fallen-log")).toBe(true);
     expect(Math.min(...instances.map(({ scale }) => scale))).toBeGreaterThanOrEqual(0.54);
@@ -270,7 +270,7 @@ describe("terrain prop placement", () => {
     expect(average(regrowth.map(({ archetype }) => getTerrainPropDisturbanceAffinity(archetype)))).toBeGreaterThan(
       average(undisturbed.map(({ archetype }) => getTerrainPropDisturbanceAffinity(archetype))) + 0.08,
     );
-    expect(regrowth.some(({ archetype }) => archetype === "shrub" || archetype === "stump")).toBe(true);
+    expect(regrowth.some(({ archetype }) => archetype === "shrub" || archetype === "mushroom")).toBe(true);
   });
 });
 

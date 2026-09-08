@@ -156,6 +156,12 @@ function requireKnownValues(values, allowed, label) {
   if (unknown.length > 0) throw new Error(`Unknown terrain benchmark ${label}: ${unknown.join(", ")}`);
 }
 
+// An informational run is a structural check on a software renderer (CI runs the whole quick
+// benchmark near 1 FPS), so it gets the full run's completion budget instead of the dev-GPU one.
+function resolveCompletionTimeoutMs(runMode, timingPolicy) {
+  return runMode === "full" || timingPolicy === "informational" ? 600_000 : 120_000;
+}
+
 function main(args) {
   const baseUrl = readOption(args, "--base-url", DEFAULT_BASE_URL);
   const artifactDirectory = resolve(readOption(args, "--artifact-dir", DEFAULT_ARTIFACT_DIRECTORY));
@@ -165,7 +171,7 @@ function main(args) {
   const renderers = readListOption(args, "--renderers", TERRAIN_BENCHMARK_RENDERERS);
   const runMode = readOption(args, "--run-mode", "quick");
   const timingPolicy = readOption(args, "--timing-policy", "enforced");
-  const timeoutMs = Number(readOption(args, "--timeout-ms", runMode === "full" ? "600000" : "120000"));
+  const timeoutMs = Number(readOption(args, "--timeout-ms", String(resolveCompletionTimeoutMs(runMode, timingPolicy))));
   const variants = readListOption(args, "--variants", TERRAIN_BENCHMARK_VARIANTS);
   requireKnownValues(renderers, TERRAIN_BENCHMARK_RENDERERS, "renderers");
   requireKnownValues(variants, TERRAIN_BENCHMARK_VARIANTS, "variants");

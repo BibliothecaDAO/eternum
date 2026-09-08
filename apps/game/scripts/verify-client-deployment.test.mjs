@@ -1,9 +1,11 @@
+// @vitest-environment node
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "node:test";
+// Deployment verification runs standalone in deployment CI and inside the client Vitest suite.
+const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import { verifyClientDeployment } from "./verify-client-deployment.mjs";
 

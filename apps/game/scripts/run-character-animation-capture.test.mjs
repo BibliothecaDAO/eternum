@@ -48,60 +48,43 @@ describe("character animation capture script", () => {
     expect(() => normalizeRootMotionSpeed("backwards")).toThrow("Invalid root motion speed");
   });
 
-  it("rejects blank or anatomically invalid captures", () => {
+  it("accepts complete evidence and rejects failed or incomplete reports", () => {
+    const report = {
+      plan: {
+        sampleFrames: [0, 1],
+        totalFrames: 2,
+        truncated: false,
+        fixedStepSeconds: 1 / 60,
+        sampling: "all-frames",
+        views: [{ id: "front" }],
+      },
+      frames: [0, 1].map((frameIndex) => ({
+        frameIndex,
+        elapsedSeconds: frameIndex / 60,
+        issues: [],
+        views: [{ id: "front", imageNonBlank: true }],
+      })),
+      evaluation: { automatedHardGatePassed: true },
+    };
+    const evaluate = (value) => evaluateCharacterAnimationCapture({ browserErrors: [], report: value });
+    expect(evaluate(report).ok).toBe(true);
+    expect(evaluate({ ...report, evaluation: { automatedHardGatePassed: false } }).ok).toBe(false);
+    expect(evaluate({ ...report, evaluation: undefined }).ok).toBe(false);
+    expect(evaluate({ ...report, frames: [report.frames[0]] }).ok).toBe(false);
+    expect(evaluate({ ...report, plan: { ...report.plan, truncated: true } }).ok).toBe(false);
+    expect(evaluate({ ...report, frames: report.frames.map((frame) => ({ ...frame, views: [] })) }).ok).toBe(false);
     expect(
-      evaluateCharacterAnimationCapture({
-        browserErrors: [],
-        report: {
-          frames: [
-            {
-              frameIndex: 12,
-              imageNonBlank: false,
-              issues: ["arrow-intersects-head"],
-              views: [{ id: "rear", imageNonBlank: false }],
-            },
-          ],
-        },
-      }),
-    ).toEqual({
-      ok: false,
-      reasons: ["blank frame views: F12:rear", "critical pose issues: F12:arrow-intersects-head"],
-    });
-  });
-
-  it("accepts a complete five-view frame", () => {
+      evaluate({
+        ...report,
+        frames: report.frames.map((frame) => ({ ...frame, issues: ["new-unrecognized-pose-defect"] })),
+      }).ok,
+    ).toBe(false);
     expect(
-      evaluateCharacterAnimationCapture({
-        browserErrors: [],
-        report: {
-          frames: [
-            {
-              frameIndex: 36,
-              imageNonBlank: true,
-              issues: [],
-              views: ["front", "right-profile", "rear", "left-profile", "elevated-three-quarter"].map((id) => ({
-                id,
-                imageNonBlank: true,
-              })),
-            },
-          ],
-        },
-      }),
-    ).toEqual({ ok: true, reasons: [] });
-  });
-
-  it("rejects a report that fails moving-root locomotion gates", () => {
-    expect(
-      evaluateCharacterAnimationCapture({
-        browserErrors: [],
-        report: {
-          evaluation: {
-            locomotionHardGateFailures: ["stance-contact-drift"],
-            locomotionHardGatePassed: false,
-          },
-          frames: [{ frameIndex: 2, imageNonBlank: true, issues: [], views: [] }],
-        },
-      }),
-    ).toEqual({ ok: false, reasons: ["locomotion hard gate: stance-contact-drift"] });
+      evaluate({
+        ...report,
+        frames: report.frames.map((frame) => ({ ...frame, views: [{ id: "front", imageNonBlank: false }] })),
+      }).ok,
+    ).toBe(false);
+    expect(evaluateCharacterAnimationCapture({ browserErrors: ["WebGL context lost"], report }).ok).toBe(false);
   });
 });

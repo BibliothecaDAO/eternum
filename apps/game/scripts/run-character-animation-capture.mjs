@@ -1,8 +1,10 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseAgentBrowserJson, runAgentBrowser } from "./run-renderer-debug-smoke.mjs";
+
+import { evaluateAnimationReport } from "../src/three/characters/gym/procedural-animation-evidence.mjs";
 
 const CHARACTER_GYM_PATH = "/debug/procedural-characters";
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
@@ -11,28 +13,11 @@ const POLL_INTERVAL_MS = 250;
 const VALID_KINDS = new Set(["archer", "crossbowman", "horse", "knight", "paladin"]);
 const VALID_OVERLAYS = new Set(["clean", "diagnostic"]);
 const VALID_SAMPLING = new Set(["all-frames", "key-phases", "phase-atlas"]);
-const VALID_SEQUENCES = new Set(["archer-shot", "locomotion-cycle", "melee-attack"]);
+const VALID_SEQUENCES = new Set(["archer-shot", "idle-hold", "locomotion-cycle", "melee-attack"]);
 const VALID_MOTION_MODES = new Set(["idle", "walk", "run", "mounted"]);
 const VALID_APPEARANCE_IDS = new Set(["modular-fantasy", "universal-base"]);
 const ASSET_WEAPON_IDS = new Set(["winter-broadaxe", "winter-rider-battleaxe"]);
 const ASSET_OFFHAND_IDS = new Set(["light-cavalry-shield", "winter-rider-shield", "winter-targe"]);
-const CRITICAL_ISSUES = [
-  "arrow-intersects-head",
-  "bend-inverted",
-  "elbow-hyperextended",
-  "elbow-overfolded",
-  "foot-backward",
-  "hand-inside-head",
-  "knee-backward",
-  "grip-detached",
-  "non-finite-joint",
-  "palm-outward",
-  "phase-mismatch",
-  "solver-socket-diverged",
-  "weapon-intersects-head",
-  "weapon-intersects-offhand",
-];
-
 export function buildCharacterAnimationCaptureUrl({ baseUrl, rendererMode }) {
   const url = new URL(baseUrl);
   url.pathname = CHARACTER_GYM_PATH;
@@ -99,23 +84,7 @@ export function normalizeRootMotionSpeed(value) {
 }
 
 export function evaluateCharacterAnimationCapture({ browserErrors, report }) {
-  const reasons = [];
-  if (!report?.frames?.length) reasons.push("capture produced no frames");
-  const blankViews = (report?.frames ?? []).flatMap((frame) =>
-    (frame.views?.length ? frame.views : [{ id: "primary", imageNonBlank: frame.imageNonBlank }])
-      .filter(({ imageNonBlank }) => !imageNonBlank)
-      .map(({ id }) => `F${frame.frameIndex}:${id}`),
-  );
-  if (blankViews.length > 0) reasons.push(`blank frame views: ${blankViews.join(", ")}`);
-  const criticalIssues = (report?.frames ?? []).flatMap(({ frameIndex, issues }) =>
-    issues
-      .filter((issue) => CRITICAL_ISSUES.some((critical) => issue.includes(critical)))
-      .map((issue) => `F${frameIndex}:${issue}`),
-  );
-  if (criticalIssues.length > 0) reasons.push(`critical pose issues: ${criticalIssues.join(", ")}`);
-  if (report?.evaluation?.locomotionHardGatePassed === false) {
-    reasons.push(`locomotion hard gate: ${report.evaluation.locomotionHardGateFailures.join(", ")}`);
-  }
+  const { reasons } = evaluateAnimationReport(report);
   if (browserErrors.length > 0) reasons.push(`browser reported ${browserErrors.length} error(s): ${browserErrors[0]}`);
   return { ok: reasons.length === 0, reasons };
 }
@@ -224,7 +193,9 @@ function writeCaptureArtifacts(session, headed, report, outputDir) {
         { headed },
       );
       const dataUrl = parseAgentBrowserJson(raw);
-      if (typeof dataUrl !== "string" || !dataUrl.includes(",")) return;
+      if (typeof dataUrl !== "string" || !/^data:image\/webp;base64,[A-Za-z0-9+/]+=*$/.test(dataUrl)) {
+        throw new Error(`Missing image artifact F${frameIndex}:${id ?? "primary"}`);
+      }
       const filename = `frame-${String(frameIndex).padStart(4, "0")}-${id ?? "primary"}.webp`;
       writeFileSync(join(outputDir, filename), decodeDataUrl(dataUrl));
     });
@@ -251,6 +222,7 @@ function runCapture({
   tier,
   timeoutMs,
   weaponId,
+  scenario,
 }) {
   const session = `character-animation-capture-${process.pid}`;
   const url = buildCharacterAnimationCaptureUrl({ baseUrl, rendererMode });
@@ -262,7 +234,18 @@ function runCapture({
       timeoutMs,
       until: ({ ready, rendererMode: activeMode }) => ready && activeMode !== "initializing",
     });
-    configureCaptureUnit(session, headed, appearanceId, tier, kind, motionMode, weaponId, offhandId);
+    let scenarioCapture;
+    if (scenario) {
+      scenarioCapture = parseAgentBrowserJson(
+        runAgentBrowser(
+          session,
+          ["eval", `JSON.stringify(window.__proceduralCharacterGym.loadReviewScenario(${JSON.stringify(scenario)}))`],
+          { headed },
+        ),
+      );
+    } else {
+      configureCaptureUnit(session, headed, appearanceId, tier, kind, motionMode, weaponId, offhandId);
+    }
     const expectedAssetId = resolveCaptureAssetId(appearanceId, tier);
     const configuredSnapshot = waitForGym({
       headed,
@@ -280,7 +263,14 @@ function runCapture({
         (!ASSET_WEAPON_IDS.has(weaponId) || stats?.meleeWeaponSource === "asset") &&
         (!ASSET_OFFHAND_IDS.has(offhandId) || stats?.meleeOffhandSource === "asset"),
     });
-    const report = captureReport(session, headed, sampling, overlay, sequence, rootMotionSpeed);
+    const report = captureReport(
+      session,
+      headed,
+      sampling,
+      overlay,
+      scenarioCapture?.sequence ?? sequence,
+      scenarioCapture?.rootMotionSpeed ?? rootMotionSpeed,
+    );
     writeCaptureArtifacts(session, headed, report, outputDir);
     const browserErrors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
     const evaluation = evaluateCharacterAnimationCapture({ browserErrors, report });
@@ -314,12 +304,33 @@ function runCapture({
 }
 
 function main(argv) {
+  const scenarioFile = readOption(argv, "--scenario-file", "");
+  const scenario = scenarioFile ? JSON.parse(readFileSync(scenarioFile, "utf8")) : undefined;
+  if (
+    scenarioFile &&
+    [
+      "--kind",
+      "--tier",
+      "--appearance-id",
+      "--motion-mode",
+      "--weapon-id",
+      "--offhand-id",
+      "--root-motion-speed",
+      "--sequence",
+    ].some((flag) => argv.includes(flag))
+  ) {
+    throw new Error(
+      "A saved scenario owns the model, motion, loadout and root speed; remove conflicting capture options",
+    );
+  }
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
-  const appearanceId = normalizeCaptureAppearanceId(readOption(argv, "--appearance-id", "modular-fantasy"));
-  const tier = normalizeCaptureTier(readOption(argv, "--tier", "3"));
+  const appearanceId = normalizeCaptureAppearanceId(
+    readOption(argv, "--appearance-id", scenario?.config?.humanoid?.appearanceId ?? "modular-fantasy"),
+  );
+  const tier = normalizeCaptureTier(readOption(argv, "--tier", scenario?.config?.humanoid?.tier ?? "3"));
   const headed = readFlag(argv, "--headed");
-  const kind = normalizeCaptureKind(readOption(argv, "--kind", "archer"));
-  const requestedMotionMode = readOption(argv, "--motion-mode", "");
+  const kind = normalizeCaptureKind(readOption(argv, "--kind", scenario?.config?.kind ?? "archer"));
+  const requestedMotionMode = readOption(argv, "--motion-mode", scenario?.config?.humanoid?.animationMode ?? "");
   const motionMode = resolveCaptureMotionMode(kind, requestedMotionMode);
   const offhandId = readOption(argv, "--offhand-id", "");
   const rendererMode = readOption(argv, "--renderer-mode", "");
@@ -336,27 +347,37 @@ function main(argv) {
   );
   const timeoutMs = Number(readOption(argv, "--timeout-ms", String(DEFAULT_TIMEOUT_MS)));
   const requestedRootMotionSpeed = readOption(argv, "--root-motion-speed", "");
-  const rootMotionSpeed = requestedRootMotionSpeed ? normalizeRootMotionSpeed(requestedRootMotionSpeed) : undefined;
+  const rootMotionSpeed = requestedRootMotionSpeed
+    ? normalizeRootMotionSpeed(requestedRootMotionSpeed)
+    : scenario?.rootMotionSpeed;
   const outputDir = resolve(
     readOption(argv, "--output-dir", resolve(process.cwd(), "../../../output/animation-capture", kind)),
   );
-  const summary = runCapture({
-    baseUrl,
-    appearanceId,
-    headed,
-    kind,
-    motionMode,
-    offhandId,
-    outputDir,
-    overlay,
-    rendererMode,
-    rootMotionSpeed,
-    sampling,
-    sequence,
-    tier,
-    timeoutMs,
-    weaponId,
-  });
+  let summary;
+  try {
+    summary = runCapture({
+      baseUrl,
+      appearanceId,
+      headed,
+      kind,
+      motionMode,
+      offhandId,
+      outputDir,
+      overlay,
+      rendererMode,
+      rootMotionSpeed,
+      sampling,
+      sequence,
+      tier,
+      timeoutMs,
+      weaponId,
+      scenario,
+    });
+  } catch (error) {
+    summary = { ok: false, reasons: [error instanceof Error ? error.message : String(error)], outputDir };
+  }
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(join(outputDir, "capture-summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
   if (!summary.ok) process.exitCode = 1;
 }

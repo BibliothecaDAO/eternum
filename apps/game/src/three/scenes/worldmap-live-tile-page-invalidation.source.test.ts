@@ -19,8 +19,8 @@ describe("worldmap live tile page invalidation", () => {
       "  private syncProjectedArmyPathfinding(",
     );
 
-    expect(lifecycle).toContain("this.worldSpatialProjection.subscribeTiles");
-    expect(lifecycle).toContain("this.handleProjectedTileChanges(changes)");
+    expect(lifecycle).toContain("subscribeWorldmapTileChanges(this.worldSpatialProjection");
+    expect(lifecycle).toContain("this.applyProjectedTileChange(change, source)");
     expect(source).not.toContain("worldUpdateListener.Tile");
   });
 

@@ -316,6 +316,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.reactionController.reset();
     this.reactionPose = undefined;
     this.avatar.setUpperBodyAction(undefined);
+    this.avatar.resetPoseHistory();
     this.applyAnimatedPose();
   }
 

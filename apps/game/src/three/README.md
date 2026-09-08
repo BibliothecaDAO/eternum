@@ -71,7 +71,7 @@ Quality and Battery use the same visible area. Battery only narrows work prepare
 
 The cosmetic catalog and FX caches own their source geometry and textures. Consumers own the materials they clone or
 tint and their own instance buffers. `ProceduralTerrain` owns page geometry, TSL materials, frontier surfaces, and
-global prop instance pools; the shared terrain-prop loader owns the single optimized Ultimate Nature GLB. Renderer
+global prop instance pools; the shared terrain-prop loader owns the single optimized BIOME / 16 prop GLB. Renderer
 teardown clears scene-owned terrain first, then cosmetic, environment, and material caches.
 
 Important shared owners include:

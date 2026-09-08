@@ -27,6 +27,30 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults(results).performanceDeltas).toHaveLength(2);
   });
 
+  it("rejects duplicate wildlife regions and incomplete creature loads", () => {
+    const results = healthyResults();
+    results[0].snapshot.wildlife = {
+      count: 2,
+      loaded: 2,
+      pending: 0,
+      failed: [],
+      visible: true,
+      creatures: [{ region: "0:0" }, { region: "0:0" }],
+    };
+    expect(evaluateTerrainGalleryResults(results).reasons).toContain(
+      "all-biomes/webgpu-auto/flat: wildlife loading or 8x8 density contract failed",
+    );
+    results[0].snapshot.wildlife = {
+      count: 1,
+      loaded: 0,
+      pending: 1,
+      failed: [],
+      visible: true,
+      creatures: [{ region: "0:0" }],
+    };
+    expect(evaluateTerrainGalleryResults(results).ok).toBe(false);
+  });
+
   it("reports backend parity, performance, and browser failures", () => {
     const results = healthyResults();
     const fallback = results.find(
@@ -154,7 +178,7 @@ describe("terrain gallery verification", () => {
     );
   });
 
-  it("requires fog preview geometry to match the one-ring frontier", () => {
+  it("requires prepared fog cells to match the one-ring frontier", () => {
     const fog = result("webgpu-auto", "webgpu", "textured");
     fog.sceneId = "fog-frontier";
     fog.snapshot.sceneId = "fog-frontier";
@@ -163,7 +187,7 @@ describe("terrain gallery verification", () => {
     fog.snapshot.fogMaskHeight = 64;
     fog.snapshot.fogMaskWidth = 64;
     fog.snapshot.fogTerrainCells = 24;
-    fog.snapshot.frontierPreviewCells = 6;
+    fog.snapshot.preparedFrontierCells = 6;
     fog.snapshot.shroudFrontierInstances = 6;
     fog.snapshot.shroudInstances = 24;
 
@@ -175,7 +199,7 @@ describe("terrain gallery verification", () => {
       }),
     ).toMatchObject({ ok: true, reasons: [] });
 
-    fog.snapshot.frontierPreviewCells = 5;
+    fog.snapshot.preparedFrontierCells = 5;
     fog.snapshot.fogTerrainCells = 23;
     fog.snapshot.shroudActiveReveals = 1;
     expect(
@@ -186,7 +210,7 @@ describe("terrain gallery verification", () => {
       }),
     ).toMatchObject({ ok: true, reasons: [] });
 
-    fog.snapshot.frontierPreviewCells = 4;
+    fog.snapshot.preparedFrontierCells = 4;
     expect(
       evaluateTerrainGalleryResults([fog], {
         groundModes: ["textured"],
@@ -194,7 +218,7 @@ describe("terrain gallery verification", () => {
         sceneIds: ["fog-frontier"],
       }).reasons,
     ).toContain(
-      "fog-frontier/webgpu-auto/textured: frontier preview geometry did not match the committed one-ring fog frontier",
+      "fog-frontier/webgpu-auto/textured: prepared frontier cells did not match the committed one-ring fog frontier",
     );
   });
 
@@ -244,6 +268,7 @@ function result(rendererMode, activeMode, groundMode) {
       cellCount: 320,
       commitMs: 4,
       drawCalls: 22,
+      wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
       dustActiveParticles: 0,
       dustCapacity: 128,
       dustEmitterCount: 0,
@@ -255,7 +280,7 @@ function result(rendererMode, activeMode, groundMode) {
       fogMaskWidth: 0,
       fogOpacity: 1,
       fogTerrainCells: 0,
-      frontierPreviewCells: 0,
+      preparedFrontierCells: 0,
       frameP50Ms: 16.6,
       frameP95Ms: 16.7,
       frameWorstMs: 18,

@@ -1,111 +1,197 @@
-import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
-import { Matrix4 } from "three";
-import { describe, expect, it } from "vitest";
-
-import { TerrainField } from "./terrain-field";
-import { terrainCellKey, terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from "three";
+import { describe, expect, it, vi } from "vitest";
+import { BiomeCreaturePopulation, wildlifeRegion } from "./creatures/biome-creature-population";
+import { findNearestTerrainHex } from "./terrain-coordinates";
+import { loadBiomeCreature } from "./creatures/biome-creature-assets";
+import { TerrainWildlife } from "./terrain-wildlife";
 import type { TerrainCellInput } from "./terrain-types";
-import { createTerrainWildlife, createTerrainWildlifeMaterial } from "./terrain-wildlife";
 
-function forest(col: number, row = 0): TerrainCellInput {
+vi.mock("./creatures/biome-creature-assets", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./creatures/biome-creature-assets")>();
   return {
-    col,
-    row,
-    biome: BiomeType.TemperateRainForest,
-    previewBiome: BiomeType.TemperateRainForest,
+    ...original,
+    loadBiomeCreature: vi.fn(async () => {
+      const root = new Group();
+      root.userData = { animation_schema: "biome-creature-v1", profile: "zebra" };
+      const body = new Group();
+      body.userData.joint = "body";
+      body.add(new Mesh(new BoxGeometry(0.2, 0.2, 0.2), new MeshStandardMaterial()));
+      root.add(body);
+      return root;
+    }),
+  };
+});
+
+function cells(size = 24): TerrainCellInput[] {
+  return Array.from({ length: size * size }, (_, i) => ({
+    col: (i % size) - 8,
+    row: Math.floor(i / size) - 8,
+    biome: i % 2 ? BiomeType.Grassland : BiomeType.TemperateDeciduousForest,
     explored: true,
     occupied: false,
-  };
+    previewBiome: null,
+  }));
 }
 
-function forestInterior(): TerrainCellInput[] {
-  const center = forest(0);
-  const cells = new Map([[terrainCellKey(0, 0), center]]);
-  for (const neighbor of terrainNeighborCoordinates(0, 0)) {
-    cells.set(terrainCellKey(neighbor.col, neighbor.row), forest(neighbor.col, neighbor.row));
-    for (const outer of terrainNeighborCoordinates(neighbor.col, neighbor.row)) {
-      cells.set(terrainCellKey(outer.col, outer.row), forest(outer.col, outer.row));
+function assertDensity(population: BiomeCreaturePopulation) {
+  const occupied = new Set<string>();
+  const reserved = new Map<string, number>();
+  for (const creature of population.creatures.values()) {
+    const region = wildlifeRegion(findNearestTerrainHex(creature.x, creature.z));
+    expect(occupied.has(region)).toBe(false);
+    occupied.add(region);
+    for (const end of [creature.cell, creature.target].filter(Boolean)) {
+      const region = wildlifeRegion(end!);
+      expect(reserved.get(region) ?? creature.id).toBe(creature.id);
+      reserved.set(region, creature.id);
     }
   }
-  return [...cells.values()];
 }
 
-function field(cells: TerrainCellInput[]): TerrainField {
-  return new TerrainField({
-    cells,
-    halo: [],
-    climate: NEUTRAL_BIOME_CLIMATE,
-    mapCenter: 0,
-    pageKey: "birds",
-    roadSegments: [],
-    settlementAnchors: [],
-  });
-}
-
-describe("terrain wildlife", () => {
-  it("never spawns on unknown, occupied, or non-forest terrain", () => {
-    const cells = [
-      { ...forest(0), explored: false, biome: null },
-      { ...forest(1), occupied: true },
-      { ...forest(2), biome: BiomeType.Ocean, previewBiome: BiomeType.Ocean },
-    ];
-    const material = createTerrainWildlifeMaterial();
-    expect(createTerrainWildlife(cells, field(cells), material)).toBeNull();
-    material.dispose();
+describe("biome creature population", () => {
+  it("spawns once per aligned 8x8 region, including negative coordinates and overlapping pages", () => {
+    const first = new BiomeCreaturePopulation();
+    const second = new BiomeCreaturePopulation();
+    first.sync(cells());
+    second.sync([...cells(), ...cells()].reverse());
+    expect([...first.creatures.values()]).toEqual([...second.creatures.values()]);
+    expect(first.creatures.size).toBe(9);
+    expect(wildlifeRegion({ col: -1, row: -8 })).toBe("-1:-1");
+    assertDensity(first);
   });
 
-  it("keeps a bounded flock at the same habitat regardless of cell traversal order", () => {
-    const cells = forestInterior();
-    const material = createTerrainWildlifeMaterial();
-    const first = createTerrainWildlife(cells, field(cells), material)!;
-    const reversed = createTerrainWildlife([...cells].reverse(), field(cells), material)!;
-    expect(first.count).toBe(3);
-    expect(first.geometry.index?.count).toBe(9);
-    expect(first.instanceMatrix.array).toEqual(reversed.instanceMatrix.array);
-    const origin = new Matrix4();
-    first.getMatrixAt(0, origin);
-    expect(origin.elements[13]).toBeGreaterThan(1);
-    const center = terrainHexToWorld(0, 0);
-    expect(origin.elements[12]).toBe(center.x);
-    expect(origin.elements[14]).toBe(center.z);
-    expect(first.castShadow).toBe(false);
-    first.geometry.dispose();
-    reversed.geometry.dispose();
-    material.dispose();
-  });
-
-  it("excludes isolated forest and narrow forest corridors", () => {
-    const material = createTerrainWildlifeMaterial();
-    for (const cells of [[forest(0)], Array.from({ length: 50 }, (_, index) => forest(index))]) {
-      expect(createTerrainWildlife(cells, field(cells), material)).toBeNull();
+  it("walks between biome tiles while maintaining the cap and preserving animals through page refresh", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    const initial = [...population.creatures.values()].map((creature) => ({ ...creature }));
+    const visitedBiomes = new Map<number, Set<number>>();
+    for (let i = 0; i < 2400; i++) {
+      population.update(0.05);
+      if (i % 40 === 0) {
+        assertDensity(population);
+        for (const creature of population.creatures.values()) {
+          const seen = visitedBiomes.get(creature.id) ?? new Set();
+          seen.add(creature.cell.col % 2);
+          visitedBiomes.set(creature.id, seen);
+        }
+      }
     }
-    material.dispose();
+    expect([...visitedBiomes.values()].some((seen) => seen.size > 1)).toBe(true);
+    expect(
+      [...population.creatures.values()].some(
+        (creature, i) => creature.x !== initial[i].x || creature.z !== initial[i].z,
+      ),
+    ).toBe(true);
+    const before = [...population.creatures.values()];
+    population.sync(cells().reverse());
+    for (const creature of before) expect(population.creatures.get(creature.id)).toBe(creature);
+    assertDensity(population);
   });
 
-  it.each(["coast", "unexplored", "occupied", "unloaded"])(
-    "keeps the full forest margin clear of %s terrain",
-    (boundary) => {
-      const cells = forestInterior();
-      const edge = cells.find((cell) => cell.col === 2 && cell.row === 0)!;
-      if (boundary === "coast") Object.assign(edge, { biome: BiomeType.Ocean, previewBiome: BiomeType.Ocean });
-      if (boundary === "unexplored") Object.assign(edge, { explored: false, biome: null, previewBiome: null });
-      if (boundary === "occupied") edge.occupied = true;
-      if (boundary === "unloaded") cells.splice(cells.indexOf(edge), 1);
-      const material = createTerrainWildlifeMaterial();
-      expect(createTerrainWildlife(cells, field(cells), material)).toBeNull();
-      material.dispose();
-    },
-  );
+  it("does not spawn or traverse hidden, occupied or rejected terrain and releases removed pages", () => {
+    const population = new BiomeCreaturePopulation(() => false);
+    population.sync(cells());
+    expect(population.creatures.size).toBe(0);
+    const roaming = new BiomeCreaturePopulation();
+    roaming.sync(cells().map((cell) => ({ ...cell, explored: false })));
+    expect(roaming.creatures.size).toBe(0);
+    roaming.sync(cells().map((cell) => ({ ...cell, occupied: true })));
+    expect(roaming.creatures.size).toBe(0);
+    roaming.sync(cells());
+    expect(roaming.creatures.size).toBeGreaterThan(0);
+    roaming.sync([]);
+    expect(roaming.creatures.size).toBe(0);
+  });
 
-  it("does not keep an old forest habitat after a lab biome change", () => {
-    const cells = forestInterior();
-    const material = createTerrainWildlifeMaterial();
-    const flock = createTerrainWildlife(cells, field(cells), material)!;
-    expect(flock).not.toBeNull();
-    const ocean = cells.map((cell) => ({ ...cell, biome: BiomeType.Ocean, previewBiome: BiomeType.Ocean }));
-    expect(createTerrainWildlife(ocean, field(ocean), material)).toBeNull();
-    flock.geometry.dispose();
-    material.dispose();
+  it("keeps water species in water and land species on land across long roaming sessions", () => {
+    const terrain = cells().map((cell) => ({ ...cell, biome: cell.col < 4 ? BiomeType.Ocean : BiomeType.Grassland }));
+    const population = new BiomeCreaturePopulation();
+    population.sync(terrain);
+    for (let i = 0; i < 3000; i++) {
+      population.update(0.05);
+      for (const creature of population.creatures.values()) {
+        expect(creature.cell.col < 4).toBe(creature.species === "green-sea-turtle");
+        if (creature.target) expect(creature.target.col < 4).toBe(creature.species === "green-sea-turtle");
+      }
+    }
+  });
+
+  it("can enter a vacant neighboring region without letting a refresh double-spawn there", () => {
+    const population = new BiomeCreaturePopulation();
+    population.sync(cells());
+    const survivor = [...population.creatures.values()][0];
+    for (const id of population.creatures.keys()) if (id !== survivor.id) population.creatures.delete(id);
+    const origin = wildlifeRegion(survivor.cell);
+    let crossed = false;
+    for (let step = 0; step < 20000 && !crossed; step++) {
+      population.update(0.05);
+      assertDensity(population);
+      crossed = wildlifeRegion(survivor.cell) !== origin;
+    }
+    expect(crossed).toBe(true);
+    population.sync(cells());
+    expect(population.creatures.get(survivor.id)).toBe(survivor);
+    assertDensity(population);
+  });
+
+  it("clamps resume gaps and caps the total population", () => {
+    const first = new BiomeCreaturePopulation(),
+      second = new BiomeCreaturePopulation();
+    first.sync(cells(64));
+    second.sync(cells(64));
+    expect(first.creatures.size).toBe(32);
+    first.update(1000);
+    second.update(0.05);
+    expect([...first.creatures.values()]).toEqual([...second.creatures.values()]);
+  });
+});
+
+describe("terrain wildlife lifecycle", () => {
+  it("disposes a model that finishes loading after its terrain has been released", async () => {
+    const template = await loadBiomeCreature("plains-zebra", () => {});
+    const mesh = template.children[0].children[0] as Mesh;
+    const disposeGeometry = vi.spyOn(mesh.geometry, "dispose");
+    let finish!: (root: Group) => void;
+    vi.mocked(loadBiomeCreature).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Grassland, height: 0, normal: [0, 1, 0] }),
+      () => {},
+    );
+    wildlife.sync(
+      cells().map((cell) => ({ ...cell, biome: BiomeType.Grassland })),
+      [],
+    );
+    const loading = wildlife.load();
+    wildlife.dispose();
+    finish(template);
+    await loading;
+    expect(disposeGeometry).toHaveBeenCalledOnce();
+    expect(wildlife.getStats().loaded).toBe(0);
+    expect(wildlife.object3d.children).toHaveLength(0);
+  });
+
+  it("shares templates, gives every animal its own joints, freezes hidden wildlife and clears released views", async () => {
+    const wildlife = new TerrainWildlife(
+      () => ({ biome: BiomeType.Grassland, height: 0, normal: [0, 1, 0] }),
+      () => {},
+    );
+    wildlife.sync(cells(), []);
+    await wildlife.load();
+    expect(wildlife.getStats().loaded).toBe(9);
+    expect(wildlife.object3d.children[0].children[0]).not.toBe(wildlife.object3d.children[1].children[0]);
+    const before = wildlife.getStats();
+    wildlife.object3d.visible = false;
+    wildlife.update(20);
+    expect(wildlife.getStats().creatures).toEqual(before.creatures);
+    wildlife.sync([], []);
+    expect(wildlife.getStats().loaded).toBe(0);
+    wildlife.dispose();
+    expect(wildlife.object3d.children).toHaveLength(0);
   });
 });

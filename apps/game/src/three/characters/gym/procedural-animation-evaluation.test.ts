@@ -4,6 +4,40 @@ import type { ProceduralAnimationCaptureResult } from "./procedural-animation-ca
 import { evaluateProceduralAnimationCapture } from "./procedural-animation-evaluation";
 
 describe("procedural animation objective evaluation", () => {
+  it("rejects visible hovering and missing support landmarks even when the solver ankle is planted", () => {
+    const result = createEvaluationResult();
+    for (const frame of result.frames)
+      for (const side of ["left", "right"] as const) {
+        Object.assign(frame.diagnostics.humanoid!.feet[side], {
+          contactKind: "sole",
+          pitchDegrees: 0,
+          contactPosition: [0, 0.04, 0],
+          heelPosition: [0, 0.04, -0.07],
+          ballPosition: [0, 0.04, 0.18],
+          toeTipPosition: [0, 0.04, 0.28],
+        });
+      }
+    const evaluation = evaluateProceduralAnimationCapture(result);
+    expect(evaluation.contactMetric).toBe("active-foot-landmark");
+    expect(evaluation.automatedHardGatePassed).toBe(false);
+    expect(evaluation.footRollFailures).toContain("left:stance-foot-not-grounded");
+    result.frames[0].diagnostics.humanoid!.feet.left.contactPosition = null;
+    expect(evaluateProceduralAnimationCapture(result).footRollFailures).toContain("left:missing-active-foot-contact");
+  });
+  it.each(["idle-hold", "melee-attack"] as const)(
+    "rejects stationary root movement and sliding during %s",
+    (sequence) => {
+      const result = createEvaluationResult();
+      result.plan.sequence = sequence;
+      expect(evaluateProceduralAnimationCapture(result).stationaryHardGatePassed).toBe(true);
+      result.frames[1].diagnostics.humanoid!.rootPosition = [0, 0, 0.1];
+      result.frames[1].diagnostics.humanoid!.feet.left.position = [0.1, 0, 0];
+      const evaluation = evaluateProceduralAnimationCapture(result);
+      expect(evaluation.automatedHardGatePassed).toBe(false);
+      expect(evaluation.stationaryHardGateFailures).toContain("stationary-root-moved-or-missing");
+      expect(evaluation.stationaryHardGateFailures).toContain("stationary-contact-drift-missing-or-excessive");
+    },
+  );
   it("measures hard gates and consecutive stance drift", () => {
     const result = createEvaluationResult();
     const evaluation = evaluateProceduralAnimationCapture(result);
@@ -170,7 +204,7 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
         },
         palmInwardDot: { left: 1, right: 1 },
         phase: frameIndex * 0.1,
-        rootPosition: [0, 0, frameIndex * 0.01],
+        rootPosition: [0, 0, 0],
         rotations: {
           chest: [0, 0, 0, 1],
           head: [0, 0, 0, 1],
@@ -193,11 +227,23 @@ function createEvaluationResult(): ProceduralAnimationCaptureResult & {
     imageNonBlank: true,
     issues: [] as string[],
     runtimePhase: "gait",
-    views: [{ imageNonBlank: true }],
+    views: [{ id: "front", imageNonBlank: true }],
   }));
   return {
     config: {} as ProceduralAnimationCaptureResult["config"],
     frames,
-    plan: { sampling: "all-frames", sequence: "melee-attack" } as ProceduralAnimationCaptureResult["plan"],
+    plan: {
+      overlay: "clean",
+      phases: [],
+      rootMotionSpeed: 0,
+      totalSeconds: 1 / 60,
+      sampling: "all-frames",
+      sequence: "melee-attack",
+      truncated: false,
+      sampleFrames: [0, 1],
+      views: [{ id: "front", label: "Front", azimuthDegrees: 0, elevationDegrees: 0 }],
+      totalFrames: 2,
+      fixedStepSeconds: 1 / 60,
+    } as ProceduralAnimationCaptureResult["plan"],
   } as unknown as ReturnType<typeof createEvaluationResult>;
 }
