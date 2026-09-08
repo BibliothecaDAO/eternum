@@ -57,7 +57,7 @@ describe("procedural character configuration", () => {
     expect(pose.feet.left.target).not.toEqual(pose.feet.right.target);
   });
 
-  it("plants stance ankles and lifts only the swing ankle", () => {
+  it("rolls stance ankles around a grounded sole and clears the swing foot", () => {
     const config = applyProceduralCharacterConfigPatch(createDefaultProceduralCharacterConfig(), {
       animationMode: "walk",
       motionVariation: 0,
@@ -72,7 +72,11 @@ describe("procedural character configuration", () => {
       Object.values(pose.feet).filter((foot) => foot.cycle.contact === "swing"),
     );
 
-    expect(stanceFeet.every((foot) => Math.abs(foot.target[1] - 0.12) < 1e-5)).toBe(true);
+    expect(stanceFeet.every((foot) => foot.roll && Math.abs(foot.target[1] - foot.roll.ankleOffset[1]) < 1e-5)).toBe(
+      true,
+    );
+    const ankleHeights = stanceFeet.map((foot) => foot.target[1]);
+    expect(Math.max(...ankleHeights) - Math.min(...ankleHeights)).toBeGreaterThan(0.04);
     expect(swingFeet.some((foot) => foot.target[1] > 0.2)).toBe(true);
   });
 
@@ -85,7 +89,10 @@ describe("procedural character configuration", () => {
     });
     const rig = resolveCharacterRig(config);
     const pose = resolveProceduralCharacterPose(rig, config, 0);
-    const footSeparation = Math.abs(pose.feet.left.target[0] - pose.feet.right.target[0]);
+    const toeOut = Math.sin((config.footProgressionDegrees * Math.PI) / 180);
+    const leftSole = pose.feet.left.target[0] - toeOut * pose.feet.left.roll!.ankleOffset[2];
+    const rightSole = pose.feet.right.target[0] + toeOut * pose.feet.right.roll!.ankleOffset[2];
+    const footSeparation = Math.abs(leftSole - rightSole);
     const legLength = rig.morphology.thighLength + rig.morphology.shinLength;
 
     expect(footSeparation / legLength).toBeCloseTo(0.13, 4);

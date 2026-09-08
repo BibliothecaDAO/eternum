@@ -1,3 +1,4 @@
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ProceduralUnitConfig } from "@/three/characters/procedural-unit-config";
 import type {
@@ -276,6 +277,8 @@ function Comparison({
   onClose(): void;
 }) {
   const [position, setPosition] = useState(0);
+  const positionRef = useRef(position);
+  positionRef.current = position;
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [atlas, setAtlas] = useState(false);
@@ -290,133 +293,136 @@ function Comparison({
   );
   useEffect(() => {
     if (!playing || atlas || !comparison.compatible) return;
-    const timer = window.setInterval(
-      () => setPosition((current) => (current + 1) % count),
-      (left.plan.fixedStepSeconds * 1000) / speed,
-    );
-    return () => window.clearInterval(timer);
-  }, [playing, atlas, comparison.compatible, count, left.plan.fixedStepSeconds, speed]);
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+    const startPosition = positionRef.current;
+    let startedAt: number | undefined;
+    let animationFrame: number;
+    const advancePlayback = (now: number) => {
+      startedAt ??= now;
+      const elapsedFrames = Math.floor(((now - startedAt) * speed) / (left.plan.fixedStepSeconds * 1000));
+      setPosition((startPosition + elapsedFrames) % count);
+      animationFrame = window.requestAnimationFrame(advancePlayback);
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+    animationFrame = window.requestAnimationFrame(advancePlayback);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [playing, atlas, comparison.compatible, count, left.plan.fixedStepSeconds, speed]);
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Knight animation comparison"
-      className="fixed inset-4 z-50 overflow-auto rounded border border-slate-600 bg-slate-950 p-4 shadow-2xl"
-      data-review-comparison={comparison.compatible ? "compatible" : "incompatible"}
+    <PopoverPanel
+      id="knight-animation-comparison"
+      ariaLabel="Knight animation comparison"
+      anchor="top-center"
+      onDismiss={onClose}
+      className="h-[calc(100dvh-80px)] w-[calc(100vw-32px)] overflow-auto border-slate-600 bg-slate-950 text-slate-100"
     >
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg">Baseline / candidate</h2>
-        <button autoFocus className={buttonClass} onClick={onClose}>
-          Close comparison
-        </button>
-      </div>
-      <p className="my-2 text-sm">
-        {comparison.compatible
-          ? "Matched capture conditions"
-          : `Incompatible: ${comparison.incompatible}. Recapture under matched conditions.`}
-      </p>
-      <p className="text-xs text-slate-400">{comparison.changedParameters.join(" · ") || "No configuration changes"}</p>
-      <p className="my-2 text-xs">
-        {comparison.failures[0] ??
-          "Candidate objective gates pass; assess weight, timing and readability before promotion."}{" "}
-        {comparison.timingChanged
-          ? "Timing changed: playback uses real elapsed time; the shorter capture holds its final pose. Atlas views match named phases."
-          : comparison.firstPoseDifference
-            ? `First pose change: ${comparison.firstPoseDifference}`
-            : ""}
-      </p>
-      {comparison.compatible && (
-        <>
-          <div className="my-3 flex flex-wrap gap-2">
-            <button className={buttonClass} disabled={atlas} onClick={() => setPlaying(!playing)}>
-              {playing ? "Pause comparison" : "Play comparison"}
-            </button>
-            <select
-              className="bg-slate-800 text-sm"
-              aria-label="Playback speed"
-              value={speed}
-              onChange={(event) => setSpeed(Number(event.target.value))}
-            >
-              <option value={1}>1× speed</option>
-              <option value={0.25}>¼ speed</option>
-            </select>
-            <button
-              className={buttonClass}
-              onClick={() => {
-                setAtlas(!atlas);
-                setPosition(0);
-                setViewIndex(0);
-                setPlaying(false);
-              }}
-            >
-              {atlas ? "Temporal playback" : "Diagnostic atlas"}
-            </button>
-            {atlas && (
+      <div data-review-comparison={comparison.compatible ? "compatible" : "incompatible"}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg">Baseline / candidate</h2>
+          <button autoFocus className={buttonClass} onClick={onClose}>
+            Close comparison
+          </button>
+        </div>
+        <p className="my-2 text-sm">
+          {comparison.compatible
+            ? "Matched capture conditions"
+            : `Incompatible: ${comparison.incompatible}. Recapture under matched conditions.`}
+        </p>
+        <p className="text-xs text-slate-400">
+          {comparison.changedParameters.join(" · ") || "No configuration changes"}
+        </p>
+        <p className="my-2 text-xs">
+          {comparison.failures[0] ??
+            "Candidate objective gates pass; assess weight, timing and readability before promotion."}{" "}
+          {comparison.timingChanged
+            ? "Timing changed: playback uses real elapsed time; the shorter capture holds its final pose. Atlas views match named phases."
+            : comparison.firstPoseDifference
+              ? `First pose change: ${comparison.firstPoseDifference}`
+              : ""}
+        </p>
+        {comparison.compatible && (
+          <>
+            <div className="my-3 flex flex-wrap gap-2">
+              <button className={buttonClass} disabled={atlas} onClick={() => setPlaying(!playing)}>
+                {playing ? "Pause comparison" : "Play comparison"}
+              </button>
               <select
                 className="bg-slate-800 text-sm"
-                aria-label="Comparison camera"
-                value={viewIndex}
-                onChange={(event) => setViewIndex(Number(event.target.value))}
+                aria-label="Playback speed"
+                value={speed}
+                onChange={(event) => setSpeed(Number(event.target.value))}
               >
-                {left.plan.views.map((view, i) => (
-                  <option value={i} key={view.id}>
-                    {view.label}
-                  </option>
-                ))}
+                <option value={1}>1× speed</option>
+                <option value={0.25}>¼ speed</option>
               </select>
-            )}
-            <button
-              className={buttonClass}
-              disabled={firstFailure < 0}
-              onClick={() => {
+              <button
+                className={buttonClass}
+                onClick={() => {
+                  setAtlas(!atlas);
+                  setPosition(0);
+                  setViewIndex(0);
+                  setPlaying(false);
+                }}
+              >
+                {atlas ? "Temporal playback" : "Diagnostic atlas"}
+              </button>
+              {atlas && (
+                <select
+                  className="bg-slate-800 text-sm"
+                  aria-label="Comparison camera"
+                  value={viewIndex}
+                  onChange={(event) => setViewIndex(Number(event.target.value))}
+                >
+                  {left.plan.views.map((view, i) => (
+                    <option value={i} key={view.id}>
+                      {view.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                className={buttonClass}
+                disabled={firstFailure < 0}
+                onClick={() => {
+                  setPlaying(false);
+                  setPosition(firstFailure);
+                }}
+              >
+                First failing frame
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[left, right].map((capture, side) => {
+                const frame = capture.frames[Math.min(index, capture.frames.length - 1)];
+                const view = frame.views[viewIndex];
+                return (
+                  <figure key={side}>
+                    <img
+                      className="max-h-[60vh] w-full object-contain"
+                      src={view.imageDataUrl ?? undefined}
+                      alt={`${side === 0 ? "Baseline" : "Candidate"} ${view.label} frame ${frame.frameIndex}`}
+                    />
+                    <figcaption className="text-center text-sm">
+                      {side === 0 ? "Baseline" : "Candidate"} · F{frame.frameIndex} · {frame.runtimePhase} ·{" "}
+                      {frame.elapsedSeconds.toFixed(3)}s {index >= capture.frames.length ? " · ended" : ""}
+                    </figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+            <input
+              className="my-4 w-full"
+              type="range"
+              aria-label="Comparison frame"
+              min={0}
+              max={count - 1}
+              value={index}
+              onChange={(event) => {
                 setPlaying(false);
-                setPosition(firstFailure);
+                setPosition(Number(event.target.value));
               }}
-            >
-              First failing frame
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[left, right].map((capture, side) => {
-              const frame = capture.frames[Math.min(index, capture.frames.length - 1)];
-              const view = frame.views[viewIndex];
-              return (
-                <figure key={side}>
-                  <img
-                    className="max-h-[60vh] w-full object-contain"
-                    src={view.imageDataUrl ?? undefined}
-                    alt={`${side === 0 ? "Baseline" : "Candidate"} ${view.label} frame ${frame.frameIndex}`}
-                  />
-                  <figcaption className="text-center text-sm">
-                    {side === 0 ? "Baseline" : "Candidate"} · F{frame.frameIndex} · {frame.runtimePhase} ·{" "}
-                    {frame.elapsedSeconds.toFixed(3)}s {index >= capture.frames.length ? " · ended" : ""}
-                  </figcaption>
-                </figure>
-              );
-            })}
-          </div>
-          <input
-            className="my-4 w-full"
-            type="range"
-            aria-label="Comparison frame"
-            min={0}
-            max={count - 1}
-            value={index}
-            onChange={(event) => {
-              setPlaying(false);
-              setPosition(Number(event.target.value));
-            }}
-          />
-        </>
-      )}
-    </div>
+            />
+          </>
+        )}
+      </div>
+    </PopoverPanel>
   );
 }
 

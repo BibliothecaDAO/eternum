@@ -206,17 +206,17 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
     if (
       expectsFog &&
-      (!(result.snapshot?.frontierPreviewCells > 0) ||
-        result.snapshot.frontierPreviewCells + result.snapshot.shroudActiveReveals !==
+      (!(result.snapshot?.preparedFrontierCells > 0) ||
+        result.snapshot.preparedFrontierCells + result.snapshot.shroudActiveReveals !==
           result.snapshot.shroudFrontierInstances)
     ) {
-      reasons.push(`${label}: frontier preview geometry did not match the committed one-ring fog frontier`);
+      reasons.push(`${label}: prepared frontier cells did not match the committed one-ring fog frontier`);
     }
     if (!expectsFog && result.snapshot?.shroudInstances !== 0) {
       reasons.push(`${label}: fully explored scene unexpectedly rendered exploration fog cells`);
     }
-    if (!expectsFog && result.snapshot?.frontierPreviewCells !== 0) {
-      reasons.push(`${label}: fully explored scene unexpectedly rendered frontier preview geometry`);
+    if (!expectsFog && result.snapshot?.preparedFrontierCells !== 0) {
+      reasons.push(`${label}: fully explored scene unexpectedly rendered prepared frontier cells`);
     }
     if (!expectsFog && result.snapshot?.fogTerrainCells !== 0) {
       reasons.push(`${label}: fully explored scene unexpectedly rendered fog-covered terrain`);
@@ -281,7 +281,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         metric.dustTriangles !== reference.dustTriangles ||
         metric.fogOpacity !== reference.fogOpacity ||
         metric.fogTerrainCells !== reference.fogTerrainCells ||
-        metric.frontierPreviewCells !== reference.frontierPreviewCells ||
+        metric.preparedFrontierCells !== reference.preparedFrontierCells ||
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.groundCoverInstances !== reference.groundCoverInstances ||

@@ -68,6 +68,7 @@ export interface ProceduralTerrainDebugStats {
   fogMaskWidth: number;
   fogOpacity: number;
   fogTerrainCells: number;
+  preparedFrontierCells: number;
   frameP50Ms: number;
   frameP95Ms: number;
   frameWorstMs: number;
@@ -301,6 +302,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     fingerprint: prepared.fingerprint,
     fogOpacity: TERRAIN_DEEP_FOG_OPACITY,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
+    preparedFrontierCells: countPreparedFrontierCells(prepared),
     fogMaskBytes: shroudStats.maskBytes,
     fogMaskHeight: shroudStats.maskHeight,
     fogMaskWidth: shroudStats.maskWidth,
@@ -397,6 +399,7 @@ function updateTerrainVerification(
     prepareMs: prepared.diagnostics.prepareMs,
     commitMs,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
+    preparedFrontierCells: countPreparedFrontierCells(prepared),
     groundCoverInstances: props.groundCoverInstances,
     settlementSites: prepared.request.settlementAnchors.length,
     triangles:
@@ -634,4 +637,8 @@ function percentile(values: readonly number[], percentileValue: number): number 
   if (values.length === 0) return 0;
   const sorted = values.toSorted((left, right) => left - right);
   return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * percentileValue) - 1)];
+}
+
+function countPreparedFrontierCells(prepared: PreparedTerrainPage): number {
+  return prepared.shroudInstances.filter((instance) => instance.frontier).length;
 }
