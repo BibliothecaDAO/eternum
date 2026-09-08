@@ -1,3 +1,5 @@
+import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
+import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
 import { createHexceptionTerrainRequest, getLocalHexDisk } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { AudioManager } from "@/audio/core/AudioManager";
@@ -5,7 +7,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -72,9 +74,6 @@ import {
   ResourceManager,
   TileManager,
   configManager,
-  divideByPrecision,
-  getBalance,
-  getBuildingCosts,
   getRealmInfo,
   getStructureStage,
   getTileAt,
@@ -637,6 +636,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
+    usePopoverStore.getState().close("plot-construction");
     this.isEntered = false;
     // Capture a zoom still waiting on its debounce so quick scene switches keep it.
     this.flushPendingLocalZoomPersist();
@@ -652,6 +652,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    usePopoverStore.getState().close("plot-construction");
     this.advanceRealmGeneration();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
@@ -743,7 +744,7 @@ export default class HexceptionScene extends HexagonScene {
     const buildingType = this.buildingPreview?.getPreviewBuilding();
 
     const account = useAccountStore.getState().account;
-    const canConstruct = !!account && !useUIStore.getState().isSpectating && !isExplicitSpectateSession();
+    const canConstruct = !!account && canIssueOrders();
     if (buildingType) {
       if (!canConstruct || !account) {
         this.clearBuildingMode();
@@ -766,13 +767,6 @@ export default class HexceptionScene extends HexagonScene {
 
       if (!buildability.canSubmit) {
         toast.error(buildability.reason ?? "Building cannot be submitted.");
-        AudioManager.getInstance().play("ui.build_invalid");
-        this.updateHexceptionGrid(this.hexceptionRadius);
-        return;
-      }
-
-      if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
-        toast.error("Insufficient resources to build here.");
         AudioManager.getInstance().play("ui.build_invalid");
         this.updateHexceptionGrid(this.hexceptionRadius);
         return;
@@ -834,34 +828,62 @@ export default class HexceptionScene extends HexagonScene {
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
-        this.state.setLeftNavigationView(canConstruct ? LeftView.ConstructionView : LeftView.EntityView);
+        this.state.setLeftNavigationView(LeftView.EntityView);
+        if (canConstruct) this.openPlotConstruction(normalizedCoords);
       }
     }
   }
 
-  private canAffordPreviewBuilding(
-    structureEntityId: number,
-    buildingType: BuildingType,
-    useSimpleCost: boolean,
-  ): boolean {
-    const buildingCosts = getBuildingCosts(structureEntityId, this.dojo.components, buildingType, useSimpleCost);
-    if (!buildingCosts?.length) {
+  private openPlotConstruction(spot: HexPosition): boolean {
+    if (!this.isEntered || !canIssueOrders()) return false;
+    const entityId = useUIStore.getState().structureEntityId;
+    const account = useAccountStore.getState().account;
+    const realm = getRealmInfo(gameEntityKey([BigInt(entityId)]), this.dojo.components);
+    if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
+    if (spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1]) return false;
+    if (this.tileManager.isHexOccupied(spot)) return false;
+    const radius = Number(this.tileManager.getRealmLevel(entityId)) + 1;
+    if (
+      !getLocalHexDisk({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, radius).some(
+        (hex) => hex.col === spot.col && hex.row === spot.row,
+      )
+    )
       return false;
-    }
-
-    const { currentDefaultTick } = getBlockTimestamp();
-    return buildingCosts.every((resourceCost) =>
-      this.hasEnoughResourceForPreviewCost(structureEntityId, resourceCost, currentDefaultTick),
-    );
+    const point = projectHexToScreen(spot, this.camera);
+    const tileManager = this.tileManager;
+    usePopoverStore.getState().openSurface({
+      id: "plot-construction",
+      anchor: { left: point.x, right: point.x, top: point.y, bottom: point.y },
+      content: (
+        <PlotConstructionPicker
+          key={entityId}
+          entityId={entityId}
+          spot={spot}
+          tileManager={tileManager}
+          isCurrentTarget={() =>
+            this.isEntered && this.tileManager === tileManager && useUIStore.getState().structureEntityId === entityId
+          }
+        />
+      ),
+      mapClick: { reanchor: (event) => this.reanchorPlotConstruction(event) },
+    });
+    return true;
   }
 
-  private hasEnoughResourceForPreviewCost(
-    structureEntityId: number,
-    resourceCost: { resource: ResourcesIds; amount: number },
-    currentDefaultTick: number,
-  ): boolean {
-    const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
-    return divideByPrecision(balance.balance) >= resourceCost.amount;
+  private reanchorPlotConstruction(event: PointerEvent): boolean {
+    const canvas = event.target;
+    if (!(canvas instanceof HTMLCanvasElement) || canvas.id !== "main-canvas") return false;
+    const rect = canvas.getBoundingClientRect();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(
+      new Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        1 - ((event.clientY - rect.top) / rect.height) * 2,
+      ),
+      this.camera,
+    );
+    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords;
+    return hex ? this.openPlotConstruction(hex) : false;
   }
 
   protected onHexagonMouseMove(hex: { position: Vector3; hexCoords: HexPosition } | null): void {

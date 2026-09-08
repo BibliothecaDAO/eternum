@@ -12,11 +12,13 @@ describe("Hexception route targeting", () => {
     const source = readSource("src/three/scenes/hexception.tsx");
     const click = source.slice(
       source.indexOf("  protected async onHexagonClick"),
-      source.indexOf("  private canAffordPreviewBuilding"),
+      source.indexOf("  protected onHexagonMouseMove"),
     );
     const guard = click.indexOf("if (!canConstruct || !account)");
-    expect(click).toContain("!!account && !useUIStore.getState().isSpectating && !isExplicitSpectateSession()");
-    expect(click).toContain("canConstruct ? LeftView.ConstructionView : LeftView.EntityView");
+    expect(click).toContain("!!account && canIssueOrders()");
+    expect(click).toContain("if (canConstruct) this.openPlotConstruction(normalizedCoords)");
+    expect(click).toContain("mapClick: { reanchor:");
+    expect(click).not.toContain("LeftView.ConstructionView");
     expect(guard).toBeGreaterThanOrEqual(0);
     expect(guard).toBeLessThan(click.indexOf("this.tileManager.placeBuilding"));
     expect(click).not.toContain("this.removeBuilding");

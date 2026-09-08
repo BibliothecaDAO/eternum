@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-08",
+    title: "Build directly on a plot",
+    description:
+      "Click an open plot to choose and build immediately. Costs and blocked reasons stay beside the plot, with the map in view.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
     title: "Deploy Armies on the Map",
     description:
       "Right-click a highlighted spawn hex or use Add on a guard slot to choose troops and deploy with the map in view. Pick from troops in stock, enter a count or use Max, and see exactly what the order uses. Blocked orders explain what is missing.",

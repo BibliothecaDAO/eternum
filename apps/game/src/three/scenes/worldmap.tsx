@@ -1,3 +1,4 @@
+import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
@@ -2134,7 +2135,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.lastHoverReconciliation = nextHoverReconciliation;
     const spawnPath = resolveSpawnActionPath(nextHexCoords, getLiveWorldmapEntityActions().actionPaths);
-    showArmyDeploymentTooltip(spawnPath && nextHexCoords ? this.projectDeploymentHex(nextHexCoords) : null);
+    showArmyDeploymentTooltip(spawnPath && nextHexCoords ? projectHexToScreen(nextHexCoords, this.camera) : null);
 
     if (hex === null) {
       if (this.previouslyHoveredHex) {
@@ -2888,20 +2889,12 @@ export default class WorldmapScene extends WarpTravel {
     if (direction === undefined || direction === null) return;
 
     const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
-    const point = this.projectDeploymentHex({ col: normalized.x, row: normalized.y });
+    const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     openArmyDeploymentPicker(
       { direction, structureId: selectedEntityId, isExplorer: true },
       { left: point.x, right: point.x, top: point.y, bottom: point.y },
       { reanchor: (event) => this.reanchorArmyDeployment(event) },
     );
-  }
-
-  private projectDeploymentHex(hex: HexPosition): { x: number; y: number } {
-    const point = getWorldPositionForHex(hex).clone().project(this.camera);
-    const canvas = document.getElementById("main-canvas");
-    const rect = canvas?.getBoundingClientRect();
-    if (!rect) throw new Error("World map canvas is missing");
-    return { x: rect.left + ((point.x + 1) * rect.width) / 2, y: rect.top + ((1 - point.y) * rect.height) / 2 };
   }
 
   private reanchorArmyDeployment(event: PointerEvent): boolean {
@@ -2940,7 +2933,7 @@ export default class WorldmapScene extends WarpTravel {
       .map((path) => {
         const target = path[path.length - 1].hex;
         const hex = new Position({ x: target.col, y: target.row }).getNormalized();
-        return this.projectDeploymentHex({ col: hex.x, row: hex.y });
+        return projectHexToScreen({ col: hex.x, row: hex.y }, this.camera);
       });
     points.sort(
       (a, b) =>

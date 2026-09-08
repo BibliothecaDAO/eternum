@@ -1,3 +1,4 @@
+import { getConstructionBuildingGroups } from "./construction-groups";
 import { usePlayResourceSound } from "@/audio";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -422,8 +423,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const { playResourceSound } = usePlayResourceSound();
 
   const buildingTypes = useMemo(
-    () => Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
-    [mode],
+    () =>
+      getConstructionBuildingGroups(mode, realm?.resources ?? []).flatMap((group) =>
+        group.buildings.map((type) => BuildingType[type]),
+      ),
+    [mode, realm?.resources],
   );
 
   const producedResourceIds = useMemo<ResourcesIds[]>(() => {
