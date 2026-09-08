@@ -89,8 +89,8 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
   [BiomeType.Ocean]: profile(0),
-  [BiomeType.Beach]: profile(0.16, ["palm", 6], ["boulder", 2], ["fallen-log", 3], ["grass-tuft", 5], ["reed", 1]),
-  [BiomeType.Scorched]: profile(0.14, ["dead-tree", 4], ["boulder", 6], ["stump", 2], ["fallen-log", 1]),
+  [BiomeType.Beach]: profile(0.16, ["palm", 6], ["boulder", 2], ["fallen-log", 3], ["grass-tuft", 5], ["cycad", 1]),
+  [BiomeType.Scorched]: profile(0.14, ["dead-tree", 4], ["boulder", 8], ["fallen-log", 1]),
   [BiomeType.Bare]: profile(0.2, ["boulder", 10], ["grass-tuft", 1]),
   [BiomeType.Tundra]: profile(0.23, ["boulder", 4], ["shrub", 5], ["grass-tuft", 8], ["wildflower", 2]),
   [BiomeType.Snow]: profile(0.12, ["boulder", 8], ["dead-tree", 1]),
@@ -118,7 +118,7 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
     ["broadleaf", 6],
     ["birch", 3],
     ["shrub", 2],
-    ["stump", 1],
+    ["mushroom", 1],
     ["fallen-log", 1],
     ["fern", 5],
     ["wildflower", 3],
@@ -126,13 +126,13 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.TemperateRainForest]: profile(
     0.32,
     ["conifer", 4],
-    ["willow", 5],
+    ["rainforest-canopy", 5],
     ["broadleaf", 2],
     ["shrub", 2],
     ["fallen-log", 2],
     ["boulder", 1],
     ["fern", 10],
-    ["reed", 3],
+    ["cycad", 3],
   ),
   [BiomeType.SubtropicalDesert]: profile(0.16, ["cactus", 9], ["boulder", 3], ["grass-tuft", 2]),
   [BiomeType.TropicalSeasonalForest]: profile(
@@ -148,12 +148,12 @@ const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
   [BiomeType.TropicalRainForest]: profile(
     0.34,
     ["palm", 4],
-    ["willow", 3],
+    ["rainforest-canopy", 3],
     ["broadleaf", 5],
     ["shrub", 3],
     ["fallen-log", 2],
     ["fern", 10],
-    ["reed", 4],
+    ["cycad", 4],
     ["wildflower", 2],
   ),
 };
@@ -381,7 +381,7 @@ function resolveArmyClearanceFootprint(archetype: TerrainPropArchetypeId): numbe
   switch (archetype) {
     case "boulder":
       return 0.21;
-    case "stump":
+    case "mushroom":
       return 0.31;
     case "fallen-log":
       return 0.34;
@@ -391,12 +391,12 @@ function resolveArmyClearanceFootprint(archetype: TerrainPropArchetypeId): numbe
       return 0.24;
     case "grass-tuft":
     case "fern":
-    case "reed":
+    case "cycad":
     case "wildflower":
       return 0.04;
     case "broadleaf":
     case "birch":
-    case "willow":
+    case "rainforest-canopy":
     case "conifer":
     case "palm":
     case "dead-tree":
@@ -589,7 +589,7 @@ function resolveTerrainPropTint(
     const dryness = clampUnit(1 - vegetation.moisture + vegetation.disturbanceStrength * 0.35);
     const wetness = vegetation.waterEdgeStrength;
     if (archetype === "fern") return [0.72 + value * 0.08, 0.88 + value * 0.08, 0.68 + value * 0.08];
-    if (archetype === "reed") return [0.82 + value * 0.08, 0.9 + value * 0.07, 0.62 + wetness * 0.12];
+    if (archetype === "cycad") return [0.82 + value * 0.08, 0.9 + value * 0.07, 0.62 + wetness * 0.12];
     if (archetype === "wildflower") return [0.9 + value * 0.08, 0.94 + value * 0.05, 0.82 + value * 0.12];
     return [0.8 + dryness * 0.12, 0.9 - dryness * 0.14 + value * 0.05, 0.68 - dryness * 0.08];
   }

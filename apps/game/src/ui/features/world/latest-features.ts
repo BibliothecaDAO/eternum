@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-08",
+    title: "Refreshed Biome Artwork",
+    description:
+      "Updated terrain vegetation, rocks and biome portraits with the new BIOME / 16 artwork, including forest canopies, mushrooms and cycads.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
     title: "More Grounded Character Walking",
     description:
       "Improved walking with heel-to-toe foot motion, weight acceptance and calmer upper-body movement, plus visible contact diagnostics in the gym.",

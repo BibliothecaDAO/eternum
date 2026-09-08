@@ -64,11 +64,11 @@ export const TERRAIN_PROP_PAGE_SLOT_CAPACITY: Readonly<Record<TerrainPropArchety
   fern: 208, // measured 136
   "grass-tuft": 160, // measured 103
   palm: 176, // measured 109
-  reed: 96, // measured 55
+  cycad: 96, // measured 55
   shrub: 176, // measured 111
-  stump: 32, // measured 17
+  mushroom: 32, // measured 17
   wildflower: 96, // measured 63
-  willow: 144, // measured 87
+  "rainforest-canopy": 144, // measured 87
 });
 
 const TERRAIN_PROP_ECOLOGY_ATTRIBUTE = "terrainPropEcology";

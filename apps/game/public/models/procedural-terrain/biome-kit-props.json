@@ -1,0 +1,807 @@
+{
+  "contractVersion": 1,
+  "catalog": {
+    "id": "biome-16",
+    "version": 1,
+    "importerVersion": 1
+  },
+  "source": {
+    "title": "BIOME / 16",
+    "version": "1.0.0",
+    "manifestSha256": "cff408ee28f06d7ec8de0c5c2838db1266dd94e11586858b3eb4f17b2e4ae456",
+    "provenance": "User-supplied original procedural artwork; see SOURCE.md"
+  },
+  "output": {
+    "file": "biome-kit-props.glb",
+    "sha256": "96716cf08ae9733e45e6804c7df560b31fb48426cc880d51de7d159194a77055",
+    "bytes": 383916,
+    "meshCompression": "EXT_meshopt_compression",
+    "textures": 0,
+    "triangleBudgets": {
+      "near": 8535,
+      "far": 3133
+    }
+  },
+  "entries": [
+    {
+      "id": "broadleaf",
+      "sourceId": "temperate-deciduous-forest__oak-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/temperate-deciduous-forest__oak-01.lod1.glb",
+          "sha256": "0c72d41148a379a66d2ae10840d590675fd7c4277d2ddf66d4e61cb5841a7f4e"
+        },
+        "far": {
+          "file": "glb/props/temperate-deciduous-forest__oak-01.lod2.glb",
+          "sha256": "1debc081268c701abe18c062b26931ad04beffdc2eeb1643df07a9c85398593f"
+        }
+      },
+      "targetHeight": 1.25,
+      "windMode": "foliage",
+      "lods": {
+        "near": {
+          "name": "broadleaf-near",
+          "triangles": 1158,
+          "vertices": 3474,
+          "bounds": {
+            "min": [
+              -0.5625180006027222,
+              0,
+              -0.5243725180625916
+            ],
+            "max": [
+              0.5625180006027222,
+              1.25,
+              0.5243725180625916
+            ]
+          }
+        },
+        "far": {
+          "name": "broadleaf-far",
+          "triangles": 409,
+          "vertices": 1227,
+          "bounds": {
+            "min": [
+              -0.5639710426330566,
+              0,
+              -0.5257270336151123
+            ],
+            "max": [
+              0.5639710426330566,
+              1.25,
+              0.5257270336151123
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "birch",
+      "sourceId": "temperate-deciduous-forest__birch-02",
+      "sources": {
+        "near": {
+          "file": "glb/props/temperate-deciduous-forest__birch-02.lod1.glb",
+          "sha256": "6aebf25499d821abaa38988bf024da2c08a7dd5ff9cbf1ddabff6525910bcfd7"
+        },
+        "far": {
+          "file": "glb/props/temperate-deciduous-forest__birch-02.lod2.glb",
+          "sha256": "dcd5d729d38dddb5c5de8132546f0f419f4c82c1d28a91a0808e981be2e0995d"
+        }
+      },
+      "targetHeight": 1.3,
+      "windMode": "foliage",
+      "lods": {
+        "near": {
+          "name": "birch-near",
+          "triangles": 1218,
+          "vertices": 3654,
+          "bounds": {
+            "min": [
+              -0.5929704308509827,
+              0,
+              -0.5481496453285217
+            ],
+            "max": [
+              0.5929704308509827,
+              1.2999999523162842,
+              0.5481496453285217
+            ]
+          }
+        },
+        "far": {
+          "name": "birch-far",
+          "triangles": 429,
+          "vertices": 1287,
+          "bounds": {
+            "min": [
+              -0.5974085927009583,
+              0,
+              -0.5522523522377014
+            ],
+            "max": [
+              0.5974085927009583,
+              1.2999999523162842,
+              0.5522523522377014
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "rainforest-canopy",
+      "sourceId": "tropical-rain-forest__jungle-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/tropical-rain-forest__jungle-01.lod1.glb",
+          "sha256": "8f0f77f2b633826d9956b4100711e9022d18b90ba7754dd74b6b2e7572146f36"
+        },
+        "far": {
+          "file": "glb/props/tropical-rain-forest__jungle-01.lod2.glb",
+          "sha256": "d5dfa7a3eac27e93c675d2946487e3c28af79b3d7d1839ee1257e05f041d7b6e"
+        }
+      },
+      "targetHeight": 1.35,
+      "windMode": "foliage",
+      "lods": {
+        "near": {
+          "name": "rainforest-canopy-near",
+          "triangles": 1158,
+          "vertices": 3474,
+          "bounds": {
+            "min": [
+              -0.5798690915107727,
+              0,
+              -0.5557597875595093
+            ],
+            "max": [
+              0.5798690915107727,
+              1.350000023841858,
+              0.5557597875595093
+            ]
+          }
+        },
+        "far": {
+          "name": "rainforest-canopy-far",
+          "triangles": 409,
+          "vertices": 1227,
+          "bounds": {
+            "min": [
+              -0.5839160680770874,
+              0,
+              -0.5549576878547668
+            ],
+            "max": [
+              0.5839160680770874,
+              1.350000023841858,
+              0.5549576878547668
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "conifer",
+      "sourceId": "taiga__pine-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/taiga__pine-01.lod1.glb",
+          "sha256": "8533431e13dc1d67d70588a52b6f3b0fbfe38ea86480ab535b59913d9bfb0c99"
+        },
+        "far": {
+          "file": "glb/props/taiga__pine-01.lod2.glb",
+          "sha256": "b6c382f9d41f24817f7ef7a62e777ebec9e57eab2aac9bee9c361729c088201f"
+        }
+      },
+      "targetHeight": 1.35,
+      "windMode": "foliage",
+      "lods": {
+        "near": {
+          "name": "conifer-near",
+          "triangles": 968,
+          "vertices": 2904,
+          "bounds": {
+            "min": [
+              -0.4140148460865021,
+              0,
+              -0.4204016923904419
+            ],
+            "max": [
+              0.4140148460865021,
+              1.350000023841858,
+              0.4204016923904419
+            ]
+          }
+        },
+        "far": {
+          "name": "conifer-far",
+          "triangles": 385,
+          "vertices": 1155,
+          "bounds": {
+            "min": [
+              -0.4030284881591797,
+              0,
+              -0.40806570649147034
+            ],
+            "max": [
+              0.4030284881591797,
+              1.350000023841858,
+              0.40806570649147034
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "palm",
+      "sourceId": "beach__palm-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/beach__palm-01.lod1.glb",
+          "sha256": "f1efdc7a25dc81e4cc370e3733f85f0a886b8d57deab3c9446aaec0ae45d412c"
+        },
+        "far": {
+          "file": "glb/props/beach__palm-01.lod2.glb",
+          "sha256": "50490c6a31134fb4a475c159ef253065b6e3f7d6368a545a6216cee145a83074"
+        }
+      },
+      "targetHeight": 1.45,
+      "windMode": "foliage",
+      "lods": {
+        "near": {
+          "name": "palm-near",
+          "triangles": 1070,
+          "vertices": 3210,
+          "bounds": {
+            "min": [
+              -0.7706009745597839,
+              0,
+              -0.7328851819038391
+            ],
+            "max": [
+              0.7706009745597839,
+              1.4500000476837158,
+              0.7328851819038391
+            ]
+          }
+        },
+        "far": {
+          "name": "palm-far",
+          "triangles": 320,
+          "vertices": 960,
+          "bounds": {
+            "min": [
+              -0.7802225351333618,
+              0,
+              -0.7420370578765869
+            ],
+            "max": [
+              0.7802225351333618,
+              1.4500000476837158,
+              0.7420370578765869
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "dead-tree",
+      "sourceId": "scorched__dead-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/scorched__dead-01.lod1.glb",
+          "sha256": "79dc2eba029e4778d6ce6ab4878923fe0a0b50c0074068f9426b420281a45ba8"
+        },
+        "far": {
+          "file": "glb/props/scorched__dead-01.lod2.glb",
+          "sha256": "21b8c4b46e6e1ac2720effefb28e5026b0bddd590dd741b8d32da77066172956"
+        }
+      },
+      "targetHeight": 1.2,
+      "windMode": "none",
+      "lods": {
+        "near": {
+          "name": "dead-tree-near",
+          "triangles": 302,
+          "vertices": 906,
+          "bounds": {
+            "min": [
+              -0.44527456164360046,
+              0,
+              -0.42462608218193054
+            ],
+            "max": [
+              0.44527456164360046,
+              1.2000000476837158,
+              0.42462608218193054
+            ]
+          }
+        },
+        "far": {
+          "name": "dead-tree-far",
+          "triangles": 125,
+          "vertices": 375,
+          "bounds": {
+            "min": [
+              -0.44587427377700806,
+              0,
+              -0.4251979887485504
+            ],
+            "max": [
+              0.44587427377700806,
+              1.2000000476837158,
+              0.4251979887485504
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "shrub",
+      "sourceId": "shrubland__shrub-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/shrubland__shrub-01.lod1.glb",
+          "sha256": "a68edf4587d7cec024a2ebde9d0ebeebe0b1f2fbaa3f3040b69b0eac8db622bd"
+        },
+        "far": {
+          "file": "glb/props/shrubland__shrub-01.lod2.glb",
+          "sha256": "2f852dc3617b9d029daa432f5bc641965a20cac4b2c277631f10a3b6507bbc7c"
+        }
+      },
+      "targetHeight": 0.32,
+      "windMode": "all",
+      "lods": {
+        "near": {
+          "name": "shrub-near",
+          "triangles": 273,
+          "vertices": 819,
+          "bounds": {
+            "min": [
+              -0.2998153269290924,
+              0,
+              -0.2775672972202301
+            ],
+            "max": [
+              0.2998153269290924,
+              0.3199999928474426,
+              0.2775672972202301
+            ]
+          }
+        },
+        "far": {
+          "name": "shrub-far",
+          "triangles": 115,
+          "vertices": 345,
+          "bounds": {
+            "min": [
+              -0.30514970421791077,
+              0,
+              -0.2709304690361023
+            ],
+            "max": [
+              0.30514970421791077,
+              0.3199999928474426,
+              0.2709304690361023
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "cactus",
+      "sourceId": "subtropical-desert__cactus-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/subtropical-desert__cactus-01.lod1.glb",
+          "sha256": "10b46109073b04fde945cc7930fd1a846fa78e85af01dfe437b7e3ab8dcd9cae"
+        },
+        "far": {
+          "file": "glb/props/subtropical-desert__cactus-01.lod2.glb",
+          "sha256": "eb17b09a0a5840a6030c167c51252aec02ee66edc2fb49a912ab4981a954d7b6"
+        }
+      },
+      "targetHeight": 0.62,
+      "windMode": "none",
+      "lods": {
+        "near": {
+          "name": "cactus-near",
+          "triangles": 322,
+          "vertices": 966,
+          "bounds": {
+            "min": [
+              -0.19550789892673492,
+              0,
+              -0.09118951857089996
+            ],
+            "max": [
+              0.19550789892673492,
+              0.6200000047683716,
+              0.09118951857089996
+            ]
+          }
+        },
+        "far": {
+          "name": "cactus-far",
+          "triangles": 110,
+          "vertices": 330,
+          "bounds": {
+            "min": [
+              -0.18531785905361176,
+              0,
+              -0.09066236764192581
+            ],
+            "max": [
+              0.18531785905361176,
+              0.6200000047683716,
+              0.09066236764192581
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "boulder",
+      "sourceId": "bare__rock-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/bare__rock-01.lod1.glb",
+          "sha256": "8c4084b1957bc713e50594b97bebc90b972a9b098e7a7e933b7dc49e596f6cb4"
+        },
+        "far": {
+          "file": "glb/props/bare__rock-01.lod2.glb",
+          "sha256": "1269bb093ead876043de0e817e6d983b177288cfdb40476e79c7e86b67834b59"
+        }
+      },
+      "targetHeight": 0.22,
+      "windMode": "none",
+      "lods": {
+        "near": {
+          "name": "boulder-near",
+          "triangles": 98,
+          "vertices": 294,
+          "bounds": {
+            "min": [
+              -0.14471101760864258,
+              0,
+              -0.11784622818231583
+            ],
+            "max": [
+              0.14471101760864258,
+              0.2199999988079071,
+              0.11784622818231583
+            ]
+          }
+        },
+        "far": {
+          "name": "boulder-far",
+          "triangles": 42,
+          "vertices": 126,
+          "bounds": {
+            "min": [
+              -0.14331549406051636,
+              0,
+              -0.12054230272769928
+            ],
+            "max": [
+              0.14331549406051636,
+              0.2199999988079071,
+              0.12054230272769928
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "mushroom",
+      "sourceId": "temperate-deciduous-forest__mushrooms-04",
+      "sources": {
+        "near": {
+          "file": "glb/props/temperate-deciduous-forest__mushrooms-04.lod1.glb",
+          "sha256": "b2a5bc0ed96c6b6e660ac9b0392d0f1a2861217be659501e14a0b6c433753092"
+        },
+        "far": {
+          "file": "glb/props/temperate-deciduous-forest__mushrooms-04.lod2.glb",
+          "sha256": "c8992e19ffac095f5bd4e8b55b062d839332321b3f0759869d6853495b447766"
+        }
+      },
+      "targetHeight": 0.22,
+      "windMode": "none",
+      "lods": {
+        "near": {
+          "name": "mushroom-near",
+          "triangles": 350,
+          "vertices": 1050,
+          "bounds": {
+            "min": [
+              -0.17226119339466095,
+              0,
+              -0.19489280879497528
+            ],
+            "max": [
+              0.17226119339466095,
+              0.2199999988079071,
+              0.19489280879497528
+            ]
+          }
+        },
+        "far": {
+          "name": "mushroom-far",
+          "triangles": 147,
+          "vertices": 441,
+          "bounds": {
+            "min": [
+              -0.17492230236530304,
+              0,
+              -0.1969371885061264
+            ],
+            "max": [
+              0.17492230236530304,
+              0.2199999988079071,
+              0.1969371885061264
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "fallen-log",
+      "sourceId": "beach__log-04",
+      "sources": {
+        "near": {
+          "file": "glb/props/beach__log-04.lod1.glb",
+          "sha256": "252870e2032c4e17288daf1070e433d2a5e26ec74132c625975e70e8e26ea58b"
+        },
+        "far": {
+          "file": "glb/props/beach__log-04.lod2.glb",
+          "sha256": "a6d583ad48d7722cceedf9583c8cfe60d3c8ca25a8e701201a3d69a55e91da89"
+        }
+      },
+      "targetHeight": 0.18,
+      "windMode": "none",
+      "lods": {
+        "near": {
+          "name": "fallen-log-near",
+          "triangles": 246,
+          "vertices": 738,
+          "bounds": {
+            "min": [
+              -0.35367825627326965,
+              0,
+              -0.09049121290445328
+            ],
+            "max": [
+              0.35367825627326965,
+              0.18000000715255737,
+              0.09049121290445328
+            ]
+          }
+        },
+        "far": {
+          "name": "fallen-log-far",
+          "triangles": 108,
+          "vertices": 324,
+          "bounds": {
+            "min": [
+              -0.3478526771068573,
+              0,
+              -0.09162767976522446
+            ],
+            "max": [
+              0.3478526771068573,
+              0.18000000715255737,
+              0.09162767976522446
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "grass-tuft",
+      "sourceId": "grassland__grass-01",
+      "sources": {
+        "near": {
+          "file": "glb/props/grassland__grass-01.lod1.glb",
+          "sha256": "601e3e9e9599600739058e29f4910cdbbc376d738992d8fecef22e381264efa7"
+        },
+        "far": {
+          "file": "glb/props/grassland__grass-01.lod2.glb",
+          "sha256": "e94cd6c64243357255d6087763a54f26c3cc8370256bde9c257b8e171449a5f1"
+        }
+      },
+      "targetHeight": 0.12,
+      "windMode": "all",
+      "lods": {
+        "near": {
+          "name": "grass-tuft-near",
+          "triangles": 82,
+          "vertices": 246,
+          "bounds": {
+            "min": [
+              -0.07764730602502823,
+              0,
+              -0.07801976054906845
+            ],
+            "max": [
+              0.07764730602502823,
+              0.11999999731779099,
+              0.07801976054906845
+            ]
+          }
+        },
+        "far": {
+          "name": "grass-tuft-far",
+          "triangles": 36,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.08799058198928833,
+              0,
+              -0.08841264247894287
+            ],
+            "max": [
+              0.08799058198928833,
+              0.11999999731779099,
+              0.08841264247894287
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "fern",
+      "sourceId": "temperate-rain-forest__fern-03",
+      "sources": {
+        "near": {
+          "file": "glb/props/temperate-rain-forest__fern-03.lod1.glb",
+          "sha256": "6b9d3c2599042144792e67efa368a22afa405b8e6069a87f0fd099bca151cc4a"
+        },
+        "far": {
+          "file": "glb/props/temperate-rain-forest__fern-03.lod2.glb",
+          "sha256": "6a616303dbc78ab384099dc3e381c75236332b9414767dda3bfe4fa41349c834"
+        }
+      },
+      "targetHeight": 0.18,
+      "windMode": "all",
+      "lods": {
+        "near": {
+          "name": "fern-near",
+          "triangles": 513,
+          "vertices": 1539,
+          "bounds": {
+            "min": [
+              -0.29651230573654175,
+              0,
+              -0.23737119138240814
+            ],
+            "max": [
+              0.29651230573654175,
+              0.18000000715255737,
+              0.23737119138240814
+            ]
+          }
+        },
+        "far": {
+          "name": "fern-far",
+          "triangles": 171,
+          "vertices": 513,
+          "bounds": {
+            "min": [
+              -0.295958012342453,
+              0,
+              -0.24514234066009521
+            ],
+            "max": [
+              0.295958012342453,
+              0.18000000715255737,
+              0.24514234066009521
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "cycad",
+      "sourceId": "tropical-rain-forest__cycad-03",
+      "sources": {
+        "near": {
+          "file": "glb/props/tropical-rain-forest__cycad-03.lod1.glb",
+          "sha256": "0a7ccea997a59b9f17790dd57d3470ee930bab397ae62f5f16651e80e13ffd79"
+        },
+        "far": {
+          "file": "glb/props/tropical-rain-forest__cycad-03.lod2.glb",
+          "sha256": "9430a79f867afcd614bfafc683a5d0cfb39e82db3b7b1045c9645fb43dc3824e"
+        }
+      },
+      "targetHeight": 0.24,
+      "windMode": "all",
+      "lods": {
+        "near": {
+          "name": "cycad-near",
+          "triangles": 522,
+          "vertices": 1566,
+          "bounds": {
+            "min": [
+              -0.38024723529815674,
+              0,
+              -0.3632364869117737
+            ],
+            "max": [
+              0.38024723529815674,
+              0.23999999463558197,
+              0.3632364869117737
+            ]
+          }
+        },
+        "far": {
+          "name": "cycad-far",
+          "triangles": 237,
+          "vertices": 711,
+          "bounds": {
+            "min": [
+              -0.38018226623535156,
+              0,
+              -0.35088303685188293
+            ],
+            "max": [
+              0.38018226623535156,
+              0.23999999463558197,
+              0.35088303685188293
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "wildflower",
+      "sourceId": "grassland__flowers-02",
+      "sources": {
+        "near": {
+          "file": "glb/props/grassland__flowers-02.lod1.glb",
+          "sha256": "a518696d908e7a29def7f369e49f3bb58927d1650d13cc67ed56dd11b93e65c4"
+        },
+        "far": {
+          "file": "glb/props/grassland__flowers-02.lod2.glb",
+          "sha256": "b99c3a34c7eee81b42d3083a7caf6938347289834a5af5e324969366c004d867"
+        }
+      },
+      "targetHeight": 0.13,
+      "windMode": "all",
+      "lods": {
+        "near": {
+          "name": "wildflower-near",
+          "triangles": 255,
+          "vertices": 765,
+          "bounds": {
+            "min": [
+              -0.07460451126098633,
+              0,
+              -0.0652039423584938
+            ],
+            "max": [
+              0.07460451126098633,
+              0.12999999523162842,
+              0.0652039423584938
+            ]
+          }
+        },
+        "far": {
+          "name": "wildflower-far",
+          "triangles": 90,
+          "vertices": 270,
+          "bounds": {
+            "min": [
+              -0.0747208446264267,
+              0,
+              -0.0626240074634552
+            ],
+            "max": [
+              0.0747208446264267,
+              0.12999999523162842,
+              0.0626240074634552
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

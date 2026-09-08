@@ -90,7 +90,7 @@ export const TerrainPropDebugView = () => {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase text-emerald-200/70">Terrain Assets</p>
-              <h1 className="mt-1 text-2xl font-semibold text-white">Ultimate Nature</h1>
+              <h1 className="mt-1 text-2xl font-semibold text-white">BIOME / 16</h1>
             </div>
             <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
               Exit
@@ -134,7 +134,7 @@ export const TerrainPropDebugView = () => {
           ref={canvasRef}
           id="terrain-prop-debug-canvas"
           className={cn("h-full w-full touch-none", !capture && "min-h-[620px]")}
-          aria-label="Ultimate Nature terrain prop catalog"
+          aria-label="BIOME / 16 terrain prop catalog"
         />
         {error && (
           <div className="absolute inset-x-4 bottom-4 border border-red-300/40 bg-red-950/85 p-3 text-sm text-red-100">

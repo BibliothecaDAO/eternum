@@ -1,22 +1,22 @@
 export type TerrainPropLod = "near" | "far";
 
-export const TERRAIN_PROP_CATALOG_PATH = "/models/procedural-terrain/ultimate-nature-props.glb";
+export const TERRAIN_PROP_CATALOG_PATH = "/models/procedural-terrain/biome-kit-props.glb";
 
 export const TERRAIN_PROP_ARCHETYPE_IDS = Object.freeze([
   "broadleaf",
   "birch",
-  "willow",
+  "rainforest-canopy",
   "conifer",
   "palm",
   "dead-tree",
   "shrub",
   "cactus",
   "boulder",
-  "stump",
+  "mushroom",
   "fallen-log",
   "grass-tuft",
   "fern",
-  "reed",
+  "cycad",
   "wildflower",
 ] as const);
 
@@ -24,16 +24,22 @@ export type TerrainPropArchetypeId = (typeof TERRAIN_PROP_ARCHETYPE_IDS)[number]
 export type TerrainPropRole = "canopy" | "groundcover" | "rigid" | "understory";
 export type TerrainPropPlacementLayer = "canopy" | "debris" | "groundcover" | "understory";
 
-const CANOPY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["broadleaf", "birch", "willow", "conifer", "palm"]);
+const CANOPY_ARCHETYPES = new Set<TerrainPropArchetypeId>([
+  "broadleaf",
+  "birch",
+  "rainforest-canopy",
+  "conifer",
+  "palm",
+]);
 const UNDERSTORY_ARCHETYPES = new Set<TerrainPropArchetypeId>(["shrub"]);
-const GROUND_COVER_ARCHETYPES = new Set<TerrainPropArchetypeId>(["fern", "grass-tuft", "reed", "wildflower"]);
-const DEBRIS_ARCHETYPES = new Set<TerrainPropArchetypeId>(["boulder", "dead-tree", "fallen-log", "stump"]);
+const GROUND_COVER_ARCHETYPES = new Set<TerrainPropArchetypeId>(["fern", "grass-tuft", "cycad", "wildflower"]);
+const DEBRIS_ARCHETYPES = new Set<TerrainPropArchetypeId>(["boulder", "dead-tree", "fallen-log", "mushroom"]);
 const CANOPY_EXCLUSION_RADIUS: Partial<Record<TerrainPropArchetypeId, number>> = Object.freeze({
   birch: 0.28,
   broadleaf: 0.3,
   conifer: 0.34,
   palm: 0.42,
-  willow: 0.48,
+  "rainforest-canopy": 0.48,
 });
 const SUCCESSION_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
   birch: 1,
@@ -45,11 +51,11 @@ const SUCCESSION_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Ob
   "fallen-log": 0,
   palm: 0.65,
   shrub: 1,
-  stump: 0,
-  willow: 0.35,
+  mushroom: 0,
+  "rainforest-canopy": 0.35,
   fern: 0.9,
   "grass-tuft": 0.85,
-  reed: 1,
+  cycad: 1,
   wildflower: 0.95,
 });
 const DISTURBANCE_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Object.freeze({
@@ -62,11 +68,11 @@ const DISTURBANCE_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = O
   "fallen-log": 0.85,
   palm: 0.2,
   shrub: 1,
-  stump: 1,
-  willow: 0.25,
+  mushroom: 1,
+  "rainforest-canopy": 0.25,
   fern: 0.8,
   "grass-tuft": 0.9,
-  reed: 0.7,
+  cycad: 0.7,
   wildflower: 1,
 });
 
@@ -81,11 +87,11 @@ const WETLAND_AFFINITY: Readonly<Record<TerrainPropArchetypeId, number>> = Objec
   "fallen-log": 0.65,
   "grass-tuft": 0.65,
   palm: 0.55,
-  reed: 1,
+  cycad: 1,
   shrub: 0.7,
-  stump: 0.3,
+  mushroom: 0.3,
   wildflower: 0.5,
-  willow: 1,
+  "rainforest-canopy": 1,
 });
 
 export function getTerrainPropRole(archetype: TerrainPropArchetypeId): TerrainPropRole {

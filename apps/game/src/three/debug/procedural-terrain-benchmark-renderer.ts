@@ -587,7 +587,7 @@ function readAssetRequestCounts(): TerrainBenchmarkSnapshot["assets"] {
   const resourceNames = performance.getEntriesByType("resource").map(({ name }) => name);
   return {
     groundArrayRequests: resourceNames.filter((name) => name.includes("/textures/procedural-terrain/ground-")).length,
-    propCatalogRequests: resourceNames.filter((name) => name.endsWith("/ultimate-nature-props.glb")).length,
+    propCatalogRequests: resourceNames.filter((name) => name.endsWith("/biome-kit-props.glb")).length,
   };
 }
 
