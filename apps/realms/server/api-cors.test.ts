@@ -27,6 +27,22 @@ describe("handleApiCors", () => {
     expect(response.headers.get("access-control-allow-origin")).toBe("https://play.realms.party");
   });
 
+  it.each(["http://localhost:5173", "https://127.0.0.1:3000", "http://[::1]:8080"])(
+    "echoes the loopback origin %s so a local client can sign in",
+    async (origin) => {
+      const response = await handleApiCors(request("POST", origin), () => Response.json({ session: true }));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+    },
+  );
+
+  it("rejects a non-loopback host that merely contains localhost", async () => {
+    const response = await handleApiCors(request("POST", "https://localhost.attacker.invalid"), () => new Response());
+
+    expect(response.status).toBe(403);
+  });
+
   it("rejects an untrusted cross-origin request", async () => {
     const response = await handleApiCors(request("POST", "https://attacker.invalid"), () => new Response());
 
