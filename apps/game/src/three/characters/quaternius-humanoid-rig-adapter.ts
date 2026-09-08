@@ -35,8 +35,8 @@ export const QUATERNIUS_HUMANOID_RIG_ADAPTER = {
     wristRight: "hand_r",
   },
   feet: {
-    left: { ankle: "foot_l", toe: "ball_l" },
-    right: { ankle: "foot_r", toe: "ball_r" },
+    left: { ankle: "foot_l", toe: "ball_l", toeTip: "ball_leaf_l", soleHeight: 0, heelLengthRatio: 0.4 },
+    right: { ankle: "foot_r", toe: "ball_r", toeTip: "ball_leaf_r", soleHeight: 0, heelLengthRatio: 0.4 },
   },
   hands: {
     left: {

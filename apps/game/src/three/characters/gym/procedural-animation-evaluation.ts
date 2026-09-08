@@ -1,5 +1,8 @@
+import type { ProceduralFootPoseDiagnostics } from "../procedural-character-diagnostics";
 import { resolveQuaternionAngularDistanceDegrees } from "../procedural-character-diagnostics";
 import type { ProceduralAnimationCaptureResult, ProceduralAnimationFrameCapture } from "./procedural-animation-capture";
+
+import { evaluateAnimationCoverage } from "./procedural-animation-evidence.mjs";
 
 const MAX_FOOT_ANGULAR_STEP_DEGREES = 20;
 const MAX_FOOT_ANGULAR_TRAVEL_DEGREES = 180;
@@ -15,12 +18,17 @@ const RUN_STEP_WIDTH_RATIO_RANGE = { maximum: 0.16, minimum: 0.04 };
 const WALK_STEP_WIDTH_RATIO_RANGE = { maximum: 0.2, minimum: 0.06 };
 
 export interface ProceduralAnimationObjectiveEvaluation {
+  footRollFailures: readonly string[];
+  contactMetric: "active-foot-landmark" | "ankle-target";
+  coverageFailures: readonly string[];
   blankViewCount: number;
   automatedHardGatePassed: boolean;
   issueCount: number;
   issueFrameCount: number;
   locomotionHardGateFailures: readonly string[];
   locomotionHardGatePassed: boolean | null;
+  stationaryHardGateFailures: readonly string[];
+  stationaryHardGatePassed: boolean | null;
   measurements: {
     elbowDegrees: { maximum: number | null; minimum: number | null };
     kneeDegrees: { maximum: number | null; minimum: number | null };
@@ -81,7 +89,10 @@ export function evaluateProceduralAnimationCapture(
     .flatMap(({ views }) => views)
     .filter(({ imageNonBlank }) => !imageNonBlank).length;
   const issueCount = result.frames.reduce((count, frame) => count + frame.issues.length, 0);
-  const temporalCoverage = result.plan.sampling === "all-frames";
+  const coverage = evaluateAnimationCoverage(result);
+  const temporalCoverage = coverage.temporalCoverage;
+  const hasFootRoll = result.frames.some((frame) => frame.diagnostics.humanoid?.feet.left.contactKind !== undefined);
+  const footRollFailures = temporalCoverage && hasFootRoll ? evaluateFootRollContacts(result.frames) : [];
   const maximumStanceContactDrift = temporalCoverage ? maximum(resolveStanceContactDrifts(result.frames)) : null;
   const locomotion =
     temporalCoverage && result.plan.sequence === "locomotion-cycle" ? evaluateLocomotion(result.frames) : null;
@@ -89,13 +100,29 @@ export function evaluateProceduralAnimationCapture(
     ? resolveLocomotionHardGateFailures(locomotion, maximumStanceContactDrift, result.plan.rootMotionSpeed)
     : [];
   const locomotionHardGatePassed = locomotion ? locomotionHardGateFailures.length === 0 : null;
+  const stationaryRequired = temporalCoverage && isStationaryKnightCapture(result);
+  const stationaryHardGateFailures = stationaryRequired
+    ? resolveStationaryKnightFailures(result.frames, maximumStanceContactDrift)
+    : [];
+  const stationaryHardGatePassed = stationaryRequired ? stationaryHardGateFailures.length === 0 : null;
   return {
+    footRollFailures,
+    contactMetric: hasFootRoll ? "active-foot-landmark" : "ankle-target",
+    coverageFailures: coverage.failures,
     blankViewCount,
-    automatedHardGatePassed: blankViewCount === 0 && issueCount === 0 && locomotionHardGatePassed !== false,
+    automatedHardGatePassed:
+      footRollFailures.length === 0 &&
+      coverage.complete &&
+      blankViewCount === 0 &&
+      issueCount === 0 &&
+      locomotionHardGatePassed !== false &&
+      stationaryHardGatePassed !== false,
     issueCount,
     issueFrameCount: result.frames.filter(({ issues }) => issues.length > 0).length,
     locomotionHardGateFailures,
     locomotionHardGatePassed,
+    stationaryHardGateFailures,
+    stationaryHardGatePassed,
     measurements: {
       elbowDegrees: range(
         resolveHumanoidValues(result.frames, ({ arms }) => [arms.left.elbowDegrees, arms.right.elbowDegrees]),
@@ -535,7 +562,7 @@ function resolveStanceContactDrifts(
       return currentFoot?.contact === "stance" &&
         previousFoot?.contact === "stance" &&
         (!stableContactOnly || (isStableContact(currentFoot.progress) && isStableContact(previousFoot.progress)))
-        ? [pointDistance(currentFoot.position, previousFoot.position)]
+        ? resolveHumanoidContactDrift(currentFoot, previousFoot)
         : [];
     });
     const hoofDrifts = (["frontLeft", "frontRight", "hindLeft", "hindRight"] as const).flatMap((hoofId) => {
@@ -588,4 +615,74 @@ function percentile(values: readonly number[], quantile: number): number | null 
   if (finiteValues.length === 0) return null;
   const index = Math.max(0, Math.ceil(Math.min(1, Math.max(0, quantile)) * finiteValues.length) - 1);
   return round(finiteValues[index]);
+}
+
+function isStationaryKnightCapture(result: Pick<ProceduralAnimationCaptureResult, "frames" | "plan">): boolean {
+  return (
+    result.plan.sequence === "idle-hold" ||
+    (result.plan.sequence === "melee-attack" && result.frames[0]?.diagnostics.kind === "knight")
+  );
+}
+
+function resolveStationaryKnightFailures(
+  frames: readonly ProceduralAnimationFrameCapture[],
+  drift: number | null,
+): string[] {
+  const failures: string[] = [];
+  if (drift === null || drift > 0.01) failures.push("stationary-contact-drift-missing-or-excessive");
+  const roots = frames.map((frame) => frame.diagnostics.humanoid?.rootPosition);
+  const origin = roots[0];
+  if (!origin || roots.some((root) => !root || Math.hypot(...root.map((value, axis) => value - origin[axis])) > 1e-6)) {
+    failures.push("stationary-root-moved-or-missing");
+  }
+  return failures;
+}
+
+function resolveHumanoidContactDrift(
+  current: ProceduralFootPoseDiagnostics,
+  previous: ProceduralFootPoseDiagnostics,
+): number[] {
+  if (current.contactKind || previous.contactKind) {
+    // A flat foot can transfer support between landmarks without moving. Compare like landmarks only.
+    if (current.contactKind !== previous.contactKind) return [];
+    return current.contactPosition && previous.contactPosition
+      ? [pointDistance(current.contactPosition, previous.contactPosition)]
+      : [];
+  }
+  return [pointDistance(current.position, previous.position)];
+}
+
+function evaluateFootRollContacts(frames: readonly ProceduralAnimationFrameCapture[]): string[] {
+  const failures = new Set<string>();
+  for (const side of ["left", "right"] as const) {
+    const contacts = new Set<string>();
+    for (const frame of frames) {
+      const humanoid = frame.diagnostics.humanoid;
+      const foot = humanoid?.feet[side];
+      if (
+        !humanoid ||
+        !foot?.heelPosition ||
+        !foot.ballPosition ||
+        !foot.toeTipPosition ||
+        !Number.isFinite(foot.pitchDegrees)
+      ) {
+        failures.add(`${side}:missing-foot-roll-landmarks`);
+        continue;
+      }
+      const landmarks = [foot.heelPosition, foot.ballPosition, foot.toeTipPosition];
+      if (landmarks.some((point) => point.some((value) => !Number.isFinite(value))))
+        failures.add(`${side}:non-finite-foot-roll-landmarks`);
+      if (landmarks.some((point) => point[1] - humanoid.rootPosition[1] < -0.01))
+        failures.add(`${side}:foot-penetrates-ground`);
+      if (foot.contact !== "stance") continue;
+      if (foot.contactKind) contacts.add(foot.contactKind);
+      if (!foot.contactPosition || foot.contactPosition.some((value) => !Number.isFinite(value)))
+        failures.add(`${side}:missing-active-foot-contact`);
+      else if (Math.abs(foot.contactPosition[1] - humanoid.rootPosition[1]) > 0.01)
+        failures.add(`${side}:stance-foot-not-grounded`);
+    }
+    for (const kind of ["heel", "sole", "forefoot"])
+      if (!contacts.has(kind)) failures.add(`${side}:missing-${kind}-contact`);
+  }
+  return [...failures];
 }

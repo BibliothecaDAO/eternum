@@ -38,7 +38,22 @@ export interface ProceduralLegPoseDiagnostics {
   upperLegLength: number;
 }
 
-export interface ProceduralFootPoseDiagnostics {
+export interface ProceduralFootFacingDiagnostics {
+  anklePosition?: Vector3Tuple;
+  forwardDot: number;
+  toePosition: Vector3Tuple;
+  contactKind?: "heel" | "sole" | "forefoot" | "air";
+  contactPosition?: Vector3Tuple | null;
+  heelPosition?: Vector3Tuple;
+  ballPosition?: Vector3Tuple;
+  toeTipPosition?: Vector3Tuple;
+  pitchDegrees?: number;
+}
+
+export interface ProceduralFootPoseDiagnostics extends Omit<
+  ProceduralFootFacingDiagnostics,
+  "forwardDot" | "toePosition"
+> {
   contact: "stance" | "swing";
   forwardDot: number | null;
   outwardProgressionDegrees: number | null;
@@ -75,7 +90,7 @@ export interface ProceduralCharacterDiagnosticSockets {
   handLeft?: Readonly<Vector3>;
   handRight?: Readonly<Vector3>;
   jawAnchor?: Readonly<Vector3>;
-  footFacing?: Readonly<Record<"left" | "right", { forwardDot: number; toePosition: Vector3Tuple }>>;
+  footFacing?: Readonly<Record<"left" | "right", ProceduralFootFacingDiagnostics>>;
   footRotations?: Readonly<Record<"left" | "right", QuaternionTuple>>;
   joints?: Partial<Readonly<Record<ProceduralHumanoidJointId, Vector3Tuple>>>;
 }
@@ -123,6 +138,10 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
     right: resolveLegDiagnostics(joints, "right", rootForward, rootLateral),
   } as const;
   const footFacing = input.sockets?.footFacing;
+  const exactAnkle = (side: "left" | "right"): Vector3Tuple => {
+    const point = input.root.localToWorld(new Vector3(...input.pose.feet[side].target));
+    return [point.x, point.y, point.z];
+  };
   const footRotations = input.sockets?.footRotations;
   const finite =
     Object.values(joints).every((joint) => joint.every(Number.isFinite)) &&
@@ -140,7 +159,7 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
       left: resolveFootDiagnostics(
         "left",
         input.pose,
-        solverJoints.ankleLeft,
+        exactAnkle("left"),
         footFacing?.left,
         footRotations?.left,
         rootForward,
@@ -149,7 +168,7 @@ export function resolveProceduralCharacterPoseDiagnostics(input: {
       right: resolveFootDiagnostics(
         "right",
         input.pose,
-        solverJoints.ankleRight,
+        exactAnkle("right"),
         footFacing?.right,
         footRotations?.right,
         rootForward,
@@ -249,17 +268,24 @@ function resolveFootDiagnostics(
   side: "left" | "right",
   pose: ProceduralCharacterPose,
   ankle: Vector3Tuple,
-  facing: { forwardDot: number; toePosition: Vector3Tuple } | undefined,
+  facing: ProceduralFootFacingDiagnostics | undefined,
   rotation: QuaternionTuple | undefined,
   rootForward: Readonly<Vector3>,
   rootLateral: Readonly<Vector3>,
 ): ProceduralFootPoseDiagnostics {
   const cycle = pose.feet[side].cycle;
   return {
+    ...facing,
     contact: cycle.contact,
     forwardDot: facing ? round(facing.forwardDot) : null,
     outwardProgressionDegrees: facing
-      ? resolveOutwardFootProgressionDegrees(side, ankle, facing.toePosition, rootForward, rootLateral)
+      ? resolveOutwardFootProgressionDegrees(
+          side,
+          facing.anklePosition ?? ankle,
+          facing.toePosition,
+          rootForward,
+          rootLateral,
+        )
       : null,
     position: ankle,
     progress: round(cycle.progress),

@@ -26,6 +26,9 @@ export interface HumanoidHandRigDefinition {
 }
 
 export interface HumanoidFootRigDefinition {
+  toeTip: string;
+  soleHeight: number;
+  heelLengthRatio: number;
   ankle: string;
   toe: string;
 }
@@ -106,6 +109,7 @@ export function resolveHumanoidRigRequiredBoneNames(adapter: HumanoidRigAdapter)
     if (foot) {
       addName(names, foot.ankle);
       addName(names, foot.toe);
+      addName(names, foot.toeTip);
     }
   });
   HUMANOID_SOCKET_IDS.forEach((socketId) => {
@@ -133,7 +137,9 @@ export function validateHumanoidRigAdapter(adapter: HumanoidRigAdapter): string[
     const hand = adapter.hands[side];
     const foot = adapter.feet[side];
     if (!hand?.hand) issues.push(`missing-hand:${side}`);
-    if (!foot?.ankle || !foot?.toe) issues.push(`missing-foot:${side}`);
+    if (!foot?.ankle || !foot?.toe || !foot?.toeTip) issues.push(`missing-foot:${side}`);
+    if (!Number.isFinite(foot?.soleHeight) || !(foot?.heelLengthRatio > 0))
+      issues.push(`invalid-foot-geometry:${side}`);
     (["index", "middle", "pinky"] as const).forEach((point) => {
       if (!hand?.palm?.[point]) issues.push(`missing-palm:${side}:${point}`);
     });

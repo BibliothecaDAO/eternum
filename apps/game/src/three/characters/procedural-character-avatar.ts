@@ -1,3 +1,4 @@
+import type { CharacterFootGeometry } from "./procedural-character-foot-roll";
 import {
   Bone,
   BufferGeometry,
@@ -15,7 +16,7 @@ import {
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
-import type { ProceduralHumanoidJointId } from "./procedural-character-diagnostics";
+import type { ProceduralHumanoidJointId, ProceduralFootFacingDiagnostics } from "./procedural-character-diagnostics";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
 import type { HumanoidRigAdapter, HumanoidSide } from "./humanoid-rig-adapter";
 import {
@@ -52,6 +53,18 @@ interface CharacterHandBinding {
   rollCorrection: Quaternion;
 }
 
+interface CharacterFootBinding {
+  neutralQuaternion: Quaternion;
+  toeNeutralQuaternion: Quaternion;
+  toeBindQuaternion: Quaternion;
+  toeTip: Bone;
+  geometry: CharacterFootGeometry;
+  contactOffsets: Readonly<Record<"heel" | "sole" | "forefoot", Vector3>>;
+  ankle: Bone;
+  toe: Bone;
+  bindQuaternion: Quaternion;
+}
+
 interface CharacterFingerBoneBinding {
   bindQuaternion: Quaternion;
   bone: Bone;
@@ -78,13 +91,14 @@ interface PreparedCharacterModel {
   bindings: Readonly<Record<CharacterPartId, SegmentBoneBinding>>;
   crowdHiddenMeshes: ReadonlyArray<{ heroVisible: boolean; mesh: Mesh }>;
   diagnosticBones: Readonly<Record<ProceduralHumanoidJointId, Bone>>;
-  feet: Readonly<Record<HumanoidSide, { ankle: Bone; toe: Bone }>>;
+  feet: Readonly<Record<HumanoidSide, CharacterFootBinding>>;
   hands: Readonly<Record<HumanoidSide, CharacterHandBinding>>;
   helper: SkeletonHelper;
   materials: Set<Material>;
   ownedGeometries: Set<BufferGeometry>;
   scene: Group;
   sockets: Readonly<Record<CharacterSocketId, CharacterSocketBinding>>;
+  restRotations: ReadonlyArray<{ bone: Bone; quaternion: Quaternion }>;
   skeletons: Set<Skeleton>;
   skinnedMeshCount: number;
   styledMaterials: StyledCharacterMaterial[];
@@ -103,11 +117,6 @@ export interface ProceduralCharacterAvatarStats {
   rightGripProfile: ProceduralHandGripProfile;
   rigAdapterId: string;
   skinnedMeshCount: number;
-}
-
-interface ProceduralFootFacingDiagnostics {
-  forwardDot: number;
-  toePosition: Vector3Tuple;
 }
 
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -152,6 +161,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchIkSolvedEnd = new Vector3();
   private readonly scratchIkSegmentQuaternion = new Quaternion();
   private readonly scratchFootCorrection = new Quaternion();
+  private readonly scratchFootYaw = new Quaternion();
   private readonly scratchFootCross = new Vector3();
   private readonly scratchFootDirection = new Vector3();
   private readonly scratchFootDesiredDirection = new Vector3();
@@ -199,6 +209,12 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
 
   public setUpperBodyAction(action?: ProceduralCharacterUpperBodyAction): void {
     this.upperBodyAction = action;
+  }
+
+  public resetPoseHistory(): void {
+    // IK bend-plane smoothing reads rendered bones; reset it alongside controller/filter state.
+    for (const { bone, quaternion } of this.activeModel.restRotations) bone.quaternion.copy(quaternion);
+    this.activeModel.scene.updateWorldMatrix(true, true);
   }
 
   public applyPose(pose: ProceduralCharacterPose): void {
@@ -293,19 +309,37 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const rootQuaternion = this.group.getWorldQuaternion(new Quaternion());
     const rootForward = new Vector3(0, 0, 1).applyQuaternion(rootQuaternion);
     const rootUp = new Vector3(0, 1, 0).applyQuaternion(rootQuaternion);
-    return Object.fromEntries(
-      (["left", "right"] as const).map((side) => {
-        const ankle = this.activeModel.feet[side].ankle.getWorldPosition(new Vector3());
-        const toePosition = this.activeModel.feet[side].toe.getWorldPosition(new Vector3());
-        const toeDirection = toePosition.clone().sub(ankle);
-        toeDirection.addScaledVector(rootUp, -toeDirection.dot(rootUp));
-        const forwardDot = toeDirection.lengthSq() > 1e-8 ? toeDirection.normalize().dot(rootForward) : 0;
-        return [side, { forwardDot, toePosition: toVectorTuple(toePosition) }];
-      }),
-    ) as unknown as Record<"left" | "right", ProceduralFootFacingDiagnostics>;
+    return {
+      left: this.readFootFacing("left", rootForward, rootUp),
+      right: this.readFootFacing("right", rootForward, rootUp),
+    };
+  }
+
+  private readFootFacing(side: HumanoidSide, rootForward: Vector3, rootUp: Vector3): ProceduralFootFacingDiagnostics {
+    const foot = this.activeModel.feet[side];
+    const ankle = foot.ankle.getWorldPosition(new Vector3());
+    const toePosition = foot.toe.getWorldPosition(new Vector3());
+    const toeDirection = toePosition.clone().sub(ankle);
+    toeDirection.addScaledVector(rootUp, -toeDirection.dot(rootUp));
+    const forwardDot = toeDirection.lengthSq() > 1e-8 ? toeDirection.normalize().dot(rootForward) : 0;
+    const facing = { forwardDot, anklePosition: toVectorTuple(ankle), toePosition: toVectorTuple(toePosition) };
+    const roll = this.lastPose?.feet[side].roll;
+    if (!roll) return facing;
+    const contactPosition =
+      roll.contactKind !== "air" ? foot.ankle.localToWorld(foot.contactOffsets[roll.contactKind].clone()) : null;
+    return {
+      ...facing,
+      contactKind: roll.contactKind,
+      contactPosition: contactPosition ? toVectorTuple(contactPosition) : null,
+      heelPosition: toVectorTuple(foot.ankle.localToWorld(foot.contactOffsets.heel.clone())),
+      ballPosition: toVectorTuple(foot.ankle.localToWorld(foot.contactOffsets.forefoot.clone())),
+      toeTipPosition: toVectorTuple(foot.toeTip.getWorldPosition(new Vector3())),
+      pitchDegrees: (roll.pitchRadians * 180) / Math.PI,
+    };
   }
 
   public measureActiveLimbLengths(): {
+    foot: CharacterFootGeometry;
     forearmLength: number;
     shinLength: number;
     thighLength: number;
@@ -317,10 +351,21 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const leftLeg = this.measureLegLengths("left");
     const rightLeg = this.measureLegLengths("right");
     return {
+      foot: this.measureActiveFootGeometry(),
       forearmLength: (left.forearmLength + right.forearmLength) * 0.5,
       shinLength: (leftLeg.shinLength + rightLeg.shinLength) * 0.5,
       thighLength: (leftLeg.thighLength + rightLeg.thighLength) * 0.5,
       upperArmLength: (left.upperArmLength + right.upperArmLength) * 0.5,
+    };
+  }
+
+  private measureActiveFootGeometry(): CharacterFootGeometry {
+    const { left, right } = this.activeModel.feet;
+    const scale = this.activeModel.scene.scale.x;
+    return {
+      ankleHeight: (left.geometry.ankleHeight + right.geometry.ankleHeight) * 0.5 * scale,
+      ballLength: (left.geometry.ballLength + right.geometry.ballLength) * 0.5 * scale,
+      heelLength: (left.geometry.heelLength + right.geometry.heelLength) * 0.5 * scale,
     };
   }
 
@@ -329,7 +374,10 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       return hasFiniteBoneTransform(this.activeModel.bindings[partId].bone);
     });
     return (
-      partTransformsFinite && Object.values(this.activeModel.feet).every(({ ankle }) => hasFiniteBoneTransform(ankle))
+      partTransformsFinite &&
+      Object.values(this.activeModel.feet).every(
+        ({ ankle, toe }) => hasFiniteBoneTransform(ankle) && hasFiniteBoneTransform(toe),
+      )
     );
   }
 
@@ -352,6 +400,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   }
 
   private applyCurrentTransforms(): void {
+    // Foot progression must start from the bind orientation, never the previous rendered pose.
+    for (const foot of Object.values(this.activeModel.feet)) {
+      foot.ankle.quaternion.copy(foot.bindQuaternion);
+      foot.toe.quaternion.copy(foot.toeBindQuaternion);
+    }
     positionCharacterModelAtPelvis(
       this.group,
       this.activeModel,
@@ -367,8 +420,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyLegIk("left");
     this.applyLegIk("right");
     if (this.config.animationMode !== "mounted") {
-      this.alignFootProgression("left");
-      this.alignFootProgression("right");
+      this.applyFootPose("left");
+      this.applyFootPose("right");
     }
     this.applyHandRollCorrections();
     this.activeModel.scene.updateWorldMatrix(true, true);
@@ -450,7 +503,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     if (grounded) this.scratchIkPole.copy(this.scratchIkRoot).add(Z_AXIS);
     // Grounded legs use the skinned rig's true hip as the forward pole origin. Reusing
     // an absolute solver-rig knee introduces lateral bias when the two hip sockets differ.
-    this.solveTwoBoneTarget(thighLength, shinLength, !grounded);
+    this.solveTwoBoneTarget(thighLength, shinLength, !grounded, grounded ? 0.999 : 0.985);
 
     this.applySolvedLegSegment(thighBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
     this.applySolvedLegSegment(shinBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
@@ -480,6 +533,32 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       this.scratchParentQuaternion,
       this.scratchTargetQuaternion,
     );
+  }
+
+  private applyFootPose(side: HumanoidSide): void {
+    const roll = this.lastPose?.feet[side].roll;
+    if (!roll) {
+      this.alignFootProgression(side);
+      return;
+    }
+    const foot = this.activeModel.feet[side];
+    const yaw = ((side === "left" ? 1 : -1) * this.config.footProgressionDegrees * Math.PI) / 180;
+    this.group.getWorldQuaternion(this.scratchGroupQuaternion);
+    this.scratchFootYaw.setFromAxisAngle(Y_AXIS, yaw);
+    this.applyFootBoneRotation(foot.ankle, foot.neutralQuaternion, roll.pitchRadians);
+    this.applyFootBoneRotation(foot.toe, foot.toeNeutralQuaternion, roll.pitchRadians - roll.toeFlexRadians);
+  }
+
+  private applyFootBoneRotation(bone: Bone, neutral: Quaternion, pitch: number): void {
+    if (!bone.parent) throw new Error(`Foot bone ${bone.name} has no parent`);
+    this.scratchFootCorrection.setFromAxisAngle(X_AXIS, pitch);
+    this.scratchTargetQuaternion
+      .copy(this.scratchGroupQuaternion)
+      .multiply(this.scratchFootYaw)
+      .multiply(this.scratchFootCorrection)
+      .multiply(neutral);
+    bone.parent.getWorldQuaternion(this.scratchParentQuaternion);
+    bone.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchTargetQuaternion).normalize();
   }
 
   private alignFootProgression(side: "left" | "right"): void {
@@ -517,12 +596,17 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     foot.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchTargetQuaternion).normalize();
   }
 
-  private solveTwoBoneTarget(firstLength: number, secondLength: number, preserveCurrentBendPlane = true): void {
+  private solveTwoBoneTarget(
+    firstLength: number,
+    secondLength: number,
+    preserveCurrentBendPlane = true,
+    maximumExtension = 0.985,
+  ): void {
     this.scratchIkOffset.copy(this.scratchIkTarget).sub(this.scratchIkRoot);
     const rawDistance = Math.max(this.scratchIkOffset.length(), 1e-6);
     const distance = Math.min(
       Math.max(rawDistance, Math.abs(firstLength - secondLength) + 1e-4),
-      (firstLength + secondLength) * 0.985,
+      (firstLength + secondLength) * maximumExtension,
     );
     this.scratchIkDirection.copy(this.scratchIkOffset).multiplyScalar(1 / rawDistance);
     const along = (firstLength * firstLength - secondLength * secondLength + distance * distance) / (2 * distance);
@@ -721,6 +805,10 @@ function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedC
     ownedGeometries,
     scene,
     sockets: createCharacterSocketBindings(scene, asset.adapter),
+    restRotations: [...new Set([...skeletons].flatMap((skeleton) => skeleton.bones))].map((bone) => ({
+      bone,
+      quaternion: bone.quaternion.clone(),
+    })),
     skeletons,
     skinnedMeshCount,
     styledMaterials,
@@ -928,18 +1016,38 @@ function createDiagnosticBoneBindings(
   ) as Record<ProceduralHumanoidJointId, Bone>;
 }
 
-function createFootBoneBindings(
-  scene: Group,
-  adapter: HumanoidRigAdapter,
-): Record<HumanoidSide, { ankle: Bone; toe: Bone }> {
+function createFootBoneBindings(scene: Group, adapter: HumanoidRigAdapter): Record<HumanoidSide, CharacterFootBinding> {
+  return { left: createFootBinding(scene, adapter, "left"), right: createFootBinding(scene, adapter, "right") };
+}
+
+function createFootBinding(scene: Group, adapter: HumanoidRigAdapter, side: HumanoidSide): CharacterFootBinding {
+  const definition = adapter.feet[side];
+  const ankle = requireRigBone(scene, adapter, definition.ankle);
+  const toe = requireRigBone(scene, adapter, definition.toe);
+  const anklePosition = ankle.getWorldPosition(new Vector3());
+  const toePosition = toe.getWorldPosition(new Vector3());
+  const ballLength = toePosition.z - anklePosition.z;
+  const geometry = {
+    ankleHeight: anklePosition.y - definition.soleHeight,
+    ballLength,
+    heelLength: ballLength * definition.heelLengthRatio,
+  };
+  if (Object.values(geometry).some((value) => !Number.isFinite(value) || value <= 0))
+    throw new Error(`Invalid ${side} foot geometry for ${adapter.id}`);
+  const sole = new Vector3(anklePosition.x, definition.soleHeight, anklePosition.z);
   return {
-    left: {
-      ankle: requireRigBone(scene, adapter, adapter.feet.left.ankle),
-      toe: requireRigBone(scene, adapter, adapter.feet.left.toe),
-    },
-    right: {
-      ankle: requireRigBone(scene, adapter, adapter.feet.right.ankle),
-      toe: requireRigBone(scene, adapter, adapter.feet.right.toe),
+    ankle,
+    toe,
+    toeTip: requireRigBone(scene, adapter, definition.toeTip),
+    geometry,
+    bindQuaternion: ankle.quaternion.clone(),
+    toeBindQuaternion: toe.quaternion.clone(),
+    neutralQuaternion: ankle.getWorldQuaternion(new Quaternion()),
+    toeNeutralQuaternion: toe.getWorldQuaternion(new Quaternion()),
+    contactOffsets: {
+      heel: ankle.worldToLocal(sole.clone().addScaledVector(Z_AXIS, -geometry.heelLength)),
+      sole: ankle.worldToLocal(sole.clone()),
+      forefoot: ankle.worldToLocal(sole.clone().addScaledVector(Z_AXIS, geometry.ballLength)),
     },
   };
 }
@@ -952,6 +1060,7 @@ function createCharacterPartTransforms(): Record<CharacterPartId, CharacterPartT
 
 function resetCharacterModelPose(model: PreparedCharacterModel, rig: ResolvedCharacterRig): void {
   model.skeletons.forEach((skeleton) => skeleton.pose());
+  model.restRotations.forEach(({ bone, quaternion }) => quaternion.copy(bone.quaternion));
   model.scene.position.set(0, 0, 0);
   const targetPelvisToAnkle = rig.morphology.thighLength + rig.morphology.shinLength;
   model.scene.scale.setScalar(targetPelvisToAnkle / model.authoredPelvisToAnkle);

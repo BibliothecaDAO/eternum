@@ -34,6 +34,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-08",
+    title: "More Grounded Character Walking",
+    description:
+      "Improved walking with heel-to-toe foot motion, weight acceptance and calmer upper-body movement, plus visible contact diagnostics in the gym.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Knight Animation Review Suite",
+    description:
+      "Added separate idle, run and sword-attack baselines, recovery captures and comparisons for animation timing changes.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-07",
     title: "Lighter Game Loading",
     description:

@@ -1,3 +1,4 @@
+import { resolveWalkingFootRoll, type CharacterFootRoll } from "./procedural-character-foot-roll";
 import { Euler, Quaternion, Vector3 } from "three";
 
 import type { ProceduralArcherUpperBodyPose } from "./archer/procedural-archer-pose";
@@ -15,6 +16,7 @@ import {
   type ProceduralCharacterGaitSignals,
 } from "./procedural-character-gait";
 import {
+  smootherStep,
   resolveOrganicLimbTrajectory,
   resolveSeededMotionValue,
   type ProceduralContactCycle,
@@ -34,6 +36,7 @@ export interface CharacterPartPose {
 export interface CharacterFootPose {
   cycle: ProceduralContactCycle;
   target: Vector3Tuple;
+  roll?: CharacterFootRoll;
 }
 
 export interface ProceduralCharacterPose {
@@ -44,6 +47,7 @@ export interface ProceduralCharacterPose {
 }
 
 interface CharacterLegJoints {
+  roll?: CharacterFootRoll;
   ankle: Vector3;
   cycle: ProceduralContactCycle;
   hip: Vector3;
@@ -595,7 +599,8 @@ function resolveGroundedPelvis(
     Math.sin(elapsedSeconds * 0.72 + resolveSeededMotionValue(config.seed, 47) * Math.PI) *
     config.motionVariation *
     0.008;
-  const baseHeight = CHARACTER_GROUND_Y + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
+  const ankleHeight = config.animationMode === "walk" ? morphology.foot.ankleHeight : CHARACTER_GROUND_Y;
+  const baseHeight = ankleHeight + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
   return new Vector3(
     balancedWeightShift * config.hipSway * lateralScale * locomotionWeight + lateralVariation,
     baseHeight + verticalStep,
@@ -606,8 +611,15 @@ function resolveGroundedPelvis(
 function resolvePelvisVerticalStep(config: ProceduralCharacterConfig, gait: ProceduralCharacterGaitSignals): number {
   if (config.animationMode !== "run") {
     const midStanceRise = 0.5 - 0.5 * Math.cos(gait.phaseRadians * 2);
-    const loadingResponse = Math.sin(gait.phaseRadians * 2 - 0.3) * 0.045;
-    return config.bob * (midStanceRise * 0.78 + loadingResponse);
+    const loadingResponse = Math.max(
+      ...Object.values(gait.feet).map((foot) => {
+        if (foot.contact !== "stance" || foot.progress >= 0.25) return 0;
+        const loading = smootherStep(foot.progress / 0.12);
+        const release = 1 - smootherStep((foot.progress - 0.12) / 0.13);
+        return loading * release;
+      }),
+    );
+    return config.bob * (midStanceRise * 0.7 - loadingResponse * 0.16);
   }
 
   const leftSupport = resolveSupportWeight(gait.feet.left);
@@ -647,16 +659,21 @@ function resolveGroundedLeg(
     gaitProfile.swingApex,
     gaitProfile.swingTimingExponent,
   );
+  const roll = config.animationMode === "walk" ? resolveWalkingFootRoll(gait.feet[side], morphology.foot) : undefined;
   const ankleTarget = new Vector3(
     sideSign * stepWidth * 0.5,
-    CHARACTER_GROUND_Y + trajectory.lift,
+    (roll ? 0 : CHARACTER_GROUND_Y) + trajectory.lift,
     targetPelvis.z + trajectory.forward - (1 - locomotionWeight) * morphology.scale * 0.055,
   );
   if (resolvePlantTarget) {
     ankleTarget.fromArray(resolvePlantTarget(side, gait.feet[side], toVectorTuple(ankleTarget), config.footPlant));
   }
+  if (roll) {
+    const toeOut = (sideSign * config.footProgressionDegrees * Math.PI) / 180;
+    ankleTarget.add(new Vector3(...roll.ankleOffset).applyAxisAngle(Y_AXIS, toeOut));
+  }
   const solved = solveTwoBoneLeg(hip, ankleTarget, morphology.thighLength, morphology.shinLength);
-  return { ...solved, cycle: gait.feet[side], hip };
+  return { ...solved, cycle: gait.feet[side], hip, roll };
 }
 
 function solveTwoBoneLeg(
@@ -688,7 +705,10 @@ function resolvePelvisRotation(config: ProceduralCharacterConfig, gait: Procedur
   return new Quaternion().setFromEuler(
     new Euler(
       config.lean * (0.28 + runWeight * 0.62) * locomotionWeight,
-      Math.sin(gait.phaseRadians - 0.12) * config.torsoTwist * (0.28 + runWeight * 0.08) * locomotionWeight,
+      Math.sin(gait.phaseRadians - 0.12) *
+        config.torsoTwist *
+        (config.animationMode === "walk" ? 0.42 : 0.28 + runWeight * 0.08) *
+        locomotionWeight,
       -supportBalance * config.hipSway * (0.68 - runWeight * 0.18) * locomotionWeight,
     ),
   );
@@ -715,7 +735,10 @@ function resolveGroundedTorso(
     .add(new Vector3(0, breathing, 0));
   const overlapLag = config.secondaryMotion * 0.18;
   const torsoTwist =
-    -Math.sin(gait.phaseRadians - overlapLag) * config.torsoTwist * locomotionWeight +
+    -Math.sin(gait.phaseRadians - overlapLag) *
+      config.torsoTwist *
+      locomotionWeight *
+      (config.animationMode === "walk" ? 0.72 : 1) +
     Math.sin(elapsedSeconds * 0.48 + resolveSeededMotionValue(config.seed, 73) * Math.PI) *
       config.motionVariation *
       0.012;
@@ -727,7 +750,11 @@ function resolveGroundedTorso(
   const neckAnchor = chest.clone().add(new Vector3(0, chestHalfHeight, 0).applyQuaternion(chestRotation));
   const head = neckAnchor.clone().add(new Vector3(0, morphology.headRadius * 0.95, 0));
   const headNod =
-    Math.sin(gait.phaseRadians * 2 - overlapLag * 1.8) * config.bob * config.secondaryMotion * 0.42 * locomotionWeight;
+    Math.sin(gait.phaseRadians * 2 - overlapLag * 1.8) *
+    config.bob *
+    config.secondaryMotion *
+    (config.animationMode === "walk" ? 0.22 : 0.42) *
+    locomotionWeight;
   const headRotation = new Quaternion().setFromEuler(
     new Euler(config.lean * 0.16 * locomotionWeight - headNod, torsoTwist * 0.18, -torsoRoll * 0.3),
   );
@@ -932,8 +959,16 @@ function assembleCharacterPose(input: {
 
   return {
     feet: {
-      left: { cycle: input.leftLeg.cycle, target: toVectorTuple(input.leftLeg.ankle) },
-      right: { cycle: input.rightLeg.cycle, target: toVectorTuple(input.rightLeg.ankle) },
+      left: {
+        cycle: input.leftLeg.cycle,
+        target: toVectorTuple(input.leftLeg.ankle),
+        ...(input.leftLeg.roll && { roll: input.leftLeg.roll }),
+      },
+      right: {
+        cycle: input.rightLeg.cycle,
+        target: toVectorTuple(input.rightLeg.ankle),
+        ...(input.rightLeg.roll && { roll: input.rightLeg.roll }),
+      },
     },
     phase: input.gait.phase,
     parts,
@@ -957,7 +992,13 @@ export function isProceduralCharacterPoseFinite(pose: ProceduralCharacterPose): 
     CHARACTER_PART_IDS.every((partId) => {
       const part = pose.parts[partId];
       return [...part.position, ...part.quaternion, ...part.jointAnchor].every(Number.isFinite);
-    }) && Object.values(pose.feet).every((foot) => foot.target.every(Number.isFinite))
+    }) &&
+    Object.values(pose.feet).every(
+      (foot) =>
+        foot.target.every(Number.isFinite) &&
+        (!foot.roll ||
+          [foot.roll.pitchRadians, foot.roll.toeFlexRadians, ...foot.roll.ankleOffset].every(Number.isFinite)),
+    )
   );
 }
 
