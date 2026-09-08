@@ -12,7 +12,6 @@ import { AutomationManager } from "../features/infrastructure/automation/automat
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
-import { ActionInstructions } from "../features/world/components/actions/action-instructions";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
@@ -41,7 +40,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <GameSystems backgroundImage={backgroundImage} />
 
         {/* Action feedback overlays */}
-        <ActionOverlays />
+        <ActionInfo />
 
         {/* HUD (heads-up display) elements */}
         <HUD />
@@ -84,16 +83,6 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   <>
     <SurfaceHost />
     <PlayOverlayManager backgroundImage={backgroundImage} />
-  </>
-);
-
-/**
- * Action feedback overlays - contextual information about current actions.
- */
-const ActionOverlays = () => (
-  <>
-    <ActionInstructions />
-    <ActionInfo />
   </>
 );
 

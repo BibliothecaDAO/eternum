@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-08",
+    title: "Clearer action selection",
+    description:
+      "Your selected entity and its available actions keep the focus. Hover a target for instructions; the bottom action banner is gone, and Escape still clears selection.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
     title: "Production beside your buildings",
     description:
       "Set production amounts on building and castle panels without leaving the map. Switch each realm between Smart, Idle, and Custom from its resource header.",
