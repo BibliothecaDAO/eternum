@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Feature Landing Map</title>
+  </head>
+  <body>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Exo+2:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <style>
+      :root {
+        --ground: #14100d;
+        --panel: #1c1611;
+        --inset: #0e0b08;
+        --line: #3a2d1a;
+        --line-soft: #241c11;
+        --text: #e9ddc6;
+        --muted: #a2926f;
+        --faint: #6e6148;
+        --peach: #f6c297;
+        --amber: #e39001;
+        --sage: #b5bd75;
+        --coral: #fc4c4c;
+        --steel: #7ea6c9;
+        --display: "IM Fell English SC", Georgia, serif;
+        --fell: "IM Fell English", Georgia, serif;
+        --sans: "Exo 2", "Segoe UI", system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0 20px 90px;
+        background: var(--ground);
+        color: var(--text);
+        font: 400 15px/1.6 var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--peach);
+      }
+      .col {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+      header.col {
+        padding-top: 56px;
+      }
+      .eyebrow {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+      h1 {
+        font: 400 42px/1.1 var(--display);
+        margin: 12px 0 10px;
+        color: var(--peach);
+        text-wrap: balance;
+      }
+      .standfirst {
+        font: italic 400 19px/1.5 var(--fell);
+        color: var(--muted);
+        max-width: 64ch;
+        margin: 0 0 18px;
+      }
+      .meta {
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 10px 0;
+      }
+      .meta b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      section {
+        margin-top: 46px;
+      }
+      h2 {
+        font: 400 24px/1.2 var(--display);
+        color: var(--peach);
+        margin: 0 0 6px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h2 .src {
+        font: 400 11px/1.4 var(--mono);
+        letter-spacing: 0.04em;
+        color: var(--faint);
+      }
+      h3 {
+        font: 400 17px/1.3 var(--display);
+        color: var(--text);
+        margin: 24px 0 8px;
+      }
+      p.lead {
+        color: var(--muted);
+        max-width: 70ch;
+        margin: 0 0 12px;
+      }
+      .surf {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 8px;
+      }
+      .surf div {
+        background: var(--panel);
+        border: 1px solid var(--line-soft);
+        padding: 12px 14px;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .surf div b {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font: 400 16px/1.2 var(--display);
+        color: var(--peach);
+        margin-bottom: 6px;
+      }
+      .surf div b i {
+        font: 500 10px/1 var(--mono);
+        letter-spacing: 0.12em;
+        color: var(--faint);
+        font-style: normal;
+      }
+      .surf div em {
+        display: block;
+        font: italic 400 13px/1.5 var(--fell);
+        color: var(--text);
+        margin-top: 6px;
+      }
+      /* screen diagram */
+      .screen {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #2a1f14;
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+      .zone {
+        position: absolute;
+        background: #1c1611ee;
+        border: 1px solid #5a4728;
+        padding: 8px 10px;
+        font-size: 11.5px;
+        line-height: 1.35;
+        color: var(--muted);
+        overflow: hidden;
+      }
+      .zone b {
+        display: block;
+        font: 400 13px/1.2 var(--display);
+        color: var(--peach);
+        margin-bottom: 4px;
+      }
+      .zone.scene {
+        background: transparent;
+        border: 1px dashed #5a4728;
+        color: var(--text);
+      }
+      .zone ul {
+        margin: 0;
+        padding-left: 14px;
+      }
+      .zone li {
+        margin: 1px 0;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .cap {
+        font: 500 10px/1.4 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--faint);
+        margin: 8px 0 4px;
+      }
+      /* table */
+      .wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line-soft);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 7px 10px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      th {
+        font: 500 10px/1.4 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--faint);
+        background: var(--panel);
+        white-space: nowrap;
+        position: sticky;
+        top: 52px;
+      }
+      td .why {
+        display: block;
+        color: var(--faint);
+        font-size: 12px;
+        margin-top: 1px;
+      }
+      .pill {
+        display: inline-block;
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.08em;
+        padding: 4px 6px;
+        white-space: nowrap;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        margin: 1px 3px 1px 0;
+      }
+      .pill.S {
+        color: var(--sage);
+        border-color: #4c5433;
+      }
+      .pill.L {
+        color: #cfd7a8;
+        border-color: #4c5433;
+      }
+      .pill.H {
+        color: var(--peach);
+        border-color: #6d5324;
+      }
+      .pill.R {
+        color: var(--peach);
+        border-color: #6d5324;
+      }
+      .pill.P {
+        color: var(--amber);
+        border-color: #6d4a1a;
+      }
+      .pill.D {
+        color: var(--amber);
+        border-color: #6d4a1a;
+      }
+      .pill.F {
+        color: var(--steel);
+        border-color: #2c4258;
+      }
+      .pill.M {
+        color: var(--steel);
+        border-color: #2c4258;
+      }
+      .pill.Q {
+        color: var(--muted);
+      }
+      .pill.W {
+        color: var(--faint);
+      }
+      .pill.X {
+        color: var(--coral);
+        border-color: #5a2a2a;
+      }
+      .mode {
+        display: inline-block;
+        font: 600 9.5px/1 var(--mono);
+        padding: 3px 5px;
+        margin-right: 3px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .mode.B {
+        color: var(--peach);
+        border-color: #6d5324;
+      }
+      .mode.E {
+        color: var(--sage);
+        border-color: #4c5433;
+      }
+      .mode.S {
+        color: var(--steel);
+        border-color: #2c4258;
+      }
+      .st {
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.08em;
+        padding: 4px 6px;
+        white-space: nowrap;
+        border: 1px solid var(--line);
+      }
+      .st.stays {
+        color: var(--sage);
+        border-color: #4c5433;
+      }
+      .st.moves {
+        color: var(--amber);
+        border-color: #6d4a1a;
+      }
+      .st.new {
+        color: var(--steel);
+        border-color: #2c4258;
+      }
+      .st.cut {
+        color: var(--coral);
+        border-color: #5a2a2a;
+      }
+      .filters {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: center;
+        padding: 10px 14px;
+        margin: 18px 0 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+      .filters label {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .filters input[type="checkbox"] {
+        accent-color: var(--peach);
+      }
+      .filters input[type="search"] {
+        margin-left: auto;
+        min-width: 200px;
+        padding: 6px 10px;
+        background: var(--inset);
+        border: 1px solid var(--line);
+        color: var(--text);
+        font: 13px var(--sans);
+      }
+      .filters .count {
+        font: 500 11px/1 var(--mono);
+        color: var(--faint);
+      }
+      tr[hidden] {
+        display: none;
+      }
+      .rule {
+        border-left: 3px solid var(--amber);
+        background: var(--panel);
+        padding: 10px 14px;
+        margin: 10px 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .rule b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      ol.way {
+        padding-left: 20px;
+        color: var(--muted);
+      }
+      ol.way li {
+        margin: 10px 0;
+      }
+      ol.way b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      ol.way small {
+        display: block;
+        color: var(--faint);
+        font-size: 12.5px;
+      }
+      footer.col {
+        margin-top: 60px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+      }
+      @media (max-width: 800px) {
+        .two {
+          grid-template-columns: 1fr;
+        }
+        th {
+          position: static;
+        }
+      }
+    </style>
+
+    <header class="col">
+      <div class="eyebrow">apps/game · design · feature placement · 2026-09-08</div>
+      <h1>Feature Landing Map</h1>
+      <p class="standfirst">
+        Every feature the client has or needs, and the one surface it lives on in the target HUD. The surfaces come
+        first, because a feature only reads well when its surface matches its tempo. The order of work falls out of the
+        moves.
+      </p>
+      <div class="meta">
+        features from the <b>Client Flow Database</b> (94 rows, verified on next) · surfaces from the
+        <b>Blitz Play Flow v0.3</b> · status: <b>stays</b> where it is today · <b>moves</b> to a new surface ·
+        <b>new</b> does not exist yet · <b>cut</b> goes away
+      </div>
+      <div class="filters" role="group" aria-label="Filters">
+        <label><input type="checkbox" data-mode="B" checked /> Blitz</label>
+        <label><input type="checkbox" data-mode="E" checked /> Eternum</label>
+        <label><input type="checkbox" data-mode="S" checked /> Spectator</label>
+        <label><input type="checkbox" data-status="moves" checked /> moves</label>
+        <label><input type="checkbox" data-status="new" checked /> new</label>
+        <label><input type="checkbox" data-status="stays" checked /> stays</label>
+        <label><input type="checkbox" data-status="cut" checked /> cut</label>
+        <input type="search" id="q" placeholder="Search features" aria-label="Search features" />
+        <span class="count" id="count"></span>
+      </div>
+    </header>
+
+    <section class="col">
+      <h2>The surfaces <span class="src">ten homes, each with one job and one tempo</span></h2>
+      <p class="lead">
+        These are the current HUD's surfaces, kept where they work and given a rule each. Two are new: the drawer and
+        the feed. Two go: the window and the toast.
+      </p>
+      <div class="surf">
+        <div>
+          <b>Scene <i>S</i></b
+          >What is where and whose. Terrain, models, ownership rings and tints, the selection, legal targets, ghosts for
+          move, build and spawn, fire, caravans.<em>If the eye can read it from the world, it does not get text.</em>
+        </div>
+        <div>
+          <b>Label <i>L</i></b
+          >What a thing is and how strong. Badge for kind, owner chrome, name, one number. Hover adds one row.<em
+            >Never an action, never a second number.</em
+          >
+        </div>
+        <div>
+          <b>Header chips <i>H</i></b
+          >Time and standing, read at a glance. Identity with the one clock, six numbers, attention count and rank, the
+          utility icons.<em>Six numbers on screen, never more.</em>
+        </div>
+        <div>
+          <b>Left rail <i>R</i></b
+          >Mine. The realm list as it exists, growing into an outliner with counts at scale. Suggestions become a row in
+          it.<em>Five rows collapsed at three realms and at a hundred.</em>
+        </div>
+        <div>
+          <b>Right panel <i>P</i></b
+          >The selection and its primary actions. The tile panel that exists today, with the actions that today open
+          windows moved onto it as buttons and inline pickers.<em
+            >Everything about the selection, nothing about anything else.</em
+          >
+        </div>
+        <div>
+          <b>Drawer <i>D</i></b
+          >A task that needs more than a button: a picker anchored to what was clicked, opening from the panel or from a
+          plot. The map stays clickable and a map click completes the task.<em>Replaces the window.</em>
+        </div>
+        <div>
+          <b>Minimap <i>M</i></b
+          >The far world. Pan, zoom, lens filters, pings for crates and captures.<em
+            >Where the eye goes when the ear hears something.</em
+          >
+        </div>
+        <div>
+          <b>Feed <i>F</i></b
+          >What happened. Activity, battles, arrivals with claim, my own orders turning gold, one chat line. Text on the
+          scene at the right edge, newest first, jump on click.<em>Replaces every toast.</em>
+        </div>
+        <div>
+          <b>Popover <i>Q</i></b
+          >Meta, opened and closed deliberately: standings and social, settings, hints, identity.<em
+            >Only for things a player does between fights.</em
+          >
+        </div>
+        <div>
+          <b>Web app <i>W</i></b
+          >Before and after the game: lobby, seating, results, review, rating.<em>The client is play only.</em>
+        </div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Where things land <span class="src">the two screens of the game</span></h2>
+      <div class="two">
+        <div>
+          <div class="cap">World map</div>
+          <div class="screen" aria-label="World map layout">
+            <div class="zone" style="left: 1%; top: 2%; width: 26%; height: 12%">
+              <b>Identity · clock</b>name, spectating state, time left
+            </div>
+            <div class="zone" style="left: 29%; top: 2%; width: 42%; height: 12%">
+              <b>Holdings</b>six numbers: wheat, wood, labor, essence, armies ready, points
+            </div>
+            <div class="zone" style="left: 73%; top: 2%; width: 26%; height: 12%">
+              <b>Attention · rank</b>threats and arrivals · rank and gap · network, activity, settings
+            </div>
+            <div class="zone" style="left: 1%; top: 16%; width: 20%; height: 50%">
+              <b>Left rail</b>
+              <ul>
+                <li>realms with attention, favorite, rename</li>
+                <li>armies ready</li>
+                <li>camps, rifts, hyperstructures held</li>
+                <li>suggestions row</li>
+                <li>automation mode per realm</li>
+              </ul>
+            </div>
+            <div class="zone scene" style="left: 23%; top: 16%; width: 50%; height: 56%">
+              <b>Scene and labels</b>
+              <ul>
+                <li>models sized by troop bucket</li>
+                <li>owner rings, selection, legal targets only</li>
+                <li>move, explore, attack by right-click</li>
+                <li>spawn hexes for a new army</li>
+                <li>ghost path with cost</li>
+                <li>labels: badge, chrome, name, count</li>
+              </ul>
+            </div>
+            <div class="zone" style="left: 75%; top: 16%; width: 24%; height: 22%">
+              <b>Feed</b>battles · captures · crates · arrivals with claim · my orders · chat line
+            </div>
+            <div class="zone" style="left: 75%; top: 40%; width: 24%; height: 46%">
+              <b>Right panel</b>
+              <ul>
+                <li>selection: owner, count, stamina with the 50 mark</li>
+                <li>army: create picker, guard picker, transfer troops</li>
+                <li>structure: upgrade with shortfall, guards, resources</li>
+                <li>attack preview: losses, remaining</li>
+                <li>biome bonus, simulate</li>
+                <li>relics of the holder</li>
+              </ul>
+            </div>
+            <div class="zone" style="left: 1%; top: 68%; width: 20%; height: 30%">
+              <b>Minimap</b>pan, zoom, lenses, pings
+            </div>
+            <div class="zone" style="left: 23%; top: 74%; width: 50%; height: 12%">
+              <b>Drawer, when open</b>anchored to the panel or the plot: transfer form, train form, market on Eternum
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="cap">Realm view</div>
+          <div class="screen" aria-label="Realm view layout">
+            <div class="zone" style="left: 1%; top: 2%; width: 26%; height: 12%"><b>Identity · clock</b>same</div>
+            <div class="zone" style="left: 29%; top: 2%; width: 42%; height: 12%">
+              <b>This realm</b>balances and rates for the realm in view, population, tiles
+            </div>
+            <div class="zone" style="left: 73%; top: 2%; width: 26%; height: 12%"><b>Attention · rank</b>same</div>
+            <div class="zone" style="left: 1%; top: 16%; width: 20%; height: 50%">
+              <b>Left rail</b>same, this realm highlighted
+            </div>
+            <div class="zone scene" style="left: 23%; top: 16%; width: 50%; height: 56%">
+              <b>Scene</b>
+              <ul>
+                <li>plots, buildings, the castle</li>
+                <li>click a plot: building picker at the plot</li>
+                <li>click a building: its panel</li>
+                <li>ghost building until confirmed</li>
+              </ul>
+            </div>
+            <div class="zone" style="left: 75%; top: 16%; width: 24%; height: 22%"><b>Feed</b>same</div>
+            <div class="zone" style="left: 75%; top: 40%; width: 24%; height: 46%">
+              <b>Right panel</b>
+              <ul>
+                <li>building: produces, consumes, population, pause, delete</li>
+                <li>production controls inline: recipe, amount, start</li>
+                <li>automation switch for the realm</li>
+                <li>castle: upgrade, provision, labor, wonder bonus</li>
+              </ul>
+            </div>
+            <div class="zone" style="left: 1%; top: 68%; width: 20%; height: 30%"><b>Minimap</b>realm in the world</div>
+            <div class="zone" style="left: 23%; top: 74%; width: 50%; height: 12%">
+              <b>Drawer, when open</b>building picker at a plot; the full catalogue only on request
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rule">
+        <b>Spectator:</b> the same two screens. The right panel loses its action buttons, the left rail becomes the
+        followed lord's holdings, the identity chip gains a lord picker. Nothing else changes.
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>The ledger <span class="src">one row per feature, one surface each</span></h2>
+      <h3>Time, standing, identity</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Feature</th>
+            <th>Modes</th>
+            <th>Today</th>
+            <th>Lands on</th>
+            <th>Status</th>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Time left<span class="why">one clock; day names and the percent pill go</span></td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>three header pills</td>
+            <td><span class="pill H">H identity chip</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Start countdown</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>header pill</td>
+            <td><span class="pill H">H identity chip, same clock</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="cut">
+            <td>Day and phase names</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>tick progress pill</td>
+            <td><span class="pill X">gone</span></td>
+            <td><span class="st cut">cut</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Who I am, spectating, sign in, play</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>identity chip popover</td>
+            <td><span class="pill H">H identity chip</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="S" data-status="new">
+            <td>Follow a lord</td>
+            <td><span class="mode S">S</span></td>
+            <td>none</td>
+            <td>
+              <span class="pill H">H identity chip picker</span> <span class="pill R">R rail as their holdings</span>
+            </td>
+            <td><span class="st new">new</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Rank, points, gap to next</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>identity chip, leaderboard popover</td>
+            <td><span class="pill H">H attention chip</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="new">
+            <td>Attention count and next</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>badges scattered</td>
+            <td><span class="pill H">H attention chip</span></td>
+            <td><span class="st new">new</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Standings, players, tribes, faith, prize</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>leaderboard popover</td>
+            <td><span class="pill Q">Q popover</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B" data-status="moves">
+            <td>Register points after the end</td>
+            <td><span class="mode B">B</span></td>
+            <td>prize panel, game finished popover</td>
+            <td><span class="pill H">H clock becomes the window with one button</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Game finished, review</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>header pill with Review</td>
+            <td><span class="pill H">H banner</span> <span class="pill W">W review</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Network, transactions, settings, hints, what's new</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>utility cluster</td>
+            <td><span class="pill H">H utility icons</span> <span class="pill Q">Q popovers</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Economy</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Feature</th>
+            <th>Modes</th>
+            <th>Today</th>
+            <th>Lands on</th>
+            <th>Status</th>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Balances<span class="why">six in the header, the rest on the realm's panel</span></td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>merged resource panel, balances tab</td>
+            <td><span class="pill H">H holdings</span> <span class="pill P">P realm panel</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Production rates and timers</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>resource chip rings</td>
+            <td><span class="pill P">P realm panel</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Build a building<span class="why">picker at the plot; the catalogue window only on request</span></td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Build window, plot click, chip plus, build another</td>
+            <td><span class="pill D">D picker at the plot</span> <span class="pill S">S ghost</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Build another of the same</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>building panel</td>
+            <td><span class="pill P">P building panel</span> <span class="pill S">S ghost</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Set production for a building</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>production popup</td>
+            <td><span class="pill P">P building panel, inline controls</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Pause, resume, delete a building</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>building panel</td>
+            <td><span class="pill P">P building panel</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>
+              Automation mode per realm<span class="why"
+                >Smart, Idle, Custom as a switch; sliders only under Custom</span
+              >
+            </td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>cockpit label, popup sliders</td>
+            <td><span class="pill R">R rail row</span> <span class="pill D">D under Custom</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>
+              Upgrade the realm<span class="why">the shortfall and the nearest stock replace "Need Resources"</span>
+            </td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>right panel block</td>
+            <td><span class="pill P">P castle panel</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B" data-status="stays">
+            <td>Provision a fresh realm</td>
+            <td><span class="mode B">B</span></td>
+            <td>right panel block</td>
+            <td><span class="pill P">P castle panel</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Produce labor</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>castle button to the popup</td>
+            <td><span class="pill P">P castle panel, inline</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Transfer resources<span class="why">destination picked on the map, amounts in the drawer</span></td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Logistics window</td>
+            <td><span class="pill D">D from the realm panel</span> <span class="pill S">S pick destination</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Transfer automation</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Logistics tab and advanced modal</td>
+            <td><span class="pill D">D from the realm panel</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Arrivals and claim</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Logistics window, badge</td>
+            <td><span class="pill F">F feed rows with claim</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>All balances table</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Logistics tab</td>
+            <td><span class="pill P">P realm panel, expand</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="E" data-status="moves">
+            <td>Market, orders, history</td>
+            <td><span class="mode E">E</span></td>
+            <td>market window at the right edge</td>
+            <td><span class="pill D">D ledger drawer</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Rename a structure</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>rail row pencil</td>
+            <td><span class="pill R">R rail row</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Favorites, category filter</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>rail rows</td>
+            <td><span class="pill R">R rail</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Suggestions</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>header pill</td>
+            <td><span class="pill R">R rail row</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Military</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Feature</th>
+            <th>Modes</th>
+            <th>Today</th>
+            <th>Lands on</th>
+            <th>Status</th>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>
+              Create a field army<span class="why"
+                >select the structure, spawn hexes light, right-click one, picker at the hex</span
+              >
+            </td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Military window via four paths</td>
+            <td><span class="pill S">S spawn hexes</span> <span class="pill D">D picker at the hex</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Add or replace a guard</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>slot Add to the window</td>
+            <td><span class="pill P">P guard slot picker</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Armies list, disband</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Military window</td>
+            <td>
+              <span class="pill R">R rail, armies section</span> <span class="pill P">P disband on the army panel</span>
+            </td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Select, read an army</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>scene and right panel</td>
+            <td><span class="pill S">S</span> <span class="pill P">P army panel</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>
+              Readiness to travel, explore, attack<span class="why">one bar with the attack mark and one word</span>
+            </td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>three icons</td>
+            <td><span class="pill P">P army panel bar</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Move, explore with cost</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>hover tooltip, right-click</td>
+            <td><span class="pill S">S ghost path</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Attack preview and confirm</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>popover over the map</td>
+            <td><span class="pill P">P army panel, target section</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Action highlights<span class="why">selection and legal targets only; the banner goes</span></td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>rings on everything, banner</td>
+            <td><span class="pill S">S</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Move troops or relics between adjacent units</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>help popover</td>
+            <td><span class="pill D">D from the army panel</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Open a relic crate</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>chest modal</td>
+            <td><span class="pill S">S right-click</span> <span class="pill F">F result row</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Take a hyperstructure</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>attack flow</td>
+            <td><span class="pill S">S</span> <span class="pill F">F capture row</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Simulate a battle</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Battle button</td>
+            <td><span class="pill Q">Q from the panel</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Under attack</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>toast, story events</td>
+            <td>
+              <span class="pill F">F row</span> <span class="pill S">S ring</span> <span class="pill R">R stripe</span>
+            </td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Auto-explore per army</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>army panel control</td>
+            <td><span class="pill P">P army panel</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="new">
+            <td>Army size on the model</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>one model, fixed scale</td>
+            <td><span class="pill S">S figure count per bucket</span></td>
+            <td><span class="st new">new</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Labels<span class="why">badge, owner chrome, name, one number; owner name only once</span></td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>owner name on every unit</td>
+            <td><span class="pill L">L</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Follow combat camera</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>header toggle</td>
+            <td><span class="pill H">H utility</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="E" data-status="stays">
+            <td>Spire travel</td>
+            <td><span class="mode E">E</span></td>
+            <td>spire panel, right-click</td>
+            <td><span class="pill P">P</span> <span class="pill S">S</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Objectives, relics, social</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Feature</th>
+            <th>Modes</th>
+            <th>Today</th>
+            <th>Lands on</th>
+            <th>Status</th>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Hyperstructure holder, points per second, guards</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>tile panel</td>
+            <td><span class="pill L">L</span> <span class="pill P">P</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="new">
+            <td>Objectives lens</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>none</td>
+            <td><span class="pill M">M lens</span> <span class="pill L">L</span></td>
+            <td><span class="st new">new</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="new">
+            <td>Crate spawns and captures ping</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>none</td>
+            <td><span class="pill M">M ping</span> <span class="pill F">F row</span></td>
+            <td><span class="st new">new</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Relics held and activation</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>tray and selector popover</td>
+            <td><span class="pill P">P section of the holder's panel</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="E" data-status="stays">
+            <td>Craft a relic</td>
+            <td><span class="mode E">E</span></td>
+            <td>popup</td>
+            <td><span class="pill P">P realm panel</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="E" data-status="stays">
+            <td>Found a hyperstructure, faith, wonder bonus</td>
+            <td><span class="mode E">E</span></td>
+            <td>tile panels</td>
+            <td><span class="pill P">P</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="E" data-status="new">
+            <td>Contribute to a hyperstructure</td>
+            <td><span class="mode E">E</span></td>
+            <td>none on next</td>
+            <td><span class="pill D">D from the hyperstructure panel</span></td>
+            <td><span class="st new">new</span></td>
+          </tr>
+          <tr data-modes="E" data-status="stays">
+            <td>Tribes: create, join, invite, remove</td>
+            <td><span class="mode E">E</span></td>
+            <td>leaderboard popover</td>
+            <td><span class="pill Q">Q</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Chat</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>bubble and popover</td>
+            <td><span class="pill F">F one line, Enter opens</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="moves">
+            <td>Activity and battle logs</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>activity popover, story events view</td>
+            <td><span class="pill F">F</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="cut">
+            <td>Toasts, 93 call sites</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>everywhere</td>
+            <td><span class="pill F">F rows</span></td>
+            <td><span class="st cut">cut</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Minimap pan, zoom</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>minimap</td>
+            <td><span class="pill M">M</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="cut">
+            <td>Dead surfaces: header picker chip, army card, Bridge view, prediction remains</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>code only</td>
+            <td><span class="pill X">gone</span></td>
+            <td><span class="st cut">cut</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>Entry and realm view</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Feature</th>
+            <th>Modes</th>
+            <th>Today</th>
+            <th>Lands on</th>
+            <th>Status</th>
+          </tr>
+          <tr data-modes="B E" data-status="stays">
+            <td>Settle, season pass, village pass</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>entry modal</td>
+            <td><span class="pill W">W</span> then one modal</td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Enter the realm view</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>V, toggle, double-click</td>
+            <td><span class="pill S">S double-click</span> <span class="pill H">H toggle</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+          <tr data-modes="B E" data-status="moves">
+            <td>Realm in view: balances, population, tiles</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>left panels</td>
+            <td><span class="pill H">H this-realm chip</span></td>
+            <td><span class="st moves">moves</span></td>
+          </tr>
+          <tr data-modes="B E S" data-status="stays">
+            <td>Boot, errors, reconnect</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>loader, network pill</td>
+            <td>loader, <span class="pill H">H utility</span></td>
+            <td><span class="st stays">stays</span></td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>The way forward <span class="src">read off the moves, smallest first</span></h2>
+      <p class="lead">
+        Each step moves features onto a surface that already exists, so nothing has to be finished before the next step
+        starts. Material, colour and type come after step six as their own pass.
+      </p>
+      <ol class="way">
+        <li>
+          <b>Right panel takes the army actions.</b> Create a field army from spawn hexes with a picker at the hex;
+          guard picker on the slot; readiness as one bar; attack preview in the panel's target section.<small
+            >Moves 5 rows. Deletes the Military window's reason to open for the common case.</small
+          >
+        </li>
+        <li>
+          <b>Drawer replaces the Build and Production windows.</b> Picker at the plot; production controls inline on the
+          building panel; the popover primitive learns to wait for a map click.<small
+            >Moves 4 rows. The 1320 px Build view survives only as the catalogue.</small
+          >
+        </li>
+        <li>
+          <b>Feed replaces toasts and the logistics window.</b> Activity, battles, crate results, arrivals with claim,
+          my orders, one chat line. Space jumps to the last row.<small>Moves 6 rows, cuts 93 toast sites.</small>
+        </li>
+        <li>
+          <b>Header carries time and standing.</b> One clock, six numbers, attention count with next, rank with the gap.
+          Day names and the percent pill go.<small>Moves 5 rows, cuts 1.</small>
+        </li>
+        <li>
+          <b>Scene and labels carry whose and how strong.</b> Action highlights scoped to the selection; labels on the
+          ladder; army models by size bucket in the Model Lab.<small>Moves 2 rows, adds 1.</small>
+        </li>
+        <li>
+          <b>Rail becomes the outliner.</b> Counts per kind with attention, suggestions as a row, automation as a
+          switch. Stress-tested at 10, 30 and 100 holdings.<small>Moves 3 rows.</small>
+        </li>
+        <li>
+          <b>Spectator follows a lord.</b> Picker in the identity chip, rail as their holdings, labels relative to
+          them.<small>Adds 1 row, the largest single gap for casters.</small>
+        </li>
+        <li>
+          <b>Transfers and the market move to drawers.</b> Destination picked on the map, amounts in the drawer;
+          Eternum's ledger drawer.<small>Moves 4 rows.</small>
+        </li>
+        <li>
+          <b>Material pass.</b> Brand tokens, type, panel material, one token at a time on surfaces that now hold the
+          right features.
+        </li>
+      </ol>
+      <div class="rule">
+        <b>How each step is judged:</b> the feature is on its surface, the map stays visible and clickable, the click
+        count is at or below the database's today column, and nothing that used to be readable stopped being readable.
+      </div>
+    </section>
+
+    <footer class="col">
+      Companion pages: Client Flow Database (today, 94 rows) · Blitz Play Flow v0.3 (surfaces and rulings) · Blitz User
+      Stories (needs). All three are on branch claude/client-flow-findings under docs/reports.
+    </footer>
+    <script>
+      (function () {
+        var boxes = Array.prototype.slice.call(document.querySelectorAll(".filters input[type=checkbox]"));
+        var q = document.getElementById("q");
+        var count = document.getElementById("count");
+        var rows = Array.prototype.slice.call(document.querySelectorAll("tr[data-modes]"));
+        function apply() {
+          var modes = boxes
+            .filter(function (b) {
+              return b.checked && b.getAttribute("data-mode");
+            })
+            .map(function (b) {
+              return b.getAttribute("data-mode");
+            });
+          var statuses = boxes
+            .filter(function (b) {
+              return b.checked && b.getAttribute("data-status");
+            })
+            .map(function (b) {
+              return b.getAttribute("data-status");
+            });
+          var text = (q.value || "").toLowerCase();
+          var shown = 0;
+          rows.forEach(function (row) {
+            var okMode = row
+              .getAttribute("data-modes")
+              .split(" ")
+              .some(function (m) {
+                return modes.indexOf(m) >= 0;
+              });
+            var okStatus = statuses.indexOf(row.getAttribute("data-status")) >= 0;
+            var okText = !text || row.textContent.toLowerCase().indexOf(text) >= 0;
+            var visible = okMode && okStatus && okText;
+            if (visible) {
+              row.removeAttribute("hidden");
+              shown += 1;
+            } else {
+              row.setAttribute("hidden", "");
+            }
+          });
+          count.textContent = shown + " of " + rows.length + " features";
+        }
+        boxes.forEach(function (b) {
+          b.addEventListener("change", apply);
+        });
+        q.addEventListener("input", apply);
+        apply();
+      })();
+    </script>
+  </body>
+</html>
