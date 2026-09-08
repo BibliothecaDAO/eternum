@@ -13,6 +13,7 @@ interface TroopCountSelectorProps {
    * the parent body already covers that info.
    */
   embedded?: boolean;
+  compact?: boolean;
 }
 
 export const TroopCountSelector = ({
@@ -22,6 +23,7 @@ export const TroopCountSelector = ({
   capacityRemaining,
   troopMaxSize,
   embedded = false,
+  compact = false,
 }: TroopCountSelectorProps) => {
   const capacityLimit =
     typeof capacityRemaining === "number" && Number.isFinite(capacityRemaining) ? capacityRemaining : null;
@@ -99,13 +101,13 @@ export const TroopCountSelector = ({
           </div>
         )}
 
-        {isAtCapacity && maxCapacity !== null && (
+        {!compact && isAtCapacity && maxCapacity !== null && (
           <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 text-xxs text-danger font-semibold">
             Deployment cap reached: {maxCapacity.toLocaleString()} troops
           </div>
         )}
 
-        {troopCount > maxAffordable && (
+        {!compact && troopCount > maxAffordable && (
           <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-danger flex-shrink-0" />
             <span className="text-xxs text-danger font-semibold">

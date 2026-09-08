@@ -1,3 +1,6 @@
+import { openArmyDeploymentPicker } from "../utils/open-army-deployment-picker";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -62,13 +65,15 @@ export const CompactDefenseDisplay = ({
   onRequestSlotAction,
   hideSlotSummary = false,
 }: CompactDefenseDisplayProps) => {
-  const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
+  const isSpectating = useUIStore((state) => state.isSpectating);
   const {
     setup: { components },
   } = useDojo();
   const currentArmiesTick = useCurrentArmiesTick();
   const isBanner = variant === "banner";
-  const canOpenModal = Boolean(canManageDefense && structureId && structureId > 0);
+  const canOpenPicker = Boolean(
+    canManageDefense && structureId && structureId > 0 && !isSpectating && !isExplicitSpectateSession(),
+  );
   const structureComponent = useMemo(() => {
     if (!structureId || !components?.Structure) {
       return null;
@@ -135,18 +140,21 @@ export const CompactDefenseDisplay = ({
     slotHeightClass,
   );
 
-  const handleSlotOpen = (slot: GuardSlot) => {
-    if (!canOpenModal || !structureId) return;
+  const handleSlotOpen = (slot: GuardSlot, element: Element) => {
+    if (!canOpenPicker || !structureId) return;
     if (onRequestSlotAction) {
       onRequestSlotAction(slot);
       return;
     }
-    openArmyCreationPopup({
-      structureId,
-      isExplorer: false,
-      maxDefenseSlots: resolvedSlotLimit,
-      initialGuardSlot: Number(slot),
-    });
+    openArmyDeploymentPicker(
+      {
+        structureId,
+        isExplorer: false,
+        maxDefenseSlots: resolvedSlotLimit,
+        initialGuardSlot: Number(slot),
+      },
+      surfaceAnchorFrom(element),
+    );
   };
 
   const renderSlot = (defense: DefenseTroop) => {
@@ -167,19 +175,19 @@ export const CompactDefenseDisplay = ({
       return null;
     }
 
-    const isSlotInteractive = isEmptySlot ? canOpenModal && hasAvailableDefenseSlot : canOpenModal;
+    const isSlotInteractive = isEmptySlot ? canOpenPicker && hasAvailableDefenseSlot : canOpenPicker;
     const interactiveClasses = isSlotInteractive
       ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
       : "cursor-default";
-    const onSlotClick = () => {
+    const onSlotClick = (event: { currentTarget: HTMLDivElement }) => {
       if (!isSlotInteractive) return;
-      handleSlotOpen(guardSlotKey);
+      handleSlotOpen(guardSlotKey, event.currentTarget);
     };
     const onSlotKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
       if (!isSlotInteractive) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        onSlotClick();
+        onSlotClick(event);
       }
     };
 

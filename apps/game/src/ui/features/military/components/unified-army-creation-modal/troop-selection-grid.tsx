@@ -15,6 +15,7 @@ interface TroopSelectionGridProps {
   onSelect: (type: TroopType, tier: TroopTier) => void;
   /** Drop outer card chrome so the grid blends with a unified parent card. */
   bare?: boolean;
+  compact?: boolean;
 }
 
 export const TroopSelectionGrid = ({
@@ -25,6 +26,7 @@ export const TroopSelectionGrid = ({
   selectedGuardTier,
   onSelect,
   bare = false,
+  compact = false,
 }: TroopSelectionGridProps) => {
   const lockedMap = useMemo(() => {
     if (!isDefenseTroopLocked || selectedGuardCategory === undefined || selectedGuardTier === undefined) {
@@ -53,6 +55,27 @@ export const TroopSelectionGrid = ({
                 const isLockedOption = Boolean(lockedMap && lockedMap !== lockedKey);
                 const canSelect = hasResources && !isLockedOption;
                 const isCollapsed = tierOption.available === 0;
+
+                if (compact) {
+                  return (
+                    <button
+                      key={lockedKey}
+                      type="button"
+                      aria-label={`${option.label} ${tierOption.tier}: ${tierOption.available.toLocaleString()} available`}
+                      aria-pressed={isSelected}
+                      disabled={isLockedOption}
+                      className={clsx(
+                        "flex items-center justify-between gap-1 rounded border px-2 py-2 text-xs tabular-nums",
+                        isSelected ? "border-gold bg-gold/15" : "border-gold/25",
+                        !hasResources && "opacity-50",
+                      )}
+                      onClick={() => onSelect(option.type, tierOption.tier)}
+                    >
+                      <span>{tierOption.tier}</span>
+                      <span>{Math.floor(tierOption.available).toLocaleString()}</span>
+                    </button>
+                  );
+                }
 
                 if (isCollapsed) {
                   // Collapsed Mini Card

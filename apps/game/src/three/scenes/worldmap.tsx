@@ -1,3 +1,6 @@
+import { useArmyDeploymentStore } from "@/hooks/store/use-army-deployment-store";
+import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
+import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -1286,6 +1289,7 @@ export default class WorldmapScene extends WarpTravel {
       this.reconcileHoverLabelsForProjectionChanges(changes);
       this.refreshTerrainPropOccupancy();
       this.syncStructureMarkers(changes);
+      this.showSuggestedArmyDeployment();
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
       onStructureComponentChanged: (current) => {
@@ -2129,6 +2133,8 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
     this.lastHoverReconciliation = nextHoverReconciliation;
+    const spawnPath = resolveSpawnActionPath(nextHexCoords, getLiveWorldmapEntityActions().actionPaths);
+    showArmyDeploymentTooltip(spawnPath && nextHexCoords ? this.projectDeploymentHex(nextHexCoords) : null);
 
     if (hex === null) {
       if (this.previouslyHoveredHex) {
@@ -2356,6 +2362,11 @@ export default class WorldmapScene extends WarpTravel {
 
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
+    if (
+      usePopoverStore.getState().openId === "army-deployment" &&
+      resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
+    )
+      return;
     const accountAddress = ContractAddress(useAccountStore.getState().account?.address || "");
     const { army, structure, chest } = hexCoords
       ? this.getHexagonEntity(hexCoords)
@@ -2420,6 +2431,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
+    if (useUIStore.getState().isSpectating || isExplicitSpectateSession()) return;
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
 
@@ -2875,10 +2887,67 @@ export default class WorldmapScene extends WarpTravel {
 
     if (direction === undefined || direction === null) return;
 
-    this.interactionAdapter.openArmyCreation({
-      direction,
-      structureId: selectedEntityId,
-    });
+    const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
+    const point = this.projectDeploymentHex({ col: normalized.x, row: normalized.y });
+    openArmyDeploymentPicker(
+      { direction, structureId: selectedEntityId, isExplorer: true },
+      { left: point.x, right: point.x, top: point.y, bottom: point.y },
+      { reanchor: (event) => this.reanchorArmyDeployment(event) },
+    );
+  }
+
+  private projectDeploymentHex(hex: HexPosition): { x: number; y: number } {
+    const point = getWorldPositionForHex(hex).clone().project(this.camera);
+    const canvas = document.getElementById("main-canvas");
+    const rect = canvas?.getBoundingClientRect();
+    if (!rect) throw new Error("World map canvas is missing");
+    return { x: rect.left + ((point.x + 1) * rect.width) / 2, y: rect.top + ((1 - point.y) * rect.height) / 2 };
+  }
+
+  private reanchorArmyDeployment(event: PointerEvent): boolean {
+    if (this.actionPathsTransitionToken === null || this.actionPathsTransitionToken !== this.chunkTransitionToken)
+      return false;
+    const canvas = event.target;
+    if (!(canvas instanceof HTMLCanvasElement) || canvas.id !== "main-canvas") return false;
+    const rect = canvas.getBoundingClientRect();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(
+      new Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        1 - ((event.clientY - rect.top) / rect.height) * 2,
+      ),
+      this.camera,
+    );
+    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords ?? null;
+    const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
+    const path = resolveSpawnActionPath(hex, actionPaths);
+    if (!path || selectedEntityId === null || selectedEntityId === undefined) return false;
+    this.onArmyCreate(path, selectedEntityId);
+    return true;
+  }
+
+  private showSuggestedArmyDeployment(): void {
+    const intent = useArmyDeploymentStore.getState();
+    if (intent.suggestedStructureId === null) return;
+    const structure = this.worldSpatialProjection.getStructure(intent.suggestedStructureId);
+    if (!structure) return;
+    intent.clear();
+    if (useUIStore.getState().isSpectating || isExplicitSpectateSession()) return;
+    const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
+    this.onStructureSelection(structure.entityId, { col: normalized.x, row: normalized.y });
+    const points = [...getLiveWorldmapEntityActions().actionPaths.values()]
+      .filter((path) => ActionPaths.getActionType(path) === ActionType.CreateArmy)
+      .map((path) => {
+        const target = path[path.length - 1].hex;
+        const hex = new Position({ x: target.col, y: target.row }).getNormalized();
+        return this.projectDeploymentHex({ col: hex.x, row: hex.y });
+      });
+    points.sort(
+      (a, b) =>
+        Math.hypot(a.x - window.innerWidth / 2, a.y - window.innerHeight / 2) -
+        Math.hypot(b.x - window.innerWidth / 2, b.y - window.innerHeight / 2),
+    );
+    showArmyDeploymentTooltip(points[0] ?? null);
   }
 
   // actionPath is not normalized
@@ -2917,6 +2986,8 @@ export default class WorldmapScene extends WarpTravel {
 
     if (!hexCoords) return;
 
+    this.showSelectedStructure(selectedEntityId, hexCoords);
+
     const structure = new StructureActionManager();
     const structureData = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(selectedEntityId)]));
     const attackRange = structureData
@@ -2930,7 +3001,16 @@ export default class WorldmapScene extends WarpTravel {
 
     const playerAddress = useAccountStore.getState().account?.address;
 
-    if (!playerAddress) return;
+    const canIssueStructureOrders =
+      !useUIStore.getState().isSpectating &&
+      !isExplicitSpectateSession() &&
+      Boolean(structureData && isAddressEqualToAccount(structureData.owner));
+    if (!playerAddress || !canIssueStructureOrders) {
+      this.updateEntityActionPaths(new Map());
+      this.highlightHexManager.highlightHexes([]);
+      showArmyDeploymentTooltip(null);
+      return;
+    }
 
     const actionPaths = structure.findActionPaths(
       hexCoords,
@@ -2940,30 +3020,28 @@ export default class WorldmapScene extends WarpTravel {
       attackRange,
     );
 
+    for (const [key, path] of actionPaths.getPaths()) {
+      const destination = path[path.length - 1].hex;
+      const tile = this.worldSpatialProjection.getTileAtHex(destination);
+      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && (!tile || Number(tile.occupierId) !== 0)) {
+        actionPaths.getPaths().delete(key);
+      }
+    }
     this.updateEntityActionPaths(actionPaths.getPaths());
-
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightDescriptors());
 
-    if (hexCoords) {
-      const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-      const worldMapPosition =
-        Number.isFinite(Number(contractPosition?.x)) && Number.isFinite(Number(contractPosition?.y))
-          ? { col: Number(contractPosition.x), row: Number(contractPosition.y) }
-          : undefined;
-      this.state.setStructureEntityId(selectedEntityId, {
-        worldMapPosition,
-        spectator: this.state.isSpectating,
-      });
-    }
-
-    // Show selection pulse for the selected structure
-    if (hexCoords) {
-      const worldPos = getWorldPositionForHex(hexCoords);
-      this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
-      this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("structure"));
-    }
-
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
+  }
+
+  private showSelectedStructure(structureId: ID, hex: HexPosition): void {
+    const contract = new Position({ x: hex.col, y: hex.row }).getContract();
+    this.state.setStructureEntityId(structureId, {
+      worldMapPosition: { col: contract.x, row: contract.y },
+      spectator: useUIStore.getState().isSpectating || isExplicitSpectateSession(),
+    });
+    const position = getWorldPositionForHex(hex);
+    this.selectionPulseManager.showSelection(position.x, position.z, structureId);
+    this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("structure"));
   }
 
   private clearEvictedArmyMovementVisuals(entityId: ID): void {
@@ -3449,6 +3527,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private clearEntitySelection() {
+    showArmyDeploymentTooltip(null);
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
@@ -8027,6 +8106,20 @@ export default class WorldmapScene extends WarpTravel {
         this.state.selectedHex = selectedHex;
       },
     });
+    this.storeSubscriptions.push(useArmyDeploymentStore.subscribe(() => this.showSuggestedArmyDeployment()));
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.isSpectating,
+        (spectating) => {
+          if (!spectating) return;
+          this.updateEntityActionPaths(new Map());
+          this.highlightHexManager.highlightHexes([]);
+          showArmyDeploymentTooltip(null);
+          usePopoverStore.getState().close("army-deployment");
+        },
+      ),
+    );
+    this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();
     this.bindPersistedZoomPreferenceLifecycle();
 

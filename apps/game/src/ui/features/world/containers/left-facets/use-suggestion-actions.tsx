@@ -1,3 +1,4 @@
+import { useArmyDeploymentStore } from "@/hooks/store/use-army-deployment-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -39,7 +40,7 @@ export const useSuggestionActions = () => {
   const { fireUpgrade, fireProvision, fireUpgradeAndProvision, pendingRealmId } = useRealmActions();
 
   const focusRealm = useCallback(
-    async (realmId: ID) => {
+    async (realmId: ID, forceMap = false) => {
       const target = playerStructures.find((structure) => structure.entityId === realmId);
       const coords = target?.structure?.base;
       if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
@@ -48,7 +49,7 @@ export const useSuggestionActions = () => {
         if (Number.isFinite(col) && Number.isFinite(row)) {
           setSelectedHex({ col, row });
         }
-        await goToStructure(realmId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
+        await goToStructure(realmId, new Position({ x: coords.coord_x, y: coords.coord_y }), forceMap || isMapView);
       } else {
         setStructureEntityId(realmId);
       }
@@ -96,7 +97,7 @@ export const useSuggestionActions = () => {
 
   const runSuggestionClick = useCallback(
     async (suggestion: EmpireSuggestion) => {
-      await focusRealm(suggestion.realmId);
+      await focusRealm(suggestion.realmId, suggestion.action === "deploy-explorer");
 
       switch (suggestion.action) {
         case "upgrade-and-provision":
@@ -108,8 +109,11 @@ export const useSuggestionActions = () => {
         case "provision":
           await fireProvision(suggestion.realmId);
           return;
-        case "garrison":
         case "deploy-explorer":
+          usePopoverStore.getState().close();
+          useArmyDeploymentStore.getState().suggest(Number(suggestion.realmId));
+          return;
+        case "garrison":
           setLeftNavigationView(LeftView.MilitaryView);
           return;
         case "build-wheat":
