@@ -27,6 +27,30 @@ describe("terrain gallery verification", () => {
     expect(evaluateTerrainGalleryResults(results).performanceDeltas).toHaveLength(2);
   });
 
+  it("rejects duplicate wildlife regions and incomplete creature loads", () => {
+    const results = healthyResults();
+    results[0].snapshot.wildlife = {
+      count: 2,
+      loaded: 2,
+      pending: 0,
+      failed: [],
+      visible: true,
+      creatures: [{ region: "0:0" }, { region: "0:0" }],
+    };
+    expect(evaluateTerrainGalleryResults(results).reasons).toContain(
+      "all-biomes/webgpu-auto/flat: wildlife loading or 8x8 density contract failed",
+    );
+    results[0].snapshot.wildlife = {
+      count: 1,
+      loaded: 0,
+      pending: 1,
+      failed: [],
+      visible: true,
+      creatures: [{ region: "0:0" }],
+    };
+    expect(evaluateTerrainGalleryResults(results).ok).toBe(false);
+  });
+
   it("reports backend parity, performance, and browser failures", () => {
     const results = healthyResults();
     const fallback = results.find(
@@ -244,6 +268,7 @@ function result(rendererMode, activeMode, groundMode) {
       cellCount: 320,
       commitMs: 4,
       drawCalls: 22,
+      wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
       dustActiveParticles: 0,
       dustCapacity: 128,
       dustEmitterCount: 0,

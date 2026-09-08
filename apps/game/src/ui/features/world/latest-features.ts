@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-09",
+    title: "Roaming Biome Wildlife",
+    description:
+      "Biome creatures wander through explored terrain, with native species and sparse populations of at most one animal per 8×8 region.",
+    type: "feature",
+  },
+  {
     date: "2026-09-08",
     title: "Refreshed Biome Artwork",
     description:

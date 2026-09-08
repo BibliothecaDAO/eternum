@@ -22,6 +22,7 @@ import { MODEL_TYPE_TO_FILE } from "@/three/constants/army-constants";
 
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
   preparedFrontierCells: 0,
+  wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
   activeMode: "webgpu",
   biomeCount: 0,
   buildingInstances: 0,

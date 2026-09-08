@@ -69,6 +69,7 @@ export interface ProceduralTerrainDebugStats {
   fogOpacity: number;
   fogTerrainCells: number;
   preparedFrontierCells: number;
+  wildlife: ReturnType<ProceduralTerrain["getWildlifeStats"]>;
   frameP50Ms: number;
   frameP95Ms: number;
   frameWorstMs: number;
@@ -275,6 +276,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   terrain.present([prepared], fogMask);
   let commitMs = performance.now() - commitStartedAt;
   terrain.setMovementInteractions(createMovementInteractionVerification(input.sceneId, terrain));
+  await terrain.loadWildlife();
   terrain.update(0);
   if (input.sceneId === "fog-reveal" && input.revealProgress > 0) {
     terrain.queueShroudReveal(TERRAIN_REVEAL_TARGET.col, TERRAIN_REVEAL_TARGET.row);
@@ -300,6 +302,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     cellCount: prepared.request.cells.length,
     commitMs,
     fingerprint: prepared.fingerprint,
+    wildlife: terrain.getWildlifeStats(),
     fogOpacity: TERRAIN_DEEP_FOG_OPACITY,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
     preparedFrontierCells: countPreparedFrontierCells(prepared),
@@ -612,6 +615,7 @@ function readStats(
   >;
   return {
     ...verification,
+    wildlife: runtime.terrain.getWildlifeStats(),
     buildingInstances: runtime.interaction.getState().buildings.length,
     propInstances: runtime.terrain.getPropStats().instances,
     fogMaskBytes: runtime.terrain.getShroudStats().maskBytes,
