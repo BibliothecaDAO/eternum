@@ -1,0 +1,2025 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Client Flow Database</title>
+  </head>
+  <body>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Exo+2:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <style>
+      :root {
+        --ground: #14100d;
+        --panel: #1c1611;
+        --inset: #0e0b08;
+        --line: #3a2d1a;
+        --line-soft: #241c11;
+        --text: #e9ddc6;
+        --muted: #a2926f;
+        --faint: #6e6148;
+        --peach: #f6c297;
+        --amber: #e39001;
+        --sage: #b5bd75;
+        --coral: #fc4c4c;
+        --display: "IM Fell English SC", Georgia, serif;
+        --fell: "IM Fell English", Georgia, serif;
+        --sans: "Exo 2", "Segoe UI", system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0 20px 90px;
+        background: var(--ground);
+        color: var(--text);
+        font: 400 15px/1.6 var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--peach);
+      }
+      a:hover {
+        color: #fff;
+      }
+      .col {
+        max-width: 1040px;
+        margin: 0 auto;
+      }
+      header.col {
+        padding-top: 56px;
+      }
+      .eyebrow {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+      h1 {
+        font: 400 42px/1.1 var(--display);
+        margin: 12px 0 10px;
+        color: var(--peach);
+        text-wrap: balance;
+      }
+      .standfirst {
+        font: italic 400 19px/1.5 var(--fell);
+        color: var(--muted);
+        max-width: 64ch;
+        margin: 0 0 18px;
+      }
+      .meta {
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 10px 0;
+      }
+      .meta b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      section {
+        margin-top: 46px;
+      }
+      h2 {
+        font: 400 24px/1.2 var(--display);
+        color: var(--peach);
+        margin: 0 0 6px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h2 .src {
+        font: 400 11px/1.4 var(--mono);
+        letter-spacing: 0.04em;
+        color: var(--faint);
+      }
+      h3 {
+        font: 400 17px/1.3 var(--display);
+        color: var(--text);
+        margin: 26px 0 8px;
+      }
+      p.lead {
+        color: var(--muted);
+        max-width: 70ch;
+        margin: 0 0 12px;
+      }
+      .wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line-soft);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      th {
+        font: 500 10px/1.4 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--faint);
+        background: var(--panel);
+        white-space: nowrap;
+      }
+      td.n {
+        font: 500 11px/1.5 var(--mono);
+        color: var(--faint);
+        white-space: nowrap;
+      }
+      td .steps {
+        display: block;
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 2px;
+      }
+      td .code {
+        font: 500 11px/1.5 var(--mono);
+        color: var(--faint);
+      }
+      td.k {
+        font: 500 12px/1.5 var(--mono);
+        white-space: nowrap;
+        text-align: center;
+      }
+      .ok {
+        color: var(--sage);
+      }
+      .bad {
+        color: var(--coral);
+      }
+      .warn {
+        color: var(--amber);
+      }
+      .pill {
+        display: inline-block;
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.1em;
+        padding: 4px 6px;
+        white-space: nowrap;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        margin-right: 4px;
+      }
+      .pill.map {
+        color: var(--sage);
+        border-color: #4c5433;
+      }
+      .pill.panel {
+        color: var(--peach);
+        border-color: #6d5324;
+      }
+      .pill.popover {
+        color: var(--amber);
+        border-color: #6d4a1a;
+      }
+      .pill.window {
+        color: var(--coral);
+        border-color: #5a2a2a;
+      }
+      .rule {
+        border-left: 3px solid var(--amber);
+        background: var(--panel);
+        padding: 10px 14px;
+        margin: 10px 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .rule b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .cls {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .cls .n {
+        font: 500 12px/1.6 var(--mono);
+        color: var(--faint);
+      }
+      .cls b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .cls .ev {
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+      .cls .fix {
+        margin-top: 6px;
+        padding-left: 12px;
+        border-left: 3px solid var(--sage);
+        font-size: 14px;
+      }
+      .surfaces {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 8px;
+      }
+      .surfaces div {
+        background: var(--panel);
+        border: 1px solid var(--line-soft);
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .surfaces div b {
+        display: block;
+        font: 600 10px/1 var(--mono);
+        letter-spacing: 0.12em;
+        color: var(--peach);
+        margin-bottom: 5px;
+      }
+      ol.iter {
+        padding-left: 20px;
+        color: var(--muted);
+      }
+      ol.iter li {
+        margin: 8px 0;
+      }
+      ol.iter b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .mode {
+        display: inline-block;
+        font: 600 9.5px/1 var(--mono);
+        padding: 3px 5px;
+        margin-right: 3px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .mode.B {
+        color: var(--peach);
+        border-color: #6d5324;
+      }
+      .mode.E {
+        color: var(--sage);
+        border-color: #4c5433;
+      }
+      .mode.S {
+        color: #7ea6c9;
+        border-color: #2c4258;
+      }
+      .mode.C {
+        color: var(--amber);
+        border-color: #6d4a1a;
+      }
+      .filters {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        align-items: center;
+        padding: 12px 14px;
+        margin: 18px 0 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+      .filters label {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 13px;
+        color: var(--text);
+        cursor: pointer;
+      }
+      .filters input[type="checkbox"] {
+        accent-color: var(--peach);
+      }
+      .filters input[type="search"] {
+        margin-left: auto;
+        min-width: 220px;
+        padding: 6px 10px;
+        background: var(--inset);
+        border: 1px solid var(--line);
+        color: var(--text);
+        font: 13px var(--sans);
+      }
+      .filters .count {
+        font: 500 11px/1 var(--mono);
+        color: var(--faint);
+      }
+      tr[hidden] {
+        display: none;
+      }
+      footer.col {
+        margin-top: 60px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+      }
+    </style>
+
+    <header class="col">
+      <div class="eyebrow">apps/game · flow database · client on next · 2026-09-08</div>
+      <h1>Client Flow Database</h1>
+      <p class="standfirst">
+        Every flow a Blitz player, an Eternum lord or a spectator can run in the current client, traced from the code on
+        next and checked on play.realms.party. Each row carries its modes, entry points, steps, surface, click count,
+        whether the map stays usable and whether it sends a transaction. Filter by mode, then read the failure classes
+        and the iteration order.
+      </p>
+      <div class="meta">
+        sources <b>apps/game/src</b> on next at 495286614 · live spectate of bltz-clash-538 · owner captures in the
+        Command Deck brief (09-01) · keys bound today: <b>Tab</b> cycle armies or structures, <b>V</b> world and local,
+        <b>Esc</b> clear or close. Nothing else. Modes: <b>B</b> Blitz · <b>E</b> Eternum · <b>S</b> Spectator ·
+        <b>C</b> Caster, not in the code yet.
+      </div>
+      <div class="filters" role="group" aria-label="Filter flows by mode">
+        <label><input type="checkbox" data-mode="B" checked /> Blitz</label>
+        <label><input type="checkbox" data-mode="E" checked /> Eternum</label>
+        <label><input type="checkbox" data-mode="S" checked /> Spectator</label>
+        <label><input type="checkbox" data-mode="C" checked /> Caster needs</label>
+        <input type="search" id="q" placeholder="Search flows" aria-label="Search flows" />
+        <span class="count" id="count"></span>
+      </div>
+    </header>
+
+    <section class="col">
+      <h2>Surfaces on screen today</h2>
+      <p class="lead">
+        Rows with a <b>Path</b> line are one flow reachable several ways; each path has its own clicks. Twenty-five
+        overlay surfaces exist. Two kinds matter for tempo: a <b>popover</b> closes on any pointer-down outside it, so
+        it cannot stay open while you point at the map; a <b>window</b> is a popover sized like a modal. The Build view
+        is 1320 px wide and full height.
+      </p>
+      <div class="surfaces">
+        <div>
+          <b>Top header</b>Identity chip (popover: sign in, play, spectating) · suggestions pill · Local and World
+          toggle · day tick progress · game start countdown · game end timer, then a "Game finished" pill with its
+          popover · follow army combat toggle · Leaderboard, Latest features, Activity, Settings popovers.
+        </div>
+        <div>
+          <b>Left column</b>Realm list with attention badges and the empire cockpit · merged resource panel per realm
+          with production timers and the automation preset label · chat bubble.
+        </div>
+        <div>
+          <b>Quick actions row</b>Above the minimap: Build, Production, Military, Transfer, Chat. Trade opens the market
+          at the right edge. Prediction is retired.
+        </div>
+        <div>
+          <b>Right panel</b>Tile details for the selection: structure (upgrade, guards with Add, resources, biome,
+          Battle simulate), army (owner, tier, count, stamina, readiness icons, biome bonus, Battle simulate), building
+          in local view (produces, consumes, population, build another, automate, pause, delete), open plot, chest,
+          quest, spire, reserved hyperstructure.
+        </div>
+        <div>
+          <b>Left views</b>Nine states: Military, Entity, Construction, Bridge, Hyperstructures, Logistics, Chat, Story
+          events, Resource table.
+        </div>
+        <div>
+          <b>Task surfaces</b>Production, Market, Quick attack preview, Help (troop and relic transfer), Chest, Army
+          creation popup, Spire travel, Craft relic, Relic activation, Resource transfer.
+        </div>
+        <div>
+          <b>Map</b>Action mode when an own entity is selected: rings on every owned entity, action paths, hover tooltip
+          with costs, the bottom-centre banner "Press Esc to exit action mode. Right-click to confirm action".
+        </div>
+        <div><b>Minimap</b>Bottom left, hex minimap, no filters.</div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Entry and orientation</h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Flow</th>
+            <th>Entry and steps</th>
+            <th>Surface</th>
+            <th>Clicks</th>
+            <th>Map</th>
+            <th>Tx</th>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">E1</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Enter a Blitz game and settle</td>
+            <td>
+              Landing, Play. Entry modal phases: loading, settlement waiting, settlement with one Settle button,
+              ready.<span class="steps"
+                >Eternum adds season pass required, season placement, village pass required, village placement, village
+                reveal.</span
+              >
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">2</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">E2</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Spectate</td>
+            <td>
+              Open with spectate in the URL. Identity chip says Spectating; its popover offers Sign in, or Play when the
+              account owns a realm here.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">E3</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Find my realm</td>
+            <td>Left realm list, click a row, camera goes to the structure. Tab cycles structures.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">E4a</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Enter the realm view<span class="steps"><b>Path:</b> key or header toggle</span>
+            </td>
+            <td>
+              V key, or the Local and World toggle pill. Inside, click an open plot for Build, a building for its panel,
+              the castle for realm details.
+            </td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">E4b</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Enter the realm view<span class="steps"><b>Path:</b> map, double-click</span>
+            </td>
+            <td>Double-click a structure on the world map to enter it.</td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">E5</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Know what to do first<span class="steps"><b>Path:</b> header pill</span>
+            </td>
+            <td>
+              Suggestions pill lists empire suggestions of fourteen kinds: upgrade and provision, upgrade, provision,
+              garrison, deploy explorer, expand population, build first, build wheat, wood, coal, copper, market,
+              military, worker hut. A chip opens Build or Military with a preselection.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">partly</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">E6</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Boot, errors and reconnect</td>
+            <td>
+              Loading screen with the world availability check and a typed error state. A network status pill appears in
+              the header only when the connection degrades, with a retry. A transactions icon sits in the same cluster.
+            </td>
+            <td><span class="pill">loader</span> <span class="pill popover">popover</span></td>
+            <td class="k">0 to 1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">E7</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Hover the map<span class="steps"><b>Path:</b> map</span>
+            </td>
+            <td>
+              Hovering an entity shows its hover label. With an own army selected, hovering a hex shows the action
+              tooltip with path, stamina and wheat cost; hovering an enemy shows the attack info.
+            </td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Realm and economy</h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Flow</th>
+            <th>Entry and steps</th>
+            <th>Surface</th>
+            <th>Clicks</th>
+            <th>Map</th>
+            <th>Tx</th>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">R1</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Read a realm</td>
+            <td>Click the structure on the world map. Right panel: upgrade block, guards, resources, biome.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R2a</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Build<span class="steps"><b>Path:</b> window</span>
+            </td>
+            <td>
+              Quick action Build. The Build view: structure sidebar to switch realm, building menu by category, simple
+              or complex cost toggle, cost, population and buildable state. Click a building to arm the preview ghost.
+              Then in the realm view click a plot; affordability is checked and the build is sent. Insufficient
+              resources produce a toast after the click.<span class="steps"
+                >The view is 1320 px by full height and closes on any pointer-down outside it, so choosing and placing
+                are two separate acts. Building only works in the realm view.</span
+              >
+            </td>
+            <td><span class="pill window">window</span> <span class="pill map">map</span></td>
+            <td class="k">3 to 4</td>
+            <td class="k bad">hidden while choosing</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R2b</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Build<span class="steps"><b>Path:</b> map, open plot</span>
+            </td>
+            <td>In the realm view click an open plot. The Build view opens for that realm. Then as R2a.</td>
+            <td><span class="pill map">map</span> <span class="pill window">window</span></td>
+            <td class="k">3</td>
+            <td class="k bad">hidden while choosing</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R2c</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Build<span class="steps"><b>Path:</b> panel, build another</span>
+            </td>
+            <td>
+              Building panel in the realm view, "Build another" arms the same building as a preview ghost with no
+              window. Click a plot. Verified in the panel code.
+            </td>
+            <td><span class="pill panel">panel</span> <span class="pill map">map</span></td>
+            <td class="k">2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R2d</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Build<span class="steps"><b>Path:</b> suggestion chip</span>
+            </td>
+            <td>Header suggestions pill, a build chip opens the Build view with the building preselected.</td>
+            <td><span class="pill popover">popover</span> <span class="pill window">window</span></td>
+            <td class="k">3</td>
+            <td class="k bad">hidden while choosing</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R2e</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Build<span class="steps"><b>Path:</b> panel, resource chip plus</span>
+            </td>
+            <td>
+              The left merged resource panel: each resource chip carries a production timer ring and a plus corner that
+              arms the build of that resource’s building when buildable, otherwise names the reason.
+            </td>
+            <td><span class="pill panel">panel</span> <span class="pill map">map</span></td>
+            <td class="k">2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">R3</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Inspect a building</td>
+            <td>
+              Realm view, click the building. Right panel: produces per second, consumes per second, population,
+              actions.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R4</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Pause, resume, delete a building</td>
+            <td>Building panel actions. Delete is a two-click confirm on the same button.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R5a</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Set production<span class="steps"><b>Path:</b> window</span>
+            </td>
+            <td>
+              Quick action Production. Production popup: realm sidebar, resource cards, pick one, controls with labor or
+              raw recipe tabs, amount, start or stop.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">3 to 4</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R5b</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Set production<span class="steps"><b>Path:</b> panel, resource chip</span>
+            </td>
+            <td>
+              Click a resource chip in the left merged resource panel: the popup opens on that realm and resource.
+            </td>
+            <td><span class="pill panel">panel</span> <span class="pill window">window</span></td>
+            <td class="k">2 to 3</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R5c</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Set production<span class="steps"><b>Path:</b> map, right-click a building</span>
+            </td>
+            <td>In the realm view right-click a building: the popup opens preselected on what it produces.</td>
+            <td><span class="pill map">map</span> <span class="pill window">window</span></td>
+            <td class="k">2 to 3</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R5d</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Set production<span class="steps"><b>Path:</b> panel, building actions</span>
+            </td>
+            <td>Building panel: pause or resume in place, "Automate production" opens the popup.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R6</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Automate production</td>
+            <td>
+              Inside the production popup, the realm automation panel: a percent slider per resource, presets. The left
+              panel shows the preset name (Smart) per realm.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">4 and more</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R7</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Upgrade the realm</td>
+            <td>
+              Right panel upgrade block: "Upgrade to Kingdom" in gold when affordable, otherwise a disabled "Need
+              Resources" button. An expandable requirements list shows each cost and a per-resource button. Blitz
+              bootstrap mode merges upgrade and provision into one action.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B">
+            <td class="n">R8</td>
+            <td><span class="mode B">B</span></td>
+            <td>Provision a fresh realm</td>
+            <td>Same block, when the realm needs bootstrap. One button.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R9</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Produce labor</td>
+            <td>Labor button in the realm details, opens Production on labor.</td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">2</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R10a</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Transfer resources<span class="steps"><b>Path:</b> window</span>
+            </td>
+            <td>
+              Quick action Transfer opens Logistics on the Transfer tab: source category filter, source, destination,
+              resource filter, tick resources and amounts, donkeys computed, send.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">5 and more</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R10b</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Transfer resources<span class="steps"><b>Path:</b> panel, resource row</span>
+            </td>
+            <td>A row in a structure resource table opens the resource transfer popover for that resource.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">3</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R11</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Automate transfers</td>
+            <td>Logistics, Automation tab, then an advanced modal.</td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">3 and more</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R12</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Claim arrivals</td>
+            <td>
+              Badge on the Transfer quick action. Logistics opens on Arrivals when anything is in flight. Claim per
+              arrival.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">2 per arrival</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">R13</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>See all balances</td>
+            <td>Logistics, All balances tab, resource table per structure.</td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">2</td>
+            <td class="k bad">hidden</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">R14</td>
+            <td><span class="mode E">E</span></td>
+            <td>Trade</td>
+            <td>
+              Market at the right edge: order book, buy and sell, history. Eternum feature; Blitz gating not verified.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">3 and more</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R15</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Manage the realm list<span class="steps"><b>Path:</b> panel, left rail</span>
+            </td>
+            <td>
+              Each row: favorite star pins it first, level, population and tiles, a needs-attention mark, info chevrons,
+              a rename pencil. Click goes to the structure. Category filter chips include camps.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R16</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Rename a structure or an army<span class="steps"><b>Path:</b> panel</span>
+            </td>
+            <td>
+              Pencil on a realm row opens the rename flow; an army rename exists in an army management card that nothing
+              mounts on next.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">R17</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Read automation state<span class="steps"><b>Path:</b> panel, cockpit</span>
+            </td>
+            <td>The empire cockpit shows each structure’s automation mode: Smart, Idle or Custom.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Military</h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Flow</th>
+            <th>Entry and steps</th>
+            <th>Surface</th>
+            <th>Clicks</th>
+            <th>Map</th>
+            <th>Tx</th>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M1a</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Create a field army<span class="steps"><b>Path:</b> window</span>
+            </td>
+            <td>
+              Quick action Military. Military view: structure sidebar to pick the realm, deploy header, creation body:
+              field or guard toggle, troop type and tier grid, count, deploy direction on a miniature hex map, confirm.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">6</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M1b</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Create a field army<span class="steps"><b>Path:</b> map, structure menu</span>
+            </td>
+            <td>
+              Right-click your structure with nothing selected. Context menu: "Create Attack Army". Opens the same
+              Military view primed with that realm. Direction still picked on the miniature map.
+            </td>
+            <td><span class="pill map">map</span> <span class="pill window">window</span></td>
+            <td class="k">5</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M1c</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Create a field army<span class="steps"><b>Path:</b> map, adjacent hex</span>
+            </td>
+            <td>
+              Select your structure; adjacent free hexes carry the create-army action. Right-click one. Opens the same
+              Military view primed with realm and direction. Left: type, tier, count, confirm.<span class="steps"
+                >The only affordance is the action highlight on the hexes; no label says what a right-click will
+                do.</span
+              >
+            </td>
+            <td><span class="pill map">map</span> <span class="pill window">window</span></td>
+            <td class="k">4</td>
+            <td class="k bad">hidden after the hex</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M1d</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Create a field army<span class="steps"><b>Path:</b> suggestion chip</span>
+            </td>
+            <td>A "deploy explorer" chip opens the Military view.</td>
+            <td><span class="pill popover">popover</span> <span class="pill window">window</span></td>
+            <td class="k">5</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M2a</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Add a guard<span class="steps"><b>Path:</b> panel, guard slot</span>
+            </td>
+            <td>
+              Right panel Guards, "Add" on an empty slot. Opens the Military view primed with the guard toggle and that
+              slot. Left: type, tier, count, confirm.
+            </td>
+            <td><span class="pill panel">panel</span> <span class="pill window">window</span></td>
+            <td class="k">4</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M2b</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Add a guard<span class="steps"><b>Path:</b> map, structure menu</span>
+            </td>
+            <td>Right-click your structure, "Create Defense Army". Opens the Military view primed on guard.</td>
+            <td><span class="pill map">map</span> <span class="pill window">window</span></td>
+            <td class="k">5</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M2c</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Add a guard<span class="steps"><b>Path:</b> window</span>
+            </td>
+            <td>Quick action Military, guard toggle, slot selection, then as M2a.</td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">6</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M3</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Review and disband armies</td>
+            <td>Military view, existing armies panel: jump to an army, disband with inline confirm.</td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">2 to 3</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">M4</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Select an army</td>
+            <td>
+              Click it. Right panel: owner, tier, count, stamina bar, readiness icons for travel, explore and wheat,
+              biome bonus, Battle simulate. Own army enters action mode: rings on every owned entity, paths, the banner.
+            </td>
+            <td><span class="pill map">map</span> <span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M5</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Move or explore</td>
+            <td>
+              Army selected, hover a hex: tooltip with path, stamina and wheat cost, explore when unexplored.
+              Right-click sends the order; movement input locks until it lands.
+            </td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M6</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>
+              Attack<span class="steps"><b>Path:</b> map</span>
+            </td>
+            <td>
+              Hover an enemy: attack info with the stamina requirement. Right-click opens the quick attack preview as
+              the confirm step: attacker and target, losses and remaining for both sides, the defenders’ guard slots, a
+              details button, then the attack button. No separate raid action exists in the client.
+            </td>
+            <td><span class="pill map">map</span> <span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M7</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Move troops between adjacent own units</td>
+            <td>
+              Hover an adjacent own army or structure, right-click. Help popover: Troops or Relics tab, direction
+              derived, amounts, transfer.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">3</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M8</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Open a relic crate</td>
+            <td>Army adjacent, right-click the crate. Chest popover, open, three relics.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">M9</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Take a hyperstructure</td>
+            <td>
+              Clear the guards through M6 repeatedly. No claim button was found in the panels; the capture happens
+              through the attack flow. The panel shows holder, points per second and guards.
+            </td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">2 per fight</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">M10</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Simulate a battle</td>
+            <td>Battle button on the biome block of any tile panel opens the simulator.</td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">2</td>
+            <td class="k bad">hidden</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">M11</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Under attack<span class="steps"><b>Path:</b> toast, then panel</span>
+            </td>
+            <td>
+              A battle toast with a navigate action. Clicking opens the story events view with the battle log and moves
+              the camera.
+            </td>
+            <td><span class="pill">toast</span> <span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">M12</td>
+            <td><span class="mode E">E</span></td>
+            <td>Spire travel</td>
+            <td>
+              Select an army on a spire, right-click, or the spire panel's "Travel to Ethereal Layer". Eternum layer
+              feature.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">M13</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Follow combat</td>
+            <td>Header toggle, camera follows battles. Mostly a spectator tool.</td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Relics, score, social, meta</h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Flow</th>
+            <th>Entry and steps</th>
+            <th>Surface</th>
+            <th>Clicks</th>
+            <th>Map</th>
+            <th>Tx</th>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">S1</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Activate a relic</td>
+            <td>Relic tray, click a relic, activation selector: pick the target structure or army, Activate.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">3</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">S2</td>
+            <td><span class="mode E">E</span></td>
+            <td>Craft a relic</td>
+            <td>Craft popup from a realm's resources. Errors explain ownership and research gating.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S3</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>See the standings</td>
+            <td>
+              Leaderboard button. Social board: Players, Tribes and Faith on Eternum, Prize panel. A player row opens
+              their profile.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B">
+            <td class="n">S4</td>
+            <td><span class="mode B">B</span></td>
+            <td>Register points</td>
+            <td>Register button in the prize panel and in the game finished popover. One transaction.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S5</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              End of game<span class="steps"><b>Path:</b> header pill</span>
+            </td>
+            <td>
+              The end timer becomes a "Game finished" pill; its popover carries a Review button to the results. Eternum
+              has an End season button once the final points are reached, then a congratulations popup.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S6</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>Read what happened</td>
+            <td>Activity button, event feed popover. Battle logs live in the story events view.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">S7</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Chat</td>
+            <td>Bubble on the left, popover at the bottom right.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S8</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Settings<span class="steps"><b>Path:</b> popover</span>
+            </td>
+            <td>
+              Gear popover sections: World with Switch game and Return home; Keyboard shortcuts view listing Tab, V and
+              Esc; Video and graphics with fullscreen; Camera with a persisted zoom slider per view and a reset;
+              Whitelist guilds on Eternum; Sound with master and category volumes.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1 to 3</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S9</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>What's new</td>
+            <td>Latest features popover with an unseen badge.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S10</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Minimap<span class="steps"><b>Path:</b> panel</span>
+            </td>
+            <td>
+              Drag pans the camera, wheel zooms, double-click resets the view. The minimap scale follows the world
+              camera distance.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S11</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Hints<span class="steps"><b>Path:</b> surface</span>
+            </td>
+            <td>
+              Hint buttons open the in-game docs on a section: getting started, realm, resources, buildings, combat,
+              exploration, points, trading, transfers, world structures, tribes.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="B E S">
+            <td class="n">S12</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span><span class="mode S">S</span></td>
+            <td>
+              Toasts<span class="steps"><b>Path:</b> toast</span>
+            </td>
+            <td>
+              Ninety-three toast call sites on next: 65 errors, 18 successes, 5 infos, 5 warnings. Battle toasts carry a
+              navigate action; the rest are not revisitable.
+            </td>
+            <td><span class="pill">toast</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Eternum only <span class="src">present in the client, gated on the eternum world mode</span></h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Flow</th>
+            <th>Entry and steps</th>
+            <th>Surface</th>
+            <th>Clicks</th>
+            <th>Map</th>
+            <th>Tx</th>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X1</td>
+            <td><span class="mode E">E</span></td>
+            <td>Enter with a season pass</td>
+            <td>
+              Entry modal: season pass required, pick a pass card, season placement on the settlement planner map,
+              confirm.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">3 to 4</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X2</td>
+            <td><span class="mode E">E</span></td>
+            <td>Settle a village</td>
+            <td>
+              Switch to village mode in the entry modal, village pass required, pick a pass, village placement, village
+              reveal shows the village entity.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">4</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X3</td>
+            <td><span class="mode E">E</span></td>
+            <td>Village timers and parent realm</td>
+            <td>Structure banner detail shows village timer chips; the parent realm rules apply to production.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X4</td>
+            <td><span class="mode E">E</span></td>
+            <td>Create a tribe</td>
+            <td>Leaderboard popover, Tribes tab, name, public or private toggle, create.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">3</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X5</td>
+            <td><span class="mode E">E</span></td>
+            <td>Join, invite, leave a tribe</td>
+            <td>
+              Tribes tab: join a public tribe, invites through the whitelist, leave. Tribe master can remove a member
+              from the member list.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2 to 3</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X6</td>
+            <td><span class="mode E">E</span></td>
+            <td>Download social data</td>
+            <td>Tribes tab button exports players and tribes as JSON.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X7</td>
+            <td><span class="mode E">E</span></td>
+            <td>Devote faith to a wonder</td>
+            <td>
+              Select an eligible structure; the right panel becomes the faith devotion panel: choose a wonder from the
+              faith leaderboard, see the split of faith points between structure owner and wonder owner, devote.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X8</td>
+            <td><span class="mode E">E</span></td>
+            <td>Claim a wonder and its bonus</td>
+            <td>
+              Update wonder ownership from the faith panel; the wonder's realm details show "Wonder Bonus Available"
+              with an activate button for the production bonus.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X9</td>
+            <td><span class="mode E">E</span></td>
+            <td>Faith standings</td>
+            <td>Leaderboard popover, Faith tab: wonders, owners, followers.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X10a</td>
+            <td><span class="mode E">E</span></td>
+            <td>
+              Found a hyperstructure<span class="steps"><b>Path:</b> panel</span>
+            </td>
+            <td>
+              Select a reserved hyperstructure tile; the right panel offers "Create hyperstructure" with the
+              requirement.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X10b</td>
+            <td><span class="mode E">E</span></td>
+            <td>
+              Found a hyperstructure<span class="steps"><b>Path:</b> map, double-click</span>
+            </td>
+            <td>
+              Double-click the reserved hyperstructure tile on the world map. Contribution of fragments and resources
+              after founding has no panel in the client on next.
+            </td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E B">
+            <td class="n">X11</td>
+            <td><span class="mode E">E</span><span class="mode B">B</span></td>
+            <td>Hyperstructure shares</td>
+            <td>
+              Blitz: shares are allocated to 100 percent automatically by a background manager, never shown. Eternum: no
+              share allocation panel exists on next. The hyperstructure leaderboard adds unregistered shareholder points
+              to registered points.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">auto</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X12</td>
+            <td><span class="mode E">E</span></td>
+            <td>Trade on the market</td>
+            <td>
+              Trade quick action, market at the right edge: Trade, History, Realm production tabs (legacy Order book,
+              AMM, History): pick a resource, buy or sell, place or fill an order, donkey cost shown.
+            </td>
+            <td><span class="pill window">window</span></td>
+            <td class="k">4 and more</td>
+            <td class="k bad">hidden</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X13</td>
+            <td><span class="mode E">E</span></td>
+            <td>Craft a relic</td>
+            <td>
+              Craft relic popup on an owned realm or village, needs research; errors explain ownership and research.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X14</td>
+            <td><span class="mode E">E</span></td>
+            <td>Travel the Ethereal layer</td>
+            <td>
+              Spire tile panel or a selected army on a spire, "Travel to Ethereal Layer", fast-travel routes on the
+              layer.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">2</td>
+            <td class="k warn">popover over map</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X15</td>
+            <td><span class="mode E">E</span></td>
+            <td>Quests</td>
+            <td>Quest tile panel with the quest entity detail and its reward.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E B">
+            <td class="n">X16</td>
+            <td><span class="mode E">E</span><span class="mode B">B</span></td>
+            <td>
+              Automate exploration<span class="steps"><b>Path:</b> panel, army tile</span>
+            </td>
+            <td>
+              The army tile panel carries a compact exploration automation control per army; entries live in an
+              exploration automation store and a manager mounted in the world layout runs them.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">1 to 2</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X17</td>
+            <td><span class="mode E">E</span></td>
+            <td>End the season</td>
+            <td>End season button once the final points are reached, then a congratulations popup.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k warn">yes</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">X18</td>
+            <td><span class="mode E">E</span></td>
+            <td>Bridge</td>
+            <td>A Bridge left view exists in the enum and nothing opens it. Dead state.</td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Spectator <span class="src">what the same HUD keeps, hides and lacks</span></h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Flow</th>
+            <th>Entry and steps</th>
+            <th>Surface</th>
+            <th>Clicks</th>
+            <th>Map</th>
+            <th>Tx</th>
+          </tr>
+          <tr data-modes="S">
+            <td class="n">V1</td>
+            <td><span class="mode S">S</span></td>
+            <td>Enter as a spectator</td>
+            <td>
+              Spectate in the URL skips the settlement check, sets can-play, auto-enters. Identity chip reads
+              Spectating; its popover offers sign-in, or Play when the account owns a realm in this game.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">0 to 1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="S">
+            <td class="n">V2</td>
+            <td><span class="mode S">S</span></td>
+            <td>What a spectator loses</td>
+            <td>
+              Suggestions pill, the left realm column and empire cockpit, the quick actions row, the realm upgrade
+              block, building management, Trade. Chat stays. Panels stay read-only; Battle simulate stays.
+            </td>
+            <td><span class="pill panel">panel</span></td>
+            <td class="k">0</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="S">
+            <td class="n">V3</td>
+            <td><span class="mode S">S</span></td>
+            <td>Read the field</td>
+            <td>
+              Click any structure or army for its tile panel: owner, guards, resources, biome, stamina. Labels show
+              owner names on every unit.
+            </td>
+            <td><span class="pill map">map</span> <span class="pill panel">panel</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="S">
+            <td class="n">V4</td>
+            <td><span class="mode S">S</span></td>
+            <td>Follow combat</td>
+            <td>Header toggle, camera follows battle events; a following toast floats under the header.</td>
+            <td><span class="pill map">map</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="S">
+            <td class="n">V5</td>
+            <td><span class="mode S">S</span></td>
+            <td>Standings, feed, battle logs</td>
+            <td>
+              Leaderboard popover with Players and Prize; Activity feed popover; story events view from a battle
+              notification.
+            </td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k warn">popover over map</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="S">
+            <td class="n">V6</td>
+            <td><span class="mode S">S</span></td>
+            <td>Game finished</td>
+            <td>Header pill with its popover. The map stays explorable.</td>
+            <td><span class="pill popover">popover</span></td>
+            <td class="k">1</td>
+            <td class="k ok">yes</td>
+            <td class="k ok">no</td>
+          </tr>
+          <tr data-modes="S C">
+            <td class="n">V7</td>
+            <td><span class="mode S">S</span><span class="mode C">C</span></td>
+            <td>Follow a lord</td>
+            <td>
+              Not in the client. Nothing lets a spectator pick a lord and see the field relative to them: no colour
+              relation, no realm list, no army cycling for that lord.
+            </td>
+            <td><span class="pill">none</span></td>
+            <td class="k">—</td>
+            <td class="k">—</td>
+            <td class="k">—</td>
+          </tr>
+          <tr data-modes="C">
+            <td class="n">V8</td>
+            <td><span class="mode C">C</span></td>
+            <td>Caster needs</td>
+            <td>
+              Multi-lord compare of points, armies and hyperstructures held; global hotspots on the minimap; free
+              camera; hide HUD; POV swap between lords; event replay markers; timeline scrub after the game. None exist
+              in code.
+            </td>
+            <td><span class="pill">none</span></td>
+            <td class="k">—</td>
+            <td class="k">—</td>
+            <td class="k">—</td>
+          </tr>
+        </table>
+      </div>
+      <div class="rule">
+        <b>Spectator rule for the redesign:</b> one layout, one mount tree. Spectating removes buttons and adds a lord
+        to follow. It never branches the components, and the follow-a-lord gap (V7) is the first spectator iteration.
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Dead surfaces <span class="src">code that ships and nothing mounts</span></h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Modes</th>
+            <th>Surface</th>
+            <th>Finding</th>
+            <th>Do</th>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">D1</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Header structure picker chip</td>
+            <td>
+              A chip with favorite, upgrade and provision affordances exists under the top header folder and no
+              component renders it.
+            </td>
+            <td>Delete or mount; the left rail row does the same job.</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">D2</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Army management card</td>
+            <td>
+              An older card with rename, buy troops and deploy direction buttons; only the army chip references it and
+              nothing renders that.
+            </td>
+            <td>Delete after iteration 1 lands the map path.</td>
+          </tr>
+          <tr data-modes="E">
+            <td class="n">D3</td>
+            <td><span class="mode E">E</span></td>
+            <td>Bridge left view</td>
+            <td>An enum value nothing opens.</td>
+            <td>Delete.</td>
+          </tr>
+          <tr data-modes="B E">
+            <td class="n">D4</td>
+            <td><span class="mode B">B</span><span class="mode E">E</span></td>
+            <td>Prediction market quick action</td>
+            <td>Retired in a comment, button gone, import remains.</td>
+            <td>Delete the remains.</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Verification log <span class="src">what was checked against the code on 2026-09-08</span></h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Claim</th>
+            <th>Checked in</th>
+            <th>Result</th>
+          </tr>
+          <tr>
+            <td>Army creation map paths</td>
+            <td>worldmap right-click dispatch, structure context menu, interaction adapter, ui store</td>
+            <td>Four paths, all end in the Military window. Rows M1a to M1d and M2a to M2c.</td>
+          </tr>
+          <tr>
+            <td>Double-click on the world map</td>
+            <td>worldmap onHexagonDoubleClick</td>
+            <td>Enters a structure; founds a reserved hyperstructure on Eternum. Rows E4b and X10b.</td>
+          </tr>
+          <tr>
+            <td>Build another arms a ghost without a window</td>
+            <td>bottom-right-panel building actions</td>
+            <td>Confirmed. Row R2c.</td>
+          </tr>
+          <tr>
+            <td>Arrivals in the structure resource table</td>
+            <td>entity-resource-table, realm-transfer</td>
+            <td>Not present. Row removed.</td>
+          </tr>
+          <tr>
+            <td>Chat hidden for spectators</td>
+            <td>bottom-right-panel quick actions</td>
+            <td>Wrong, chat stays. Row V2 corrected.</td>
+          </tr>
+          <tr>
+            <td>Auto-explore switch</td>
+            <td>army banner entity detail</td>
+            <td>A compact automation control on the army tile. Row X16 corrected.</td>
+          </tr>
+          <tr>
+            <td>Blitz settle is one random click</td>
+            <td>game entry modal</td>
+            <td>One Settle button. Row E1 corrected.</td>
+          </tr>
+          <tr>
+            <td>Hyperstructure claim button</td>
+            <td>all system call sites named claim</td>
+            <td>
+              Only the wonder bonus claim exists; hyperstructures change hands through the attack flow. Row M9 stands.
+            </td>
+          </tr>
+          <tr>
+            <td>Attack preview shows no odds</td>
+            <td>quick attack preview</td>
+            <td>Wrong: it shows losses and remaining for both sides and the defenders’ slots. Row M6 corrected.</td>
+          </tr>
+          <tr>
+            <td>Raid as a distinct action</td>
+            <td>quick attack preview, action types</td>
+            <td>No raid action in the client. Row M6 notes it.</td>
+          </tr>
+          <tr>
+            <td>Keys bound today</td>
+            <td>worldmap and hexception shortcut registrations</td>
+            <td>Tab, V, Esc only.</td>
+          </tr>
+          <tr>
+            <td>Popover closes on outside pointer-down</td>
+            <td>design-system popover</td>
+            <td>Confirmed; the Build view is 1320 px by full height.</td>
+          </tr>
+          <tr>
+            <td>Army model per size</td>
+            <td>army-manager</td>
+            <td>Fixed scale, troop count feeds labels only.</td>
+          </tr>
+          <tr>
+            <td>Toasts</td>
+            <td>all toast call sites</td>
+            <td>93 sites. Row S12.</td>
+          </tr>
+          <tr>
+            <td>Dead surfaces</td>
+            <td>header structure picker, army management card, Bridge view, prediction market</td>
+            <td>None mounted. Section above.</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Failure classes <span class="src">each is one root cause behind several flows</span></h2>
+
+      <div class="cls">
+        <span class="n">F1</span>
+        <div>
+          <b>Every task is a surface.</b>
+          <div class="ev">
+            Twenty-five overlay surfaces. Build, Military, Production and Logistics are windows, not panels: 1320 px
+            wide, full height, over the map. Flows R2, R5, R6, R9 to R14, M1 to M3, M10.
+          </div>
+          <div class="fix">
+            Fix the class: a task that ends with a map click never opens a window. It opens a compact picker next to
+            what was clicked, and the map click completes it.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F2</span>
+        <div>
+          <b>Outside click dismisses.</b>
+          <div class="ev">
+            The popover primitive closes on any pointer-down outside it. A panel cannot stay open while the player
+            points at the map, so every choose-then-place flow fights the dismissal. This is why army deploy direction
+            was moved into a miniature map inside the modal.
+          </div>
+          <div class="fix">
+            Fix the class: a surface that is waiting for a map click declares it, and map pointer-down completes the
+            task instead of dismissing. One rule in the primitive, every flow inherits it.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F3</span>
+        <div>
+          <b>The real map is duplicated inside panels.</b>
+          <div class="ev">
+            The army creation body carries its own hex map to pick a direction. Build, Military and Production each
+            carry a structure sidebar to pick a realm, duplicating the left realm list. The map paths exist (M1b, M1c,
+            M2b, R2b, R5c) and every one of them ends in the window: the map only pre-fills it.
+          </div>
+          <div class="fix">
+            Fix the class: the realm is the selection, the direction is a hex on the world map. The right-click create
+            path already exists and needs only an affordance: a ring of deployable hexes when a structure is selected.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F4</span>
+        <div>
+          <b>Action mode paints the whole map.</b>
+          <div class="ev">
+            Rings on every owned entity, a pulsing banner at the bottom, and "Press Esc" as the first instruction.
+          </div>
+          <div class="fix">
+            Fix the class: highlight only the selection and its legal targets. The hover tooltip is the instruction; the
+            banner goes.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F5</span>
+        <div>
+          <b>Dead ends and late errors.</b>
+          <div class="ev">
+            "Need Resources" is a disabled button. "Insufficient resources to build here" is a toast after the plot
+            click, although the cost was known before it.
+          </div>
+          <div class="fix">
+            Fix the class: a blocked action names the shortfall and offers the nearest way to close it, before the
+            click.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F6</span>
+        <div>
+          <b>Three clocks.</b>
+          <div class="ev">Day tick progress with a percent, the start countdown, the end timer.</div>
+          <div class="fix">Fix the class: one clock with the minute tick on its bar.</div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F7</span>
+        <div>
+          <b>Icons without words.</b>
+          <div class="ev">The quick actions row and the army readiness icons carry labels only for screen readers.</div>
+          <div class="fix">Fix the class: a label under every icon a player has to learn.</div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F8</span>
+        <div>
+          <b>Automation is buried.</b>
+          <div class="ev">
+            Production automation is three levels down; transfer automation is a tab and then an advanced modal.
+          </div>
+          <div class="fix">
+            Fix the class: one automation row per realm in the left panel, with the preset as a switch. Details open
+            only when the switch is set to custom.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F9</span>
+        <div>
+          <b>Labels and models carry the same job twice.</b>
+          <div class="ev">
+            The owner's name is on every unit; the army model is one figure at one scale whatever the count.
+          </div>
+          <div class="fix">
+            Fix the class: the label ladder from issue #4876, and army models per size bucket in the Model Lab.
+          </div>
+        </div>
+      </div>
+
+      <div class="cls">
+        <span class="n">F10</span>
+        <div>
+          <b>Eternum machinery leaks into Blitz and spectators get a stripped player HUD.</b>
+          <div class="ev">
+            Hyperstructure shares are auto-allocated in Blitz by a hidden manager; the market, faith, tribes and
+            villages exist as code paths the Blitz player never sees but the surfaces are built around; a spectator gets
+            the player layout with pieces removed and no lord to follow (V2, V7).
+          </div>
+          <div class="fix">
+            Fix the class: one layout whose surfaces are declared per mode and per role, rather than branches inside
+            each component.
+          </div>
+        </div>
+      </div>
+
+      <div class="rule">
+        <b>Two things the client already does right and the iterations build on:</b> movement is one right-click with a
+        cost tooltip, and the right-side tile panel is the correct contextual surface for the selection.
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Iterations <span class="src">one flow each, measured in clicks and map visibility</span></h2>
+      <ol class="iter">
+        <li>
+          <b>Finish the map path for army creation.</b> M1c already gets realm and direction from the map and then opens
+          the window. Replace the window at the end of that path with a compact picker at the hex: tier chips, count,
+          confirm. Label the deployable hexes so the path is discoverable. Target: three clicks, map visible. Closes M1
+          and M2 for the common case; the window stays for browsing armies.
+        </li>
+        <li>
+          <b>Popover keeps open for a map click.</b> The primitive gains one declared state: waiting for the map. Closes
+          F2 for every choose-then-place flow.
+        </li>
+        <li>
+          <b>Build from the plot.</b> Click a plot, a compact building picker anchored at it, click a building, placed.
+          The 1320 px window survives only for browsing. Closes R2.
+        </li>
+        <li>
+          <b>Action mode scoped to the selection.</b> Rings on the selection and its legal targets only, banner deleted.
+          Closes F4.
+        </li>
+        <li>
+          <b>Blocked actions explain themselves.</b> Upgrade and build name the shortfall and the nearest stock before
+          the click. Closes F5.
+        </li>
+        <li><b>One clock.</b> Closes F6.</li>
+        <li><b>Labels on the ladder.</b> Reuses the quiet labels built in the lab. Closes half of F9.</li>
+        <li><b>Models by size.</b> Figure count per troop bucket in the Model Lab. Closes the other half of F9.</li>
+        <li><b>Automation as a switch per realm.</b> Closes F8.</li>
+        <li>
+          <b>Words under icons.</b> Closes F7, and it can ride along with any earlier iteration that touches the row.
+        </li>
+      </ol>
+      <p class="lead">
+        Colour, type and material come after the flows, as their own pass, one token at a time. Hotkeys come after that.
+      </p>
+    </section>
+
+    <footer class="col">
+      Traced from: left-command-sidebar, construction-modal, select-preview-building, hexception (placement),
+      military-modal, unified-army-creation-modal, logistics-view, production-modal and production panels,
+      bottom-right-panel, selected-worldmap-entity, worldmap right-click dispatch, worldmap-interaction-adapter, popover
+      primitive, top-header, secondary-menu-items, social-board, game-entry-phase, settings, relic tray. Live check on
+      play.realms.party, game bltz-clash-538, spectator.
+    </footer>
+    <script>
+      (function () {
+        var boxes = Array.prototype.slice.call(document.querySelectorAll(".filters input[type=checkbox]"));
+        var q = document.getElementById("q");
+        var count = document.getElementById("count");
+        var rows = Array.prototype.slice.call(document.querySelectorAll("tr[data-modes]"));
+        function apply() {
+          var on = boxes
+            .filter(function (b) {
+              return b.checked;
+            })
+            .map(function (b) {
+              return b.getAttribute("data-mode");
+            });
+          var text = (q.value || "").toLowerCase();
+          var shown = 0;
+          rows.forEach(function (row) {
+            var modes = row.getAttribute("data-modes").split(" ");
+            var modeOk = modes.some(function (m) {
+              return on.indexOf(m) >= 0;
+            });
+            var textOk = !text || row.textContent.toLowerCase().indexOf(text) >= 0;
+            var visible = modeOk && textOk;
+            if (visible) row.removeAttribute("hidden");
+            else row.setAttribute("hidden", "");
+            if (visible) shown += 1;
+          });
+          count.textContent = shown + " of " + rows.length + " flows";
+        }
+        boxes.forEach(function (b) {
+          b.addEventListener("change", apply);
+        });
+        q.addEventListener("input", apply);
+        apply();
+      })();
+    </script>
+  </body>
+</html>

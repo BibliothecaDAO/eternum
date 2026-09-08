@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Blitz User Stories</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Exo+2:wght@400;500;600&family=IM+Fell+English:ital@1&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <style>
+      @page {
+        size: A4;
+        margin: 14mm 12mm;
+      }
+      :root {
+        --ground: #14100d;
+        --panel: #1c1611;
+        --inset: #0e0b08;
+        --line: #3a2d1a;
+        --line-soft: #241c11;
+        --text: #e9ddc6;
+        --muted: #a2926f;
+        --faint: #6e6148;
+        --gold: #f6c297;
+        --amber: #e39001;
+        --mine: #b5bd75;
+        --ally: #7ea6c9;
+        --enemy: #fc4c4c;
+        --neutral: #9a8f80;
+        --display: "IM Fell English SC", Georgia, serif;
+        --sans: "Exo 2", "Segoe UI", system-ui, sans-serif;
+        --fell: "IM Fell English", Georgia, serif;
+        --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--ground);
+      }
+      body {
+        margin: 0;
+        padding: 0 20px 90px;
+        background: var(--ground);
+        color: var(--text);
+        font: 400 15px/1.6 var(--sans);
+        -webkit-font-smoothing: antialiased;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      a {
+        color: var(--gold);
+      }
+      .col {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      header.col {
+        padding-top: 40px;
+      }
+      .eyebrow {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+      h1 {
+        font: 400 40px/1.1 var(--display);
+        margin: 12px 0 10px;
+        color: var(--gold);
+      }
+      .standfirst {
+        font: italic 400 19px/1.5 var(--fell);
+        color: var(--muted);
+        max-width: 62ch;
+        margin: 0 0 20px;
+      }
+      .facts {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+        margin: 0 0 8px;
+      }
+      .fact {
+        background: var(--panel);
+        padding: 10px 12px;
+      }
+      .fact b {
+        display: block;
+        font: 500 18px/1.2 var(--mono);
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+      .fact span {
+        font: 400 11px/1.4 var(--sans);
+        color: var(--muted);
+      }
+      .meta {
+        font: 400 12px/1.6 var(--mono);
+        color: var(--faint);
+        padding: 8px 0 0;
+      }
+      section {
+        margin-top: 36px;
+        break-inside: avoid-page;
+      }
+      h2 {
+        font: 400 22px/1.2 var(--display);
+        color: var(--gold);
+        margin: 0 0 4px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h2 .src {
+        font: 400 11px/1.4 var(--mono);
+        letter-spacing: 0.04em;
+        color: var(--faint);
+      }
+      .when {
+        font: italic 400 14px/1.5 var(--fell);
+        color: var(--muted);
+        margin: 0 0 12px;
+      }
+      .personas {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .persona {
+        border: 1px solid var(--line-soft);
+        background: var(--panel);
+        padding: 13px 15px;
+        border-top: 2px solid var(--amber);
+      }
+      .persona b {
+        font: 400 15px/1.3 var(--display);
+        color: var(--gold);
+        display: block;
+        margin-bottom: 4px;
+      }
+      .persona span {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .story {
+        display: grid;
+        grid-template-columns: 38px 96px 1fr auto;
+        gap: 12px;
+        align-items: baseline;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--line-soft);
+        break-inside: avoid;
+      }
+      .id {
+        font: 500 11px/1.5 var(--mono);
+        color: var(--faint);
+      }
+      .who {
+        font: 500 11px/1.5 var(--mono);
+        letter-spacing: 0.03em;
+        color: var(--faint);
+      }
+      .what {
+        font-size: 14.5px;
+      }
+      .what small {
+        display: block;
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 2px;
+      }
+      .on {
+        display: flex;
+        gap: 4px;
+        align-self: center;
+      }
+      .on i {
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.1em;
+        padding: 4px 6px;
+        white-space: nowrap;
+        font-style: normal;
+        color: var(--muted);
+        border: 1px solid var(--line);
+      }
+      .on i.card {
+        color: var(--gold);
+        border-color: #6d5324;
+      }
+      .on i.map {
+        color: var(--mine);
+        border-color: #4c5433;
+      }
+      .rule {
+        border-left: 3px solid var(--amber);
+        background: var(--panel);
+        padding: 10px 14px;
+        margin: 10px 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .rule b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .never {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .never div {
+        border: 1px solid var(--line-soft);
+        border-left: 3px solid var(--enemy);
+        background: var(--panel);
+        padding: 10px 12px;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .never div b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .surfaces {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .surfaces div {
+        background: var(--panel);
+        border: 1px solid var(--line-soft);
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .surfaces div b {
+        display: block;
+        font: 600 10px/1 var(--mono);
+        letter-spacing: 0.12em;
+        color: var(--gold);
+        margin-bottom: 5px;
+      }
+      footer.col {
+        margin-top: 50px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="col">
+      <div class="eyebrow">apps/game · design input · 2026-09-07 · exported 2026-09-08 with the brand kit type</div>
+      <h1>Blitz User Stories</h1>
+      <p class="standfirst">
+        Sixty minutes, ninety-six lords, one map. Everything a player needs to see, decide and do inside that hour, and
+        the surface of the Command Deck each need lands on.
+      </p>
+      <div class="facts">
+        <div class="fact"><b>60:00</b><span>match length · settling opens at 0:59, the horn at 1:00</span></div>
+        <div class="fact"><b>96</b><span>seats per game</span></div>
+        <div class="fact"><b>60 s · 180 s</b><span>army tick · delivery tick</span></div>
+        <div class="fact"><b>30 → 120</b><span>stamina at start, +30 per tick, capped</span></div>
+        <div class="fact"><b>50 · 20 · 30</b><span>stamina to attack · per hex moved · per hex explored</span></div>
+        <div class="fact">
+          <b>5 · 250 · 1,000</b
+          ><span>points per tile · relic or camp claim · hyperstructure claim, +1 per cycle held</span>
+        </div>
+        <div class="fact"><b>5 min · 3</b><span>relic chests spawn · relics per chest</span></div>
+        <div class="fact"><b>10 min</b><span>after the end to register points</span></div>
+      </div>
+      <div class="meta">
+        values from preset 8 · Regular Fast (Blitz Preset Rulebook) · label rules from issue #4876 · surfaces from the
+        Blitz Command Deck brief. Surface names here predate Blitz Play Flow v0.2: RAIL keys are now 1 to 9 and the
+        right column is gone; the Play Flow rulings win where they differ.
+      </div>
+    </header>
+
+    <section class="col">
+      <h2>The six lords of the hour</h2>
+      <div class="personas">
+        <div class="persona">
+          <b>The Regular</b
+          ><span
+            >Plays most evenings. Wants a seat, the horn, and a first order inside the first minute. Judges the game by
+            how little it makes them hunt.</span
+          >
+        </div>
+        <div class="persona">
+          <b>The First-Timer</b
+          ><span
+            >Arrived from a link with one hour to learn by doing. Reads the screen, not a manual. Every dead end costs a
+            player.</span
+          >
+        </div>
+        <div class="persona">
+          <b>The Commander</b
+          ><span
+            >Nine armies, ninety-five opponents. Lives on hotkeys, Tab and the minimap. Wants stamina, odds and range
+            without opening anything.</span
+          >
+        </div>
+        <div class="persona">
+          <b>The Quartermaster</b
+          ><span
+            >Plays the economy: labor, production, transfers timed to the delivery tick. Wants rates, not totals, and a
+            warning before a shortage.</span
+          >
+        </div>
+        <div class="persona">
+          <b>The Contender</b
+          ><span
+            >Chasing the top ten. Counts points per action, hunts hyperstructures and relics, and registers points
+            before the window closes.</span
+          >
+        </div>
+        <div class="persona">
+          <b>The Witness</b
+          ><span
+            >Spectates live or reviews after. Follows one lord at a time and reads the same field with the same labels,
+            minus the buttons.</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Where a need lands</h2>
+      <div class="surfaces">
+        <div><b>CHIP</b>Identity, game, phase and the clock. Top-left. The only place the match's time lives.</div>
+        <div><b>LEDGER</b>Resources with rates, this realm or the empire. Top-centre.</div>
+        <div><b>ALERTS</b>Attacks, arrivals, rank and settings. Top-right.</div>
+        <div><b>RAIL</b>Realms and army groups as portrait tiles. Left edge, keys 1 to 9.</div>
+        <div>
+          <b>CARD</b>The selection, its commands as a Q W E grid, and the context on the right third. Bottom-centre.
+        </div>
+        <div><b>MAP</b>Labels, ghosts, rings and the cursor. The scene itself.</div>
+        <div><b>MINIMAP</b>Bottom-left, with the Local and World toggle and the lens keys.</div>
+        <div><b>FEED</b>Events newest first as text on the scene, right edge. Replaces toasts and windows.</div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Before the horn <span class="src">0:00 to 1:00</span></h2>
+      <p class="when">
+        Settling opens at fifty-nine seconds and the main phase at sixty. Nothing else on screen should ask for
+        attention until then.
+      </p>
+      <div class="story">
+        <span class="id">B01</span><span class="who">REGULAR</span
+        ><span class="what"
+          >From the first frame I see the countdown to the horn, and it is the biggest number on screen.</span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B02</span><span class="who">FIRST-TIMER</span
+        ><span class="what">The camera opens on my realm, selected, with its card already showing what I can do.</span
+        ><span class="on"><i class="map">MAP</i><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B03</span><span class="who">REGULAR</span
+        ><span class="what"
+          >I read my starting stock and my starting armies in one glance, without opening anything.</span
+        ><span class="on"><i>LEDGER</i><i>RAIL</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B04</span><span class="who">REGULAR</span
+        ><span class="what"
+          >At the horn the countdown flips to time left and the first order is one keystroke away.<small
+            >No modal, no tutorial sheet, no "game started" toast.</small
+          ></span
+        ><span class="on"><i>CHIP</i><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B05</span><span class="who">WITNESS</span
+        ><span class="what"
+          >I can pick any of the ninety-six lords to follow before the horn and switch at any moment.</span
+        ><span class="on"><i>CHIP</i><i>RAIL</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>The first five minutes</h2>
+      <p class="when">Selection, movement and the minute tick. If these three feel right the hour is won.</p>
+      <div class="story">
+        <span class="id">B06</span><span class="who">COMMANDER</span
+        ><span class="what">Every army I own is one Tab press away, and the card shows what it can do right now.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B07</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >I right-click a hex to move. A ghost walks the path and tells me the stamina it costs before I commit.<small
+            >20 stamina per hex moved, 30 per hex explored. Left-click selects, right-click acts, Esc cancels.</small
+          ></span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B08</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >Stamina is a bar with the attack line drawn on it, so I know at a glance who can fight.<small
+            >Attack needs 50, defence 40.</small
+          ></span
+        ><span class="on"><i class="card">CARD</i><i>RAIL</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B09</span><span class="who">COMMANDER</span
+        ><span class="what">I see when the next army tick lands, because that is when 30 stamina comes back.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B10</span><span class="who">FIRST-TIMER</span
+        ><span class="what"
+          >Explore is the same gesture as move. What I found lands in the feed the moment the hex opens.</span
+        ><span class="on"><i class="map">MAP</i><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B11</span><span class="who">FIRST-TIMER</span
+        ><span class="what"
+          >Every command shows its key on the button, laid out Q W E, A S D, so my hands learn the deck without
+          reading.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B12</span><span class="who">FIRST-TIMER</span
+        ><span class="what"
+          >When an order cannot be given, the button says why in four words, not a dialog.<small
+            >"Needs 50 stamina" · "Out of range" · "Not enough wheat".</small
+          ></span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Expanding <span class="src">exploration · camps · relics</span></h2>
+      <div class="story">
+        <span class="id">B13</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >Each explored tile shows its points as it happens, in the feed and on my score.<small
+            >+5 per tile.</small
+          ></span
+        ><span class="on"><i>FEED</i><i>CHIP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B14</span><span class="who">REGULAR</span
+        ><span class="what"
+          >When I uncover a camp, its label tells me the guards and the feed tells me what it holds.</span
+        ><span class="on"><i class="map">MAP</i><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B15</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >Relic chests ping the minimap when they spawn, so every five minutes I know where to look.<small
+            >Ten hexes from the centre, three relics per chest, 250 points a discovery.</small
+          ></span
+        ><span class="on"><i>MINIMAP</i><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B16</span><span class="who">ANY</span
+        ><span class="what"
+          >A chest reads "Relic Crate" with neutral chrome, never like an enemy.<small
+            >Issue #4876, stories 14 and 37.</small
+          ></span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B17</span><span class="who">REGULAR</span
+        ><span class="what">Essence I picked up shows in the ledger with a rise, not a toast.</span
+        ><span class="on"><i>LEDGER</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>The economy <span class="src">labor · production · transfers</span></h2>
+      <p class="when">Rates over totals. The Quartermaster plays against the delivery tick, not the stockpile.</p>
+      <div class="story">
+        <span class="id">B18</span><span class="who">QUARTERMASTER</span
+        ><span class="what">The ledger shows this realm's rates per minute and flips to the empire with one key.</span
+        ><span class="on"><i>LEDGER</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B19</span><span class="who">QUARTERMASTER</span
+        ><span class="what"
+          >A resource that will run out before the horn turns amber. One that is out turns red and says which building
+          starves.</span
+        ><span class="on"><i>LEDGER</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B20</span><span class="who">QUARTERMASTER</span
+        ><span class="what">Labor sits beside the resources it makes, with what one labor buys.</span
+        ><span class="on"><i>LEDGER</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B21</span><span class="who">QUARTERMASTER</span
+        ><span class="what"
+          >Build is an icon grid on the card. Cost on hover, greyed when I cannot afford it, and a click places a ghost
+          on the hex.</span
+        ><span class="on"><i class="card">CARD</i><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B22</span><span class="who">QUARTERMASTER</span
+        ><span class="what"
+          >A building's production and its queue live on the card's right third with progress, not in a window.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B23</span><span class="who">QUARTERMASTER</span
+        ><span class="what"
+          >A transfer is one row: from, to, amount, and the delivery tick it lands on. Then it is a caravan on the map
+          and a row in the feed.</span
+        ><span class="on"><i class="card">CARD</i><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B24</span><span class="who">QUARTERMASTER</span
+        ><span class="what">Arrivals are feed rows with a claim button. Nothing arrives silently.</span
+        ><span class="on"><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B25</span><span class="who">QUARTERMASTER</span
+        ><span class="what"
+          >"Not enough" is never a dead end. The card names the resource, the shortfall, and offers the richest realm's
+          stock in one click.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>War <span class="src">train · move · attack · defend</span></h2>
+      <div class="story">
+        <span class="id">B26</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >I train troops from the card with count and cost on one row. Deploy is a click on a hex.<small
+            >3,000 troops per settlement.</small
+          ></span
+        ><span class="on"><i class="card">CARD</i><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B27</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >Hovering an enemy puts the odds on the card's right third, with the biome bonus spelled out.<small
+            >Biome bonus 30 percent.</small
+          ></span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B28</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >Attack is a right-click on the target or W. The irreversible version holds for a moment instead of asking me
+          a question.</span
+        ><span class="on"><i class="map">MAP</i><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B29</span><span class="who">COMMANDER</span
+        ><span class="what">Raid and attack are two buttons that say what each takes and what each returns.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B30</span><span class="who">REGULAR</span
+        ><span class="what"
+          >When my realm is hit, its rail tile stripes red and the alert counts it. One click jumps the camera
+          there.</span
+        ><span class="on"><i>RAIL</i><i>ALERTS</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B31</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >A structure's guards are on its full label when I hover it, so I never open a panel to size up a fight.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B32</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >Fallen guards show their return countdown on the realm's card.<small>Ten minutes.</small></span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B33</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >Armies group under 1 to 9 the way every RTS does. The rail shows the groups with counts.</span
+        ><span class="on"><i>RAIL</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B34</span><span class="who">COMMANDER</span
+        ><span class="what"
+          >Only the selected army and its legal targets are emphasised. Ownership is a tint, never a ring on everything
+          I own.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Objectives and points <span class="src">hyperstructures · rank · registration</span></h2>
+      <div class="story">
+        <span class="id">B35</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >The Objectives lens shows every hyperstructure with its holder and guards, nearest first, on the map and the
+          minimap.</span
+        ><span class="on"><i class="map">MAP</i><i>MINIMAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B36</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >Before I commit an attack I see what the claim is worth and what holding it pays per cycle.<small
+            >1,000 from bandits, then +1 each cycle held.</small
+          ></span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B37</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >My rank and points, with how they moved, are always in the chip. The full board is a page, not a
+          window.</span
+        ><span class="on"><i>CHIP</i><i>ALERTS</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B38</span><span class="who">CONTENDER</span
+        ><span class="what">The gap to the rank above me is a number I can read without hovering.</span
+        ><span class="on"><i>ALERTS</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B39</span><span class="who">ANY</span
+        ><span class="what">A hyperstructure changing hands is a feed row and a ping on the minimap.</span
+        ><span class="on"><i>FEED</i><i>MINIMAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B40</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >When the hour ends, the clock becomes the registration window and one button registers my points.<small
+            >Ten minutes. Miss it and the points are not counted.</small
+          ></span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Reading the field <span class="src">issue #4876 · labels</span></h2>
+      <p class="when">One label family. The badge says what, the chrome says whose.</p>
+      <div class="story">
+        <span class="id">B41</span><span class="who">ANY</span
+        ><span class="what"
+          >Every entity on the map has one label with a badge for its kind. Two marker systems never coexist.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B42</span><span class="who">ANY</span
+        ><span class="what"
+          >Mine is green, allies are blue, agents amber, neutral grey, and each enemy keeps a colour I can tell apart in
+          a brawl.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B43</span><span class="who">ANY</span
+        ><span class="what"
+          >Labels are compact by default and full when I hover. Zoom moves the camera and never changes the label.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B44</span><span class="who">COMMANDER</span
+        ><span class="what">One toggle hides small armies under 1,500 troops. There is no other density setting.</span
+        ><span class="on"><i>MINIMAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B45</span><span class="who">ANY</span
+        ><span class="what">The Vanguard's defenders read as neutral, never as an enemy player.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B46</span><span class="who">ANY</span
+        ><span class="what"
+          >The selected entity and any of mine under attack always keep a label, whatever the budget.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B47</span><span class="who">WITNESS</span
+        ><span class="what"
+          >A spectator reads the field with the same labels and colours, relative to the lord they follow.</span
+        ><span class="on"><i class="map">MAP</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Time</h2>
+      <div class="story">
+        <span class="id">B48</span><span class="who">ANY</span
+        ><span class="what"
+          >There is one clock. It shows time left with tick marks, and it is visible in every state including
+          spectating.</span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B49</span><span class="who">REGULAR</span
+        ><span class="what">The last five minutes change the clock's colour. The last minute counts seconds.</span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B50</span><span class="who">QUARTERMASTER</span
+        ><span class="what">The next delivery tick is written where transfers are made.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B51</span><span class="who">COMMANDER</span
+        ><span class="what">The next army tick is written beside stamina.</span
+        ><span class="on"><i class="card">CARD</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>The feed and the chat</h2>
+      <div class="story">
+        <span class="id">B52</span><span class="who">ANY</span
+        ><span class="what"
+          >The feed is newest first with three filters, all, mine, combat. Clicking a row jumps the camera.</span
+        ><span class="on"><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B53</span><span class="who">ANY</span
+        ><span class="what"
+          >My own order appears as a grey row at once and turns gold when the chain confirms it. Nothing else on screen
+          changes.</span
+        ><span class="on"><i>FEED</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B54</span><span class="who">ANY</span
+        ><span class="what">A failed order flashes the entity red and the feed row says why. No toast, no dialog.</span
+        ><span class="on"><i>FEED</i><i class="map">MAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B55</span><span class="who">REGULAR</span
+        ><span class="what"
+          >Chat is one line at the bottom right. Enter opens it, Esc closes it, and it never covers the scene.</span
+        ><span class="on"><i>CHAT</i></span>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Spectating and the end</h2>
+      <div class="story">
+        <span class="id">B56</span><span class="who">WITNESS</span
+        ><span class="what"
+          >I get the same deck without the buttons. The rail becomes the player list and the card shows the
+          selection.</span
+        ><span class="on"><i>RAIL</i><i class="card">CARD</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B57</span><span class="who">WITNESS</span
+        ><span class="what"
+          >The chip says I am spectating and offers sign-in inside itself. Nothing else mentions login.</span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B58</span><span class="who">WITNESS</span
+        ><span class="what">Following a lord means Tab cycles their armies and the minimap centres on their realm.</span
+        ><span class="on"><i>CHIP</i><i>MINIMAP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B59</span><span class="who">ANY</span
+        ><span class="what"
+          >When the game ends a banner offers Review and Home. The map stays explorable behind it.</span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+      <div class="story">
+        <span class="id">B60</span><span class="who">CONTENDER</span
+        ><span class="what"
+          >Review shows final ranks, my placement, and what it paid, from the same page the lobby uses.<small
+            >Continues in Realms User Stories, Lobby.</small
+          ></span
+        ><span class="on"><i>CHIP</i></span>
+      </div>
+      <div class="rule">
+        <b>Spectator rule:</b> one layout, one mount tree. Spectating removes buttons and adds a player list. It never
+        branches the components.
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Never</h2>
+      <p class="when">What the deck refuses to do, so that the stories above stay true.</p>
+      <div class="never">
+        <div><b>A modal over the scene.</b> Every window becomes a card tab, a drawer, or a feed row.</div>
+        <div><b>A spinner while the chain works.</b> The ghost is the feedback. Confirmation is a colour change.</div>
+        <div><b>A confirmation dialog for a reversible action.</b> The irreversible ones hold to confirm.</div>
+        <div><b>A toast.</b> Toasts are a queue you cannot revisit. The feed is the queue.</div>
+        <div><b>A second clock.</b> Percent, day and countdown collapse into one.</div>
+        <div><b>A page reload to change account or game.</b> The chip handles identity in place.</div>
+      </div>
+    </section>
+
+    <footer class="col">
+      Sources: Blitz Preset Rulebook (preset 8, Regular Fast) · issue #4876 Spec: HTML-only world map Labels · Blitz
+      Command Deck brief (zones, hotkeys, interaction rules) · Realms User Stories (lobby, review). Companion canvas:
+      Blitz Command Deck Canvas.
+    </footer>
+  </body>
+</html>

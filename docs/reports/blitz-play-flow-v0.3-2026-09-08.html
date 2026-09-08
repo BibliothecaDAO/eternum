@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Blitz Play Flow</title>
+  </head>
+  <body>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Exo+2:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <style>
+      :root {
+        --ground: #14100d;
+        --panel: #1c1611;
+        --inset: #0e0b08;
+        --line: #3a2d1a;
+        --line-soft: #241c11;
+        --text: #e9ddc6;
+        --muted: #a2926f;
+        --faint: #6e6148;
+        --peach: #f6c297;
+        --amber: #e39001;
+        --sage: #b5bd75;
+        --coral: #fc4c4c;
+        --display: "IM Fell English SC", Georgia, serif;
+        --fell: "IM Fell English", Georgia, serif;
+        --sans: "Exo 2", "Segoe UI", system-ui, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0 20px 90px;
+        background: var(--ground);
+        color: var(--text);
+        font: 400 15px/1.6 var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--peach);
+      }
+      a:hover {
+        color: #fff;
+      }
+      .col {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      header.col {
+        padding-top: 56px;
+      }
+      .eyebrow {
+        font: 500 11px/1 var(--mono);
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--amber);
+      }
+      h1 {
+        font: 400 42px/1.1 var(--display);
+        margin: 12px 0 10px;
+        color: var(--peach);
+        text-wrap: balance;
+      }
+      .standfirst {
+        font: italic 400 19px/1.5 var(--fell);
+        color: var(--muted);
+        max-width: 64ch;
+        margin: 0 0 18px;
+      }
+      .meta {
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 10px 0;
+      }
+      .meta b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      section {
+        margin-top: 46px;
+      }
+      h2 {
+        font: 400 24px/1.2 var(--display);
+        color: var(--peach);
+        margin: 0 0 6px;
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      h2 .src {
+        font: 400 11px/1.4 var(--mono);
+        letter-spacing: 0.04em;
+        color: var(--faint);
+      }
+      h3 {
+        font: 400 17px/1.3 var(--display);
+        color: var(--text);
+        margin: 26px 0 8px;
+      }
+      p.lead {
+        color: var(--muted);
+        max-width: 66ch;
+        margin: 0 0 12px;
+      }
+      .wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line-soft);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13.5px;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      th {
+        font: 500 10px/1.4 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--faint);
+        background: var(--panel);
+      }
+      td.code,
+      .code {
+        font: 500 11.5px/1.5 var(--mono);
+        color: var(--peach);
+        white-space: nowrap;
+      }
+      td .why {
+        display: block;
+        color: var(--muted);
+        font-size: 12.5px;
+        margin-top: 2px;
+      }
+      .tempo {
+        font: 600 9.5px/1 var(--mono);
+        letter-spacing: 0.1em;
+        padding: 4px 6px;
+        white-space: nowrap;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .tempo.reflex {
+        color: var(--sage);
+        border-color: #4c5433;
+      }
+      .tempo.glance {
+        color: var(--peach);
+        border-color: #6d5324;
+      }
+      .tempo.commit {
+        color: var(--coral);
+        border-color: #5a2a2a;
+      }
+      .challenge {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .challenge .n {
+        font: 500 12px/1.6 var(--mono);
+        color: var(--faint);
+      }
+      .challenge b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .challenge .claim {
+        color: var(--muted);
+        font-size: 13.5px;
+      }
+      .challenge .ruling {
+        margin-top: 6px;
+        padding-left: 12px;
+        border-left: 3px solid var(--amber);
+        font-size: 14px;
+      }
+      .challenge .ruling i {
+        font: italic 400 13px/1.5 var(--fell);
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .zones {
+        font: 400 12px/1.45 var(--mono);
+        color: var(--muted);
+        background: var(--inset);
+        border: 1px solid var(--line-soft);
+        padding: 14px 16px;
+        overflow-x: auto;
+        white-space: pre;
+        margin: 0;
+      }
+      .zones b {
+        color: var(--peach);
+        font-weight: 500;
+      }
+      .keys {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 8px;
+      }
+      .keys div {
+        background: var(--panel);
+        border: 1px solid var(--line-soft);
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .keys kbd {
+        display: inline-grid;
+        place-items: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        margin-right: 6px;
+        background: var(--peach);
+        color: var(--ground);
+        font: 700 11px var(--mono);
+      }
+      .rule {
+        border-left: 3px solid var(--amber);
+        background: var(--panel);
+        padding: 10px 14px;
+        margin: 10px 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .rule b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .qa {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line-soft);
+        font-size: 14px;
+      }
+      .qa .n {
+        font: 500 12px/1.6 var(--mono);
+        color: var(--faint);
+      }
+      .qa b {
+        color: var(--text);
+        font-weight: 500;
+        display: block;
+      }
+      .qa span {
+        color: var(--muted);
+      }
+      footer.col {
+        margin-top: 60px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        font: 400 12px/1.7 var(--mono);
+        color: var(--faint);
+      }
+    </style>
+
+    <header class="col">
+      <div class="eyebrow">apps/game · design input · v0.3 · 2026-09-08</div>
+      <h1>Blitz Play Flow</h1>
+      <p class="standfirst">
+        The player-perspective flow map, merged with the Command Deck brief, the Blitz user stories, the label spec and
+        what the UI Lab has shown so far. Where the sources disagreed, the ruling and its evidence are written down so
+        the next iteration argues with facts. v0.3 adds the scale rule: the deck must hold at ten holdings and at a
+        hundred.
+      </p>
+      <div class="meta">
+        v0.3 adds the scale rule · merges <b>eternum-ux-flow-map.md v0.1</b> · <b>Blitz Command Deck brief</b> ·
+        <b>Blitz User Stories</b> (B01 to B60) · <b>issue #4876</b> · <b>preset 8 rulebook</b> · <b>UI Lab</b> captures
+      </div>
+    </header>
+
+    <section class="col">
+      <h2>Tempo classes <span class="src">kept from v0.1, one change</span></h2>
+      <p class="lead">
+        The core constraint stands: sixty minutes, one-minute army ticks, no immunity. Every flow is budgeted by how
+        long a player can afford to look away from the map.
+      </p>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Class</th>
+            <th>Budget</th>
+            <th>Rule</th>
+          </tr>
+          <tr>
+            <td><span class="tempo reflex">Reflex</span></td>
+            <td>under 1 s, one click</td>
+            <td>
+              Executes on the scene with a hotkey. The ghost renders at click, solid at pre-confirm. Never a modal.
+            </td>
+          </tr>
+          <tr>
+            <td><span class="tempo glance">Glance</span></td>
+            <td>0 clicks</td>
+            <td>Always visible on a chip, the card, or a label. At most six numbers on screen at any time.</td>
+          </tr>
+          <tr>
+            <td><span class="tempo">Deliberate</span></td>
+            <td>2 to 10 s</td>
+            <td>A drawer that opens upward from the command card. The map stays visible and clickable.</td>
+          </tr>
+          <tr>
+            <td><span class="tempo commit">Commit</span></td>
+            <td>10 s and more</td>
+            <td>
+              <b>Changed:</b> hold-to-confirm on the button, 400 ms, no dialog. The one modal in the whole hour is
+              settling, and it happens before the horn.
+            </td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Surfaces <span class="src">re-coded: the side panels are gone</span></h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Code</th>
+            <th>Surface</th>
+            <th>Use for</th>
+          </tr>
+          <tr>
+            <td class="code">S</td>
+            <td>Scene</td>
+            <td>
+              Everything spatial: terrain, units, ownership tint and rings, ranges, paths, ghosts, fog, fire on a raided
+              realm.
+            </td>
+          </tr>
+          <tr>
+            <td class="code">S+</td>
+            <td>Scene label</td>
+            <td>
+              One label family. Badge for kind, chrome for owner, name and count. Hover adds one row. Never actions.
+            </td>
+          </tr>
+          <tr>
+            <td class="code">H</td>
+            <td>Chips</td>
+            <td>
+              Three floating chips: identity and clock, holdings, attention and rank. Read at a glance, never edge to
+              edge.
+            </td>
+          </tr>
+          <tr>
+            <td class="code">R</td>
+            <td>Outliner</td>
+            <td>
+              One row per kind of holding with a count and an attention badge, down the left edge. Expands to a
+              searchable, sortable list. Collapsed, it is five lines at three realms and at a hundred.
+            </td>
+          </tr>
+          <tr>
+            <td class="code">D</td>
+            <td>Deck</td>
+            <td>
+              The command card: selection, Q W E grid, context. Deliberate tasks open as a drawer above it. This
+              replaces both side panels of v0.1.
+            </td>
+          </tr>
+          <tr>
+            <td class="code">T</td>
+            <td>Feed</td>
+            <td>
+              Text rows on the scene at the right edge, newest first. Replaces toasts, the ticker, the transactions and
+              logistics windows.
+            </td>
+          </tr>
+          <tr>
+            <td class="code">K</td>
+            <td>Keys</td>
+            <td>Every repeated action gets one, shown on its button.</td>
+          </tr>
+          <tr>
+            <td class="code">M</td>
+            <td>Modal</td>
+            <td>Settle, once. Nothing else.</td>
+          </tr>
+          <tr>
+            <td class="code">W</td>
+            <td>Web app</td>
+            <td>Lobby, value, results, review. The client is play-only.</td>
+          </tr>
+        </table>
+      </div>
+      <h3>Zone rule</h3>
+      <pre class="zones">┌───────────────────────────────────────────────────────────────────────┐
+│ <b>[identity · clock]</b>          <b>[holdings]</b>               <b>[attention · rank ⚙]</b> │
+│ <b>R</b> realms 12 ·3   camps 10   rifts 10                       <b>T</b> feed rows  │
+│ <b>R</b> hyperstructures 3   armies 24 ·6         <b>S</b>                         │
+│                              labels · rings · ghosts                  │
+│                                                                       │
+│ <b>minimap</b>            <b>D</b> [selection] [Q W E / A S D] [context]      chat ▁ │
+└───────────────────────────────────────────────────────────────────────┘</pre>
+      <div class="rule">
+        <b
+          >Top is time and score. Left is mine. Bottom is what I selected and what I can do. The scene is what happened
+          and where.</b
+        >
+        Four sides carry things, not surfaces: only the minimap and the deck are docked.
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Built for scale <span class="src">v0.3 · ten holdings and a hundred</span></h2>
+      <p class="lead">
+        A Blitz lord can end the hour with ten realms, ten camps, ten rifts and three hyperstructures. An Eternum lord
+        can hold a hundred realms. A roster fails past ten, so the deck is designed by exception: counts at rest, a
+        queue for what needs me, groups for what I care about now.
+      </p>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Surface</th>
+            <th>At three realms</th>
+            <th>At a hundred</th>
+            <th>Borrowed from</th>
+          </tr>
+          <tr>
+            <td>Outliner</td>
+            <td>Realms 3, Armies 9. Rows pre-bound to 1 2 3.</td>
+            <td>
+              Five collapsed rows with counts and badges. Expand a kind for a list with search and sort by status.
+            </td>
+            <td>Stellaris outliner</td>
+          </tr>
+          <tr>
+            <td>Attention queue</td>
+            <td>Chip count; one key steps to the next flagged holding.</td>
+            <td>Same key, longer queue. Under attack, starving, idle, arrival waiting, in that order.</td>
+            <td>Civilization "next city", StarCraft idle worker</td>
+          </tr>
+          <tr>
+            <td>Keys 1 to 9</td>
+            <td>Pre-bound to the three realms.</td>
+            <td>
+              Control groups: Ctrl and a number binds the selection, the number recalls it, the outliner shows the
+              binding.
+            </td>
+            <td>Every RTS</td>
+          </tr>
+          <tr>
+            <td>Holdings chip</td>
+            <td>Totals and the selected realm.</td>
+            <td>Empire rates and the count of exceptions. Totals alone hide the one realm that starves.</td>
+            <td>Paradox alerts row</td>
+          </tr>
+          <tr>
+            <td>Feed</td>
+            <td>One row per event.</td>
+            <td>Rows group per tick: "12 arrivals" expands, claim-all on the row. Filter defaults to mine.</td>
+            <td>Anno object list</td>
+          </tr>
+          <tr>
+            <td>Map</td>
+            <td>Labels within budget.</td>
+            <td>Ownership tint on the far view; the minimap filters by lens and by attention.</td>
+            <td>Command Deck brief, far band</td>
+          </tr>
+          <tr>
+            <td>Deck</td>
+            <td>One selection.</td>
+            <td>
+              Multi-select and "all of this kind": the drawer applies one order to the selection. Automation runs the
+              rest.
+            </td>
+            <td>Age of Empires select-all</td>
+          </tr>
+        </table>
+      </div>
+      <div class="rule">
+        <b>Scale rule:</b> every surface must read the same at three holdings and at a hundred. A surface that grows a
+        row per holding is wrong. Counts at rest, a queue for exceptions, groups for intent.
+      </div>
+      <div class="rule">
+        <b>Lab gate:</b> the capture's strongest lord holds 3 settlements and 9 armies, so a lab-only stress setting
+        treats the N strongest lords' holdings as the followed lord's, labelled on screen as merged. Every scale claim
+        is checked at 10, 30 and 100 holdings on real geometry.
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Challenges to v0.1 <span class="src">each with its evidence and a ruling</span></h2>
+
+      <div class="challenge">
+        <span class="n">C1</span>
+        <div>
+          <b>Two side panels plus a bottom ticker.</b>
+          <div class="claim">
+            v0.1 §3 keeps a left command sidebar (structures, resources, chat) and a right context panel, with the
+            ticker and minimap along the bottom.
+          </div>
+          <div class="ruling">
+            Ruling: no side panels. Selection context lives on the deck, mine lives on the rail, chat is one line.<i
+              >Evidence: the owner rejected a four-sided overlay on the lab's first draft; the brief and every RTS this
+              game courts put selection at the bottom; the lab measured the map at 45 percent of the frame with panels
+              on two sides and 84 percent without.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C2</span>
+        <div>
+          <b>Three clocks.</b>
+          <div class="claim">
+            v0.1 §A lists a game clock with day N of 10 and a phase name, a stamina tick cue, and an automation
+            countdown.
+          </div>
+          <div class="ruling">
+            Ruling: one clock with three marks. Time left is the number; the minute tick and the ten-minute cycle are
+            ticks on its bar. No day names.<i
+              >Evidence: the client's "day" is six army ticks with names like Dawn and Dusk that change no decision;
+              stamina refills every minute regardless; hyperstructure points land per ten-minute cycle. The brief's rule
+              is one clock; the earlier HUD's three clocks were an audit finding.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C3</span>
+        <div>
+          <b>Commit class means a modal.</b>
+          <div class="claim">v0.1 routes upgrades and other irreversible actions through a modal.</div>
+          <div class="ruling">
+            Ruling: hold to confirm on the button. Settling is the only modal, and it precedes the horn.<i
+              >Evidence: no immunity and a sixty-minute clock make every dialog a cost; the brief's interaction rules
+              already specify the 400 ms hold; the stories' "Never" list forbids confirmation dialogs for reversible
+              actions and modals over the scene.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C4</span>
+        <div>
+          <b>Realms on F1 to F9.</b>
+          <div class="claim">This was the lab's choice, not v0.1's. v0.1 uses 1, 2, 3.</div>
+          <div class="ruling">
+            Ruling, amended in v0.3: digits are control groups. Ctrl and a digit binds the selection, the digit recalls
+            it. Blitz pre-binds the three starting realms to 1 2 3, so v0.1's habit holds and the scheme survives a
+            hundred realms. Armies on Tab and Shift-Tab.<i
+              >Evidence: F1 opens browser help, F3 opens find, F5 reloads, F11 goes fullscreen. A fixed index breaks
+              past nine holdings; groups are how every RTS handles two hundred units.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C5</span>
+        <div>
+          <b>Mnemonic command keys.</b>
+          <div class="claim">
+            v0.1 uses Q W E as explore, move, attack modes and B, P, L to open build, production and logistics.
+          </div>
+          <div class="ruling">
+            Ruling: positional grid, meanings fixed per kind. Army: Q move, W attack, E explore, A transfer. Realm: Q
+            build, W produce, E transfer, A train. The key is printed on the tile, so no mnemonic is needed and no
+            letter collides with a browser shortcut.<i
+              >Evidence: the lab's grid already shows the key on every tile and says why a tile is blocked; Deliberate
+              tasks open from the same tile as a drawer, so B, P and L would be aliases for what the grid already
+              does.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C6</span>
+        <div>
+          <b>Space focuses the last event.</b>
+          <div class="claim">v0.1 §4. The brief had Space toggling map and realm view.</div>
+          <div class="ruling">
+            Ruling: v0.1 wins. Space jumps to the last feed event, the way an RTS jumps to the last alert. Entering a
+            realm is a click on its tile or Enter with it selected.<i
+              >Evidence: thirty years of muscle memory; the stories' feed rows already jump the camera (B52), Space is
+              the keyboard for that.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C7</span>
+        <div>
+          <b>Suggestion chips in the top bar.</b>
+          <div class="claim">
+            v0.1 §2.2 promotes the first-minute checklist to a chip, and asks whether suggestions become the onboarding
+            surface.
+          </div>
+          <div class="ruling">
+            Ruling: suggestions live in the deck's context slot when nothing better is there, and fade after each is
+            done once. Never a chip.<i
+              >Evidence: six numbers is the Glance budget and suggestions are copy, not numbers; the First-Timer stories
+              put learning on the deck (B11, B12).</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C8</span>
+        <div>
+          <b>Spectators get no ownership chrome.</b>
+          <div class="claim">v0.1 §6.</div>
+          <div class="ruling">
+            Ruling: spectators get the same labels and colours relative to the lord they follow, minus the buttons.<i
+              >Evidence: B47 and B56; one mount tree, one layout, no per-component spectator branches.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C9</span>
+        <div>
+          <b>Per-owner enemy colours as label fills.</b>
+          <div class="claim">This was the lab's first reading of issue #4876.</div>
+          <div class="ruling">
+            Ruling: the ring and tint under the model carry the owner colour. Labels are one quiet material with a thin
+            owner stripe. Issue #4876 is satisfied without the carnival.<i
+              >Evidence: the lab capture at tactical zoom showed twelve saturated fills louder than the selection; the
+              scene is the place for whose, the label for what and how much.</i
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="challenge">
+        <span class="n">C10</span>
+        <div>
+          <b>Which six numbers.</b>
+          <div class="claim">v0.1 proposes points, rank, points per second, day and phase, armies ready, arrivals.</div>
+          <div class="ruling">
+            Ruling: time left · points with rank · gap to the next rank · armies ready · attention count (threats and
+            arrivals together) · the selection's stamina. Points per second folds into the rank line as "+N per cycle
+            held".<i
+              >Evidence: C2 removes day and phase; arrivals and threats both mean "look here" and share one jump key;
+              the selection's stamina decides the next order.</i
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Journey <span class="src">v0.1 stages, re-landed on the surfaces above</span></h2>
+      <p class="lead">Only rows that changed surface or tempo are annotated. Everything else in v0.1 stands.</p>
+      <h3>Entry and settle · the first sixty seconds</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Flow</th>
+            <th>Lands on</th>
+            <th>Tempo</th>
+          </tr>
+          <tr>
+            <td>Boot from the first snapshot page holding my structures<span class="why">Unchanged.</span></td>
+            <td class="code">H loader</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>Settle, one click, camera flies to the triangle<span class="why">The one modal.</span></td>
+            <td class="code">M → S</td>
+            <td><span class="tempo commit">Commit</span></td>
+          </tr>
+          <tr>
+            <td>
+              Orientation: my three realms, nearest hyperstructures, first ring of fog cleared<span class="why"
+                >The realm is selected and its card is already open (B02).</span
+              >
+            </td>
+            <td class="code">S + D</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>First orders<span class="why">Suggestions in the deck's context slot, not a chip (C7).</span></td>
+            <td class="code">D</td>
+            <td><span class="tempo reflex">Reflex</span></td>
+          </tr>
+        </table>
+      </div>
+      <h3>Core loop</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Flow</th>
+            <th>Lands on</th>
+            <th>Tempo</th>
+          </tr>
+          <tr>
+            <td>Clock, minute tick, ten-minute cycle<span class="why">One clock (C2).</span></td>
+            <td class="code">H identity chip</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>Realm switch<span class="why">A digit recalls a group (C4). Camera and card swap.</span></td>
+            <td class="code">K + R</td>
+            <td><span class="tempo reflex">Reflex</span></td>
+          </tr>
+          <tr>
+            <td>
+              Next holding that needs me<span class="why"
+                >N steps the attention queue: under attack, starving, idle, arrival waiting.</span
+              >
+            </td>
+            <td class="code">K + H</td>
+            <td><span class="tempo reflex">Reflex</span></td>
+          </tr>
+          <tr>
+            <td>Read balances<span class="why">Holdings chip shows six; the realm's card shows the rest.</span></td>
+            <td class="code">H + D</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              Build, produce, train, transfer<span class="why"
+                >Each is a grid tile that opens a drawer above the deck. Cost inline, ghost on the hex.</span
+              >
+            </td>
+            <td class="code">D drawer → S ghost</td>
+            <td><span class="tempo">Deliberate</span></td>
+          </tr>
+          <tr>
+            <td>Upgrade realm<span class="why">Hold to confirm on the tile (C3).</span></td>
+            <td class="code">D</td>
+            <td><span class="tempo commit">Commit</span></td>
+          </tr>
+          <tr>
+            <td>
+              Explore, move, attack<span class="why"
+                >Right-click acts, keys on the grid. Stamina cost on the ghost path.</span
+              >
+            </td>
+            <td class="code">S + K</td>
+            <td><span class="tempo reflex">Reflex</span></td>
+          </tr>
+          <tr>
+            <td>Odds against a hovered target<span class="why">The deck's context slot, never over the unit.</span></td>
+            <td class="code">D</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              Threat near my structure<span class="why"
+                >Red ring on the scene, stripe on the rail tile, count on the attention chip, feed row. Space jumps
+                there.</span
+              >
+            </td>
+            <td class="code">S + R + H + T</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              Relic crate race, hyperstructure changing hands<span class="why"
+                >Feed row plus a minimap ping (B15, B39).</span
+              >
+            </td>
+            <td class="code">T + minimap</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              Arrivals<span class="why">Feed rows with a claim button; the attention chip counts them (C10).</span>
+            </td>
+            <td class="code">T + H</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              Standings<span class="why">Popover from the rank chip; the full board is a page in the web app.</span>
+            </td>
+            <td class="code">H popover · W</td>
+            <td><span class="tempo">Deliberate</span></td>
+          </tr>
+          <tr>
+            <td>Chat<span class="why">One line bottom right. Enter opens, Esc closes.</span></td>
+            <td class="code">T</td>
+            <td><span class="tempo">Deliberate</span></td>
+          </tr>
+        </table>
+      </div>
+      <h3>Late game and the end</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Flow</th>
+            <th>Lands on</th>
+            <th>Tempo</th>
+          </tr>
+          <tr>
+            <td>
+              Projection against rivals<span class="why"
+                >The rank line: gap to the next rank and "+N per cycle held". No extra widget.</span
+              >
+            </td>
+            <td class="code">H rank chip</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              Last five minutes, last minute<span class="why">Clock turns amber, then counts seconds (B49).</span>
+            </td>
+            <td class="code">H</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+          <tr>
+            <td>
+              End<span class="why"
+                >A banner with Review and Home; the map stays explorable. Then ten minutes to register points from the
+                same chip (B40, B59).</span
+              >
+            </td>
+            <td class="code">H banner · W</td>
+            <td><span class="tempo glance">Glance</span></td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Keys</h2>
+      <div class="keys">
+        <div>
+          <kbd>1</kbd> to <kbd>9</kbd> recall a group · <kbd>Ctrl</kbd> and a digit binds the selection · Blitz
+          pre-binds realms to 1 2 3
+        </div>
+        <div><kbd>N</kbd> next holding that needs attention</div>
+        <div><kbd>Tab</kbd> next army · <kbd>⇧Tab</kbd> previous</div>
+        <div><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> the grid, meanings per kind</div>
+        <div><kbd>RMB</kbd> act on the hex or target under the cursor</div>
+        <div><kbd>F</kbd> recenter on the selection</div>
+        <div><kbd>Space</kbd> jump to the last event</div>
+        <div><kbd>Enter</kbd> open chat, or enter the selected realm</div>
+        <div><kbd>Esc</kbd> cancel, close, clear</div>
+        <div><kbd>hold</kbd> 400 ms on an irreversible tile</div>
+      </div>
+    </section>
+
+    <section class="col">
+      <h2>Open questions from v0.1 <span class="src">answered where the evidence allows</span></h2>
+      <div class="qa">
+        <span class="n">1</span>
+        <div>
+          <b>New surface or a redesign of the left sidebar and cockpit?</b
+          ><span
+            >New. The deck, rail and chips are built in the UI Lab as one mount tree and replace the sidebar, the
+            bottom-right panel and the four modal shells when they land.</span
+          >
+        </div>
+      </div>
+      <div class="qa">
+        <span class="n">2</span>
+        <div>
+          <b>Is there a right context panel?</b
+          ><span>No. Selection context is the deck. Labels never carry actions.</span>
+        </div>
+      </div>
+      <div class="qa">
+        <span class="n">3</span>
+        <div><b>Which six numbers?</b><span>See C10.</span></div>
+      </div>
+      <div class="qa">
+        <span class="n">4</span>
+        <div>
+          <b>Mobile now?</b
+          ><span
+            >Desktop first for play. Mobile is spectate and review this pass; the lab keeps a mobile layout so the deck
+            never assumes a wide screen.</span
+          >
+        </div>
+      </div>
+      <div class="qa">
+        <span class="n">5</span>
+        <div>
+          <b>Who is the caster?</b
+          ><span
+            >In-app viewers first: follow a lord, same labels, no buttons. Free camera and HUD hiding are a later mode
+            for streamers.</span
+          >
+        </div>
+      </div>
+      <div class="qa">
+        <span class="n">6</span>
+        <div>
+          <b>Suggestions as onboarding?</b
+          ><span
+            >Yes, in the deck's context slot, fading after first use. Bracket-based fading is a tuning question once the
+            slot exists.</span
+          >
+        </div>
+      </div>
+      <h3>Still open for the owner</h3>
+      <div class="qa">
+        <span class="n">a</span>
+        <div>
+          <b>Does the ten-minute cycle deserve a visible mark on the clock, or is the minute tick enough?</b
+          ><span>It changes whether held hyperstructures feel like income.</span>
+        </div>
+      </div>
+      <div class="qa">
+        <span class="n">b</span>
+        <div>
+          <b>Realm view: a separate camera mode, or the same map zoomed to the realm's hexes?</b
+          ><span>The brief assumed two views. Continuous zoom could make it one.</span>
+        </div>
+      </div>
+      <div class="qa">
+        <span class="n">c</span>
+        <div>
+          <b>Feed on the right edge as text, or under the deck as a ticker?</b
+          ><span>Text rows keep the deck clear and give Space a target; a ticker keeps the right edge empty.</span>
+        </div>
+      </div>
+    </section>
+
+    <footer class="col">
+      Sources: eternum-ux-flow-map.md v0.1 · Blitz Command Deck brief · Blitz User Stories · issue #4876 · Blitz Preset
+      Rulebook, preset 8 · apps/game top-header tick-progress (day = six army ticks) · UI Lab captures 2026-09-07 and
+      2026-09-08.
+    </footer>
+  </body>
+</html>
