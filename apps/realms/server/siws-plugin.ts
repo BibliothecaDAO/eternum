@@ -14,6 +14,7 @@ import { normalizeStarknetAddress, parseSiwsTypedData } from "@realms-world/iden
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import { serverEnv } from "./env";
+import { isLoopbackHost } from "./loopback-origins";
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 
 interface SIWSPluginOptions {
@@ -45,9 +46,8 @@ function getHostname(value?: string | null) {
 
 function isEquivalentHost(a?: string, b?: string) {
   if (!a || !b) return false;
-  const loopbacks = new Set(["localhost", "127.0.0.1", "::1"]);
   if (a === b) return true;
-  return loopbacks.has(a) && loopbacks.has(b);
+  return isLoopbackHost(a) && isLoopbackHost(b);
 }
 
 const resolveIdentityRpcUrl = () =>
