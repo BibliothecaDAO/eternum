@@ -8,11 +8,10 @@ import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
-import { GameEndTimer } from "./game-end-timer";
-import { GameStartCountdown } from "./game-start-countdown";
+import { GameClock } from "./game-clock";
+import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { SuggestionsPill } from "./pills/suggestions-pill";
-import { TickProgress } from "./tick-progress";
 import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -118,7 +117,7 @@ export const TopHeader = memo(() => {
       {/* Layout container — pointer-events pass through the gaps between pills so the
           map remains clickable. Each pill flips pointer-events back on. The
           center cluster carries the six headline pieces in canonical order
-          (rank · view · day · timer · army toggle · settings); the right
+          (rank · view · clock · attention · army toggle · settings); the right
           cluster carries ancillary status icons (network / tx / features). */}
       <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
         {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
@@ -193,14 +192,8 @@ export const TopHeader = memo(() => {
           )}
         </div>
 
-        {/* 4. Day-tick progress */}
-        <div className={TOP_PILL}>
-          <TickProgress />
-        </div>
-
-        {/* 5. Game start / end timers — each self-styled, only render when active. */}
-        <GameStartCountdown />
-        <GameEndTimer />
+        <GameClock />
+        <AttentionPill />
 
         {/* 6. Army combat follow toggle */}
         {showFollowArmyToggle && (

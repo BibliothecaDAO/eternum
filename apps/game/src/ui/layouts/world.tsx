@@ -16,6 +16,7 @@ import { BottomRightPanel } from "../features/world/components/bottom-right-pane
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
+import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
@@ -66,6 +67,7 @@ const BackgroundSystems = () => (
     <RecsStoreBridge />
     <ActionRunners />
     <BlockTimestampPoller />
+    <GameCycleEffects />
     <ChainTimePoller />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
@@ -89,7 +91,7 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
 /**
  * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
  * Layout:
- * - Top-left: TopHeader (player info, map toggle, tick progress)
+ * - Top-left: TopHeader (player info, map toggle, clock and attention)
  * - Left: LeftCommandSidebar (structure selector, navigation, views)
  * - Bottom-right: BottomRightPanel (tile info, minimap)
  * Every other surface is a popover hanging off its own trigger.

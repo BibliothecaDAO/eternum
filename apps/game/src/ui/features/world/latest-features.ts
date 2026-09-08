@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-08",
+    title: "One clock and attention count",
+    description:
+      "See the start countdown or time left in one clock. The attention count combines structures under attack and ready arrivals; click it to cycle through their locations.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
     title: "Clearer action selection",
     description:
       "Your selected entity and its available actions keep the focus. Hover a target for instructions; the bottom action banner is gone, and Escape still clears selection.",

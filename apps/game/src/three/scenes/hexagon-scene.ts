@@ -221,14 +221,12 @@ export abstract class HexagonScene {
         structureEntityId: state.structureEntityId,
         cycleProgress: state.cycleProgress,
         debugCycleProgressOverride: state.debugCycleProgressOverride,
-        cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, structureEntityId, cycleProgress, debugCycleProgressOverride, cycleTime }) => {
+      ({ leftNavigationView, structureEntityId, cycleProgress, debugCycleProgressOverride }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.structureEntityId = structureEntityId;
         this.state.cycleProgress = cycleProgress;
         this.state.debugCycleProgressOverride = debugCycleProgressOverride;
-        this.state.cycleTime = cycleTime;
       },
     );
   }

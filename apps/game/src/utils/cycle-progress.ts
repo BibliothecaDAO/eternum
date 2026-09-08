@@ -15,3 +15,10 @@ export const resolveDebuggableCycleProgress = (
   liveProgress: number,
   debugOverride: DebugCycleProgressOverride,
 ): number => clampCycleProgress(debugOverride ?? liveProgress);
+
+/** Six army ticks remain the renderer's day/night cycle; they are not HUD phases. */
+export function resolveDayCycleProgress(timestamp: number, armyTickSeconds: number): number {
+  if (!Number.isFinite(armyTickSeconds) || armyTickSeconds <= 0) throw new Error("Army tick duration is unavailable");
+  const daySeconds = armyTickSeconds * 6;
+  return ((timestamp % daySeconds) / daySeconds) * 100;
+}

@@ -142,8 +142,6 @@ interface UIStore {
   setCycleProgress: (progress: number) => void;
   debugCycleProgressOverride: DebugCycleProgressOverride;
   setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => void;
-  cycleTime: number;
-  setCycleTime: (time: number) => void;
 }
 
 export type AppStore = UIStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -344,7 +342,5 @@ export const useUIStore = create(
       const clampedProgress = clampCycleProgress(progress);
       set({ cycleProgress: clampedProgress, debugCycleProgressOverride: clampedProgress });
     },
-    cycleTime: 0,
-    setCycleTime: (time: number) => set({ cycleTime: time }),
   })),
 );

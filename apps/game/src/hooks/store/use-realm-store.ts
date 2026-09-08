@@ -51,9 +51,11 @@ export interface RealmStore {
   playerStructures: Structure[];
   setPlayerStructures: (playerStructures: Structure[]) => void;
   arrivedArrivalsNumber: number;
-  setArrivedArrivalsNumber: (arrivedArrivalsNumber: number) => void;
+  arrivedArrivalStructureIds: ID[];
+  setArrivalIndicators: (
+    indicators: Pick<RealmStore, "arrivedArrivalsNumber" | "pendingArrivalsNumber" | "arrivedArrivalStructureIds">,
+  ) => void;
   pendingArrivalsNumber: number;
-  setPendingArrivalsNumber: (pendingArrivalsNumber: number) => void;
   publicIncomingTroopArrivalsByStructure: Record<string, IncomingTroopArrival[]>;
   setPublicIncomingTroopArrivalsByStructure: (value: Record<string, IncomingTroopArrival[]>) => void;
   availableRelicsNumber: number;
@@ -202,9 +204,9 @@ export const createRealmStoreSlice = (
       return updates;
     }),
   arrivedArrivalsNumber: 0,
-  setArrivedArrivalsNumber: (arrivedArrivalsNumber: number) => set({ arrivedArrivalsNumber }),
+  arrivedArrivalStructureIds: [],
+  setArrivalIndicators: (indicators: Parameters<RealmStore["setArrivalIndicators"]>[0]) => set(indicators),
   pendingArrivalsNumber: 0,
-  setPendingArrivalsNumber: (pendingArrivalsNumber: number) => set({ pendingArrivalsNumber }),
   publicIncomingTroopArrivalsByStructure: {},
   setPublicIncomingTroopArrivalsByStructure: (
     publicIncomingTroopArrivalsByStructure: Record<string, IncomingTroopArrival[]>,

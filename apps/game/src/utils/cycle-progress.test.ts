@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { clampCycleProgress, resolveDebuggableCycleProgress } from "./cycle-progress";
+import { clampCycleProgress, resolveDebuggableCycleProgress, resolveDayCycleProgress } from "./cycle-progress";
 
 describe("cycle progress debug helpers", () => {
   it("clamps progress to the day-cycle range", () => {
@@ -24,4 +24,10 @@ describe("cycle progress debug helpers", () => {
     expect(resolveDebuggableCycleProgress(63, 18)).toBe(18);
     expect(resolveDebuggableCycleProgress(63, 180)).toBe(100);
   });
+});
+
+it("preserves the six-tick atmospheric cycle independently of header phases", () => {
+  expect(resolveDayCycleProgress(180, 60)).toBe(50);
+  expect(resolveDayCycleProgress(360, 60)).toBe(0);
+  expect(() => resolveDayCycleProgress(10, 0)).toThrow("Army tick duration is unavailable");
 });
