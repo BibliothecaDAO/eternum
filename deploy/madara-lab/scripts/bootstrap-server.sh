@@ -15,7 +15,7 @@ set -euo pipefail
 : "${TUNNEL_ID:?set TUNNEL_ID (from cloudflared tunnel create)}"
 CREDENTIALS_JSON="${CREDENTIALS_JSON:-/root/credentials.json}"
 REPO_URL="${REPO_URL:-https://github.com/BibliothecaDAO/eternum.git}"
-REPO_BRANCH="${REPO_BRANCH:-feat/madara-lab}"
+REPO_BRANCH="${REPO_BRANCH:-next}"
 REPO_DIR=/opt/realms/eternum
 LAB_DIR="$REPO_DIR/deploy/madara-lab"
 PNPM_VERSION=10.25.0   # package.json "packageManager"
