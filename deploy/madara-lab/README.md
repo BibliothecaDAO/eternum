@@ -604,7 +604,7 @@ realms-lab` (prints the `TUNNEL_ID` and writes `~/.cloudflared/<id>.json`), then
 On the box, as root, fresh Ubuntu 24.04:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/BibliothecaDAO/eternum/feat/madara-lab/deploy/madara-lab/scripts/bootstrap-server.sh
+curl -fsSLO https://raw.githubusercontent.com/BibliothecaDAO/eternum/next/deploy/madara-lab/scripts/bootstrap-server.sh
 LAB_DOMAIN=lab.example.com TUNNEL_ID=<uuid> bash bootstrap-server.sh
 ```
 
@@ -632,8 +632,7 @@ curl -s https://app.<LAB_DOMAIN>/health
 curl -s https://launch.<LAB_DOMAIN>/health
 ```
 
-Identity redeploys are
-`git pull && pnpm install && pnpm run build:packages && DATABASE_SSL=false pnpm --filter @realms-world/db push && pnpm --filter @realms-world/realms build && sudo systemctl restart realms-identity`.
+Redeploys of every host service go through `scripts/deploy-box.sh` (as root on the box), which `.github/workflows/deploy-box.yml` runs on each push to `next` that touches a service: it fast-forwards the checkout, installs, builds shared packages, rebuilds the identity SPA and pushes its schema when identity changed, restarts only the units whose inputs changed, waits for their `/health`, and prints one `box_deploy` JSON line. A box left on an old branch is carried onto `next` by the same run, provided its worktree is clean.
 On a box provisioned before `realms-identity.service` replaced `web.service`, switch the units once:
 
 ```bash
@@ -643,7 +642,7 @@ sudo systemctl disable --now web.service
 sudo systemctl enable --now realms-identity.service
 ```
 
-Herald redeploys remain `git pull && pnpm run build:packages && sudo systemctl restart herald`. The harness runs on the box (`pnpm lab:harness`) — driver-on-box for now; the
+The harness runs on the box (`pnpm lab:harness`) — driver-on-box for now; the
 driver-off-box variant (E.1) is the laptop against `rpc.<LAB_DOMAIN>` and is a separate measurement. Record the
 `cloudflared` image digest here at first `up` (pin discipline). Cloudflare's proxy has a 100 s per-request limit and
 WebSockets pass through; the herald stream and the RPC are both fine with that.
@@ -659,6 +658,7 @@ deploy/madara-lab/
   scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
   scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
   scripts/bootstrap-game.sh  gameplay contracts + ChainConfig + preset 1
+  scripts/deploy-box.sh    redeploy host services from next; run by .github/workflows/deploy-box.yml
   scripts/deploy-gameplay-contracts.ts  idempotent class declaration and registry deployment
   scripts/probe-deploy-account.ts  fee-free deploy_account proof + timings
   scripts/block-stats.sh   aggregates Madara's per-block JSON log

@@ -1,6 +1,6 @@
 # apps/realtime-server: the dev realtime chat (world chat, DMs, presence) on the box.
 # Installed by scripts/bootstrap-server.sh into /etc/systemd/system/realms-chat.service.
-# Redeploy: git pull && pnpm install && sudo systemctl restart realms-chat.
+# Redeploy: scripts/deploy-box.sh (run by .github/workflows/deploy-box.yml on push to next).
 # Env is inline (local dev creds, not secrets); the chat has its own eternum_realtime DB so its
 # drizzle-kit push can never collide with herald/identity in the shared realms DB.
 [Unit]
