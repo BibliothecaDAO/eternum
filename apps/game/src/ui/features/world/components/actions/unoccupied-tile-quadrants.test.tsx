@@ -26,10 +26,6 @@ vi.mock("@/ui/features/military", () => ({
   formatBiomeBonus: (bonus: number) => `${Math.round((bonus - 1) * 100)}%`,
 }));
 
-vi.mock("@/ui/features/world/components/entities/layout", () => ({
-  EntityDetailSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
 vi.mock("@/ui/features/military/battle/battle-lab", () => ({
   BattleLab: () => null,
 }));
@@ -127,6 +123,7 @@ describe("BiomeSummaryCard", () => {
     expect(header.textContent).toContain("Biome · (5, 3)");
     expect(header.textContent).toContain("Re-sync");
     expect(container.querySelectorAll(".rounded-xl")).toHaveLength(1);
+    expect(container.firstElementChild).toBe(header.parentElement);
     expect(header.hasAttribute("aria-expanded")).toBe(false);
     await act(async () => (header.querySelector("button") as HTMLButtonElement).click());
     expect(resync).toHaveBeenCalledOnce();

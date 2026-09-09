@@ -7,7 +7,6 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import Trees from "lucide-react/dist/esm/icons/trees";
 import { formatBiomeBonus } from "@/ui/features/military";
-import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
@@ -210,16 +209,12 @@ export const UnoccupiedTileQuadrants = ({
   }, [biome, openSurface]);
 
   return (
-    <div className="w-full shrink-0">
-      <EntityDetailSection compact className="flex flex-col" tone="highlight">
-        <BiomeSummaryCard
-          biome={biome}
-          coordsLabel={coordsLabel}
-          headerAction={headerAction}
-          onSimulateBattle={handleSimulateBattle}
-          showSimulateAction
-        />
-      </EntityDetailSection>
-    </div>
+    <BiomeSummaryCard
+      biome={biome}
+      coordsLabel={coordsLabel}
+      headerAction={headerAction}
+      onSimulateBattle={handleSimulateBattle}
+      showSimulateAction
+    />
   );
 };
