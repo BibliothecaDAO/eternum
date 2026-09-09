@@ -35,10 +35,7 @@ const normalizeAddress = (address?: bigint | null): bigint => {
   return address;
 };
 
-/**
- * Resolve an owner update while guarding against transient stale updates where
- * owner address briefly resolves to 0n before cache/ECS catches up.
- */
+/** Resolve owner metadata from the authoritative owner address. */
 export const resolveArmyOwnerState = ({ existingOwner, incomingOwner }: ResolveArmyOwnerStateInput): ArmyOwnerState => {
   const existingAddress = normalizeAddress(existingOwner?.address);
   const incomingAddress = normalizeAddress(incomingOwner.address);
@@ -47,15 +44,6 @@ export const resolveArmyOwnerState = ({ existingOwner, incomingOwner }: ResolveA
   const existingGuild = cleanText(existingOwner?.guildName);
   const incomingName = cleanText(incomingOwner.ownerName);
   const incomingGuild = cleanText(incomingOwner.guildName);
-
-  // Keep the known player owner when a transient stale update reports 0n.
-  if (incomingAddress === 0n && existingAddress !== 0n) {
-    return {
-      address: existingAddress,
-      ownerName: existingName,
-      guildName: existingGuild,
-    };
-  }
 
   const shouldReuseExistingName =
     incomingName.length === 0 && existingAddress === incomingAddress && existingAddress !== 0n;

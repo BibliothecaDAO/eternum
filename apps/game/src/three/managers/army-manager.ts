@@ -252,6 +252,7 @@ export class ArmyManager {
   private unsubscribeAccountStore?: () => void;
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
+  private unsubscribeStructureOwnership?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
   private readonly proceduralArmyCharacterLayer: ProceduralArmyCharacterLayer;
@@ -334,6 +335,7 @@ export class ArmyManager {
       this.handleArmyProjectionChanges(changes);
     });
     this.subscribeToExplorerTroopsPresentation();
+    this.subscribeToStructureOwnership();
 
     // Initialize memory monitor for tracking army operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -374,6 +376,24 @@ export class ArmyManager {
       this.applyExplorerTroopsPresentationUpdate(current);
     });
     this.unsubscribeExplorerTroopsPresentation = () => subscription.unsubscribe();
+  }
+
+  private subscribeToStructureOwnership(): void {
+    if (!this.components) return;
+    const subscription = this.components.Structure.update$.subscribe(({ value: [current, previous] }) => {
+      if (!current || current.owner === previous?.owner) return;
+      this.armyPresentations.forEach((army, entityId) => {
+        if (army.owningStructureId !== current.entity_id) return;
+        this.syncTrackedArmyOwnerState({
+          entityId,
+          ownerAddress: current.owner,
+          ownerName: this.resolveArmyOwnerNameForAddress(entityId, current.owner, "", "structure update"),
+          guildName: "",
+          ownerStructureId: current.entity_id,
+        });
+      });
+    });
+    this.unsubscribeStructureOwnership = () => subscription.unsubscribe();
   }
 
   private handleArmyProjectionChanges(changes: readonly ArmySpatialProjectionChange[]): void {
@@ -906,7 +926,7 @@ export class ArmyManager {
     ownerStructureId?: ID | null;
     fallbackOwnerAddress: bigint;
     fallbackOwnerName: string;
-    logContext: "spawn" | "explorer update";
+    logContext: "spawn" | "explorer update" | "structure update";
   }): { ownerAddress: bigint; ownerName: string } {
     if (params.ownerStructureId === null || params.ownerStructureId === undefined || !this.components?.Structure) {
       return {
@@ -952,7 +972,7 @@ export class ArmyManager {
     armyEntityId: ID,
     ownerAddress: bigint,
     fallbackOwnerName: string,
-    logContext: "spawn" | "explorer update",
+    logContext: "spawn" | "explorer update" | "structure update",
   ): string {
     let ownerName = fallbackOwnerName;
 
@@ -3217,6 +3237,8 @@ ${
     this.unsubscribeArmyProjection();
     this.unsubscribeExplorerTroopsPresentation?.();
     this.unsubscribeExplorerTroopsPresentation = undefined;
+    this.unsubscribeStructureOwnership?.();
+    this.unsubscribeStructureOwnership = undefined;
     this.armyProjectionSyncs.clear();
 
     if (this.unsubscribeVisibility) {
