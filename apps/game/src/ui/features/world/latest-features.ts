@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Readable Nights",
+    description:
+      "Night and twilight gain brighter fill and cool moonlight; compare all seven lighting setups in the biome lab.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Tier 3 Building Milestones",
     description: "A realm's first Tier 3 military building makes the news; repeated army deployments no longer do.",
     type: "fix",

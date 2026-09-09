@@ -1,3 +1,4 @@
+import { AtmosphereLabControls } from "./atmosphere-lab-controls";
 import { GraphicsLabsNav } from "./graphics-labs-nav";
 import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { RefreshCw } from "lucide-react";
@@ -442,6 +443,10 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             </button>
           </fieldset>
 
+          <AtmosphereLabControls
+            onPhase={setCycleProgress}
+            onMoon={(enabled) => rendererRef.current?.setMoonEnabled(enabled)}
+          />
           <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
             {preview.biome === "ethereal" ? "Fixed moonlit night" : `Game day cycle: ${cycleProgress}%`}
             <input

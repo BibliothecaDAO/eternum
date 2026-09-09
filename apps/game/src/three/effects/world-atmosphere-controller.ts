@@ -1,3 +1,4 @@
+import { WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import type GUI from "lil-gui";
 import {
@@ -12,21 +13,9 @@ import {
   Object3D,
 } from "three";
 
-interface TimeOfDayColors {
-  skyColor: number;
-  groundColor: number;
-  sunColor: number;
-  ambientColor: number;
-  fogColor: number;
-  hemisphereIntensity: number;
-  sunIntensity: number;
-  ambientIntensity: number;
-  fogNear: number;
-  fogFar: number;
-}
-
 interface WorldAtmosphereParams {
   enabled: boolean;
+  moonEnabled: boolean;
   cycleSpeed: number; // Multiplier for testing (1.0 = normal)
   sunHeight: number;
   sunDistance: number;
@@ -50,7 +39,6 @@ const VISIBILITY_FLOORS = {
   ambientIntensity: 0.48,
   hemisphereIntensity: 0.95,
   sunIntensity: 1.55,
-  moonRimIntensity: 0.26,
 } as const;
 
 const WEATHER_LIMITS = {
@@ -67,13 +55,14 @@ const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
 export class WorldAtmosphereController {
   private scene: Scene;
   private directionalLight: DirectionalLight;
-  private moonRimLight: DirectionalLight;
-  private moonRimTarget: Object3D;
+  private moonLight: DirectionalLight;
+  private moonTarget: Object3D;
   private hemisphereLight: HemisphereLight;
   private ambientLight: AmbientLight;
   private fog: Fog;
   public params: WorldAtmosphereParams = {
     enabled: true,
+    moonEnabled: true,
     cycleSpeed: 1.0,
     sunHeight: 12,
     sunDistance: 15,
@@ -84,18 +73,7 @@ export class WorldAtmosphereController {
   };
 
   // Current color state (for smooth transitions)
-  private currentColors: TimeOfDayColors = {
-    skyColor: 0x344562,
-    groundColor: 0x405477,
-    sunColor: 0x7b5fd6,
-    ambientColor: 0x7891c4,
-    fogColor: 0x536b8c,
-    hemisphereIntensity: 1.05,
-    sunIntensity: 1.85,
-    ambientIntensity: 0.56,
-    fogNear: 15,
-    fogFar: 45,
-  };
+  private currentColors: TimeOfDayColors = { ...WORLD_ATMOSPHERE_PRESETS.deepNight };
 
   // Current sun position state (for smooth camera tracking)
   private currentSunPosition: Vector3 = new Vector3(0, 12, 0);
@@ -105,15 +83,14 @@ export class WorldAtmosphereController {
   private readonly tempColor1: Color = new Color();
   private readonly tempColor2: Color = new Color();
   private readonly tempHSL: { h: number; s: number; l: number } = { h: 0, s: 0, l: 0 };
-  private readonly moonRimDirection: Vector3 = new Vector3();
-  private readonly moonRimPosition: Vector3 = new Vector3();
+  private readonly moonPosition: Vector3 = new Vector3();
   private readonly stormTint: Color = new Color(0x606880);
   private readonly lastUpdateSkyColor: Color = new Color();
   private readonly lastUpdateFogColor: Color = new Color();
   private lastUpdateDirIntensity: number = 0;
   private lastUpdateHemiIntensity: number = 0;
   private lastUpdateAmbientIntensity: number = 0;
-  private lastUpdateMoonRimIntensity: number = 0;
+  private lastUpdateMoonIntensity: number = 0;
   private lastWeatherAdjustedHemiIntensity: number = 0;
   private lastWeatherAdjustedAmbientIntensity: number = 0;
   private currentAngle: number = 0; // Track smoothed angular progress
@@ -136,102 +113,6 @@ export class WorldAtmosphereController {
     fogColor: Color;
   };
 
-  // Balance a restrained key light with diffuse sky fill. Stronger noon keys
-  // bleach PBR surfaces when the sun crosses the strategy camera reflection angle.
-  private readonly timeOfDayPresets: { [key: string]: TimeOfDayColors } = {
-    deepNight: {
-      // 0, 100
-      skyColor: 0x344562,
-      groundColor: 0x405477,
-      sunColor: 0x9b7ee8,
-      ambientColor: 0x7891c4,
-      fogColor: 0x536b8c,
-      hemisphereIntensity: 1.05,
-      sunIntensity: 1.85,
-      ambientIntensity: 0.56,
-      fogNear: 15,
-      fogFar: 56,
-    },
-    dawn: {
-      // 16.7
-      skyColor: 0xffba8a,
-      groundColor: 0x9f7188,
-      sunColor: 0xffd0a5,
-      ambientColor: 0xb994b2,
-      fogColor: 0xd4a8b0,
-      hemisphereIntensity: 1.45,
-      sunIntensity: 1.65,
-      ambientIntensity: 0.6,
-      fogNear: 22,
-      fogFar: 58,
-    },
-    morning: {
-      // 33.3
-      skyColor: 0xb7dcff,
-      groundColor: 0xd8c7a9,
-      sunColor: 0xfff5d5,
-      ambientColor: 0xffecd3,
-      fogColor: 0xd2e5f4,
-      hemisphereIntensity: 1.65,
-      sunIntensity: 1.95,
-      ambientIntensity: 0.56,
-      fogNear: 30,
-      fogFar: 82,
-    },
-    day: {
-      // 50
-      skyColor: 0xb8d8f2,
-      groundColor: 0xd6c7ad,
-      sunColor: 0xfff2dc,
-      ambientColor: 0xf2dfc7,
-      fogColor: 0xd2e2f0,
-      hemisphereIntensity: 1.7,
-      sunIntensity: 1.85,
-      ambientIntensity: 0.56,
-      fogNear: 32,
-      fogFar: 82,
-    },
-    afternoon: {
-      // 58.3
-      skyColor: 0xb4cee8,
-      groundColor: 0xcab89f,
-      sunColor: 0xffd8aa,
-      ambientColor: 0xecc8b0,
-      fogColor: 0xcbd2dc,
-      hemisphereIntensity: 1.6,
-      sunIntensity: 1.65,
-      ambientIntensity: 0.68,
-      fogNear: 28,
-      fogFar: 72,
-    },
-    dusk: {
-      // 66.7
-      skyColor: 0xff9f72,
-      groundColor: 0x9a6682,
-      sunColor: 0xffbd8e,
-      ambientColor: 0xc591aa,
-      fogColor: 0xd39aab,
-      hemisphereIntensity: 1.55,
-      sunIntensity: 1.55,
-      ambientIntensity: 0.6,
-      fogNear: 24,
-      fogFar: 62,
-    },
-    evening: {
-      // 83.3
-      skyColor: 0x667fb8,
-      groundColor: 0x53617e,
-      sunColor: 0xd4e0ff,
-      ambientColor: 0x8aa2d2,
-      fogColor: 0x637da5,
-      hemisphereIntensity: 1.3,
-      sunIntensity: 2.05,
-      ambientIntensity: 0.62,
-      fogNear: 20,
-      fogFar: 54,
-    },
-  };
-
   constructor(
     scene: Scene,
     directionalLight: DirectionalLight,
@@ -245,13 +126,13 @@ export class WorldAtmosphereController {
     this.ambientLight = ambientLight;
     this.fog = fog;
 
-    this.moonRimLight = new DirectionalLight(0x9cb6ff, 0);
-    this.moonRimLight.castShadow = false;
-    this.moonRimTarget = new Object3D();
-    this.scene.add(this.moonRimTarget);
-    this.moonRimLight.target = this.moonRimTarget;
-    this.moonRimLight.position.copy(this.directionalLight.position);
-    this.scene.add(this.moonRimLight);
+    this.moonLight = new DirectionalLight(0x9cb6ff, 0);
+    this.moonLight.castShadow = false;
+    this.moonTarget = new Object3D();
+    this.scene.add(this.moonTarget);
+    this.moonLight.target = this.moonTarget;
+    this.moonLight.position.copy(this.directionalLight.position);
+    this.scene.add(this.moonLight);
 
     // Store original lighting state
     this.originalLightingState = {
@@ -306,7 +187,7 @@ export class WorldAtmosphereController {
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(progressFrame.progress, cameraTarget, progressFrame.snapVisualState);
-    this.updateMoonRimLighting(progressFrame.progress, cameraTarget);
+    this.updateMoonLighting(progressFrame.progress, cameraTarget);
   }
 
   private resolveAtmosphereProgress(adjustedProgress: number, forceSnap: boolean): AtmosphereProgressFrame {
@@ -370,8 +251,8 @@ export class WorldAtmosphereController {
     t = this.smoothStep(t, this.params.transitionSmoothness);
 
     // Get the two presets to interpolate
-    const startColors = this.timeOfDayPresets[startPoint.preset];
-    const endColors = this.timeOfDayPresets[endPoint.preset];
+    const startColors = WORLD_ATMOSPHERE_PRESETS[startPoint.preset];
+    const endColors = WORLD_ATMOSPHERE_PRESETS[endPoint.preset];
 
     // Interpolate all values
     return {
@@ -575,41 +456,19 @@ export class WorldAtmosphereController {
     this.directionalLight.target.updateMatrixWorld();
   }
 
-  private updateMoonRimLighting(progress: number, cameraTarget?: Vector3): void {
-    const nightToneFactor = this.resolveNightToneFactor(progress);
-    if (nightToneFactor <= 0) {
-      this.moonRimLight.intensity = 0;
-      this.lastUpdateMoonRimIntensity = 0;
-      return;
-    }
-
-    const rimIntensity = Math.max(
-      VISIBILITY_FLOORS.moonRimIntensity,
-      MathUtils.lerp(VISIBILITY_FLOORS.moonRimIntensity, 0.56, nightToneFactor),
-    );
-    this.moonRimLight.intensity = rimIntensity;
-    this.lastUpdateMoonRimIntensity = rimIntensity;
-    this.moonRimLight.color.setHex(this.lerpColor(0x88a9ff, 0xccdbff, nightToneFactor));
-
-    const rimAnchor = cameraTarget ?? this.currentSunTarget;
-    this.moonRimDirection.copy(rimAnchor).sub(this.currentSunPosition);
-    this.moonRimDirection.y = Math.max(this.moonRimDirection.y, 0.15);
-
-    if (this.moonRimDirection.lengthSq() < 0.0001) {
-      this.moonRimDirection.set(0.7, 0.25, 0.7);
-    }
-
-    this.moonRimDirection.normalize();
-
-    const rimDistance = this.params.sunDistance * (0.65 + nightToneFactor * 0.25);
-    const rimHeight = this.params.sunHeight * (0.22 + nightToneFactor * 0.08);
-
-    this.moonRimPosition.copy(rimAnchor).addScaledVector(this.moonRimDirection, rimDistance);
-    this.moonRimPosition.y = rimAnchor.y + rimHeight;
-
-    this.moonRimLight.position.copy(this.moonRimPosition);
-    this.moonRimTarget.position.set(rimAnchor.x, rimAnchor.y + 1.2, rimAnchor.z + 5.2);
-    this.moonRimTarget.updateMatrixWorld();
+  private updateMoonLighting(progress: number, cameraTarget?: Vector3): void {
+    const nightToneFactor = this.params.moonEnabled ? this.resolveNightToneFactor(progress) : 0;
+    this.moonLight.intensity = 0.95 * nightToneFactor;
+    this.lastUpdateMoonIntensity = this.moonLight.intensity;
+    this.moonLight.color.setHex(0xb3ccff);
+    const anchor = cameraTarget ?? this.currentSunTarget;
+    // A raised cool key lights silhouettes and their front faces instead of a low rear rim.
+    this.moonPosition
+      .set(-this.params.sunDistance * 0.65, this.params.sunHeight, this.params.sunDistance * 0.8)
+      .add(anchor);
+    this.moonLight.position.copy(this.moonPosition);
+    this.moonTarget.position.copy(anchor);
+    this.moonTarget.updateMatrixWorld();
   }
 
   /**
@@ -648,14 +507,7 @@ export class WorldAtmosphereController {
     this.lastWeatherAdjustedHemiIntensity = this.hemisphereLight.intensity;
     this.lastWeatherAdjustedAmbientIntensity = this.ambientLight.intensity;
 
-    if (this.lastUpdateMoonRimIntensity > 0) {
-      this.moonRimLight.intensity = Math.max(
-        VISIBILITY_FLOORS.moonRimIntensity,
-        this.lastUpdateMoonRimIntensity * reductionFactor,
-      );
-    } else {
-      this.moonRimLight.intensity = 0;
-    }
+    this.moonLight.intensity = this.params.moonEnabled ? this.lastUpdateMoonIntensity * reductionFactor : 0;
 
     const fogTintBlend = Math.min(haze, WEATHER_LIMITS.maxFogTintBlend);
     this.fog.color.copy(this.lastUpdateFogColor).lerp(this.stormTint, fogTintBlend);
@@ -693,7 +545,7 @@ export class WorldAtmosphereController {
     (this.scene.background as Color).copy(this.originalLightingState.sceneBackground);
 
     this.fog.color.copy(this.originalLightingState.fogColor);
-    this.moonRimLight.intensity = 0;
+    this.moonLight.intensity = 0;
     this.lastWeatherAdjustedHemiIntensity = this.hemisphereLight.intensity;
     this.lastWeatherAdjustedAmbientIntensity = this.ambientLight.intensity;
     this.isProgressInitialized = false;
@@ -744,6 +596,7 @@ export class WorldAtmosphereController {
         this.setEnabled(value);
       });
 
+    atmosphereFolder.add(this.params, "moonEnabled").name("Moon");
     atmosphereFolder.add(this.params, "cycleSpeed", 0.1, 10, 0.1).name("Cycle Speed");
 
     atmosphereFolder.add(this.params, "transitionSmoothness", 0, 1, 0.05).name("Transition Smoothness");
@@ -784,8 +637,8 @@ export class WorldAtmosphereController {
     this.isDisposed = true;
 
     this.restoreOriginalLighting();
-    this.scene.remove(this.moonRimLight);
-    this.scene.remove(this.moonRimTarget);
+    this.scene.remove(this.moonLight);
+    this.scene.remove(this.moonTarget);
   }
 
   /**

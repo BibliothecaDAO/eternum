@@ -123,6 +123,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
   setCycleProgress(progress: number): void;
+  setMoonEnabled(enabled: boolean): void;
 }
 
 interface MountProceduralTerrainDebugRendererInput {
@@ -220,6 +221,9 @@ export async function mountProceduralTerrainDebugRenderer(
       placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
+      setMoonEnabled: (enabled) => {
+        runtime.atmosphere.params.moonEnabled = enabled;
+      },
       setCycleProgress: (progress) => {
         runtime.cycleProgress = progress;
       },
