@@ -27,6 +27,21 @@ export interface PlayerLeaderboardActivityEntry {
 const POINTS_PRECISION = 1_000_000;
 const HISTORY_PAGE_SIZE = 500;
 
+const ACTIVITY_BREAKDOWN_KEYS: Record<string, keyof PlayerActivityBreakdown> = {
+  Exploration: "exploration",
+  OpenRelicChest: "openRelicChest",
+  HyperStructureBanditsDefeat: "hyperStructureBanditsDefeat",
+  OtherStructureBanditsDefeat: "otherStructureBanditsDefeat",
+  HyperstructureSharePoints: "hyperstructureShare",
+};
+
+const reportInvalidPointsStory = (event: HeraldHistoryEvent, reason: string): null => {
+  const error = new Error(`Invalid points story at block ${event.block_number}, event ${event.event_index}: ${reason}`);
+  if (import.meta.env.DEV) throw error;
+  console.error(error);
+  return null;
+};
+
 const emptyBreakdown = (): PlayerActivityBreakdown => ({
   exploration: { count: 0, points: 0 },
   openRelicChest: { count: 0, points: 0 },
@@ -44,8 +59,11 @@ const pointsRegistration = (
   const story = asRecord(event.value.story);
   const payload = asRecord(story?.PointsRegisteredStory);
   if (!payload) return null;
-  const activity = String(payload.activity) as keyof PlayerActivityBreakdown;
-  if (!Object.hasOwn(emptyBreakdown(), activity)) return null;
+  const variant = String(payload.activity);
+  if (!Object.hasOwn(ACTIVITY_BREAKDOWN_KEYS, variant)) {
+    return reportInvalidPointsStory(event, `unknown activity ${variant}`);
+  }
+  const activity = ACTIVITY_BREAKDOWN_KEYS[variant];
   try {
     return {
       activity,
@@ -53,7 +71,7 @@ const pointsRegistration = (
       points: Number(BigInt(String(payload.points))) / POINTS_PRECISION,
     };
   } catch {
-    return null;
+    return reportInvalidPointsStory(event, "invalid owner address or points");
   }
 };
 

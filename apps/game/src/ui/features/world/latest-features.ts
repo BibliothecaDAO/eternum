@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "See Where Points Come From",
+    description:
+      "The Players board now shows points earned through exploration, chests, captured camps and hyperstructures, and held hyperstructures.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     title: "Your Place on the Leaderboard",
     description:
       "Click your name, rank and points to open the Players board at your highlighted row. Your gameplay address is there too, with the player profile one click away.",
