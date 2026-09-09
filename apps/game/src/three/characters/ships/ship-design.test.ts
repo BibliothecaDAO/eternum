@@ -1,5 +1,8 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { NodeIO, VertexLayout } from "@gltf-transform/core";
+import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -10,25 +13,35 @@ const classes: ShipArmyClass[] = ["knight", "crossbowman", "paladin"];
 const tiers: ShipTier[] = [1, 2, 3];
 const templates = new Map<string, Group>();
 
-async function loadFleetGeometry(army: ShipArmyClass, tier: ShipTier) {
+async function loadFleetGeometry(io: NodeIO, army: ShipArmyClass, tier: ShipTier) {
   const bytes = readFileSync(new URL(`../../../../public/models/ships/${army}-t${tier}.glb`, import.meta.url));
-  const jsonLength = bytes.readUInt32LE(12);
-  const json = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
-  // Retain real geometry, pivots and materials; image decoding belongs to the browser smoke check.
-  const binary = bytes.subarray(28 + jsonLength);
-  json.buffers[0].uri = `data:application/octet-stream;base64,${binary.toString("base64")}`;
-  for (const material of json.materials) {
-    delete material.pbrMetallicRoughness?.baseColorTexture;
-  }
-  json.images = [];
-  json.textures = [];
-  return (await new GLTFLoader().parseAsync(JSON.stringify(json), "")).scene;
+  const document = await io.readBinary(bytes);
+  // Decode the shipped geometry in Node; texture decoding stays in the browser smoke check.
+  document
+    .getRoot()
+    .listTextures()
+    .forEach((texture) => texture.dispose());
+  document
+    .getRoot()
+    .listExtensionsUsed()
+    .find((extension) => extension.extensionName === "KHR_draco_mesh_compression")
+    ?.dispose();
+  const decoded = Uint8Array.from(await io.writeBinary(document));
+  return (await new GLTFLoader().parseAsync(decoded.buffer, "")).scene;
 }
 
 beforeAll(async () => {
   vi.stubGlobal("ProgressEvent", class extends Event {});
+  const { createDecoderModule } = createRequire(import.meta.url)("draco3dgltf");
+  // Match DRACOLoader's separate decoded attributes when handing geometry to GLTFLoader.
+  const io = new NodeIO()
+    .setVertexLayout(VertexLayout.SEPARATE)
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies({
+      "draco3d.decoder": await createDecoderModule(),
+    });
   for (const army of classes)
-    for (const tier of tiers) templates.set(`${army}-${tier}`, await loadFleetGeometry(army, tier));
+    for (const tier of tiers) templates.set(`${army}-${tier}`, await loadFleetGeometry(io, army, tier));
 });
 
 afterAll(() => vi.unstubAllGlobals());

@@ -60,7 +60,6 @@ export interface ArmyInstanceData {
 }
 
 export enum ModelType {
-  Boat = "boat",
   Knight1 = "knight1",
   Knight2 = "knight2",
   Knight3 = "knight3",
@@ -70,6 +69,15 @@ export enum ModelType {
   Paladin1 = "paladin1",
   Paladin2 = "paladin2",
   Paladin3 = "paladin3",
+  ShipKnight1 = "ship-knight1",
+  ShipKnight2 = "ship-knight2",
+  ShipKnight3 = "ship-knight3",
+  ShipCrossbowman1 = "ship-crossbowman1",
+  ShipCrossbowman2 = "ship-crossbowman2",
+  ShipCrossbowman3 = "ship-crossbowman3",
+  ShipPaladin1 = "ship-paladin1",
+  ShipPaladin2 = "ship-paladin2",
+  ShipPaladin3 = "ship-paladin3",
   AgentApix = "apix",
   AgentElisa = "elisa",
   AgentIstarai = "istarai",

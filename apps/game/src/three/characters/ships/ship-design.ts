@@ -2,7 +2,8 @@ import { BufferGeometry, Group, Mesh, MeshStandardMaterial, Object3D, Texture } 
 
 export type ShipArmyClass = "knight" | "crossbowman" | "paladin";
 export type ShipTier = 1 | 2 | 3;
-const GAME_SCALE = 0.3;
+/** Authored hulls span several hexes; this is the one scale that fits them to a tile in the world and the lab. */
+export const SHIP_WORLD_SCALE = 0.3;
 const HULL_LENGTH = 4.2;
 const NAMES: Record<ShipArmyClass, readonly string[]> = {
   knight: ["Warden transport", "Ironwind escort", "Sovereign flagship"],
@@ -35,7 +36,7 @@ interface ClothMesh {
 export function createShipDesign(template: Group, army: ShipArmyClass, tier: ShipTier): ShipDesign {
   const object = new Group();
   object.name = `ship-${army}-t${tier}`;
-  object.scale.setScalar(GAME_SCALE);
+  object.scale.setScalar(SHIP_WORLD_SCALE);
   const hull = template.clone(true);
   object.add(hull);
   const meshes = prepareShipMeshes(hull);
@@ -50,7 +51,7 @@ export function createShipDesign(template: Group, army: ShipArmyClass, tier: Shi
   return {
     object,
     name: NAMES[army][tier - 1],
-    length: HULL_LENGTH * GAME_SCALE,
+    length: HULL_LENGTH * SHIP_WORLD_SCALE,
     triangles: meshes.triangles,
     animate,
     setWind: (strength) => {

@@ -575,8 +575,7 @@ function unitConfig(settings: ModelLabSettings, tier: ShipTier) {
 }
 
 function assetPath(settings: ModelLabSettings, tier: ShipTier): string {
-  if (settings.family === "ships")
-    return settings.source === "legacy" ? "/models/units/ship.glb" : "/models/units/boat.glb";
+  if (settings.family === "ships") return "/models/units/ship.glb";
   if (settings.source === "default") return `/models/units/default_${settings.family}_lvl${tier}.glb`;
   return `/models/units/${settings.family === "crossbowman" ? "archer" : settings.family}${tier}.glb`;
 }

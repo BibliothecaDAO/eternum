@@ -35,6 +35,7 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/te
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
+import { isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
 import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -311,8 +312,6 @@ export class ArmyManager {
     this.proceduralArmyCharacterLayer.setShadowsEnabled(
       this.currentCameraView === CameraView.Close && (hexagonScene?.getShadowsEnabled() ?? true),
     );
-    // Warm boat model up to avoid first shoreline transition rendering as a ghost while GLTF loads.
-    void this.armyModel.preloadModels([ModelType.Boat]);
     this.scale = new Vector3(0.3, 0.3, 0.3);
     this.renderChunkSize = renderChunkSize;
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
@@ -1100,6 +1099,11 @@ export class ArmyManager {
     return { modelTypesByEntity, requiredModelTypes };
   }
 
+  /** Each army's hull loads in the background so its first shoreline crossing does not render as a ghost. */
+  private warmShipModels(armies: readonly ArmyData[]): void {
+    void this.armyModel.preloadModels(armies.map((army) => TROOP_TO_SHIP_MODEL[army.category][army.tier]));
+  }
+
   private setVisibleArmyOrder(order: ID[]): void {
     const state = {
       order: this.visibleArmyOrder,
@@ -1427,6 +1431,7 @@ export class ArmyManager {
       if (requiredModelTypes.size > 0) {
         await this.armyModel.preloadModels(requiredModelTypes);
       }
+      this.warmShipModels(armiesRequiringModels);
 
       if (this.isDestroyed) {
         return;
@@ -2401,7 +2406,7 @@ export class ArmyManager {
         category: army.category,
         distanceToViewCenterSquared: animationContext?.cameraPosition?.distanceToSquared(instance.position),
         entityId,
-        isNaval: modelType === ModelType.Boat,
+        isNaval: isShipModel(modelType),
         isMoving: false,
         isSelected: this.selectedArmyForPath === army.entityId,
         position: instance.position,
@@ -2414,7 +2419,7 @@ export class ArmyManager {
     presentation.attachments = army.attachments;
     presentation.category = army.category;
     presentation.distanceToViewCenterSquared = animationContext?.cameraPosition?.distanceToSquared(instance.position);
-    presentation.isNaval = modelType === ModelType.Boat;
+    presentation.isNaval = isShipModel(modelType);
     presentation.isMoving = this.armyModel.isEntityMoving(entityId);
     presentation.isSelected = this.selectedArmyForPath === army.entityId;
     presentation.position = instance.position;
@@ -3286,7 +3291,7 @@ function createTerrainMovementInteraction(): TerrainMovementInteraction {
 }
 
 function resolveArmyTerrainMovementMode(army: ArmyData, modelType: ModelType | undefined): TerrainMovementMode {
-  if (modelType === ModelType.Boat) return "naval";
+  if (isShipModel(modelType)) return "naval";
   if (army.category === TroopType.Paladin && army.tier === TroopTier.T3) return "airborne";
   return "ground";
 }

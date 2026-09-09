@@ -3,12 +3,14 @@ import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
+import { SHIP_WORLD_SCALE } from "@/three/characters/ships/ship-design";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
   AnimationMixer,
   Box3,
+  BufferGeometry,
   Color,
   Euler,
   Group,
@@ -34,6 +36,8 @@ import {
   buildArmyModelAssetPath,
   MAX_INSTANCES,
   TROOP_TO_MODEL,
+  TROOP_TO_SHIP_MODEL,
+  isShipModel,
 } from "../constants";
 import {
   AnimatedInstancedMesh,
@@ -87,6 +91,49 @@ const flushArmyModelSlotUploads = (modelData: ModelData): void => {
     modelData.contactShadowMesh?.instanceMatrix,
   ]);
 };
+
+/** Instanced meshes draw raw geometry, so a hull's world scale is written into its vertices once at load. */
+function bakeShipWorldScale(scene: Object3D): void {
+  const scaled = new Set<BufferGeometry>();
+  scene.traverse((child) => {
+    if (!(child instanceof Mesh) || scaled.has(child.geometry)) return;
+    child.geometry.scale(SHIP_WORLD_SCALE, SHIP_WORLD_SCALE, SHIP_WORLD_SCALE);
+    scaled.add(child.geometry);
+  });
+}
+
+function isWaterBiome(biome: BiomeType): boolean {
+  return biome === BiomeType.Ocean || biome === BiomeType.DeepOcean;
+}
+
+/** Unknown troop types or tiers are loud in dev but still render the table's first model rather than nothing. */
+function resolveTroopModel(
+  table: Record<TroopType, Record<TroopTier, ModelType>>,
+  troopType: TroopType,
+  troopTier: TroopTier,
+  entityId: number,
+): ModelType {
+  const defaultModel = table[TroopType.Knight][TroopTier.T1];
+  const troopModels = table[troopType];
+  if (!troopModels) {
+    console.warn(
+      `[ArmyModel] Unknown troop type "${troopType}" for entity ${entityId}; falling back to ${defaultModel}.`,
+    );
+    return defaultModel;
+  }
+
+  const modelForTier = troopModels[troopTier];
+  if (modelForTier) {
+    return modelForTier;
+  }
+
+  const fallbackModel =
+    troopModels[TroopTier.T1] ?? troopModels[TroopTier.T2] ?? troopModels[TroopTier.T3] ?? defaultModel;
+  console.warn(
+    `[ArmyModel] Unknown troop tier "${troopTier}" for type ${troopType} on entity ${entityId}; using ${fallbackModel}.`,
+  );
+  return fallbackModel;
+}
 
 export class ArmyModel {
   // Core properties
@@ -149,7 +196,6 @@ export class ArmyModel {
   private readonly ROTATION_SPEED = 5.0;
   private readonly zeroScale = new Vector3(0, 0, 0);
   private readonly normalScale = new Vector3(1, 1, 1);
-  private readonly boatScale = new Vector3(1, 1, 1);
   private readonly agentScale = new Vector3(2, 2, 2);
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
@@ -248,6 +294,7 @@ export class ArmyModel {
         assetPath,
         async (gltf) => {
           try {
+            if (isShipModel(modelType)) bakeShipWorldScale(gltf.scene);
             const modelData = this.createModelData(gltf);
             await this.compilePipelines?.(modelData.group, this.scene);
             this.scene.add(modelData.group);
@@ -374,7 +421,7 @@ export class ArmyModel {
    *
    * `mesh.count` only draws slots in [0, count). `updateInstance` can move an
    * entity onto a different (already-loaded) model mid-move — e.g. a biome
-   * switch to Boat over water — by adding its slot to that model's
+   * switch to a ship over water — by adding its slot to that model's
    * `activeInstances` without `setVisibleSlots`/`syncModelDrawCount` running.
    * Without bumping the count here the slot stays >= count and the model is not
    * drawn (while the entity's label, keyed by entityId, keeps following). This
@@ -810,9 +857,6 @@ export class ArmyModel {
   }
 
   private getScaleForModelType(modelType: ModelType): Vector3 {
-    if (modelType === ModelType.Boat) {
-      return this.boatScale;
-    }
     if (modelType === ModelType.AgentIstarai || modelType === ModelType.AgentElisa) {
       return this.agentScale;
     }
@@ -1619,15 +1663,15 @@ export class ArmyModel {
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
-    const isBoat = modelType === ModelType.Boat;
+    const isShip = isShipModel(modelType);
 
-    if (!isBoat) {
+    if (!isShip) {
       movement.floatingHeight = Math.max(0, movement.floatingHeight - deltaTime * this.FLOAT_TRANSITION_SPEED);
     }
 
     // Use reusable vector instead of cloning
     this.tempVector1.copy(movement.startPos);
-    if (!isBoat) {
+    if (!isShip) {
       this.tempVector1.y += movement.floatingHeight;
     }
 
@@ -1643,7 +1687,7 @@ export class ArmyModel {
 
     this.updateLabelPosition(entityId, this.tempVector1);
 
-    if (movement.floatingHeight <= 0 || isBoat) {
+    if (movement.floatingHeight <= 0 || isShip) {
       this.movingInstances.delete(entityId);
     }
   }
@@ -1656,9 +1700,9 @@ export class ArmyModel {
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
-    const isBoat = modelType === ModelType.Boat;
+    const isShip = isShipModel(modelType);
 
-    if (!isBoat) {
+    if (!isShip) {
       movement.floatingHeight = Math.min(
         this.FLOAT_HEIGHT,
         movement.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
@@ -1674,7 +1718,7 @@ export class ArmyModel {
 
     // Use reusable vector instead of cloning
     this.tempVector2.copy(instanceData.position);
-    if (!isBoat) {
+    if (!isShip) {
       this.tempVector2.y += movement.floatingHeight;
     }
 
@@ -1716,13 +1760,13 @@ export class ArmyModel {
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
-    const isBoat = modelType === ModelType.Boat;
+    const isShip = isShipModel(modelType);
 
     // Track elapsed time for rhythmic bob
     splineData.elapsedTime += deltaTime;
 
     // Float up (same as existing)
-    if (!isBoat) {
+    if (!isShip) {
       splineData.floatingHeight = Math.min(
         this.FLOAT_HEIGHT,
         splineData.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
@@ -1744,7 +1788,7 @@ export class ArmyModel {
 
       // During anticipation, don't advance progress — just render squash
       this.tempVector2.copy(instanceData.position);
-      if (!isBoat) {
+      if (!isShip) {
         this.tempVector2.y += splineData.floatingHeight;
       }
       this.updateInstance(
@@ -1836,7 +1880,7 @@ export class ArmyModel {
 
       // Render during settlement
       this.tempVector2.copy(instanceData.position);
-      if (!isBoat) {
+      if (!isShip) {
         this.tempVector2.y += splineData.floatingHeight;
       }
       this.updateInstance(
@@ -1887,7 +1931,7 @@ export class ArmyModel {
     // Rhythmic bob + forward lean (not for boats)
     let bobYOffset = 0;
     let pitchAngle = 0;
-    if (!isBoat) {
+    if (!isShip) {
       const bob = resolveRhythmicBob({
         elapsedTime: splineData.elapsedTime,
         speed: currentSpeed,
@@ -1906,7 +1950,7 @@ export class ArmyModel {
 
     // Apply floating height + rhythmic bob
     this.tempVector2.copy(instanceData.position);
-    if (!isBoat) {
+    if (!isShip) {
       this.tempVector2.y += splineData.floatingHeight + bobYOffset;
     }
 
@@ -2011,9 +2055,8 @@ export class ArmyModel {
     troopTier: TroopTier,
     biome: BiomeType,
   ): ModelType {
-    // For water biomes, always return boat model regardless of troop type
-    if (biome === BiomeType.Ocean || biome === BiomeType.DeepOcean) {
-      return ModelType.Boat;
+    if (isWaterBiome(biome)) {
+      return resolveTroopModel(TROOP_TO_SHIP_MODEL, troopType, troopTier, entityId);
     }
 
     if (this.isAgent) {
@@ -2022,26 +2065,7 @@ export class ArmyModel {
       }
     }
 
-    const troopModels = TROOP_TO_MODEL[troopType];
-    if (!troopModels) {
-      console.warn(
-        `[ArmyModel] Unknown troop type "${troopType}" for entity ${entityId}; falling back to ${ModelType.Knight1}.`,
-      );
-      return ModelType.Knight1;
-    }
-
-    const modelForTier = troopModels[troopTier];
-    if (modelForTier) {
-      return modelForTier;
-    }
-
-    const fallbackModel =
-      troopModels[TroopTier.T1] ?? troopModels[TroopTier.T2] ?? troopModels[TroopTier.T3] ?? ModelType.Knight1;
-
-    console.warn(
-      `[ArmyModel] Unknown troop tier "${troopTier}" for type ${troopType} on entity ${entityId}; using ${fallbackModel}.`,
-    );
-    return fallbackModel;
+    return resolveTroopModel(TROOP_TO_MODEL, troopType, troopTier, entityId);
   }
 
   private clearMovementState(entityId: number): void {
