@@ -10,7 +10,9 @@ describe("createModelRegistry", () => {
     const registry = createModelRegistry(await readWorldManifest(manifestPath));
 
     expect(registry.bySelector.size).toBe(GAME_SYNC_MODEL_MANIFEST.length);
-    expect(registry.persistent).toHaveLength(45);
+    expect(registry.persistent.map(({ definition }) => definition.name)).toEqual(
+      GAME_SYNC_MODEL_MANIFEST.filter((model) => model.channels.includes("gamewide-entity")).map((model) => model.name),
+    );
     expect(registry.events.map(({ definition }) => definition.name)).toEqual([
       "SeasonEnded",
       "OpenRelicChestEvent",

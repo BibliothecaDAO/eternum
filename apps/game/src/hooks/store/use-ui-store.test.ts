@@ -46,3 +46,24 @@ describe("useUIStore cycle progress debug override", () => {
     expect(useUIStore.getState().cycleProgress).toBe(37);
   });
 });
+
+describe("army deployment suggestion intent", () => {
+  it("notifies only on deployment intent changes and clears after consumption", () => {
+    const selected: Array<number | null> = [];
+    const unsubscribe = useUIStore.subscribe(
+      (state) => state.suggestedArmyDeploymentStructureId,
+      (structureId) => selected.push(structureId),
+    );
+    try {
+      useUIStore.getState().setSuggestedArmyDeploymentStructureId(42);
+      useUIStore.getState().setPendingMilitaryAction({ structureId: 7, isExplorer: true });
+      useUIStore.getState().setSuggestedArmyDeploymentStructureId(null);
+      expect(selected).toEqual([42, null]);
+      expect(useUIStore.getState().pendingMilitaryAction?.structureId).toBe(7);
+    } finally {
+      unsubscribe();
+      useUIStore.getState().setSuggestedArmyDeploymentStructureId(null);
+      useUIStore.getState().setPendingMilitaryAction(null);
+    }
+  });
+});

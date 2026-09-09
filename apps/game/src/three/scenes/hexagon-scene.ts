@@ -1,3 +1,4 @@
+import { RainEffect } from "@/three/effects/rain-effect";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
@@ -99,10 +100,8 @@ export abstract class HexagonScene {
 
   private stormAmbientBaseIntensity?: number;
   private stormHemisphereBaseIntensity?: number;
-  private weatherAtmosphereState?: Pick<
-    WeatherState,
-    "ambientBoost" | "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness"
-  >;
+  private weatherAtmosphereState?: WeatherState;
+  private rainEffect!: RainEffect;
 
   private groundMesh!: Mesh;
   private groundMeshTexture: Texture | null = null;
@@ -202,7 +201,12 @@ export abstract class HexagonScene {
     });
     this.worldUpdateListener = new WorldUpdateListener(this.dojo);
     this.highlightHexManager = new HighlightHexManager(this.scene);
-    this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
+    this.thunderBoltManager = new ThunderBoltManager(
+      this.scene,
+      this.controls,
+      (x, z) => this.getTerrainSurface().sampleSurface(x, z).height,
+    );
+    this.rainEffect = new RainEffect(this.scene, (x, z) => this.getTerrainSurface().sampleSurface(x, z).height);
     this.scene.background = new Color(this.sceneName === SceneName.WorldMap ? TERRAIN_DEEP_FOG_COLOR : 0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
@@ -221,14 +225,12 @@ export abstract class HexagonScene {
         structureEntityId: state.structureEntityId,
         cycleProgress: state.cycleProgress,
         debugCycleProgressOverride: state.debugCycleProgressOverride,
-        cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, structureEntityId, cycleProgress, debugCycleProgressOverride, cycleTime }) => {
+      ({ leftNavigationView, structureEntityId, cycleProgress, debugCycleProgressOverride }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.structureEntityId = structureEntityId;
         this.state.cycleProgress = cycleProgress;
         this.state.debugCycleProgressOverride = debugCycleProgressOverride;
-        this.state.cycleTime = cycleTime;
       },
     );
   }
@@ -879,6 +881,13 @@ export abstract class HexagonScene {
       },
       0,
     );
+    return () => {
+      if (this.cameraTransitionState.activeToken !== transitionToken) return;
+      this.cameraTransitionTimeline?.kill();
+      this.cameraTransitionTimeline = null;
+      this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
+      this.setCameraTransitionStatus("idle");
+    };
   }
 
   public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {
@@ -995,6 +1004,7 @@ export abstract class HexagonScene {
     this.updateLights();
     this.updateHighlightPulse();
     this.thunderBoltManager.update();
+    this.rainEffect.update(deltaTime, this.controls.target, this.weatherAtmosphereState);
 
     if (this.shouldEnableStormEffects()) {
       this.updateStormEffects();
@@ -1005,9 +1015,7 @@ export abstract class HexagonScene {
     PerformanceMonitor.end("scene.update");
   }
 
-  public setWeatherAtmosphereState(
-    state?: Pick<WeatherState, "ambientBoost" | "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">,
-  ): void {
+  public setWeatherAtmosphereState(state?: WeatherState): void {
     this.weatherAtmosphereState = state ? { ...state } : undefined;
   }
 
@@ -1071,19 +1079,10 @@ export abstract class HexagonScene {
     });
 
     const weatherState = this.weatherAtmosphereState;
-    const cycleStormDepth = cycleProgress < 20 ? 1 - Math.abs(cycleProgress - 10) / 10 : 0;
-
-    const stormDepth =
-      weatherState !== undefined
-        ? Math.max(0, Math.min(1, Math.max(weatherState.intensity, weatherState.stormIntensity)))
-        : cycleStormDepth;
-
-    const skyDarkness = weatherState !== undefined ? weatherState.skyDarkness : stormDepth * 0.6;
-    const fogDensity = weatherState !== undefined ? weatherState.fogDensity : stormDepth * 0.5;
-    const sunOcclusion =
-      weatherState !== undefined
-        ? Math.min(1, weatherState.intensity * 0.75 + weatherState.stormIntensity * 0.25)
-        : stormDepth * 0.7;
+    const stormDepth = weatherState ? Math.max(weatherState.intensity, weatherState.stormIntensity) : 0;
+    const skyDarkness = weatherState?.skyDarkness ?? 0;
+    const fogDensity = weatherState?.fogDensity ?? 0;
+    const sunOcclusion = weatherState?.sunOcclusion ?? 0;
 
     if (stormDepth > 0.001) {
       this.worldAtmosphereController.applyWeatherModulation(
@@ -1096,7 +1095,7 @@ export abstract class HexagonScene {
 
     // Delegate lightning checks, storm light positioning, and intensity to the lightning system
     this.lightningSystem.update({
-      cycleProgress,
+      stormIntensity: weatherState?.stormIntensity ?? 0,
       cameraTargetX: cameraTarget.x,
       cameraTargetY: cameraTarget.y,
       cameraTargetZ: cameraTarget.z,
@@ -1173,6 +1172,7 @@ export abstract class HexagonScene {
     if (this.highlightHexManager) {
       this.highlightHexManager.dispose();
     }
+    this.rainEffect?.dispose();
     if (this.thunderBoltManager) {
       this.thunderBoltManager.destroy();
     }
@@ -1257,6 +1257,10 @@ export abstract class HexagonScene {
     return null;
   }
   public abstract setup(context?: SceneSetupContext): void | Promise<void>;
+  /** Resolves once the scene has something worth showing; a flight holds the outgoing frame until then. */
+  public whenPresentable(): Promise<void> {
+    return Promise.resolve();
+  }
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(nextSceneName?: SceneName): void;
 

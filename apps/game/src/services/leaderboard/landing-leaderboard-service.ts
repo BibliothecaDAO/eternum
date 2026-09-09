@@ -1,26 +1,14 @@
 import type { WorldDeployment } from "@/runtime/world/world-directory";
-import { fetchHeraldGameHistory, fetchHeraldGameSnapshot } from "@/runtime/world/herald-http";
+import { fetchHeraldGameLeaderboard, fetchHeraldGameSnapshot } from "@/runtime/world/herald-http";
 import {
   calculateUnregisteredShareholderPoints,
   type HeraldGameSnapshot,
-  type HeraldHistoryEvent,
+  createEmptyActivityBreakdown,
+  type PlayerLeaderboardActivityEntry,
 } from "@bibliothecadao/eternum/game-sync";
 
 const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
-
-export interface PlayerActivityStat {
-  count: number;
-  points: number;
-}
-
-export interface PlayerActivityBreakdown {
-  exploration: PlayerActivityStat;
-  openRelicChest: PlayerActivityStat;
-  hyperStructureBanditsDefeat: PlayerActivityStat;
-  otherStructureBanditsDefeat: PlayerActivityStat;
-  hyperstructureShare: PlayerActivityStat;
-}
 
 export interface LandingLeaderboardEntry {
   rank: number;
@@ -72,37 +60,9 @@ const decodePlayerName = (value: unknown): string | null => {
   return decoded.trim() || null;
 };
 
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-
-const emptyActivity = (): PlayerActivityBreakdown => ({
-  exploration: { count: 0, points: 0 },
-  openRelicChest: { count: 0, points: 0 },
-  hyperStructureBanditsDefeat: { count: 0, points: 0 },
-  otherStructureBanditsDefeat: { count: 0, points: 0 },
-  hyperstructureShare: { count: 0, points: 0 },
-});
-
-const activityByPlayer = (events: readonly HeraldHistoryEvent[]): Map<string, PlayerActivityBreakdown> => {
-  const result = new Map<string, PlayerActivityBreakdown>();
-  for (const event of events) {
-    const payload = asRecord(asRecord(event.value.story)?.PointsRegisteredStory);
-    if (!payload) continue;
-    const player = normalizeLeaderboardAddress(payload.owner_address);
-    const activityName = String(payload.activity) as keyof PlayerActivityBreakdown;
-    if (!player || !Object.hasOwn(emptyActivity(), activityName)) continue;
-    const activity = result.get(player) ?? emptyActivity();
-    const points = Number(toBigInt(payload.points) ?? 0n) / REGISTERED_POINTS_PRECISION;
-    activity[activityName].count += 1;
-    activity[activityName].points += points;
-    result.set(player, activity);
-  }
-  return result;
-};
-
 export const buildLandingLeaderboard = (
   snapshot: HeraldGameSnapshot,
-  storyEvents: readonly HeraldHistoryEvent[],
+  activityEntries: readonly PlayerLeaderboardActivityEntry[],
 ): LandingLeaderboardEntry[] => {
   const names = new Map(
     rows(snapshot, "AddressName").flatMap((row) => {
@@ -110,7 +70,7 @@ export const buildLandingLeaderboard = (
       return address ? [[address, decodePlayerName(row.name)] as const] : [];
     }),
   );
-  const activities = activityByPlayer(storyEvents);
+  const activities = new Map(activityEntries.map((entry) => [entry.address, entry.activityBreakdown]));
   const unregisteredPoints = calculateUnregisteredShareholderPoints(
     {
       gameRegistry: rows(snapshot, "GameRegistry"),
@@ -126,7 +86,7 @@ export const buildLandingLeaderboard = (
       if (!address) return [];
       const registeredPoints = Number(toBigInt(row.registered_points) ?? 0n) / REGISTERED_POINTS_PRECISION;
       const livePoints = unregisteredPoints.get(address) ?? 0;
-      const activity = activities.get(address) ?? emptyActivity();
+      const activity = activities.get(address) ?? createEmptyActivityBreakdown();
       return [
         {
           rank: 0,
@@ -155,7 +115,7 @@ export const buildLandingLeaderboard = (
 };
 
 const fetchLeaderboardSource = async (world: WorldDeployment, gameId: number) => {
-  const [snapshot, history] = await Promise.all([
+  const [snapshot, leaderboard] = await Promise.all([
     fetchHeraldGameSnapshot(world, gameId, [
       "PlayerRegisteredPoints",
       "AddressName",
@@ -164,9 +124,9 @@ const fetchLeaderboardSource = async (world: WorldDeployment, gameId: number) =>
       "GameRegistry",
       "PresetConfig",
     ]),
-    fetchHeraldGameHistory(world, gameId, { limit: 500, model: "StoryEvent" }),
+    fetchHeraldGameLeaderboard(world, gameId),
   ]);
-  return buildLandingLeaderboard(snapshot, history.items);
+  return buildLandingLeaderboard(snapshot, leaderboard.entries);
 };
 
 export const fetchLandingLeaderboard = async (

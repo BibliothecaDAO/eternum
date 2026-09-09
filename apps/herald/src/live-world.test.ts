@@ -196,6 +196,32 @@ describe("LiveWorld", () => {
     expect(live.snapshot("7").models[0].rows[0].value.value).toBe("0x3");
   });
 
+  it("publishes the confirmed head only after the history aggregate commits", async () => {
+    let releaseCommit!: () => void;
+    let startedCommit!: () => void;
+    const commitStarted = new Promise<void>((resolve) => {
+      startedCommit = resolve;
+    });
+    const committed = new Promise<void>((resolve) => {
+      releaseCommit = resolve;
+    });
+    const historyStore = {
+      appendEvents: async () => {
+        startedCommit();
+        await committed;
+      },
+      freezeReviewSnapshot: async () => undefined,
+    } as unknown as HistoryStore;
+    const { live } = liveFixture({ historyStore });
+    const socket = attachResumed(live);
+    const advancing = live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
+    await commitStarted;
+    expect(socket.messages.some((message) => message.type === "head")).toBe(false);
+    releaseCommit();
+    await advancing;
+    expect(socket.messages).toContainEqual(expect.objectContaining({ type: "head", block: 13 }));
+  });
+
   it("advances history completeness through confirmed blocks without history events", async () => {
     const historyStore = {
       appendEvents: vi.fn(async () => undefined),

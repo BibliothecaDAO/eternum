@@ -48,7 +48,27 @@ describe("Popover", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  it("keeps a tall map picker within a 1600 by 900 viewport even near the bottom edge", async () => {
+    vi.stubGlobal("innerHeight", 900);
+    vi.stubGlobal("innerWidth", 1600);
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(1400);
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "plot-construction",
+        content: <div>Buildings</div>,
+        anchor: { left: 1200, right: 1200, top: 850, bottom: 850 },
+        mapClick: "dismiss",
+      }),
+    );
+    const picker = panel("plot-construction")!;
+    expect(picker.style.top).toBe("56px");
+    expect(picker.style.maxHeight).toBe("836px");
+    expect(picker.className).toContain("overflow-y-auto");
   });
 
   it("anchors the panel on the body without a scrim", async () => {
@@ -92,6 +112,60 @@ describe("Popover", () => {
       document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     });
     expect(panel("a")).toBeNull();
+  });
+
+  it("reanchors map clicks without unmounting content, dismisses other map hits, and preserves Escape", async () => {
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    const onDismiss = vi.fn();
+    const reanchor = vi.fn(() => true);
+    const renderDrawer = (left: number) =>
+      root.render(
+        <PopoverPanel
+          id="map-drawer"
+          ariaLabel="Map drawer"
+          anchor={{ left, right: left, top: 80, bottom: 80 }}
+          mapClick={{ reanchor }}
+          onDismiss={onDismiss}
+        >
+          <input aria-label="Count" defaultValue="100" />
+        </PopoverPanel>,
+      );
+    await act(async () => renderDrawer(100));
+    const input = panel("map-drawer")!.querySelector("input")!;
+    input.value = "500";
+    await act(async () => canvas.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+    expect(reanchor).toHaveBeenCalledTimes(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+    await act(async () => renderDrawer(300));
+    expect(panel("map-drawer")!.style.left).toBe("300px");
+    expect(panel("map-drawer")!.querySelector("input")).toBe(input);
+    expect(input.value).toBe("500");
+    reanchor.mockReturnValue(false);
+    await act(async () => canvas.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    await act(async () => document.body.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+    expect(reanchor).toHaveBeenCalledTimes(2);
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(onDismiss).toHaveBeenCalledTimes(3);
+    canvas.remove();
+  });
+
+  it("dismisses map clicks by default and forwards a store surface's map policy", async () => {
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+    await act(async () => trigger("open a").click());
+    await act(async () => canvas.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+    expect(panel("a")).toBeNull();
+    const reanchor = vi.fn(() => true);
+    await act(async () =>
+      usePopoverStore.getState().openSurface({ id: "map", content: "picker", mapClick: { reanchor } }),
+    );
+    await act(async () => canvas.dispatchEvent(new Event("pointerdown", { bubbles: true })));
+    expect(reanchor).toHaveBeenCalledTimes(1);
+    expect(panel("map")).not.toBeNull();
+    canvas.remove();
   });
 
   it("renders a store surface through the same panel and closes it on Escape", async () => {

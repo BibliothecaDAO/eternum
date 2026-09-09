@@ -62,3 +62,21 @@ describe("SelectionPulseManager material ownership", () => {
     expect(material.opacity).toBeCloseTo(palette.intensity);
   });
 });
+
+describe("selection scope", () => {
+  it("reuses one ring while selection moves among four owned entities", () => {
+    const scene = new THREE.Scene();
+    const manager = new SelectionPulseManager(scene);
+    for (const entityId of [1, 2, 3, 4]) {
+      manager.showSelection(entityId * 2, 0, entityId);
+      expect(scene.children.filter((child) => child.visible)).toHaveLength(1);
+      expect(manager.getSelectedEntityId()).toBe(entityId);
+    }
+    expect(scene.children).toHaveLength(1);
+    manager.hideSelection();
+    expect(scene.children.filter((child) => child.visible)).toHaveLength(0);
+    expect(manager.getSelectedEntityId()).toBeNull();
+    manager.dispose();
+    expect(scene.children).toHaveLength(0);
+  });
+});

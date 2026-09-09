@@ -1,3 +1,4 @@
+import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 import { POLLING_INTERVALS } from "@/config/polling";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -24,8 +25,7 @@ const getArrivalKey = (arrival: ResourceArrivalInfo) =>
  * come from the bridge's slice; this runner owns only the claim timer and its retry memory.
  */
 const ResourceArrivalAutoClaim = () => {
-  const setArrivedArrivalsNumber = useUIStore((state) => state.setArrivedArrivalsNumber);
-  const setPendingArrivalsNumber = useUIStore((state) => state.setPendingArrivalsNumber);
+  const setArrivalIndicators = useUIStore((state) => state.setArrivalIndicators);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const gameWinner = useUIStore((state) => state.gameWinner);
@@ -68,15 +68,9 @@ const ResourceArrivalAutoClaim = () => {
     (arrivals: ResourceArrivalInfo[], nowOverride?: number) => {
       const now = nowOverride ?? getChainNowSeconds();
       const filteredArrivals = arrivals.filter((arrival) => !autoClaimedArrivals.current.has(getArrivalKey(arrival)));
-      const arrived = filteredArrivals.filter(
-        (arrival) => now >= Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS,
-      );
-      const pending = Math.max(filteredArrivals.length - arrived.length, 0);
-
-      setArrivedArrivalsNumber(arrived.length);
-      setPendingArrivalsNumber(pending);
+      setArrivalIndicators(resolveResourceArrivalIndicators(filteredArrivals, now));
     },
-    [getChainNowSeconds, setArrivedArrivalsNumber, setPendingArrivalsNumber],
+    [getChainNowSeconds, setArrivalIndicators],
   );
 
   const scheduleNextAutoClaim = useCallback(() => {

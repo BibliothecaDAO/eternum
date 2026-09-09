@@ -14,6 +14,10 @@ export const OVERLAY_SURFACE_ACTIVE =
  */
 const OVERLAY_PILL_CLICKABLE = `${OVERLAY_SURFACE_BASE} ${OVERLAY_SURFACE_HOVER}`;
 
+/** The one small text button on HUD surfaces: outline pill, sans (never the Cinzel button default). */
+export const HUD_PILL_BUTTON =
+  "rounded-full border border-gold/30 px-3 py-1 font-sans text-xs text-gold transition hover:border-gold/60 disabled:opacity-50";
+
 /**
  * Shared trigger surface for dropdown/select inputs so every dropdown in a
  * panel (biome, troop type, tier, relics, …) reads as the same control: a

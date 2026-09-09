@@ -26,6 +26,9 @@ It serves:
 - `GET /<chain>/games`
 - `GET /<chain>/games/<game_id>/snapshot`
 - `GET /<chain>/games/<game_id>/snapshot?models=WorldConfig,Structure`
+- `GET /<chain>/games/<game_id>/leaderboard` — prepared points breakdown and ranking; 503 until startup history backfill
+  completes. Restored from PostgreSQL before serving and updated only after newly inserted history events commit. Deploy
+  Herald before clients consuming this endpoint.
 - `GET /<chain>/games/<game_id>/history?model=StoryEvent&limit=50&offset=0`
 - `GET /<chain>/games/<game_id>/review/snapshot`
 - `GET /<chain>/games/<game_id>/transactions/count`

@@ -21,10 +21,8 @@ import {
 } from "./renderer-display-runtime";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
 import { disposeRendererBackend } from "./renderer-backend-compat";
-import {
-  initializeRendererBackendRuntime,
-  initializeRendererDeviceLossFallbackRuntime,
-} from "./renderer-backend-runtime";
+import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
+import { reloadWithWebGLRenderer } from "./renderer-device-loss-recovery";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
 import { discardGpuBackendFrame, startGpuBackendFrame } from "./gpu-backend-hot-path-instrumentation";
@@ -57,12 +55,6 @@ const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = DEV_MODE_ENABLED;
 
 type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
-type ReconnectableRendererControls = NonNullable<RendererInteractionRuntime["controls"]> & {
-  connect?: (surface: HTMLElement) => void;
-  disconnect?: () => void;
-  listenToKeyEvents?: (surface: HTMLElement) => void;
-};
-
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
   private readonly sessionRuntime: RendererSessionRuntime<HUDScene>;
@@ -99,7 +91,6 @@ export default class GameRenderer {
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
-  private hasRecoveredFromDeviceLoss = false;
   private isRecoveringFromDeviceLoss = false;
   private isRendererRecoveryPaused = false;
   private rendererFrameFailureCircuit?: RendererFrameFailureCircuit;
@@ -184,161 +175,27 @@ export default class GameRenderer {
 
   private handleRendererDeviceLost(event: RendererDeviceLostEvent): void {
     reportRendererDeviceLoss(event, {
-      recoveryAttempted: this.shouldStartDeviceLossFallback(),
+      recoveryAttempted: this.shouldStartDeviceLossFallback(event),
     });
-    void this.recoverFromRendererDeviceLoss(event);
+    this.recoverFromRendererDeviceLoss(event);
   }
 
-  private async recoverFromRendererDeviceLoss(event: RendererDeviceLostEvent): Promise<void> {
-    if (!this.shouldStartDeviceLossFallback()) {
-      return;
-    }
-
-    const previousBackend = this.backend;
-    this.beginDeviceLossFallback();
-
-    try {
-      const fallbackRuntime = await this.initializeDeviceLossFallbackBackend();
-      if (this.isDestroyed) {
-        disposeRendererBackend(fallbackRuntime.backend);
-        return;
-      }
-
-      this.installDeviceLossFallbackBackend({
-        backend: fallbackRuntime.backend,
-        previousBackend,
-        renderer: fallbackRuntime.renderer,
-      });
-      this.resumeRendererAfterDeviceLossFallback();
-    } catch (error) {
-      this.handleDeviceLossFallbackFailure(error, event.activeMode);
-    }
+  private shouldStartDeviceLossFallback(event: RendererDeviceLostEvent): boolean {
+    return event.activeMode === "webgpu" && !this.isDestroyed && !this.isRecoveringFromDeviceLoss;
   }
 
-  private shouldStartDeviceLossFallback(): boolean {
-    return !this.isDestroyed && !this.isRecoveringFromDeviceLoss && !this.hasRecoveredFromDeviceLoss;
-  }
-
-  private beginDeviceLossFallback(): void {
+  private recoverFromRendererDeviceLoss(event: RendererDeviceLostEvent): void {
+    if (!this.shouldStartDeviceLossFallback(event)) return;
     this.isRecoveringFromDeviceLoss = true;
     this.isRendererRecoveryPaused = true;
     discardGpuBackendFrame();
-  }
-
-  private async initializeDeviceLossFallbackBackend(): Promise<{
-    backend: RendererBackendRuntime;
-    renderer: RendererSurfaceLike;
-  }> {
-    return initializeRendererDeviceLossFallbackRuntime({
-      envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-      isMobileDevice: this.isMobileDevice,
-      pixelRatio: this.getTargetPixelRatio(),
-      search: window.location.search,
-    });
-  }
-
-  private installDeviceLossFallbackBackend(input: {
-    backend: RendererBackendRuntime;
-    previousBackend?: RendererBackendRuntime;
-    renderer: RendererSurfaceLike;
-  }): void {
-    const shouldRestoreMonitoring = Boolean(this.supportRuntimeRegistry.getMonitoring());
-
-    this.backend = input.backend;
-    this.renderer = input.renderer;
-    configureGltfTextureSupport(input.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
-    this.mountRecoveredRendererSurface(input.renderer.domElement);
-    this.reconnectRendererControlsToSurface(input.renderer.domElement);
-    this.reattachSceneInputSurfaces(input.renderer.domElement);
-    this.resetBackendDependentSupportRuntimes(shouldRestoreMonitoring);
-    this.disposePreviousRendererBackend(input.previousBackend);
-    this.onWindowResize();
-  }
-
-  private mountRecoveredRendererSurface(surface: HTMLElement): void {
-    document.body.style.background = "black";
-    surface.id = "main-canvas";
-
-    const currentSurface = document.getElementById("main-canvas");
-    if (currentSurface && currentSurface !== surface) {
-      currentSurface.replaceWith(surface);
-      return;
-    }
-
-    if (!surface.isConnected) {
-      document.body.appendChild(surface);
-    }
-  }
-
-  private reconnectRendererControlsToSurface(surface: HTMLElement): void {
-    const controls = this.controls as ReconnectableRendererControls | undefined;
-    if (!controls) {
-      return;
-    }
-
-    if (!controls.disconnect || !controls.connect) {
-      console.warn("[GameRenderer] Renderer controls cannot reconnect to the replacement canvas");
-      return;
-    }
-
-    controls.disconnect();
-    controls.connect(surface);
-    controls.listenToKeyEvents?.(document.body);
-  }
-
-  private reattachSceneInputSurfaces(surface: HTMLElement): void {
-    this.worldmapScene?.setInputSurface(surface);
-    this.fastTravelScene?.setInputSurface(surface);
-    this.hexceptionScene?.setInputSurface(surface);
-  }
-
-  private resetBackendDependentSupportRuntimes(shouldRestoreMonitoring: boolean): void {
-    this.supportRuntimeRegistry.resetEffectsBridge();
-    if (shouldRestoreMonitoring) {
-      this.supportRuntimeRegistry.resetMonitoring();
-      this.sessionRuntime.initializeMonitoring();
-    }
-
-    if (!this.hasPreparedRendererScenes()) {
-      return;
-    }
-
-    const effectsBridgeRuntime = this.supportRuntimeRegistry.ensureEffectsBridge();
-    effectsBridgeRuntime.applyEnvironment();
-    effectsBridgeRuntime.setupPostProcessingEffects();
-    effectsBridgeRuntime.applyRenderVisualProfile(renderProfile.visuals);
-    effectsBridgeRuntime.updateWeatherPostProcessing();
-  }
-
-  private disposePreviousRendererBackend(previousBackend?: RendererBackendRuntime): void {
-    if (!previousBackend || previousBackend === this.backend) {
-      return;
-    }
-
-    disposeRendererBackend(previousBackend);
-  }
-
-  private resumeRendererAfterDeviceLossFallback(): void {
-    this.hasRecoveredFromDeviceLoss = true;
-    this.isRecoveringFromDeviceLoss = false;
-    this.isRendererRecoveryPaused = false;
-    this.lastTime = 0;
-    this.lastFrameTime = 0;
-
-    if (this.hasPreparedRendererScenes()) {
-      this.animate();
-    }
-  }
-
-  private handleDeviceLossFallbackFailure(error: unknown, lostMode: RendererDeviceLostEvent["activeMode"]): void {
-    this.isRecoveringFromDeviceLoss = false;
-    this.isRendererRecoveryPaused = false;
-    this.lastTime = 0;
-    this.lastFrameTime = 0;
-    reportRendererRecoveryFailure(error, lostMode);
-
-    if (!this.isDestroyed && this.hasPreparedRendererScenes()) {
-      this.animate();
+    // Native WebGPU instance matrices use storage attributes that cannot be
+    // carried into WebGL. Rebuild the scene and asset caches in a fresh boot.
+    try {
+      reloadWithWebGLRenderer();
+    } catch (error) {
+      // Never resume drawing with the lost device or retry navigation in a loop.
+      reportRendererRecoveryFailure(error, event.activeMode);
     }
   }
 
@@ -527,11 +384,12 @@ export default class GameRenderer {
       onFrameError: (error) => this.handleRendererFrameError(error),
       onFrameSuccess: () => this.getRendererFrameFailureCircuit().recordSuccess(),
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
+        const sceneName = this.sceneManager?.getRenderingScene();
         const rendered = runRendererFrame({
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
-          currentScene: this.sceneManager?.getRenderingScene(),
+          currentScene: sceneName,
           currentTime,
           cycleProgress,
           deltaTime,
@@ -543,6 +401,7 @@ export default class GameRenderer {
           worldmapScene: this.worldmapScene,
         });
 
+        if (rendered && sceneName) this.transitionManager.onFrameRendered(this.renderer.domElement, sceneName);
         return rendered;
       },
       requestNextFrame: () => this.scheduleNextAnimationFrame(),

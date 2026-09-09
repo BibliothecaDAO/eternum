@@ -46,7 +46,7 @@ interface ActiveAmbienceSound {
 interface AmbienceParams {
   enabled: boolean;
   masterVolume: number;
-  weatherIntensity: number;
+  rainIntensity: number;
   stormIntensity: number;
 }
 
@@ -59,12 +59,12 @@ export class AmbienceManager {
   private params: AmbienceParams = {
     enabled: true,
     masterVolume: 1.0,
-    weatherIntensity: 0,
+    rainIntensity: 0,
     stormIntensity: 0,
   };
 
   private currentTimeOfDay: TimeOfDay = TimeOfDay.DAY;
-  private currentWeather: WeatherType = WeatherType.CLEAR;
+  private currentWeather: WeatherType = WeatherType.SUNNY;
   private activeSounds: Map<string, ActiveAmbienceSound> = new Map();
   private layerIdCounter: number = 0;
   private isFirstUpdate: boolean = true;
@@ -76,7 +76,7 @@ export class AmbienceManager {
     {
       assetId: ["ambient.birds.morning.1", "ambient.birds.morning.2", "ambient.birds.morning.3"],
       timeOfDay: [TimeOfDay.DAWN, TimeOfDay.DAY],
-      weather: [WeatherType.CLEAR],
+      weather: [WeatherType.SUNNY, WeatherType.CLOUDY],
       baseVolume: 0.2,
       fadeInDuration: 5.0,
       fadeOutDuration: 5.0,
@@ -87,7 +87,7 @@ export class AmbienceManager {
     {
       assetId: ["ambient.crickets.night.1"],
       timeOfDay: [TimeOfDay.NIGHT, TimeOfDay.EVENING],
-      weather: [WeatherType.CLEAR],
+      weather: [WeatherType.SUNNY, WeatherType.CLOUDY],
       baseVolume: 0.175,
       fadeInDuration: 5.0,
       fadeOutDuration: 5.0,
@@ -98,7 +98,7 @@ export class AmbienceManager {
     {
       assetId: ["ambient.birds.night.1"],
       timeOfDay: [TimeOfDay.NIGHT, TimeOfDay.EVENING],
-      weather: [WeatherType.CLEAR],
+      weather: [WeatherType.SUNNY, WeatherType.CLOUDY],
       baseVolume: 0.175,
       fadeInDuration: 5.0,
       fadeOutDuration: 5.0,
@@ -109,7 +109,7 @@ export class AmbienceManager {
     {
       assetId: ["ambient.wolves.night.1", "ambient.wolves.night.2"], // Only 2 wolf sounds available
       timeOfDay: [TimeOfDay.NIGHT],
-      weather: [WeatherType.CLEAR],
+      weather: [WeatherType.SUNNY, WeatherType.CLOUDY],
       baseVolume: 0.15,
       fadeInDuration: 3.0,
       fadeOutDuration: 3.0,
@@ -181,7 +181,7 @@ export class AmbienceManager {
     cycleProgress: number,
     currentWeather: WeatherType,
     deltaTime: number,
-    weatherIntensity: number = this.params.weatherIntensity,
+    rainIntensity: number = this.params.rainIntensity,
     stormIntensity: number = this.params.stormIntensity,
   ): void {
     if (!this.params.enabled) {
@@ -194,14 +194,14 @@ export class AmbienceManager {
       return; // Wait until audio system is initialized
     }
 
-    this.params.weatherIntensity = Math.max(0, Math.min(1, weatherIntensity));
+    this.params.rainIntensity = Math.max(0, Math.min(1, rainIntensity));
     this.params.stormIntensity = Math.max(0, Math.min(1, stormIntensity));
 
     // Determine current time of day
     const newTimeOfDay = this.getTimeOfDay(cycleProgress);
     const effectiveWeather = this.resolveEffectiveWeather(
       currentWeather,
-      this.params.weatherIntensity,
+      this.params.rainIntensity,
       this.params.stormIntensity,
     );
     const timeChanged = newTimeOfDay !== this.currentTimeOfDay;
@@ -232,11 +232,11 @@ export class AmbienceManager {
 
   private resolveEffectiveWeather(
     weatherType: WeatherType,
-    weatherIntensity: number,
+    rainIntensity: number,
     stormIntensity: number,
   ): WeatherType {
     if (stormIntensity > 0.3) return WeatherType.STORM;
-    if (weatherIntensity > 0.2) return WeatherType.RAIN;
+    if (rainIntensity > 0.2) return WeatherType.RAIN;
     return weatherType;
   }
 
@@ -566,11 +566,11 @@ export class AmbienceManager {
    * Update ambience based on weather intensity from WeatherManager
    * This provides smoother transitions than binary weather type changes
    *
-   * @param weatherIntensity - Overall weather intensity 0-1
+   * @param rainIntensity - Overall weather intensity 0-1
    * @param stormIntensity - Storm-specific intensity 0-1 (for thunder)
    */
-  updateFromWeather(weatherIntensity: number, stormIntensity: number): void {
-    this.params.weatherIntensity = weatherIntensity;
+  updateFromWeather(rainIntensity: number, stormIntensity: number): void {
+    this.params.rainIntensity = rainIntensity;
     this.params.stormIntensity = stormIntensity;
     this.applyWeatherVolumeModulation();
   }
@@ -587,7 +587,7 @@ export class AmbienceManager {
 
       if (layer.weather.includes(WeatherType.RAIN) || layer.weather.includes(WeatherType.STORM)) {
         // Rain sounds: scale with weather intensity
-        volumeMultiplier = Math.max(0.3, this.params.weatherIntensity);
+        volumeMultiplier = Math.max(0.3, this.params.rainIntensity);
       }
 
       if (layer.weather.includes(WeatherType.STORM)) {
@@ -604,7 +604,7 @@ export class AmbienceManager {
    * Get current weather intensity
    */
   getWeatherIntensity(): number {
-    return this.params.weatherIntensity;
+    return this.params.rainIntensity;
   }
 
   /**

@@ -15,6 +15,7 @@ interface TroopSelectionGridProps {
   onSelect: (type: TroopType, tier: TroopTier) => void;
   /** Drop outer card chrome so the grid blends with a unified parent card. */
   bare?: boolean;
+  compact?: boolean;
 }
 
 export const TroopSelectionGrid = ({
@@ -25,6 +26,7 @@ export const TroopSelectionGrid = ({
   selectedGuardTier,
   onSelect,
   bare = false,
+  compact = false,
 }: TroopSelectionGridProps) => {
   const lockedMap = useMemo(() => {
     if (!isDefenseTroopLocked || selectedGuardCategory === undefined || selectedGuardTier === undefined) {
@@ -33,6 +35,46 @@ export const TroopSelectionGrid = ({
 
     return `${selectedGuardCategory}-${selectedGuardTier}`;
   }, [isDefenseTroopLocked, selectedGuardCategory, selectedGuardTier]);
+
+  if (compact) {
+    return (
+      <div className="grid grid-cols-3 gap-2 p-1" role="group" aria-label="Available troops">
+        {options.flatMap((option) =>
+          option.tiers.map((tier) => {
+            const key = `${option.type}-${tier.tier}`;
+            const isSelected = selected.type === option.type && selected.tier === tier.tier;
+            const reason =
+              lockedMap && lockedMap !== key
+                ? "This guard slot requires its existing troop type and tier."
+                : tier.available <= 0
+                  ? "No troops in stock."
+                  : null;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-label={`${option.label} ${tier.tier}: ${tier.available.toLocaleString()} available`}
+                aria-pressed={isSelected}
+                disabled={Boolean(reason)}
+                title={reason ?? `${option.label} ${tier.tier}`}
+                className={clsx(
+                  "relative flex min-w-0 flex-col items-center rounded border px-1 pt-3 pb-1 text-xs tabular-nums disabled:grayscale disabled:opacity-40",
+                  isSelected ? "border-gold bg-gold/15" : "border-gold/25",
+                )}
+                onClick={() => onSelect(option.type, tier.tier)}
+              >
+                <span className="absolute top-0.5 right-1 text-[10px]">{tier.tier}</span>
+                <ResourceIcon resource={tier.resourceTrait} size="lg" className="!h-10 !w-10" withTooltip={false} />
+                <span className="max-w-full truncate rounded bg-black/40 px-1 text-[10px]">
+                  {tier.available.toLocaleString()}
+                </span>
+              </button>
+            );
+          }),
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={bare ? "p-1" : "rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm"}>

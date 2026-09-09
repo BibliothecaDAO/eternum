@@ -19,7 +19,6 @@ describe("worldmap content ladder wiring", () => {
     expect(source).toMatch(/this\.fxManager\.setVisible\(ladder\.fx\)/);
     expect(source).toMatch(/this\.resourceFXManager\.setVisible\(ladder\.fx\)/);
     expect(source).toMatch(/this\.combatPresentation\?\.setVisible\(ladder\.fx\)/);
-    expect(source).toMatch(/this\.arrivalGhostManager\.setSuspended\(!ladder\.fx\)/);
     expect(source).toMatch(/this\.armyManager\.setLabelPriorityContext\(context\)/);
     expect(source).toMatch(/this\.structureManager\.setLabelPriorityContext\(context\)/);
   });

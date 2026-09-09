@@ -16,9 +16,8 @@ export class LightningEffectSystem {
   private originalLightningIntensity = 0;
   private originalLightningColor = 0;
   private originalStormLightningIntensity = 0;
-  private lastLightningTriggerProgress = -1;
+  private nextStormStrikeAt = 0;
   private lightningSequenceTimeout: NodeJS.Timeout | null = null;
-  private lightningTriggerTimeout: ReturnType<typeof setTimeout> | null = null;
   private currentStrikeIndex = 0;
   private readonly lightningStrikes: Array<{ delay: number; duration: number }> = [
     { delay: 0, duration: 80 },
@@ -56,7 +55,7 @@ export class LightningEffectSystem {
    * and update storm light position/intensity.
    */
   update(params: {
-    cycleProgress: number;
+    stormIntensity: number;
     cameraTargetX: number;
     cameraTargetY: number;
     cameraTargetZ: number;
@@ -70,8 +69,7 @@ export class LightningEffectSystem {
       this.endLightning();
     }
 
-    // Check for lightning trigger based on cycle timing
-    this.shouldTriggerLightningAtCycleProgress(params.cycleProgress);
+    this.updateStormStrikes(params.stormIntensity, currentTime);
 
     // Position storm light to follow camera
     this.stormLight.position.set(params.cameraTargetX, params.cameraTargetY + 25, params.cameraTargetZ + 5);
@@ -140,29 +138,18 @@ export class LightningEffectSystem {
     this.lightningEndTime = 0;
   }
 
-  private shouldTriggerLightningAtCycleProgress(cycleProgress: number): boolean {
-    const tolerance = 20;
-
-    if (cycleProgress < tolerance && this.lastLightningTriggerProgress !== 0) {
-      this.lastLightningTriggerProgress = 0;
-      this.lightningTriggerTimeout = setTimeout(() => {
-        this.startLightningSequence();
-      }, 2000);
-      return false;
+  private updateStormStrikes(intensity: number, now: number): void {
+    if (intensity <= 0.1) {
+      if (this.nextStormStrikeAt > 0) this.cleanup();
+      return;
     }
-
-    if (cycleProgress > tolerance * 2) {
-      this.lastLightningTriggerProgress = -1;
-    }
-
-    return false;
+    if (now < this.nextStormStrikeAt) return;
+    this.nextStormStrikeAt = now + 8000;
+    this.startLightningSequence();
   }
 
   cleanup(): void {
-    if (this.lightningTriggerTimeout) {
-      clearTimeout(this.lightningTriggerTimeout);
-      this.lightningTriggerTimeout = null;
-    }
+    this.nextStormStrikeAt = 0;
     if (this.lightningSequenceTimeout) {
       clearTimeout(this.lightningSequenceTimeout);
       this.lightningSequenceTimeout = null;

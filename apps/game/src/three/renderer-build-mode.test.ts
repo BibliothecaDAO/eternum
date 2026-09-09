@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildRendererDebugUrl,
+  buildRendererRecoveryUrl,
   DEFAULT_RENDERER_BUILD_MODE,
   removeRetiredRendererModePreference,
   resolveRendererBuildMode,
@@ -32,6 +33,21 @@ describe("renderer build mode", () => {
     const removeItem = vi.fn();
     removeRetiredRendererModePreference({ removeItem });
     expect(removeItem).toHaveBeenCalledWith("RENDERER_MODE");
+  });
+
+  it("recovers the same game and camera in WebGL without enabling debug logs", () => {
+    const href =
+      "https://localhost:4183/play/madara/game-28/map?col=5&row=3&spectate=true&rendererMode=webgpu-auto#world";
+    const url = new URL(buildRendererRecoveryUrl(href));
+    expect(url.pathname).toBe("/play/madara/game-28/map");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      col: "5",
+      row: "3",
+      spectate: "true",
+      rendererMode: "webgpu-force-webgl",
+    });
+    expect(url.hash).toBe("#world");
+    expect(buildRendererRecoveryUrl(url.href)).toBe(url.href);
   });
 
   it("builds an explicit renderer reload without dropping spectator intent", () => {

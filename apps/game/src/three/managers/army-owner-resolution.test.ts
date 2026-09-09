@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resolveArmyOwnerState } from "./army-owner-resolution";
 
 describe("resolveArmyOwnerState", () => {
-  it("preserves existing player owner when incoming owner is temporarily zero", () => {
+  it("accepts a structure returning to neutral ownership", () => {
     const result = resolveArmyOwnerState({
       existingOwner: {
         address: 123n,
@@ -17,9 +17,9 @@ describe("resolveArmyOwnerState", () => {
     });
 
     expect(result).toEqual({
-      address: 123n,
-      ownerName: "Alice",
-      guildName: "Red",
+      address: 0n,
+      ownerName: "The Vanguard",
+      guildName: "",
     });
   });
 

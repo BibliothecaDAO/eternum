@@ -117,11 +117,7 @@ describe("worldmap hover label wiring", () => {
       ),
     ).toContain("this.retryPendingHoverLabelRecovery");
     expect(
-      extractSourceBetween(
-        source,
-        "private async updateNonCriticalManagersForChunk(",
-        "private syncArrivalGhostChunkVisibility()",
-      ),
+      extractSourceBetween(source, "private async updateNonCriticalManagersForChunk(", "update(deltaTime: number)"),
     ).toContain("this.retryPendingHoverLabelRecovery");
   });
 

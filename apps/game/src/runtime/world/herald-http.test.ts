@@ -3,7 +3,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { WorldDeployment } from "./world-directory";
-import { fetchHeraldGameDirectory, fetchHeraldGameSnapshot, snapshotModelRows } from "./herald-http";
+import {
+  fetchHeraldGameHistory,
+  fetchHeraldGameDirectory,
+  fetchHeraldGameSnapshot,
+  snapshotModelRows,
+} from "./herald-http";
 
 const world = {
   id: "blitz",
@@ -51,4 +56,13 @@ describe("Herald HTTP client", () => {
       "Herald snapshot omitted requested model Structure",
     );
   });
+});
+
+it("requests battle-only history from Herald rather than a mixed story page", async () => {
+  vi.stubGlobal("fetch", mockFetch);
+  mockFetch.mockResolvedValue(new Response(JSON.stringify({ items: [] })));
+  await fetchHeraldGameHistory(world, 28, { model: "StoryEvent", story: "BattleStory", limit: 350 });
+  const url = new URL(String(mockFetch.mock.calls[0][0]));
+  expect(url.pathname).toBe("/herald/madara/games/28/history");
+  expect(Object.fromEntries(url.searchParams)).toEqual({ model: "StoryEvent", story: "BattleStory", limit: "350" });
 });

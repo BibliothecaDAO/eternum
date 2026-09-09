@@ -3,9 +3,9 @@ export type HeadlineType =
   | "hyper-capture"
   | "elimination"
   | "game-end"
+  | "game-start"
   | "five-min-warning"
-  | "first-t2-army"
-  | "first-t3-army";
+  | "t3-building";
 
 export interface Headline {
   id: string;
@@ -18,4 +18,3 @@ export interface Headline {
 }
 
 export const HEADLINE_DISPLAY_MS = 8_000;
-export const RECENT_HEADLINE_WINDOW_MS = 20_000;

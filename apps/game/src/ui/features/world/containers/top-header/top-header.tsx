@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -6,14 +7,11 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
-import { GameEndTimer } from "./game-end-timer";
-import { GameStartCountdown } from "./game-start-countdown";
+import { GameClock } from "./game-clock";
+import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
-import { SuggestionsPill } from "./pills/suggestions-pill";
-import { TickProgress } from "./tick-progress";
-import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { TOP_PILL } from "./top-pill";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -34,14 +32,7 @@ export const TopHeader = memo(() => {
   const playHover = useUISound("ui.hover");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const followArmyCombats = useUIStore((state) => state.followArmyCombats);
-  const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
-  const isSpectating = useUIStore((state) => state.isSpectating);
-  // The follow-army-combats toggle is a spectator-only affordance: it's for
-  // watching other players' battles. Active players manage their own armies, so
-  // it's hidden for them entirely.
-  const showFollowArmyToggle = isSpectating;
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
@@ -115,22 +106,18 @@ export const TopHeader = memo(() => {
 
   return (
     <>
-      {/* Layout container — pointer-events pass through the gaps between pills so the
-          map remains clickable. Each pill flips pointer-events back on. The
-          center cluster carries the six headline pieces in canonical order
-          (rank · view · day · timer · army toggle · settings); the right
-          cluster carries ancillary status icons (network / tx / features). */}
-      <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
+      {/* The header row: pointer-events pass through the gaps between pills so the map remains clickable; each
+          pill flips pointer-events back on. The columns start below this row (HUD_COLUMN_TOP), so the cluster is
+          centred on the full width: identity · view · clock · attention · settings. */}
+      <div className="fixed top-0 inset-x-0 z-20 flex h-11 items-center justify-center gap-2 px-3 pointer-events-none">
         {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
         <IdentityChip />
 
-        {/* 2. Empire-wide suggested actions — sits right after the rank pill and
-            is hidden while spectating (a spectator has no empire to act on). */}
-        {!isSpectating && <SuggestionsPill />}
-
         {/* 3. Local / World toggle (+ conditional Ethereal layer chip) */}
         <div className={cn(TOP_PILL, "whitespace-nowrap")}>
-          <span
+          <button
+            type="button"
+            aria-pressed={isLocalView}
             onClick={() => {
               playClick();
               goToStructure(
@@ -140,13 +127,14 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer", TOP_PILL_TEXT, !isLocalView && "text-gold/55")}
+            className={cn("cursor-pointer", HUD_LABEL_BRIGHT, !isLocalView && "text-gold/55")}
           >
             Local
-          </span>
+          </button>
           <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
             <input
               type="checkbox"
+              aria-label="Show world map"
               className="sr-only peer"
               checked={isWorldView}
               onChange={(e) => {
@@ -159,9 +147,11 @@ export const TopHeader = memo(() => {
                 );
               }}
             />
-            <div className="w-10 h-5 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+            <div className="w-10 h-5 rounded-full peer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
           </label>
-          <span
+          <button
+            type="button"
+            aria-pressed={isWorldView && !isFastTravelView}
             onClick={() => {
               playClick();
               goToStructure(
@@ -171,10 +161,10 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer", TOP_PILL_TEXT, !isWorldView && "text-gold/55")}
+            className={cn("cursor-pointer", HUD_LABEL_BRIGHT, !isWorldView && "text-gold/55")}
           >
             World
-          </span>
+          </button>
           {showFastTravelLayerToggle && (
             <button
               type="button"
@@ -193,39 +183,9 @@ export const TopHeader = memo(() => {
           )}
         </div>
 
-        {/* 4. Day-tick progress */}
-        <div className={TOP_PILL}>
-          <TickProgress />
-        </div>
+        <GameClock />
+        <AttentionPill />
 
-        {/* 5. Game start / end timers — each self-styled, only render when active. */}
-        <GameStartCountdown />
-        <GameEndTimer />
-
-        {/* 6. Army combat follow toggle */}
-        {showFollowArmyToggle && (
-          <button
-            type="button"
-            className={cn(
-              "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
-              OVERLAY_SURFACE_BASE,
-              followArmyCombats
-                ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"
-                : "hover:border-gold/50",
-            )}
-            onClick={() => {
-              setFollowArmyCombats(!followArmyCombats);
-              playClick();
-            }}
-            onMouseEnter={() => playHover()}
-            aria-pressed={followArmyCombats}
-            title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
-          >
-            <Swords className={cn("h-4 w-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
-          </button>
-        )}
-
-        {/* 7. Settings + ancillary status icons (network, tx, latest features…) */}
         <SecondaryMenuItems />
       </div>
 

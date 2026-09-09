@@ -37,10 +37,11 @@ const RANK_THRESHOLD = 500;
 const isMeaningfullyRanked = (standing: IdentityStanding): boolean =>
   Number.isFinite(standing.rank) && (standing.rank <= RANK_THRESHOLD || standing.points > 0);
 
-export const shortAddress = (address: string): string => `${address.slice(0, 6)}…${address.slice(-4)}`;
+const shortAddress = (address: string): string => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
+/** The session username is the synced name; the chain name only stands in for a session without one. */
 const resolveDisplayName = ({ identity, gameplayAccount, playerName }: IdentityChipInput): string | null =>
-  playerName ?? identity.name ?? (gameplayAccount.address ? shortAddress(gameplayAccount.address) : null);
+  identity.name ?? playerName ?? (gameplayAccount.address ? shortAddress(gameplayAccount.address) : null);
 
 /**
  * One identity, one output. The session is the only "logged in" fact; the gameplay account only decides between

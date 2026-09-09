@@ -15,3 +15,37 @@ export const resolveDebuggableCycleProgress = (
   liveProgress: number,
   debugOverride: DebugCycleProgressOverride,
 ): number => clampCycleProgress(debugOverride ?? liveProgress);
+
+/** Six army ticks remain the renderer's day/night cycle; they are not HUD phases. */
+export function resolveDayCycleProgress(timestamp: number, armyTickSeconds: number): number {
+  if (!Number.isFinite(armyTickSeconds) || armyTickSeconds <= 0) throw new Error("Army tick duration is unavailable");
+  const daySeconds = armyTickSeconds * 6;
+  return ((timestamp % daySeconds) / daySeconds) * 100;
+}
+
+export const DAY_PHASE_PROGRESS = {
+  dawn: 100 / 6,
+  morning: 100 / 3,
+  afternoon: 50,
+  lateAfternoon: 175 / 3,
+  dusk: (100 / 6) * 4,
+  evening: (100 / 6) * 5,
+} as const;
+
+/** The HUD day: six phases, one per army tick, so a phase's length is the tick length. */
+export const DAY_PHASES = [
+  { name: "Night", start: 0 },
+  { name: "Dawn", start: DAY_PHASE_PROGRESS.dawn },
+  { name: "Morning", start: DAY_PHASE_PROGRESS.morning },
+  { name: "Day", start: DAY_PHASE_PROGRESS.afternoon },
+  { name: "Dusk", start: DAY_PHASE_PROGRESS.dusk },
+  { name: "Evening", start: DAY_PHASE_PROGRESS.evening },
+] as const;
+export type DayPhaseName = (typeof DAY_PHASES)[number]["name"];
+export function resolveDayPhase(cycleProgress: number): { name: DayPhaseName; index: number; progress: number } {
+  const cycle = clampCycleProgress(cycleProgress) % 100;
+  const index = DAY_PHASES.findLastIndex((phase) => cycle >= phase.start);
+  const phase = DAY_PHASES[index];
+  const end = DAY_PHASES[index + 1]?.start ?? 100;
+  return { name: phase.name, index, progress: ((cycle - phase.start) / (end - phase.start)) * 100 };
+}

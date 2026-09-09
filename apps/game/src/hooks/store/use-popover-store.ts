@@ -9,6 +9,9 @@ export interface SurfaceAnchor {
   bottom: number;
 }
 
+/** Reanchoring owns the map hit test; false means the map click closes the panel. */
+export type PopoverMapClick = "dismiss" | { reanchor: (event: PointerEvent) => boolean };
+
 /** Where a surface hangs from: a rect, a viewport edge, or null for the top centre. */
 type SurfaceAnchorInput = SurfaceAnchor | "top-center" | "right-edge" | "bottom-right";
 
@@ -16,6 +19,7 @@ interface OpenSurface {
   id: string;
   content: ReactNode;
   anchor: SurfaceAnchorInput | null;
+  mapClick?: PopoverMapClick;
 }
 
 /**
@@ -29,7 +33,12 @@ interface PopoverStore {
   open: (id: string) => void;
   close: (id?: string) => void;
   toggle: (id: string) => void;
-  openSurface: (surface: { id: string; content: ReactNode; anchor?: SurfaceAnchorInput | null }) => void;
+  openSurface: (surface: {
+    id: string;
+    content: ReactNode;
+    anchor?: SurfaceAnchorInput | null;
+    mapClick?: PopoverMapClick;
+  }) => void;
   closeSurface: () => void;
 }
 
@@ -40,6 +49,7 @@ export const usePopoverStore = create<PopoverStore>()((set) => ({
   close: (id) => set((state) => (id === undefined || state.openId === id ? { openId: null, surface: null } : state)),
   toggle: (id) =>
     set((state) => (state.openId === id ? { openId: null, surface: null } : { openId: id, surface: null })),
-  openSurface: ({ id, content, anchor = null }) => set({ openId: id, surface: { id, content, anchor } }),
+  openSurface: ({ id, content, anchor = null, mapClick }) =>
+    set({ openId: id, surface: { id, content, anchor, mapClick } }),
   closeSurface: () => set((state) => (state.surface ? { openId: null, surface: null } : state)),
 }));

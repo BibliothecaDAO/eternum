@@ -13,6 +13,7 @@ interface TroopCountSelectorProps {
    * the parent body already covers that info.
    */
   embedded?: boolean;
+  compact?: boolean;
 }
 
 export const TroopCountSelector = ({
@@ -22,6 +23,7 @@ export const TroopCountSelector = ({
   capacityRemaining,
   troopMaxSize,
   embedded = false,
+  compact = false,
 }: TroopCountSelectorProps) => {
   const capacityLimit =
     typeof capacityRemaining === "number" && Number.isFinite(capacityRemaining) ? capacityRemaining : null;
@@ -73,17 +75,21 @@ export const TroopCountSelector = ({
             disabled={troopCount >= maxAffordable}
             className="flex-1 px-2 py-1.5 text-xs font-extrabold"
           >
-            MAX
+            {compact ? "Max" : "MAX"}
           </Button>
         </div>
-        <NumberInput
-          max={maxAffordable}
-          min={0}
-          step={100}
-          value={troopCount}
-          onChange={onChange}
-          className="h-9 text-sm"
-        />
+        <label>
+          <span className="sr-only">Troop count</span>
+          <NumberInput
+            arrows={!compact}
+            max={maxAffordable}
+            min={0}
+            step={100}
+            value={troopCount}
+            onChange={onChange}
+            className="h-9 text-sm"
+          />
+        </label>
 
         {!embedded && (
           <div className="flex justify-between items-center text-xs">

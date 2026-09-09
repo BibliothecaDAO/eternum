@@ -41,7 +41,8 @@ export function RealtimeChatShell({
 }: RealtimeChatShellProps) {
   const isEmbedded = displayMode === "embedded";
   const actions = useRealtimeChatActions();
-  const isExpanded = useRealtimeChatSelector((state) => state.isShellOpen);
+  const shellOpen = useRealtimeChatSelector((state) => state.isShellOpen);
+  const isExpanded = isEmbedded || shellOpen;
   const openTabs = useRealtimeChatSelector((state) => state.openTabs);
   const activeTabId = useRealtimeChatSelector((state) => state.activeTabId);
   useRealtimeChatInitializer(autoInitializeClient ? initializer : null);
@@ -174,19 +175,21 @@ export function RealtimeChatShell({
           // square so the shell's warm gradient + frame show through (the flat
           // black box read as a different surface from the rest of the HUD).
           isEmbedded ? "rounded-none bg-transparent" : "rounded-2xl bg-black/70",
-          isExpanded
-            ? isHeightExpanded
-              ? isEmbedded
-                ? "h-full"
-                : "h-[600px]"
-              : isEmbedded
-                ? "h-64"
-                : "h-72"
-            : showInlineToggle
-              ? isEmbedded
-                ? "h-16"
-                : "h-14"
-              : "h-0 min-h-0 pointer-events-none",
+          isEmbedded
+            ? "h-full min-h-0"
+            : isExpanded
+              ? isHeightExpanded
+                ? isEmbedded
+                  ? "h-full"
+                  : "h-[600px]"
+                : isEmbedded
+                  ? "h-64"
+                  : "h-72"
+              : showInlineToggle
+                ? isEmbedded
+                  ? "h-16"
+                  : "h-14"
+                : "h-0 min-h-0 pointer-events-none",
           isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
           !isExpanded && !showInlineToggle && "w-0 max-w-0",
           isExpanded && !isEmbedded ? "bg-black/80" : "bg-transparent",
@@ -204,6 +207,7 @@ export function RealtimeChatShell({
             {/* Tab Bar */}
             <div className="relative">
               <TabBar
+                showWindowControls={!isEmbedded}
                 tabs={openTabs}
                 activeTabId={activeTabId}
                 onTabClick={(tabId) => actions.setActiveTab(tabId)}

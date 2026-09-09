@@ -7,7 +7,6 @@ type OpenStructureContextMenuInput = Parameters<typeof openStructureContextMenu>
 
 interface WorldmapInteractionState {
   selectedHex?: { col: number; row: number } | null;
-  openArmyCreationPopup(input: { structureId: ID; isExplorer: boolean; direction: number }): void;
   setSelectedHex(input: { col: number; row: number } | null): void;
   setStructureEntityId(
     structureId: ID,
@@ -81,14 +80,6 @@ export function createWorldmapInteractionAdapter({
         structure: input.structure,
         hexCoords: input.hexCoords,
         components: dojoComponents,
-      });
-    },
-
-    openArmyCreation(input: { direction: number; structureId: ID }) {
-      state.openArmyCreationPopup({
-        structureId: input.structureId,
-        isExplorer: true,
-        direction: input.direction,
       });
     },
   };

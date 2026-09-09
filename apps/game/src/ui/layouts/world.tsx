@@ -1,3 +1,4 @@
+import { LeaderboardActivitySync } from "./leaderboard-activity-sync";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
@@ -6,17 +7,15 @@ import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overl
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
-import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
-import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
-import { ActionInstructions } from "../features/world/components/actions/action-instructions";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
+import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
@@ -41,7 +40,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <GameSystems backgroundImage={backgroundImage} />
 
         {/* Action feedback overlays */}
-        <ActionOverlays />
+        <ActionInfo />
 
         {/* HUD (heads-up display) elements */}
         <HUD />
@@ -65,14 +64,15 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
 const BackgroundSystems = () => (
   <>
     <RecsStoreBridge />
+    <LeaderboardActivitySync />
     <ActionRunners />
     <BlockTimestampPoller />
+    <GameCycleEffects />
     <ChainTimePoller />
     <BlitzSetHyperstructureShareholdersTo100 />
     <AutomationManager />
     <TransferAutomationManager />
     <ExplorationAutomationManager />
-    <NetworkStatusBanner onRetry={triggerConnectionForceReconnect} />
     <SentryUserSync />
   </>
 );
@@ -88,19 +88,9 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
 );
 
 /**
- * Action feedback overlays - contextual information about current actions.
- */
-const ActionOverlays = () => (
-  <>
-    <ActionInstructions />
-    <ActionInfo />
-  </>
-);
-
-/**
  * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
  * Layout:
- * - Top-left: TopHeader (player info, map toggle, tick progress)
+ * - Top-left: TopHeader (player info, map toggle, clock and attention)
  * - Left: LeftCommandSidebar (structure selector, navigation, views)
  * - Bottom-right: BottomRightPanel (tile info, minimap)
  * Every other surface is a popover hanging off its own trigger.

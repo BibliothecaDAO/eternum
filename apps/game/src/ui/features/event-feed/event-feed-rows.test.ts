@@ -2,7 +2,7 @@ import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { TransactionType } from "@bibliothecadao/provider";
 import { type ResourceArrivalInfo, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { deriveFeedRows, selectTickerRows } from "./event-feed-rows";
+import { deriveFeedRows, selectTickerRows, transferRowLabel } from "./event-feed-rows";
 
 const NOW_MS = 1_700_000_000_000;
 const NOW_SECONDS = NOW_MS / 1000;
@@ -26,6 +26,7 @@ const caravan = (arrivesInSeconds: number): ResourceArrivalInfo => ({
 
 const derive = (input: Partial<Parameters<typeof deriveFeedRows>[0]> = {}) =>
   deriveFeedRows({
+    ownedStructureIds: [42],
     transactions: [],
     arrivals: [],
     notices: [],
@@ -75,4 +76,19 @@ describe("deriveFeedRows", () => {
     expect(rows.recent.map((row) => row.id)).toEqual(["n1", "n2", "0xold"]);
     expect(selectTickerRows(rows, NOW_MS, 6_000).map((row) => row.id)).toEqual(["n1"]);
   });
+});
+
+it("only includes caravans destined for the player's structures", () => {
+  expect(derive({ arrivals: [caravan(90)], ownedStructureIds: [99] }).inFlight).toEqual([]);
+  expect(derive({ arrivals: [caravan(-5)], ownedStructureIds: [] }).arrived).toEqual([]);
+});
+it("does not treat a future arrival as a just-completed event", () => {
+  expect(selectTickerRows(derive({ arrivals: [caravan(90)] }), NOW_MS, 6000)).toEqual([]);
+});
+
+it("names sent and arrived caravans in Events", () => {
+  expect(transferRowLabel(derive({ arrivals: [caravan(90)] }).inFlight[0])).toBe("Caravan sent");
+  expect(transferRowLabel(derive({ arrivals: [caravan(0)] }).arrived[0])).toBe("Caravan arrived");
+  expect(transferRowLabel(derive({ transactions: [transfer({ status: "success" })] }).recent[0])).toBe("Caravan sent");
+  expect(transferRowLabel(derive({ transactions: [transfer({ status: "reverted" })] }).recent[0])).toBeNull();
 });

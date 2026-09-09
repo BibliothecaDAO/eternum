@@ -1,6 +1,6 @@
 import {
   IDENTITY_POPOVER_ID,
-  identityClient,
+  signOutIdentitySession,
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
@@ -32,14 +32,6 @@ const reportSignOutFailure = (error: unknown): string => {
   const message = error instanceof Error ? error.message : "Sign out failed";
   console.error("identity_sign_out_failed", { error: message });
   return message;
-};
-
-const disconnectSignedOutWallet = async (disconnect: () => Promise<unknown>): Promise<void> => {
-  try {
-    await disconnect();
-  } catch (error) {
-    reportSignOutFailure(error);
-  }
 };
 
 /**
@@ -86,7 +78,6 @@ export const LandingIdentityChip = () => {
 };
 
 const SignedInPanel = ({ session }: { session: Session }) => {
-  const applySession = useIdentitySessionStore((state) => state.applySession);
   const closePopover = usePopoverStore((state) => state.close);
   const { disconnectAsync } = useDisconnect();
   const [signingOut, setSigningOut] = useState(false);
@@ -96,9 +87,7 @@ const SignedInPanel = ({ session }: { session: Session }) => {
     setSigningOut(true);
     setError(null);
     try {
-      await identityClient.signOut();
-      await disconnectSignedOutWallet(disconnectAsync);
-      applySession(null);
+      await signOutIdentitySession(disconnectAsync);
       closePopover(IDENTITY_POPOVER_ID);
     } catch (error) {
       setError(reportSignOutFailure(error));

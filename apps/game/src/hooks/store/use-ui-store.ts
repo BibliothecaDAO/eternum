@@ -117,6 +117,9 @@ interface UIStore {
   openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
   pendingMilitaryAction: PendingMilitaryAction | null;
   setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
+  /** A suggestion's selection intent, consumed when the world map is ready. */
+  suggestedArmyDeploymentStructureId: number | null;
+  setSuggestedArmyDeploymentStructureId: (structureId: number | null) => void;
   // Bumped whenever a military mutation lands (create / disband) so the deploy
   // map can re-fetch tile occupancy. Plain RECS-side state isn't enough — the
   militaryMapVersion: number;
@@ -125,8 +128,6 @@ interface UIStore {
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
   // camera follow
-  followArmyCombats: boolean;
-  setFollowArmyCombats: (follow: boolean) => void;
   isFollowingArmy: boolean;
   setIsFollowingArmy: (following: boolean) => void;
   followingArmyMessage: string | null;
@@ -139,8 +140,6 @@ interface UIStore {
   setCycleProgress: (progress: number) => void;
   debugCycleProgressOverride: DebugCycleProgressOverride;
   setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => void;
-  cycleTime: number;
-  setCycleTime: (time: number) => void;
 }
 
 export type AppStore = UIStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -297,6 +296,9 @@ export const useUIStore = create(
       }),
     pendingMilitaryAction: null,
     setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
+    suggestedArmyDeploymentStructureId: null,
+    setSuggestedArmyDeploymentStructureId: (suggestedArmyDeploymentStructureId) =>
+      set({ suggestedArmyDeploymentStructureId }),
     militaryMapVersion: 0,
     bumpMilitaryMapVersion: () => set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
     ...createThreeStoreSlice(set, get),
@@ -310,10 +312,6 @@ export const useUIStore = create(
       localStorage.setItem("useSimpleCost", String(useSimpleCost));
     },
     // camera follow
-    followArmyCombats: false,
-    setFollowArmyCombats: (follow: boolean) => {
-      set({ followArmyCombats: follow });
-    },
     isFollowingArmy: false,
     setIsFollowingArmy: (following: boolean) => {
       set({ isFollowingArmy: following });
@@ -338,7 +336,5 @@ export const useUIStore = create(
       const clampedProgress = clampCycleProgress(progress);
       set({ cycleProgress: clampedProgress, debugCycleProgressOverride: clampedProgress });
     },
-    cycleTime: 0,
-    setCycleTime: (time: number) => set({ cycleTime: time }),
   })),
 );

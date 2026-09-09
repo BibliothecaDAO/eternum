@@ -82,13 +82,18 @@ export class SceneManager {
 
     const previousScene = this.currentScene ? this.scenes.get(this.currentScene) : undefined;
     previousScene?.deactivateInputSurface?.();
-    previousScene?.onSwitchOff(sceneNameToTransition);
-
     this.transitionInProgress = true;
-    this.preparingScene = { name: sceneNameToTransition, token: transitionToken };
-    const fadeOutCompletion = this.transitionManager.fadeOut();
     const setupOwnership = this.createSetupOwnership(transitionToken);
-    const sceneSetupCompletion = this.setupScene(sceneNameToTransition, pendingScene, setupOwnership.context);
+    const flight = this.transitionManager.startSceneFlight(previousScene, this.currentScene, sceneNameToTransition);
+    const fadeOutCompletion = flight ?? this.transitionManager.fadeOut();
+    const prepare = () => {
+      if (!setupOwnership.context.isCurrent())
+        return Promise.resolve<SceneSetupResult>({ succeeded: false, error: new Error("Scene transition superseded") });
+      previousScene?.onSwitchOff(sceneNameToTransition);
+      this.preparingScene = { name: sceneNameToTransition, token: transitionToken };
+      return this.setupScene(sceneNameToTransition, pendingScene, setupOwnership.context);
+    };
+    const sceneSetupCompletion = flight ? flight.then(prepare) : prepare();
     void this.completeTransition(
       sceneNameToTransition,
       pendingScene,
@@ -201,7 +206,7 @@ export class SceneManager {
     const finalizePlan = this.getTransitionFinalizePlan(transitionToken);
     if (finalizePlan.shouldRunPostSetupEffects && (setupSucceeded || previousSceneName !== undefined)) {
       this.moveCameraForScene();
-      this.transitionManager.fadeIn();
+      this.transitionManager.fadeIn(this.scenes.get(this.currentScene!));
     }
 
     this.transitionInProgress = false;

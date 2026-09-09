@@ -30,6 +30,8 @@ function createTransitionManagerHarness() {
   };
 
   return {
+    startSceneFlight: vi.fn(() => null),
+    onFrameRendered: vi.fn(),
     fadeOut: vi.fn(() => {
       if (!active) return Promise.resolve(false);
 
@@ -179,8 +181,6 @@ export function createGameRendererRuntimeHarness() {
           getEffectsBridge: () => effectsBridge,
           getMonitoring: () => monitoringRuntime,
           getRoute: () => routeRuntime,
-          resetEffectsBridge: vi.fn(),
-          resetMonitoring: vi.fn(),
         },
         sessionRuntime: {
           captureStatsSample: vi.fn(),

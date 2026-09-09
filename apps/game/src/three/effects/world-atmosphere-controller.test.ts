@@ -23,7 +23,7 @@ function createFixture() {
   return { manager, scene, directionalLight, hemisphereLight, ambientLight, fog };
 }
 
-function findMoonRimLight(scene: Scene, mainDirectionalLight: DirectionalLight): DirectionalLight | null {
+function findMoonLight(scene: Scene, mainDirectionalLight: DirectionalLight): DirectionalLight | null {
   return (
     scene.children.find(
       (child): child is DirectionalLight => child instanceof DirectionalLight && child !== mainDirectionalLight,
@@ -78,16 +78,16 @@ describe("WorldAtmosphereController", () => {
 
   it("uses the readability-first night preset", () => {
     const fixture = createFixture();
-    const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
+    const moonLight = findMoonLight(fixture.scene, fixture.directionalLight);
 
     fixture.manager.update(0);
 
-    expect((fixture.scene.background as Color).getHex()).toBe(0x344562);
-    expect(fixture.fog.color.getHex()).toBe(0x536b8c);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.56);
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.05);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(1.85);
-    expect(moonRimLight?.intensity).toBeCloseTo(0.56);
+    expect((fixture.scene.background as Color).getHex()).toBe(0x3a4d70);
+    expect(fixture.fog.color.getHex()).toBe(0x4f6788);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.48); // 0.45 after the night temperature grading
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.15);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(2.3);
+    expect(moonLight?.intensity).toBeCloseTo(0.95);
   });
 
   it("applies visibility floors to low lighting inputs", () => {
@@ -182,18 +182,18 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.directionalLight.position.y).toBeCloseTo(12);
   });
 
-  it("enables a cool moon rim light at night while keeping it off during day", () => {
+  it("enables a cool moon key light at night while keeping it off during day", () => {
     const fixture = createFixture();
-    const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
+    const moonLight = findMoonLight(fixture.scene, fixture.directionalLight);
 
-    expect(moonRimLight).not.toBeNull();
+    expect(moonLight).not.toBeNull();
 
     fixture.manager.update(40);
-    expect(moonRimLight!.intensity).toBe(0);
+    expect(moonLight!.intensity).toBe(0);
 
     fixture.manager.update(90, new Vector3(5, 1, 8));
-    expect(moonRimLight!.intensity).toBeGreaterThan(0);
-    expect(moonRimLight!.color.getHex()).not.toBe(0xffffff);
+    expect(moonLight!.intensity).toBeGreaterThan(0);
+    expect(moonLight!.color.getHex()).not.toBe(0xffffff);
   });
 
   it("clamps cycle speed and maps time-of-day buckets", () => {
@@ -206,7 +206,9 @@ describe("WorldAtmosphereController", () => {
 
     expect(fixture.manager.getTimeOfDay(5)).toBe("Night");
     expect(fixture.manager.getTimeOfDay(20)).toBe("Dawn");
-    expect(fixture.manager.getTimeOfDay(40)).toBe("Day");
+    expect(fixture.manager.getTimeOfDay(40)).toBe("Morning");
+    expect(fixture.manager.getTimeOfDay(50)).toBe("Day");
+    expect(fixture.manager.getTimeOfDay(60)).toBe("Day");
     expect(fixture.manager.getTimeOfDay(70)).toBe("Dusk");
     expect(fixture.manager.getTimeOfDay(80)).toBe("Dusk");
     expect(fixture.manager.getTimeOfDay(90)).toBe("Evening");
@@ -285,7 +287,7 @@ describe("WorldAtmosphereController", () => {
 
   it("weather modulation does not compound across sky, fog, light, or rim values", () => {
     const fixture = createFixture();
-    const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
+    const moonLight = findMoonLight(fixture.scene, fixture.directionalLight);
 
     fixture.manager.update(0);
 
@@ -294,7 +296,7 @@ describe("WorldAtmosphereController", () => {
       ambient: fixture.ambientLight.intensity,
       fog: fixture.fog.color.getHex(),
       hemisphere: fixture.hemisphereLight.intensity,
-      rim: moonRimLight?.intensity,
+      rim: moonLight?.intensity,
       sky: (fixture.scene.background as Color).getHex(),
       sun: fixture.directionalLight.intensity,
     };
@@ -304,7 +306,7 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.ambientLight.intensity).toBe(first.ambient);
     expect(fixture.fog.color.getHex()).toBe(first.fog);
     expect(fixture.hemisphereLight.intensity).toBe(first.hemisphere);
-    expect(moonRimLight?.intensity).toBe(first.rim);
+    expect(moonLight?.intensity).toBe(first.rim);
     expect((fixture.scene.background as Color).getHex()).toBe(first.sky);
     expect(fixture.directionalLight.intensity).toBe(first.sun);
   });
@@ -414,7 +416,7 @@ describe("WorldAtmosphereController", () => {
 });
 
 function readLighting(fixture: ReturnType<typeof createFixture>) {
-  const rim = findMoonRimLight(fixture.scene, fixture.directionalLight)!;
+  const rim = findMoonLight(fixture.scene, fixture.directionalLight)!;
   return {
     sun: fixture.directionalLight.intensity,
     sunPosition: fixture.directionalLight.position.toArray(),
@@ -431,3 +433,17 @@ function readLighting(fixture: ReturnType<typeof createFixture>) {
     fog: fixture.fog.color.getHex(),
   };
 }
+
+it("lets the biome lab disable the moon through weather updates", () => {
+  const fixture = createFixture();
+  const moon = findMoonLight(fixture.scene, fixture.directionalLight)!;
+  fixture.manager.update(0);
+  expect(moon.position.y - moon.target.position.y).toBeGreaterThanOrEqual(10);
+  fixture.manager.params.moonEnabled = false;
+  fixture.manager.update(0);
+  fixture.manager.applyWeatherModulation(1, 1, 1);
+  expect(moon.intensity).toBe(0);
+  fixture.manager.params.moonEnabled = true;
+  fixture.manager.update(0);
+  expect(moon.intensity).toBeCloseTo(0.95);
+});

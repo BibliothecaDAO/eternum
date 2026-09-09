@@ -14,7 +14,7 @@ import { normalizeStarknetAddress, parseSiwsTypedData } from "@realms-world/iden
 import { RpcProvider, verifyMessageInStarknet } from "starknet";
 
 import { serverEnv } from "./env";
-import { isLoopbackHost } from "./loopback-origins";
+import { isLoopbackHost } from "@realms-world/chain";
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 
 interface SIWSPluginOptions {

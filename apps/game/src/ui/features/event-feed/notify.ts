@@ -5,6 +5,7 @@ interface NoticeOptions {
   description?: ReactNode;
   duration?: number;
   id?: string;
+  location?: { x: number; y: number };
 }
 
 const push = (kind: FeedNoticeKind, title: ReactNode, options?: NoticeOptions): string =>
@@ -14,6 +15,7 @@ const push = (kind: FeedNoticeKind, title: ReactNode, options?: NoticeOptions): 
     description: options?.description,
     id: options?.id,
     ttlMs: options?.duration,
+    location: options?.location,
   });
 
 /**

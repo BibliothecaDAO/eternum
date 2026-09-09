@@ -27,10 +27,11 @@ describe("PlayView review auto-open", () => {
   });
 
   it("keeps the in-game finished surface a pill that points at the dashboard, never a modal", () => {
-    const source = readSource("src/ui/features/world/containers/top-header/game-end-timer.tsx");
+    const source = readSource("src/ui/features/world/containers/top-header/game-finished-pill.tsx");
 
     expect(source).toContain("const GameFinishedPill");
-    expect(source).toContain("<GameFinishedPill />");
+    const clock = readSource("src/ui/features/world/containers/top-header/game-clock.tsx");
+    expect(clock).toContain("<GameFinishedPill />");
     expect(source).toContain("resetBootstrap();");
     expect(source).toContain('navigate("/");');
     expect(source).not.toContain("GameIsOverModal");

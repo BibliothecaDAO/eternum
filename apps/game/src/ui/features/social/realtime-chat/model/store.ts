@@ -882,7 +882,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
     },
     loadWorldHistory: async ({ zoneId, cursor, limit, since, replaceExisting }: LoadWorldChatHistoryParams) => {
       const { baseUrl } = get();
-      if (!baseUrl) return;
+      if (!baseUrl || get().worldZones[zoneId]?.isFetchingHistory) return;
 
       set((state) => {
         const zoneState = state.worldZones[zoneId] ?? createWorldZoneState(zoneId);
@@ -892,6 +892,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             [zoneId]: {
               ...zoneState,
               isFetchingHistory: true,
+              historyError: undefined,
             },
           },
         };
@@ -940,6 +941,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 hasMoreHistory: Boolean(data?.nextCursor),
                 lastFetchedCursor: data?.nextCursor ?? null,
                 isFetchingHistory: false,
+                historyError: undefined,
               },
             },
           };
@@ -954,6 +956,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               [zoneId]: {
                 ...currentZone,
                 isFetchingHistory: false,
+                historyError: "Chat history is unavailable. Try again.",
               },
             },
           };

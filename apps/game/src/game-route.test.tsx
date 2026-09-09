@@ -45,7 +45,7 @@ vi.mock("./ui/features/news-headlines", () => ({
 }));
 
 vi.mock("./ui/features/story-events", () => ({
-  StoryEventToastBridge: () => <div>StoryEventToastBridge</div>,
+  StoryEventAudioCues: () => <div>StoryEventAudioCues</div>,
 }));
 
 vi.mock("./ui/modules/loading-screen", () => ({

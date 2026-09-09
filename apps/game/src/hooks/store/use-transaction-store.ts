@@ -34,7 +34,6 @@ interface TransactionStoreState {
   updateTransaction: (hash: string, updates: Partial<Transaction>) => void;
   removeTransaction: (hash: string) => void;
   clearAllTransactions: () => void;
-  clearCompletedTransactions: () => void;
   setMinimized: (minimized: boolean) => void;
   toggleMinimized: () => void;
   setStuckThreshold: (ms: number) => void;
@@ -102,11 +101,6 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     })),
 
   clearAllTransactions: () => set({ transactions: [] }),
-
-  clearCompletedTransactions: () =>
-    set((state) => ({
-      transactions: state.transactions.filter((t) => t.status === "pending"),
-    })),
 
   setMinimized: (minimized) => set({ isMinimized: minimized }),
 

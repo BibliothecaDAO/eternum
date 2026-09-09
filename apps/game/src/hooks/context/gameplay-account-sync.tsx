@@ -1,3 +1,5 @@
+import { recoverGameplaySigner, rotateBoundGameplaySigner } from "@/account/gameplay-signer-recovery";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { configureGameplayAccountSubmits } from "@/account/gameplay-account-submit";
 import { identityOrigin, useIdentitySession } from "@/hooks/context/identity-session";
@@ -89,7 +91,18 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
             });
 
         if (active) {
-          setGameplayAccount(configureGameplayAccountSubmits(account, worldTarget.chain), addAddressPadding(owner));
+          setGameplayAccount(
+            configureGameplayAccountSubmits(account, worldTarget.chain, () =>
+              recoverGameplaySigner({
+                provider,
+                address: account.address,
+                publicKey: key.publicKey,
+                api: gameplayAccountApi,
+                isCurrent: () => active && canIssueOrders(),
+              }),
+            ),
+            addAddressPadding(owner),
+          );
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Gameplay account provisioning failed";
@@ -150,10 +163,7 @@ async function recoverBoundGameplayAccount({
 }) {
   const currentPublicKey = await readGameplayAccountPublicKey(provider, boundAccount);
   if (needsRotation || BigInt(currentPublicKey) !== BigInt(key.publicKey)) {
-    const rotatedAccount = await gameplayAccountApi.rotate(key.publicKey);
-    if (BigInt(rotatedAccount) !== BigInt(boundAccount)) {
-      throw new Error("Binding authority rotated an unexpected gameplay account");
-    }
+    await rotateBoundGameplaySigner(gameplayAccountApi, boundAccount, key.publicKey);
   }
   return connectGameplayAccount({ address: boundAccount, classHash, privateKey: key.privateKey, provider });
 }

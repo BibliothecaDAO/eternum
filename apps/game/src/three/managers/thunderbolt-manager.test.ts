@@ -1,116 +1,104 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as THREE from "three";
-
-vi.mock("@bibliothecadao/types", () => ({
-  TroopType: {
-    Knight: "Knight",
-    Crossbowman: "Crossbowman",
-    Paladin: "Paladin",
-  },
-  TroopTier: {
-    T1: "T1",
-    T2: "T2",
-    T3: "T3",
-  },
-  ResourcesIds: {
-    StaminaRelic1: 1,
-  },
-  getNeighborHexes: vi.fn(() => []),
-}));
-
-vi.mock("../constants", () => ({
-  HEX_SIZE: 1,
-}));
-
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Texture, TextureLoader, Vector3 } from "three";
+vi.mock("../constants", () => ({ HEX_SIZE: 1 }));
 vi.mock("../utils", () => ({
-  getWorldPositionForHex: vi.fn(() => new THREE.Vector3()),
+  getWorldPositionForHex: ({ col, row }: { col: number; row: number }) => new Vector3(col, 0, row),
 }));
-
 import { ThunderBoltManager } from "./thunderbolt-manager";
-
-describe("ThunderBoltManager lifecycle", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("cancels scheduled thunderbolt spawns during destroy", () => {
-    const manager = new ThunderBoltManager(new THREE.Scene(), {
-      object: { position: new THREE.Vector3() },
-      target: new THREE.Vector3(),
-    });
-    const createThunderBoltSpy = vi.spyOn(manager as never, "createThunderBolt").mockImplementation(() => undefined);
-    vi.spyOn(manager as never, "getCenterHexFromCamera").mockReturnValue({ col: 0, row: 0 });
-    vi.spyOn(manager as never, "getRandomHexesAroundCenter").mockReturnValue([
-      { col: 0, row: 0 },
-      { col: 1, row: 0 },
-    ]);
-
-    manager.spawnThunderBolts();
-    manager.destroy();
-    vi.runAllTimers();
-
-    expect(createThunderBoltSpy).not.toHaveBeenCalled();
-  });
+beforeEach(() => {
+  vi.spyOn(TextureLoader.prototype, "load").mockReturnValue(new Texture());
+  vi.spyOn(Math, "random").mockReturnValue(0);
 });
-
-describe("ThunderBoltManager opacity determinism", () => {
-  it("produces deterministic opacity — same inputs yield same output regardless of previous frame", () => {
-    // Simulate the opacity calculation from the non-persistent update branch.
-    // The fix replaces the self-referential read of layer.material.opacity with a
-    // deterministic layerIndex-based brightness factor.
-    function computeOpacity(baseFade: number, flicker: number, layerIndex: number): number {
-      const layerFade = layerIndex === 0 ? 1.0 : 0.7 + layerIndex * 0.1;
-      const opacity = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade, 0.02, 1);
-      const layerBrightness = layerIndex === 0 ? 1.0 : 0.8;
-      return THREE.MathUtils.clamp(opacity * layerBrightness, 0.02, 1);
-    }
-
-    // Run twice with identical inputs — must produce identical outputs
-    const result1 = computeOpacity(0.6, 0.9, 0);
-    const result2 = computeOpacity(0.6, 0.9, 0);
-    expect(result1).toBe(result2);
-
-    const result3 = computeOpacity(0.6, 0.9, 1);
-    const result4 = computeOpacity(0.6, 0.9, 1);
-    expect(result3).toBe(result4);
-  });
-
-  it("core layers (index 0) are brighter than outer layers at the same elapsed time", () => {
-    const baseFade = 0.8;
-    const flicker = 0.75;
-
-    const layerFade0 = 1.0;
-    const opacity0 = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade0, 0.02, 1);
-    const core = THREE.MathUtils.clamp(opacity0 * 1.0, 0.02, 1);
-
-    const layerFade1 = 0.7 + 1 * 0.1;
-    const opacity1 = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade1, 0.02, 1);
-    const outer = THREE.MathUtils.clamp(opacity1 * 0.8, 0.02, 1);
-
-    expect(core).toBeGreaterThan(outer);
-  });
-
-  it("opacity stays within clamped range [0.02, 1.0] across many frames", () => {
-    for (let frame = 0; frame < 120; frame++) {
-      const progress = frame / 120;
-      const fadeIn = Math.min(1, progress / 0.15);
-      const fadeOut = progress > 0.35 ? 1 - (progress - 0.35) / 0.65 : 1;
-      const flicker = 0.65 + Math.sin(frame * 0.3 * 0.015) * 0.35;
-      const baseFade = fadeIn * fadeOut;
-
-      for (let layerIndex = 0; layerIndex < 3; layerIndex++) {
-        const layerFade = layerIndex === 0 ? 1.0 : 0.7 + layerIndex * 0.1;
-        const opacity = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade, 0.02, 1);
-        const layerBrightness = layerIndex === 0 ? 1.0 : 0.8;
-        const finalOpacity = THREE.MathUtils.clamp(opacity * layerBrightness, 0.02, 1);
-
-        expect(finalOpacity).toBeGreaterThanOrEqual(0.02);
-        expect(finalOpacity).toBeLessThanOrEqual(1.0);
-      }
-    }
-  });
+afterEach(() => vi.restoreAllMocks());
+it("anchors the strike at its hex, advances frames, and removes it after the sheet finishes", () => {
+  let now = 1000;
+  vi.spyOn(performance, "now").mockImplementation(() => now);
+  const scene = new Scene();
+  const manager = new ThunderBoltManager(scene, { target: new Vector3() }, () => 2);
+  manager.spawnThunderBoltAt({ col: 3, row: 4 });
+  const strike = scene.children[0].children[0] as Group;
+  expect(strike.position.toArray()).toEqual([3, 2.05, 4]);
+  const [front, flash] = strike.children as Mesh<import("three").BufferGeometry, MeshBasicMaterial>[];
+  const normal = flash.geometry.attributes.normal;
+  expect(new Vector3().fromBufferAttribute(normal, 0).y).toBeCloseTo(1);
+  const camera = new PerspectiveCamera(50, 1.6, 0.1, 100);
+  camera.position.set(3, 20, 25);
+  camera.lookAt(strike.position);
+  camera.updateMatrixWorld();
+  const tip = strike.position.clone().add(new Vector3(0, 12, 0));
+  const firstView = tip.clone().project(camera);
+  camera.position.set(20, 35, 25);
+  camera.lookAt(strike.position);
+  camera.updateMatrixWorld();
+  expect(tip.clone().project(camera).y).not.toBeCloseTo(firstView.y);
+  expect(front.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0]);
+  expect(front.material.depthTest).toBe(true);
+  now += 250;
+  manager.update();
+  expect(front.material.map!.offset.toArray()).toEqual([0.625, 0.875]);
+  now += 550;
+  manager.update();
+  expect(manager.getActiveCount()).toBe(0);
+  expect(scene.children[0].children).toHaveLength(0);
+  manager.destroy();
+});
+it("releases resources and cannot spawn after destruction", () => {
+  const scene = new Scene();
+  const manager = new ThunderBoltManager(scene, { target: new Vector3() });
+  manager.spawnThunderBoltAt({ col: 0, row: 0 });
+  const front = scene.children[0].children[0].children[0] as Mesh;
+  const dispose = vi.spyOn(front.material as MeshBasicMaterial, "dispose");
+  manager.destroy();
+  manager.destroy();
+  manager.spawnThunderBoltAt({ col: 1, row: 1 });
+  expect(dispose).toHaveBeenCalledTimes(1);
+  expect(manager.getActiveCount()).toBe(0);
+  expect(scene.children).toHaveLength(0);
+});
+it("keeps the authored bolt tip on the ground-flash centre at different camera bearings", () => {
+  const camera = { position: new Vector3(12, 30, 20) };
+  const scene = new Scene();
+  const manager = new ThunderBoltManager(scene, { target: new Vector3(), object: camera }, () => 3);
+  for (const bearing of [0, Math.PI / 3, Math.PI]) {
+    camera.position.set(Math.sin(bearing) * 30, 30, Math.cos(bearing) * 30);
+    manager.spawnThunderBoltAt({ col: 0, row: 0 });
+    const strike = scene.children[0].children.at(-1)!;
+    scene.updateMatrixWorld(true);
+    const [bolt, flash] = strike.children as Mesh[];
+    // Plane UV (0.5, 0.14) is the authored core's terminal point.
+    const positions = bolt.geometry.attributes.position;
+    const top = new Vector3()
+      .fromBufferAttribute(positions, 0)
+      .lerp(new Vector3().fromBufferAttribute(positions, 1), 0.5);
+    const bottom = new Vector3()
+      .fromBufferAttribute(positions, 2)
+      .lerp(new Vector3().fromBufferAttribute(positions, 3), 0.5);
+    const tip = bottom.lerp(top, 0.14).applyMatrix4(bolt.matrixWorld);
+    const centre = flash.getWorldPosition(new Vector3());
+    expect(tip.distanceTo(centre)).toBeLessThan(0.00001);
+    expect(strike.children).toHaveLength(2);
+  }
+  manager.destroy();
+});
+it("varies adjacent strikes while keeping each variant synchronized to the ground flash", () => {
+  let now = 1000;
+  vi.spyOn(performance, "now").mockImplementation(() => now);
+  const scene = new Scene();
+  const manager = new ThunderBoltManager(scene, { target: new Vector3() });
+  for (const [i, random] of [0, 0, 0.5, 0.99].entries()) {
+    vi.mocked(Math.random).mockReturnValue(random);
+    manager.spawnThunderBoltAt({ col: i, row: 0 });
+  }
+  now += 100;
+  manager.update();
+  const strikes = scene.children[0].children;
+  const rows = strikes.map((strike) => (strike.children[0] as Mesh<any, MeshBasicMaterial>).material.map!.offset.y);
+  expect(new Set(rows).size).toBe(4);
+  for (const strike of strikes) {
+    const [bolt, flash] = strike.children as Mesh<any, MeshBasicMaterial>[];
+    expect(bolt.material.map!.repeat.toArray()).toEqual([0.125, 0.125]);
+    expect(flash.material.map!.repeat.toArray()).toEqual([0.25, 0.25]);
+    expect(flash.material.map!.offset.toArray()).toEqual([0.5, 0.75]);
+  }
+  manager.destroy();
 });

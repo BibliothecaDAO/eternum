@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -7,7 +7,6 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import Trees from "lucide-react/dist/esm/icons/trees";
 import { formatBiomeBonus } from "@/ui/features/military";
-import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
@@ -96,6 +95,8 @@ const buildBiomeTroopBonusCards = (biome: BiomeType) => {
 
 interface BiomeSummaryCardProps {
   biome: BiomeType;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
   onSimulateBattle?: () => void;
   showSimulateAction?: boolean;
   /**
@@ -109,6 +110,8 @@ interface BiomeSummaryCardProps {
 
 export const BiomeSummaryCard = ({
   biome,
+  coordsLabel,
+  headerAction,
   onSimulateBattle,
   showSimulateAction = false,
   highlightTroopType,
@@ -138,7 +141,18 @@ export const BiomeSummaryCard = ({
     ) : undefined;
 
   return (
-    <InfoBubble title="Biome" icon={Trees} cue={battleAction} className="w-full flex-1 min-w-0">
+    <InfoBubble
+      collapsible={false}
+      title={coordsLabel ?? "Biome"}
+      icon={Trees}
+      cue={
+        <span className="flex items-center gap-1">
+          {headerAction}
+          {battleAction}
+        </span>
+      }
+      className="w-full shrink-0 min-w-0"
+    >
       <div className="flex flex-col gap-2">
         <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
           {biomeLabel}
@@ -183,7 +197,11 @@ export const BiomeSummaryCard = ({
   );
 };
 
-export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
+export const UnoccupiedTileQuadrants = ({
+  biome,
+  coordsLabel,
+  headerAction,
+}: Pick<BiomeSummaryCardProps, "biome" | "coordsLabel" | "headerAction">) => {
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const handleSimulateBattle = useCallback(() => {
@@ -191,10 +209,12 @@ export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   }, [biome, openSurface]);
 
   return (
-    <div className="h-full min-h-0 w-full">
-      <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
-        <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
-      </EntityDetailSection>
-    </div>
+    <BiomeSummaryCard
+      biome={biome}
+      coordsLabel={coordsLabel}
+      headerAction={headerAction}
+      onSimulateBattle={handleSimulateBattle}
+      showSimulateAction
+    />
   );
 };

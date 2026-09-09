@@ -41,24 +41,6 @@ export function displayAddress(string: string) {
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
 
-export function addressToNumber(address: string) {
-  // Convert the address to a big integer
-  let numericValue = ContractAddress(address);
-
-  // Sum the digits of the numeric value
-  let sum = 0;
-  while (numericValue > 0) {
-    sum += Number(numericValue % 5n);
-    numericValue /= 5n;
-  }
-
-  // Map the sum to a number between 1 and 10
-  const result = (sum % 5) + 1;
-
-  // Pad with a 0 if the result is less than 10
-  return result < 10 ? `0${result}` : result.toString();
-}
-
 export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string, hex: boolean = false) => {
   navigator.clipboard
     .writeText(hex ? toHexString(address) : address.toString())

@@ -496,6 +496,9 @@ importers:
       depcheck:
         specifier: ^1.4.7
         version: 1.4.7
+      draco3dgltf:
+        specifier: 1.5.7
+        version: 1.5.7
       eslint-config-love:
         specifier: ^114.0.0
         version: 114.0.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
@@ -849,6 +852,9 @@ importers:
       '@fastify/redis':
         specifier: ^6.0.0
         version: 6.2.0
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@types/pg':
         specifier: ^8.15.5
         version: 8.16.0

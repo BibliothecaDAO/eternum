@@ -16,9 +16,17 @@ describe("local tile state ownership", () => {
     expect(source).not.toContain("const buildCost = useMemo");
   });
 
+  it("renders building production and castle labor inline without a catalogue trigger", () => {
+    const local = source.slice(source.indexOf("const LocalTilePanel"), source.indexOf("const MinimapPanel"));
+    expect(local).toContain("resource={ResourcesIds.Labor}");
+    expect(local).toContain("resource={producedResource}");
+    expect(local).not.toContain("openSurface");
+    expect(local).not.toContain("ProductionModal");
+  });
+
   it("guards production and destruction against spectator intent even for an owned realm", () => {
-    expect(source).toContain("!isSpectating");
-    expect(source).toContain("!isExplicitSpectateSession()");
+    expect(source).toContain("ordersAllowed && playerStructures.some");
+    expect(source).toContain("useUIStore(canIssueOrders)");
     expect(
       source.match(/if \(!selectedBuildingHex \|\| !canManageBuilding \|\| isActionLoading\) return;/g),
     ).toHaveLength(2);

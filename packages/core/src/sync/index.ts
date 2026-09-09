@@ -8,3 +8,4 @@ export * from "./model-manifest";
 export * from "./shareholder-points";
 export * from "./scheduler";
 export * from "./world-spatial-projection";
+export * from "./leaderboard-activity";

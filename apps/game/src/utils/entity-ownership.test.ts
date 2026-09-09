@@ -13,7 +13,7 @@ vi.mock("@/sync/game-scope", () => ({
 }));
 
 // Imported after mocks to ensure they take effect.
-import { isEntityOwnedByAccount } from "./entity-ownership";
+import { arePlayersAllied, isEntityOwnedByAccount } from "./entity-ownership";
 
 type FakeStructure = { owner: unknown };
 const makeComponents = (structures: Record<string, FakeStructure>) =>
@@ -89,5 +89,24 @@ describe("isEntityOwnedByAccount", () => {
     const components = { Structure: new Map() } as unknown as Parameters<typeof isEntityOwnedByAccount>[0];
     // Passing a non-integer forces BigInt to throw.
     expect(isEntityOwnedByAccount(components, 1.5, "0xabc")).toBe(false);
+  });
+});
+
+describe("arePlayersAllied", () => {
+  it("resolves current guild membership, including leaving, without an army update", () => {
+    const members = new Map<string, { guild_id: bigint }>([
+      ["1", { guild_id: 99n }],
+      ["2", { guild_id: 99n }],
+    ]);
+    const components = { GuildMember: members } as any;
+    expect(arePlayersAllied(components, "0x01", 2n)).toBe(true);
+    members.set("2", { guild_id: 88n });
+    expect(arePlayersAllied(components, 1n, 2n)).toBe(false);
+    members.set("2", { guild_id: 0n });
+    expect(arePlayersAllied(components, 1n, 2n)).toBe(false);
+    expect(arePlayersAllied(components, 1n, 1n)).toBe(false);
+    expect(arePlayersAllied(components, undefined, 2n)).toBe(false);
+    members.set("1", { guild_id: 0n });
+    expect(arePlayersAllied(components, 1n, 2n)).toBe(false);
   });
 });

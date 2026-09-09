@@ -1,379 +1,285 @@
-import { ReactComponent as Next } from "@/assets/icons/common/arrow-right.svg";
-import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
-import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
-import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
-import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
-import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
+import { AudioCategory, useAudio } from "@/audio";
+import { signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
-import { useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { LOCAL_CAMERA_ZOOM } from "@/three/constants";
-import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
+import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import {
+  readGraphicsPreferences,
+  writeGraphicsPreferences,
+  type GraphicsPreferences,
+} from "@/three/graphics-preferences";
+import { readRenderMode, RENDER_MODE_OPTIONS, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { RENDER_MODE_OPTIONS, RENDER_MODE_DESCRIPTION, renderProfile, writeRenderMode } from "@/three/render-profile";
-import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
-import { Headline } from "@/ui/design-system/molecules";
-import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
-import { resetBootstrap } from "@/init/bootstrap";
-import { useNavigate } from "react-router-dom";
-import { ShortcutsPanel } from "@/ui/modules/shortcuts/shortcuts";
-import { addressToNumber } from "@/ui/utils/utils";
-import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
-import { useState } from "react";
-import { toast } from "@/ui/features/event-feed/notify";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
+import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
+import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
+import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
+import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
+import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress } from "@bibliothecadao/types";
+import { useDisconnect } from "@starknet-react/core";
+import { type ReactNode, useState } from "react";
 
 export const SETTINGS_POPOVER_ID = "settings";
+const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
-type SettingsView = "settings" | "shortcuts";
+export const SettingsPanel = () => (
+  <div className="flex flex-col gap-4 p-1">
+    <ProfileHeader />
+    <VideoSettings />
+    <AudioSettings />
+    <ShortcutsSection />
+    <SessionActions />
+  </div>
+);
 
-/**
- * The settings panel: the settings sections, or the keyboard shortcut list behind its View link. It renders inside
- * the gear's popover, so its audio, camera and guild subscriptions exist only while that is open, and the view resets
- * to the sections on every open.
- */
-export const SettingsPanel = () => {
-  const [view, setView] = useState<SettingsView>("settings");
+const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
-  if (view === "shortcuts") return <ShortcutsPanel onBack={() => setView("settings")} />;
-  return <SettingsSections onViewShortcuts={() => setView("shortcuts")} />;
-};
-
-const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) => {
+function ProfileHeader() {
+  const { session } = useIdentitySession();
+  const address = useAccountStore((state) => state.account?.address ?? null);
+  const players = useWorldSlicesStore((state) => state.players);
+  const { standingsByAddress } = useInGameLeaderboard();
   const {
-    account: { account },
+    setup: { components },
   } = useDojo();
-
-  const navigate = useNavigate();
-
-  // Use full audio system for reactive state updates
-  const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
-  const { trackName, next: nextTrack } = useMusicPlayer();
-  const worldmapZoomDistance =
-    useCameraZoomStore((state) => state.worldmapDistance) ?? WORLDMAP_CAMERA_ZOOM.defaultDistance;
-  const localZoomDistance = useCameraZoomStore((state) => state.localDistance) ?? LOCAL_CAMERA_ZOOM.defaultDistance;
-  const setWorldmapZoomDistance = useCameraZoomStore((state) => state.setWorldmapDistance);
-  const setLocalZoomDistance = useCameraZoomStore((state) => state.setLocalDistance);
-  const resetCameraZoom = useCameraZoomStore((state) => state.resetToDefaults);
-
-  const playToggleOn = useUISound("ui.toggle_on");
-  const playToggleOff = useUISound("ui.toggle_off");
-
-  const { toggleFullScreen, isFullScreen } = useScreenOrientation();
-  const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
-  const mode = useGameModeConfig();
-
-  const clickFullScreen = () => {
-    if (fullScreen) {
-      playToggleOff();
-    } else {
-      playToggleOn();
-    }
-    setFullScreen(!fullScreen);
-    toggleFullScreen();
-  };
-
-  // The guilds slice is the subscription; the bridge publishes it once per ingest slice and on account change.
-  const guilds = useWorldSlicesStore((state) => state.guilds);
-  const [selectedGuilds, setSelectedGuilds] = useState<string[]>(() => {
-    const savedGuilds = localStorage.getItem("WHITELIST");
-    return savedGuilds ? savedGuilds.split(",") : [];
-  });
-
-  const handleGuildSelect = (guildId: string) => {
-    setSelectedGuilds((prev) => {
-      const newGuilds = prev.includes(guildId) ? prev.filter((id) => id !== guildId) : [...prev, guildId];
-      localStorage.setItem("WHITELIST", newGuilds.join(","));
-      toast(prev.includes(guildId) ? "Guild removed from whitelist!" : "Guild added to whitelist!");
-      return newGuilds;
-    });
-  };
-
-  const handleClearGuilds = () => {
-    setSelectedGuilds([]);
-    localStorage.removeItem("WHITELIST");
-    toast("Guild whitelist cleared!");
-  };
+  const [error, setError] = useState<string | null>(null);
+  const owner = address ? ContractAddress(address) : null;
+  // The session username is the synced name; the chain name stands in when the session has none.
+  const name = session?.user.name || (owner && players.find((player) => player.address === owner)?.name) || null;
+  const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
+  const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, components)?.name ?? null);
+  const spectating = isExplicitSpectateSession();
+  const facts = [
+    standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} VP`,
+    guild,
+    spectating && name && `as ${name}`,
+  ].filter(Boolean);
 
   return (
-    <div className="flex flex-col space-y-6 p-2">
-      <div className="flex items-center justify-center">
-        <Avatar size="xl" className="relative z-1" src={`/images/avatars/${addressToNumber(account.address)}.png`} />
-      </div>
-
-      {/* Settings Sections */}
-      <div className="flex flex-col space-y-6">
-        {/* World Selection */}
-        <section className="space-y-3">
-          <Headline>World</Headline>
-          <div className="flex items-center justify-between text-xs text-gray-gold">
-            <div>Switch Game</div>
-            <Button
-              size="xs"
-              onClick={() => {
-                toast("Redirecting to the landing page to change games…");
-                try {
-                  redirectToLandingWorldSelection();
-                } catch {
-                  // Redirect helper throws to terminate legacy async flows.
-                }
-              }}
+    <header className="flex items-center gap-3 border-b border-gold/20 pb-3">
+      {address && <img src={getAvatarUrl(address)} alt="" className="h-10 w-10 rounded-full border border-gold/30" />}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>
+          {address && (
+            <button
+              type="button"
+              aria-label="Copy address"
+              className="shrink-0 font-mono text-[11px] text-gold/60"
+              onClick={() => navigator.clipboard.writeText(address).catch(() => setError("Could not copy address"))}
             >
-              Change Game
-            </Button>
-          </div>
-          <div className="flex items-center justify-between text-xs text-gray-gold">
-            <div>Return Home</div>
-            <Button
-              size="xs"
-              onClick={() => {
-                resetBootstrap();
-                navigate("/");
-              }}
-            >
-              Home
-            </Button>
-          </div>
-          <div className="flex items-center justify-between text-xs text-gray-gold">
-            <div>Keyboard Shortcuts</div>
-            <Button size="xs" onClick={onViewShortcuts}>
-              View
-            </Button>
-          </div>
-        </section>
-        {/* Video controls and the temporal render profile. */}
-        <section className="space-y-3">
-          <Headline>Video & Graphics</Headline>
-          <div className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold" onClick={clickFullScreen}>
-            <Checkbox enabled={fullScreen} />
-            <div>Fullscreen</div>
-          </div>
-
-          <div className="text-xs text-gray-gold mt-2">Render Mode</div>
-          <div className="flex space-x-2">
-            {RENDER_MODE_OPTIONS.map(({ label, mode: nextMode }) => (
-              <Button
-                key={nextMode}
-                aria-pressed={renderProfile.mode === nextMode}
-                variant={renderProfile.mode === nextMode ? "success" : "outline"}
-                onClick={() => {
-                  if (renderProfile.mode === nextMode) return;
-                  writeRenderMode(localStorage, nextMode);
-                  window.location.reload();
-                }}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-          <p className="text-xs leading-relaxed text-gray-gold/70">{RENDER_MODE_DESCRIPTION}</p>
-          <WorldAppearanceControls />
-          <RendererDebugControl className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
-        </section>
-
-        {/* Camera — persisted zoom per scene. Changes apply immediately to the
-              active scene and are restored on every scene switch and reload. */}
-        <section className="space-y-3">
-          <Headline>Camera</Headline>
-          <RangeInput
-            title="World Map Zoom"
-            fromTitle="Close"
-            toTitle="Far"
-            min={WORLDMAP_CAMERA_ZOOM.minDistance}
-            max={WORLDMAP_CAMERA_ZOOM.maxDistance}
-            value={Math.round(worldmapZoomDistance)}
-            onChange={setWorldmapZoomDistance}
-          />
-          <RangeInput
-            title="Local View Zoom"
-            fromTitle="Close"
-            toTitle="Far"
-            min={LOCAL_CAMERA_ZOOM.minDistance}
-            max={LOCAL_CAMERA_ZOOM.maxDistance}
-            value={Math.round(localZoomDistance)}
-            onChange={setLocalZoomDistance}
-          />
-          <Button size="xs" variant="outline" onClick={resetCameraZoom}>
-            Reset to Default
-          </Button>
-        </section>
-
-        {/* Guild Section */}
-        <section className="space-y-3">
-          <Headline>Whitelist Guilds</Headline>
-          <div className="flex flex-col space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {guilds.map((guild) => (
-                <Button
-                  size="xs"
-                  key={guild.entityId}
-                  variant={selectedGuilds.includes(guild.entityId.toString()) ? "success" : "outline"}
-                  onClick={() => handleGuildSelect(guild.entityId.toString())}
-                >
-                  {guild.name}
-                </Button>
-              ))}
-            </div>
-            {selectedGuilds.length > 0 && (
-              <Button size="xs" variant="danger" onClick={handleClearGuilds} className="self-start">
-                Clear All
-              </Button>
-            )}
-          </div>
-        </section>
-
-        {/* Sound Section */}
-        <section className="space-y-3">
-          <Headline>Sound</Headline>
-          <div className="flex space-x-2">
-            {audioState && !audioState.muted ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  playToggleOff();
-                  setMuted(true);
-                }}
-              >
-                <Unmuted className="w-4 cursor-pointer fill-gold" />
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setMuted(false);
-                  playToggleOn();
-                }}
-              >
-                <Muted className="w-4 cursor-pointer fill-gold" />
-              </Button>
-            )}
-            <ScrollingTrackName trackName={trackName || "Loading..."} trackArtist={mode.audio.trackArtist} />
-            <Button variant="outline" onClick={nextTrack}>
-              <Next className="w-2 cursor-pointer fill-gold" />
-            </Button>
-          </div>
-          <div className="space-y-2">
-            <RangeInput
-              value={Math.round((audioState?.masterVolume || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setMasterVolume(value / 100)}
-              title="Master Volume"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
-              title="Music"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.UI, value / 100)}
-              title="UI Effects"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.COMBAT] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.COMBAT, value / 100)}
-              title="Combat Effects"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.RESOURCE] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.RESOURCE, value / 100)}
-              title="Resource Effects"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.BUILDING] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.BUILDING, value / 100)}
-              title="Building Effects"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.AMBIENT] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.AMBIENT, value / 100)}
-              title="Ambient"
-            />
-            <RangeInput
-              value={Math.round((audioState?.categoryVolumes[AudioCategory.ENVIRONMENT] || 0) * 100)}
-              fromTitle="Mute"
-              onChange={(value) => setCategoryVolume(AudioCategory.ENVIRONMENT, value / 100)}
-              title="Weather"
-            />
-          </div>
-        </section>
-
-        {/* Footer — credits + outbound links only. The "Done" button is
-              redundant with the window close (X) and the onboarding shortcut
-              was only useful at first-run. */}
-        <section className="space-y-4">
-          <div className="flex space-x-4">
-            <a target="_blank" href="https://realms.world">
-              <RealmsWorld className="w-16" />
-            </a>
-            <a href="https://www.dojoengine.org/en/">
-              <DojoMark className="w-16" />
-            </a>
-          </div>
-
-          <div className="text-xs text-white/40">
-            Built by{" "}
-            <a className="underline" href="https://realms.world">
-              Realms.World
-            </a>
-            , powered by{" "}
-            <a className="underline" href="https://www.dojoengine.org/en/">
-              dojo
-            </a>{" "}
-            <br /> Fork and modify this client on{" "}
-            <a className="underline" href="https://github.com/BibliothecaDAO/eternum">
-              Github
-            </a>
-          </div>
-        </section>
+              {shortAddress(address)} ⧉
+            </button>
+          )}
+        </div>
+        {facts.length > 0 && <p className={cn("truncate", HUD_BODY)}>{facts.join(" · ")}</p>}
+        {error && (
+          <p role="alert" className="text-xs text-danger">
+            {error}
+          </p>
+        )}
       </div>
-    </div>
+    </header>
   );
-};
+}
 
-// ScrollingTrackName moved to MusicPlayer component
-
-const WorldAppearanceControls = () => {
-  const { fogStyle, reducedMotion, setFogStyle, setReducedMotion } = useWorldAppearanceStore();
+function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-3 border-t border-gold/15 pt-3">
-      <legend className="text-xs text-gray-gold">World atmosphere</legend>
-      <div className="flex gap-2" role="group" aria-label="Fog appearance">
-        {(
-          [
-            ["clear", "Clear frontier"],
-            ["mist", "Soft mist"],
-          ] as const
-        ).map(([style, label]) => (
-          <Button
-            key={style}
-            size="xs"
-            variant={fogStyle === style ? "success" : "outline"}
-            aria-pressed={fogStyle === style}
-            onClick={() => setFogStyle(style)}
+    <section aria-label={title} className="space-y-2">
+      <h2 className={cn("font-sans", HUD_LABEL)}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+function SelectedOption({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(HUD_PILL_BUTTON, selected && "border-gold bg-gold text-dark-brown")}
+    >
+      {children}
+    </button>
+  );
+}
+function VideoSettings() {
+  const preferences = readGraphicsPreferences(localStorage);
+  const renderMode = readRenderMode(localStorage);
+  const { reducedMotion, setReducedMotion } = useWorldAppearanceStore();
+  const changeGraphics = (change: Partial<GraphicsPreferences>) => {
+    writeGraphicsPreferences(localStorage, { ...preferences, ...change });
+    window.location.reload();
+  };
+  const changeRenderMode = (mode: RenderMode) => {
+    writeRenderMode(localStorage, mode);
+    window.location.reload();
+  };
+  return (
+    <SettingsSection title="Video & Graphics">
+      <div className="flex flex-wrap gap-2">
+        {(["balanced", "high"] as const).map((quality) => (
+          <SelectedOption
+            key={quality}
+            selected={preferences.quality === quality}
+            onClick={() => changeGraphics({ quality })}
           >
-            {label}
-          </Button>
+            {quality === "high" ? "High" : "Balanced"}
+          </SelectedOption>
         ))}
+        {RENDER_MODE_OPTIONS.map((option) => (
+          <SelectedOption
+            key={option.mode}
+            selected={renderMode === option.mode}
+            onClick={() => changeRenderMode(option.mode)}
+          >
+            {option.label}
+          </SelectedOption>
+        ))}
+        <SelectedOption
+          selected={preferences.shadows}
+          onClick={() => changeGraphics({ shadows: !preferences.shadows })}
+        >
+          Shadows
+        </SelectedOption>
+        <SelectedOption selected={reducedMotion} onClick={() => setReducedMotion(!reducedMotion)}>
+          Reduced motion
+        </SelectedOption>
       </div>
-      <p className="text-xs leading-relaxed text-gray-gold/70">
-        Keep explored terrain clear or soften the frontier with mist. Unexplored territory stays hidden.
-      </p>
-      <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-gold">
-        <input
-          type="checkbox"
-          checked={reducedMotion}
-          onChange={(event) => setReducedMotion(event.target.checked)}
-          className="accent-gold"
-        />
-        Reduce ambient motion
-      </label>
-    </fieldset>
+      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
+    </SettingsSection>
   );
-};
+}
+
+function VolumeSlider({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="grid grid-cols-[4rem_1fr_2.5rem] items-center gap-2">
+      <span className={HUD_BODY}>{label}</span>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={value}
+        aria-label={label}
+        className="w-full accent-gold"
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <span className={cn("text-right tabular-nums", HUD_BODY)}>{value}</span>
+    </label>
+  );
+}
+function AudioSettings() {
+  const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
+  return (
+    <SettingsSection title="Audio">
+      <VolumeSlider
+        label="Master"
+        value={Math.round((audioState?.masterVolume ?? 0) * 100)}
+        onChange={(value) => setMasterVolume(value / 100)}
+      />
+      <VolumeSlider
+        label="Music"
+        value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] ?? 0) * 100)}
+        onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
+      />
+      <VolumeSlider
+        label="Effects"
+        value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] ?? 0) * 100)}
+        onChange={(value) => effectsCategories.forEach((category) => setCategoryVolume(category, value / 100))}
+      />
+      <SelectedOption selected={audioState?.muted ?? false} onClick={() => setMuted(!audioState?.muted)}>
+        Mute
+      </SelectedOption>
+    </SettingsSection>
+  );
+}
+
+const KEY_NAMES: Record<string, string> = { Escape: "Esc" };
+const formatShortcutKey = (
+  key: string,
+  modifiers?: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean },
+) =>
+  [
+    modifiers?.ctrl && "Ctrl",
+    modifiers?.alt && "Alt",
+    modifiers?.meta && "Meta",
+    modifiers?.shift && "Shift",
+    KEY_NAMES[key] ?? (key.length === 1 ? key.toUpperCase() : key),
+  ]
+    .filter(Boolean)
+    .join("+");
+
+/** Read-only: one line per bound key (both scenes bind the same keys), plus the chat binding. */
+function ShortcutsSection() {
+  const bound = getShortcutManager().getShortcuts();
+  // One row per key; a key bound differently per scene lists each meaning once.
+  const bindings = new Map<string, string[]>();
+  for (const shortcut of [...bound, CHAT_SHORTCUT]) {
+    const key = formatShortcutKey(shortcut.key, "modifiers" in shortcut ? shortcut.modifiers : undefined);
+    const meanings = bindings.get(key) ?? [];
+    if (!meanings.includes(shortcut.description)) meanings.push(shortcut.description);
+    bindings.set(key, meanings);
+  }
+  return (
+    <SettingsSection title="Shortcuts">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        {[...bindings].map(([key, meanings]) => (
+          <div key={key} className="contents">
+            <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-[11px] text-gold">{key}</dt>
+            <dd className={cn("truncate", HUD_BODY)}>{meanings.join(" · ")}</dd>
+          </div>
+        ))}
+      </dl>
+    </SettingsSection>
+  );
+}
+
+function SessionActions() {
+  const { session } = useIdentitySession();
+  const { disconnectAsync } = useDisconnect();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const canSignOut = Boolean(session) && !isExplicitSpectateSession();
+  const signOut = async () => {
+    setPending(true);
+    setError(null);
+    try {
+      await signOutIdentitySession(disconnectAsync);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Sign out failed");
+    } finally {
+      setPending(false);
+    }
+  };
+  return (
+    <section aria-label="Session" className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3">
+      {canSignOut && (
+        <button type="button" disabled={pending} onClick={signOut} className={HUD_PILL_BUTTON}>
+          {pending ? "Signing out…" : "Sign out"}
+        </button>
+      )}
+      <button type="button" onClick={() => window.location.assign("/")} className={HUD_PILL_BUTTON}>
+        Leave game
+      </button>
+      {error && (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}

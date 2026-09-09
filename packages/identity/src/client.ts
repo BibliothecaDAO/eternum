@@ -1,4 +1,4 @@
-import { resolveEndpoint } from "@realms-world/chain";
+import { isLoopbackOrigin, resolveEndpoint } from "@realms-world/chain";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -28,20 +28,27 @@ const readJson = async <T>(response: Response): Promise<T> => {
 
 export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: IdentityClientOptions) => {
   const authBaseUrl = resolveEndpoint(baseUrl, { name: "identity base URL", browserFacing: true });
-  const request = (path: string, init?: RequestInit) =>
-    fetch(`${authBaseUrl}${path}`, {
+  const storage =
+    typeof window !== "undefined" && isLoopbackOrigin(window.location.origin) ? window.localStorage : null;
+  const tokenKey = `identity-session:${authBaseUrl}`;
+  const request = (path: string, init?: RequestInit) => {
+    const token = storage?.getItem(tokenKey);
+    return fetch(`${authBaseUrl}${path}`, {
       ...init,
       credentials: "include",
       headers: {
         "content-type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
         ...init?.headers,
       },
     });
+  };
 
   const getSession = async (): Promise<Session | null> => {
     const response = await request("/get-session", { method: "GET" });
-    if (response.status === 401) return null;
-    return readJson<Session | null>(response);
+    const session = response.status === 401 ? null : await readJson<Session | null>(response);
+    if (!session) storage?.removeItem(tokenKey);
+    return session;
   };
 
   const signOut = async (): Promise<void> => {
@@ -49,6 +56,7 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     if (!response.ok) {
       throw new Error(`Identity request failed with status ${response.status}`);
     }
+    storage?.removeItem(tokenKey);
   };
 
   const signIn = async (options: SignInOptions): Promise<Session> => {
@@ -60,7 +68,7 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     const message = buildSiwsMessage({ ...options, nonce });
     const signature = await options.signTypedData(message);
 
-    await readJson<{ token: string }>(
+    const { token } = await readJson<{ token: string }>(
       await request("/siws/verify", {
         method: "POST",
         body: JSON.stringify({
@@ -71,6 +79,7 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
       }),
     );
 
+    storage?.setItem(tokenKey, token);
     const session = await getSession();
     if (!session) throw new Error("Identity session was not created");
     return session;

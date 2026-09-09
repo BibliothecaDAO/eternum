@@ -1,7 +1,9 @@
 // @vitest-environment node
 
-import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
+import { createEmptyActivityBreakdown, type HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { fetchGameReviewData } from "./game-review-service";
 
 const PLAYER = "0x62ba685f1d600ac7bda27e556b787548da32c7c0aa3ff5f58dddc07b9116f33";
 const GAME_ID = 5;
@@ -10,12 +12,14 @@ const TRIAL_ID = "0x1c6b";
 
 const herald = vi.hoisted(() => ({
   fetchHistory: vi.fn(),
+  fetchLeaderboard: vi.fn(),
   fetchReviewSnapshot: vi.fn(),
   fetchTransactionCount: vi.fn(),
 }));
 
 vi.mock("@/runtime/world/herald-http", () => ({
   fetchHeraldGameHistory: herald.fetchHistory,
+  fetchHeraldGameLeaderboard: herald.fetchLeaderboard,
   fetchHeraldGameReviewSnapshot: herald.fetchReviewSnapshot,
   fetchHeraldTransactionCount: herald.fetchTransactionCount,
 }));
@@ -73,6 +77,12 @@ describe("game review Herald read model", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     herald.fetchReviewSnapshot.mockResolvedValue(reviewSnapshot());
+    const activityBreakdown = createEmptyActivityBreakdown();
+    activityBreakdown.exploration = { count: 166, points: 830 };
+    herald.fetchLeaderboard.mockResolvedValue({
+      game_id: String(GAME_ID),
+      entries: [{ address: PLAYER, rank: 1, totalPoints: 830, activityBreakdown }],
+    });
     herald.fetchHistory.mockResolvedValue({
       complete_through_block: REVIEW_BLOCK,
       items: [],
@@ -84,11 +94,10 @@ describe("game review Herald read model", () => {
   });
 
   it("builds the exact L3 result and transaction stats without a SQL reader", async () => {
-    const { fetchGameReviewData } = await import("./game-review-service");
-
     const review = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
 
     expect(review.stats.totalTransactions).toBe(42);
+    expect(review.stats.totalTilesExplored).toBe(166);
     expect(review.rewards?.isRanked).toBe(true);
     expect(review.rewards?.chests).toBe(2);
     expect(herald.fetchReviewSnapshot).toHaveBeenCalledOnce();
@@ -102,8 +111,6 @@ describe("game review Herald read model", () => {
       offset: 0,
       total: 0,
     });
-    const { fetchGameReviewData } = await import("./game-review-service");
-
     await expect(
       fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER }),
     ).rejects.toThrow(/complete through block 99/);

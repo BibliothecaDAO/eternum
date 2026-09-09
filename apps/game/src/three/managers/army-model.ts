@@ -442,7 +442,6 @@ export class ArmyModel {
 
   private createModelData(gltf: any, ownsGeometry: boolean = true): ModelData {
     const group = new Group();
-    const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
 
@@ -473,7 +472,6 @@ export class ArmyModel {
 
     return {
       group,
-      sourceScene,
       instancedMeshes,
       contactShadowMesh,
       contactShadowScale,
@@ -492,26 +490,6 @@ export class ArmyModel {
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
       ownsGeometry,
     };
-  }
-
-  private createRenderableSourceScene(scene: Object3D): Object3D {
-    const template = new Group();
-    scene.updateMatrixWorld(true);
-    this.dummyMatrix.copy(scene.matrixWorld).invert();
-
-    scene.traverse((child: Object3D) => {
-      if (!(child instanceof Mesh)) {
-        return;
-      }
-
-      const clone = child.clone();
-      clone.raycast = () => {};
-      this.contactShadowMatrix.copy(this.dummyMatrix).multiply(child.matrixWorld);
-      this.contactShadowMatrix.decompose(clone.position, clone.quaternion, clone.scale);
-      template.add(clone);
-    });
-
-    return template;
   }
 
   private computeContactShadowScale(gltf: any): number {
@@ -705,16 +683,6 @@ export class ArmyModel {
     } catch (error) {
       console.error("Failed to preload army models", error);
     }
-  }
-
-  public async getModelSourceScene(modelType: ModelType): Promise<Object3D> {
-    const modelData = await this.ensureModel(modelType);
-    return modelData.sourceScene;
-  }
-
-  public async getCosmeticModelSourceScene(skin: ResolvedCosmeticSkin): Promise<Object3D> {
-    const modelData = await this.ensureCosmeticModel(skin);
-    return modelData.sourceScene;
   }
 
   public assignModelToEntity(entityId: number, modelType: ModelType): void {

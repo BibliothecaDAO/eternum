@@ -1,3 +1,4 @@
+import { bearer } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -66,5 +67,5 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [siws({ domain: serverEnv.VITE_BASE_URL })],
+  plugins: [siws({ domain: serverEnv.VITE_BASE_URL }), bearer()],
 });

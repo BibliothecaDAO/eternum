@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { BiomeSummaryCard } from "./unoccupied-tile-quadrants";
+import { BiomeSummaryCard, UnoccupiedTileQuadrants } from "./unoccupied-tile-quadrants";
 
 const mocks = vi.hoisted(() => ({
   getBiomeCombatBonus: vi.fn(),
@@ -24,10 +24,6 @@ vi.mock("@/ui/design-system/molecules/resource-icon", () => ({
 
 vi.mock("@/ui/features/military", () => ({
   formatBiomeBonus: (bonus: number) => `${Math.round((bonus - 1) * 100)}%`,
-}));
-
-vi.mock("@/ui/features/world/components/entities/layout", () => ({
-  EntityDetailSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/ui/features/military/battle/battle-lab", () => ({
@@ -94,7 +90,8 @@ describe("BiomeSummaryCard", () => {
     const summaryCard = container.firstElementChild;
 
     expect(summaryCard?.className).toContain("w-full");
-    expect(summaryCard?.className).toContain("flex-1");
+    expect(summaryCard?.className).not.toContain("flex-1");
+    expect(summaryCard?.className).toContain("shrink-0");
     expect(summaryCard?.className).toContain("min-w-0");
     expect(bonusGrid?.className).toContain("w-full");
     expect(bonusGrid?.className).toContain("flex");
@@ -110,5 +107,33 @@ describe("BiomeSummaryCard", () => {
     expect(container.textContent).toContain("Penalty");
     expect(container.textContent).toContain("Neutral");
     expect(container.textContent).toContain("Advantage");
+  });
+  it("puts plain-tile coordinates and re-sync in the biome header with the bonuses", async () => {
+    const resync = vi.fn();
+    await act(async () =>
+      root.render(
+        <UnoccupiedTileQuadrants
+          biome={"Tundra" as never}
+          coordsLabel="Biome · (5, 3)"
+          headerAction={<button onClick={resync}>Re-sync</button>}
+        />,
+      ),
+    );
+    const header = container.querySelector(".rounded-xl")!.firstElementChild!;
+    expect(header.textContent).toContain("Biome · (5, 3)");
+    expect(header.textContent).toContain("Re-sync");
+    expect(container.querySelectorAll(".rounded-xl")).toHaveLength(1);
+    expect(container.firstElementChild).toBe(header.parentElement);
+    expect(header.hasAttribute("aria-expanded")).toBe(false);
+    await act(async () => (header.querySelector("button") as HTMLButtonElement).click());
+    expect(resync).toHaveBeenCalledOnce();
+    expect(container.querySelectorAll("[data-bonus-card]")).toHaveLength(3);
+  });
+  it("keeps troop bonuses visible when the biome header is clicked", async () => {
+    await act(async () => root.render(<BiomeSummaryCard biome={"Tundra" as never} />));
+    const header = container.firstElementChild!.firstElementChild as HTMLElement;
+    await act(async () => header.click());
+    expect(container.querySelectorAll("[data-bonus-card]")).toHaveLength(3);
+    expect(header.getAttribute("role")).not.toBe("button");
   });
 });

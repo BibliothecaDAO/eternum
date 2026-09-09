@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { createHeraldRequestHandler } from "./http";
 import type { GameSnapshot, ReplayMetrics } from "./types";
@@ -51,6 +51,7 @@ const handler = createHeraldRequestHandler({
   },
   metrics,
   history: {
+    leaderboard: (gameId) => ({ game_id: gameId, entries: [] }),
     queryEvents: async (query) => ({
       complete_through_block: 12,
       items: [
@@ -124,4 +125,36 @@ describe("herald HTTP", () => {
 
     expect((await handler(new Request("http://herald/other/games/7/snapshot"))).status).toBe(404);
   });
+});
+
+it("serves the prepared leaderboard aggregate without paging history", async () => {
+  const response = await handler(new Request("http://herald/madara/games/7/leaderboard"));
+  expect(response.status).toBe(200);
+  expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  expect(await response.json()).toEqual({ game_id: "7", entries: [] });
+});
+
+it("passes a battle-only history filter to the store before pagination", async () => {
+  const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 350, offset: 0, complete_through_block: 12 }));
+  const battleHandler = createHeraldRequestHandler({
+    chain: "madara",
+    confirmedBlock: () => 12,
+    decodedModelCount: 0,
+    metrics,
+    fold: { modelRows: () => [], snapshot: () => snapshot },
+    undecodableEventCount: () => 0,
+    history: {
+      queryEvents,
+      leaderboard: () => null,
+      reviewSnapshot: async () => snapshot,
+      transactionCount: async () => ({ game_id: "7", count: 0 }),
+    },
+  });
+  const response = await battleHandler(
+    new Request("http://herald/madara/games/7/history?model=StoryEvent&story=BattleStory&limit=350"),
+  );
+  expect(response.status).toBe(200);
+  expect(queryEvents).toHaveBeenCalledWith(
+    expect.objectContaining({ gameId: "7", model: "StoryEvent", story: "BattleStory", limit: 350, offset: 0 }),
+  );
 });

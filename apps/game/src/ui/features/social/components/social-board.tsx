@@ -54,9 +54,9 @@ export const LEADERBOARD_POPOVER_ID = "leaderboard";
 
 /**
  * The social board: players, tribes, faith and prize tabs with the expandable player / tribe detail column. It
- * renders inside the leaderboard button's popover; its world-slice subscriptions exist only while that is open.
+ * renders inside the identity chip's popover; its world-slice subscriptions exist only while that is open.
  */
-export const SocialBoard = () => {
+export const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) => {
   const {
     account: { account },
     setup: { components },
@@ -147,7 +147,9 @@ export const SocialBoard = () => {
             <span>Players</span>
           </div>
         ),
-        component: <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} />,
+        component: (
+          <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} focusOwnPlayer={focusOwnPlayer} />
+        ),
         expandedContent: <PlayerId selectedPlayer={selectedPlayer} />,
       },
     ];
@@ -199,6 +201,7 @@ export const SocialBoard = () => {
 
     return baseTabs;
   }, [
+    focusOwnPlayer,
     showGuildsTab,
     isEternumMode,
     isBlitzMode,

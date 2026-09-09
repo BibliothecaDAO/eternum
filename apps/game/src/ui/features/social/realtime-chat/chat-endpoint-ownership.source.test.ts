@@ -8,13 +8,13 @@ import { describe, expect, it } from "vitest";
 describe("realtime chat endpoint ownership", () => {
   it("uses the dedicated chat endpoint and leaves it unset in the Madara lab", () => {
     const sidebarSource = readFileSync(
-      resolve(process.cwd(), "src/ui/features/world/containers/left-command-sidebar.tsx"),
+      resolve(process.cwd(), "src/ui/features/world/containers/hud-chat-window.tsx"),
       "utf8",
     );
     const madaraEnvSample = readFileSync(resolve(process.cwd(), ".env.madara.blitz.sample"), "utf8");
 
     expect(sidebarSource).toContain("env.VITE_PUBLIC_CHAT_URL");
-    expect(sidebarSource).toContain("`game:${gameId}`");
+    expect(sidebarSource).toContain("`game:${configManager.getActiveGameId()}`");
     expect(sidebarSource).not.toContain('"global"');
     expect(sidebarSource).not.toContain("queryParams");
     expect(sidebarSource).not.toContain("demo-player");

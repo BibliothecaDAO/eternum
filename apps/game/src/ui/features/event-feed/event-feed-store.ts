@@ -12,6 +12,8 @@ export interface FeedNotice {
   at: number;
   /** How long the ticker shows it; the feed panel keeps it until it scrolls off the recent list. */
   ttlMs: number;
+  /** Where the notice happened, when the caller knows; a row with a location flies the camera. */
+  location?: { x: number; y: number };
 }
 
 const MAX_NOTICES = 50;

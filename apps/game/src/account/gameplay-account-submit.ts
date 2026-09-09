@@ -16,6 +16,9 @@ type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promi
 interface ConfiguredGameplaySubmit {
   chain: GameChain;
   execute: RawExecute;
+  recoverSigner?: () => Promise<boolean>;
+  signerRecovery?: Promise<boolean>;
+  signerRevision: number;
 }
 
 /**
@@ -46,7 +49,11 @@ interface GameplaySubmit extends ExecuteGameplayAccountTransactionOptions {
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
 const accountNonceDispensers = new Map<string, AccountNonceDispenser>();
 
-export function configureGameplayAccountSubmits(account: Account, chain: GameChain): Account {
+export function configureGameplayAccountSubmits(
+  account: Account,
+  chain: GameChain,
+  recoverSigner?: () => Promise<boolean>,
+): Account {
   const configured = configuredGameplaySubmits.get(account);
   if (configured) {
     assertConfiguredChain(account.address, configured.chain, chain);
@@ -56,6 +63,8 @@ export function configureGameplayAccountSubmits(account: Account, chain: GameCha
   configuredGameplaySubmits.set(account, {
     chain,
     execute: account.execute.bind(account),
+    recoverSigner,
+    signerRevision: 0,
   });
   account.execute = ((calls: AllowArray<Call>, details?: UniversalDetails) =>
     executeGameplayAccountTransaction({ account, calls, chain, details })) as Account["execute"];
@@ -73,7 +82,7 @@ export function executeGameplayAccountTransaction({
 
   const execute = configured?.execute ?? account.execute.bind(account);
   const dispenser = resolveNonceDispenser(`${chain}:${account.address.toLowerCase()}`);
-  return submitWithLocalNonce({ account, calls, chain, details, dispenser, execute });
+  return submitWithLocalNonce({ account, calls, chain, details, dispenser, execute }, configured);
 }
 
 function assertConfiguredChain(address: string, configuredChain: GameChain, requestedChain: GameChain): void {
@@ -88,13 +97,41 @@ function resolveNonceDispenser(key: string): AccountNonceDispenser {
   return dispenser;
 }
 
-async function submitWithLocalNonce(submit: GameplaySubmit): Promise<InvokeFunctionResponse> {
+async function submitWithLocalNonce(
+  submit: GameplaySubmit,
+  configured?: ConfiguredGameplaySubmit,
+): Promise<InvokeFunctionResponse> {
+  const signerRevision = configured?.signerRevision;
   try {
     return await submitOnce(submit);
   } catch (error) {
-    if (!isNonceRejection(error)) throw error;
+    if (isNonceRejection(error)) return submitOnce(submit);
+    if (!configured || !isSignerValidationFailure(error)) throw error;
+    const recovered = configured.signerRevision !== signerRevision || (await recoverConfiguredSigner(configured));
+    if (!recovered) throw error;
     return submitOnce(submit);
   }
+}
+
+function isSignerValidationFailure(error: unknown): boolean {
+  const validationData = error && typeof error === "object" && "data" in error ? error.data : undefined;
+  return [error, validationData].some((part) =>
+    /\bAccount:\s*invalid signature\b/i.test(extractErrorMessage(part, "")),
+  );
+}
+
+function recoverConfiguredSigner(configured: ConfiguredGameplaySubmit): Promise<boolean> {
+  if (!configured.recoverSigner) return Promise.resolve(false);
+  configured.signerRecovery ??= configured
+    .recoverSigner()
+    .then((recovered) => {
+      if (recovered) configured.signerRevision += 1;
+      return recovered;
+    })
+    .finally(() => {
+      configured.signerRecovery = undefined;
+    });
+  return configured.signerRecovery;
 }
 
 async function submitOnce({

@@ -177,7 +177,7 @@ describe("LandingIdentityChip sign-in requests", () => {
     expect(disconnectMock).toHaveBeenCalledOnce();
     expect(useIdentitySessionStore.getState().session).toBeNull();
     expect(usePopoverStore.getState().openId).toBeNull();
-    expect(consoleError).toHaveBeenCalledWith("identity_sign_out_failed", { error: "Wallet unavailable" });
+    expect(consoleError).toHaveBeenCalledWith("identity_wallet_disconnect_failed", expect.any(Error));
     consoleError.mockRestore();
   });
 });

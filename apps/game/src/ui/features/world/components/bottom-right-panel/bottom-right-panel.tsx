@@ -1,22 +1,21 @@
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
+import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
+import { canIssueOrders } from "@/utils/can-issue-orders";
+import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
-import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
-import { LeftView } from "@/types";
+import { formatTilePanelTitle } from "./tile-panel-title";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
-import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { MarketModal } from "@/ui/features/economy/trading";
 import {
   configManager,
   divideByPrecision,
@@ -46,20 +45,17 @@ import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "reac
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
-import { ProductionModal } from "@/ui/features/settlement";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { TileManager } from "@bibliothecadao/eternum";
-import Bot from "lucide-react/dist/esm/icons/bot";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PauseIcon from "lucide-react/dist/esm/icons/pause";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Play from "lucide-react/dist/esm/icons/play";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 
-import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
+import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
@@ -156,8 +152,8 @@ const MapTilePanel = () => {
   }, [occupierType]);
 
   const isStructure = useMemo(() => {
-    return Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
-  }, [occupierType, tile?.occupier_is_structure]);
+    return isTileOccupierStructure(occupierType);
+  }, [occupierType]);
 
   const isReservedHyperstructure = useMemo(() => {
     return isTileOccupierReservedHyperstructure(occupierType);
@@ -173,7 +169,7 @@ const MapTilePanel = () => {
 
   const tileTypeLabel = useMemo(() => {
     if (!tile) return "Hex Tile";
-    if (!hasOccupier) return "Biome Tile";
+    if (!hasOccupier) return "Biome";
     if (isSpire) return "Spire Tile";
     if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";
@@ -182,9 +178,7 @@ const MapTilePanel = () => {
     return "Army Tile";
   }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, isQuest]);
 
-  const panelTitle = selectedHex
-    ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
-    : "No Tile Selected";
+  const panelTitle = selectedHex ? formatTilePanelTitle(tileTypeLabel, selectedHex) : "No Tile Selected";
 
   return (
     <>
@@ -202,14 +196,13 @@ const MapTilePanel = () => {
 const LocalTilePanel = () => {
   const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useTooltipStore((state) => state.setTooltip);
-  const openSurface = usePopoverStore((state) => state.openSurface);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = useCurrentDefaultTick();
@@ -342,9 +335,7 @@ const LocalTilePanel = () => {
       : [];
 
   const canManageBuilding =
-    !isSpectating &&
-    !isExplicitSpectateSession() &&
-    playerStructures.some((structure) => structure.entityId === structureEntityId);
+    ordersAllowed && playerStructures.some((structure) => structure.entityId === structureEntityId);
 
   // Cancel any active "build another" preview when the player picks a
   // different tile. Otherwise the preview from one building leaks into the
@@ -456,6 +447,7 @@ const LocalTilePanel = () => {
     return (
       <InfoBubble title={panelTitle} bodyClassName="pt-0">
         <RealmUpgradeCompact />
+        {canManageBuilding && <InlineProduction entityId={structureEntityId} resource={ResourcesIds.Labor} />}
       </InfoBubble>
     );
   }
@@ -465,7 +457,7 @@ const LocalTilePanel = () => {
       <InfoBubble title={panelTitle}>
         <p className={HUD_BODY_MUTED}>
           {canManageBuilding
-            ? "Open building plot. Choose a building from the construction menu."
+            ? "Open building plot. Choose a building in the plot picker."
             : "Open building plot. Select a completed building to inspect its production."}
         </p>
       </InfoBubble>
@@ -634,6 +626,12 @@ const LocalTilePanel = () => {
         </div>
       </InfoBubble>
 
+      {canManageBuilding && canAddProduction && producedResource !== undefined && (
+        <InfoBubble title="Production" icon={Factory}>
+          <InlineProduction entityId={structureEntityId} resource={producedResource} />
+        </InfoBubble>
+      )}
+
       {/* Actions bubble — build cost + the live action buttons. Pickaxe
           is always rendered (greyed out when constraints don't allow), so
           the player knows it's a real affordance and gets a tooltip with
@@ -706,24 +704,6 @@ const LocalTilePanel = () => {
                     </button>
                   );
                 })()}
-              {canAddProduction && (
-                <button
-                  type="button"
-                  onClick={(event) =>
-                    openSurface({
-                      id: "production",
-                      content: <ProductionModal preSelectedResource={producedResource} />,
-                      anchor: surfaceAnchorFrom(event.currentTarget),
-                    })
-                  }
-                  disabled={isActionLoading}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gold/40 bg-gold/10 text-gold shadow transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Automate production"
-                  aria-label="Automate production"
-                >
-                  <Bot className="h-3.5 w-3.5" />
-                </button>
-              )}
               {buildingCategory !== BuildingType.WorkersHut && (
                 <button
                   type="button"
@@ -735,8 +715,8 @@ const LocalTilePanel = () => {
                       ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
                       : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
                   )}
-                  title={isPaused ? "Resume" : "Pause"}
-                  aria-label={isPaused ? "Resume" : "Pause"}
+                  title={isPaused ? "Resume" : "Stop"}
+                  aria-label={isPaused ? "Resume" : "Stop"}
                 >
                   {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
                 </button>
@@ -837,8 +817,9 @@ const MinimapPanel = () => {
 };
 
 /**
- * BottomRightPanel — atomized into two independent floating widgets:
- *   - TileDetailsAtom: bottom-right, only when a tile/building is selected.
+ * BottomRightPanel places the minimap at left and the feed, details and chat at right.
+ * Independent widgets:
+ *   - RightHudColumn: persistent feed and chat, with details when a tile is selected.
  *   - MinimapAtom: bottom-left, persistent in map view.
  * They no longer share a frame or tab strip.
  */
@@ -863,149 +844,18 @@ export const BottomRightPanel = memo(() => {
     <>
       {showMinimap && (
         <>
-          <LeftActionsRow
-            style={{ bottom: `calc(${BOTTOM_PANEL_MARGIN} + ${MINIMAP_SIZE}px + ${LEFT_ACTIONS_GAP_FROM_MINIMAP}px)` }}
-          />
           <div
-            className="pointer-events-auto fixed left-3 z-[25]"
-            style={{ bottom: BOTTOM_PANEL_MARGIN, width: MINIMAP_SIZE }}
+            className={cn("pointer-events-auto fixed left-3 z-[25]", HUD_COLUMN_WIDTH)}
+            style={{ bottom: BOTTOM_PANEL_MARGIN }}
             aria-label="Minimap"
           >
             <MinimapPanel />
           </div>
         </>
       )}
-      {showTileDetails && (
-        <div
-          className="pointer-events-auto fixed bottom-4 right-3 z-30 flex w-[300px] max-h-[calc(100vh-88px)] flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
-          aria-label="Tile details"
-        >
-          {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
-        </div>
-      )}
+      <RightHudColumn>{showTileDetails ? isMapView ? <MapTilePanel /> : <LocalTilePanel /> : null}</RightHudColumn>
     </>
   );
 });
 
 BottomRightPanel.displayName = "BottomRightPanel";
-
-// ---------------------------------------------------------------------------
-// LeftActionsRow — small horizontal row of CircleButtons floating above the
-// minimap. Each button opens its corresponding modal/popup:
-//   Build           → ConstructionView modal (SelectPreviewBuildingMenu)
-//   Transfer        → LogisticsView modal (with Transfer tab pre-selected)
-//   Chat            → Chat modal
-//   Trade           → MarketModal (openSurface)
-//   Prediction      → PredictionMarket modal
-// Replaces the old vertical view-switcher pill strip on the left edge.
-// ---------------------------------------------------------------------------
-
-const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
-  const view = useUIStore((state) => state.leftNavigationView);
-  const setView = useUIStore((state) => state.setLeftNavigationView);
-  const openSurface = usePopoverStore((state) => state.openSurface);
-  const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
-  const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
-  const isSpectating = useUIStore((state) => state.isSpectating);
-  const mode = useGameModeConfig();
-  const showTradeAction = mode.ui.showTradeMenu && !isSpectating;
-  const handleOpenLogistics = useCallback(() => {
-    // If anything is in flight or ready, land the user on Arrivals so the
-    // badge they just clicked actually points at the relevant tab.
-    const hasArrivals = arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0;
-    setLogisticsActiveTab(hasArrivals ? "arrivals" : "transfer");
-    setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
-  }, [arrivedArrivalsNumber, pendingArrivalsNumber, setLogisticsActiveTab, setView, view]);
-  const handleOpenProduction = useCallback(() => {
-    if (!structureEntityId) return;
-    openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> });
-  }, [structureEntityId, openSurface]);
-  const toggleView = useCallback(
-    (target: LeftView) => () => setView(view === target ? LeftView.None : target),
-    [setView, view],
-  );
-
-  return (
-    <div
-      className="pointer-events-auto fixed left-3 z-[25] flex items-center gap-2 rounded-full border border-gold/30 bg-black/60 px-2.5 py-1.5 shadow-[0_4px_18px_rgba(0,0,0,0.6)] backdrop-blur-sm"
-      style={style}
-      aria-label="Quick actions"
-    >
-      {!isSpectating && (
-        <>
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.construction}
-            label="Build"
-            active={view === LeftView.ConstructionView}
-            onClick={toggleView(LeftView.ConstructionView)}
-          />
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.production}
-            label="Production"
-            onClick={handleOpenProduction}
-            disabled={!structureEntityId}
-          />
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.military}
-            label="Military"
-            active={view === LeftView.MilitaryView}
-            onClick={toggleView(LeftView.MilitaryView)}
-            disabled={!structureEntityId}
-          />
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.transfer}
-            label="Transfer"
-            active={view === LeftView.ResourceArrivals}
-            onClick={handleOpenLogistics}
-            primaryNotification={
-              arrivedArrivalsNumber > 0
-                ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
-                : undefined
-            }
-            secondaryNotification={
-              pendingArrivalsNumber > 0
-                ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
-                : undefined
-            }
-          />
-        </>
-      )}
-      <CircleButton
-        variant="action"
-        size="md"
-        tooltipLocation="top"
-        label="Chat"
-        active={view === LeftView.ChatView}
-        onClick={toggleView(LeftView.ChatView)}
-      >
-        <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-[#2a1c0c]" strokeWidth={2.25} />
-      </CircleButton>
-      {showTradeAction && (
-        <CircleButton
-          variant="action"
-          size="md"
-          tooltipLocation="top"
-          image={BuildingThumbs.scale}
-          label="Trade"
-          onClick={() => openSurface({ id: "market", content: <MarketModal />, anchor: "right-edge" })}
-        />
-      )}
-      {/* Prediction Market button retired: the PM deployment is gone until
-          W6 — the modal would initialize against a dead host. */}
-    </div>
-  );
-};

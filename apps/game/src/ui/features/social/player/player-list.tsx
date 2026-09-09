@@ -1,4 +1,4 @@
-import { ReactComponent as Invite } from "@/assets/icons/common/envelope.svg";
+import Invite from "lucide-react/dist/esm/icons/mail";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { getAvatarUrl } from "@/hooks/use-player-avatar";
@@ -10,7 +10,7 @@ import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
 import User from "lucide-react/dist/esm/icons/user";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
@@ -28,6 +28,7 @@ export interface PlayerCustom extends PlayerInfo {
 
 interface PlayerListProps {
   players: PlayerCustom[];
+  focusOwnPlayer?: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
@@ -74,7 +75,13 @@ const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivitySta
   };
 };
 
-export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading }: PlayerListProps) => {
+export const PlayerList = ({
+  players,
+  viewPlayerInfo,
+  whitelistPlayer,
+  isLoading,
+  focusOwnPlayer = false,
+}: PlayerListProps) => {
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState<string | null>(null);
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
@@ -117,6 +124,19 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
 
   // Leaderboard effects for animations
   const { effects, rowRefs } = useLeaderboardEffects(filteredPlayers, ENABLE_LEADERBOARD_EFFECTS_MOCKUP);
+
+  const focusedOwnRow = useRef(false);
+  useEffect(() => {
+    if (!focusOwnPlayer || focusedOwnRow.current) return;
+    const ownPlayer = sortedPlayers.find((player) => player.isUser);
+    if (!ownPlayer) return;
+    const address = String(ownPlayer.address);
+    const row = rowRefs.current.get(address.toLowerCase());
+    if (!row) return;
+    focusedOwnRow.current = true;
+    setSelectedPlayerAddress(address);
+    row.scrollIntoView({ block: "center" });
+  }, [focusOwnPlayer, sortedPlayers, rowRefs]);
 
   // FLIP animation for row reordering
   useLayoutEffect(() => {
@@ -302,6 +322,8 @@ const PlayerRow = ({
   return (
     <div
       ref={registerRef}
+      data-player-address={String(player.address)}
+      aria-current={isSelected ? "true" : undefined}
       className={clsx(
         "relative flex w-full mb-1 overflow-visible rounded-lg border border-transparent bg-dark/40 backdrop-blur-sm transition-all duration-200",
         player.isUser && !isSelected && "border-gold/50 bg-gold/20",
@@ -346,24 +368,22 @@ const PlayerRow = ({
               alt={`${player.name} avatar`}
             />
           )}
-          <h6
-            className={clsx("truncate text-sm font-semibold transition-colors", {
-              "text-lightest": isSelected,
-              "text-gold": !isSelected,
-            })}
-          >
-            {player.name}
-          </h6>
-          {player.isUser && (
-            <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
-              You
-            </span>
-          )}
-          {isSelected && (
-            <span className="shrink-0 rounded-full border border-amber-300/70 bg-amber-300/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
-              Viewing
-            </span>
-          )}
+          <div className="min-w-0">
+            <h6
+              className={clsx("truncate text-sm font-semibold transition-colors", {
+                "text-lightest": isSelected,
+                "text-gold": !isSelected,
+              })}
+            >
+              {player.name}
+            </h6>
+            {player.isUser && (
+              <span
+                title={`0x${BigInt(player.address).toString(16)}`}
+                className="block truncate font-mono text-[10px] text-gold/60"
+              >{`0x${BigInt(player.address).toString(16)}`}</span>
+            )}
+          </div>
         </div>
         {showTribeDetails ? (
           <div

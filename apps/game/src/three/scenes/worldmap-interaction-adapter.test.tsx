@@ -85,24 +85,4 @@ describe("WorldmapInteractionAdapter", () => {
       components: "components",
     });
   });
-
-  it("routes army creation through the popup adapter", () => {
-    const openArmyCreationPopup = vi.fn();
-    const adapter = createWorldmapInteractionAdapter({
-      state: {
-        openArmyCreationPopup,
-      } as never,
-    });
-
-    adapter.openArmyCreation({
-      direction: 5,
-      structureId: 42,
-    });
-
-    expect(openArmyCreationPopup).toHaveBeenCalledWith({
-      structureId: 42,
-      isExplorer: true,
-      direction: 5,
-    });
-  });
 });

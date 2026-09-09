@@ -5,8 +5,9 @@ import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eter
 import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { create } from "zustand";
+import { useConnectionStore } from "./use-connection-store";
 
 interface StoryEventData {
   entity_id: number | null;
@@ -30,7 +31,6 @@ export interface ProcessedStoryEvent extends StoryEventData {
 type StreamStoryEvent = StoryEventData;
 
 interface StoryEventsState {
-  revision: number;
   streamed: StreamStoryEvent[];
   accept: (event: StreamStoryEvent) => void;
   reset: () => void;
@@ -39,7 +39,6 @@ interface StoryEventsState {
 const STREAM_EVENT_LIMIT = 512;
 
 const useStoryEventsStore = create<StoryEventsState>((set) => ({
-  revision: 0,
   streamed: [],
   accept: (event) =>
     set((state) => ({
@@ -47,12 +46,9 @@ const useStoryEventsStore = create<StoryEventsState>((set) => ({
         0,
         STREAM_EVENT_LIMIT,
       ),
-      revision: state.revision + 1,
     })),
-  reset: () => set({ revision: 0, streamed: [] }),
+  reset: () => set({ streamed: [] }),
 }));
-
-export const useStoryEventRevision = (): number => useStoryEventsStore((state) => state.revision);
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -148,7 +144,7 @@ const processStoryEvent = (
   return { ...event, id, timestampMs, presentation };
 };
 
-export const useStoryEvents = (limit: number = 100) => {
+export const useStoryEvents = (limit: number = 100, story?: string) => {
   const {
     setup: { components },
   } = useDojo();
@@ -157,30 +153,42 @@ export const useStoryEvents = (limit: number = 100) => {
   const world = getWorldById(profile?.worldId ?? "blitz") ?? getDefaultWorld();
   const gameId = configManager.getActiveGameId();
 
+  const confirmedBlock = useConnectionStore((state) => (story ? state.lastConfirmedBlock : null));
+  const handshake = useConnectionStore((state) => (story ? state.lastGlobalHandshake : null));
+
   const query = useQuery({
-    queryKey: ["heraldStoryEvents", world.id, gameId, limit],
+    queryKey: ["heraldStoryEvents", world.heraldBaseUrl, world.chain, world.id, gameId, limit, story],
     queryFn: async (): Promise<StoryEventData[]> => {
-      const page = await fetchHeraldGameHistory(world, gameId, { limit, model: "StoryEvent" });
+      const page = await fetchHeraldGameHistory(world, gameId, { limit, model: "StoryEvent", story });
       return page.items.flatMap((event) => {
         const story = historyStoryEvent(event);
         return story ? [story] : [];
       });
     },
     staleTime: Number.POSITIVE_INFINITY,
+    ...(story ? { retry: false, retryOnMount: false, refetchOnWindowFocus: false, refetchOnReconnect: false } : {}),
   });
+
+  const { refetch, isError } = query;
+  useEffect(() => {
+    // Filtered history must recover battles after they leave the mixed stream ring.
+    if (story && !isError) void refetch({ cancelRefetch: false });
+  }, [confirmedBlock, handshake, story, refetch, isError]);
 
   const data = useMemo(() => {
     const identities = new Set<string>();
     return [...streamed, ...(query.data ?? [])]
+      .filter((event) => !story || event.story === story)
       .filter((event) => {
         const identity = event.event_id ?? `${event.tx_hash}:${event.timestamp}`;
         if (identities.has(identity)) return false;
         identities.add(identity);
         return true;
       })
+      .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
       .slice(0, limit)
       .map((event, index) => processStoryEvent(event, index, components));
-  }, [components, limit, query.data, streamed]);
+  }, [components, limit, query.data, streamed, story]);
 
   return { ...query, data };
 };

@@ -11,6 +11,7 @@ interface InfoBubbleProps {
   cue?: ReactNode;
   children: ReactNode;
   className?: string;
+  variant?: "panel" | "section";
   bodyClassName?: string;
   /** Header toggles the body open/closed (default on). The cue stays visible
    *  while collapsed so at-a-glance info (e.g. the automation countdown) is
@@ -31,6 +32,7 @@ export const InfoBubble = ({
   cue,
   children,
   className,
+  variant = "panel",
   bodyClassName,
   collapsible = true,
   defaultCollapsed = false,
@@ -40,7 +42,13 @@ export const InfoBubble = ({
   const toggle = () => setCollapsed((value) => !value);
 
   return (
-    <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto rounded-xl", className)}>
+    <div
+      className={cn(
+        "pointer-events-auto shrink-0",
+        variant === "panel" && [OVERLAY_SURFACE_BASE, "rounded-xl"],
+        className,
+      )}
+    >
       {/* The whole header toggles collapse — title AND cue. Interactive cue
           controls must stopPropagation so they don't also collapse the panel. */}
       <div
@@ -64,6 +72,7 @@ export const InfoBubble = ({
         onKeyDown={
           collapsible
             ? (event) => {
+                if (event.target !== event.currentTarget) return;
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   toggle();

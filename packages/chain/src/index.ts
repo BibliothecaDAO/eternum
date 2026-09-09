@@ -13,3 +13,5 @@ export {
   encodeChainName,
   expectedChainId,
 } from "../chain-guard.js";
+
+export * from "./loopback-origins";

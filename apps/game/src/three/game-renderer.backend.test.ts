@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetRendererDiagnostics } from "./renderer-diagnostics";
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
+const { reloadWithWebGLRenderer } = vi.hoisted(() => ({ reloadWithWebGLRenderer: vi.fn() }));
+vi.mock("./renderer-device-loss-recovery", () => ({ reloadWithWebGLRenderer }));
+
 const createWebGPURendererBackendMock = vi.fn();
 
 vi.mock("@bibliothecadao/eternum", () => {
@@ -299,82 +302,45 @@ describe("GameRenderer backend seam", () => {
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
   });
 
-  it("reconnects the live renderer surface to the maintained WebGL2 backend after WebGPU device loss", async () => {
-    const previousBackend = createFakeBackend();
-    const fallbackBackend = createFakeBackend();
-    previousBackend.renderer.domElement.id = "main-canvas";
-    document.body.appendChild(previousBackend.renderer.domElement);
-
-    const controls = {
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      listenToKeyEvents: vi.fn(),
-    };
-    const effectsBridge = {
-      applyEnvironment: vi.fn(),
-      applyRenderVisualProfile: vi.fn(),
-      dispose: vi.fn(),
-      setupPostProcessingEffects: vi.fn(),
-      updateWeatherPostProcessing: vi.fn(),
-    };
-    const monitoringRuntime = { dispose: vi.fn(), initialize: vi.fn() };
-    const subject = Object.create(GameRenderer.prototype) as any;
-
-    subject.backend = previousBackend;
-    subject.renderer = previousBackend.renderer;
-    subject.controls = controls;
-    subject.isMobileDevice = false;
-    subject.isDestroyed = false;
-    subject.getTargetPixelRatio = vi.fn(() => 1);
-    subject.initializeDeviceLossFallbackBackend = vi.fn(async () => ({
-      backend: fallbackBackend,
-      renderer: fallbackBackend.renderer,
-    }));
-    subject.animate = vi.fn();
-    subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
-    subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
-    subject.hudScene = {
-      getWeatherManager: vi.fn(() => ({ getState: vi.fn(() => ({ intensity: 0.2, stormIntensity: 0 })) })),
-      onWindowResize: vi.fn(),
-    };
-    subject.sceneManager = {};
-    subject.worldmapScene = { setInputSurface: vi.fn(), applyRenderVisualProfile: vi.fn() };
-    subject.fastTravelScene = { setInputSurface: vi.fn(), applyRenderVisualProfile: vi.fn() };
-    subject.hexceptionScene = { setInputSurface: vi.fn(), applyRenderVisualProfile: vi.fn() };
-    subject.sessionRuntime = {
-      initializeMonitoring: vi.fn(),
-    };
-    subject.supportRuntimeRegistry = {
-      ensureEffectsBridge: vi.fn(() => effectsBridge),
-      getControlBridge: vi.fn(() => ({ markLabelsDirty: vi.fn() })),
-      getMonitoring: vi.fn(() => monitoringRuntime),
-      resetEffectsBridge: vi.fn(),
-      resetMonitoring: vi.fn(),
-    };
-
-    await subject.recoverFromRendererDeviceLoss({
-      activeMode: "webgpu",
-      message: "device lost during frame",
+  it("reboots once after native device loss without reusing the scene on a new backend", () => {
+    reloadWithWebGLRenderer.mockReset();
+    const backend = createFakeBackend();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), {
+      backend,
+      renderer: backend.renderer,
+      isDestroyed: false,
+      isRecoveringFromDeviceLoss: false,
     });
+    subject.recoverFromRendererDeviceLoss({ activeMode: "webgpu", message: "device lost" });
+    subject.recoverFromRendererDeviceLoss({ activeMode: "webgpu", message: "repeated loss" });
+    expect(reloadWithWebGLRenderer).toHaveBeenCalledOnce();
+    expect(subject.isRendererRecoveryPaused).toBe(true);
+    expect(subject.backend).toBe(backend);
+  });
 
-    expect(subject.backend).toBe(fallbackBackend);
-    expect(subject.renderer).toBe(fallbackBackend.renderer);
-    expect(document.getElementById("main-canvas")).toBe(fallbackBackend.renderer.domElement);
-    expect(controls.disconnect).toHaveBeenCalledTimes(1);
-    expect(controls.connect).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
-    expect(controls.listenToKeyEvents).toHaveBeenCalledWith(document.body);
-    expect(subject.worldmapScene.setInputSurface).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
-    expect(subject.fastTravelScene.setInputSurface).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
-    expect(subject.hexceptionScene.setInputSurface).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
-    expect(subject.supportRuntimeRegistry.resetEffectsBridge).toHaveBeenCalledTimes(1);
-    expect(subject.supportRuntimeRegistry.resetMonitoring).toHaveBeenCalledTimes(1);
-    expect(subject.sessionRuntime.initializeMonitoring).toHaveBeenCalledTimes(1);
-    expect(effectsBridge.applyEnvironment).toHaveBeenCalledTimes(1);
-    expect(effectsBridge.setupPostProcessingEffects).toHaveBeenCalledTimes(1);
-    expect(effectsBridge.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
-    expect(effectsBridge.updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
-    expect(previousBackend.dispose).toHaveBeenCalledTimes(1);
-    expect(fallbackBackend.resize).toHaveBeenCalledTimes(1);
-    expect(subject.animate).toHaveBeenCalledTimes(1);
+  it("does not reload for a fallback loss or after destruction", () => {
+    reloadWithWebGLRenderer.mockReset();
+    const subject = Object.assign(Object.create(GameRenderer.prototype), { isDestroyed: false });
+    subject.recoverFromRendererDeviceLoss({ activeMode: "webgl2-fallback" });
+    subject.isDestroyed = true;
+    subject.recoverFromRendererDeviceLoss({ activeMode: "webgpu" });
+    expect(reloadWithWebGLRenderer).not.toHaveBeenCalled();
+  });
+
+  it("keeps the lost renderer paused if navigation fails, without looping", () => {
+    reloadWithWebGLRenderer.mockReset().mockImplementationOnce(() => {
+      throw new Error("navigation failed");
+    });
+    const subject = Object.assign(Object.create(GameRenderer.prototype), { isDestroyed: false });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      subject.recoverFromRendererDeviceLoss({ activeMode: "webgpu" });
+      subject.recoverFromRendererDeviceLoss({ activeMode: "webgpu" });
+      expect(subject.isRendererRecoveryPaused).toBe(true);
+      expect(reloadWithWebGLRenderer).toHaveBeenCalledOnce();
+      expect(log).toHaveBeenCalledWith(expect.stringContaining("recovery_failed"));
+    } finally {
+      log.mockRestore();
+    }
   });
 });

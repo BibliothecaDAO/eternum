@@ -1,3 +1,4 @@
+import { isLoopbackOrigin } from "@realms-world/chain";
 export interface SecurityConfig {
   allowedOrigins: ReadonlySet<string>;
   globalConnectionCap: number;
@@ -29,4 +30,4 @@ export const readSecurityConfig = (environment = process.env): SecurityConfig =>
 });
 
 export const isAllowedOrigin = (origin: string | undefined, allowedOrigins: ReadonlySet<string>): boolean =>
-  Boolean(origin && allowedOrigins.has(origin));
+  Boolean(origin && (allowedOrigins.has(origin) || isLoopbackOrigin(origin)));

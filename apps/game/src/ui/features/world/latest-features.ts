@@ -35,6 +35,342 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Quick Feed and Chat Strip",
+    description:
+      "Events show as a short stack of rows under the header that fade on their own, with a Log button for the full history. Chat is one line at the foot of the right column that expands over the details when you press Enter.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Clock Shows the Day Phase",
+    description:
+      "The match countdown now carries the day phase icon, the time left in the phase and a six-segment underline; hover for the full breakdown.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Selected Hex Stays Outlined",
+    description:
+      "The hex you select keeps its outline while hovering elsewhere, survives a Local/World flight, and clears on an empty-map click or Escape.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Compact Settings",
+    description:
+      "One popover: profile, video with the frame-rate cap, audio, the keys bound in the current view, sign out and leave game.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Sails Show Ownership",
+    description:
+      "Ship sails keep white outer panels and a printed centre stripe in the owner's map colour, the same one their armies and labels carry.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Weather Across the World",
+    description:
+      "Sunny, cloudy, rainy and stormy weather evolves through gradual fronts, driving lighting and wind, with falling rain and ground splashes that follow the map perspective.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Readable Nights",
+    description:
+      "Night and twilight gain brighter fill and cool moonlight; compare all seven lighting setups in the biome lab.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Tier 3 Building Milestones",
+    description: "A realm's first Tier 3 military building makes the news; repeated army deployments no longer do.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Caravans in Events",
+    description: "Track sent and arrived caravans in Events and the next incoming delivery on your structure's tile.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-09",
+    title: "Spectator Standings",
+    description: "Watch the top ten and the selected player's points each tick; select a row to visit their capital.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-09",
+    title: "Choose the Battle to Watch",
+    description: "Battle rows fly the camera on demand; the automatic combat-follow header control is removed.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "One Game Clock",
+    description: "The countdown carries a day phase underline; hover to see the current phase.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Consistent Header Labels",
+    description: "Player names and spectator labels share the same small caps style across the header.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Simpler Game Settings",
+    description:
+      "Settings groups quality, shadows, motion and audio controls beneath your identity, with one Leave game action.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Tile Details Stay Anchored",
+    description: "Tile details stay at the bottom right while Events and Chat fill the space above them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Events and Chat Together",
+    description:
+      "Switch between Events and Chat in one panel. Enter focuses chat, Escape returns to Events, and Log keeps the full activity history.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Spectator Controls Stay Consistent",
+    description: "Switching between Local and World keeps order controls hidden while spectating.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Readable Relic Crate Details",
+    description: "Chest tiles show their crate contents above the biome bonuses and coordinates.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Armies Follow Realm Ownership",
+    description: "Armies change owner and colour immediately when their home structure changes hands.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Continuous World and Local Flights",
+    description: "Keep the map visible while the next view loads during World and Local camera flights.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
+    title: "Biome Bonuses Stay Visible",
+    description:
+      "Biome keeps its troop bonuses expanded and uses only their content height. Keyboard actions inside panel headers no longer collapse their panels.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
+    title: "Consistent Tile Coordinates",
+    description:
+      "Structure, army and plain-tile headers all show the same map coordinates, whether you select them from the map or a panel.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
+    title: "Battles Stay in Events",
+    description:
+      "Events loads battle history directly, so movement and production stories cannot push fights out of the feed. Confirmed updates keep the battle list current.",
+  },
+  {
+    date: "2026-09-09",
+    type: "improvement",
+    title: "One Plain Tile Panel",
+    description: "Plain tiles show their coordinates, header actions and troop bonuses inside a single Biome frame.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
+    title: "Recover After Graphics Loss",
+    description:
+      "If WebGPU loses its device, the game reloads once in WebGL at the same map URL, rebuilding models and terrain for that renderer.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
+    title: "Leaderboard Retry Stays Yours",
+    description:
+      "If points history is unavailable, Players keeps its error and cached details until you press Refresh. Background requests resume after a successful retry.",
+  },
+  {
+    date: "2026-09-09",
+    type: "improvement",
+    title: "Quieter Event Feed",
+    description:
+      "Routine production stays in Activity. Events keeps battles, caravans and action results readable in one compact type style, with failed or stuck production still visible.",
+  },
+  {
+    date: "2026-09-09",
+    type: "improvement",
+    title: "Structure Details Together",
+    description:
+      "See a structure’s owner, guards and resources in one panel. Biome uses only the space its bonuses need.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
+    title: "Panels Align With the Header",
+    description:
+      "Structures and Events start beside the top header, leaving more room for realm controls and tile details below.",
+  },
+  {
+    date: "2026-09-09",
+    type: "improvement",
+    title: "Points Ready When You Open",
+    description:
+      "Your leaderboard breakdown loads when you enter the game and stays refreshed while you play, so opening Players no longer scans the match history.",
+  },
+  {
+    date: "2026-09-09",
+    title: "Roomier Panels and Compact Chat",
+    description:
+      "Keep world chat open below tile details, with Events above. The wider structure panel has more room for names and resources, and its action buttons sit directly underneath.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "One Feed for Game Events",
+    description:
+      "Read battles, action results and your incoming caravans in Events. Battle rows show both armies and the winner; floating notifications no longer cover the map.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Open Suggestions Without Interruptions",
+    description: "Cycle through attention targets and open suggested actions without interrupting your game.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Resume After Signing In Elsewhere",
+    description:
+      "If another tab’s sign-in replaces your gameplay key, this tab takes control once and retries your action once. The event feed tells you what happened.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Events, Details and Chat",
+    description:
+      "Keep important events above tile details on the right. Filter events by all, mine or combat, jump to surviving participants, and press Enter to open chat. Activity keeps the full log.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "See Where Points Come From",
+    description:
+      "The Players board now shows points earned through exploration, chests, captured camps and hyperstructures, and held hyperstructures.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Your Place on the Leaderboard",
+    description:
+      "Click your name, rank and points to open the Players board at your highlighted row. Your gameplay address is there too, with the player profile one click away.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Fly Between Map Views",
+    description:
+      "Fly toward a realm when entering it and pull back when leaving, with a short scene crossfade. Reduced motion keeps the familiar fade, and Local/World controls support keyboard navigation.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Day Timer Returns",
+    description:
+      "The familiar day-phase indicator returns beside the match clock. Hover it for the current phase and time remaining; daylight and the gong keep running independently.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "One Attention List",
+    description:
+      "Cycle through locations needing attention, then suggested actions, from one header pill. Suggestions open beside familiar panel styling and remain yours to confirm.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Action Previews Beside Their Targets",
+    description:
+      "Attack, help, chest and spire previews open beside the target hex. Right-click another legal target to move the preview, or click elsewhere to close it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Visual Building Choices",
+    description:
+      "Choose buildings from thumbnails with resource costs beside each choice. Buildable options come first, and tall plot pickers stay inside the screen with scrolling.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Visual Troop Deployment",
+    description:
+      "Choose troops by their icon, tier and stock. Add 100, add 500 or use Max when deploying field armies and guards, with empty choices clearly marked.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Clearer Army Movement",
+    description:
+      "Armies move without duplicate pending silhouettes or destination rings, keeping the battlefield clear.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
+    title: "Daylight Independent of the HUD",
+    description: "The world's day and night cycle follows game time even when the day timer is hidden.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "One clock and attention count",
+    description:
+      "See the start countdown or time left in one clock. The attention count combines structures under attack and ready arrivals; click it to cycle through their locations.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Clearer action selection",
+    description:
+      "Your selected entity and its available actions keep the focus. Hover a target for instructions; the bottom action banner is gone, and Escape still clears selection.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Production beside your buildings",
+    description:
+      "Set production amounts on building and castle panels without leaving the map. Switch each realm between Smart, Idle, and Custom from its resource header.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Build directly on a plot",
+    description:
+      "Click an open plot to choose and build immediately. Costs and blocked reasons stay beside the plot, with the map in view.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Deploy Armies on the Map",
+    description:
+      "Right-click a highlighted spawn hex or use Add on a guard slot to choose troops and deploy with the map in view. Pick from troops in stock, enter a count or use Max, and see exactly what the order uses. Blocked orders explain what is missing.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-09",
     title: "Roaming Biome Wildlife",
     description:
       "Biome creatures wander through explored terrain, with native species and sparse populations of at most one animal per 8×8 region.",

@@ -1,3 +1,5 @@
+import type { PlayerLeaderboardActivityEntry } from "./leaderboard-activity";
+
 export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "Settled";
 
 export interface HeraldGameClock {
@@ -85,4 +87,9 @@ export interface HeraldHistoryPage {
 export interface HeraldTransactionCount {
   count: number;
   game_id: string;
+}
+
+export interface HeraldLeaderboard {
+  game_id: string;
+  entries: PlayerLeaderboardActivityEntry[];
 }

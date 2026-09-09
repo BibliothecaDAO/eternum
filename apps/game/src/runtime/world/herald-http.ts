@@ -2,6 +2,7 @@ import type {
   HeraldGameDirectory,
   HeraldGameSnapshot,
   HeraldHistoryPage,
+  HeraldLeaderboard,
   HeraldTransactionCount,
 } from "@bibliothecadao/eternum/game-sync";
 
@@ -68,6 +69,7 @@ export const fetchHeraldGameHistory = async (
     entityId?: bigint | number | string;
     limit?: number;
     model?: string;
+    story?: string;
     offset?: number;
     owner?: string;
   } = {},
@@ -79,6 +81,7 @@ export const fetchHeraldGameHistory = async (
   if (input.entityId !== undefined) url.searchParams.set("entity_id", String(input.entityId));
   if (input.limit !== undefined) url.searchParams.set("limit", String(input.limit));
   if (input.model) url.searchParams.set("model", input.model);
+  if (input.story) url.searchParams.set("story", input.story);
   if (input.offset !== undefined) url.searchParams.set("offset", String(input.offset));
   if (input.owner) url.searchParams.set("owner", input.owner);
   return fetchHeraldJson(url.toString(), `Herald history for ${world.id} game ${gameId}`);
@@ -109,4 +112,16 @@ export const feltEquals = (left: unknown, right: unknown): boolean => {
   } catch {
     return false;
   }
+};
+
+export const fetchHeraldGameLeaderboard = async (
+  world: WorldDeployment,
+  gameId: number,
+): Promise<HeraldLeaderboard> => {
+  if (!Number.isSafeInteger(gameId) || gameId <= 0)
+    throw new Error(`Herald leaderboard requires a positive game id; received ${gameId}`);
+  return fetchHeraldJson(
+    buildHeraldUrl(world, `/games/${gameId}/leaderboard`),
+    `Herald leaderboard for ${world.id} game ${gameId}`,
+  );
 };

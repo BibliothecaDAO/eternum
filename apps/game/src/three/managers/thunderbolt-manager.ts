@@ -1,363 +1,60 @@
 import { type HexPosition, getNeighborHexes } from "@bibliothecadao/types";
-import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
-import * as THREE from "three";
-import { env } from "../../../env";
+import type GUI from "lil-gui";
+import {
+  AdditiveBlending,
+  DoubleSide,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  Scene,
+  Texture,
+  Vector3,
+} from "three";
 import { HEX_SIZE } from "../constants";
 import { getWorldPositionForHex } from "../utils";
-
-// Module-level temp vectors to avoid allocations in hot paths
-// These are reused across all thunderbolt generation calls
-const tempDirection = new THREE.Vector3();
-const tempJitter = new THREE.Vector3();
-const tempSubDirection = new THREE.Vector3();
-const tempCameraTarget = new THREE.Vector3();
+import {
+  loadWeatherSpriteSheet,
+  spriteSheetFrame,
+  spriteSheetOffset,
+  WEATHER_SPRITE_SHEETS,
+} from "../effects/weather-sprite-sheet";
 
 interface ThunderBoltConfig {
   radius: number;
   count: number;
-  duration: number;
-  persistent: boolean;
-  debug: boolean;
 }
-
-interface LightningLayer {
-  mesh: THREE.Mesh;
-  material: THREE.MeshBasicMaterial;
-}
-
-interface LightningSegment {
-  layers: LightningLayer[]; // Multiple layers: core, body, glow
-}
-
 interface ActiveThunderBolt {
-  group: THREE.Group;
-  segments: LightningSegment[];
-  glow?: THREE.Group;
+  group: Group;
+  materials: MeshBasicMaterial[];
+  textures: Texture[];
   startTime: number;
-  duration: number;
-  hexPosition: HexPosition;
-  flickerSpeed: number;
+  variant: number;
 }
+const tempCameraTarget = new Vector3();
 
-/**
- * ThunderBoltManager - Manages thunder bolt effects in 3D scenes
- *
- * Usage in scene setup() method:
- * ```typescript
- * setup() {
- *   // Configure thunder bolts for this scene
- *   this.getThunderBoltManager().setConfig({
- *     radius: 6,        // How far from camera center to spawn bolts
- *     count: 8,         // Base number of bolts to spawn
- *     duration: 800,    // How long each bolt lasts (ms)
- *     persistent: false, // Whether bolts stay visible
- *     debug: true       // Enable console logging
- *   });
- * }
- * ```
- */
 export class ThunderBoltManager {
-  private thunderBolts: THREE.Group = new THREE.Group();
+  private readonly thunderBolts = new Group();
+  private readonly boltSheet = loadWeatherSpriteSheet(WEATHER_SPRITE_SHEETS.lightning);
+  private readonly flashSheet = loadWeatherSpriteSheet(WEATHER_SPRITE_SHEETS.flash);
+  private readonly boltGeometry = new PlaneGeometry(16, 16).translate(0, 16 * (0.5 - 0.14), 0);
+  private readonly flashGeometry = new PlaneGeometry(5, 5).rotateX(-Math.PI / 2);
   private activeThunderBolts: ActiveThunderBolt[] = [];
-  private scheduledSpawnTimeouts: Array<ReturnType<typeof setTimeout>> = [];
-  private config: ThunderBoltConfig = {
-    radius: 2,
-    count: 5,
-    duration: 250,
-    persistent: true,
-    debug: DEV_MODE_ENABLED,
-  };
-
-  // Pooled geometries for impact glow (created once, reused for all thunderbolts)
-  private readonly glowCoreGeometry: THREE.CircleGeometry;
-  private readonly glowMidGeometry: THREE.CircleGeometry;
-  private readonly glowOuterGeometry: THREE.CircleGeometry;
-
-  // Pooled materials for impact glow (created once, cloned for each thunderbolt)
-  // Using prototype materials that define the base properties
-  private readonly glowCoreMaterialPrototype: THREE.MeshBasicMaterial;
-  private readonly glowMidMaterialPrototype: THREE.MeshBasicMaterial;
-  private readonly glowOuterMaterialPrototype: THREE.MeshBasicMaterial;
+  private config: ThunderBoltConfig = { radius: 2, count: 5 };
+  private disposed = false;
+  private lastVariant = -1;
 
   constructor(
-    private scene: THREE.Scene,
-    private controls: any,
+    private scene: Scene,
+    private controls: { target: Vector3; object?: { position: Vector3 } },
+    private sampleHeight: (x: number, z: number) => number = () => 0,
   ) {
     this.thunderBolts.name = "ThunderBolts";
-    this.scene.add(this.thunderBolts);
-
-    // Pre-create pooled geometries for impact glow (unit size, scaled via mesh transform)
-    // These are shared across all thunderbolts to avoid geometry allocation per-bolt
-    this.glowCoreGeometry = new THREE.CircleGeometry(1, 16);
-    this.glowMidGeometry = new THREE.CircleGeometry(1, 16);
-    this.glowOuterGeometry = new THREE.CircleGeometry(1, 16);
-
-    // Pre-create pooled material prototypes for impact glow
-    // These define base properties; opacity is animated per-instance
-    this.glowCoreMaterialPrototype = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.9,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    this.glowMidMaterialPrototype = new THREE.MeshBasicMaterial({
-      color: 0xaaccff,
-      transparent: true,
-      opacity: 0.5,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-    this.glowOuterMaterialPrototype = new THREE.MeshBasicMaterial({
-      color: 0x6688bb,
-      transparent: true,
-      opacity: 0.25,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-
-    if (this.config.debug) {
-      verboseLog("ThunderBoltManager initialized with pooled geometries and materials");
-    }
+    scene.add(this.thunderBolts);
   }
 
-  public setConfig(config: Partial<ThunderBoltConfig>): void {
-    this.config = { ...this.config, ...config };
-
-    if (this.config.debug) {
-      verboseLog("ThunderBolt config updated:", this.config);
-    }
-  }
-
-  public getConfig(): ThunderBoltConfig {
-    return { ...this.config };
-  }
-
-  private generateLightningPath(height: number, subdivisions: number): THREE.Vector3[] {
-    const points: THREE.Vector3[] = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, height, 0)];
-    let sway = 1.4;
-
-    for (let i = 0; i < subdivisions; i++) {
-      const refined: THREE.Vector3[] = [points[0]];
-
-      for (let j = 0; j < points.length - 1; j++) {
-        const start = points[j];
-        const end = points[j + 1];
-        const mid = start.clone().add(end).multiplyScalar(0.5);
-        const progress = mid.y / height;
-        const jitter = sway * (1 - progress * 0.8);
-        mid.x += (Math.random() - 0.5) * jitter;
-        mid.z += (Math.random() - 0.5) * jitter;
-        refined.push(mid, end);
-      }
-
-      points.splice(0, points.length, ...refined);
-      sway *= 0.55;
-    }
-
-    return points;
-  }
-
-  private generateBranchPaths(mainPath: THREE.Vector3[], height: number): THREE.Vector3[][] {
-    const branches: THREE.Vector3[][] = [];
-    const branchCount = 2 + Math.floor(Math.random() * 2); // 2-3 main branches
-    const minIndex = Math.floor(mainPath.length * 0.25);
-    const maxIndex = Math.floor(mainPath.length * 0.85);
-
-    if (maxIndex <= minIndex) {
-      return branches;
-    }
-
-    for (let i = 0; i < branchCount; i++) {
-      const anchorIndex = THREE.MathUtils.randInt(minIndex, maxIndex);
-      const anchor = mainPath[anchorIndex];
-      const branchLength = height * (0.2 + Math.random() * 0.25);
-      const segmentCount = 4 + Math.floor(Math.random() * 3);
-
-      // Direction tends outward and slightly downward - use temp vector
-      tempDirection
-        .set((Math.random() - 0.5) * 1.5, 0.3 + Math.random() * 0.5, (Math.random() - 0.5) * 1.5)
-        .normalize();
-
-      const branch: THREE.Vector3[] = [anchor.clone()];
-      const step = branchLength / segmentCount;
-
-      for (let j = 1; j <= segmentCount; j++) {
-        const jitterAmount = step * (0.3 + (j / segmentCount) * 0.4); // More jitter toward end
-        // Use temp vectors for intermediate calculations
-        tempJitter.set(
-          (Math.random() - 0.5) * jitterAmount,
-          (Math.random() - 0.5) * jitterAmount * 0.5,
-          (Math.random() - 0.5) * jitterAmount,
-        );
-        // Create new Vector3 for the step point (must persist in branch array)
-        const stepPoint = anchor.clone();
-        stepPoint.x += tempDirection.x * step * j + tempJitter.x;
-        stepPoint.y += tempDirection.y * step * j + tempJitter.y;
-        stepPoint.z += tempDirection.z * step * j + tempJitter.z;
-        branch.push(stepPoint);
-      }
-
-      branches.push(branch);
-
-      // Add sub-branches (smaller forks off main branches)
-      if (Math.random() < 0.6 && branch.length > 3) {
-        const subAnchorIndex = Math.floor(branch.length * (0.3 + Math.random() * 0.4));
-        const subAnchor = branch[subAnchorIndex];
-        const subLength = branchLength * 0.4;
-        const subSegments = 2 + Math.floor(Math.random() * 2);
-
-        // Use temp vector for sub-direction
-        tempSubDirection
-          .set(
-            tempDirection.x + (Math.random() - 0.5) * 0.8,
-            tempDirection.y * 0.5,
-            tempDirection.z + (Math.random() - 0.5) * 0.8,
-          )
-          .normalize();
-
-        const subBranch: THREE.Vector3[] = [subAnchor.clone()];
-        const subStep = subLength / subSegments;
-
-        for (let k = 1; k <= subSegments; k++) {
-          // Use temp vector for jitter calculation
-          tempJitter.set(
-            (Math.random() - 0.5) * subStep * 0.5,
-            (Math.random() - 0.5) * subStep * 0.3,
-            (Math.random() - 0.5) * subStep * 0.5,
-          );
-          // Create new Vector3 for the sub point (must persist in subBranch array)
-          const subPoint = subAnchor.clone();
-          subPoint.x += tempSubDirection.x * subStep * k + tempJitter.x;
-          subPoint.y += tempSubDirection.y * subStep * k + tempJitter.y;
-          subPoint.z += tempSubDirection.z * subStep * k + tempJitter.z;
-          subBranch.push(subPoint);
-        }
-
-        branches.push(subBranch);
-      }
-    }
-
-    return branches;
-  }
-
-  /**
-   * Create a multi-layered lightning segment with core, body, and glow
-   * @param points - Path points for the lightning
-   * @param baseRadius - Base radius (will be scaled for each layer)
-   * @param isBranch - Whether this is a branch (thinner, less prominent)
-   */
-  private createLightningSegment(
-    points: THREE.Vector3[],
-    baseRadius: number,
-    isBranch: boolean = false,
-  ): LightningSegment {
-    const curve = new THREE.CatmullRomCurve3(points);
-    const tubularSegments = Math.max(12, points.length * 2);
-    const layers: LightningLayer[] = [];
-
-    // Layer configuration based on whether it's main bolt or branch
-    const layerConfigs = isBranch
-      ? [
-          // Branch: simpler, 2 layers
-          { radiusMult: 0.4, color: 0xffffff, opacity: 0.9, radialSegments: 4 }, // Core
-          { radiusMult: 1.0, color: 0xaaccff, opacity: 0.4, radialSegments: 5 }, // Glow
-        ]
-      : [
-          // Main bolt: 3 layers for dramatic effect
-          { radiusMult: 0.25, color: 0xffffff, opacity: 1.0, radialSegments: 4 }, // Bright core
-          { radiusMult: 0.6, color: 0xddeeff, opacity: 0.7, radialSegments: 5 }, // Body
-          { radiusMult: 1.5, color: 0x88aadd, opacity: 0.25, radialSegments: 6 }, // Outer glow
-        ];
-
-    for (const config of layerConfigs) {
-      const radius = baseRadius * config.radiusMult;
-      const tube = new THREE.TubeGeometry(curve, tubularSegments, radius, config.radialSegments, false);
-      const material = new THREE.MeshBasicMaterial({
-        color: config.color,
-        transparent: true,
-        opacity: config.opacity,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      });
-
-      const mesh = new THREE.Mesh(tube, material);
-      mesh.castShadow = false;
-      mesh.receiveShadow = false;
-
-      layers.push({ mesh, material });
-    }
-
-    return { layers };
-  }
-
-  private createImpactGlow(radius: number): THREE.Group {
-    const glowGroup = new THREE.Group();
-
-    // Inner bright core - use pooled geometry and clone prototype material
-    // Cloning a material is faster than creating from scratch (reuses shader program)
-    const coreMaterial = this.glowCoreMaterialPrototype.clone();
-    const core = new THREE.Mesh(this.glowCoreGeometry, coreMaterial);
-    core.rotation.x = -Math.PI / 2;
-    core.position.y = 0.03;
-    core.scale.setScalar(radius * 0.3);
-    glowGroup.add(core);
-
-    // Middle glow - use pooled geometry and clone prototype material
-    const midMaterial = this.glowMidMaterialPrototype.clone();
-    const mid = new THREE.Mesh(this.glowMidGeometry, midMaterial);
-    mid.rotation.x = -Math.PI / 2;
-    mid.position.y = 0.02;
-    mid.scale.setScalar(radius * 0.7);
-    glowGroup.add(mid);
-
-    // Outer soft glow - use pooled geometry and clone prototype material
-    const outerMaterial = this.glowOuterMaterialPrototype.clone();
-    const outer = new THREE.Mesh(this.glowOuterGeometry, outerMaterial);
-    outer.rotation.x = -Math.PI / 2;
-    outer.position.y = 0.01;
-    outer.scale.setScalar(radius * 1.5);
-    glowGroup.add(outer);
-
-    return glowGroup;
-  }
-
-  private updateGlowOpacity(glow: THREE.Group, multiplier: number): void {
-    const opacities = [0.9, 0.5, 0.25]; // Core, mid, outer base opacities
-    let index = 0;
-    glow.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        const mat = child.material as THREE.MeshBasicMaterial;
-        mat.opacity = opacities[index] * multiplier;
-        index++;
-      }
-    });
-  }
-
-  private disposeThunderBolt(bolt: ActiveThunderBolt): void {
-    bolt.segments.forEach((segment) => {
-      segment.layers.forEach((layer) => {
-        bolt.group.remove(layer.mesh);
-        layer.material.dispose();
-        layer.mesh.geometry.dispose();
-      });
-    });
-
-    if (bolt.glow) {
-      bolt.glow.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          // Only dispose materials, NOT geometries (they're pooled and shared)
-          (child.material as THREE.Material).dispose();
-        }
-      });
-      bolt.group.remove(bolt.glow);
-    }
-
-    this.thunderBolts.remove(bolt.group);
-    bolt.group.clear();
+  setConfig(config: Partial<ThunderBoltConfig>): void {
+    Object.assign(this.config, config);
   }
 
   private getCenterHexFromCamera(): HexPosition {
@@ -367,7 +64,7 @@ export class ThunderBoltManager {
       tempCameraTarget.copy(this.controls.target);
     } else {
       // Fallback: use controls object position
-      tempCameraTarget.copy(this.controls.object.position);
+      tempCameraTarget.copy(this.controls.object?.position ?? new Vector3());
       tempCameraTarget.y = 0;
     }
 
@@ -386,54 +83,65 @@ export class ThunderBoltManager {
   }
 
   private createThunderBolt(hexPosition: HexPosition): void {
-    const worldPos = getWorldPositionForHex(hexPosition);
-    const height = 13 + Math.random() * 4;
-    const mainPath = this.generateLightningPath(height, 5 + Math.floor(Math.random() * 2));
-    const branches = this.generateBranchPaths(mainPath, height);
-    const boltGroup = new THREE.Group();
-    const segments: LightningSegment[] = [];
-
-    // Create main bolt with layered glow (not a branch)
-    const mainSegment = this.createLightningSegment(mainPath, 0.15, false);
-    segments.push(mainSegment);
-    mainSegment.layers.forEach((layer) => boltGroup.add(layer.mesh));
-
-    // Create branches (thinner, simpler)
-    branches.forEach((branch) => {
-      const branchSegment = this.createLightningSegment(branch, 0.08, true);
-      segments.push(branchSegment);
-      branchSegment.layers.forEach((layer) => boltGroup.add(layer.mesh));
-    });
-
-    const glow = this.createImpactGlow(0.55 + Math.random() * 0.25);
-    boltGroup.add(glow);
-
-    boltGroup.position.copy(worldPos);
-    boltGroup.position.y += 0.05;
-
-    const randomRotation = Math.random() * Math.PI * 2;
-    boltGroup.rotation.y = randomRotation;
-
-    const duration = this.config.persistent ? 30000 : this.config.duration + Math.random() * 300;
-
-    const thunderBolt: ActiveThunderBolt = {
-      group: boltGroup,
-      segments,
-      glow,
-      startTime: performance.now(),
-      duration,
-      hexPosition,
-      flickerSpeed: 3 + Math.random() * 4,
-    };
-
-    this.thunderBolts.add(boltGroup);
-    this.activeThunderBolts.push(thunderBolt);
-
-    if (this.config.debug) {
-      verboseLog(
-        `Created thunder bolt at hex (${hexPosition.col}, ${hexPosition.row}) world pos (${worldPos.x.toFixed(2)}, ${worldPos.y.toFixed(2)}, ${worldPos.z.toFixed(2)}), duration: ${duration}ms`,
-      );
+    if (this.disposed) return;
+    const variant = this.chooseVariant();
+    const boltMaterial = this.createSheetMaterial(
+      this.boltSheet,
+      WEATHER_SPRITE_SHEETS.lightning,
+      variant * WEATHER_SPRITE_SHEETS.lightning.frames,
+    );
+    const flashMaterial = this.createSheetMaterial(this.flashSheet, WEATHER_SPRITE_SHEETS.flash);
+    const group = new Group();
+    group.name = "Lightning strike";
+    group.position.copy(getWorldPositionForHex(hexPosition));
+    group.position.y = this.sampleHeight(group.position.x, group.position.z) + 0.05;
+    // Face the camera at birth, but stay upright and fixed in world space for the strike.
+    const front = new Mesh(this.boltGeometry, boltMaterial);
+    const cameraPosition = this.controls.object?.position;
+    if (cameraPosition) {
+      front.rotation.y = Math.atan2(cameraPosition.x - group.position.x, cameraPosition.z - group.position.z);
     }
+    const flash = new Mesh(this.flashGeometry, flashMaterial);
+    flash.name = "Lightning ground flash";
+    group.add(front, flash);
+    this.thunderBolts.add(group);
+    this.activeThunderBolts.push({
+      group,
+      materials: [boltMaterial, flashMaterial],
+      textures: [boltMaterial.map!, flashMaterial.map!],
+      startTime: performance.now(),
+      variant,
+    });
+  }
+
+  private chooseVariant(): number {
+    const variants = WEATHER_SPRITE_SHEETS.lightning.variants;
+    const choices = this.lastVariant < 0 ? variants : variants - 1;
+    const choice = Math.floor(Math.random() * choices);
+    const variant = this.lastVariant >= 0 && choice >= this.lastVariant ? choice + 1 : choice;
+    this.lastVariant = variant;
+    return variant;
+  }
+
+  private createSheetMaterial(
+    source: Texture,
+    sheet: Parameters<typeof loadWeatherSpriteSheet>[0],
+    firstFrame = 0,
+  ): MeshBasicMaterial {
+    const texture = source.clone();
+    texture.repeat.set(1 / sheet.columns, 1 / sheet.rows);
+    const offset = spriteSheetOffset(sheet, firstFrame);
+    texture.offset.set(offset.x, offset.y);
+    return new MeshBasicMaterial({
+      map: texture,
+      side: DoubleSide,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      blending: AdditiveBlending,
+      toneMapped: false,
+      fog: false,
+    });
   }
 
   private getRandomHexesAroundCenter(centerHex: HexPosition, radius: number, count: number): HexPosition[] {
@@ -460,235 +168,70 @@ export class ThunderBoltManager {
     return shuffled.slice(0, Math.min(count, shuffled.length));
   }
 
-  public spawnThunderBolts(): void {
-    const centerHex = this.getCenterHexFromCamera();
-    const randomHexes = this.getRandomHexesAroundCenter(
-      centerHex,
+  spawnThunderBolts(): void {
+    const positions = this.getRandomHexesAroundCenter(
+      this.getCenterHexFromCamera(),
       this.config.radius,
-      this.config.count + Math.floor(Math.random() * 3),
+      this.config.count,
     );
-
-    if (this.config.debug) {
-      verboseLog(`Spawning ${randomHexes.length} thunder bolts around center (${centerHex.col}, ${centerHex.row})`);
-      verboseLog("Thunder bolt positions:", randomHexes);
-    }
-
-    // Calculate spawn timing to ensure all bolts are visible for their full duration
-    // Use maximum 10% of the bolt duration for the entire spawn sequence, capped at 50ms
-    const maxSpawnPeriod = Math.min(this.config.duration * 0.1, 50);
-    const spawnInterval = randomHexes.length > 1 ? maxSpawnPeriod / (randomHexes.length - 1) : 0;
-
-    randomHexes.forEach((hex, index) => {
-      const timeoutId = setTimeout(
-        () => {
-          this.scheduledSpawnTimeouts = this.scheduledSpawnTimeouts.filter(
-            (scheduledTimeoutId) => scheduledTimeoutId !== timeoutId,
-          );
-          this.createThunderBolt(hex);
-        },
-        index * spawnInterval + Math.random() * 10,
-      );
-      this.scheduledSpawnTimeouts.push(timeoutId);
-    });
+    for (const position of positions) this.createThunderBolt(position);
   }
 
-  public spawnThunderBoltAt(hexPosition: HexPosition): void {
-    this.createThunderBolt(hexPosition);
+  spawnThunderBoltAt(position: HexPosition): void {
+    this.createThunderBolt(position);
   }
 
-  public update(): void {
-    const currentTime = performance.now();
-
-    for (let i = this.activeThunderBolts.length - 1; i >= 0; i--) {
-      const thunderBolt = this.activeThunderBolts[i];
-      const elapsed = currentTime - thunderBolt.startTime;
-      const progress = elapsed / thunderBolt.duration;
-
-      if (progress >= 1 && !this.config.persistent) {
-        this.disposeThunderBolt(thunderBolt);
-        this.activeThunderBolts.splice(i, 1);
-
-        if (this.config.debug) {
-          verboseLog(`Removed thunder bolt at hex (${thunderBolt.hexPosition.col}, ${thunderBolt.hexPosition.row})`);
-        }
-      } else if (!this.config.persistent) {
-        const fadeIn = Math.min(1, progress / 0.15);
-        const fadeOut = progress > 0.35 ? 1 - (progress - 0.35) / 0.65 : 1;
-        const flicker = 0.65 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.015) * 0.35;
-        const baseFade = fadeIn * fadeOut;
-        const intensity = THREE.MathUtils.lerp(0.8, 1.35, flicker);
-
-        // Update all layers in each segment
-        thunderBolt.segments.forEach((segment) => {
-          segment.layers.forEach((layer, layerIndex) => {
-            // Core layers (index 0) stay brighter, outer layers fade more
-            const layerFade = layerIndex === 0 ? 1.0 : 0.7 + layerIndex * 0.1;
-            const opacity = THREE.MathUtils.clamp(baseFade * (0.7 + flicker * 0.3) * layerFade, 0.02, 1);
-            const layerBrightness = layerIndex === 0 ? 1.0 : 0.8;
-            layer.material.opacity = THREE.MathUtils.clamp(opacity * layerBrightness, 0.02, 1);
-
-            // Only tint non-white layers
-            if (layerIndex > 0) {
-              layer.material.color.setRGB(intensity * 0.9, intensity * 0.85, 1.0);
-            }
-          });
-        });
-
-        if (thunderBolt.glow) {
-          this.updateGlowOpacity(thunderBolt.glow, baseFade * flicker);
-        }
-      } else {
-        // For persistent bolts, just keep them flickering
-        const intensity = Math.sin(elapsed * thunderBolt.flickerSpeed * 0.015) * 0.4 + 1.0;
-        const baseOpacity = 0.75 + Math.sin(elapsed * thunderBolt.flickerSpeed * 0.006) * 0.2;
-
-        thunderBolt.segments.forEach((segment) => {
-          segment.layers.forEach((layer, layerIndex) => {
-            const layerMult = layerIndex === 0 ? 1.0 : 0.6;
-            layer.material.opacity = baseOpacity * layerMult;
-
-            if (layerIndex > 0) {
-              layer.material.color.setRGB(intensity, intensity * 0.88, 1.05);
-            }
-          });
-        });
-
-        if (thunderBolt.glow) {
-          this.updateGlowOpacity(thunderBolt.glow, baseOpacity);
-        }
+  update(): void {
+    const now = performance.now();
+    this.activeThunderBolts = this.activeThunderBolts.filter((bolt) => {
+      const frame = spriteSheetFrame(WEATHER_SPRITE_SHEETS.lightning, now - bolt.startTime, false);
+      if (frame === null) {
+        this.disposeBolt(bolt);
+        return false;
       }
-    }
-
-    if (this.config.debug && this.activeThunderBolts.length > 0) {
-      verboseLog(`Active thunder bolts: ${this.activeThunderBolts.length}`);
-    }
-  }
-
-  public cleanup(): void {
-    this.scheduledSpawnTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
-    this.scheduledSpawnTimeouts = [];
-
-    this.activeThunderBolts.forEach((thunderBolt) => {
-      this.disposeThunderBolt(thunderBolt);
+      const boltOffset = spriteSheetOffset(
+        WEATHER_SPRITE_SHEETS.lightning,
+        bolt.variant * WEATHER_SPRITE_SHEETS.lightning.frames + frame,
+      );
+      const flashOffset = spriteSheetOffset(WEATHER_SPRITE_SHEETS.flash, frame);
+      bolt.textures[0].offset.set(boltOffset.x, boltOffset.y);
+      bolt.textures[1].offset.set(flashOffset.x, flashOffset.y);
+      return true;
     });
-    this.activeThunderBolts.length = 0;
-
-    if (this.config.debug) {
-      verboseLog("ThunderBoltManager cleaned up");
-    }
   }
 
-  public getActiveCount(): number {
+  private disposeBolt(bolt: ActiveThunderBolt): void {
+    this.thunderBolts.remove(bolt.group);
+    bolt.materials.forEach((material) => material.dispose());
+    bolt.textures.forEach((texture) => texture.dispose());
+  }
+
+  cleanup(): void {
+    this.activeThunderBolts.forEach((bolt) => this.disposeBolt(bolt));
+    this.activeThunderBolts = [];
+  }
+
+  getActiveCount(): number {
     return this.activeThunderBolts.length;
   }
 
-  public clearAll(): void {
-    if (this.config.debug) {
-      verboseLog("Clearing all thunder bolts...");
-    }
+  destroy(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.cleanup();
-  }
-
-  /**
-   * Fully dispose the manager including pooled geometries and materials.
-   * Call this when the scene is being destroyed.
-   */
-  public destroy(): void {
-    this.cleanup();
-
-    // Dispose pooled geometries
-    this.glowCoreGeometry.dispose();
-    this.glowMidGeometry.dispose();
-    this.glowOuterGeometry.dispose();
-
-    // Dispose pooled material prototypes
-    this.glowCoreMaterialPrototype.dispose();
-    this.glowMidMaterialPrototype.dispose();
-    this.glowOuterMaterialPrototype.dispose();
-
-    // Remove from scene
+    this.boltGeometry.dispose();
+    this.flashGeometry.dispose();
     this.scene.remove(this.thunderBolts);
-
-    if (this.config.debug) {
-      verboseLog("ThunderBoltManager destroyed (pooled geometries and materials disposed)");
-    }
   }
 
-  // GUI setup helper
-  public setupGUI(folder: any): void {
-    const thunderFolder = folder.addFolder("Thunder Bolts");
-
-    thunderFolder
-      .add(this.config, "debug")
-      .name("Debug Mode")
-      .onChange((value: boolean) => {
-        this.config.debug = value;
-      });
-
-    thunderFolder
-      .add(this.config, "persistent")
-      .name("Persistent Bolts")
-      .onChange((value: boolean) => {
-        this.config.persistent = value;
-      });
-
-    thunderFolder
-      .add(this.config, "radius", 1, 10, 1)
-      .name("Radius")
-      .onChange((value: number) => {
-        this.config.radius = value;
-      });
-
-    thunderFolder
-      .add(this.config, "count", 1, 20, 1)
-      .name("Count")
-      .onChange((value: number) => {
-        this.config.count = value;
-      });
-
-    thunderFolder
-      .add(this.config, "duration", 100, 2000, 50)
-      .name("Duration (ms)")
-      .onChange((value: number) => {
-        this.config.duration = value;
-      });
-
-    thunderFolder
-      .add(
-        {
-          spawnNow: () => {
-            verboseLog("Manually spawning thunder bolts...");
-            this.spawnThunderBolts();
-          },
-        },
-        "spawnNow",
-      )
-      .name("Spawn Now");
-
-    thunderFolder
-      .add(
-        {
-          clearAll: () => {
-            this.clearAll();
-          },
-        },
-        "clearAll",
-      )
-      .name("Clear All");
-
-    thunderFolder
-      .add(
-        {
-          testSingle: () => {
-            const centerHex = this.getCenterHexFromCamera();
-            verboseLog("Creating single thunder bolt at center...");
-            this.spawnThunderBoltAt(centerHex);
-          },
-        },
-        "testSingle",
-      )
-      .name("Test Single");
-
-    thunderFolder.close();
+  setupGUI(folder: GUI): void {
+    const thunder = folder.addFolder("Thunder Bolts");
+    thunder.add(this.config, "radius", 1, 20, 1).name("Radius");
+    thunder.add(this.config, "count", 1, 20, 1).name("Count");
+    thunder
+      .add({ strike: () => this.spawnThunderBoltAt(this.getCenterHexFromCamera()) }, "strike")
+      .name("Strike at camera");
+    thunder.add({ clear: () => this.cleanup() }, "clear").name("Clear strikes");
+    thunder.close();
   }
 }

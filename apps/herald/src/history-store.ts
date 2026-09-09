@@ -1,4 +1,6 @@
-import { Pool } from "pg";
+import { PointsLeaderboard } from "./points-leaderboard";
+import { readPointsRegistration, type HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import { Pool, type PoolClient } from "pg";
 
 import type { HeraldGameSnapshot, HeraldHistoryPage, HeraldTransactionCount } from "@bibliothecadao/eternum/game-sync";
 
@@ -22,6 +24,7 @@ export interface HistoryQuery {
   gameId: string;
   limit: number;
   model?: string;
+  story?: string;
   offset: number;
   owner?: string;
 }
@@ -69,6 +72,8 @@ const storedHistoryEvent = (event: DecodedWorldEvent): StoredHistoryEvent | null
 
 export class HistoryStore {
   private readonly pool: Pool;
+  private readonly points = new PointsLeaderboard();
+  private leaderboardReady = false;
   private writeQueue = Promise.resolve();
   private writeFailure?: Error;
 
@@ -98,6 +103,8 @@ export class HistoryStore {
       );
       CREATE INDEX IF NOT EXISTS herald_history_game_model_position
         ON herald_history_events (chain, world_address, game_id, model, block_number DESC, transaction_index DESC, event_index DESC);
+      CREATE INDEX IF NOT EXISTS herald_history_story_variant
+        ON herald_history_events USING GIN ((value->'story'));
       CREATE INDEX IF NOT EXISTS herald_history_game_owner_position
         ON herald_history_events (chain, world_address, game_id, owner, block_number DESC, transaction_index DESC, event_index DESC);
       CREATE INDEX IF NOT EXISTS herald_history_game_entity_position
@@ -131,6 +138,7 @@ export class HistoryStore {
         PRIMARY KEY (chain, world_address, game_id)
       );
     `);
+    await this.restorePointsLeaderboard();
   }
 
   public async appendEvents(events: readonly DecodedWorldEvent[], completeThroughBlock?: number): Promise<void> {
@@ -141,11 +149,25 @@ export class HistoryStore {
     if (rows.length === 0 && completeThroughBlock === undefined) return;
 
     const client = await this.pool.connect();
+    let registrations: Array<{ gameId: string; points: NonNullable<ReturnType<typeof readPointsRegistration>> }> = [];
     try {
       await client.query("BEGIN");
-      if (rows.length > 0) {
-        await client.query(
-          `INSERT INTO herald_history_events (
+      registrations = await this.insertNewHistory(client, rows);
+      if (completeThroughBlock !== undefined) await this.advanceHistoryProgress(client, completeThroughBlock);
+      await client.query("COMMIT");
+      for (const registration of registrations) this.points.accept(registration.gameId, registration.points);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async insertNewHistory(client: PoolClient, rows: StoredHistoryEvent[]) {
+    if (rows.length === 0) return [];
+    const inserted = await client.query<Pick<StoredHistoryEvent, "game_id" | "value">>(
+      `INSERT INTO herald_history_events (
              chain, world_address, model, game_id, block_number, transaction_hash,
              transaction_index, event_index, owner, entity_id, value
            )
@@ -155,13 +177,19 @@ export class HistoryStore {
              model text, game_id text, block_number bigint, transaction_hash text,
              transaction_index integer, event_index integer, owner text, entity_id text, value jsonb
            )
-           ON CONFLICT DO NOTHING`,
-          [this.chain, this.worldAddress, JSON.stringify(rows)],
-        );
-      }
-      if (completeThroughBlock !== undefined) {
-        await client.query(
-          `INSERT INTO herald_history_progress (chain, world_address, complete_through_block, updated_at)
+           ON CONFLICT DO NOTHING
+           RETURNING game_id::text, value`,
+      [this.chain, this.worldAddress, JSON.stringify(rows)],
+    );
+    return inserted.rows.flatMap((row) => {
+      const points = readPointsRegistration(row.value);
+      return points ? [{ gameId: row.game_id, points }] : [];
+    });
+  }
+
+  private async advanceHistoryProgress(client: PoolClient, completeThroughBlock: number): Promise<void> {
+    await client.query(
+      `INSERT INTO herald_history_progress (chain, world_address, complete_through_block, updated_at)
            VALUES ($1, $2, $3, now())
            ON CONFLICT (chain, world_address) DO UPDATE
            SET complete_through_block = GREATEST(
@@ -169,15 +197,28 @@ export class HistoryStore {
                  EXCLUDED.complete_through_block
                ),
                updated_at = now()`,
-          [this.chain, this.worldAddress, completeThroughBlock],
-        );
-      }
-      await client.query("COMMIT");
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
+      [this.chain, this.worldAddress, completeThroughBlock],
+    );
+  }
+
+  public markLeaderboardReady(): void {
+    this.leaderboardReady = true;
+  }
+
+  public leaderboard(gameId: string): HeraldLeaderboard | null {
+    return this.leaderboardReady ? this.points.snapshot(gameId) : null;
+  }
+
+  private async restorePointsLeaderboard(): Promise<void> {
+    const result = await this.pool.query<{ game_id: string; value: Record<string, unknown> }>(
+      `SELECT game_id::text, value FROM herald_history_events
+       WHERE chain = $1 AND world_address = $2 AND model = 'StoryEvent'
+         AND value->'story' ? 'PointsRegisteredStory'`,
+      [this.chain, this.worldAddress],
+    );
+    for (const row of result.rows) {
+      const registration = readPointsRegistration(row.value);
+      if (registration) this.points.accept(row.game_id, registration);
     }
   }
 
@@ -241,11 +282,12 @@ export class HistoryStore {
     const values: unknown[] = [this.chain, this.worldAddress, query.gameId];
     const addFilter = (sql: string, value: unknown) => {
       values.push(value);
-      filters.push(sql.replace("?", `$${values.length}`));
+      filters.push(sql.replace("$value", `$${values.length}`));
     };
-    if (query.model) addFilter("model = ?", query.model);
-    if (query.owner) addFilter("owner = ?", normalizeFelt(query.owner));
-    if (query.entityId) addFilter("entity_id = ?", BigInt(query.entityId).toString());
+    if (query.model) addFilter("model = $value", query.model);
+    if (query.story) addFilter("value->'story' ? $value", query.story);
+    if (query.owner) addFilter("owner = $value", normalizeFelt(query.owner));
+    if (query.entityId) addFilter("entity_id = $value", BigInt(query.entityId).toString());
 
     const where = filters.join(" AND ");
     const countResult = await this.pool.query<{ total: string }>(

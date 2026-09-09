@@ -17,9 +17,6 @@ interface ProductionWorkflowsProps {
   productionBuildings: Building[];
   selectedResource: ResourcesIds | null;
   onSelectResource: (resource: ResourcesIds | null) => void;
-  wonderBonus: number;
-  productionBonus: number;
-  troopsBonus: number;
   realmEntityId: string;
 }
 
@@ -30,9 +27,6 @@ export const ProductionWorkflows = ({
   productionBuildings,
   selectedResource,
   onSelectResource,
-  wonderBonus,
-  productionBonus,
-  troopsBonus,
 }: ProductionWorkflowsProps) => {
   const [activeTab, setActiveTab] = useState(() => (selectedResource ? 0 : 1));
   const previousSelectedResourceRef = useRef<ResourcesIds | null>(selectedResource ?? null);
@@ -76,15 +70,7 @@ export const ProductionWorkflows = ({
             productionBuildings={productionBuildings}
           />
 
-          {selectedResource && (
-            <ProductionControls
-              selectedResource={selectedResource}
-              realm={realm}
-              wonderBonus={wonderBonus}
-              productionBonus={productionBonus}
-              troopsBonus={troopsBonus}
-            />
-          )}
+          {selectedResource && <ProductionControls selectedResource={selectedResource} realm={realm} />}
         </div>
       ),
     },
