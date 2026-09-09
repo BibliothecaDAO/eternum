@@ -1,32 +1,29 @@
-import { Particles } from "@/three/managers/particles";
+import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import * as THREE from "three";
 
+/** The selected hex holds the same outline the hover draws, on its own layer so hover and selection never collide. */
 export class SelectedHexManager {
-  private particles: Particles;
+  private readonly outline: HoverHexManager;
 
-  constructor(
-    scene: THREE.Scene,
-    private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
-  ) {
-    this.particles = new Particles(scene);
-    this.particles.setParticleSize(0.2);
-    this.particles.setLightIntensity(1);
+  constructor(scene: THREE.Scene, terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE) {
+    this.outline = new HoverHexManager(scene, terrainSurface);
+    this.outline.setVisualMode("outline");
   }
 
   setPosition(x: number, z: number) {
-    this.particles.setPosition(x, this.terrainSurface.sampleSurface(x, z).height + 0.1, z);
+    this.outline.showHover(x, z);
   }
 
   resetPosition() {
-    this.particles.resetPosition();
+    this.outline.hideHover();
   }
 
   update(deltaTime: number) {
-    this.particles.update(deltaTime);
+    this.outline.update(deltaTime);
   }
 
   dispose() {
-    this.particles.dispose();
+    this.outline.dispose();
   }
 }

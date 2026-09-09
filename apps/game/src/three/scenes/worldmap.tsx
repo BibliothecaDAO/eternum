@@ -892,6 +892,8 @@ export default class WorldmapScene extends WarpTravel {
   };
   private isUrlChangedListenerAttached = false;
   private readonly urlChangedHandler = () => {
+    // A flight into the local view keeps the selection; a jump within the map clears it.
+    if (parsePlayRoute(window.location)?.scene === "hex") return;
     this.clearSelection();
   };
   private followCameraTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -2352,7 +2354,11 @@ export default class WorldmapScene extends WarpTravel {
       chest: chest ? { id: chest.id } : undefined,
     });
 
-    if (clickPlan.kind === "ignore" || !hexCoords) {
+    if (!hexCoords) {
+      this.clearSelection();
+      return;
+    }
+    if (clickPlan.kind === "ignore") {
       return;
     }
 
@@ -3642,6 +3648,17 @@ export default class WorldmapScene extends WarpTravel {
       reportAmbientConvergenceError: (error) => this.reportAmbientConvergenceError(error),
       waitForAmbientConvergence: () => this.awaitInitialTerrainConvergence(),
     });
+    if (setupContext.isCurrent()) this.redrawHeldSelection();
+  }
+
+  private redrawHeldSelection(): void {
+    const selectedHex = this.state.selectedHex;
+    if (!selectedHex) return;
+    const position = getWorldPositionForHex({
+      col: selectedHex.col - FELT_CENTER(),
+      row: selectedHex.row - FELT_CENTER(),
+    });
+    this.selectedHexManager.setPosition(position.x, position.z);
   }
 
   private reportAmbientConvergenceError(error: unknown): void {
@@ -8208,7 +8225,7 @@ export default class WorldmapScene extends WarpTravel {
 
     try {
       this.selectedHexManager.resetPosition();
-      this.state.setSelectedHex(null);
+      if (nextSceneName !== SceneName.Hexception) this.state.setSelectedHex(null);
       this.state.setHoveredHex(null);
       this.highlightHexManager.highlightHexes([]);
       this.selectionPulseManager.hideSelection();
