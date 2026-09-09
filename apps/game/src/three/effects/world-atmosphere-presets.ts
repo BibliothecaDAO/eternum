@@ -14,15 +14,15 @@ export interface TimeOfDayColors {
 // The world controller and biome lab edit and read this one table.
 export const WORLD_ATMOSPHERE_PRESETS: Record<string, TimeOfDayColors> = {
   deepNight: {
-    // 0, 100
-    skyColor: 0x344562,
-    groundColor: 0x405477,
-    sunColor: 0x9b7ee8,
-    ambientColor: 0x7891c4,
-    fogColor: 0x536b8c,
-    hemisphereIntensity: 1.6,
-    sunIntensity: 1.85,
-    ambientIntensity: 0.8,
+    // 0, 100. Fill sits low so the moon light keeps shading on units and roofs; labels stay readable on the cooler sky.
+    skyColor: 0x3a4d70,
+    groundColor: 0x364868,
+    sunColor: 0xa998f0,
+    ambientColor: 0x6f88bd,
+    fogColor: 0x4f6788,
+    hemisphereIntensity: 1.15,
+    sunIntensity: 2.3,
+    ambientIntensity: 0.45,
     fogNear: 15,
     fogFar: 56,
   },
@@ -92,15 +92,15 @@ export const WORLD_ATMOSPHERE_PRESETS: Record<string, TimeOfDayColors> = {
     fogFar: 62,
   },
   evening: {
-    // 83.3
+    // 83.3. Same rule as night: less fill, a little more directional light.
     skyColor: 0x667fb8,
-    groundColor: 0x53617e,
+    groundColor: 0x4d5c7a,
     sunColor: 0xd4e0ff,
     ambientColor: 0x8aa2d2,
-    fogColor: 0x637da5,
-    hemisphereIntensity: 1.55,
-    sunIntensity: 2.05,
-    ambientIntensity: 0.74,
+    fogColor: 0x5f79a1,
+    hemisphereIntensity: 1.25,
+    sunIntensity: 2.2,
+    ambientIntensity: 0.52,
     fogNear: 20,
     fogFar: 54,
   },

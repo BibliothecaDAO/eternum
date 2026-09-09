@@ -82,11 +82,11 @@ describe("WorldAtmosphereController", () => {
 
     fixture.manager.update(0);
 
-    expect((fixture.scene.background as Color).getHex()).toBe(0x344562);
-    expect(fixture.fog.color.getHex()).toBe(0x536b8c);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.8);
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.6);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(1.85);
+    expect((fixture.scene.background as Color).getHex()).toBe(0x3a4d70);
+    expect(fixture.fog.color.getHex()).toBe(0x4f6788);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.48); // 0.45 after the night temperature grading
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.15);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(2.3);
     expect(moonLight?.intensity).toBeCloseTo(0.95);
   });
 
