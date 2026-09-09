@@ -30,7 +30,6 @@ export interface ProcessedStoryEvent extends StoryEventData {
 type StreamStoryEvent = StoryEventData;
 
 interface StoryEventsState {
-  revision: number;
   streamed: StreamStoryEvent[];
   accept: (event: StreamStoryEvent) => void;
   reset: () => void;
@@ -39,7 +38,6 @@ interface StoryEventsState {
 const STREAM_EVENT_LIMIT = 512;
 
 const useStoryEventsStore = create<StoryEventsState>((set) => ({
-  revision: 0,
   streamed: [],
   accept: (event) =>
     set((state) => ({
@@ -47,12 +45,15 @@ const useStoryEventsStore = create<StoryEventsState>((set) => ({
         0,
         STREAM_EVENT_LIMIT,
       ),
-      revision: state.revision + 1,
     })),
-  reset: () => set({ revision: 0, streamed: [] }),
+  reset: () => set({ streamed: [] }),
 }));
 
-export const useStoryEventRevision = (): number => useStoryEventsStore((state) => state.revision);
+/** A refresh signal only; points totals stay in Herald's history aggregate. */
+export const useLatestPointsEventId = (): string | null =>
+  useStoryEventsStore(
+    (state) => state.streamed.find((event) => event.story === "PointsRegisteredStory")?.event_id ?? null,
+  );
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;

@@ -51,6 +51,7 @@ const handler = createHeraldRequestHandler({
   },
   metrics,
   history: {
+    leaderboard: (gameId) => ({ game_id: gameId, entries: [] }),
     queryEvents: async (query) => ({
       complete_through_block: 12,
       items: [
@@ -124,4 +125,11 @@ describe("herald HTTP", () => {
 
     expect((await handler(new Request("http://herald/other/games/7/snapshot"))).status).toBe(404);
   });
+});
+
+it("serves the prepared leaderboard aggregate without paging history", async () => {
+  const response = await handler(new Request("http://herald/madara/games/7/leaderboard"));
+  expect(response.status).toBe(200);
+  expect(response.headers.get("access-control-allow-origin")).toBe("*");
+  expect(await response.json()).toEqual({ game_id: "7", entries: [] });
 });

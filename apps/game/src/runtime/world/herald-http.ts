@@ -2,6 +2,7 @@ import type {
   HeraldGameDirectory,
   HeraldGameSnapshot,
   HeraldHistoryPage,
+  HeraldLeaderboard,
   HeraldTransactionCount,
 } from "@bibliothecadao/eternum/game-sync";
 
@@ -109,4 +110,16 @@ export const feltEquals = (left: unknown, right: unknown): boolean => {
   } catch {
     return false;
   }
+};
+
+export const fetchHeraldGameLeaderboard = async (
+  world: WorldDeployment,
+  gameId: number,
+): Promise<HeraldLeaderboard> => {
+  if (!Number.isSafeInteger(gameId) || gameId <= 0)
+    throw new Error(`Herald leaderboard requires a positive game id; received ${gameId}`);
+  return fetchHeraldJson(
+    buildHeraldUrl(world, `/games/${gameId}/leaderboard`),
+    `Herald leaderboard for ${world.id} game ${gameId}`,
+  );
 };

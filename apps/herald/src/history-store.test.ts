@@ -1,0 +1,67 @@
+import { GAME_SYNC_MODEL_MANIFEST } from "@bibliothecadao/eternum/game-sync-models";
+import { beforeEach, expect, it, vi } from "vitest";
+import type { DecodedWorldEvent } from "./types";
+const db = vi.hoisted(() => ({ query: vi.fn(), transaction: vi.fn(), release: vi.fn() }));
+vi.mock("pg", () => ({
+  Pool: class {
+    query = db.query;
+    connect = async () => ({ query: db.transaction, release: db.release });
+  },
+}));
+import { HistoryStore } from "./history-store";
+
+const value = {
+  story: { PointsRegisteredStory: { owner_address: "0xabc", activity: "Exploration", points: "0x4c4b40" } },
+};
+const event = {
+  kind: "event",
+  model: GAME_SYNC_MODEL_MANIFEST.find((model) => model.name === "StoryEvent")!,
+  key: { game_id: "0x1c" },
+  value,
+  entityId: "0x1",
+  position: { blockNumber: 365589, transactionHash: "0x123", transactionIndex: 0, eventIndex: 19 },
+} as DecodedWorldEvent;
+
+beforeEach(() => {
+  db.query.mockReset();
+  db.transaction.mockReset();
+  db.release.mockReset();
+});
+it("restores points after restart, counts only new SQL rows and serves without more database reads", async () => {
+  db.query.mockImplementation(async (sql: string) => ({
+    rows: sql.includes("SELECT game_id") ? [{ game_id: "28", value }] : [],
+  }));
+  let insertCount = 0;
+  db.transaction.mockImplementation(async (sql: string) => ({
+    rows: sql.includes("INSERT INTO herald_history_events") && insertCount++ === 0 ? [{ game_id: "28", value }] : [],
+  }));
+  const store = new HistoryStore("postgres://test", "madara", "0xworld");
+  await store.initialize();
+  expect(store.leaderboard("28")).toBeNull();
+  store.markLeaderboardReady();
+  expect(store.leaderboard("28")?.entries[0].totalPoints).toBe(5);
+  await store.appendEvents([event]);
+  await store.appendEvents([event]);
+  expect(store.leaderboard("28")?.entries[0].activityBreakdown.exploration).toEqual({ count: 2, points: 10 });
+  expect(db.transaction.mock.calls.find(([sql]) => sql.includes("INSERT INTO herald_history_events"))?.[0]).toContain(
+    "ON CONFLICT DO NOTHING",
+  );
+  const reads = db.query.mock.calls.length;
+  store.leaderboard("28");
+  store.leaderboard("28");
+  expect(db.query).toHaveBeenCalledTimes(reads);
+});
+it("does not publish a rolled-back points registration", async () => {
+  db.query.mockResolvedValue({ rows: [] });
+  db.transaction.mockImplementation(async (sql: string) => {
+    if (sql === "COMMIT") throw new Error("commit failed");
+    return { rows: sql.includes("INSERT INTO herald_history_events") ? [{ game_id: "28", value }] : [] };
+  });
+  const store = new HistoryStore("postgres://test", "madara", "0xworld");
+  await store.initialize();
+  store.markLeaderboardReady();
+  await expect(store.appendEvents([event])).rejects.toThrow("commit failed");
+  expect(store.leaderboard("28")?.entries).toEqual([]);
+  expect(db.transaction).toHaveBeenCalledWith("ROLLBACK");
+  expect(db.release).toHaveBeenCalledOnce();
+});

@@ -34,7 +34,7 @@ describe("in-game leaderboard fact ownership", () => {
     // row's total is always the sum of what it shows. Finalized games keep the
     // RECS-backed final standings, and tx flows (register/claim) stay on RECS.
     expect(panelSource).toContain("useInGameLeaderboard");
-    expect(panelSource).toContain("fetchLeaderboardActivityBreakdowns");
+    expect(panelSource).toContain("useLeaderboardActivity");
     expect(panelSource).toContain("activityEntry?.totalPoints");
     expect(panelSource).toContain("isFinalized ? (standing?.points ?? 0)");
     expect(panelSource).not.toContain("setInterval");
@@ -44,8 +44,8 @@ describe("in-game leaderboard fact ownership", () => {
     expect(playerListSource).not.toContain("LandingLeaderboardEntry");
     expect(playerListSource).not.toContain("leaderboardRankOverride");
     expect(playerListSource).not.toContain("leaderboardPointsOverride");
-    expect(activityServiceSource).toContain("activityBreakdown");
-    expect(activityServiceSource).toContain("totalPoints:");
+    expect(activityServiceSource).toContain("fetchHeraldGameLeaderboard");
+    expect(activityServiceSource).not.toContain("fetchHeraldGameHistory");
     expect(activityServiceSource).not.toContain("registeredPoints");
   });
 

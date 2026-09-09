@@ -13,7 +13,7 @@ interface HeraldHttpState {
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
-  history?: Pick<HistoryStore, "queryEvents" | "reviewSnapshot" | "transactionCount">;
+  history?: Pick<HistoryStore, "queryEvents" | "reviewSnapshot" | "transactionCount" | "leaderboard">;
   undecodableEventCount: () => number;
 }
 
@@ -81,6 +81,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);
   const historyPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/history$`);
   const reviewSnapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/review/snapshot$`);
+  const leaderboardPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/leaderboard$`);
   const transactionCountPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/transactions/count$`);
 
   return async (request) => {
@@ -111,6 +112,13 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const message = error instanceof Error ? error.message : String(error);
         return jsonResponse({ error: message }, 400);
       }
+    }
+
+    const leaderboardMatch = request.method === "GET" ? leaderboardPath.exec(url.pathname) : null;
+    if (leaderboardMatch) {
+      if (!state.history) return jsonResponse({ error: "history_unavailable" }, 503);
+      const leaderboard = state.history.leaderboard(leaderboardMatch[1]);
+      return leaderboard ? jsonResponse(leaderboard) : jsonResponse({ error: "leaderboard_warming_up" }, 503);
     }
 
     const historyMatch = request.method === "GET" ? historyPath.exec(url.pathname) : null;

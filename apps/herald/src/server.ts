@@ -204,14 +204,16 @@ const main = async (): Promise<void> => {
     registry,
     rpc,
     toBlock: loaded.confirmedBlock,
-  }).catch((error) => {
-    console.error(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : String(error),
-        event: "herald_history_backfill_failed",
-      }),
-    );
-  });
+  })
+    .then(() => historyStore.markLeaderboardReady())
+    .catch((error) => {
+      console.error(
+        JSON.stringify({
+          error: error instanceof Error ? error.message : String(error),
+          event: "herald_history_backfill_failed",
+        }),
+      );
+    });
 };
 
 await main();

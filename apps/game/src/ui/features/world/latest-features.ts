@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    type: "improvement",
+    title: "Points Ready When You Open",
+    description:
+      "Your leaderboard breakdown loads when you enter the game and stays refreshed while you play, so opening Players no longer scans the match history.",
+  },
+  {
+    date: "2026-09-09",
     title: "Roomier Panels and Compact Chat",
     description:
       "Keep world chat open below tile details, with Events above. The wider structure panel has more room for names and resources, and its action buttons sit directly underneath.",

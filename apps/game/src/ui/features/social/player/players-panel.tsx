@@ -1,9 +1,7 @@
+import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import {
-  fetchLeaderboardActivityBreakdowns,
-  type PlayerLeaderboardActivityEntry,
-} from "@/services/leaderboard/player-activity-breakdown-service";
+import { type PlayerLeaderboardActivityEntry } from "@/services/leaderboard/player-activity-breakdown-service";
 import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
@@ -20,11 +18,8 @@ import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import Search from "lucide-react/dist/esm/icons/search";
-import { KeyboardEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
-import { useStoryEventRevision } from "@/hooks/store/use-story-events-store";
-
-const SOCIAL_LEADERBOARD_LIMIT = 1000;
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
   new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry]));
@@ -55,28 +50,17 @@ export const PlayersPanel = ({
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showPointsBreakdown, setShowPointsBreakdown] = useState(false);
-  const [activityBreakdownsByAddress, setActivityBreakdownsByAddress] = useState(
-    () => new Map<string, PlayerLeaderboardActivityEntry>(),
+  const {
+    data: activityEntries,
+    isFetching: isActivityBreakdownFetching,
+    error: activityError,
+    refetch: refreshActivityBreakdowns,
+  } = useLeaderboardActivity();
+  const activityBreakdownsByAddress = useMemo(
+    () => buildActivityBreakdownLookup(activityEntries ?? []),
+    [activityEntries],
   );
-  const [isActivityBreakdownFetching, setIsActivityBreakdownFetching] = useState(false);
   const mode = useGameModeConfig();
-  const storyEventRevision = useStoryEventRevision();
-
-  const refreshActivityBreakdowns = useCallback(async () => {
-    setIsActivityBreakdownFetching(true);
-    try {
-      const entries = await fetchLeaderboardActivityBreakdowns(SOCIAL_LEADERBOARD_LIMIT);
-      setActivityBreakdownsByAddress(buildActivityBreakdownLookup(entries));
-    } catch (error) {
-      console.error("Failed to refresh leaderboard activity breakdown", error);
-    } finally {
-      setIsActivityBreakdownFetching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshActivityBreakdowns();
-  }, [refreshActivityBreakdowns, storyEventRevision]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -116,7 +100,7 @@ export const PlayersPanel = ({
         const activityEntry = activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ?? null;
 
         // Finalized games rank by the on-chain final standings. Live games rank
-        // by the SQL leaderboard total — the same source as the breakdown
+        // by Herald’s prepared history total — the same source as the breakdown
         // columns, so POINTS is always the sum of what the row displays (owner
         // ruling). The RECS standing is only the pre-fetch fallback.
         const liveRank = activityEntry?.rank ?? standing?.rank ?? player.rank;
@@ -214,7 +198,9 @@ export const PlayersPanel = ({
             </Button>
           </div>
           <RefreshButton
-            onClick={refreshActivityBreakdowns}
+            onClick={() => {
+              void refreshActivityBreakdowns();
+            }}
             isLoading={isActivityBreakdownFetching}
             disabled={isActivityBreakdownFetching}
             size="md"
@@ -222,6 +208,11 @@ export const PlayersPanel = ({
           />
         </div>
 
+        {activityError && (
+          <p role="alert" className="text-sm text-danger">
+            Points breakdown is unavailable. Use refresh to retry.
+          </p>
+        )}
         {userGuild?.isOwner && (
           <div className="flex justify-between items-center">
             <div className="text-sm text-gold/80">
