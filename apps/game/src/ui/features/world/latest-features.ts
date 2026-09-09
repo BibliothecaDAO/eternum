@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Roomier Panels and Compact Chat",
+    description:
+      "Keep world chat open below tile details, with Events above. The wider structure panel has more room for names and resources, and its action buttons sit directly underneath.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "One Feed for Game Events",
     description:
       "Read battles, action results and your incoming caravans in Events. Battle rows show both armies and the winner; floating notifications no longer cover the map.",

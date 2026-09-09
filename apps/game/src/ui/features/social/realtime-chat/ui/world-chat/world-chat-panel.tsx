@@ -164,7 +164,14 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
 
   // Initial load of messages
   useEffect(() => {
-    if (resolvedZoneId && zone && messages.length === 0 && zone.hasMoreHistory && !zone.isFetchingHistory) {
+    if (
+      resolvedZoneId &&
+      zone &&
+      messages.length === 0 &&
+      zone.hasMoreHistory &&
+      !zone.isFetchingHistory &&
+      !zone.historyError
+    ) {
       loadHistory(undefined);
     }
   }, [resolvedZoneId, zone, messages.length]);
@@ -220,7 +227,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   // the panel is still mounting (which caused the infinite-history loop).
   useEffect(() => {
     const sentinel = topSentinelRef.current;
-    if (!sentinel || !zone?.hasMoreHistory) return;
+    if (!sentinel || !zone?.hasMoreHistory || zone.historyError) return;
     if (!hasInitialAnchorRef.current) return;
 
     const observer = new IntersectionObserver(
@@ -269,6 +276,18 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               {/* Sentinel for auto-loading older messages */}
               <div ref={topSentinelRef} className="h-1" />
 
+              {zone.historyError && (
+                <div role="status" className="mb-2 text-xs text-gold/70">
+                  {zone.historyError}{" "}
+                  <button
+                    type="button"
+                    className="text-gold underline"
+                    onClick={() => void loadHistory(zone.lastFetchedCursor ?? undefined)}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
               {zone.isFetchingHistory && (
                 <div className="flex justify-center py-2">
                   <span className="text-xs text-gold/50">Loading older messages...</span>
@@ -346,7 +365,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                     </Fragment>
                   );
                 })}
-                {messages.length === 0 && !zone.isFetchingHistory && (
+                {messages.length === 0 && !zone.isFetchingHistory && !zone.historyError && (
                   <li className="text-sm text-gold/50">No messages yet. Be the first to say hello!</li>
                 )}
               </ul>
@@ -360,7 +379,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
             if (!resolvedZoneId) return;
             await sendMessage({ content: value, zoneId: resolvedZoneId });
           }}
-          placeholder={resolvedZoneId ? `Message zone ${resolvedZoneId}` : "Select a zone to chat"}
+          placeholder={resolvedZoneId ? "Message world chat…" : "Select a zone to chat"}
           disabled={!resolvedZoneId}
         />
       </div>

@@ -1,3 +1,4 @@
+import { HUD_SECTION_HEIGHT } from "../hud-layout";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -15,12 +16,6 @@ import { Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback, useMemo } from "react";
-
-const STRUCTURE_LIST_VISIBLE_ROWS = 3;
-const STRUCTURE_ROW_HEIGHT_PX = 60;
-const STRUCTURE_ROW_GAP_PX = 8;
-const STRUCTURE_LIST_MAX_HEIGHT_PX =
-  STRUCTURE_LIST_VISIBLE_ROWS * STRUCTURE_ROW_HEIGHT_PX + (STRUCTURE_LIST_VISIBLE_ROWS - 1) * STRUCTURE_ROW_GAP_PX;
 
 /**
  * The left rail. A flat, filterable list of every owned structure with the
@@ -98,10 +93,10 @@ export const StructureListColumn = memo(() => {
   }
 
   return (
-    <div className="flex min-w-0 flex-col">
+    <div className="flex min-w-0 shrink-0 flex-col" style={{ height: HUD_SECTION_HEIGHT }}>
       {/* Header: single-line category filter on the left, owned count on the
           right. No label (the active chip is highlighted) and no sort control. */}
-      <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto rounded-xl")}>
+      <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex h-full min-h-0 flex-col rounded-xl")}>
         <div className="flex items-center justify-between gap-2 border-b border-gold/15 px-3 py-2">
           <FilterChipsRow
             availableCategories={availableCategories}
@@ -110,15 +105,12 @@ export const StructureListColumn = memo(() => {
           />
           <span className={cn(HUD_CUE, "flex-shrink-0")}>{visibleStructures.length}</span>
         </div>
-        <div className="px-3 pb-3 pt-1">
+        <div className="min-h-0 flex-1 overflow-hidden px-3 pb-3 pt-1">
           {visibleStructures.length === 0 ? (
             <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
           ) : (
             // Fit three full realm rows; scroll only for larger empires.
-            <div
-              className="flex flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
-              style={{ maxHeight: `${STRUCTURE_LIST_MAX_HEIGHT_PX}px` }}
-            >
+            <div className="flex h-full flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
               {visibleStructures.map((structure) => (
                 <StructureStatusRow
                   key={structure.entityId}

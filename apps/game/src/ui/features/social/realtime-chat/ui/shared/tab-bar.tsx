@@ -14,6 +14,7 @@ interface TabBarProps {
   onToggleExpand: () => void;
   isExpanded: boolean;
   className?: string;
+  showWindowControls?: boolean;
 }
 
 export const TabBar: React.FC<TabBarProps> = ({
@@ -27,6 +28,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   onToggleExpand,
   isExpanded,
   className = "",
+  showWindowControls = true,
 }) => {
   return (
     <div className={`flex items-center justify-between border-b border-gold/30 px-2 py-1 ${className}`}>
@@ -80,22 +82,26 @@ export const TabBar: React.FC<TabBarProps> = ({
         >
           💾
         </button>
-        <button
-          onClick={onToggleExpand}
-          className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
-          title={isExpanded ? "Collapse" : "Expand"}
-        >
-          {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
-        </button>
-        <button
-          onClick={onMinimize}
-          className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
-          title="Minimize chat"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-            <path d="M6 12L18 12" stroke="#E0AF65" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+        {showWindowControls && (
+          <>
+            <button
+              onClick={onToggleExpand}
+              className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? <CollapseIcon className="w-4 h-4" /> : <ExpandIcon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={onMinimize}
+              className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
+              title="Minimize chat"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                <path d="M6 12L18 12" stroke="#E0AF65" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

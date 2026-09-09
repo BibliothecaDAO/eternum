@@ -46,6 +46,7 @@ export interface ChatTab {
 }
 
 export interface WorldChatZoneState {
+  historyError?: string;
   zoneId: string;
   messages: WorldChatMessage[];
   unreadCount: number;
