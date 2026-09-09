@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createIdentityClient } from "./client";
 
@@ -48,4 +48,45 @@ describe("identity client", () => {
 
     await expect(client.getSession()).resolves.toBeNull();
   });
+});
+
+afterEach(() => vi.unstubAllGlobals());
+it.each([
+  "http://localhost:4183",
+  "https://127.0.0.1:4183",
+  "http://[::1]:4183",
+  "https://play.realms.party",
+  "https://localhost.attacker.invalid",
+])("selects session transport and persists across reload for %s", async (origin) => {
+  const stored = new Map<string, string>();
+  const localStorage = {
+    getItem: (key: string) => stored.get(key) ?? null,
+    setItem: (key: string, value: string) => stored.set(key, value),
+    removeItem: (key: string) => stored.delete(key),
+  };
+  vi.stubGlobal("window", { location: { origin }, localStorage });
+  const session = { session: { id: "test" }, user: { id: "player" } };
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(Response.json({ nonce: "nonce" }))
+    .mockResolvedValueOnce(Response.json({ token: "session-token" }))
+    .mockImplementation(async () => Response.json(session));
+  const options = { baseUrl: "https://realms.test/api/auth", fetch };
+  await createIdentityClient(options).signIn({
+    address: "0x123",
+    chainId: "SN_MAIN",
+    domain: "realms.test",
+    uri: "https://realms.test",
+    signTypedData: async () => ["0x1"],
+  });
+  const reloaded = createIdentityClient(options);
+  await reloaded.getSession();
+  const loopback = !origin.includes("realms.party") && !origin.includes("attacker");
+  expect(stored.size).toBe(loopback ? 1 : 0);
+  expect(new Headers(fetch.mock.calls.at(-1)?.[1]?.headers).get("authorization")).toBe(
+    loopback ? "Bearer session-token" : null,
+  );
+  expect(fetch.mock.calls.at(-1)?.[1]?.credentials).toBe("include");
+  await reloaded.signOut();
+  expect(stored.size).toBe(0);
 });

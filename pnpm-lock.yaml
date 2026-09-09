@@ -852,6 +852,9 @@ importers:
       '@fastify/redis':
         specifier: ^6.0.0
         version: 6.2.0
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@types/pg':
         specifier: ^8.15.5
         version: 8.16.0

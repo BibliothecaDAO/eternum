@@ -10,3 +10,16 @@ describe("browser origin policy", () => {
     expect(isAllowedOrigin("https://evil.realms.test", allowed)).toBe(false);
   });
 });
+
+it.each(["http://localhost:4183", "https://127.0.0.1:3000", "http://[::1]:8080"])(
+  "allows loopback %s without CORS_ORIGIN",
+  (origin) => {
+    expect(isAllowedOrigin(origin, readSecurityConfig({}).allowedOrigins)).toBe(true);
+  },
+);
+it.each([undefined, "null", "https://localhost.attacker.invalid", "ftp://localhost:4183"])(
+  "rejects untrusted origin %s",
+  (origin) => {
+    expect(isAllowedOrigin(origin, readSecurityConfig({}).allowedOrigins)).toBe(false);
+  },
+);

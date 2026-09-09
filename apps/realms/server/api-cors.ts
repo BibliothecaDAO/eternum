@@ -1,5 +1,5 @@
 import { serverEnv } from "./env";
-import { isLoopbackOrigin } from "./loopback-origins";
+import { isLoopbackOrigin } from "@realms-world/chain";
 
 type ApiHandler = () => Promise<Response> | Response;
 
@@ -25,7 +25,7 @@ const isAllowedOrigin = (origin: string): boolean => ALLOWED_ORIGINS.has(origin)
 
 function withCorsHeaders(response: Response, origin: string | null): Response {
   response.headers.set("access-control-allow-credentials", "true");
-  response.headers.set("access-control-allow-headers", "content-type");
+  response.headers.set("access-control-allow-headers", "content-type, authorization");
   response.headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
   response.headers.append("vary", "Origin");
   if (origin !== null) response.headers.set("access-control-allow-origin", origin);

@@ -24,6 +24,7 @@ describe("handleApiCors", () => {
 
     expect(route).not.toHaveBeenCalled();
     expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-headers")).toContain("authorization");
     expect(response.headers.get("access-control-allow-origin")).toBe("https://play.realms.party");
   });
 

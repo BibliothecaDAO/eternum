@@ -15,6 +15,7 @@
     "db:push": "drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
+    "@realms-world/chain": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@fastify/redis": "^6.0.0",
     "@types/pg": "^8.15.5",
