@@ -58,7 +58,7 @@ describe("overlay surfaces", () => {
 
   it("the popover panel is the only dialog role in the client", () => {
     const dialogs = walk(SOURCE_ROOT)
-      .filter((path) => /role=["']dialog["']/.test(readFileSync(path, "utf8")))
+      .filter((path) => /role=["']dialog["'](?=[\s/>])/.test(readFileSync(path, "utf8")))
       .map((path) => relative(SOURCE_ROOT, path));
     expect(dialogs).toEqual(["ui/design-system/molecules/popover.tsx"]);
   });

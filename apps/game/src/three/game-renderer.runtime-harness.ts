@@ -30,6 +30,7 @@ function createTransitionManagerHarness() {
   };
 
   return {
+    startSceneFlight: vi.fn(() => null),
     fadeOut: vi.fn(() => {
       if (!active) return Promise.resolve(false);
 

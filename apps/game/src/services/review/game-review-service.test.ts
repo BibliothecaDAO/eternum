@@ -3,6 +3,8 @@
 import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { fetchGameReviewData } from "./game-review-service";
+
 const PLAYER = "0x62ba685f1d600ac7bda27e556b787548da32c7c0aa3ff5f58dddc07b9116f33";
 const GAME_ID = 5;
 const REVIEW_BLOCK = 100;
@@ -84,8 +86,6 @@ describe("game review Herald read model", () => {
   });
 
   it("builds the exact L3 result and transaction stats without a SQL reader", async () => {
-    const { fetchGameReviewData } = await import("./game-review-service");
-
     const review = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
 
     expect(review.stats.totalTransactions).toBe(42);
@@ -102,8 +102,6 @@ describe("game review Herald read model", () => {
       offset: 0,
       total: 0,
     });
-    const { fetchGameReviewData } = await import("./game-review-service");
-
     await expect(
       fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER }),
     ).rejects.toThrow(/complete through block 99/);
