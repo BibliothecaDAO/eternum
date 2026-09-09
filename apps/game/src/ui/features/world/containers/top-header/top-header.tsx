@@ -125,7 +125,9 @@ export const TopHeader = memo(() => {
 
         {/* 3. Local / World toggle (+ conditional Ethereal layer chip) */}
         <div className={cn(TOP_PILL, "whitespace-nowrap")}>
-          <span
+          <button
+            type="button"
+            aria-pressed={isLocalView}
             onClick={() => {
               playClick();
               goToStructure(
@@ -138,10 +140,11 @@ export const TopHeader = memo(() => {
             className={cn("cursor-pointer", TOP_PILL_TEXT, !isLocalView && "text-gold/55")}
           >
             Local
-          </span>
+          </button>
           <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
             <input
               type="checkbox"
+              aria-label="Show world map"
               className="sr-only peer"
               checked={isWorldView}
               onChange={(e) => {
@@ -154,9 +157,11 @@ export const TopHeader = memo(() => {
                 );
               }}
             />
-            <div className="w-10 h-5 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+            <div className="w-10 h-5 rounded-full peer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
           </label>
-          <span
+          <button
+            type="button"
+            aria-pressed={isWorldView && !isFastTravelView}
             onClick={() => {
               playClick();
               goToStructure(
@@ -169,7 +174,7 @@ export const TopHeader = memo(() => {
             className={cn("cursor-pointer", TOP_PILL_TEXT, !isWorldView && "text-gold/55")}
           >
             World
-          </span>
+          </button>
           {showFastTravelLayerToggle && (
             <button
               type="button"
@@ -189,7 +194,9 @@ export const TopHeader = memo(() => {
         </div>
 
         <GameClock />
-        <div className={TOP_PILL}><TickProgress /></div>
+        <div className={TOP_PILL}>
+          <TickProgress />
+        </div>
         <AttentionPill />
 
         {/* 6. Army combat follow toggle */}

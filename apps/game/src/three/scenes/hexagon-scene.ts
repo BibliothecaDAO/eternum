@@ -877,6 +877,13 @@ export abstract class HexagonScene {
       },
       0,
     );
+    return () => {
+      if (this.cameraTransitionState.activeToken !== transitionToken) return;
+      this.cameraTransitionTimeline?.kill();
+      this.cameraTransitionTimeline = null;
+      this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
+      this.setCameraTransitionStatus("idle");
+    };
   }
 
   public moveCameraToXYZ(x: number, y: number, z: number, duration: number = 2) {

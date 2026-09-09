@@ -20,6 +20,7 @@ function createDeferred<T>(): Deferred<T> {
 function createTransitionHarness(events?: string[]) {
   const fadeOuts: Array<Deferred<boolean>> = [];
   const transitionManager = {
+    startSceneFlight: vi.fn(() => null as Promise<boolean> | null),
     fadeIn: vi.fn(),
     fadeOut: vi.fn(() => {
       events?.push("fade-out");
@@ -58,6 +59,27 @@ function createScene(overrides: Partial<HexagonScene> = {}) {
 }
 
 describe("SceneManager transitions", () => {
+  it("keeps drawing the outgoing scene until its camera flight completes", async () => {
+    const { sceneManager, transitionManager } = createTransitionHarness();
+    const flight = createDeferred<boolean>();
+    transitionManager.startSceneFlight.mockReturnValue(flight.promise);
+    const map = createScene();
+    const realm = createScene();
+    sceneManager.addScene(SceneName.WorldMap, map);
+    sceneManager.addScene(SceneName.Hexception, realm);
+    sceneManager._updateCurrentScene(SceneName.WorldMap);
+    sceneManager.switchScene(SceneName.Hexception);
+    expect(sceneManager.getRenderingScene()).toBe(SceneName.WorldMap);
+    expect(realm.setup).not.toHaveBeenCalled();
+    expect(map.onSwitchOff).not.toHaveBeenCalled();
+    flight.resolve(true);
+    await flushTransitionWork();
+    await flushTransitionWork();
+    expect(map.onSwitchOff).toHaveBeenCalledWith(SceneName.Hexception);
+    expect(realm.setup).toHaveBeenCalledOnce();
+    expect(sceneManager.getCurrentScene()).toBe(SceneName.Hexception);
+  });
+
   it("renders the preparing scene without releasing input while its GPU work is pending", async () => {
     const setup = createDeferred<void>();
     const { fadeOuts, sceneManager } = createTransitionHarness();

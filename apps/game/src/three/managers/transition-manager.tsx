@@ -1,3 +1,7 @@
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
+import type { HexagonScene } from "../scenes/hexagon-scene";
+import type { SceneName } from "../types";
+import { SceneFlight, canFlyBetweenScenes } from "./scene-flight";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
@@ -7,6 +11,20 @@ export class TransitionManager {
   private fadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private resolveFadeOut: ((completed: boolean) => void) | null = null;
   private destroyed = false;
+  private flight: SceneFlight | null = null;
+
+  startSceneFlight(
+    scene: HexagonScene | undefined,
+    from: SceneName | undefined,
+    to: SceneName,
+  ): Promise<boolean> | null {
+    if (this.destroyed || !scene || !canFlyBetweenScenes(from, to, useWorldAppearanceStore.getState().reducedMotion))
+      return null;
+    this.cancelPendingFadeOut();
+    this.flight?.destroy();
+    this.flight = new SceneFlight(scene, to);
+    return this.flight.flyOut();
+  }
 
   fadeOut(): Promise<boolean> {
     if (this.destroyed) {
@@ -14,6 +32,8 @@ export class TransitionManager {
     }
 
     this.cancelPendingFadeOut();
+    this.flight?.destroy();
+    this.flight = null;
 
     const { setIsLoadingScreenEnabled } = useUIStore.getState();
     setIsLoadingScreenEnabled(true);
@@ -23,7 +43,8 @@ export class TransitionManager {
     });
   }
 
-  fadeIn() {
+  fadeIn(scene?: HexagonScene) {
+    if (scene) this.flight?.reveal(scene);
     this.cancelPendingFadeOut();
     useUIStore.getState().setIsLoadingScreenEnabled(false);
     useTooltipStore.getState().setTooltip(null);
@@ -35,6 +56,8 @@ export class TransitionManager {
 
   destroy() {
     this.destroyed = true;
+    this.flight?.destroy();
+    this.flight = null;
     this.cancelPendingFadeOut();
   }
 

@@ -35,38 +35,51 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Fly Between Map Views",
+    description:
+      "Fly toward a realm when entering it and pull back when leaving, with a short scene crossfade. Reduced motion keeps the familiar fade, and Local/World controls support keyboard navigation.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Day Timer Returns",
-    description: "The familiar day-phase indicator returns beside the match clock. Hover it for the current phase and time remaining; daylight and the gong keep running independently.",
+    description:
+      "The familiar day-phase indicator returns beside the match clock. Hover it for the current phase and time remaining; daylight and the gong keep running independently.",
     type: "improvement",
   },
   {
     date: "2026-09-09",
     title: "One Attention List",
-    description: "Cycle through locations needing attention, then suggested actions, from one header pill. Suggestions open beside familiar panel styling and remain yours to confirm.",
+    description:
+      "Cycle through locations needing attention, then suggested actions, from one header pill. Suggestions open beside familiar panel styling and remain yours to confirm.",
     type: "improvement",
   },
   {
     date: "2026-09-09",
     title: "Action Previews Beside Their Targets",
-    description: "Attack, help, chest and spire previews open beside the target hex. Right-click another legal target to move the preview, or click elsewhere to close it.",
+    description:
+      "Attack, help, chest and spire previews open beside the target hex. Right-click another legal target to move the preview, or click elsewhere to close it.",
     type: "improvement",
   },
   {
     date: "2026-09-09",
     title: "Visual Building Choices",
-    description: "Choose buildings from thumbnails with resource costs beside each choice. Buildable options come first, and tall plot pickers stay inside the screen with scrolling.",
+    description:
+      "Choose buildings from thumbnails with resource costs beside each choice. Buildable options come first, and tall plot pickers stay inside the screen with scrolling.",
     type: "improvement",
   },
   {
     date: "2026-09-09",
     title: "Visual Troop Deployment",
-    description: "Choose troops by their icon, tier and stock. Add 100, add 500 or use Max when deploying field armies and guards, with empty choices clearly marked.",
+    description:
+      "Choose troops by their icon, tier and stock. Add 100, add 500 or use Max when deploying field armies and guards, with empty choices clearly marked.",
     type: "improvement",
   },
   {
     date: "2026-09-09",
     title: "Clearer Army Movement",
-    description: "Armies move without duplicate pending silhouettes or destination rings, keeping the battlefield clear.",
+    description:
+      "Armies move without duplicate pending silhouettes or destination rings, keeping the battlefield clear.",
     type: "fix",
   },
   {
