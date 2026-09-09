@@ -1,11 +1,14 @@
 import { CanvasTexture, SRGBColorSpace } from "three";
 import type { ShipArmyClass } from "./ship-design";
 
+export const SAIL_STRIPE_U = { start: 150 / 512, end: 362 / 512 } as const;
+
 export type SailPrint = "army" | "crown" | "chevron" | "sun";
 export interface SailIdentity {
   army: ShipArmyClass;
   color: string;
   print: SailPrint;
+  ink?: string;
 }
 
 /** One texture can be shared by every ship belonging to the same player. */
@@ -20,9 +23,17 @@ export function createSailPrint(identity: SailIdentity, artwork?: ImageBitmap): 
     const width = artwork.width * scale,
       height = artwork.height * scale;
     ctx.drawImage(artwork, 256 - width / 2, 276 - height / 2, width, height);
-  } else paintEmblem(ctx, identity.print === "army" ? identity.army : identity.print, "#e9bb58", 256, 265, 1);
+  } else
+    paintEmblem(
+      ctx,
+      identity.print === "army" ? identity.army : identity.print,
+      identity.ink ?? "#e9bb58",
+      256,
+      265,
+      1,
+    );
   // A permanent class badge keeps army type legible when the center carries a player's custom print.
-  paintEmblem(ctx, identity.army, "#e9bb58", 256, 440, 0.22);
+  paintEmblem(ctx, identity.army, identity.ink ?? "#e9bb58", 256, 440, 0.22);
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.flipY = false;
@@ -32,7 +43,7 @@ export function createSailPrint(identity: SailIdentity, artwork?: ImageBitmap): 
 }
 
 function paintLinen(ctx: CanvasRenderingContext2D, color: string) {
-  ctx.fillStyle = "#e8dfc6";
+  ctx.fillStyle = "#f5f3ed";
   ctx.fillRect(0, 0, 512, 512);
   ctx.strokeStyle = "#a9937020";
   ctx.lineWidth = 1;
@@ -47,7 +58,7 @@ function paintLinen(ctx: CanvasRenderingContext2D, color: string) {
     ctx.stroke();
   }
   ctx.fillStyle = color;
-  ctx.fillRect(150, 0, 212, 512);
+  ctx.fillRect(SAIL_STRIPE_U.start * 512, 0, (SAIL_STRIPE_U.end - SAIL_STRIPE_U.start) * 512, 512);
   ctx.strokeStyle = "#c3a35b";
   ctx.lineWidth = 3;
   ctx.strokeRect(8, 8, 496, 496);

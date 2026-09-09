@@ -1,3 +1,4 @@
+import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
@@ -253,6 +254,7 @@ export class ArmyManager {
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private unsubscribeStructureOwnership?: () => void;
+  private unsubscribeGuildMembership?: () => void;
   private readonly armyProjectionSyncs = new Map<ID, Promise<void>>();
   private attachmentManager: CosmeticAttachmentManager;
   private readonly proceduralArmyCharacterLayer: ProceduralArmyCharacterLayer;
@@ -336,6 +338,7 @@ export class ArmyManager {
     });
     this.subscribeToExplorerTroopsPresentation();
     this.subscribeToStructureOwnership();
+    this.subscribeToGuildMembership();
 
     // Initialize memory monitor for tracking army operations
     if (MEMORY_MONITORING_ENABLED) {
@@ -376,6 +379,11 @@ export class ArmyManager {
       this.applyExplorerTroopsPresentationUpdate(current);
     });
     this.unsubscribeExplorerTroopsPresentation = () => subscription.unsubscribe();
+  }
+
+  private subscribeToGuildMembership(): void {
+    const subscription = this.components?.GuildMember?.update$.subscribe(() => this.recheckOwnership());
+    this.unsubscribeGuildMembership = () => subscription?.unsubscribe();
   }
 
   private subscribeToStructureOwnership(): void {
@@ -1762,7 +1770,7 @@ export class ArmyManager {
     const isMine = finalOwnerAddress ? isAddressEqualToAccount(finalOwnerAddress) : false;
 
     // Determine the color based on ownership using the centralized player color system
-    // This ensures each unique player gets a distinct, consistent color across the game
+    // Relation colours are shared with sails, structures and labels.
     const color = this.getArmyColor({
       isMine,
       isDaydreamsAgent: params.isDaydreamsAgent,
@@ -2726,7 +2734,8 @@ export class ArmyManager {
   }): PlayerColorProfile {
     return playerColorManager.getProfileForUnit(
       army.isMine,
-      army.isAlly ?? false,
+      army.isAlly ??
+        arePlayersAllied(this.components, useAccountStore.getState().account?.address, army.owner?.address),
       army.isDaydreamsAgent,
       army.owner?.address,
     );
@@ -2966,7 +2975,7 @@ export class ArmyManager {
       {
         entityId: this.toNumericId(army.entityId),
         isMine: army.isMine,
-        isAlly: false,
+        isAlly: arePlayersAllied(this.components, useAccountStore.getState().account?.address, army.owner.address),
         ownerAddress: army.owner.address,
         underAttack: army.attackedFromDegrees !== undefined,
       },
@@ -3119,7 +3128,7 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    const layoutDataKey = buildArmyLabelLayoutDataKey(army);
+    const layoutDataKey = `${buildArmyLabelLayoutDataKey(army)}-${army.color}`;
     const staminaDataKey = buildArmyLabelStaminaDataKey(army);
 
     syncArmyLabelContentState({
@@ -3237,6 +3246,8 @@ ${
     this.unsubscribeArmyProjection();
     this.unsubscribeExplorerTroopsPresentation?.();
     this.unsubscribeExplorerTroopsPresentation = undefined;
+    this.unsubscribeGuildMembership?.();
+    this.unsubscribeGuildMembership = undefined;
     this.unsubscribeStructureOwnership?.();
     this.unsubscribeStructureOwnership = undefined;
     this.armyProjectionSyncs.clear();

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Sails Show Ownership",
+    description:
+      "Ship sails keep white outer panels and a printed centre stripe: green for your fleet, red for enemies and blue for allies.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Weather Across the World",
     description:
       "Sunny, cloudy, rainy and stormy weather evolves through gradual fronts, driving lighting and wind, with falling rain and ground splashes that follow the map perspective.",

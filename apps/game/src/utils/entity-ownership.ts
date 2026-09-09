@@ -28,3 +28,16 @@ export const isEntityOwnedByAccount = (
     return false;
   }
 };
+
+export function arePlayersAllied(
+  components: ClientComponents | null | undefined,
+  playerAddress: bigint | string | undefined,
+  ownerAddress: bigint | string | undefined,
+): boolean {
+  const player = toAddress(playerAddress);
+  const owner = toAddress(ownerAddress);
+  if (!components?.GuildMember || !player || !owner || player === owner) return false;
+  const playerGuild = getComponentValue(components.GuildMember, gameEntityKey([player]))?.guild_id;
+  if (!playerGuild) return false;
+  return getComponentValue(components.GuildMember, gameEntityKey([owner]))?.guild_id === playerGuild;
+}

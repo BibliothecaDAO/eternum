@@ -1,3 +1,4 @@
+import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
@@ -420,6 +421,11 @@ export class StructureManager {
   }
 
   private subscribeToStructurePresentationComponents(): void {
+    const guildSubscription = this.components?.GuildMember?.update$.subscribe(() => {
+      this.structureInfoCache.clear();
+      this.requestVisibleStructuresRefresh({ refreshExisting: true });
+    });
+    if (guildSubscription) this.recsUnsubscribes.push(() => guildSubscription.unsubscribe());
     const structureSubscription = this.components?.Structure?.update$.subscribe(({ value }) => {
       const [current, previous] = value;
       const entityId = normalizeEntityId(current?.entity_id ?? previous?.entity_id);
@@ -543,7 +549,7 @@ export class StructureManager {
       initialized: this.resolveHyperstructureInitialized(renderable.entityId, renderInfo.type),
       level: renderInfo.level,
       isMine: isAddressEqualToAccount(ownerAddress),
-      isAlly: false,
+      isAlly: arePlayersAllied(this.components, useAccountStore.getState().account?.address, ownerAddress),
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
       hasWonder: renderInfo.hasWonder,

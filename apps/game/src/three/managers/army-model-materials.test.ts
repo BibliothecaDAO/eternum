@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MeshBasicMaterial, MeshStandardMaterial } from "three";
+import { MeshBasicMaterial, MeshStandardMaterial, Texture } from "three";
 import { createPooledInstancedMaterial, releasePooledInstancedMaterial } from "./army-model-materials";
 import { MaterialPool } from "../utils/material-pool";
 
@@ -31,4 +31,19 @@ describe("army model materials", () => {
 
     expect(releaseSpy).toHaveBeenCalledTimes(2);
   });
+});
+
+it("uses the same instance ownership colour for printed sails and existing stands", () => {
+  const sail = new MeshStandardMaterial({ map: new Texture() });
+  sail.name = "Fleet Ownership sail";
+  sail.userData.ownershipColor = true;
+  const hull = new MeshStandardMaterial();
+  hull.name = "Fleet Carved oak";
+  const printed = createPooledInstancedMaterial(sail);
+  const timber = createPooledInstancedMaterial(hull);
+  expect(printed.usesInstanceColor).toBe(true);
+  expect(timber.usesInstanceColor).toBe(false);
+  expect((printed.material as MeshBasicMaterial).opacity).toBe(1);
+  releasePooledInstancedMaterial(printed.material);
+  releasePooledInstancedMaterial(timber.material);
 });

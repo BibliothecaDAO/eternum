@@ -58,6 +58,18 @@ def finish_material(name, color, metal=0, roughness=0.55, timber=False):
     return mat
 
 
+def create_sail_material(army):
+    material = finish_material("Ownership sail", (1, 1, 1), 0, 0.92)
+    material["ownershipColor"] = True
+    shader = material.node_tree.nodes.get("Principled BSDF")
+    texture = material.node_tree.nodes.new("ShaderNodeTexImage")
+    texture.image = bpy.data.images.load(
+        str(Path(__file__).parent / f"textures/{army}-sail.png"), check_existing=True
+    )
+    material.node_tree.links.new(texture.outputs["Color"], shader.inputs["Base Color"])
+    return material
+
+
 def create_materials(army, tier):
     return {
         "oak": finish_material("Carved oak", (0.32, 0.14, 0.035), timber=True),
@@ -72,6 +84,7 @@ def create_materials(army, tier):
         "iron": finish_material("Gunmetal", (0.024, 0.035, 0.042), 0.72, 0.31),
         "dark": finish_material("Recess", (0.014, 0.012, 0.009)),
         "rope": finish_material("Braided hemp", (0.32, 0.22, 0.10), 0, 0.95),
+        "sail": create_sail_material(army),
         "cloth": finish_material("Ivory canvas", (0.86, 0.79, 0.62), 0, 0.92),
         "glass": finish_material("Amber glazing", (0.23, 0.105, 0.026), 0.25, 0.22),
     }
@@ -667,7 +680,7 @@ def build_canvas(work, index, y, top, width, height):
         for j in range(rows)
         for i in range(cols)
     ]
-    sail = work.surface(f"Sail_{index}", verts, faces, "cloth", uv, True)
+    sail = work.surface(f"Sail_{index}", verts, faces, "sail", uv, True)
     sail["clothMastStart"] = [0, 0.54, -y]
     sail["clothMastEnd"] = [0, top + 0.52, -y]
     sail["clothMastRadius"] = 0.063
