@@ -1,3 +1,5 @@
+import { WeatherLabRuntime } from "./weather-lab-runtime";
+import { WeatherType } from "../managers/weather-manager";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
@@ -124,6 +126,9 @@ export interface ProceduralTerrainDebugRendererHandle {
   setPreview(preview: TerrainLabPreview): Promise<void>;
   setCycleProgress(progress: number): void;
   setMoonEnabled(enabled: boolean): void;
+  setWeather(type: WeatherType): void;
+  setWeatherEvolving(enabled: boolean): void;
+  strike(): void;
 }
 
 interface MountProceduralTerrainDebugRendererInput {
@@ -153,6 +158,7 @@ type TerrainDebugRendererConstructor = new (options: {
 
 interface TerrainDebugRuntime {
   atmosphere: WorldAtmosphereController;
+  weather: WeatherLabRuntime;
   cycleProgress: number;
   camera: PerspectiveCamera;
   cameraFrame: TerrainDebugCameraFrame;
@@ -211,6 +217,7 @@ export async function mountProceduralTerrainDebugRenderer(
         runtime.interaction.dispose();
         runtime.realmModel?.dispose();
         runtime.terrain.dispose();
+        runtime.weather.dispose();
         runtime.atmosphere.dispose();
         runtime.renderer.dispose();
         delete debugWindow.__terrainVerification;
@@ -221,6 +228,9 @@ export async function mountProceduralTerrainDebugRenderer(
       placeBuilding: (path, yaw) => runtime.interaction.placeBuilding(path, yaw),
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
+      setWeatherEvolving: (enabled) => runtime.weather.setEvolving(enabled),
+      setWeather: (type) => runtime.weather.setWeather(type),
+      strike: () => runtime.weather.strike(),
       setMoonEnabled: (enabled) => {
         runtime.atmosphere.params.moonEnabled = enabled;
       },
@@ -358,7 +368,8 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   >;
   scene.add(terrain.object3d);
   if (realmModel) scene.add(realmModel.group);
-  const atmosphere = createGameLighting(scene);
+  const { atmosphere, sun } = createGameLighting(scene);
+  const weather = new WeatherLabRuntime(scene, sun, controls, (x, z) => terrain.sampleSurface(x, z).height);
   atmosphere.update(50, controls.target, { snap: true });
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
   const firstRenderStartedAt = performance.now();
@@ -377,6 +388,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   );
   return {
     atmosphere,
+    weather,
     cycleProgress: 50,
     interaction,
     camera,
@@ -538,7 +550,7 @@ function advanceRevealToProgress(terrain: ProceduralTerrain, progress: number): 
   for (let step = 0; step < steps; step += 1) terrain.update(Math.min(0.05, targetSeconds - step * 0.05));
 }
 
-function createGameLighting(scene: Scene): WorldAtmosphereController {
+function createGameLighting(scene: Scene): { atmosphere: WorldAtmosphereController; sun: DirectionalLight } {
   const ambient = new AmbientLight();
   const hemisphere = new HemisphereLight();
   const sun = new DirectionalLight();
@@ -546,7 +558,10 @@ function createGameLighting(scene: Scene): WorldAtmosphereController {
   scene.add(ambient, hemisphere, sun, sun.target);
   // The game controller also uses this detached fog object for atmosphere colors.
   // Exploration coverage belongs to TerrainFogField, not Three.js distance fog.
-  return new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR));
+  return {
+    atmosphere: new WorldAtmosphereController(scene, sun, hemisphere, ambient, new Fog(TERRAIN_DEEP_FOG_COLOR)),
+    sun,
+  };
 }
 
 function createCameraFrame(
@@ -603,6 +618,7 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
       runtime.controls.target,
       LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
     );
+    runtime.weather.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.atmosphere);
     runtime.renderer.render(runtime.scene, runtime.camera);
   });
   return () => runtime.renderer.setAnimationLoop(null);

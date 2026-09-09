@@ -3764,9 +3764,6 @@ export default class WorldmapScene extends WarpTravel {
     this.getThunderBoltManager().setConfig({
       radius: 18, // Large spread across the visible area
       count: 6, // Many thunder bolts for dramatic effect
-      duration: 400, // Medium duration for good visibility
-      persistent: false, // Auto-fade for production use
-      debug: false, // Disable logging for performance
     });
 
     useUIStore.getState().setLeftNavigationView(LeftView.None);

@@ -43,7 +43,7 @@ describe("LightningEffectSystem", () => {
   it("update positions storm light at camera target", () => {
     system.setup();
     system.update({
-      cycleProgress: 50,
+      stormIntensity: 0,
       cameraTargetX: 10,
       cameraTargetY: 5,
       cameraTargetZ: -3,
@@ -68,4 +68,30 @@ describe("LightningEffectSystem", () => {
     expect(deps.scene.remove).toHaveBeenCalledTimes(2);
     expect(deps.thunderBoltManager.cleanup).toHaveBeenCalledTimes(1);
   });
+});
+
+it("spawns lightning only during weather storms and stops scheduled strikes when clear", () => {
+  vi.useFakeTimers();
+  const deps = createMockDeps();
+  const system = new LightningEffectSystem(deps);
+  system.setup();
+  const frame = {
+    cameraTargetX: 0,
+    cameraTargetY: 0,
+    cameraTargetZ: 0,
+    elapsedTime: 1,
+    stormDepth: 1,
+    stormIntensity: 0,
+  };
+  system.update(frame);
+  vi.advanceTimersByTime(2000);
+  expect(deps.thunderBoltManager.spawnThunderBolts).not.toHaveBeenCalled();
+  system.update({ ...frame, stormIntensity: 1 });
+  vi.advanceTimersByTime(1);
+  expect(deps.thunderBoltManager.spawnThunderBolts).toHaveBeenCalledTimes(1);
+  system.update(frame);
+  vi.advanceTimersByTime(8000);
+  expect(deps.thunderBoltManager.spawnThunderBolts).toHaveBeenCalledTimes(1);
+  system.dispose();
+  vi.useRealTimers();
 });

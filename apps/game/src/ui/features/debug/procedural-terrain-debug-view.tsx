@@ -1,3 +1,4 @@
+import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
 import { GraphicsLabsNav } from "./graphics-labs-nav";
 import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
@@ -443,6 +444,11 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             </button>
           </fieldset>
 
+          <WeatherLabControls
+            onEvolving={(enabled) => rendererRef.current?.setWeatherEvolving(enabled)}
+            onWeather={(type) => rendererRef.current?.setWeather(type)}
+            onStrike={() => rendererRef.current?.strike()}
+          />
           <AtmosphereLabControls
             onPhase={setCycleProgress}
             onMoon={(enabled) => rendererRef.current?.setMoonEnabled(enabled)}

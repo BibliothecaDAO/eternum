@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Weather Across the World",
+    description:
+      "Sunny, cloudy, rainy and stormy weather evolves through gradual fronts, driving lighting and wind, with falling rain and ground splashes that follow the map perspective.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Readable Nights",
     description:
       "Night and twilight gain brighter fill and cool moonlight; compare all seven lighting setups in the biome lab.",

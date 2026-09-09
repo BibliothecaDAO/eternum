@@ -1,5 +1,4 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { RainEffect } from "@/three/effects/rain-effect";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
 import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
@@ -25,7 +24,6 @@ export default class HUDScene {
   private navigator: Navigator;
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
-  private rainEffect!: RainEffect;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
   private ambientParticles?: AmbientParticleSystem;
@@ -50,10 +48,9 @@ export default class HUDScene {
 
     this.addAmbientLight();
     this.addHemisphereLight();
-    this.rainEffect = new RainEffect(this.scene);
 
     // Initialize weather and ambience systems
-    this.weatherManager = new WeatherManager(this.scene, this.rainEffect);
+    this.weatherManager = new WeatherManager();
 
     this.ambienceManager = new AmbienceManager();
     this.setupGraphicsDevEffectControls();
@@ -111,7 +108,6 @@ export default class HUDScene {
     }
 
     try {
-      this.rainEffect.addGUIControls(this.GUIFolder);
       this.weatherManager.addGUIControls(this.GUIFolder);
       this.ambienceManager.addGUIControls(this.GUIFolder);
       this.addDebugTimeControls();
@@ -244,7 +240,7 @@ export default class HUDScene {
     this.navigator.update();
 
     // Update weather system (handles rain, wind, transitions)
-    this.weatherManager.update(deltaTime, this.camera.position);
+    this.weatherManager.update(deltaTime);
 
     // Track cycle progress for ambience
     if (cycleProgress !== undefined) {
@@ -261,7 +257,7 @@ export default class HUDScene {
       this.cycleProgress,
       currentWeatherType,
       deltaTime,
-      weatherState.intensity,
+      weatherState.rainIntensity,
       weatherState.stormIntensity,
     );
 
@@ -311,11 +307,6 @@ export default class HUDScene {
     }
 
     useUIStore.getState().setDebugCycleProgressOverride(null);
-
-    // Clean up rain effect resources
-    if (this.rainEffect) {
-      this.rainEffect.dispose();
-    }
 
     // Clean up weather manager
     if (this.weatherManager) {

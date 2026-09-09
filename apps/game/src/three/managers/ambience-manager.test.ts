@@ -26,12 +26,19 @@ describe("ambience-manager", () => {
     const updateLayersSpy = vi.spyOn(manager, "updateSoundLayers").mockImplementation(() => {});
     vi.spyOn(manager, "updateActiveSounds").mockImplementation(() => {});
 
-    manager.update(50, WeatherType.CLEAR, 0.016, 0.8, 0);
+    manager.update(50, WeatherType.SUNNY, 0.016, 0.8, 0);
     const callCountAfterFirstFrame = updateLayersSpy.mock.calls.length;
 
-    manager.update(50, WeatherType.CLEAR, 0.016, 0.8, 0);
+    manager.update(50, WeatherType.SUNNY, 0.016, 0.8, 0);
 
     expect(updateLayersSpy.mock.calls.length).toBe(callCountAfterFirstFrame);
+  });
+
+  it("does not infer rain audio from cloud cover", () => {
+    installLocalStorageMock();
+    const manager = new AmbienceManager() as any;
+    expect(manager.resolveEffectiveWeather(WeatherType.CLOUDY, 0, 0)).toBe(WeatherType.CLOUDY);
+    expect(manager.resolveEffectiveWeather(WeatherType.CLOUDY, 0.7, 0)).toBe(WeatherType.RAIN);
   });
 
   it("tracks random-interval clip sources so newly played clips are layer-owned", async () => {

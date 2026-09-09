@@ -618,9 +618,6 @@ export default class HexceptionScene extends HexagonScene {
     this.getThunderBoltManager().setConfig({
       radius: 6, // Medium spread around the hex settlement
       count: 4, // Moderate number of bolts for hex view
-      duration: 400, // Longer duration for better visibility in close view
-      persistent: false, // Auto-fade for production use
-      debug: false, // Disable logging for performance
     });
 
     // select center hex
