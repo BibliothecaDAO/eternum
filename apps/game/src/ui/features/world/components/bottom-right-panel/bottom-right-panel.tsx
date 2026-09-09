@@ -1,3 +1,4 @@
+import { RightHudColumn } from "@/ui/features/world/containers/right-hud-column";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -52,7 +53,6 @@ import { TileManager } from "@bibliothecadao/eternum";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PauseIcon from "lucide-react/dist/esm/icons/pause";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Play from "lucide-react/dist/esm/icons/play";
@@ -822,8 +822,9 @@ const MinimapPanel = () => {
 };
 
 /**
- * BottomRightPanel — atomized into two independent floating widgets:
- *   - TileDetailsAtom: bottom-right, only when a tile/building is selected.
+ * BottomRightPanel places the minimap at left and the feed, details and chat at right.
+ * Independent widgets:
+ *   - RightHudColumn: persistent feed and chat, with details when a tile is selected.
  *   - MinimapAtom: bottom-left, persistent in map view.
  * They no longer share a frame or tab strip.
  */
@@ -860,14 +861,7 @@ export const BottomRightPanel = memo(() => {
           </div>
         </>
       )}
-      {showTileDetails && (
-        <div
-          className="pointer-events-auto fixed bottom-4 right-3 z-30 flex w-[300px] max-h-[calc(100vh-88px)] flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
-          aria-label="Tile details"
-        >
-          {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
-        </div>
-      )}
+      <RightHudColumn>{showTileDetails ? isMapView ? <MapTilePanel /> : <LocalTilePanel /> : null}</RightHudColumn>
     </>
   );
 });
@@ -969,16 +963,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           />
         </>
       )}
-      <CircleButton
-        variant="action"
-        size="md"
-        tooltipLocation="top"
-        label="Chat"
-        active={view === LeftView.ChatView}
-        onClick={toggleView(LeftView.ChatView)}
-      >
-        <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-[#2a1c0c]" strokeWidth={2.25} />
-      </CircleButton>
+
       {showTradeAction && (
         <CircleButton
           variant="action"

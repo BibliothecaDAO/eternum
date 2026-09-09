@@ -1,0 +1,48 @@
+import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { gameEntityKey } from "@/sync/game-scope";
+import { Position } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import type { ClientComponents } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+
+function resolveEventPosition(event: ProcessedStoryEvent, components: ClientComponents): Position | null {
+  const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
+  if (coord && typeof coord === "object" && "x" in coord && "y" in coord) {
+    return new Position({ x: Number(coord.x), y: Number(coord.y) });
+  }
+  // Battle stories contain participant IDs but no historical hex. Resolve surviving entities from RECS.
+  for (const id of [event.storyPayload.defender_id, event.entity_id, event.storyPayload.attacker_id]) {
+    if (id == null) continue;
+    const key = gameEntityKey([BigInt(String(id))]);
+    const structure = getComponentValue(components.Structure, key);
+    if (structure) return new Position({ x: structure.base.coord_x, y: structure.base.coord_y });
+    const army = getComponentValue(components.ExplorerTroops, key);
+    if (army) return new Position({ x: army.coord.x, y: army.coord.y });
+  }
+  return null;
+}
+
+export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
+  const {
+    setup: { components },
+  } = useDojo();
+  const navigate = useNavigateToMapView();
+  const position = resolveEventPosition(event, components);
+  return (
+    <button
+      type="button"
+      disabled={!position}
+      onClick={() => position && navigate(position)}
+      title={position ? event.presentation.description : "This event’s location is no longer available"}
+      className="block w-full px-3 py-2 text-left !font-sans !text-[11px] normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:cursor-default"
+    >
+      <span className="block font-semibold">
+        {event.story === "BattleStory" ? "Battle resolved" : event.presentation.title}
+      </span>
+      {event.presentation.description && (
+        <span className="line-clamp-2 text-gold/65">{event.presentation.description}</span>
+      )}
+    </button>
+  );
+};

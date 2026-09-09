@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Events, Details and Chat",
+    description:
+      "Keep important events above tile details on the right. Filter events by all, mine or combat, jump to surviving participants, and press Enter to open chat. Activity keeps the full log.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "See Where Points Come From",
     description:
       "The Players board now shows points earned through exploration, chests, captured camps and hyperstructures, and held hyperstructures.",

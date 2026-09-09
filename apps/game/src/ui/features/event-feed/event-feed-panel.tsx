@@ -1,3 +1,5 @@
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { StoryFeedRow } from "./story-feed-row";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -27,8 +29,9 @@ const Section = ({ title, rows, tone }: { title: string; rows: FeedRow[]; tone?:
 /** The event feed: what is in flight, what has arrived, what just happened — one list, in the activity popover. */
 export const EventFeedPanel = () => {
   const rows = useFeedRows();
+  const { data: stories } = useStoryEvents(350);
   const clearCompletedTransactions = useTransactionStore((state) => state.clearCompletedTransactions);
-  const isEmpty = rows.inFlight.length + rows.arrived.length + rows.recent.length === 0;
+  const isEmpty = rows.inFlight.length + rows.arrived.length + rows.recent.length + stories.length === 0;
 
   if (isEmpty) {
     return (
@@ -45,6 +48,16 @@ export const EventFeedPanel = () => {
         <Section title="In flight" rows={rows.inFlight} />
         <Section title="Arrived" rows={rows.arrived} tone="text-emerald-300" />
         <Section title="Recent" rows={rows.recent} />
+        <section aria-label="World history">
+          <div className="px-3 py-2">
+            <span className={HUD_LABEL}>World history</span>
+          </div>
+          {[...stories]
+            .sort((left, right) => right.timestampMs - left.timestampMs)
+            .map((event) => (
+              <StoryFeedRow key={event.id} event={event} />
+            ))}
+        </section>
       </div>
       <div className="flex items-center justify-between border-t border-gold/10 bg-dark-brown/30 px-3 py-2">
         <p className="text-[10px] text-gold/30">Click a transaction to view on Voyager</p>
