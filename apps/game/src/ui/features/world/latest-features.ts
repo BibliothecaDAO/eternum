@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Tier 3 Building Milestones",
+    description: "A realm's first Tier 3 military building makes the news; repeated army deployments no longer do.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     title: "Caravans in Events",
     description: "Track sent and arrived caravans in Events and the next incoming delivery on your structure's tile.",
     type: "feature",

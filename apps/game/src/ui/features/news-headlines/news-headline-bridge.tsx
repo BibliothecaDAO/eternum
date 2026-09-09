@@ -1,3 +1,6 @@
+import { activeGameRows } from "@/sync/recs-rows";
+import { getScopedGameId } from "@/sync/game-scope";
+import { createBuildingMilestones } from "./building-milestones";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useHeadlineFeedStore } from "./headline-feed-store";
@@ -12,77 +15,13 @@ import { StructureType } from "@bibliothecadao/types";
 // @ts-ignore
 import { useDojo, useQuery } from "@bibliothecadao/react";
 
-import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { AudioManager } from "@/audio/core/AudioManager";
 
-import { type Headline, HEADLINE_DISPLAY_MS, RECENT_HEADLINE_WINDOW_MS } from "./headline-types";
+import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
-import { parseNumeric } from "../story-events/story-event-utils";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
-
-/** Fields we access on story events — typed locally to avoid cascading module resolution issues */
-interface BattleEvent {
-  id: string;
-  tx_hash?: string;
-  story: string;
-  timestampMs: number;
-  battle_defender_id?: number;
-  battle_attacker_id?: number;
-  battle_winner_id?: number;
-  battle_defender_owner_address?: string;
-  battle_attacker_owner_address?: string;
-  explorer_create_structure_id?: unknown;
-  explorer_create_tier?: unknown;
-}
-
-const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 1 | 2 | 3 | null => {
-  if (value == null) return null;
-
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 1) {
-      return parseTroopTier(entries[0][0], usesZeroBasedEncoding);
-    }
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    const normalized = trimmed.toUpperCase();
-    if (normalized === "T1") return 1;
-    if (normalized === "T2") return 2;
-    if (normalized === "T3") return 3;
-
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      try {
-        return parseTroopTier(JSON.parse(trimmed), usesZeroBasedEncoding);
-      } catch {
-        return null;
-      }
-    }
-  }
-
-  const numericTier = parseNumeric(value);
-  if (numericTier == null) {
-    return null;
-  }
-
-  if (usesZeroBasedEncoding) {
-    if (numericTier === 0) return 1;
-    if (numericTier === 1) return 2;
-    if (numericTier === 2) return 3;
-    return null;
-  }
-
-  if (numericTier === 1 || numericTier === 2 || numericTier === 3) {
-    return numericTier;
-  }
-
-  return null;
-};
 
 export function NewsHeadlineBridge() {
   const { setup } = useDojo();
@@ -96,7 +35,6 @@ export function NewsHeadlineBridge() {
     return projection ? createWorldEventEntityReader(setup.components, projection) : null;
   }, [setup.components]);
 
-  const { data: storyEventLog = [] } = useStoryEvents(350);
   const address = useAccountStore((state) => state.account?.address);
   const startAt = useUIStore((state) => state.gameStartMainAt);
   const nowSeconds = useCurrentBlockTimestamp();
@@ -111,9 +49,6 @@ export function NewsHeadlineBridge() {
 
   // Init-skip refs
   const gameEndFiredRef = useRef(false);
-  const troopMilestonesInitializedRef = useRef(false);
-  const firstT2ArmyFiredRef = useRef(false);
-  const firstT3ArmyFiredRef = useRef(false);
 
   // Navigation refs
   const navRef = useRef({ goToStructure, navigateToMapView, setSelectedHex, isMapView });
@@ -192,72 +127,27 @@ export function NewsHeadlineBridge() {
     });
   }, [startAt, nowSeconds, enqueue]);
 
-  // --- First T2 / T3 army creation detection ---
   useEffect(() => {
-    const now = Date.now();
-    const events = storyEventLog as unknown as BattleEvent[];
-
-    const creationEvents = events.filter((event) => event.story === "ExplorerCreateStory");
-    const numericTiers = creationEvents
-      .map((event) => parseNumeric(event.explorer_create_tier))
-      .filter((tier): tier is number => tier !== null);
-    const usesZeroBasedTierEncoding = numericTiers.includes(0);
-
-    if (!troopMilestonesInitializedRef.current) {
-      firstT2ArmyFiredRef.current = creationEvents.some(
-        (event) => parseTroopTier(event.explorer_create_tier, usesZeroBasedTierEncoding) === 2,
-      );
-      firstT3ArmyFiredRef.current = creationEvents.some(
-        (event) => parseTroopTier(event.explorer_create_tier, usesZeroBasedTierEncoding) === 3,
-      );
-      troopMilestonesInitializedRef.current = true;
-      return;
-    }
-
-    const recentCreationEvents = creationEvents.filter((event) => event.timestampMs >= now - RECENT_HEADLINE_WINDOW_MS);
-
-    for (const event of recentCreationEvents) {
-      const troopTier = parseTroopTier(event.explorer_create_tier, usesZeroBasedTierEncoding);
-      const structureId = parseNumeric(event.explorer_create_structure_id);
-
-      if (troopTier !== 2 && troopTier !== 3) {
-        continue;
-      }
-
-      if (troopTier === 2 && firstT2ArmyFiredRef.current) {
-        continue;
-      }
-
-      if (troopTier === 3 && firstT3ArmyFiredRef.current) {
-        continue;
-      }
-
-      const structure = structureId !== null ? entityReader?.getStructure(structureId) : null;
-      const ownerName = structure?.ownerName || structure?.structureName || "Unknown commander";
-      const headlineType = troopTier === 2 ? "first-t2-army" : "first-t3-army";
-
+    const resolveMilestone = createBuildingMilestones(activeGameRows(setup.components.Building));
+    const subscription = setup.components.Building.update$.subscribe(({ value: [current] }) => {
+      if (!current || current.game_id !== getScopedGameId()) return;
+      const buildingName = resolveMilestone(current, getActiveGameSyncRuntime()?.getStatus() === "running");
+      if (!buildingName) return;
+      const structureId = current.outer_entity_id;
+      const structure = entityReader?.getStructure(structureId);
+      const realmName = structure?.structureName || `Realm #${structureId}`;
       enqueue({
-        id: `${headlineType}:${event.tx_hash ?? event.id}`,
-        type: headlineType,
-        title: troopTier === 2 ? "FIRST T2 ARMY BUILT" : "FIRST T3 ARMY BUILT",
-        description: `"${ownerName}" fields the first Tier ${troopTier} army`,
-        icon: headlineType,
-        location:
-          structure && structureId !== null
-            ? { x: structure.coordX, y: structure.coordY, entityId: structureId }
-            : undefined,
-        timestamp: now,
+        id: `t3-building:${structureId}`,
+        type: "t3-building",
+        icon: "t3-building",
+        title: "TIER 3 BUILDING RAISED",
+        description: `${realmName} has raised a Tier 3 ${buildingName}`,
+        location: structure ? { x: structure.coordX, y: structure.coordY, entityId: structureId } : undefined,
+        timestamp: Date.now(),
       });
-
-      if (troopTier === 2) {
-        firstT2ArmyFiredRef.current = true;
-      }
-
-      if (troopTier === 3) {
-        firstT3ArmyFiredRef.current = true;
-      }
-    }
-  }, [storyEventLog, entityReader, enqueue]);
+    });
+    return () => subscription.unsubscribe();
+  }, [setup.components, entityReader, enqueue]);
 
   // --- Game end detection ---
   useEffect(() => {

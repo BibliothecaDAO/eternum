@@ -64,14 +64,7 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, HeadlineTheme> = {
     accentSurfaceClassName: "border-orange/35 bg-orange/10 text-orange",
     accentEdgeClassName: "bg-orange/80",
   },
-  "first-t2-army": {
-    icon: Shield,
-    eyebrow: "Military Milestone",
-    accentTextClassName: "text-gold",
-    accentSurfaceClassName: "border-gold/35 bg-gold/10 text-gold",
-    accentEdgeClassName: "bg-gold/80",
-  },
-  "first-t3-army": {
+  "t3-building": {
     icon: Shield,
     eyebrow: "Military Milestone",
     accentTextClassName: "text-brilliance",

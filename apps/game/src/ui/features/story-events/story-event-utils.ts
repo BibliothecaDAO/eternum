@@ -1,21 +1,3 @@
-export const parseNumeric = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  if (typeof value === "bigint") {
-    const asNumber = Number(value);
-    return Number.isFinite(asNumber) ? asNumber : null;
-  }
-  if (typeof value === "string") {
-    try {
-      const parsed = value.startsWith("0x") ? Number(BigInt(value)) : Number(value);
-      return Number.isNaN(parsed) ? null : parsed;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-};
-
 export const extractRoleLabel = (
   description: string | undefined,
   role: "Attacker" | "Defender",
