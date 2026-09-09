@@ -12,6 +12,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../../../../env";
+import { CHAT_SHORTCUT } from "./chat-shortcut";
 
 const isTypingTarget = (target: EventTarget | null) =>
   target instanceof Element &&
@@ -47,7 +48,8 @@ export function HudChatWindow() {
         setOpen(false);
         return;
       }
-      if (event.key !== "Enter" || open || event.repeat || event.defaultPrevented || isTypingTarget(event.target)) return;
+      if (event.key !== CHAT_SHORTCUT.key || open || event.repeat || event.defaultPrevented) return;
+      if (isTypingTarget(event.target)) return;
       event.preventDefault();
       setOpen(true);
     };
