@@ -1,3 +1,4 @@
+import { ChestTileDetails } from "./chest-tile-details";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -38,13 +39,8 @@ import { toast } from "@/ui/features/event-feed/notify";
 // just stacks each section with a small gap and lets each child render its
 // own rounded bubble.
 const occupiedEntityLayoutClass = "flex min-w-0 shrink-0 flex-col gap-2 pointer-events-auto";
-const entityInfoScrollPaneClass = "min-w-0";
 const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
 const scrollableEntitySectionClass = "flex min-w-0";
-
-const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
-  <div className={entityInfoScrollPaneClass}>{children}</div>
-);
 
 export const SelectedWorldmapEntity = ({
   coordsLabel,
@@ -76,9 +72,6 @@ const SelectedWorldmapEntityContent = ({
   const { handleUrlChange } = useQuery();
   const openSurface = usePopoverStore((state) => state.openSurface);
 
-  const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
-  const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
-
   const tile = useTileAt(selectedHex.col, selectedHex.row);
 
   const biome = useMemo(() => {
@@ -92,7 +85,7 @@ const SelectedWorldmapEntityContent = ({
   const occupierType = tile?.occupier_type ?? 0;
   const isSpire = occupierType === TileOccupier.Spire;
   const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
-  const isStructure = Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
+  const isStructure = isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
   const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
@@ -125,8 +118,6 @@ const SelectedWorldmapEntityContent = ({
     return <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />;
   }
 
-  const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
-
   const occupierEntityId = tile.occupier_id;
   const sharedDetailProps = {
     compact: true,
@@ -134,42 +125,38 @@ const SelectedWorldmapEntityContent = ({
   } as const;
 
   return (
-    <div
-      className="grid shrink-0 content-start grid-cols-1 gap-2"
-      style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
-    >
-      {isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier) ? null : coordChip}
+    <div className={occupiedEntityLayoutClass}>
+      {isChest || isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier)
+        ? null
+        : coordChip}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
-          <EntityInfoScrollPane>
-            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
-              <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
-            </EntityDetailSection>
-          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+            <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+          </EntityDetailSection>
+
           <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isReservedHyperstructure ? (
         <div className={occupiedEntityLayoutClass}>
-          <EntityInfoScrollPane>
-            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
-              <ReservedHyperstructurePanel selectedHex={selectedHex} />
-            </EntityDetailSection>
-          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+            <ReservedHyperstructurePanel selectedHex={selectedHex} />
+          </EntityDetailSection>
+
           <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isStructure ? (
         <div className={occupiedEntityLayoutClass}>
-          <EntityInfoScrollPane>
-            <StructureBannerEntityDetail
-              structureEntityId={occupierEntityId}
-              maxInventory={14}
-              showButtons={false}
-              className={scrollableEntityDetailClass}
-              coordsLabel={coordsLabel}
-              headerAction={headerAction}
-              {...sharedDetailProps}
-            />
-          </EntityInfoScrollPane>
+          <StructureBannerEntityDetail
+            structureEntityId={occupierEntityId}
+            maxInventory={14}
+            showButtons={false}
+            className={scrollableEntityDetailClass}
+            coordsLabel={coordsLabel}
+            headerAction={headerAction}
+            {...sharedDetailProps}
+          />
+
           <SelectedStructureActionPanel
             structureEntityId={occupierEntityId}
             biome={biome}
@@ -177,18 +164,15 @@ const SelectedWorldmapEntityContent = ({
           />
         </div>
       ) : isChest ? (
-        <div className={occupiedEntityLayoutClass}>
-          <EntityInfoScrollPane>
-            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
-              <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
-            </EntityDetailSection>
-          </EntityInfoScrollPane>
-          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-        </div>
+        <ChestTileDetails
+          crateEntityId={occupierEntityId}
+          biome={biome}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          onSimulateBattle={handleSimulateBattle}
+        />
       ) : isQuest ? (
-        <EntityInfoScrollPane>
-          <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
-        </EntityInfoScrollPane>
+        <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
       ) : (
         <SelectedArmyTilePanel
           armyEntityId={occupierEntityId}
@@ -223,17 +207,16 @@ const SelectedArmyTilePanel = ({
 
   return (
     <div className={occupiedEntityLayoutClass}>
-      <EntityInfoScrollPane>
-        <ArmyBannerEntityDetail
-          armyEntityId={armyEntityId}
-          showButtons={false}
-          className={scrollableEntityDetailClass}
-          coordsLabel={coordsLabel}
-          headerAction={headerAction}
-          compact
-          layoutVariant="banner"
-        />
-      </EntityInfoScrollPane>
+      <ArmyBannerEntityDetail
+        armyEntityId={armyEntityId}
+        showButtons={false}
+        className={scrollableEntityDetailClass}
+        coordsLabel={coordsLabel}
+        headerAction={headerAction}
+        compact
+        layoutVariant="banner"
+      />
+
       <BiomeSummaryCard
         biome={biome}
         showSimulateAction
@@ -272,19 +255,6 @@ const SelectedStructureActionPanel = ({
   }
 
   return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;
-};
-
-const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
-  return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex flex-col gap-1 text-left">
-        <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relic Crate</span>
-        <span className="text-sm font-semibold text-gold">Crate #{crateEntityId}</span>
-        <p className="text-xxs text-gold/70">Claim it to discover 3 relics that can empower armies or structures.</p>
-        <p className="text-xxs text-gold/70">Cracking it open also grants you 1000 Victory Points !</p>
-      </div>
-    </div>
-  );
 };
 
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {

@@ -114,7 +114,7 @@ const getOccupierColor = (tile: MinimapTile) => {
   if (!hasTileOccupier(type)) return null;
   if (type === TileOccupier.Spire) return "#67e8f9";
   if (isTileOccupierReservedHyperstructure(type as TileOccupier)) return "#fbbf24";
-  const isStructure = tile.occupier_is_structure || isTileOccupierStructure(type);
+  const isStructure = isTileOccupierStructure(type);
   return isStructure ? "#22d3ee" : "#f97316";
 };
 
@@ -449,7 +449,7 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
         return { iconSrc: LABEL_ICONS.quest } satisfies TileMarker;
       }
 
-      const hasStructure = tile.occupier_is_structure || isTileOccupierStructure(occupierType);
+      const hasStructure = isTileOccupierStructure(occupierType);
 
       if (hasStructure) {
         const info = getStructureInfoFromTileOccupier(occupierType);

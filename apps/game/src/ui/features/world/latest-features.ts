@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Readable Relic Crate Details",
+    description: "Chest tiles show their crate contents above the biome bonuses and coordinates.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     title: "Armies Follow Realm Ownership",
     description: "Armies change owner and colour immediately when their home structure changes hands.",
     type: "fix",

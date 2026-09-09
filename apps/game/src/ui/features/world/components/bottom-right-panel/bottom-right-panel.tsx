@@ -152,8 +152,8 @@ const MapTilePanel = () => {
   }, [occupierType]);
 
   const isStructure = useMemo(() => {
-    return Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
-  }, [occupierType, tile?.occupier_is_structure]);
+    return isTileOccupierStructure(occupierType);
+  }, [occupierType]);
 
   const isReservedHyperstructure = useMemo(() => {
     return isTileOccupierReservedHyperstructure(occupierType);
