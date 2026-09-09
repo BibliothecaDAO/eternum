@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
@@ -2785,7 +2787,7 @@ export default class WorldmapScene extends WarpTravel {
       hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
     };
 
-    usePopoverStore.getState().openSurface({
+    this.openTargetActionSurface(targetHex, {
       id: "quick-attack",
       content: <QuickAttackPreview attacker={attackerSummary} target={targetSummary} />,
     });
@@ -2825,7 +2827,7 @@ export default class WorldmapScene extends WarpTravel {
         alt: true,
       };
 
-      usePopoverStore.getState().openSurface({
+      this.openTargetActionSurface(targetHex, {
         id: "quick-attack",
         content: <QuickAttackPreview attacker={attackerSummary} target={targetSummary} />,
       });
@@ -2838,7 +2840,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    usePopoverStore.getState().openSurface({
+    this.openTargetActionSurface(targetHex, {
       id: "spire-travel",
       content: (
         <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />
@@ -2865,25 +2867,50 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private reanchorArmyDeployment(event: PointerEvent): boolean {
-    if (this.actionPathsTransitionToken === null || this.actionPathsTransitionToken !== this.chunkTransitionToken)
-      return false;
+  private openTargetActionSurface(targetHex: HexPosition, surface: { id: string; content: ReactNode }): void {
+    if (!canIssueOrders()) return;
+    const normalized = new Position({ x: targetHex.col, y: targetHex.row }).getNormalized();
+    const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
+    usePopoverStore.getState().openSurface({
+      ...surface,
+      anchor: { left: point.x, right: point.x, top: point.y, bottom: point.y },
+      mapClick: { reanchor: (event) => this.reanchorMapActionPreview(event) },
+    });
+  }
+
+  private getMapActionAtPointer(event: PointerEvent): { path: ActionPath[]; selectedEntityId: ID } | null {
+    if (!canIssueOrders() || this.actionPathsTransitionToken === null || this.actionPathsTransitionToken !== this.chunkTransitionToken) return null;
     const canvas = event.target;
-    if (!(canvas instanceof HTMLCanvasElement) || canvas.id !== "main-canvas") return false;
+    if (!(canvas instanceof HTMLCanvasElement) || canvas.id !== "main-canvas") return null;
     const rect = canvas.getBoundingClientRect();
     const raycaster = new Raycaster();
-    raycaster.setFromCamera(
-      new Vector2(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        1 - ((event.clientY - rect.top) / rect.height) * 2,
-      ),
-      this.camera,
-    );
-    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords ?? null;
+    raycaster.setFromCamera(new Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      1 - ((event.clientY - rect.top) / rect.height) * 2,
+    ), this.camera);
+    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
-    const path = resolveSpawnActionPath(hex, actionPaths);
-    if (!path || selectedEntityId === null || selectedEntityId === undefined) return false;
-    this.onArmyCreate(path, selectedEntityId);
+    if (!hex || selectedEntityId === null || selectedEntityId === undefined) return null;
+    const path = actionPaths.get(ActionPaths.posKey(hex, true));
+    return path ? { path, selectedEntityId } : null;
+  }
+
+  private reanchorArmyDeployment(event: PointerEvent): boolean {
+    const action = this.getMapActionAtPointer(event);
+    if (!action || ActionPaths.getActionType(action.path) !== ActionType.CreateArmy) return false;
+    this.onArmyCreate(action.path, action.selectedEntityId);
+    return true;
+  }
+
+  private reanchorMapActionPreview(event: PointerEvent): boolean {
+    const action = this.getMapActionAtPointer(event);
+    const type = action && ActionPaths.getActionType(action.path);
+    if (!action || !isMapPreviewAction(event.button, type)) return false;
+    const { path, selectedEntityId } = action;
+    if (type === ActionType.Attack) this.onArmyAttack(path, selectedEntityId);
+    else if (type === ActionType.Help) this.onArmyHelp(path, selectedEntityId);
+    else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
+    else this.onArmySpireTravel(path, selectedEntityId);
     return true;
   }
 
@@ -2922,7 +2949,7 @@ export default class WorldmapScene extends WarpTravel {
     const isTargetMine = target.army?.owner === account || target.structure?.owner === account;
     const isSelectedMine = selected.army?.owner === account || selected.structure?.owner === account;
 
-    usePopoverStore.getState().openSurface({
+    this.openTargetActionSurface(targetHex, {
       id: "help",
       content: (
         <HelpModal
@@ -3413,7 +3440,7 @@ export default class WorldmapScene extends WarpTravel {
     // Get the target hex (last hex in the path)
     const targetHex = selectedPath[selectedPath.length - 1];
 
-    usePopoverStore.getState().openSurface({
+    this.openTargetActionSurface(targetHex, {
       id: "chest",
       content: (
         <ChestModal

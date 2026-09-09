@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Action Previews Beside Their Targets",
+    description: "Attack, help, chest and spire previews open beside the target hex. Right-click another legal target to move the preview, or click elsewhere to close it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Visual Building Choices",
     description: "Choose buildings from thumbnails with resource costs beside each choice. Buildable options come first, and tall plot pickers stay inside the screen with scrolling.",
     type: "improvement",
