@@ -7,11 +7,11 @@ import {
 } from "./procedural-army-representation";
 
 describe("procedural army representation", () => {
-  it("routes land units to procedural actors while retaining the boat model", () => {
+  it("routes land units and ships alike to procedural actors", () => {
     expect(shouldPresentArmyProcedurally(ModelType.Knight1)).toBe(true);
     expect(shouldPresentArmyProcedurally(ModelType.Crossbowman2)).toBe(true);
     expect(shouldPresentArmyProcedurally(ModelType.Paladin3)).toBe(true);
-    expect(shouldPresentArmyProcedurally(ModelType.Boat)).toBe(true);
+    expect(shouldPresentArmyProcedurally(ModelType.ShipKnight1)).toBe(true);
     expect(shouldPresentArmyProcedurally(undefined)).toBe(false);
   });
 

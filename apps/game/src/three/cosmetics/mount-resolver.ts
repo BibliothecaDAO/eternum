@@ -1,5 +1,6 @@
 import { Euler, Vector3 } from "three";
-import { ModelType } from "../types/army";
+import { isShipModel } from "../constants/army-constants";
+import type { ModelType } from "../types/army";
 import { StructureType } from "@bibliothecadao/types";
 import type { AttachmentTransform } from "./types";
 
@@ -58,7 +59,7 @@ const HUMANOID_DEFAULTS: Record<string, MountDefinition> = {
   },
 };
 
-const BOAT_OVERRIDES: Record<string, MountDefinition> = {
+const SHIP_OVERRIDES: Record<string, MountDefinition> = {
   origin: {
     offset: [0, 0, 0],
   },
@@ -68,10 +69,6 @@ const BOAT_OVERRIDES: Record<string, MountDefinition> = {
   spine: {
     offset: [0, 0.9, 0],
   },
-};
-
-const ARMY_MOUNT_OVERRIDES: Partial<Record<ModelType, Record<string, MountDefinition>>> = {
-  [ModelType.Boat]: BOAT_OVERRIDES,
 };
 
 const DEFAULT_STRUCTURE_MOUNTS: Record<string, MountDefinition> = {
@@ -171,8 +168,8 @@ export function resolveArmyMountTransforms(
 
   applyDefinitions(HUMANOID_DEFAULTS, base, out);
 
-  if (modelType) {
-    applyDefinitions(ARMY_MOUNT_OVERRIDES[modelType], base, out);
+  if (isShipModel(modelType)) {
+    applyDefinitions(SHIP_OVERRIDES, base, out);
   }
 
   return out;

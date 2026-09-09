@@ -330,9 +330,9 @@ describe("ArmyModel draw-count stays correct on cached model switch (1A)", () =>
     const slot = subject.allocateInstanceSlot(entityId);
 
     const landModel = createModelData();
-    const boatModel = createModelData();
+    const shipModel = createModelData();
     (subject as any).models.set(ModelType.Knight1, landModel);
-    (subject as any).models.set(ModelType.Boat, boatModel);
+    (subject as any).models.set(ModelType.ShipKnight1, shipModel);
 
     // Entity is currently rendered on the land model at `slot`.
     (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
@@ -340,19 +340,19 @@ describe("ArmyModel draw-count stays correct on cached model switch (1A)", () =>
     landModel.activeInstances.add(slot);
     landModel.instancedMeshes[0].count = slot + 1;
 
-    // Boat is loaded but never drawn (count 0) — this is the bug precondition:
+    // The ship is loaded but never drawn (count 0) — this is the bug precondition:
     // a cached model whose draw count was never bumped to include this slot.
-    expect(boatModel.instancedMeshes[0].count).toBe(0);
+    expect(shipModel.instancedMeshes[0].count).toBe(0);
 
-    // Simulate the mid-move biome switch onto the cached Boat model.
-    (subject as any).entityModelMap.set(entityId, ModelType.Boat);
+    // Simulate the mid-move biome switch onto the cached ship model.
+    (subject as any).entityModelMap.set(entityId, ModelType.ShipKnight1);
     subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
 
-    // The slot moved onto the Boat model...
-    expect(boatModel.activeInstances.has(slot)).toBe(true);
-    // ...and the Boat model's draw count now covers it (regression: stayed 0,
+    // The slot moved onto the ship model...
+    expect(shipModel.activeInstances.has(slot)).toBe(true);
+    // ...and the ship model's draw count now covers it (regression: stayed 0,
     // so the model was invisible until the next map-wide setVisibleSlots).
-    expect(boatModel.instancedMeshes[0].count).toBeGreaterThanOrEqual(slot + 1);
+    expect(shipModel.instancedMeshes[0].count).toBeGreaterThanOrEqual(slot + 1);
   });
 });
 

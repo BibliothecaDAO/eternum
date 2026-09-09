@@ -1,12 +1,13 @@
 import type { Matrix4, Mesh } from "three";
-import { ModelType } from "../types/army";
+import { isShipModel } from "../constants/army-constants";
+import type { ModelType } from "../types/army";
 
 const groundOffsets = new WeakMap<readonly Mesh[], number>();
 
 /** Instanced models draw raw geometry; node transforms and animation bounds are not their standing origin. */
 export function getArmyGroundOffset(meshes: readonly Mesh[], modelType?: ModelType): number {
-  // Boat origins describe their waterline; placing the keel on the surface would lift the hull out of the water.
-  if (modelType === ModelType.Boat) return 0;
+  // Ship origins describe their waterline; placing the keel on the surface would lift the hull out of the water.
+  if (isShipModel(modelType)) return 0;
   const cached = groundOffsets.get(meshes);
   if (cached !== undefined) return cached;
 
