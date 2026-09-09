@@ -27,7 +27,7 @@ it("combat excludes personal failures and arrivals", () => {
     ...empty,
     arrived: [{ kind: "arrival", id: "caravan", at: 30 }],
     recent: [{ kind: "transaction", id: "failed", at: 40, transaction: { status: "reverted" } }],
-  } as FeedRows;
+  } as unknown as FeedRows;
   expect(selectImportantFeedRows([battle("fight", 20)], feed, "all", null).map((row) => row.id)).toEqual([
     "failed",
     "caravan",
@@ -55,4 +55,24 @@ it("shows one battle when Herald records a story for each participant", () => {
   const attacker = battle("attacker", 20);
   const defender = { ...attacker, id: "defender", owner: "0x2" };
   expect(selectImportantFeedRows([attacker, defender], empty, "all", null)).toHaveLength(1);
+});
+
+it("keeps pending and completed actions and travelling caravans in Events", () => {
+  const feed = {
+    inFlight: [
+      { kind: "arrival", id: "travelling", at: 50 },
+      { kind: "transaction", id: "pending", at: 40 },
+    ],
+    arrived: [],
+    recent: [
+      { kind: "transaction", id: "done", at: 30, transaction: { status: "success" } },
+      { kind: "notice", id: "notice", at: 20 },
+    ],
+  } as unknown as FeedRows;
+  expect(selectImportantFeedRows([], feed, "mine", "0x1").map((row) => row.id)).toEqual([
+    "travelling",
+    "pending",
+    "done",
+    "notice",
+  ]);
 });

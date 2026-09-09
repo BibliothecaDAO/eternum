@@ -16,7 +16,7 @@ import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { gameEntityKey } from "../managers/config-manager";
 
-export type StoryEventIcon =
+type StoryEventIcon =
   | "realm"
   | "building"
   | "production"
@@ -196,14 +196,19 @@ const formatters: Record<string, StoryFormatter> = {
     const stolen = formatResourceList(payload.stolen_resources ?? []);
     let victor;
 
-    if (Number(attackerLeft) == 0 && Number(defenderLeft) == 0) {
-      victor = "Mutual Annihilation";
-    } else if (Number(attackerLeft) == 0 && Number(defenderLeft) > 0) {
-      victor = `Defender [${defenderOwnerLabel}]`;
-    } else if (Number(defenderLeft) == 0 && Number(attackerLeft) > 0) {
+    // The contract records the winning owner structure, not the explorer entity.
+    const winningOwnerId = Number(payload.winner_id);
+    if (winningOwnerId > 0 && winningOwnerId === Number(payload.attacker_owner_id)) {
       victor = `Attacker [${attackerOwnerLabel}]`;
+    } else if (winningOwnerId > 0 && winningOwnerId === Number(payload.defender_owner_id)) {
+      victor = `Defender [${defenderOwnerLabel}]`;
+    } else if (
+      Number(payload.attacker_troops_before) === Number(payload.attacker_troops_lost) &&
+      Number(payload.defender_troops_before) === Number(payload.defender_troops_lost)
+    ) {
+      victor = "Mutual Annihilation";
     } else {
-      victor = `Draw`;
+      victor = "Draw";
     }
 
     return {

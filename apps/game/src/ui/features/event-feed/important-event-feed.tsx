@@ -54,7 +54,7 @@ export const ImportantEventFeed = () => {
               row.kind === "story" ? (
                 <StoryFeedRow key={row.id} event={row.event} />
               ) : (
-                <FeedRowView key={row.id} row={row} />
+                <FeedRowView key={row.id} row={row} compact />
               ),
             )}
           </section>

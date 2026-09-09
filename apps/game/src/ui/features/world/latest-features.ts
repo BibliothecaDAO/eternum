@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "One Feed for Game Events",
+    description:
+      "Read battles, action results and your incoming caravans in Events. Battle rows show both armies and the winner; floating notifications no longer cover the map.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Open Suggestions Without Interruptions",
     description: "Cycle through attention targets and open suggested actions without interrupting your game.",
     type: "fix",

@@ -12,12 +12,12 @@ const sameOwner = (left: unknown, right: string | null): boolean => {
     return false;
   }
 };
-const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
+export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
   [event.owner, event.storyPayload.attacker_owner_address, event.storyPayload.defender_owner_address].some((owner) =>
     sameOwner(owner, address),
   );
 
-const battleIdentity = (event: ProcessedStoryEvent): string =>
+export const battleIdentity = (event: ProcessedStoryEvent): string =>
   [
     event.tx_hash,
     event.timestampMs,
@@ -45,15 +45,7 @@ export function selectImportantFeedRows(
     })
     .map((event) => ({ kind: "story", id: `story:${event.id}`, at: event.timestampMs, event }));
   if (filter !== "combat") {
-    rows.push(
-      ...feed.arrived,
-      ...feed.inFlight.filter((row) => row.kind === "transaction" && row.isStuck),
-      ...feed.recent.filter(
-        (row) =>
-          (row.kind === "transaction" && row.transaction.status === "reverted") ||
-          (row.kind === "notice" && (row.notice.kind === "error" || row.notice.kind === "warning")),
-      ),
-    );
+    rows.push(...feed.arrived, ...feed.inFlight, ...feed.recent);
   }
   return rows.sort((left, right) => right.at - left.at);
 }

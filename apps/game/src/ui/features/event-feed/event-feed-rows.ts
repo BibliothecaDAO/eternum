@@ -26,6 +26,7 @@ export interface FeedRows {
 
 interface DeriveFeedRowsInput {
   transactions: readonly Transaction[];
+  ownedStructureIds: readonly number[];
   arrivals: readonly ResourceArrivalInfo[];
   notices: readonly FeedNotice[];
   nowMs: number;
@@ -56,6 +57,7 @@ const arrivalRow = (arrival: ResourceArrivalInfo, nowSeconds: number): Extract<F
  */
 export const deriveFeedRows = ({
   transactions,
+  ownedStructureIds,
   arrivals,
   notices,
   nowMs,
@@ -82,7 +84,9 @@ export const deriveFeedRows = ({
     }
   }
 
+  const owned = new Set(ownedStructureIds);
   for (const arrival of arrivals) {
+    if (!owned.has(arrival.structureEntityId)) continue;
     const row = arrivalRow(arrival, nowSeconds);
     (row.remainingSeconds > 0 ? inFlight : arrived).push(row);
   }
@@ -105,5 +109,8 @@ export const deriveFeedRows = ({
 /** What just happened: rows whose moment lies inside the ticker window (notices honour their own ttl). */
 export const selectTickerRows = (rows: FeedRows, nowMs: number, windowMs: number): FeedRow[] =>
   [...rows.inFlight, ...rows.arrived, ...rows.recent]
-    .filter((row) => (row.kind === "notice" ? nowMs - row.at < row.notice.ttlMs : nowMs - row.at < windowMs))
+    .filter(
+      (row) =>
+        nowMs >= row.at && (row.kind === "notice" ? nowMs - row.at < row.notice.ttlMs : nowMs - row.at < windowMs),
+    )
     .sort(byNewest);

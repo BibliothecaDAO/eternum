@@ -3,7 +3,6 @@
  * into the landing page bundle.
  */
 import { ChunkTransitionIndicator, ErrorBoundary, WorldLoading } from "@/ui/shared";
-import { EventFeedTicker } from "@/ui/features/event-feed/event-feed-ticker";
 import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-cues";
 import { useEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
@@ -17,7 +16,7 @@ import type { SetupResult } from "./init/bootstrap";
 import { PlayRouteBootstrapErrorScreen } from "./ui/layouts/play-route-bootstrap-error-screen";
 import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
-import { StoryEventToastBridge } from "./ui/features/story-events";
+import { StoryEventAudioCues } from "./ui/features/story-events";
 import { LoadingScreen } from "./ui/modules/loading-screen";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
@@ -40,14 +39,13 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
         <PlaySceneHandoff />
-        <StoryEventToastBridge />
+        <StoryEventAudioCues />
         <NewsHeadlineBridge />
         <TransactionListenerBridge />
         <TransactionAudioCues />
         <World backgroundImage={backgroundImage} />
         <ChunkTransitionIndicator />
         <WorldLoading />
-        <EventFeedTicker />
       </ErrorBoundary>
     </DojoProvider>
   );
