@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Spectator Standings",
+    description: "Watch the top ten and the selected player's points each tick; select a row to visit their capital.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-09",
     title: "Choose the Battle to Watch",
     description: "Battle rows fly the camera on demand; the automatic combat-follow header control is removed.",
     type: "improvement",

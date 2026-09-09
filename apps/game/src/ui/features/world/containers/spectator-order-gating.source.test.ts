@@ -12,6 +12,10 @@ it("routes HUD order gating through the session-aware gate", () => {
   for (const file of ["left-command-sidebar.tsx", "left-actions-row.tsx"]) {
     const source = readFileSync(join("src/ui/features/world/containers", file), "utf8");
     expect(source).toContain("useUIStore(canIssueOrders)");
-    expect(source).toContain("if (!ordersAllowed) return null;");
+    expect(source).toContain(
+      file === "left-command-sidebar.tsx"
+        ? "if (!ordersAllowed) return <SpectatorStandings />;"
+        : "if (!ordersAllowed) return null;",
+    );
   }
 });

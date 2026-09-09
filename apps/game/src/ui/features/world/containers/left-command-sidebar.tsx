@@ -1,3 +1,4 @@
+import { SpectatorStandings } from "./spectator-standings";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_COLUMN_WIDTH } from "./hud-layout";
@@ -64,7 +65,7 @@ export const LeftCommandSidebar = memo(() => {
   const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
   const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
 
-  if (!ordersAllowed) return null;
+  if (!ordersAllowed) return <SpectatorStandings />;
 
   return (
     <>
