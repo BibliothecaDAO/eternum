@@ -1,3 +1,4 @@
+import type { CompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -21,7 +22,7 @@ import Crosshair from "lucide-react/dist/esm/icons/crosshair";
 import MapIcon from "lucide-react/dist/esm/icons/map";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square";
 import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
-import { memo, type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, memo, type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { HudChatWindow } from "./hud-chat-window";
 import { EmpireCockpit } from "./left-facets/empire-cockpit";
 import { StructureListColumn } from "./left-facets/structure-list-column";
@@ -32,13 +33,52 @@ type CompactTab = "empire" | "map" | "log" | "chat" | "details";
 /** Tabs whose content is the bottom sheet; the log is its own popover and chat is the chat window. */
 const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]);
 
-const TAB_BAR_SAFE_PADDING = "max(env(safe-area-inset-bottom), 0.5rem)";
+/** Safe-area insets, never less than the shell's own padding so a phone without a notch keeps its gutters. */
+const SAFE_BOTTOM = "max(env(safe-area-inset-bottom), 0.5rem)";
+const SAFE_SIDES: CSSProperties = {
+  paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
+  paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
+};
+
+interface LaneLayout {
+  shell: string;
+  panels: string;
+  sheet: string;
+  sheetStyle?: CSSProperties;
+  tabBar: string;
+  tabBarStyle: CSSProperties;
+}
 
 /**
- * The HUD below `lg`: one tab bar at the foot of the screen and, above it, one open panel at a time — the empire
- * column, the minimap, the log, chat, or the selected tile. The map stays tappable around whatever is open.
+ * Portrait stacks the panels over a tab bar at the foot of the screen. Landscape has almost no height to spare, so
+ * the same panels sit in a column docked to the right edge, the tab bar becomes a vertical rail beside them and the
+ * sheet fills the column instead of taking a share of the height. The rail is `box-content` so the notch inset adds
+ * to its width rather than eating into the tabs.
  */
-export const CompactHud = memo(() => {
+const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
+  portrait: {
+    shell: "inset-x-0 bottom-0 flex-col",
+    panels: "",
+    sheet: "max-h-[55dvh] rounded-t-xl",
+    sheetStyle: SAFE_SIDES,
+    tabBar: "border-t pt-1",
+    tabBarStyle: { ...SAFE_SIDES, paddingBottom: SAFE_BOTTOM },
+  },
+  landscape: {
+    shell: "top-11 bottom-0 right-0 flex-row",
+    panels: "w-[min(380px,50vw)]",
+    sheet: "min-h-0 flex-1 rounded-l-xl rounded-t-none",
+    tabBar: "w-14 box-content flex-col border-l px-1 pt-1",
+    tabBarStyle: { paddingRight: "max(env(safe-area-inset-right), 0.25rem)", paddingBottom: SAFE_BOTTOM },
+  },
+};
+
+/**
+ * The HUD below `lg`: one tab bar and, beside it, one open panel at a time — the empire column, the minimap, the
+ * log, chat, or the selected tile. The map stays tappable around whatever is open. `lane` picks the layout for the
+ * phone's orientation.
+ */
+export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const ordersAllowed = useUIStore(canIssueOrders);
   const { isMapView, selectionKey } = useTileSelection();
@@ -64,30 +104,35 @@ export const CompactHud = memo(() => {
     { id: "chat", label: "Chat", icon: MessageSquare, badge: chatUnread },
   ];
   if (selectionKey !== null) tabs.push({ id: "details", label: "Details", icon: Crosshair });
+  const layout = LANE_LAYOUT[lane];
 
   return (
     <div
       aria-label="Compact HUD"
-      className={cn("pointer-events-none fixed inset-x-0 bottom-0 flex flex-col", open === "chat" ? "z-[130]" : "z-30")}
+      className={cn("pointer-events-none fixed flex", layout.shell, open === "chat" ? "z-[130]" : "z-30")}
     >
-      <div className="flex flex-col items-end gap-1 px-2 pb-1">
-        <FeedNotices pinned={pinned} />
+      <div className={cn("flex min-h-0 flex-col justify-end", layout.panels)}>
+        <div className="flex flex-col items-end gap-1 px-2 pb-1">
+          <FeedNotices pinned={pinned} />
+        </div>
+        {/* The chat window stays mounted so the client keeps its connection; its strip only shows while open. */}
+        <div className={open === "chat" ? "px-2 pb-1" : "hidden"}>
+          <HudChatWindow open={open === "chat"} onOpenChange={setChatOpen} />
+        </div>
+        {open !== null && SHEET_TABS.has(open) && (
+          <section
+            aria-label="HUD sheet"
+            className={cn(
+              "pointer-events-auto flex flex-col gap-2 overflow-y-auto overscroll-contain p-2 touch-pan-y",
+              layout.sheet,
+              OVERLAY_SURFACE_BASE,
+            )}
+            style={layout.sheetStyle}
+          >
+            <SheetContent tab={open} isMapView={isMapView} ordersAllowed={ordersAllowed} />
+          </section>
+        )}
       </div>
-      {/* The chat window stays mounted so the client keeps its connection; its strip only shows while open. */}
-      <div className={open === "chat" ? "px-2 pb-1" : "hidden"}>
-        <HudChatWindow open={open === "chat"} onOpenChange={setChatOpen} />
-      </div>
-      {open !== null && SHEET_TABS.has(open) && (
-        <section
-          aria-label="HUD sheet"
-          className={cn(
-            "pointer-events-auto flex max-h-[55dvh] flex-col gap-2 overflow-y-auto overscroll-contain rounded-t-xl p-2 touch-pan-y",
-            OVERLAY_SURFACE_BASE,
-          )}
-        >
-          <SheetContent tab={open} isMapView={isMapView} ordersAllowed={ordersAllowed} />
-        </section>
-      )}
       {open === "log" && (
         <EventLogPanel
           onDismiss={close}
@@ -96,8 +141,11 @@ export const CompactHud = memo(() => {
       )}
       <nav
         aria-label="HUD tabs"
-        className="pointer-events-auto flex h-auto items-stretch gap-1 border-t border-gold/20 bg-black/90 px-2 pt-1 backdrop-blur-md"
-        style={{ paddingBottom: TAB_BAR_SAFE_PADDING }}
+        className={cn(
+          "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-black/90 backdrop-blur-md",
+          layout.tabBar,
+        )}
+        style={layout.tabBarStyle}
       >
         {tabs.map((tab) => (
           <TabButton key={tab.id} tab={tab} active={open === tab.id} onToggle={toggle} />

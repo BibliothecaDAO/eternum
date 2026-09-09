@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-10",
     title: "Phone-Sized HUD",
     description:
-      "On a phone the map is no longer buried under the desktop columns. A bottom tab bar opens one sheet at a time for your empire, the minimap, the log, chat and the selected tile, and the top pills scroll sideways under the notch.",
+      "On a phone the map is no longer buried under the desktop columns. A bottom tab bar opens one sheet at a time for your empire, the minimap, the log, chat and the selected tile, and the top pills scroll sideways under the notch. Turn the phone sideways and the tabs become a rail on the right with the sheet and surfaces docked beside it, clear of the notch.",
     type: "improvement",
   },
   {

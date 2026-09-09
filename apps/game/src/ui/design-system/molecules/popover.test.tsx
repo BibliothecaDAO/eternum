@@ -5,6 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: vi.fn() }) }));
 
+import {
+  COMPACT_HUD_MEDIA_QUERY,
+  COMPACT_LANDSCAPE_MEDIA_QUERY,
+  type CompactLane,
+} from "@/hooks/helpers/use-compact-hud";
 import { Popover, PopoverPanel, SurfaceHost } from "./popover";
 
 const Trigger = ({ id, label }: { id: string; label: string }) => {
@@ -28,9 +33,42 @@ const TwoPopovers = () => (
   </>
 );
 
-/** The compact lane is one media query (`use-compact-hud`); the popover reads it, so the test drives it. */
-const stubCompactViewport = (matches: boolean) =>
-  vi.stubGlobal("matchMedia", () => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+/** The compact lane is two media queries (`use-compact-hud`); the popover reads them, so the test answers both. */
+const stubCompactLane = (lane: CompactLane | null) => {
+  const answers: Record<string, boolean> = {
+    [COMPACT_HUD_MEDIA_QUERY]: lane !== null,
+    [COMPACT_LANDSCAPE_MEDIA_QUERY]: lane === "landscape",
+  };
+  vi.stubGlobal("matchMedia", (media: string) => ({
+    matches: answers[media] ?? false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
+};
+
+const mountPanel = async (anchor: Parameters<typeof PopoverPanel>[0]["anchor"], onDismiss: () => void) => {
+  const panelContainer = document.createElement("div");
+  document.body.appendChild(panelContainer);
+  const panelRoot = createRoot(panelContainer);
+  await act(async () =>
+    panelRoot.render(
+      <PopoverPanel id="sheet" ariaLabel="Sheet" anchor={anchor} onDismiss={onDismiss}>
+        <span>sheet body</span>
+      </PopoverPanel>,
+    ),
+  );
+  return async () => {
+    await act(async () => panelRoot.unmount());
+    panelContainer.remove();
+  };
+};
+
+const COMPACT_ANCHORS = [
+  "top-center",
+  "right-edge",
+  "bottom-right",
+  { left: 40, right: 80, top: 300, bottom: 340 },
+] as const;
 
 const panel = (id: string) => document.querySelector<HTMLElement>(`[data-popover-panel="${id}"]`);
 const trigger = (label: string) =>
@@ -75,26 +113,10 @@ describe("Popover", () => {
     expect(picker.className).toContain("overflow-y-auto");
   });
 
-  it("collapses every anchor to a bottom sheet on a compact viewport", async () => {
-    stubCompactViewport(true);
-    const onDismiss = vi.fn();
-    const anchors = [
-      "top-center",
-      "right-edge",
-      "bottom-right",
-      { left: 40, right: 80, top: 300, bottom: 340 },
-    ] as const;
-    for (const anchor of anchors) {
-      const sheetContainer = document.createElement("div");
-      document.body.appendChild(sheetContainer);
-      const sheetRoot = createRoot(sheetContainer);
-      await act(async () =>
-        sheetRoot.render(
-          <PopoverPanel id="sheet" ariaLabel="Sheet" anchor={anchor} onDismiss={onDismiss}>
-            <span>sheet body</span>
-          </PopoverPanel>,
-        ),
-      );
+  it("collapses every anchor to a bottom sheet on a compact viewport held upright", async () => {
+    stubCompactLane("portrait");
+    for (const anchor of COMPACT_ANCHORS) {
+      const unmount = await mountPanel(anchor, vi.fn());
       const sheet = panel("sheet")!;
       expect(sheet.style.left).toBe("0px");
       expect(sheet.style.right).toBe("0px");
@@ -106,13 +128,28 @@ describe("Popover", () => {
       expect(sheet.style.maxHeight).toContain("safe-area-inset-bottom");
       expect(sheet.className).toContain("max-lg:w-screen");
       expect(sheet.className).toContain("touch-pan-y");
-      await act(async () => sheetRoot.unmount());
-      sheetContainer.remove();
+      await unmount();
+    }
+  });
+
+  it("collapses every anchor to a right drawer under the header on a compact viewport held sideways", async () => {
+    stubCompactLane("landscape");
+    for (const anchor of COMPACT_ANCHORS) {
+      const unmount = await mountPanel(anchor, vi.fn());
+      const drawer = panel("sheet")!;
+      expect(drawer.style.top).toBe("56px");
+      expect(drawer.style.right).toBe("0px");
+      expect(drawer.style.bottom).toBe("0px");
+      expect(drawer.style.left).toBe("");
+      // jsdom drops the `min(100vw, 640px)` width cap as it drops `max(..., env(...))`; the height budget is kept.
+      expect(drawer.style.maxHeight).toContain("56px");
+      expect(drawer.className).toContain("max-lg:landscape:rounded-r-none");
+      await unmount();
     }
   });
 
   it("keeps the anchored placement from Tailwind's lg breakpoint up", async () => {
-    stubCompactViewport(false);
+    stubCompactLane(null);
     await act(async () => trigger("open a").click());
     expect(panel("a")!.style.bottom).toBe("");
     expect(panel("a")!.style.top).not.toBe("");

@@ -80,7 +80,7 @@ beforeEach(async () => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  await act(async () => root.render(<CompactHud />));
+  await act(async () => root.render(<CompactHud lane="portrait" />));
 });
 
 afterEach(async () => {
@@ -92,6 +92,18 @@ it("renders the tab bar with no sheet and no Details tab until something is sele
   expect(tabLabels()).toEqual(["Empire", "Map", "Log", "Chat"]);
   expect(sheet()).toBeNull();
   expect(container.querySelector('[aria-label="Compact HUD"]')?.className).toContain("pointer-events-none");
+});
+
+it("docks to the right edge as a column and a vertical rail in landscape, with the sheet filling the column", async () => {
+  await act(async () => root.render(<CompactHud key="landscape" lane="landscape" />));
+  const shell = container.querySelector('[aria-label="Compact HUD"]')!;
+  expect(shell.className).toContain("flex-row");
+  expect(shell.className).toContain("top-11");
+  expect(shell.className).not.toContain("inset-x-0");
+  expect(container.querySelector("nav")?.className).toContain("flex-col");
+  await tap("Map");
+  expect(sheet()?.className).toContain("flex-1");
+  expect(sheet()?.className).not.toContain("max-h-[55dvh]");
 });
 
 it("opens one sheet at a time and closes it when the active tab is tapped again", async () => {
@@ -115,7 +127,7 @@ it("hosts the standings for a spectator", async () => {
 
 it("counts unread events on the Log tab and opens the log panel instead of the sheet", async () => {
   mocks.rows = [{ at: 1 }, { at: 2 }];
-  await act(async () => root.render(<CompactHud key="with-rows" />));
+  await act(async () => root.render(<CompactHud key="with-rows" lane="portrait" />));
   expect(tab("Log")?.querySelector('[aria-label="Unread events"]')?.textContent).toBe("2");
   await tap("Log");
   expect(container.querySelector('[role="dialog"]')?.textContent).toBe("Log panel");
