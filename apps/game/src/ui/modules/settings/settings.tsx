@@ -160,7 +160,7 @@ function VideoSettings() {
           Reduced motion
         </SelectedOption>
       </div>
-      <RendererDebugControl className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
+      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
     </SettingsSection>
   );
 }
@@ -226,19 +226,21 @@ const formatShortcutKey = (
 /** Read-only: one line per bound key (both scenes bind the same keys), plus the chat binding. */
 function ShortcutsSection() {
   const bound = getShortcutManager().getShortcuts();
-  const bindings = new Map<string, string>();
-  for (const shortcut of bound) {
-    const key = formatShortcutKey(shortcut.key, shortcut.modifiers);
-    if (!bindings.has(key)) bindings.set(key, shortcut.description);
+  // One row per key; a key bound differently per scene lists each meaning once.
+  const bindings = new Map<string, string[]>();
+  for (const shortcut of [...bound, CHAT_SHORTCUT]) {
+    const key = formatShortcutKey(shortcut.key, "modifiers" in shortcut ? shortcut.modifiers : undefined);
+    const meanings = bindings.get(key) ?? [];
+    if (!meanings.includes(shortcut.description)) meanings.push(shortcut.description);
+    bindings.set(key, meanings);
   }
-  bindings.set(formatShortcutKey(CHAT_SHORTCUT.key), CHAT_SHORTCUT.description);
   return (
     <SettingsSection title="Shortcuts">
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        {[...bindings].map(([key, description]) => (
+        {[...bindings].map(([key, meanings]) => (
           <div key={key} className="contents">
             <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-[11px] text-gold">{key}</dt>
-            <dd className={cn("truncate", HUD_BODY)}>{description}</dd>
+            <dd className={cn("truncate", HUD_BODY)}>{meanings.join(" · ")}</dd>
           </div>
         ))}
       </dl>

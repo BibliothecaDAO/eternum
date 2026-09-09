@@ -53,15 +53,19 @@ export class SceneFlight {
   /** The captured frame stays until the incoming scene is presentable, then fades on its next rendered frame. */
   reveal(incoming: HexagonScene): void {
     if (this.destroyed) return;
-    void incoming.whenPresentable().then(() => {
-      if (this.destroyed) return;
-      const target = incoming.getCameraTargetPosition();
-      const settled = incoming.getCamera().position.clone();
-      const factor = this.destination === SceneName.Hexception ? 1.15 : 0.85;
-      incoming.getCamera().position.copy(target).add(settled.clone().sub(target).multiplyScalar(factor));
-      incoming.cameraAnimate(settled, target, 0.3);
-      this.revealPending = true;
-    });
+    // A failed grid build must not trap the player behind the held frame: reveal whatever the scene has.
+    void incoming
+      .whenPresentable()
+      .catch(() => undefined)
+      .then(() => {
+        if (this.destroyed) return;
+        const target = incoming.getCameraTargetPosition();
+        const settled = incoming.getCamera().position.clone();
+        const factor = this.destination === SceneName.Hexception ? 1.15 : 0.85;
+        incoming.getCamera().position.copy(target).add(settled.clone().sub(target).multiplyScalar(factor));
+        incoming.cameraAnimate(settled, target, 0.3);
+        this.revealPending = true;
+      });
   }
 
   /** Called synchronously after rendering, while the non-preserved drawing buffer is still valid. */

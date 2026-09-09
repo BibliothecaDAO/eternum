@@ -8,6 +8,8 @@ import { env } from "../../../env";
 
 interface RendererDebugControlProps {
   className?: string;
+  /** Boot and error screens show the fallback reason and adapter; Settings shows only the switch. */
+  diagnostics?: boolean;
 }
 
 const rendererModes: ReadonlyArray<{ label: string; mode: RendererBuildMode }> = [
@@ -21,7 +23,10 @@ const formatActiveMode = (activeMode: ReturnType<typeof snapshotRendererDiagnost
   return "Pending";
 };
 
-export const RendererDebugControl = ({ className = "" }: RendererDebugControlProps) => {
+export const RendererDebugControl = ({
+  className = "",
+  diagnostics: showDiagnostics = true,
+}: RendererDebugControlProps) => {
   // Each host mounts after renderer init or already rerenders while booting, so this snapshot needs no subscription.
   const diagnostics = snapshotRendererDiagnostics();
   const currentHref = window.location.href;
@@ -68,17 +73,17 @@ export const RendererDebugControl = ({ className = "" }: RendererDebugControlPro
         })}
       </div>
 
-      {diagnostics.fallbackReason ? (
+      {showDiagnostics && diagnostics.fallbackReason ? (
         <div className="mt-1 truncate text-amber-300/80" title={diagnostics.fallbackReason}>
           {diagnostics.fallbackReason}
         </div>
       ) : null}
-      {adapter ? (
+      {showDiagnostics && adapter ? (
         <div className="mt-1 truncate text-gold/45" title={adapter}>
           {adapter}
         </div>
       ) : null}
-      <div className="mt-1 text-gold/35">Reloads with console diagnostics for that page load.</div>
+      {showDiagnostics && <div className="mt-1 text-gold/35">Reloads with console diagnostics for that page load.</div>}
     </div>
   );
 };
