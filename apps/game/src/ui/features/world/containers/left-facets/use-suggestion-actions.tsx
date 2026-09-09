@@ -1,3 +1,4 @@
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -14,12 +15,7 @@ import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 import { gameEntityKey } from "@/sync/game-scope";
 
-/**
- * Resolves a suggestion click into the right side-effect: focus the target
- * realm (camera + active-structure state) and either fire a multicall directly
- * or open the relevant modal. Extracted so the in-rail panel (removed) and the
- * top-header SuggestionsPill can share one path.
- */
+/** Explicit suggestion actions focus their realm and use the existing order flows. */
 export const useSuggestionActions = () => {
   const { account, setup } = useDojo();
   const { isMapView } = useQuery();
@@ -96,7 +92,9 @@ export const useSuggestionActions = () => {
 
   const runSuggestionClick = useCallback(
     async (suggestion: EmpireSuggestion) => {
+      if (!canIssueOrders()) return;
       await focusRealm(suggestion.realmId, suggestion.action === "deploy-explorer");
+      if (!canIssueOrders()) return;
 
       switch (suggestion.action) {
         case "upgrade-and-provision":

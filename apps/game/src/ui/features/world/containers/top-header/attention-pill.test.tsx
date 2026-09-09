@@ -2,7 +2,10 @@ vi.mock("@/three/constants", () => ({ HEX_SIZE: 1 }));
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ allowed: true, go: vi.fn(), state: {} as any }));
+const mocks = vi.hoisted(() => ({ allowed: true, go: vi.fn(), open: vi.fn(), close: vi.fn(), state: {} as any }));
+vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({openSurface: mocks.open, close: mocks.close}) } }));
+vi.mock("../left-facets/use-empire-suggestions", () => ({useEmpireSuggestions: () => [{id: "build", realmId: 1}]}));
+vi.mock("../left-facets/suggestions-panel", () => ({ SuggestionsPanel: () => null }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select(mocks.state) }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => 100000 }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useGoToStructure: () => mocks.go }));
@@ -40,11 +43,17 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
 });
-it("sums attack and arrival counts and goes to the next location with one click", async () => {
+it("counts distinct attention targets and suggestions, then cycles without submitting orders", async () => {
   await act(async () => root.render(<AttentionPill />));
   expect(container.textContent).toBe("Attention 3");
   await act(async () => container.querySelector("button")!.click());
-  expect(mocks.go).toHaveBeenCalledWith(3, expect.objectContaining({ coords: { x: 20, y: 21 } }), true);
+  expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({ coords: { x: 10, y: 11 } }), true);
+  await act(async () => container.querySelector("button")!.click());
+  expect(mocks.go).toHaveBeenLastCalledWith(3, expect.objectContaining({ coords: { x: 20, y: 21 } }), true);
+  expect(mocks.open).not.toHaveBeenCalled();
+  await act(async () => container.querySelector("button")!.click());
+  expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({coords:{x:10,y:11}}), true);
+  expect(mocks.open).toHaveBeenCalledWith(expect.objectContaining({id: "suggestions", mapClick: "dismiss"}));
 });
 it("hides personal attention for a spectator", async () => {
   mocks.allowed = false;

@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "One Attention List",
+    description: "Cycle through locations needing attention, then suggested actions, from one header pill. Suggestions open beside familiar panel styling and remain yours to confirm.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Action Previews Beside Their Targets",
     description: "Attack, help, chest and spire previews open beside the target hex. Right-click another legal target to move the preview, or click elsewhere to close it.",
     type: "improvement",

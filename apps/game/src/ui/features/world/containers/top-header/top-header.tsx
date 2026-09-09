@@ -11,7 +11,6 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
-import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
@@ -122,10 +121,6 @@ export const TopHeader = memo(() => {
       <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
         {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
         <IdentityChip />
-
-        {/* 2. Empire-wide suggested actions — sits right after the rank pill and
-            is hidden while spectating (a spectator has no empire to act on). */}
-        {!isSpectating && <SuggestionsPill />}
 
         {/* 3. Local / World toggle (+ conditional Ethereal layer chip) */}
         <div className={cn(TOP_PILL, "whitespace-nowrap")}>

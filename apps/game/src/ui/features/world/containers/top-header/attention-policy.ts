@@ -19,8 +19,8 @@ export function resolveStructureAttention(structures: Structure[], arrivedStruct
   return { attackedCount: attacked.length, targets };
 }
 
-export function nextAttentionTarget<T extends { entityId: ID }>(targets: T[], currentEntityId: ID): T | undefined {
-  if (targets.length === 0) return undefined;
-  const currentIndex = targets.findIndex((target) => target.entityId === currentEntityId);
-  return targets[(currentIndex + 1) % targets.length];
+export function nextAttentionItem<T extends { key: string }>(items: T[], currentKey: string | null): T | undefined {
+  if (items.length === 0) return undefined;
+  const currentIndex = items.findIndex(item => item.key === currentKey);
+  return items[(currentIndex + 1) % items.length];
 }

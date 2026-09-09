@@ -1,3 +1,4 @@
+import { OVERLAY_SURFACE_BASE, OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_HOVER } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
@@ -35,9 +36,9 @@ export const SuggestionChip = memo(({ suggestion, onClick, isPending }: Suggesti
       title={`${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? ` — ${suggestion.reason}` : ""}`}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition",
-        isPrimary
-          ? "border-gold/60 bg-gold/10 hover:border-gold hover:bg-gold/20 shadow-[0_0_10px_rgba(223,170,84,0.18)]"
-          : "border-gold/20 bg-black/30 hover:border-gold/40 hover:bg-black/40",
+        OVERLAY_SURFACE_BASE,
+        OVERLAY_SURFACE_HOVER,
+        isPrimary && OVERLAY_SURFACE_ACTIVE,
         isPending && "cursor-not-allowed opacity-60 hover:bg-transparent",
       )}
     >

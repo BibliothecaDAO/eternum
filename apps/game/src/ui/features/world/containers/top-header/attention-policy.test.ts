@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
 import type { Structure } from "@bibliothecadao/types";
-import { resolveStructureAttention, nextAttentionTarget } from "./attention-policy";
+import { resolveStructureAttention, nextAttentionItem } from "./attention-policy";
 const structure = (entityId: number, ends: number[] = []) =>
   ({
     entityId,
@@ -25,10 +25,12 @@ it("counts attacked structures once and deduplicates navigation with arrival tar
 it("expires attacks at the same boundary as battle badges", () => {
   expect(resolveStructureAttention([structure(1, [100])], [], 100).attackedCount).toBe(0);
 });
-it("cycles through current targets and recovers when the previous target disappears", () => {
-  const targets = [{ entityId: 1 }, { entityId: 3 }];
-  expect(nextAttentionTarget(targets, 1)?.entityId).toBe(3);
-  expect(nextAttentionTarget(targets, 3)?.entityId).toBe(1);
-  expect(nextAttentionTarget(targets, 9)?.entityId).toBe(1);
-  expect(nextAttentionTarget([], 1)).toBeUndefined();
+it("cycles attention before suggestions and recovers when an item disappears", () => {
+  const items = [{key: "attention:1"}, {key: "attention:3"}, {key: "suggestion:1"}];
+  expect(nextAttentionItem(items, null)?.key).toBe("attention:1");
+  expect(nextAttentionItem(items, "attention:1")?.key).toBe("attention:3");
+  expect(nextAttentionItem(items, "attention:3")?.key).toBe("suggestion:1");
+  expect(nextAttentionItem(items, "suggestion:1")?.key).toBe("attention:1");
+  expect(nextAttentionItem(items, "removed")?.key).toBe("attention:1");
+  expect(nextAttentionItem([], null)).toBeUndefined();
 });
