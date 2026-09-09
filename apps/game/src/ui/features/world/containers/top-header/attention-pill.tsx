@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useMemo, useRef } from "react";
 import Bell from "lucide-react/dist/esm/icons/bell";
 import { useDojo } from "@bibliothecadao/react";
@@ -9,7 +10,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { SuggestionsPanel } from "../left-facets/suggestions-panel";
 import { useEmpireSuggestions } from "../left-facets/use-empire-suggestions";
-import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { TOP_PILL } from "./top-pill";
 import { nextAttentionItem, resolveStructureAttention } from "./attention-policy";
 
 export const AttentionPill = memo(() => {
@@ -72,7 +73,7 @@ function AttentionCycle() {
       title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
     >
       <Bell className="h-3.5 w-3.5" />
-      <span className={TOP_PILL_TEXT}>Attention {items.length}</span>
+      <span className={HUD_LABEL_BRIGHT}>Attention {items.length}</span>
     </button>
   );
 }

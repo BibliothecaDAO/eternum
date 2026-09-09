@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -13,7 +14,7 @@ import { GameClock } from "./game-clock";
 import { TickProgress } from "./tick-progress";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
-import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { TOP_PILL } from "./top-pill";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -138,7 +139,7 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer", TOP_PILL_TEXT, !isLocalView && "text-gold/55")}
+            className={cn("cursor-pointer", HUD_LABEL_BRIGHT, !isLocalView && "text-gold/55")}
           >
             Local
           </button>
@@ -172,7 +173,7 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer", TOP_PILL_TEXT, !isWorldView && "text-gold/55")}
+            className={cn("cursor-pointer", HUD_LABEL_BRIGHT, !isWorldView && "text-gold/55")}
           >
             World
           </button>

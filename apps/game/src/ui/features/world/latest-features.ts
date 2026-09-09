@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Consistent Header Labels",
+    description: "Player names and spectator labels share the same small caps style across the header.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Simpler Game Settings",
     description:
       "Settings groups quality, shadows, motion and audio controls beneath your identity, with one Leave game action.",

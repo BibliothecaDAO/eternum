@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -133,9 +134,7 @@ export const TickProgress = memo(() => {
           <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
         </div>
       </div>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold tabular-nums">
-        {phaseData.phaseProgress.toFixed(0)}%
-      </span>
+      <span className={HUD_LABEL_BRIGHT}>{phaseData.phaseProgress.toFixed(0)}%</span>
     </div>
   );
 });

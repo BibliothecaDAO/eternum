@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { resetBootstrap } from "@/init/bootstrap";
 import Button from "@/ui/design-system/atoms/button";
@@ -7,7 +8,7 @@ import { Popover } from "@/ui/design-system/molecules/popover";
 import TrophyIcon from "lucide-react/dist/esm/icons/trophy";
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { TOP_PILL } from "./top-pill";
 
 const GAME_FINISHED_POPOVER_ID = "game-finished";
 
@@ -35,7 +36,7 @@ export const GameFinishedPill = () => {
           onClick={() => togglePopover(GAME_FINISHED_POPOVER_ID)}
           className={cn(
             TOP_PILL,
-            TOP_PILL_TEXT,
+            HUD_LABEL_BRIGHT,
             "game-finished-pill whitespace-nowrap transition hover:bg-gold/15",
             isOpen && "border-gold/60 bg-gold/15",
           )}

@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -27,7 +28,7 @@ import {
 } from "./identity-chip-state";
 import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
-import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { TOP_PILL } from "./top-pill";
 
 const formatPoints = (points: number): string => Math.round(points).toLocaleString();
 
@@ -89,7 +90,7 @@ const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOp
       }}
       className={cn(
         TOP_PILL,
-        TOP_PILL_TEXT,
+        HUD_LABEL_BRIGHT,
         "identity-chip whitespace-nowrap transition hover:bg-gold/15",
         isOpen && "border-gold/60 bg-gold/15",
       )}
@@ -107,7 +108,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
           <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
           <span>Spectating</span>
           {state.name && <Separator />}
-          {state.name && <span className="max-w-[140px] truncate normal-case tracking-normal">as {state.name}</span>}
+          {state.name && <span className="max-w-[140px] truncate">as {state.name}</span>}
         </>
       );
     case "signed-out":
@@ -125,7 +126,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
           <LoaderIcon className="h-3.5 w-3.5 animate-spin text-gold" aria-hidden="true" />
           <span>Connecting</span>
           {state.name && <Separator />}
-          {state.name && <span className="max-w-[140px] truncate normal-case tracking-normal">{state.name}</span>}
+          {state.name && <span className="max-w-[140px] truncate">{state.name}</span>}
         </>
       );
     case "player":

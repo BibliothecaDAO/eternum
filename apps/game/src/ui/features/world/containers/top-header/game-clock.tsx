@@ -1,3 +1,4 @@
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
 import Clock from "lucide-react/dist/esm/icons/clock";
 import { configManager } from "@bibliothecadao/eternum";
@@ -5,7 +6,7 @@ import { TickIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { TOP_PILL } from "./top-pill";
 import { GameFinishedPill } from "./game-finished-pill";
 import { resolveGameClock } from "./game-clock-policy";
 
@@ -26,7 +27,7 @@ export const GameClock = memo(() => {
   return (
     <div className={cn(TOP_PILL, "relative overflow-hidden")} aria-label="Game clock">
       <Clock className="h-3.5 w-3.5" />
-      <span className={cn(TOP_PILL_TEXT, "whitespace-nowrap")}>{clock.label}</span>
+      <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap")}>{clock.label}</span>
       {clock.remainingRatio !== null && (
         <div
           role="progressbar"
