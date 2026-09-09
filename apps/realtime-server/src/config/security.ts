@@ -31,3 +31,7 @@ export const readSecurityConfig = (environment = process.env): SecurityConfig =>
 
 export const isAllowedOrigin = (origin: string | undefined, allowedOrigins: ReadonlySet<string>): boolean =>
   Boolean(origin && (allowedOrigins.has(origin) || isLoopbackOrigin(origin)));
+
+/** The one origin rule for HTTP CORS and the socket upgrade: echo an allowed origin, refuse everything else. */
+export const resolveAllowedOrigin = (origin: string | undefined, allowedOrigins: ReadonlySet<string>): string | null =>
+  origin !== undefined && isAllowedOrigin(origin, allowedOrigins) ? origin : null;

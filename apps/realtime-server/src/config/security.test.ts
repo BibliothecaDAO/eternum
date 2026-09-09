@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isAllowedOrigin, readSecurityConfig } from "./security";
+import { isAllowedOrigin, readSecurityConfig, resolveAllowedOrigin } from "./security";
 
 describe("browser origin policy", () => {
   it("is closed by default and exact-match allowlisted", () => {
@@ -23,3 +23,11 @@ it.each([undefined, "null", "https://localhost.attacker.invalid", "ftp://localho
     expect(isAllowedOrigin(origin, readSecurityConfig({}).allowedOrigins)).toBe(false);
   },
 );
+
+it("echoes allowed and loopback origins for CORS and refuses the rest", () => {
+  const allowed = readSecurityConfig({ CORS_ORIGIN: "https://play.realms.test" }).allowedOrigins;
+  expect(resolveAllowedOrigin("https://play.realms.test", allowed)).toBe("https://play.realms.test");
+  expect(resolveAllowedOrigin("https://localhost:4183", allowed)).toBe("https://localhost:4183");
+  expect(resolveAllowedOrigin("https://evil.realms.test", allowed)).toBeNull();
+  expect(resolveAllowedOrigin(undefined, allowed)).toBeNull();
+});

@@ -25,7 +25,7 @@ import type { DirectMessageRecord, DirectMessageThreadRecord } from "./db/schema
 import { worldChatMessages, type WorldChatMessageRecord } from "./db/schema/world-chat";
 import { parseGameChannel } from "./channels/channel";
 import type { MembershipResolver } from "./channels/membership";
-import { isAllowedOrigin, readSecurityConfig, type SecurityConfig } from "./config/security";
+import { isAllowedOrigin, readSecurityConfig, resolveAllowedOrigin, type SecurityConfig } from "./config/security";
 import {
   createAttachPlayerSession,
   requirePlayerSession,
@@ -261,7 +261,7 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
   app.use(
     "/api/*",
     cors({
-      origin: Array.from(security.allowedOrigins),
+      origin: (origin) => resolveAllowedOrigin(origin, security.allowedOrigins),
       allowHeaders: ["Content-Type"],
       allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       credentials: true,
