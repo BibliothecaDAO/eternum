@@ -7,7 +7,7 @@ import { HudChatWindow } from "./hud-chat-window";
 export const RightHudColumn = ({ children }: { children?: ReactNode }) => (
   <aside
     aria-label="Right column"
-    className={cn("pointer-events-none fixed bottom-4 right-3 top-16 z-30 flex flex-col gap-2", HUD_COLUMN_WIDTH)}
+    className={cn("pointer-events-none fixed bottom-4 right-3 top-2 z-30 flex flex-col gap-2", HUD_COLUMN_WIDTH)}
   >
     <div className="shrink-0" style={{ height: HUD_SECTION_HEIGHT }}>
       <ImportantEventFeed />

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    type: "fix",
+    title: "Panels Align With the Header",
+    description:
+      "Structures and Events start beside the top header, leaving more room for realm controls and tile details below.",
+  },
+  {
+    date: "2026-09-09",
     type: "improvement",
     title: "Points Ready When You Open",
     description:

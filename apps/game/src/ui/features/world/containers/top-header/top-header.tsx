@@ -119,7 +119,7 @@ export const TopHeader = memo(() => {
           center cluster carries the six headline pieces in canonical order
           (rank · view · clock · attention · army toggle · settings); the right
           cluster carries ancillary status icons (network / tx / features). */}
-      <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
+      <div className="fixed top-0 left-[344px] right-[344px] min-[1800px]:left-[384px] min-[1800px]:right-[384px] z-20 flex flex-wrap items-center justify-center gap-2 px-3 py-2 pointer-events-none">
         {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
         <IdentityChip />
 

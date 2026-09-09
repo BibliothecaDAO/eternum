@@ -72,7 +72,7 @@ export const LeftCommandSidebar = memo(() => {
       {ConnectedAccount && !isSpectating && (
         <div
           className={cn(
-            "fixed left-3 top-16 z-20 pointer-events-auto flex max-h-[calc(100vh-396px)] flex-col gap-2 overflow-y-auto scrollbar-thin",
+            "fixed left-3 top-2 z-20 pointer-events-auto flex max-h-[calc(100vh-340px)] flex-col gap-2 overflow-y-auto scrollbar-thin",
             HUD_COLUMN_WIDTH,
           )}
         >
