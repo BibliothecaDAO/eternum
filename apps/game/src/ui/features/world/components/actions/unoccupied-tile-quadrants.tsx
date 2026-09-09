@@ -138,7 +138,7 @@ export const BiomeSummaryCard = ({
     ) : undefined;
 
   return (
-    <InfoBubble title="Biome" icon={Trees} cue={battleAction} className="w-full flex-1 min-w-0">
+    <InfoBubble title="Biome" icon={Trees} cue={battleAction} className="w-full shrink-0 min-w-0">
       <div className="flex flex-col gap-2">
         <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
           {biomeLabel}
@@ -191,8 +191,8 @@ export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   }, [biome, openSurface]);
 
   return (
-    <div className="h-full min-h-0 w-full">
-      <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
+    <div className="w-full shrink-0">
+      <EntityDetailSection compact className="flex flex-col" tone="highlight">
         <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
       </EntityDetailSection>
     </div>

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    type: "improvement",
+    title: "Structure Details Together",
+    description:
+      "See a structure’s owner, guards and resources in one panel. Biome uses only the space its bonuses need.",
+  },
+  {
+    date: "2026-09-09",
     type: "fix",
     title: "Panels Align With the Header",
     description:

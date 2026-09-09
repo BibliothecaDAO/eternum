@@ -37,7 +37,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 // bottom-right-panel) already provides positioning + scroll, so this layout
 // just stacks each section with a small gap and lets each child render its
 // own rounded bubble.
-const occupiedEntityLayoutClass = "flex h-full min-h-0 min-w-0 flex-col gap-2 pointer-events-auto";
+const occupiedEntityLayoutClass = "flex min-w-0 shrink-0 flex-col gap-2 pointer-events-auto";
 const entityInfoScrollPaneClass = "min-w-0";
 const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
 const scrollableEntitySectionClass = "flex min-w-0";
@@ -123,7 +123,7 @@ const SelectedWorldmapEntityContent = ({
 
   if (!hasOccupier) {
     return (
-      <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 flex-col">
         {coordChip}
         <UnoccupiedTileQuadrants biome={biome} />
       </div>
@@ -140,7 +140,7 @@ const SelectedWorldmapEntityContent = ({
 
   return (
     <div
-      className="grid h-full min-h-0 grid-cols-1 gap-2"
+      className="grid shrink-0 content-start grid-cols-1 gap-2"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
       {isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier) ? null : coordChip}

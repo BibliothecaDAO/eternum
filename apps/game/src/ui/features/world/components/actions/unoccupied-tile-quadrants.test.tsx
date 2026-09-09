@@ -94,7 +94,8 @@ describe("BiomeSummaryCard", () => {
     const summaryCard = container.firstElementChild;
 
     expect(summaryCard?.className).toContain("w-full");
-    expect(summaryCard?.className).toContain("flex-1");
+    expect(summaryCard?.className).not.toContain("flex-1");
+    expect(summaryCard?.className).toContain("shrink-0");
     expect(summaryCard?.className).toContain("min-w-0");
     expect(bonusGrid?.className).toContain("w-full");
     expect(bonusGrid?.className).toContain("flex");

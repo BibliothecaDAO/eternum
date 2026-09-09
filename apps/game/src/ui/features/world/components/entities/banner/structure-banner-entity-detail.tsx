@@ -9,6 +9,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -172,12 +173,13 @@ const StructureBannerEntityDetailContent = memo(
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
-      <div className={cn("flex min-w-0 flex-col gap-2", className)}>
+      <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE, className)}>
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}
         {!hideOwner && (
           <InfoBubble
+            variant="section"
             title={coordsLabel ?? ownerDisplayName ?? "Owner"}
             cue={coordsLabel ? headerAction : structureName}
             bodyClassName="pt-0"
@@ -228,13 +230,13 @@ const StructureBannerEntityDetailContent = memo(
         )}
 
         {relicEffects.length > 0 && (
-          <InfoBubble title="Active Relics" icon={Sparkles}>
+          <InfoBubble variant="section" title="Active Relics" icon={Sparkles}>
             <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
           </InfoBubble>
         )}
 
         {shouldRenderVillageTimers && (
-          <InfoBubble title="Village Intel">
+          <InfoBubble variant="section" title="Village Intel">
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
               <VillageTimerChip
@@ -252,7 +254,7 @@ const StructureBannerEntityDetailContent = memo(
         )}
 
         {/* Guards — always shown for structures that can hold defenders. */}
-        <InfoBubble title="Guards" icon={Shield} cue={guardCue}>
+        <InfoBubble variant="section" title="Guards" icon={Shield} cue={guardCue}>
           {guards.length > 0 ? (
             <CompactDefenseDisplay
               troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
@@ -272,6 +274,7 @@ const StructureBannerEntityDetailContent = memo(
             Owners get a Transfer button (this realm as recipient) and the build
             "+" on each token. */}
         <InfoBubble
+          variant="section"
           title="Resources"
           icon={Factory}
           cue={
@@ -303,7 +306,7 @@ const StructureBannerEntityDetailContent = memo(
         </InfoBubble>
 
         {showFaithTab && (
-          <InfoBubble title="Faith" icon={Sparkles}>
+          <InfoBubble variant="section" title="Faith" icon={Sparkles}>
             <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
           </InfoBubble>
         )}
