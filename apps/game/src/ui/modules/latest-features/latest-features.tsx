@@ -53,8 +53,6 @@ const formatGameSlug = (gameSlug: string): string =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-export const LATEST_FEATURES_POPOVER_ID = "latest-features";
-
 /** The what's-new feed; it renders inside its button's popover, and mounting it marks the feed seen. */
 export const LatestFeaturesPanel = () => {
   const { markAsSeen } = useLatestFeaturesSeen();

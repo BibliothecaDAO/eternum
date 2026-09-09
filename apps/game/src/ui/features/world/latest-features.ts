@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Your Place on the Leaderboard",
+    description:
+      "Click your name, rank and points to open the Players board at your highlighted row. Your gameplay address is there too, with the player profile one click away.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Fly Between Map Views",
     description:
       "Fly toward a realm when entering it and pull back when leaving, with a short scene crossfade. Reduced motion keeps the familiar fade, and Local/World controls support keyboard navigation.",

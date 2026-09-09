@@ -7,7 +7,7 @@ import { buildEntryHref } from "@/play/navigation/play-route";
 import { getActiveWorld } from "@/runtime/world";
 import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
@@ -24,8 +24,9 @@ import {
   type IdentityChipState,
   NO_OWNED_STRUCTURES,
   resolveIdentityChipState,
-  shortAddress,
 } from "./identity-chip-state";
+import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
+import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
 
 const formatPoints = (points: number): string => Math.round(points).toLocaleString();
@@ -52,22 +53,20 @@ const useIdentityChipState = (): IdentityChipState => {
   }, [gameplayAddress, identityName, players, provisioningError, standingsByAddress, status, structures]);
 };
 
-/**
- * The top-left identity chip: who you are in this game, in one pill, with the sign-in surface and the Play
- * affordance behind one popover. It replaces the spectating pill, the rank pill and the "not logged in" banner; the
- * leaderboard has its own top-bar button.
- */
+/** Player identity opens the leaderboard; other states keep their sign-in surface. */
 export const IdentityChip = () => {
   const state = useIdentityChipState();
-  const isOpen = usePopoverStore((popovers) => popovers.openId === IDENTITY_POPOVER_ID);
+  const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
+  const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
 
   return (
     <Popover
-      id={IDENTITY_POPOVER_ID}
-      ariaLabel="Identity"
+      id={popoverId}
+      ariaLabel={state.kind === "player" ? "Leaderboard" : "Identity"}
+      className={state.kind === "player" ? "w-auto" : undefined}
       trigger={<IdentityChipTrigger state={state} isOpen={isOpen} />}
     >
-      <IdentityChipPanelBody state={state} />
+      {state.kind === "player" ? <SocialBoard focusOwnPlayer /> : <IdentityChipPanelBody state={state} />}
     </Popover>
   );
 };
@@ -80,7 +79,14 @@ const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOp
       type="button"
       aria-expanded={isOpen}
       aria-label="Identity"
-      onClick={() => togglePopover(IDENTITY_POPOVER_ID)}
+      onClick={() => {
+        if (state.kind === "player") {
+          useSocialStore.setState({ selectedTab: 0, isExpanded: false });
+          togglePopover(LEADERBOARD_POPOVER_ID);
+        } else {
+          togglePopover(IDENTITY_POPOVER_ID);
+        }
+      }}
       className={cn(
         TOP_PILL,
         TOP_PILL_TEXT,
@@ -127,8 +133,6 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
         <>
           <img src={BuildingThumbs.guild} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
           <span className="max-w-[140px] truncate">{state.name}</span>
-          <Separator />
-          <span>{formatRealmCount(state.realmCount)}</span>
           {state.standing && <Separator />}
           {state.standing && <span>#{state.standing.rank}</span>}
           {state.standing && <Separator />}
@@ -140,9 +144,7 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
 
 const Separator = () => <span className="text-gold/50">·</span>;
 
-const formatRealmCount = (count: number): string => `${count} ${count === 1 ? "realm" : "realms"}`;
-
-const IdentityChipPanelBody = ({ state }: { state: IdentityChipState }) => {
+const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" }> }) => {
   switch (state.kind) {
     case "signed-out":
       return (
@@ -160,8 +162,6 @@ const IdentityChipPanelBody = ({ state }: { state: IdentityChipState }) => {
       );
     case "spectating":
       return <SpectatingPanel state={state} />;
-    case "player":
-      return <PlayerPanel state={state} />;
   }
 };
 
@@ -188,23 +188,6 @@ const SpectatingPanel = ({ state }: { state: Extract<IdentityChipState, { kind: 
         </Button>
       ) : (
         <span className={HUD_BODY_MUTED}>Your account owns no realm in this game.</span>
-      )}
-    </div>
-  );
-};
-
-const PlayerPanel = ({ state }: { state: Extract<IdentityChipState, { kind: "player" }> }) => {
-  const gameplayAddress = useAccountStore((account) => account.account?.address ?? null);
-
-  return (
-    <div className="flex flex-col gap-1">
-      <span className={HUD_HEADLINE}>{state.name}</span>
-      {gameplayAddress && <span className="font-mono text-[11px] text-gold/60">{shortAddress(gameplayAddress)}</span>}
-      <span className={HUD_LABEL}>{formatRealmCount(state.realmCount)}</span>
-      {state.standing && (
-        <span className={HUD_BODY}>
-          Rank #{state.standing.rank} · {formatPoints(state.standing.points)} VP
-        </span>
       )}
     </div>
   );

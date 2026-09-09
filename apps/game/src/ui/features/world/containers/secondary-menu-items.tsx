@@ -1,14 +1,11 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
-import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { EventFeedPanel, FEED_POPOVER_ID } from "@/ui/features/event-feed/event-feed-panel";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
-import { LATEST_FEATURES_POPOVER_ID, LatestFeaturesPanel } from "@/ui/modules/latest-features/latest-features";
 import { SETTINGS_POPOVER_ID, SettingsPanel } from "@/ui/modules/settings/settings";
 import { useMemo } from "react";
 
@@ -41,72 +38,14 @@ const useTransactionSignal = () => {
   }, [txTransactions, txStuckThresholdMs]);
 };
 
-/** The top bar's utility cluster: leaderboard, what's new, network, transactions and settings, each a popover off its button. */
+/** The top bar's utility cluster: network, activity and settings, each a popover off its button. */
 export const SecondaryMenuItems = () => {
   const openPopoverId = usePopoverStore((state) => state.openId);
   const togglePopover = usePopoverStore((state) => state.toggle);
-  const { unseenCount: unseenFeaturesCount } = useLatestFeaturesSeen();
   const txStatus = useTransactionSignal();
-  const isLatestFeaturesOpen = openPopoverId === LATEST_FEATURES_POPOVER_ID;
 
   return (
     <div className="pointer-events-auto flex items-center gap-2">
-      {/* Leaderboard keeps its own button; the social board hangs off it. */}
-      <Popover
-        id={LEADERBOARD_POPOVER_ID}
-        ariaLabel="Leaderboard"
-        align="end"
-        className="w-auto"
-        trigger={
-          <CircleButton
-            variant="hud"
-            className="social-selector"
-            tooltipLocation="bottom"
-            active={openPopoverId === LEADERBOARD_POPOVER_ID}
-            image={BuildingThumbs.guild}
-            label={"Leaderboard"}
-            size="topbar"
-            onClick={() => togglePopover(LEADERBOARD_POPOVER_ID)}
-          />
-        }
-      >
-        <SocialBoard />
-      </Popover>
-
-      {/* What's new — the button shows while there are unseen features, and stays while its feed is open
-          (opening the feed marks it seen). */}
-      {(unseenFeaturesCount > 0 || isLatestFeaturesOpen) && (
-        <Popover
-          id={LATEST_FEATURES_POPOVER_ID}
-          ariaLabel="What's new"
-          align="end"
-          className="w-[420px] overflow-y-auto p-0"
-          trigger={
-            <CircleButton
-              variant="hud"
-              className="latest-features-selector"
-              tooltipLocation="bottom"
-              active={isLatestFeaturesOpen}
-              image={BuildingThumbs.latestUpdates}
-              label={"Latest Features"}
-              size="topbar"
-              onClick={() => togglePopover(LATEST_FEATURES_POPOVER_ID)}
-              primaryNotification={
-                unseenFeaturesCount > 0
-                  ? {
-                      value: unseenFeaturesCount,
-                      color: "gold",
-                      location: "topright",
-                    }
-                  : undefined
-              }
-            />
-          }
-        >
-          <LatestFeaturesPanel />
-        </Popover>
-      )}
-
       {/* Connection health indicator - only visible when unhealthy. The
           component returns null when the network is healthy; render it
           directly without a wrapper so it doesn't claim a gap-2 slot when

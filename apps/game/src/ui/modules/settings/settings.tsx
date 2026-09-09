@@ -21,11 +21,13 @@ import { ShortcutsPanel } from "@/ui/modules/shortcuts/shortcuts";
 import { addressToNumber } from "@/ui/utils/utils";
 import { useDojo, useScreenOrientation } from "@bibliothecadao/react";
 import { useState } from "react";
+import { LatestFeaturesPanel } from "@/ui/modules/latest-features/latest-features";
+import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { toast } from "@/ui/features/event-feed/notify";
 
 export const SETTINGS_POPOVER_ID = "settings";
 
-type SettingsView = "settings" | "shortcuts";
+type SettingsView = "settings" | "shortcuts" | "features";
 
 /**
  * The settings panel: the settings sections, or the keyboard shortcut list behind its View link. It renders inside
@@ -36,10 +38,26 @@ export const SettingsPanel = () => {
   const [view, setView] = useState<SettingsView>("settings");
 
   if (view === "shortcuts") return <ShortcutsPanel onBack={() => setView("settings")} />;
-  return <SettingsSections onViewShortcuts={() => setView("shortcuts")} />;
+  if (view === "features")
+    return (
+      <div>
+        <Button size="xs" onClick={() => setView("settings")}>
+          Back to settings
+        </Button>
+        <LatestFeaturesPanel />
+      </div>
+    );
+  return <SettingsSections onViewShortcuts={() => setView("shortcuts")} onViewFeatures={() => setView("features")} />;
 };
 
-const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) => {
+const SettingsSections = ({
+  onViewShortcuts,
+  onViewFeatures,
+}: {
+  onViewShortcuts: () => void;
+  onViewFeatures: () => void;
+}) => {
+  const { unseenCount } = useLatestFeaturesSeen();
   const {
     account: { account },
   } = useDojo();
@@ -132,6 +150,12 @@ const SettingsSections = ({ onViewShortcuts }: { onViewShortcuts: () => void }) 
               }}
             >
               Home
+            </Button>
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-gold">
+            <div>What’s new{unseenCount > 0 ? ` (${unseenCount})` : ""}</div>
+            <Button size="xs" onClick={onViewFeatures}>
+              View
             </Button>
           </div>
           <div className="flex items-center justify-between text-xs text-gray-gold">

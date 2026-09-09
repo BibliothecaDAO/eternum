@@ -1,3 +1,4 @@
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
   fetchLeaderboardActivityBreakdowns,
@@ -31,8 +32,10 @@ const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[])
 export const PlayersPanel = ({
   players,
   viewPlayerInfo,
+  focusOwnPlayer = false,
 }: {
   players: PlayerInfo[];
+  focusOwnPlayer?: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
 }) => {
   const {
@@ -175,6 +178,7 @@ export const PlayersPanel = ({
   }, [playersWithStructures, searchTerm]);
 
   const whitelistPlayer = (address: ContractAddress) => {
+    if (!canIssueOrders()) return;
     setIsLoading(true);
     update_whitelist({
       address,
@@ -282,6 +286,7 @@ export const PlayersPanel = ({
       <div className="flex-1 min-h-0">
         <PlayerList
           players={filteredPlayers}
+          focusOwnPlayer={focusOwnPlayer}
           viewPlayerInfo={viewPlayerInfo}
           whitelistPlayer={whitelistPlayer}
           isLoading={isLoading}
