@@ -123,12 +123,20 @@ describe("BiomeSummaryCard", () => {
         />,
       ),
     );
-    const header = container.querySelector("[aria-expanded]")!;
+    const header = container.querySelector(".rounded-xl")!.firstElementChild!;
     expect(header.textContent).toContain("Biome · (5, 3)");
     expect(header.textContent).toContain("Re-sync");
-    expect(container.querySelectorAll("[aria-expanded]")).toHaveLength(1);
+    expect(container.querySelectorAll(".rounded-xl")).toHaveLength(1);
+    expect(header.hasAttribute("aria-expanded")).toBe(false);
     await act(async () => (header.querySelector("button") as HTMLButtonElement).click());
     expect(resync).toHaveBeenCalledOnce();
     expect(container.querySelectorAll("[data-bonus-card]")).toHaveLength(3);
+  });
+  it("keeps troop bonuses visible when the biome header is clicked", async () => {
+    await act(async () => root.render(<BiomeSummaryCard biome={"Tundra" as never} />));
+    const header = container.firstElementChild!.firstElementChild as HTMLElement;
+    await act(async () => header.click());
+    expect(container.querySelectorAll("[data-bonus-card]")).toHaveLength(3);
+    expect(header.getAttribute("role")).not.toBe("button");
   });
 });

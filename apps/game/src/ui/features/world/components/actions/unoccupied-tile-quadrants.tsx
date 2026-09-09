@@ -143,6 +143,7 @@ export const BiomeSummaryCard = ({
 
   return (
     <InfoBubble
+      collapsible={false}
       title={coordsLabel ?? "Biome"}
       icon={Trees}
       cue={

@@ -36,6 +36,13 @@ const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
     type: "fix",
+    title: "Biome Bonuses Stay Visible",
+    description:
+      "Biome keeps its troop bonuses expanded and uses only their content height. Keyboard actions inside panel headers no longer collapse their panels.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
     title: "Consistent Tile Coordinates",
     description:
       "Structure, army and plain-tile headers all show the same map coordinates, whether you select them from the map or a panel.",
