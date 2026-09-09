@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Open Suggestions Without Interruptions",
+    description: "Cycle through attention targets and open suggested actions without interrupting your game.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     title: "Resume After Signing In Elsewhere",
     description:
       "If another tab’s sign-in replaces your gameplay key, this tab takes control once and retries your action once. The event feed tells you what happened.",

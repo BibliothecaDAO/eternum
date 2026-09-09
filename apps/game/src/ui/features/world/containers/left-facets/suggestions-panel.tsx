@@ -11,7 +11,9 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
   const { handleSuggestionClick, pendingRealmId, pendingSuggestionIds } = useSuggestionActions();
   const selected = useRef<HTMLDivElement>(null);
   const ordersAllowed = useUIStore(canIssueOrders);
-  useEffect(() => selected.current?.scrollIntoView({ block: "nearest" }), [selectedId]);
+  useEffect(() => {
+    selected.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedId]);
   useEffect(() => {
     if (!ordersAllowed) usePopoverStore.getState().close("suggestions");
   }, [ordersAllowed]);
