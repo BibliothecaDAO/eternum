@@ -80,15 +80,15 @@ export const TroopCountSelector = ({
         </div>
         <label>
           <span className="sr-only">Troop count</span>
-        <NumberInput
+          <NumberInput
             arrows={!compact}
-          max={maxAffordable}
-          min={0}
-          step={100}
-          value={troopCount}
-          onChange={onChange}
-          className="h-9 text-sm"
-        />
+            max={maxAffordable}
+            min={0}
+            step={100}
+            value={troopCount}
+            onChange={onChange}
+            className="h-9 text-sm"
+          />
         </label>
 
         {!embedded && (

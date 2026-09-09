@@ -3,8 +3,10 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ allowed: true, go: vi.fn(), open: vi.fn(), close: vi.fn(), state: {} as any }));
-vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({openSurface: mocks.open, close: mocks.close}) } }));
-vi.mock("../left-facets/use-empire-suggestions", () => ({useEmpireSuggestions: () => [{id: "build", realmId: 1}]}));
+vi.mock("@/hooks/store/use-popover-store", () => ({
+  usePopoverStore: { getState: () => ({ openSurface: mocks.open, close: mocks.close }) },
+}));
+vi.mock("../left-facets/use-empire-suggestions", () => ({ useEmpireSuggestions: () => [{ id: "build", realmId: 1 }] }));
 vi.mock("../left-facets/suggestions-panel", () => ({ SuggestionsPanel: () => null }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select(mocks.state) }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => 100000 }));
@@ -52,8 +54,8 @@ it("counts distinct attention targets and suggestions, then cycles without submi
   expect(mocks.go).toHaveBeenLastCalledWith(3, expect.objectContaining({ coords: { x: 20, y: 21 } }), true);
   expect(mocks.open).not.toHaveBeenCalled();
   await act(async () => container.querySelector("button")!.click());
-  expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({coords:{x:10,y:11}}), true);
-  expect(mocks.open).toHaveBeenCalledWith(expect.objectContaining({id: "suggestions", mapClick: "dismiss"}));
+  expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({ coords: { x: 10, y: 11 } }), true);
+  expect(mocks.open).toHaveBeenCalledWith(expect.objectContaining({ id: "suggestions", mapClick: "dismiss" }));
 });
 it("hides personal attention for a spectator", async () => {
   mocks.allowed = false;

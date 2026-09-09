@@ -1144,7 +1144,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.combatPresentationRuntime.bind();
 
-
     installWorldmapDebugHooks(window, {
       getProceduralArmyProductionStats: () => this.armyManager.getProceduralArmyProductionStats(),
       testMaterialSharing: () => this.armyManager.logMaterialSharingStats(),
@@ -2879,15 +2878,23 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getMapActionAtPointer(event: PointerEvent): { path: ActionPath[]; selectedEntityId: ID } | null {
-    if (!canIssueOrders() || this.actionPathsTransitionToken === null || this.actionPathsTransitionToken !== this.chunkTransitionToken) return null;
+    if (
+      !canIssueOrders() ||
+      this.actionPathsTransitionToken === null ||
+      this.actionPathsTransitionToken !== this.chunkTransitionToken
+    )
+      return null;
     const canvas = event.target;
     if (!(canvas instanceof HTMLCanvasElement) || canvas.id !== "main-canvas") return null;
     const rect = canvas.getBoundingClientRect();
     const raycaster = new Raycaster();
-    raycaster.setFromCamera(new Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      1 - ((event.clientY - rect.top) / rect.height) * 2,
-    ), this.camera);
+    raycaster.setFromCamera(
+      new Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        1 - ((event.clientY - rect.top) / rect.height) * 2,
+      ),
+      this.camera,
+    );
     const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords;
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (!hex || selectedEntityId === null || selectedEntityId === undefined) return null;
@@ -3901,7 +3908,6 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingExploreLatencyActions.clear();
-
 
     this.isSwitchedOff = runtimeState.isSwitchedOff;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;

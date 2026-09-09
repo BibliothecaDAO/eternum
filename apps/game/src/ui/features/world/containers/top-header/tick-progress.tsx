@@ -21,7 +21,6 @@ export const TickProgress = memo(() => {
   const hasValidCycle = cycleTime > 0;
   const dayDuration = hasValidCycle ? cycleTime * PHASES.length : 1;
 
-
   const phaseData = useMemo(() => {
     const dayElapsed = hasValidCycle ? currentBlockTimestamp % dayDuration : 0;
     const currentPhase = hasValidCycle ? Math.floor(dayElapsed / cycleTime) : 0;

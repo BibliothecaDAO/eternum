@@ -21,6 +21,6 @@ export function resolveStructureAttention(structures: Structure[], arrivedStruct
 
 export function nextAttentionItem<T extends { key: string }>(items: T[], currentKey: string | null): T | undefined {
   if (items.length === 0) return undefined;
-  const currentIndex = items.findIndex(item => item.key === currentKey);
+  const currentIndex = items.findIndex((item) => item.key === currentKey);
   return items[(currentIndex + 1) % items.length];
 }

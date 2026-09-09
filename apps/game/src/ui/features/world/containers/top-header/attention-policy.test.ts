@@ -26,7 +26,7 @@ it("expires attacks at the same boundary as battle badges", () => {
   expect(resolveStructureAttention([structure(1, [100])], [], 100).attackedCount).toBe(0);
 });
 it("cycles attention before suggestions and recovers when an item disappears", () => {
-  const items = [{key: "attention:1"}, {key: "attention:3"}, {key: "suggestion:1"}];
+  const items = [{ key: "attention:1" }, { key: "attention:3" }, { key: "suggestion:1" }];
   expect(nextAttentionItem(items, null)?.key).toBe("attention:1");
   expect(nextAttentionItem(items, "attention:1")?.key).toBe("attention:3");
   expect(nextAttentionItem(items, "attention:3")?.key).toBe("suggestion:1");

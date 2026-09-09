@@ -2,12 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { getBuildingCosts, getRealmInfo, type TileManager } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  BuildingTypeToString,
-  ContractAddress,
-  type HexPosition,
-} from "@bibliothecadao/types";
+import { BuildingType, BuildingTypeToString, ContractAddress, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";

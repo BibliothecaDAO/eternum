@@ -19,11 +19,17 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
   return (
     <section className="w-[360px] max-w-full space-y-2 p-3" aria-label="Suggested actions">
       <h2 className="border-b border-gold/25 pb-2 text-sm font-semibold">Suggested actions</h2>
-      {suggestions.map(suggestion => (
-        <div key={suggestion.id} ref={suggestion.id === selectedId ? selected : undefined}
-          className={suggestion.id === selectedId ? "rounded-lg ring-1 ring-gold/30" : undefined}>
-          <SuggestionChip suggestion={suggestion} onClick={handleSuggestionClick}
-            isPending={pendingSuggestionIds.includes(suggestion.id) || pendingRealmId === suggestion.realmId} />
+      {suggestions.map((suggestion) => (
+        <div
+          key={suggestion.id}
+          ref={suggestion.id === selectedId ? selected : undefined}
+          className={suggestion.id === selectedId ? "rounded-lg ring-1 ring-gold/30" : undefined}
+        >
+          <SuggestionChip
+            suggestion={suggestion}
+            onClick={handleSuggestionClick}
+            isPending={pendingSuggestionIds.includes(suggestion.id) || pendingRealmId === suggestion.realmId}
+          />
         </div>
       ))}
       {suggestions.length === 0 && <p className="text-xs">No suggested actions right now.</p>}

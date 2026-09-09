@@ -30,11 +30,11 @@ beforeEach(() => {
       {
         label: "Economic",
         buildings: [
-          { type: 1, label: "Farm", costs: [{resource: 1, amount: 10}], disabled: false },
+          { type: 1, label: "Farm", costs: [{ resource: 1, amount: 10 }], disabled: false },
           {
             type: 2,
             label: "Fishing Village",
-            costs: [{resource: 1, amount: 20}],
+            costs: [{ resource: 1, amount: 20 }],
             disabled: true,
             reason: "Insufficient resources to build.",
           },

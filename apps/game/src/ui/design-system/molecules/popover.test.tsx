@@ -57,12 +57,14 @@ describe("Popover", () => {
     vi.stubGlobal("innerHeight", 900);
     vi.stubGlobal("innerWidth", 1600);
     vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(1400);
-    await act(async () => usePopoverStore.getState().openSurface({
-      id: "plot-construction",
-      content: <div>Buildings</div>,
-      anchor: { left: 1200, right: 1200, top: 850, bottom: 850 },
-      mapClick: "dismiss",
-    }));
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "plot-construction",
+        content: <div>Buildings</div>,
+        anchor: { left: 1200, right: 1200, top: 850, bottom: 850 },
+        mapClick: "dismiss",
+      }),
+    );
     const picker = panel("plot-construction")!;
     expect(picker.style.top).toBe("56px");
     expect(picker.style.maxHeight).toBe("836px");

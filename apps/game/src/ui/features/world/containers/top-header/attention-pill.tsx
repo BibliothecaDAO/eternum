@@ -26,10 +26,21 @@ function AttentionCycle() {
   const suggestions = useEmpireSuggestions();
   const previousKey = useRef<string | null>(null);
   const now = Math.floor(useNowMs() / 1000);
-  const { targets } = useMemo(() => resolveStructureAttention(structures, arrivedIds, now), [structures, arrivedIds, now]);
+  const { targets } = useMemo(
+    () => resolveStructureAttention(structures, arrivedIds, now),
+    [structures, arrivedIds, now],
+  );
   const items = [
-    ...targets.map((target) => ({ key: `attention:${target.entityId}`, realmId: target.entityId, suggestionId: null as string | null })),
-    ...suggestions.map((suggestion) => ({ key: `suggestion:${suggestion.id}`, realmId: suggestion.realmId, suggestionId: suggestion.id })),
+    ...targets.map((target) => ({
+      key: `attention:${target.entityId}`,
+      realmId: target.entityId,
+      suggestionId: null as string | null,
+    })),
+    ...suggestions.map((suggestion) => ({
+      key: `suggestion:${suggestion.id}`,
+      realmId: suggestion.realmId,
+      suggestionId: suggestion.id,
+    })),
   ];
   const goToNext = () => {
     if (!canIssueOrders()) return;
@@ -52,9 +63,14 @@ function AttentionCycle() {
     }
   };
   return (
-    <button type="button" className={TOP_PILL} onClick={goToNext} disabled={items.length === 0}
+    <button
+      type="button"
+      className={TOP_PILL}
+      onClick={goToNext}
+      disabled={items.length === 0}
       aria-label={`Attention: ${items.length}. Go to next item`}
-      title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}>
+      title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
+    >
       <Bell className="h-3.5 w-3.5" />
       <span className={TOP_PILL_TEXT}>Attention {items.length}</span>
     </button>

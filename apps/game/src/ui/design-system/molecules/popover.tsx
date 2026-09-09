@@ -275,7 +275,10 @@ const resolvePanelStyle = (anchor: PanelAnchor, align: PopoverAlign, panel: HTML
   const preferredTop =
     contentHeight > viewportHeightBelow(below) && fitsAbove ? anchor.top - PANEL_GAP_PX - contentHeight : below;
   const visibleHeight = Math.min(contentHeight, viewportHeightBelow(HEADER_CLEARANCE_PX));
-  const top = Math.max(HEADER_CLEARANCE_PX, Math.min(preferredTop, window.innerHeight - visibleHeight - VIEWPORT_MARGIN_PX));
+  const top = Math.max(
+    HEADER_CLEARANCE_PX,
+    Math.min(preferredTop, window.innerHeight - visibleHeight - VIEWPORT_MARGIN_PX),
+  );
   const maxHeight = viewportHeightBelow(top);
   if (align === "end") {
     const right = Math.max(VIEWPORT_MARGIN_PX, window.innerWidth - anchor.right);
