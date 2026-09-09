@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Caravans in Events",
+    description: "Track sent and arrived caravans in Events and the next incoming delivery on your structure's tile.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-09",
     title: "Spectator Standings",
     description: "Watch the top ten and the selected player's points each tick; select a row to visit their capital.",
     type: "feature",

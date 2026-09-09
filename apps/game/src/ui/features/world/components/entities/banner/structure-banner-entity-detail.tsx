@@ -1,3 +1,4 @@
+import { IncomingCaravans } from "./incoming-caravans";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Loader from "lucide-react/dist/esm/icons/loader";
@@ -174,6 +175,7 @@ const StructureBannerEntityDetailContent = memo(
 
     return (
       <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE, className)}>
+        <IncomingCaravans structureId={structureEntityId} isOwner={isMine} />
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}

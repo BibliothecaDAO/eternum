@@ -1,3 +1,4 @@
+import { TransactionType } from "@bibliothecadao/provider";
 import type { Transaction } from "@/hooks/store/use-transaction-store";
 import type { Resource, ResourceArrivalInfo } from "@bibliothecadao/types";
 import type { FeedNotice } from "./event-feed-store";
@@ -114,3 +115,15 @@ export const selectTickerRows = (rows: FeedRows, nowMs: number, windowMs: number
         nowMs >= row.at && (row.kind === "notice" ? nowMs - row.at < row.notice.ttlMs : nowMs - row.at < windowMs),
     )
     .sort(byNewest);
+
+/** Transfer language is shared by every Events rendering, including Log. */
+export function transferRowLabel(row: FeedRow): string | null {
+  if (row.kind === "arrival") return row.remainingSeconds > 0 ? "Caravan sent" : "Caravan arrived";
+  if (
+    row.kind === "transaction" &&
+    row.transaction.type === TransactionType.SEND &&
+    row.transaction.status === "success"
+  )
+    return "Caravan sent";
+  return null;
+}

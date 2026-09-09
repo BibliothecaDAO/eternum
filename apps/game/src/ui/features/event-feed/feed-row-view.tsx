@@ -6,7 +6,7 @@ import { getExplorerTxUrl, getStatusColor } from "@/ui/components/transaction-ce
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { findResourceById } from "@bibliothecadao/types";
-import type { FeedRow } from "./event-feed-rows";
+import { transferRowLabel, type FeedRow } from "./event-feed-rows";
 
 const NOTICE_TONE: Record<string, string> = {
   info: "text-gold",
@@ -25,7 +25,7 @@ const formatCountdown = (seconds: number): string => {
 /** One feed row, whatever its source. */
 export const FeedRowView = ({ row, compact = false }: { row: FeedRow; compact?: boolean }) => {
   if (row.kind === "transaction")
-    return compact ? (
+    return compact || transferRowLabel(row) ? (
       <TransactionFeedRow row={row} />
     ) : (
       <TransactionItem transaction={row.transaction} isStuck={row.isStuck} />
@@ -66,7 +66,9 @@ const ArrivalFeedRow = ({ row }: { row: Extract<FeedRow, { kind: "arrival" }> })
           />
         ))}
       </span>
-      <span className="min-w-0 flex-1 truncate">Caravan to structure #{row.structureEntityId}</span>
+      <span className="min-w-0 flex-1 truncate">
+        {transferRowLabel(row)} · #{row.structureEntityId}
+      </span>
       <span className={cn("shrink-0 tabular-nums", arrived ? "text-emerald-300" : "text-gold/70")}>
         {arrived ? "Arrived" : formatCountdown(row.remainingSeconds)}
       </span>
@@ -85,7 +87,7 @@ function TransactionFeedRow({ row }: { row: Extract<FeedRow, { kind: "transactio
       title={transaction.errorMessage ?? transaction.hash}
       className="flex items-center gap-2 px-3 py-2 !font-sans !text-[11px] normal-case tracking-normal hover:bg-gold/10"
     >
-      <span className="min-w-0 flex-1 truncate text-gold">{transaction.description}</span>
+      <span className="min-w-0 flex-1 truncate text-gold">{transferRowLabel(row) ?? transaction.description}</span>
       <span className={cn("shrink-0", getStatusColor(transaction.status, isStuck))}>
         {isStuck
           ? "Stuck"
