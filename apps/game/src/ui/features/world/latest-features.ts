@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Tile Details Stay Anchored",
+    description: "Tile details stay at the bottom right while Events and Chat fill the space above them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Events and Chat Together",
     description:
       "Switch between Events and Chat in one panel. Enter focuses chat, Escape returns to Events, and Log keeps the full activity history.",
