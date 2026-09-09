@@ -38,31 +38,31 @@ export const TroopSelectionGrid = ({
 
   if (compact) {
     return (
-      <div className="flex gap-2 overflow-x-auto p-1" role="group" aria-label="Available troops">
-        {options.flatMap((option) =>
-          option.tiers
-            .filter((tier) => tier.available > 0)
-            .map((tier) => {
-              const key = `${option.type}-${tier.tier}`;
-              const isSelected = selected.type === option.type && selected.tier === tier.tier;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  aria-label={`${option.label} ${tier.tier}: ${tier.available.toLocaleString()} available`}
-                  aria-pressed={isSelected}
-                  disabled={Boolean(lockedMap && lockedMap !== key)}
-                  className={clsx(
-                    "shrink-0 rounded border px-2 py-2 text-xs tabular-nums",
-                    isSelected ? "border-gold bg-gold/15" : "border-gold/25",
-                  )}
-                  onClick={() => onSelect(option.type, tier.tier)}
-                >
-                  {option.label} {tier.tier} · {tier.available.toLocaleString()}
-                </button>
-              );
-            }),
-        )}
+      <div className="grid grid-cols-3 gap-2 p-1" role="group" aria-label="Available troops">
+        {options.flatMap((option) => option.tiers.map((tier) => {
+          const key = `${option.type}-${tier.tier}`;
+          const isSelected = selected.type === option.type && selected.tier === tier.tier;
+          const reason = lockedMap && lockedMap !== key
+            ? "This guard slot requires its existing troop type and tier."
+            : tier.available <= 0 ? "No troops in stock." : null;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={`${option.label} ${tier.tier}: ${tier.available.toLocaleString()} available`}
+              aria-pressed={isSelected}
+              disabled={Boolean(reason)}
+              title={reason ?? `${option.label} ${tier.tier}`}
+              className={clsx("relative flex min-w-0 flex-col items-center rounded border px-1 pt-3 pb-1 text-xs tabular-nums disabled:grayscale disabled:opacity-40",
+                isSelected ? "border-gold bg-gold/15" : "border-gold/25")}
+              onClick={() => onSelect(option.type, tier.tier)}
+            >
+              <span className="absolute top-0.5 right-1 text-[10px]">{tier.tier}</span>
+              <ResourceIcon resource={tier.resourceTrait} size="lg" className="!h-10 !w-10" withTooltip={false} />
+              <span className="max-w-full truncate rounded bg-black/40 px-1 text-[10px]">{tier.available.toLocaleString()}</span>
+            </button>
+          );
+        }))}
       </div>
     );
   }

@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Visual Troop Deployment",
+    description: "Choose troops by their icon, tier and stock. Add 100, add 500 or use Max when deploying field armies and guards, with empty choices clearly marked.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Clearer Army Movement",
     description: "Armies move without duplicate pending silhouettes or destination rings, keeping the battlefield clear.",
     type: "fix",

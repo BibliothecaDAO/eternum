@@ -68,21 +68,19 @@ afterEach(async () => {
   container.remove();
 });
 
-it("shows only stocked troop chips, an editable count and capped Max", async () => {
+it("shows troop tiles including blocked empty stock, an editable count and capped increments", async () => {
   await renderPicker();
   const chips = container.querySelectorAll('[role="group"] button');
-  expect([...chips].map((chip) => chip.textContent)).toEqual(["Knight T1 · 240", "Knight T3 · 20"]);
+  expect(chips).toHaveLength(3);
+  expect(chips[1].getAttribute("title")).toBe("No troops in stock.");
+  expect((chips[1] as HTMLButtonElement).disabled).toBe(true);
   expect(container.querySelectorAll("input")).toHaveLength(1);
   expect(container.querySelector("input")?.dataset.arrows).toBe("false");
-  expect(container.querySelector('[type="range"]')).toBeNull();
-  expect([...container.querySelectorAll("button")].map((button) => button.textContent)).toEqual([
-    "×",
-    "Knight T1 · 240",
-    "Knight T3 · 20",
-    "Max",
-    "Deploy",
-  ]);
-  await act(async () => (chips[1] as HTMLButtonElement).click());
+  await act(async () => findButton("+100").click());
+  expect(mocks.form.handleTroopCountChange).toHaveBeenLastCalledWith(150);
+  await act(async () => findButton("+500").click());
+  expect(mocks.form.handleTroopCountChange).toHaveBeenLastCalledWith(150);
+  await act(async () => (chips[2] as HTMLButtonElement).click());
   expect(mocks.form.handleTroopSelect).toHaveBeenCalledWith(TroopType.Knight, TroopTier.T3);
   await act(async () => findButton("Max").click());
   expect(mocks.form.handleTroopCountChange).toHaveBeenCalledWith(150);
@@ -99,7 +97,7 @@ it("keeps an empty stockpile's blocker separate from usage and Deploy visible bu
     isActionDisabled: true,
   });
   await renderPicker();
-  expect(container.querySelectorAll('[role="group"] button')).toHaveLength(0);
+  expect(container.querySelectorAll('[role="group"] button:disabled')).toHaveLength(3);
   const reason = container.querySelector('[role="status"]');
   expect(reason?.textContent).toBe("Not enough of this troop.");
   expect(reason?.nextElementSibling?.textContent).toContain("Troop count");

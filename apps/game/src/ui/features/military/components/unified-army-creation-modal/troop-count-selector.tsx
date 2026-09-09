@@ -25,32 +25,6 @@ export const TroopCountSelector = ({
   embedded = false,
   compact = false,
 }: TroopCountSelectorProps) => {
-  if (compact) {
-    return (
-      <div className="flex items-center gap-2 p-1">
-        <label className="min-w-0 flex-1">
-          <span className="sr-only">Troop count</span>
-          <NumberInput
-            max={maxAffordable}
-            min={0}
-            value={troopCount}
-            onChange={onChange}
-            arrows={false}
-            className="h-9 text-sm"
-          />
-        </label>
-        <Button
-          variant="gold"
-          onClick={() => onChange(maxAffordable)}
-          disabled={troopCount >= maxAffordable}
-          className="px-3 py-2 text-xs"
-        >
-          Max
-        </Button>
-      </div>
-    );
-  }
-
   const capacityLimit =
     typeof capacityRemaining === "number" && Number.isFinite(capacityRemaining) ? capacityRemaining : null;
   const capacityLimitDisplay = capacityLimit !== null ? Math.max(0, Math.floor(capacityLimit)) : null;
@@ -101,10 +75,13 @@ export const TroopCountSelector = ({
             disabled={troopCount >= maxAffordable}
             className="flex-1 px-2 py-1.5 text-xs font-extrabold"
           >
-            MAX
+            {compact ? "Max" : "MAX"}
           </Button>
         </div>
+        <label>
+          <span className="sr-only">Troop count</span>
         <NumberInput
+            arrows={!compact}
           max={maxAffordable}
           min={0}
           step={100}
@@ -112,6 +89,7 @@ export const TroopCountSelector = ({
           onChange={onChange}
           className="h-9 text-sm"
         />
+        </label>
 
         {!embedded && (
           <div className="flex justify-between items-center text-xs">
