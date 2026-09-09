@@ -1,5 +1,6 @@
 import { env } from "../../../env";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
+import { isCoarsePointer } from "@/utils/pointer";
 
 import { ProceduralUnitRuntime } from "./procedural-unit-runtime";
 
@@ -17,7 +18,7 @@ export async function initializeProceduralCharacterRendererRuntime(
   const results = await Promise.allSettled([
     initializeRendererBackendRuntime({
       envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-      isMobileDevice: window.matchMedia("(pointer: coarse)").matches,
+      isMobileDevice: isCoarsePointer(),
       pixelRatio: Math.min(window.devicePixelRatio || 1, input.pixelRatioCap),
       search: window.location.search,
     }),

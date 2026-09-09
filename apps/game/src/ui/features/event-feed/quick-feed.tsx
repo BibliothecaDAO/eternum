@@ -12,9 +12,10 @@ import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
 import WifiOff from "lucide-react/dist/esm/icons/wifi-off";
 import { useEffect, useRef, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
+import type { Headline } from "../news-headlines/headline-types";
 import { EventLogPanel } from "./event-log-panel";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
-import { selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
+import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { toast } from "./notify";
 import { useFeedRows } from "./use-feed-rows";
 
@@ -25,19 +26,10 @@ const CONNECTION_NOTICE_ID = "connection";
 
 /** Top of the right column: the Log button, then at most five one-line rows that fade after 20 s. */
 export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
-  const nowMs = useNowMs();
-  const tickSeconds = Number(configManager.getTick(TickIds.Armies));
-  const address = useAccountStore((state) => state.account?.address ?? null);
-  const headlines = useHeadlineFeedStore((state) => state.headlines);
-  const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
-  const { data: stories } = useStoryEvents(350, "BattleStory");
-  const feed = useFeedRows();
-  const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
+  const { nowMs, rows, pinned } = useImportantFeed();
   const visible = selectQuickFeedRows(rows, nowMs, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
-  const [seenAt, setSeenAt] = useState(() => Date.now());
+  const unread = useUnreadFeedCount(rows, logOpen);
   const logButton = useRef<HTMLButtonElement>(null);
-  useEffect(() => setSeenAt(Date.now()), [logOpen]);
-  const unread = logOpen ? 0 : rows.filter((row) => row.at > seenAt).length;
   useConnectionNotices();
 
   return (
@@ -56,19 +48,9 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
       >
         <ScrollText className="h-4 w-4" />
         Log
-        {unread > 0 && (
-          <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
-            {unread}
-          </span>
-        )}
+        <UnreadFeedBadge count={unread} />
       </button>
-      <OfflineRow />
-      {headlineFeed.pinned.map((headline) => (
-        <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "bg-gold/25")}>
-          <HeadlineIcon type={headline.type} />
-          <span className="min-w-0 flex-1 truncate">{headline.description}</span>
-        </div>
-      ))}
+      <FeedNotices pinned={pinned} />
       {visible.map((row) => (
         <FeedRowLine
           key={row.id}
@@ -86,8 +68,48 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
   );
 };
 
+/** The important rows every layout counts and previews, plus the headlines pinned for the current tick. */
+export function useImportantFeed() {
+  const nowMs = useNowMs();
+  const tickSeconds = Number(configManager.getTick(TickIds.Armies));
+  const address = useAccountStore((state) => state.account?.address ?? null);
+  const headlines = useHeadlineFeedStore((state) => state.headlines);
+  const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
+  const { data: stories } = useStoryEvents(350, "BattleStory");
+  const feed = useFeedRows();
+  const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
+  return { nowMs, rows, pinned: headlineFeed.pinned };
+}
+
+/** Rows that arrived since the log was last open; zero while it is open. */
+export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): number {
+  const [seenAt, setSeenAt] = useState(() => Date.now());
+  useEffect(() => setSeenAt(Date.now()), [logOpen]);
+  return logOpen ? 0 : rows.filter((row) => row.at > seenAt).length;
+}
+
+export const UnreadFeedBadge = ({ count }: { count: number }) =>
+  count > 0 ? (
+    <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
+      {count}
+    </span>
+  ) : null;
+
+/** The notices no layout hides: the red offline row, then the headlines pinned for this tick. */
+export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
+  <>
+    <OfflineRow />
+    {pinned.map((headline) => (
+      <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "bg-gold/25")}>
+        <HeadlineIcon type={headline.type} />
+        <span className="min-w-0 flex-1 truncate">{headline.description}</span>
+      </div>
+    ))}
+  </>
+);
+
 /** Connection transitions become feed rows; the offline state is the pinned red row. */
-function useConnectionNotices() {
+export function useConnectionNotices() {
   useEffect(
     () =>
       useConnectionStore.subscribe((state, previous) => {

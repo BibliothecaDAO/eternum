@@ -6,7 +6,7 @@ import {
   ExistingArmiesPanel,
   UnifiedArmyCreationBody,
 } from "@/ui/features/military/components/unified-army-creation-modal";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
@@ -97,7 +97,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
       title="Military"
       icon={Swords}
       onClose={close}
-      className="w-[1320px] h-[calc(100vh-7rem)]"
+      className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"
     >
       <div className="grid h-full grid-cols-12 min-h-0">

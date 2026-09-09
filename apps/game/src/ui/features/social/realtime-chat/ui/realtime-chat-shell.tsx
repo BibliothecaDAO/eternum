@@ -190,8 +190,8 @@ export function RealtimeChatShell({
                   ? "h-16"
                   : "h-14"
                 : "h-0 min-h-0 pointer-events-none",
-          isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
-          !isExpanded && !showInlineToggle && "w-0 max-w-0",
+          isEmbedded ? "w-full" : "w-[800px] max-lg:w-screen lg:max-w-[45vw]",
+          !isExpanded && !showInlineToggle && "w-0 max-w-0 max-lg:w-0",
           isExpanded && !isEmbedded ? "bg-black/80" : "bg-transparent",
         )}
       >

@@ -17,6 +17,7 @@ vi.mock("@/hooks/store/use-popover-store", () => ({
 // Production renders through the shared surface frame inside the popover panel. Mock the frame so this stays a
 // focused adapter test.
 vi.mock("@/ui/design-system/molecules/popover", () => ({
+  SURFACE_WORKSPACE_CLASS: "w-[1320px]",
   SurfaceFrame: ({
     title,
     className,

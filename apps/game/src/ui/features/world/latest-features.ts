@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-10",
+    title: "Phone-Sized HUD",
+    description:
+      "On a phone the map is no longer buried under the desktop columns. A bottom tab bar opens one sheet at a time for your empire, the minimap, the log, chat and the selected tile, and the top pills scroll sideways under the notch.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-09",
     title: "Quick Feed and Chat Strip",
     description:

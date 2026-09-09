@@ -1,4 +1,5 @@
 import { useAudio } from "@/audio/hooks/useAudio";
+import { isCompactViewport } from "@/hooks/helpers/use-compact-hud";
 import { type PopoverMapClick, type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,6 +12,13 @@ import { createPortal } from "react-dom";
 const PANEL_GAP_PX = 8;
 const VIEWPORT_MARGIN_PX = 8;
 const HEADER_CLEARANCE_PX = 56;
+/** Space the sheet keeps under its content so it clears the iOS home indicator; never less than the panel's padding. */
+const COMPACT_SHEET_BOTTOM_INSET = "max(1rem, env(safe-area-inset-bottom))";
+/** Keep in step with `max-lg:h-[85dvh]` in `SURFACE_WORKSPACE_CLASS`; Tailwind needs that class as a literal. */
+const COMPACT_SHEET_CONTENT_HEIGHT = "85dvh";
+
+/** Size of a full workspace surface (Build, Military, Market...): a wide desk on desktop, a full bottom sheet below `lg`. */
+export const SURFACE_WORKSPACE_CLASS = "w-[1320px] h-[calc(100dvh-7rem)] max-lg:w-screen max-lg:h-[85dvh]";
 
 type PopoverAlign = "start" | "end";
 
@@ -102,7 +110,8 @@ export const PopoverPanel = ({
       aria-label={ariaLabel}
       data-popover-panel={id}
       className={cn(
-        "pointer-events-auto fixed z-[130] w-80 overflow-y-auto rounded-xl p-4 text-gold",
+        "pointer-events-auto fixed z-[130] w-80 touch-pan-y overflow-y-auto overscroll-contain rounded-xl p-4 text-gold",
+        "max-lg:w-screen max-lg:rounded-b-none",
         OVERLAY_SURFACE_BASE,
         className,
       )}
@@ -222,7 +231,7 @@ interface SurfaceFrameProps {
   icon?: LucideIcon;
   onClose: () => void;
   footer?: ReactNode;
-  /** Width and height of the surface, e.g. `w-[1320px] h-[calc(100vh-7rem)]`; the panel caps both to the viewport. */
+  /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */
   className?: string;
   bodyClassName?: string;
   children: ReactNode;
@@ -251,7 +260,28 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
   return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
 };
 
-const resolvePanelStyle = (anchor: PanelAnchor, align: PopoverAlign, panel: HTMLElement | null): CSSProperties => {
+/**
+ * Where the panel sits. Below `lg` every anchor collapses to a bottom sheet: a phone has no room beside a trigger,
+ * and the sheet's height budget is its content plus the safe-area strip so a `SURFACE_WORKSPACE_CLASS` child fits
+ * exactly. Desktop placement hangs from the anchor as before.
+ */
+const resolvePanelStyle = (anchor: PanelAnchor, align: PopoverAlign, panel: HTMLElement | null): CSSProperties =>
+  isCompactViewport() ? resolveCompactSheetStyle() : resolveAnchoredPanelStyle(anchor, align, panel);
+
+const resolveCompactSheetStyle = (): CSSProperties => ({
+  left: 0,
+  right: 0,
+  bottom: 0,
+  maxWidth: "100vw",
+  maxHeight: `calc(${COMPACT_SHEET_CONTENT_HEIGHT} + ${COMPACT_SHEET_BOTTOM_INSET})`,
+  paddingBottom: COMPACT_SHEET_BOTTOM_INSET,
+});
+
+const resolveAnchoredPanelStyle = (
+  anchor: PanelAnchor,
+  align: PopoverAlign,
+  panel: HTMLElement | null,
+): CSSProperties => {
   const maxWidth = Math.max(0, window.innerWidth - 2 * VIEWPORT_MARGIN_PX);
   if (anchor === "top-center") {
     const top = HEADER_CLEARANCE_PX;

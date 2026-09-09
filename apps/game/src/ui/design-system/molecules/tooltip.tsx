@@ -1,4 +1,5 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { isCoarsePointer } from "@/utils/pointer";
 import clsx from "clsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -31,7 +32,11 @@ const getHiddenTransform = (placement: TooltipPlacement) => {
   }
 };
 
-export const Tooltip = ({ className }: TooltipProps) => {
+/** The global hover tooltip. Touch devices have no hover, so they render nothing and attach no listeners. */
+export const Tooltip = ({ className }: TooltipProps) =>
+  isCoarsePointer() ? null : <HoverTooltip className={className} />;
+
+const HoverTooltip = ({ className }: TooltipProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const tooltip = useTooltipStore((state) => state.tooltip);
   const [placement, setPlacement] = useState<TooltipPlacement>("top");

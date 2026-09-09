@@ -28,6 +28,10 @@ const TwoPopovers = () => (
   </>
 );
 
+/** The compact lane is one media query (`use-compact-hud`); the popover reads it, so the test drives it. */
+const stubCompactViewport = (matches: boolean) =>
+  vi.stubGlobal("matchMedia", () => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+
 const panel = (id: string) => document.querySelector<HTMLElement>(`[data-popover-panel="${id}"]`);
 const trigger = (label: string) =>
   [...document.querySelectorAll("button")].find((button) => button.textContent === label)!;
@@ -69,6 +73,49 @@ describe("Popover", () => {
     expect(picker.style.top).toBe("56px");
     expect(picker.style.maxHeight).toBe("836px");
     expect(picker.className).toContain("overflow-y-auto");
+  });
+
+  it("collapses every anchor to a bottom sheet on a compact viewport", async () => {
+    stubCompactViewport(true);
+    const onDismiss = vi.fn();
+    const anchors = [
+      "top-center",
+      "right-edge",
+      "bottom-right",
+      { left: 40, right: 80, top: 300, bottom: 340 },
+    ] as const;
+    for (const anchor of anchors) {
+      const sheetContainer = document.createElement("div");
+      document.body.appendChild(sheetContainer);
+      const sheetRoot = createRoot(sheetContainer);
+      await act(async () =>
+        sheetRoot.render(
+          <PopoverPanel id="sheet" ariaLabel="Sheet" anchor={anchor} onDismiss={onDismiss}>
+            <span>sheet body</span>
+          </PopoverPanel>,
+        ),
+      );
+      const sheet = panel("sheet")!;
+      expect(sheet.style.left).toBe("0px");
+      expect(sheet.style.right).toBe("0px");
+      expect(sheet.style.bottom).toBe("0px");
+      expect(sheet.style.top).toBe("");
+      expect(sheet.style.maxWidth).toBe("100vw");
+      // jsdom drops the matching `max(..., env(...))` padding value, so the height budget stands in for both.
+      expect(sheet.style.maxHeight).toContain("85dvh");
+      expect(sheet.style.maxHeight).toContain("safe-area-inset-bottom");
+      expect(sheet.className).toContain("max-lg:w-screen");
+      expect(sheet.className).toContain("touch-pan-y");
+      await act(async () => sheetRoot.unmount());
+      sheetContainer.remove();
+    }
+  });
+
+  it("keeps the anchored placement from Tailwind's lg breakpoint up", async () => {
+    stubCompactViewport(false);
+    await act(async () => trigger("open a").click());
+    expect(panel("a")!.style.bottom).toBe("");
+    expect(panel("a")!.style.top).not.toBe("");
   });
 
   it("anchors the panel on the body without a scrim", async () => {
