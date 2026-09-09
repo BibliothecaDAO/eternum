@@ -49,7 +49,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
         <BattleDetails description={event.presentation.description} />
       ) : (
         <>
-          <span className="block font-semibold">{event.presentation.title}</span>
+          <span className="block font-normal">{event.presentation.title}</span>
           <span className="line-clamp-2 text-gold/65">{event.presentation.description}</span>
         </>
       )}
@@ -66,7 +66,7 @@ function BattleDetails({ description }: { description?: string }) {
   const winner = formatWinnerName(findSegmentValue(segments, (label) => label === "Winner"));
   return (
     <>
-      <span className="flex gap-1 font-semibold">
+      <span className="flex gap-1 font-normal">
         <span aria-hidden>⚔</span>
         <span className="truncate">
           {attacker} <span className="text-gold/50">vs</span> {defender}

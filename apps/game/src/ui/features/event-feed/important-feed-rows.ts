@@ -1,3 +1,4 @@
+import { TransactionType } from "@bibliothecadao/provider";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRow, FeedRows } from "./event-feed-rows";
 
@@ -27,6 +28,17 @@ export const battleIdentity = (event: ProcessedStoryEvent): string =>
     event.storyPayload.defender_troops_before,
   ].join(":");
 
+const routineProductionTypes = new Set<TransactionType>([
+  TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+  TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
+  TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION,
+]);
+
+function isImportantPersonalRow(row: FeedRow): boolean {
+  if (row.kind !== "transaction") return true;
+  return row.isStuck || row.transaction.status === "reverted" || !routineProductionTypes.has(row.transaction.type);
+}
+
 /** Battles include structure captures. Routine moves and point accrual remain in the full log. */
 export function selectImportantFeedRows(
   stories: ProcessedStoryEvent[],
@@ -45,7 +57,7 @@ export function selectImportantFeedRows(
     })
     .map((event) => ({ kind: "story", id: `story:${event.id}`, at: event.timestampMs, event }));
   if (filter !== "combat") {
-    rows.push(...feed.arrived, ...feed.inFlight, ...feed.recent);
+    rows.push(...[...feed.arrived, ...feed.inFlight, ...feed.recent].filter(isImportantPersonalRow));
   }
   return rows.sort((left, right) => right.at - left.at);
 }

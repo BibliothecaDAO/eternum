@@ -36,6 +36,13 @@ const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
     type: "improvement",
+    title: "Quieter Event Feed",
+    description:
+      "Routine production stays in Activity. Events keeps battles, caravans and action results readable in one compact type style, with failed or stuck production still visible.",
+  },
+  {
+    date: "2026-09-09",
+    type: "improvement",
     title: "Structure Details Together",
     description:
       "See a structure’s owner, guards and resources in one panel. Biome uses only the space its bonuses need.",

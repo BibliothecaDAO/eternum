@@ -33,8 +33,8 @@ export const FeedRowView = ({ row, compact = false }: { row: FeedRow; compact?: 
   if (row.kind === "arrival") return <ArrivalFeedRow row={row} />;
   if (row.notice.kind === "custom") return <div className="px-3 py-2">{row.notice.title}</div>;
   return (
-    <div className="flex flex-col gap-0.5 px-3 py-2 text-xs">
-      <span className={cn("font-semibold", NOTICE_TONE[row.notice.kind])}>{row.notice.title}</span>
+    <div className="flex flex-col gap-0.5 px-3 py-2 font-sans text-[11px] font-normal">
+      <span className={cn("font-normal", NOTICE_TONE[row.notice.kind])}>{row.notice.title}</span>
       {row.notice.description && <span className="text-gold/70">{row.notice.description}</span>}
     </div>
   );

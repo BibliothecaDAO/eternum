@@ -1,3 +1,4 @@
+import { TransactionType } from "@bibliothecadao/provider";
 import { expect, it } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRows } from "./event-feed-rows";
@@ -61,7 +62,7 @@ it("keeps pending and completed actions and travelling caravans in Events", () =
   const feed = {
     inFlight: [
       { kind: "arrival", id: "travelling", at: 50 },
-      { kind: "transaction", id: "pending", at: 40 },
+      { kind: "transaction", id: "pending", at: 40, transaction: { status: "pending", type: TransactionType.SEND } },
     ],
     arrived: [],
     recent: [
@@ -75,4 +76,27 @@ it("keeps pending and completed actions and travelling caravans in Events", () =
     "done",
     "notice",
   ]);
+});
+
+it("leaves routine production in Activity but keeps failed and stuck production visible", () => {
+  const production = (id: string, status: "pending" | "success" | "reverted", isStuck = false) => ({
+    kind: "transaction" as const,
+    id,
+    at: 10,
+    isStuck,
+    transaction: {
+      hash: id,
+      submittedAt: 10,
+      description: "Converted resources",
+      status,
+      type: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    },
+  });
+  const feed: FeedRows = {
+    arrived: [],
+    inFlight: [production("pending", "pending"), production("stuck", "pending", true)],
+    recent: [production("done", "success"), production("failed", "reverted")],
+  };
+  expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["stuck", "failed"]);
+  expect(feed.recent).toHaveLength(2);
 });

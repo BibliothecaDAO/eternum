@@ -511,21 +511,6 @@ export const useAutomation = () => {
             skipped: planLogPayload.skipped,
           });
           anyExecuted = true;
-
-          const producedResources = Object.entries(plan.outputsByResource);
-          if (producedResources.length > 0) {
-            const detail = producedResources
-              .map(([resId, amount]) => {
-                const label = resolveResourceLabel(Number(resId));
-                return `${Math.round(amount).toLocaleString()} ${label}`;
-              })
-              .join(", ");
-            toast.success(
-              `Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
-            );
-          } else {
-            toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
-          }
         } catch (rawError) {
           const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
           const isSignerFault = isSignerTransientError(rawError);
