@@ -1,3 +1,4 @@
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -36,11 +37,11 @@ export const TopHeader = memo(() => {
   const followArmyCombats = useUIStore((state) => state.followArmyCombats);
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
   // The follow-army-combats toggle is a spectator-only affordance: it's for
   // watching other players' battles. Active players manage their own armies, so
   // it's hidden for them entirely.
-  const showFollowArmyToggle = isSpectating;
+  const showFollowArmyToggle = !ordersAllowed;
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);

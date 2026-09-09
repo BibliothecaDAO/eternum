@@ -1,3 +1,4 @@
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useCallback } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -15,9 +16,9 @@ export const LeftActionsRow = () => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const mode = useGameModeConfig();
-  const showTradeAction = mode.ui.showTradeMenu && !isSpectating;
+  const showTradeAction = mode.ui.showTradeMenu && ordersAllowed;
   const handleOpenLogistics = useCallback(() => {
     // If anything is in flight or ready, land the user on Arrivals so the
     // badge they just clicked actually points at the relevant tab.
@@ -34,62 +35,62 @@ export const LeftActionsRow = () => {
     [setView, view],
   );
 
+  if (!ordersAllowed) return null;
+
   return (
     <div
       className="pointer-events-auto flex items-center justify-evenly gap-2 rounded-xl border border-gold/25 px-2 py-2"
       aria-label="Quick actions"
     >
-      {!isSpectating && (
-        <>
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.construction}
-            label="Build"
-            active={view === LeftView.ConstructionView}
-            onClick={toggleView(LeftView.ConstructionView)}
-          />
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.production}
-            label="Production"
-            onClick={handleOpenProduction}
-            disabled={!structureEntityId}
-          />
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.military}
-            label="Military"
-            active={view === LeftView.MilitaryView}
-            onClick={toggleView(LeftView.MilitaryView)}
-            disabled={!structureEntityId}
-          />
-          <CircleButton
-            variant="action"
-            size="md"
-            tooltipLocation="top"
-            image={BuildingThumbs.transfer}
-            label="Transfer"
-            active={view === LeftView.ResourceArrivals}
-            onClick={handleOpenLogistics}
-            primaryNotification={
-              arrivedArrivalsNumber > 0
-                ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
-                : undefined
-            }
-            secondaryNotification={
-              pendingArrivalsNumber > 0
-                ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
-                : undefined
-            }
-          />
-        </>
-      )}
+      <>
+        <CircleButton
+          variant="action"
+          size="md"
+          tooltipLocation="top"
+          image={BuildingThumbs.construction}
+          label="Build"
+          active={view === LeftView.ConstructionView}
+          onClick={toggleView(LeftView.ConstructionView)}
+        />
+        <CircleButton
+          variant="action"
+          size="md"
+          tooltipLocation="top"
+          image={BuildingThumbs.production}
+          label="Production"
+          onClick={handleOpenProduction}
+          disabled={!structureEntityId}
+        />
+        <CircleButton
+          variant="action"
+          size="md"
+          tooltipLocation="top"
+          image={BuildingThumbs.military}
+          label="Military"
+          active={view === LeftView.MilitaryView}
+          onClick={toggleView(LeftView.MilitaryView)}
+          disabled={!structureEntityId}
+        />
+        <CircleButton
+          variant="action"
+          size="md"
+          tooltipLocation="top"
+          image={BuildingThumbs.transfer}
+          label="Transfer"
+          active={view === LeftView.ResourceArrivals}
+          onClick={handleOpenLogistics}
+          primaryNotification={
+            arrivedArrivalsNumber > 0
+              ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
+              : undefined
+          }
+          secondaryNotification={
+            pendingArrivalsNumber > 0
+              ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
+              : undefined
+          }
+        />
+      </>
 
       {showTradeAction && (
         <CircleButton

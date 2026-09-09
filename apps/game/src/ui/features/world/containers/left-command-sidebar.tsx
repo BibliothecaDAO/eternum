@@ -1,3 +1,4 @@
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_COLUMN_WIDTH } from "./hud-layout";
 import { LeftActionsRow } from "./left-actions-row";
@@ -37,7 +38,7 @@ export const LeftCommandSidebar = memo(() => {
   const pendingRenameStructureEntityId = useUIStore((state) => state.pendingRenameStructureEntityId);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
   const bumpStructureNameVersion = useUIStore((state) => state.bumpStructureNameVersion);
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
 
   const handleNameChange = useCallback(
     (entityId: ID, newName: string) => {
@@ -63,13 +64,15 @@ export const LeftCommandSidebar = memo(() => {
   const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
   const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
 
+  if (!ordersAllowed) return null;
+
   return (
     <>
       {/* Left control column — always-visible vertical list of all the player's
           structures. The active card expands to show Suggested Actions only.
           Heavier views (Production, Military) live in centered modals
           triggered from the action row under the resource panel. */}
-      {ConnectedAccount && !isSpectating && (
+      {ConnectedAccount && (
         <div
           className={cn(
             "fixed left-3 top-2 z-20 pointer-events-auto flex max-h-[calc(100vh-340px)] flex-col gap-2 overflow-y-auto scrollbar-thin",

@@ -1,4 +1,4 @@
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
@@ -120,12 +120,12 @@ const RealmVillageDetails = () => {
 };
 
 export const RealmUpgradeCompact = () => {
-  const isSpectating = useUIStore((state) => state.isSpectating);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   if (!upgradeInfo) return null;
 
-  if (!upgradeInfo.isOwner || isSpectating || isExplicitSpectateSession()) {
+  if (!upgradeInfo.isOwner || !ordersAllowed) {
     return (
       <div className="space-y-2">
         <SectionRow label="Settlement level">

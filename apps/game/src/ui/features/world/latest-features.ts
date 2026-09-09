@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Spectator Controls Stay Consistent",
+    description: "Switching between Local and World keeps order controls hidden while spectating.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     title: "Readable Relic Crate Details",
     description: "Chest tiles show their crate contents above the biome bonuses and coordinates.",
     type: "fix",

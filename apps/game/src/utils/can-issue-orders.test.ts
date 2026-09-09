@@ -23,3 +23,11 @@ describe("canIssueOrders", () => {
     expect(canIssueOrders(state)).toBe(expected);
   });
 });
+
+it("retains spectator intent through scene-owned state resets", () => {
+  overrideSpectateIntent(true);
+  state.isSpectating = true;
+  expect(canIssueOrders()).toBe(false);
+  state.isSpectating = false;
+  expect(canIssueOrders()).toBe(false);
+});
