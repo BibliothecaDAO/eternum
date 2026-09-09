@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
   worldZones: {
     "game:28": { messages: [{ id: "m1", content: "gg wp", sender: { playerId: "0x9", displayName: "Rasch" } }] },
   } as Record<string, { messages: Array<{ id: string; content: string; sender: { playerId: string; displayName?: string } }> }>,
-  actions: { setShellOpen: vi.fn() },
+  connectionStatus: "connected",
+  actions: { setShellOpen: vi.fn(), loadWorldHistory: vi.fn() },
 }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: { account?: { address: string } }) => unknown) =>
@@ -22,6 +23,12 @@ vi.mock("@/ui/features/social", () => ({
   RealtimeChatShell: () => <input aria-label="Message" />,
 }));
 import { HudChatWindow } from "./hud-chat-window";
+import { useState } from "react";
+
+const Host = () => {
+  const [open, setOpen] = useState(false);
+  return <HudChatWindow open={open} onOpenChange={setOpen} />;
+};
 
 const mount = () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -34,9 +41,10 @@ const mount = () => {
 it("shows the last message with the unread count, opens on Enter and closes on Escape or a map click", async () => {
   const { container, root } = mount();
   try {
-    await act(async () => root.render(<HudChatWindow />));
+    await act(async () => root.render(<Host />));
     const strip = container.querySelector<HTMLButtonElement>('[aria-label="Chat strip"]')!;
     expect(strip.textContent).toBe("Rasch: gg wp3");
+    expect(mocks.actions.loadWorldHistory).toHaveBeenCalledWith({ zoneId: "game:28", limit: 10 });
     expect(container.querySelector('[aria-label="Unread chat messages"]')?.textContent).toBe("3");
     expect(container.querySelector("input")).toBeNull();
     await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
@@ -64,7 +72,7 @@ it("asks a signed-out viewer to sign in and ignores Enter", async () => {
   mocks.address = undefined;
   const { container, root } = mount();
   try {
-    await act(async () => root.render(<HudChatWindow />));
+    await act(async () => root.render(<Host />));
     const strip = container.querySelector<HTMLButtonElement>('[aria-label="Chat strip"]')!;
     expect(strip.textContent).toBe("Sign in to chat");
     expect(strip.disabled).toBe(true);

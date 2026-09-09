@@ -141,14 +141,19 @@ export const getEntityNameFromLocalStorage = (entityId: ID) => {
   return localStorage.getItem(`entity-name-${entityId}`);
 };
 
+/** The name registration writes when the account has no username; every reader treats it as no name. */
+export const buildFallbackPlayerName = (address: string): string => `Player-${address.slice(-6)}`;
+export const isFallbackPlayerName = (name: string): boolean => /^Player-[0-9a-fA-F]{6}$/.test(name);
+
 export const getAddressName = (address: ContractAddress, components: ClientComponents) => {
   const internalName = getInternalAddressName(address.toString());
   if (internalName) return internalName;
 
   const addressBigInt = BigInt(address);
   const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([addressBigInt]));
-
-  return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
+  if (!addressName) return undefined;
+  const name = shortString.decodeShortString(addressName.name.toString());
+  return isFallbackPlayerName(name) ? undefined : name;
 };
 
 export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents): string | undefined => {

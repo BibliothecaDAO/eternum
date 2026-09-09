@@ -5,12 +5,12 @@ import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
+import { StructureActionsRow } from "@/ui/features/world/components/actions/structure-actions-row";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import { memo } from "react";
 
-// Always-on data column for the active owned structure: one merged "Empire"
-// panel of resource tokens (production + balance + build), rendered below
-// StructureListColumn in the left rail.
+// Always-on panel for the active owned structure: its action row (Build, Production, Military, Transfer)
+// over one merged panel of resource tokens, rendered below StructureListColumn in the left rail.
 export const EmpireCockpit = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
@@ -39,6 +39,7 @@ export const EmpireCockpit = memo(() => {
       }
       collapsible
     >
+      <StructureActionsRow structureEntityId={structureEntityId} />
       <MergedResourcePanel
         structureEntityId={structureEntityId}
         resources={resources}

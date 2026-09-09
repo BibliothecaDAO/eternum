@@ -40,11 +40,6 @@ vi.mock("@/hooks/store/use-world-appearance-store", () => ({
   useWorldAppearanceStore: () => ({ reducedMotion: true, setReducedMotion: mocks.setReducedMotion }),
 }));
 vi.mock("@/ui/debug/renderer-debug-control", () => ({ RendererDebugControl: () => <div>Renderer</div> }));
-vi.mock("@/ui/design-system/atoms", () => ({
-  RangeInput: ({ title, onChange }: { title: string; onChange: (v: number) => void }) => (
-    <button onClick={() => onChange(25)}>{title}</button>
-  ),
-}));
 import { SettingsPanel } from "./settings";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 
@@ -78,18 +73,26 @@ it("shows the profile, wires the controls, lists bound keys and uses gold select
   });
   const { container, root } = await mount();
   const click = async (label: string) => act(async () => findButton(container, label).click());
+  const slide = async (label: string, value: number) =>
+    act(async () => {
+      const input = container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+      setter.call(input, String(value));
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
   try {
     const header = container.querySelector("header")!;
     expect(header.querySelector("img")?.getAttribute("src")).toMatch(/^\/images\/avatars\/0\d\.png$/);
-    expect(header.textContent).toContain("Rasch");
+    expect(header.textContent).toContain("Owner");
     expect(header.textContent).toContain("#3 · 1,250 VP");
     expect(header.textContent).toContain("Bibliotheca");
     expect(container.querySelector("h2")?.textContent).toBe("Video & Graphics");
     expect(container.textContent).toContain("Renderer");
     const keys = [...container.querySelectorAll("dt")].map((node) => node.textContent);
     expect(keys).toEqual(["V", "Shift+Tab", "Enter"]);
+    expect(container.textContent).toContain("Uncapped");
     expect(container.textContent).toContain("Open chat");
-    await click("Effects");
+    await slide("Effects", 25);
     expect(mocks.setCategoryVolume.mock.calls).toEqual([
       ["ui", 0.25],
       ["combat", 0.25],
@@ -100,9 +103,7 @@ it("shows the profile, wires the controls, lists bound keys and uses gold select
     expect(mocks.setReducedMotion).toHaveBeenCalledWith(false);
     for (const button of container.querySelectorAll('[aria-pressed="true"]'))
       expect(button.className).toContain("bg-gold text-dark-brown");
-    // The RangeInput mock renders bare buttons; every real button overrides the Cinzel default.
-    for (const button of container.querySelectorAll("button[class]"))
-      expect(button.className).toMatch(/font-(sans|mono)/);
+    for (const button of container.querySelectorAll("button")) expect(button.className).toMatch(/font-(sans|mono)/);
     await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Copy address"]')!.click());
     expect(mocks.writeText).toHaveBeenCalledWith("0x123456789");
     await click("Sign out");

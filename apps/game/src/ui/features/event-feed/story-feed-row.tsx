@@ -12,6 +12,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { ClientComponents } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
+import { formatFeedTime } from "./important-feed-rows";
 
 export function resolveStoryEventPosition(event: ProcessedStoryEvent, components: ClientComponents): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
@@ -49,7 +50,10 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
         <BattleDetails description={event.presentation.description} />
       ) : (
         <>
-          <span className="block font-normal">{event.presentation.title}</span>
+          <span className="flex justify-between gap-2 font-normal">
+            <span className="truncate">{event.presentation.title}</span>
+            <span className="shrink-0 tabular-nums text-gold/50">{formatFeedTime(event.timestampMs)}</span>
+          </span>
           <span className="line-clamp-2 text-gold/65">{event.presentation.description}</span>
         </>
       )}

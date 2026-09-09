@@ -6,12 +6,11 @@ import {
   DISPLAYED_SLOT_NUMBER_MAP,
   GuardSlot,
   RESOURCE_PRECISION,
-  StructureType,
   resources,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getAddressName } from "../utils/entities";
-import { getStructureTypeName } from "../utils/structure";
+import { getAddressName, getStructureName } from "../utils/entities";
+import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { gameEntityKey } from "../managers/config-manager";
@@ -52,15 +51,12 @@ const formatters: Record<string, StoryFormatter> = {
     const ownerLabel = components
       ? getActivityActor(event.ownerAddress, components)
       : shortenAddress(event.ownerAddress);
-    const entityRef = formatEntityRef(event.entityId);
+    const realm = describeStructureDetails(event, components) ?? formatEntityRef(event.entityId);
     return {
       title: "Realm founded",
       description:
-        joinPieces([
-          ownerLabel ? `Settled by ${ownerLabel}` : undefined,
-          coord ? `Coordinates ${coord}` : undefined,
-          entityRef ? `Registry: ${entityRef}` : undefined,
-        ]) ?? "New realm established on the map.",
+        joinPieces([realm, ownerLabel ? `Settled by ${ownerLabel}` : undefined, coord ? `at ${coord}` : undefined]) ??
+        "New realm established on the map.",
       icon: "realm",
     };
   },
@@ -500,15 +496,9 @@ function describeStructureDetails(
     const structure = getComponentValue(components.Structure, structureEntity);
     if (!structure) return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
 
-    const isBlitz = getIsBlitz();
-    const categoryValue = toNumber(structure.base?.category ?? structure.category);
-    const typeLabel =
-      categoryValue !== null ? getStructureTypeName(categoryValue as StructureType, isBlitz) : "Structure";
-    const name = `${typeLabel} #${structure.entity_id?.toString?.() ?? structure.entity_id}`;
+    const name = getStructureName(structure, getIsBlitz()).name;
     const level = toNumber(structure.base?.level);
-    const coordX = toNumber(structure.base?.coord_x);
-    const coordY = toNumber(structure.base?.coord_y);
-    const coord = coordX !== null && coordY !== null ? `(${coordX}, ${coordY})` : undefined;
+    const coord = formatCoord({ x: structure.base?.coord_x, y: structure.base?.coord_y });
 
     return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
   } catch (error) {
@@ -625,13 +615,15 @@ function formatEnum(value: unknown): string | undefined {
   return undefined;
 }
 
+/** Contract coordinates read as the map's normalized coordinates, the ones every tile panel shows. */
 function formatCoord(value: unknown): string | undefined {
   if (!value || typeof value !== "object") return undefined;
   const coord = value as Record<string, unknown>;
   const x = toNumber(coord.x);
   const y = toNumber(coord.y);
   if (x === null || y === null) return undefined;
-  return `(${x}, ${y})`;
+  const normalized = new Position({ x, y }).getNormalized();
+  return `(${normalized.x}, ${normalized.y})`;
 }
 
 function formatNumber(value: unknown): string | null {

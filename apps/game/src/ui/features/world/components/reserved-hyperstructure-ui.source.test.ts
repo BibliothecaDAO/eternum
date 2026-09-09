@@ -22,9 +22,9 @@ describe("Reserved hyperstructure client wiring", () => {
     expect(selectedWorldmapEntitySource).toContain(
       "const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);",
     );
-    expect(selectedWorldmapEntitySource).toContain("Unconstructed Hyperstructure");
-    expect(selectedWorldmapEntitySource).toContain("Double-click it on the map or press Create Here");
-    expect(selectedWorldmapEntitySource).toContain("Create Here");
+    expect(selectedWorldmapEntitySource).toContain("Reserved Hyperstructure");
+    expect(selectedWorldmapEntitySource).toContain("Create it here or double-click the tile");
+    expect(selectedWorldmapEntitySource).toContain("Create here");
     expect(selectedWorldmapEntitySource).toContain("useBlitzHyperstructureCreation");
 
     expect(bottomRightPanelSource).toContain("return hasTileOccupier(tile.occupier_type);");

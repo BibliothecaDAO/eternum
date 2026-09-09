@@ -10,7 +10,7 @@ export const SecondaryMenuItems = () => {
   const togglePopover = usePopoverStore((state) => state.toggle);
 
   return (
-    <div className="pointer-events-auto">
+    <div className="pointer-events-auto flex h-9 items-center">
       <Popover
         id={SETTINGS_POPOVER_ID}
         ariaLabel="Settings"

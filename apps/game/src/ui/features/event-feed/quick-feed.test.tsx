@@ -25,9 +25,19 @@ vi.mock("@bibliothecadao/eternum", () => ({
 vi.mock("@bibliothecadao/react", () => ({ useDojo: () => ({ setup: { components: {} } }) }));
 vi.mock("./use-feed-rows", () => ({ useFeedRows: () => mocks.feed }));
 vi.mock("./story-feed-row", () => ({ resolveStoryEventPosition: () => null }));
+vi.mock("./feed-row-line", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./feed-row-line")>()),
+  FeedRowLine: ({ row }: { row: { id: string } }) => <div data-row>{row.id}</div>,
+}));
 vi.mock("./event-log-panel", () => ({ EventLogPanel: () => <div role="dialog">Log panel</div> }));
 vi.mock("./notify", () => ({ toast: mocks.toast }));
 import { QuickFeed } from "./quick-feed";
+import { useState } from "react";
+
+const Host = () => {
+  const [logOpen, setLogOpen] = useState(false);
+  return <QuickFeed logOpen={logOpen} onLogToggle={() => setLogOpen((open) => !open)} />;
+};
 
 const battle = (id: string, at: number) =>
   ({
@@ -44,7 +54,7 @@ const render = async () => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () => root.render(<QuickFeed />));
+  await act(async () => root.render(<Host />));
   return { container, unmount: () => act(async () => root.unmount()).then(() => container.remove()) };
 };
 
@@ -73,11 +83,11 @@ it("shows at most five fresh rows newest first with ticks, keeps pinned headline
     mocks.nowMs += 1;
     await act(async () => useHeadlineFeedStore.setState({}));
     const feed = container.querySelector('[aria-label="Quick feed"]')!;
-    expect(feed.firstElementChild?.getAttribute("aria-label")).toBe("Pinned event");
-    expect(feed.firstElementChild?.textContent).toBe("Ann has raised a Tier 3 Barracks");
-    const rows = [...feed.children].slice(1, -1);
-    expect(rows).toHaveLength(5);
-    expect(rows[0].textContent).toBe("Ann vs Bob · Ann winsT2");
+    expect(feed.firstElementChild?.getAttribute("aria-label")).toBe("Log");
+    expect(feed.children[1]?.getAttribute("aria-label")).toBe("Pinned event");
+    expect(feed.children[1]?.textContent).toBe("Ann has raised a Tier 3 Barracks");
+    const rows = [...feed.querySelectorAll("[data-row]")].map((row) => row.textContent);
+    expect(rows).toEqual(["story:b1", "story:b2", "story:b3", "story:b4", "story:b5"]);
     expect(container.querySelector('[aria-label="Unread events"]')?.textContent).toBe("7");
     await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Log"]')!.click());
     expect(container.querySelector('[role="dialog"]')?.textContent).toBe("Log panel");

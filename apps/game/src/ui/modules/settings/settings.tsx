@@ -9,10 +9,11 @@ import {
   writeGraphicsPreferences,
   type GraphicsPreferences,
 } from "@/three/graphics-preferences";
-import { RangeInput } from "@/ui/design-system/atoms";
+import { readRenderMode, RENDER_MODE_OPTIONS, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
@@ -26,10 +27,9 @@ import { type ReactNode, useState } from "react";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
-const BUTTON = "rounded-full px-3 py-1 font-sans text-xs";
 
 export const SettingsPanel = () => (
-  <div className="flex flex-col gap-5 p-2">
+  <div className="flex flex-col gap-4 p-1">
     <ProfileHeader />
     <VideoSettings />
     <AudioSettings />
@@ -37,6 +37,8 @@ export const SettingsPanel = () => (
     <SessionActions />
   </div>
 );
+
+const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 function ProfileHeader() {
   const { session } = useIdentitySession();
@@ -48,33 +50,35 @@ function ProfileHeader() {
   } = useDojo();
   const [error, setError] = useState<string | null>(null);
   const owner = address ? ContractAddress(address) : null;
-  const name = (owner && players.find((player) => player.address === owner)?.name) || session?.user.name || null;
+  // The session username is the synced name; the chain name stands in when the session has none.
+  const name = session?.user.name || (owner && players.find((player) => player.address === owner)?.name) || null;
   const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, components)?.name ?? null);
   const spectating = isExplicitSpectateSession();
+  const facts = [
+    standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} VP`,
+    guild,
+    spectating && name && `as ${name}`,
+  ].filter(Boolean);
 
   return (
     <header className="flex items-center gap-3 border-b border-gold/20 pb-3">
-      {address && <img src={getAvatarUrl(address)} alt="" className="h-12 w-12 rounded-full border border-gold/30" />}
+      {address && <img src={getAvatarUrl(address)} alt="" className="h-10 w-10 rounded-full border border-gold/30" />}
       <div className="min-w-0 flex-1">
-        <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>
-        {spectating && name && <p className={cn("truncate", HUD_BODY)}>as {name}</p>}
-        {address && (
-          <button
-            type="button"
-            aria-label="Copy address"
-            className="font-mono text-xs text-gold/70"
-            onClick={() => navigator.clipboard.writeText(address).catch(() => setError("Could not copy address"))}
-          >
-            {address.slice(0, 6)}…{address.slice(-4)} ⧉
-          </button>
-        )}
-        {standing && (
-          <p className={HUD_BODY}>
-            #{standing.rank} · {Math.round(standing.points).toLocaleString()} VP
-          </p>
-        )}
-        {guild && <p className={HUD_BODY}>{guild}</p>}
+        <div className="flex items-baseline gap-2">
+          <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>
+          {address && (
+            <button
+              type="button"
+              aria-label="Copy address"
+              className="shrink-0 font-mono text-[11px] text-gold/60"
+              onClick={() => navigator.clipboard.writeText(address).catch(() => setError("Could not copy address"))}
+            >
+              {shortAddress(address)} ⧉
+            </button>
+          )}
+        </div>
+        {facts.length > 0 && <p className={cn("truncate", HUD_BODY)}>{facts.join(" · ")}</p>}
         {error && (
           <p role="alert" className="text-xs text-danger">
             {error}
@@ -87,7 +91,7 @@ function ProfileHeader() {
 
 function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={title} className="space-y-3">
+    <section aria-label={title} className="space-y-2">
       <h2 className={cn("font-sans", HUD_LABEL)}>{title}</h2>
       {children}
     </section>
@@ -107,7 +111,7 @@ function SelectedOption({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={cn(BUTTON, selected ? "bg-gold text-dark-brown" : "border border-gold/30 text-gold")}
+      className={cn(HUD_PILL_BUTTON, selected && "border-gold bg-gold text-dark-brown")}
     >
       {children}
     </button>
@@ -115,14 +119,19 @@ function SelectedOption({
 }
 function VideoSettings() {
   const preferences = readGraphicsPreferences(localStorage);
+  const renderMode = readRenderMode(localStorage);
   const { reducedMotion, setReducedMotion } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     writeGraphicsPreferences(localStorage, { ...preferences, ...change });
     window.location.reload();
   };
+  const changeRenderMode = (mode: RenderMode) => {
+    writeRenderMode(localStorage, mode);
+    window.location.reload();
+  };
   return (
     <SettingsSection title="Video & Graphics">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(["balanced", "high"] as const).map((quality) => (
           <SelectedOption
             key={quality}
@@ -132,8 +141,15 @@ function VideoSettings() {
             {quality === "high" ? "High" : "Balanced"}
           </SelectedOption>
         ))}
-      </div>
-      <div className="flex gap-2">
+        {RENDER_MODE_OPTIONS.map((option) => (
+          <SelectedOption
+            key={option.mode}
+            selected={renderMode === option.mode}
+            onClick={() => changeRenderMode(option.mode)}
+          >
+            {option.label}
+          </SelectedOption>
+        ))}
         <SelectedOption
           selected={preferences.shadows}
           onClick={() => changeGraphics({ shadows: !preferences.shadows })}
@@ -148,22 +164,40 @@ function VideoSettings() {
     </SettingsSection>
   );
 }
+
+function VolumeSlider({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="grid grid-cols-[4rem_1fr_2.5rem] items-center gap-2">
+      <span className={HUD_BODY}>{label}</span>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={value}
+        aria-label={label}
+        className="w-full accent-gold"
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <span className={cn("text-right tabular-nums", HUD_BODY)}>{value}</span>
+    </label>
+  );
+}
 function AudioSettings() {
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   return (
     <SettingsSection title="Audio">
-      <RangeInput
-        title="Master"
+      <VolumeSlider
+        label="Master"
         value={Math.round((audioState?.masterVolume ?? 0) * 100)}
         onChange={(value) => setMasterVolume(value / 100)}
       />
-      <RangeInput
-        title="Music"
+      <VolumeSlider
+        label="Music"
         value={Math.round((audioState?.categoryVolumes[AudioCategory.MUSIC] ?? 0) * 100)}
         onChange={(value) => setCategoryVolume(AudioCategory.MUSIC, value / 100)}
       />
-      <RangeInput
-        title="Effects"
+      <VolumeSlider
+        label="Effects"
         value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] ?? 0) * 100)}
         onChange={(value) => effectsCategories.forEach((category) => setCategoryVolume(category, value / 100))}
       />
@@ -175,7 +209,10 @@ function AudioSettings() {
 }
 
 const KEY_NAMES: Record<string, string> = { Escape: "Esc" };
-const formatShortcutKey = (key: string, modifiers?: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean }) =>
+const formatShortcutKey = (
+  key: string,
+  modifiers?: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean },
+) =>
   [
     modifiers?.ctrl && "Ctrl",
     modifiers?.alt && "Alt",
@@ -186,25 +223,22 @@ const formatShortcutKey = (key: string, modifiers?: { shift?: boolean; ctrl?: bo
     .filter(Boolean)
     .join("+");
 
-/** Read-only: the keys the active scene has bound, plus the chat binding. */
+/** Read-only: one line per bound key (both scenes bind the same keys), plus the chat binding. */
 function ShortcutsSection() {
   const bound = getShortcutManager().getShortcuts();
-  const bindings = [
-    ...bound.map((shortcut) => ({
-      key: formatShortcutKey(shortcut.key, shortcut.modifiers),
-      description: shortcut.description,
-    })),
-    { key: formatShortcutKey(CHAT_SHORTCUT.key), description: CHAT_SHORTCUT.description },
-  ];
+  const bindings = new Map<string, string>();
+  for (const shortcut of bound) {
+    const key = formatShortcutKey(shortcut.key, shortcut.modifiers);
+    if (!bindings.has(key)) bindings.set(key, shortcut.description);
+  }
+  bindings.set(formatShortcutKey(CHAT_SHORTCUT.key), CHAT_SHORTCUT.description);
   return (
     <SettingsSection title="Shortcuts">
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        {bindings.map((binding) => (
-          <div key={`${binding.key}:${binding.description}`} className="contents">
-            <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-[11px] text-gold">
-              {binding.key}
-            </dt>
-            <dd className={HUD_BODY}>{binding.description}</dd>
+        {[...bindings].map(([key, description]) => (
+          <div key={key} className="contents">
+            <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-[11px] text-gold">{key}</dt>
+            <dd className={cn("truncate", HUD_BODY)}>{description}</dd>
           </div>
         ))}
       </dl>
@@ -232,15 +266,11 @@ function SessionActions() {
   return (
     <section aria-label="Session" className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3">
       {canSignOut && (
-        <button type="button" disabled={pending} onClick={signOut} className={cn(BUTTON, "border border-gold/30 text-gold")}>
+        <button type="button" disabled={pending} onClick={signOut} className={HUD_PILL_BUTTON}>
           {pending ? "Signing out…" : "Sign out"}
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => window.location.assign("/")}
-        className={cn(BUTTON, "border border-gold/30 text-gold")}
-      >
+      <button type="button" onClick={() => window.location.assign("/")} className={HUD_PILL_BUTTON}>
         Leave game
       </button>
       {error && (

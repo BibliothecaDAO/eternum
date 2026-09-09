@@ -4,10 +4,10 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -18,7 +18,6 @@ import { StructureBannerEntityDetail } from "@/ui/features/world/components/enti
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
-import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { BiomeType, HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
@@ -40,7 +39,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 // own rounded bubble.
 const occupiedEntityLayoutClass = "flex min-w-0 shrink-0 flex-col gap-2 pointer-events-auto";
 const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
-const scrollableEntitySectionClass = "flex min-w-0";
 
 export const SelectedWorldmapEntity = ({
   coordsLabel,
@@ -126,23 +124,19 @@ const SelectedWorldmapEntityContent = ({
 
   return (
     <div className={occupiedEntityLayoutClass}>
-      {isChest || isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier)
-        ? null
-        : coordChip}
+      {isQuest ? coordChip : null}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
-          <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+          <TileChrome title={coordsLabel ?? "Spire tile"} headerAction={headerAction}>
             <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
-          </EntityDetailSection>
-
+          </TileChrome>
           <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isReservedHyperstructure ? (
         <div className={occupiedEntityLayoutClass}>
-          <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+          <TileChrome title={coordsLabel ?? "Hyperstructure tile"} headerAction={headerAction}>
             <ReservedHyperstructurePanel selectedHex={selectedHex} />
-          </EntityDetailSection>
-
+          </TileChrome>
           <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isStructure ? (
@@ -257,6 +251,15 @@ const SelectedStructureActionPanel = ({
   return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;
 };
 
+/** The chrome every occupied tile shares: one surface, a header band with the coordinates, sections below. */
+const TileChrome = ({ title, headerAction, children }: { title: string; headerAction?: ReactNode; children: ReactNode }) => (
+  <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE)}>
+    <InfoBubble variant="section" title={title} cue={headerAction} bodyClassName="pt-0">
+      {children}
+    </InfoBubble>
+  </div>
+);
+
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
     hexCoords: selectedHex,
@@ -273,54 +276,36 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
       const message = raw.includes("already been created")
         ? "This hyperstructure was already created — the map is catching up."
         : raw || "Failed to create the hyperstructure.";
-      toast.error(message);
+      toast.error(message, { location: { x: selectedHex.col, y: selectedHex.row } });
     }
-  }, [createHyperstructure]);
+  }, [createHyperstructure, selectedHex.col, selectedHex.row]);
 
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex flex-col gap-1 text-left">
-        <span className="text-xxs uppercase tracking-[0.3em] text-amber-200/80">Unconstructed Hyperstructure</span>
-        <span className="text-sm font-semibold text-amber-100">Reserved Hyperstructure</span>
-        <p className="text-xxs text-gold/70">
-          This tile is already reserved for a future Hyperstructure. Double-click it on the map or press Create Here to
-          awaken the real structure.
-        </p>
-      </div>
-      <div className="flex justify-start">
-        <Button
-          variant="outline"
-          size="xs"
-          className="rounded-full border-amber-300/70 px-3 py-1 text-[11px] text-amber-100 hover:border-amber-200"
-          forceUppercase={false}
-          withoutSound
+    <div className="flex flex-col gap-2">
+      <p className={HUD_HEADLINE}>Reserved Hyperstructure</p>
+      <p className={HUD_BODY}>Reserved for a future Hyperstructure. Create it here or double-click the tile.</p>
+      <div>
+        <button
+          type="button"
+          className={HUD_PILL_BUTTON}
           disabled={!canCreate || isCreating}
           onClick={() => void handleCreateHyperstructure()}
         >
-          {isCreating ? "Creating..." : "Create Here"}
-        </Button>
+          {isCreating ? "Creating…" : "Create here"}
+        </button>
       </div>
     </div>
   );
 };
 
-const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer: () => void }) => {
-  return (
-    <div className="flex h-full flex-col justify-between gap-3">
-      <div className="flex flex-col gap-1 text-left">
-        <span className="text-xxs uppercase tracking-[0.3em] text-cyan-200/80">Spire</span>
-        <span className="text-sm font-semibold text-cyan-100">Ethereal Layer Gateway</span>
-        <p className="text-xxs text-gold/70">Use this Spire to enter the Ethereal Layer and fast-travel routes.</p>
-      </div>
-      <Button
-        size="xs"
-        variant="outline"
-        forceUppercase={false}
-        className="w-full border-cyan-300/60 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
-        onClick={onTravelToEtherealLayer}
-      >
+const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer: () => void }) => (
+  <div className="flex flex-col gap-2">
+    <p className={HUD_HEADLINE}>Ethereal Layer Gateway</p>
+    <p className={HUD_BODY}>Enter the Ethereal Layer here to fast-travel.</p>
+    <div>
+      <button type="button" className={HUD_PILL_BUTTON} onClick={onTravelToEtherealLayer}>
         Travel to Ethereal Layer
-      </Button>
+      </button>
     </div>
-  );
-};
+  </div>
+);

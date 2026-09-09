@@ -2,7 +2,7 @@ import { TransactionType } from "@bibliothecadao/provider";
 import { expect, it } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRows } from "./event-feed-rows";
-import { groupFeedRowsByTick, resolveGameTick, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
+import { formatFeedTime, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 const empty: FeedRows = { inFlight: [], arrived: [], recent: [] };
 const battle = (id: string, at: number, owner = "0x1") =>
   ({
@@ -38,24 +38,8 @@ it("combat excludes personal failures and arrivals", () => {
     "story:fight",
   ]);
 });
-it("groups by configured army ticks, newest tick and newest event first", () => {
-  const rows = selectImportantFeedRows(
-    [battle("old", 60_000), battle("new", 125_000), battle("middle", 120_000)],
-    empty,
-    "all",
-    null,
-  );
-  const tickOf = (at: number) => resolveGameTick(at, null, 60);
-  expect(groupFeedRowsByTick(rows, tickOf).map((group) => [group.tick, group.rows.map((row) => row.id)])).toEqual([
-    [2, ["story:new", "story:middle"]],
-    [1, ["story:old"]],
-  ]);
-  expect(() => resolveGameTick(60_000, null, 0)).toThrow("configured army tick");
-});
-
-it("counts ticks from the game start once it is known", () => {
-  expect(resolveGameTick(600_000, 540, 60)).toBe(2);
-  expect(resolveGameTick(540_000, 540, 60)).toBe(1);
+it("formats a row time as HH:MM", () => {
+  expect(formatFeedTime(new Date(2026, 8, 9, 14, 5).getTime())).toBe("14:05");
 });
 
 it("keeps only the newest rows inside the quick feed window", () => {

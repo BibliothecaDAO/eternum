@@ -70,28 +70,9 @@ export function selectImportantFeedRows(
   return rows.sort((left, right) => right.at - left.at);
 }
 
-/** Ticks count from the game start once it is known; before that the absolute army tick stands in. */
-export function resolveGameTick(atMs: number, startAtSeconds: number | null, tickSeconds: number): number {
-  if (!Number.isFinite(tickSeconds) || tickSeconds <= 0)
-    throw new Error("The event feed requires the configured army tick duration");
-  const atSeconds = atMs / 1000;
-  if (startAtSeconds === null) return Math.floor(atSeconds / tickSeconds);
-  return Math.floor((atSeconds - startAtSeconds) / tickSeconds) + 1;
-}
-
-export function groupFeedRowsByTick(
-  rows: ImportantFeedRow[],
-  tickOf: (atMs: number) => number,
-): Array<{ tick: number; rows: ImportantFeedRow[] }> {
-  const groups = new Map<number, ImportantFeedRow[]>();
-  for (const row of [...rows].sort((left, right) => right.at - left.at)) {
-    const tick = tickOf(row.at);
-    const group = groups.get(tick) ?? [];
-    group.push(row);
-    groups.set(tick, group);
-  }
-  return [...groups].map(([tick, rows]) => ({ tick, rows }));
-}
+/** Every feed row shows the wall-clock time it happened. */
+export const formatFeedTime = (atMs: number): string =>
+  new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** The quick feed shows what just happened: rows inside the window, newest first, capped. */
 export function selectQuickFeedRows(

@@ -27,7 +27,7 @@ describe("resolveIdentityChipState", () => {
 
   it("an explicit ?spectate=true session is spectating as the signed-in name, with Play when the account owns a structure", () => {
     enterPlaySession("?spectate=true");
-    expect(resolveIdentityChipState(signedInPlayer())).toEqual({ kind: "spectating", name: "RASCHEL", canPlay: true });
+    expect(resolveIdentityChipState(signedInPlayer())).toEqual({ kind: "spectating", name: "raschel", canPlay: true });
   });
 
   it("an anonymous explicit spectator is spectating without a name or Play", () => {
@@ -56,7 +56,7 @@ describe("resolveIdentityChipState", () => {
     overrideSpectateIntent(false);
     expect(resolveIdentityChipState(signedInPlayer())).toEqual({
       kind: "player",
-      name: "RASCHEL",
+      name: "raschel",
       realmCount: 3,
       standing: { rank: 12, points: 4100 },
     });

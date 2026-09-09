@@ -10,8 +10,9 @@ it("keeps Settings to profile, video, audio, shortcuts and session, with no Cinz
   expect(source).toContain("getShortcutManager().getShortcuts()");
   expect(source).toContain("CHAT_SHORTCUT");
   expect(source).toContain("bg-gold text-dark-brown");
+  expect(source).toContain("RENDER_MODE_OPTIONS");
   expect(source).toContain("Copy address");
   expect(source).toContain("Sign out");
   expect(source).toContain("Leave game");
-  expect(source.match(/font-sans/g)?.length ?? 0).toBeGreaterThan(1);
+  expect(source).toContain("HUD_PILL_BUTTON");
 });

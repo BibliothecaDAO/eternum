@@ -384,16 +384,6 @@ const PlayerRow = ({
               >{`0x${BigInt(player.address).toString(16)}`}</span>
             )}
           </div>
-          {player.isUser && (
-            <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
-              You
-            </span>
-          )}
-          {isSelected && (
-            <span className="shrink-0 rounded-full border border-amber-300/70 bg-amber-300/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
-              Viewing
-            </span>
-          )}
         </div>
         {showTribeDetails ? (
           <div

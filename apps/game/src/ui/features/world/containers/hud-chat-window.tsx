@@ -10,7 +10,7 @@ import {
 } from "@/ui/features/social";
 import { configManager } from "@bibliothecadao/eternum";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { env } from "../../../../../env";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
@@ -18,8 +18,10 @@ const isTypingTarget = (target: EventTarget | null) =>
   target instanceof Element &&
   target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
 
-/** One strip at the foot of the right column: the last message and the unread count. It expands over the tile details. */
-export function HudChatWindow() {
+const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
+
+/** The strip at the foot of the right column: last message and unread count. Open, it takes the details' place. */
+export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const address = useAccountStore((state) => state.account?.address);
   const zoneId = `game:${configManager.getActiveGameId()}`;
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
@@ -27,12 +29,17 @@ export function HudChatWindow() {
     [address, zoneId],
   );
   useRealtimeChatInitializer(initializer);
-  const [open, setOpen] = useState(false);
+  const connection = useRealtimeChatSelector((state) => state.connectionStatus);
+  const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
   const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
   const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   const pane = useRef<HTMLElement>(null);
 
+  // The strip shows the last message before the chat was ever opened, so history loads on connect.
+  useEffect(() => {
+    if (connection === "connected") void loadWorldHistory({ zoneId, limit: 10 });
+  }, [connection, loadWorldHistory, zoneId]);
   useEffect(() => {
     setShellOpen(open);
     return () => setShellOpen(false);
@@ -45,16 +52,16 @@ export function HudChatWindow() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && open) {
         event.stopImmediatePropagation();
-        setOpen(false);
+        onOpenChange(false);
         return;
       }
       if (event.key !== CHAT_SHORTCUT.key || open || event.repeat || event.defaultPrevented) return;
       if (isTypingTarget(event.target)) return;
       event.preventDefault();
-      setOpen(true);
+      onOpenChange(true);
     };
     const onMapPointerDown = (event: PointerEvent) => {
-      if (open && event.target instanceof HTMLCanvasElement) setOpen(false);
+      if (open && event.target instanceof HTMLCanvasElement) onOpenChange(false);
     };
     window.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("pointerdown", onMapPointerDown);
@@ -62,22 +69,22 @@ export function HudChatWindow() {
       window.removeEventListener("keydown", onKeyDown, true);
       document.removeEventListener("pointerdown", onMapPointerDown);
     };
-  }, [initializer, open]);
+  }, [initializer, onOpenChange, open]);
 
   const stripText = !initializer
     ? "Sign in to chat"
     : lastMessage
-      ? `${lastMessage.sender.displayName?.trim() || lastMessage.sender.playerId}: ${lastMessage.content}`
+      ? `${lastMessage.sender.displayName?.trim() || shortAddress(lastMessage.sender.playerId)}: ${lastMessage.content}`
       : "No messages yet";
 
   return (
-    <div className="relative shrink-0">
+    <>
       {open && (
         <section
           ref={pane}
           aria-label="Chat"
           className={cn(
-            "pointer-events-auto absolute inset-x-0 bottom-full mb-2 flex h-[min(60vh,520px)] flex-col overflow-hidden rounded-xl",
+            "pointer-events-auto mt-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
             OVERLAY_SURFACE_BASE,
           )}
         >
@@ -95,9 +102,9 @@ export function HudChatWindow() {
         aria-label="Chat strip"
         aria-expanded={open}
         disabled={!initializer}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => onOpenChange(!open)}
         className={cn(
-          "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
+          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
           OVERLAY_SURFACE_BASE,
           initializer ? "hover:border-gold/50" : "cursor-default",
         )}
@@ -110,6 +117,6 @@ export function HudChatWindow() {
           </span>
         )}
       </button>
-    </div>
+    </>
   );
 }

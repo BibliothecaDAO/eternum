@@ -28,7 +28,6 @@ import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
-import { StructureActionsRow } from "../../actions/structure-actions-row";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -220,7 +219,6 @@ const StructureBannerEntityDetailContent = memo(
                 </Button>
               )}
             </div>
-            {isMine && <StructureActionsRow structureEntityId={Number(structure.entity_id)} />}
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-gold/15 pt-2">
                 <HyperstructureVPDisplay

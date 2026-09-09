@@ -44,7 +44,6 @@ import { useComponentValue } from "@dojoengine/react";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
-import { StructureActionsRow } from "@/ui/features/world/components/actions/structure-actions-row";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { TileManager } from "@bibliothecadao/eternum";
@@ -447,7 +446,6 @@ const LocalTilePanel = () => {
   if (isCastleTile) {
     return (
       <InfoBubble title={panelTitle} bodyClassName="pt-0">
-        {canManageBuilding && <StructureActionsRow structureEntityId={structureEntityId} />}
         <RealmUpgradeCompact />
         {canManageBuilding && <InlineProduction entityId={structureEntityId} resource={ResourcesIds.Labor} />}
       </InfoBubble>

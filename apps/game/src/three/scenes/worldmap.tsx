@@ -2198,7 +2198,7 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      toast.success("Creating Hyperstructure...");
+      toast.success("Creating Hyperstructure...", { location: { x: hexCoords.col, y: hexCoords.row } });
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
       toast.error("Unable to create this Hyperstructure right now.");

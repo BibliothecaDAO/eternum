@@ -10,7 +10,7 @@ import { MarketModal } from "@/ui/features/economy/trading";
 import { ProductionModal } from "@/ui/features/settlement";
 import type { ID } from "@bibliothecadao/types";
 
-/** Build · Production · Military · Transfer for one owned structure, rendered under its name in the tile details. */
+/** Build · Production · Military · Transfer for the active owned structure, at the top of its realm panel. */
 export const StructureActionsRow = ({ structureEntityId }: { structureEntityId: ID }) => {
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
@@ -46,7 +46,7 @@ export const StructureActionsRow = ({ structureEntityId }: { structureEntityId: 
   if (!ordersAllowed) return null;
 
   return (
-    <div className="flex items-center gap-2 pt-2" aria-label="Structure actions">
+    <div className="flex items-center gap-2 pb-2" aria-label="Structure actions">
       <CircleButton
         variant="hud"
         size="sm"

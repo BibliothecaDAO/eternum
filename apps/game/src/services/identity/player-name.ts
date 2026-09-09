@@ -1,3 +1,4 @@
+import { buildFallbackPlayerName } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 
 const MAX_SHORT_STRING_LENGTH = 31;
@@ -8,7 +9,7 @@ export const resolvePlayerName = (address: string, preferredName?: string | null
     return normalizedPreferredName;
   }
 
-  return `Player-${address.slice(-6)}`;
+  return buildFallbackPlayerName(address);
 };
 
 export const resolvePlayerNameFelt = (address: string, preferredName?: string | null): string =>
