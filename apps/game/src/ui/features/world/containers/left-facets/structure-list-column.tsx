@@ -2,7 +2,7 @@ import { HUD_SECTION_HEIGHT } from "../hud-layout";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY_MUTED, HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
@@ -84,13 +84,7 @@ export const StructureListColumn = memo(() => {
     [setPendingRenameStructureEntityId],
   );
 
-  if (allStructures.length === 0) {
-    return (
-      <div className={cn("pointer-events-auto rounded-xl px-3 py-2", OVERLAY_SURFACE_BASE)}>
-        <span className={HUD_LABEL}>No structures synced yet</span>
-      </div>
-    );
-  }
+  if (allStructures.length === 0) return null;
 
   return (
     <div className="flex min-w-0 shrink-0 flex-col" style={{ height: HUD_SECTION_HEIGHT }}>

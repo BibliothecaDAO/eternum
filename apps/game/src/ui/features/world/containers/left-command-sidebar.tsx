@@ -2,7 +2,6 @@ import { SpectatorStandings } from "./spectator-standings";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
-import { LeftActionsRow } from "./left-actions-row";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -69,10 +68,8 @@ export const LeftCommandSidebar = memo(() => {
 
   return (
     <>
-      {/* Left control column — always-visible vertical list of all the player's
-          structures. The active card expands to show Suggested Actions only.
-          Heavier views (Production, Military) live in centered modals
-          triggered from the action row under the resource panel. */}
+      {/* Left control column — the player's structures and the active one's token panel. The action row
+          lives in the tile details of the selected own structure. */}
       {ConnectedAccount && (
         <div
           className={cn(
@@ -83,7 +80,6 @@ export const LeftCommandSidebar = memo(() => {
         >
           <StructureListColumn />
           <EmpireCockpit />
-          <LeftActionsRow />
         </div>
       )}
 
