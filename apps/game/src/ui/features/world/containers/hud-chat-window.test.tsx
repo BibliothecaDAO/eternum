@@ -7,7 +7,10 @@ const mocks = vi.hoisted(() => ({
   unreadDirectTotal: 1,
   worldZones: {
     "game:28": { messages: [{ id: "m1", content: "gg wp", sender: { playerId: "0x9", displayName: "Rasch" } }] },
-  } as Record<string, { messages: Array<{ id: string; content: string; sender: { playerId: string; displayName?: string } }> }>,
+  } as Record<
+    string,
+    { messages: Array<{ id: string; content: string; sender: { playerId: string; displayName?: string } }> }
+  >,
   connectionStatus: "connected",
   actions: { setShellOpen: vi.fn(), loadWorldHistory: vi.fn() },
 }));

@@ -4,7 +4,6 @@
 // Form Controls
 export { default as Button } from "./button";
 export { MaxButton } from "./max-button";
-export { RangeInput } from "./range-input";
 export { Select } from "./select";
 export { default as TextInput } from "./text-input";
 export { default as Panel } from "./panel";

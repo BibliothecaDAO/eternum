@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 type ConnectionStatus = "connected" | "degraded" | "disconnected";
-export type StreamStatus = "connected" | "stale" | "reconnecting" | "failed";
+type StreamStatus = "connected" | "stale" | "reconnecting" | "failed";
 
 interface ConnectionState {
   status: ConnectionStatus;

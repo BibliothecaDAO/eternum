@@ -24,7 +24,10 @@ export const StructureActionsRow = ({ structureEntityId }: { structureEntityId: 
   const showTradeAction = mode.ui.showTradeMenu && ordersAllowed;
 
   // Every action works on this structure, so it becomes the active one first.
-  const activate = useCallback(() => setStructureEntityId(structureEntityId), [setStructureEntityId, structureEntityId]);
+  const activate = useCallback(
+    () => setStructureEntityId(structureEntityId),
+    [setStructureEntityId, structureEntityId],
+  );
   const toggleView = useCallback(
     (target: LeftView) => () => {
       activate();

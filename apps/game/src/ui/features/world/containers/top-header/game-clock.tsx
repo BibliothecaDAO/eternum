@@ -71,7 +71,10 @@ export const GameClock = memo(() => {
             <span key={phase.name} className="relative flex-1 bg-gold/20">
               {index < dayPhase.index && <span className="absolute inset-0 bg-gold/60" />}
               {index === dayPhase.index && (
-                <span className="absolute inset-y-0 left-0 bg-gold" style={{ width: `${Math.round(dayPhase.progress)}%` }} />
+                <span
+                  className="absolute inset-y-0 left-0 bg-gold"
+                  style={{ width: `${Math.round(dayPhase.progress)}%` }}
+                />
               )}
             </span>
           ))}

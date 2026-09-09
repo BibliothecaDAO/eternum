@@ -24,7 +24,10 @@ beforeEach(() => {
   canvas.id = "main-canvas";
   document.body.append(canvas);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ transferFromImageBitmap: vi.fn() } as never);
-  vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ close: vi.fn() })));
+  vi.stubGlobal(
+    "createImageBitmap",
+    vi.fn(() => Promise.resolve({ close: vi.fn() })),
+  );
 });
 afterEach(() => {
   vi.useRealTimers();

@@ -252,7 +252,15 @@ const SelectedStructureActionPanel = ({
 };
 
 /** The chrome every occupied tile shares: one surface, a header band with the coordinates, sections below. */
-const TileChrome = ({ title, headerAction, children }: { title: string; headerAction?: ReactNode; children: ReactNode }) => (
+const TileChrome = ({
+  title,
+  headerAction,
+  children,
+}: {
+  title: string;
+  headerAction?: ReactNode;
+  children: ReactNode;
+}) => (
   <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE)}>
     <InfoBubble variant="section" title={title} cue={headerAction} bodyClassName="pt-0">
       {children}

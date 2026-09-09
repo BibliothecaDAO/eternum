@@ -23,7 +23,8 @@ it("stacks feed, bottom-anchored details, then the chat strip, and collapses det
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
-  const click = (label: string) => act(async () => container.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!.click());
+  const click = (label: string) =>
+    act(async () => container.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!.click());
   try {
     await act(async () =>
       root.render(

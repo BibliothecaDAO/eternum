@@ -10,6 +10,7 @@ import {
   Vector3,
 } from "three";
 import { expect, it, vi } from "vitest";
+import { WORLD_ATMOSPHERE_PRESETS } from "@/three/effects/world-atmosphere-presets";
 import { WorldAtmosphereController } from "../effects/world-atmosphere-controller";
 import { WeatherType } from "../managers/weather-manager";
 vi.mock("../utils", () => ({ getWorldPositionForHex: () => new Vector3() }));
@@ -36,7 +37,10 @@ it("modulates day and night lighting through the same weather state while keepin
     runtime.update(0, atmosphere);
     expect(sun.intensity).toBeLessThan(clearSun);
     expect(ambient.intensity).toBeGreaterThan(clearAmbient);
-    expect(hemi.intensity).toBeGreaterThanOrEqual(1.6);
+    // Clouds never dim the fill below what the phase's preset sets.
+    expect(hemi.intensity).toBeGreaterThanOrEqual(
+      WORLD_ATMOSPHERE_PRESETS[phase === 0 ? "deepNight" : "day"].hemisphereIntensity - 0.05,
+    );
     if (phase === 0) expect(moon.intensity).toBeLessThan(clearMoon);
     else expect(moon.intensity).toBe(0);
   }

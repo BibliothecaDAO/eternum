@@ -31,7 +31,10 @@ export const EventLogPanel = ({
   const headlineFeed = orderHeadlineFeed(headlines, useNowMs(), tickSeconds);
   const { data: stories, isError, refetch } = useStoryEvents(350);
   const feed = useFeedRows();
-  const rows = selectImportantFeedRows(stories, feed, filter, address, [...headlineFeed.pinned, ...headlineFeed.recent]);
+  const rows = selectImportantFeedRows(stories, feed, filter, address, [
+    ...headlineFeed.pinned,
+    ...headlineFeed.recent,
+  ]);
   const history = [...stories].sort((left, right) => right.timestampMs - left.timestampMs);
 
   return (
