@@ -10,7 +10,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
-import { FELT_CENTER } from "@/ui/config";
+import { formatTilePanelTitle } from "./tile-panel-title";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
@@ -178,9 +178,7 @@ const MapTilePanel = () => {
     return "Army Tile";
   }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, isQuest]);
 
-  const panelTitle = selectedHex
-    ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
-    : "No Tile Selected";
+  const panelTitle = selectedHex ? formatTilePanelTitle(tileTypeLabel, selectedHex) : "No Tile Selected";
 
   return (
     <>

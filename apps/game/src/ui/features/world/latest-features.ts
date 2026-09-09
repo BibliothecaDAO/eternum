@@ -36,6 +36,13 @@ const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
     type: "fix",
+    title: "Consistent Tile Coordinates",
+    description:
+      "Structure, army and plain-tile headers all show the same map coordinates, whether you select them from the map or a panel.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
     title: "Battles Stay in Events",
     description:
       "Events loads battle history directly, so movement and production stories cannot push fights out of the feed. Confirmed updates keep the battle list current.",
