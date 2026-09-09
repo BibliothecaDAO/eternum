@@ -636,8 +636,8 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
-    usePopoverStore.getState().close("plot-construction");
     this.isEntered = false;
+    usePopoverStore.getState().close("plot-construction");
     // Capture a zoom still waiting on its debounce so quick scene switches keep it.
     this.flushPendingLocalZoomPersist();
 

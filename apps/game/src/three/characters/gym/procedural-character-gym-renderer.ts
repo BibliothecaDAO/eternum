@@ -537,7 +537,7 @@ class ProceduralCharacterGymRuntime {
     const primaryView = views[0];
     return {
       diagnostics,
-      elapsedSeconds: Number((frameIndex * plan.fixedStepSeconds).toFixed(4)),
+      elapsedSeconds: frameIndex * plan.fixedStepSeconds,
       expectedPhase,
       frameIndex,
       imageDataUrl: primaryView?.imageDataUrl ?? null,
@@ -1115,6 +1115,7 @@ function resolveRuntimeCapturePhase(
   character: ProceduralUnitActor,
 ): string {
   if (sequence === "locomotion-cycle") return "gait";
+  if (sequence === "idle-hold") return "idle";
   const stats = character.getStats();
   return sequence === "archer-shot" || sequence === "boat-broadside" || sequence === "dragon-fire"
     ? stats.rangedPhase

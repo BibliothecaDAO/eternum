@@ -73,7 +73,7 @@ export const ProceduralAnimationInspector = ({
             </p>
             <p className="text-xs font-semibold text-white">
               {result.plan.sequence} · {result.frames.length} poses · {imageCount} views · {result.plan.overlay} ·{" "}
-              {evaluation.automatedHardGatePassed ? "objective pass" : "objective fail"}
+              {evaluation.automatedHardGatePassed ? "objective pass" : "objective fail"} · {evaluation.contactMetric}
               {result.plan.rootMotionSpeed > 0 ? ` · root ${result.plan.rootMotionSpeed.toFixed(2)} u/s` : ""}
               {result.plan.truncated ? " · capped" : ""}
             </p>
@@ -123,6 +123,9 @@ export const ProceduralAnimationInspector = ({
         </div>
       </header>
 
+      {evaluation.footRollFailures.length > 0 && (
+        <p className="px-3 py-2 text-xs text-amber-200">{evaluation.footRollFailures.join(" · ")}</p>
+      )}
       {evaluation.measurements.locomotion && <LocomotionDiagnostics locomotion={evaluation.measurements.locomotion} />}
 
       <div className="flex items-stretch border-b border-white/10">
@@ -318,6 +321,18 @@ const FrameDiagnostics = ({
       <DiagnosticMetric label="R head gap" value={formatDistance(humanoid?.arms.right.handHeadClearance)} />
       <DiagnosticMetric label="Arrow gap" value={formatDistance(bow?.arrowHeadClearance)} />
       <DiagnosticMetric label="Nock / jaw" value={formatDistance(bow?.nockJawDistance)} />
+      {humanoid?.feet.left.contactKind && (
+        <DiagnosticMetric
+          label="L support / pitch"
+          value={`${humanoid.feet.left.contactKind} / ${formatDegrees(humanoid.feet.left.pitchDegrees)}`}
+        />
+      )}
+      {humanoid?.feet.right.contactKind && (
+        <DiagnosticMetric
+          label="R support / pitch"
+          value={`${humanoid.feet.right.contactKind} / ${formatDegrees(humanoid.feet.right.pitchDegrees)}`}
+        />
+      )}
       <DiagnosticMetric label="L foot Δ" value={formatDegrees(resolveFootStep(frame, previousFrame, "left"))} />
       <DiagnosticMetric label="R foot Δ" value={formatDegrees(resolveFootStep(frame, previousFrame, "right"))} />
       <div className="col-span-2 md:col-span-9">

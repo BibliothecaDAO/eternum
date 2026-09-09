@@ -1,0 +1,83 @@
+name: Deploy Box
+
+# Keeps the lab box's host services (herald, identity, launch, chat) on `next`. Every push to `next`
+# that touches one of them runs deploy/madara-lab/scripts/deploy-box.sh over SSH; the script decides
+# which units to restart and prints one JSON result line, surfaced in the step summary.
+# Needs: secret BOX_SSH_PRIVATE_KEY (a key in ubuntu's authorized_keys on the box) and variables
+# BOX_SSH_HOST (the box IP) and BOX_SSH_HOST_KEY (its `ssh-keyscan -t ed25519` line).
+on:
+  push:
+    branches: [next]
+    paths:
+      - "apps/herald/**"
+      - "apps/realms/**"
+      - "apps/launch-service/**"
+      - "apps/realtime-server/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "deploy/madara-lab/scripts/deploy-box.sh"
+      - ".github/workflows/deploy-box.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-box
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BOX_SSH_HOST: ${{ vars.BOX_SSH_HOST }}
+    steps:
+      - name: Validate box access configuration
+        env:
+          BOX_SSH_PRIVATE_KEY: ${{ secrets.BOX_SSH_PRIVATE_KEY }}
+          BOX_SSH_HOST_KEY: ${{ vars.BOX_SSH_HOST_KEY }}
+        run: |
+          for name in BOX_SSH_HOST BOX_SSH_HOST_KEY BOX_SSH_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::$name is required"; exit 1; fi
+          done
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        env:
+          BOX_SSH_PRIVATE_KEY: ${{ secrets.BOX_SSH_PRIVATE_KEY }}
+          BOX_SSH_HOST_KEY: ${{ vars.BOX_SSH_HOST_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$BOX_SSH_PRIVATE_KEY" > ~/.ssh/box && chmod 600 ~/.ssh/box
+          printf '%s\n' "$BOX_SSH_HOST_KEY" > ~/.ssh/known_hosts
+
+      # The script is copied from this checkout rather than run from the box's own tree, so a box
+      # sitting on an old branch still runs the current recipe on its first deploy.
+      - name: Redeploy host services from next
+        run: |
+          set -o pipefail
+          scp -i ~/.ssh/box -o BatchMode=yes deploy/madara-lab/scripts/deploy-box.sh "ubuntu@$BOX_SSH_HOST:/tmp/deploy-box.sh"
+          ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=next bash /tmp/deploy-box.sh" | tee deploy-box.log
+
+      - name: Publish deploy result
+        if: always()
+        run: |
+          result=$(tail -n 1 deploy-box.log 2>/dev/null || echo '{"event":"box_deploy","status":"unknown"}')
+          {
+            echo "## Box deploy"
+            echo
+            echo '```json'
+            echo "$result"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload deploy log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-box
+          path: deploy-box.log
+          if-no-files-found: warn

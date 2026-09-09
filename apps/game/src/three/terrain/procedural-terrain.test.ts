@@ -42,8 +42,7 @@ describe("ProceduralTerrain", () => {
     const geometry = ground.geometry;
     const worldMaterial = ground.material;
     const pools = terrain.object3d.getObjectByName("terrain-prop-pools")!;
-    const wildlife = terrain.object3d.getObjectByName("terrain-wildlife") as Mesh;
-    const wildlifeMaterial = Array.isArray(wildlife.material) ? wildlife.material[0] : wildlife.material;
+    const wildlife = terrain.object3d.getObjectByName("terrain-wildlife")!;
     const beforeSurface = terrain.sampleSurface(0, 0);
 
     terrain.setSurfacePresentation("ethereal");
@@ -52,17 +51,17 @@ describe("ProceduralTerrain", () => {
     expect(ground.geometry).toBe(geometry);
     expect(terrain.sampleSurface(0, 0)).toEqual(beforeSurface);
     expect(pools.visible).toBe(false);
-    expect(wildlifeMaterial.visible).toBe(false);
+    expect(wildlife.visible).toBe(false);
     terrain.setQualityTier("overview");
     terrain.setQualityTier("detail");
     expect(ground.material).toBe(etherealMaterial);
     expect(pools.visible).toBe(false);
-    expect(wildlifeMaterial.visible).toBe(false);
+    expect(wildlife.visible).toBe(false);
 
     terrain.setSurfacePresentation("world");
     expect(ground.material).toBe(worldMaterial);
     expect(pools.visible).toBe(true);
-    expect(wildlifeMaterial.visible).toBe(true);
+    expect(wildlife.visible).toBe(true);
     terrain.setSurfacePresentation("ethereal");
     expect(ground.material).toBe(etherealMaterial);
     const dispose = vi.spyOn(Array.isArray(etherealMaterial) ? etherealMaterial[0] : etherealMaterial, "dispose");
@@ -314,24 +313,18 @@ describe("ProceduralTerrain", () => {
   it("hides wildlife for overview and reduced motion, then releases it with its terrain page", () => {
     const terrain = new ProceduralTerrain();
     terrain.present([terrain.preparePage(forestRequest())]);
-    const flock = terrain.object3d.getObjectByName("terrain-wildlife") as InstancedMesh;
-    expect(flock).toBeDefined();
-    const material = Array.isArray(flock.material) ? flock.material[0] : flock.material;
-    const disposeGeometry = vi.spyOn(flock.geometry, "dispose");
-    const disposeInstances = vi.spyOn(flock, "dispose");
-    const disposeMaterial = vi.spyOn(material, "dispose");
-    expect(material.visible).toBe(true);
+    const wildlife = terrain.object3d.getObjectByName("terrain-wildlife")!;
+    expect(terrain.getWildlifeStats().count).toBe(0); // Ambient spawning is deferred beyond the terrain commit.
+    expect(wildlife.visible).toBe(true);
     terrain.setQualityTier("overview");
-    expect(material.visible).toBe(false);
+    expect(wildlife.visible).toBe(false);
     terrain.setQualityTier("detail");
-    expect(material.visible).toBe(true);
+    expect(wildlife.visible).toBe(true);
     useWorldAppearanceStore.getState().setReducedMotion(true);
-    expect(material.visible).toBe(false);
+    expect(wildlife.visible).toBe(false);
     terrain.present([]);
-    expect(disposeGeometry).toHaveBeenCalledOnce();
-    expect(disposeInstances).toHaveBeenCalledOnce();
+    expect(terrain.getWildlifeStats().count).toBe(0);
     terrain.dispose();
-    expect(disposeMaterial).toHaveBeenCalledOnce();
     useWorldAppearanceStore.getState().setReducedMotion(false);
   });
 

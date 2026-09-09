@@ -1,4 +1,5 @@
 import { serverEnv } from "./env";
+import { isLoopbackOrigin } from "./loopback-origins";
 
 type ApiHandler = () => Promise<Response> | Response;
 
@@ -9,7 +10,7 @@ const ALLOWED_ORIGINS = new Set([
 
 export async function handleApiCors(request: Request, handler: ApiHandler): Promise<Response> {
   const origin = request.headers.get("origin");
-  if (origin !== null && !ALLOWED_ORIGINS.has(origin)) {
+  if (origin !== null && !isAllowedOrigin(origin)) {
     return Response.json({ error: "origin_not_allowed" }, { status: 403 });
   }
 
@@ -19,6 +20,8 @@ export async function handleApiCors(request: Request, handler: ApiHandler): Prom
 
   return withCorsHeaders(await handler(), origin);
 }
+
+const isAllowedOrigin = (origin: string): boolean => ALLOWED_ORIGINS.has(origin) || isLoopbackOrigin(origin);
 
 function withCorsHeaders(response: Response, origin: string | null): Response {
   response.headers.set("access-control-allow-credentials", "true");

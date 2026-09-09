@@ -10,6 +10,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
+import { clientDataPlugin } from "./build/client-data";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
@@ -30,7 +31,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
-  const plugins = [svgr({ dimensions: false, svgo: false, typescript: true }), react()];
+  const plugins = [clientDataPlugin(), svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
   if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);

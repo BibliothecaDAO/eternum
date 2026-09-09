@@ -3,7 +3,7 @@ import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { HintSection } from "@/ui/features/progression";
+import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 

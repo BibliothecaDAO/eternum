@@ -33,6 +33,7 @@ export type ProceduralAnimationCaptureSequence =
   | "archer-shot"
   | "boat-broadside"
   | "dragon-fire"
+  | "idle-hold"
   | "locomotion-cycle"
   | "melee-attack";
 export type ProceduralAnimationCaptureSampling = "all-frames" | "key-phases" | "phase-atlas";
@@ -186,6 +187,9 @@ export function createProceduralAnimationCapturePlan(
   options: ProceduralAnimationCaptureOptions = {},
 ): ProceduralAnimationCapturePlan {
   const sequence = options.sequence ?? resolveDefaultAnimationCaptureSequence(config.kind);
+  if (sequence === "idle-hold" && (config.kind !== "knight" || config.humanoid.animationMode !== "idle")) {
+    throw new Error("Idle hold requires a stationary knight in idle mode");
+  }
   const overlay = options.overlay ?? resolveDefaultAnimationCaptureOverlay(sampling);
   const rootMotionSpeed = resolveCaptureRootMotionSpeed(config, sequence, options.rootMotionSpeed);
   const fixedStepSeconds = config.humanoid.fixedStep;
@@ -228,11 +232,16 @@ function resolveActionCapturePhases(
     );
   }
   if (sequence === "melee-attack") {
-    return traceActionCapturePhases(
+    const phases = traceActionCapturePhases(
       startProceduralMeleeAttack(createIdleProceduralMeleeAttackState()),
       (state) => advanceProceduralMeleeAttack(state, config.melee, fixedStepSeconds, false).state,
       "Melee",
     );
+    const startFrame = phases[phases.length - 1].endFrame;
+    return [
+      ...phases,
+      { id: "idle", label: "Settled", startFrame, endFrame: startFrame + Math.ceil(0.2 / fixedStepSeconds) + 1 },
+    ];
   }
   if (sequence === "boat-broadside") {
     return traceActionCapturePhases(
@@ -352,6 +361,7 @@ function resolveCapturePhaseDurations(
       phase("contact", "Contact", config.melee.contactSeconds),
       phase("followThrough", "Follow-through", config.melee.followThroughSeconds),
       phase("recover", "Recover", config.melee.recoverSeconds),
+      phase("idle", "Settled", 0.2),
     ];
   }
   if (sequence === "boat-broadside") {
@@ -371,6 +381,8 @@ function resolveCapturePhaseDurations(
       phase("recover", "Recover", config.dragon.recoverSeconds),
     ];
   }
+
+  if (sequence === "idle-hold") return [phase("idle", "Idle hold", 2)];
 
   const mountedDragon = config.kind === "paladin" && config.dragon.tier === 3;
   const cadence =
@@ -453,7 +465,7 @@ function resolveSampleFrames(
   }
 
   if (sampling === "phase-atlas") {
-    if (sequence === "locomotion-cycle") {
+    if (sequence === "locomotion-cycle" || sequence === "idle-hold") {
       return {
         frames: [0, 0.25, 0.5, 0.75].map((cycleProgress) =>
           clampFrameIndex(Math.floor(totalFrames * cycleProgress), totalFrames),

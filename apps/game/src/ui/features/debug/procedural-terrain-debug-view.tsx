@@ -1,3 +1,4 @@
+import { GraphicsLabsNav } from "./graphics-labs-nav";
 import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +22,8 @@ import { DEFAULT_TERRAIN_LAB_PREVIEW, type TerrainLabPreview } from "@/three/deb
 import { MODEL_TYPE_TO_FILE } from "@/three/constants/army-constants";
 
 const EMPTY_STATS: ProceduralTerrainDebugStats = {
+  preparedFrontierCells: 0,
+  wildlife: { count: 0, loaded: 0, pending: 0, failed: [], visible: true, creatures: [] },
   activeMode: "webgpu",
   biomeCount: 0,
   buildingInstances: 0,
@@ -226,14 +229,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             </Link>
           </div>
 
-          <nav className="flex gap-3 text-sm" aria-label="Graphics labs">
-            <Link to="/biome-lab" className={!localMode ? "text-emerald-200" : "text-stone-400"}>
-              World biomes
-            </Link>
-            <Link to="/local-lab" className={localMode ? "text-emerald-200" : "text-stone-400"}>
-              Local mode
-            </Link>
-          </nav>
+          <GraphicsLabsNav />
           {localMode && (
             <label className="flex flex-col gap-1 text-sm">
               Buildable radius

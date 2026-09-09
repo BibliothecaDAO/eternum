@@ -143,6 +143,7 @@ const CAMERA_DISTANCE = Object.freeze({ close: 27, far: 52, medium: 38 });
 const INITIAL_FOCUS = Object.freeze({ col: -1, row: -1 });
 const COVERAGE_GRID = Object.freeze([-0.9, -0.45, 0, 0.45, 0.9]);
 const GROUND_PLANE = new Plane(new Vector3(0, 1, 0), 0);
+const ASSET_REQUEST_TIMELINE_CAPACITY = 4096;
 
 export async function mountProceduralTerrainBenchmarkRenderer(
   input: MountProceduralTerrainBenchmarkRendererInput,
@@ -166,6 +167,7 @@ export async function mountProceduralTerrainBenchmarkRenderer(
 async function createBenchmarkRuntime(
   input: MountProceduralTerrainBenchmarkRendererInput,
 ): Promise<TerrainBenchmarkRuntime> {
+  reserveAssetRequestTimeline();
   const renderer = await createRenderer(input);
   const scene = createScene();
   const camera = new PerspectiveCamera(36, 1, 0.1, 500);
@@ -583,11 +585,18 @@ function countVisiblePropInstances(terrain: WorldmapProceduralTerrain): number {
   return instances;
 }
 
+// Vite dev serves every module as its own resource entry and fills the browser's default
+// 250-entry timing buffer before the terrain assets load, so the asset counts below read zero
+// unless the buffer is sized ahead of the first asset request.
+function reserveAssetRequestTimeline(): void {
+  performance.setResourceTimingBufferSize(ASSET_REQUEST_TIMELINE_CAPACITY);
+}
+
 function readAssetRequestCounts(): TerrainBenchmarkSnapshot["assets"] {
   const resourceNames = performance.getEntriesByType("resource").map(({ name }) => name);
   return {
     groundArrayRequests: resourceNames.filter((name) => name.includes("/textures/procedural-terrain/ground-")).length,
-    propCatalogRequests: resourceNames.filter((name) => name.endsWith("/ultimate-nature-props.glb")).length,
+    propCatalogRequests: resourceNames.filter((name) => name.endsWith("/biome-kit-props.glb")).length,
   };
 }
 

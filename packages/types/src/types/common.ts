@@ -365,21 +365,6 @@ export interface Resource {
 
 /// REALMS
 
-export interface RealmInterface {
-  realmId: ID;
-  name: string;
-  cities: number;
-  rivers: number;
-  wonder: number;
-  harbors: number;
-  regions: number;
-  resourceTypesCount: number;
-  resourceTypesPacked: bigint;
-  order: number;
-  owner?: ContractAddress;
-  imageUrl: string;
-}
-
 export interface Position {
   alt: boolean;
   x: number;

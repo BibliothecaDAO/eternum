@@ -141,6 +141,10 @@ export class WorldFold {
     if (!rows) throw new Error(`Store event ${event.model.name} is not a persistent sync model`);
 
     const existing = this.storedRow(event.model.name, event.entityId);
+    // Dojo's erase_model emits StoreDelRecord whether or not the row was ever written (ResourceArrival
+    // is erased when an arrival day settles to zero, initialized or not), so a delete for a row this
+    // fold never held is chain-legal: nothing to remove, nothing to broadcast.
+    if (event.kind === "delete" && !existing) return undefined;
     const gameId = event.model.s2Scope === "game" ? this.eventGameId(event, existing) : undefined;
 
     if (event.kind === "set") {

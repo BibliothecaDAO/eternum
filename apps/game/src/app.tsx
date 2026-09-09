@@ -37,6 +37,9 @@ const DebugProceduralTerrainBenchmarkView = lazy(() =>
 const DebugWorldFxGymView = lazy(() =>
   import("./ui/features/debug/world-fx-gym-view").then((module) => ({ default: module.WorldFxGymView })),
 );
+const ModelLabView = lazy(() =>
+  import("./ui/features/debug/model-lab-view").then((module) => ({ default: module.ModelLabView })),
+);
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
@@ -55,6 +58,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route
+          path="/model-lab"
+          element={
+            <DebugRouteShell>
+              <ModelLabView />
+            </DebugRouteShell>
+          }
+        />
         <Route
           path="/local-lab"
           element={

@@ -1,5 +1,5 @@
 import { Headline } from "@/ui/design-system/molecules/headline";
-import { ExplorationTable } from "@/ui/features/progression";
+import { ExplorationTable } from "./exploration-table";
 
 export const TheMap = () => {
   return (

@@ -1,3 +1,4 @@
+import type { CharacterFootGeometry } from "./procedural-character-foot-roll";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 
 export const CHARACTER_PART_IDS = [
@@ -19,6 +20,7 @@ type CharacterSide = "left" | "right";
 type CharacterJointKind = "hinge" | "swing-twist";
 
 export interface CharacterMorphology {
+  foot: CharacterFootGeometry;
   scale: number;
   shoulderWidth: number;
   hipWidth: number;
@@ -49,7 +51,13 @@ export interface ResolvedCharacterRig {
 
 export function applyCharacterRigLimbLengths(
   rig: ResolvedCharacterRig,
-  lengths: { forearmLength: number; shinLength: number; thighLength: number; upperArmLength: number },
+  lengths: {
+    forearmLength: number;
+    shinLength: number;
+    thighLength: number;
+    upperArmLength: number;
+    foot: CharacterFootGeometry;
+  },
 ): ResolvedCharacterRig {
   const upperArmLength = resolveMeasuredLength(lengths.upperArmLength, rig.morphology.upperArmLength);
   const forearmLength = resolveMeasuredLength(lengths.forearmLength, rig.morphology.forearmLength);
@@ -58,7 +66,7 @@ export function applyCharacterRigLimbLengths(
   const thighRatio = measuredLegLength > 0.1 ? lengths.thighLength / measuredLegLength : 0.5;
   const thighLength = rigLegLength * thighRatio;
   const shinLength = rigLegLength - thighLength;
-  const morphology = { ...rig.morphology, forearmLength, shinLength, thighLength, upperArmLength };
+  const morphology = { ...rig.morphology, forearmLength, shinLength, thighLength, upperArmLength, foot: lengths.foot };
   return {
     morphology,
     parts: {
@@ -80,6 +88,7 @@ export function resolveCharacterRig(config: ProceduralCharacterConfig): Resolved
   const scale = 0.94 + random() * 0.12;
   const build = 0.92 + random() * 0.18 + (config.tier - 1) * 0.025;
   const morphology: CharacterMorphology = {
+    foot: { ankleHeight: 0.11 * scale, heelLength: 0.074 * scale, ballLength: 0.185 * scale },
     scale,
     shoulderWidth: 0.68 * build * scale,
     hipWidth: 0.4 * (0.96 + random() * 0.08) * scale,

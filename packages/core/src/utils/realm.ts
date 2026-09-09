@@ -1,28 +1,8 @@
-import { ClientComponents, findResourceIdByTrait, ID, orders, RealmInfo, RealmInterface } from "@bibliothecadao/types";
+import { ClientComponents, ID, RealmInfo } from "@bibliothecadao/types";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { configManager, getAddressNameFromEntity, ResourceManager, DEFAULT_COORD_ALT } from "..";
 import realmsJson from "../data/realms.json";
-import { packValues, unpackValue } from "./packed-data";
-
-interface Attribute {
-  trait_type: string;
-  value: any;
-}
-
-let realms: {
-  [key: string]: any;
-} = {};
-
-const loadRealms = async () => {
-  try {
-    const { default: fullRealms } = await import("../data/full-realms.json");
-    realms = fullRealms;
-  } catch {
-    // Consumers fall back to the smaller bundled realm index when the full dataset cannot load.
-  }
-};
-
-void loadRealms();
+import { unpackValue } from "./packed-data";
 
 export const getRealmNameById = (realmId: ID): string => {
   const features = realmsJson["features"][realmId - 1];
@@ -66,50 +46,6 @@ export function getRealmInfo(entity: Entity, components: ClientComponents): Real
       structure,
     };
   }
-}
-
-export function getOffchainRealm(realmId: ID): RealmInterface | undefined {
-  const realmsData = realms;
-  const realm = realmsData[realmId.toString()];
-  if (!realm) return;
-
-  const resourceIds = realm.attributes
-    .filter(({ trait_type }: Attribute) => trait_type === "Resource")
-    .map(({ value }: Attribute) => findResourceIdByTrait(value));
-
-  const resourceTypesPacked = BigInt(packValues(resourceIds));
-
-  const getAttributeValue = (attributeName: string): number => {
-    const attribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === attributeName);
-    return attribute ? attribute.value : 0;
-  };
-
-  const cities = getAttributeValue("Cities");
-  const harbors = getAttributeValue("Harbors");
-  const rivers = getAttributeValue("Rivers");
-  const regions = getAttributeValue("Regions");
-
-  const wonder: number = 1;
-
-  const orderAttribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === "Order");
-  const orderName = orderAttribute ? orderAttribute.value.split(" ").pop() || "" : "";
-  const order = orders.find(({ orderName: name }) => name === orderName)?.orderId || 0;
-
-  const imageUrl = realm.image;
-
-  return {
-    realmId,
-    name: getRealmNameById(realmId),
-    resourceTypesPacked,
-    resourceTypesCount: resourceIds.length,
-    cities,
-    harbors,
-    rivers,
-    regions,
-    wonder,
-    order,
-    imageUrl,
-  };
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {

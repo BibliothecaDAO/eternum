@@ -27,6 +27,16 @@ const SCENE_IDS = [
 ];
 const QUALITY_TIERS = ["overview", "balanced", "detail"];
 
+function isWildlifePopulationValid(wildlife) {
+  if (!wildlife || !Number.isInteger(wildlife.count) || wildlife.count < 0 || wildlife.count > 32) return false;
+  if (wildlife.visible && (wildlife.pending !== 0 || wildlife.failed.length > 0 || wildlife.loaded !== wildlife.count))
+    return false;
+  return (
+    wildlife.creatures.length === wildlife.count &&
+    new Set(wildlife.creatures.map((creature) => creature.region)).size === wildlife.count
+  );
+}
+
 export function buildTerrainGalleryUrl(
   baseUrl,
   rendererMode,
@@ -206,17 +216,17 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     }
     if (
       expectsFog &&
-      (!(result.snapshot?.frontierPreviewCells > 0) ||
-        result.snapshot.frontierPreviewCells + result.snapshot.shroudActiveReveals !==
+      (!(result.snapshot?.preparedFrontierCells > 0) ||
+        result.snapshot.preparedFrontierCells + result.snapshot.shroudActiveReveals !==
           result.snapshot.shroudFrontierInstances)
     ) {
-      reasons.push(`${label}: frontier preview geometry did not match the committed one-ring fog frontier`);
+      reasons.push(`${label}: prepared frontier cells did not match the committed one-ring fog frontier`);
     }
     if (!expectsFog && result.snapshot?.shroudInstances !== 0) {
       reasons.push(`${label}: fully explored scene unexpectedly rendered exploration fog cells`);
     }
-    if (!expectsFog && result.snapshot?.frontierPreviewCells !== 0) {
-      reasons.push(`${label}: fully explored scene unexpectedly rendered frontier preview geometry`);
+    if (!expectsFog && result.snapshot?.preparedFrontierCells !== 0) {
+      reasons.push(`${label}: fully explored scene unexpectedly rendered prepared frontier cells`);
     }
     if (!expectsFog && result.snapshot?.fogTerrainCells !== 0) {
       reasons.push(`${label}: fully explored scene unexpectedly rendered fog-covered terrain`);
@@ -243,7 +253,13 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
     if (!(result.snapshot?.triangles > 0 && result.snapshot.triangles <= 3_000_000)) {
       reasons.push(`${label}: triangle count exceeded policy or was unavailable`);
     }
-    if (!(result.snapshot?.drawCalls > 0 && result.snapshot.drawCalls <= 40)) {
+    const wildlife = result.snapshot?.wildlife;
+    if (!isWildlifePopulationValid(wildlife)) {
+      reasons.push(`${label}: wildlife loading or 8x8 density contract failed`);
+    }
+    // Authored rigid joints cost at most 28 primitives per creature, drawn in color and shadow passes.
+    const drawCallBudget = 40 + (wildlife?.visible ? Math.min(wildlife.loaded, 32) * 56 : 0);
+    if (!(result.snapshot?.drawCalls > 0 && result.snapshot.drawCalls <= drawCallBudget)) {
       reasons.push(`${label}: draw-call count exceeded policy or was unavailable`);
     }
     if (!(result.imageCoverage >= 0.12)) reasons.push(`${label}: screenshot terrain coverage was below 12%`);
@@ -281,7 +297,7 @@ export function evaluateTerrainGalleryResults(results, options = {}) {
         metric.dustTriangles !== reference.dustTriangles ||
         metric.fogOpacity !== reference.fogOpacity ||
         metric.fogTerrainCells !== reference.fogTerrainCells ||
-        metric.frontierPreviewCells !== reference.frontierPreviewCells ||
+        metric.preparedFrontierCells !== reference.preparedFrontierCells ||
         metric.groundTextureBytes !== reference.groundTextureBytes ||
         metric.groundTextureLayers !== reference.groundTextureLayers ||
         metric.groundCoverInstances !== reference.groundCoverInstances ||

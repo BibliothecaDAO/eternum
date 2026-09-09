@@ -8,7 +8,7 @@ import Hammer from "lucide-react/dist/esm/icons/hammer";
 import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
 
 const SelectPreviewBuildingMenu = lazy(() =>
-  import("@/ui/features/settlement").then((module) => ({
+  import("@/ui/features/settlement/construction/select-preview-building").then((module) => ({
     default: module.SelectPreviewBuildingMenu,
   })),
 );

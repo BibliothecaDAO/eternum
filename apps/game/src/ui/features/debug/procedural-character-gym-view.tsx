@@ -1,3 +1,9 @@
+import { KnightAnimationReviewPanel } from "./knight-animation-review-panel";
+import {
+  createKnightAnimationScenario,
+  readKnightAnimationScenario,
+  resolveKnightReviewSequence,
+} from "@/three/characters/gym/knight-animation-review";
 import {
   Camera,
   Check,
@@ -116,6 +122,7 @@ const INITIAL_STATS: ProceduralCharacterGymStats = {
 };
 
 interface CharacterGymDebugBridge {
+  loadReviewScenario(scenario?: unknown): { sequence: ProceduralAnimationCaptureSequence; rootMotionSpeed: number };
   attackMelee(): boolean;
   cancelArrow(): void;
   cancelMelee(): void;
@@ -168,6 +175,7 @@ export const ProceduralCharacterGymView = () => {
   const [captureResult, setCaptureResult] = useState<ProceduralAnimationCaptureResult | null>(null);
   const [selectedCaptureFrame, setSelectedCaptureFrame] = useState<ProceduralAnimationFrameCapture | null>(null);
   const [captureBusy, setCaptureBusy] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
 
   useEffect(
     () =>
@@ -283,6 +291,22 @@ export const ProceduralCharacterGymView = () => {
     setCaptureResult(null);
     setSelectedCaptureFrame(null);
   }, []);
+  const loadReviewScenario = useCallback(
+    (value: unknown = createKnightAnimationScenario()) => {
+      const scenario = readKnightAnimationScenario(value);
+      const collision = { ...collisionConfigRef.current, enabled: false };
+      collisionConfigRef.current = collision;
+      configRef.current = scenario.config;
+      setCollisionConfig(collision);
+      setConfig(scenario.config);
+      rendererRef.current?.updateCollisionConfig(collision);
+      rendererRef.current?.updateConfig(scenario.config);
+      rendererRef.current?.reset();
+      closeCapture();
+      return { sequence: resolveKnightReviewSequence(scenario.id), rootMotionSpeed: scenario.rootMotionSpeed };
+    },
+    [closeCapture],
+  );
   const patchConfig = useCallback((patch: ProceduralUnitConfigPatch) => {
     setSelectedPreset("custom");
     if (patch.kind === "boat") setCollisionConfig((current) => ({ ...current, enabled: false }));
@@ -316,6 +340,7 @@ export const ProceduralCharacterGymView = () => {
         captureResultRef,
         patchConfig,
         patchCollisionConfig,
+        loadReviewScenario,
       ),
     [
       attackMelee,
@@ -324,6 +349,7 @@ export const ProceduralCharacterGymView = () => {
       captureFrames,
       fireArrow,
       patchCollisionConfig,
+      loadReviewScenario,
       patchConfig,
       reset,
       runSmoke,
@@ -409,8 +435,8 @@ export const ProceduralCharacterGymView = () => {
         }
         melee={!collisionConfig.enabled && (config.kind === "knight" || config.kind === "paladin")}
         paused={paused}
-        ready={ready}
-        captureBusy={captureBusy}
+        ready={ready && !reviewBusy}
+        captureBusy={captureBusy || reviewBusy}
         onDrop={() => runPhysicsAction("startRagdoll")}
         onCancelArrow={cancelArrow}
         onCancelMelee={cancelMelee}
@@ -424,18 +450,34 @@ export const ProceduralCharacterGymView = () => {
         onStrike={() => runPhysicsAction("applyImpulse")}
         onTogglePaused={togglePaused}
       />
+      <KnightAnimationReviewPanel
+        config={config}
+        ready={ready && !captureBusy}
+        renderer={stats.rendererMode}
+        onLoad={loadReviewScenario}
+        onBusy={setReviewBusy}
+        onCapture={(sampling, scenario) =>
+          captureFrames(sampling, sampling === "all-frames" ? "clean" : "diagnostic", {
+            sequence: resolveKnightReviewSequence(scenario.id),
+            rootMotionSpeed: scenario.rootMotionSpeed,
+          })
+        }
+        onCaptureFinished={closeCapture}
+      />
       <div className="flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[370px_minmax(0,1fr)]">
-        <CharacterGymControls
-          collisionConfig={collisionConfig}
-          config={config}
-          copied={copied}
-          selectedPreset={selectedPreset}
-          onApplyPreset={applyPreset}
-          onCopyConfig={copyConfig}
-          onPatchCollisionConfig={patchCollisionConfig}
-          onPatchConfig={patchConfig}
-          onResetCamera={() => rendererRef.current?.resetCamera()}
-        />
+        <fieldset disabled={reviewBusy || captureBusy} className="min-h-0 overflow-auto border-0 p-0">
+          <CharacterGymControls
+            collisionConfig={collisionConfig}
+            config={config}
+            copied={copied}
+            selectedPreset={selectedPreset}
+            onApplyPreset={applyPreset}
+            onCopyConfig={copyConfig}
+            onPatchCollisionConfig={patchCollisionConfig}
+            onPatchConfig={patchConfig}
+            onResetCamera={() => rendererRef.current?.resetCamera()}
+          />
+        </fieldset>
         <CharacterGymViewport
           collisionConfig={collisionConfig}
           config={config}
@@ -523,8 +565,10 @@ function exposeCharacterGymDebugBridge(
   captureResultRef: MutableRefObject<ProceduralAnimationCaptureResult | null>,
   updateConfig: (patch: ProceduralUnitConfigPatch) => void,
   updateCollisionConfig: (patch: Partial<ProceduralCollisionGymConfig>) => void,
+  loadReviewScenario: CharacterGymDebugBridge["loadReviewScenario"],
 ): () => void {
   window.__proceduralCharacterGym = {
+    loadReviewScenario,
     attackMelee,
     captureFrames,
     cancelArrow,

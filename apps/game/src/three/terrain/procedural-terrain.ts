@@ -1,4 +1,4 @@
-import { createTerrainWildlife, createTerrainWildlifeMaterial } from "./terrain-wildlife";
+import { TerrainWildlife } from "./terrain-wildlife";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import {
   BufferAttribute,
@@ -88,7 +88,7 @@ export interface TerrainUploadMetrics {
 export class ProceduralTerrain {
   readonly object3d = new Group();
   private readonly materials: TerrainMaterials;
-  private readonly wildlifeMaterial = createTerrainWildlifeMaterial();
+  private readonly wildlife: TerrainWildlife;
   private readonly pages = new Map<string, PresentedTerrainPage>();
   private readonly presentationGroup = new Group();
   private groundTextureDetailEnabled = true;
@@ -114,6 +114,11 @@ export class ProceduralTerrain {
     this.object3d.name = "procedural-terrain";
     this.presentationGroup.name = "procedural-terrain-pages";
     this.movementEffects = new TerrainMovementEffects((worldX, worldZ) => this.sampleSurface(worldX, worldZ).biome);
+    this.wildlife = new TerrainWildlife(
+      (x, z) => this.sampleSurface(x, z),
+      (material) => this.fogField.applyRevealToMaterial(material),
+    );
+    this.object3d.add(this.wildlife.object3d);
     this.object3d.add(this.presentationGroup);
     this.object3d.add(this.fogField.object3d);
     this.object3d.add(this.movementEffects.object3d);
@@ -241,7 +246,7 @@ export class ProceduralTerrain {
     const worldSurface = this.surfacePresentation === "world";
     if (this.propPools) this.propPools.object3d.visible = worldSurface;
     this.movementEffects.object3d.visible = worldSurface;
-    this.wildlifeMaterial.visible = worldSurface && this.qualityTier === "detail" && !reducedMotion;
+    this.wildlife.object3d.visible = worldSurface && this.qualityTier === "detail" && !reducedMotion;
   }
 
   getQualityTier(): TerrainQualityTier {
@@ -306,6 +311,15 @@ export class ProceduralTerrain {
   update(deltaSeconds: number): void {
     this.fogField.updateAnimation(deltaSeconds);
     this.movementEffects.update(deltaSeconds);
+    this.wildlife.update(deltaSeconds);
+  }
+
+  loadWildlife(): Promise<void> {
+    return this.wildlife.load();
+  }
+
+  getWildlifeStats() {
+    return this.wildlife.getStats();
   }
 
   /** Presents exactly these pages as one coherent geometry, props, sampling, and fog change. */
@@ -359,6 +373,7 @@ export class ProceduralTerrain {
     nextPages.forEach(({ presented }) => {
       presented.complete = true;
     });
+    if (affectedPageKeys.size > 0) this.syncWildlife();
   }
 
   /** Whether this fingerprint has completed geometry, prop storage, sampling, and fog installation. */
@@ -375,6 +390,21 @@ export class ProceduralTerrain {
   refreshPropOccupancy(isOccupied: (col: number, row: number) => boolean): void {
     this.isPropTileOccupied = isOccupied;
     this.pages.forEach((page, key) => this.writeVisibleProps(key, page));
+    this.syncWildlife();
+  }
+
+  private syncWildlife(): void {
+    const pages = [...this.pages.values()];
+    const cells = pages.flatMap((page) =>
+      page.prepared.request.cells.map((cell) => ({
+        ...cell,
+        occupied: cell.occupied || this.isPropTileOccupied(cell.col, cell.row),
+      })),
+    );
+    this.wildlife.sync(
+      cells,
+      pages.flatMap((page) => page.propInstances),
+    );
   }
 
   private writeVisibleProps(pageKey: string, page: PresentedTerrainPage): void {
@@ -418,7 +448,7 @@ export class ProceduralTerrain {
     this.propPools = null;
     this.fogField.dispose();
     this.movementEffects.dispose();
-    this.wildlifeMaterial.dispose();
+    this.wildlife.dispose();
     new Set(
       [
         this.materials.flatLand,
@@ -504,8 +534,6 @@ export class ProceduralTerrain {
       throw error;
     }
     const field = new TerrainField(preparedPage.request);
-    const wildlife = createTerrainWildlife(preparedPage.request.cells, field, this.wildlifeMaterial);
-    if (wildlife) group.add(wildlife);
     return {
       complete: false,
       field,

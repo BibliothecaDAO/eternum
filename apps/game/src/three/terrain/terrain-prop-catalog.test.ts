@@ -29,9 +29,9 @@ describe("terrain prop catalog", () => {
     });
 
     expect(() => requireCompleteTerrainPropCatalog({ scene })).not.toThrow();
-    scene.remove(scene.getObjectByName("willow-far")!);
+    scene.remove(scene.getObjectByName("rainforest-canopy-far")!);
     expect(() => requireCompleteTerrainPropCatalog({ scene })).toThrow(
-      "Terrain prop catalog is missing required meshes: willow-far",
+      "Terrain prop catalog is missing required meshes: rainforest-canopy-far",
     );
   });
 
@@ -45,8 +45,10 @@ describe("terrain prop catalog", () => {
 
   it("favors pioneer cover and deadwood at settlement regrowth edges", () => {
     expect(getTerrainPropDisturbanceAffinity("shrub")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("broadleaf"));
-    expect(getTerrainPropDisturbanceAffinity("birch")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("willow"));
-    expect(getTerrainPropDisturbanceAffinity("stump")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("boulder"));
+    expect(getTerrainPropDisturbanceAffinity("birch")).toBeGreaterThan(
+      getTerrainPropDisturbanceAffinity("rainforest-canopy"),
+    );
+    expect(getTerrainPropDisturbanceAffinity("mushroom")).toBeGreaterThan(getTerrainPropDisturbanceAffinity("boulder"));
     expect(getTerrainPropDisturbanceAffinity("fallen-log")).toBeGreaterThan(
       getTerrainPropDisturbanceAffinity("boulder"),
     );
@@ -56,7 +58,7 @@ describe("terrain prop catalog", () => {
     expect(isTerrainGroundCover("grass-tuft")).toBe(true);
     expect(isTerrainPropVisibleAtLod("grass-tuft", "near")).toBe(true);
     expect(isTerrainPropVisibleAtLod("grass-tuft", "far")).toBe(false);
-    expect(getTerrainPropWetlandAffinity("reed")).toBeGreaterThan(getTerrainPropWetlandAffinity("grass-tuft"));
-    expect(getTerrainPropWetlandAffinity("willow")).toBeGreaterThan(getTerrainPropWetlandAffinity("cactus"));
+    expect(getTerrainPropWetlandAffinity("cycad")).toBeGreaterThan(getTerrainPropWetlandAffinity("grass-tuft"));
+    expect(getTerrainPropWetlandAffinity("rainforest-canopy")).toBeGreaterThan(getTerrainPropWetlandAffinity("cactus"));
   });
 });

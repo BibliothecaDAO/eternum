@@ -39,10 +39,11 @@ The default atlas captures one representative pose from every named animation ph
 
 Four cardinal views alone hide vertical and depth intersections, while a second elevated/rear three-quarter adds less
 new information than it costs. Five is therefore the default spatial minimum for the current asymmetric characters. The
-atlas uses one midpoint per named action phase: 45 images for the nine-phase archer shot and 30 for the six-phase melee
-attack. Locomotion instead uses four quarter-cycle poses (20 images) so every biped and horse contact pattern is
-represented. The single three-quarter **Every frame** capture remains the temporal proof for transitions, so the default
-does not create 735 near-duplicate images for one 147-frame archer cycle.
+atlas uses one midpoint per named action phase: 45 body images for the nine-phase archer shot and 35 for the six melee
+action phases plus the settled idle phase. Equipped humanoids additionally capture two grip macro views per phase.
+Locomotion instead uses four quarter-cycle poses (20 images) so every biped and horse contact pattern is represented.
+The single three-quarter **Every frame** capture remains the temporal proof for transitions, so the default does not
+create 735 near-duplicate images for one 147-frame archer cycle.
 
 Captured actions are selected from the active unit:
 
@@ -70,11 +71,13 @@ pnpm capture:character-animation \
 
 Supported kinds are `archer`, `crossbowman`, `horse`, `knight`, and `paladin`. Sampling is `phase-atlas`, `key-phases`,
 or `all-frames`; overlay mode is `diagnostic` or `clean`. `--motion-mode walk|run` selects the grounded gait,
-`--sequence locomotion-cycle` overrides a combat unit's default action capture, and `--root-motion-speed` can override
-the natural distance-per-cycle speed. The command writes one labelled WebP per sampled frame and view, plus a
-reproducible `pose-report.json` containing the complete unit configuration, phase plan, root speed, viewpoint metadata,
-named joint positions, contact cycles, locomotion metrics, and issues. It exits non-zero for a blank view, phase drift,
-non-finite joints, invalid anatomy or equipment, or a moving-root locomotion gate failure.
+`--sequence locomotion-cycle` overrides a combat unit's default action capture,
+`--sequence idle-hold --kind knight --motion-mode idle` captures two seconds of stationary rest, and
+`--root-motion-speed` can override the natural distance-per-cycle speed. The command writes one labelled WebP per
+sampled frame and view, plus a reproducible `pose-report.json` containing the complete unit configuration, phase plan,
+root speed, viewpoint metadata, named joint positions, contact cycles, locomotion metrics, and issues. It exits non-zero
+for a blank view, phase drift, non-finite joints, invalid anatomy or equipment, or a moving-root locomotion gate
+failure.
 
 The read-only browser seam is `window.__proceduralCharacterGym`:
 

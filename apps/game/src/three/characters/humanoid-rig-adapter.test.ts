@@ -11,7 +11,13 @@ describe("humanoid rig adapter", () => {
     expect(validateHumanoidRigAdapter(adapter)).toEqual([]);
     expect(adapter.partBindings.thighLeft).toEqual({ bone: "thigh_l", childBone: "calf_l", stable: true });
     expect(adapter.diagnosticBones.kneeRight).toBe("calf_r");
-    expect(adapter.feet.left).toEqual({ ankle: "foot_l", toe: "ball_l" });
+    expect(adapter.feet.left).toEqual({
+      ankle: "foot_l",
+      toe: "ball_l",
+      toeTip: "ball_leaf_l",
+      soleHeight: 0,
+      heelLengthRatio: 0.4,
+    });
     expect(adapter.sockets.gripRight.offset.kind).toBe("knuckle-center");
     expect(requiredBones).toEqual(expect.arrayContaining(["pelvis", "hand_l", "thumb_03_r", "ball_l", "ball_r"]));
   });

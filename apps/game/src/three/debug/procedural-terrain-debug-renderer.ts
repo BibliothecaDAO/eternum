@@ -68,6 +68,8 @@ export interface ProceduralTerrainDebugStats {
   fogMaskWidth: number;
   fogOpacity: number;
   fogTerrainCells: number;
+  preparedFrontierCells: number;
+  wildlife: ReturnType<ProceduralTerrain["getWildlifeStats"]>;
   frameP50Ms: number;
   frameP95Ms: number;
   frameWorstMs: number;
@@ -274,6 +276,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   terrain.present([prepared], fogMask);
   let commitMs = performance.now() - commitStartedAt;
   terrain.setMovementInteractions(createMovementInteractionVerification(input.sceneId, terrain));
+  await terrain.loadWildlife();
   terrain.update(0);
   if (input.sceneId === "fog-reveal" && input.revealProgress > 0) {
     terrain.queueShroudReveal(TERRAIN_REVEAL_TARGET.col, TERRAIN_REVEAL_TARGET.row);
@@ -299,8 +302,10 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     cellCount: prepared.request.cells.length,
     commitMs,
     fingerprint: prepared.fingerprint,
+    wildlife: terrain.getWildlifeStats(),
     fogOpacity: TERRAIN_DEEP_FOG_OPACITY,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
+    preparedFrontierCells: countPreparedFrontierCells(prepared),
     fogMaskBytes: shroudStats.maskBytes,
     fogMaskHeight: shroudStats.maskHeight,
     fogMaskWidth: shroudStats.maskWidth,
@@ -397,6 +402,7 @@ function updateTerrainVerification(
     prepareMs: prepared.diagnostics.prepareMs,
     commitMs,
     fogTerrainCells: prepared.diagnostics.fogTerrainCells,
+    preparedFrontierCells: countPreparedFrontierCells(prepared),
     groundCoverInstances: props.groundCoverInstances,
     settlementSites: prepared.request.settlementAnchors.length,
     triangles:
@@ -609,6 +615,7 @@ function readStats(
   >;
   return {
     ...verification,
+    wildlife: runtime.terrain.getWildlifeStats(),
     buildingInstances: runtime.interaction.getState().buildings.length,
     propInstances: runtime.terrain.getPropStats().instances,
     fogMaskBytes: runtime.terrain.getShroudStats().maskBytes,
@@ -634,4 +641,8 @@ function percentile(values: readonly number[], percentileValue: number): number 
   if (values.length === 0) return 0;
   const sorted = values.toSorted((left, right) => left - right);
   return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * percentileValue) - 1)];
+}
+
+function countPreparedFrontierCells(prepared: PreparedTerrainPage): number {
+  return prepared.shroudInstances.filter((instance) => instance.frontier).length;
 }

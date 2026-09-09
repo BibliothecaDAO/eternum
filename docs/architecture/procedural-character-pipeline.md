@@ -273,3 +273,80 @@ pnpm run knip
 Add the focused tests for every touched gait, action, equipment, adapter, and Jolt file. The change is done when the
 asset contract, gym evidence, aesthetic gate, production mapping, lifecycle smoke, and performance gate all agree on the
 same character configuration.
+
+## Knight animation iteration
+
+The **Knight animation review** toolbar in `/debug/procedural-characters` keeps Universal Base T1, the sword/shield
+loadout, seed 1337 and 60 Hz simulation fixed. Select **Walk**, **Run**, **Idle** or **Sword attack**. Each animation
+keeps a separate baseline and candidate in the current session; switching the selector loads its starting configuration.
+
+- Walk and run require translating-root gait evidence, including the existing contact, support and clearance gates.
+- Idle captures a two-second stationary hold with quarter-interval atlas poses.
+- Sword attack captures acquire, windup, strike, contact, follow-through, recovery and a short settled idle phase. Idle
+  and attack require measured stationary root and stance-contact stability.
+
+1. Select an animation (or **Reset animation**), then **Capture baseline**. Every frame is captured twice from reset,
+   followed by the diagnostic atlas. Missing coverage/images, objective failures or semantic replay differences above
+   `1e-6` withhold the baseline. Failed evidence can still be saved with **Save candidate**.
+2. **Save scenario** and **Save baseline** preserve configuration and images across reloads. The original version-1
+   knight-walk scenario files still load. Import rejects missing fields, invalid values and mismatched model/loadout.
+3. Tune motion with the existing controls and **Capture candidate**. Melee timing, reach, arc, torso weight and other
+   motion controls are editable; the selected animation and model remain fixed.
+4. **Compare** provides synchronized frames, normal/quarter-speed playback, scrubbing, diagnostic cameras, changed
+   parameters and the first pose difference. Timing edits preserve real elapsed time: the shorter clip holds its last
+   frame and is labelled ended. Atlas samples compare the same named phases. Different animations, renderer/viewport,
+   browser, asset hash or incompatible camera plans are rejected as comparison pairs.
+5. Save candidate evidence and score the existing aesthetic rubric before promotion. These are local review baselines,
+   not production performance or aesthetic approval. Use **Run smoke** separately for the knight's ragdoll/reset
+   lifecycle.
+
+Replay any exported scenario through the capture command; the validated browser scenario supplies its sequence:
+
+```bash
+pnpm --dir apps/game capture:character-animation -- \
+  --base-url https://127.0.0.1:4174 \
+  --scenario-file /absolute/path/knight-attack-scenario.json \
+  --sampling all-frames --renderer-mode webgpu-force-webgl \
+  --output-dir /absolute/path/output/knight-attack
+```
+
+Do not combine a saved scenario with flags overriding model, gait, loadout, sequence or root speed. The CLI writes
+`pose-report.json`, required WebP images and `capture-summary.json`, including a failed summary when capture/export
+throws. Browser and CLI share completeness validation. Capped previews remain available; capped or sparse temporal
+evidence cannot pass. Long timing experiments above the capture cap must be shortened before establishing a baseline.
+
+## Walk v2: rollover and weight acceptance
+
+Implemented 2026-09-08. The visual reference is Epic's
+[Game Animation Sample demonstration](https://www.youtube.com/watch?v=4ag7fSlEeKA), with the armed-character direction
+informed by the
+[For Honor motion-matching presentation](https://media.gdcvault.com/gdc2016/Presentations/Clavet_Simon_MotionMatching.pdf).
+These are qualitative references for grounding, coordination and responsiveness; this pass does not claim a numerical
+fit to proprietary AAA motion data. The
+[published rocker-shape study](https://pmc.ncbi.nlm.nih.gov/articles/PMC2906615/) supports treating heel, ankle and
+forefoot progression as coordinated mechanics. Our specific angles and timings are authored implementation choices, not
+measured biological constants.
+
+The walk pose now owns foot pitch, toe flexion and the active heel/sole/forefoot contact. The rig adapter supplies the
+ankle, ball and toe-tip bones, sole plane and virtual heel length. Geometry is calibrated from the active asset; yaw,
+roll and toe orientation are applied in the character frame, without inheriting the previous frame's foot rotation.
+Stance plants a sole origin, then solves the ankle around the active pivot. The heel lowers over the first 20% of
+stance; heel rise occupies the last 32%. Chosen endpoint pitches are 12 degrees toe-up at contact and 28 degrees heel-up
+at push-off. Toe flexion keeps the toe segment level during forefoot support, and all phase joins are continuous.
+
+Weight acceptance now uses contact loading, with a smaller mid-stance rise, slightly clearer pelvis counter-rotation and
+quieter chest/head motion. The avatar's old 98.5% leg reach limit held a standing knee around 160 degrees and lifted the
+visible foot away from a correct solver target. Grounded leg IK now permits 99.9% extension, retains its forward bend
+pole and uses the measured ankle height. Arm and mounted-limb reach limits remain separate.
+
+Capture diagnostics report actual rendered heel, forefoot and toe-tip landmarks. `contactMetric` distinguishes the new
+`active-foot-landmark` measurement from legacy `ankle-target` reports. Drift compares consecutive samples of the same
+supporting landmark; switching landmarks is additionally protected by per-frame ground-clearance/contact-height checks
+and the existing pose/angular continuity gates. Missing landmarks, penetration, hovering support or missing rollover
+phases fail the temporal gate. Legacy ankle-target drift values are not directly comparable to rendered-contact drift.
+
+Local evidence is in `output/playwright/walk-v2/`: baseline/candidate atlas comparison, deterministic temporal captures,
+run/idle/attack regression captures and crowd performance reports. The initial rendered-contact probe exposed about
+0.031 scene units of mid-stance hover. After the reach/height correction, the inspected knight capture holds support
+height within 0.000001 scene units and maximum consecutive support drift below 0.0004. These results establish this
+local implementation slice; the AAA reference remains a visual quality target rather than a certification.

@@ -75,6 +75,55 @@ const allLatestFeatures: LatestFeature[] = [
     type: "feature",
   },
   {
+    date: "2026-09-09",
+    title: "Roaming Biome Wildlife",
+    description:
+      "Biome creatures wander through explored terrain, with native species and sparse populations of at most one animal per 8×8 region.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-08",
+    title: "Refreshed Biome Artwork",
+    description:
+      "Updated terrain vegetation, rocks and biome portraits with the new BIOME / 16 artwork, including forest canopies, mushrooms and cycads.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "More Grounded Character Walking",
+    description:
+      "Improved walking with heel-to-toe foot motion, weight acceptance and calmer upper-body movement, plus visible contact diagnostics in the gym.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Knight Animation Review Suite",
+    description:
+      "Added separate idle, run and sword-attack baselines, recovery captures and comparisons for animation timing changes.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-08",
+    title: "Detailed Fleets for Every Army",
+    type: "improvement",
+    description:
+      "Compare all nine detailed ships in the Model Lab: Knight cannon ships, Crossbowman ballista ships and Paladin sacred vessels. Each tier has its own silhouette, with player sail prints, sailing animation and the same hex footprint.",
+    readMore: "/model-lab",
+  },
+  {
+    date: "2026-09-07",
+    title: "Lighter Game Loading",
+    description:
+      "Game entry downloads less unused data. Construction and production panels load when opened, keeping more work out of startup.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-07",
+    title: "Recover After Client Updates",
+    description: "An outdated client refreshes once if a game module is no longer available after an update.",
+    type: "fix",
+  },
+  {
     date: "2026-09-07",
     title: "A Glimpse Beneath",
     description:
