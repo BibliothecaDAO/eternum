@@ -14,7 +14,7 @@ import { useFeedRows } from "./use-feed-rows";
 export const ImportantEventFeed = () => {
   const [filter, setFilter] = useState<ImportantFeedFilter>("all");
   const address = useAccountStore((state) => state.account?.address ?? null);
-  const { data: stories, isError } = useStoryEvents(350);
+  const { data: stories, isError, refetch } = useStoryEvents(350, "BattleStory");
   const feed = useFeedRows();
   const groups = groupFeedRowsByTick(
     selectImportantFeedRows(stories, feed, filter, address),
@@ -45,8 +45,19 @@ export const ImportantEventFeed = () => {
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20">
-        {isError && <p className="px-3 py-2 text-xs text-danger">Event history could not load.</p>}
-        {groups.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">No important events yet.</p>}
+        {isError && (
+          <p className="px-3 py-2 text-xs text-danger">
+            Event history could not load.{" "}
+            <button
+              type="button"
+              className="font-sans text-xs underline"
+              onClick={() => void refetch({ cancelRefetch: false })}
+            >
+              Retry
+            </button>
+          </p>
+        )}
+        {!isError && groups.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">No important events yet.</p>}
         {groups.map(({ tick, rows }) => (
           <section key={tick}>
             <div className="border-y border-gold/10 px-3 py-1 text-[10px] text-gold/50">Tick {tick}</div>

@@ -24,6 +24,7 @@ export interface HistoryQuery {
   gameId: string;
   limit: number;
   model?: string;
+  story?: string;
   offset: number;
   owner?: string;
 }
@@ -102,6 +103,8 @@ export class HistoryStore {
       );
       CREATE INDEX IF NOT EXISTS herald_history_game_model_position
         ON herald_history_events (chain, world_address, game_id, model, block_number DESC, transaction_index DESC, event_index DESC);
+      CREATE INDEX IF NOT EXISTS herald_history_story_variant
+        ON herald_history_events USING GIN ((value->'story'));
       CREATE INDEX IF NOT EXISTS herald_history_game_owner_position
         ON herald_history_events (chain, world_address, game_id, owner, block_number DESC, transaction_index DESC, event_index DESC);
       CREATE INDEX IF NOT EXISTS herald_history_game_entity_position
@@ -279,11 +282,12 @@ export class HistoryStore {
     const values: unknown[] = [this.chain, this.worldAddress, query.gameId];
     const addFilter = (sql: string, value: unknown) => {
       values.push(value);
-      filters.push(sql.replace("?", `$${values.length}`));
+      filters.push(sql.replace("$value", `$${values.length}`));
     };
-    if (query.model) addFilter("model = ?", query.model);
-    if (query.owner) addFilter("owner = ?", normalizeFelt(query.owner));
-    if (query.entityId) addFilter("entity_id = ?", BigInt(query.entityId).toString());
+    if (query.model) addFilter("model = $value", query.model);
+    if (query.story) addFilter("value->'story' ? $value", query.story);
+    if (query.owner) addFilter("owner = $value", normalizeFelt(query.owner));
+    if (query.entityId) addFilter("entity_id = $value", BigInt(query.entityId).toString());
 
     const where = filters.join(" AND ");
     const countResult = await this.pool.query<{ total: string }>(

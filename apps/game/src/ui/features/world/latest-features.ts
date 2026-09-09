@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    type: "fix",
+    title: "Battles Stay in Events",
+    description:
+      "Events loads battle history directly, so movement and production stories cannot push fights out of the feed. Confirmed updates keep the battle list current.",
+  },
+  {
+    date: "2026-09-09",
     type: "improvement",
     title: "One Plain Tile Panel",
     description:

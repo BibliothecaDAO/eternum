@@ -65,3 +65,22 @@ it("does not publish a rolled-back points registration", async () => {
   expect(db.transaction).toHaveBeenCalledWith("ROLLBACK");
   expect(db.release).toHaveBeenCalledOnce();
 });
+
+it("applies the story variant to both the history count and the bounded page", async () => {
+  db.query.mockImplementation(async (sql: string) => ({ rows: sql.includes("COUNT(*)") ? [{ total: "2" }] : [] }));
+  const store = new HistoryStore("postgres://test", "madara", "0x123");
+  const page = await store.queryEvents({
+    gameId: "28",
+    model: "StoryEvent",
+    story: "BattleStory",
+    limit: 350,
+    offset: 0,
+  });
+  const [[countSql, countValues], [pageSql, pageValues]] = db.query.mock.calls;
+  expect(countSql).toContain("model = $4 AND value->'story' ? $5");
+  expect(pageSql).toContain("model = $4 AND value->'story' ? $5");
+  expect(pageSql).toContain("LIMIT $6 OFFSET $7");
+  expect(countValues.slice(0, 5)).toEqual(["madara", "0x123", "28", "StoryEvent", "BattleStory"]);
+  expect(pageValues.slice(-2)).toEqual([350, 0]);
+  expect(page.total).toBe(2);
+});

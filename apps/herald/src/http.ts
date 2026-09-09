@@ -71,6 +71,7 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
   gameId,
   limit: paginationValue(url, "limit", 100),
   model: url.searchParams.get("model") ?? undefined,
+  story: url.searchParams.get("story") ?? undefined,
   offset: paginationValue(url, "offset", 0),
   owner: url.searchParams.get("owner") ?? undefined,
 });

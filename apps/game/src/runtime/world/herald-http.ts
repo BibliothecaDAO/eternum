@@ -69,6 +69,7 @@ export const fetchHeraldGameHistory = async (
     entityId?: bigint | number | string;
     limit?: number;
     model?: string;
+    story?: string;
     offset?: number;
     owner?: string;
   } = {},
@@ -80,6 +81,7 @@ export const fetchHeraldGameHistory = async (
   if (input.entityId !== undefined) url.searchParams.set("entity_id", String(input.entityId));
   if (input.limit !== undefined) url.searchParams.set("limit", String(input.limit));
   if (input.model) url.searchParams.set("model", input.model);
+  if (input.story) url.searchParams.set("story", input.story);
   if (input.offset !== undefined) url.searchParams.set("offset", String(input.offset));
   if (input.owner) url.searchParams.set("owner", input.owner);
   return fetchHeraldJson(url.toString(), `Herald history for ${world.id} game ${gameId}`);
