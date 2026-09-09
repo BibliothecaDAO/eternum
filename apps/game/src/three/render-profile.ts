@@ -1,3 +1,4 @@
+import { readGraphicsPreferences, type GraphicsPreferences } from "./graphics-preferences";
 export type RenderMode = "uncapped" | "capped";
 
 export interface RenderVisualProfile {
@@ -74,10 +75,21 @@ export function writeRenderMode(storage: Pick<Storage, "setItem"> | null, mode: 
   storage?.setItem(RENDER_MODE_STORAGE_KEY, mode);
 }
 
-export function createRenderProfile(mode: RenderMode): RenderProfile {
-  return { mode, maxFps: mode === "uncapped" ? null : 60, visuals: QUALITY_VISUALS };
+export function createRenderProfile(
+  mode: RenderMode,
+  preferences: GraphicsPreferences = { quality: "high", shadows: true },
+): RenderProfile {
+  const visuals = { ...QUALITY_VISUALS, shadows: preferences.shadows };
+  if (preferences.quality === "balanced") {
+    visuals.pixelRatio = 1;
+    visuals.shadowMapSize = 512;
+  }
+  return { mode, maxFps: mode === "uncapped" ? null : 60, visuals };
 }
 
 const browserStorage = typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;
 
-export const renderProfile = createRenderProfile(readRenderMode(browserStorage));
+export const renderProfile = createRenderProfile(
+  readRenderMode(browserStorage),
+  readGraphicsPreferences(browserStorage),
+);

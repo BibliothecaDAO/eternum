@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Simpler Game Settings",
+    description:
+      "Settings groups quality, shadows, motion and audio controls beneath your identity, with one Leave game action.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Tile Details Stay Anchored",
     description: "Tile details stay at the bottom right while Events and Chat fill the space above them.",
     type: "improvement",

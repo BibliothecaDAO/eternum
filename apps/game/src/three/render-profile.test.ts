@@ -62,3 +62,12 @@ describe("render profile", () => {
     expect(storage.setItem).toHaveBeenCalledWith(RENDER_MODE_STORAGE_KEY, "capped");
   });
 });
+
+it("applies quality and shadow preferences to the actual renderer profile", () => {
+  const high = createRenderProfile("uncapped", { quality: "high", shadows: true });
+  const balanced = createRenderProfile("uncapped", { quality: "balanced", shadows: false });
+  expect(high.visuals.pixelRatio).toBe(RENDERER_PIXEL_RATIO_CAP);
+  expect(balanced.visuals.pixelRatio).toBe(1);
+  expect(balanced.visuals.shadowMapSize).toBe(512);
+  expect(balanced.visuals.shadows).toBe(false);
+});
