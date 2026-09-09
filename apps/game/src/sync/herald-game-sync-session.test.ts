@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { describe, expect, it, vi } from "vitest";
 
 import { buildHeraldGameStreamUrl, createHeraldGameSyncSession } from "./herald-game-sync-session";
@@ -43,4 +45,26 @@ describe("buildHeraldGameStreamUrl", () => {
       "snapshot-apply-completed",
     ]);
   });
+});
+
+it("records confirmed heads even when provisional row evidence has advanced the clock", () => {
+  const session = createHeraldGameSyncSession({
+    baseUrl: "https://herald.realms.test",
+    chain: "madara",
+    entityModels: [],
+    eventModels: [],
+    gameId: 54,
+    setup: { network: { contractComponents: {} } } as never,
+  });
+  const previous = useChainTimeStore.getState();
+  const previousBlock = useConnectionStore.getState().lastConfirmedBlock;
+  try {
+    useChainTimeStore.setState({ lastHeartbeat: { timestamp: 200_000, source: "row-evidence" } });
+    session.onHead?.({ block: 13, timestamp: 100 });
+    expect(useConnectionStore.getState().lastConfirmedBlock).toBe(13);
+    expect(useChainTimeStore.getState().lastHeartbeat?.timestamp).toBe(200_000);
+  } finally {
+    useChainTimeStore.setState(previous);
+    useConnectionStore.setState({ lastConfirmedBlock: previousBlock });
+  }
 });

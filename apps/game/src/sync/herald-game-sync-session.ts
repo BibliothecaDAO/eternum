@@ -66,6 +66,7 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
     onTransactionEntitiesReceived: recordClientActionDiffReceived,
     onSubscriptionActive: input.onSubscriptionActive,
     onHead: (head) => {
+      useConnectionStore.getState().recordConfirmedHead(head.block);
       useChainTimeStore.getState().setHeartbeat({
         blockNumber: head.block,
         source: "herald-head",

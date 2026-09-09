@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const state = vi.hoisted(() => ({ gameId: 28, pointsEventId: null as string | null, handshake: 0, fetch: vi.fn() }));
+const state = vi.hoisted(() => ({ gameId: 28, confirmedBlock: 10, handshake: 0, fetch: vi.fn() }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getActiveGameId: () => state.gameId } }));
 vi.mock("@/runtime/world", () => ({ getActiveWorld: () => ({ worldId: "blitz" }) }));
 vi.mock("@/runtime/world/world-directory", () => ({
@@ -14,20 +14,19 @@ vi.mock("@/runtime/world/world-directory", () => ({
 vi.mock("@/services/leaderboard/player-activity-breakdown-service", () => ({
   fetchLeaderboardActivityBreakdowns: state.fetch,
 }));
-vi.mock("@/hooks/store/use-story-events-store", () => ({ useLatestPointsEventId: () => state.pointsEventId }));
 vi.mock("@/hooks/store/use-connection-store", () => ({
-  useConnectionStore: (selector: (value: { lastGlobalHandshake: number }) => unknown) =>
-    selector({ lastGlobalHandshake: state.handshake }),
+  useConnectionStore: (selector: (value: { lastGlobalHandshake: number; lastConfirmedBlock: number }) => unknown) =>
+    selector({ lastGlobalHandshake: state.handshake, lastConfirmedBlock: state.confirmedBlock }),
 }));
 import { LeaderboardActivitySync } from "@/ui/layouts/leaderboard-activity-sync";
 import { useLeaderboardActivity } from "./use-leaderboard-activity";
 afterEach(() => {
   state.gameId = 28;
-  state.pointsEventId = null;
+  state.confirmedBlock = 10;
   state.handshake = 0;
   state.fetch.mockReset();
 });
-it("opens Players with the entry-time result already available and isolates games", async () => {
+it("opens Players from cache, refreshes after confirmed heads and reconnects, and isolates games", async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const entries = [{ address: "0x1", totalPoints: 5, rank: 1 }];
@@ -62,7 +61,7 @@ it("opens Players with the entry-time result already available and isolates game
     );
     expect(displayed).toEqual(entries);
     expect(state.fetch).toHaveBeenCalledOnce();
-    state.pointsEventId = "new-points-story";
+    state.confirmedBlock = 11;
     await act(async () =>
       root.render(
         <QueryClientProvider client={client}>

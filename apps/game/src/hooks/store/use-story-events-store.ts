@@ -49,12 +49,6 @@ const useStoryEventsStore = create<StoryEventsState>((set) => ({
   reset: () => set({ streamed: [] }),
 }));
 
-/** A refresh signal only; points totals stay in Herald's history aggregate. */
-export const useLatestPointsEventId = (): string | null =>
-  useStoryEventsStore(
-    (state) => state.streamed.find((event) => event.story === "PointsRegisteredStory")?.event_id ?? null,
-  );
-
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 

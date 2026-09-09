@@ -4,6 +4,7 @@ import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import { resolveGameId, resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import {
   fetchHeraldGameHistory,
+  fetchHeraldGameLeaderboard,
   fetchHeraldGameReviewSnapshot,
   fetchHeraldTransactionCount,
 } from "@/runtime/world/herald-http";
@@ -380,7 +381,8 @@ export const fetchGameReviewData = async (input: {
 }): Promise<GameReviewData> => {
   const source = await loadReviewSource(input.worldName);
   const finalization = buildFinalization(source);
-  const leaderboard = buildLandingLeaderboard(source.snapshot, source.history);
+  const activity = await fetchHeraldGameLeaderboard(source.world, source.gameId);
+  const leaderboard = buildLandingLeaderboard(source.snapshot, activity.entries);
   const playerAddress = parseAddress(input.playerAddress);
   const personalScore = playerAddress ? (leaderboard.find((entry) => entry.address === playerAddress) ?? null) : null;
   const structures = modelRows(source.snapshot, "Structure");

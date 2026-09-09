@@ -13,6 +13,7 @@ interface ConnectionState {
   lastGlobalDataUpdate: number;
   lastSpatialHandshake: number;
   lastGlobalHandshake: number;
+  lastConfirmedBlock: number | null;
   lastConnectedAt: number;
   lastDisconnectedAt: number | null;
   reconnectAttempts: number;
@@ -24,6 +25,7 @@ interface ConnectionState {
   recordGlobalUpdate: () => void;
   recordSpatialHandshake: () => void;
   recordGlobalHandshake: () => void;
+  recordConfirmedHead: (block: number) => void;
   recordStreamReconnect: () => void;
   incrementReconnectAttempts: () => void;
   resetReconnectAttempts: () => void;
@@ -45,6 +47,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
   lastGlobalDataUpdate: Date.now(),
   lastSpatialHandshake: 0,
   lastGlobalHandshake: 0,
+  lastConfirmedBlock: null,
   lastConnectedAt: Date.now(),
   lastDisconnectedAt: null,
   reconnectAttempts: 0,
@@ -111,6 +114,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
     const now = Date.now();
     set({ lastGlobalUpdate: now, lastGlobalHandshake: now });
   },
+  recordConfirmedHead: (lastConfirmedBlock) => set({ lastConfirmedBlock }),
   recordStreamReconnect: () => set((state) => ({ streamReconnectVersion: state.streamReconnectVersion + 1 })),
   incrementReconnectAttempts: () => set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),
   resetReconnectAttempts: () => set({ reconnectAttempts: 0 }),

@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import type { HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
+import { createEmptyActivityBreakdown, type HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fetchGameReviewData } from "./game-review-service";
@@ -12,12 +12,14 @@ const TRIAL_ID = "0x1c6b";
 
 const herald = vi.hoisted(() => ({
   fetchHistory: vi.fn(),
+  fetchLeaderboard: vi.fn(),
   fetchReviewSnapshot: vi.fn(),
   fetchTransactionCount: vi.fn(),
 }));
 
 vi.mock("@/runtime/world/herald-http", () => ({
   fetchHeraldGameHistory: herald.fetchHistory,
+  fetchHeraldGameLeaderboard: herald.fetchLeaderboard,
   fetchHeraldGameReviewSnapshot: herald.fetchReviewSnapshot,
   fetchHeraldTransactionCount: herald.fetchTransactionCount,
 }));
@@ -75,6 +77,12 @@ describe("game review Herald read model", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     herald.fetchReviewSnapshot.mockResolvedValue(reviewSnapshot());
+    const activityBreakdown = createEmptyActivityBreakdown();
+    activityBreakdown.exploration = { count: 166, points: 830 };
+    herald.fetchLeaderboard.mockResolvedValue({
+      game_id: String(GAME_ID),
+      entries: [{ address: PLAYER, rank: 1, totalPoints: 830, activityBreakdown }],
+    });
     herald.fetchHistory.mockResolvedValue({
       complete_through_block: REVIEW_BLOCK,
       items: [],
@@ -89,6 +97,7 @@ describe("game review Herald read model", () => {
     const review = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
 
     expect(review.stats.totalTransactions).toBe(42);
+    expect(review.stats.totalTilesExplored).toBe(166);
     expect(review.rewards?.isRanked).toBe(true);
     expect(review.rewards?.chests).toBe(2);
     expect(herald.fetchReviewSnapshot).toHaveBeenCalledOnce();
