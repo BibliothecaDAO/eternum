@@ -106,12 +106,10 @@ export const TopHeader = memo(() => {
 
   return (
     <>
-      {/* Layout container — pointer-events pass through the gaps between pills so the
-          map remains clickable. Each pill flips pointer-events back on. The
-          center cluster carries the six headline pieces in canonical order
-          (rank · view · clock · attention · army toggle · settings); the right
-          cluster carries ancillary status icons (network / tx / features). */}
-      <div className="fixed top-0 left-[344px] right-[344px] min-[1800px]:left-[384px] min-[1800px]:right-[384px] z-20 flex flex-wrap items-center justify-center gap-2 px-3 py-2 pointer-events-none">
+      {/* The header row: pointer-events pass through the gaps between pills so the map remains clickable; each
+          pill flips pointer-events back on. The columns start below this row (HUD_COLUMN_TOP), so the cluster is
+          centred on the full width: identity · view · clock · attention · settings. */}
+      <div className="fixed top-0 inset-x-0 z-20 flex h-11 items-center justify-center gap-2 px-3 pointer-events-none">
         {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
         <IdentityChip />
 

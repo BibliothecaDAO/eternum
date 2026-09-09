@@ -1,7 +1,7 @@
 import { SpectatorStandings } from "./spectator-standings";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_COLUMN_WIDTH } from "./hud-layout";
+import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
 import { LeftActionsRow } from "./left-actions-row";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -76,7 +76,8 @@ export const LeftCommandSidebar = memo(() => {
       {ConnectedAccount && (
         <div
           className={cn(
-            "fixed left-3 top-2 z-20 pointer-events-auto flex max-h-[calc(100vh-340px)] flex-col gap-2 overflow-y-auto scrollbar-thin",
+            "fixed left-3 z-20 pointer-events-auto flex max-h-[calc(100vh-340px)] flex-col gap-2 overflow-y-auto scrollbar-thin",
+            HUD_COLUMN_TOP,
             HUD_COLUMN_WIDTH,
           )}
         >

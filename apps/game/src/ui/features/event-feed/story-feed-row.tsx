@@ -13,7 +13,7 @@ import { useDojo } from "@bibliothecadao/react";
 import type { ClientComponents } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 
-function resolveEventPosition(event: ProcessedStoryEvent, components: ClientComponents): Position | null {
+export function resolveStoryEventPosition(event: ProcessedStoryEvent, components: ClientComponents): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
   if (coord && typeof coord === "object" && "x" in coord && "y" in coord) {
     return new Position({ x: Number(coord.x), y: Number(coord.y) });
@@ -35,7 +35,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
     setup: { components },
   } = useDojo();
   const navigate = useNavigateToMapView();
-  const position = resolveEventPosition(event, components);
+  const position = resolveStoryEventPosition(event, components);
   const battle = event.story === "BattleStory";
   return (
     <button

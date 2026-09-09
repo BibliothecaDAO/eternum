@@ -8,7 +8,7 @@ import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { HUD_COLUMN_WIDTH } from "./hud-layout";
+import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
 import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
 
 export function SpectatorStandings() {
@@ -33,7 +33,8 @@ function StandingsPanel() {
     <section
       aria-label="Spectator standings"
       className={cn(
-        "fixed left-3 top-2 z-20 pointer-events-auto rounded-xl overflow-hidden",
+        "fixed left-3 z-20 pointer-events-auto rounded-xl overflow-hidden",
+        HUD_COLUMN_TOP,
         HUD_COLUMN_WIDTH,
         OVERLAY_SURFACE_BASE,
       )}

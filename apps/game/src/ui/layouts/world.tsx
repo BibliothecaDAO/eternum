@@ -7,8 +7,6 @@ import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overl
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
-import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
-import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
@@ -75,7 +73,6 @@ const BackgroundSystems = () => (
     <AutomationManager />
     <TransferAutomationManager />
     <ExplorationAutomationManager />
-    <NetworkStatusBanner onRetry={triggerConnectionForceReconnect} />
     <SentryUserSync />
   </>
 );

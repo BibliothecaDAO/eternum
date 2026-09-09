@@ -70,18 +70,38 @@ export function selectImportantFeedRows(
   return rows.sort((left, right) => right.at - left.at);
 }
 
-export function groupFeedRowsByTick(
-  rows: ImportantFeedRow[],
-  tickSeconds: number,
-): Array<{ tick: number; rows: ImportantFeedRow[] }> {
+/** Ticks count from the game start once it is known; before that the absolute army tick stands in. */
+export function resolveGameTick(atMs: number, startAtSeconds: number | null, tickSeconds: number): number {
   if (!Number.isFinite(tickSeconds) || tickSeconds <= 0)
     throw new Error("The event feed requires the configured army tick duration");
+  const atSeconds = atMs / 1000;
+  if (startAtSeconds === null) return Math.floor(atSeconds / tickSeconds);
+  return Math.floor((atSeconds - startAtSeconds) / tickSeconds) + 1;
+}
+
+export function groupFeedRowsByTick(
+  rows: ImportantFeedRow[],
+  tickOf: (atMs: number) => number,
+): Array<{ tick: number; rows: ImportantFeedRow[] }> {
   const groups = new Map<number, ImportantFeedRow[]>();
   for (const row of [...rows].sort((left, right) => right.at - left.at)) {
-    const tick = Math.floor(row.at / 1000 / tickSeconds);
+    const tick = tickOf(row.at);
     const group = groups.get(tick) ?? [];
     group.push(row);
     groups.set(tick, group);
   }
   return [...groups].map(([tick, rows]) => ({ tick, rows }));
+}
+
+/** The quick feed shows what just happened: rows inside the window, newest first, capped. */
+export function selectQuickFeedRows(
+  rows: ImportantFeedRow[],
+  nowMs: number,
+  windowMs: number,
+  maxRows: number,
+): ImportantFeedRow[] {
+  return rows
+    .filter((row) => nowMs >= row.at && nowMs - row.at < windowMs)
+    .sort((left, right) => right.at - left.at)
+    .slice(0, maxRows);
 }
