@@ -208,7 +208,7 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.manager.getTimeOfDay(20)).toBe("Dawn");
     expect(fixture.manager.getTimeOfDay(40)).toBe("Morning");
     expect(fixture.manager.getTimeOfDay(50)).toBe("Day");
-    expect(fixture.manager.getTimeOfDay(60)).toBe("Afternoon");
+    expect(fixture.manager.getTimeOfDay(60)).toBe("Day");
     expect(fixture.manager.getTimeOfDay(70)).toBe("Dusk");
     expect(fixture.manager.getTimeOfDay(80)).toBe("Dusk");
     expect(fixture.manager.getTimeOfDay(90)).toBe("Evening");

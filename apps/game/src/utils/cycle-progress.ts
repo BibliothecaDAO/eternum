@@ -32,19 +32,20 @@ export const DAY_PHASE_PROGRESS = {
   evening: (100 / 6) * 5,
 } as const;
 
-const DAY_PHASES = [
+/** The HUD day: six phases, one per army tick, so a phase's length is the tick length. */
+export const DAY_PHASES = [
   { name: "Night", start: 0 },
   { name: "Dawn", start: DAY_PHASE_PROGRESS.dawn },
   { name: "Morning", start: DAY_PHASE_PROGRESS.morning },
   { name: "Day", start: DAY_PHASE_PROGRESS.afternoon },
-  { name: "Afternoon", start: DAY_PHASE_PROGRESS.lateAfternoon },
   { name: "Dusk", start: DAY_PHASE_PROGRESS.dusk },
   { name: "Evening", start: DAY_PHASE_PROGRESS.evening },
-];
-export function resolveDayPhase(cycleProgress: number): { name: string; progress: number } {
+] as const;
+export type DayPhaseName = (typeof DAY_PHASES)[number]["name"];
+export function resolveDayPhase(cycleProgress: number): { name: DayPhaseName; index: number; progress: number } {
   const cycle = clampCycleProgress(cycleProgress) % 100;
   const index = DAY_PHASES.findLastIndex((phase) => cycle >= phase.start);
   const phase = DAY_PHASES[index];
   const end = DAY_PHASES[index + 1]?.start ?? 100;
-  return { name: phase.name, progress: ((cycle - phase.start) / (end - phase.start)) * 100 };
+  return { name: phase.name, index, progress: ((cycle - phase.start) / (end - phase.start)) * 100 };
 }

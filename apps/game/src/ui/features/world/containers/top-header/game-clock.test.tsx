@@ -19,15 +19,22 @@ afterEach(async () => {
 });
 // Explicit key exercises the memoized presentation with a new fixture timestamp.
 const render = () => act(async () => root.render(<GameClock key={mocks.now} />));
-it("renders only one clock with no phase names or percent", async () => {
+it("merges the countdown with the phase icon, time left in phase and six segments", async () => {
   await render();
-  expect(container.textContent).toBe("Starts in 1m 00s");
+  expect(container.textContent).toBe("Starts in 1m 00s0m 30s");
   expect(container.querySelector('[role="progressbar"]')).toBeNull();
   mocks.now = 120;
   await render();
-  expect(container.textContent).toBe("10m 00s left");
-  expect(container.querySelector('[role="progressbar"]')?.getAttribute("aria-label")).toBe("Dawn progress");
-  expect(container.querySelector('[aria-label="Game clock"]')?.getAttribute("title")).toBe("Dawn");
+  expect(container.textContent).toBe("10m 00s left0m 30s");
+  expect(container.querySelector('[aria-label="Dawn"]')).not.toBeNull();
+  const progress = container.querySelector('[role="progressbar"]')!;
+  expect(progress.getAttribute("aria-label")).toBe("Dawn progress");
+  expect(progress.getAttribute("aria-valuenow")).toBe("50");
+  expect(progress.children).toHaveLength(6);
+  expect(progress.children[1].firstElementChild?.getAttribute("style")).toContain("width: 50%");
+  expect(container.querySelector('[aria-label="Game clock"]')?.getAttribute("title")).toBe(
+    "Dawn · phase 2 of 6\nDay length 6m 00s\n0m 30s left in dawn",
+  );
 });
 it("retains urgency and the finished review entry", async () => {
   mocks.now = 600;

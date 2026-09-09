@@ -37,8 +37,9 @@ it("preserves the six-tick atmospheric cycle independently of header phases", ()
   expect(() => resolveDayCycleProgress(10, 0)).toThrow("Army tick duration is unavailable");
 });
 
-it("shares the atmospheric phase boundaries and wraps midnight", () => {
-  expect(resolveDayPhase(25)).toEqual({ name: "Dawn", progress: expect.closeTo(50) });
-  expect(resolveDayPhase(50)).toEqual({ name: "Day", progress: 0 });
-  expect(resolveDayPhase(100)).toEqual({ name: "Night", progress: 0 });
+it("splits the day into six tick-long phases and wraps midnight", () => {
+  expect(resolveDayPhase(25)).toEqual({ name: "Dawn", index: 1, progress: expect.closeTo(50) });
+  expect(resolveDayPhase(50)).toEqual({ name: "Day", index: 3, progress: 0 });
+  expect(resolveDayPhase(60)).toEqual({ name: "Day", index: 3, progress: expect.closeTo(60) });
+  expect(resolveDayPhase(100)).toEqual({ name: "Night", index: 0, progress: 0 });
 });
