@@ -4,19 +4,34 @@ import { TileOccupier } from "@bibliothecadao/types";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it, vi } from "vitest";
 vi.mock("./unoccupied-tile-quadrants", () => ({
-  BiomeSummaryCard: ({ coordsLabel }: { coordsLabel?: string }) => <article>Biome {coordsLabel} +30%</article>,
+  BiomeSummaryCard: ({ coordsLabel }: { coordsLabel?: string }) => <article>Biome {coordsLabel ?? ""} +30%</article>,
+}));
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
+  configManager: { getRelicCrateReward: () => ({ relicsPerCrate: 3, victoryPoints: 250 }) },
 }));
 import { ChestTileDetails } from "./chest-tile-details";
-it("stacks crate content above one biome card carrying the coordinates", () => {
+it("builds the crate panel from the structure tile chrome with contents read from config", () => {
   const container = document.createElement("div");
   container.innerHTML = renderToStaticMarkup(
-    <ChestTileDetails crateEntityId={99} biome={"Beach" as never} coordsLabel="(3, 4)" onSimulateBattle={() => {}} />,
+    <ChestTileDetails
+      crateEntityId={99}
+      biome={"Beach" as never}
+      coordsLabel="Relic Tile · (3, 4)"
+      onSimulateBattle={() => {}}
+    />,
   );
-  expect(container.textContent).toContain("Relic Crate");
+  const header = container.querySelector('[aria-expanded="true"]')!;
+  expect(header.textContent).toBe("Relic Tile · (3, 4)");
+  expect(header.querySelector("svg")).not.toBeNull();
   expect(container.textContent).toContain("Crate #99");
+  expect(container.querySelector('img[src="/images/relic-chest/chest-closed.png"]')).not.toBeNull();
+  expect(container.textContent).toContain("Contents");
+  expect(container.textContent).toContain("Relics3");
+  expect(container.textContent).toContain("Victory points250");
+  expect(container.textContent).not.toMatch(/1000|discover/);
   expect(container.querySelectorAll("article")).toHaveLength(1);
-  expect(container.querySelector("article")?.textContent).toContain("(3, 4)");
-  expect(container.querySelector("section")?.nextElementSibling?.tagName).toBe("ARTICLE");
+  expect(container.querySelector("article")?.textContent).not.toContain("(3, 4)");
   expect(container.innerHTML).not.toMatch(/h-full|overflow-y-auto|grid-rows/);
 });
 

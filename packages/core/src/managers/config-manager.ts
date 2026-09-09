@@ -1126,6 +1126,20 @@ export class ClientConfigManager {
     );
   }
 
+  /** What opening a relic crate yields: relics per crate (map config) and victory points (grant config). */
+  getRelicCrateReward(): { relicsPerCrate: number; victoryPoints: number } {
+    return this.getValueOrDefault(
+      () => {
+        const rulebook = this.getRulebook();
+        const relicsPerCrate = rulebook?.map_config?.relic_chest_relics_per_chest;
+        const victoryPoints = rulebook?.victory_points_grant_config?.relic_open_points;
+        if (relicsPerCrate === undefined || victoryPoints === undefined) return undefined;
+        return { relicsPerCrate: Number(relicsPerCrate), victoryPoints: Number(victoryPoints) / 1_000_000 };
+      },
+      { relicsPerCrate: 0, victoryPoints: 0 },
+    );
+  }
+
   getBasePopulationCapacity(): number {
     return this.getValueOrDefault(() => {
       const rulebook = this.getRulebook();
