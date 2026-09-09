@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ gameStartMainAt: 120, gameEndAt: 720, now: 60 }));
+const mocks = vi.hoisted(() => ({ cycleProgress: 25, gameStartMainAt: 120, gameEndAt: 720, now: 60 }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select(mocks) }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentBlockTimestamp: () => mocks.now }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60 } }));
@@ -26,7 +26,8 @@ it("renders only one clock with no phase names or percent", async () => {
   mocks.now = 120;
   await render();
   expect(container.textContent).toBe("10m 00s left");
-  expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
+  expect(container.querySelector('[role="progressbar"]')?.getAttribute("aria-label")).toBe("Dawn progress");
+  expect(container.querySelector('[aria-label="Game clock"]')?.getAttribute("title")).toBe("Dawn");
 });
 it("retains urgency and the finished review entry", async () => {
   mocks.now = 600;

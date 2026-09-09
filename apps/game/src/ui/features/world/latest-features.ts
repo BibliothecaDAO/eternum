@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "One Game Clock",
+    description: "The countdown carries a day phase underline; hover to see the current phase.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Consistent Header Labels",
     description: "Player names and spectator labels share the same small caps style across the header.",
     type: "improvement",

@@ -22,3 +22,29 @@ export function resolveDayCycleProgress(timestamp: number, armyTickSeconds: numb
   const daySeconds = armyTickSeconds * 6;
   return ((timestamp % daySeconds) / daySeconds) * 100;
 }
+
+export const DAY_PHASE_PROGRESS = {
+  dawn: 100 / 6,
+  morning: 100 / 3,
+  afternoon: 50,
+  lateAfternoon: 175 / 3,
+  dusk: (100 / 6) * 4,
+  evening: (100 / 6) * 5,
+} as const;
+
+const DAY_PHASES = [
+  { name: "Night", start: 0 },
+  { name: "Dawn", start: DAY_PHASE_PROGRESS.dawn },
+  { name: "Morning", start: DAY_PHASE_PROGRESS.morning },
+  { name: "Day", start: DAY_PHASE_PROGRESS.afternoon },
+  { name: "Afternoon", start: DAY_PHASE_PROGRESS.lateAfternoon },
+  { name: "Dusk", start: DAY_PHASE_PROGRESS.dusk },
+  { name: "Evening", start: DAY_PHASE_PROGRESS.evening },
+];
+export function resolveDayPhase(cycleProgress: number): { name: string; progress: number } {
+  const cycle = clampCycleProgress(cycleProgress) % 100;
+  const index = DAY_PHASES.findLastIndex((phase) => cycle >= phase.start);
+  const phase = DAY_PHASES[index];
+  const end = DAY_PHASES[index + 1]?.start ?? 100;
+  return { name: phase.name, progress: ((cycle - phase.start) / (end - phase.start)) * 100 };
+}

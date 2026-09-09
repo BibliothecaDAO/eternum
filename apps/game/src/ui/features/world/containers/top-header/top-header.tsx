@@ -11,7 +11,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
-import { TickProgress } from "./tick-progress";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { TOP_PILL } from "./top-pill";
@@ -196,9 +195,6 @@ export const TopHeader = memo(() => {
         </div>
 
         <GameClock />
-        <div className={TOP_PILL}>
-          <TickProgress />
-        </div>
         <AttentionPill />
 
         {/* 6. Army combat follow toggle */}

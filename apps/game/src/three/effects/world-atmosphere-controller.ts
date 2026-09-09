@@ -1,3 +1,4 @@
+import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
 import type GUI from "lil-gui";
 import {
   Scene,
@@ -44,15 +45,6 @@ interface AtmosphereProgressFrame {
   progress: number;
   snapVisualState: boolean;
 }
-
-const DAY_PHASE_PROGRESS = {
-  dawn: 100 / 6,
-  morning: 100 / 3,
-  afternoon: 50,
-  lateAfternoon: 175 / 3,
-  dusk: (100 / 6) * 4,
-  evening: (100 / 6) * 5,
-} as const;
 
 const VISIBILITY_FLOORS = {
   ambientIntensity: 0.48,
@@ -736,12 +728,7 @@ export class WorldAtmosphereController {
    * Get current time of day as string (for debugging/UI)
    */
   getTimeOfDay(progress: number): string {
-    if (progress < DAY_PHASE_PROGRESS.dawn) return "Night";
-    if (progress < DAY_PHASE_PROGRESS.morning) return "Dawn";
-    if (progress < DAY_PHASE_PROGRESS.afternoon) return "Day";
-    if (progress < DAY_PHASE_PROGRESS.dusk) return "Afternoon";
-    if (progress < DAY_PHASE_PROGRESS.evening) return "Dusk";
-    return "Evening";
+    return resolveDayPhase(progress).name;
   }
 
   /**

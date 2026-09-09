@@ -1,3 +1,4 @@
+import { resolveDayPhase } from "@/utils/cycle-progress";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
 import Clock from "lucide-react/dist/esm/icons/clock";
@@ -12,6 +13,7 @@ import { resolveGameClock } from "./game-clock-policy";
 
 const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"];
 export const GameClock = memo(() => {
+  const dayPhase = resolveDayPhase(useUIStore((state) => state.cycleProgress));
   const startAt = useUIStore((state) => state.gameStartMainAt);
   const endAt = useUIStore((state) => state.gameEndAt);
   const now = useCurrentBlockTimestamp();
@@ -25,18 +27,18 @@ export const GameClock = memo(() => {
   }, [urgency]);
   if (clock.phase === "finished") return <GameFinishedPill />;
   return (
-    <div className={cn(TOP_PILL, "relative overflow-hidden")} aria-label="Game clock">
+    <div className={cn(TOP_PILL, "relative overflow-hidden")} aria-label="Game clock" title={dayPhase.name}>
       <Clock className="h-3.5 w-3.5" />
       <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap")}>{clock.label}</span>
       {clock.remainingRatio !== null && (
         <div
           role="progressbar"
-          aria-label="Game time remaining in army ticks"
+          aria-label={`${dayPhase.name} progress`}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(clock.remainingRatio * 100)}
+          aria-valuenow={Math.round(dayPhase.progress)}
           className="absolute bottom-0 left-0 h-0.5 bg-gold"
-          style={{ width: `${clock.remainingRatio * 100}%` }}
+          style={{ width: `${dayPhase.progress}%` }}
         />
       )}
     </div>

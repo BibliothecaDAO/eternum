@@ -2,7 +2,12 @@
 
 import { describe, expect, it } from "vitest";
 
-import { clampCycleProgress, resolveDebuggableCycleProgress, resolveDayCycleProgress } from "./cycle-progress";
+import {
+  resolveDayPhase,
+  clampCycleProgress,
+  resolveDebuggableCycleProgress,
+  resolveDayCycleProgress,
+} from "./cycle-progress";
 
 describe("cycle progress debug helpers", () => {
   it("clamps progress to the day-cycle range", () => {
@@ -30,4 +35,10 @@ it("preserves the six-tick atmospheric cycle independently of header phases", ()
   expect(resolveDayCycleProgress(180, 60)).toBe(50);
   expect(resolveDayCycleProgress(360, 60)).toBe(0);
   expect(() => resolveDayCycleProgress(10, 0)).toThrow("Army tick duration is unavailable");
+});
+
+it("shares the atmospheric phase boundaries and wraps midnight", () => {
+  expect(resolveDayPhase(25)).toEqual({ name: "Dawn", progress: expect.closeTo(50) });
+  expect(resolveDayPhase(50)).toEqual({ name: "Day", progress: 0 });
+  expect(resolveDayPhase(100)).toEqual({ name: "Night", progress: 0 });
 });
