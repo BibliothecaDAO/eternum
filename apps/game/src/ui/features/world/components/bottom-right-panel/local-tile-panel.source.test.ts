@@ -25,7 +25,7 @@ describe("local tile state ownership", () => {
   });
 
   it("guards production and destruction against spectator intent even for an owned realm", () => {
-    expect(source).toContain("!isSpectating");
+    expect(source).toContain("ordersAllowed && playerStructures.some");
     expect(source).toContain("useUIStore(canIssueOrders)");
     expect(
       source.match(/if \(!selectedBuildingHex \|\| !canManageBuilding \|\| isActionLoading\) return;/g),
