@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Day Timer Returns",
+    description: "The familiar day-phase indicator returns beside the match clock. Hover it for the current phase and time remaining; daylight and the gong keep running independently.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "One Attention List",
     description: "Cycle through locations needing attention, then suggested actions, from one header pill. Suggestions open beside familiar panel styling and remain yours to confirm.",
     type: "improvement",
