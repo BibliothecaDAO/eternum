@@ -81,6 +81,34 @@ it("opens Players from cache, refreshes after confirmed heads and reconnects, an
       ),
     );
     expect(state.fetch).toHaveBeenCalledTimes(3);
+    let finishRefresh!: (result: typeof entries) => void;
+    state.fetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishRefresh = resolve;
+        }),
+    );
+    state.confirmedBlock = 12;
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <LeaderboardActivitySync />
+          <Panel />
+        </QueryClientProvider>,
+      ),
+    );
+    expect(state.fetch).toHaveBeenCalledTimes(4);
+    state.confirmedBlock = 13;
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <LeaderboardActivitySync />
+          <Panel />
+        </QueryClientProvider>,
+      ),
+    );
+    expect(state.fetch).toHaveBeenCalledTimes(4);
+    await act(async () => finishRefresh(entries));
     state.gameId = 29;
     state.fetch.mockImplementation(() => new Promise(() => {}));
     await act(async () =>

@@ -8,7 +8,7 @@ export function LeaderboardActivitySync() {
   const handshake = useConnectionStore((state) => state.lastGlobalHandshake);
   useEffect(() => {
     // Stories may arrive provisionally. Herald commits history before publishing this head.
-    void refetch();
+    void refetch({ cancelRefetch: false });
   }, [confirmedBlock, handshake, refetch]);
   return null;
 }
