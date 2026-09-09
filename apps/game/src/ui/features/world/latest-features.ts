@@ -36,6 +36,13 @@ const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
     type: "fix",
+    title: "Recover After Graphics Loss",
+    description:
+      "If WebGPU loses its device, the game reloads once in WebGL at the same map URL, rebuilding models and terrain for that renderer.",
+  },
+  {
+    date: "2026-09-09",
+    type: "fix",
     title: "Leaderboard Retry Stays Yours",
     description:
       "If points history is unavailable, Players keeps its error and cached details until you press Refresh. Background requests resume after a successful retry.",

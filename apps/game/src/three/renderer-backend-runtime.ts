@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/react";
 import { verboseLog } from "@/utils/dev-mode";
 import {
-  incrementRendererDiagnosticError,
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
   syncRendererBackendDiagnostics,
@@ -60,31 +59,6 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
   });
   const diagnostics = await backend.initialize();
   return completeRendererBackendInitialization(backend, diagnostics);
-}
-
-export async function initializeRendererDeviceLossFallbackRuntime(
-  input: Omit<InitializeRendererBackendRuntimeInput, "backendFactory" | "onDeviceLost">,
-): Promise<{
-  backend: RendererBackendRuntimeState;
-  renderer: RendererSurfaceLike;
-}> {
-  const backend = createWebGPURendererBackend({
-    isMobileDevice: input.isMobileDevice,
-    pixelRatio: input.pixelRatio,
-    requestedMode: "webgpu-force-webgl",
-  });
-
-  try {
-    const diagnostics = await backend.initialize();
-    incrementRendererDiagnosticError("fallbacks");
-    return completeRendererBackendInitialization(backend, {
-      ...diagnostics,
-      fallbackReason: "webgpu-device-lost",
-    });
-  } catch (error) {
-    backend.dispose?.();
-    throw error;
-  }
 }
 
 function completeRendererBackendInitialization(

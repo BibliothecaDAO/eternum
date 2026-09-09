@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
 
 const setSentryScopeTags = vi.fn();
-const incrementRendererDiagnosticError = vi.fn();
 const syncRendererBackendDiagnostics = vi.fn();
 const setRendererDiagnosticCapabilities = vi.fn();
 const setRendererDiagnosticDegradations = vi.fn();
@@ -13,15 +12,13 @@ const verboseLog = vi.fn();
 vi.mock("@sentry/react", () => ({ getCurrentScope: () => ({ setTags: setSentryScopeTags }) }));
 vi.mock("@/utils/dev-mode", () => ({ verboseLog }));
 vi.mock("./renderer-diagnostics", () => ({
-  incrementRendererDiagnosticError,
   syncRendererBackendDiagnostics,
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
 }));
 vi.mock("./webgpu-renderer-backend", () => ({ createWebGPURendererBackend }));
 
-const { initializeRendererBackendRuntime, initializeRendererDeviceLossFallbackRuntime } =
-  await import("./renderer-backend-runtime");
+const { initializeRendererBackendRuntime } = await import("./renderer-backend-runtime");
 
 function createFakeBackend(activeMode: "webgpu" | "webgl2-fallback" = "webgpu") {
   return {
@@ -96,32 +93,6 @@ describe("renderer backend runtime", () => {
         event: "renderer-init-completed",
         fallbackReason: null,
         requestedMode: "webgpu-auto",
-      }),
-    );
-    expect(result).toEqual({ backend, renderer: backend.renderer });
-  });
-
-  it("restarts on the maintained WebGL2 fallback after device loss", async () => {
-    const backend = createFakeBackend("webgl2-fallback");
-    createWebGPURendererBackend.mockReturnValue(backend);
-
-    const result = await initializeRendererDeviceLossFallbackRuntime({
-      envBuildMode: "webgpu-auto",
-      isMobileDevice: false,
-      pixelRatio: 1,
-      search: "",
-    });
-
-    expect(createWebGPURendererBackend).toHaveBeenCalledWith({
-      isMobileDevice: false,
-      pixelRatio: 1,
-      requestedMode: "webgpu-force-webgl",
-    });
-    expect(incrementRendererDiagnosticError).toHaveBeenCalledWith("fallbacks");
-    expect(syncRendererBackendDiagnostics).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeMode: "webgl2-fallback",
-        fallbackReason: "webgpu-device-lost",
       }),
     );
     expect(result).toEqual({ backend, renderer: backend.renderer });

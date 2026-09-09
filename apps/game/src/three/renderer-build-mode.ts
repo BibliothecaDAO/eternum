@@ -39,6 +39,13 @@ export function hasExplicitRendererMode(search: string): boolean {
   return new URLSearchParams(search).has(RENDERER_MODE_QUERY_PARAM);
 }
 
+/** Preserve the match, camera route and spectator intent when rebuilding after device loss. */
+export function buildRendererRecoveryUrl(href: string): string {
+  const url = new URL(href);
+  url.searchParams.set(RENDERER_MODE_QUERY_PARAM, "webgpu-force-webgl");
+  return url.toString();
+}
+
 /** Builds a reload URL for an explicit renderer trial and turns on the diagnostics emitted during that boot. */
 export function buildRendererDebugUrl(href: string, mode: RendererBuildMode): string {
   const url = new URL(href);

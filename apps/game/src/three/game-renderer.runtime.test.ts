@@ -204,14 +204,12 @@ describe("GameRenderer runtime harness", () => {
     const recoverFromRendererDeviceLoss = vi.fn();
     vi.spyOn(console, "error").mockImplementation(() => {});
     subject.recoverFromRendererDeviceLoss = recoverFromRendererDeviceLoss;
-    subject.hasRecoveredFromDeviceLoss = false;
     subject.isRecoveringFromDeviceLoss = false;
 
     subject.handleRendererDeviceLost({ activeMode: "webgpu", message: "first loss" });
     subject.isRecoveringFromDeviceLoss = true;
     subject.handleRendererDeviceLost({ activeMode: "webgpu", message: "repeated loss" });
     subject.isRecoveringFromDeviceLoss = false;
-    subject.hasRecoveredFromDeviceLoss = true;
     subject.handleRendererDeviceLost({ activeMode: "webgl2-fallback", message: "fallback context lost" });
 
     expect(sentry.captureException).toHaveBeenCalledTimes(3);
@@ -219,60 +217,6 @@ describe("GameRenderer runtime harness", () => {
     expect(
       sentry.captureException.mock.calls.map(([, context]) => context.tags["renderer.recovery_attempted"]),
     ).toEqual(["yes", "no", "no"]);
-  });
-
-  it("unpauses and restarts the animation loop when fallback initialization fails", () => {
-    const harness = createGameRendererRuntimeHarness();
-    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
-    const animate = vi.fn();
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    subject.animate = animate;
-    subject.isRecoveringFromDeviceLoss = true;
-    subject.isRendererRecoveryPaused = true;
-    subject.lastTime = 100;
-    subject.lastFrameTime = 104;
-
-    subject.handleDeviceLossFallbackFailure(new Error("fallback init failed"), "webgpu");
-
-    expect(subject.isRecoveringFromDeviceLoss).toBe(false);
-    expect(subject.isRendererRecoveryPaused).toBe(false);
-    expect(subject.lastTime).toBe(0);
-    expect(subject.lastFrameTime).toBe(0);
-    expect(animate).toHaveBeenCalledTimes(1);
-    expect(sentry.captureException).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        tags: {
-          "renderer.backend": "webgpu",
-          "renderer.failure_kind": "recovery_failed",
-        },
-      }),
-    );
-  });
-
-  it("keeps one animation-frame chain when a fast fallback failure resumes rendering", async () => {
-    const harness = createGameRendererRuntimeHarness();
-    const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
-    const pendingFrames: FrameRequestCallback[] = [];
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => pendingFrames.push(callback));
-
-    harness.sceneManager.switchScene(SceneName.WorldMap);
-    await vi.waitFor(() => expect(harness.worldmapScene.activateInputSurface).toHaveBeenCalledOnce());
-    subject.animate();
-    expect(harness.backend.renderFrame).toHaveBeenCalledOnce();
-    expect(pendingFrames).toHaveLength(1);
-
-    subject.isRecoveringFromDeviceLoss = true;
-    subject.isRendererRecoveryPaused = true;
-    subject.handleDeviceLossFallbackFailure(new Error("fallback init failed"), "webgpu");
-
-    expect(pendingFrames).toHaveLength(1);
-    expect(harness.backend.renderFrame).toHaveBeenCalledOnce();
-
-    pendingFrames.shift()?.(16);
-    expect(harness.backend.renderFrame).toHaveBeenCalledTimes(2);
-    expect(pendingFrames).toHaveLength(1);
   });
 
   it("switches scenes through the shared scene manager", async () => {

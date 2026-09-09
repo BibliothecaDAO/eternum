@@ -180,8 +180,6 @@ export function createGameRendererRuntimeHarness() {
           getEffectsBridge: () => effectsBridge,
           getMonitoring: () => monitoringRuntime,
           getRoute: () => routeRuntime,
-          resetEffectsBridge: vi.fn(),
-          resetMonitoring: vi.fn(),
         },
         sessionRuntime: {
           captureStatsSample: vi.fn(),
