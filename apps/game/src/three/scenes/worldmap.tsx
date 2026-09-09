@@ -150,7 +150,6 @@ import {
   type WorldmapHoverReconciliationSnapshot,
 } from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
 import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName } from "../types/common";
@@ -237,7 +236,6 @@ import {
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
-import { resolveArrivalGhostVisualStyle, shouldCreatePredictiveArrivalGhost } from "../managers/arrival-ghost-policy";
 import {
   resolveExploreCompletionVisualCleanup,
   shouldCleanupTrackedTravelEffect,
@@ -947,7 +945,6 @@ export default class WorldmapScene extends WarpTravel {
   private pinnedRenderAreas: Set<string> = new Set();
 
   private fxManager!: FXManager;
-  private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
   private combatPresentation?: CombatPresentationCoordinator;
   private combatPresentationRuntime!: WorldmapCombatPresentation;
@@ -1144,11 +1141,7 @@ export default class WorldmapScene extends WarpTravel {
       getStructureHexPosition: (entityId) => this.getStructureHexPosition(entityId),
     });
     this.combatPresentationRuntime.bind();
-    this.arrivalGhostManager = new ArrivalGhostManager(this.scene, {
-      chunkStride: this.chunkSize,
-      renderChunkSize: this.renderChunkSize,
-      terrainSurface: this.getTerrainSurface(),
-    });
+
 
     installWorldmapDebugHooks(window, {
       getProceduralArmyProductionStats: () => this.armyManager.getProceduralArmyProductionStats(),
@@ -1475,7 +1468,6 @@ export default class WorldmapScene extends WarpTravel {
     changes.forEach(({ entityId, current }) => {
       if (!current) {
         this.disposePendingMovementVisualLifecycle(entityId);
-        this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
         this.battleDirectionManager.removeEntityFromTracking(entityId);
         return;
       }
@@ -1545,7 +1537,6 @@ export default class WorldmapScene extends WarpTravel {
     this.fxManager.setVisible(ladder.fx);
     this.resourceFXManager.setVisible(ladder.fx);
     this.combatPresentation?.setVisible(ladder.fx);
-    this.arrivalGhostManager.setSuspended(!ladder.fx);
     this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
     this.commitStrategicMarkers();
@@ -2592,7 +2583,7 @@ export default class WorldmapScene extends WarpTravel {
       if (exploreLatencyActionId) {
         this.pendingExploreLatencyActions.set(selectedEntityId, { actionId: exploreLatencyActionId, targetKey: key });
       }
-      // The click's ghost: the destination stays selected and the path highlighted before anything is signed.
+      // Keep the destination selected while the order is submitted.
       if (exploreLatencyActionId) {
         recordClientActionPhase(exploreLatencyActionId, "ghost_rendered");
       }
@@ -2679,29 +2670,6 @@ export default class WorldmapScene extends WarpTravel {
 
         this.travelEffectsByEntity.set(selectedEntityId, { key, cleanup, effectType });
         maxLifetimeTimeout = setTimeout(cleanup, MAX_TRAVEL_EFFECT_LIFETIME_MS);
-      }
-
-      const shouldTrackArrivalGhost = shouldCreatePredictiveArrivalGhost({
-        hasTargetHex: true,
-        isLocalArmy: selectedArmy?.isMine ?? false,
-        movementType: actionType === ActionType.Explore ? "explore" : "travel",
-      });
-
-      if (shouldTrackArrivalGhost) {
-        const ghostSource = this.armyManager.getArrivalGhostSourceSnapshot(selectedEntityId);
-        if (ghostSource) {
-          this.arrivalGhostManager.upsertLocalArrivalGhost({
-            entityId: selectedEntityId,
-            hexCoords: {
-              col: targetHex.col - FELT_CENTER(),
-              row: targetHex.row - FELT_CENTER(),
-            },
-            sourceScene: ghostSource.sourceScene,
-            visualStyle: resolveArrivalGhostVisualStyle({
-              armyColor: ghostSource.armyColor,
-            }),
-          });
-        }
       }
 
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
@@ -3075,7 +3043,6 @@ export default class WorldmapScene extends WarpTravel {
         source: "worldmap",
         entityId,
       });
-      this.arrivalGhostManager.resolveArrivalGhost(entityId, "settled");
       this.handoffPendingArmyMovementToVisualLifecycle(entityId);
     });
     const disposeMovementComplete = this.armyManager.onMovementComplete(entityId, () => {
@@ -3113,7 +3080,6 @@ export default class WorldmapScene extends WarpTravel {
   private handlePendingArmyMovementFailure(entityId: ID, cleanup: () => void): void {
     this.clearPendingArmyMovementVisuals(entityId);
     this.disposePendingMovementVisualLifecycle(entityId);
-    this.arrivalGhostManager.clearArrivalGhost(entityId, "failed");
     cleanup();
   }
 
@@ -3908,9 +3874,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingExploreLatencyActions.clear();
-    this.arrivalGhostManager
-      .getTrackedEntityIds()
-      .forEach((entityId) => this.arrivalGhostManager.clearArrivalGhost(entityId, "scene_destroyed"));
+
 
     this.isSwitchedOff = runtimeState.isSwitchedOff;
     this.lastControlsCameraDistance = runtimeState.lastControlsCameraDistance;
@@ -7357,10 +7321,6 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private syncArrivalGhostChunkVisibility(): void {
-    this.arrivalGhostManager.setCurrentChunk(this.currentChunk);
-  }
-
   update(deltaTime: number) {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
@@ -7370,8 +7330,6 @@ export default class WorldmapScene extends WarpTravel {
     this.syncTerrainMovementInteractions();
     this.proceduralTerrain.update(deltaTime);
     this.combatPresentation?.update(deltaTime);
-    this.syncArrivalGhostChunkVisibility();
-    this.arrivalGhostManager.update(deltaTime);
     this.fxManager.update(deltaTime);
     this.resourceFXManager.update(deltaTime);
     this.selectionPulseManager.update(deltaTime);
@@ -7758,7 +7716,6 @@ export default class WorldmapScene extends WarpTravel {
 
     destroyWorldmapOwnedManagers({
       armyManager: this.armyManager,
-      arrivalGhostManager: this.arrivalGhostManager,
       structureManager: this.structureManager,
       reservedHyperstructureManager: this.reservedHyperstructureManager,
       chestManager: this.chestManager,

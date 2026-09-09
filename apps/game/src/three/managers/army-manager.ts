@@ -59,10 +59,10 @@ import { getComponentValue, type ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import * as THREE from "three";
-import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
-import type { AttachmentTransform, CosmeticAttachmentTemplate, ResolvedCosmeticSkin } from "../cosmetics";
+import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
@@ -165,11 +165,6 @@ export interface ArmyMovementPlan {
   worldPath: Vector3[];
   armyCategory: TroopType;
   armyTier: TroopTier;
-}
-
-export interface PendingCreationGhostSource {
-  armyColor: string;
-  sourceScene: Object3D;
 }
 
 export interface ProceduralArmyProductionStats extends ProceduralArmyCharacterLayerStats {
@@ -1289,7 +1284,7 @@ export class ArmyManager {
     // freeInstanceSlot kills the movement callback that would normally do this
     this.cleanupMovementSourceBucket(entityId);
     // Chunk reconciliation can evict a moving army before the tween completes.
-    // Surface that as a visual cancellation so arrival ghosts and travel effects
+    // Surface that as a visual cancellation so travel effects
     // do not survive the lost movement-complete callback.
     if (shouldNotifyMovementVisualCancel) {
       this.runMovementVisualCancelListeners(numericId);
@@ -2000,106 +1995,6 @@ export class ArmyManager {
 
   public getArmy(entityId: ID): ArmyData | undefined {
     return this.armyPresentations.get(entityId);
-  }
-
-  public getArrivalGhostSourceSnapshot(entityId: ID): { armyColor: string; sourceScene: Object3D } | null {
-    const army = this.armyPresentations.get(entityId);
-    if (!army) {
-      return null;
-    }
-
-    const numericEntityId = this.toNumericId(entityId);
-    const modelData = this.armyModel.getModelForEntity(numericEntityId);
-    if (!modelData) {
-      return null;
-    }
-
-    return {
-      armyColor: army.color,
-      sourceScene: modelData.sourceScene,
-    };
-  }
-
-  public async resolvePendingCreationGhostSource(input: {
-    entityId: ID;
-    hexCoords: HexPosition;
-    troopType: TroopType;
-    troopTier: TroopTier;
-  }): Promise<PendingCreationGhostSource> {
-    const ownerAddress = this.resolvePendingCreationOwnerAddress();
-    this.hydratePendingCreationCosmetics(ownerAddress);
-
-    const baseModelType = this.resolvePendingCreationBaseModel(input);
-    const cosmetic = resolveArmyCosmetic({
-      owner: ownerAddress,
-      troopType: input.troopType,
-      tier: input.troopTier,
-      defaultModelType: baseModelType,
-    });
-    const sourceScene = await this.resolvePendingCreationSourceScene({
-      baseModelType: cosmetic.skin.modelType ?? baseModelType,
-      cosmeticSkin: cosmetic.skin,
-    });
-
-    return {
-      armyColor: this.resolvePendingCreationGhostColor(ownerAddress),
-      sourceScene,
-    };
-  }
-
-  private resolvePendingCreationOwnerAddress(): bigint {
-    return ContractAddress(useAccountStore.getState().account?.address || "0");
-  }
-
-  private hydratePendingCreationCosmetics(ownerAddress: bigint): void {
-    if (!this.components || ownerAddress === 0n) {
-      return;
-    }
-
-    playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
-  }
-
-  private resolvePendingCreationBaseModel(input: {
-    entityId: ID;
-    hexCoords: HexPosition;
-    troopType: TroopType;
-    troopTier: TroopTier;
-  }): ModelType {
-    const contractHex = new Position({ x: input.hexCoords.col, y: input.hexCoords.row }).getContract();
-    const biome = configManager.getBiome(contractHex.x, contractHex.y);
-    return this.armyModel.getModelTypeForEntity(
-      this.toNumericId(input.entityId),
-      input.troopType,
-      input.troopTier,
-      biome,
-    );
-  }
-
-  private async resolvePendingCreationSourceScene(input: {
-    baseModelType: ModelType;
-    cosmeticSkin: ResolvedCosmeticSkin;
-  }): Promise<Object3D> {
-    if (this.shouldUsePendingCreationCosmeticSource(input.cosmeticSkin)) {
-      try {
-        return await this.armyModel.getCosmeticModelSourceScene(input.cosmeticSkin);
-      } catch (error) {
-        console.warn("[ArmyManager] Failed to load pending creation cosmetic ghost, falling back to base model", error);
-      }
-    }
-
-    return this.armyModel.getModelSourceScene(input.baseModelType);
-  }
-
-  private shouldUsePendingCreationCosmeticSource(skin: ResolvedCosmeticSkin): boolean {
-    return !skin.isFallback && skin.assetPaths.length > 0;
-  }
-
-  private resolvePendingCreationGhostColor(ownerAddress: bigint): string {
-    return this.getArmyColor({
-      isMine: true,
-      isDaydreamsAgent: false,
-      owner: { address: ownerAddress },
-    });
   }
 
   public syncAttachedArmiesOwnerForStructure(params: {

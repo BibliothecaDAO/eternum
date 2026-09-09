@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Clearer Army Movement",
+    description: "Armies move without duplicate pending silhouettes or destination rings, keeping the battlefield clear.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     title: "Daylight Independent of the HUD",
     description: "The world's day and night cycle follows game time even when the day timer is hidden.",
     type: "improvement",
