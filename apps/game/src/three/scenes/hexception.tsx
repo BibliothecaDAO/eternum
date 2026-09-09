@@ -177,6 +177,7 @@ export default class HexceptionScene extends HexagonScene {
   private localAssetsStarted = false;
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
+  private localGridBuilt: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
@@ -1117,6 +1118,11 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
+  /** The first local frame is empty until the grid build presents terrain and buildings. */
+  public override whenPresentable(): Promise<void> {
+    return this.localGridBuilt;
+  }
+
   private advanceRealmGeneration(): number {
     this.activeRealmGeneration += 1;
     return this.activeRealmGeneration;
@@ -1210,7 +1216,7 @@ export default class HexceptionScene extends HexagonScene {
 
     // The whole grid build runs as one macrotask once models resolve; the
     // frame-owner marker is what attributes the local-view freeze to it.
-    void runOwnedBuildingWorkAfterModelsLoad({
+    this.localGridBuilt = runOwnedBuildingWorkAfterModelsLoad({
       apply: () =>
         runWithFrameWorkOwner("scene:hexception:grid", () => {
           const centers = [

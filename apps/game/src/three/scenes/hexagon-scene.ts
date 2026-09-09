@@ -1257,6 +1257,10 @@ export abstract class HexagonScene {
     return null;
   }
   public abstract setup(context?: SceneSetupContext): void | Promise<void>;
+  /** Resolves once the scene has something worth showing; a flight holds the outgoing frame until then. */
+  public whenPresentable(): Promise<void> {
+    return Promise.resolve();
+  }
   public abstract moveCameraToURLLocation(): void;
   public abstract onSwitchOff(nextSceneName?: SceneName): void;
 

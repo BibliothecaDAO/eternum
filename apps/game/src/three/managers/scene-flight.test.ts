@@ -5,7 +5,7 @@ import type { HexagonScene } from "../scenes/hexagon-scene";
 import { SceneName } from "../types";
 import { SceneFlight, canFlyBetweenScenes } from "./scene-flight";
 
-function scene() {
+function scene(presentable: Promise<void> = Promise.resolve()) {
   const camera = { position: new Vector3(0, 20, 20) };
   const cancel = vi.fn();
   return {
@@ -14,6 +14,7 @@ function scene() {
     getLocationCoordinates: () => ({ x: 10, z: 20 }),
     cameraAnimate: vi.fn(() => cancel),
     moveCameraToXYZ: vi.fn(),
+    whenPresentable: () => presentable,
     cancel,
   };
 }
@@ -22,10 +23,12 @@ beforeEach(() => {
   const canvas = document.createElement("canvas");
   canvas.id = "main-canvas";
   document.body.append(canvas);
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage: vi.fn() } as never);
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ transferFromImageBitmap: vi.fn() } as never);
+  vi.stubGlobal("createImageBitmap", vi.fn(() => Promise.resolve({ close: vi.fn() })));
 });
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
   document.body.innerHTML = "";
 });
@@ -51,8 +54,8 @@ it("holds the outgoing frame through setup, then crossfades as the incoming came
   expect(document.querySelector('[data-scene-transition="frame"]')).not.toBeNull();
   expect(outgoing.cancel).toHaveBeenCalledOnce();
   flight.reveal(incoming as unknown as HexagonScene);
-  expect(incoming.cameraAnimate).toHaveBeenCalledWith(new Vector3(0, 20, 20), new Vector3(), 0.3);
   await vi.advanceTimersByTimeAsync(500);
+  expect(incoming.cameraAnimate).toHaveBeenCalledWith(new Vector3(0, 20, 20), new Vector3(), 0.3);
   expect(document.querySelector('[data-scene-transition="frame"]')).not.toBeNull();
   flight.onFrameRendered(source, SceneName.WorldMap);
   expect(document.querySelector('[data-scene-transition="frame"]')).not.toBeNull();
@@ -71,20 +74,26 @@ it("cancels an interrupted flight and removes its timer without touching a destr
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it("copies the just-rendered buffer before restoring the outgoing camera", async () => {
+it("snapshots the just-rendered buffer on the GPU before restoring the outgoing camera", async () => {
   const outgoing = scene();
   const flight = new SceneFlight(outgoing as unknown as HexagonScene, SceneName.Hexception);
   const source = document.querySelector("canvas")!;
-  const drawImage = vi.fn(() => expect(outgoing.moveCameraToXYZ).not.toHaveBeenCalled());
-  vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue({ drawImage } as never);
+  const transfer = vi.fn();
+  vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue({ transferFromImageBitmap: transfer } as never);
+  const snapshot = vi.mocked(createImageBitmap).mockImplementation(() => {
+    expect(outgoing.moveCameraToXYZ).not.toHaveBeenCalled();
+    return Promise.resolve({ close: vi.fn() } as never);
+  });
   const completion = flight.flyOut();
   flight.onFrameRendered(source, SceneName.WorldMap);
-  expect(drawImage).not.toHaveBeenCalled();
+  expect(snapshot).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(450);
-  expect(drawImage).not.toHaveBeenCalled();
+  expect(snapshot).not.toHaveBeenCalled();
   flight.onFrameRendered(source, SceneName.WorldMap);
   await expect(completion).resolves.toBe(true);
-  expect(drawImage).toHaveBeenCalledOnce();
-  expect(drawImage).toHaveBeenCalledWith(source, 0, 0);
+  expect(snapshot).toHaveBeenCalledWith(source);
+  expect(HTMLCanvasElement.prototype.getContext).toHaveBeenCalledWith("bitmaprenderer");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(transfer).toHaveBeenCalledOnce();
   flight.destroy();
 });

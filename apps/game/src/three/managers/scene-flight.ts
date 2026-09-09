@@ -50,14 +50,18 @@ export class SceneFlight {
     });
   }
 
+  /** The captured frame stays until the incoming scene is presentable, then fades on its next rendered frame. */
   reveal(incoming: HexagonScene): void {
     if (this.destroyed) return;
-    const target = incoming.getCameraTargetPosition();
-    const settled = incoming.getCamera().position.clone();
-    const factor = this.destination === SceneName.Hexception ? 1.15 : 0.85;
-    incoming.getCamera().position.copy(target).add(settled.clone().sub(target).multiplyScalar(factor));
-    incoming.cameraAnimate(settled, target, 0.3);
-    this.revealPending = true;
+    void incoming.whenPresentable().then(() => {
+      if (this.destroyed) return;
+      const target = incoming.getCameraTargetPosition();
+      const settled = incoming.getCamera().position.clone();
+      const factor = this.destination === SceneName.Hexception ? 1.15 : 0.85;
+      incoming.getCamera().position.copy(target).add(settled.clone().sub(target).multiplyScalar(factor));
+      incoming.cameraAnimate(settled, target, 0.3);
+      this.revealPending = true;
+    });
   }
 
   /** Called synchronously after rendering, while the non-preserved drawing buffer is still valid. */
@@ -99,13 +103,20 @@ export class SceneFlight {
     this.outgoing.getCamera().position.copy(this.originalPosition);
   }
 
+  /**
+   * The copy stays on the GPU: `createImageBitmap` snapshots the drawing buffer at call time and a bitmap
+   * renderer presents it, so the flight never pays the ReadPixels stall a 2D `drawImage` of a WebGL canvas costs.
+   */
   private captureOutgoingFrame(source: HTMLCanvasElement): void {
     const frame = document.createElement("canvas");
     frame.width = source.width;
     frame.height = source.height;
-    const context = frame.getContext("2d");
+    const context = frame.getContext("bitmaprenderer");
     if (!context) return;
-    context.drawImage(source, 0, 0);
+    void createImageBitmap(source).then((bitmap) => {
+      if (this.frame === frame) context.transferFromImageBitmap(bitmap);
+      else bitmap.close();
+    });
     const rect = source.getBoundingClientRect();
     Object.assign(frame.style, {
       position: "fixed",
