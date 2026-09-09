@@ -124,3 +124,56 @@ it("opens Players from cache, refreshes after confirmed heads and reconnects, an
     client.clear();
   }
 });
+
+it("pauses automatic requests after failure until the player retries successfully", async () => {
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  const client = new QueryClient();
+  const root = createRoot(document.createElement("div"));
+  let query!: ReturnType<typeof useLeaderboardActivity>;
+  function Panel() {
+    query = useLeaderboardActivity();
+    return null;
+  }
+  const render = () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <LeaderboardActivitySync />
+        <Panel />
+      </QueryClientProvider>,
+    );
+  state.fetch.mockRejectedValue(new Error("Leaderboard failed: 404 Not Found"));
+  try {
+    await act(async () => {
+      render();
+    });
+    await vi.waitFor(async () => {
+      await act(async () => {});
+      expect(query.isError).toBe(true);
+    });
+    for (let head = 11; head <= 14; head++) {
+      state.confirmedBlock = head;
+      state.handshake++;
+      await act(async () => {
+        render();
+      });
+    }
+    expect(state.fetch).toHaveBeenCalledOnce();
+    state.fetch.mockResolvedValue([]);
+    await act(async () => {
+      await query.refetch();
+    });
+    await vi.waitFor(async () => {
+      await act(async () => {});
+      expect(query.isError).toBe(false);
+    });
+    const requestsAfterRetry = state.fetch.mock.calls.length;
+    state.confirmedBlock++;
+    await act(async () => {
+      render();
+    });
+    expect(state.fetch).toHaveBeenCalledTimes(requestsAfterRetry + 1);
+  } finally {
+    await act(async () => root.unmount());
+    client.clear();
+  }
+});

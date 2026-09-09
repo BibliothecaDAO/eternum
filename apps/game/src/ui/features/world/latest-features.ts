@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    type: "fix",
+    title: "Leaderboard Retry Stays Yours",
+    description:
+      "If points history is unavailable, Players keeps its error and cached details until you press Refresh. Background requests resume after a successful retry.",
+  },
+  {
+    date: "2026-09-09",
     type: "improvement",
     title: "Quieter Event Feed",
     description:

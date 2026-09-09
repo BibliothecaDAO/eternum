@@ -15,5 +15,8 @@ export function useLeaderboardActivity() {
     enabled: gameId > 0,
     staleTime: Infinity,
     retry: false,
+    retryOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
