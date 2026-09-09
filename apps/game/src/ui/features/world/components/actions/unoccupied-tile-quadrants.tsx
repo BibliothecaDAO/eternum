@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -96,6 +96,8 @@ const buildBiomeTroopBonusCards = (biome: BiomeType) => {
 
 interface BiomeSummaryCardProps {
   biome: BiomeType;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
   onSimulateBattle?: () => void;
   showSimulateAction?: boolean;
   /**
@@ -109,6 +111,8 @@ interface BiomeSummaryCardProps {
 
 export const BiomeSummaryCard = ({
   biome,
+  coordsLabel,
+  headerAction,
   onSimulateBattle,
   showSimulateAction = false,
   highlightTroopType,
@@ -138,7 +142,17 @@ export const BiomeSummaryCard = ({
     ) : undefined;
 
   return (
-    <InfoBubble title="Biome" icon={Trees} cue={battleAction} className="w-full shrink-0 min-w-0">
+    <InfoBubble
+      title={coordsLabel ?? "Biome"}
+      icon={Trees}
+      cue={
+        <span className="flex items-center gap-1">
+          {headerAction}
+          {battleAction}
+        </span>
+      }
+      className="w-full shrink-0 min-w-0"
+    >
       <div className="flex flex-col gap-2">
         <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
           {biomeLabel}
@@ -183,7 +197,11 @@ export const BiomeSummaryCard = ({
   );
 };
 
-export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
+export const UnoccupiedTileQuadrants = ({
+  biome,
+  coordsLabel,
+  headerAction,
+}: Pick<BiomeSummaryCardProps, "biome" | "coordsLabel" | "headerAction">) => {
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const handleSimulateBattle = useCallback(() => {
@@ -193,7 +211,13 @@ export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   return (
     <div className="w-full shrink-0">
       <EntityDetailSection compact className="flex flex-col" tone="highlight">
-        <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
+        <BiomeSummaryCard
+          biome={biome}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          onSimulateBattle={handleSimulateBattle}
+          showSimulateAction
+        />
       </EntityDetailSection>
     </div>
   );

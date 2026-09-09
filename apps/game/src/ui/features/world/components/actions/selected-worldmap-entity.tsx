@@ -122,12 +122,7 @@ const SelectedWorldmapEntityContent = ({
   ) : null;
 
   if (!hasOccupier) {
-    return (
-      <div className="flex shrink-0 flex-col">
-        {coordChip}
-        <UnoccupiedTileQuadrants biome={biome} />
-      </div>
-    );
+    return <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />;
   }
 
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";

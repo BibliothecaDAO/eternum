@@ -4,7 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { BiomeSummaryCard } from "./unoccupied-tile-quadrants";
+import { BiomeSummaryCard, UnoccupiedTileQuadrants } from "./unoccupied-tile-quadrants";
 
 const mocks = vi.hoisted(() => ({
   getBiomeCombatBonus: vi.fn(),
@@ -111,5 +111,24 @@ describe("BiomeSummaryCard", () => {
     expect(container.textContent).toContain("Penalty");
     expect(container.textContent).toContain("Neutral");
     expect(container.textContent).toContain("Advantage");
+  });
+  it("puts plain-tile coordinates and re-sync in the biome header with the bonuses", async () => {
+    const resync = vi.fn();
+    await act(async () =>
+      root.render(
+        <UnoccupiedTileQuadrants
+          biome={"Tundra" as never}
+          coordsLabel="Biome · (5, 3)"
+          headerAction={<button onClick={resync}>Re-sync</button>}
+        />,
+      ),
+    );
+    const header = container.querySelector("[aria-expanded]")!;
+    expect(header.textContent).toContain("Biome · (5, 3)");
+    expect(header.textContent).toContain("Re-sync");
+    expect(container.querySelectorAll("[aria-expanded]")).toHaveLength(1);
+    await act(async () => (header.querySelector("button") as HTMLButtonElement).click());
+    expect(resync).toHaveBeenCalledOnce();
+    expect(container.querySelectorAll("[data-bonus-card]")).toHaveLength(3);
   });
 });

@@ -169,7 +169,7 @@ const MapTilePanel = () => {
 
   const tileTypeLabel = useMemo(() => {
     if (!tile) return "Hex Tile";
-    if (!hasOccupier) return "Biome Tile";
+    if (!hasOccupier) return "Biome";
     if (isSpire) return "Spire Tile";
     if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";

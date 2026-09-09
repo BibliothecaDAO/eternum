@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    type: "improvement",
+    title: "One Plain Tile Panel",
+    description:
+      "Plain tiles show their coordinates and header actions inside Biome, above the troop bonuses, without a separate coordinate frame.",
+  },
+  {
+    date: "2026-09-09",
     type: "fix",
     title: "Recover After Graphics Loss",
     description:
