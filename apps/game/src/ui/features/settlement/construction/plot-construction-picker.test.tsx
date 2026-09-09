@@ -30,11 +30,11 @@ beforeEach(() => {
       {
         label: "Economic",
         buildings: [
-          { type: 1, label: "Farm", cost: "10 Labor", disabled: false },
+          { type: 1, label: "Farm", costs: [{resource: 1, amount: 10}], disabled: false },
           {
             type: 2,
             label: "Fishing Village",
-            cost: "20 Labor",
+            costs: [{resource: 1, amount: 20}],
             disabled: true,
             reason: "Insufficient resources to build.",
           },
@@ -50,11 +50,13 @@ afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
 });
-it("builds from one chip click and shows blocked costs and reasons before clicking", async () => {
+it("builds from one tile click and exposes blocked costs and reasons before clicking", async () => {
   await render();
   const buttons = container.querySelectorAll("button");
   expect(buttons[1].disabled).toBe(true);
-  expect(buttons[1].textContent).toContain("20 LaborInsufficient resources to build.");
+  expect(buttons[1].textContent).toContain("20");
+  expect(buttons[1].title).toBe("Insufficient resources to build.");
+  expect(buttons[0].querySelectorAll("img")).toHaveLength(2);
   await act(async () => {
     buttons[1].click();
     buttons[0].click();
@@ -72,4 +74,10 @@ it("closes when order permission or ownership is lost", async () => {
   await render();
   expect(container.textContent).toBe("");
   expect(mocks.close).toHaveBeenCalledWith("plot-construction");
+});
+
+it("sorts buildable tiles before blocked tiles within each group", async () => {
+  mocks.form.groups[0].buildings.reverse();
+  await render();
+  expect(container.querySelector("button")?.getAttribute("aria-label")).toBe("Farm");
 });

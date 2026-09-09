@@ -48,7 +48,25 @@ describe("Popover", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  it("keeps a tall map picker within a 1600 by 900 viewport even near the bottom edge", async () => {
+    vi.stubGlobal("innerHeight", 900);
+    vi.stubGlobal("innerWidth", 1600);
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(1400);
+    await act(async () => usePopoverStore.getState().openSurface({
+      id: "plot-construction",
+      content: <div>Buildings</div>,
+      anchor: { left: 1200, right: 1200, top: 850, bottom: 850 },
+      mapClick: "dismiss",
+    }));
+    const picker = panel("plot-construction")!;
+    expect(picker.style.top).toBe("56px");
+    expect(picker.style.maxHeight).toBe("836px");
+    expect(picker.className).toContain("overflow-y-auto");
   });
 
   it("anchors the panel on the body without a scrim", async () => {

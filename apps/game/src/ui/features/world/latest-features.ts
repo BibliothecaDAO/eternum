@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Visual Building Choices",
+    description: "Choose buildings from thumbnails with resource costs beside each choice. Buildable options come first, and tall plot pickers stay inside the screen with scrolling.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Visual Troop Deployment",
     description: "Choose troops by their icon, tier and stock. Add 100, add 500 or use Max when deploying field armies and guards, with empty choices clearly marked.",
     type: "improvement",

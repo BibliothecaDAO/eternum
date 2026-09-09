@@ -6,7 +6,6 @@ import {
   BuildingType,
   BuildingTypeToString,
   ContractAddress,
-  ResourcesIds,
   type HexPosition,
 } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -66,9 +65,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       return {
         type,
         label: BuildingTypeToString[type],
-        cost:
-          costs?.map((cost) => `${cost.amount.toLocaleString()} ${ResourcesIds[cost.resource]}`).join(" · ") ??
-          "Cost unavailable",
+        costs,
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };
