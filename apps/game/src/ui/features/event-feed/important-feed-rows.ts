@@ -1,9 +1,13 @@
+import type { Headline } from "../news-headlines/headline-types";
 import { TransactionType } from "@bibliothecadao/provider";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRow, FeedRows } from "./event-feed-rows";
 
 export type ImportantFeedFilter = "all" | "mine" | "combat";
-export type ImportantFeedRow = FeedRow | { kind: "story"; id: string; at: number; event: ProcessedStoryEvent };
+export type ImportantFeedRow =
+  | { kind: "headline"; id: string; at: number; headline: Headline }
+  | FeedRow
+  | { kind: "story"; id: string; at: number; event: ProcessedStoryEvent };
 
 const sameOwner = (left: unknown, right: string | null): boolean => {
   if (left == null || right === null) return false;
@@ -45,6 +49,7 @@ export function selectImportantFeedRows(
   feed: FeedRows,
   filter: ImportantFeedFilter,
   address: string | null,
+  headlines: Headline[] = [],
 ): ImportantFeedRow[] {
   const battles = new Set<string>();
   const rows: ImportantFeedRow[] = stories
@@ -59,6 +64,9 @@ export function selectImportantFeedRows(
   if (filter !== "combat") {
     rows.push(...[...feed.arrived, ...feed.inFlight, ...feed.recent].filter(isImportantPersonalRow));
   }
+  rows.push(
+    ...headlines.map((headline) => ({ kind: "headline" as const, id: headline.id, at: headline.timestamp, headline })),
+  );
   return rows.sort((left, right) => right.at - left.at);
 }
 

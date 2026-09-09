@@ -1,6 +1,6 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
-import { EventFeedPanel, FEED_POPOVER_ID } from "@/ui/features/event-feed/event-feed-panel";
+import { useEventsPanelStore } from "@/ui/features/event-feed/events-panel-store";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { Popover } from "@/ui/design-system/molecules/popover";
@@ -38,7 +38,7 @@ const useTransactionSignal = () => {
   }, [txTransactions, txStuckThresholdMs]);
 };
 
-/** The top bar's utility cluster: network, activity and settings, each a popover off its button. */
+/** The top bar's utility cluster: network status, pending transactions and settings. */
 export const SecondaryMenuItems = () => {
   const openPopoverId = usePopoverStore((state) => state.openId);
   const togglePopover = usePopoverStore((state) => state.toggle);
@@ -52,48 +52,35 @@ export const SecondaryMenuItems = () => {
           empty. */}
       <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
 
-      {/* Activity — the event feed, always visible, immediately to the left of Settings.
-          Status dot indicator overlays when there's an active signal. */}
-      <Popover
-        id={FEED_POPOVER_ID}
-        ariaLabel="Activity"
-        align="end"
-        className="w-[360px] overflow-y-auto p-0"
-        trigger={
-          <div className="relative">
-            <CircleButton
-              variant="hud"
-              className="transactions-selector"
-              tooltipLocation="bottom"
-              active={openPopoverId === FEED_POPOVER_ID}
-              image="/image-icons/network.png"
-              label={"Activity"}
-              size="topbar"
-              onClick={() => togglePopover(FEED_POPOVER_ID)}
-              primaryNotification={
-                txStatus.pendingCount > 0
-                  ? {
-                      value: txStatus.pendingCount,
-                      color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
-                      location: "topright",
-                    }
-                  : undefined
-              }
-            />
-            {txStatus.status !== "idle" && (
-              <div
-                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
+      <div className="relative">
+        <CircleButton
+          variant="hud"
+          className="transactions-selector"
+          tooltipLocation="bottom"
+          image="/image-icons/network.png"
+          label={"Network and transactions"}
+          size="topbar"
+          onClick={() => useEventsPanelStore.getState().openEvents("mine")}
+          primaryNotification={
+            txStatus.pendingCount > 0
+              ? {
+                  value: txStatus.pendingCount,
+                  color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
+                  location: "topright",
+                }
+              : undefined
+          }
+        />
+        {txStatus.status !== "idle" && (
+          <div
+            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
                         ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
                         ${txStatus.status === "stuck" ? "bg-orange animate-pulse" : ""}
                         ${txStatus.status === "error" ? "bg-danger" : ""}
                         shadow-[0_0_6px_currentColor]`}
-              />
-            )}
-          </div>
-        }
-      >
-        <EventFeedPanel />
-      </Popover>
+          />
+        )}
+      </div>
 
       {/* Settings stays last in the utility cluster; its panel hangs off the gear. */}
       <Popover

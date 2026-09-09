@@ -3,6 +3,7 @@ export type HeadlineType =
   | "hyper-capture"
   | "elimination"
   | "game-end"
+  | "game-start"
   | "five-min-warning"
   | "first-t2-army"
   | "first-t3-army";

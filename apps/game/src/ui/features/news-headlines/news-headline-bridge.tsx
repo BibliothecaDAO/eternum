@@ -1,3 +1,6 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useHeadlineFeedStore } from "./headline-feed-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -5,11 +8,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Position } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
+import { StructureType } from "@bibliothecadao/types";
 // @ts-ignore
 import { useDojo, useQuery } from "@bibliothecadao/react";
 
-import { useHyperstructureInfos } from "@/hooks/helpers/use-hyperstructure-infos";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
@@ -95,7 +97,10 @@ export function NewsHeadlineBridge() {
   }, [setup.components]);
 
   const { data: storyEventLog = [] } = useStoryEvents(350);
-  const hyperstructures = useHyperstructureInfos();
+  const address = useAccountStore((state) => state.account?.address);
+  const startAt = useUIStore((state) => state.gameStartMainAt);
+  const nowSeconds = useCurrentBlockTimestamp();
+  const wasBeforeStart = useRef(false);
 
   // Queue state
   const [queue, setQueue] = useState<Headline[]>([]);
@@ -105,9 +110,6 @@ export function NewsHeadlineBridge() {
   const shownIdsRef = useRef(new Set<string>());
 
   // Init-skip refs
-  const storyInitializedRef = useRef(false);
-  const hyperOwnerRef = useRef<Map<number, string>>(new Map());
-  const hyperInitializedRef = useRef(false);
   const gameEndFiredRef = useRef(false);
   const troopMilestonesInitializedRef = useRef(false);
   const firstT2ArmyFiredRef = useRef(false);
@@ -124,12 +126,15 @@ export function NewsHeadlineBridge() {
     if (shownIdsRef.current.has(headline.id)) return;
     shownIdsRef.current.add(headline.id);
     setQueue((prev) => [...prev, headline]);
+    useHeadlineFeedStore.getState().publish(headline);
     try {
       AudioManager.getInstance().play("combat.victory");
     } catch {
       // audio not critical
     }
   }, []);
+
+  useEffect(() => () => useHeadlineFeedStore.setState({ headlines: [] }), []);
 
   // --- Dismiss ---
   const dismiss = useCallback(() => {
@@ -143,83 +148,49 @@ export function NewsHeadlineBridge() {
     return () => clearTimeout(timer);
   }, [currentHeadline, dismiss]);
 
-  // --- Realm fall + elimination detection ---
+  // Ownership headlines follow the same RECS row transition for every kind of structure.
   useEffect(() => {
-    const now = Date.now();
-    // Cast to access battle fields that exist at runtime (StoryEventData) but
-    // can't resolve at tsc time due to workspace module resolution.
-    const events = storyEventLog as unknown as BattleEvent[];
+    const subscription = setup.components.Structure.update$.subscribe(({ value: [current, previous] }) => {
+      if (!current || !previous || current.owner === previous.owner) return;
+      const isHyperstructure = current.base.category === StructureType.Hyperstructure;
+      const player = address ? BigInt(address) : null;
+      if (!isHyperstructure && current.owner !== player && previous.owner !== player) return;
+      const structure = entityReader?.getStructure(current.entity_id);
+      const title = isHyperstructure
+        ? "HYPERSTRUCTURE SEIZED"
+        : current.owner === player
+          ? "STRUCTURE CAPTURED"
+          : "STRUCTURE LOST";
+      enqueue({
+        id: `capture:${current.entity_id}:${previous.owner}:${current.owner}:${Date.now()}`,
+        type: isHyperstructure ? "hyper-capture" : "realm-fall",
+        icon: isHyperstructure ? "hyper-capture" : "realm-fall",
+        title,
+        description: `${structure?.structureName || `Structure #${current.entity_id}`} changes hands`,
+        location: { x: current.base.coord_x, y: current.base.coord_y, entityId: current.entity_id },
+        timestamp: Date.now(),
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [setup.components, entityReader, address, enqueue]);
 
-    if (!storyInitializedRef.current) {
-      for (const event of events) {
-        const key = `realm-fall:${event.tx_hash ?? event.id}:${event.battle_defender_id}`;
-        shownIdsRef.current.add(key);
-      }
-      storyInitializedRef.current = true;
+  useEffect(() => {
+    if (!startAt) return;
+    if (nowSeconds < startAt) {
+      wasBeforeStart.current = true;
       return;
     }
-
-    const recentBattles = events.filter(
-      (event) => event.story === "BattleStory" && event.timestampMs >= now - RECENT_HEADLINE_WINDOW_MS,
-    );
-
-    for (const event of recentBattles) {
-      const defenderId = parseNumeric(event.battle_defender_id);
-      if (defenderId === null) continue;
-
-      const structure = entityReader?.getStructure(defenderId);
-      if (!structure || structure.structureType !== StructureType.Realm) continue;
-
-      // Check if attacker won (realm fell)
-      const winnerId = parseNumeric(event.battle_winner_id);
-      const attackerId = parseNumeric(event.battle_attacker_id);
-      if (winnerId === null || attackerId === null || winnerId !== attackerId) continue;
-
-      const realmFallKey = `realm-fall:${event.tx_hash ?? event.id}:${defenderId}`;
-      if (shownIdsRef.current.has(realmFallKey)) continue;
-
-      // Resolve names
-      const defenderAddr = String(event.battle_defender_owner_address ?? "");
-      const attackerAddr = String(event.battle_attacker_owner_address ?? "");
-      const realmName = structure.ownerName || structure.structureName || `Realm #${defenderId}`;
-      const attackerName = attackerAddr ? entityReader?.getPlayerName(attackerAddr) || "Unknown" : "Unknown";
-
-      enqueue({
-        id: realmFallKey,
-        type: "realm-fall",
-        title: "REALM FALLEN",
-        description: `"${realmName} has fallen to ${attackerName}"`,
-        icon: "realm-fall",
-        location: { x: structure.coordX, y: structure.coordY, entityId: defenderId },
-        timestamp: now,
-      });
-
-      // Check for player elimination
-      if (defenderAddr) {
-        try {
-          const ownedStructures = entityReader?.getStructuresByOwner(defenderAddr) ?? [];
-          const ownedRealms = ownedStructures.filter(
-            (s: { structureType: number }) => s.structureType === StructureType.Realm,
-          );
-          // If 0 or 1 realms left (the fallen one may still be in cache), player may be eliminated
-          if (ownedRealms.length <= 1) {
-            const defenderName = entityReader?.getPlayerName(defenderAddr) || realmName;
-            const elimKey = `elimination:${defenderAddr}:${now}`;
-            enqueue({
-              id: elimKey,
-              type: "elimination",
-              title: "PLAYER ELIMINATED",
-              description: `"${defenderName} has been vanquished"`,
-              icon: "elimination",
-              timestamp: now,
-            });
-          }
-        } catch {
-          // structure lookup not critical
-        }
-      }
-    }
-  }, [storyEventLog, entityReader, enqueue]);
+    if (!wasBeforeStart.current) return;
+    wasBeforeStart.current = false;
+    enqueue({
+      id: `game-start:${startAt}`,
+      type: "game-start",
+      icon: "game-start",
+      title: "THE GAME HAS BEGUN",
+      description: "The world is open. Let the campaign begin.",
+      timestamp: Date.now(),
+    });
+  }, [startAt, nowSeconds, enqueue]);
 
   // --- First T2 / T3 army creation detection ---
   useEffect(() => {
@@ -231,10 +202,6 @@ export function NewsHeadlineBridge() {
       .map((event) => parseNumeric(event.explorer_create_tier))
       .filter((tier): tier is number => tier !== null);
     const usesZeroBasedTierEncoding = numericTiers.includes(0);
-
-    if (!storyInitializedRef.current) {
-      return;
-    }
 
     if (!troopMilestonesInitializedRef.current) {
       firstT2ArmyFiredRef.current = creationEvents.some(
@@ -291,44 +258,6 @@ export function NewsHeadlineBridge() {
       }
     }
   }, [storyEventLog, entityReader, enqueue]);
-
-  // --- Hyperstructure capture detection ---
-  useEffect(() => {
-    if (!hyperInitializedRef.current) {
-      // First render: populate ref without firing headlines
-      const map = new Map<number, string>();
-      for (const h of hyperstructures) {
-        map.set(h.entity_id, ContractAddress(h.owner).toString());
-      }
-      hyperOwnerRef.current = map;
-      hyperInitializedRef.current = true;
-      return;
-    }
-
-    for (const h of hyperstructures) {
-      const currentOwner = ContractAddress(h.owner).toString();
-      const prevOwner = hyperOwnerRef.current.get(h.entity_id);
-
-      if (prevOwner !== undefined && prevOwner !== currentOwner) {
-        const newOwnerName = h.ownerName || entityReader?.getPlayerName(currentOwner) || "Unknown";
-        const oldOwnerName = entityReader?.getPlayerName(prevOwner) || "Unknown";
-        const captureKey = `hyper-capture:${h.entity_id}:${currentOwner}`;
-
-        const position = h.position;
-        enqueue({
-          id: captureKey,
-          type: "hyper-capture",
-          title: "HYPERSTRUCTURE SEIZED",
-          description: `"${newOwnerName} captures Hyperstructure from ${oldOwnerName}"`,
-          icon: "hyper-capture",
-          location: position ? { x: position.x, y: position.y, entityId: h.entity_id } : undefined,
-          timestamp: Date.now(),
-        });
-      }
-
-      hyperOwnerRef.current.set(h.entity_id, currentOwner);
-    }
-  }, [hyperstructures, entityReader, enqueue]);
 
   // --- Game end detection ---
   useEffect(() => {

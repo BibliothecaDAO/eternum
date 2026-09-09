@@ -11,9 +11,11 @@ import {
   useRealtimeChatSelector,
 } from "@/ui/features/social";
 import { configManager } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { env } from "../../../../../env";
-import { HUD_SECTION_HEIGHT } from "./hud-layout";
+import { ImportantEventFeed } from "@/ui/features/event-feed/important-event-feed";
+import { useEventsPanelStore } from "@/ui/features/event-feed/events-panel-store";
+import { useUnreadEvents } from "@/ui/features/event-feed/use-unread-events";
 
 export function HudChatWindow() {
   const address = useAccountStore((state) => state.account?.address);
@@ -25,18 +27,30 @@ export function HudChatWindow() {
   );
   useRealtimeChatInitializer(initializer);
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
-  const [open, setOpen] = useState(true);
-  const [focusRequest, setFocusRequest] = useState(0);
+  const { tab, focusRequest, openChat, openEvents } = useEventsPanelStore();
+  const open = tab === "chat";
+  const unreadChat = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
+  const unreadEvents = useUnreadEvents(!open);
+  useEffect(() => {
+    setShellOpen(open);
+    return () => setShellOpen(false);
+  }, [open, setShellOpen]);
   const panel = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (view === LeftView.ChatView) {
-      setOpen(true);
-      setFocusRequest((request) => request + 1);
+      openChat();
     }
-  }, [view]);
+  }, [view, openChat]);
   useEffect(() => {
     const onEnter = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && useEventsPanelStore.getState().tab === "chat") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openEvents();
+        return;
+      }
       if (
         event.key !== "Enter" ||
         event.repeat ||
@@ -52,12 +66,11 @@ export function HudChatWindow() {
       )
         return;
       event.preventDefault();
-      setOpen(true);
-      setFocusRequest((request) => request + 1);
+      openChat();
     };
-    window.addEventListener("keydown", onEnter);
-    return () => window.removeEventListener("keydown", onEnter);
-  }, []);
+    window.addEventListener("keydown", onEnter, true);
+    return () => window.removeEventListener("keydown", onEnter, true);
+  }, [openChat, openEvents]);
   useEffect(() => {
     if (focusRequest > 0)
       panel.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input,textarea")?.focus();
@@ -66,22 +79,26 @@ export function HudChatWindow() {
   return (
     <section
       ref={panel}
-      aria-label="Chat window"
-      className={cn("pointer-events-auto flex shrink-0 flex-col overflow-hidden rounded-xl", OVERLAY_SURFACE_BASE)}
-      style={{ height: open ? HUD_SECTION_HEIGHT : 36 }}
+      aria-label="Events and Chat"
+      className={cn(
+        "pointer-events-auto flex h-full min-h-0 flex-col overflow-hidden rounded-xl",
+        OVERLAY_SURFACE_BASE,
+      )}
     >
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-        className="flex h-9 shrink-0 items-center justify-between border-b border-gold/15 px-3"
+      <div
+        role="tablist"
+        aria-label="Events and Chat"
+        className="flex h-9 shrink-0 items-center gap-4 border-b border-gold/15 px-3"
       >
-        <span className={HUD_LABEL}>Chat</span>
-        <span className="text-[10px] text-gold/50">
-          {connection === "error" ? "Offline · " : ""}
-          {open ? "Collapse" : "Enter ↵"}
-        </span>
-      </button>
+        <button type="button" role="tab" aria-selected={!open} onClick={() => openEvents()} className={HUD_LABEL}>
+          Events {open && unreadEvents > 0 && <span aria-label="Unread events">{unreadEvents}</span>}
+        </button>
+        <button type="button" role="tab" aria-selected={open} onClick={openChat} className={HUD_LABEL}>
+          Chat {!open && unreadChat > 0 && <span aria-label="Unread chat messages">{unreadChat}</span>}
+        </button>
+        {connection === "error" && <span className="text-xs text-gold/50">Offline</span>}
+      </div>
+      {!open && <ImportantEventFeed />}
       {open &&
         (initializer ? (
           <RealtimeChatShell

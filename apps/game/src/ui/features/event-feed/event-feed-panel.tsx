@@ -7,8 +7,6 @@ import type { FeedRow } from "./event-feed-rows";
 import { FeedRowView } from "./feed-row-view";
 import { useFeedRows } from "./use-feed-rows";
 
-export const FEED_POPOVER_ID = "feed";
-
 const Section = ({ title, rows, tone }: { title: string; rows: FeedRow[]; tone?: string }) => {
   if (rows.length === 0) return null;
   return (
@@ -26,7 +24,7 @@ const Section = ({ title, rows, tone }: { title: string; rows: FeedRow[]; tone?:
   );
 };
 
-/** The event feed: what is in flight, what has arrived, what just happened — one list, in the activity popover. */
+/** The event feed: what is in flight, what has arrived, what just happened — one list in the Events Log filter. */
 export const EventFeedPanel = () => {
   const rows = useFeedRows();
   const { data: stories } = useStoryEvents(350);
@@ -44,7 +42,7 @@ export const EventFeedPanel = () => {
 
   return (
     <div className="flex flex-col">
-      <div className="max-h-[420px] overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+      <div className="min-h-0">
         <Section title="In flight" rows={rows.inFlight} />
         <Section title="Arrived" rows={rows.arrived} tone="text-emerald-300" />
         <Section title="Recent" rows={rows.recent} />

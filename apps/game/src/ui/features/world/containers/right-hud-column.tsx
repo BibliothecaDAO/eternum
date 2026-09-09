@@ -1,5 +1,4 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ImportantEventFeed } from "@/ui/features/event-feed/important-event-feed";
 import { type ReactNode } from "react";
 import { HUD_COLUMN_WIDTH, HUD_SECTION_HEIGHT } from "./hud-layout";
 import { HudChatWindow } from "./hud-chat-window";
@@ -10,7 +9,7 @@ export const RightHudColumn = ({ children }: { children?: ReactNode }) => (
     className={cn("pointer-events-none fixed bottom-4 right-3 top-2 z-30 flex flex-col gap-2", HUD_COLUMN_WIDTH)}
   >
     <div className="shrink-0" style={{ height: HUD_SECTION_HEIGHT }}>
-      <ImportantEventFeed />
+      <HudChatWindow />
     </div>
     <div
       aria-label={children ? "Tile details" : undefined}
@@ -18,6 +17,5 @@ export const RightHudColumn = ({ children }: { children?: ReactNode }) => (
     >
       {children}
     </div>
-    <HudChatWindow />
   </aside>
 );

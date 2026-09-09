@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Events and Chat Together",
+    description:
+      "Switch between Events and Chat in one panel. Enter focuses chat, Escape returns to Events, and Log keeps the full activity history.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Spectator Controls Stay Consistent",
     description: "Switching between Local and World keeps order controls hidden while spectating.",
     type: "fix",
