@@ -35,6 +35,34 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Quick Feed and Chat Strip",
+    description:
+      "Events show as a short stack of rows under the header that fade on their own, with a Log button for the full history. Chat is one line at the foot of the right column that expands over the details when you press Enter.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Clock Shows the Day Phase",
+    description:
+      "The match countdown now carries the day phase icon, the time left in the phase and a six-segment underline; hover for the full breakdown.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Selected Hex Stays Outlined",
+    description:
+      "The hex you select keeps its outline while hovering elsewhere, survives a Local/World flight, and clears on an empty-map click or Escape.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
+    title: "Compact Settings",
+    description:
+      "One popover: profile, video with the frame-rate cap, audio, the keys bound in the current view, sign out and leave game.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "Sails Show Ownership",
     description:
       "Ship sails keep white outer panels and a printed centre stripe in the owner's map colour, the same one their armies and labels carry.",
