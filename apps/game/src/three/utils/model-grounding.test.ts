@@ -33,9 +33,9 @@ describe("army ground contact", () => {
     boot.geometry.dispose();
   });
 
-  it("preserves a boat's authored waterline even when its hull extends below it", () => {
+  it("preserves a ship's authored waterline even when its hull extends below it", () => {
     const hull = new Mesh(new BoxGeometry(2, 1, 4));
-    expect(getArmyGroundOffset([hull], ModelType.Boat)).toBe(0);
+    expect(getArmyGroundOffset([hull], ModelType.ShipPaladin3)).toBe(0);
     hull.geometry.dispose();
   });
 });
