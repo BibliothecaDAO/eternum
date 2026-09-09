@@ -26,6 +26,10 @@ export class TransitionManager {
     return this.flight.flyOut();
   }
 
+  onFrameRendered(source: HTMLCanvasElement, sceneName: SceneName): void {
+    this.flight?.onFrameRendered(source, sceneName);
+  }
+
   fadeOut(): Promise<boolean> {
     if (this.destroyed) {
       return Promise.resolve(false);

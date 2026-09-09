@@ -384,11 +384,12 @@ export default class GameRenderer {
       onFrameError: (error) => this.handleRendererFrameError(error),
       onFrameSuccess: () => this.getRendererFrameFailureCircuit().recordSuccess(),
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
+        const sceneName = this.sceneManager?.getRenderingScene();
         const rendered = runRendererFrame({
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
-          currentScene: this.sceneManager?.getRenderingScene(),
+          currentScene: sceneName,
           currentTime,
           cycleProgress,
           deltaTime,
@@ -400,6 +401,7 @@ export default class GameRenderer {
           worldmapScene: this.worldmapScene,
         });
 
+        if (rendered && sceneName) this.transitionManager.onFrameRendered(this.renderer.domElement, sceneName);
         return rendered;
       },
       requestNextFrame: () => this.scheduleNextAnimationFrame(),

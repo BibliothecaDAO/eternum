@@ -14,7 +14,8 @@ export function canFlyBetweenScenes(from: SceneName | undefined, to: SceneName, 
 export class SceneFlight {
   private frame: HTMLCanvasElement | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
-  private animationFrame: number | null = null;
+  private capturePending = false;
+  private revealPending = false;
   private resolveFlight: ((completed: boolean) => void) | null = null;
   private destroyed = false;
   private cancelAnimation: (() => void) | undefined;
@@ -44,17 +45,7 @@ export class SceneFlight {
       this.resolveFlight = resolve;
       this.timer = setTimeout(() => {
         this.timer = null;
-        // Copy after the renderer's frame, before the shared camera is handed to the next scene.
-        this.animationFrame = requestAnimationFrame(() => {
-          this.animationFrame = null;
-          try {
-            this.captureOutgoingFrame();
-          } finally {
-            this.restoreOutgoingCamera();
-            this.resolveFlight = null;
-            resolve(!this.destroyed);
-          }
-        });
+        this.capturePending = true;
       }, 450);
     });
   }
@@ -66,20 +57,33 @@ export class SceneFlight {
     const factor = this.destination === SceneName.Hexception ? 1.15 : 0.85;
     incoming.getCamera().position.copy(target).add(settled.clone().sub(target).multiplyScalar(factor));
     incoming.cameraAnimate(settled, target, 0.3);
-    const frame = this.frame;
-    if (!frame) return;
-    frame.style.transition = "opacity 150ms ease-out";
-    this.animationFrame = requestAnimationFrame(() => {
-      this.animationFrame = null;
-      frame.style.opacity = "0";
+    this.revealPending = true;
+  }
+
+  /** Called synchronously after rendering, while the non-preserved drawing buffer is still valid. */
+  onFrameRendered(source: HTMLCanvasElement, sceneName: SceneName): void {
+    if (this.destroyed) return;
+    if (this.capturePending && sceneName !== this.destination) {
+      this.capturePending = false;
+      this.captureOutgoingFrame(source);
+      this.restoreOutgoingCamera();
+      this.resolveFlight?.(true);
+      this.resolveFlight = null;
+    }
+    if (this.revealPending && sceneName === this.destination) {
+      this.revealPending = false;
+      if (!this.frame) return;
+      this.frame.style.transition = "opacity 150ms ease-out";
+      this.frame.style.opacity = "0";
       this.timer = setTimeout(() => this.removeFrame(), 150);
-    });
+    }
   }
 
   destroy(): void {
     this.destroyed = true;
     if (this.timer !== null) clearTimeout(this.timer);
-    if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
+    this.capturePending = false;
+    this.revealPending = false;
     this.cancelAnimation?.();
     this.cancelAnimation = undefined;
     this.resolveFlight?.(false);
@@ -95,9 +99,7 @@ export class SceneFlight {
     this.outgoing.getCamera().position.copy(this.originalPosition);
   }
 
-  private captureOutgoingFrame(): void {
-    const source = document.getElementById("main-canvas");
-    if (!(source instanceof HTMLCanvasElement)) return;
+  private captureOutgoingFrame(source: HTMLCanvasElement): void {
     const frame = document.createElement("canvas");
     frame.width = source.width;
     frame.height = source.height;

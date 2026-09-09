@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Continuous World and Local Flights",
+    description: "Keep the map visible while the next view loads during World and Local camera flights.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-09",
     type: "fix",
     title: "Biome Bonuses Stay Visible",
     description:

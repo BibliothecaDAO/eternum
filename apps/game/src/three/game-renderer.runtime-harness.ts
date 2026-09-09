@@ -31,6 +31,7 @@ function createTransitionManagerHarness() {
 
   return {
     startSceneFlight: vi.fn(() => null),
+    onFrameRendered: vi.fn(),
     fadeOut: vi.fn(() => {
       if (!active) return Promise.resolve(false);
 
