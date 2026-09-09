@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-09",
+    title: "Choose the Battle to Watch",
+    description: "Battle rows fly the camera on demand; the automatic combat-follow header control is removed.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-09",
     title: "One Game Clock",
     description: "The countdown carries a day phase underline; hover to see the current phase.",
     type: "improvement",

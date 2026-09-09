@@ -1,5 +1,4 @@
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
-import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -8,7 +7,6 @@ import { Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
@@ -34,14 +32,7 @@ export const TopHeader = memo(() => {
   const playHover = useUISound("ui.hover");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const followArmyCombats = useUIStore((state) => state.followArmyCombats);
-  const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
-  const ordersAllowed = useUIStore(canIssueOrders);
-  // The follow-army-combats toggle is a spectator-only affordance: it's for
-  // watching other players' battles. Active players manage their own armies, so
-  // it's hidden for them entirely.
-  const showFollowArmyToggle = !ordersAllowed;
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
@@ -197,30 +188,6 @@ export const TopHeader = memo(() => {
         <GameClock />
         <AttentionPill />
 
-        {/* 6. Army combat follow toggle */}
-        {showFollowArmyToggle && (
-          <button
-            type="button"
-            className={cn(
-              "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
-              OVERLAY_SURFACE_BASE,
-              followArmyCombats
-                ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"
-                : "hover:border-gold/50",
-            )}
-            onClick={() => {
-              setFollowArmyCombats(!followArmyCombats);
-              playClick();
-            }}
-            onMouseEnter={() => playHover()}
-            aria-pressed={followArmyCombats}
-            title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
-          >
-            <Swords className={cn("h-4 w-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
-          </button>
-        )}
-
-        {/* 7. Settings + ancillary status icons (network, tx, latest features…) */}
         <SecondaryMenuItems />
       </div>
 

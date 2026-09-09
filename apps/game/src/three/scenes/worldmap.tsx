@@ -1595,26 +1595,6 @@ export default class WorldmapScene extends WarpTravel {
           this.recalculateArrowsForEntity(defenderId);
         }
 
-        const uiStore = useUIStore.getState();
-        const followArmyCombats = uiStore.followArmyCombats;
-        const currentScene = this.sceneManager.getCurrentScene();
-
-        if (followArmyCombats && currentScene === SceneName.WorldMap) {
-          const attackerPosition =
-            attackerId !== undefined
-              ? (this.getArmyDisplayPosition(attackerId) ?? this.getStructureHexPosition(attackerId))
-              : undefined;
-          const defenderPosition =
-            defenderId !== undefined
-              ? (this.getArmyDisplayPosition(defenderId) ?? this.getStructureHexPosition(defenderId))
-              : undefined;
-          const targetPosition = defenderPosition ?? attackerPosition;
-
-          if (targetPosition) {
-            this.focusCameraOnEvent(targetPosition.col, targetPosition.row, "Following Army Combat");
-          }
-        }
-
         this.notifyArmyUnderAttack(update);
       }),
     );
