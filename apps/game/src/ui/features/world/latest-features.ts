@@ -34,6 +34,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-09",
+    title: "Daylight Independent of the HUD",
+    description: "The world's day and night cycle follows game time even when the day timer is hidden.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-08",
     title: "One clock and attention count",
     description:

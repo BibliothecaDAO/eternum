@@ -51,3 +51,24 @@ it("writes atmospheric progress and respects debug overrides", async () => {
   await render();
   expect(mocks.setProgress).toHaveBeenLastCalledWith(20);
 });
+it("advances the atmosphere from block time without a clock pill and resumes after a debug override", async () => {
+  await render();
+  expect(mocks.setProgress).toHaveBeenLastCalledWith(50);
+  mocks.now = 210;
+  await render();
+  expect(mocks.setProgress).toHaveBeenLastCalledWith((210 / 360) * 100);
+  mocks.tick = 4;
+  mocks.now = 240;
+  await render();
+  expect(mocks.setProgress).toHaveBeenLastCalledWith((240 / 360) * 100);
+  mocks.override = 20;
+  mocks.now = 300;
+  await render();
+  expect(mocks.setProgress).toHaveBeenLastCalledWith(20);
+  mocks.override = null;
+  await render();
+  expect(mocks.setProgress).toHaveBeenLastCalledWith((300 / 360) * 100);
+  mocks.now = 360;
+  await render();
+  expect(mocks.setProgress).toHaveBeenLastCalledWith(0);
+});
