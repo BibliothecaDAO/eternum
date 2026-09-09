@@ -121,7 +121,5 @@ export class RainEffect {
     this.geometry.dispose();
     this.dropsMaterial.dispose();
     this.splashesMaterial.dispose();
-    this.dropsSheet.dispose();
-    this.splashesSheet.dispose();
   }
 }

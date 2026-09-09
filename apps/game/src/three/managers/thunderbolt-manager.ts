@@ -219,8 +219,6 @@ export class ThunderBoltManager {
     if (this.disposed) return;
     this.disposed = true;
     this.cleanup();
-    this.boltSheet.dispose();
-    this.flashSheet.dispose();
     this.boltGeometry.dispose();
     this.flashGeometry.dispose();
     this.scene.remove(this.thunderBolts);

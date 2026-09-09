@@ -18,11 +18,17 @@ export function spriteSheetOffset(sheet: SpriteSheet, frame: number): { x: numbe
   return { x: (frame % sheet.columns) / sheet.columns, y: 1 - (Math.floor(frame / sheet.columns) + 1) / sheet.rows };
 }
 
+const loadedSheets = new Map<string, Texture>();
+
+/** Every scene and lab shares one GPU copy per sheet for the life of the page; nobody disposes them. */
 export function loadWeatherSpriteSheet(sheet: SpriteSheet): Texture {
+  const loaded = loadedSheets.get(sheet.url);
+  if (loaded) return loaded;
   const texture = new TextureLoader().load(sheet.url);
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = texture.magFilter = LinearFilter;
   texture.generateMipmaps = false;
   texture.wrapS = texture.wrapT = ClampToEdgeWrapping;
+  loadedSheets.set(sheet.url, texture);
   return texture;
 }

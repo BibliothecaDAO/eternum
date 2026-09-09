@@ -17,7 +17,6 @@ import { describe, expect, it } from "vitest";
  */
 const SANCTIONED_CLIENT_FILES = new Set([
   "src/audio/core/AudioManager.ts",
-  "src/hooks/shortcuts/useShortcuts.ts",
   "src/hooks/store/use-transaction-store.ts",
   "src/three/cosmetics/attachment-manager.ts",
   "src/three/cosmetics/debug-controller.ts",

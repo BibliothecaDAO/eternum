@@ -19,7 +19,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
   "apps/game/src/three/managers/ambience-manager.ts": { class: "debug", reason: "developer ambience counters" },
   "apps/game/src/three/managers/army-manager.ts": { class: "debug", reason: "developer army counters" },
   "apps/game/src/three/managers/structure-manager.ts": { class: "clock", reason: "local timed-label interpolation" },
-  "apps/game/src/three/managers/weather-manager.ts": { class: "debug", reason: "developer weather counters" },
   "apps/game/src/three/systems/wind-system.ts": { class: "debug", reason: "developer wind counters" },
   "apps/game/src/ui/debug/army-movement-latency-overlay.tsx": { class: "debug", reason: "local metrics repaint" },
   "apps/game/src/ui/debug/dev-sync-overlay.tsx": { class: "debug", reason: "local age-label repaint" },

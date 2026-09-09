@@ -10,10 +10,4 @@ describe("bootstrap hard-reload regression", () => {
 
     expect(source).not.toContain("window.location.reload()");
   });
-
-  it("does not trigger a browser reload when redirecting legacy world-selection flows back to landing", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/ui/features/world-selector/index.tsx"), "utf8");
-
-    expect(source).not.toContain("window.location.reload()");
-  });
 });

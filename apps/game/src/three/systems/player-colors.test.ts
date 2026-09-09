@@ -1,20 +1,21 @@
 import { expect, it } from "vitest";
 import { playerColorManager } from "./player-colors";
 
-it("uses green for self, blue for allies and red for every enemy, including agents", () => {
-  for (const agent of [false, true]) {
-    expect(playerColorManager.getProfileForUnit(true, false, agent, 1n).primary.getHexString()).toBe("4ade80");
-    expect(playerColorManager.getProfileForUnit(false, true, agent, 2n).primary.getHexString()).toBe("60a5fa");
-    for (const owner of [3n, 4n, 999n]) {
-      expect(playerColorManager.getProfileForUnit(false, false, agent, owner).primary.getHexString()).toBe("ef4444");
-    }
-  }
+it("keeps self green and allies blue for every address", () => {
+  expect(playerColorManager.getProfileForUnit(true, false, false, 1n).primary.getHexString()).toBe("4ade80");
+  expect(playerColorManager.getProfileForUnit(false, true, false, 2n).primary.getHexString()).toBe("60a5fa");
 });
-it("changes the relation colour immediately without retaining an address-based colour assignment", () => {
-  const enemy = playerColorManager.getProfileForUnit(false, false, false, 3n);
-  const captured = playerColorManager.getProfileForUnit(true, false, false, 3n);
-  const allied = playerColorManager.getProfileForUnit(false, true, false, 3n);
-  expect(enemy.primary.equals(captured.primary)).toBe(false);
-  expect(allied.primary.equals(captured.primary)).toBe(false);
-  expect(playerColorManager.getProfileForUnit(false, false, false, 4n)).toBe(enemy);
+
+it("gives each enemy address its own stable hue so rivals stay distinguishable on the map", () => {
+  const first = playerColorManager.getProfileForUnit(false, false, false, 3n);
+  const second = playerColorManager.getProfileForUnit(false, false, false, 4n);
+  expect(first.primary.equals(second.primary)).toBe(false);
+  expect(playerColorManager.getProfileForUnit(false, false, false, 3n)).toBe(first);
+  expect(playerColorManager.getProfileForUnit(false, false, false, "3")).toBe(first);
+});
+
+it("moves a captured address onto the relation colour instead of its old enemy hue", () => {
+  const enemy = playerColorManager.getProfileForUnit(false, false, false, 5n);
+  const captured = playerColorManager.getProfileForUnit(true, false, false, 5n);
+  expect(captured.primary.equals(enemy.primary)).toBe(false);
 });

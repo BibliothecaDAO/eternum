@@ -7,6 +7,7 @@ import {
   type GraphicsPreferences,
 } from "@/three/graphics-preferences";
 import { RangeInput } from "@/ui/design-system/atoms";
+import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { useDisconnect } from "@starknet-react/core";
@@ -141,6 +142,7 @@ function VideoSettings() {
           Reduced motion
         </SelectedOption>
       </div>
+      <RendererDebugControl className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
     </SettingsSection>
   );
 }

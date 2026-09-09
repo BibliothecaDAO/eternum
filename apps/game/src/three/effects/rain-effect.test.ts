@@ -48,7 +48,7 @@ it("keeps drops anchored in the world while the camera pans and uses scene depth
   expect(before.filter((point) => after.some((other) => point.equals(other)))).toHaveLength(84);
   effect.dispose();
 });
-it("animates only in rain, leaves splashes fixed, and disposes each resource once", () => {
+it("animates only in rain, leaves splashes fixed, and disposes its own resources once while sharing the sheets", () => {
   const { effect, scene, group, curtains } = fixture();
   const state = effect as any;
   const target = new Vector3();
@@ -67,5 +67,6 @@ it("animates only in rain, leaves splashes fixed, and disposes each resource onc
   effect.dispose();
   effect.dispose();
   expect(scene.children).toHaveLength(0);
-  for (const dispose of [materialDispose, textureDispose, geometryDispose]) expect(dispose).toHaveBeenCalledTimes(1);
+  for (const dispose of [materialDispose, geometryDispose]) expect(dispose).toHaveBeenCalledTimes(1);
+  expect(textureDispose).not.toHaveBeenCalled();
 });

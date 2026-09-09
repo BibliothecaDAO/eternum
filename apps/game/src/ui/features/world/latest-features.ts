@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-09",
     title: "Sails Show Ownership",
     description:
-      "Ship sails keep white outer panels and a printed centre stripe: green for your fleet, red for enemies and blue for allies.",
+      "Ship sails keep white outer panels and a printed centre stripe in the owner's map colour, the same one their armies and labels carry.",
     type: "improvement",
   },
   {

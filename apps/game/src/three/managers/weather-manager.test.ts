@@ -57,13 +57,13 @@ describe("weather fronts", () => {
     const early = fixture().manager;
     vi.mocked(Math.random).mockReturnValue(0.999);
     const late = fixture().manager;
-    early.update(181);
-    late.update(181);
+    early.update(301);
+    late.update(301);
     expect(early.getState().isTransitioning).toBe(true);
     expect(late.getState().isTransitioning).toBe(false);
     early.update(25);
     expect(early.getState().type).toBe(WeatherType.CLOUDY);
-    late.update(240);
+    late.update(300);
     late.update(25);
     expect(late.getState().type).toBe(WeatherType.CLOUDY);
   });

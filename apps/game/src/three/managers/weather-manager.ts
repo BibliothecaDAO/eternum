@@ -45,7 +45,7 @@ const WEATHER: Record<WeatherType, WeatherProfile> = {
       sunOcclusion: 0,
       ambientBoost: 0,
     },
-    dwell: [180, 420],
+    dwell: [300, 600],
     transitionSeconds: 35,
     next: [WeatherType.CLOUDY],
   },
@@ -61,7 +61,7 @@ const WEATHER: Record<WeatherType, WeatherProfile> = {
     },
     dwell: [90, 240],
     transitionSeconds: 25,
-    next: [WeatherType.SUNNY, WeatherType.SUNNY, WeatherType.RAIN, WeatherType.RAIN, WeatherType.STORM],
+    next: [WeatherType.SUNNY, WeatherType.SUNNY, WeatherType.SUNNY, WeatherType.RAIN, WeatherType.STORM],
   },
   [WeatherType.RAIN]: {
     lighting: {
