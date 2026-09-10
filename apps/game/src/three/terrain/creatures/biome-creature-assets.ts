@@ -1,6 +1,7 @@
 import { Box3, Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { creatureMovement } from "./biome-creature-catalog";
 import { createCreatureAnimator } from "./biome-creature-animator.js";
 
 /** Owned by one terrain instance; clones share GPU resources but never joint transforms. */
@@ -11,7 +12,7 @@ export async function loadBiomeCreature(
   const { scene } = await new GLTFLoader().loadAsync(`/models/biome-creatures/${species}.glb`);
   try {
     createCreatureAnimator(scene).reset();
-    prepareCreatureMaterials(scene, reveal);
+    prepareCreatureMaterials(scene, creatureMovement(species) !== "water", reveal);
     fitCreatureToHex(scene, species);
     return scene;
   } catch (error) {
@@ -20,7 +21,11 @@ export async function loadBiomeCreature(
   }
 }
 
-function prepareCreatureMaterials(scene: Group, reveal: (material: MeshStandardNodeMaterial) => void): void {
+function prepareCreatureMaterials(
+  scene: Group,
+  castsShadow: boolean,
+  reveal: (material: MeshStandardNodeMaterial) => void,
+): void {
   const materials = new Map<MeshStandardMaterial, MeshStandardNodeMaterial>();
   scene.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -35,7 +40,7 @@ function prepareCreatureMaterials(scene: Group, reveal: (material: MeshStandardN
       return material;
     };
     object.material = Array.isArray(object.material) ? object.material.map(convert) : convert(object.material);
-    object.castShadow = true;
+    object.castShadow = castsShadow;
     object.receiveShadow = true;
     object.raycast = () => {};
   });
@@ -49,6 +54,10 @@ function fitCreatureToHex(scene: Group, species: string): void {
   const scale = 0.65 / Math.max(size.x, size.y, size.z);
   if (!Number.isFinite(scale) || scale <= 0) throw new Error(`Invalid creature bounds: ${species}`);
   scene.scale.setScalar(scale);
+  if (creatureMovement(species) === "water") {
+    // Aquatic assets have raised display pivots; center their bodies on the swimming depth.
+    scene.position.y = -bounds.getCenter(new Vector3()).y * scale;
+  }
 }
 
 export function disposeBiomeCreature(root: Group): void {

@@ -17,6 +17,8 @@ export type WorldmapRenderDurationMetric =
   | "chunkTerrainCommitMs"
   | "chunkManagerCatchUpMs"
   | "structureAssetPrewarmMs"
+  | "structureModelLoadMs"
+  | "pipelineCompileMs"
   | "presentationSkewMs"
   | "frameBudgetLongTaskMs"
   | "visualTerrainWindowMs"
@@ -166,6 +168,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkTerrainCommitMs: createDurationStats(),
     chunkManagerCatchUpMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
+    structureModelLoadMs: createDurationStats(),
+    pipelineCompileMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
     frameBudgetLongTaskMs: createDurationStats(),
     visualTerrainWindowMs: createDurationStats(),

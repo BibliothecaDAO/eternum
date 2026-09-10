@@ -99,8 +99,6 @@ export abstract class HexagonScene {
   protected ambientPurpleLight!: AmbientLight;
   protected lightningSystem!: LightningEffectSystem;
 
-  private stormAmbientBaseIntensity?: number;
-  private stormHemisphereBaseIntensity?: number;
   private weatherAtmosphereState?: WeatherState;
   private rainEffect!: RainEffect;
 
@@ -1115,29 +1113,6 @@ export abstract class HexagonScene {
       elapsedTime,
       stormDepth,
     });
-
-    // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
-    // When atmosphere control is enabled, read the pre-flicker baseline from the manager to avoid
-    // compounding drift (the live light value already includes previous flicker).
-    const atmosphereEnabled = this.worldAtmosphereController?.params?.enabled === true;
-
-    const ambientBase = atmosphereEnabled
-      ? this.worldAtmosphereController!.getLastAmbientIntensity()
-      : (this.stormAmbientBaseIntensity ??= this.ambientPurpleLight.intensity);
-    const hemisphereBase = atmosphereEnabled
-      ? this.worldAtmosphereController!.getLastHemisphereIntensity()
-      : (this.stormHemisphereBaseIntensity ??= this.hemisphereLight.intensity);
-
-    if (!atmosphereEnabled) {
-      this.stormAmbientBaseIntensity ??= ambientBase;
-      this.stormHemisphereBaseIntensity ??= hemisphereBase;
-    }
-
-    const ambientFlicker = 1 + Math.sin(elapsedTime * 2) * 0.06;
-    this.ambientPurpleLight.intensity = ambientBase * ambientFlicker;
-
-    const hemisphereFlicker = 1 + Math.sin(elapsedTime * 1.5) * 0.06;
-    this.hemisphereLight.intensity = hemisphereBase * hemisphereFlicker;
   }
 
   protected shouldEnableStormEffects(): boolean {
@@ -1384,11 +1359,7 @@ export abstract class HexagonScene {
     this.mainDirectionalLight.castShadow = this.shadowsEnabled;
     switch (view) {
       case CameraView.Close:
-        this.mainDirectionalLight.shadow.bias = -0.02;
-        this.setMainDirectionalShadowActive(this.shadowsEnabled);
-        break;
       case CameraView.Medium:
-        this.mainDirectionalLight.shadow.bias = -0.015;
         this.setMainDirectionalShadowActive(this.shadowsEnabled);
         break;
       case CameraView.Far:

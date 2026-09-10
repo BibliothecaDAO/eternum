@@ -60,7 +60,8 @@ describe("instanced reward hierarchies", () => {
     model.updateAnimations(0.5);
     model.instancedMeshes[0].getMatrixAt(0, actual);
     expect(new Vector3().setFromMatrixPosition(actual).y).toBeCloseTo(3.5);
-    expect(model.instancedMeshes[0].morphTexture?.image.height).toBe(4);
+    expect(model.instancedMeshes[0].morphTexture).toBeNull();
+    expect(model.instancedMeshes[0].morphTargetInfluences).toEqual([0.75]);
     model.dispose();
   });
   it("keeps sparse slots hidden and drops truncated placements before animation updates", () => {
@@ -74,7 +75,7 @@ describe("instanced reward hierarchies", () => {
     model.instancedMeshes[0].getMatrixAt(0, actual);
     expect(actual.determinant()).toBe(0);
     model.setCount(1);
-    expect(model.instancedMeshes[0].count).toBe(2);
+    expect(model.instancedMeshes[0].count).toBe(1);
     model.instancedMeshes[0].getMatrixAt(1, actual);
     expect(actual.determinant()).toBe(0);
     expect(() => model.setMatrixAt(4, new Matrix4())).toThrow(RangeError);
@@ -117,6 +118,58 @@ describe("chest camera facing", () => {
     model.updateAnimations(0);
     chestMesh.getMatrixAt(0, matrix);
     expect(new Vector3(0, 0, 1).transformDirection(matrix).z).toBeCloseTo(-Math.SQRT1_2);
+    model.dispose();
+  });
+});
+
+describe("reward animation uploads", () => {
+  it("uploads only changed slots and leaves stationary parts clean at GPU precision", () => {
+    const asset = createAsset();
+    const stationary = new Mesh(new PlaneGeometry(), new MeshStandardMaterial());
+    stationary.name = "Basin";
+    stationary.rotation.y = 0.123;
+    asset.scene.add(stationary);
+    const model = new RewardTileModel(asset, 1000);
+    model.setMatrixAt(2, new Matrix4().makeTranslation(10, 0, 0));
+    model.setCount(3);
+    const basin = model.instancedMeshes.find((mesh) => mesh.name === "Basin")!;
+    const moving = model.instancedMeshes.find((mesh) => mesh.name === "Liquid")!;
+    model.instancedMeshes.forEach((mesh) => mesh.instanceMatrix.clearUpdateRanges());
+    const basinVersion = basin.instanceMatrix.version;
+    model.updateAnimations(0.1);
+    expect(basin.instanceMatrix.version).toBe(basinVersion);
+    expect(basin.instanceMatrix.updateRanges).toEqual([]);
+    expect(moving.instanceMatrix.updateRanges).toEqual([{ start: 32, count: 16 }]);
+    for (let frame = 0; frame < 100; frame++) model.updateAnimations(1 / 60);
+    expect(moving.instanceMatrix.updateRanges).toEqual([{ start: 32, count: 16 }]);
+    model.removeInstance(2);
+    expect(basin.instanceMatrix.updateRanges).toEqual([{ start: 32, count: 16 }]);
+    const removed = new Matrix4();
+    basin.getMatrixAt(2, removed);
+    expect(removed.determinant()).toBe(0);
+    model.dispose();
+  });
+
+  it("shares the current morph pose across sparse instances without capacity-sized textures", () => {
+    const model = new RewardTileModel(createAsset(), 1000);
+    model.setMatrixAt(0, new Matrix4());
+    model.setMatrixAt(7, new Matrix4().makeTranslation(10, 0, 0));
+    model.setCount(8);
+    const mesh = model.instancedMeshes[0];
+    const influences = mesh.morphTargetInfluences;
+    expect(influences).toEqual([0.5]);
+    model.updateAnimations(0.5);
+    expect(mesh.morphTargetInfluences).toBe(influences);
+    expect(influences).toEqual([0.75]);
+    expect(mesh.morphTexture).toBeNull();
+    expect(mesh.count).toBe(8);
+    model.setCount(0);
+    expect(mesh.count).toBe(0);
+    expect(mesh.visible).toBe(false);
+    model.setMatrixAt(0, new Matrix4());
+    model.setCount(1);
+    expect(mesh.count).toBe(1);
+    expect(mesh.morphTargetInfluences).toBe(influences);
     model.dispose();
   });
 });

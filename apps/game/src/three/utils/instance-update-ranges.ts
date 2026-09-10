@@ -28,10 +28,19 @@ export function flushSlotDirtyRange(
   const count = range.max - range.min + 1;
   for (const attribute of attributes) {
     if (!attribute) continue;
-    attribute.addUpdateRange(range.min * attribute.itemSize, count * attribute.itemSize);
-    attribute.needsUpdate = true;
+    queueInstanceUpdate(attribute, range.min, count);
   }
   range.min = Number.POSITIVE_INFINITY;
   range.max = -1;
   return count;
+}
+
+/** Keep pending uploads bounded when an offscreen mesh is updated repeatedly before a draw. */
+export function queueInstanceUpdate(attribute: BufferAttribute, firstSlot: number, slotCount: number): void {
+  const start = firstSlot * attribute.itemSize;
+  const count = slotCount * attribute.itemSize;
+  const queued = attribute.updateRanges.find((range) => range.start === start);
+  if (queued) queued.count = Math.max(queued.count, count);
+  else attribute.addUpdateRange(start, count);
+  attribute.needsUpdate = true;
 }

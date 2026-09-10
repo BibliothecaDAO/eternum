@@ -91,8 +91,6 @@ export class WorldAtmosphereController {
   private lastUpdateHemiIntensity: number = 0;
   private lastUpdateAmbientIntensity: number = 0;
   private lastUpdateMoonIntensity: number = 0;
-  private lastWeatherAdjustedHemiIntensity: number = 0;
-  private lastWeatherAdjustedAmbientIntensity: number = 0;
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
@@ -182,8 +180,6 @@ export class WorldAtmosphereController {
     this.lastUpdateDirIntensity = this.directionalLight.intensity;
     this.lastUpdateHemiIntensity = this.hemisphereLight.intensity;
     this.lastUpdateAmbientIntensity = this.ambientLight.intensity;
-    this.lastWeatherAdjustedHemiIntensity = this.lastUpdateHemiIntensity;
-    this.lastWeatherAdjustedAmbientIntensity = this.lastUpdateAmbientIntensity;
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(progressFrame.progress, cameraTarget, progressFrame.snapVisualState);
@@ -504,8 +500,6 @@ export class WorldAtmosphereController {
       VISIBILITY_FLOORS.ambientIntensity,
       this.lastUpdateAmbientIntensity + shadowLift,
     );
-    this.lastWeatherAdjustedHemiIntensity = this.hemisphereLight.intensity;
-    this.lastWeatherAdjustedAmbientIntensity = this.ambientLight.intensity;
 
     this.moonLight.intensity = this.params.moonEnabled ? this.lastUpdateMoonIntensity * reductionFactor : 0;
 
@@ -546,27 +540,7 @@ export class WorldAtmosphereController {
 
     this.fog.color.copy(this.originalLightingState.fogColor);
     this.moonLight.intensity = 0;
-    this.lastWeatherAdjustedHemiIntensity = this.hemisphereLight.intensity;
-    this.lastWeatherAdjustedAmbientIntensity = this.ambientLight.intensity;
     this.isProgressInitialized = false;
-  }
-
-  /**
-   * Return the ambient-light intensity from the current atmosphere frame.
-   * Storm-flicker code reads this instead of the live light value so weather
-   * boosts are preserved without compounding drift.
-   */
-  getLastAmbientIntensity(): number {
-    return this.lastWeatherAdjustedAmbientIntensity;
-  }
-
-  /**
-   * Return the hemisphere-light intensity from the current atmosphere frame.
-   * Storm-flicker code reads this instead of the live light value so weather
-   * boosts are preserved without compounding drift.
-   */
-  getLastHemisphereIntensity(): number {
-    return this.lastWeatherAdjustedHemiIntensity;
   }
 
   /**

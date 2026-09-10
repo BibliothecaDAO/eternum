@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-10",
+    title: "Clearer Terrain and Smoother Storms",
+    type: "improvement",
+    description:
+      "Explored terrain stays distinct from fog through daylight, sunset and moonlight. Scorched tiles show burnt volcanic rock and glowing lava fissures. Storms, chests and rifts animate more smoothly, with less stutter when lightning first strikes. Map shadows stay grounded, and fish and turtles swim partly submerged.",
+  },
+  {
+    date: "2026-09-10",
     title: "Fleet details and reward preview",
     type: "fix",
     description:

@@ -1,11 +1,9 @@
-import { Group, InstancedMesh, Matrix4, PerspectiveCamera, Scene, Texture, TextureLoader, Vector3 } from "three";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+vi.mock("../utils/utils", () => ({ loadKtx2Texture: vi.fn(() => Promise.resolve(new Texture())) }));
+import { Group, InstancedMesh, Matrix4, PerspectiveCamera, Scene, Texture, Vector3 } from "three";
+import { afterEach, expect, it, vi } from "vitest";
 import { RainEffect } from "./rain-effect";
 
 const rain = { rainIntensity: 1, windX: 1, windZ: 0 };
-beforeEach(() => {
-  vi.spyOn(TextureLoader.prototype, "load").mockImplementation(() => new Texture());
-});
 afterEach(() => vi.restoreAllMocks());
 function fixture() {
   const scene = new Scene();
@@ -37,7 +35,7 @@ it("keeps drops anchored in the world while the camera pans and uses scene depth
   expect(positions(curtains)).toEqual(before);
   expect(before[48].clone().project(camera).x).not.toBeCloseTo(projected.x);
   for (const mesh of [curtains, splashes]) {
-    expect(mesh.material).toMatchObject({ depthTest: true, depthWrite: false });
+    expect(mesh.material).toMatchObject({ depthTest: true, depthWrite: false, forceSinglePass: true });
   }
   expect(positions(splashes).every((position) => Math.abs(position.y - 2.04) < 0.001)).toBe(true);
   const splashMatrix = new Matrix4();
@@ -62,7 +60,7 @@ it("animates only in rain, leaves splashes fixed, and disposes its own resources
   effect.update(0.1, target, { ...rain, rainIntensity: 0 });
   expect(group.visible).toBe(false);
   const materialDispose = vi.spyOn(curtains.material as any, "dispose");
-  const textureDispose = vi.spyOn(state.dropsSheet, "dispose");
+  const textureDispose = vi.spyOn(state.dropsSheet.value, "dispose");
   const geometryDispose = vi.spyOn(curtains.geometry, "dispose");
   effect.dispose();
   effect.dispose();

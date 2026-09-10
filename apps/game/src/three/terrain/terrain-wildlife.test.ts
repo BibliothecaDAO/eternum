@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BiomeCreaturePopulation, wildlifeRegion } from "./creatures/biome-creature-population";
 import { findNearestTerrainHex } from "./terrain-coordinates";
 import { loadBiomeCreature } from "./creatures/biome-creature-assets";
+import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 import { TerrainWildlife } from "./terrain-wildlife";
 import type { TerrainCellInput } from "./terrain-types";
 
@@ -195,3 +196,29 @@ describe("terrain wildlife lifecycle", () => {
     expect(wildlife.object3d.children).toHaveLength(0);
   });
 });
+
+it.each([BiomeType.DeepOcean, BiomeType.Ocean])(
+  "keeps aquatic wildlife partly submerged in biome %s",
+  async (biome) => {
+    const wildlife = new TerrainWildlife(
+      () => ({ biome, height: TERRAIN_WATER_LEVEL, normal: [0, 1, 0] }),
+      () => {},
+    );
+    try {
+      wildlife.sync(
+        cells().map((cell) => ({ ...cell, biome })),
+        [],
+      );
+      await wildlife.load();
+      expect(wildlife.object3d.children.length).toBeGreaterThan(0);
+      for (let frame = 0; frame < 20; frame++) {
+        wildlife.update(0.05);
+        for (const creature of wildlife.object3d.children) {
+          expect(creature.position.y).toBeLessThan(TERRAIN_WATER_LEVEL);
+        }
+      }
+    } finally {
+      wildlife.dispose();
+    }
+  },
+);

@@ -883,10 +883,12 @@ export class StructureManager {
   }
 
   private loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
+    const startedAt = performance.now();
     return new Promise((resolve, reject) => {
       gltfLoader.load(
         modelPath,
         (gltf) => {
+          recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
           try {
             const instancedModel =
               modelPath === RiftModelPath
@@ -904,6 +906,7 @@ export class StructureManager {
         },
         undefined,
         (error) => {
+          recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
           console.error(modelPath);
           console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
           reject(error);

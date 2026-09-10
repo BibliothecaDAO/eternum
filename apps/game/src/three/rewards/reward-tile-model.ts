@@ -12,6 +12,7 @@ import {
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { AnimationVisibilityContext } from "../types/animation";
+import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { disposeSkinnedSceneTemplates } from "../characters/skinned-asset-resources";
 import { createArcaneStoneMaterial, createRuneFlameMaterials } from "./reward-summoning-effects";
@@ -69,8 +70,7 @@ export class RewardTileModel {
   removeInstance(index: number): void {
     this.placements.delete(index);
     for (const mesh of this.instancedMeshes) {
-      mesh.setMatrixAt(index, this.hidden);
-      mesh.instanceMatrix.needsUpdate = true;
+      this.writeMatrix(mesh, index, this.hidden);
     }
   }
 
@@ -78,7 +78,7 @@ export class RewardTileModel {
     this.count = count;
     for (const index of this.placements.keys()) if (index >= count) this.removeInstance(index);
     for (const mesh of this.instancedMeshes) {
-      mesh.count = mesh.morphTexture ? Math.max(2, count) : count;
+      mesh.count = count;
       mesh.visible = count > 0;
     }
   }
@@ -138,13 +138,10 @@ export class RewardTileModel {
     );
     mesh.name = source.name;
     mesh.receiveShadow = true;
-    // Allocate the morph texture at capacity before the first shader compilation.
-    if (source.morphTargetInfluences?.length) {
-      mesh.setMorphAt(Math.max(2, this.capacity) - 1, source);
-    }
-    // Three's node morph shader selects its instanced path only above one.
-    // The spare slot remains a zero-scale matrix, including for a single rift.
-    mesh.count = source.morphTargetInfluences?.length ? 2 : 0;
+    // Every reward instance uses the same sampled pose. Share its morph weights
+    // directly instead of uploading a capacity-sized copy of identical rows.
+    mesh.morphTargetInfluences = source.morphTargetInfluences;
+    mesh.count = 0;
     mesh.frustumCulled = false;
     this.sources.push(source);
     this.instancedMeshes.push(mesh);
@@ -175,13 +172,19 @@ export class RewardTileModel {
     this.instancedMeshes.forEach((mesh, part) => {
       const source = this.sources[part];
       this.composed.multiplyMatrices(placement, source.matrixWorld);
-      mesh.setMatrixAt(index, this.composed);
-      mesh.instanceMatrix.needsUpdate = true;
-      if (source.morphTargetInfluences?.length) {
-        mesh.setMorphAt(index, source);
-        mesh.morphTexture!.needsUpdate = true;
-      }
+      this.writeMatrix(mesh, index, this.composed);
     });
+  }
+
+  private writeMatrix(mesh: InstancedMesh, index: number, matrix: Matrix4): void {
+    const offset = index * 16;
+    const values = mesh.instanceMatrix.array;
+    // Compare in the buffer's precision so stationary parts do not become dirty
+    // because their source transforms were calculated in double precision.
+    const changed = matrix.elements.some((value, component) => values[offset + component] !== Math.fround(value));
+    if (!changed) return;
+    mesh.setMatrixAt(index, matrix);
+    queueInstanceUpdate(mesh.instanceMatrix, index, 1);
   }
 
   private isNearCamera(visibility?: AnimationVisibilityContext): boolean {
