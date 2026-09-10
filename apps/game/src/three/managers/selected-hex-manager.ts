@@ -1,12 +1,11 @@
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { Particles } from "@/three/managers/particles";
-import { resolveHoverVisualPalette } from "@/three/managers/worldmap-interaction-palette";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import * as THREE from "three";
 
 /**
- * The selected hex holds the hover's own look on its own layer, so hover and selection never collide, and lifts
- * a particle ring above it so the held hex reads at a glance.
+ * The selected hex holds the hover's filled look in the hover manager's own blue, the same ring the terrain lab
+ * draws, so a held hex and the hex under the pointer never read as one thing; a particle ring lifts above it.
  */
 export class SelectedHexManager {
   private readonly hover: HoverHexManager;
@@ -17,7 +16,7 @@ export class SelectedHexManager {
     private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
   ) {
     this.hover = new HoverHexManager(scene, terrainSurface);
-    this.hover.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
+    this.hover.setVisualMode("fill");
     this.particles = new Particles(scene);
     this.particles.setParticleSize(0.2);
     this.particles.setLightIntensity(1);

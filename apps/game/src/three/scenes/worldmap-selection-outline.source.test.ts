@@ -4,7 +4,8 @@ import { expect, it } from "vitest";
 
 it("keeps the selected hex lit like the hover, independent of it, across a local flight", () => {
   const manager = readFileSync("src/three/managers/selected-hex-manager.ts", "utf8");
-  expect(manager).toContain("resolveHoverVisualPalette({ hasSelection: false })");
+  expect(manager).toContain('setVisualMode("fill")');
+  expect(manager).not.toContain("applyHoverPalette");
   expect(manager).toContain("new Particles(scene)");
 
   const worldmap = readFileSync("src/three/scenes/worldmap.tsx", "utf8");

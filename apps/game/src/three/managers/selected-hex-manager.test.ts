@@ -3,15 +3,16 @@ import * as THREE from "three";
 
 import { HoverHexManager } from "./hover-hex-manager";
 import { SelectedHexManager } from "./selected-hex-manager";
-import { resolveHoverVisualPalette } from "./worldmap-interaction-palette";
 
 describe("SelectedHexManager", () => {
-  it("draws the same filled hover look as the hex under the pointer", () => {
+  it("fills the hex in the hover manager's own blue, never the pink hover palette", () => {
     const apply = vi.spyOn(HoverHexManager.prototype, "applyHoverPalette");
+    const mode = vi.spyOn(HoverHexManager.prototype, "setVisualMode");
     new SelectedHexManager(new THREE.Scene());
-    expect(apply.mock.calls[0][0]).toEqual(resolveHoverVisualPalette({ hasSelection: false }));
-    expect(apply.mock.calls[0][0].visualMode).toBe("fill");
+    expect(apply).not.toHaveBeenCalled();
+    expect(mode).toHaveBeenCalledWith("fill");
     apply.mockRestore();
+    mode.mockRestore();
   });
 
   it("holds the hover look and the particle ring while a selection exists and releases both", () => {
