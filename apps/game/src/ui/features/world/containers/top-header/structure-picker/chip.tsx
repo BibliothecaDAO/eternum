@@ -41,13 +41,6 @@ export type StructureWithMetadata = Structure & {
   isFavorite: boolean;
   canUpgrade: boolean;
   /**
-   * Cheap empire-wide signal: this realm is in blitz, owned by the player,
-   * main phase has started, season hasn't ended, and the provision building
-   * has not been registered yet. Drives both the left-rail suggestion engine
-   * and the modal-sidebar attention dots without a per-structure request.
-   */
-  canProvision: boolean;
-  /**
    * Per-building-type counts read off StructureBuildings.packed_counts_*. Used
    * by the suggestion engine to recommend construction targets (wheat farms,
    * resource farms, worker huts) without extra read calls.

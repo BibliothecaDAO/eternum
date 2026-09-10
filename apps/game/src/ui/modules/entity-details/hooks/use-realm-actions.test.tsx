@@ -57,12 +57,12 @@ const HookProbe = () => {
       <div data-testid="pending">{actions.pendingRealmId ?? "none"}</div>
       <button
         type="button"
-        data-testid="provision"
+        data-testid="upgrade"
         onClick={() => {
-          void actions.fireProvision(101).catch(() => undefined);
+          void actions.fireUpgrade(101).catch(() => undefined);
         }}
       >
-        Provision
+        Upgrade
       </button>
     </div>
   );
@@ -81,10 +81,10 @@ describe("useRealmActions", () => {
 
   const readPending = () => container.querySelector('[data-testid="pending"]')?.textContent ?? "";
 
-  const clickProvision = async () => {
-    const button = container.querySelector('[data-testid="provision"]') as HTMLButtonElement | null;
+  const clickUpgrade = async () => {
+    const button = container.querySelector('[data-testid="upgrade"]') as HTMLButtonElement | null;
     if (!button) {
-      throw new Error("Could not find provision button");
+      throw new Error("Could not find upgrade button");
     }
 
     await act(async () => {
@@ -122,11 +122,11 @@ describe("useRealmActions", () => {
 
   it("does not keep realm actions pending while waiting for confirmation", async () => {
     await renderProbe();
-    await clickProvision();
+    await clickUpgrade();
 
     expect(mocks.executeObservedClientTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
-        operation: "realm_systems.provision",
+        operation: "realm_systems.upgrade",
         waitForConfirmation: false,
       }),
     );
@@ -137,7 +137,7 @@ describe("useRealmActions", () => {
     mocks.executeObservedClientTransaction.mockReturnValueOnce(new Promise(() => undefined));
 
     await renderProbe();
-    await clickProvision();
+    await clickUpgrade();
 
     expect(readPending()).toBe("101");
 

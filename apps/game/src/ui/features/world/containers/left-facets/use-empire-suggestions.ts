@@ -28,7 +28,6 @@ import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
 import Building2 from "lucide-react/dist/esm/icons/building-2";
 import Compass from "lucide-react/dist/esm/icons/compass";
 import HomeIcon from "lucide-react/dist/esm/icons/home";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Shield from "lucide-react/dist/esm/icons/shield";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Wheat from "lucide-react/dist/esm/icons/wheat";
@@ -71,7 +70,6 @@ type BuildabilityContext = {
 };
 
 const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
-  "upgrade-and-provision": Pickaxe,
   "build-copper": Building2,
   "build-coal": Building2,
   "build-first": Building2,
@@ -83,7 +81,6 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
   "deploy-explorer": Compass,
   "expand-population": Sparkles,
   garrison: Shield,
-  provision: Pickaxe,
   upgrade: ArrowUpCircle,
 };
 
@@ -309,7 +306,6 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           realmName: structure.displayName,
           realmLevel: structure.realmLevel,
           isBlitzActive,
-          canProvision: structure.canProvision,
           canAffordUpgrade: canAffordRealmUpgrade(
             structure.entityId,
             structure.realmLevel,

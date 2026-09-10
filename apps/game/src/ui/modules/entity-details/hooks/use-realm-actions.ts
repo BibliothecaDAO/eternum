@@ -13,10 +13,8 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 
 /**
- * Realm action firers that take `realmId` as an argument. Decouples the
- * upgrade / provision / multicall tx submission from per-realm state hooks
- * so the empire-wide Suggested Actions panel can fire any realm's action in
- * one click without instantiating N hooks.
+ * Realm action firers that take `realmId` as an argument, so the empire-wide Suggested Actions panel can fire any
+ * realm's upgrade in one click without instantiating N hooks. Provisioning is the provision runner's job.
  */
 export const useRealmActions = () => {
   const { account } = useDojo();
@@ -24,11 +22,6 @@ export const useRealmActions = () => {
 
   const structureSystemsAddress = useMemo(() => {
     const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "structure_systems");
-    return contract?.address ?? null;
-  }, []);
-
-  const blitzRealmSystemsAddress = useMemo(() => {
-    const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
     return contract?.address ?? null;
   }, []);
 
@@ -42,18 +35,6 @@ export const useRealmActions = () => {
       };
     },
     [structureSystemsAddress],
-  );
-
-  const buildProvisionCall = useCallback(
-    (realmId: ID): Call | null => {
-      if (!blitzRealmSystemsAddress) return null;
-      return {
-        contractAddress: blitzRealmSystemsAddress,
-        entrypoint: "provision_realm",
-        calldata: CallData.compile([...gameCallArgs(), realmId]),
-      };
-    },
-    [blitzRealmSystemsAddress],
   );
 
   const execute = useCallback(
@@ -98,39 +79,8 @@ export const useRealmActions = () => {
     [buildUpgradeCall, execute],
   );
 
-  const fireProvision = useCallback(
-    async (realmId: ID) => {
-      const call = buildProvisionCall(realmId);
-      if (!call) {
-        toast.error("Unable to resolve realm system contracts.");
-        return;
-      }
-      await execute(realmId, [call], "realm_systems.provision");
-    },
-    [buildProvisionCall, execute],
-  );
-
-  const fireUpgradeAndProvision = useCallback(
-    async (realmId: ID) => {
-      const upgradeCall = buildUpgradeCall(realmId);
-      const provisionCall = buildProvisionCall(realmId);
-      if (!upgradeCall || !provisionCall) {
-        toast.error("Unable to resolve realm system contracts.");
-        return;
-      }
-      // Provision FIRST: provision_realm grants the realm's starting resources
-      // (and turns on its economy). level_up then spends them in the same tx.
-      // Running level_up first would revert — a freshly settled realm has no
-      // resources until it is provisioned.
-      await execute(realmId, [provisionCall, upgradeCall], "realm_systems.provision_and_upgrade");
-    },
-    [buildUpgradeCall, buildProvisionCall, execute],
-  );
-
   return {
     pendingRealmId,
     fireUpgrade,
-    fireProvision,
-    fireUpgradeAndProvision,
   };
 };
