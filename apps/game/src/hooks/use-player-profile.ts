@@ -26,6 +26,9 @@ export const usePlayerProfile = (address: string | bigint | null | undefined): P
   );
 };
 
+/** The resolved name alone, for callers that keep their own fallback (the story formatter shortens itself). */
+export const getPlayerName = (address: string | bigint): string | null => getPlayerProfile(address).name;
+
 /** The name a surface shows for an address: resolved name, else the shortened address. */
 export const getPlayerDisplayName = (address: string | bigint): string =>
   displayPlayerName(toAddress(address), getPlayerProfile(address).name);

@@ -34,10 +34,14 @@ export interface StoryEventPresentation {
   owner?: string | null;
 }
 
+/** The client's player resolver (identity profile over chain name); null when the address has no name. */
+export type PlayerNameResolver = (address: string) => string | null;
+
 type StoryFormatter = (
   event: StoryEventSystemUpdate,
   payload: Record<string, unknown>,
   components?: ClientComponents,
+  resolvePlayerName?: PlayerNameResolver,
 ) => StoryEventPresentation;
 
 const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource) => {
@@ -46,11 +50,9 @@ const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource)
 }, {});
 
 const formatters: Record<string, StoryFormatter> = {
-  RealmCreatedStory: (event, payload, components) => {
+  RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord = formatCoord(payload.coord);
-    const ownerLabel = components
-      ? getActivityActor(event.ownerAddress, components)
-      : shortenAddress(event.ownerAddress);
+    const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
     const realm = describeStructureDetails(event, components) ?? "Realm";
     return {
       title: "Realm founded",
@@ -164,19 +166,15 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "resource",
     };
   },
-  BattleStory: (event, payload, components) => {
+  BattleStory: (event, payload, components, resolvePlayerName) => {
     const battleType = formatEnum(payload.battle_type) ?? "Battle";
     const attacker = describeEntity(payload.attacker_id, components);
     const defender = describeEntity(payload.defender_id, components);
     const winnerId = formatNumber(payload.winner_id);
     const attackerOwner = payload.attacker_owner_address ?? payload.attacker_owner_id;
     const defenderOwner = payload.defender_owner_address ?? payload.defender_owner_id;
-    const attackerOwnerLabel = components
-      ? getActivityActor(attackerOwner, components)
-      : formatOwnerFallback(attackerOwner);
-    const defenderOwnerLabel = components
-      ? getActivityActor(defenderOwner, components)
-      : formatOwnerFallback(defenderOwner);
+    const attackerOwnerLabel = nameOwner(attackerOwner, components, resolvePlayerName);
+    const defenderOwnerLabel = nameOwner(defenderOwner, components, resolvePlayerName);
     const attackerTroop = formatTroopDescriptor(payload.attacker_troops_type, payload.attacker_troops_tier);
     const defenderTroop = formatTroopDescriptor(payload.defender_troops_type, payload.defender_troops_tier);
     const attackerStrength = formatUnitAmount(payload.attacker_troops_before);
@@ -228,16 +226,16 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "battle",
     };
   },
-  ResourceTransferStory: (event, payload, components) => {
+  ResourceTransferStory: (event, payload, components, resolvePlayerName) => {
     const resourcesText = formatResourceList(payload.resources);
     const transferType = formatEnum(payload.transfer_type);
     const route = formatRoute(payload.from_entity_id, payload.to_entity_id, components);
-    const sender = components
-      ? getActivityActor(payload.from_entity_owner_address ?? payload.from_entity_id, components)
-      : formatOwnerFallback(payload.from_entity_owner_address ?? payload.from_entity_id);
-    const recipient = components
-      ? getActivityActor(payload.to_entity_owner_address ?? payload.to_entity_id, components)
-      : formatOwnerFallback(payload.to_entity_owner_address ?? payload.to_entity_id);
+    const sender = nameOwner(
+      payload.from_entity_owner_address ?? payload.from_entity_id,
+      components,
+      resolvePlayerName,
+    );
+    const recipient = nameOwner(payload.to_entity_owner_address ?? payload.to_entity_id, components, resolvePlayerName);
     const travelTime = formatTravelTime(payload.travel_time);
     const minted = payload.is_mint === true ? "Minted at destination" : undefined;
 
@@ -372,7 +370,7 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "troop",
     };
   },
-  GuardExplorerSwapStory: (event, payload, components) => {
+  GuardExplorerSwapStory: (event, payload, components, resolvePlayerName) => {
     const sourceStructure = describeStructureDetails(
       event,
       components,
@@ -396,8 +394,8 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "troop",
     };
   },
-  PrizeDistributedStory: (_, payload) => {
-    const recipient = shortenAddress(payload.to_player_address);
+  PrizeDistributedStory: (_, payload, components, resolvePlayerName) => {
+    const recipient = nameOwner(payload.to_player_address, components, resolvePlayerName);
     const amount = formatTokenAmount(payload.amount, payload.decimals);
     return {
       title: "Prize distributed",
@@ -418,28 +416,27 @@ const formatters: Record<string, StoryFormatter> = {
 export function buildStoryEventPresentation(
   event: StoryEventSystemUpdate,
   components?: ClientComponents,
+  resolvePlayerName?: PlayerNameResolver,
 ): StoryEventPresentation {
   const payload = event.storyPayload ?? {};
   const formatter = payload && formatters[event.storyType];
-  const base = formatter ? formatter(event, payload, components) : fallbackPresentation(event, components);
-
-  let ownerName: string | null = null;
-  if (event.ownerAddress && components) {
-    const addressName = getAddressName(event.ownerAddress as unknown as ContractAddress, components);
-    ownerName = addressName || shortenAddress(event.ownerAddress);
-  } else {
-    ownerName = shortenAddress(event.ownerAddress);
-  }
+  const base = formatter
+    ? formatter(event, payload, components, resolvePlayerName)
+    : fallbackPresentation(event, components, resolvePlayerName);
 
   return {
     ...base,
-    owner: ownerName,
+    owner: nameOwner(event.ownerAddress, components, resolvePlayerName) ?? null,
   };
 }
 
-function fallbackPresentation(event: StoryEventSystemUpdate, components?: ClientComponents): StoryEventPresentation {
+function fallbackPresentation(
+  event: StoryEventSystemUpdate,
+  components?: ClientComponents,
+  resolvePlayerName?: PlayerNameResolver,
+): StoryEventPresentation {
   const type = event.storyType || "Unknown";
-  const owner = components ? getActivityActor(event.ownerAddress, components) : shortenAddress(event.ownerAddress);
+  const owner = nameOwner(event.ownerAddress, components, resolvePlayerName);
   const subject = describeEntity(event.entityId, components);
   return {
     title: `${type} event`,
@@ -853,22 +850,37 @@ function formatRoute(fromEntity: unknown, toEntity: unknown, components?: Client
 }
 
 /** An owner is an address (its registered name, else shortened) or an owning structure (its name). */
-function getActivityActor(owner: unknown, components: ClientComponents): string | undefined {
+/**
+ * The one way a story names an owner: the ownerless address reads as Neutral, an address goes to the client's
+ * resolver, then the chain name (the registration fallback reads as none), then the shortened address; anything
+ * else is a structure id and reads by its name.
+ */
+function nameOwner(
+  owner: unknown,
+  components?: ClientComponents,
+  resolvePlayerName?: PlayerNameResolver,
+): string | undefined {
   if (owner === undefined || owner === null) return undefined;
-
   if (typeof owner === "string" && owner.startsWith("0x")) {
-    try {
-      const resolved = getAddressName(owner as unknown as ContractAddress, components);
-      return resolved ?? shortenAddress(owner) ?? owner;
-    } catch (error) {
-      return shortenAddress(owner) ?? owner;
-    }
+    if (isZeroAddress(owner)) return "Neutral";
+    const chainName = components ? safeChainName(owner, components) : undefined;
+    return resolvePlayerName?.(owner) ?? chainName ?? shortenAddress(owner) ?? owner;
   }
-
-  return describeStructureName(owner, components) ?? formatOwnerFallback(owner);
+  return components ? (describeStructureName(owner, components) ?? undefined) : undefined;
 }
 
-function formatOwnerFallback(owner: unknown): string | undefined {
-  if (typeof owner === "string" && owner.startsWith("0x")) return shortenAddress(owner) ?? owner;
-  return undefined;
-}
+const isZeroAddress = (address: string): boolean => {
+  try {
+    return BigInt(address) === 0n;
+  } catch {
+    return false;
+  }
+};
+
+const safeChainName = (address: string, components: ClientComponents): string | undefined => {
+  try {
+    return getAddressName(address as unknown as ContractAddress, components);
+  } catch {
+    return undefined;
+  }
+};

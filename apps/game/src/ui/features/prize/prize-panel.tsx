@@ -1,3 +1,4 @@
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -5,8 +6,7 @@ import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { activeGameRows } from "@/sync/recs-rows";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
-import { displayAddress } from "@/ui/utils/utils";
-import { LeaderboardManager, toHexString } from "@bibliothecadao/eternum";
+import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import Users from "lucide-react/dist/esm/icons/users";
@@ -214,7 +214,7 @@ export const PrizePanel = () => {
                 Next:{" "}
                 {rankedPlayers
                   .slice(revealed, revealed + 4)
-                  .map((player) => displayAddress(toHexString(player.address)))
+                  .map((player) => getPlayerDisplayName(player.address))
                   .join(", ") || "-"}
               </div>
             </div>

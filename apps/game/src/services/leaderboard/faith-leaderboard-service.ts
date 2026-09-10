@@ -1,3 +1,5 @@
+import { getPlayerName } from "@/hooks/use-player-profile";
+import { isFallbackPlayerName } from "@bibliothecadao/eternum";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 
 type ReadModelRow = Record<string, unknown>;
@@ -130,8 +132,13 @@ const structuresWithWonder = (rows: FaithReadModels): ReadModelRow[] =>
 const wonderFaith = (rows: FaithReadModels, wonderId: bigint): ReadModelRow =>
   rows.wonderFaith.find((row) => sameFelt(row.wonder_id, wonderId)) ?? {};
 
-const ownerName = (rows: FaithReadModels, owner: unknown): string | null =>
-  decodeShortString(rows.addressNames.find((row) => sameFelt(row.address, owner))?.name);
+/** The player resolver first; the read model's chain name only for an address the game has not registered. */
+const ownerName = (rows: FaithReadModels, owner: unknown): string | null => {
+  const resolved = typeof owner === "string" || typeof owner === "bigint" ? getPlayerName(owner) : null;
+  if (resolved) return resolved;
+  const chainName = decodeShortString(rows.addressNames.find((row) => sameFelt(row.address, owner))?.name);
+  return chainName && !isFallbackPlayerName(chainName) ? chainName : null;
+};
 
 const structureTypeLabel = (structureType: number): string => {
   if (structureType === REALM_STRUCTURE_TYPE) return "Realm";

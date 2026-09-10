@@ -2,7 +2,7 @@ import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
@@ -60,8 +60,6 @@ const toArmy = (army: WorkingArmy): Army => ({
   tier: army.tier,
   battle_cooldown_end: army.battle_cooldown_end,
 });
-
-const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 
 /** Stable key for a CombatParameters object (bigint-safe, unlike raw JSON.stringify). */
 const serializeParams = (params: CombatParameters) =>
@@ -293,7 +291,7 @@ export const BattleLab = ({
       ? getGuildFromPlayerAddress(ContractAddress(target.addressOwner), components)?.name
       : undefined;
     return formatSocialText(twitterTemplates.combat, {
-      attackerNameText: `${accountName || shortAddress(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+      attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
       defenderNameText: `${target.addressOwner ? getAddressName(target.addressOwner, components) : "@daydreamsagents"} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
