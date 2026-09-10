@@ -81,7 +81,7 @@ it("has no crate modal left: opening happens from the map or the tile panel", ()
   expect(existsSync("src/ui/features/military/chest/chest-modal.tsx")).toBe(false);
   expect(existsSync("src/ui/features/military/chest/chest-container.tsx")).toBe(false);
   expect(readFileSync("src/ui/features/military/index.ts", "utf8")).not.toContain("Chest");
-  expect(readFileSync("src/three/scenes/worldmap.tsx", "utf8")).toContain("openRelicCrateContextMenu(");
+  expect(readFileSync("src/three/scenes/worldmap.tsx", "utf8")).toContain("void openRelicCrate({");
 });
 
 it("classifies the live chest row by occupier type rather than its immovable-occupier flag", () => {

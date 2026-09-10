@@ -9,7 +9,7 @@ export const ChestInfo = memo(() => {
       <div className="flex flex-col gap-1 text-xs font-medium">
         <span className="text-xxs uppercase tracking-wide opacity-80">Relic Crate</span>
         <span>Contains valuable relics that can enhance your structures and armies.</span>
-        <span className="text-xxs uppercase tracking-wide">Click to open the crate and collect relics.</span>
+        <span className="text-xxs uppercase tracking-wide">Right-click to open it with this army.</span>
       </div>
     </InfoLabel>
   );

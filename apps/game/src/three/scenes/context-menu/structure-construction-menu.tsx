@@ -1,7 +1,7 @@
 import { LeftView } from "@/types";
 import { getGameModeConfig } from "@/config/game-modes";
-import { ContextMenuAction, ContextMenuIcon, ContextMenuRadialOptions } from "@/types/context-menu";
-import { CONTEXT_MENU_CONFIG } from "@/ui/config";
+import { ContextMenuAction } from "@/types/context-menu";
+import type { ReactNode } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -23,11 +23,6 @@ interface CreateConstructionMenuParams {
   components: Components;
   simpleCostEnabled: boolean;
   selectConstructionBuilding: (building: BuildingType, view: LeftView, resource?: ResourcesIds) => void;
-}
-
-interface ConstructionMenuResult {
-  constructionAction: ContextMenuAction;
-  radialOptions: ContextMenuRadialOptions;
 }
 
 const romanToNumber: Record<string, string> = { I: "1", II: "2", III: "3" };
@@ -71,7 +66,7 @@ const toSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-"
 const createResourceIconComponent = (
   resource: string | ResourcesIds | null | undefined,
   isDisabled: boolean = false,
-): ContextMenuIcon | undefined => {
+): ReactNode => {
   if (resource === undefined || resource === null) {
     return undefined;
   }
@@ -83,41 +78,26 @@ const createResourceIconComponent = (
     return undefined;
   }
 
-  return {
-    radial: (
-      <ResourceIcon
-        resource={resourceName}
-        size="lg"
-        withTooltip={false}
-        className={`pointer-events-none ${isDisabled ? "opacity-40 grayscale" : ""}`}
-      />
-    ),
-    list: (
-      <ResourceIcon
-        resource={resourceName}
-        size="sm"
-        withTooltip={false}
-        className={`pointer-events-none ${isDisabled ? "opacity-40 grayscale" : ""}`}
-      />
-    ),
-  };
+  return (
+    <ResourceIcon
+      resource={resourceName}
+      size="sm"
+      withTooltip={false}
+      className={`pointer-events-none ${isDisabled ? "opacity-40 grayscale" : ""}`}
+    />
+  );
 };
 
-const createTierIconComponent = (tierLabel: string): ContextMenuIcon => ({
-  radial: (
-    <span className="pointer-events-none flex h-full w-full items-center justify-center text-sm font-semibold text-gold">
-      {tierLabel}
-    </span>
-  ),
-  list: <span className="pointer-events-none text-xs font-semibold uppercase text-gold">{tierLabel}</span>,
-});
+const createTierIconComponent = (tierLabel: string): ReactNode => (
+  <span className="pointer-events-none text-xs font-semibold uppercase text-gold">{tierLabel}</span>
+);
 
 export const createConstructionMenu = ({
   structure,
   components,
   simpleCostEnabled,
   selectConstructionBuilding,
-}: CreateConstructionMenuParams): ConstructionMenuResult => {
+}: CreateConstructionMenuParams): ContextMenuAction => {
   const structureId = BigInt(structure.id);
   const idString = structureId.toString();
   const structureEntityId = Number(structureId);
@@ -148,7 +128,7 @@ export const createConstructionMenu = ({
     building: BuildingType;
     view: LeftView;
     resource?: ResourcesIds;
-    iconComponent?: ContextMenuIcon;
+    iconComponent?: ReactNode;
     disabled?: boolean;
     hint?: string;
   }): ContextMenuAction => ({
@@ -295,19 +275,6 @@ export const createConstructionMenu = ({
     };
   });
 
-  const childActionGroupSizes = [
-    realmResourceActions.length,
-    economicActions.length,
-    ...militaryTierActions.map((action) => action.children?.length ?? 0),
-  ];
-
-  const maxChildActionCount = childActionGroupSizes.reduce((max, count) => Math.max(max, count), 0);
-
-  const radialOptions: ContextMenuRadialOptions = {
-    ...CONTEXT_MENU_CONFIG.radial,
-    maxActions: Math.max(CONTEXT_MENU_CONFIG.radial?.maxActions ?? 8, maxChildActionCount),
-  };
-
   const constructionCategories: ContextMenuAction[] = [
     {
       id: `structure-${idString}-construction-resources`,
@@ -349,8 +316,5 @@ export const createConstructionMenu = ({
     onSelect: () => {},
   };
 
-  return {
-    constructionAction,
-    radialOptions,
-  };
+  return constructionAction;
 };

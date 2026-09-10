@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
   disconnect: vi.fn(),
   writeText: vi.fn(),
+  updateUser: vi.fn(),
+  refresh: vi.fn(),
   spectating: false,
 }));
 vi.mock("@/audio", () => ({
@@ -20,6 +22,8 @@ vi.mock("@/audio", () => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => ({ session: { user: { name: "Owner", id: "0x123456789" } } }),
+  useIdentitySessionStore: { getState: () => ({ refresh: mocks.refresh }) },
+  identityClient: { updateUser: mocks.updateUser },
   signOutIdentitySession: mocks.signOut,
 }));
 vi.mock("@/hooks/store/use-account-store", () => ({ useAccountStore: () => "0x123456789" }));
@@ -127,5 +131,33 @@ it("shows Spectating with no sign out for an explicit spectator", async () => {
   } finally {
     await act(async () => root.unmount());
     mocks.spectating = false;
+  }
+});
+
+it("renames the identity account from the profile header and shows the server's refusal", async () => {
+  const { container, root } = await mount();
+  const typeName = (value: string) =>
+    act(async () => {
+      const input = container.querySelector<HTMLInputElement>('input[aria-label="Username"]')!;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  const submit = () => act(async () => container.querySelector("form")!.requestSubmit());
+  try {
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Change username"]')!.click());
+    mocks.updateUser.mockRejectedValueOnce(new Error("Name is already taken"));
+    await typeName("Taken");
+    await submit();
+    expect(mocks.updateUser).toHaveBeenCalledWith({ name: "Taken" });
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe("Name is already taken");
+
+    mocks.updateUser.mockResolvedValueOnce(undefined);
+    await typeName("Fresh");
+    await submit();
+    expect(mocks.updateUser).toHaveBeenLastCalledWith({ name: "Fresh" });
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+    expect(container.querySelector("form")).toBeNull();
+  } finally {
+    await act(async () => root.unmount());
   }
 });

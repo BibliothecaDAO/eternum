@@ -127,6 +127,10 @@ describe("ArmyManager stamina sync", () => {
         return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, entityId);
       },
       updateArmyLabelData: vi.fn(),
+      staminaUnresolved: new Set<number>(),
+      refreshArmyStamina(entityId: number, tick: number) {
+        return ArmyManager.prototype["refreshArmyStamina"].call(this, entityId, tick);
+      },
     };
 
     ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 5);
@@ -187,6 +191,10 @@ describe("ArmyManager stamina sync", () => {
         return ArmyManager.prototype["resolveArmyStaminaSnapshot"].call(this, entityId);
       },
       updateArmyLabelData: vi.fn(),
+      staminaUnresolved: new Set<number>(),
+      refreshArmyStamina(entityId: number, tick: number) {
+        return ArmyManager.prototype["refreshArmyStamina"].call(this, entityId, tick);
+      },
     };
 
     ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 5);
@@ -213,6 +221,10 @@ describe("ArmyManager stamina sync", () => {
       entityIdLabels: new Map([[1, {}]]),
       resolveArmyStaminaSnapshot,
       updateArmyLabelData,
+      staminaUnresolved: new Set<number>(),
+      refreshArmyStamina(entityId: number, tick: number) {
+        return ArmyManager.prototype["refreshArmyStamina"].call(this, entityId, tick);
+      },
     };
 
     ArmyManager.prototype["recomputeStaminaForAllArmies"].call(fakeManager, 6);

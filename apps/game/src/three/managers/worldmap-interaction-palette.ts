@@ -96,15 +96,7 @@ export function resolveSelectionPulsePalette(selectionRole: WorldmapSelectionVis
 export function resolveHoverVisualPalette(params: {
   hasSelection: boolean;
   actionType?: ActionType | string | null;
-  preserveOutlineOnly?: boolean;
 }): HoverVisualPalette {
-  if (params.preserveOutlineOnly) {
-    return {
-      ...GENERIC_HOVER_PALETTE,
-      visualMode: "outline",
-    };
-  }
-
   if (params.hasSelection && params.actionType) {
     return {
       baseColor: HOVER_SELECTOR_BASE_COLOR,

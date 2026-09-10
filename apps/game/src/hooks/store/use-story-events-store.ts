@@ -1,3 +1,4 @@
+import { getPlayerName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory } from "@/runtime/world/herald-http";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { getActiveWorld } from "@/runtime/world";
@@ -142,6 +143,7 @@ const processStoryEvent = (
       rawStory: event.rawStory,
     },
     components,
+    getPlayerName,
   );
   const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
   return { ...event, id, timestampMs, presentation };

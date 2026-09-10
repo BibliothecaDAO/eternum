@@ -1,5 +1,5 @@
 import { createWorld, defineComponent, setComponent, Type, type Component, type Entity } from "@dojoengine/recs";
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { ClientComponents } from "@bibliothecadao/types";
 // The package index first, so the config singleton the utils read through it is evaluated before any story runs.
@@ -141,4 +141,42 @@ it("keeps an unknown story to its owner and subject without ids or hashes", () =
   expect(presentation.title).toBe("MysteryStory event");
   expect(presentation.description).not.toMatch(/Entity #|Tx:|0xdeadbeef/);
   expect(presentation.description).toMatch(/^Owner: 0x/);
+});
+
+describe("owner naming", () => {
+  it("names owners through the injected resolver, reads the zero address as Neutral, and shortens the rest", () => {
+    const resolve = (address: string) => (address === "0x70bf" ? "Lord KB" : null);
+    const presentation = buildStoryEventPresentation(
+      {
+        ownerAddress: "0x70bf",
+        ownerName: null,
+        entityId: 1,
+        txHash: "0x1",
+        timestamp: 0,
+        storyType: "BattleStory",
+        storyPayload: { attacker_owner_address: "0x70bf", defender_owner_address: "0x0", winner_id: 1, attacker_id: 1 },
+        rawStory: {},
+      },
+      undefined,
+      resolve,
+    );
+    expect(presentation.owner).toBe("Lord KB");
+    expect(presentation.description).toContain("Attacker [Lord KB]");
+    expect(presentation.description).toContain("Defender [Neutral]");
+    const unnamed = buildStoryEventPresentation(
+      {
+        ownerAddress: "0x1234567890abcdef",
+        ownerName: null,
+        entityId: 1,
+        txHash: "0x1",
+        timestamp: 0,
+        storyType: "Unknown",
+        storyPayload: {},
+        rawStory: {},
+      },
+      undefined,
+      resolve,
+    );
+    expect(unnamed.owner).toBe("0x1234…cdef");
+  });
 });

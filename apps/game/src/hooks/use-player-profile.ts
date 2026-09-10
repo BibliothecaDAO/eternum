@@ -1,5 +1,5 @@
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { displayPlayerName, shortenPlayerAddress } from "@bibliothecadao/eternum";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
 
 /** What every surface shows for a player: the resolved name (or nothing) and the portrait. */
@@ -25,6 +25,9 @@ export const usePlayerProfile = (address: string | bigint | null | undefined): P
     owner === null ? NO_PROFILE : (state.players.find((player) => player.address === owner) ?? NO_PROFILE),
   );
 };
+
+/** The resolved name alone, for callers that keep their own fallback (the story formatter shortens itself). */
+export const getPlayerName = (address: string | bigint): string | null => getPlayerProfile(address).name;
 
 /** The name a surface shows for an address: resolved name, else the shortened address. */
 export const getPlayerDisplayName = (address: string | bigint): string =>
@@ -53,5 +56,11 @@ const isStarknetAddress = (value: string): boolean => /^0x[0-9a-fA-F]+$/.test(va
  */
 export const resolveChatSenderName = (playerId: string, displayName: string | null | undefined): string => {
   if (!isStarknetAddress(playerId)) return displayName?.trim() || playerId;
-  return getPlayerProfile(playerId).name ?? displayName?.trim() ?? shortenPlayerAddress(playerId);
+  // The chat server stores the sender's address as its display name when they had none; that never shows.
+  const serverName = displayName?.trim();
+  return (
+    getPlayerProfile(playerId).name ??
+    (serverName && !isStarknetAddress(serverName) ? serverName : null) ??
+    getPlayerDisplayName(playerId)
+  );
 };

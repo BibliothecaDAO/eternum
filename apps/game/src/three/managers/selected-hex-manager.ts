@@ -1,31 +1,44 @@
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
-import { resolveHoverVisualPalette } from "@/three/managers/worldmap-interaction-palette";
+import { Particles } from "@/three/managers/particles";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import * as THREE from "three";
 
-/** The selected hex holds the same outline the hover draws, on its own layer so hover and selection never collide. */
+/**
+ * The selected hex holds the hover's filled look in the hover manager's own blue, the same ring the terrain lab
+ * draws, so a held hex and the hex under the pointer never read as one thing; a particle ring lifts above it.
+ */
 export class SelectedHexManager {
-  private readonly outline: HoverHexManager;
+  private readonly hover: HoverHexManager;
+  private readonly particles: Particles;
 
-  constructor(scene: THREE.Scene, terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE) {
-    this.outline = new HoverHexManager(scene, terrainSurface);
-    // The same colour the hover ring draws, outline only, so the selection reads as the hover that stayed.
-    this.outline.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false, preserveOutlineOnly: true }));
+  constructor(
+    scene: THREE.Scene,
+    private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
+  ) {
+    this.hover = new HoverHexManager(scene, terrainSurface);
+    this.hover.setVisualMode("fill");
+    this.particles = new Particles(scene);
+    this.particles.setParticleSize(0.2);
+    this.particles.setLightIntensity(1);
   }
 
   setPosition(x: number, z: number) {
-    this.outline.showHover(x, z);
+    this.hover.showHover(x, z);
+    this.particles.setPosition(x, this.terrainSurface.sampleSurface(x, z).height + 0.1, z);
   }
 
   resetPosition() {
-    this.outline.hideHover();
+    this.hover.hideHover();
+    this.particles.resetPosition();
   }
 
   update(deltaTime: number) {
-    this.outline.update(deltaTime);
+    this.hover.update(deltaTime);
+    this.particles.update(deltaTime);
   }
 
   dispose() {
-    this.outline.dispose();
+    this.hover.dispose();
+    this.particles.dispose();
   }
 }

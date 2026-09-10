@@ -1,3 +1,4 @@
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -44,8 +45,6 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ClientComponents, GuardSlot, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { shortString } from "starknet";
 import * as THREE from "three";
 import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
@@ -533,7 +532,7 @@ export class StructureManager {
       ? getComponentValue(this.components.Structure, gameEntityKey([BigInt(renderable.entityId)]))
       : undefined;
     const ownerAddress = structureComponent?.owner ?? 0n;
-    const ownerName = this.resolveLiveStructureOwnerName(renderable.entityId, ownerAddress, "");
+    const ownerName = this.resolveLiveStructureOwnerName(ownerAddress, "");
     const cosmetic = this.resolveStructureCosmeticSelection({
       owner: ownerAddress,
       structureType: renderInfo.type,
@@ -995,22 +994,9 @@ export class StructureManager {
     return gltfs.map((gltf) => new InstancedModel(gltf, STRUCTURE_INSTANCE_CAPACITY, false, cosmeticId, "cache"));
   }
 
-  private resolveLiveStructureOwnerName(entityId: ID, ownerAddress: bigint, fallbackOwnerName: string): string {
-    if (!this.components?.AddressName) {
-      return fallbackOwnerName;
-    }
-
-    const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([ownerAddress]));
-    if (!addressName?.name) {
-      return fallbackOwnerName;
-    }
-
-    try {
-      return shortString.decodeShortString(addressName.name.toString());
-    } catch (error) {
-      console.warn(`[StructureManager] Failed to decode owner name for ${entityId}:`, error);
-      return fallbackOwnerName;
-    }
+  private resolveLiveStructureOwnerName(ownerAddress: bigint, fallbackOwnerName: string): string {
+    // One resolver for every surface: identity profile over chain name, the registration fallback reads as none.
+    return ownerAddress === 0n ? fallbackOwnerName : getPlayerDisplayName(ownerAddress);
   }
 
   private resolveStructureCosmeticSelection(input: {

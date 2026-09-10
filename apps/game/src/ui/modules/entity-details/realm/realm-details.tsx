@@ -5,6 +5,8 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 
+import { toast } from "@/ui/features/event-feed/notify";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { Castle } from "@/ui/modules/entity-details/realm/castle";
@@ -164,6 +166,7 @@ export const RealmUpgradeCompact = () => {
 
     void handleUpgrade().catch((error) => {
       console.error("Failed to upgrade realm", error);
+      toast.error(extractReadableErrorMessage(error, "Upgrade failed."));
     });
   };
 

@@ -70,7 +70,7 @@ import {
 
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
-import { openRelicCrateContextMenu } from "./context-menu/relic-crate-context-menu";
+import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
 import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
@@ -2552,7 +2552,7 @@ export default class WorldmapScene extends WarpTravel {
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
-          this.onChestSelection(event, actionPath, selectedEntityId);
+          this.onChestSelection(actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         }
@@ -2966,7 +2966,7 @@ export default class WorldmapScene extends WarpTravel {
     const { path, selectedEntityId } = action;
     if (type === ActionType.Attack) this.onArmyAttack(path, selectedEntityId);
     else if (type === ActionType.Help) this.onArmyHelp(path, selectedEntityId);
-    else if (type === ActionType.Chest) this.onChestSelection(event, path, selectedEntityId);
+    else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
     else this.onArmySpireTravel(path, selectedEntityId);
     return true;
   }
@@ -3491,14 +3491,12 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  private onChestSelection(event: MouseEvent, actionPath: ActionPath[], selectedEntityId: ID) {
+  /** Right-click on a crate with the adjacent army selected opens it; the reveal comes back as an event. */
+  private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
+    const account = useAccountStore.getState().account;
+    if (!account) return;
     const targetHex = actionPath[actionPath.length - 1].hex;
-    openRelicCrateContextMenu({
-      event,
-      hexCoords: targetHex,
-      explorerId: selectedEntityId,
-      systemCalls: this.dojo.systemCalls,
-    });
+    void openRelicCrate({ systemCalls: this.dojo.systemCalls, account, explorerId: selectedEntityId, hex: targetHex });
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {

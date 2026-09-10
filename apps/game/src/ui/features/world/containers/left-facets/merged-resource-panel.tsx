@@ -205,13 +205,13 @@ export const MergedResourcePanel = memo(
         if (balanceLabel) tooltipParts.push(`${balanceLabel} held`);
 
         return (
-          <div key={resourceId} className="relative inline-flex h-9 w-9 shrink-0">
+          <div key={resourceId} className="relative inline-flex h-12 w-12 shrink-0">
             <ProductionStatusBadge
               resourceLabel={label}
               tooltipText={tooltipParts.join(" • ")}
               isProducing={Boolean(item?.isProducing)}
               timeRemainingSeconds={effectiveRemaining}
-              size="xs"
+              size="sm"
               showTooltip
               cornerTopLeft={count}
               cornerTopRight={balanceLabel}

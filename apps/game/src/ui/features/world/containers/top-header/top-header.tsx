@@ -144,7 +144,7 @@ export const TopHeader = memo(() => {
             ) : (
               <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
             )}
-            <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
+            <span className={HUD_LABEL_BRIGHT}>{followingArmyMessage ?? "Following Army"}</span>
           </div>
         </div>
       )}
