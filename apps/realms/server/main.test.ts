@@ -28,7 +28,11 @@ vi.mock("./env", () => ({
 }));
 vi.mock("./names", () => ({
   leaderboardPopulation: vi.fn(() => []),
-  namesByOwners: vi.fn(() => []),
+}));
+vi.mock("./profiles", () => ({
+  profilesByAccounts: vi.fn(async (accounts: string[]) =>
+    Object.fromEntries(accounts.map((account) => [account, { name: `lord-${account}`, portrait: "02" }])),
+  ),
 }));
 vi.mock("./static", () => ({ serveStatic: mocks.serveStatic }));
 
@@ -52,6 +56,37 @@ describe("identity request router", () => {
     expect(response.headers.get("content-type")).toContain("application/json");
     expect(response.headers.get("access-control-allow-origin")).toBe("https://play.realms.party");
     expect(mocks.serveStatic).not.toHaveBeenCalled();
+  });
+
+  it("serves public batched profiles by gameplay account, capped at 200 addresses", async () => {
+    const response = await handleRequest(new Request("https://app.realms.party/api/profiles?accounts=0x1,0x2"));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      profiles: { "0x1": { name: "lord-0x1", portrait: "02" }, "0x2": { name: "lord-0x2", portrait: "02" } },
+    });
+    expect(mocks.getSession).not.toHaveBeenCalled();
+    const empty = await handleRequest(new Request("https://app.realms.party/api/profiles"));
+    expect(empty.status).toBe(400);
+    const tooMany = Array.from({ length: 201 }, (_, index) => `0x${index}`).join(",");
+    expect((await handleRequest(new Request(`https://app.realms.party/api/profiles?accounts=${tooMany}`))).status).toBe(
+      400,
+    );
+    expect((await handleRequest(new Request("https://app.realms.party/api/names?owners=0x1"))).status).toBe(404);
+  });
+
+  it("rate-limits profile requests per client and keeps other clients unaffected", async () => {
+    const ask = (client: string) =>
+      handleRequest(new Request("https://app.realms.party/api/profiles?accounts=0x1"), client);
+    for (let index = 0; index < 30; index += 1) expect((await ask("10.0.0.1")).status).toBe(200);
+    expect((await ask("10.0.0.1")).status).toBe(429);
+    expect((await ask("10.0.0.2")).status).toBe(200);
+    const viaEdge = await handleRequest(
+      new Request("https://app.realms.party/api/profiles?accounts=0x1", {
+        headers: { "cf-connecting-ip": "10.0.0.1" },
+      }),
+      "10.0.0.3",
+    );
+    expect(viaEdge.status).toBe(429);
   });
 
   it("does not treat the API root as a client route", async () => {

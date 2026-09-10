@@ -3,9 +3,12 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 vi.mock("./hud-chat-window", () => ({
   HudChatWindow: ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => (
-    <button aria-label="Chat strip" aria-expanded={open} onClick={() => onOpenChange(!open)}>
-      Chat strip
-    </button>
+    <div className="mt-auto" data-chat>
+      {open && <section aria-label="Chat">Chat pane</section>}
+      <button aria-label="Chat strip" aria-expanded={open} onClick={() => onOpenChange(!open)}>
+        Chat strip
+      </button>
+    </div>
   ),
 }));
 vi.mock("@/ui/features/event-feed/quick-feed", () => ({
@@ -19,7 +22,7 @@ vi.mock("@/ui/features/event-feed/quick-feed", () => ({
 }));
 import { RightHudColumn } from "./right-hud-column";
 
-it("stacks feed, bottom-anchored details, then the chat strip, and collapses details while chat or log is open", async () => {
+it("stacks feed, details under it, the chat strip at the bottom; chat keeps the details, the log replaces them", async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -37,10 +40,14 @@ it("stacks feed, bottom-anchored details, then the chat strip, and collapses det
     expect(aside.className).toContain("top-[60px]");
     expect(aside.firstElementChild?.tagName).toBe("NAV");
     const details = container.querySelector('[aria-label="Tile details"]')!;
-    expect(details.className).toContain("mt-auto");
-    expect(details.nextElementSibling?.textContent).toBe("Chat strip");
+    expect(details.previousElementSibling?.tagName).toBe("NAV");
+    expect(details.className).not.toMatch(/mt-auto|max-h-/);
+    expect(details.className).toContain("min-h-0");
+    expect(details.className).toContain("overflow-y-auto");
+    expect(details.nextElementSibling?.className).toContain("mt-auto");
     await click("Chat strip");
-    expect(container.querySelector('[aria-label="Tile details"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Tile details"]')?.textContent).toBe("Realm");
+    expect(container.querySelector('[aria-label="Chat"]')?.nextElementSibling?.textContent).toBe("Chat strip");
     expect(aside.className).toContain("z-[130]");
     await click("Log");
     expect(container.querySelector('[aria-label="Log"]')?.getAttribute("aria-expanded")).toBe("true");

@@ -1,9 +1,9 @@
 import { env } from "@/../env";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getAddressName, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useComponentSystem, useDojo } from "@bibliothecadao/react";
 import { ClientComponents, ContractAddress, ID, resources } from "@bibliothecadao/types";
 import { ComponentValue, isComponentUpdate } from "@dojoengine/recs";
@@ -82,7 +82,7 @@ export const RaidResult = ({
     ClientComponents["events"]["ExplorerRaidEvent"]["schema"]
   > | null>(null);
 
-  const accountName = useAccountStore((state) => state.accountName);
+  const accountName = usePlayerDisplayName(account.address);
 
   // Format the tweet text
   const formattedTweet = useMemo(() => {

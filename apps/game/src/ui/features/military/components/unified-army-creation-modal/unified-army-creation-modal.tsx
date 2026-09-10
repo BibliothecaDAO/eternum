@@ -27,12 +27,6 @@ type UnifiedArmyCreationBodyProps = UnifiedArmyCreationProps & {
    * the parent Military modal provides the window shell.
    */
   embedded?: boolean;
-  /**
-   * When true, the troop count snaps to the current maxAffordable whenever
-   * the troop combo, slot, or army type changes. Used by the Military modal
-   * so the player can submit in one extra click (slot → ADD).
-   */
-  autoMaxOnContextChange?: boolean;
 };
 
 export const UnifiedArmyCreationBody = ({
@@ -43,7 +37,6 @@ export const UnifiedArmyCreationBody = ({
   initialGuardSlot,
   followSelectedStructure,
   embedded = true,
-  autoMaxOnContextChange = false,
 }: UnifiedArmyCreationBodyProps) => {
   const mode = useGameModeConfig();
   const playerStructures = useOwnedMilitaryStructureInfos();
@@ -117,7 +110,6 @@ export const UnifiedArmyCreationBody = ({
     isExplorer,
     direction,
     initialGuardSlot,
-    autoMaxOnContextChange,
   });
   const leftColumnClass = "flex flex-1 min-w-0 flex-col";
   const rightColumnClass = "flex flex-1 min-w-0 flex-col";

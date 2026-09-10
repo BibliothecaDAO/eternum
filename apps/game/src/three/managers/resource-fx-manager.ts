@@ -154,6 +154,28 @@ export class ResourceFXManager {
     });
   }
 
+  /** A crate burst: every relic rises from the hex at once, fanned out sideways and staggered by a beat. */
+  public async playRelicBurst(relicIds: number[], col: number, row: number): Promise<void> {
+    const { getWorldPositionForHex } = await import("../utils/utils");
+    const position = getWorldPositionForHex({ col, row } as HexPosition);
+    placePositionOnTerrain(position, this.terrainSurface);
+    const spread = 1.1;
+    await Promise.all(
+      relicIds.map(
+        (relicId, index) =>
+          new Promise<void>((resolve) => {
+            setTimeout(() => {
+              const offset = (index - (relicIds.length - 1) / 2) * spread;
+              void this.playResourceFxAtCoords(relicId, 1, position.x + offset, position.y + 2.5, position.z, {
+                duration: 2.6,
+                floatHeight: 3,
+              }).then(resolve, () => resolve());
+            }, index * 180);
+          }),
+      ),
+    );
+  }
+
   public async playMultipleResourceFx(
     resources: Array<{ resourceId: number; amount: number; text?: string }>,
     col: number,

@@ -141,6 +141,16 @@ export const getEntityNameFromLocalStorage = (entityId: ID) => {
   return localStorage.getItem(`entity-name-${entityId}`);
 };
 
+/** How an address reads on a surface when the player has no name: its first and last hex digits. */
+export const shortenPlayerAddress = (address: ContractAddress | string): string => {
+  const hex = typeof address === "string" ? address : `0x${address.toString(16)}`;
+  return `${hex.slice(0, 6)}…${hex.slice(-4)}`;
+};
+
+/** The one display rule for a player: the resolved name, else the shortened address. */
+export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
+  name || shortenPlayerAddress(address);
+
 /** The name registration writes when the account has no username; every reader treats it as no name. */
 export const buildFallbackPlayerName = (address: string): string => `Player-${address.slice(-6)}`;
 export const isFallbackPlayerName = (name: string): boolean => /^Player-[0-9a-fA-F]{6}$/.test(name);
@@ -158,13 +168,7 @@ export const getAddressName = (address: ContractAddress, components: ClientCompo
 
 export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents): string | undefined => {
   const address = getAddressFromStructureEntity(entityId, components);
-  if (!address) return undefined;
-
-  const internalName = getInternalAddressName(address.toString());
-  if (internalName) return internalName;
-
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
-  return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
+  return address ? getAddressName(address, components) : undefined;
 };
 
 export const getAddressFromStructureEntity = (

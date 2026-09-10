@@ -31,10 +31,6 @@ export interface IdentitySession {
   readonly portrait: string | null;
 }
 
-const NamesPayload = Schema.Struct({
-  names: Schema.Record(Schema.String, Schema.String),
-});
-
 const PopulationPayload = Schema.Struct({
   players: Schema.Array(
     Schema.Struct({
@@ -157,12 +153,6 @@ const makeIdentityApi = Effect.gen(function* () {
   const claimName = (name: string) => updateUser({ name });
   const setPortrait = (portrait: string) => updateUser({ image: portrait });
 
-  const names = (owners: readonly string[]) =>
-    api({
-      path: `/api/names?owners=${owners.join(",")}`,
-      schema: NamesPayload,
-    }).pipe(Effect.map((payload) => payload.names));
-
   const leaderboardPopulation = api({ path: "/api/leaderboard", schema: PopulationPayload }).pipe(
     Effect.map((payload) => payload.players),
   );
@@ -184,7 +174,7 @@ const makeIdentityApi = Effect.gen(function* () {
     }),
   );
 
-  return { session, signIn, signOut, claimName, setPortrait, names, leaderboardPopulation, gameplayBinding };
+  return { session, signIn, signOut, claimName, setPortrait, leaderboardPopulation, gameplayBinding };
 });
 
 type IdentityApiShape = Effect.Success<typeof makeIdentityApi>;

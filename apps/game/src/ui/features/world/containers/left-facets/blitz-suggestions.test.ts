@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildBlitzRealmSuggestions,
@@ -41,7 +42,6 @@ const baseInput = (overrides: Partial<BlitzRealmSuggestionInput> = {}): BlitzRea
   realmName: "Test Realm",
   realmLevel: 1,
   isBlitzActive: true,
-  canProvision: false,
   canAffordUpgrade: false,
   hasAvailableBuildingTile: true,
   buildingTilesOccupied: 1,
@@ -64,24 +64,14 @@ describe("buildBlitzRealmSuggestions", () => {
     expect(buildBlitzRealmSuggestions(baseInput({ isBlitzActive: false }))).toEqual([]);
   });
 
-  it("uses provision as the first step when a fresh realm cannot afford level-up", () => {
-    const [first] = buildBlitzRealmSuggestions(baseInput({ canProvision: true, canAffordUpgrade: false }));
-
-    expect(first).toMatchObject({
-      action: "provision",
-      label: "Provision realm",
-      reason: "Start your economy before upgrading.",
-    });
-  });
-
-  it("bundles provision and level-up only when the upgrade is already affordable", () => {
-    const [first] = buildBlitzRealmSuggestions(baseInput({ canProvision: true, canAffordUpgrade: true }));
-
-    expect(first).toMatchObject({
-      action: "upgrade-and-provision",
-      label: "Provision + level up realm",
-      reason: "Start your economy and upgrade in one action.",
-    });
+  it("never suggests provisioning: the provision runner handles every unprovisioned realm", () => {
+    const [first] = buildBlitzRealmSuggestions(baseInput({ canAffordUpgrade: true }));
+    expect(first?.action).toBe("upgrade");
+    const source = readFileSync("src/ui/features/world/containers/left-facets/blitz-suggestions.ts", "utf8");
+    expect(source).not.toMatch(/provision/i);
+    expect(readFileSync("src/ui/features/world/containers/left-facets/use-suggestion-actions.tsx", "utf8")).not.toMatch(
+      /provision/i,
+    );
   });
 
   it("only shows the first eligible hint per realm", () => {

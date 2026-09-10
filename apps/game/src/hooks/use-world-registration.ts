@@ -3,6 +3,7 @@
  * Blitz worlds now enter through a single `settle` action.
  */
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
 import { namespaceForChain } from "@/sync/game-scope";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
@@ -61,7 +62,8 @@ export const useWorldRegistration = ({
   enabled = true,
 }: UseWorldRegistrationProps): UseWorldRegistrationReturn => {
   const account = useAccountStore((state) => state.account);
-  const accountName = useAccountStore((state) => state.accountName);
+  // The chain name written at registration is the identity username, when one was chosen.
+  const accountName = useIdentitySessionStore((state) => identityUsername(state.session));
   const address = account?.address;
   const usernameFelt = useMemo(
     () => (address ? resolvePlayerNameFelt(address, accountName) : null),

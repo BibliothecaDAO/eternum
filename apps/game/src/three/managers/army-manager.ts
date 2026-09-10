@@ -1,6 +1,8 @@
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
@@ -251,6 +253,7 @@ export class ArmyManager {
   private memoryMonitor?: MemoryMonitor;
   private debugStatsIntervalId?: ReturnType<typeof setInterval>;
   private unsubscribeAccountStore?: () => void;
+  private unsubscribePlayers?: () => void;
   private readonly unsubscribeArmyProjection: () => void;
   private unsubscribeExplorerTroopsPresentation?: () => void;
   private unsubscribeStructureOwnership?: () => void;
@@ -364,6 +367,10 @@ export class ArmyManager {
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
     });
+    // Identity names arrive after the armies spawned: every label re-reads its owner through the one resolver.
+    this.unsubscribePlayers = useWorldSlicesStore.subscribe((state, previous) => {
+      if (state.players !== previous.players) this.refreshOwnerNames();
+    });
 
     // Initialize the last known armies tick to current tick
     this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;
@@ -395,7 +402,7 @@ export class ArmyManager {
         this.syncTrackedArmyOwnerState({
           entityId,
           ownerAddress: current.owner,
-          ownerName: this.resolveArmyOwnerNameForAddress(entityId, current.owner, "", "structure update"),
+          ownerName: this.resolveArmyOwnerNameForAddress(current.owner),
           guildName: "",
           ownerStructureId: current.entity_id,
         });
@@ -957,12 +964,7 @@ export class ArmyManager {
       const ownerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
       return {
         ownerAddress,
-        ownerName: this.resolveArmyOwnerNameForAddress(
-          params.armyEntityId,
-          ownerAddress,
-          params.fallbackOwnerName,
-          params.logContext,
-        ),
+        ownerName: this.resolveArmyOwnerNameForAddress(ownerAddress),
       };
     } catch (error) {
       console.warn(
@@ -976,34 +978,21 @@ export class ArmyManager {
     }
   }
 
-  private resolveArmyOwnerNameForAddress(
-    armyEntityId: ID,
-    ownerAddress: bigint,
-    fallbackOwnerName: string,
-    logContext: "spawn" | "explorer update" | "structure update",
-  ): string {
-    let ownerName = fallbackOwnerName;
+  private resolveArmyOwnerNameForAddress(ownerAddress: bigint): string {
+    return getPlayerDisplayName(ownerAddress);
+  }
 
-    if (this.components?.AddressName) {
-      const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([ownerAddress]));
-
-      if (addressName?.name) {
-        try {
-          ownerName = shortString.decodeShortString(addressName.name.toString());
-        } catch (error) {
-          console.warn(
-            `[ArmyManager] Failed to decode owner name during ${logContext} for army ${armyEntityId}:`,
-            error,
-          );
-        }
-      }
-    }
-
-    if (!ownerName || ownerName.length === 0) {
-      ownerName = `0x${ownerAddress.toString(16)}`;
-    }
-
-    return ownerName;
+  private refreshOwnerNames(): void {
+    this.armyPresentations.forEach((army, entityId) => {
+      if (army.owner.address === undefined) return;
+      this.syncTrackedArmyOwnerState({
+        entityId,
+        ownerAddress: army.owner.address,
+        ownerName: this.resolveArmyOwnerNameForAddress(army.owner.address),
+        guildName: army.owner.guildName,
+        ownerStructureId: army.owningStructureId,
+      });
+    });
   }
 
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
@@ -3257,6 +3246,8 @@ ${
       this.unsubscribeVisibility = undefined;
     }
 
+    this.unsubscribePlayers?.();
+    this.unsubscribePlayers = undefined;
     if (this.unsubscribeAccountStore) {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;

@@ -2,10 +2,9 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { gameEntityKey } from "@/sync/game-scope";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { displayAddress } from "@/ui/utils/utils";
 import {
   Position,
-  getAddressName,
+  displayPlayerName,
   getBlockTimestamp,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
@@ -14,6 +13,7 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
 import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
@@ -49,7 +49,8 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const guards = structure ? getGuardsByStructure(structure) : [];
   const isMine = structure?.owner === userAddress;
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
-  const addressName = structure?.owner ? getAddressName(structure.owner, components) : BANDITS_NAME;
+  const ownerProfile = usePlayerProfile(structure?.owner);
+  const addressName = structure?.owner ? (ownerProfile.name ?? undefined) : BANDITS_NAME;
   const relicEffects: RelicEffectWithEndTick[] = useMemo(() => {
     const effects: RelicEffectWithEndTick[] = [];
     const { currentArmiesTick } = getBlockTimestamp();
@@ -65,8 +66,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
       ? getRealmCountPerHyperstructure(components).get(structureEntityId)
       : undefined;
 
-  const ownerHex = structure?.owner ? `0x${structure.owner.toString(16)}` : undefined;
-  const ownerDisplayName = addressName || displayAddress(ownerHex ?? "0x0");
+  const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;
 
   const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
 

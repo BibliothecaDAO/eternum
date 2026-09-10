@@ -1,3 +1,4 @@
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { type AppStore, useUIStore } from "@/hooks/store/use-ui-store";
@@ -6,6 +7,7 @@ import { gameEntityKey } from "@/sync/game-scope";
 import { activeGameRows, allRows } from "@/sync/recs-rows";
 import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
+import { identityProfiles } from "@/services/identity/player-profiles";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
@@ -17,7 +19,6 @@ import {
   formatGuilds,
   getAddressName,
   getGuildFromPlayerAddress,
-  getInternalAddressName,
   getStructure,
   ResourceManager,
   summarizeIncomingTroopArrivals,
@@ -32,7 +33,7 @@ import {
   type Structure,
 } from "@bibliothecadao/types";
 import { type Component, getComponentEntities, getComponentValue } from "@dojoengine/recs";
-import { shortString } from "starknet";
+import { type IdentityProfile, profileOfIdentityUser } from "@realms-world/identity";
 import { env } from "../../env";
 
 type Slice =
@@ -73,15 +74,31 @@ const publishBridgeMetrics = (metrics: RecsStoreBridgeMetrics): void => {
   (window as typeof window & BridgeMetricsWindow).__eternumBridgeMetrics = { ...metrics };
 };
 
-const readPlayers = (components: ClientComponents): Player[] =>
-  [...getComponentEntities(components.AddressName as Component)].flatMap((entity) => {
+/**
+ * One row per registered address: identity's profile (the username and portrait) over the chain name, which reads
+ * as no name when it is the registration fallback. The signed-in user's own session stands in for their profile
+ * until identity answers; every new address is asked for in one batch.
+ */
+const readPlayers = (components: ClientComponents): Player[] => {
+  const self = readSelfProfile();
+  const rows = [...getComponentEntities(components.AddressName as Component)].flatMap((entity) => {
     const addressName = getComponentValue(components.AddressName, entity);
     if (!addressName) return [];
-    const name =
-      getInternalAddressName(addressName.address.toString()) ??
-      shortString.decodeShortString(addressName.name.toString());
-    return [{ address: addressName.address, entity, name }];
+    const address = addressName.address;
+    const profile = identityProfiles.get(address) ?? (self?.address === address ? self.profile : undefined);
+    const chainName = getAddressName(address, components) ?? null;
+    return [{ address, entity, name: profile?.name ?? chainName, portrait: profile?.portrait ?? null }];
   });
+  identityProfiles.request(rows.map((row) => row.address));
+  return rows;
+};
+
+const readSelfProfile = (): { address: ContractAddress; profile: IdentityProfile } | null => {
+  const address = useAccountStore.getState().account?.address;
+  const user = useIdentitySessionStore.getState().session?.user;
+  if (!address || !user) return null;
+  return { address: ContractAddress(address), profile: profileOfIdentityUser(user) };
+};
 
 const readGuilds = (components: ClientComponents, account: string) =>
   formatGuilds(
@@ -309,7 +326,17 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
   const unsubscribeAccount = useAccountStore.subscribe((state, previous) => {
     if (state.account?.address === previous.account?.address) return;
     metrics.accountTriggers += 1;
-    markDirty("mine", "guilds", "armies");
+    markDirty("mine", "guilds", "armies", "players");
+    flush();
+  });
+  // Identity answers and session changes re-derive the players slice; the profiles module holds the copy.
+  const unsubscribeProfiles = identityProfiles.subscribe(() => {
+    markDirty("players");
+    flush();
+  });
+  const unsubscribeSession = useIdentitySessionStore.subscribe((state, previous) => {
+    if (state.session?.user === previous.session?.user) return;
+    markDirty("players");
     flush();
   });
   // Selection and relic refreshes are the only store writes that change a derived fact; nothing else flushes here.
@@ -331,6 +358,8 @@ export const installRecsStoreBridge = ({ components, runtime }: RecsStoreBridgeI
     subscriptions.forEach((subscription) => subscription.unsubscribe());
     unsubscribeSlices();
     unsubscribeAccount();
+    unsubscribeProfiles();
+    unsubscribeSession();
     unsubscribeUi();
   };
 };

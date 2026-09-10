@@ -40,7 +40,7 @@ import {
   ResourceIdToMiningType,
   TileManager,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   BiomeType,
   BuildingType,
@@ -156,6 +156,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const mode = useGameModeConfig();
+  const { isMapView } = useQuery();
 
   const realmEntity = gameEntityKey([BigInt(entityId)]);
   const realm = getRealmInfo(realmEntity, dojo.setup.components);
@@ -241,6 +242,28 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       useSimpleCost,
       mode,
     ],
+  );
+
+  // One rule for a card click: the world view has no tile picker, so the click builds on the first free tile
+  // and the panel stays open; the local view arms the placement preview and closes the panel.
+  const selectBuildingCard = useCallback(
+    (target: { type: BuildingType; resource?: ResourcesIds }, playSound: () => void) => {
+      if (isMapView) {
+        void handleAutoBuild(target);
+        return;
+      }
+      const isActivePreview =
+        previewBuilding?.type === target.type && (previewBuilding?.resource ?? undefined) === target.resource;
+      if (isActivePreview) {
+        setPreviewBuilding(null);
+        return;
+      }
+      setPreviewBuilding(target.resource !== undefined ? target : { type: target.type });
+      playSound();
+      AudioManager.getInstance().play("ui.summon");
+      setLeftNavigationView(LeftView.None);
+    },
+    [handleAutoBuild, isMapView, previewBuilding, setLeftNavigationView, setPreviewBuilding],
   );
 
   const handleDestroyBuilding = useCallback(
@@ -658,19 +681,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildingId={building}
                             resourceId={resourceId}
                             onClick={() => {
-                              if (!canBuild) {
-                                return;
-                              }
-                              if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
-                                setPreviewBuilding(null);
-                              } else {
-                                setPreviewBuilding({ type: building, resource: resourceId });
-                                playResourceSound(resourceId);
-                                AudioManager.getInstance().play("ui.summon");
-                                // Close the modal so the player can immediately
-                                // click an empty tile to place the preview.
-                                setLeftNavigationView(LeftView.None);
-                              }
+                              if (!canBuild) return;
+                              selectBuildingCard({ type: building, resource: resourceId }, () =>
+                                playResourceSound(resourceId),
+                              );
                             }}
                             active={previewBuilding?.resource === resourceId}
                             buildingName={resource?.trait}
@@ -747,14 +761,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             resourceId={resourceId}
                             onClick={() => {
                               if (!canBuild) return;
-                              if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
-                                setPreviewBuilding(null);
-                              } else {
-                                setPreviewBuilding({ type: building, resource: resourceId });
-                                playResourceSound(resourceId);
-                                AudioManager.getInstance().play("ui.summon");
-                                setLeftNavigationView(LeftView.None);
-                              }
+                              selectBuildingCard({ type: building, resource: resourceId }, () =>
+                                playResourceSound(resourceId),
+                              );
                             }}
                             active={previewBuilding?.resource === resourceId}
                             buildingName={resource?.trait}
@@ -859,22 +868,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     key={index}
                     buildingId={building}
                     onClick={() => {
-                      if (!canBuild) {
-                        return;
-                      }
-                      if (previewBuilding?.type === building) {
-                        setPreviewBuilding(null);
-                      } else {
-                        setPreviewBuilding({ type: building });
-                        AudioManager.getInstance().play("ui.summon");
-                        setLeftNavigationView(LeftView.None);
-                        if (building === BuildingType.ResourceWheat) {
-                          playResourceSound(ResourcesIds.Wheat);
-                        }
-                        if (building === BuildingType.ResourceFish) {
-                          playResourceSound(ResourcesIds.Fish);
-                        }
-                      }
+                      if (!canBuild) return;
+                      selectBuildingCard({ type: building }, () => {
+                        if (building === BuildingType.ResourceWheat) playResourceSound(ResourcesIds.Wheat);
+                        if (building === BuildingType.ResourceFish) playResourceSound(ResourcesIds.Fish);
+                      });
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
@@ -1005,13 +1003,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 buildingId={building}
                                 onClick={() => {
                                   if (!canBuild) return;
-                                  if (previewBuilding?.type === building) {
-                                    setPreviewBuilding(null);
-                                  } else {
-                                    setPreviewBuilding({ type: building });
-                                    AudioManager.getInstance().play("ui.summon");
-                                    setLeftNavigationView(LeftView.None);
-                                  }
+                                  selectBuildingCard({ type: building }, () => {});
                                 }}
                                 active={previewBuilding?.type === building}
                                 buildingName={`${BuildingTypeToString[building]}`}
@@ -1066,6 +1058,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       pausedByCategory,
       mode,
       handleAutoBuild,
+      selectBuildingCard,
       handleDestroyBuilding,
       handlePauseResumeAll,
       getBuildingCountFor,

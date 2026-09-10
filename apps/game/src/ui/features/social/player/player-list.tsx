@@ -1,7 +1,7 @@
 import Invite from "lucide-react/dist/esm/icons/mail";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { RegisterPointsButton } from "../components/register-points-button";
@@ -197,7 +197,7 @@ export const PlayerList = ({
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
             const playerEffect = effects.get(normalizedAddress.toLowerCase());
-            const avatarUrl = getAvatarUrl(String(player.address));
+            const avatarUrl = playerAvatarUrl(player.address);
 
             return (
               <PlayerRow

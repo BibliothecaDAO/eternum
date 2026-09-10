@@ -6,6 +6,7 @@ import { ActionFooter } from "./unified-army-creation-modal/action-footer";
 import { TroopCountSelector } from "./unified-army-creation-modal/troop-count-selector";
 import { TroopSelectionGrid } from "./unified-army-creation-modal/troop-selection-grid";
 import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation";
+import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
 import type { ArmyDeploymentTarget } from "../utils/open-army-deployment-picker";
 
 export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {
@@ -21,14 +22,13 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
   const form = useArmyCreation({
     ...target,
     fixedContext: true,
-    autoMaxOnContextChange: true,
     onSubmit: () => usePopoverStore.getState().close("army-deployment"),
   });
 
   return (
     <div className="w-[360px] max-w-full space-y-2 p-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold">{target.isExplorer ? "Deploy field army" : "Deploy guard"}</span>
+        <span className="text-sm font-semibold">{describeDeploymentTarget(target)}</span>
         <button
           type="button"
           aria-label="Close deployment picker"
@@ -76,3 +76,11 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
     </div>
   );
 };
+
+/** "Deploy field army", or the guard slot the picker was opened from: "Deploy guard · slot 2". */
+function describeDeploymentTarget(target: ArmyDeploymentTarget): string {
+  if (target.isExplorer) return "Deploy field army";
+  const slotNumber =
+    target.initialGuardSlot === undefined ? undefined : DISPLAYED_SLOT_NUMBER_MAP[target.initialGuardSlot as GuardSlot];
+  return slotNumber === undefined ? "Deploy guard" : `Deploy guard · slot ${slotNumber}`;
+}

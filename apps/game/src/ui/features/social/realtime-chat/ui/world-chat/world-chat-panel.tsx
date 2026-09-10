@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
@@ -104,8 +105,9 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
   return "Now";
 };
 
+/** The registered name first; the chat server's display name only for a sender this game has not registered. */
 const formatSenderName = (message: WorldChatMessage) =>
-  message.sender.displayName?.trim() || message.sender.playerId || "Unknown adventurer";
+  resolveChatSenderName(message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
 
 export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders

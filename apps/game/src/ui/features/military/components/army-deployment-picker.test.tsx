@@ -105,6 +105,13 @@ it("keeps an empty stockpile's blocker separate from usage and Deploy visible bu
   expect(findButton("Deploy").disabled).toBe(true);
 });
 
+it("names the guard slot it was opened from", async () => {
+  await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer={false} initialGuardSlot={1} />));
+  expect(container.textContent).toContain("Deploy guard · slot 3");
+  await act(async () => root.render(<ArmyDeploymentPicker structureId={42} isExplorer />));
+  expect(container.textContent).toContain("Deploy field army");
+});
+
 describe("spectator gating", () => {
   it.each(["isSpectating", "explicit"] as const)("does not render for %s", async (key) => {
     mocks[key] = true;

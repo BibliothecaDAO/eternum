@@ -1,5 +1,7 @@
-import { openArmyDeploymentPicker } from "../utils/open-army-deployment-picker";
+import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeploymentPicker } from "../utils/open-army-deployment-picker";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { OVERLAY_SURFACE_ACTIVE } from "@/ui/design-system/atoms/overlay-surface";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
@@ -22,7 +24,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import Plus from "lucide-react/dist/esm/icons/plus";
 import type { KeyboardEvent } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { EntityDetailLayoutVariant } from "@/ui/features/world/components/entities/layout";
 
@@ -72,6 +74,10 @@ export const CompactDefenseDisplay = ({
   const currentArmiesTick = useCurrentArmiesTick();
   const isBanner = variant === "banner";
   const canOpenPicker = Boolean(canManageDefense && structureId && structureId > 0 && ordersAllowed);
+  // The slot whose picker is open stays lit until the picker closes.
+  const [pickerSlot, setPickerSlot] = useState<GuardSlot | null>(null);
+  const isPickerOpen = usePopoverStore((state) => state.openId === ARMY_DEPLOYMENT_SURFACE_ID);
+  const highlightedSlot = isPickerOpen ? pickerSlot : null;
   const structureComponent = useMemo(() => {
     if (!structureId || !components?.Structure) {
       return null;
@@ -144,6 +150,7 @@ export const CompactDefenseDisplay = ({
       onRequestSlotAction(slot);
       return;
     }
+    setPickerSlot(slot);
     openArmyDeploymentPicker(
       {
         structureId,
@@ -151,7 +158,7 @@ export const CompactDefenseDisplay = ({
         maxDefenseSlots: resolvedSlotLimit,
         initialGuardSlot: Number(slot),
       },
-      surfaceAnchorFrom(element),
+      { anchor: surfaceAnchorFrom(element), placement: "beside" },
     );
   };
 
@@ -198,7 +205,9 @@ export const CompactDefenseDisplay = ({
             : "border border-gold/20 bg-brown-900/90 whitespace-nowrap",
           interactiveClasses,
           "w-full",
+          highlightedSlot === guardSlotKey && OVERLAY_SURFACE_ACTIVE,
         )}
+        data-picker-open={highlightedSlot === guardSlotKey ? "true" : undefined}
         title={isEmptySlot ? `Defense Slot ${slotDisplayNumber} is empty` : `Defense Slot ${slotDisplayNumber}`}
         role={isSlotInteractive ? "button" : undefined}
         tabIndex={isSlotInteractive ? 0 : undefined}

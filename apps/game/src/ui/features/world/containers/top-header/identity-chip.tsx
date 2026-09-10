@@ -1,5 +1,5 @@
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
-import { IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
+import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
@@ -39,19 +39,18 @@ const useIdentityChipState = (): IdentityChipState => {
   const players = useWorldSlicesStore((state) => state.players);
   const structures = useWorldSlicesStore((state) => state.structures);
   const { standingsByAddress } = useInGameLeaderboard();
-  const identityName = session?.user.name || null;
 
   return useMemo(() => {
     const owner = gameplayAddress ? ContractAddress(gameplayAddress) : null;
     return resolveIdentityChipState({
       isExplicitSpectateSession: isExplicitSpectateSession(),
-      identity: { status, name: identityName },
+      identity: { status, name: identityUsername(session) },
       gameplayAccount: { address: gameplayAddress, provisioningError },
       playerName: owner === null ? null : (players.find((player) => player.address === owner)?.name ?? null),
       owned: owner === null ? NO_OWNED_STRUCTURES : countOwnedStructures(structures, owner),
       standing: owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null),
     });
-  }, [gameplayAddress, identityName, players, provisioningError, standingsByAddress, status, structures]);
+  }, [gameplayAddress, players, provisioningError, session, standingsByAddress, status, structures]);
 };
 
 /** Player identity opens the leaderboard; other states keep their sign-in surface. */

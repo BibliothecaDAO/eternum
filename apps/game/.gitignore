@@ -24,7 +24,7 @@ dist-ssr
 yarn.lock
 
 dev-dist
-.env
+!.env
 .env.local
 .env.local.*
 *.ts.timestamp-*.mjs

@@ -22,6 +22,7 @@ import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
+import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
 import { RecsStoreBridge } from "./recs-store-bridge";
 import { PlayOverlayManager } from "./play-overlay-manager";
 
@@ -69,6 +70,7 @@ const BackgroundSystems = () => (
     <RecsStoreBridge />
     <LeaderboardActivitySync />
     <ActionRunners />
+    <RelicCrateOpenings />
     <BlockTimestampPoller />
     <GameCycleEffects />
     <ChainTimePoller />

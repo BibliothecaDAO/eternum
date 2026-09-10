@@ -68,7 +68,9 @@ import {
 } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER } from "@/ui/config";
-import { ChestModal, HelpModal } from "@/ui/features/military";
+import { HelpModal } from "@/ui/features/military";
+import { openRelicCrateContextMenu } from "./context-menu/relic-crate-context-menu";
+import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -889,6 +891,8 @@ export default class WorldmapScene extends WarpTravel {
   };
   private handleWorldmapControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    // The flight tween is leaving this scene: no target-hex, terrain-window or chunk-refresh churn on its way out.
+    if (this.cameraOwnedByFlight) return;
     this.updateCameraTargetHexThrottled?.();
     this.refreshVisualTerrainWindowThrottled?.();
 
@@ -903,6 +907,14 @@ export default class WorldmapScene extends WarpTravel {
         threshold: this.zoomForceRefreshDistanceThreshold,
       }),
       status: this.zoomCoordinator.getSnapshot().status,
+    });
+    traceFlightPlanner({
+      distance: nextCameraDistance.toFixed(2),
+      distanceChanged:
+        this.lastControlsCameraDistance === null || this.lastControlsCameraDistance !== nextCameraDistance,
+      status: this.zoomCoordinator.getSnapshot().status,
+      immediate: refreshPlan.immediateLevel,
+      pending: refreshPlan.nextState.pendingLevel,
     });
     this.zoomRefreshPlannerState = refreshPlan.nextState;
     this.lastControlsCameraDistance = nextCameraDistance;
@@ -1605,6 +1617,20 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
+    this.registerRelicChestWorldUpdateSubscriptions();
+  }
+
+  // A flourish only, for crates inside the loaded chunk: the relics themselves land in RECS on the explorer,
+  // and the feed row (the UI's) covers every opening in the world.
+  private registerRelicChestWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
+        if (this.currentChunk === "null") return;
+        const hex = new Position({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
+        if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
+        void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
+      }),
+    );
   }
 
   private registerBattleWorldUpdateSubscriptions(): void {
@@ -2523,7 +2549,7 @@ export default class WorldmapScene extends WarpTravel {
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
-          this.onChestSelection(actionPath, selectedEntityId);
+          this.onChestSelection(event, actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         }
@@ -2880,8 +2906,10 @@ export default class WorldmapScene extends WarpTravel {
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     openArmyDeploymentPicker(
       { direction, structureId: selectedEntityId, isExplorer: true },
-      { left: point.x, right: point.x, top: point.y, bottom: point.y },
-      { reanchor: (event) => this.reanchorArmyDeployment(event) },
+      {
+        anchor: { left: point.x, right: point.x, top: point.y, bottom: point.y },
+        mapClick: { reanchor: (event) => this.reanchorArmyDeployment(event) },
+      },
     );
   }
 
@@ -2935,7 +2963,7 @@ export default class WorldmapScene extends WarpTravel {
     const { path, selectedEntityId } = action;
     if (type === ActionType.Attack) this.onArmyAttack(path, selectedEntityId);
     else if (type === ActionType.Help) this.onArmyHelp(path, selectedEntityId);
-    else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
+    else if (type === ActionType.Chest) this.onChestSelection(event, path, selectedEntityId);
     else this.onArmySpireTravel(path, selectedEntityId);
     return true;
   }
@@ -3460,24 +3488,13 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
-    const selectedPath = actionPath.map((path) => path.hex);
-
-    // Get the target hex (last hex in the path)
-    const targetHex = selectedPath[selectedPath.length - 1];
-
-    this.openTargetActionSurface(targetHex, {
-      id: "chest",
-      content: (
-        <ChestModal
-          selected={{
-            type: ActorType.Explorer,
-            id: selectedEntityId,
-            hex: { x: targetHex.col, y: targetHex.row },
-          }}
-          chestHex={{ x: targetHex.col, y: targetHex.row }}
-        />
-      ),
+  private onChestSelection(event: MouseEvent, actionPath: ActionPath[], selectedEntityId: ID) {
+    const targetHex = actionPath[actionPath.length - 1].hex;
+    openRelicCrateContextMenu({
+      event,
+      hexCoords: targetHex,
+      explorerId: selectedEntityId,
+      systemCalls: this.dojo.systemCalls,
     });
   }
 
@@ -7449,6 +7466,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private syncWorldmapZoomSnapshot(deltaTime: number): void {
+    // The flight owns the camera: the coordinator must not pull the distance back toward its own target.
+    if (this.cameraOwnedByFlight) return;
     const zoomFrame = this.zoomCoordinator.tick({
       actualDistance: this.getCurrentCameraDistance(),
       deltaMs: deltaTime * 1000,
