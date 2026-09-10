@@ -46,11 +46,14 @@ describe("createRendererSceneRegistry", () => {
     const worldmapScene = createScene("map");
     const fastTravelScene = createScene("travel");
     const surface = document.createElement("canvas");
+    const compilePipelines = vi.fn(async () => {});
+    const createHexceptionScene = vi.fn(() => hexceptionScene as never);
 
     const registry = createRendererSceneRegistry({
+      compilePipelines,
       controls: { id: "controls" } as never,
       createFastTravelScene: vi.fn(() => fastTravelScene as never),
-      createHexceptionScene: vi.fn(() => hexceptionScene as never),
+      createHexceptionScene,
       createSceneManager: vi.fn(() => sceneManager as never),
       createTransitionManager: vi.fn(() => transitionManager as never),
       createWorldmapScene: vi.fn(() => worldmapScene as never),
@@ -61,6 +64,8 @@ describe("createRendererSceneRegistry", () => {
       raycaster: { id: "raycaster" } as never,
     });
 
+    // Both hex scenes warm their pipelines through the one renderer compiler.
+    expect(createHexceptionScene).toHaveBeenCalledWith(expect.objectContaining({ compilePipelines }));
     expect(registry.transitionManager).toBe(transitionManager);
     expect(registry.sceneManager).toBe(sceneManager);
     expect(registry.fastTravelScene).toBe(fastTravelScene);

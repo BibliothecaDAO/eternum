@@ -184,3 +184,35 @@ describe("FrameBudgetWorkQueue", () => {
     expect(harness.frameCount()).toBe(0);
   });
 });
+
+describe("hold", () => {
+  it("keeps queued work while held and drains it on release", async () => {
+    const harness = createHarness();
+    const ran: string[] = [];
+    harness.queue.setHeld(true);
+    const done = harness.queue.schedule("critical", () => void ran.push("terrain"), "terrain:present:page");
+    expect(harness.frameCount()).toBe(0);
+    await harness.flushFrame();
+    expect(ran).toEqual([]);
+    harness.queue.setHeld(false);
+    expect(harness.frameCount()).toBe(1);
+    await harness.flushFrame();
+    await done;
+    expect(ran).toEqual(["terrain"]);
+  });
+
+  it("stops a running drain at the next task when held mid-frame", async () => {
+    const harness = createHarness();
+    const ran: string[] = [];
+    void harness.queue.schedule("critical", () => {
+      ran.push("first");
+      harness.queue.setHeld(true);
+    });
+    void harness.queue.schedule("critical", () => void ran.push("second"));
+    await harness.flushFrame();
+    expect(ran).toEqual(["first"]);
+    harness.queue.setHeld(false);
+    await harness.flushFrame();
+    expect(ran).toEqual(["first", "second"]);
+  });
+});

@@ -24,6 +24,8 @@ import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { ActionRunners } from "../action-runners";
 import { RelicCrateOpenings } from "../features/military/chest/relic-crate-openings";
 import { RecsStoreBridge } from "./recs-store-bridge";
+import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
+import { Profiler } from "react";
 import { PlayOverlayManager } from "./play-overlay-manager";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
@@ -47,7 +49,13 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <ActionInfo />
 
         {/* HUD (heads-up display) elements */}
-        <HUD />
+        {FLIGHT_TRACE_ENABLED ? (
+          <Profiler id="hud" onRender={(id, phase, actualDuration) => traceFlightCommit(id, phase, actualDuration)}>
+            <HUD />
+          </Profiler>
+        ) : (
+          <HUD />
+        )}
 
         {/* Utility overlays */}
         <Leva hidden={!DEV_MODE_ENABLED} collapsed titleBar={{ position: { x: 0, y: 50 } }} />

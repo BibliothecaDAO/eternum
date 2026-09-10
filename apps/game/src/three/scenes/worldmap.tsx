@@ -3705,6 +3705,12 @@ export default class WorldmapScene extends WarpTravel {
     if (setupContext.isCurrent()) this.redrawHeldSelection();
   }
 
+  /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
+  public override setCameraOwnedByFlight(owned: boolean): void {
+    super.setCameraOwnedByFlight(owned);
+    this.chunkWorkQueue.setHeld(owned);
+  }
+
   private redrawHeldSelection(): void {
     const selectedHex = this.state.selectedHex;
     if (!selectedHex) return;
