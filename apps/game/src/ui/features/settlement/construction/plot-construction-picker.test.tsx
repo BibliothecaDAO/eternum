@@ -1,9 +1,17 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ form: {} as any, close: vi.fn() }));
+const mocks = vi.hoisted(() => ({ form: {} as any, close: vi.fn(), tooltip: vi.fn() }));
 vi.mock("./use-plot-construction", () => ({ usePlotConstruction: () => mocks.form }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
+vi.mock("@/hooks/store/use-tooltip-store", () => ({
+  useTooltipStore: (select: any) => select({ setTooltip: mocks.tooltip }),
+}));
+vi.mock("@/ui/design-system/molecules/requirement-chips", () => ({
+  RequirementChips: ({ requirements }: any) => (
+    <span>{requirements.map((r: any) => `${r.current}/${r.amount}`).join(",")}</span>
+  ),
+}));
 import { PlotConstructionPicker } from "./plot-construction-picker";
 let root: Root;
 let container: HTMLDivElement;
@@ -30,11 +38,11 @@ beforeEach(() => {
       {
         label: "Economic",
         buildings: [
-          { type: 1, label: "Farm", costs: [{ resource: 1, amount: 10 }], disabled: false },
+          { type: 1, label: "Farm", requirements: [{ resource: 1, amount: 10, current: 25 }], disabled: false },
           {
             type: 2,
             label: "Fishing Village",
-            costs: [{ resource: 1, amount: 20 }],
+            requirements: [{ resource: 1, amount: 20, current: 5 }],
             disabled: true,
             reason: "Insufficient resources to build.",
           },
@@ -53,10 +61,12 @@ afterEach(async () => {
 it("builds from one tile click and exposes blocked costs and reasons before clicking", async () => {
   await render();
   const buttons = container.querySelectorAll("button");
-  expect(buttons[1].disabled).toBe(true);
+  expect(buttons[1].getAttribute("aria-disabled")).toBe("true");
   expect(buttons[1].textContent).toContain("20");
   expect(buttons[1].title).toBe("Insufficient resources to build.");
   expect(buttons[0].querySelectorAll("img")).toHaveLength(2);
+  await act(async () => buttons[1].dispatchEvent(new MouseEvent("mouseover", { bubbles: true })));
+  expect(mocks.tooltip).toHaveBeenLastCalledWith(expect.objectContaining({ position: "top" }));
   await act(async () => {
     buttons[1].click();
     buttons[0].click();

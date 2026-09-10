@@ -14,10 +14,19 @@ describe("construction groups", () => {
     });
     expect(groups.flatMap((group) => group.buildings)).not.toContain(BuildingType.ResourceGold);
   });
-  it("keeps food first, military tier order and the game mode's exclusions", () => {
+  it("keeps food first, one army ordered by troop then tier, and the game mode's exclusions", () => {
     const groups = getConstructionBuildingGroups(mode, []);
-    expect(groups.map((group) => group.label)).toEqual(["Economic", "Stable", "Barracks", "Archery"]);
+    expect(groups.map((group) => group.label)).toEqual(["Economic", "Military"]);
     expect(groups[0].buildings.slice(0, 2)).toEqual([BuildingType.ResourceWheat, BuildingType.ResourceFish]);
-    expect(groups[2].buildings).toEqual([BuildingType.ResourceKnightT1, BuildingType.ResourceKnightT2]);
+    expect(groups[1].buildings).toEqual([
+      BuildingType.ResourcePaladinT1,
+      BuildingType.ResourcePaladinT2,
+      BuildingType.ResourcePaladinT3,
+      BuildingType.ResourceKnightT1,
+      BuildingType.ResourceKnightT2,
+      BuildingType.ResourceCrossbowmanT1,
+      BuildingType.ResourceCrossbowmanT2,
+      BuildingType.ResourceCrossbowmanT3,
+    ]);
   });
 });

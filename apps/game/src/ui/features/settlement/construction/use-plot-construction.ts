@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
-import { getBuildingCosts, getRealmInfo, type TileManager } from "@bibliothecadao/eternum";
+import { getRealmInfo, type TileManager } from "@bibliothecadao/eternum";
 import { BuildingType, BuildingTypeToString, ContractAddress, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -10,7 +10,7 @@ import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "./construction-buildability";
-import { getConstructionBuildingGroups } from "./construction-groups";
+import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 
 export interface PlotConstructionTarget {
   entityId: number;
@@ -28,7 +28,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   const ordersAllowed = useUIStore(canIssueOrders);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
-  useCurrentDefaultTick();
+  const currentDefaultTick = useCurrentDefaultTick();
   const entity = gameEntityKey([BigInt(target.entityId)]);
   useComponentValue(components.Structure, entity);
   useComponentValue(components.StructureBuildings, entity);
@@ -56,11 +56,10 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     label: group.label,
     buildings: group.buildings.map((type) => {
       const state = buildability(type);
-      const costs = getBuildingCosts(target.entityId, components, type, useSimpleCost);
       return {
         type,
         label: BuildingTypeToString[type],
-        costs,
+        requirements: resolveBuildingRequirements(target.entityId, components, type, useSimpleCost, currentDefaultTick),
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };

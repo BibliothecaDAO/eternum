@@ -6,7 +6,11 @@
  */
 
 import { HEX_SIZE } from "@/three/constants";
-import { createHexagonShape, createRoundedHexagonShape } from "@/three/geometry/hexagon-geometry";
+import {
+  createHexagonRingShape,
+  createHexagonShape,
+  createRoundedHexagonShape,
+} from "@/three/geometry/hexagon-geometry";
 import { ShapeGeometry } from "three";
 import { registerDebugHook, type DebugHookInstallOptions } from "./debug-hooks";
 
@@ -14,6 +18,8 @@ interface GeometryConfig {
   size: number;
   rounded: boolean;
   cornerRadius?: number;
+  /** A band instead of a fill: the hexagon inside this radius is cut out. */
+  innerRadius?: number;
 }
 
 interface GeometryStats {
@@ -43,9 +49,11 @@ export class HexGeometryPool {
       rounded: true,
       cornerRadius: HEX_SIZE * 0.975 * 0.15,
     },
+    // The buildable-hex outline in the local scene: a thin band just inside the cell.
     interactive: {
-      size: HEX_SIZE,
+      size: HEX_SIZE * 0.97,
       rounded: false,
+      innerRadius: HEX_SIZE * 0.93,
     },
     border: {
       size: HEX_SIZE,
@@ -109,9 +117,12 @@ export class HexGeometryPool {
    * Create optimized geometry from config
    */
   private createGeometry(config: GeometryConfig): ShapeGeometry {
-    const shape = config.rounded
-      ? createRoundedHexagonShape(config.size, config.cornerRadius)
-      : createHexagonShape(config.size);
+    const shape =
+      config.innerRadius !== undefined
+        ? createHexagonRingShape(config.size, config.innerRadius)
+        : config.rounded
+          ? createRoundedHexagonShape(config.size, config.cornerRadius)
+          : createHexagonShape(config.size);
 
     const geometry = new ShapeGeometry(shape);
 

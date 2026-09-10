@@ -123,6 +123,7 @@ type ResolveSubject = {
   allHexes: Set<string>;
   isRenderingAllHexes: boolean;
   position: THREE.Vector3;
+  terrain: { sampleSurface: () => { height: number } };
 };
 
 function createResolveSubject(visibleHexKeys: string[]): ResolveSubject {
@@ -132,6 +133,7 @@ function createResolveSubject(visibleHexKeys: string[]): ResolveSubject {
   subject.allHexes = new Set();
   subject.isRenderingAllHexes = false;
   subject.position = new THREE.Vector3();
+  subject.terrain = { sampleSurface: () => ({ height: 0 }) };
 
   return subject;
 }

@@ -18,6 +18,8 @@ const army = {
   tier: TroopTier.T2,
   isDaydreamsAgent: false,
   troopCount: 1500,
+  currentStamina: 75,
+  maxStamina: 100,
 } satisfies ArmyLabelData;
 
 const structure = {
@@ -43,6 +45,7 @@ describe("label factory shared model rendering", () => {
     expect(label.dataset.labelTitle).toBe("Sable Order");
     expect(label.textContent).toContain("Sable Order");
     expect(label.textContent).toContain("1500");
+    expect(label.textContent).toContain("75/100");
   });
 
   it("renders structure hover labels from the shared title, guard, and building model", () => {
