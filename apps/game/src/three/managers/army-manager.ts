@@ -206,6 +206,7 @@ export class ArmyManager {
   private scene: Scene;
   private armyModel: ArmyModel;
   /** Bounded render and animation resources. Authoritative existence and location live in the projection. */
+  private readonly staminaUnresolved = new Set<ID>();
   private armyPresentations: Map<ID, ArmyData> = new Map();
   private readonly worldSpatialProjection: WorldSpatialProjection;
   private scale: Vector3;
@@ -575,6 +576,8 @@ export class ArmyManager {
     if (tickRefresh.shouldRecompute) {
       this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
       this.recomputeStaminaForAllArmies(currentArmiesTick);
+    } else if (this.staminaUnresolved.size > 0) {
+      this.staminaUnresolved.forEach((entityId) => this.refreshArmyStamina(entityId, currentArmiesTick));
     }
     this.recomputeBattleTimersForAllArmies();
   }
@@ -1768,6 +1771,9 @@ export class ArmyManager {
 
     const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
     finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
+    // The projection can spawn a label before RECS holds the troops; the next chain-time advance resolves it.
+    if (!initialStaminaPresentation) this.staminaUnresolved.add(params.entityId);
+    else this.staminaUnresolved.delete(params.entityId);
 
     this.armyPresentations.set(
       params.entityId,
@@ -3069,25 +3075,31 @@ ${
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
   private recomputeStaminaForAllArmies(currentArmiesTick: number): void {
-    // Update all army data in cache
-    this.armyPresentations.forEach((army, entityId) => {
-      try {
-        const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
+    this.armyPresentations.forEach((_army, entityId) => this.refreshArmyStamina(entityId, currentArmiesTick));
+  }
 
-        // Update cached army data with new stamina
-        army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
-        army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
-        army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
-
-        // Update visible label if it exists
-        const label = this.entityIdLabels.get(entityId);
-        if (label) {
-          this.updateArmyLabelData(entityId, army, label);
-        }
-      } catch {
-        // Skip this army — don't let one bad entity block all others
+  /** Reads the tick-aware stamina for one army into its record and label; a miss leaves it for the next advance. */
+  private refreshArmyStamina(entityId: ID, currentArmiesTick: number): void {
+    const army = this.armyPresentations.get(entityId);
+    if (!army) {
+      this.staminaUnresolved.delete(entityId);
+      return;
+    }
+    try {
+      const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
+      if (!staminaSnapshot) {
+        this.staminaUnresolved.add(entityId);
+        return;
       }
-    });
+      this.staminaUnresolved.delete(entityId);
+      army.currentStamina = staminaSnapshot.current;
+      army.maxStamina = staminaSnapshot.max;
+      army.displayStaminaRatio = staminaSnapshot.displayRatio;
+      const label = this.entityIdLabels.get(entityId);
+      if (label) this.updateArmyLabelData(entityId, army, label);
+    } catch {
+      // One bad entity must not block the others.
+    }
   }
 
   /**
