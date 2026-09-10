@@ -7,12 +7,10 @@ import { configManager } from "../managers/config-manager";
 type TimestampSource = () => number;
 
 const defaultTimestampSource: TimestampSource = () => Math.floor(Date.now() / 1000);
+/** The client's running estimate of chain time: clocks, cooldowns and stamina read it. */
 let timestampSource: TimestampSource = defaultTimestampSource;
-
-// Conservative buffer in ticks to account for client-chain clock desync.
-// This ensures validation uses a tick slightly behind the displayed tick,
-// preventing tx failures when client clock is ahead of chain.
-const CONSERVATIVE_TICK_BUFFER = 1;
+/** The newest timestamp the chain itself has written (a closed head or a row). Null until one is known. */
+let chainProvenTimestampSource: (() => number | null) | null = null;
 
 // Small extra buffer for automation projections — clock-jitter insurance only.
 // The Aug 19 playtest proved buffer depth cannot fix automation reverts: with
@@ -25,6 +23,15 @@ const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 3;
 
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
   timestampSource = source ? () => Math.floor(source()) : defaultTimestampSource;
+};
+
+/**
+ * Production is projected at chain-proven time, never at the estimate. A transaction executes at or after the
+ * newest chain-written timestamp, so a balance projected there is a floor on what the chain will hold; the
+ * estimate can lead the executing block by seconds and a MAX taken from it reverts.
+ */
+export const setChainProvenTimestampSource = (source: (() => number | null) | null) => {
+  chainProvenTimestampSource = source;
 };
 
 // A chain-written timestamp ahead of the local chain-time estimate is proof the
@@ -45,35 +52,20 @@ export const reportObservedChainTimestamp = (timestampSeconds: number) => {
 
 export const getBlockTimestamp = () => {
   const timestamp = timestampSource();
+  const provenTimestamp = chainProvenTimestampSource?.() ?? timestamp;
   const tickConfigArmies = configManager.getTick(TickIds.Armies);
   const tickConfigDefault = configManager.getTick(TickIds.Default);
 
   // Config not hydrated yet reads as interval 0; report tick 0 (not Infinity) until it lands.
-  const tickOrZero = (interval: number) =>
-    Number.isFinite(interval) && interval > 0 ? Math.floor(timestamp / interval) : 0;
-  const currentDefaultTick = tickOrZero(Number(tickConfigDefault));
-  const currentArmiesTick = tickOrZero(Number(tickConfigArmies));
+  const tickOrZero = (seconds: number, interval: number) =>
+    Number.isFinite(interval) && interval > 0 ? Math.floor(seconds / interval) : 0;
+  const currentDefaultTick = tickOrZero(provenTimestamp, Number(tickConfigDefault));
+  const currentArmiesTick = tickOrZero(timestamp, Number(tickConfigArmies));
 
   return {
     currentBlockTimestamp: timestamp,
     currentDefaultTick,
     currentArmiesTick,
-  };
-};
-
-/**
- * Returns conservative tick values for transaction validation.
- * Subtracts a buffer from the current tick to account for potential
- * client-chain clock desync, ensuring resources are validated against
- * a slightly earlier tick to prevent tx failures.
- */
-export const getConservativeBlockTimestamp = () => {
-  const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-
-  return {
-    currentBlockTimestamp,
-    currentDefaultTick: Math.max(0, currentDefaultTick - CONSERVATIVE_TICK_BUFFER),
-    currentArmiesTick: Math.max(0, currentArmiesTick - CONSERVATIVE_TICK_BUFFER),
   };
 };
 

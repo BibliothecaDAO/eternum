@@ -4,28 +4,40 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   getAutomationProjectionTick,
   getBlockTimestamp,
-  getConservativeBlockTimestamp,
   setBlockTimestampSource,
+  setChainProvenTimestampSource,
 } from "./timestamp";
 
 // getTick(Default) is a fixed 1s, so ticks equal source seconds and the
 // buffers are directly observable as tick differences.
 const SOURCE_SECONDS = 1_787_000_000;
 
-afterEach(() => setBlockTimestampSource(null));
+afterEach(() => {
+  setBlockTimestampSource(null);
+  setChainProvenTimestampSource(null);
+});
 
-describe("tick buffers", () => {
-  it("holds the automation projection 3s behind the clock — jitter belt under the revert-resync chokepoint", () => {
-    setBlockTimestampSource(() => SOURCE_SECONDS);
-    const { currentDefaultTick } = getBlockTimestamp();
+describe("chain time", () => {
+  it("projects production at chain-proven time while clocks keep the estimate", () => {
+    setBlockTimestampSource(() => SOURCE_SECONDS + 4);
+    setChainProvenTimestampSource(() => SOURCE_SECONDS);
 
-    expect(getAutomationProjectionTick().currentDefaultTick).toBe(currentDefaultTick - 3);
+    const { currentBlockTimestamp, currentDefaultTick } = getBlockTimestamp();
+    expect(currentBlockTimestamp).toBe(SOURCE_SECONDS + 4);
+    expect(currentDefaultTick).toBe(SOURCE_SECONDS);
   });
 
-  it("keeps the UI validation buffer at 1s — only automation gets the deep buffer", () => {
+  it("falls back to the estimate until the chain has written a timestamp", () => {
     setBlockTimestampSource(() => SOURCE_SECONDS);
-    const { currentDefaultTick } = getBlockTimestamp();
+    setChainProvenTimestampSource(() => null);
 
-    expect(getConservativeBlockTimestamp().currentDefaultTick).toBe(currentDefaultTick - 1);
+    expect(getBlockTimestamp().currentDefaultTick).toBe(SOURCE_SECONDS);
+  });
+
+  it("holds the automation projection 3s behind the proven tick — jitter belt under the revert-resync chokepoint", () => {
+    setBlockTimestampSource(() => SOURCE_SECONDS + 4);
+    setChainProvenTimestampSource(() => SOURCE_SECONDS);
+
+    expect(getAutomationProjectionTick().currentDefaultTick).toBe(SOURCE_SECONDS - 3);
   });
 });
