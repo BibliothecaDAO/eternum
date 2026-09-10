@@ -42,6 +42,7 @@
     "verify:terrain:gallery": "node ./scripts/terrain-verification/run-terrain-gallery-verification.mjs",
     "verify:terrain:contact-sheet": "node ./scripts/terrain-verification/create-terrain-contact-sheet.mjs",
     "test": "node ./scripts/run-vitest.mjs",
+    "verify:assets": "vitest run --config vitest.assets.config.ts",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:three:types": "tsc --noEmit --pretty false -p tsconfig.three-types.json",
     "typecheck:character-gym": "tsc --pretty false -p tsconfig.character-gym.json",

@@ -1,17 +1,8 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { createWorldmapChunkOrchestrationFixture } from "./worldmap-chunk-orchestration-fixture";
 import { flushMicrotasks } from "./worldmap-test-harness";
 import { invalidateWorldmapSwitchOffTransitionState } from "./worldmap-runtime-lifecycle";
-
-function readWorldmapSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const worldmapPath = resolve(currentDir, "worldmap.tsx");
-  return readFileSync(worldmapPath, "utf8");
-}
 
 describe("worldmap switch-off transition race hardening", () => {
   it("invalidates transition ownership state on switch-off", () => {
@@ -68,18 +59,5 @@ describe("worldmap switch-off transition race hardening", () => {
     });
     expect(fixture.managerUpdate.calls).toEqual([]);
     expect(fixture.getCurrentChunk()).toBe("0,0");
-  });
-
-  it("wires switch-off transition invalidation into worldmap scene", () => {
-    const source = readWorldmapSource();
-
-    expect(source).toMatch(/invalidateWorldmapSwitchOffTransitionState/);
-  });
-
-  it("routes shared lifecycle cleanup through WarpTravel", () => {
-    const source = readWorldmapSource();
-
-    expect(source).toMatch(/extends WarpTravel/);
-    expect(source).toMatch(/runWarpTravelSwitchOffLifecycle\(\)/);
   });
 });

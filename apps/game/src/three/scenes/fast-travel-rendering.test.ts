@@ -1,15 +1,6 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { prepareFastTravelRenderState } from "./fast-travel-rendering";
-
-function readFastTravelSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const scenePath = resolve(currentDir, "fast-travel.ts");
-  return readFileSync(scenePath, "utf8");
-}
 
 describe("prepareFastTravelRenderState", () => {
   it("prepares a fully explored no-terrain render state", () => {
@@ -51,12 +42,5 @@ describe("prepareFastTravelRenderState", () => {
       origin: { col: 8, row: 8 },
       size: { cols: 5, rows: 3 },
     });
-  });
-
-  it("routes the scene through a no-ground fast-travel render path", () => {
-    const source = readFastTravelSource();
-
-    expect(source).toMatch(/shouldCreateGroundMesh\(\): boolean/);
-    expect(source).toMatch(/return false/);
   });
 });

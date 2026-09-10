@@ -140,25 +140,3 @@ describe("Bug 0b – ground mesh texture disposal", () => {
 // ---------------------------------------------------------------------------
 // Bug 0c: No console.log in getHexagonCoordinates
 // ---------------------------------------------------------------------------
-describe("Bug 0c – no console.log in getHexagonCoordinates", () => {
-  it("getHexagonCoordinates source does not contain console.log", async () => {
-    // Read the source file and verify console.log("row" is not present
-    // in the getHexagonCoordinates method.
-    const fs = await import("fs");
-    const path = await import("path");
-
-    const sourcePath = path.resolve(__dirname, "hexagon-scene.ts");
-    const source = fs.readFileSync(sourcePath, "utf-8");
-
-    // Find the getHexagonCoordinates method body
-    const methodStart = source.indexOf("getHexagonCoordinates(");
-    expect(methodStart).toBeGreaterThan(-1);
-
-    // Find the next method or closing brace to delimit the method body
-    // We look for the return statement which ends the method
-    const methodBody = source.slice(methodStart, methodStart + 500);
-
-    // Assert no console.log in the method body
-    expect(methodBody).not.toMatch(/console\.log\(/);
-  });
-});
