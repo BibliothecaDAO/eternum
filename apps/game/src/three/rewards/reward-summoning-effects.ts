@@ -113,6 +113,7 @@ export function createChestRadiance() {
     transparent: true,
     depthWrite: false,
     side: DoubleSide,
+    forceSinglePass: true,
     blending: AdditiveBlending,
   });
   const edge = smoothstep(0.05, 0.5, uv().x.sub(0.5).abs()).oneMinus();

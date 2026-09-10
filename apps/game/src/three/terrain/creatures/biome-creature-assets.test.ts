@@ -2,9 +2,10 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { Box3, Mesh, Vector3 } from "three";
 import { createCreatureAnimator } from "./biome-creature-animator.js";
-import { disposeBiomeCreature } from "./biome-creature-assets";
+import { loadBiomeCreature, disposeBiomeCreature } from "./biome-creature-assets";
 
 const directory = new URL("../../../../public/models/biome-creatures/", import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL("manifest.json", directory), "utf8"));
@@ -74,3 +75,26 @@ describe("supplied creature assets", () => {
       disposeBiomeCreature(gltf.scene);
     });
 });
+
+it.each(["lantern-anglerfish", "green-sea-turtle"])(
+  "centers %s at swimming depth without casting a surface shadow",
+  async (species) => {
+    const bytes = readFileSync(new URL(`${species}.glb`, directory));
+    const gltf = await parseWithoutTextures(bytes);
+    const loader = vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValueOnce(gltf);
+    try {
+      const creature = await loadBiomeCreature(species, () => {});
+      const bounds = new Box3().setFromObject(creature);
+      expect(bounds.getCenter(new Vector3()).y).toBeCloseTo(0);
+      expect(bounds.min.y).toBeLessThan(0);
+      expect(bounds.max.y).toBeGreaterThan(0);
+      expect(Math.max(...bounds.getSize(new Vector3()).toArray())).toBeCloseTo(0.65);
+      creature.traverse((object) => {
+        if (object instanceof Mesh) expect(object.castShadow).toBe(false);
+      });
+      disposeBiomeCreature(creature);
+    } finally {
+      loader.mockRestore();
+    }
+  },
+);

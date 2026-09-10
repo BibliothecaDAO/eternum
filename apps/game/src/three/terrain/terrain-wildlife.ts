@@ -172,7 +172,7 @@ export class TerrainWildlife {
   private poseView(view: WildlifeView, creature: RoamingCreature): void {
     const surface = this.sampleSurface(creature.x, creature.z);
     const mode = creatureMovement(creature.species);
-    const height = mode === "water" ? TERRAIN_WATER_LEVEL + 0.03 : surface.height + (mode === "air" ? 0.5 : 0.015);
+    const height = mode === "water" ? TERRAIN_WATER_LEVEL - 0.03 : surface.height + (mode === "air" ? 0.5 : 0.015);
     view.root.position.set(creature.x, height, creature.z);
     this.up.set(...(mode === "land" ? surface.normal : ([0, 1, 0] as const)));
     this.forward.set(Math.sin(creature.yaw), 0, Math.cos(creature.yaw)).projectOnPlane(this.up).normalize();

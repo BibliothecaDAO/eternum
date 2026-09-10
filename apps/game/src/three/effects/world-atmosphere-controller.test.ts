@@ -46,8 +46,6 @@ describe("WorldAtmosphereController", () => {
       fixture.manager.update(progress, cameraTarget, { environment: "ethereal" });
       fixture.manager.applyWeatherModulation(1, 1, 1, 1);
       expect(readLighting(fixture)).toEqual(underground);
-      expect(fixture.manager.getLastAmbientIntensity()).toBe(underground.ambient);
-      expect(fixture.manager.getLastHemisphereIntensity()).toBe(underground.hemisphere);
     }
     fixture.manager.dispose();
     expected.manager.dispose();
@@ -84,9 +82,9 @@ describe("WorldAtmosphereController", () => {
 
     expect((fixture.scene.background as Color).getHex()).toBe(0x3a4d70);
     expect(fixture.fog.color.getHex()).toBe(0x4f6788);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.48); // 0.45 after the night temperature grading
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.15);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(2.3);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.55);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.35);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(2.65);
     expect(moonLight?.intensity).toBeCloseTo(0.95);
   });
 
@@ -164,9 +162,9 @@ describe("WorldAtmosphereController", () => {
     fixture.manager.update(50);
 
     expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.56);
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.7);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(1.85);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.62);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.9);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(3.0);
   });
 
   it("snaps forced debug time previews even when live-cycle smoothing is slow", () => {
@@ -178,7 +176,7 @@ describe("WorldAtmosphereController", () => {
     fixture.manager.update(50, undefined, { snap: true });
 
     expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.56);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.62);
     expect(fixture.directionalLight.position.y).toBeCloseTo(12);
   });
 
@@ -343,62 +341,20 @@ describe("WorldAtmosphereController", () => {
     expect(skyAfter).toBe(skyBefore);
   });
 
-  it("getLastAmbientIntensity and getLastHemisphereIntensity return values from the current atmosphere frame", () => {
+  it("applies weather fill without accumulating across repeated updates", () => {
     const fixture = createFixture();
-
-    // Before any update, getters return 0 (initial field value)
-    expect(fixture.manager.getLastAmbientIntensity()).toBe(0);
-    expect(fixture.manager.getLastHemisphereIntensity()).toBe(0);
-
-    // Update at day (progress 37.5) - should store the day-time intensities
     fixture.manager.update(37.5);
-    const ambientAtDay = fixture.manager.getLastAmbientIntensity();
-    const hemisphereAtDay = fixture.manager.getLastHemisphereIntensity();
+    const baseAmbient = fixture.ambientLight.intensity;
+    const baseHemisphere = fixture.hemisphereLight.intensity;
 
-    expect(ambientAtDay).toBeGreaterThan(0);
-    expect(hemisphereAtDay).toBeGreaterThan(0);
-
-    // The getter values should match the light objects (no flicker applied by the manager)
-    expect(fixture.ambientLight.intensity).toBeCloseTo(ambientAtDay);
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(hemisphereAtDay);
-
-    // Update at deep night (progress 0) - intensities should change
-    fixture.manager.update(0);
-    const ambientAtNight = fixture.manager.getLastAmbientIntensity();
-    const hemisphereAtNight = fixture.manager.getLastHemisphereIntensity();
-
-    expect(ambientAtNight).toBeCloseTo(fixture.ambientLight.intensity);
-    expect(hemisphereAtNight).not.toBeCloseTo(hemisphereAtDay);
-  });
-
-  it("getLastAmbientIntensity is stable across repeated reads (no drift)", () => {
-    const fixture = createFixture();
-
+    for (let frame = 0; frame < 10; frame++) {
+      fixture.manager.applyWeatherModulation(0.2, 0.2, 0.2, 0.22);
+      expect(fixture.ambientLight.intensity).toBeCloseTo(baseAmbient + 0.22);
+      expect(fixture.hemisphereLight.intensity).toBeCloseTo(baseHemisphere + 0.22);
+    }
     fixture.manager.update(37.5);
-    const first = fixture.manager.getLastAmbientIntensity();
-
-    // Simulate what storm flicker does: overwrite the light intensity
-    fixture.ambientLight.intensity = first * 1.06;
-
-    // Without calling update(), the getter should still return the pre-flicker value
-    expect(fixture.manager.getLastAmbientIntensity()).toBe(first);
-  });
-
-  it("keeps weather ambient boost in the storm-flicker baseline", () => {
-    const fixture = createFixture();
-
-    fixture.manager.update(37.5);
-    const baseAmbient = fixture.manager.getLastAmbientIntensity();
-
-    fixture.manager.applyWeatherModulation(0.2, 0.2, 0.2, 0.22);
-    const boostedAmbient = fixture.manager.getLastAmbientIntensity();
-
-    expect(boostedAmbient).toBeCloseTo(baseAmbient + 0.22);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(boostedAmbient);
-
-    fixture.ambientLight.intensity = boostedAmbient * 1.06;
-
-    expect(fixture.manager.getLastAmbientIntensity()).toBeCloseTo(boostedAmbient);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(baseAmbient);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(baseHemisphere);
   });
 
   it("is idempotent on dispose", () => {

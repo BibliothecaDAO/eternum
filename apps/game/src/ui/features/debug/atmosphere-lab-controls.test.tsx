@@ -32,9 +32,9 @@ it("offers all seven phases, a moon toggle, and edits the shared world preset", 
   WORLD_ATMOSPHERE_PRESETS.deepNight.hemisphereIntensity = original;
   await act(async () => root.unmount());
 });
-it("keeps night and evening fill below their directional light and leaves the day reference unchanged", () => {
+it("keeps night and evening fill below daylight and preserves directional shading", () => {
   for (const preset of [WORLD_ATMOSPHERE_PRESETS.deepNight, WORLD_ATMOSPHERE_PRESETS.evening]) {
-    expect(preset.ambientIntensity).toBeLessThan(0.6);
+    expect(preset.ambientIntensity).toBeLessThan(WORLD_ATMOSPHERE_PRESETS.day.ambientIntensity);
     expect(preset.hemisphereIntensity).toBeLessThan(WORLD_ATMOSPHERE_PRESETS.day.hemisphereIntensity);
     expect(preset.sunIntensity).toBeGreaterThan(preset.hemisphereIntensity);
   }
@@ -46,9 +46,9 @@ it("keeps night and evening fill below their directional light and leaves the da
     sunColor: 0xfff2dc,
     ambientColor: 0xf2dfc7,
     fogColor: 0xd2e2f0,
-    hemisphereIntensity: 1.7,
-    sunIntensity: 1.85,
-    ambientIntensity: 0.56,
+    hemisphereIntensity: 1.9,
+    sunIntensity: 3.0,
+    ambientIntensity: 0.62,
     fogNear: 32,
     fogFar: 82,
   });

@@ -1865,15 +1865,6 @@ export default class WorldmapScene extends WarpTravel {
     this.setMainDirectionalShadowActive(
       shouldCastWorldmapDirectionalShadow(this.getShadowsEnabled(), this.getCurrentCameraView() === CameraView.Far),
     );
-    this.mainDirectionalLight.shadow.mapSize.set(1024, 1024);
-    this.mainDirectionalLight.shadow.camera.left = -60;
-    this.mainDirectionalLight.shadow.camera.right = 60;
-    this.mainDirectionalLight.shadow.camera.top = 45;
-    this.mainDirectionalLight.shadow.camera.bottom = -45;
-    this.mainDirectionalLight.shadow.camera.far = 110;
-    this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.shadow.bias = -0.02;
-    this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
   }
 
   private getCurrentCameraDistance(): number {

@@ -1,14 +1,5 @@
-import {
-  AmbientLight,
-  Color,
-  DirectionalLight,
-  Fog,
-  HemisphereLight,
-  Scene,
-  Texture,
-  TextureLoader,
-  Vector3,
-} from "three";
+vi.mock("../utils/utils", () => ({ loadKtx2Texture: vi.fn(() => Promise.resolve(new Texture())) }));
+import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight, Scene, Texture, Vector3 } from "three";
 import { expect, it, vi } from "vitest";
 import { WORLD_ATMOSPHERE_PRESETS } from "@/three/effects/world-atmosphere-presets";
 import { WorldAtmosphereController } from "../effects/world-atmosphere-controller";
@@ -17,7 +8,6 @@ vi.mock("../utils", () => ({ getWorldPositionForHex: () => new Vector3() }));
 vi.mock("../constants", () => ({ HEX_SIZE: 1 }));
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 it("modulates day and night lighting through the same weather state while keeping fill readable", () => {
-  vi.spyOn(TextureLoader.prototype, "load").mockReturnValue(new Texture());
   const scene = new Scene();
   scene.background = new Color();
   const sun = new DirectionalLight(),

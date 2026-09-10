@@ -1,3 +1,4 @@
+import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
   Box3,
@@ -272,10 +273,10 @@ export class TerrainPropPools {
     });
     const written = instances.length;
     if (written === 0) return 0;
-    uploadSubRange(mesh.instanceMatrix, start, written, MATRIX_FLOATS);
+    queueInstanceUpdate(mesh.instanceMatrix, start, written);
     if (instances.length > 0) {
-      uploadSubRange(requireInstanceColor(mesh), start, instances.length, VEC3_FLOATS);
-      uploadSubRange(pool.ecology, start, instances.length, VEC3_FLOATS);
+      queueInstanceUpdate(requireInstanceColor(mesh), start, instances.length);
+      queueInstanceUpdate(pool.ecology, start, instances.length);
     }
     return written;
   }
@@ -326,7 +327,7 @@ function moveFollowingInstances(pool: PropPool, start: number, previousCount: nu
   for (const attribute of [pool.mesh.instanceMatrix, requireInstanceColor(pool.mesh), pool.ecology]) {
     const size = attribute.itemSize;
     attribute.array.copyWithin(destination * size, source * size, (source + count) * size);
-    uploadSubRange(attribute, destination, count, size);
+    queueInstanceUpdate(attribute, destination, count);
   }
   return count;
 }
@@ -373,16 +374,6 @@ function requireSlotCapacity(pool: PropPool, archetype: TerrainPropArchetypeId, 
 
 function countPoolInstances(pool: PropPool): number {
   return pool.slots.reduce((total, slot) => total + slot.count, 0);
-}
-
-function uploadSubRange(attribute: BufferAttribute, start: number, count: number, itemFloats: number): void {
-  const rangeStart = start * itemFloats;
-  const rangeCount = count * itemFloats;
-  // Coalesce repeated writes before the renderer consumes the upload ranges.
-  const queued = attribute.updateRanges.find((range) => range.start === rangeStart);
-  if (queued) queued.count = Math.max(queued.count, rangeCount);
-  else attribute.addUpdateRange(rangeStart, rangeCount);
-  attribute.needsUpdate = true;
 }
 
 function requireInstanceColor(mesh: InstancedMesh): InstancedBufferAttribute {

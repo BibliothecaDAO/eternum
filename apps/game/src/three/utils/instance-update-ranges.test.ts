@@ -46,3 +46,16 @@ describe("instance update ranges", () => {
     ]);
   });
 });
+
+it("coalesces repeated flushes for the same offscreen slots without dropping a wider pending write", () => {
+  const matrices = new InstancedBufferAttribute(new Float32Array(16 * 8), 16);
+  const range = createSlotDirtyRange();
+  markSlotDirty(range, 2);
+  markSlotDirty(range, 5);
+  flushSlotDirtyRange(range, [matrices]);
+  for (let frame = 0; frame < 100; frame++) {
+    markSlotDirty(range, 2);
+    flushSlotDirtyRange(range, [matrices]);
+  }
+  expect(matrices.updateRanges).toEqual([{ start: 32, count: 64 }]);
+});

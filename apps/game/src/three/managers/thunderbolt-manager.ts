@@ -1,16 +1,8 @@
 import { type HexPosition, getNeighborHexes } from "@bibliothecadao/types";
 import type GUI from "lil-gui";
-import {
-  AdditiveBlending,
-  DoubleSide,
-  Group,
-  Mesh,
-  MeshBasicMaterial,
-  PlaneGeometry,
-  Scene,
-  Texture,
-  Vector3,
-} from "three";
+import { AdditiveBlending, DoubleSide, Group, Mesh, PlaneGeometry, Scene, Vector2, Vector3 } from "three";
+import { MeshBasicNodeMaterial } from "three/webgpu";
+import { uniform, uv, vec2 } from "three/tsl";
 import { HEX_SIZE } from "../constants";
 import { getWorldPositionForHex } from "../utils";
 import {
@@ -26,12 +18,13 @@ interface ThunderBoltConfig {
 }
 interface ActiveThunderBolt {
   group: Group;
-  materials: MeshBasicMaterial[];
-  textures: Texture[];
+  materials: MeshBasicNodeMaterial[];
+  frameOffsets: Vector2[];
   startTime: number;
   variant: number;
 }
 const tempCameraTarget = new Vector3();
+const MAX_IDLE_STRIKES = 20;
 
 export class ThunderBoltManager {
   private readonly thunderBolts = new Group();
@@ -40,6 +33,7 @@ export class ThunderBoltManager {
   private readonly boltGeometry = new PlaneGeometry(16, 16).translate(0, 16 * (0.5 - 0.14), 0);
   private readonly flashGeometry = new PlaneGeometry(5, 5).rotateX(-Math.PI / 2);
   private activeThunderBolts: ActiveThunderBolt[] = [];
+  private readonly idleThunderBolts: ActiveThunderBolt[] = [];
   private config: ThunderBoltConfig = { radius: 2, count: 5 };
   private disposed = false;
   private lastVariant = -1;
@@ -84,34 +78,45 @@ export class ThunderBoltManager {
 
   private createThunderBolt(hexPosition: HexPosition): void {
     if (this.disposed) return;
-    const variant = this.chooseVariant();
-    const boltMaterial = this.createSheetMaterial(
-      this.boltSheet,
+    const bolt = this.idleThunderBolts.pop() ?? this.createStrikeResources();
+    bolt.variant = this.chooseVariant();
+    bolt.startTime = performance.now();
+    const boltOffset = spriteSheetOffset(
       WEATHER_SPRITE_SHEETS.lightning,
-      variant * WEATHER_SPRITE_SHEETS.lightning.frames,
+      bolt.variant * WEATHER_SPRITE_SHEETS.lightning.frames,
     );
-    const flashMaterial = this.createSheetMaterial(this.flashSheet, WEATHER_SPRITE_SHEETS.flash);
+    const flashOffset = spriteSheetOffset(WEATHER_SPRITE_SHEETS.flash, 0);
+    bolt.frameOffsets[0].set(boltOffset.x, boltOffset.y);
+    bolt.frameOffsets[1].set(flashOffset.x, flashOffset.y);
+    bolt.group.position.copy(getWorldPositionForHex(hexPosition));
+    bolt.group.position.y = this.sampleHeight(bolt.group.position.x, bolt.group.position.z) + 0.05;
+    // Face the camera at birth, but stay upright and fixed in world space for the strike.
+    const cameraPosition = this.controls.object?.position;
+    bolt.group.children[0].rotation.y = cameraPosition
+      ? Math.atan2(cameraPosition.x - bolt.group.position.x, cameraPosition.z - bolt.group.position.z)
+      : 0;
+    this.thunderBolts.add(bolt.group);
+    this.activeThunderBolts.push(bolt);
+  }
+
+  private createStrikeResources(): ActiveThunderBolt {
+    const boltOffset = new Vector2();
+    const flashOffset = new Vector2();
+    const boltMaterial = this.createSheetMaterial(this.boltSheet, WEATHER_SPRITE_SHEETS.lightning, boltOffset);
+    const flashMaterial = this.createSheetMaterial(this.flashSheet, WEATHER_SPRITE_SHEETS.flash, flashOffset);
     const group = new Group();
     group.name = "Lightning strike";
-    group.position.copy(getWorldPositionForHex(hexPosition));
-    group.position.y = this.sampleHeight(group.position.x, group.position.z) + 0.05;
-    // Face the camera at birth, but stay upright and fixed in world space for the strike.
     const front = new Mesh(this.boltGeometry, boltMaterial);
-    const cameraPosition = this.controls.object?.position;
-    if (cameraPosition) {
-      front.rotation.y = Math.atan2(cameraPosition.x - group.position.x, cameraPosition.z - group.position.z);
-    }
     const flash = new Mesh(this.flashGeometry, flashMaterial);
     flash.name = "Lightning ground flash";
     group.add(front, flash);
-    this.thunderBolts.add(group);
-    this.activeThunderBolts.push({
+    return {
       group,
       materials: [boltMaterial, flashMaterial],
-      textures: [boltMaterial.map!, flashMaterial.map!],
-      startTime: performance.now(),
-      variant,
-    });
+      frameOffsets: [boltOffset, flashOffset],
+      startTime: 0,
+      variant: 0,
+    };
   }
 
   private chooseVariant(): number {
@@ -124,17 +129,21 @@ export class ThunderBoltManager {
   }
 
   private createSheetMaterial(
-    source: Texture,
+    source: ReturnType<typeof loadWeatherSpriteSheet>,
     sheet: Parameters<typeof loadWeatherSpriteSheet>[0],
-    firstFrame = 0,
-  ): MeshBasicMaterial {
-    const texture = source.clone();
-    texture.repeat.set(1 / sheet.columns, 1 / sheet.rows);
-    const offset = spriteSheetOffset(sheet, firstFrame);
-    texture.offset.set(offset.x, offset.y);
-    return new MeshBasicMaterial({
-      map: texture,
+    frameOffset: Vector2,
+  ): MeshBasicNodeMaterial {
+    const offset = spriteSheetOffset(sheet, 0);
+    frameOffset.set(offset.x, offset.y);
+    // Animate UVs per strike while sharing the compressed sheet.
+    const sample = source.sample(
+      uv()
+        .mul(vec2(1 / sheet.columns, 1 / sheet.rows))
+        .add(uniform(frameOffset)),
+    );
+    const material = new MeshBasicNodeMaterial({
       side: DoubleSide,
+      forceSinglePass: true,
       transparent: true,
       depthWrite: false,
       depthTest: true,
@@ -142,6 +151,9 @@ export class ThunderBoltManager {
       toneMapped: false,
       fog: false,
     });
+    material.colorNode = sample.rgb;
+    material.opacityNode = sample.a;
+    return material;
   }
 
   private getRandomHexesAroundCenter(centerHex: HexPosition, radius: number, count: number): HexPosition[] {
@@ -186,7 +198,7 @@ export class ThunderBoltManager {
     this.activeThunderBolts = this.activeThunderBolts.filter((bolt) => {
       const frame = spriteSheetFrame(WEATHER_SPRITE_SHEETS.lightning, now - bolt.startTime, false);
       if (frame === null) {
-        this.disposeBolt(bolt);
+        this.releaseBolt(bolt);
         return false;
       }
       const boltOffset = spriteSheetOffset(
@@ -194,20 +206,21 @@ export class ThunderBoltManager {
         bolt.variant * WEATHER_SPRITE_SHEETS.lightning.frames + frame,
       );
       const flashOffset = spriteSheetOffset(WEATHER_SPRITE_SHEETS.flash, frame);
-      bolt.textures[0].offset.set(boltOffset.x, boltOffset.y);
-      bolt.textures[1].offset.set(flashOffset.x, flashOffset.y);
+      bolt.frameOffsets[0].set(boltOffset.x, boltOffset.y);
+      bolt.frameOffsets[1].set(flashOffset.x, flashOffset.y);
       return true;
     });
   }
 
-  private disposeBolt(bolt: ActiveThunderBolt): void {
+  private releaseBolt(bolt: ActiveThunderBolt): void {
     this.thunderBolts.remove(bolt.group);
-    bolt.materials.forEach((material) => material.dispose());
-    bolt.textures.forEach((texture) => texture.dispose());
+    // Reuse compiled objects through repeated storm bursts; cap retained idle resources.
+    if (this.idleThunderBolts.length < MAX_IDLE_STRIKES) this.idleThunderBolts.push(bolt);
+    else bolt.materials.forEach((material) => material.dispose());
   }
 
   cleanup(): void {
-    this.activeThunderBolts.forEach((bolt) => this.disposeBolt(bolt));
+    this.activeThunderBolts.forEach((bolt) => this.releaseBolt(bolt));
     this.activeThunderBolts = [];
   }
 
@@ -219,6 +232,8 @@ export class ThunderBoltManager {
     if (this.disposed) return;
     this.disposed = true;
     this.cleanup();
+    this.idleThunderBolts.forEach((bolt) => bolt.materials.forEach((material) => material.dispose()));
+    this.idleThunderBolts.length = 0;
     this.boltGeometry.dispose();
     this.flashGeometry.dispose();
     this.scene.remove(this.thunderBolts);

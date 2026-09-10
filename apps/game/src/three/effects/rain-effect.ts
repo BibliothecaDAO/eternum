@@ -1,6 +1,6 @@
 import { DoubleSide, Group, InstancedMesh, Object3D, PlaneGeometry, Scene, Vector2, type Vector3 } from "three";
 import MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMaterial.js";
-import { texture, uniform, uv, vec2 } from "three/tsl";
+import { uniform, uv, vec2 } from "three/tsl";
 import type { WeatherState } from "../managers/weather-manager";
 import {
   loadWeatherSpriteSheet,
@@ -49,11 +49,13 @@ export class RainEffect {
     const material = new MeshBasicNodeMaterial();
     const tiledUv = falling ? uv().mul(vec2(1, 2)).add(this.drift).fract() : uv();
     // Half-texel inset prevents neighboring animation frames bleeding into the tile.
-    const sample = texture(sheet, tiledUv.mul(0.249).add(0.0005).add(this.frameOffset));
+    const sample = sheet.sample(tiledUv.mul(0.249).add(0.0005).add(this.frameOffset));
     material.colorNode = sample.rgb;
     material.opacityNode = sample.a.mul(this.opacity).mul(falling ? 0.28 : 0.35);
     material.transparent = true;
     material.side = DoubleSide;
+    // Flat cards have no back surface to sort into a second pass.
+    material.forceSinglePass = true;
     material.depthWrite = false;
     material.depthTest = true;
     material.toneMapped = false;

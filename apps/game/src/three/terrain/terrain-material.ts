@@ -79,7 +79,7 @@ function createTerrainWaterMaterial(waterMotion: UniformNode<"float", number>): 
   const fresnel = waveNormalView.dot(positionViewDirection).clamp(0, 1).oneMinus().pow(4).mul(depthMotion);
   const reflectiveColor = mix(shorelineColor, color("#b6d8e2"), fresnel.mul(0.14));
   const foam = createTerrainWaterFoam(shore, waterDepth, waterMotion);
-  material.colorNode = shadeTerrainHexBoundary(mix(reflectiveColor, color("#dce8de"), foam.mul(0.7)));
+  material.colorNode = shadeTerrainSurface(mix(reflectiveColor, color("#dce8de"), foam.mul(0.7)));
   const waterRoughness = mix(0.5, 0.42, depthBlend).add(shore.mul(shallowEdge).mul(0.08));
   material.roughnessNode = mix(waterRoughness, 0.78, foam).clamp(0.18, 0.78);
   return material;
@@ -196,7 +196,7 @@ export function createTerrainGroundMaterial(
     groundMotion,
   );
   const ashCoverage = smoothstep(0.05, 0.5, groundWeights1.w);
-  material.colorNode = shadeTerrainHexBoundary(
+  material.colorNode = shadeTerrainSurface(
     mix(groundColor, volcanic.color, ashCoverage),
     smoothstep(0.25, 0.55, groundWeights0.w),
   );
@@ -231,13 +231,17 @@ function createScorchedSurface(
   const veinDistance = veinPhase.sin().abs();
   const branchDistance = branchPhase.sin().abs().add(0.035);
   const junction = float(0.08).sub(veinDistance.sub(branchDistance).abs()).max(0).div(0.08);
-  const channelDistance = veinDistance.min(branchDistance).sub(junction.mul(junction).mul(0.02));
+  const channelDistance = veinDistance
+    .min(branchDistance)
+    .sub(junction.mul(junction).mul(0.02))
+    .add(height.sub(0.5).mul(0.07));
   const edgeWidth = fwidth(channelDistance).max(0.01);
-  const molten = smoothstep(float(0.065).sub(edgeWidth), edgeWidth.add(0.065), channelDistance).oneMinus();
-  const bank = smoothstep(0.065, 0.12, channelDistance).oneMinus();
+  const molten = smoothstep(float(0.09).sub(edgeWidth), edgeWidth.add(0.09), channelDistance).oneMinus();
+  const bank = smoothstep(0.09, 0.24, channelDistance).oneMinus();
   const ashDrift = ground.x.mul(0.72).add(ground.y.mul(0.41)).add(broadWarp).sin();
-  const ash = smoothstep(0.5, 0.95, ashDrift).mul(smoothstep(0.4, 0.75, height));
-  const mineral = mix(color("#222930"), color("#68716f"), ash);
+  const ash = smoothstep(0.7, 0.98, ashDrift).mul(smoothstep(0.5, 0.8, height));
+  // Burnt red basalt and sparse oxidized crust keep the biome volcanic even in cool moonlight.
+  const mineral = mix(color("#452924"), color("#784536"), ash);
   const grain = albedo
     .dot(vec3(0.2126, 0.7152, 0.0722))
     .mul(1.1)
@@ -248,10 +252,11 @@ function createScorchedSurface(
   const driftingCrust = smoothstep(0.25, 0.75, flow.mul(0.43).add(height.mul(8)).sin());
   const coolingCrust = smoothstep(0.4, 0.78, height).mul(0.32).add(driftingCrust.mul(0.62));
   const lavaColor = mix(color("#922009"), color("#ffac25"), heat);
-  const banks = mix(mineral.mul(grain), color("#151a1d"), bank.mul(0.5));
+  const banks = mix(mineral.mul(grain), color("#63291c"), bank.mul(0.5));
+  const bankGlow = color("#ba300b").mul(bank).mul(molten.oneMinus()).mul(0.24);
   return {
     color: mix(banks, color("#582317"), molten),
-    embers: lavaColor.mul(molten).mul(coolingCrust.oneMinus()).mul(1.5),
+    embers: lavaColor.mul(molten).mul(coolingCrust.oneMinus()).mul(1.7).add(bankGlow),
   };
 }
 
@@ -309,7 +314,11 @@ function createWindblownGroundDetail(
 
 // Two offset rectangular lattices describe the same point-up hexes as terrainHexToWorld.
 // Drawing the border in the surface shader keeps it on the actual terrain and water heights.
-function shadeTerrainHexBoundary(surfaceColor: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
+function shadeTerrainSurface(baseColor: Node<"vec3">, grassContrast: Node<"float"> = float(0)): Node<"vec3"> {
+  // Lift dark albedo across land and water while retaining hue and bright snow/sand highlights.
+  // This keeps explored ground readable against unlit fog without flattening directional shadows.
+  const baseLuminance = baseColor.dot(vec3(0.2126, 0.7152, 0.0722)).clamp(0.001, 1);
+  const surfaceColor = baseColor.mul(baseLuminance.pow(-0.3));
   const edgeDistance = terrainHexEdgeDistance(positionLocal.xz);
   const pixelWidth = fwidth(edgeDistance).max(0.001);
   const border = smoothstep(0.008, pixelWidth.mul(1.2).add(0.008), edgeDistance).oneMinus();
@@ -348,7 +357,7 @@ function selectStrongestGroundPair(weights0: Node<"vec4">, weights1: Node<"vec4"
 function createVertexColorMaterial(name: string, fallbackRoughness: number): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: fallbackRoughness });
   material.name = name;
-  material.colorNode = shadeTerrainHexBoundary(attribute("terrainColor", "vec3"));
+  material.colorNode = shadeTerrainSurface(attribute("terrainColor", "vec3"));
   material.roughnessNode = attribute("terrainRoughness", "float");
   return material;
 }
