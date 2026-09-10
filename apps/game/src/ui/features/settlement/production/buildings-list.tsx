@@ -1,4 +1,5 @@
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
@@ -11,7 +12,7 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
-import { Building, BuildingType, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
@@ -32,12 +33,7 @@ export const BuildingsList = ({
   const currentDefaultTick = useCoarseCurrentDefaultTick();
   // Guard against invalid realm data to prevent crashes
   if (!realm || !realm.position || !realm.entityId) {
-    return (
-      <div className="rounded-lg border border-gold/20 bg-black/30 p-3 h-[500px] overflow-y-auto">
-        <h3 className="text-3xl border-gold/20">Production Buildings</h3>
-        <p className="text-gold/70 pb-8 text-lg">Realm data is currently unavailable.</p>
-      </div>
-    );
+    return <p className={cn(HUD_BODY_MUTED, "p-3")}>Realm data is currently unavailable.</p>;
   }
 
   const { setup } = useDojo();
@@ -102,120 +98,78 @@ export const BuildingsList = ({
 
   if (selectedResource !== null) {
     if (!selectedProduction) {
-      return (
-        <div className="p-3">
-          <p className="text-sm text-gold/70">Loading production data…</p>
-        </div>
-      );
+      return <p className={cn(HUD_BODY_MUTED, "p-3")}>Loading production data…</p>;
     }
 
-    const bgImage = selectedProduction.isLabor
-      ? BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH]
-      : selectedProduction.buildings[0]?.category
-        ? BUILDING_IMAGES_PATH[selectedProduction.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
-        : "";
-
     return (
-      <div
-        className="rounded-lg border border-gold/20 bg-black/30 relative min-h-28 p-3"
-        style={{
-          backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <ResourceIcon resource={ResourcesIds[selectedProduction.resource]} size="xl" />
-            <div>
-              <h4 className="text-xl font-semibold text-gold tracking-wide">
-                {ResourcesIds[selectedProduction.resource]}
-              </h4>
-              <span className="text-base text-gold/70 font-medium">
-                {selectedProduction.buildings.length} building
-                {selectedProduction.buildings.length !== 1 ? "s" : ""} producing
-              </span>
-            </div>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-gold/15 bg-black/25 px-3 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <ResourceIcon resource={ResourcesIds[selectedProduction.resource]} size="md" />
+          <div className="min-w-0">
+            <h4 className={cn(HUD_HEADLINE, "truncate")}>{ResourcesIds[selectedProduction.resource]}</h4>
+            <span className={HUD_BODY}>
+              {selectedProduction.buildings.length} building{selectedProduction.buildings.length !== 1 ? "s" : ""}{" "}
+              producing
+            </span>
           </div>
-          <button
-            onClick={() => onSelectProduction(null)}
-            className="button button-ghost hover:button-ghost-hover w-full px-4 py-2 text-sm sm:w-auto"
-          >
-            Change Resource
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={() => onSelectProduction(null)}
+          className="rounded-md border border-gold/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-gold/80 transition hover:border-gold/50 hover:text-gold"
+        >
+          Change resource
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="h-full pt-6">
-      <div className="flex flex-col gap-3">
-        {productions.length === 0 ? (
-          <div className="rounded-lg border border-gold/20 bg-black/30 p-6 text-center">
-            <h4 className="mb-2 text-xl font-semibold text-gold">No Production Buildings</h4>
-            <p className="text-lg text-gold/70">
-              You need to create production buildings first to start producing resources.
-            </p>
-          </div>
-        ) : (
-          productions.map((production) => {
-            const bgImage = production.isLabor
-              ? BUILDING_IMAGES_PATH[BuildingType.ResourceLabor as keyof typeof BUILDING_IMAGES_PATH]
-              : production.buildings[0]?.category
-                ? BUILDING_IMAGES_PATH[production.buildings[0].category as keyof typeof BUILDING_IMAGES_PATH]
-                : "";
-
-            return (
-              <div
-                key={production.resource}
-                onClick={() => onSelectProduction(production.resource)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelectProduction(production.resource);
-                  }
-                }}
-                className="relative flex cursor-pointer flex-wrap items-center gap-4 rounded-lg border border-gold/25 bg-[rgba(20,16,13,0.85)] p-4 transition hover:border-gold/40 hover:bg-[rgba(42,34,28,0.9)] focus:outline-none focus:ring-2 focus:ring-gold/60"
-                style={{
-                  backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(${bgImage})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <ResourceIcon resource={ResourcesIds[production.resource]} size="lg" />
-                  <div className="min-w-0">
-                    <h4 className="truncate text-xl font-semibold text-gold tracking-wide">
-                      {ResourcesIds[production.resource]}
-                    </h4>
-                    <span className="text-base font-medium text-gold/70">
-                      {production.buildings.length} building
-                      {production.buildings.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-full min-w-[200px] flex-1 sm:w-auto sm:flex-initial">
-                  <ResourceChip
-                    resourceId={production.resource}
-                    resourceManager={resourceManager}
-                    size="large"
-                    showTransfer={false}
-                    storageCapacity={realmInfo?.storehouses?.capacityKg}
-                    storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
-                    activeRelicEffects={activeRelicEffects}
-                    canOpenProduction={production.buildings.length > 0}
-                    onManageProduction={(resource) => onSelectProduction(resource)}
-                  />
+    <div className="flex flex-col gap-1.5">
+      {productions.length === 0 ? (
+        <p className={cn(HUD_BODY_MUTED, "p-3")}>Build production buildings first to start producing resources.</p>
+      ) : (
+        productions.map((production) => {
+          return (
+            <div
+              key={production.resource}
+              onClick={() => onSelectProduction(production.resource)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectProduction(production.resource);
+                }
+              }}
+              className="flex cursor-pointer items-center gap-3 rounded-lg border border-gold/15 bg-black/25 px-3 py-2 transition hover:border-gold/40 focus:outline-none focus:ring-2 focus:ring-gold/60"
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <ResourceIcon resource={ResourcesIds[production.resource]} size="md" />
+                <div className="min-w-0">
+                  <h4 className={cn(HUD_HEADLINE, "truncate")}>{ResourcesIds[production.resource]}</h4>
+                  <span className={HUD_BODY}>
+                    {production.buildings.length} building{production.buildings.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </div>
-            );
-          })
-        )}
-      </div>
+
+              <div className="w-[320px] max-w-[55%]">
+                <ResourceChip
+                  resourceId={production.resource}
+                  resourceManager={resourceManager}
+                  showTransfer={false}
+                  storageCapacity={realmInfo?.storehouses?.capacityKg}
+                  storageCapacityUsed={realmInfo?.storehouses?.capacityUsedKg}
+                  activeRelicEffects={activeRelicEffects}
+                  canOpenProduction={production.buildings.length > 0}
+                  onManageProduction={(resource) => onSelectProduction(resource)}
+                />
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 };
