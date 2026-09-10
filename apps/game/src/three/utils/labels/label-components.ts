@@ -1,11 +1,4 @@
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import {
-  isStaminaRecharging,
-  STAMINA_RECHARGING_FILL_CLASS,
-  STAMINA_RECHARGING_TEXT_CLASS,
-  STAMINA_RECHARGING_TRACK_CLASS,
-} from "@/ui/shared/lib/stamina-visuals";
-import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { CameraView } from "../../scenes/camera-view";
@@ -98,15 +91,6 @@ const formatCompactNumber = (value?: number | null): string => {
   }
 
   return value.toString();
-};
-
-const formatStaminaPercent = (current: number, max: number): string => {
-  if (!max || max <= 0) {
-    return "0%";
-  }
-
-  const pct = Math.round((current / max) * 100);
-  return `${pct}%`;
 };
 
 /**
@@ -289,122 +273,6 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
 };
 
 /**
- * Create stamina bar component
- */
-export const createStaminaBar = (currentStamina: number, maxStamina: number, inputView: CameraView): HTMLElement => {
-  const cameraView = resolveCameraView(inputView);
-  const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
-    current: currentStamina,
-    max: maxStamina,
-  });
-  const container = document.createElement("div");
-  container.setAttribute("data-component", "stamina-bar");
-
-  if (cameraView === CameraView.Medium) {
-    container.classList.add("flex", "items-center", "gap-1", "text-[11px]");
-
-    const icon = document.createElement("span");
-    icon.textContent = "⚡";
-    icon.classList.add("text-yellow-400");
-    if (recharging) {
-      icon.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
-    }
-    container.appendChild(icon);
-
-    const percent = document.createElement("span");
-    percent.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
-    percent.classList.add("font-semibold", "tracking-tight");
-    if (recharging) {
-      percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
-    }
-    percent.style.color = SOFT_LABEL_COLOR;
-    percent.setAttribute("data-role", "stamina-percent");
-    container.appendChild(percent);
-
-    return container;
-  }
-
-  container.style.display = "flex";
-  container.style.alignItems = "center";
-  container.style.gap = "4px";
-  container.style.fontSize = "10px";
-
-  const icon = document.createElement("span");
-  icon.textContent = "⚡";
-  icon.style.color = "#facc15";
-  container.appendChild(icon);
-
-  const progressBar = document.createElement("div");
-  progressBar.style.position = "relative";
-  progressBar.style.backgroundColor = "#374151";
-  progressBar.style.borderRadius = "9999px";
-  progressBar.style.height = "8px";
-  progressBar.style.width = "80px";
-  progressBar.style.minWidth = "80px";
-  progressBar.style.maxWidth = "80px";
-  progressBar.style.overflow = "hidden";
-  progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
-  progressBar.setAttribute("data-role", "progress-container");
-  if (recharging) {
-    progressBar.classList.add(STAMINA_RECHARGING_TRACK_CLASS);
-  }
-
-  const progressFill = document.createElement("div");
-  const projectedFill = document.createElement("div");
-  progressFill.style.position = "absolute";
-  progressFill.style.top = "0";
-  progressFill.style.left = "0";
-  progressFill.style.height = "100%";
-  progressFill.style.borderRadius = "9999px";
-  progressFill.style.transition = "width 0.3s ease-in-out";
-  progressFill.setAttribute("data-role", "progress-fill");
-  progressFill.style.opacity = "0.4";
-  progressFill.style.width = `${committedPercentage}%`;
-
-  projectedFill.style.position = "absolute";
-  projectedFill.style.top = "0";
-  projectedFill.style.left = "0";
-  projectedFill.style.height = "100%";
-  projectedFill.style.borderRadius = "9999px";
-  projectedFill.style.transition = "width 1s linear";
-  projectedFill.setAttribute("data-role", "projected-progress-fill");
-  if (recharging) {
-    projectedFill.classList.add(STAMINA_RECHARGING_FILL_CLASS);
-  }
-  projectedFill.style.width = `${displayPercentage}%`;
-
-  if (committedPercentage > 66) {
-    progressFill.style.backgroundColor = "#10b981";
-    projectedFill.style.backgroundColor = "#34d399";
-  } else if (committedPercentage > 33) {
-    progressFill.style.backgroundColor = "#f59e0b";
-    projectedFill.style.backgroundColor = "#fbbf24";
-  } else {
-    progressFill.style.backgroundColor = "#ef4444";
-    projectedFill.style.backgroundColor = "#fb7185";
-  }
-
-  progressBar.appendChild(progressFill);
-  progressBar.appendChild(projectedFill);
-  container.appendChild(progressBar);
-
-  const text = document.createElement("span");
-  text.textContent = `${displayedCurrent}/${maxStamina}`;
-  text.style.color = "#ffffff";
-  text.style.fontFamily = "monospace";
-  text.style.fontSize = "10px";
-  text.style.fontWeight = "500";
-  if (recharging) {
-    text.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
-  }
-  text.setAttribute("data-role", "stamina-text");
-  container.appendChild(text);
-
-  return container;
-};
-
-/**
  * Create troop count display
  */
 export const createTroopCountDisplay = (
@@ -472,9 +340,7 @@ export const createTroopCountDisplay = (
  * Create guard army display
  */
 export const createGuardArmyDisplay = (
-  guardArmies:
-    | Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>
-    | undefined,
+  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number }> | undefined,
   inputView: CameraView,
 ): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
@@ -503,9 +369,7 @@ export const createGuardArmyDisplay = (
         return;
       }
 
-      const troopDisplay = createTroopCountDisplay(guard.count, guard.category ?? "", guard.tier, cameraView);
-      troopDisplay.appendChild(createGuardStaminaDisplay(guard.stamina));
-      container.appendChild(troopDisplay);
+      container.appendChild(createTroopCountDisplay(guard.count, guard.category ?? "", guard.tier, cameraView));
     });
 
     return container;
@@ -582,21 +446,12 @@ export const createGuardArmyDisplay = (
     tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
     tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
     guardDiv.appendChild(tierBadge);
-    guardDiv.appendChild(createGuardStaminaDisplay(guard.stamina));
 
     container.appendChild(guardDiv);
   });
 
   return container;
 };
-
-function createGuardStaminaDisplay(stamina: number): HTMLElement {
-  const staminaDisplay = document.createElement("span");
-  staminaDisplay.classList.add("font-mono", "text-[10px]", "text-yellow-200");
-  staminaDisplay.setAttribute("data-role", "guard-stamina");
-  staminaDisplay.textContent = `STA ${formatCompactNumber(stamina)}`;
-  return staminaDisplay;
-}
 
 /**
  * Create production display
@@ -849,69 +704,6 @@ export const updateIncomingTroopDisplay = (
 };
 
 /**
- * Update an existing stamina bar with new values
- */
-export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
-  const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
-  const progressContainer = staminaBarElement.querySelector("[data-role='progress-container']") as HTMLElement | null;
-  const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
-  const projectedFill = staminaBarElement.querySelector("[data-role='projected-progress-fill']") as HTMLElement | null;
-  const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
-  const recharging = isStaminaRecharging(currentStamina, maxStamina);
-  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
-    current: currentStamina,
-    max: maxStamina,
-  });
-
-  if (percentElement) {
-    percentElement.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
-    percentElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
-  }
-
-  if (textElement) {
-    textElement.textContent = `${displayedCurrent}/${maxStamina}`;
-    textElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
-  }
-
-  const iconElement = staminaBarElement.firstElementChild as HTMLElement | null;
-  if (iconElement) {
-    iconElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
-  }
-
-  if (progressFill) {
-    progressFill.style.width = `${committedPercentage}%`;
-    progressFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
-
-    // Color based on stamina level
-    if (committedPercentage > 66) {
-      progressFill.style.backgroundColor = "#10b981"; // green-500
-      if (projectedFill) {
-        projectedFill.style.backgroundColor = "#34d399";
-      }
-    } else if (committedPercentage > 33) {
-      progressFill.style.backgroundColor = "#f59e0b"; // amber-500
-      if (projectedFill) {
-        projectedFill.style.backgroundColor = "#fbbf24";
-      }
-    } else {
-      progressFill.style.backgroundColor = "#ef4444"; // red-500
-      if (projectedFill) {
-        projectedFill.style.backgroundColor = "#fb7185";
-      }
-    }
-
-    if (projectedFill) {
-      projectedFill.style.width = `${displayPercentage}%`;
-      projectedFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
-    }
-  }
-
-  if (progressContainer) {
-    progressContainer.classList.toggle(STAMINA_RECHARGING_TRACK_CLASS, recharging);
-  }
-};
-
-/**
  * Create a rotated arrow element
  * @param degrees - Degrees (0 is East, positive is clockwise)
  * @param color - CSS color class for the arrow
@@ -1077,9 +869,7 @@ export const updateDirectionIndicators = (
 
 export const updateGuardArmyDisplay = (
   container: HTMLElement,
-  guardArmies:
-    | Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>
-    | undefined,
+  guardArmies: Array<{ slot: number; category: string | null; tier: number; count: number }> | undefined,
   inputView: CameraView,
 ): void => {
   const next = createGuardArmyDisplay(guardArmies, inputView);

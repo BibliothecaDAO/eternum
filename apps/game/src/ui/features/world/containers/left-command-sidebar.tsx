@@ -24,7 +24,7 @@ export const LeftCommandSidebar = memo(() => {
   return (
     <div
       className={cn(
-        "fixed left-3 z-20 pointer-events-auto flex max-h-[calc(100vh-340px)] flex-col gap-2 overflow-y-auto scrollbar-thin",
+        "fixed left-3 z-20 pointer-events-auto flex max-h-[calc(100vh-340px)] flex-col gap-3 overflow-y-auto scrollbar-thin",
         HUD_COLUMN_TOP,
         HUD_COLUMN_WIDTH,
       )}

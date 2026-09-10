@@ -1,5 +1,6 @@
 import { gameEntityKey } from "@/sync/game-scope";
-import { getAddressName, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { type ClientComponents, ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -40,13 +41,8 @@ export const createWorldEventEntityReader = (
   components: ClientComponents,
   projection: WorldSpatialProjection,
 ): WorldEventEntityReader => {
-  const getPlayerName = (ownerAddress: string): string => {
-    try {
-      return getAddressName(ContractAddress(ownerAddress), components) ?? "";
-    } catch {
-      return "";
-    }
-  };
+  // The one player resolver: identity profile over chain name, Player-xxxxxx for neither.
+  const getPlayerName = (ownerAddress: string): string => getPlayerDisplayName(ownerAddress);
 
   const getStructure = (entityId: number): WorldEventStructure | null => {
     const spatial = projection.getStructure(entityId);

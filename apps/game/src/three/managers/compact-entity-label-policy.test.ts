@@ -19,8 +19,6 @@ const baseArmy = {
   tier: TroopTier.T1,
   isDaydreamsAgent: false,
   troopCount: 12,
-  currentStamina: 8,
-  maxStamina: 10,
 } satisfies ArmyData;
 
 const baseStructure = {

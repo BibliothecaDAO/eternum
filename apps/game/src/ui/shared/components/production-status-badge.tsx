@@ -1,4 +1,4 @@
-import { useMemo, type FC } from "react";
+import { type FC } from "react";
 
 import clsx from "clsx";
 
@@ -16,46 +16,8 @@ const resolveResourceIdFromLabel = (label: string): ResourcesIds | undefined => 
   return typeof maybeId === "number" ? maybeId : undefined;
 };
 
-/** Dominant color per resource — [r, g, b] extracted from icon artwork. */
-const RESOURCE_COLORS: Record<string, [number, number, number]> = {
-  Wood: [139, 90, 43],
-  Stone: [156, 156, 156],
-  Coal: [60, 60, 60],
-  Copper: [184, 115, 51],
-  Obsidian: [55, 25, 70],
-  Silver: [192, 192, 210],
-  Ironwood: [90, 120, 80],
-  ColdIron: [100, 140, 180],
-  Gold: [255, 200, 50],
-  Hartwood: [60, 140, 60],
-  Diamonds: [185, 242, 255],
-  Sapphire: [30, 80, 200],
-  Ruby: [200, 30, 50],
-  DeepCrystal: [120, 50, 200],
-  Ignium: [255, 80, 20],
-  EtherealSilica: [200, 220, 255],
-  TrueIce: [140, 220, 255],
-  TwilightQuartz: [180, 100, 220],
-  AlchemicalSilver: [170, 200, 230],
-  Adamantine: [50, 200, 150],
-  Mithral: [200, 170, 255],
-  Dragonhide: [180, 50, 30],
-  Wheat: [220, 180, 60],
-  Fish: [60, 150, 200],
-  Labor: [200, 170, 80],
-  AncientFragment: [200, 180, 100],
-  Essence: [120, 80, 200],
-  Research: [80, 180, 220],
-  Lords: [255, 215, 0],
-};
-
-const DEFAULT_PRODUCING_COLOR: [number, number, number] = [52, 211, 153]; // emerald fallback
+const PRODUCING_COLOR: [number, number, number] = [52, 211, 153]; // emerald
 const IDLE_COLOR: [number, number, number] = [251, 191, 36]; // amber
-
-const getResourceColor = (label: string): [number, number, number] => {
-  const clean = label.replace(/\s/g, "").replace("'", "");
-  return RESOURCE_COLORS[clean] ?? DEFAULT_PRODUCING_COLOR;
-};
 
 interface ProductionStatusBadgeProps {
   resourceLabel: string;
@@ -106,10 +68,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   const shouldPulse =
     isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
-  const [r, g, b] = useMemo(
-    () => (isProducing ? getResourceColor(resourceLabel) : IDLE_COLOR),
-    [isProducing, resourceLabel],
-  );
+  const [r, g, b] = isProducing ? PRODUCING_COLOR : IDLE_COLOR;
 
   const preset =
     size === "md"
@@ -241,6 +200,13 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         <span className="absolute -top-1 -left-1 z-10 flex min-w-[14px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">
           {cornerTopLeft}
         </span>
+      )}
+      {cornerTopRight && (
+        <span
+          key={cornerTopRight}
+          aria-hidden
+          className={clsx("absolute pointer-events-none rounded-full accrual-sweep", preset.progressOffset)}
+        />
       )}
       {cornerTopRight && (
         <span

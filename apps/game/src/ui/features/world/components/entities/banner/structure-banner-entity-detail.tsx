@@ -261,7 +261,7 @@ const StructureBannerEntityDetailContent = memo(
         <InfoBubble variant="section" title="Guards" icon={Shield} cue={guardCue}>
           {guards.length > 0 ? (
             <CompactDefenseDisplay
-              troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
+              troops={guards}
               slotsUsed={guardSlotsUsed}
               slotsMax={guardSlotsMax}
               structureId={Number(structure.entity_id ?? 0)}

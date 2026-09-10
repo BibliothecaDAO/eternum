@@ -6,6 +6,7 @@ import clsx from "clsx";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import { useMemo } from "react";
 
+import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import type { GuardSummary, SelectedTroopCombo } from "./types";
 
@@ -71,10 +72,12 @@ export const DefenseSlotSelection = ({
                 (resource) => resource.id === getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1),
               )?.trait ?? null)
             : null;
-          const hasGuard = Boolean(guardInfo?.troops);
+          // A wiped slot keeps its troop row at count 0 on chain; it reads as empty here, or as rebuilding.
+          const hasGuard = (guardCount ?? 0) > 0;
+          const cooldownSeconds = guardInfo?.cooldownRemaining ?? 0;
           const isSelected = guardSlot === slot;
           const canOpenAdditionalSlot = canCreateDefenseArmy && activeSlotCount < unlockedCapacity;
-          const isSlotSelectable = hasGuard || canOpenAdditionalSlot;
+          const isSlotSelectable = hasGuard || (canOpenAdditionalSlot && cooldownSeconds === 0);
           const isSlotCompatible =
             !guardInfo || (guardCategory === selectedTroopCombo.type && guardTier === selectedTroopCombo.tier);
           return (
@@ -125,6 +128,8 @@ export const DefenseSlotSelection = ({
                     </div>
                     <GuardStaminaBar current={guardStaminaCurrent} max={guardStaminaMax} />
                   </div>
+                ) : cooldownSeconds > 0 ? (
+                  <GuardCooldownBadge seconds={cooldownSeconds} />
                 ) : (
                   <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>Empty</div>
                 )}

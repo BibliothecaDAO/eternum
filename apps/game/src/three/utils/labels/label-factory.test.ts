@@ -18,8 +18,6 @@ const army = {
   tier: TroopTier.T2,
   isDaydreamsAgent: false,
   troopCount: 1500,
-  currentStamina: 75,
-  maxStamina: 100,
 } satisfies ArmyLabelData;
 
 const structure = {
@@ -34,7 +32,7 @@ const structure = {
   owner: { address: 456n, ownerName: "Ember", guildName: "" },
   structureType: StructureType.Camp,
   hasWonder: false,
-  guardArmies: [{ slot: 1, category: "Knight", tier: 2, count: 1500, stamina: 42 }],
+  guardArmies: [{ slot: 1, category: "Knight", tier: 2, count: 1500 }],
   activeProductions: [{ buildingCount: 3, buildingType: BuildingType.ResourceWood }],
 } satisfies StructureInfo;
 
@@ -45,16 +43,14 @@ describe("label factory shared model rendering", () => {
     expect(label.dataset.labelTitle).toBe("Sable Order");
     expect(label.textContent).toContain("Sable Order");
     expect(label.textContent).toContain("1500");
-    expect(label.textContent).toContain("75/100");
   });
 
-  it("renders structure hover labels from the shared title, guard, stamina, and building model", () => {
+  it("renders structure hover labels from the shared title, guard, and building model", () => {
     const label = createStructureLabel(structure, CameraView.Medium);
 
     expect(label.dataset.labelTitle).toBe("North Camp");
     expect(label.textContent).toContain("North Camp");
     expect(label.textContent).toContain("1500");
-    expect(label.textContent).toContain("42");
     expect(label.textContent).toContain("3");
   });
 

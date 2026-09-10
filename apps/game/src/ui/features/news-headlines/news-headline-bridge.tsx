@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Position } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 // @ts-ignore
-import { StructureType } from "@bibliothecadao/types";
+import { ContractAddress, StructureType } from "@bibliothecadao/types";
 // @ts-ignore
 import { useDojo, useQuery } from "@bibliothecadao/react";
 
@@ -22,6 +22,15 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
+
+const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
+
+const resolveCaptureTitle = (isHyperstructure: boolean, playerTook: boolean, playerLost: boolean) => {
+  if (isHyperstructure) return "HYPERSTRUCTURE SEIZED";
+  if (playerTook) return "REALM CAPTURED";
+  if (playerLost) return "REALM LOST";
+  return "REALM FALLS";
+};
 
 export function NewsHeadlineBridge() {
   const { setup } = useDojo();
@@ -83,25 +92,24 @@ export function NewsHeadlineBridge() {
     return () => clearTimeout(timer);
   }, [currentHeadline, dismiss]);
 
-  // Ownership headlines follow the same RECS row transition for every kind of structure.
+  // Ownership headlines follow the same RECS row transition for realms and hyperstructures. Rifts and camps
+  // change hands too often to be news.
   useEffect(() => {
     const subscription = setup.components.Structure.update$.subscribe(({ value: [current, previous] }) => {
       if (!current || !previous || current.owner === previous.owner) return;
+      if (!NEWSWORTHY_CAPTURES.has(current.base.category as StructureType)) return;
+      if (!entityReader) return;
       const isHyperstructure = current.base.category === StructureType.Hyperstructure;
       const player = address ? BigInt(address) : null;
-      if (!isHyperstructure && current.owner !== player && previous.owner !== player) return;
-      const structure = entityReader?.getStructure(current.entity_id);
-      const title = isHyperstructure
-        ? "HYPERSTRUCTURE SEIZED"
-        : current.owner === player
-          ? "STRUCTURE CAPTURED"
-          : "STRUCTURE LOST";
+      const structureName = entityReader.getStructure(current.entity_id)?.structureName ?? `#${current.entity_id}`;
+      const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
+      const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
       enqueue({
         id: `capture:${current.entity_id}:${previous.owner}:${current.owner}:${Date.now()}`,
         type: isHyperstructure ? "hyper-capture" : "realm-fall",
         icon: isHyperstructure ? "hyper-capture" : "realm-fall",
-        title,
-        description: `${structure?.structureName || `Structure #${current.entity_id}`} changes hands`,
+        title: resolveCaptureTitle(isHyperstructure, current.owner === player, previous.owner === player),
+        description: `${captor} took ${structureName} from ${previousOwner}`,
         location: { x: current.base.coord_x, y: current.base.coord_y, entityId: current.entity_id },
         timestamp: Date.now(),
       });

@@ -33,7 +33,7 @@ export interface StructureInfo {
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
   // Live presentation facts derived from RECS
-  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
@@ -59,9 +59,6 @@ export interface ArmyData {
   attachments?: CosmeticAttachmentTemplate[];
   // Live presentation facts derived from RECS
   troopCount: number;
-  currentStamina: number;
-  maxStamina: number;
-  displayStaminaRatio?: number;
   attackedFromDegrees?: number; // Degrees from which this army has been attacked
   attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends

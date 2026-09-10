@@ -19,6 +19,8 @@ export interface SelectedTroopCombo {
 
 export interface GuardSummary {
   slot: bigint | number;
+  /** Seconds before a wiped slot accepts troops again; 0 when open. */
+  cooldownRemaining: number;
   troops?: {
     category?: TroopType;
     tier?: TroopTier;

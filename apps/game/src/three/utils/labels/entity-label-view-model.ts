@@ -27,9 +27,7 @@ export interface EntityLabelViewModel {
 }
 
 type ArmyLabelSource = Pick<ArmyData, "entityId" | "owner"> &
-  Partial<
-    Pick<ArmyData, "category" | "currentStamina" | "isDaydreamsAgent" | "isMine" | "maxStamina" | "tier" | "troopCount">
-  > & { isAlly?: boolean };
+  Partial<Pick<ArmyData, "category" | "isDaydreamsAgent" | "isMine" | "tier" | "troopCount">> & { isAlly?: boolean };
 
 type StructureLabelSource = Pick<
   StructureInfo,
@@ -115,13 +113,6 @@ function buildArmyDetailRows(army: ArmyLabelSource): EntityLabelDetailRow[] {
     });
   }
 
-  if (army.currentStamina !== undefined && army.maxStamina !== undefined) {
-    rows.push({
-      label: "Stamina",
-      value: `${army.currentStamina}/${army.maxStamina}`,
-    });
-  }
-
   return rows;
 }
 
@@ -158,24 +149,13 @@ function buildGuardDetailRows(guards: StructureLabelSource["guardArmies"]): Enti
   }
 
   const firstGuard = activeGuards[0];
-  const rows: EntityLabelDetailRow[] = [
+  return [
     {
       label: "Guards",
       meta: firstGuard ? `${firstGuard.category ?? "Troops"} T${firstGuard.tier}` : undefined,
       value: formatCompactLabelNumber(totalGuardCount),
     },
   ];
-
-  const staminaValues = activeGuards
-    .map((guard) => guard.stamina)
-    .filter((stamina) => Number.isFinite(stamina))
-    .map((stamina) => formatCompactLabelNumber(stamina));
-
-  if (staminaValues.length > 0) {
-    rows.push({ label: "Guard stamina", value: staminaValues.join(", ") });
-  }
-
-  return rows;
 }
 
 export function resolveArmyTitle(army: Pick<ArmyData, "entityId" | "owner">): string {

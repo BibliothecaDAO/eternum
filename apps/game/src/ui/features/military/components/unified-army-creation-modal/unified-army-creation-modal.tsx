@@ -118,7 +118,7 @@ export const UnifiedArmyCreationBody = ({
     <div className="p-3">
       <div className="flex items-stretch gap-3">
         <div className={leftColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-2">
+          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-3">
             <TroopSelectionGrid
               options={form.troopOptions}
               selected={form.selectedTroopCombo}

@@ -285,7 +285,9 @@ export const MergedResourcePanel = memo(
             showHiddenCount={false}
           />
         )}
-        {tokens.length > 0 && <div className="flex max-w-full flex-wrap justify-start gap-2 px-1.5">{tokens}</div>}
+        {tokens.length > 0 && (
+          <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-4 px-2 pt-1.5">{tokens}</div>
+        )}
       </div>
     );
   },

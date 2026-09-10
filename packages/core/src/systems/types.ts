@@ -22,7 +22,6 @@ export interface GuardArmy {
   category: string | null;
   tier: number;
   count: number;
-  stamina: number;
 }
 
 export interface ActiveProduction {

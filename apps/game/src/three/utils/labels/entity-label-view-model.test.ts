@@ -21,8 +21,6 @@ const army = {
   tier: TroopTier.T2,
   isDaydreamsAgent: false,
   troopCount: 1500,
-  currentStamina: 75,
-  maxStamina: 100,
 } satisfies ArmyData;
 
 const structure = {
@@ -37,7 +35,7 @@ const structure = {
   owner: { address: 456n, ownerName: "Ember", guildName: "" },
   structureType: StructureType.Camp,
   hasWonder: false,
-  guardArmies: [{ slot: 1, category: "Knight", tier: 2, count: 1500, stamina: 42 }],
+  guardArmies: [{ slot: 1, category: "Knight", tier: 2, count: 1500 }],
   activeProductions: [{ buildingCount: 3, buildingType: BuildingType.ResourceWood }],
 } satisfies StructureInfo;
 
@@ -55,14 +53,11 @@ describe("entity label view model", () => {
       iconKey: "army",
     });
     expect(model.detailRows).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ label: "Troops", value: "1.5k", meta: "Knight T2" }),
-        expect.objectContaining({ label: "Stamina", value: "75/100" }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ label: "Troops", value: "1.5k", meta: "Knight T2" })]),
     );
   });
 
-  it("builds structure identity, guards, guard stamina, and production detail", () => {
+  it("builds structure identity, guards, and production detail", () => {
     const model = buildStructureEntityLabelViewModel(structure);
 
     expect(model).toMatchObject({
@@ -77,7 +72,6 @@ describe("entity label view model", () => {
       expect.arrayContaining([
         expect.objectContaining({ label: "Owner", value: "Ember" }),
         expect.objectContaining({ label: "Guards", value: "1.5k", meta: "Knight T2" }),
-        expect.objectContaining({ label: "Guard stamina", value: "42" }),
         expect.objectContaining({ label: "Buildings", value: "3" }),
       ]),
     );
