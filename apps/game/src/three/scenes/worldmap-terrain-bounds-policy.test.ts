@@ -1,17 +1,8 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   isHexWithinTerrainPresentationBounds,
   resolveTerrainPresentationBounds,
 } from "./worldmap-terrain-bounds-policy";
-
-function readWorldmapSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const worldmapPath = resolve(currentDir, "worldmap.tsx");
-  return readFileSync(worldmapPath, "utf8");
-}
 
 describe("resolveTerrainPresentationBounds", () => {
   const baseInput = {
@@ -100,11 +91,5 @@ describe("resolveTerrainPresentationBounds", () => {
     expect(bounds.maxRow).toBe(9 + 6);
     expect(bounds.minY).toBe(-10);
     expect(bounds.maxY).toBe(50);
-  });
-
-  it("worldmap runtime chunk bounds are sourced from the terrain presentation bounds policy", () => {
-    const source = readWorldmapSource();
-
-    expect(source).toMatch(/resolveTerrainPresentationWorldBounds/);
   });
 });

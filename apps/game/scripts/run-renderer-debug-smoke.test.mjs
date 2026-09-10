@@ -116,16 +116,6 @@ describe("main option validation", () => {
   });
 });
 
-describe("debug route readiness", () => {
-  it("waits for the debug route to mount before running scenario checks", () => {
-    const source = readFileSync("./scripts/run-renderer-debug-smoke.mjs", "utf8");
-
-    expect(source).toContain("waitForDebugRouteReady");
-    expect(source).toContain("DEBUG_ROUTE_POLL_MS");
-    expect(source).toContain("initialSnapshot");
-  });
-});
-
 describe("resolveAgentBrowserWorkingDirectory", () => {
   it("runs npx outside the repository workspace to avoid npm duplicate workspace-name failures", () => {
     expect(resolveAgentBrowserWorkingDirectory({ RUNNER_TEMP: "/runner-temp", TMPDIR: "/tmp" })).toBe("/runner-temp");

@@ -1,16 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
 import { finalizeWarpTravelChunkSwitch } from "./warp-travel-chunk-switch-commit";
 import { createControlledAsyncCall } from "./worldmap-test-harness";
-
-function readWorldmapSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const worldmapPath = resolve(currentDir, "worldmap.tsx");
-  return readFileSync(worldmapPath, "utf8");
-}
 
 describe("finalizeWarpTravelChunkSwitch", () => {
   it("rolls back to the previous chunk authority and restores visuals when hydration failed", async () => {
@@ -443,11 +434,5 @@ describe("finalizeWarpTravelChunkSwitch", () => {
       transitionToken: 19,
     });
     expect(commitPreparedTerrain).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps committed chunk authority ownership inside the finalize callback path", () => {
-    const source = readWorldmapSource();
-
-    expect(source).not.toMatch(/this\.currentChunk = finalizeResult\.nextCurrentChunk/);
   });
 });

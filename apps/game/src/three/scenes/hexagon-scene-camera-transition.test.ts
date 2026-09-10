@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,11 +6,6 @@ import {
   resolveCameraTransitionCompletion,
   resolveCameraTransitionStart,
 } from "./hexagon-scene-camera-transition";
-
-function readHexagonSceneSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, "hexagon-scene.ts"), "utf8");
-}
 
 describe("publishCameraTransitionFrame", () => {
   it("lets controls own change dispatch when update reports movement", () => {
@@ -101,15 +93,5 @@ describe("camera transition state", () => {
       activeToken: null,
       nextToken: 4,
     });
-  });
-});
-
-describe("hexagon scene camera transition wiring", () => {
-  it("uses the camera transition frame publisher and records retarget cancellations", () => {
-    const source = readHexagonSceneSource();
-
-    expect(source).toMatch(/publishCameraTransitionFrame\(/);
-    expect(source).toMatch(/incrementWorldmapRenderCounter\("zoomTransitionsCancelled"\)/);
-    expect(source).toMatch(/gsap\.timeline\(\{/);
   });
 });

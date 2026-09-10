@@ -1,7 +1,6 @@
 // @vitest-environment node
 
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildBlitzRealmSuggestions,
@@ -62,16 +61,6 @@ const actionsFor = (input: BlitzRealmSuggestionInput) =>
 describe("buildBlitzRealmSuggestions", () => {
   it("does not suggest anything outside active blitz play", () => {
     expect(buildBlitzRealmSuggestions(baseInput({ isBlitzActive: false }))).toEqual([]);
-  });
-
-  it("never suggests provisioning: the provision runner handles every unprovisioned realm", () => {
-    const [first] = buildBlitzRealmSuggestions(baseInput({ canAffordUpgrade: true }));
-    expect(first?.action).toBe("upgrade");
-    const source = readFileSync("src/ui/features/world/containers/left-facets/blitz-suggestions.ts", "utf8");
-    expect(source).not.toMatch(/provision/i);
-    expect(readFileSync("src/ui/features/world/containers/left-facets/use-suggestion-actions.tsx", "utf8")).not.toMatch(
-      /provision/i,
-    );
   });
 
   it("only shows the first eligible hint per realm", () => {

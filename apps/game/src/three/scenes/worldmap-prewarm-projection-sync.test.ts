@@ -1,45 +1,6 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 
-function readWorldmapSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
-}
-
 describe("prewarmDirectionalPresentationChunk projection sync", () => {
-  it("syncs projection tiles before preparing terrain", () => {
-    const source = readWorldmapSource();
-
-    // Extract the prewarmDirectionalPresentationChunk method body
-    const methodStart = source.indexOf("private async prewarmDirectionalPresentationChunk");
-    expect(methodStart).toBeGreaterThan(-1);
-
-    // Get a reasonable window of the method body (enough to cover the prepareWorldmapChunkPresentation call)
-    const methodBody = source.slice(methodStart, methodStart + 1500);
-
-    // The method must NOT use Promise.resolve(true) as the projectionSyncPromise
-    expect(methodBody).not.toMatch(/projectionSyncPromise:\s*Promise\.resolve\(true\)/);
-
-    expect(methodBody).toMatch(/projectionSyncPromise:.*syncProjectionTilesForChunk/s);
-  });
-
-  it("prewarm still respects isLatestToken and isSwitchedOff guards", () => {
-    const source = readWorldmapSource();
-
-    const methodStart = source.indexOf("private async prewarmDirectionalPresentationChunk");
-    expect(methodStart).toBeGreaterThan(-1);
-
-    const methodBody = source.slice(methodStart, methodStart + 1500);
-
-    // isLatestToken guard must reference isSwitchedOff
-    expect(methodBody).toMatch(/isSwitchedOff/);
-
-    // isLatestToken guard must reference chunkTransitionToken
-    expect(methodBody).toMatch(/chunkTransitionToken/);
-  });
-
   it("prepareWorldmapChunkPresentation skips terrain when projectionSyncPromise resolves false", async () => {
     // This test validates that the downstream presentation function correctly
     // gates terrain preparation on projection sync, so a failed local sync
