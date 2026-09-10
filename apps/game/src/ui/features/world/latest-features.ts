@@ -38,7 +38,7 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Arcane Chests and Essence Rifts",
     type: "improvement",
     description:
-      "New map chests emerge through violet shadows. Collecting one lights it from within and reveals your three relics before the whole altar sinks into the biome. Existing chests stay settled as you browse. Essence rifts now churn and erupt with textured liquid spray.",
+      "Camera-facing chests pair light purple enamel with gold and blue gems, with a softer daytime finish and a night glow. New chests emerge through violet shadows; opening reveals three relics before the altar sinks into the biome. Existing chests stay settled as you browse. Essence rifts erupt with textured liquid spray.",
   },
   {
     date: "2026-09-10",
