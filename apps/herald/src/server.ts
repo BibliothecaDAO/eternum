@@ -14,6 +14,8 @@ import { backfillHistory } from "./history-backfill";
 import { HistoryStore } from "./history-store";
 
 const CHECKPOINT_EVERY_BLOCKS = 100;
+/** How often Herald reads the sequencer clock off the pre-confirmed block. */
+const CHAIN_CLOCK_INTERVAL_MS = 500;
 
 interface HeraldConfig {
   chain: string;
@@ -129,9 +131,16 @@ const main = async (): Promise<void> => {
     onTransaction: (transaction) => live.acceptTransaction(transaction),
   });
 
+  const chainClock = setInterval(() => {
+    live.publishChainClock().catch((error: Error) => {
+      console.warn(JSON.stringify({ error: error.message, event: "herald_chain_clock_failed" }));
+    });
+  }, CHAIN_CLOCK_INTERVAL_MS);
+
   const shutdown = async (exitCode: number): Promise<void> => {
     if (shuttingDown) return;
     shuttingDown = true;
+    clearInterval(chainClock);
     subscriptions.stop();
     server?.stop();
     try {

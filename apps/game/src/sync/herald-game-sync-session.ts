@@ -66,10 +66,10 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
     onTransactionEntitiesReceived: recordClientActionDiffReceived,
     onSubscriptionActive: input.onSubscriptionActive,
     onHead: (head) => {
-      useConnectionStore.getState().recordConfirmedHead(head.block);
+      if (!head.preconfirmed) useConnectionStore.getState().recordConfirmedHead(head.block);
       useChainTimeStore.getState().setHeartbeat({
         blockNumber: head.block,
-        source: "herald-head",
+        source: head.preconfirmed ? "herald-clock" : "herald-head",
         timestamp: head.timestamp * 1_000,
       });
     },

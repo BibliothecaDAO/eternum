@@ -120,8 +120,9 @@ export class GameStreamHub {
     this.publish(gameId, { ...input, type: "tx" });
   }
 
-  public publishHead(gameId: string, block: number, timestamp: number): void {
-    this.publish(gameId, { block, timestamp, type: "head" });
+  /** A confirmed head, or with `preconfirmed` the sequencer clock read off the pre-confirmed block. */
+  public publishHead(gameId: string, block: number, timestamp: number, preconfirmed = false): void {
+    this.publish(gameId, { block, preconfirmed, timestamp, type: "head" });
   }
 
   private publish(gameId: string, body: PublishBody<PublishedMessage>): void {

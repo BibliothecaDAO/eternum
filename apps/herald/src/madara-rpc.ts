@@ -1,4 +1,4 @@
-import type { Felt, RawWorldEvent, RpcBlockWithReceipts } from "./types";
+import type { Felt, RawWorldEvent, RpcBlockWithReceipts, RpcHead } from "./types";
 
 interface JsonRpcSuccess<Result> {
   jsonrpc: "2.0";
@@ -38,6 +38,11 @@ export class MadaraRpc {
 
   public blockNumber(): Promise<number> {
     return this.request<number>("starknet_blockNumber", []);
+  }
+
+  /** The pre-confirmed block's header: its timestamp is the sequencer clock a transaction executes against. */
+  public getPreconfirmedHeader(): Promise<RpcHead> {
+    return this.request<RpcHead>("starknet_getBlockWithTxHashes", ["pre_confirmed"]);
   }
 
   public getBlockWithReceipts(block: number | "pre_confirmed"): Promise<RpcBlockWithReceipts> {
