@@ -10,6 +10,7 @@ import X from "lucide-react/dist/esm/icons/x";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AlertBannerShell } from "@/ui/shared/components/alert-banner-shell";
+import { HUD_COLUMN_TOP } from "@/ui/features/world/containers/hud-layout";
 
 import type { Headline, HeadlineType } from "./headline-types";
 
@@ -103,7 +104,7 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -16, opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-x-0 top-1/3 z-30 flex justify-center px-4"
+          className={cn("fixed inset-x-0 z-30 flex justify-center px-4", HUD_COLUMN_TOP)}
         >
           <AlertBannerShell accentEdgeClassName={theme.accentEdgeClassName}>
             <div className="relative grid grid-cols-[52px_minmax(0,1fr)_52px] items-center gap-3 px-4 py-3.5">

@@ -5,6 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RiftModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
@@ -255,6 +256,7 @@ export class StructureManager {
   private timedLabelInterval: NodeJS.Timeout | null = null; // Timer for updating battle and arrival countdowns
   private structuresWithActiveTimedLabels: Set<ID> = new Set(); // Track structures with active timed labels for O(1) lookup
   private unsubscribeAccountStore?: () => void;
+  private unsubscribePlayers?: () => void;
   private readonly unsubscribeProjection: () => void;
   private readonly recsUnsubscribes: Array<() => void> = [];
   private readonly incomingTroopArrivalsByStructure = new Map<ID, IncomingTroopArrival[]>();
@@ -363,6 +365,12 @@ export class StructureManager {
 
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       // isMine is folded into every cached record.
+      this.structureInfoCache.clear();
+      this.requestVisibleStructuresRefresh({ refreshExisting: true });
+    });
+    this.unsubscribePlayers = useWorldSlicesStore.subscribe((state, previous) => {
+      if (state.players === previous.players) return;
+      // Owner names are folded into every cached record; a profile landing after the label re-resolves them.
       this.structureInfoCache.clear();
       this.requestVisibleStructuresRefresh({ refreshExisting: true });
     });
@@ -601,7 +609,6 @@ export class StructureManager {
       category: guard?.category ?? null,
       tier: TROOP_TIERS[guard?.tier] ?? 1,
       count: divideByPrecision(Number(guard?.count ?? 0)),
-      stamina: Number(guard?.stamina?.amount ?? 0),
     });
 
     return [
@@ -769,6 +776,8 @@ export class StructureManager {
       this.unsubscribeAccountStore();
       this.unsubscribeAccountStore = undefined;
     }
+    this.unsubscribePlayers?.();
+    this.unsubscribePlayers = undefined;
 
     // Clean up camera view listener
     if (this.hexagonScene) {
