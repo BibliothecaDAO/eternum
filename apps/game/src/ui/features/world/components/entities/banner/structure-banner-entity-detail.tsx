@@ -89,6 +89,7 @@ const StructureBannerEntityDetailContent = memo(
       guardSlotsMax,
       isMine,
       hyperstructureRealmCount,
+      hyperstructurePointsPerSecond,
       isHyperstructure,
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
@@ -168,7 +169,7 @@ const StructureBannerEntityDetailContent = memo(
     const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
-    const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
+    const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
     const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
     const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
@@ -222,7 +223,8 @@ const StructureBannerEntityDetailContent = memo(
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-gold/15 pt-2">
                 <HyperstructureVPDisplay
-                  realmCount={hyperstructureRealmCount}
+                  pointsPerSecond={hyperstructurePointsPerSecond}
+                  realmCount={hyperstructureRealmCount ?? 0}
                   isOwned={isHyperstructureOwned}
                   className="w-full"
                 />

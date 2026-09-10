@@ -1,9 +1,11 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { gameEntityKey } from "@/sync/game-scope";
+import { getComponentValue } from "@dojoengine/recs";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import {
   Position,
+  configManager,
   displayPlayerName,
   getBlockTimestamp,
   getGuardsByStructure,
@@ -64,6 +66,16 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const hyperstructureRealmCount =
     structure?.base.category === StructureType.Hyperstructure
       ? getRealmCountPerHyperstructure(components).get(structureEntityId)
+      : undefined;
+  // The chain grants hyp_points_per_second × points_multiplier per second; the realm count only feeds the
+  // multiplier at claim time, so the panel reads the multiplier the chain holds.
+  const hyperstructurePointsPerSecond =
+    structure?.base.category === StructureType.Hyperstructure
+      ? configManager.getHyperstructureConfig().pointsPerCycle *
+        Number(
+          getComponentValue(components.Hyperstructure, gameEntityKey([BigInt(structureEntityId)]))?.points_multiplier ??
+            0,
+        )
       : undefined;
 
   const ownerDisplayName = structure?.owner ? displayPlayerName(structure.owner, ownerProfile.name) : BANDITS_NAME;
@@ -175,6 +187,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     isMine,
     isAlly,
     hyperstructureRealmCount,
+    hyperstructurePointsPerSecond,
     isHyperstructure,
     typeLabel,
     backgroundImage,
