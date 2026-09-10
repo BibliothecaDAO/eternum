@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import wasm from "vite-plugin-wasm";
 import { defineConfig } from "vitest/config";
+import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 
 export default defineConfig({
   plugins: [react(), wasm()],
@@ -11,6 +12,9 @@ export default defineConfig({
     // isolation. One CI retry turns those known flakes from an 11-minute job
     // rerun into a few retried seconds; locally failures stay loud.
     retry: process.env.CI ? 1 : 0,
+    // The asset and CLI checks run through vitest.assets.config.ts (`pnpm verify:assets`) where the artefacts
+    // they check are produced; the PR gate stays a behaviour suite.
+    exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
     env: {
       VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x0000000000000000000000000000000000000002",
       VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x0000000000000000000000000000000000000003",

@@ -63,6 +63,7 @@ jobs:
         run: |
           node --test apps/game/scripts/verify-client-deployment.test.mjs
           pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts
+          pnpm --dir apps/game verify:assets
 
       - name: Build client
         env:
