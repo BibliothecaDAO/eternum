@@ -51,7 +51,7 @@ const formatters: Record<string, StoryFormatter> = {
     const ownerLabel = components
       ? getActivityActor(event.ownerAddress, components)
       : shortenAddress(event.ownerAddress);
-    const realm = describeStructureDetails(event, components) ?? formatEntityRef(event.entityId);
+    const realm = describeStructureDetails(event, components) ?? "Realm";
     return {
       title: "Realm founded",
       description:
@@ -124,11 +124,11 @@ const formatters: Record<string, StoryFormatter> = {
     };
   },
   ExplorerMoveStory: (event, payload, components) => {
-    const explorerId = formatNumber(payload.explorer_id);
-    const explorerLabel = explorerId ? `Explorer ${explorerId}` : "Explorer";
+    const homeStructureId = payload.explorer_structure_id ?? event.entityId;
+    const explorerLabel = describeExplorer(payload.explorer_id, components, homeStructureId);
     const start = formatCoord(payload.start_coord);
     const end = formatCoord(payload.end_coord);
-    const structureRef = formatEntityRef(payload.explorer_structure_id ?? event.entityId);
+    const structureRef = describeStructureDetails(event, components, undefined, undefined, homeStructureId);
     const path = formatDirectionSequence(payload.directions);
     const discovery = formatExploreFind(payload.explore_find);
     // const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
@@ -148,9 +148,9 @@ const formatters: Record<string, StoryFormatter> = {
     };
   },
   ExplorerExtractRewardStory: (event, payload, components) => {
-    const explorerId = formatNumber(payload.explorer_id);
-    const explorerLabel = explorerId ? `Explorer ${explorerId}` : "Explorer";
-    const structureRef = formatEntityRef(payload.explorer_structure_id ?? event.entityId);
+    const homeStructureId = payload.explorer_structure_id ?? event.entityId;
+    const explorerLabel = describeExplorer(payload.explorer_id, components, homeStructureId);
+    const structureRef = describeStructureDetails(event, components, undefined, undefined, homeStructureId);
     const coord = formatCoord(payload.coord);
     const reward = buildRewardText(payload.reward_resource_type, payload.reward_resource_amount);
     return {
@@ -166,8 +166,8 @@ const formatters: Record<string, StoryFormatter> = {
   },
   BattleStory: (event, payload, components) => {
     const battleType = formatEnum(payload.battle_type) ?? "Battle";
-    const attackerId = formatNumber(payload.attacker_id);
-    const defenderId = formatNumber(payload.defender_id);
+    const attacker = describeEntity(payload.attacker_id, components);
+    const defender = describeEntity(payload.defender_id, components);
     const winnerId = formatNumber(payload.winner_id);
     const attackerOwner = payload.attacker_owner_address ?? payload.attacker_owner_id;
     const defenderOwner = payload.defender_owner_address ?? payload.defender_owner_id;
@@ -210,8 +210,8 @@ const formatters: Record<string, StoryFormatter> = {
     return {
       title: `${battleType} resolved`,
       description: joinPieces([
-        attackerOwnerLabel ? `Attacker [${attackerOwnerLabel}]:  Army ${attackerId}` : undefined,
-        defenderOwnerLabel ? `Defender [${defenderOwnerLabel}]:  Army ${defenderId}` : undefined,
+        attackerOwnerLabel ? `Attacker [${attackerOwnerLabel}]:  ${attacker ?? "Army"}` : undefined,
+        defenderOwnerLabel ? `Defender [${defenderOwnerLabel}]:  ${defender ?? "Army"}` : undefined,
         attackerTroop
           ? `Attacker forces: ${attackerTroop}${attackerStrength ? ` [ ${attackerStrength} ]` : ""}`
           : undefined,
@@ -231,7 +231,7 @@ const formatters: Record<string, StoryFormatter> = {
   ResourceTransferStory: (event, payload, components) => {
     const resourcesText = formatResourceList(payload.resources);
     const transferType = formatEnum(payload.transfer_type);
-    const route = formatRoute(payload.from_entity_id, payload.to_entity_id);
+    const route = formatRoute(payload.from_entity_id, payload.to_entity_id, components);
     const sender = components
       ? getActivityActor(payload.from_entity_owner_address ?? payload.from_entity_id, components)
       : formatOwnerFallback(payload.from_entity_owner_address ?? payload.from_entity_id);
@@ -301,7 +301,6 @@ const formatters: Record<string, StoryFormatter> = {
   },
   ExplorerCreateStory: (event, payload, components) => {
     const structureSummary = describeStructureDetails(event, components, undefined, undefined, payload.structure_id);
-    const explorerRef = formatEntityRef(payload.explorer_id);
     const troopCategory = formatEnum(payload.category);
     const troopTier = formatEnum(payload.tier);
     const troopDescriptor = [troopCategory, troopTier].filter(Boolean).join(" ");
@@ -312,7 +311,6 @@ const formatters: Record<string, StoryFormatter> = {
       title: "Explorer enlisted",
       description: joinPieces([
         structureSummary,
-        explorerRef ? `Explorer: ${explorerRef}` : undefined,
         troopDescriptor ? `Unit: ${troopDescriptor}` : undefined,
         amount ? `Strength: ${amount}` : undefined,
         direction ? `Spawn: ${direction}` : undefined,
@@ -320,37 +318,36 @@ const formatters: Record<string, StoryFormatter> = {
       icon: "troop",
     };
   },
-  ExplorerAddStory: (_, payload) => {
-    const explorerRef = formatEntityRef(payload.explorer_id);
+  ExplorerAddStory: (_, payload, components) => {
+    const explorerRef = describeExplorer(payload.explorer_id, components);
     const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
     const direction = formatDirection(payload.home_direction);
     return {
       title: "Explorer reinforced",
       description: joinPieces([
-        explorerRef ? `Explorer: ${explorerRef}` : undefined,
+        `Explorer: ${explorerRef}`,
         amount ? `Reinforcements: +${amount}` : undefined,
         direction ? `Home route: ${direction}` : undefined,
       ]),
       icon: "troop",
     };
   },
-  ExplorerDeleteStory: (_, payload) => {
-    const explorerRef = formatEntityRef(payload.explorer_id);
+  ExplorerDeleteStory: (_, payload, components) => {
     return {
       title: "Explorer retired",
-      description: explorerRef ? `${explorerRef} disbanded.` : "Explorer unit removed.",
+      description: `${describeExplorer(payload.explorer_id, components)} disbanded.`,
       icon: "troop",
     };
   },
-  ExplorerExplorerSwapStory: (_, payload) => {
-    const fromRef = formatEntityRef(payload.from_explorer_id);
-    const toRef = formatEntityRef(payload.to_explorer_id);
+  ExplorerExplorerSwapStory: (_, payload, components) => {
+    const fromRef = describeExplorer(payload.from_explorer_id, components);
+    const toRef = describeExplorer(payload.to_explorer_id, components);
     const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
     const direction = formatDirection(payload.to_explorer_direction);
     return {
       title: "Troops reassigned",
       description: joinPieces([
-        fromRef && toRef ? `Route: ${fromRef} → ${toRef}` : undefined,
+        `Route: ${fromRef} → ${toRef}`,
         count ? `Transferred: ${count}` : undefined,
         direction ? `Direction: ${direction}` : undefined,
       ]),
@@ -358,7 +355,7 @@ const formatters: Record<string, StoryFormatter> = {
     };
   },
   ExplorerGuardSwapStory: (event, payload, components) => {
-    const fromExplorer = formatEntityRef(payload.from_explorer_id);
+    const fromExplorer = describeExplorer(payload.from_explorer_id, components);
     const targetStructure = describeStructureDetails(event, components, undefined, undefined, payload.to_structure_id);
     const slotLabel = formatSlotLabel(payload.to_guard_slot);
     const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
@@ -366,7 +363,7 @@ const formatters: Record<string, StoryFormatter> = {
     return {
       title: "Explorer garrisons troops",
       description: joinPieces([
-        fromExplorer ? `Explorer: ${fromExplorer}` : undefined,
+        `Explorer: ${fromExplorer}`,
         targetStructure,
         slotLabel ? `Assignment: ${slotLabel}` : undefined,
         count ? `Deployed: ${count}` : undefined,
@@ -384,7 +381,7 @@ const formatters: Record<string, StoryFormatter> = {
       payload.from_structure_id,
     );
     const slotLabel = formatSlotLabel(payload.from_guard_slot);
-    const explorerRef = formatEntityRef(payload.to_explorer_id);
+    const explorerRef = describeExplorer(payload.to_explorer_id, components);
     const count = formatResourceAmount(payload.count) ?? formatNumber(payload.count ?? null) ?? undefined;
     const direction = formatDirection(payload.to_explorer_direction);
     return {
@@ -392,7 +389,7 @@ const formatters: Record<string, StoryFormatter> = {
       description: joinPieces([
         sourceStructure,
         slotLabel ? `From ${slotLabel}` : undefined,
-        explorerRef ? `To ${explorerRef}` : undefined,
+        `To ${explorerRef}`,
         count ? `Committed: ${count}` : undefined,
         direction ? `Direction: ${direction}` : undefined,
       ]),
@@ -424,7 +421,7 @@ export function buildStoryEventPresentation(
 ): StoryEventPresentation {
   const payload = event.storyPayload ?? {};
   const formatter = payload && formatters[event.storyType];
-  const base = formatter ? formatter(event, payload, components) : fallbackPresentation(event);
+  const base = formatter ? formatter(event, payload, components) : fallbackPresentation(event, components);
 
   let ownerName: string | null = null;
   if (event.ownerAddress && components) {
@@ -440,18 +437,13 @@ export function buildStoryEventPresentation(
   };
 }
 
-function fallbackPresentation(event: StoryEventSystemUpdate): StoryEventPresentation {
+function fallbackPresentation(event: StoryEventSystemUpdate, components?: ClientComponents): StoryEventPresentation {
   const type = event.storyType || "Unknown";
-  const owner = shortenAddress(event.ownerAddress);
-  const entityRef = formatEntityRef(event.entityId);
+  const owner = components ? getActivityActor(event.ownerAddress, components) : shortenAddress(event.ownerAddress);
+  const subject = describeEntity(event.entityId, components);
   return {
     title: `${type} event`,
-    description:
-      joinPieces([
-        owner ? `Owner: ${owner}` : undefined,
-        entityRef,
-        event.txHash ? `Tx: ${event.txHash}` : undefined,
-      ]) ?? "Details captured from StoryEvent stream.",
+    description: joinPieces([owner ? `Owner: ${owner}` : undefined, subject]),
     icon: "scroll",
   };
 }
@@ -485,25 +477,68 @@ function describeStructureDetails(
   const targetId = structureOverride ?? event.entityId;
 
   if (!components || targetId === null || targetId === undefined) {
-    return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
+    return describeFallbackStructure(fallbackCategory, fallbackCoord);
   }
 
-  const entityId = toBigIntSafe(targetId);
-  if (entityId === null) return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
+  const structure = readStructure(targetId, components);
+  if (!structure) return describeFallbackStructure(fallbackCategory, fallbackCoord);
 
+  const name = getStructureName(structure, getIsBlitz()).name;
+  const level = toNumber(structure.base?.level);
+  const coord = formatCoord({ x: structure.base?.coord_x, y: structure.base?.coord_y });
+
+  return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
+}
+
+type StructureRow = NonNullable<ReturnType<typeof readStructure>>;
+
+function readStructure(structureId: unknown, components?: ClientComponents) {
+  const entityId = toBigIntSafe(structureId);
+  if (!components || entityId === null) return undefined;
   try {
-    const structureEntity = gameEntityKey([entityId]);
-    const structure = getComponentValue(components.Structure, structureEntity);
-    if (!structure) return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
-
-    const name = getStructureName(structure, getIsBlitz()).name;
-    const level = toNumber(structure.base?.level);
-    const coord = formatCoord({ x: structure.base?.coord_x, y: structure.base?.coord_y });
-
-    return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
-  } catch (error) {
-    return describeFallbackStructure(event, fallbackCategory, fallbackCoord, structureOverride);
+    return getComponentValue(components.Structure, gameEntityKey([entityId]));
+  } catch {
+    return undefined;
   }
+}
+
+function readExplorer(explorerId: unknown, components?: ClientComponents) {
+  const entityId = toBigIntSafe(explorerId);
+  if (!components || entityId === null) return undefined;
+  try {
+    return getComponentValue(components.ExplorerTroops, gameEntityKey([entityId]));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The structure's name alone, undefined when RECS has no row: a story never prints a raw entity id. */
+function describeStructureName(structureId: unknown, components?: ClientComponents): string | undefined {
+  const structure = readStructure(structureId, components);
+  return structure ? structureDisplayName(structure) : undefined;
+}
+
+function structureDisplayName(structure: StructureRow): string {
+  return getStructureName(structure, getIsBlitz()).name;
+}
+
+/**
+ * The explorer as a player reads it: its home structure's name and its tier ("Stormhold T2 army"). A retired
+ * explorer has no row, so the home structure from the payload stands in; with nothing to read it is "Army".
+ */
+function describeExplorer(explorerId: unknown, components?: ClientComponents, homeStructureId?: unknown): string {
+  const explorer = readExplorer(explorerId, components);
+  const home = describeStructureName(explorer?.owner ?? homeStructureId, components);
+  const tier = formatEnum(explorer?.troops?.tier);
+  const army = tier ? `${tier} army` : "army";
+  return home ? `${home} ${army}` : "Army";
+}
+
+/** A structure by name, else an explorer by home and tier, else nothing. */
+function describeEntity(entityId: unknown, components?: ClientComponents): string | undefined {
+  const structureName = describeStructureName(entityId, components);
+  if (structureName) return structureName;
+  return readExplorer(entityId, components) ? describeExplorer(entityId, components) : undefined;
 }
 
 function formatResourceList(value: unknown): string | undefined {
@@ -761,30 +796,16 @@ function toBigIntSafe(value: unknown): bigint | null {
   return null;
 }
 
-function describeFallbackStructure(
-  event: StoryEventSystemUpdate,
-  fallbackCategory?: unknown,
-  fallbackCoord?: unknown,
-  overrideEntityId?: unknown,
-): string | undefined {
+function describeFallbackStructure(fallbackCategory?: unknown, fallbackCoord?: unknown): string | undefined {
   const categoryLabel = formatBuildingCategory(fallbackCategory);
   const coordLabel = formatCoord(fallbackCoord);
-  const entityLabel = formatEntityRef(overrideEntityId ?? event.entityId);
-  return joinPieces([categoryLabel ?? entityLabel, coordLabel ? `at ${coordLabel}` : undefined]);
+  return joinPieces([categoryLabel, coordLabel ? `at ${coordLabel}` : undefined]);
 }
 
 function formatResourceAmount(amount: unknown): string | undefined {
   const bigIntAmount = amountToBigInt(amount);
   if (bigIntAmount === null) return undefined;
   return formatAmountWithPrecision(bigIntAmount, RESOURCE_PRECISION);
-}
-
-function formatEntityRef(value: unknown): string | undefined {
-  const numeric = toNumber(value);
-  if (numeric !== null) return `Entity #${numeric}`;
-  if (typeof value === "bigint") return `Entity #${value.toString()}`;
-  if (typeof value === "string" && value.trim().length > 0) return value;
-  return undefined;
 }
 
 function formatSlotLabel(value: unknown): string | undefined {
@@ -824,68 +845,30 @@ function formatTravelTime(seconds: unknown): string | undefined {
   return `${numeric.toLocaleString()} ticks`;
 }
 
-function formatRoute(fromEntity: unknown, toEntity: unknown): string | undefined {
-  const fromRef = formatEntityRef(fromEntity);
-  const toRef = formatEntityRef(toEntity);
+function formatRoute(fromEntity: unknown, toEntity: unknown, components?: ClientComponents): string | undefined {
+  const fromRef = describeEntity(fromEntity, components);
+  const toRef = describeEntity(toEntity, components);
   if (!fromRef || !toRef) return undefined;
   return `${fromRef} → ${toRef}`;
 }
 
+/** An owner is an address (its registered name, else shortened) or an owning structure (its name). */
 function getActivityActor(owner: unknown, components: ClientComponents): string | undefined {
   if (owner === undefined || owner === null) return undefined;
 
-  if (typeof owner === "string") {
-    if (owner.startsWith("0x")) {
-      try {
-        const resolved = getAddressName(owner as unknown as ContractAddress, components);
-        return resolved ?? shortenAddress(owner) ?? owner;
-      } catch (error) {
-        return shortenAddress(owner) ?? owner;
-      }
+  if (typeof owner === "string" && owner.startsWith("0x")) {
+    try {
+      const resolved = getAddressName(owner as unknown as ContractAddress, components);
+      return resolved ?? shortenAddress(owner) ?? owner;
+    } catch (error) {
+      return shortenAddress(owner) ?? owner;
     }
-
-    const numeric = Number(owner);
-    if (!Number.isNaN(numeric)) {
-      return `Entity #${numeric}`;
-    }
-
-    return owner;
   }
 
-  if (typeof owner === "number") {
-    return `Entity #${owner}`;
-  }
-
-  if (typeof owner === "bigint") {
-    return `Entity #${owner.toString()}`;
-  }
-
-  return `${owner}`;
+  return describeStructureName(owner, components) ?? formatOwnerFallback(owner);
 }
 
 function formatOwnerFallback(owner: unknown): string | undefined {
-  if (owner === undefined || owner === null) return undefined;
-
-  if (typeof owner === "string") {
-    if (owner.startsWith("0x")) {
-      return shortenAddress(owner) ?? owner;
-    }
-
-    const numeric = Number(owner);
-    if (!Number.isNaN(numeric)) {
-      return `Entity #${numeric}`;
-    }
-
-    return owner;
-  }
-
-  if (typeof owner === "number") {
-    return `Entity #${owner}`;
-  }
-
-  if (typeof owner === "bigint") {
-    return `Entity #${owner.toString()}`;
-  }
-
-  return `${owner}`;
+  if (typeof owner === "string" && owner.startsWith("0x")) return shortenAddress(owner) ?? owner;
+  return undefined;
 }

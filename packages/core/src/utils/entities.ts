@@ -158,13 +158,7 @@ export const getAddressName = (address: ContractAddress, components: ClientCompo
 
 export const getAddressNameFromEntity = (entityId: ID, components: ClientComponents): string | undefined => {
   const address = getAddressFromStructureEntity(entityId, components);
-  if (!address) return undefined;
-
-  const internalName = getInternalAddressName(address.toString());
-  if (internalName) return internalName;
-
-  const addressName = getComponentValue(components.AddressName, getEntityIdFromKeys([BigInt(address)]));
-  return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
+  return address ? getAddressName(address, components) : undefined;
 };
 
 export const getAddressFromStructureEntity = (
