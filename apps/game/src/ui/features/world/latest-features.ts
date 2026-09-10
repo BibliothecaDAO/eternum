@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-10",
+    title: "Tap To Select, Hold To Move",
+    description:
+      "Tap the map to select or inspect. Hold a highlighted destination for half a second to issue an order. Dragging or pinching cancels the hold, and repeated taps no longer issue orders.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
+    title: "Clearer Mobile Map Controls",
+    description:
+      "Keep more of the map in view with a compact header, stable navigation tabs, and one closable panel at a time. Portrait sheets and landscape drawers make tile details and the minimap easier to use on a phone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
     title: "Usernames and portraits everywhere",
     description:
       "Your identity username and portrait now show on armies, tiles, chat, standings and the settings header, and registration writes that username to the chain.",
@@ -66,20 +80,6 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Actions bubble and calmer HUD",
     description:
       "Build, Production, Military and Transfer sit in their own Actions bubble; tile details stay visible under the feed while chat is open; feed rows are easier to read over bright terrain; building cards build directly in the world view; the deployment picker opens at zero troops.",
-    type: "improvement",
-  },
-  {
-    date: "2026-09-10",
-    title: "Touch Controls on the Map",
-    description:
-      "The map now answers to fingers. Tap an army or realm to select it, tap a reachable hex to preview the path and its cost, then tap it again (or press and hold) to give the order. Pinch to zoom the world map in and out.",
-    type: "improvement",
-  },
-  {
-    date: "2026-09-10",
-    title: "Phone-Sized HUD",
-    description:
-      "On a phone the map is no longer buried under the desktop columns. A bottom tab bar opens one sheet at a time for your empire, the minimap, the log, chat and the selected tile, and the top pills scroll sideways under the notch. Turn the phone sideways and the tabs become a rail on the right with the sheet and surfaces docked beside it, clear of the notch.",
     type: "improvement",
   },
   {

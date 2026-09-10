@@ -1,6 +1,7 @@
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { resolveLeftViewSurface } from "./left-view-policy";
 import { LeftView } from "@/types";
 import { PopoverPanel, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
@@ -36,20 +37,20 @@ LeftViewSurfaces.displayName = "LeftViewSurfaces";
 const ActiveViewSurface = () => {
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
-  const view = useUIStore((state) => state.leftNavigationView);
+  const surface = useUIStore((state) => resolveLeftViewSurface(state.leftNavigationView));
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   // Esc handling lives inside each view's popover panel, so we don't double-bind it here.
   const closeView = useCallback(() => setView(LeftView.None), [setView]);
 
-  if (view === LeftView.ConstructionView) {
+  if (surface === "build") {
     return (
       <PopoverPanel id="build" ariaLabel="Build" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
         <ConstructionModal structureEntityId={structureEntityId} />
       </PopoverPanel>
     );
   }
-  if (view === LeftView.ResourceArrivals) {
+  if (surface === "logistics") {
     return (
       <PopoverPanel
         id="logistics"
@@ -70,7 +71,7 @@ const ActiveViewSurface = () => {
       </PopoverPanel>
     );
   }
-  if (view === LeftView.MilitaryView) {
+  if (surface === "military") {
     return (
       <PopoverPanel id="military" ariaLabel="Military" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
         <MilitaryModal structureEntityId={structureEntityId} />

@@ -7,7 +7,7 @@ import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
-import { InputManager, wasTouch } from "@/three/managers/input-manager";
+import { InputManager } from "@/three/managers/input-manager";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
@@ -64,7 +64,6 @@ import {
 } from "./hexagon-scene-camera-transition";
 import { destroyHexagonSceneOwnedManagers } from "./hexagon-scene-ownership-lifecycle";
 import { LightningEffectSystem } from "./lightning-effect-system";
-import { resolveTouchTapIntent } from "./touch-order-policy";
 import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-policy";
 
 export { CameraView } from "./camera-view";
@@ -73,8 +72,6 @@ type CameraTransitionStatus = "idle" | "transitioning";
 export interface SceneSetupContext {
   isCurrent: () => boolean;
 }
-
-const hexKey = (hex: HexPosition) => `${hex.col},${hex.row}`;
 
 export abstract class HexagonScene {
   protected scene!: Scene;
@@ -133,8 +130,6 @@ export abstract class HexagonScene {
 
   // Performance tuning options (optimized defaults for better FPS)
   protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
-  /** Hex a touch tap previewed; a second tap on the same hex commits the order. */
-  private armedHexKey: string | null = null;
 
   constructor(
     protected sceneName: SceneName,
@@ -395,30 +390,10 @@ export abstract class HexagonScene {
     }
   }
 
-  private handleClick(event: MouseEvent, raycaster: Raycaster): void {
+  private handleClick(_event: MouseEvent, raycaster: Raycaster): void {
     useUIStore.getState().closeContextMenu();
     const clickedHex = this.resolveClickedHex(raycaster);
-    const intent = resolveTouchTapIntent({
-      isTouch: wasTouch(event),
-      isActionTarget: clickedHex !== null && this.isHexActionTarget(clickedHex.hexCoords),
-      armedHexKey: this.armedHexKey,
-      tappedHexKey: clickedHex ? hexKey(clickedHex.hexCoords) : null,
-    });
-
-    if (intent === "select" || clickedHex === null) {
-      this.armedHexKey = null;
-      this.onHexagonClick(clickedHex?.hexCoords ?? null);
-      return;
-    }
-
-    if (intent === "arm") {
-      this.armedHexKey = hexKey(clickedHex.hexCoords);
-      this.onHexagonMouseMove(clickedHex);
-      return;
-    }
-
-    this.armedHexKey = null;
-    this.onHexagonRightClick(event, clickedHex.hexCoords);
+    this.onHexagonClick(clickedHex?.hexCoords ?? null);
   }
 
   private resolveClickedHex(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
@@ -429,11 +404,6 @@ export abstract class HexagonScene {
     // Fallback: try direct army model raycasting when hex picking fails
     const fallbackHex = this.tryArmyRaycastFallback(raycaster);
     return fallbackHex ? { hexCoords: fallbackHex, position: getWorldPositionForHex(fallbackHex) } : null;
-  }
-
-  /** Whether a tap on this hex would issue an order for the current selection; scenes with orders override it. */
-  protected isHexActionTarget(_hex: HexPosition): boolean {
-    return false;
   }
 
   private handleRightClick(event: MouseEvent, raycaster: Raycaster): void {

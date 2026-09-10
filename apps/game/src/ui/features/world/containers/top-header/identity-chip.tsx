@@ -54,7 +54,7 @@ const useIdentityChipState = (): IdentityChipState => {
 };
 
 /** Player identity opens the leaderboard; other states keep their sign-in surface. */
-export const IdentityChip = () => {
+export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
   const state = useIdentityChipState();
   const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
   const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
@@ -64,14 +64,22 @@ export const IdentityChip = () => {
       id={popoverId}
       ariaLabel={state.kind === "player" ? "Leaderboard" : "Identity"}
       className={state.kind === "player" ? "w-auto" : undefined}
-      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} />}
+      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />}
     >
       {state.kind === "player" ? <SocialBoard focusOwnPlayer /> : <IdentityChipPanelBody state={state} />}
     </Popover>
   );
 };
 
-const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOpen: boolean }) => {
+const IdentityChipTrigger = ({
+  state,
+  isOpen,
+  compact,
+}: {
+  state: IdentityChipState;
+  isOpen: boolean;
+  compact: boolean;
+}) => {
   const togglePopover = usePopoverStore((popovers) => popovers.toggle);
 
   return (
@@ -90,12 +98,32 @@ const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOp
       className={cn(
         TOP_PILL,
         HUD_LABEL_BRIGHT,
-        "identity-chip whitespace-nowrap transition hover:bg-gold/15",
+        "identity-chip min-w-0 max-w-full whitespace-nowrap transition-colors hover:bg-gold/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold",
+        compact && "gap-1.5 px-2 font-sans text-xs normal-case tracking-normal",
         isOpen && "border-gold/60 bg-gold/15",
       )}
     >
-      <IdentityChipLabel state={state} />
+      {compact ? <CompactIdentityLabel state={state} /> : <IdentityChipLabel state={state} />}
     </button>
+  );
+};
+
+const CompactIdentityLabel = ({ state }: { state: IdentityChipState }) => {
+  if (state.kind === "player") {
+    return (
+      <>
+        <span className="min-w-0 truncate">{state.name}</span>
+        {state.standing && <span className="shrink-0 text-gold/70">#{state.standing.rank}</span>}
+      </>
+    );
+  }
+  const Icon = state.kind === "connecting" ? LoaderIcon : EyeIcon;
+  const label = state.kind === "spectating" ? "Spectating" : state.kind === "connecting" ? "Connecting" : "Sign in";
+  return (
+    <>
+      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+      <span className="truncate">{label}</span>
+    </>
   );
 };
 

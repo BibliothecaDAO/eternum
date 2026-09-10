@@ -81,7 +81,7 @@ interface PanelFrameProps {
    * details panel); minimap renders at a smaller height since it's a constant
    * reference widget rather than a content panel.
    */
-  height?: number;
+  height?: number | string;
 }
 
 interface ResourceAmountEntry {
@@ -743,7 +743,7 @@ export const LocalTilePanel = () => {
   );
 };
 
-export const MinimapPanel = () => {
+export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isMapView } = useQuery();
@@ -796,9 +796,9 @@ export const MinimapPanel = () => {
   }, []);
 
   return (
-    <PanelFrame title="Minimap" height={MINIMAP_SIZE}>
+    <PanelFrame title="Minimap" height={compact ? "clamp(180px, 35dvh, 320px)" : MINIMAP_SIZE}>
       <div className="relative flex h-full min-h-0 flex-col">
-        <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
+        <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
             tiles={tiles}
             selectedHex={focusSelectedHex}

@@ -2468,10 +2468,6 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  protected override isHexActionTarget(hex: HexPosition): boolean {
-    return getLiveWorldmapEntityActions().actionPaths.has(ActionPaths.posKey(hex, true));
-  }
-
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
     if (!canIssueOrders()) return;
     // Check if account exists before allowing actions
