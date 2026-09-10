@@ -14,11 +14,11 @@ bun run index.ts
 
 <!-- dev -->
 
-`bun --env-file=../client/.env.development index.ts`
+`bun --env-file=../apps/game/.env index.ts`
 
 <!-- prod -->
 
-`bun --env-file=../client/.env.production index.ts`
+`bun --env-file=../apps/game/.env.production index.ts`
 
 ## Batched config deployment (multicall)
 
