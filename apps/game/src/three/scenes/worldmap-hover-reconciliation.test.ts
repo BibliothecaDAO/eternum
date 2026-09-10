@@ -23,7 +23,7 @@ describe("worldmap hover reconciliation", () => {
   });
 
   it("skips a stationary hex while its hover mode is unchanged", () => {
-    const outlinePalette = resolveHoverVisualPalette({ hasSelection: false, preserveOutlineOnly: true });
+    const outlinePalette = { ...resolveHoverVisualPalette({ hasSelection: false }), visualMode: "outline" as const };
 
     expect(shouldReconcileWorldmapHover(snapshot(4, 7, outlinePalette), snapshot(4, 7, outlinePalette))).toBe(false);
   });
@@ -31,7 +31,7 @@ describe("worldmap hover reconciliation", () => {
   it("reconciles when the resolved hex, intensity, or hover mode changes", () => {
     const genericPalette = resolveHoverVisualPalette({ hasSelection: false });
     const actionPalette = resolveHoverVisualPalette({ hasSelection: true, actionType: "move" });
-    const outlinePalette = resolveHoverVisualPalette({ hasSelection: false, preserveOutlineOnly: true });
+    const outlinePalette = { ...resolveHoverVisualPalette({ hasSelection: false }), visualMode: "outline" as const };
 
     expect(shouldReconcileWorldmapHover(snapshot(4, 7), snapshot(5, 7))).toBe(true);
     expect(shouldReconcileWorldmapHover(snapshot(4, 7, genericPalette), snapshot(4, 7, actionPalette))).toBe(true);
