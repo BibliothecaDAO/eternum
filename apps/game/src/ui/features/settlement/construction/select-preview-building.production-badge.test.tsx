@@ -2,8 +2,16 @@
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+
+const routeMocks = vi.hoisted(() => ({ isMapView: false }));
+const uiMocks = vi.hoisted(() => ({
+  setPreviewBuilding: vi.fn(),
+  setLeftNavigationView: vi.fn(),
+  setSelectedBuildingHex: vi.fn(),
+}));
+const buildMocks = vi.hoisted(() => ({ buildRealmBuilding: vi.fn(async () => true) }));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -57,10 +65,11 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({
       previewBuilding: null,
-      setPreviewBuilding: vi.fn(),
+      setPreviewBuilding: uiMocks.setPreviewBuilding,
+      setLeftNavigationView: uiMocks.setLeftNavigationView,
       useSimpleCost: false,
       setUseSimpleCost: vi.fn(),
-      setSelectedBuildingHex: vi.fn(),
+      setSelectedBuildingHex: uiMocks.setSelectedBuildingHex,
       setTooltip: vi.fn(),
     }),
 }));
@@ -119,7 +128,7 @@ vi.mock("./construction-buildability", () => ({
 }));
 
 vi.mock("./realm-build-actions", () => ({
-  buildRealmBuilding: vi.fn(),
+  buildRealmBuilding: buildMocks.buildRealmBuilding,
   resolveRealmHasAvailableBuildingTile: () => true,
 }));
 
@@ -131,6 +140,7 @@ vi.mock("@bibliothecadao/react", () => ({
       systemCalls: {},
     },
   }),
+  useQuery: () => ({ isMapView: routeMocks.isMapView }),
 }));
 
 vi.mock("@dojoengine/react", () => ({
@@ -206,6 +216,11 @@ describe("SelectPreviewBuildingMenu production badge", () => {
   let root: Root | null = null;
   let container: HTMLDivElement | null = null;
 
+  beforeEach(() => {
+    routeMocks.isMapView = false;
+    vi.clearAllMocks();
+  });
+
   afterEach(() => {
     if (root) {
       act(() => root?.unmount());
@@ -227,5 +242,36 @@ describe("SelectPreviewBuildingMenu production badge", () => {
     expect(
       container.querySelector("[data-testid='production-status-badge']")?.getAttribute("data-corner-top-left"),
     ).toBe("5");
+  });
+
+  const renderMenu = async () => {
+    const { SelectPreviewBuildingMenu } = await import("./select-preview-building");
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => {
+      root?.render(<SelectPreviewBuildingMenu entityId={101} />);
+    });
+    return container.querySelector<HTMLElement>("img[alt='Farm']")!.closest("div.cursor-pointer") as HTMLElement;
+  };
+
+  it("builds straight onto a free tile from the world view and keeps the panel open", async () => {
+    routeMocks.isMapView = true;
+    const card = await renderMenu();
+    await act(async () => card.click());
+    expect(buildMocks.buildRealmBuilding).toHaveBeenCalledTimes(1);
+    expect(buildMocks.buildRealmBuilding).toHaveBeenCalledWith(
+      expect.objectContaining({ entityId: 101, target: { type: BuildingType.ResourceWheat } }),
+    );
+    expect(uiMocks.setPreviewBuilding).not.toHaveBeenCalled();
+    expect(uiMocks.setLeftNavigationView).not.toHaveBeenCalled();
+  });
+
+  it("arms the placement preview and closes the panel from the local view", async () => {
+    const card = await renderMenu();
+    await act(async () => card.click());
+    expect(buildMocks.buildRealmBuilding).not.toHaveBeenCalled();
+    expect(uiMocks.setPreviewBuilding).toHaveBeenCalledWith({ type: BuildingType.ResourceWheat });
+    expect(uiMocks.setLeftNavigationView).toHaveBeenCalledTimes(1);
   });
 });
