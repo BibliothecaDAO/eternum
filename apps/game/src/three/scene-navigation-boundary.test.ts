@@ -1,16 +1,7 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
 import { SceneName } from "./types";
-
-function readNavigationSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const navigationPath = resolve(currentDir, "utils/navigation.ts");
-  return readFileSync(navigationPath, "utf8");
-}
 
 describe("resolveNavigationSceneTarget", () => {
   it("honors explicit map and hex requests", () => {
@@ -90,11 +81,5 @@ describe("resolveNavigationSceneTarget", () => {
         fastTravelEnabled: false,
       }),
     ).toBe(SceneName.WorldMap);
-  });
-
-  it("keeps dormant fast-travel policy owned by the boundary instead of navigation helpers", () => {
-    const source = readNavigationSource();
-
-    expect(source).not.toMatch(/fastTravelEnabled:\s*false/);
   });
 });

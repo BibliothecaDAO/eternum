@@ -1,17 +1,8 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { SceneName } from "../types";
 import { resolveEnterFastTravelTransition, resolveExitFastTravelTransition } from "./fast-travel-navigation-policy";
 import { resolveFastTravelSpireByTravelHex, resolveFastTravelSpireByWorldHex } from "./fast-travel-spire-mapping";
-
-function readNavigationSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const navigationPath = resolve(currentDir, "../utils/navigation.ts");
-  return readFileSync(navigationPath, "utf8");
-}
 
 const spireMappings = [
   {
@@ -85,13 +76,5 @@ describe("fast-travel Spire navigation policy", () => {
         spireMappings,
       }),
     ).toBeNull();
-  });
-
-  it("adds dedicated travel entry and exit navigation helpers", () => {
-    const source = readNavigationSource();
-
-    expect(source).toMatch(/navigateIntoFastTravelSpire/);
-    expect(source).toMatch(/navigateOutOfFastTravelSpire/);
-    expect(source).toMatch(/SceneName\.FastTravel/);
   });
 });

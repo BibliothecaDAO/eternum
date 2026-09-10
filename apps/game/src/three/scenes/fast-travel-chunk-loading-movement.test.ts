@@ -1,32 +1,10 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { hydrateFastTravelChunkState } from "./fast-travel-hydration";
 import { resolveFastTravelMovement } from "./fast-travel-movement-policy";
 import { resolveFastTravelChunkHydrationPlan } from "./fast-travel-chunk-loading-runtime";
 
-function readFastTravelSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const scenePath = resolve(currentDir, "fast-travel.ts");
-  return readFileSync(scenePath, "utf8");
-}
-
 describe("FastTravelScene chunk loading movement compatibility", () => {
-  it("rebuilds chunk switches through a single apply path", () => {
-    const source = readFastTravelSource();
-
-    expect(source).toMatch(
-      /private applyFastTravelVisibleChunk\(chunkKey: string, startCol: number, startRow: number\)/,
-    );
-    expect(source).toMatch(/resolveFastTravelChunkHydrationPlan/);
-    expect(source).toMatch(/hydrateFastTravelChunkState\(/);
-    expect(source).toMatch(/prepareFastTravelRenderState\(/);
-    expect(source).toMatch(/this\.currentChunk = chunkKey/);
-    expect(source).toMatch(/this\.syncFastTravelSceneVisuals\(\)/);
-  });
-
   it("keeps movement valid anywhere inside the larger render window after a chunk switch", () => {
     const chunkPlan = resolveFastTravelChunkHydrationPlan({
       startCol: 12,

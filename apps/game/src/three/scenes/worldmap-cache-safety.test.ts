@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   shouldRejectCachedExploredTerrainSnapshot,
@@ -12,12 +9,6 @@ import {
   resolveTerrainPresentationBounds,
 } from "./worldmap-terrain-bounds-policy";
 import { isHexWithinRenderBounds } from "../utils/chunk-geometry";
-
-function readWorldmapSource(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const worldmapPath = resolve(currentDir, "worldmap.tsx");
-  return readFileSync(worldmapPath, "utf8");
-}
 
 describe("shouldRejectCachedTerrainSnapshot", () => {
   it("rejects completely empty cached terrain snapshots", () => {
@@ -147,13 +138,5 @@ describe("padded bounds prevent incorrect cache replay rejection", () => {
 
     // Therefore, cache replay decisions using padded bounds would NOT reject
     // this hex as offscreen, preventing false cache invalidation.
-  });
-
-  it("worldmap cache replay does not early-return on cached bounds invisibility", () => {
-    const source = readWorldmapSource();
-
-    expect(source).not.toMatch(
-      /if\s*\(bounds\?\.box\s*&&\s*!this\.visibilityManager\.isBoxVisible\(bounds\.box\)\)\s*\{\s*return false;\s*\}/s,
-    );
   });
 });

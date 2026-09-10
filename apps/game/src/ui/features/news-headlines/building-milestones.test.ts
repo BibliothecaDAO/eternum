@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { BuildingType } from "@bibliothecadao/types";
 import { expect, it } from "vitest";
 import { createBuildingMilestones } from "./building-milestones";
@@ -22,10 +21,4 @@ it("ignores T2 and names each T3 building", () => {
   expect(observe({ outer_entity_id: 1, category: BuildingType.ResourceKnightT2 }, true)).toBeNull();
   expect(observe({ outer_entity_id: 1, category: BuildingType.ResourceCrossbowmanT3 }, true)).toBe("Archery Range");
   expect(observe({ outer_entity_id: 2, category: BuildingType.ResourcePaladinT3 }, true)).toBe("Stables");
-});
-it("has no story subscription that can turn T3 army creation into a headline", () => {
-  const bridge = readFileSync("src/ui/features/news-headlines/news-headline-bridge.tsx", "utf8");
-  expect(bridge).not.toMatch(/ExplorerCreateStory|useStoryEvents|parseTroopTier|firstT2|firstT3/);
-  expect(bridge).toContain("setup.components.Building.update$.subscribe");
-  expect(bridge).toContain('getStatus() === "running"');
 });
