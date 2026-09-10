@@ -9,7 +9,11 @@ import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/sync/game-scope";
 import { toast } from "@/ui/features/event-feed/notify";
-import { createRealmProvisionRunner, type RealmProvisionCandidate } from "@/ui/realm-provision-runner";
+import {
+  createRealmProvisionRunner,
+  type RealmProvisionCandidate,
+  type RealmProvisionRetry,
+} from "@/ui/realm-provision-runner";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
@@ -377,15 +381,15 @@ const AutoProvisionRealms = () => {
       hasSigner: () => Boolean(useAccountStore.getState().account) && canIssueOrders(),
       submit: (realmIds) => submitRealmProvisions(account, realmIds),
       report: {
-        provisioned: (realm) =>
-          toast.success(`Provisioned ${realm.name}`, { location: (realm as ProvisionableRealm).location }),
-        failed: (realms, error) =>
-          toast.error(
-            `Provisioning ${realms.map((realm) => realm.name).join(", ")} failed: ${extractReadableErrorMessage(
-              error,
-              "transaction rejected",
-            )}`,
-          ),
+        provisioned: (realms) => {
+          toast.dismiss(provisionBatchNoticeId(realms));
+          realms.forEach((realm) =>
+            toast.success(`Provisioned ${realm.name}`, { location: (realm as ProvisionableRealm).location }),
+          );
+        },
+        // One row per batch: a repeat failure replaces it, a success dismisses it.
+        failed: (realms, error, retry) =>
+          toast.error(describeProvisionFailure(realms, error, retry), { id: provisionBatchNoticeId(realms) }),
       },
     });
 
@@ -396,6 +400,23 @@ const AutoProvisionRealms = () => {
   }, [account, components.StructureBuildings, isBlitzWorld]);
 
   return null;
+};
+
+const provisionBatchNoticeId = (realms: RealmProvisionCandidate[]): string =>
+  `provision:${realms.map((realm) => realm.entityId).join(",")}`;
+
+const describeProvisionFailure = (
+  realms: RealmProvisionCandidate[],
+  error: unknown,
+  retry: RealmProvisionRetry,
+): string => {
+  const names = realms.map((realm) => realm.name).join(", ");
+  const reason = extractReadableErrorMessage(error, "transaction rejected");
+  const next =
+    retry.nextAttemptInHeads === null
+      ? "giving up until reload"
+      : `retry in ${retry.nextAttemptInHeads} ${retry.nextAttemptInHeads === 1 ? "block" : "blocks"}`;
+  return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
 };
 
 const submitRealmProvisions = async (
