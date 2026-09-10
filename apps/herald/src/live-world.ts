@@ -77,6 +77,7 @@ export class LiveWorld {
   private overlayFold: WorldFold;
   private confirmedBlockValue: number;
   private preconfirmedBlockValue: number | null = null;
+  private lastClockTimestamp = 0;
   private lastCheckpointBlock: number;
   private checkpointFailure?: Error;
   private checkpointInFlight = false;
@@ -148,6 +149,18 @@ export class LiveWorld {
 
   public detach(session: GameStreamSession): void {
     this.hub.detach(session);
+  }
+
+  /**
+   * The sequencer clock: the pre-confirmed block's timestamp, published whenever it moves. Clients project
+   * production at the newest chain-written time, so this keeps a MAX within a poll of what the chain accepts.
+   */
+  public async publishChainClock(): Promise<void> {
+    if (this.knownGames.size === 0) return;
+    const header = await this.input.rpc.getPreconfirmedHeader();
+    if (header.timestamp <= this.lastClockTimestamp) return;
+    this.lastClockTimestamp = header.timestamp;
+    for (const gameId of this.knownGames) this.hub.publishHead(gameId, header.block_number, header.timestamp, true);
   }
 
   public async acceptSubscribedHead(head: RpcHead): Promise<void> {
@@ -253,6 +266,7 @@ export class LiveWorld {
     await this.rebuildOverlay();
     this.publishOverlayReverts();
     this.diffLatency.record("confirmed", performance.now() - startedAt);
+    this.lastClockTimestamp = Math.max(this.lastClockTimestamp, head.timestamp);
     for (const gameId of this.knownGames) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.checkpointIfDue();
   }

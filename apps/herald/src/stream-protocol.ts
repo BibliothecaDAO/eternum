@@ -31,7 +31,7 @@ export type HeraldStreamMessage =
       block: number | null;
       revert_reason?: string;
     })
-  | (StreamMessageBase & { type: "head"; block: number; timestamp: number });
+  | (StreamMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed: boolean });
 
 export interface ResumeRequest {
   type: "resume";

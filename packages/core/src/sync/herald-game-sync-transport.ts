@@ -52,7 +52,7 @@ type HeraldMessage =
       block: number | null;
       revert_reason?: string;
     })
-  | (HeraldMessageBase & { type: "head"; block: number; timestamp: number });
+  | (HeraldMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed?: boolean });
 
 export interface HeraldSocket {
   close(): void;
@@ -394,7 +394,11 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   private acceptHead(message: Extract<HeraldMessage, { type: "head" }>): void {
-    const head: GameSyncHead = { block: message.block, timestamp: message.timestamp };
+    const head: GameSyncHead = {
+      block: message.block,
+      preconfirmed: message.preconfirmed === true,
+      timestamp: message.timestamp,
+    };
     this.handlers?.onHead?.(head);
   }
 
