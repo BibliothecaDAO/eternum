@@ -42,12 +42,15 @@ import { isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constan
 import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import {
   FELT_CENTER,
   Position,
+  StaminaManager,
   configManager,
   divideByPrecision,
+  getBlockTimestamp,
   recordArmyMovementLatencyPhase,
 } from "@bibliothecadao/eternum";
 import type {
@@ -83,6 +86,7 @@ import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
@@ -92,7 +96,11 @@ import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
-import { buildArmyLabelDataKey, syncArmyLabelContentState } from "./army-label-content";
+import {
+  buildArmyLabelLayoutDataKey,
+  buildArmyLabelStaminaDataKey,
+  syncArmyLabelContentState,
+} from "./army-label-content";
 import {
   configureArmyLabelHoverPriority,
   initializeArmyLabelState,
@@ -105,6 +113,7 @@ import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from
 import type { CompactEntityLabelScope } from "./compact-entity-label-renderer";
 import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
+import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { createManagerVisibilityDiff } from "./manager-visibility-diff";
@@ -177,6 +186,8 @@ interface AddArmyParams {
   tier: TroopTier;
   isDaydreamsAgent: boolean;
   troopCount?: number;
+  currentStamina?: number;
+  maxStamina?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleCooldownEnd?: number;
@@ -195,6 +206,7 @@ export class ArmyManager {
   private scene: Scene;
   private armyModel: ArmyModel;
   /** Bounded render and animation resources. Authoritative existence and location live in the projection. */
+  private readonly staminaUnresolved = new Set<ID>();
   private armyPresentations: Map<ID, ArmyData> = new Map();
   private readonly worldSpatialProjection: WorldSpatialProjection;
   private scale: Vector3;
@@ -234,6 +246,7 @@ export class ArmyManager {
   private hadMovingArmiesLastFrame = false;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
+  private lastKnownArmiesTick: number = 0;
   private unsubscribeChainTime?: () => void;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
@@ -361,6 +374,7 @@ export class ArmyManager {
     });
 
     // Initialize the last known armies tick to current tick
+    this.lastKnownArmiesTick = getBlockTimestamp().currentArmiesTick;
     this.unsubscribeChainTime = useChainTimeStore.subscribe(() => this.handleChainTimeAdvanceSafely());
   }
 
@@ -489,6 +503,8 @@ export class ArmyManager {
       tier,
       isDaydreamsAgent: false,
       troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
+      currentStamina: Number(explorerTroops.troops.stamina.amount),
+      maxStamina: StaminaManager.getMaxStamina(category, tier),
       battleCooldownEnd: explorerTroops.troops.battle_cooldown_end,
     };
   }
@@ -552,6 +568,17 @@ export class ArmyManager {
   }
 
   private handleChainTimeAdvance(): void {
+    const { currentArmiesTick } = getBlockTimestamp();
+    const tickRefresh = resolveArmyStaminaTickRefresh({
+      currentTick: currentArmiesTick,
+      previousTick: this.lastKnownArmiesTick,
+    });
+    if (tickRefresh.shouldRecompute) {
+      this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      this.recomputeStaminaForAllArmies(currentArmiesTick);
+    } else if (this.staminaUnresolved.size > 0) {
+      this.staminaUnresolved.forEach((entityId) => this.refreshArmyStamina(entityId, currentArmiesTick));
+    }
     this.recomputeBattleTimersForAllArmies();
   }
 
@@ -621,6 +648,8 @@ export class ArmyManager {
       tier: TroopTier.T1,
       isDaydreamsAgent: false,
       troopCount: 10,
+      currentStamina: 10,
+      maxStamina: 100,
     });
   }
 
@@ -787,6 +816,8 @@ export class ArmyManager {
         tier,
         isDaydreamsAgent: false,
         troopCount: Math.floor(Math.random() * 100) + 10,
+        currentStamina: Math.floor(Math.random() * 100),
+        maxStamina: 100,
       });
     }
 
@@ -1674,6 +1705,8 @@ export class ArmyManager {
 
     // Variables to hold the final values
     let finalTroopCount = params.troopCount || 0;
+    let finalCurrentStamina = params.currentStamina || 0;
+    const finalMaxStamina = params.maxStamina || 0;
     let finalOwnerAddress = params.owner.address;
     let finalOwnerName = params.owner.ownerName;
     const finalGuildName = params.owner.guildName;
@@ -1736,6 +1769,12 @@ export class ArmyManager {
       owner: { address: finalOwnerAddress || 0n },
     });
 
+    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot(params.entityId);
+    finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
+    // The projection can spawn a label before RECS holds the troops; the next chain-time advance resolves it.
+    if (!initialStaminaPresentation) this.staminaUnresolved.add(params.entityId);
+    else this.staminaUnresolved.delete(params.entityId);
+
     this.armyPresentations.set(
       params.entityId,
       createArmyRecord({
@@ -1758,6 +1797,9 @@ export class ArmyManager {
         isDaydreamsAgent: params.isDaydreamsAgent,
         // Enhanced data
         troopCount: finalTroopCount,
+        currentStamina: finalCurrentStamina,
+        maxStamina: finalMaxStamina,
+        displayStaminaRatio: initialStaminaPresentation?.displayRatio,
         attackedFromDegrees: attackedFromDegrees ?? undefined,
         attackedTowardDegrees: attackTowardDegrees ?? undefined,
         battleCooldownEnd: finalBattleCooldownEnd,
@@ -2995,6 +3037,71 @@ ${
     `);
   }
 
+  private resolveLiveExplorerTroops(entityId: ID) {
+    if (!this.components) {
+      return null;
+    }
+
+    return getComponentValue(this.components.ExplorerTroops, gameEntityKey([BigInt(entityId)]))?.troops ?? null;
+  }
+
+  private resolveArmyStaminaSnapshot(
+    entityId: ID,
+    currentArmiesTick = getBlockTimestamp().currentArmiesTick,
+  ): { current: number; max: number; displayRatio: number } | null {
+    if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
+      return null;
+    }
+
+    const staminaSnapshot = getExplorerStaminaSnapshot({
+      entityId,
+      currentArmiesTick,
+      liveTroops: this.resolveLiveExplorerTroops(entityId),
+    });
+    if (!staminaSnapshot) {
+      return null;
+    }
+
+    // staminaSnapshot.current is already the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
+    return {
+      current: staminaSnapshot.current,
+      max: staminaSnapshot.max,
+      displayRatio: staminaSnapshot.max > 0 ? staminaSnapshot.current / staminaSnapshot.max : 0,
+    };
+  }
+
+  /**
+   * Recompute stamina for all armies and update visible labels when armies tick changes
+   */
+  private recomputeStaminaForAllArmies(currentArmiesTick: number): void {
+    this.armyPresentations.forEach((_army, entityId) => this.refreshArmyStamina(entityId, currentArmiesTick));
+  }
+
+  /** Reads the tick-aware stamina for one army into its record and label; a miss leaves it for the next advance. */
+  private refreshArmyStamina(entityId: ID, currentArmiesTick: number): void {
+    const army = this.armyPresentations.get(entityId);
+    if (!army) {
+      this.staminaUnresolved.delete(entityId);
+      return;
+    }
+    try {
+      const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId, currentArmiesTick);
+      if (!staminaSnapshot) {
+        this.staminaUnresolved.add(entityId);
+        return;
+      }
+      this.staminaUnresolved.delete(entityId);
+      army.currentStamina = staminaSnapshot.current;
+      army.maxStamina = staminaSnapshot.max;
+      army.displayStaminaRatio = staminaSnapshot.displayRatio;
+      const label = this.entityIdLabels.get(entityId);
+      if (label) this.updateArmyLabelData(entityId, army, label);
+    } catch {
+      // One bad entity must not block the others.
+    }
+  }
+
   /**
    * Recompute battle timers for all armies and update visible labels every second
    */
@@ -3022,12 +3129,27 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
+    const layoutDataKey = `${buildArmyLabelLayoutDataKey(army)}-${army.color}`;
+    const staminaDataKey = buildArmyLabelStaminaDataKey(army);
+
     syncArmyLabelContentState({
       label: existingLabel,
-      dataKey: `${buildArmyLabelDataKey(army)}-${army.color}`,
+      layoutDataKey,
+      staminaDataKey,
       labelsAttachedToScene: this.labelsGroup.parent !== null,
       renderLabel: () => updateArmyLabel(existingLabel.element, army, this.currentCameraView),
+      renderStamina: () => this.updateArmyLabelStamina(existingLabel.element, army),
     });
+  }
+
+  private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
+    const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
+    if (!staminaBar) {
+      updateArmyLabel(labelElement, army, this.currentCameraView);
+      return;
+    }
+
+    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina);
   }
 
   /**
@@ -3069,6 +3191,11 @@ ${
     }
 
     army.troopCount = troopCount;
+
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot(entityId);
+    army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+    army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+    army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
     const ownerStructureId = explorerTroops.owner === 0 ? null : explorerTroops.owner;
     const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({

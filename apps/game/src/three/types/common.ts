@@ -59,6 +59,9 @@ export interface ArmyData {
   attachments?: CosmeticAttachmentTemplate[];
   // Live presentation facts derived from RECS
   troopCount: number;
+  currentStamina: number;
+  maxStamina: number;
+  displayStaminaRatio?: number;
   attackedFromDegrees?: number; // Degrees from which this army has been attacked
   attackedTowardDegrees?: number; // Degrees in which this army has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends

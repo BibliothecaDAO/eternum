@@ -15,7 +15,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveMovementStamina, type MovementStaminaResolution } from "@/lib/army-stamina/movement-affordability";
-import { getExplorerStaminaSnapshot } from "@/lib/army-stamina/source-resolution";
 import { resolveStoredWorldmapCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
@@ -3227,13 +3226,8 @@ export default class WorldmapScene extends WarpTravel {
   private canArmyAct(entityId: ID): boolean {
     const army = this.armyManager.getArmy(entityId);
     if (!army) return false;
-    const stamina = getExplorerStaminaSnapshot({
-      entityId,
-      currentArmiesTick: getBlockTimestamp().currentArmiesTick,
-      liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(entityId),
-    });
     const minStaminaCost = configManager.getMinTravelStaminaCost();
-    if (Math.floor(stamina?.current ?? 0) < Math.floor(minStaminaCost)) return false;
+    if (Math.floor(army.currentStamina ?? 0) < Math.floor(minStaminaCost)) return false;
     if ((army.battleTimerLeft ?? 0) > 0) return false;
     return true;
   }

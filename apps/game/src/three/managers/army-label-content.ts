@@ -4,33 +4,67 @@ interface LabelWithRenderState {
   visible: boolean;
   userData: {
     lastDataKey?: string | null;
+    lastLayoutDataKey?: string | null;
+    lastStaminaDataKey?: string | null;
   };
 }
 
 export type ArmyLabelContentFields = Pick<
   ArmyData,
-  "troopCount" | "battleTimerLeft" | "isMine" | "owner" | "attackedFromDegrees" | "attackedTowardDegrees"
+  | "troopCount"
+  | "currentStamina"
+  | "maxStamina"
+  | "displayStaminaRatio"
+  | "battleTimerLeft"
+  | "isMine"
+  | "owner"
+  | "attackedFromDegrees"
+  | "attackedTowardDegrees"
 >;
 
-export function buildArmyLabelDataKey(army: ArmyLabelContentFields): string {
+export function buildArmyLabelLayoutDataKey(army: ArmyLabelContentFields): string {
   return `${army.troopCount}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
 }
 
-/** Rerenders a visible label only when its data key moved; a hidden label forgets its key so it rerenders on return. */
+export function buildArmyLabelStaminaDataKey(army: ArmyLabelContentFields): string {
+  return `${army.currentStamina}-${army.maxStamina}`;
+}
+
 export function syncArmyLabelContentState(input: {
   label: LabelWithRenderState;
-  dataKey: string;
+  layoutDataKey: string;
+  staminaDataKey: string;
   labelsAttachedToScene: boolean;
   renderLabel: () => void;
+  renderStamina: () => void;
 }): void {
   const isVisible = input.labelsAttachedToScene && input.label.visible === true;
 
-  if (!isVisible) {
-    input.label.userData.lastDataKey = null;
+  if (
+    isVisible &&
+    input.label.userData.lastLayoutDataKey === input.layoutDataKey &&
+    input.label.userData.lastStaminaDataKey === input.staminaDataKey
+  ) {
     return;
   }
-  if (input.label.userData.lastDataKey === input.dataKey) return;
 
-  input.label.userData.lastDataKey = input.dataKey;
+  if (!isVisible) {
+    input.label.userData.lastDataKey = null;
+    input.label.userData.lastLayoutDataKey = null;
+    input.label.userData.lastStaminaDataKey = null;
+    return;
+  }
+
+  const layoutChanged = input.label.userData.lastLayoutDataKey !== input.layoutDataKey;
+
+  input.label.userData.lastLayoutDataKey = input.layoutDataKey;
+  input.label.userData.lastStaminaDataKey = input.staminaDataKey;
+  input.label.userData.lastDataKey = `${input.layoutDataKey}|${input.staminaDataKey}`;
+
+  if (!layoutChanged) {
+    input.renderStamina();
+    return;
+  }
+
   input.renderLabel();
 }
