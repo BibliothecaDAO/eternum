@@ -2,10 +2,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
-it("renders the actions once, in their own bubble between the structure list and the token panel", () => {
+it("renders the actions once, in their own bubble below the token panel", () => {
   expect(existsSync("src/ui/features/world/components/actions/structure-actions-row.tsx")).toBe(false);
   const sidebar = readFileSync("src/ui/features/world/containers/left-command-sidebar.tsx", "utf8");
-  expect(sidebar).toContain("<StructureListColumn />\n      <StructureActionsPanel />\n      <EmpireCockpit />");
+  expect(sidebar).toContain("<StructureListColumn />\n      <EmpireCockpit />\n      <StructureActionsPanel />");
   for (const path of [
     "src/ui/features/world/containers/left-facets/empire-cockpit.tsx",
     "src/ui/features/world/components/entities/banner/structure-banner-entity-detail.tsx",

@@ -30,8 +30,8 @@ export const LeftCommandSidebar = memo(() => {
       )}
     >
       <StructureListColumn />
-      <StructureActionsPanel />
       <EmpireCockpit />
+      <StructureActionsPanel />
     </div>
   );
 });
