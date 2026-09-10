@@ -1,28 +1,13 @@
 import { SceneName } from "@/three/types";
 import type { ReactNode } from "react";
 
-export type ContextMenuLayout = "auto" | "list" | "radial";
-
-export interface ContextMenuIcon {
-  radial: ReactNode;
-  list?: ReactNode;
-}
-
-export interface ContextMenuRadialOptions {
-  radius?: number;
-  innerRadius?: number;
-  selectRadius?: number;
-  gapDegrees?: number;
-  maxActions?: number;
-}
-
 export interface ContextMenuAction {
   id: string;
   label: string;
   disabled?: boolean;
   hint?: string;
   icon?: string;
-  iconComponent?: ContextMenuIcon;
+  iconComponent?: ReactNode;
   onSelect: () => void;
   children?: ContextMenuAction[];
   childTitle?: string;
@@ -43,7 +28,5 @@ export interface ContextMenuState {
   position: { x: number; y: number };
   scene: SceneName;
   actions: ContextMenuAction[];
-  layout?: ContextMenuLayout;
-  radialOptions?: ContextMenuRadialOptions;
   metadata?: ContextMenuMetadata;
 }

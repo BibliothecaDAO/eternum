@@ -12,6 +12,7 @@ import { ExplorationAutomationManager } from "../features/infrastructure/automat
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
+import { ContextMenu } from "../features/world/components/context-menu/context-menu";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
 import { CompactHud } from "../features/world/containers/compact-hud";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
@@ -114,6 +115,7 @@ const HUD = () => {
   return (
     <>
       <TopHeader />
+      <ContextMenu />
       <LeftViewSurfaces />
       {lane ? (
         <CompactHud lane={lane} />

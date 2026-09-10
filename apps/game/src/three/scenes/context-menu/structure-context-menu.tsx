@@ -3,8 +3,9 @@ import { playResourceSound } from "@/three/sound/utils";
 import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView } from "@/types";
 import { SetupResult } from "@bibliothecadao/dojo";
-import { Position } from "@bibliothecadao/eternum";
+import { gameEntityKey, getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
 import { SceneName } from "../../types/common";
 import { navigateToStructure } from "../../utils/navigation";
 import { createConstructionMenu } from "./structure-construction-menu";
@@ -17,6 +18,11 @@ interface OpenStructureContextMenuParams {
   hexCoords: HexPosition;
   components: Components;
 }
+
+const resolveStructureTitle = (structure: HexEntityInfo, components: Components) => {
+  const structureRow = getComponentValue(components.Structure, gameEntityKey([BigInt(structure.id)]));
+  return structureRow ? getStructureName(structureRow, getIsBlitz()).name : `Structure ${structure.id}`;
+};
 
 export const openStructureContextMenu = ({
   event,
@@ -69,7 +75,7 @@ export const openStructureContextMenu = ({
     }
   };
 
-  const { constructionAction, radialOptions } = createConstructionMenu({
+  const constructionAction = createConstructionMenu({
     structure,
     components,
     simpleCostEnabled: uiStore.useSimpleCost,
@@ -78,12 +84,10 @@ export const openStructureContextMenu = ({
 
   uiStore.openContextMenu({
     id: `structure-${idString}`,
-    title: `Realm ${idString}`,
+    title: resolveStructureTitle(structure, components),
     subtitle: `(${hexCoords.col}, ${hexCoords.row})`,
     position: { x: event.clientX, y: event.clientY },
     scene: SceneName.WorldMap,
-    layout: "radial",
-    radialOptions,
     metadata: {
       entityId: structure.id,
       entityType: "structure",
