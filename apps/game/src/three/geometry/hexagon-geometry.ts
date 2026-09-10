@@ -1,5 +1,4 @@
-import { HEX_SIZE } from "@/three/constants";
-import { EdgesGeometry, LineBasicMaterial, LineSegments, Shape, ShapeGeometry, Vector2 } from "three";
+import { Path, Shape, Vector2 } from "three";
 
 export const createHexagonShape = (radius: number) => {
   const shape = new Shape();
@@ -17,6 +16,13 @@ export const createHexagonShape = (radius: number) => {
   shape.closePath();
 
   return shape;
+};
+
+/** A hexagon band: the outer hexagon with the inner one cut out. */
+export const createHexagonRingShape = (outerRadius: number, innerRadius: number) => {
+  const ring = createHexagonShape(outerRadius);
+  ring.holes.push(new Path(createHexagonShape(innerRadius).getPoints().slice().reverse()));
+  return ring;
 };
 
 export const createRoundedHexagonShape = (radius: number, cornerRadius: number = radius * 0.15) => {
@@ -156,14 +162,3 @@ function getOneRoundedCorner(
 
   return points;
 }
-
-const edgesGeometry = new EdgesGeometry(new ShapeGeometry(createHexagonShape(HEX_SIZE)));
-const edgesMaterial = new LineBasicMaterial({
-  color: "black",
-  linewidth: 1,
-  transparent: true,
-  opacity: 0.15,
-});
-
-const hexagonEdgeMesh = new LineSegments(edgesGeometry, edgesMaterial);
-hexagonEdgeMesh.rotateX(Math.PI / 2);

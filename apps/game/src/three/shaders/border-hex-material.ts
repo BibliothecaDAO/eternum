@@ -1,9 +1,10 @@
 import * as THREE from "three";
 
-export const interactiveHexMaterial = new THREE.MeshStandardMaterial({
-  color: "green",
-  vertexColors: false,
+/** The buildable-hex band: a quiet parchment line that reads on every biome and never writes depth. */
+export const interactiveHexMaterial = new THREE.MeshBasicMaterial({
+  color: 0xf6f1e5,
   transparent: true,
-  opacity: 0.3, // Start fully transparent
-  wireframe: false,
+  opacity: 0.45,
+  depthWrite: false,
+  toneMapped: false,
 });

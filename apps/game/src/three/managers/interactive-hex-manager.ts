@@ -13,7 +13,8 @@ import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 
-const INTERACTIVE_HEX_Y = 0.1;
+/** The band floats just above the sampled ground so relief cannot swallow it. */
+const INTERACTIVE_HEX_SURFACE_OFFSET = 0.03;
 const INTERACTIVE_PICK_Y = 0;
 const RAY_PARALLEL_EPSILON = 1e-6;
 
@@ -29,7 +30,7 @@ export class InteractiveHexManager {
   private instanceMesh: THREE.InstancedMesh | null = null;
   private hoverAura: Aura;
   private hoverHexManager: HoverHexManager;
-  private readonly instanceMaterial: THREE.MeshStandardMaterial;
+  private readonly instanceMaterial: THREE.MeshBasicMaterial;
   private position = new THREE.Vector3();
   private pickIntersection = new THREE.Vector3();
   private dummy = new THREE.Object3D();
@@ -55,7 +56,10 @@ export class InteractiveHexManager {
   private visibleHexCoordsCapacity: number = 0;
   private surfaceVisible = true;
 
-  constructor(scene: THREE.Scene, terrain: TerrainSurface = FLAT_TERRAIN_SURFACE) {
+  constructor(
+    scene: THREE.Scene,
+    private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
+  ) {
     this.scene = scene;
     this.hoverAura = new Aura();
     this.hoverHexManager = new HoverHexManager(scene, terrain);
@@ -381,7 +385,7 @@ export class InteractiveHexManager {
         const col = this.hexCoordsCache[i * 2];
         const row = this.hexCoordsCache[i * 2 + 1];
         getWorldPositionForHexCoordsInto(col, row, this.position);
-        this.dummy.position.set(this.position.x, INTERACTIVE_HEX_Y, this.position.z);
+        this.dummy.position.set(this.position.x, this.surfaceY(this.position.x, this.position.z), this.position.z);
         this.dummy.rotation.x = -Math.PI / 2;
         this.dummy.updateMatrix();
         mesh.setMatrixAt(i, this.dummy.matrix);
@@ -392,7 +396,7 @@ export class InteractiveHexManager {
       this.allHexes.forEach((hexString) => {
         const [col, row] = hexString.split(",").map(Number);
         const position = getWorldPositionForHex({ col, row });
-        this.dummy.position.set(position.x, INTERACTIVE_HEX_Y, position.z);
+        this.dummy.position.set(position.x, this.surfaceY(position.x, position.z), position.z);
         this.dummy.rotation.x = -Math.PI / 2;
         this.dummy.updateMatrix();
         mesh.setMatrixAt(index, this.dummy.matrix);
@@ -439,7 +443,7 @@ export class InteractiveHexManager {
       const col = this.visibleHexCoordsCache[i * 2];
       const row = this.visibleHexCoordsCache[i * 2 + 1];
       getWorldPositionForHexCoordsInto(col, row, this.position);
-      this.dummy.position.set(this.position.x, INTERACTIVE_HEX_Y, this.position.z);
+      this.dummy.position.set(this.position.x, this.surfaceY(this.position.x, this.position.z), this.position.z);
       this.dummy.rotation.x = -Math.PI / 2;
       this.dummy.updateMatrix();
       mesh.setMatrixAt(i, this.dummy.matrix);
@@ -499,6 +503,10 @@ export class InteractiveHexManager {
     return this.resolveHexFromPoint(hit.point);
   }
 
+  private surfaceY(x: number, z: number): number {
+    return this.terrain.sampleSurface(x, z).height + INTERACTIVE_HEX_SURFACE_OFFSET;
+  }
+
   private resolveHexFromPoint(point: THREE.Vector3) {
     const hexCoords = getHexForWorldPosition(point);
     if (!this.isHexInteractive(hexCoords)) {
@@ -506,7 +514,7 @@ export class InteractiveHexManager {
     }
 
     getWorldPositionForHexCoordsInto(hexCoords.col, hexCoords.row, this.position);
-    this.position.y = INTERACTIVE_HEX_Y;
+    this.position.y = this.surfaceY(this.position.x, this.position.z);
 
     return { hexCoords, position: this.position };
   }

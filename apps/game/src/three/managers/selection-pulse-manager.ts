@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { HEX_SIZE } from "@/three/constants";
-import { createHexagonShape } from "@/three/geometry/hexagon-geometry";
+import { createHexagonRingShape } from "@/three/geometry/hexagon-geometry";
 import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { type PulseVisualPalette, resolveSelectionPulsePalette } from "./worldmap-interaction-palette";
 
@@ -55,11 +55,7 @@ export class SelectionPulseManager {
   }
 
   private createRingGeometry(outerRadius: number, innerRadius: number): THREE.ShapeGeometry {
-    const outer = createHexagonShape(outerRadius);
-    const innerPoints = createHexagonShape(innerRadius).getPoints().slice().reverse();
-
-    outer.holes.push(new THREE.Path(innerPoints));
-    return new THREE.ShapeGeometry(outer);
+    return new THREE.ShapeGeometry(createHexagonRingShape(outerRadius, innerRadius));
   }
 
   private shouldAnimate(): boolean {
