@@ -1,4 +1,4 @@
-import { BufferGeometry, Group, Mesh, MeshStandardMaterial, Object3D, Texture } from "three";
+import { Float32BufferAttribute, BufferGeometry, Group, Mesh, MeshStandardMaterial, Object3D, Texture } from "three";
 
 export type ShipArmyClass = "knight" | "crossbowman" | "paladin";
 export type ShipTier = 1 | 2 | 3;
@@ -96,10 +96,10 @@ function prepareShipMeshes(hull: Group) {
     if (!uv || uv.count !== node.geometry.attributes.position.count)
       throw new Error(`Fleet cloth ${node.name} has no valid UVs`);
     copies.forEach((material) => (kind === "sail" ? sails : pennants).add(material));
+    const attributes = prepareClothAttributes(node.geometry);
     cloth.push({
       geometry: node.geometry,
-      rest: new Float32Array(node.geometry.attributes.position.array),
-      uv: new Float32Array(uv.array),
+      ...attributes,
       pennant: kind === "pennant",
       mast: kind === "sail" ? readClothMast(node) : null,
     });
@@ -107,6 +107,20 @@ function prepareShipMeshes(hull: Group) {
     if (node.geometry.boundingSphere) node.geometry.boundingSphere.radius += 0.8;
   });
   return { materials, sails, pennants, cloth, triangles };
+}
+
+/** Asset compression can interleave attributes; cloth needs independent writable positions. */
+function prepareClothAttributes(geometry: BufferGeometry): Pick<ClothMesh, "rest" | "uv"> {
+  const position = geometry.attributes.position;
+  const coordinates = geometry.attributes.uv;
+  const rest = new Float32Array(position.count * 3);
+  const uv = new Float32Array(position.count * 2);
+  for (let index = 0; index < position.count; index++) {
+    rest.set([position.getX(index), position.getY(index), position.getZ(index)], index * 3);
+    uv.set([coordinates.getX(index), coordinates.getY(index)], index * 2);
+  }
+  geometry.setAttribute("position", new Float32BufferAttribute(rest.slice(), 3));
+  return { rest, uv };
 }
 
 function readClothMast(node: Mesh): NonNullable<ClothMesh["mast"]> {

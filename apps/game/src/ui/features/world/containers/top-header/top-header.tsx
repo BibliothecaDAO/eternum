@@ -1,4 +1,5 @@
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { HudHeaderLayout } from "./hud-header-layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -168,7 +169,8 @@ function MapViewControls({
 }) {
   const viewButton = (active: boolean) =>
     cn(
-      "min-h-11 min-w-11 rounded-md px-3 font-sans text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
+      HUD_LABEL_BRIGHT,
+      "min-h-11 min-w-11 rounded-md px-3 font-sans transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
       active ? "bg-gold/20 text-gold" : "text-gold/65",
     );
   return (

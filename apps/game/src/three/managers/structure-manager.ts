@@ -1,3 +1,7 @@
+import { RewardTileModel } from "../rewards/reward-tile-model";
+import { resolveRewardNightAmount } from "../rewards/reward-lighting";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { RiftModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -117,10 +121,12 @@ import {
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
 
-// Fixed buffer capacity per structure model — buffers never grow (InstancedModel
+type StructureModel = InstancedModel | RewardTileModel;
+
+// Fixed buffer capacity per structure model — buffers never grow (StructureModel
 // refuses overflow loudly), so this is sized to the worst-case count of one
 // structure type in a render area, not a growth seed.
-// Fixed per model (buffers never grow, see InstancedModel). Sized from the game cap: 96 players times the
+// Fixed per model (buffers never grow, see StructureModel). Sized from the game cap: 96 players times the
 // largest per-player structure class (six Eternum villages) plus the reserved sites, matching the army capacity.
 const STRUCTURE_INSTANCE_CAPACITY = 1024;
 const WONDER_MODEL_INDEX = 4;
@@ -158,7 +164,7 @@ interface VisibleStructurePassSnapshot {
 interface StructureInstanceBinding {
   entityIdsByInstance: Map<number, ID>;
   instanceIndex: number;
-  model: InstancedModel;
+  model: StructureModel;
 }
 
 const isBoundStructureInstance = (binding: StructureInstanceBinding | undefined): binding is StructureInstanceBinding =>
@@ -196,7 +202,7 @@ interface StructureManagerMetrics {
 /** Scratch state shared by every slice of one visible pass. */
 interface VisibleStructurePassScratch {
   attachmentRetain: Set<number>;
-  dirtyModels: Set<InstancedModel>;
+  dirtyModels: Set<StructureModel>;
 }
 
 // A running battle cooldown (troop_guards.*.battle_cooldown_end in RECS) is the structure's
@@ -216,22 +222,22 @@ function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSp
 
 export class StructureManager {
   private scene: Scene;
-  private structureModels: Map<StructureType, Map<number, InstancedModel>> = new Map();
-  private structureModelPromises: Map<string, Promise<InstancedModel>> = new Map();
+  private structureModels: Map<StructureType, Map<number, StructureModel>> = new Map();
+  private structureModelPromises: Map<string, Promise<StructureModel>> = new Map();
   private structureModelPaths: Record<string, string[]>;
   // Cosmetic skin models keyed by cosmeticId
-  private cosmeticStructureModels: Map<string, InstancedModel[]> = new Map();
-  private cosmeticStructureModelPromises: Map<string, Promise<InstancedModel[]>> = new Map();
+  private cosmeticStructureModels: Map<string, StructureModel[]> = new Map();
+  private cosmeticStructureModelPromises: Map<string, Promise<StructureModel[]>> = new Map();
   private isUpdatingVisibleStructures = false;
   private readonly runVisibleStructuresUpdate: () => Promise<void>;
   private entityIdMaps: Map<StructureType, Map<number, ID>> = new Map();
   // Cosmetic entity ID maps keyed by cosmeticId
   private cosmeticEntityIdMaps: Map<string, Map<number, ID>> = new Map();
   private structureInstanceBindings: Map<ID, StructureInstanceBinding[]> = new Map();
-  private structureInstanceSlots: Map<InstancedModel, Array<ID | undefined>> = new Map();
-  private structureInstanceFreeSlots: Map<InstancedModel, number> = new Map();
+  private structureInstanceSlots: Map<StructureModel, Array<ID | undefined>> = new Map();
+  private structureInstanceFreeSlots: Map<StructureModel, number> = new Map();
   private hasWarnedStructureCapacityOverflow = false;
-  private structureModelDrawCounts: Map<InstancedModel, number> = new Map();
+  private structureModelDrawCounts: Map<StructureModel, number> = new Map();
   private wonderEntityIdMaps: Map<number, ID> = new Map();
   private entityIdLabels: Map<ID, CSS2DObject> = new Map();
   private labelPool = new LabelPool();
@@ -677,7 +683,7 @@ export class StructureManager {
     return hidden;
   }
 
-  private forEachStructureModel(callback: (model: InstancedModel) => void): void {
+  private forEachStructureModel(callback: (model: StructureModel) => void): void {
     this.structureModels.forEach((models) => models.forEach(callback));
     this.cosmeticStructureModels.forEach((models) => models.forEach(callback));
   }
@@ -850,7 +856,7 @@ export class StructureManager {
     return prewarmPromise;
   }
 
-  private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<InstancedModel> {
+  private async ensureStructureModel(structureType: StructureType, modelIndex: number): Promise<StructureModel> {
     const cached = this.structureModels.get(structureType)?.get(modelIndex);
     if (cached) return cached;
 
@@ -864,7 +870,7 @@ export class StructureManager {
     const pending = this.loadStructureModel(structureType, modelPath)
       .then(async (model) => {
         await this.compileModelPipelines([model]);
-        const variants = this.structureModels.get(structureType) ?? new Map<number, InstancedModel>();
+        const variants = this.structureModels.get(structureType) ?? new Map<number, StructureModel>();
         variants.set(modelIndex, model);
         this.structureModels.set(structureType, variants);
         this.attachStructureModelsToScene([model]);
@@ -877,18 +883,21 @@ export class StructureManager {
     return pending;
   }
 
-  private loadStructureModel(structureType: StructureType, modelPath: string): Promise<InstancedModel> {
+  private loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
     return new Promise((resolve, reject) => {
       gltfLoader.load(
         modelPath,
         (gltf) => {
           try {
-            const instancedModel = new InstancedModel(
-              gltf,
-              STRUCTURE_INSTANCE_CAPACITY,
-              false,
-              modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
-            );
+            const instancedModel =
+              modelPath === RiftModelPath
+                ? new RewardTileModel(gltf, STRUCTURE_INSTANCE_CAPACITY)
+                : new InstancedModel(
+                    gltf,
+                    STRUCTURE_INSTANCE_CAPACITY,
+                    false,
+                    modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
+                  );
             resolve(instancedModel);
           } catch (error) {
             reject(error);
@@ -908,7 +917,7 @@ export class StructureManager {
    * Ensures cosmetic structure models are loaded for a given cosmeticId.
    * Returns the loaded models or empty array if loading fails.
    */
-  private async ensureCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<InstancedModel[]> {
+  private async ensureCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<StructureModel[]> {
     if (this.cosmeticStructureModels.has(cosmeticId)) {
       return this.cosmeticStructureModels.get(cosmeticId)!;
     }
@@ -919,7 +928,7 @@ export class StructureManager {
     }
 
     if (assetPaths.length === 0) {
-      const empty: InstancedModel[] = [];
+      const empty: StructureModel[] = [];
       this.cosmeticStructureModels.set(cosmeticId, empty);
       return empty;
     }
@@ -933,7 +942,7 @@ export class StructureManager {
       })
       .catch((error) => {
         console.warn(`[StructureManager] Failed to load cosmetic models for ${cosmeticId}:`, error);
-        const empty: InstancedModel[] = [];
+        const empty: StructureModel[] = [];
         this.cosmeticStructureModels.set(cosmeticId, empty);
         return empty;
       })
@@ -946,7 +955,7 @@ export class StructureManager {
   }
 
   // Pipelines compile before the group joins the scene, so the first frame that shows a chunk draws terrain only.
-  private async compileModelPipelines(models: InstancedModel[]): Promise<void> {
+  private async compileModelPipelines(models: StructureModel[]): Promise<void> {
     try {
       for (const model of models) {
         this.requireActiveModelOwner();
@@ -964,7 +973,7 @@ export class StructureManager {
   }
 
   // Models load after the band may have hidden the layer, so a freshly loaded group takes the ladder's state.
-  private attachStructureModelsToScene(models: InstancedModel[]): void {
+  private attachStructureModelsToScene(models: StructureModel[]): void {
     const visible = this.contentLadder.structureModels;
     models.forEach((model) => {
       model.group.visible = visible;
@@ -976,7 +985,7 @@ export class StructureManager {
     this.metrics.hiddenModelGroups = this.countHiddenModelGroups();
   }
 
-  private async loadCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<InstancedModel[]> {
+  private async loadCosmeticStructureModels(cosmeticId: string, assetPaths: string[]): Promise<StructureModel[]> {
     const gltfs = await resolveAllSkinGltfs({
       cosmeticId,
       assetPaths,
@@ -1228,7 +1237,7 @@ export class StructureManager {
     return !structure.usesFallbackCosmeticSkin;
   }
 
-  private getModelForStructure(structure: StructureInfo): InstancedModel | undefined {
+  private getModelForStructure(structure: StructureInfo): StructureModel | undefined {
     if (this.hasCosmeticSkin(structure)) {
       return this.cosmeticStructureModels.get(structure.cosmeticId ?? "")?.[0];
     }
@@ -1465,7 +1474,7 @@ export class StructureManager {
         attachmentRetain.add(entityId);
       }
     });
-    return { attachmentRetain, dirtyModels: new Set<InstancedModel>() };
+    return { attachmentRetain, dirtyModels: new Set<StructureModel>() };
   }
 
   /** Each slice's structures become drawable at its end; only the world bounds wait for the whole pass. */
@@ -1494,7 +1503,7 @@ export class StructureManager {
   private addVisibleStructureInstance(
     structure: StructureInfo,
     attachmentRetain: Set<number>,
-    dirtyModels: Set<InstancedModel>,
+    dirtyModels: Set<StructureModel>,
   ): void {
     const rotationY = this.resolveVisibleStructureRotationY(structure);
     this.syncVisibleStructurePresentation(structure, rotationY, attachmentRetain);
@@ -1509,7 +1518,7 @@ export class StructureManager {
 
   private addVisibleBaseStructureInstances(
     structure: StructureInfo,
-    dirtyModels: Set<InstancedModel>,
+    dirtyModels: Set<StructureModel>,
   ): StructureInstanceBinding[] {
     const models = this.structureModels.get(structure.structureType);
     if (!models) {
@@ -1537,7 +1546,7 @@ export class StructureManager {
 
   private addVisibleCosmeticStructureInstances(
     structure: StructureInfo,
-    dirtyModels: Set<InstancedModel>,
+    dirtyModels: Set<StructureModel>,
   ): StructureInstanceBinding[] {
     const cosmeticId = structure.cosmeticId ?? "";
     const model = this.cosmeticStructureModels.get(cosmeticId)?.[0];
@@ -1552,10 +1561,10 @@ export class StructureManager {
   }
 
   private bindStructureInstance(
-    model: InstancedModel,
+    model: StructureModel,
     entityId: ID,
     entityIdsByInstance: Map<number, ID>,
-    dirtyModels: Set<InstancedModel>,
+    dirtyModels: Set<StructureModel>,
   ): StructureInstanceBinding | undefined {
     const slots = this.structureInstanceSlots.get(model) ?? [];
     const instanceIndex = this.takeFreeStructureInstanceSlot(model, slots);
@@ -1583,7 +1592,7 @@ export class StructureManager {
     );
   }
 
-  private takeFreeStructureInstanceSlot(model: InstancedModel, slots: Array<ID | undefined>): number {
+  private takeFreeStructureInstanceSlot(model: StructureModel, slots: Array<ID | undefined>): number {
     const freeSlot = this.structureInstanceFreeSlots.get(model);
     if (freeSlot === undefined || freeSlot < 0 || freeSlot >= slots.length || slots[freeSlot] !== undefined) {
       this.structureInstanceFreeSlots.delete(model);
@@ -1599,7 +1608,7 @@ export class StructureManager {
     return freeSlot;
   }
 
-  private removeVisibleStructureInstance(entityId: ID, dirtyModels: Set<InstancedModel>): void {
+  private removeVisibleStructureInstance(entityId: ID, dirtyModels: Set<StructureModel>): void {
     const bindings = this.structureInstanceBindings.get(entityId);
     if (!bindings) {
       return;
@@ -1623,7 +1632,7 @@ export class StructureManager {
     this.structureInstanceBindings.delete(entityId);
   }
 
-  private updateVisibleStructureModelCounts(dirtyModels: Set<InstancedModel>): void {
+  private updateVisibleStructureModelCounts(dirtyModels: Set<StructureModel>): void {
     dirtyModels.forEach((model) => {
       const slots = this.structureInstanceSlots.get(model) ?? [];
       while (slots.length > 0 && slots.at(-1) === undefined) {
@@ -1836,7 +1845,11 @@ export class StructureManager {
 
     if (this.contentLadder.structureModels) {
       const context = this.resolveAnimationVisibilityContext(visibility);
-      this.forEachStructureModel((model) => model.updateAnimations(deltaTime, context));
+      const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
+      this.forEachStructureModel((model) => {
+        if (model instanceof RewardTileModel) model.updatePresentation(nightAmount);
+        model.updateAnimations(deltaTime, context);
+      });
     }
 
     if (this.frustumVisibilityDirty) {

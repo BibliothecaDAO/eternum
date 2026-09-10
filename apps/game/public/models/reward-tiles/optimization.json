@@ -1,0 +1,16 @@
+[
+  {
+    "asset": "chest",
+    "beforeBytes": 9778316,
+    "afterBytes": 519580,
+    "beforeTriangles": 57542,
+    "afterTriangles": 34358
+  },
+  {
+    "asset": "rift",
+    "beforeBytes": 10809560,
+    "afterBytes": 1120924,
+    "beforeTriangles": 40452,
+    "afterTriangles": 35910
+  }
+]

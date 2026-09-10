@@ -3,7 +3,15 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { NodeIO, VertexLayout } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
-import { Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
+import {
+  Group,
+  InterleavedBuffer,
+  InterleavedBufferAttribute,
+  Mesh,
+  MeshStandardMaterial,
+  Texture,
+  Vector3,
+} from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TERRAIN_HEX_HORIZONTAL_SPACING } from "../../terrain/terrain-coordinates";
@@ -201,5 +209,49 @@ describe("Blender fleet assets", () => {
     expect((original.material as MeshStandardMaterial).wireframe).toBe(false);
     expect(sourceDisposed).not.toHaveBeenCalled();
     expect(textureDisposed).not.toHaveBeenCalled();
+  });
+});
+
+it("animates compressed interleaved sails and pennants exactly like separate attributes", () => {
+  const source = template("knight", 1);
+  const packed = source.clone(true);
+  packed.traverse((part) => {
+    if (!(part instanceof Mesh) || (!part.name.startsWith("Sail_") && !part.name.startsWith("Pennant_"))) return;
+    part.geometry = part.geometry.clone();
+    const positions = part.geometry.attributes.position;
+    const uv = part.geometry.attributes.uv;
+    const data = new Float32Array(positions.count * 5);
+    for (let index = 0; index < positions.count; index++) {
+      data.set(
+        [positions.getX(index), positions.getY(index), positions.getZ(index), uv.getX(index), uv.getY(index)],
+        index * 5,
+      );
+    }
+    const buffer = new InterleavedBuffer(data, 5);
+    part.geometry.setAttribute("position", new InterleavedBufferAttribute(buffer, 3, 0));
+    part.geometry.setAttribute("uv", new InterleavedBufferAttribute(buffer, 2, 3));
+  });
+  const expected = createShipDesign(source, "knight", 1);
+  const actual = createShipDesign(packed, "knight", 1);
+  for (const time of [0, 1.7, 4.3]) {
+    expected.animate(time, true);
+    actual.animate(time, true);
+    actual.object.traverse((part) => {
+      if (!(part instanceof Mesh) || (!part.name.startsWith("Sail_") && !part.name.startsWith("Pennant_"))) return;
+      const reference = expected.object.getObjectByName(part.name) as Mesh;
+      const positions = part.geometry.attributes.position;
+      const rest = reference.geometry.attributes.position;
+      for (let index = 0; index < positions.count; index++) {
+        expect(positions.getZ(index)).toBeCloseTo(rest.getZ(index), 6);
+        expect(part.geometry.attributes.uv.getX(index)).toBeCloseTo(reference.geometry.attributes.uv.getX(index), 6);
+        expect(part.geometry.attributes.uv.getY(index)).toBeCloseTo(reference.geometry.attributes.uv.getY(index), 6);
+      }
+    });
+  }
+  expected.dispose();
+  actual.dispose();
+  packed.traverse((part) => {
+    if (part instanceof Mesh && (part.name.startsWith("Sail_") || part.name.startsWith("Pennant_")))
+      part.geometry.dispose();
   });
 });

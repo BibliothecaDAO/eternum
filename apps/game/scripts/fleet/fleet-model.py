@@ -316,7 +316,7 @@ def build_strakes(work):
             side,
             0.765,
             1,
-            "oak" if work.tier == 1 else "enamel",
+            "enamel",
             0.06,
         )
         for t in [0.18, 0.7, 0.78, 1]:
@@ -765,13 +765,6 @@ def build_rigging(work):
         build_shrouds(work, y, top)
         build_canvas(work, index, y, top, width, height)
         build_flag(work, index, y, top + 0.48)
-    work.sweep(
-        "Forestay",
-        [(0, 2.35, 1.36), (0, specs[0][0], specs[0][1] + 0.27)],
-        0.012,
-        "rope",
-        6,
-    )
     work.sweep(
         "Backstay",
         [

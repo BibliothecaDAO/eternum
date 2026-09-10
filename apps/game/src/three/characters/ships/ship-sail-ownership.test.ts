@@ -21,9 +21,10 @@ it("ships every sail with class artwork and ownership tint, leaving hull materia
           const source = asset.materials[primitive.material];
           expect(source.extras?.ownershipColor === true).toBe(isSail);
           if (!isSail) continue;
-          const image = asset.images[asset.textures[source.pbrMetallicRoughness.baseColorTexture.index].source];
-          expect(image.name).toBe(`${army} ownership sail`);
-          expect(image.mimeType).toBe("image/png");
+          const texture = asset.textures[source.pbrMetallicRoughness.baseColorTexture.index];
+          const image = asset.images[texture.extensions?.KHR_texture_basisu?.source ?? texture.source];
+          expect(image.name).toContain(army);
+          expect(image.mimeType).toBe("image/ktx2");
           const material = new MeshStandardMaterial({ map: new Texture() });
           material.name = source.name;
           material.userData = source.extras;
