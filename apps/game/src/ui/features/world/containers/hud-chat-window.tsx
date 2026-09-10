@@ -20,7 +20,8 @@ const isTypingTarget = (target: EventTarget | null) =>
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
-/** The strip at the foot of the right column: last message and unread count. Open, it takes the details' place. */
+/** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
+ *  above the strip and the details above keep whatever room is left. */
 export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const address = useAccountStore((state) => state.account?.address);
   const zoneId = `game:${configManager.getActiveGameId()}`;
@@ -78,13 +79,13 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
       : "No messages yet";
 
   return (
-    <>
+    <div className="mt-auto flex shrink-0 flex-col gap-2">
       {open && (
         <section
           ref={pane}
           aria-label="Chat"
           className={cn(
-            "pointer-events-auto mt-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
+            "pointer-events-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
             OVERLAY_SURFACE_BASE,
           )}
         >
@@ -117,6 +118,6 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
           </span>
         )}
       </button>
-    </>
+    </div>
   );
 }
