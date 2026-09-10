@@ -10,7 +10,7 @@ import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Popover, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { Popover, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
@@ -78,7 +78,7 @@ const LeaderboardSurface = () => (
     title="Leaderboard"
     icon={Trophy}
     onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
-    className="w-[1000px]"
+    className={SURFACE_WORKSPACE_CLASS}
   >
     <SocialBoard focusOwnPlayer />
   </SurfaceFrame>

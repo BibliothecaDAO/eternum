@@ -33,14 +33,13 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
 });
-it("shows sliders only when Custom is selected and saves through the existing store", async () => {
+it("keeps the sliders in reach under every preset and saves through the existing store", async () => {
   await act(async () =>
     root.render(<RealmAutomationPanel realmEntityId="5" producedResources={[ResourcesIds.Wood]} />),
   );
-  expect(container.querySelector('input[type="range"]')).toBeNull();
+  expect(container.querySelectorAll('input[type="range"]').length).toBeGreaterThan(0);
   const custom = [...container.querySelectorAll("button")].find((button) => button.textContent === "Custom")!;
   await act(async () => custom.click());
-  expect(container.querySelectorAll('input[type="range"]').length).toBeGreaterThan(0);
   const save = [...container.querySelectorAll("button")].find((button) => button.textContent === "Save Changes")!;
   await act(async () => save.click());
   expect(useAutomationStore.getState().realms["5"].presetId).toBe("custom");
