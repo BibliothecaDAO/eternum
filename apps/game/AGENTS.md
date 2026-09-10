@@ -91,17 +91,16 @@ Use this runbook when validating spectator/game flow in a real browser session.
 Use this workflow before capturing screenshots or validating account-specific game UI:
 
 1. Start the game client with a supported Node runtime. The local shell may pick Node 21.x, which Vite rejects; prefer
-   Node 20.19+ or 22.12+. The dev environment is `madara.blitz`; copy `.env.madara.blitz.sample` to `.env.madara.blitz`
-   first.
+   Node 20.19+ or 22.12+. The committed `.env` points the dev server at the live lab stack; no env setup is needed.
 
 ```bash
-npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174 --mode madara.blitz
+npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174
 ```
 
 When debugging Three.js, world-map rendering, or graphics state, enable the graphics debug mode:
 
 ```bash
-VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174 --mode madara.blitz
+VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 $(which pnpm) --dir /path/to/repo/apps/game dev --host 127.0.0.1 --port 4174
 ```
 
 If `npx` reports duplicate workspace names from the monorepo, run the command from `/tmp` and pass the absolute `pnpm`
@@ -150,10 +149,10 @@ pnpm -r --filter "@bibliothecadao/*" --if-present build
 
 ```bash
 # If local node is already >=20.19
-pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 --mode madara.blitz
+pnpm --dir apps/game dev --host 127.0.0.1 --port 4173
 
 # If local node is older (common in CI/agents), force a compatible runtime:
-npx -y node@20.19.0 $(which pnpm) --dir apps/game dev --host 127.0.0.1 --port 4173 --mode madara.blitz
+npx -y node@20.19.0 $(which pnpm) --dir apps/game dev --host 127.0.0.1 --port 4173
 ```
 
 ### Spectator Smoke Test (Autonomous)
