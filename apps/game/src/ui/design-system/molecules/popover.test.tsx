@@ -120,7 +120,9 @@ describe("Popover", () => {
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(360);
     const slot = { left: 1270, right: 1580, top: 300, bottom: 340 };
     await act(async () =>
-      usePopoverStore.getState().openSurface({ id: "picker", content: <div>Deploy</div>, anchor: slot, placement: "beside" }),
+      usePopoverStore
+        .getState()
+        .openSurface({ id: "picker", content: <div>Deploy</div>, anchor: slot, placement: "beside" }),
     );
     const beside = panel("picker")!;
     expect(beside.style.top).toBe("300px");

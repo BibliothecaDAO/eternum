@@ -60,7 +60,12 @@ it("offers Open only while one of the player's armies stands next to the crate",
 it("lists the relics once the crate is opened and drops the Open action", () => {
   const container = render({
     crateEntityId: null,
-    opening: { explorerId: 7, hex: { x: 3, y: 4 }, relics: [ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic1], timestamp: 1 },
+    opening: {
+      explorerId: 7,
+      hex: { x: 3, y: 4 },
+      relics: [ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic1],
+      timestamp: 1,
+    },
   });
   expect(container.textContent).toContain("Crate opened");
   expect(container.querySelector('img[src="/images/relic-chest/chest-opened.png"]')).not.toBeNull();

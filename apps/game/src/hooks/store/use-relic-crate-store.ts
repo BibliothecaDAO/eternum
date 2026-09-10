@@ -11,7 +11,7 @@ interface RelicCrateState {
 
 const OPENINGS_KEPT = 32;
 
-export const relicCrateHexKey = (hex: { x: number; y: number }) => `${hex.x},${hex.y}`;
+const relicCrateHexKey = (hex: { x: number; y: number }) => `${hex.x},${hex.y}`;
 
 export const useRelicCrateStore = create<RelicCrateState>((set) => ({
   openings: {},

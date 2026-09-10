@@ -17,7 +17,7 @@ const TRACE_STORAGE_KEY = "eternum:trace";
 // The play router rewrites the query string on every scene change, so the flag is read when this module loads
 // (put `?trace=flight` on the play map URL) and remembered for the session.
 const readFlightTraceFlag = (): boolean => {
-  if (!import.meta.env.DEV || typeof window === "undefined") return false;
+  if (!import.meta.env.DEV || typeof window === "undefined" || !window.location) return false;
   const requested = new URLSearchParams(window.location.search).get("trace");
   if (requested) window.sessionStorage.setItem(TRACE_STORAGE_KEY, requested);
   return (requested ?? window.sessionStorage.getItem(TRACE_STORAGE_KEY)) === "flight";
@@ -25,12 +25,8 @@ const readFlightTraceFlag = (): boolean => {
 
 const FLIGHT_TRACE_ENABLED = readFlightTraceFlag();
 
-export function isFlightTraceEnabled(): boolean {
-  return FLIGHT_TRACE_ENABLED;
-}
-
 export function beginFlightTrace(from: string | undefined, to: string): void {
-  if (!isFlightTraceEnabled()) return;
+  if (!FLIGHT_TRACE_ENABLED) return;
   activeTrace = { startedAt: performance.now(), label: `${from ?? "?"}→${to}` };
   console.log(`[flight] flyOut ${activeTrace.label} at ${activeTrace.startedAt.toFixed(0)}ms`);
 }

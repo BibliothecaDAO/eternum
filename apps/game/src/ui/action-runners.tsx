@@ -349,7 +349,10 @@ const AutoProvisionRealms = () => {
         .getState()
         .playerStructures.filter((structure) => structure.category === StructureType.Realm)
         .flatMap((structure) => {
-          const buildings = getComponentValue(components.StructureBuildings, gameEntityKey([BigInt(structure.entityId)]));
+          const buildings = getComponentValue(
+            components.StructureBuildings,
+            gameEntityKey([BigInt(structure.entityId)]),
+          );
           if (!buildings) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
             (count) => BigInt(count ?? 0),

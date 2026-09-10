@@ -910,7 +910,8 @@ export default class WorldmapScene extends WarpTravel {
     });
     traceFlightPlanner({
       distance: nextCameraDistance.toFixed(2),
-      distanceChanged: this.lastControlsCameraDistance === null || this.lastControlsCameraDistance !== nextCameraDistance,
+      distanceChanged:
+        this.lastControlsCameraDistance === null || this.lastControlsCameraDistance !== nextCameraDistance,
       status: this.zoomCoordinator.getSnapshot().status,
       immediate: refreshPlan.immediateLevel,
       pending: refreshPlan.nextState.pendingLevel,

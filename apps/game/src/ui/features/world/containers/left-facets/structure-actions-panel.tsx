@@ -39,7 +39,8 @@ export const StructureActionsPanel = memo(() => {
     setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
   }, [arrivedArrivalsNumber, pendingArrivalsNumber, setLogisticsActiveTab, setView, view]);
   const handleOpenProduction = useCallback(
-    () => openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> }),
+    () =>
+      openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> }),
     [openSurface, structureEntityId],
   );
   const handleOpenMarket = useCallback(

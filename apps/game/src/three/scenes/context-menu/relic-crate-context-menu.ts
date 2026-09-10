@@ -13,7 +13,12 @@ interface OpenRelicCrateContextMenuParams {
 }
 
 /** Right-click on a crate with an adjacent own explorer selected: one entry, open it. */
-export const openRelicCrateContextMenu = ({ event, hexCoords, explorerId, systemCalls }: OpenRelicCrateContextMenuParams) => {
+export const openRelicCrateContextMenu = ({
+  event,
+  hexCoords,
+  explorerId,
+  systemCalls,
+}: OpenRelicCrateContextMenuParams) => {
   const account = useAccountStore.getState().account;
   if (!account) return;
   useUIStore.getState().openContextMenu({

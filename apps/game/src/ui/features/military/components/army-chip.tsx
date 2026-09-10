@@ -115,28 +115,31 @@ const ArmyChip = ({
     return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
   }, [army.troops]);
 
-  const onTroopSwap = useCallback((trigger: Element) => {
-    openSurface({
-      id: "help",
-      anchor: surfaceAnchorFrom(trigger),
-      placement: "beside",
-      content: (
-        <HelpModal
-          selected={{
-            type: ActorType.Explorer,
-            id: army.entityId,
-            hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
-          }}
-          target={{
-            type: ActorType.Structure,
-            id: army.entity_owner_id,
-            hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
-          }}
-          allowBothDirections={true}
-        />
-      ),
-    });
-  }, [army, hexPosition, openSurface]);
+  const onTroopSwap = useCallback(
+    (trigger: Element) => {
+      openSurface({
+        id: "help",
+        anchor: surfaceAnchorFrom(trigger),
+        placement: "beside",
+        content: (
+          <HelpModal
+            selected={{
+              type: ActorType.Explorer,
+              id: army.entityId,
+              hex: new Position({ x: Number(army.position.x), y: Number(army.position.y) }).getContract(),
+            }}
+            target={{
+              type: ActorType.Structure,
+              id: army.entity_owner_id,
+              hex: new Position({ x: Number(hexPosition?.col), y: Number(hexPosition?.row) }).getContract(),
+            }}
+            allowBothDirections={true}
+          />
+        ),
+      });
+    },
+    [army, hexPosition, openSurface],
+  );
 
   return (
     <div

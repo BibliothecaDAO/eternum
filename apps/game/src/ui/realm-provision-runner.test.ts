@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRealmProvisionRunner, type RealmProvisionCandidate, type RealmProvisionPhase } from "./realm-provision-runner";
+import {
+  createRealmProvisionRunner,
+  type RealmProvisionCandidate,
+  type RealmProvisionPhase,
+} from "./realm-provision-runner";
 
 const realm = (entityId: number, provisioned = false): RealmProvisionCandidate => ({
   entityId,
@@ -7,13 +11,15 @@ const realm = (entityId: number, provisioned = false): RealmProvisionCandidate =
   provisioned,
 });
 
-const harness = (overrides: {
-  realms?: RealmProvisionCandidate[];
-  phase?: Partial<RealmProvisionPhase>;
-  now?: number;
-  signer?: boolean;
-  submit?: (ids: number[]) => Promise<void>;
-} = {}) => {
+const harness = (
+  overrides: {
+    realms?: RealmProvisionCandidate[];
+    phase?: Partial<RealmProvisionPhase>;
+    now?: number;
+    signer?: boolean;
+    submit?: (ids: number[]) => Promise<void>;
+  } = {},
+) => {
   const store = {
     realms: overrides.realms ?? [realm(1), realm(2, true), realm(3)],
     phase: { mainStartsAt: 100, endsAt: 1_000, devModeOn: false, ...overrides.phase },
