@@ -62,7 +62,7 @@ interface StructureLabelData extends LabelData {
     ownerName: string;
     guildName: string;
   };
-  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
+  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;

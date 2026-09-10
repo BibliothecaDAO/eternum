@@ -5,10 +5,8 @@ import {
   createContentContainer,
   createDirectionIndicators,
   createOwnerDisplayElement,
-  createStaminaBar,
   createTroopCountDisplay,
   updateDirectionIndicators,
-  updateStaminaBar,
 } from "./label-components";
 import { getOwnershipStyle, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
@@ -28,9 +26,6 @@ export interface ArmyLabelData extends LabelData {
   };
   color: string;
   troopCount: number;
-  currentStamina: number;
-  maxStamina: number;
-  displayStaminaRatio?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
@@ -82,46 +77,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     }
 
     // Add troop count display
-    let troopCountDisplay: HTMLElement | undefined;
     if (data.troopCount !== undefined) {
-      troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
-      textContainer.appendChild(troopCountDisplay);
-    }
-
-    let staminaHandledInline = false;
-    if (
-      cameraView === CameraView.Medium &&
-      troopCountDisplay &&
-      data.currentStamina !== undefined &&
-      data.maxStamina !== undefined &&
-      data.maxStamina > 0
-    ) {
-      const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
-      troopCountDisplay.appendChild(staminaBar);
-      staminaHandledInline = true;
-    }
-
-    if (!staminaHandledInline) {
-      if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
-        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
-        textContainer.appendChild(staminaBar);
-      } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
-        const staminaInfo = document.createElement("div");
-        staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
-
-        const staminaIcon = document.createElement("span");
-        staminaIcon.textContent = "⚡";
-        staminaIcon.classList.add("text-yellow-400");
-        staminaInfo.appendChild(staminaIcon);
-
-        const staminaText = document.createElement("span");
-        staminaText.textContent = `${data.currentStamina}`;
-        staminaText.classList.add("font-mono");
-        staminaText.style.color = "#f6f1e5";
-        staminaInfo.appendChild(staminaText);
-
-        textContainer.appendChild(staminaInfo);
-      }
+      textContainer.appendChild(createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView));
     }
 
     // Structure based on view and directions
@@ -229,46 +186,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
         contentContainer.appendChild(line2);
       }
 
-      let troopCountDisplay: HTMLElement | undefined;
       if (data.troopCount !== undefined) {
-        troopCountDisplay = createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView);
-        contentContainer.appendChild(troopCountDisplay);
-      }
-
-      let staminaHandledInline = false;
-      if (
-        cameraView === CameraView.Medium &&
-        troopCountDisplay &&
-        data.currentStamina !== undefined &&
-        data.maxStamina !== undefined &&
-        data.maxStamina > 0
-      ) {
-        const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
-        troopCountDisplay.appendChild(staminaBar);
-        staminaHandledInline = true;
-      }
-
-      if (!staminaHandledInline) {
-        if (data.currentStamina !== undefined && data.maxStamina !== undefined && data.maxStamina > 0) {
-          const staminaBar = createStaminaBar(data.currentStamina, data.maxStamina, cameraView);
-          contentContainer.appendChild(staminaBar);
-        } else if (data.currentStamina !== undefined && cameraView !== CameraView.Medium) {
-          const staminaInfo = document.createElement("div");
-          staminaInfo.classList.add("flex", "items-center", "text-xxs", "gap-1");
-
-          const staminaIcon = document.createElement("span");
-          staminaIcon.textContent = "⚡";
-          staminaIcon.classList.add("text-yellow-400");
-          staminaInfo.appendChild(staminaIcon);
-
-          const staminaText = document.createElement("span");
-          staminaText.textContent = `${data.currentStamina}`;
-          staminaText.classList.add("font-mono");
-          staminaText.style.color = "#f6f1e5";
-          staminaInfo.appendChild(staminaText);
-
-          contentContainer.appendChild(staminaInfo);
-        }
+        contentContainer.appendChild(createTroopCountDisplay(data.troopCount, data.category, data.tier, cameraView));
       }
     }
 
@@ -277,11 +196,6 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       armyIcon.src = data.isDaydreamsAgent
         ? "/images/logos/daydreams.png"
         : `/images/labels/${data.isMine ? "army" : "enemy_army"}.png`;
-    }
-
-    const staminaBar = element.querySelector('[data-component="stamina-bar"]');
-    if (staminaBar && data.currentStamina !== undefined && data.maxStamina !== undefined) {
-      updateStaminaBar(staminaBar as HTMLElement, data.currentStamina, data.maxStamina);
     }
 
     const directionIndicators = updateDirectionIndicators(
