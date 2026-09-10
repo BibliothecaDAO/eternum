@@ -267,8 +267,14 @@ import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visib
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
   normalizeWorldmapWheelDelta,
+  resolveWorldmapPinchZoomDelta,
   resolveWorldmapWheelPixelDelta,
 } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
+import {
+  TOUCH_POINTER_EVENT_TYPES,
+  TouchGestureRecognizer,
+  toTouchPointerSample,
+} from "@/three/utils/touch-gesture-recognizer";
 import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
@@ -658,7 +664,22 @@ export default class WorldmapScene extends WarpTravel {
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
-  private wheelEventTarget: HTMLElement | null = null;
+  private zoomInputTarget: HTMLElement | null = null;
+  private readonly pinchZoomRecognizer = new TouchGestureRecognizer((gesture) => {
+    if (gesture.kind !== "pinch") {
+      return;
+    }
+    this.applyWorldmapZoomIntent({
+      type: "continuous_delta",
+      delta: resolveWorldmapPinchZoomDelta({ scale: gesture.scale }),
+    });
+  });
+  private readonly pinchPointerHandler = (event: PointerEvent) => {
+    const sample = toTouchPointerSample(event);
+    if (sample) {
+      this.pinchZoomRecognizer.feed(sample);
+    }
+  };
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
     minDistance: WORLDMAP_CAMERA_ZOOM.minDistance,
@@ -998,8 +1019,8 @@ export default class WorldmapScene extends WarpTravel {
 
   public override setInputSurface(surface: HTMLElement): void {
     super.setInputSurface(surface);
-    this.detachWorldmapWheelHandler();
-    this.attachWorldmapWheelHandler();
+    this.detachWorldmapZoomInput();
+    this.attachWorldmapZoomInput();
   }
 
   public override getTerrainSurface(): TerrainSurface {
@@ -1710,7 +1731,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private setupCameraZoomHandler() {
-    this.detachWorldmapWheelHandler();
+    this.detachWorldmapZoomInput();
     this.wheelHandler = (event: WheelEvent) => {
       const normalizedWheelDelta = normalizeWorldmapWheelDelta({
         delta: event.deltaY,
@@ -1735,10 +1756,11 @@ export default class WorldmapScene extends WarpTravel {
       this.applyWorldmapZoomIntent({ type: "continuous_delta", delta: normalizedWheelDelta.normalizedDelta });
     };
 
-    this.attachWorldmapWheelHandler();
+    this.attachWorldmapZoomInput();
   }
 
-  private attachWorldmapWheelHandler(): void {
+  /** Wheel and touch pinch share the zoom coordinator; MapControls' own zoom stays disabled. */
+  private attachWorldmapZoomInput(): void {
     if (!this.wheelHandler) {
       return;
     }
@@ -1749,15 +1771,26 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
-    this.wheelEventTarget = canvas;
+    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
+      canvas.addEventListener(pointerEventType, this.pinchPointerHandler);
+    }
+    this.zoomInputTarget = canvas;
   }
 
-  private detachWorldmapWheelHandler(): void {
-    if (this.wheelEventTarget && this.wheelHandler) {
-      this.wheelEventTarget.removeEventListener("wheel", this.wheelHandler);
+  private detachWorldmapZoomInput(): void {
+    const target = this.zoomInputTarget;
+    this.zoomInputTarget = null;
+    if (!target) {
+      return;
     }
 
-    this.wheelEventTarget = null;
+    if (this.wheelHandler) {
+      target.removeEventListener("wheel", this.wheelHandler);
+    }
+    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
+      target.removeEventListener(pointerEventType, this.pinchPointerHandler);
+    }
+    this.pinchZoomRecognizer.reset();
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
@@ -2407,6 +2440,10 @@ export default class WorldmapScene extends WarpTravel {
         z: position.z,
       },
     });
+  }
+
+  protected override isHexActionTarget(hex: HexPosition): boolean {
+    return getLiveWorldmapEntityActions().actionPaths.has(ActionPaths.posKey(hex, true));
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -3869,7 +3906,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private clearWorldmapVisibilityRuntimeForSwitchOff(): void {
-    this.detachWorldmapWheelHandler();
+    this.detachWorldmapZoomInput();
     this.wheelHandler = null;
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();

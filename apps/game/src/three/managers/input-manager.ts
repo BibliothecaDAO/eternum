@@ -1,5 +1,11 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { SceneManager } from "@/three/scene-manager";
+import {
+  TOUCH_POINTER_EVENT_TYPES,
+  TouchGestureRecognizer,
+  toTouchPointerSample,
+  type TouchGesture,
+} from "@/three/utils/touch-gesture-recognizer";
 import * as THREE from "three";
 import { SceneName } from "../types";
 
@@ -10,6 +16,17 @@ interface InputListener {
   callback: InputCallback;
   event: ListenerTypes;
   handler: (event: MouseEvent) => void;
+}
+
+const TOUCH_GESTURE_LISTENER_TYPE: Partial<Record<TouchGesture["kind"], ListenerTypes>> = {
+  tap: "click",
+  "long-press": "contextmenu",
+  "double-tap": "dblclick",
+};
+
+/** True when a scene callback was dispatched from a touch gesture rather than a mouse event. */
+export function wasTouch(event: MouseEvent): boolean {
+  return typeof PointerEvent !== "undefined" && event instanceof PointerEvent && event.pointerType === "touch";
 }
 
 export class InputManager {
@@ -24,6 +41,10 @@ export class InputManager {
   private latestMouseMoveEvent: MouseEvent | null = null;
   private mouseMoveFrameId: number | null = null;
   private mouseMoveFrameToken = 0;
+  private readonly touchGestures: TouchGestureRecognizer;
+  private readonly touchPointerHandler = (event: PointerEvent) => this.handleTouchPointerEvent(event);
+  private latestTouchEvent: PointerEvent | null = null;
+  private lastPointerWasTouch = false;
 
   constructor(
     private sceneName: SceneName,
@@ -33,6 +54,7 @@ export class InputManager {
     private camera: THREE.Camera,
   ) {
     this.mouseDownHandler = this.handleMouseDown.bind(this);
+    this.touchGestures = new TouchGestureRecognizer((gesture) => this.dispatchTouchGesture(gesture));
   }
 
   setSurface(surface: HTMLElement): void {
@@ -73,6 +95,11 @@ export class InputManager {
   addListener(event: ListenerTypes, callback: InputCallback): void {
     const handler = (e: MouseEvent) => {
       if (this.sceneManager.getCurrentScene() !== this.sceneName) {
+        return;
+      }
+
+      if (this.lastPointerWasTouch) {
+        this.suppressNativeMouseEventAfterTouch(event, e);
         return;
       }
 
@@ -169,10 +196,14 @@ export class InputManager {
     for (const listener of this.listeners) {
       this.surface.addEventListener(listener.event, listener.handler);
     }
+    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
+      this.surface.addEventListener(pointerEventType, this.touchPointerHandler);
+    }
   }
 
   pauseListeners(): void {
     this.cancelPendingMouseMove();
+    this.resetTouchTracking();
     if (this.surface) {
       this.surface.removeEventListener("mousedown", this.mouseDownHandler);
     }
@@ -180,6 +211,56 @@ export class InputManager {
     for (const listener of this.listeners) {
       this.surface?.removeEventListener(listener.event, listener.handler);
     }
+    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
+      this.surface?.removeEventListener(pointerEventType, this.touchPointerHandler);
+    }
+  }
+
+  private handleTouchPointerEvent(event: PointerEvent): void {
+    const sample = toTouchPointerSample(event);
+    if (!sample) {
+      this.lastPointerWasTouch = false;
+      return;
+    }
+
+    if (sample.kind === "down") {
+      // No compatibility mousedown/mousemove/mouseup for touch: the recognizer owns touch input.
+      event.preventDefault();
+      this.lastPointerWasTouch = true;
+      this.isDragged = false;
+    }
+
+    this.latestTouchEvent = event;
+    this.touchGestures.feed(sample);
+  }
+
+  /** Browsers still fire click (and, on Android, contextmenu) after a touch; the recognizer already handled it. */
+  private suppressNativeMouseEventAfterTouch(event: ListenerTypes, mouseEvent: MouseEvent): void {
+    if (event === "contextmenu") {
+      mouseEvent.preventDefault();
+    }
+  }
+
+  private dispatchTouchGesture(gesture: TouchGesture): void {
+    const listenerType = TOUCH_GESTURE_LISTENER_TYPE[gesture.kind];
+    const touchEvent = this.latestTouchEvent;
+    if (!listenerType || !touchEvent || !this.isActive || this.isDestroyed) {
+      return;
+    }
+    if (this.sceneManager.getCurrentScene() !== this.sceneName) {
+      return;
+    }
+
+    for (const listener of this.listeners) {
+      if (listener.event === listenerType) {
+        this.processImmediateEvent(listenerType, touchEvent, listener.callback);
+      }
+    }
+  }
+
+  private resetTouchTracking(): void {
+    this.touchGestures.reset();
+    this.latestTouchEvent = null;
   }
 
   private handleMouseDown(e: MouseEvent): void {

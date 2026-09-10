@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyContinuousWorldmapZoomDelta,
   normalizeWorldmapWheelDelta,
+  resolveWorldmapPinchZoomDelta,
   resolveWorldmapWheelPixelDelta,
 } from "./worldmap-zoom-input-normalizer";
 
@@ -31,6 +32,42 @@ describe("normalizeWorldmapWheelDelta", () => {
 
   it("clamps pathological wheel spikes", () => {
     expect(normalizeWorldmapWheelDelta({ delta: 10_000, deltaMode: 0, viewportHeight: 900 }).normalizedDelta).toBe(480);
+  });
+});
+
+describe("resolveWorldmapPinchZoomDelta", () => {
+  it("spreading the fingers to double the pinch halves the camera distance", () => {
+    const delta = resolveWorldmapPinchZoomDelta({ scale: 2 });
+
+    expect(delta).toBeLessThan(0);
+    expect(
+      applyContinuousWorldmapZoomDelta({
+        currentDistance: 20,
+        normalizedDelta: delta,
+        minDistance: 5,
+        maxDistance: 40,
+      }),
+    ).toBeCloseTo(10, 5);
+  });
+
+  it("closing the pinch to half its spread doubles the camera distance", () => {
+    const delta = resolveWorldmapPinchZoomDelta({ scale: 0.5 });
+
+    expect(delta).toBeGreaterThan(0);
+    expect(
+      applyContinuousWorldmapZoomDelta({
+        currentDistance: 20,
+        normalizedDelta: delta,
+        minDistance: 5,
+        maxDistance: 40,
+      }),
+    ).toBeCloseTo(40, 5);
+  });
+
+  it("ignores a still pinch and degenerate scales", () => {
+    expect(resolveWorldmapPinchZoomDelta({ scale: 1 })).toBe(0);
+    expect(resolveWorldmapPinchZoomDelta({ scale: 0 })).toBe(0);
+    expect(resolveWorldmapPinchZoomDelta({ scale: Number.NaN })).toBe(0);
   });
 });
 
