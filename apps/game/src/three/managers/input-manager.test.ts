@@ -12,7 +12,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   },
 }));
 
-const { InputManager, wasTouch } = await import("./input-manager");
+const { InputManager } = await import("./input-manager");
 
 function createSubject(currentScene: SceneName = SceneName.WorldMap) {
   const sceneManager = {
@@ -321,7 +321,7 @@ describe("InputManager touch", () => {
 
     expect(down.defaultPrevented).toBe(true);
     expect(clickCallback).toHaveBeenCalledTimes(1);
-    expect(wasTouch(clickCallback.mock.calls[0][0])).toBe(true);
+    expect(clickCallback.mock.calls[0][0].pointerType).toBe("touch");
     expect(fixture.mouse.x).toBeCloseTo(-0.74);
     expect(moveCallback).not.toHaveBeenCalled();
     expect(frameHarness.requestAnimationFrame).not.toHaveBeenCalled();
@@ -344,11 +344,11 @@ describe("InputManager touch", () => {
     fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
 
     expect(contextMenuCallback).toHaveBeenCalledTimes(1);
-    expect(wasTouch(contextMenuCallback.mock.calls[0][0])).toBe(true);
+    expect(contextMenuCallback.mock.calls[0][0].pointerType).toBe("touch");
     expect(clickCallback).not.toHaveBeenCalled();
   });
 
-  it("dispatches a quick second tap as dblclick after the click", () => {
+  it("keeps quick repeated taps on the selection path without double-click actions", () => {
     vi.useFakeTimers();
     const clickCallback = vi.fn();
     const doubleClickCallback = vi.fn();
@@ -366,7 +366,7 @@ describe("InputManager touch", () => {
     fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 2, 155, 262));
 
     expect(clickCallback).toHaveBeenCalledTimes(2);
-    expect(doubleClickCallback).toHaveBeenCalledTimes(1);
+    expect(doubleClickCallback).not.toHaveBeenCalled();
   });
 
   it("returns to the native mouse path once a mouse pointer is seen again", () => {
@@ -383,7 +383,7 @@ describe("InputManager touch", () => {
     fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
 
     expect(clickCallback).toHaveBeenCalledTimes(2);
-    expect(wasTouch(clickCallback.mock.calls[1][0])).toBe(false);
+    expect(clickCallback.mock.calls[1][0]).toBeInstanceOf(MouseEvent);
   });
 
   it("stops a pending long press when listeners are paused", () => {
@@ -400,5 +400,56 @@ describe("InputManager touch", () => {
     vi.advanceTimersByTime(500);
 
     expect(contextMenuCallback).not.toHaveBeenCalled();
+  });
+
+  it.each(["drag", "pinch", "pointercancel", "lostpointercapture", "blur", "hidden"])(
+    "cancels a held order on %s",
+    (interruption) => {
+      vi.useFakeTimers();
+      const fixture = createSubject();
+      const order = vi.fn();
+      const select = vi.fn();
+      fixture.manager.setSurface(fixture.surface);
+      fixture.manager.activate();
+      fixture.manager.addListener("contextmenu", order);
+      fixture.manager.addListener("click", select);
+      fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+      vi.advanceTimersByTime(250);
+      if (interruption === "drag") fixture.surface.dispatchEvent(createTouchPointerEvent("pointermove", 1, 180, 260));
+      else if (interruption === "pinch")
+        fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 2, 200, 260));
+      else if (interruption === "blur") window.dispatchEvent(new Event("blur"));
+      else if (interruption === "hidden") {
+        vi.spyOn(document, "hidden", "get").mockReturnValue(true);
+        document.dispatchEvent(new Event("visibilitychange"));
+      } else fixture.surface.dispatchEvent(createTouchPointerEvent(interruption, 1, 150, 260));
+      vi.advanceTimersByTime(500);
+      fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 1, interruption === "drag" ? 180 : 150, 260));
+      fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
+      expect(order).not.toHaveBeenCalled();
+      expect(select).not.toHaveBeenCalled();
+      fixture.manager.destroy();
+    },
+  );
+
+  it("commits at the held position after 500ms, even with small finger drift, and suppresses Android's native menu", () => {
+    vi.useFakeTimers();
+    const fixture = createSubject();
+    const order = vi.fn();
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("contextmenu", order);
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointermove", 1, 156, 263));
+    vi.advanceTimersByTime(499);
+    expect(order).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(order).toHaveBeenCalledTimes(1);
+    expect(order.mock.calls[0][0]).toMatchObject({ clientX: 150, clientY: 260, pointerType: "touch" });
+    const nativeMenu = new MouseEvent("contextmenu", { cancelable: true });
+    fixture.surface.dispatchEvent(nativeMenu);
+    expect(nativeMenu.defaultPrevented).toBe(true);
+    expect(order).toHaveBeenCalledTimes(1);
+    fixture.manager.destroy();
   });
 });

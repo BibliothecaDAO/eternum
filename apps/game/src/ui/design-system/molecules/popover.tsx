@@ -226,7 +226,7 @@ const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
     <button
       type="button"
       onClick={onClose}
-      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-gold/30 bg-black/30 text-gold/80 transition hover:border-gold hover:bg-gold/15 hover:text-gold"
+      className="inline-flex h-7 w-7 max-lg:h-11 max-lg:w-11 cursor-pointer items-center justify-center rounded-full border border-gold/30 bg-black/30 text-gold/80 transition hover:border-gold hover:bg-gold/15 hover:text-gold"
       aria-label="Close"
       title="Close"
     >

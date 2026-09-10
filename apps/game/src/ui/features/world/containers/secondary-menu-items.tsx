@@ -10,7 +10,7 @@ export const SecondaryMenuItems = () => {
   const togglePopover = usePopoverStore((state) => state.toggle);
 
   return (
-    <div className="pointer-events-auto flex h-9 items-center">
+    <div className="pointer-events-auto flex h-9 max-lg:h-11 items-center">
       <Popover
         id={SETTINGS_POPOVER_ID}
         ariaLabel="Settings"
@@ -24,6 +24,7 @@ export const SecondaryMenuItems = () => {
             active={openPopoverId === SETTINGS_POPOVER_ID}
             image={BuildingThumbs.settings}
             label={"Settings"}
+            aria-label="Settings"
             size="topbar"
             onClick={() => togglePopover(SETTINGS_POPOVER_ID)}
           />

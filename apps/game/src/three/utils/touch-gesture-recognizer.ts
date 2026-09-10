@@ -1,13 +1,11 @@
 /**
  * Pure touch gesture recognizer. Feed it raw touch pointer samples and it emits taps,
- * double taps, long presses, and pinch scale steps. It never touches the DOM, so the
+ * long presses and pinch scale steps. It never touches the DOM, so the
  * scene input manager and the worldmap pinch handler can each own an instance.
  */
 
 const TAP_SLOP_PX = 10;
 const LONG_PRESS_MS = 500;
-const DOUBLE_TAP_MS = 300;
-const DOUBLE_TAP_SLOP_PX = 24;
 
 export interface TouchPointerSample {
   kind: "down" | "move" | "up" | "cancel";
@@ -17,7 +15,13 @@ export interface TouchPointerSample {
   time: number;
 }
 
-export const TOUCH_POINTER_EVENT_TYPES = ["pointerdown", "pointermove", "pointerup", "pointercancel"] as const;
+export const TOUCH_POINTER_EVENT_TYPES = [
+  "pointerdown",
+  "pointermove",
+  "pointerup",
+  "pointercancel",
+  "lostpointercapture",
+] as const;
 type TouchPointerEventType = (typeof TOUCH_POINTER_EVENT_TYPES)[number];
 
 const SAMPLE_KIND_BY_EVENT_TYPE: Record<TouchPointerEventType, TouchPointerSample["kind"]> = {
@@ -25,6 +29,7 @@ const SAMPLE_KIND_BY_EVENT_TYPE: Record<TouchPointerEventType, TouchPointerSampl
   pointermove: "move",
   pointerup: "up",
   pointercancel: "cancel",
+  lostpointercapture: "cancel",
 };
 
 /** Null for non-touch pointers, so callers can leave mouse and pen input on their existing paths. */
@@ -41,7 +46,6 @@ export function toTouchPointerSample(event: PointerEvent): TouchPointerSample | 
 
 export type TouchGesture =
   | { kind: "tap"; x: number; y: number }
-  | { kind: "double-tap"; x: number; y: number }
   | { kind: "long-press"; x: number; y: number }
   | { kind: "pinch"; scale: number; centerX: number; centerY: number };
 
@@ -60,10 +64,6 @@ interface PressState {
   longPressFired: boolean;
 }
 
-interface TapRecord extends PointerPosition {
-  time: number;
-}
-
 const scheduleWithTimeout: ScheduleTimer = (fn, ms) => {
   const timer = setTimeout(fn, ms);
   return () => clearTimeout(timer);
@@ -75,7 +75,6 @@ export class TouchGestureRecognizer {
   private cancelLongPressTimer: (() => void) | null = null;
   private pinchActive = false;
   private previousPinchDistance: number | null = null;
-  private lastTap: TapRecord | null = null;
 
   constructor(
     private readonly emit: (gesture: TouchGesture) => void,
@@ -104,7 +103,6 @@ export class TouchGestureRecognizer {
     this.pointers.clear();
     this.pinchActive = false;
     this.previousPinchDistance = null;
-    this.lastTap = null;
   }
 
   private handleDown(sample: TouchPointerSample): void {
@@ -145,10 +143,14 @@ export class TouchGestureRecognizer {
     this.pointers.delete(sample.pointerId);
 
     if (this.press?.pointerId === sample.pointerId) {
-      const isTap = !this.press.movedPastSlop && !this.press.longPressFired && !this.pinchActive;
+      const isTap =
+        !this.press.movedPastSlop &&
+        !this.press.longPressFired &&
+        !this.pinchActive &&
+        distanceBetween(this.press.start, sample) <= TAP_SLOP_PX;
       this.clearPress();
       if (isTap) {
-        this.emitTap(sample);
+        this.emit({ kind: "tap", x: sample.x, y: sample.y });
       }
     }
 
@@ -216,23 +218,6 @@ export class TouchGestureRecognizer {
     if (this.pointers.size < 2) {
       this.previousPinchDistance = null;
     }
-  }
-
-  private emitTap(sample: TouchPointerSample): void {
-    this.emit({ kind: "tap", x: sample.x, y: sample.y });
-
-    const isSecondTap =
-      this.lastTap !== null &&
-      sample.time - this.lastTap.time <= DOUBLE_TAP_MS &&
-      distanceBetween(this.lastTap, sample) <= DOUBLE_TAP_SLOP_PX;
-
-    if (isSecondTap) {
-      this.lastTap = null;
-      this.emit({ kind: "double-tap", x: sample.x, y: sample.y });
-      return;
-    }
-
-    this.lastTap = { x: sample.x, y: sample.y, time: sample.time };
   }
 
   private clearPress(): void {

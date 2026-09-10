@@ -18,17 +18,6 @@ interface InputListener {
   handler: (event: MouseEvent) => void;
 }
 
-const TOUCH_GESTURE_LISTENER_TYPE: Partial<Record<TouchGesture["kind"], ListenerTypes>> = {
-  tap: "click",
-  "long-press": "contextmenu",
-  "double-tap": "dblclick",
-};
-
-/** True when a scene callback was dispatched from a touch gesture rather than a mouse event. */
-export function wasTouch(event: MouseEvent): boolean {
-  return typeof PointerEvent !== "undefined" && event instanceof PointerEvent && event.pointerType === "touch";
-}
-
 export class InputManager {
   private listeners: InputListener[] = [];
   private isDragged = false;
@@ -45,6 +34,10 @@ export class InputManager {
   private readonly touchPointerHandler = (event: PointerEvent) => this.handleTouchPointerEvent(event);
   private latestTouchEvent: PointerEvent | null = null;
   private lastPointerWasTouch = false;
+  private readonly cancelTouchGesture = () => this.resetTouchTracking();
+  private readonly handleVisibilityChange = () => {
+    if (document.hidden) this.resetTouchTracking();
+  };
 
   constructor(
     private sceneName: SceneName,
@@ -192,6 +185,8 @@ export class InputManager {
       return;
     }
 
+    window.addEventListener("blur", this.cancelTouchGesture);
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
     this.surface.addEventListener("mousedown", this.mouseDownHandler);
     for (const listener of this.listeners) {
       this.surface.addEventListener(listener.event, listener.handler);
@@ -204,6 +199,8 @@ export class InputManager {
   pauseListeners(): void {
     this.cancelPendingMouseMove();
     this.resetTouchTracking();
+    window.removeEventListener("blur", this.cancelTouchGesture);
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     if (this.surface) {
       this.surface.removeEventListener("mousedown", this.mouseDownHandler);
     }
@@ -219,6 +216,7 @@ export class InputManager {
   private handleTouchPointerEvent(event: PointerEvent): void {
     const sample = toTouchPointerSample(event);
     if (!sample) {
+      if (event.type === "pointerdown") this.resetTouchTracking();
       this.lastPointerWasTouch = false;
       return;
     }
@@ -242,18 +240,31 @@ export class InputManager {
   }
 
   private dispatchTouchGesture(gesture: TouchGesture): void {
-    const listenerType = TOUCH_GESTURE_LISTENER_TYPE[gesture.kind];
+    if (gesture.kind === "pinch") return;
+    const listenerType = gesture.kind === "tap" ? "click" : "contextmenu";
     const touchEvent = this.latestTouchEvent;
-    if (!listenerType || !touchEvent || !this.isActive || this.isDestroyed) {
+    if (!touchEvent || !this.isActive || this.isDestroyed) {
       return;
     }
     if (this.sceneManager.getCurrentScene() !== this.sceneName) {
       return;
     }
 
+    // Use the recognized location: small finger drift must not retarget a held order across a hex boundary.
+    const gestureEvent = new PointerEvent(listenerType, {
+      clientX: gesture.x,
+      clientY: gesture.y,
+      pointerId: touchEvent.pointerId,
+      pointerType: "touch",
+      altKey: touchEvent.altKey,
+      ctrlKey: touchEvent.ctrlKey,
+      metaKey: touchEvent.metaKey,
+      shiftKey: touchEvent.shiftKey,
+      cancelable: true,
+    });
     for (const listener of this.listeners) {
       if (listener.event === listenerType) {
-        this.processImmediateEvent(listenerType, touchEvent, listener.callback);
+        this.processImmediateEvent(listenerType, gestureEvent, listener.callback);
       }
     }
   }

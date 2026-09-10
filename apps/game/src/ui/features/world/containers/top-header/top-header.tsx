@@ -1,4 +1,5 @@
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { HudHeaderLayout } from "./hud-header-layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -15,12 +16,12 @@ import { TOP_PILL } from "./top-pill";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
 export const TopHeader = memo(() => {
+  const lane = useCompactLane();
   const {
     setup,
     account: { account },
@@ -29,7 +30,6 @@ export const TopHeader = memo(() => {
   const { handleUrlChange } = useQuery();
 
   const playClick = useUISound("ui.click");
-  const playHover = useUISound("ui.hover");
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
@@ -61,7 +61,6 @@ export const TopHeader = memo(() => {
   const showFastTravelLayerToggle = mode.id === "eternum";
   const isFastTravelView = currentPathname.includes("/travel");
   const isLocalView = currentPathname.includes("/hex");
-  const isWorldView = !isLocalView;
 
   useEffect(() => {
     const updatePathname = () => {
@@ -104,91 +103,36 @@ export const TopHeader = memo(() => {
     structureEntityId,
   ]);
 
+  const navigateToView = useCallback(
+    (world: boolean) => {
+      playClick();
+      goToStructure(
+        world ? lastControlledStructureEntityId || structureEntityId : structureEntityId,
+        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+        world,
+      );
+    },
+    [goToStructure, lastControlledStructureEntityId, playClick, selectedStructurePosition, structureEntityId],
+  );
+
   return (
     <>
-      {/* The header row: pointer-events pass through the gaps between pills so the map remains clickable; each
-          pill flips pointer-events back on. The columns start below this row (HUD_COLUMN_TOP), so the cluster is
-          centred on the full width: identity · view · clock · attention · settings. Below `lg` the row sits under
-          the notch and scrolls sideways instead of wrapping, so it owns its own touch events. */}
-      <div className="fixed top-0 inset-x-0 z-20 flex h-11 items-center justify-center gap-2 px-3 pointer-events-none max-lg:top-[env(safe-area-inset-top)] max-lg:pl-[max(0.75rem,env(safe-area-inset-left))] max-lg:pr-[max(0.75rem,env(safe-area-inset-right))] max-lg:justify-start max-lg:overflow-x-auto max-lg:no-scrollbar max-lg:touch-pan-x max-lg:pointer-events-auto max-lg:[&>*]:shrink-0">
-        {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
-        <IdentityChip />
-
-        {/* 3. Local / World toggle (+ conditional Ethereal layer chip) */}
-        <div className={cn(TOP_PILL, "whitespace-nowrap")}>
-          <button
-            type="button"
-            aria-pressed={isLocalView}
-            onClick={() => {
-              playClick();
-              goToStructure(
-                structureEntityId,
-                new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                false,
-              );
-            }}
-            onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer", HUD_LABEL_BRIGHT, !isLocalView && "text-gold/55")}
-          >
-            Local
-          </button>
-          <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
-            <input
-              type="checkbox"
-              aria-label="Show world map"
-              className="sr-only peer"
-              checked={isWorldView}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                playClick();
-                goToStructure(
-                  lastControlledStructureEntityId || structureEntityId,
-                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                  checked,
-                );
-              }}
-            />
-            <div className="w-10 h-5 rounded-full peer peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
-          </label>
-          <button
-            type="button"
-            aria-pressed={isWorldView && !isFastTravelView}
-            onClick={() => {
-              playClick();
-              goToStructure(
-                structureEntityId,
-                new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                true,
-              );
-            }}
-            onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer", HUD_LABEL_BRIGHT, !isWorldView && "text-gold/55")}
-          >
-            World
-          </button>
-          {showFastTravelLayerToggle && (
-            <button
-              type="button"
-              onClick={navigateToFastTravelLayer}
-              onMouseEnter={() => playHover()}
-              className={cn(
-                "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] transition-all duration-200",
-                isFastTravelView
-                  ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
-                  : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
-              )}
-              title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
-            >
-              Ethereal
-            </button>
-          )}
-        </div>
-
-        <GameClock />
-        <AttentionPill />
-
-        <SecondaryMenuItems />
-      </div>
+      <HudHeaderLayout
+        lane={lane}
+        identity={<IdentityChip compact={lane !== null} />}
+        clock={<GameClock compact={lane !== null} />}
+        attention={<AttentionPill />}
+        settings={<SecondaryMenuItems />}
+        viewControls={
+          <MapViewControls
+            isLocalView={isLocalView}
+            isFastTravelView={isFastTravelView}
+            showFastTravel={showFastTravelLayerToggle}
+            onNavigate={navigateToView}
+            onFastTravel={navigateToFastTravelLayer}
+          />
+        }
+      />
 
       {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
       {isFollowingArmy && (
@@ -208,3 +152,53 @@ export const TopHeader = memo(() => {
 });
 
 TopHeader.displayName = "TopHeader";
+
+function MapViewControls({
+  isLocalView,
+  isFastTravelView,
+  showFastTravel,
+  onNavigate,
+  onFastTravel,
+}: {
+  isLocalView: boolean;
+  isFastTravelView: boolean;
+  showFastTravel: boolean;
+  onNavigate: (world: boolean) => void;
+  onFastTravel: () => void;
+}) {
+  const viewButton = (active: boolean) =>
+    cn(
+      "min-h-11 min-w-11 rounded-md px-3 font-sans text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
+      active ? "bg-gold/20 text-gold" : "text-gold/65",
+    );
+  return (
+    <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
+      <button
+        type="button"
+        aria-pressed={isLocalView}
+        onClick={() => onNavigate(false)}
+        className={viewButton(isLocalView)}
+      >
+        Local
+      </button>
+      <button
+        type="button"
+        aria-pressed={!isLocalView && !isFastTravelView}
+        onClick={() => onNavigate(true)}
+        className={viewButton(!isLocalView && !isFastTravelView)}
+      >
+        World
+      </button>
+      {showFastTravel && (
+        <button
+          type="button"
+          aria-pressed={isFastTravelView}
+          onClick={onFastTravel}
+          className={viewButton(isFastTravelView)}
+        >
+          Ethereal
+        </button>
+      )}
+    </div>
+  );
+}
