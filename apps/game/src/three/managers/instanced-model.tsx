@@ -1,3 +1,4 @@
+import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -55,6 +56,7 @@ function resolveRenderedInstanceCount(mesh: InstancedMesh, logicalCount: number)
 function hideUnusedRenderedInstances(mesh: InstancedMesh, logicalCount: number, renderedCount: number): void {
   for (let index = logicalCount; index < renderedCount; index++) {
     mesh.setMatrixAt(index, zeroMatrix);
+    queueInstanceUpdate(mesh.instanceMatrix, index, 1);
   }
 }
 
@@ -295,7 +297,7 @@ export default class InstancedModel {
         targetArray.set(sourceArray.subarray(0, floatsToCopy));
       }
       applyRenderedInstanceCount(mesh, finalCount);
-      mesh.instanceMatrix.needsUpdate = true;
+      if (finalCount > 0) queueInstanceUpdate(mesh.instanceMatrix, 0, finalCount);
       resolvedCount = Math.min(resolvedCount, finalCount);
     });
     this.count = resolvedCount;
@@ -307,7 +309,7 @@ export default class InstancedModel {
     }
     this.instancedMeshes.forEach((child) => {
       child.setMatrixAt(index, matrix);
-      child.instanceMatrix.needsUpdate = true;
+      queueInstanceUpdate(child.instanceMatrix, index, 1);
     });
 
     if (this.contactShadowMesh) {
@@ -323,7 +325,7 @@ export default class InstancedModel {
         );
         this.contactShadowMesh.setMatrixAt(index, this.contactShadowMatrix);
       }
-      this.contactShadowMesh.instanceMatrix.needsUpdate = true;
+      queueInstanceUpdate(this.contactShadowMesh.instanceMatrix, index, 1);
     }
   }
 
@@ -334,7 +336,7 @@ export default class InstancedModel {
     this.instancedMeshes.forEach((mesh) => {
       mesh.setColorAt(index, color);
       if (mesh.instanceColor) {
-        mesh.instanceColor.needsUpdate = true;
+        queueInstanceUpdate(mesh.instanceColor, index, 1);
       }
     });
   }
@@ -348,7 +350,7 @@ export default class InstancedModel {
     if (this.contactShadowMesh) {
       this.contactShadowMesh.count = drawCount;
     }
-    this.needsUpdate();
+    this.refreshBounds();
   }
 
   removeInstance(index: number) {
@@ -356,19 +358,7 @@ export default class InstancedModel {
     this.refreshBounds();
   }
 
-  needsUpdate() {
-    this.instancedMeshes.forEach((mesh) => {
-      mesh.instanceMatrix.needsUpdate = true;
-    });
-
-    if (this.contactShadowMesh) {
-      this.contactShadowMesh.instanceMatrix.needsUpdate = true;
-    }
-
-    this.refreshBounds();
-  }
-
-  private refreshBounds(): void {
+  refreshBounds(): void {
     this.instancedMeshes.forEach((mesh) => {
       if (this.worldBounds) {
         this.applyWorldBounds(mesh);
@@ -583,15 +573,12 @@ export default class InstancedModel {
 
     // Wonder rotation with its own frame limiting
     if (this.name === "wonder" && now - this.lastWonderUpdate >= this.wonderUpdateInterval) {
-      const rotationSpeed = 1; // Adjust speed as needed
+      rotationMatrix.makeRotationY(deltaTime);
 
       this.instancedMeshes.forEach((mesh) => {
         for (let i = 0; i < mesh.count; i++) {
           // Get the current instance matrix
           mesh.getMatrixAt(i, instanceMatrix);
-
-          // Create a rotation matrix around Y axis
-          rotationMatrix.makeRotationY(rotationSpeed * deltaTime);
 
           // Apply rotation to the instance matrix
           instanceMatrix.multiply(rotationMatrix);
@@ -600,7 +587,7 @@ export default class InstancedModel {
           mesh.setMatrixAt(i, instanceMatrix);
         }
 
-        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.count > 0) queueInstanceUpdate(mesh.instanceMatrix, 0, mesh.count);
       });
 
       this.lastWonderUpdate = now;

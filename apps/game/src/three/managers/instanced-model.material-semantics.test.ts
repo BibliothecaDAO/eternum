@@ -183,4 +183,22 @@ describe("InstancedModel material semantics", () => {
     expect(readInstanceMatrix(chestMesh, 1).elements).toEqual(hiddenMatrix.elements);
     expect(model.getMatricesAndCount().count).toBe(1);
   });
+  it("queues only changed structure slots and does not upload matrices for a count-only update", async () => {
+    const { default: InstancedModel } = await import("./instanced-model");
+    const model = new InstancedModel(createInstancedModelTestGltf(new MeshStandardMaterial()), 1000);
+    const mesh = model.instancedMeshes[0];
+    mesh.instanceMatrix.clearUpdateRanges();
+    const version = mesh.instanceMatrix.version;
+    model.setCount(4);
+    expect(mesh.instanceMatrix.version).toBe(version);
+    model.setMatrixAt(3, new Matrix4().makeTranslation(3, 2, 1));
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 48, count: 16 }]);
+    model.setCount(4);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 48, count: 16 }]);
+    mesh.instanceMatrix.clearUpdateRanges();
+    model.removeInstance(3);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 48, count: 16 }]);
+    expect(readInstanceMatrix(mesh, 3).elements).toEqual(new Matrix4().makeScale(0, 0, 0).elements);
+    model.dispose();
+  });
 });

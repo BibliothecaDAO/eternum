@@ -205,7 +205,8 @@ export const createRealmStoreSlice = (
     }),
   arrivedArrivalsNumber: 0,
   arrivedArrivalStructureIds: [],
-  setArrivalIndicators: (indicators: Parameters<RealmStore["setArrivalIndicators"]>[0]) => set(indicators),
+  setArrivalIndicators: (indicators: Parameters<RealmStore["setArrivalIndicators"]>[0]) =>
+    set((state) => (haveSameArrivalIndicators(state, indicators) ? state : indicators)),
   pendingArrivalsNumber: 0,
   publicIncomingTroopArrivalsByStructure: {},
   setPublicIncomingTroopArrivalsByStructure: (
@@ -224,3 +225,15 @@ export const createRealmStoreSlice = (
   relicsRefreshNonce: 0,
   triggerRelicsRefresh: () => set((state: RealmStore) => ({ relicsRefreshNonce: state.relicsRefreshNonce + 1 })),
 });
+
+function haveSameArrivalIndicators(
+  current: RealmStore,
+  next: Parameters<RealmStore["setArrivalIndicators"]>[0],
+): boolean {
+  return (
+    current.arrivedArrivalsNumber === next.arrivedArrivalsNumber &&
+    current.pendingArrivalsNumber === next.pendingArrivalsNumber &&
+    current.arrivedArrivalStructureIds.length === next.arrivedArrivalStructureIds.length &&
+    current.arrivedArrivalStructureIds.every((id, index) => id === next.arrivedArrivalStructureIds[index])
+  );
+}

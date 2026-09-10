@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-10",
+    title: "Lighter Map and Combat Updates",
+    type: "improvement",
+    description:
+      "The map does less background rendering work, idle combat effects stop consuming frame time, and arrival badges update only when their contents change.",
+  },
+  {
+    date: "2026-09-10",
     title: "Clearer Terrain and Smoother Storms",
     type: "improvement",
     description:

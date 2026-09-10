@@ -494,7 +494,6 @@ async function createSettlementRealmModel(
     model.setMatrixAt(index, matrix);
   });
   model.setCount(TERRAIN_SETTLEMENT_REGROWTH_SITES.length);
-  model.needsUpdate();
   return model;
 }
 

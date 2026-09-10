@@ -1,3 +1,4 @@
+import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { TroopTier } from "@bibliothecadao/types";
 import {
@@ -52,6 +53,7 @@ export class MeleeImpactSystem {
     transparent: true,
     opacity: 0.72,
     side: DoubleSide,
+    forceSinglePass: true,
     vertexColors: true,
   });
   private readonly slashMesh: InstancedMesh;
@@ -62,6 +64,7 @@ export class MeleeImpactSystem {
   private readonly spinQuaternion = new Quaternion();
   private readonly scale = new Vector3();
   private readonly color = new Color();
+  private activeCount = 0;
   private spawnedCount = 0;
   private droppedCount = 0;
   private disposed = false;
@@ -82,7 +85,7 @@ export class MeleeImpactSystem {
       tier: TroopTier.T1,
     }));
     this.group.add(this.slashMesh, this.impactMesh);
-    this.hideInactiveInstances();
+    this.setRenderCount(0);
   }
 
   public spawn(input: MeleeImpactSpawn): boolean {
@@ -92,6 +95,7 @@ export class MeleeImpactSystem {
       this.droppedCount += 1;
       return false;
     }
+    this.activeCount++;
     entry.active = true;
     entry.elapsedSeconds = 0;
     entry.position.copy(input.target);
@@ -105,18 +109,23 @@ export class MeleeImpactSystem {
   }
 
   public update(deltaSeconds: number): void {
-    if (this.disposed) return;
+    if (this.disposed || this.activeCount === 0) return;
     const elapsed = Number.isFinite(deltaSeconds) ? Math.min(Math.max(0, deltaSeconds), 0.1) : 0;
-    this.entries.forEach((entry, index) => this.updateEntry(entry, index, elapsed));
-    this.slashMesh.instanceMatrix.needsUpdate = true;
-    this.impactMesh.instanceMatrix.needsUpdate = true;
-    if (this.slashMesh.instanceColor) this.slashMesh.instanceColor.needsUpdate = true;
-    if (this.impactMesh.instanceColor) this.impactMesh.instanceColor.needsUpdate = true;
+    let renderCount = 0;
+    for (const entry of this.entries) {
+      if (this.updateEntry(entry, renderCount, elapsed)) renderCount++;
+    }
+    this.setRenderCount(renderCount);
+    if (renderCount === 0) return;
+    for (const mesh of [this.slashMesh, this.impactMesh]) {
+      queueInstanceUpdate(mesh.instanceMatrix, 0, renderCount);
+      if (mesh.instanceColor) queueInstanceUpdate(mesh.instanceColor, 0, renderCount);
+    }
   }
 
   public getStats(): MeleeImpactSystemStats {
     return {
-      activeCount: this.entries.filter(({ active }) => active).length,
+      activeCount: this.activeCount,
       capacity: this.capacity,
       droppedCount: this.droppedCount,
       spawnedCount: this.spawnedCount,
@@ -128,14 +137,17 @@ export class MeleeImpactSystem {
       entry.active = false;
       entry.elapsedSeconds = 0;
     });
+    this.activeCount = 0;
     this.spawnedCount = 0;
     this.droppedCount = 0;
-    this.hideInactiveInstances();
+    this.setRenderCount(0);
   }
 
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.slashMesh.dispose();
+    this.impactMesh.dispose();
     this.slashGeometry.dispose();
     this.impactGeometry.dispose();
     this.slashMaterial.dispose();
@@ -144,14 +156,14 @@ export class MeleeImpactSystem {
     this.group.removeFromParent();
   }
 
-  private updateEntry(entry: MeleeImpactEntry, index: number, deltaSeconds: number): void {
-    if (!entry.active) return;
+  private updateEntry(entry: MeleeImpactEntry, index: number, deltaSeconds: number): boolean {
+    if (!entry.active) return false;
     entry.elapsedSeconds += deltaSeconds;
     const progress = Math.min(1, entry.elapsedSeconds / IMPACT_SECONDS);
     if (progress >= 1) {
       entry.active = false;
-      this.hideInstance(index);
-      return;
+      this.activeCount--;
+      return false;
     }
 
     const intensity = 1 - progress;
@@ -166,19 +178,14 @@ export class MeleeImpactSystem {
     this.color.copy(resolveTierColor(entry.tier)).multiplyScalar(Math.max(0.08, intensity));
     this.slashMesh.setColorAt(index, this.color);
     this.impactMesh.setColorAt(index, this.color);
+    return true;
   }
 
-  private hideInactiveInstances(): void {
-    this.entries.forEach((_entry, index) => this.hideInstance(index));
-    this.slashMesh.instanceMatrix.needsUpdate = true;
-    this.impactMesh.instanceMatrix.needsUpdate = true;
-  }
-
-  private hideInstance(index: number): void {
-    this.scale.setScalar(0);
-    this.matrix.compose(this.group.position, this.group.quaternion, this.scale);
-    this.slashMesh.setMatrixAt(index, this.matrix);
-    this.impactMesh.setMatrixAt(index, this.matrix);
+  private setRenderCount(count: number): void {
+    this.slashMesh.count = count;
+    this.impactMesh.count = count;
+    this.slashMesh.visible = count > 0;
+    this.impactMesh.visible = count > 0;
   }
 }
 

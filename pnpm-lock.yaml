@@ -123,6 +123,11 @@ overrides:
 
 packageExtensionsChecksum: sha256-2XhCmL8hTN3oqYW8jQHF2j7T7zZfCdxiCgOiQlYn6rU=
 
+patchedDependencies:
+  three@0.185.1:
+    hash: 92f09167c58a4b5699768c631f1b079bf5baaf9e499ffbb3a3dfdbd41cb9205e
+    path: patches/three@0.185.1.patch
+
 importers:
 
   .:
@@ -419,7 +424,7 @@ importers:
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))
       three:
         specifier: ^0.185.1
-        version: 0.185.1
+        version: 0.185.1(patch_hash=92f09167c58a4b5699768c631f1b079bf5baaf9e499ffbb3a3dfdbd41cb9205e)
       type-fest:
         specifier: catalog:game
         version: 2.19.0
@@ -35022,7 +35027,7 @@ snapshots:
 
   three@0.174.0: {}
 
-  three@0.185.1: {}
+  three@0.185.1(patch_hash=92f09167c58a4b5699768c631f1b079bf5baaf9e499ffbb3a3dfdbd41cb9205e): {}
 
   timeout-abort-controller@3.0.0:
     dependencies:
