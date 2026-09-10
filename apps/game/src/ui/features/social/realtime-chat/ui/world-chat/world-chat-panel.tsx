@@ -274,7 +274,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
         {!zone && <p className="text-sm text-gold/50">Join a zone to view chat.</p>}
         {zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth">
+            <div ref={scrollContainerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1 scroll-smooth">
               {/* Sentinel for auto-loading older messages */}
               <div ref={topSentinelRef} className="h-1" />
 
@@ -296,7 +296,8 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                 </div>
               )}
 
-              <ul className="flex flex-col gap-0.5">
+              {/* Anchored to the input: a short history sits at the bottom, next to where the reply goes. */}
+              <ul className="mt-auto flex flex-col gap-0.5">
                 {messages.map((message, index) => {
                   const senderName = formatSenderName(message);
                   const messageParts = processMessage(message.content);

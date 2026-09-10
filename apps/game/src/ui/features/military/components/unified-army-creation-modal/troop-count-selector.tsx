@@ -44,7 +44,7 @@ export const TroopCountSelector = ({
         embedded ? "p-1" : "mt-2 p-2 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20"
       }
     >
-      <div className="space-y-1.5">
+      <div className="space-y-3">
         {/*
           Two rows: quick-add buttons on top, the editable count input on its
           own full-width row below. In the narrow embedded panel a single row

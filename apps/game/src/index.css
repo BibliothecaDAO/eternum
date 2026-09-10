@@ -340,6 +340,34 @@ body {
   }
 }
 
+/* One quick fill around a resource token each time its held amount changes. */
+@property --accrual-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes accrualSweep {
+  0% {
+    --accrual-angle: 0deg;
+    opacity: 1;
+  }
+  70% {
+    --accrual-angle: 360deg;
+    opacity: 1;
+  }
+  100% {
+    --accrual-angle: 360deg;
+    opacity: 0;
+  }
+}
+
+.accrual-sweep {
+  background: conic-gradient(rgba(110, 231, 183, 0.75) var(--accrual-angle), transparent var(--accrual-angle));
+  animation: accrualSweep 0.5s ease-out forwards;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+}
+
 .highlight-central-cell {
   animation: highlightPulse 2s infinite;
 }

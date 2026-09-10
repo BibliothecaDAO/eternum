@@ -44,10 +44,12 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
   if (clock.phase === "finished") return <GameFinishedPill />;
   const PhaseIcon = PHASE_ICONS[dayPhase.name];
   const phaseSecondsLeft = Math.round(((100 - dayPhase.progress) / 100) * armyTickSeconds);
+  const daySecondsLeft = phaseSecondsLeft + (DAY_PHASES.length - 1 - dayPhase.index) * armyTickSeconds;
+  // The title never carries the live countdown: a changing title attribute closes the native tooltip every second.
   const breakdown = [
     `${dayPhase.name} · phase ${dayPhase.index + 1} of ${DAY_PHASES.length}`,
     `Day length ${formatGameClockDuration(armyTickSeconds * DAY_PHASES.length)}`,
-    `${formatGameClockDuration(phaseSecondsLeft)} left in ${dayPhase.name.toLowerCase()}`,
+    "Countdown to the next day",
   ].join("\n");
   return (
     <div
@@ -73,7 +75,7 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
             compact && "text-[10px] tracking-normal text-gold/75",
           )}
         >
-          {formatGameClockDuration(phaseSecondsLeft)}
+          {formatGameClockDuration(daySecondsLeft)}
         </span>
       </span>
       {clock.remainingRatio !== null && (
