@@ -52,6 +52,7 @@ interface CreateRendererSceneRegistryInput<
     sceneManager: TSceneManager;
   }) => TFastTravelScene;
   createHexceptionScene: (input: {
+    compilePipelines: PipelineCompiler;
     controls: TControls;
     dojo: TDojo;
     mouse: TMouse;
@@ -118,6 +119,7 @@ export function createRendererSceneRegistry<
   const transitionManager = input.createTransitionManager();
   const sceneManager = input.createSceneManager(transitionManager);
   const hexceptionScene = input.createHexceptionScene({
+    compilePipelines: input.compilePipelines ?? (async () => {}),
     controls: input.controls,
     dojo: input.dojo,
     mouse: input.mouse,
@@ -176,8 +178,8 @@ export function createGameRendererSceneRegistry(input: {
     controls: input.controls,
     createFastTravelScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
       new FastTravelScene(dojo, raycaster, controls, mouse, sceneManager),
-    createHexceptionScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-      new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
+    createHexceptionScene: ({ compilePipelines, controls, dojo, mouse, raycaster, sceneManager }) =>
+      new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager, compilePipelines),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
     createTransitionManager: () => new TransitionManager(),
     createWorldmapScene: ({ compilePipelines, controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>

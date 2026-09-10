@@ -13,6 +13,8 @@ import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/st
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
+import { awaitLocalScenePresentable } from "./local-scene-presentation";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -178,6 +180,7 @@ export default class HexceptionScene extends HexagonScene {
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
   private localGridBuilt: Promise<void> = Promise.resolve();
+  private groundTexturesReady: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
   // True from setup until switch-off. Store subscriptions fire in every scene, so a grid rebuild (and the
@@ -199,6 +202,7 @@ export default class HexceptionScene extends HexagonScene {
     mouse: Vector2,
     raycaster: Raycaster,
     sceneManager: SceneManager,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     super(SceneName.Hexception, controls, dojo, mouse, raycaster, sceneManager);
 
@@ -530,7 +534,7 @@ export default class HexceptionScene extends HexagonScene {
     void this.proceduralTerrain.loadProps().catch((error) => {
       console.warn("[Hexception] Optional procedural terrain props failed to load", error);
     });
-    void this.proceduralTerrain.loadGroundTextures().catch((error) => {
+    this.groundTexturesReady = this.proceduralTerrain.loadGroundTextures().catch((error) => {
       console.warn("[Hexception] Procedural ground textures failed; retaining flat terrain", error);
     });
     this.loadBuildingModels();
@@ -1118,9 +1122,16 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  /** The first local frame is empty until the grid build presents terrain and buildings. */
+  /**
+   * The first local frame is empty until the grid build presents terrain and buildings, and slow until the
+   * renderer has compiled their pipelines; both happen behind the held world frame.
+   */
   public override whenPresentable(): Promise<void> {
-    return this.localGridBuilt;
+    return awaitLocalScenePresentable({
+      gridBuilt: this.localGridBuilt,
+      groundTextures: this.groundTexturesReady,
+      compile: () => this.compilePipelines(this.scene, this.scene),
+    });
   }
 
   private advanceRealmGeneration(): number {

@@ -81,6 +81,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   private cancelDrainRequest: (() => void) | null = null;
   private isDraining = false;
   private isDisposed = false;
+  private isHeld = false;
   private consecutiveCriticalTasks = 0;
   private consecutiveVisibleTasks = 0;
 
@@ -117,6 +118,13 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     return result;
   }
 
+  /** Held, the queue keeps its work but drains nothing; releasing it drains on the next frame. */
+  setHeld(held: boolean): void {
+    if (this.isHeld === held) return;
+    this.isHeld = held;
+    if (!held) this.requestDrain();
+  }
+
   dispose(): void {
     if (this.isDisposed) {
       return;
@@ -135,7 +143,13 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
   }
 
   private requestDrain(): void {
-    if (this.isDisposed || this.isDraining || this.cancelDrainRequest !== null || !this.hasPendingWork()) {
+    if (
+      this.isDisposed ||
+      this.isHeld ||
+      this.isDraining ||
+      this.cancelDrainRequest !== null ||
+      !this.hasPendingWork()
+    ) {
       return;
     }
 
@@ -155,7 +169,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     const frameBudgetMs = this.isLoading() ? this.loadingFrameBudgetMs : this.frameBudgetMs;
 
     try {
-      while (!this.isDisposed) {
+      while (!this.isDisposed && !this.isHeld) {
         const work = this.takeNextWork();
         if (!work) {
           break;

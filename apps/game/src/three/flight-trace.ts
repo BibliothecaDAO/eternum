@@ -11,6 +11,9 @@ interface ActiveFlightTrace {
 }
 
 let activeTrace: ActiveFlightTrace | null = null;
+let longTaskObserver: PerformanceObserver | null = null;
+// The post-reveal frame compiles what the reveal could not; keep listening that long after fadeIn.
+const TRACE_TAIL_MS = 4_000;
 
 const TRACE_STORAGE_KEY = "eternum:trace";
 
@@ -23,18 +26,53 @@ const readFlightTraceFlag = (): boolean => {
   return (requested ?? window.sessionStorage.getItem(TRACE_STORAGE_KEY)) === "flight";
 };
 
-const FLIGHT_TRACE_ENABLED = readFlightTraceFlag();
+export const FLIGHT_TRACE_ENABLED = readFlightTraceFlag();
 
 export function beginFlightTrace(from: string | undefined, to: string): void {
   if (!FLIGHT_TRACE_ENABLED) return;
   activeTrace = { startedAt: performance.now(), label: `${from ?? "?"}→${to}` };
   console.log(`[flight] flyOut ${activeTrace.label} at ${activeTrace.startedAt.toFixed(0)}ms`);
+  observeLongTasks();
 }
 
 export function endFlightTrace(reason: string): void {
   if (!activeTrace) return;
   console.log(`[flight] ${offset()} ${reason}`);
-  activeTrace = null;
+  const trace = activeTrace;
+  window.setTimeout(() => {
+    if (activeTrace === trace) {
+      activeTrace = null;
+      longTaskObserver?.disconnect();
+      longTaskObserver = null;
+    }
+  }, TRACE_TAIL_MS);
+}
+
+/** A React commit of the HUD during the flight: the route change re-renders it while the scene animates. */
+export function traceFlightCommit(id: string, phase: string, actualDurationMs: number): void {
+  if (!activeTrace || actualDurationMs <= FRAME_BUDGET_MS) return;
+  console.log(`[flight] ${offset()} react ${id} ${phase} ${actualDurationMs.toFixed(1)}ms`);
+}
+
+// Long tasks catch what no frame owner wraps: module loading, layout, garbage collection.
+function observeLongTasks(): void {
+  if (longTaskObserver || typeof PerformanceObserver === "undefined") return;
+  try {
+    longTaskObserver = new PerformanceObserver((list) => {
+      if (!activeTrace) return;
+      list.getEntries().forEach((entry) => {
+        const at = entry.startTime - (activeTrace?.startedAt ?? 0);
+        const source = (
+          entry as PerformanceEntry & { attribution?: { containerType?: string; containerSrc?: string }[] }
+        ).attribution?.[0];
+        const where = source ? ` in ${source.containerType ?? "?"} ${source.containerSrc ?? ""}`.trimEnd() : "";
+        console.log(`[flight] +${at.toFixed(0)}ms longtask ${entry.duration.toFixed(0)}ms${where}`);
+      });
+    });
+    longTaskObserver.observe({ entryTypes: ["longtask"] });
+  } catch {
+    longTaskObserver = null;
+  }
 }
 
 export function traceFlightFrame(durationMs: number, owner: { owner: string; maxCallMs: number } | null): void {
