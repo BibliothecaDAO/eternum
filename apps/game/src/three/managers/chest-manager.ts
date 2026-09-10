@@ -19,7 +19,9 @@ import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "../sce
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
-import { getWorldPositionForHex, hashCoordinates } from "../utils";
+import { getWorldPositionForHex } from "../utils";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
@@ -488,8 +490,7 @@ export class ChestManager {
   private chestPlacement(chest: Pick<ChestSpatialRenderable, "hexCoords">): THREE.Matrix4 {
     this.dummy.position.copy(this.getChestWorldPosition(chest));
     this.dummy.position.y += 0.05;
-    const rotationIndex = Math.floor(hashCoordinates(chest.hexCoords.col, chest.hexCoords.row) * 6);
-    this.dummy.rotation.y = (rotationIndex * Math.PI) / 3;
+    this.dummy.rotation.y = 0;
     this.dummy.updateMatrix();
     return this.dummy.matrix;
   }
@@ -623,8 +624,14 @@ export class ChestManager {
   }
 
   public update(deltaTime: number) {
+    const cameraPosition = this.hexagonScene?.getCamera().position;
+    const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
+    this.chestModel?.updatePresentation(nightAmount, cameraPosition);
     this.chestModel?.updateAnimations(deltaTime);
-    if (this.chestModel && this.chestTransitions?.update(deltaTime, this.chestModel.time)) {
+    if (
+      this.chestModel &&
+      this.chestTransitions?.update(deltaTime, this.chestModel.time, cameraPosition, nightAmount)
+    ) {
       for (const chest of this.visibleChests) this.updateChestInstance(chest);
       this.updateChestMarkers();
     }

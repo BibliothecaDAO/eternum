@@ -1,13 +1,15 @@
 import { ChestRelicReveal } from "./chest-relic-reveal";
-import { AnimationMixer, Group, Matrix4, Scene } from "three";
+import { AnimationMixer, Group, Matrix4, Scene, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { RewardSummoning } from "./reward-summoning";
+import { ChestPresentation } from "./chest-presentation";
 
 interface ChestTransition {
   root: Group;
   mixer: AnimationMixer;
   effect: RewardSummoning;
+  presentation: ChestPresentation;
   relics?: ChestRelicReveal;
   tileKey?: string;
   kind?: "summon" | "open";
@@ -24,6 +26,7 @@ export class ChestTransitions {
       const root = new Group();
       const object = gltf.scene.clone(true);
       root.add(object);
+      const presentation = new ChestPresentation(object);
       const mixer = new AnimationMixer(object);
       gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
       // Radiant interior surfaces and beams light the opening without adding
@@ -31,7 +34,7 @@ export class ChestTransitions {
       const effect = new RewardSummoning(object, root, false);
       root.visible = false;
       this.group.add(root);
-      this.actors.push({ root, mixer, effect });
+      this.actors.push({ root, mixer, effect, presentation });
     }
   }
 
@@ -90,11 +93,13 @@ export class ChestTransitions {
     return actor?.kind === "summon" ? actor.effect.revealProgress : 1;
   }
 
-  update(delta: number, animationTime: number): boolean {
+  update(delta: number, animationTime: number, cameraPosition?: Vector3, nightAmount = 0): boolean {
     if (!this.active.size) return false;
     for (const [tileKey, actor] of this.active) {
       actor.mixer.setTime(animationTime);
       actor.effect.update(delta, animationTime);
+      actor.presentation.setNightAmount(nightAmount);
+      if (cameraPosition) actor.presentation.faceCamera(cameraPosition);
       actor.relics?.update(actor.effect.openingElapsed);
       if (actor.kind === "summon" ? actor.effect.isSummoned : actor.effect.isAbsorbed) this.cancel(tileKey);
     }
@@ -121,6 +126,7 @@ export class ChestTransitions {
     this.group.removeFromParent();
     for (const actor of this.actors) {
       actor.effect.dispose();
+      actor.presentation.dispose();
       actor.mixer.stopAllAction();
       actor.mixer.uncacheRoot(actor.mixer.getRoot());
     }

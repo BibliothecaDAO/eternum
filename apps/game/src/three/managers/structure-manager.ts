@@ -1,5 +1,7 @@
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
+import { resolveRewardNightAmount } from "../rewards/reward-lighting";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { RiftModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -1829,7 +1831,11 @@ export class StructureManager {
 
     if (this.contentLadder.structureModels) {
       const context = this.resolveAnimationVisibilityContext(visibility);
-      this.forEachStructureModel((model) => model.updateAnimations(deltaTime, context));
+      const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
+      this.forEachStructureModel((model) => {
+        if (model instanceof RewardTileModel) model.updatePresentation(nightAmount);
+        model.updateAnimations(deltaTime, context);
+      });
     }
 
     if (this.frustumVisibilityDirty) {

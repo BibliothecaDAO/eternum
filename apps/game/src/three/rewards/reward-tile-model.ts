@@ -8,12 +8,15 @@ import {
   Mesh,
   MeshStandardMaterial,
   Sphere,
+  Vector3,
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { AnimationVisibilityContext } from "../types/animation";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { disposeSkinnedSceneTemplates } from "../characters/skinned-asset-resources";
 import { createArcaneStoneMaterial, createRuneFlameMaterials } from "./reward-summoning-effects";
+import { ChestPresentation } from "./chest-presentation";
+import { RiftPresentation } from "./rift-presentation";
 
 /** Keeps the authored hierarchy and morph animation while batching visible reward tiles. */
 export class RewardTileModel {
@@ -31,6 +34,9 @@ export class RewardTileModel {
   private readonly ownedMaterials = new Set<Material>();
   private bounds?: { box: Box3; sphere: Sphere };
   private count = 0;
+  private readonly chest?: ChestPresentation;
+  private readonly rift?: RiftPresentation;
+  private readonly cameraPosition = new Vector3(0, 0, 1);
 
   constructor(
     gltf: GLTF,
@@ -38,6 +44,8 @@ export class RewardTileModel {
   ) {
     this.template = gltf;
     this.pose = gltf.scene.clone(true);
+    if (this.pose.getObjectByName("ChestBody")) this.chest = new ChestPresentation(this.pose);
+    else this.rift = new RiftPresentation(this.pose);
     this.mixer = new AnimationMixer(this.pose);
     gltf.animations.forEach((clip) => this.mixer.clipAction(clip).play());
     this.energy.glyphStrength.value = 0.8;
@@ -97,12 +105,20 @@ export class RewardTileModel {
     for (const [index, placement] of this.placements) this.writePose(index, placement);
   }
 
+  updatePresentation(nightAmount: number, cameraPosition?: Vector3): void {
+    if (cameraPosition) this.cameraPosition.copy(cameraPosition);
+    this.chest?.setNightAmount(nightAmount);
+    this.rift?.setNightAmount(nightAmount);
+  }
+
   dispose(): void {
     this.group.removeFromParent();
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.pose);
     this.instancedMeshes.forEach((mesh) => mesh.dispose());
     this.ownedMaterials.forEach((material) => material.dispose());
+    this.chest?.dispose();
+    this.rift?.dispose();
     this.energy.glyph.dispose();
     this.energy.flame.dispose();
     disposeSkinnedSceneTemplates([this.template.scene]);
@@ -155,6 +171,7 @@ export class RewardTileModel {
   }
 
   private writePose(index: number, placement: Matrix4): void {
+    this.chest?.faceCamera(this.cameraPosition, placement);
     this.instancedMeshes.forEach((mesh, part) => {
       const source = this.sources[part];
       this.composed.multiplyMatrices(placement, source.matrixWorld);

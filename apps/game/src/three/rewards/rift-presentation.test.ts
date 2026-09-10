@@ -1,0 +1,30 @@
+import { expect, it } from "vitest";
+import { Group, Mesh, MeshStandardMaterial, PlaneGeometry } from "three";
+import { RiftPresentation } from "./rift-presentation";
+
+it("brightens shared liquid at night while preserving terrain, vertex colors and the daytime material", () => {
+  const liquid = new MeshStandardMaterial({ roughness: 0.55, vertexColors: true, emissive: 0x210254 });
+  liquid.name = "Living liquid";
+  const stone = new MeshStandardMaterial({ color: 0x888888 });
+  stone.name = "Slate";
+  const group = new Group();
+  const pool = new Mesh(new PlaneGeometry(), liquid);
+  const spray = new Mesh(new PlaneGeometry(), liquid);
+  const basin = new Mesh(new PlaneGeometry(), stone);
+  group.add(pool, spray, basin);
+  const presentation = new RiftPresentation(group);
+  expect(pool.material).toBe(spray.material);
+  expect(pool.material).not.toBe(liquid);
+  expect(basin.material).toBe(stone);
+  presentation.setNightAmount(1);
+  expect(pool.material.emissive.b).toBeGreaterThan(liquid.emissive.b);
+  expect(pool.material.roughness).toBeLessThan(liquid.roughness);
+  expect(pool.material.vertexColors).toBe(true);
+  presentation.setNightAmount(0);
+  expect(pool.material.emissive.equals(liquid.emissive)).toBe(true);
+  expect(pool.material.roughness).toBe(liquid.roughness);
+  presentation.dispose();
+  group.children.forEach((child) => (child as Mesh).geometry.dispose());
+  liquid.dispose();
+  stone.dispose();
+});

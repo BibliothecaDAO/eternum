@@ -35,10 +35,17 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-10",
+    title: "Fleet details and reward preview",
+    type: "fix",
+    description:
+      "Tier 1 ships carry their class color along the upper hull, with the forward sail rope removed. Compressed sails and flags animate correctly. Preview chest opening and all three relic icons in the Reward Lab. Map view labels match the other header controls.",
+  },
+  {
+    date: "2026-09-10",
     title: "Arcane Chests and Essence Rifts",
     type: "improvement",
     description:
-      "New map chests emerge through violet shadows. Collecting one lights it from within and reveals your three relics before the whole altar sinks into the biome. Existing chests stay settled as you browse. Essence rifts now churn and erupt with textured liquid spray.",
+      "Camera-facing chests pair light purple enamel with gold and blue gems, with a softer daytime finish and a night glow. New chests emerge through violet shadows; opening reveals three relics before the altar sinks into the biome. Existing chests stay settled as you browse. Essence rifts erupt with textured liquid spray and catch moonlight with a violet glow after dark.",
   },
   {
     date: "2026-09-10",

@@ -33,7 +33,7 @@ export function createRuneFlameMaterials() {
     .add(0.5)
     .mul(flicker.mul(0.7).add(0.3));
   const glyph = new MeshBasicNodeMaterial();
-  glyph.colorNode = mix(color("#350448"), color("#ab37ef"), flow.mul(glyphStrength));
+  glyph.colorNode = mix(color("#350448"), color("#ab37ef"), flow.mul(glyphStrength)).mul(1.5).add(color("#682a94").rgb);
   glyph.toneMapped = false;
 
   const flame = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, side: DoubleSide });
@@ -102,27 +102,8 @@ export function createArcaneStoneMaterial(
     roughness: 0.88,
     metalness: 0.02,
   });
-  const radius = positionLocal.xz.length();
-  const wave = radius
-    .mul(19)
-    .sub(energy.clock.mul(3.1))
-    .add(energy.clock.mul(0.73).sin().mul(2.4))
-    .sin()
-    .mul(0.5)
-    .add(0.5);
-  const veins = positionLocal.x.mul(37).add(positionLocal.z.mul(29)).sin().mul(0.5).add(0.5);
-  const flicker = energy.clock
-    .mul(2.13)
-    .add(radius.mul(13))
-    .sin()
-    .mul(energy.clock.mul(5.71).sub(positionLocal.x.mul(8)).sin())
-    .mul(0.4)
-    .add(0.6);
-  material.emissiveNode = mix(
-    color("#09010d"),
-    color("#5f108e"),
-    wave.pow(4).mul(veins.mul(0.35).add(0.65)).mul(flicker),
-  ).mul(energy.glyphStrength);
+  // Energy travels through the carved glyphs, leaving the masonry free of moving bands.
+  material.emissiveNode = color("#39234c").mul(energy.glyphStrength.div(0.8));
   return material;
 }
 

@@ -12,6 +12,7 @@ describe("StructureManager reset pass", () => {
   it("updates draw counts only for models with entering or leaving slots", () => {
     const source = readSource("./structure-manager.ts");
 
+    expect(source).toMatch(/type StructureModel = InstancedModel \| RewardTileModel/);
     expect(source).toMatch(/private updateVisibleStructureModelCounts\(dirtyModels: Set<StructureModel>\)/);
     expect(source).toMatch(/dirtyModels\.forEach\(\(model\) =>/);
     expect(source).not.toMatch(
