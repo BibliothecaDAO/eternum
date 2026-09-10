@@ -28,6 +28,7 @@ const SANCTIONED_CLIENT_FILES = new Set([
   "src/three/scenes/worldmap-hover-label-recovery.ts",
   "src/three/scenes/worldmap-perf-simulation.ts",
   "src/three/scenes/worldmap.tsx",
+  "src/three/flight-trace.ts",
   "src/three/stats-recorder.ts",
   "src/three/systems/player-colors.ts",
   "src/three/utils/centralized-visibility-manager.ts",

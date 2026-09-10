@@ -40,6 +40,7 @@ export class SceneFlight {
       .clone()
       .sub(this.originalTarget)
       .multiplyScalar(enteringRealm ? 0.45 : 1.25);
+    this.outgoing.setCameraOwnedByFlight(true);
     this.cancelAnimation = this.outgoing.cameraAnimate(target.clone().add(offset), target, 0.45);
     return new Promise((resolve) => {
       this.resolveFlight = resolve;
@@ -105,6 +106,7 @@ export class SceneFlight {
     const { x, y, z } = this.originalTarget;
     this.outgoing.moveCameraToXYZ(x, y, z, 0);
     this.outgoing.getCamera().position.copy(this.originalPosition);
+    this.outgoing.setCameraOwnedByFlight(false);
   }
 
   /**

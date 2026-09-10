@@ -70,6 +70,7 @@ import {
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
 import { openRelicCrateContextMenu } from "./context-menu/relic-crate-context-menu";
+import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -890,6 +891,8 @@ export default class WorldmapScene extends WarpTravel {
   };
   private handleWorldmapControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    // The flight tween is leaving this scene: no target-hex, terrain-window or chunk-refresh churn on its way out.
+    if (this.cameraOwnedByFlight) return;
     this.updateCameraTargetHexThrottled?.();
     this.refreshVisualTerrainWindowThrottled?.();
 
@@ -904,6 +907,13 @@ export default class WorldmapScene extends WarpTravel {
         threshold: this.zoomForceRefreshDistanceThreshold,
       }),
       status: this.zoomCoordinator.getSnapshot().status,
+    });
+    traceFlightPlanner({
+      distance: nextCameraDistance.toFixed(2),
+      distanceChanged: this.lastControlsCameraDistance === null || this.lastControlsCameraDistance !== nextCameraDistance,
+      status: this.zoomCoordinator.getSnapshot().status,
+      immediate: refreshPlan.immediateLevel,
+      pending: refreshPlan.nextState.pendingLevel,
     });
     this.zoomRefreshPlannerState = refreshPlan.nextState;
     this.lastControlsCameraDistance = nextCameraDistance;
@@ -7455,6 +7465,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private syncWorldmapZoomSnapshot(deltaTime: number): void {
+    // The flight owns the camera: the coordinator must not pull the distance back toward its own target.
+    if (this.cameraOwnedByFlight) return;
     const zoomFrame = this.zoomCoordinator.tick({
       actualDistance: this.getCurrentCameraDistance(),
       deltaMs: deltaTime * 1000,

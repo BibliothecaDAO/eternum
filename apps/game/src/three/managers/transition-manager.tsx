@@ -2,6 +2,7 @@ import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-stor
 import type { HexagonScene } from "../scenes/hexagon-scene";
 import type { SceneName } from "../types";
 import { SceneFlight, canFlyBetweenScenes } from "./scene-flight";
+import { beginFlightTrace, endFlightTrace } from "../flight-trace";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
@@ -23,6 +24,7 @@ export class TransitionManager {
     this.cancelPendingFadeOut();
     this.flight?.destroy();
     this.flight = new SceneFlight(scene, to);
+    beginFlightTrace(from, to);
     return this.flight.flyOut();
   }
 
@@ -48,6 +50,7 @@ export class TransitionManager {
   }
 
   fadeIn(scene?: HexagonScene) {
+    endFlightTrace("fadeIn: incoming scene revealed");
     if (scene) this.flight?.reveal(scene);
     this.cancelPendingFadeOut();
     useUIStore.getState().setIsLoadingScreenEnabled(false);

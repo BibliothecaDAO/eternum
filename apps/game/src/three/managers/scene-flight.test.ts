@@ -14,6 +14,7 @@ function scene(presentable: Promise<void> = Promise.resolve()) {
     getLocationCoordinates: () => ({ x: 10, z: 20 }),
     cameraAnimate: vi.fn(() => cancel),
     moveCameraToXYZ: vi.fn(),
+    setCameraOwnedByFlight: vi.fn(),
     whenPresentable: () => presentable,
     cancel,
   };
@@ -49,6 +50,9 @@ it("holds the outgoing frame through setup, then crossfades as the incoming came
   const flight = new SceneFlight(outgoing as unknown as HexagonScene, SceneName.Hexception);
   const completion = flight.flyOut();
   expect(outgoing.cameraAnimate).toHaveBeenCalledWith(expect.any(Vector3), new Vector3(10, 0, 20), 0.45);
+  // The flight owns the outgoing camera from flyOut until it hands the original camera back.
+  expect(outgoing.setCameraOwnedByFlight).toHaveBeenCalledWith(true);
+  expect(outgoing.setCameraOwnedByFlight).not.toHaveBeenCalledWith(false);
   await vi.advanceTimersByTimeAsync(500);
   const source = document.querySelector("canvas")!;
   expect(document.querySelector('[data-scene-transition="frame"]')).toBeNull();
@@ -56,6 +60,7 @@ it("holds the outgoing frame through setup, then crossfades as the incoming came
   await expect(completion).resolves.toBe(true);
   expect(document.querySelector('[data-scene-transition="frame"]')).not.toBeNull();
   expect(outgoing.cancel).toHaveBeenCalledOnce();
+  expect(outgoing.setCameraOwnedByFlight).toHaveBeenLastCalledWith(false);
   flight.reveal(incoming as unknown as HexagonScene);
   await vi.advanceTimersByTimeAsync(500);
   expect(incoming.cameraAnimate).toHaveBeenCalledWith(new Vector3(0, 20, 20), new Vector3(), 0.3);
