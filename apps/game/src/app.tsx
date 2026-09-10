@@ -40,6 +40,9 @@ const DebugWorldFxGymView = lazy(() =>
 const ModelLabView = lazy(() =>
   import("./ui/features/debug/model-lab-view").then((module) => ({ default: module.ModelLabView })),
 );
+const RewardLabView = lazy(() =>
+  import("./ui/features/debug/reward-lab-view").then((module) => ({ default: module.RewardLabView })),
+);
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = () => <div className="min-h-screen bg-black" />;
@@ -58,6 +61,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route
+          path="/reward-lab"
+          element={
+            <DebugRouteShell>
+              <RewardLabView />
+            </DebugRouteShell>
+          }
+        />
         <Route
           path="/model-lab"
           element={

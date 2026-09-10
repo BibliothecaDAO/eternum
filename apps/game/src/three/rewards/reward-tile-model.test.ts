@@ -99,7 +99,7 @@ describe("chest camera facing", () => {
     model.setMatrixAt(0, new Matrix4());
     model.setMatrixAt(1, new Matrix4().makeTranslation(20, 0, 0));
     model.setCount(2);
-    model.updateChestPresentation(new Vector3(10, 8, 10), 0);
+    model.updatePresentation(0, new Vector3(10, 8, 10));
     model.updateAnimations(0);
     const matrix = new Matrix4();
     const chestMesh = model.instancedMeshes.find((mesh) => mesh.name === "chest")!;
@@ -113,7 +113,7 @@ describe("chest camera facing", () => {
       altarMesh.getMatrixAt(index, matrix);
       expect(new Vector3(0, 0, 1).transformDirection(matrix).toArray()).toEqual([0, 0, 1]);
     }
-    model.updateChestPresentation(new Vector3(-10, 8, -10), 1);
+    model.updatePresentation(1, new Vector3(-10, 8, -10));
     model.updateAnimations(0);
     chestMesh.getMatrixAt(0, matrix);
     expect(new Vector3(0, 0, 1).transformDirection(matrix).z).toBeCloseTo(-Math.SQRT1_2);

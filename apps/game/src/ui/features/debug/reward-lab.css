@@ -1,0 +1,184 @@
+.reward-lab {
+  height: 100dvh;
+  min-height: 680px;
+  display: flex;
+  flex-direction: column;
+  background: #13171b;
+  color: #e7e0d4;
+  font:
+    13px/1.5 Inter,
+    sans-serif;
+}
+.reward-lab header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 28px;
+  border-bottom: 1px solid #ffffff12;
+}
+.reward-lab header a {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: #c6a978;
+}
+.reward-lab h1 {
+  margin: 2px 0 0;
+  font:
+    25px Georgia,
+    serif;
+}
+.rl-tag {
+  letter-spacing: 0.15em;
+  font-size: 10px;
+  color: #bda3df;
+}
+.rl-studies {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 14px 24px;
+}
+.reward-lab button {
+  border: 1px solid #ffffff1c;
+  background: #20242b;
+  color: inherit;
+  border-radius: 6px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+.reward-lab button:hover {
+  background: #303039;
+}
+.reward-lab button[aria-pressed="true"] {
+  background: #3c304f;
+  border-color: #ad87d3;
+}
+.rl-studies button {
+  text-align: left;
+  min-height: 72px;
+}
+.rl-studies strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.rl-studies span {
+  display: block;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a8a4ae;
+  margin-top: 5px;
+}
+.rl-stage {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+  margin: 0 24px;
+  overflow: hidden;
+  border: 1px solid #ffffff18;
+  border-radius: 8px;
+}
+.rl-canvas {
+  position: absolute;
+  inset: 0;
+}
+.rl-canvas canvas {
+  display: block;
+}
+.rl-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  background: #171b20df;
+  padding: 40px;
+}
+.rl-stage-note,
+.rl-stats {
+  position: absolute;
+  pointer-events: none;
+  background: #13171bbd;
+  padding: 9px 13px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.rl-stage-note {
+  left: 14px;
+  bottom: 14px;
+  color: #ddd1c5;
+}
+.rl-stats {
+  right: 14px;
+  top: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.reward-lab footer {
+  padding: 14px 24px;
+}
+.rl-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.rl-controls label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.rl-controls input {
+  accent-color: #b491d4;
+}
+.rl-timeline {
+  flex: 1;
+  min-width: 180px;
+}
+.rl-timeline input {
+  flex: 1;
+  min-width: 80px;
+}
+.rl-controls select {
+  background: #242831;
+  color: inherit;
+  padding: 7px;
+  border: 1px solid #ffffff24;
+  border-radius: 4px;
+}
+.reward-lab footer p {
+  margin: 11px 0 6px;
+  color: #a8a4ae;
+  font-size: 11px;
+}
+.rl-downloads {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: #a8a4ae;
+}
+.rl-downloads a {
+  color: #c7a7eb;
+}
+@media (max-width: 850px) {
+  .reward-lab {
+    min-height: 820px;
+  }
+  .rl-studies {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 10px;
+  }
+  .rl-stage {
+    margin: 0 10px;
+  }
+  .reward-lab header {
+    padding: 14px;
+    flex-wrap: wrap;
+  }
+  .reward-lab footer {
+    padding: 12px;
+  }
+  .rl-tag {
+    display: none;
+  }
+}

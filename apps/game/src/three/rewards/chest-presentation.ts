@@ -1,12 +1,6 @@
-import { Color, Group, Material, MathUtils, Matrix4, Mesh, MeshStandardMaterial, Vector3 } from "three";
+import { Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 import { color, texture, uniform, vec3 } from "three/tsl";
-
-export function resolveChestNightAmount(cycleProgress: number): number {
-  const daylight =
-    MathUtils.smoothstep(cycleProgress, 16.7, 33.3) * (1 - MathUtils.smoothstep(cycleProgress, 66.7, 83.3));
-  return 1 - daylight;
-}
 
 /** Shared chest finish and orientation for settled instances and tile transitions. */
 export class ChestPresentation {

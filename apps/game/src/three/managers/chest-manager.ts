@@ -21,7 +21,7 @@ import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex } from "../utils";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { resolveChestNightAmount } from "../rewards/chest-presentation";
+import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { createChestLabel } from "../utils/labels/label-factory";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { gltfLoader } from "../utils/utils";
@@ -625,8 +625,8 @@ export class ChestManager {
 
   public update(deltaTime: number) {
     const cameraPosition = this.hexagonScene?.getCamera().position;
-    const nightAmount = resolveChestNightAmount(useUIStore.getState().cycleProgress);
-    if (cameraPosition) this.chestModel?.updateChestPresentation(cameraPosition, nightAmount);
+    const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
+    this.chestModel?.updatePresentation(nightAmount, cameraPosition);
     this.chestModel?.updateAnimations(deltaTime);
     if (
       this.chestModel &&

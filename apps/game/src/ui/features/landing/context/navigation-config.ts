@@ -1,6 +1,6 @@
 import { Box, Bug, Castle, Home, Trees, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "debug" | "biome-lab" | "local-lab" | "model-lab";
+type SectionId = "home" | "debug" | "biome-lab" | "local-lab" | "model-lab" | "reward-lab";
 
 interface SubMenuItem {
   id: string;
@@ -56,6 +56,13 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     subMenu: [{ id: "model-lab", label: "MODEL LAB", tab: null, href: "/model-lab" }],
   },
   ...buildDebugNavigationSections(),
+  {
+    id: "reward-lab",
+    label: "Reward Lab",
+    icon: Box,
+    basePath: "/reward-lab",
+    subMenu: [{ id: "reward-lab", label: "REWARD LAB", tab: null, href: "/reward-lab" }],
+  },
 ];
 
 const HOME_SECTION_PATHS = new Set(["/", "/learn", "/news", "/factory"]);

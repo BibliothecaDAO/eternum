@@ -84,9 +84,10 @@ export class ModelLabEnvironment {
     this.signature = signature;
   }
 
-  frame(delta: number, target: Vector3, lighting: ModelLabSettings["lighting"]): void {
+  frame(delta: number, target: Vector3, lighting: ModelLabSettings["lighting"] | "night"): void {
     this.terrain.update(delta);
-    this.atmosphere.update(lighting === "sunset" ? 65 : 42, target, { snap: true, environment: "world" });
+    const progress = lighting === "night" ? 0 : lighting === "sunset" ? 65 : 42;
+    this.atmosphere.update(progress, target, { snap: true, environment: "world" });
   }
 
   dispose(): void {
