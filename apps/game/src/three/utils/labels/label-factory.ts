@@ -46,6 +46,12 @@ const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
     line1.style.color = "inherit";
     contentContainer.appendChild(line1);
 
+    const hint = document.createElement("span");
+    hint.textContent = "Right-click with an army to open";
+    hint.classList.add("text-[10px]", "opacity-80");
+    hint.setAttribute("data-role", "chest-hint");
+    contentContainer.appendChild(hint);
+
     labelDiv.appendChild(contentContainer.wrapper);
     return labelDiv;
   },
