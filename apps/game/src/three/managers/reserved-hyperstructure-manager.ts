@@ -131,7 +131,6 @@ export class ReservedHyperstructureManager {
     }
 
     reservedHyperstructureModel.setCount(entries.length);
-    reservedHyperstructureModel.needsUpdate();
   }
 
   private getReservedHyperstructureHexes(): HexPosition[] {

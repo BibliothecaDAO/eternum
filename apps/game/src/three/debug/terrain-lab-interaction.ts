@@ -104,7 +104,7 @@ export class TerrainLabInteraction {
         getArmyGroundOffset(this.army.instancedMeshes, this.armyType === "none" ? undefined : this.armyType),
       );
       this.army.setMatrixAt(0, this.matrix, this.armyPosition.y);
-      this.army.needsUpdate();
+      this.army.refreshBounds();
     }
     this.army.updateAnimations(delta);
   }

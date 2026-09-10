@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { createStore } from "zustand/vanilla";
 import { describe, expect, it, vi } from "vitest";
 import { configManager } from "@bibliothecadao/eternum";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
@@ -135,4 +136,24 @@ describe("use-realm-store spectator lifecycle", () => {
     expect(next.isSpectating).toBe(false);
     expect(next.structureEntityId).toBe(444);
   });
+});
+
+it("publishes arrival badges only when their counts or ordered structure IDs change", () => {
+  const store = createStore<RealmStore>((set) => createRealmStoreSlice(set));
+  const listener = vi.fn();
+  store.subscribe(listener);
+  const setIndicators = store.getState().setArrivalIndicators;
+  for (let tick = 0; tick < 60; tick++) {
+    setIndicators({ arrivedArrivalsNumber: 0, pendingArrivalsNumber: 0, arrivedArrivalStructureIds: [] });
+  }
+  expect(listener).not.toHaveBeenCalled();
+  const indicators = { arrivedArrivalsNumber: 2, pendingArrivalsNumber: 1, arrivedArrivalStructureIds: [7, 8] };
+  setIndicators(indicators);
+  const committed = store.getState();
+  setIndicators({ ...indicators, arrivedArrivalStructureIds: [7, 8] });
+  expect(store.getState()).toBe(committed);
+  expect(listener).toHaveBeenCalledTimes(1);
+  setIndicators({ ...indicators, arrivedArrivalStructureIds: [8, 7] });
+  setIndicators({ ...indicators, pendingArrivalsNumber: 2 });
+  expect(listener).toHaveBeenCalledTimes(3);
 });

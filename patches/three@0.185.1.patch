@@ -1,0 +1,205 @@
+diff --git a/build/three.webgpu.js b/build/three.webgpu.js
+index 2e490796d4d4aa9479b04a5c46ddbf31cc05b1a1..25c348fe44c8286525c47df68dac10514586bb8a 100644
+--- a/build/three.webgpu.js
++++ b/build/three.webgpu.js
+@@ -18297,6 +18297,15 @@ const _matrixBuffers = /*@__PURE__*/ new WeakMap();
+ const _colorBuffers = /*@__PURE__*/ new WeakMap();
+ const _previousInstanceMatrices = /*@__PURE__*/ new WeakMap();
+ 
++// The WebGL uniform path uploads the entire matrix array on every draw, even
++// for unchanged instances. Vertex attributes honor versions and dirty ranges.
++function useUniformInstanceMatrices( builder, matrices ) {
++
++	return builder.renderer.backend.isWebGLBackend !== true &&
++		Math.max( matrices.count, 1 ) * 16 * 4 <= builder.getUniformBufferLimit();
++
++}
++
+ /**
+  * Creates the appropriate node for instanced matrix transformations.
+  * Depending on buffer limits and storage capability, returns either a storage, buffer, or instanced interleaved attribute node.
+@@ -18318,9 +18327,7 @@ function createInstanceMatrixNode( builder, instanceMatrix ) {
+ 
+ 	} else {
+ 
+-		const uniformBufferSize = matrixCount * 16 * 4;
+-
+-		if ( uniformBufferSize <= builder.getUniformBufferLimit() ) {
++		if ( useUniformInstanceMatrices( builder, instanceMatrix ) ) {
+ 
+ 			instanceMatrixNode = buffer( instanceMatrix.array, 'mat4', matrixCount ).element( instanceIndex );
+ 
+@@ -18412,9 +18419,7 @@ const instance = /*@__PURE__*/ Fn( ( [ matrices, colors = null ], builder ) => {
+ 
+ 	if ( ! isStorageMatrix ) {
+ 
+-		const uniformBufferSize = Math.max( matrices.count, 1 ) * 16 * 4;
+-
+-		if ( uniformBufferSize > builder.getUniformBufferLimit() ) {
++		if ( ! useUniformInstanceMatrices( builder, matrices ) ) {
+ 
+ 			interleavedMatrix = _matrixBuffers.get( matrices );
+ 
+@@ -18437,7 +18442,7 @@ const instance = /*@__PURE__*/ Fn( ( [ matrices, colors = null ], builder ) => {
+ 
+ 			if ( ! bufferAttribute ) {
+ 
+-				bufferAttribute = new InstancedBufferAttribute( colors.array, 3 );
++				bufferAttribute = new InstancedInterleavedBuffer( colors.array, 3, 1 );
+ 				_colorBuffers.set( colors, bufferAttribute );
+ 
+ 			}
+@@ -18452,34 +18457,27 @@ const instance = /*@__PURE__*/ Fn( ( [ matrices, colors = null ], builder ) => {
+ 
+ 	}
+ 
+-	// Synchronization of dynamic buffer updates per frame
++	// Synchronize before geometry uploads; consuming dirty spans keeps later
++	// writes small and makes a changed transform/color visible in this draw.
+ 	if ( interleavedMatrix !== null || interleavedColor !== null ) {
+ 
+-		OnFrameUpdate( () => {
++		OnBeforeObjectUpdate( () => {
+ 
+-			if ( interleavedMatrix !== null ) {
++			if ( interleavedMatrix !== null && matrices.version !== interleavedMatrix.version ) {
+ 
+ 				interleavedMatrix.clearUpdateRanges();
+ 				interleavedMatrix.updateRanges.push( ...matrices.updateRanges );
+-
+-				if ( matrices.version !== interleavedMatrix.version ) {
+-
+-					interleavedMatrix.version = matrices.version;
+-
+-				}
++				matrices.clearUpdateRanges();
++				interleavedMatrix.version = matrices.version;
+ 
+ 			}
+ 
+-			if ( colors && interleavedColor !== null ) {
++			if ( colors && interleavedColor !== null && colors.version !== interleavedColor.version ) {
+ 
+ 				interleavedColor.clearUpdateRanges();
+ 				interleavedColor.updateRanges.push( ...colors.updateRanges );
+-
+-				if ( colors.version !== interleavedColor.version ) {
+-
+-					interleavedColor.version = colors.version;
+-
+-				}
++				colors.clearUpdateRanges();
++				interleavedColor.version = colors.version;
+ 
+ 			}
+ 
+diff --git a/src/nodes/accessors/Instance.js b/src/nodes/accessors/Instance.js
+index b89834b9166c75fd946ade24db265bf8c367d244..5f4775ba77e44ab58439d0fc57275ec6e4909ff7 100644
+--- a/src/nodes/accessors/Instance.js
++++ b/src/nodes/accessors/Instance.js
+@@ -1,6 +1,6 @@
+ 
+ import { vec3, mat4, Fn } from '../tsl/TSLBase.js';
+-import { OnFrameUpdate, OnObjectUpdate } from '../utils/EventNode.js';
++import { OnBeforeObjectUpdate, OnObjectUpdate } from '../utils/EventNode.js';
+ import { normalLocal, transformNormal } from './Normal.js';
+ import { positionLocal, positionPrevious } from './Position.js';
+ import { varyingProperty } from '../core/PropertyNode.js';
+@@ -10,13 +10,21 @@ import { storage } from './StorageBufferNode.js';
+ import { instanceIndex } from '../core/IndexNode.js';
+ 
+ import { InstancedInterleavedBuffer } from '../../core/InstancedInterleavedBuffer.js';
+-import { InstancedBufferAttribute } from '../../core/InstancedBufferAttribute.js';
+ import { DynamicDrawUsage } from '../../constants.js';
+ 
+ const _matrixBuffers = /*@__PURE__*/ new WeakMap();
+ const _colorBuffers = /*@__PURE__*/ new WeakMap();
+ const _previousInstanceMatrices = /*@__PURE__*/ new WeakMap();
+ 
++// The WebGL uniform path uploads the entire matrix array on every draw, even
++// for unchanged instances. Vertex attributes honor versions and dirty ranges.
++function useUniformInstanceMatrices( builder, matrices ) {
++
++	return builder.renderer.backend.isWebGLBackend !== true &&
++		Math.max( matrices.count, 1 ) * 16 * 4 <= builder.getUniformBufferLimit();
++
++}
++
+ /**
+  * Creates the appropriate node for instanced matrix transformations.
+  * Depending on buffer limits and storage capability, returns either a storage, buffer, or instanced interleaved attribute node.
+@@ -38,9 +46,7 @@ function createInstanceMatrixNode( builder, instanceMatrix ) {
+ 
+ 	} else {
+ 
+-		const uniformBufferSize = matrixCount * 16 * 4;
+-
+-		if ( uniformBufferSize <= builder.getUniformBufferLimit() ) {
++		if ( useUniformInstanceMatrices( builder, instanceMatrix ) ) {
+ 
+ 			instanceMatrixNode = buffer( instanceMatrix.array, 'mat4', matrixCount ).element( instanceIndex );
+ 
+@@ -132,9 +138,7 @@ export const instance = /*@__PURE__*/ Fn( ( [ matrices, colors = null ], builder
+ 
+ 	if ( ! isStorageMatrix ) {
+ 
+-		const uniformBufferSize = Math.max( matrices.count, 1 ) * 16 * 4;
+-
+-		if ( uniformBufferSize > builder.getUniformBufferLimit() ) {
++		if ( ! useUniformInstanceMatrices( builder, matrices ) ) {
+ 
+ 			interleavedMatrix = _matrixBuffers.get( matrices );
+ 
+@@ -157,7 +161,7 @@ export const instance = /*@__PURE__*/ Fn( ( [ matrices, colors = null ], builder
+ 
+ 			if ( ! bufferAttribute ) {
+ 
+-				bufferAttribute = new InstancedBufferAttribute( colors.array, 3 );
++				bufferAttribute = new InstancedInterleavedBuffer( colors.array, 3, 1 );
+ 				_colorBuffers.set( colors, bufferAttribute );
+ 
+ 			}
+@@ -172,34 +176,27 @@ export const instance = /*@__PURE__*/ Fn( ( [ matrices, colors = null ], builder
+ 
+ 	}
+ 
+-	// Synchronization of dynamic buffer updates per frame
++	// Synchronize before geometry uploads; consuming dirty spans keeps later
++	// writes small and makes a changed transform/color visible in this draw.
+ 	if ( interleavedMatrix !== null || interleavedColor !== null ) {
+ 
+-		OnFrameUpdate( () => {
++		OnBeforeObjectUpdate( () => {
+ 
+-			if ( interleavedMatrix !== null ) {
++			if ( interleavedMatrix !== null && matrices.version !== interleavedMatrix.version ) {
+ 
+ 				interleavedMatrix.clearUpdateRanges();
+ 				interleavedMatrix.updateRanges.push( ...matrices.updateRanges );
+-
+-				if ( matrices.version !== interleavedMatrix.version ) {
+-
+-					interleavedMatrix.version = matrices.version;
+-
+-				}
++				matrices.clearUpdateRanges();
++				interleavedMatrix.version = matrices.version;
+ 
+ 			}
+ 
+-			if ( colors && interleavedColor !== null ) {
++			if ( colors && interleavedColor !== null && colors.version !== interleavedColor.version ) {
+ 
+ 				interleavedColor.clearUpdateRanges();
+ 				interleavedColor.updateRanges.push( ...colors.updateRanges );
+-
+-				if ( colors.version !== interleavedColor.version ) {
+-
+-					interleavedColor.version = colors.version;
+-
+-				}
++				colors.clearUpdateRanges();
++				interleavedColor.version = colors.version;
+ 
+ 			}
+ 

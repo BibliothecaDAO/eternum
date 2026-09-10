@@ -1,12 +1,12 @@
-import { DynamicDrawUsage, InstancedMesh, type BufferGeometry, type Material } from "three";
+import { InstancedMesh, type BufferGeometry, type Material } from "three";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 
 /**
  * Keep native WebGPU transforms out of per-draw uniform uploads.
  * Ordinary instance matrices below the uniform limit are uploaded at full
  * capacity on every draw. Storage attributes upload only when needsUpdate is
- * set and honor dirty ranges. WebGL keeps its native instance attributes:
- * three's storage-matrix fallback does not render correctly on that backend.
+ * set and honor dirty ranges. The Three patch keeps WebGL on native instance
+ * attributes at every capacity; its uniform path otherwise uploads every draw.
  */
 export function createInstancedMesh<G extends BufferGeometry, M extends Material | Material[]>(
   geometry: G,
@@ -24,10 +24,6 @@ export function createInstancedMesh<G extends BufferGeometry, M extends Material
       const matrices = new StorageInstancedBufferAttribute(mesh.instanceMatrix.array, 16);
       matrices.name = mesh.instanceMatrix.name;
       mesh.instanceMatrix = matrices;
-    } else {
-      // The WebGL matrix wrapper synchronizes its version after attribute
-      // uploads. Dynamic usage makes a changed transform visible this frame.
-      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     }
     mesh.onBeforeRender = beforeRender;
     beforeRender.call(this, renderer, ...args);
