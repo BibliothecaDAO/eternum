@@ -19,6 +19,7 @@ export class SceneFlight {
   private resolveFlight: ((completed: boolean) => void) | null = null;
   private destroyed = false;
   private cancelAnimation: (() => void) | undefined;
+  private cameraOwned = false;
   private readonly originalPosition: Vector3;
   private readonly originalTarget: Vector3;
 
@@ -40,6 +41,7 @@ export class SceneFlight {
       .clone()
       .sub(this.originalTarget)
       .multiplyScalar(enteringRealm ? 0.45 : 1.25);
+    this.cameraOwned = true;
     this.outgoing.setCameraOwnedByFlight(true);
     this.cancelAnimation = this.outgoing.cameraAnimate(target.clone().add(offset), target, 0.45);
     return new Promise((resolve) => {
@@ -98,6 +100,8 @@ export class SceneFlight {
     this.resolveFlight?.(false);
     this.resolveFlight = null;
     this.removeFrame();
+    // A superseded or faded-out flight never restores the camera; the scene must still get it back.
+    this.releaseCamera();
   }
 
   private restoreOutgoingCamera(): void {
@@ -106,6 +110,12 @@ export class SceneFlight {
     const { x, y, z } = this.originalTarget;
     this.outgoing.moveCameraToXYZ(x, y, z, 0);
     this.outgoing.getCamera().position.copy(this.originalPosition);
+    this.releaseCamera();
+  }
+
+  private releaseCamera(): void {
+    if (!this.cameraOwned) return;
+    this.cameraOwned = false;
     this.outgoing.setCameraOwnedByFlight(false);
   }
 

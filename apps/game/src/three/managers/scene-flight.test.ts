@@ -80,6 +80,10 @@ it("cancels an interrupted flight and removes its timer without touching a destr
   expect(outgoing.cancel).toHaveBeenCalledOnce();
   expect(outgoing.moveCameraToXYZ).not.toHaveBeenCalled();
   expect(vi.getTimerCount()).toBe(0);
+  // The camera never came back through a restore, so the cancel itself hands it back to the scene.
+  expect(outgoing.setCameraOwnedByFlight).toHaveBeenLastCalledWith(false);
+  flight.destroy();
+  expect(outgoing.setCameraOwnedByFlight).toHaveBeenCalledTimes(2);
 });
 
 it("snapshots the just-rendered buffer on the GPU before restoring the outgoing camera", async () => {
