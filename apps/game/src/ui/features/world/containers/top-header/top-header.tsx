@@ -7,6 +7,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
@@ -143,7 +144,7 @@ export const TopHeader = memo(() => {
             ) : (
               <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
             )}
-            <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
+            <span className={HUD_LABEL_BRIGHT}>{followingArmyMessage ?? "Following Army"}</span>
           </div>
         </div>
       )}

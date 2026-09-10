@@ -4,7 +4,7 @@
  * fails, or that outlives its budget (async pipeline creation can take seconds on a software backend), still
  * reveals: an uncompiled first frame is a hitch, a frozen snapshot is a bug.
  */
-export const LOCAL_SCENE_WARM_UP_BUDGET_MS = 1_500;
+const LOCAL_SCENE_WARM_UP_BUDGET_MS = 1_500;
 
 export async function awaitLocalScenePresentable(input: {
   gridBuilt: Promise<void>;
