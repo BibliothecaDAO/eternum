@@ -1,5 +1,5 @@
 import { ReactComponent as Crown } from "@/assets/icons/crown.svg";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ReactComponent as Scroll } from "@/assets/icons/scroll.svg";
 import { ReactComponent as Sparkles } from "@/assets/icons/sparkles.svg";
@@ -67,7 +67,7 @@ export const MarketModal = () => {
       title="Market"
       icon={Store}
       onClose={closeSurface}
-      className="w-[1320px] h-[calc(100vh-7rem)]"
+      className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"
     >
       <MarketContent />

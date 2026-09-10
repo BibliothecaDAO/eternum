@@ -34,6 +34,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-10",
+    title: "Touch Controls on the Map",
+    description:
+      "The map now answers to fingers. Tap an army or realm to select it, tap a reachable hex to preview the path and its cost, then tap it again (or press and hold) to give the order. Pinch to zoom the world map in and out.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
+    title: "Phone-Sized HUD",
+    description:
+      "On a phone the map is no longer buried under the desktop columns. A bottom tab bar opens one sheet at a time for your empire, the minimap, the log, chat and the selected tile, and the top pills scroll sideways under the notch. Turn the phone sideways and the tabs become a rail on the right with the sheet and surfaces docked beside it, clear of the notch.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-09",
     title: "Quick Feed and Chat Strip",
     description:

@@ -12,7 +12,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   },
 }));
 
-const { InputManager } = await import("./input-manager");
+const { InputManager, wasTouch } = await import("./input-manager");
 
 function createSubject(currentScene: SceneName = SceneName.WorldMap) {
   const sceneManager = {
@@ -284,5 +284,121 @@ describe("InputManager lifecycle", () => {
     const mousedownRemovals = removeSpy.mock.calls.filter((call) => String(call[0]) === "mousedown");
     expect(mousedownRemovals).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalledWith("InputManager already destroyed, skipping cleanup");
+  });
+});
+
+function createTouchPointerEvent(type: string, pointerId: number, clientX: number, clientY: number) {
+  return new PointerEvent(type, { pointerId, pointerType: "touch", clientX, clientY, bubbles: true, cancelable: true });
+}
+
+function createMousePointerEvent(type: string, clientX: number, clientY: number) {
+  return new PointerEvent(type, { pointerId: 99, pointerType: "mouse", clientX, clientY, bubbles: true });
+}
+
+describe("InputManager touch", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("dispatches a touch tap as one click from the recognizer and ignores the native click", () => {
+    const frameHarness = installAnimationFrameHarness();
+    const clickCallback = vi.fn();
+    const moveCallback = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", clickCallback);
+    fixture.manager.addListener("mousemove", moveCallback);
+
+    const down = createTouchPointerEvent("pointerdown", 1, 150, 260);
+    fixture.surface.dispatchEvent(down);
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointermove", 1, 152, 261));
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 1, 152, 261));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 152, clientY: 261 }));
+
+    expect(down.defaultPrevented).toBe(true);
+    expect(clickCallback).toHaveBeenCalledTimes(1);
+    expect(wasTouch(clickCallback.mock.calls[0][0])).toBe(true);
+    expect(fixture.mouse.x).toBeCloseTo(-0.74);
+    expect(moveCallback).not.toHaveBeenCalled();
+    expect(frameHarness.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("dispatches a touch long press as contextmenu and does not click on release", () => {
+    vi.useFakeTimers();
+    const clickCallback = vi.fn();
+    const contextMenuCallback = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", clickCallback);
+    fixture.manager.addListener("contextmenu", contextMenuCallback);
+
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+    vi.advanceTimersByTime(500);
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 1, 150, 260));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
+
+    expect(contextMenuCallback).toHaveBeenCalledTimes(1);
+    expect(wasTouch(contextMenuCallback.mock.calls[0][0])).toBe(true);
+    expect(clickCallback).not.toHaveBeenCalled();
+  });
+
+  it("dispatches a quick second tap as dblclick after the click", () => {
+    vi.useFakeTimers();
+    const clickCallback = vi.fn();
+    const doubleClickCallback = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", clickCallback);
+    fixture.manager.addListener("dblclick", doubleClickCallback);
+
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 1, 150, 260));
+    vi.advanceTimersByTime(100);
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 2, 155, 262));
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 2, 155, 262));
+
+    expect(clickCallback).toHaveBeenCalledTimes(2);
+    expect(doubleClickCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns to the native mouse path once a mouse pointer is seen again", () => {
+    const clickCallback = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("click", clickCallback);
+
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerup", 1, 150, 260));
+    fixture.surface.dispatchEvent(createMousePointerEvent("pointerdown", 150, 260));
+    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 150, clientY: 260 }));
+
+    expect(clickCallback).toHaveBeenCalledTimes(2);
+    expect(wasTouch(clickCallback.mock.calls[1][0])).toBe(false);
+  });
+
+  it("stops a pending long press when listeners are paused", () => {
+    vi.useFakeTimers();
+    const contextMenuCallback = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("contextmenu", contextMenuCallback);
+
+    fixture.surface.dispatchEvent(createTouchPointerEvent("pointerdown", 1, 150, 260));
+    fixture.manager.deactivate();
+    vi.advanceTimersByTime(500);
+
+    expect(contextMenuCallback).not.toHaveBeenCalled();
   });
 });

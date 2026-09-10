@@ -5,7 +5,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   type Army,
@@ -316,7 +316,7 @@ export const BattleLab = ({
       title="Combat"
       icon={Swords}
       onClose={closeSurface}
-      className="w-[1320px] h-[calc(100vh-7rem)]"
+      className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="relative overflow-x-hidden"
     >
       <CombatParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />

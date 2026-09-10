@@ -108,8 +108,9 @@ export const TopHeader = memo(() => {
     <>
       {/* The header row: pointer-events pass through the gaps between pills so the map remains clickable; each
           pill flips pointer-events back on. The columns start below this row (HUD_COLUMN_TOP), so the cluster is
-          centred on the full width: identity · view · clock · attention · settings. */}
-      <div className="fixed top-0 inset-x-0 z-20 flex h-11 items-center justify-center gap-2 px-3 pointer-events-none">
+          centred on the full width: identity · view · clock · attention · settings. Below `lg` the row sits under
+          the notch and scrolls sideways instead of wrapping, so it owns its own touch events. */}
+      <div className="fixed top-0 inset-x-0 z-20 flex h-11 items-center justify-center gap-2 px-3 pointer-events-none max-lg:top-[env(safe-area-inset-top)] max-lg:pl-[max(0.75rem,env(safe-area-inset-left))] max-lg:pr-[max(0.75rem,env(safe-area-inset-right))] max-lg:justify-start max-lg:overflow-x-auto max-lg:no-scrollbar max-lg:touch-pan-x max-lg:pointer-events-auto max-lg:[&>*]:shrink-0">
         {/* 1. Identity chip — who you are in this game (spectating / not signed in / connecting / player) */}
         <IdentityChip />
 

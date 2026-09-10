@@ -364,6 +364,11 @@ body {
   text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1);
   @apply cursor-fancy text-gold;
 }
+/* A long press on the map is an order, not a request for the browser's callout or a text selection. */
+#main-canvas {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
 .font-grotesk {
   font-family: "Exo 2", "Space Grotesk", sans-serif;
 }

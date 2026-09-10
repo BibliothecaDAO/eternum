@@ -1,5 +1,5 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ActorType, ID } from "@bibliothecadao/types";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
@@ -25,7 +25,7 @@ export const ChestModal = ({
       title="Open Relic Crate"
       icon={Sparkles}
       onClose={close}
-      className="w-[1320px] h-[calc(100vh-7rem)]"
+      className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-y-auto overflow-x-hidden"
     >
       <Suspense fallback={<LoadingAnimation />}>

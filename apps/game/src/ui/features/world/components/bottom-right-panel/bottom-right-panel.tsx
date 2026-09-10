@@ -135,7 +135,7 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
   </section>
 );
 
-const MapTilePanel = () => {
+export const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   const tile = useTileAt(selectedHex?.col, selectedHex?.row) ?? null;
@@ -193,7 +193,7 @@ const MapTilePanel = () => {
   );
 };
 
-const LocalTilePanel = () => {
+export const LocalTilePanel = () => {
   const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -743,7 +743,7 @@ const LocalTilePanel = () => {
   );
 };
 
-const MinimapPanel = () => {
+export const MinimapPanel = () => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isMapView } = useQuery();

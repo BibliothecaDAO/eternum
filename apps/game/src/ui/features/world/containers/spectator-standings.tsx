@@ -11,11 +11,29 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
 import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
 
+/** The desktop left column for a spectator: the standings table in its own fixed frame. */
 export function SpectatorStandings() {
-  return <StandingsPanel key={configManager.getActiveGameId()} />;
+  return (
+    <section
+      aria-label="Spectator standings"
+      className={cn(
+        "fixed left-3 z-20 pointer-events-auto rounded-xl overflow-hidden",
+        HUD_COLUMN_TOP,
+        HUD_COLUMN_WIDTH,
+        OVERLAY_SURFACE_BASE,
+      )}
+    >
+      <SpectatorStandingsBody />
+    </section>
+  );
 }
 
-function StandingsPanel() {
+/** The standings table without a frame, so the desktop column and the compact sheet host the same rows. */
+export function SpectatorStandingsBody() {
+  return <StandingsRows key={configManager.getActiveGameId()} />;
+}
+
+function StandingsRows() {
   const { data, isError } = useLeaderboardActivity();
   const tick = useCurrentArmiesTick();
   const [history, setHistory] = useState<StandingsTick | null>(null);
@@ -30,15 +48,7 @@ function StandingsPanel() {
   const rows = selectSpectatorStandings(data ?? [], selectedOwner, history);
 
   return (
-    <section
-      aria-label="Spectator standings"
-      className={cn(
-        "fixed left-3 z-20 pointer-events-auto rounded-xl overflow-hidden",
-        HUD_COLUMN_TOP,
-        HUD_COLUMN_WIDTH,
-        OVERLAY_SURFACE_BASE,
-      )}
-    >
+    <>
       <div className="px-3 py-2 text-xs uppercase tracking-widest text-gold border-b border-gold/20">Standings</div>
       <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-[10px] text-gold/50">
         <span>#</span>
@@ -82,6 +92,6 @@ function StandingsPanel() {
           {isError ? "Standings unavailable" : data ? "No points scored yet" : "Loading standings…"}
         </p>
       )}
-    </section>
+    </>
   );
 }

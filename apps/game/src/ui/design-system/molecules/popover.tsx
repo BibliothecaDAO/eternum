@@ -1,4 +1,5 @@
 import { useAudio } from "@/audio/hooks/useAudio";
+import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { type PopoverMapClick, type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,6 +12,21 @@ import { createPortal } from "react-dom";
 const PANEL_GAP_PX = 8;
 const VIEWPORT_MARGIN_PX = 8;
 const HEADER_CLEARANCE_PX = 56;
+/** Space the sheet keeps under its content so it clears the iOS home indicator; never less than the panel's padding. */
+const COMPACT_SHEET_BOTTOM_INSET = "max(1rem, env(safe-area-inset-bottom))";
+/** Keep in step with `max-lg:h-[85dvh]` in `SURFACE_WORKSPACE_CLASS`; Tailwind needs that class as a literal. */
+const COMPACT_SHEET_CONTENT_HEIGHT = "85dvh";
+/** The landscape drawer's width cap; keep in step with the `max-lg:landscape:w-[...]` in `SURFACE_WORKSPACE_CLASS`. */
+const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
+
+/**
+ * Size of a full workspace surface (Build, Military, Market...): a wide desk on desktop, a full bottom sheet below
+ * `lg`, and a drawer down the right edge when the phone is sideways. The landscape height is the drawer's header
+ * clearance (`HEADER_CLEARANCE_PX`, 3.5rem) plus its bottom inset (`COMPACT_SHEET_BOTTOM_INSET`), so the child
+ * fits the drawer exactly; Tailwind needs the class as a literal, so keep the three in step.
+ */
+export const SURFACE_WORKSPACE_CLASS =
+  "w-[1320px] h-[calc(100dvh-7rem)] max-lg:w-screen max-lg:h-[85dvh] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(100dvh-3.5rem-max(1rem,env(safe-area-inset-bottom)))]";
 
 type PopoverAlign = "start" | "end";
 
@@ -102,7 +118,9 @@ export const PopoverPanel = ({
       aria-label={ariaLabel}
       data-popover-panel={id}
       className={cn(
-        "pointer-events-auto fixed z-[130] w-80 overflow-y-auto rounded-xl p-4 text-gold",
+        "pointer-events-auto fixed z-[130] w-80 touch-pan-y overflow-y-auto overscroll-contain rounded-xl p-4 text-gold",
+        "max-lg:w-screen max-lg:rounded-b-none",
+        "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
         OVERLAY_SURFACE_BASE,
         className,
       )}
@@ -222,7 +240,7 @@ interface SurfaceFrameProps {
   icon?: LucideIcon;
   onClose: () => void;
   footer?: ReactNode;
-  /** Width and height of the surface, e.g. `w-[1320px] h-[calc(100vh-7rem)]`; the panel caps both to the viewport. */
+  /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */
   className?: string;
   bodyClassName?: string;
   children: ReactNode;
@@ -251,7 +269,45 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
   return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
 };
 
+/**
+ * Where the panel sits. Below `lg` every anchor collapses: a phone has no room beside a trigger, so upright it is a
+ * bottom sheet whose height budget is its content plus the safe-area strip, and sideways it is a drawer down the
+ * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. Desktop placement
+ * hangs from the anchor as before.
+ */
 const resolvePanelStyle = (anchor: PanelAnchor, align: PopoverAlign, panel: HTMLElement | null): CSSProperties => {
+  const lane = resolveCompactLane();
+  if (lane === "portrait") return resolveCompactSheetStyle();
+  if (lane === "landscape") return resolveCompactDrawerStyle();
+  return resolveAnchoredPanelStyle(anchor, align, panel);
+};
+
+const resolveCompactSheetStyle = (): CSSProperties => ({
+  left: 0,
+  right: 0,
+  bottom: 0,
+  maxWidth: "100vw",
+  maxHeight: `calc(${COMPACT_SHEET_CONTENT_HEIGHT} + ${COMPACT_SHEET_BOTTOM_INSET})`,
+  paddingLeft: "env(safe-area-inset-left)",
+  paddingRight: "env(safe-area-inset-right)",
+  paddingBottom: COMPACT_SHEET_BOTTOM_INSET,
+});
+
+const resolveCompactDrawerStyle = (): CSSProperties => ({
+  top: HEADER_CLEARANCE_PX,
+  right: 0,
+  bottom: 0,
+  maxWidth: COMPACT_DRAWER_MAX_WIDTH,
+  maxHeight: `calc(100dvh - ${HEADER_CLEARANCE_PX}px)`,
+  paddingRight: "env(safe-area-inset-right)",
+  paddingBottom: COMPACT_SHEET_BOTTOM_INSET,
+});
+
+const resolveAnchoredPanelStyle = (
+  anchor: PanelAnchor,
+  align: PopoverAlign,
+  panel: HTMLElement | null,
+): CSSProperties => {
   const maxWidth = Math.max(0, window.innerWidth - 2 * VIEWPORT_MARGIN_PX);
   if (anchor === "top-center") {
     const top = HEADER_CLEARANCE_PX;

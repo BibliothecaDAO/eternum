@@ -1,5 +1,5 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import Factory from "lucide-react/dist/esm/icons/factory";
 
 interface ProductionPopupShellProps {
@@ -17,7 +17,7 @@ export const ProductionPopupShell = ({ children, onClose }: ProductionPopupShell
       title="Production"
       icon={Factory}
       onClose={handleClose}
-      className="w-[1320px] h-[calc(100vh-7rem)]"
+      className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="overflow-hidden"
     >
       {children}

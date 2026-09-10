@@ -13,8 +13,11 @@ import { TransferAutomationManager } from "../features/infrastructure/automation
 import { ActionInfo } from "../features/world/components/actions/action-info";
 import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/components/hyperstructures/blitz-hyperstructure-shareholder";
+import { CompactHud } from "../features/world/containers/compact-hud";
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
+import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
@@ -89,27 +92,33 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
 
 /**
  * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
- * Layout:
- * - Top-left: TopHeader (player info, map toggle, clock and attention)
- * - Left: LeftCommandSidebar (structure selector, navigation, views)
- * - Bottom-right: BottomRightPanel (tile info, minimap)
- * Every other surface is a popover hanging off its own trigger.
+ * Desktop layout:
+ * - Top: TopHeader (player info, map toggle, clock and attention)
+ * - Left: LeftCommandSidebar (structure selector and empire cockpit)
+ * - Bottom: BottomRightPanel (minimap, feed, tile inspector, chat)
+ * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
+ * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
  */
-const HUD = () => (
-  <>
-    {/* Top zone — TopHeader positions its own pills with fixed offsets. */}
-    <TopHeader />
-
-    {/* Left edge — view switcher + floating active view panel. */}
-    <LeftCommandSidebar />
-
-    {/* Bottom-right — minimap + contextual tile inspector. */}
-    <BottomRightPanel />
-  </>
-);
+const HUD = () => {
+  const lane = useCompactLane();
+  return (
+    <>
+      <TopHeader />
+      <LeftViewSurfaces />
+      {lane ? (
+        <CompactHud lane={lane} />
+      ) : (
+        <>
+          <LeftCommandSidebar />
+          <BottomRightPanel />
+        </>
+      )}
+    </>
+  );
+};
 
 const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1">
+  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
       {env.VITE_PUBLIC_GAME_VERSION}
     </a>
