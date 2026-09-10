@@ -73,7 +73,10 @@ function AttentionCycle() {
       title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
     >
       <Bell className="h-3.5 w-3.5" />
-      <span className={HUD_LABEL_BRIGHT}>Attention {items.length}</span>
+      <span className={HUD_LABEL_BRIGHT}>
+        <span className="max-lg:hidden">Attention </span>
+        {items.length}
+      </span>
     </button>
   );
 }

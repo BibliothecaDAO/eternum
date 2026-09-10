@@ -1,8 +1,16 @@
+import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
-import InstancedModel from "@/three/managers/instanced-model";
+import { RewardTileModel } from "../rewards/reward-tile-model";
+import { ChestTransitions } from "../rewards/chest-transitions";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
 import { Position } from "@bibliothecadao/eternum";
-import type { ChestSpatialRenderable, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import {
+  getActiveGameSyncRuntime,
+  type ChestSpatialProjectionChange,
+  type ChestSpatialRenderable,
+  type WorldSpatialProjection,
+} from "@bibliothecadao/eternum/game-sync";
 import { ID } from "@bibliothecadao/types";
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
@@ -45,7 +53,9 @@ const MAX_INSTANCES = 1000;
 
 export class ChestManager {
   private scene: THREE.Scene;
-  private chestModel!: InstancedModel;
+  private chestModel?: RewardTileModel;
+  private chestTransitions?: ChestTransitions;
+  private renderedChunk: string | null = null;
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
   private dummy: THREE.Object3D = new THREE.Object3D();
@@ -56,12 +66,9 @@ export class ChestManager {
   private entityIdMap: Map<number, ID> = new Map();
   private chestInstanceOrder: ID[] = [];
   private chestInstanceIndices: Map<ID, number> = new Map();
-  private scale: number = 1;
   private chunkSize: number;
   private currentCameraView: CameraView;
   private contentLadder: WorldmapContentLadder;
-  private animations: Map<number, THREE.AnimationMixer> = new Map();
-  private animationClips: THREE.AnimationClip[] = [];
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
   private transitionChunkByToken: Map<number, string> = new Map();
@@ -78,6 +85,7 @@ export class ChestManager {
     hexagonScene?: HexagonScene,
     chunkSize: number = Math.max(1, Math.floor(renderChunkSize.width / 2)),
     private readonly chunkWorkScheduler?: FrameBudgetWorkScheduler,
+    private readonly compilePipelines: PipelineCompiler = async () => {},
   ) {
     this.scene = scene;
     this.worldSpatialProjection = worldSpatialProjection;
@@ -100,11 +108,11 @@ export class ChestManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
-    this.unsubscribeProjection = worldSpatialProjection.subscribeChests(() => {
-      if (isCommittedManagerChunk(this.currentChunkKey)) {
-        void this.requestVisibleChestsRefresh(this.currentChunkKey);
-      }
-    });
+    this.unsubscribeProjection = worldSpatialProjection.subscribeChests((changes) => this.onChestChanges(changes));
+  }
+
+  public hasActiveLabelAnimations(): boolean {
+    return this.chestTransitions?.hasRelicReveals() ?? false;
   }
 
   public getVisibleCount(): number {
@@ -142,6 +150,7 @@ export class ChestManager {
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
     if (this.chestModel) this.chestModel.group.visible = ladder.structureModels;
+    if (this.chestTransitions) this.chestTransitions.group.visible = ladder.structureModels;
     this.pointsRenderer?.setEnabled(ladder.entityIcons);
     this.labelsGroup.visible = ladder.textLabels !== "none";
   }
@@ -152,6 +161,10 @@ export class ChestManager {
     textureLoader.load(
       "/images/labels/chest.png",
       (texture) => {
+        if (this.isDestroyed) {
+          texture.dispose();
+          return;
+        }
         // Texture loaded successfully
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
@@ -192,18 +205,13 @@ export class ChestManager {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
 
-    // Clean up animations
-    this.animations.forEach((mixer) => mixer.stopAllAction());
-    this.animations.clear();
+    this.chestTransitions?.dispose();
 
     // Clean up points renderer
     if (this.pointsRenderer) {
       this.pointsRenderer.dispose();
     }
 
-    // Phase 2.5: dispose the chest InstancedModel (MAX_INSTANCES geometry/materials/
-    // morph textures + instance buffers) and remove its group from the scene
-    // (InstancedModel.dispose removes the group from its parent).
     this.chestModel?.dispose();
 
     // Remove and clear entity labels from the label group.
@@ -218,43 +226,72 @@ export class ChestManager {
   }
 
   private async loadModel(): Promise<void> {
-    const loader = gltfLoader;
+    let model: RewardTileModel | undefined;
+    let transitions: ChestTransitions | undefined;
+    try {
+      const gltf = await gltfLoader.loadAsync(ChestModelPath);
+      model = new RewardTileModel(gltf, MAX_INSTANCES);
+      transitions = new ChestTransitions(gltf);
+      await this.compilePipelines(model.group, this.scene);
+      await transitions.prepare(this.compilePipelines, this.scene);
+      if (this.isDestroyed) {
+        transitions.dispose();
+        model.dispose();
+        return;
+      }
+      this.chestModel = model;
+      this.chestTransitions = transitions;
+      this.scene.add(model.group, transitions.group);
+      this.applyContentLadder(this.contentLadder);
+    } catch (error) {
+      transitions?.dispose();
+      model?.dispose();
+      console.error("[ChestManager] Failed to prepare arcane chests", error);
+    }
+  }
 
-    const loadPromise = new Promise<{ model: InstancedModel; clips: THREE.AnimationClip[] }>((resolve, reject) => {
-      loader.load(
-        ChestModelPath,
-        (gltf) => {
-          const instancedModel = new InstancedModel(gltf, MAX_INSTANCES, false, "Chest");
-          const clips = gltf.animations || [];
-          resolve({ model: instancedModel, clips });
-        },
-        undefined,
-        (error) => {
-          console.error(`An error occurred while loading the chest model:`, error);
-          reject(error);
-        },
-      );
-    });
+  private onChestChanges(changes: readonly ChestSpatialProjectionChange[]): void {
+    if (!isCommittedManagerChunk(this.currentChunkKey) || this.isDestroyed) return;
+    if (this.chestModel && this.chestTransitions) {
+      const [row, col] = this.currentChunkKey.split(",").map(Number);
+      const visibleIds = new Set(this.getVisibleChestsForChunk(row, col).map((chest) => chest.entityId));
+      for (const change of changes) {
+        const kind = resolveChestTransition({
+          change,
+          syncStatus: getActiveGameSyncRuntime()?.getStatus(),
+          isVisible: visibleIds.has(change.entityId),
+          wasVisible: this.chestInstanceIndices.has(change.entityId),
+        });
+        const chest = change.current ?? change.previous;
+        if (kind && chest)
+          this.chestTransitions.start(
+            this.transitionKey(chest),
+            kind,
+            this.chestPlacement(chest),
+            this.chestModel.time,
+          );
+      }
+    }
+    // A live logical change is applied together; chunk browsing never creates FX.
+    this.renderVisibleChests(this.currentChunkKey);
+  }
 
-    await loadPromise
-      .then(({ model, clips }) => {
-        // Phase 2.5: the manager was torn down while the model was loading — dispose
-        // the freshly-parsed model instead of adding it to a dead scene.
-        if (this.isDestroyed) {
-          model.dispose();
-          return;
-        }
-        this.chestModel = model;
-        this.animationClips = clips;
-        model.group.visible = this.contentLadder.structureModels;
-        this.scene.add(model.group);
-        const shadowsEnabled = this.hexagonScene?.getShadowsEnabled() ?? true;
-        const enableContactShadows = !(this.currentCameraView === CameraView.Close && shadowsEnabled);
-        this.chestModel.setContactShadowsEnabled(enableContactShadows);
-      })
-      .catch((error) => {
-        console.error(`Failed to load chest model:`, error);
-      });
+  public revealRelics(hexCoords: { col: number; row: number }, relics: readonly number[]): boolean {
+    if (!this.chestModel || !this.chestTransitions || !this.contentLadder.structureModels) return false;
+    const tile = { hexCoords };
+    const key = this.transitionKey(tile);
+    const opened = this.chestTransitions.start(key, "open", this.chestPlacement(tile), this.chestModel.time);
+    if (!opened) return false;
+    this.chestTransitions.revealRelics(key, relics);
+    const chest = this.worldSpatialProjection.getChestsAtHex(hexCoords)[0];
+    const instance = chest ? this.chestInstanceIndices.get(chest.entityId) : undefined;
+    if (instance !== undefined) this.chestModel.removeInstance(instance);
+    this.updateChestMarkers();
+    return true;
+  }
+
+  private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
+    return `${chest.hexCoords.col},${chest.hexCoords.row}`;
   }
 
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
@@ -306,7 +343,7 @@ export class ChestManager {
     });
   }
 
-  private getChestWorldPosition = (chest: ChestSpatialRenderable) => {
+  private getChestWorldPosition = (chest: Pick<ChestSpatialRenderable, "hexCoords">) => {
     const { x: hexCoordsX, y: hexCoordsY } = new Position({
       x: chest.hexCoords.col,
       y: chest.hexCoords.row,
@@ -345,6 +382,8 @@ export class ChestManager {
       return;
     }
 
+    if (this.renderedChunk !== chunkKey) this.chestTransitions?.clear();
+    this.renderedChunk = chunkKey;
     const [startRow, startCol] = chunkKey.split(",").map(Number);
     const visibleChests = this.getVisibleChestsForChunk(startRow, startCol);
     const visibleChestIds = new Set<ID>(visibleChests.map((chest) => chest.entityId));
@@ -374,20 +413,24 @@ export class ChestManager {
       }
     });
 
-    if (this.pointsRenderer) {
-      const nextPointConfigs = visibleChests.map((chest) => {
-        const iconPosition = this.getChestWorldPosition(chest);
-        iconPosition.y += 2;
-        return {
-          entityId: chest.entityId,
-          position: iconPosition,
-        };
-      });
-      this.pointsRenderer.setMany(nextPointConfigs);
+    this.updateChestMarkers();
+  }
 
-      const stalePointIds = this.pointsRenderer.getEntityIds().filter((entityId) => !visibleChestIds.has(entityId));
-      this.pointsRenderer.removeMany(stalePointIds);
-    }
+  private updateChestMarkers(): void {
+    if (!this.pointsRenderer) return;
+    const revealed = this.visibleChests.filter(
+      (chest) => (this.chestTransitions?.revealProgress(this.transitionKey(chest)) ?? 1) > 0,
+    );
+    const revealedIds = new Set(revealed.map((chest) => chest.entityId));
+    this.pointsRenderer.setMany(
+      revealed.map((chest) => {
+        const progress = this.chestTransitions?.revealProgress(this.transitionKey(chest)) ?? 1;
+        const position = this.getChestWorldPosition(chest);
+        position.y += 2 - (1 - progress) * 0.5 + Math.sin(progress * Math.PI) * 0.14;
+        return { entityId: chest.entityId, position };
+      }),
+    );
+    this.pointsRenderer.removeMany(this.pointsRenderer.getEntityIds().filter((entityId) => !revealedIds.has(entityId)));
   }
 
   private addChestInstance(chest: ChestSpatialRenderable) {
@@ -435,17 +478,20 @@ export class ChestManager {
   }
 
   private writeChestInstance(chest: ChestSpatialRenderable, index: number) {
-    const position = this.getChestWorldPosition(chest);
-    position.y += 0.05;
-    const { col: x, row: y } = chest.hexCoords;
+    if (this.chestTransitions?.has(this.transitionKey(chest))) {
+      this.chestModel?.removeInstance(index);
+      return;
+    }
+    this.chestModel?.setMatrixAt(index, this.chestPlacement(chest));
+  }
 
-    this.dummy.position.copy(position);
-    const rotationSeed = hashCoordinates(x, y);
-    const rotationIndex = Math.floor(rotationSeed * 6);
-    const randomRotation = (rotationIndex * Math.PI) / 3;
-    this.dummy.rotation.y = randomRotation;
+  private chestPlacement(chest: Pick<ChestSpatialRenderable, "hexCoords">): THREE.Matrix4 {
+    this.dummy.position.copy(this.getChestWorldPosition(chest));
+    this.dummy.position.y += 0.05;
+    const rotationIndex = Math.floor(hashCoordinates(chest.hexCoords.col, chest.hexCoords.row) * 6);
+    this.dummy.rotation.y = (rotationIndex * Math.PI) / 3;
     this.dummy.updateMatrix();
-    this.chestModel.setMatrixAt(index, this.dummy.matrix);
+    return this.dummy.matrix;
   }
 
   private updateChestLabelPosition(chest: ChestSpatialRenderable) {
@@ -577,9 +623,10 @@ export class ChestManager {
   }
 
   public update(deltaTime: number) {
-    // Update animations
-    this.animations.forEach((mixer) => {
-      mixer.update(deltaTime);
-    });
+    this.chestModel?.updateAnimations(deltaTime);
+    if (this.chestModel && this.chestTransitions?.update(deltaTime, this.chestModel.time)) {
+      for (const chest of this.visibleChests) this.updateChestInstance(chest);
+      this.updateChestMarkers();
+    }
   }
 }

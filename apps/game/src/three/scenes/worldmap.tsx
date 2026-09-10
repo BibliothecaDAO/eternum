@@ -51,6 +51,7 @@ import { LeftView } from "@/types";
 import { configManager, NEUTRAL_BIOME_CLIMATE, Position } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
+  getActiveGameSyncRuntime,
   type ArmySpatialProjectionChange,
   type StructureSpatialProjectionChange,
   type ArmySpatialRenderable,
@@ -1219,6 +1220,7 @@ export default class WorldmapScene extends WarpTravel {
       this,
       this.chunkSize,
       this.chunkWorkQueue,
+      this.compilePipelines,
     );
 
     // Bootstrap applyRenderVisualProfile may have run before these managers existed; apply the
@@ -1625,10 +1627,11 @@ export default class WorldmapScene extends WarpTravel {
   private registerRelicChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
-        if (this.currentChunk === "null") return;
+        if (this.currentChunk === "null" || getActiveGameSyncRuntime()?.getStatus() !== "running") return;
         const hex = new Position({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
         if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
-        void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
+        const revealed = this.chestManager.revealRelics({ col: opening.hex.x, row: opening.hex.y }, opening.relics);
+        if (!revealed) void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
       }),
     );
   }
@@ -2466,10 +2469,6 @@ export default class WorldmapScene extends WarpTravel {
         z: position.z,
       },
     });
-  }
-
-  protected override isHexActionTarget(hex: HexPosition): boolean {
-    return getLiveWorldmapEntityActions().actionPaths.has(ActionPaths.posKey(hex, true));
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -7755,6 +7754,7 @@ export default class WorldmapScene extends WarpTravel {
     return (
       this.armyManager.hasMovingArmies() ||
       this.resourceFXManager.hasActiveFx() ||
+      this.chestManager.hasActiveLabelAnimations() ||
       this.fxManager.hasActiveLabelFx() ||
       this.hoverLabelManager.hasActiveLabels()
     );

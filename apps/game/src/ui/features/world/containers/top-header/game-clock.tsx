@@ -27,7 +27,7 @@ const PHASE_ICONS: Record<DayPhaseName, typeof Sun> = {
   Evening: MoonStar,
 };
 
-export const GameClock = memo(() => {
+export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
   const dayPhase = resolveDayPhase(useUIStore((state) => state.cycleProgress));
   const startAt = useUIStore((state) => state.gameStartMainAt);
   const endAt = useUIStore((state) => state.gameEndAt);
@@ -50,13 +50,31 @@ export const GameClock = memo(() => {
     `${formatGameClockDuration(phaseSecondsLeft)} left in ${dayPhase.name.toLowerCase()}`,
   ].join("\n");
   return (
-    <div className={cn(TOP_PILL, "relative overflow-hidden")} aria-label="Game clock" title={breakdown}>
-      <Clock className="h-3.5 w-3.5" />
-      <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap")}>{clock.label}</span>
-      <span aria-hidden className="h-4 w-px bg-gold/25" />
-      <PhaseIcon className="h-3.5 w-3.5" aria-label={dayPhase.name} />
-      <span className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums")}>
-        {formatGameClockDuration(phaseSecondsLeft)}
+    <div
+      className={cn(TOP_PILL, "relative overflow-hidden", compact && "flex-col items-start justify-center gap-0 px-2")}
+      aria-label="Game clock"
+      title={compact ? `${clock.label}\n${breakdown}` : breakdown}
+    >
+      <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
+        <Clock className="h-3.5 w-3.5 shrink-0" />
+        <span
+          className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-[11px] tracking-normal")}
+        >
+          {compact ? clock.compactLabel : clock.label}
+        </span>
+      </span>
+      {!compact && <span aria-hidden className="h-4 w-px bg-gold/25" />}
+      <span className="flex items-center gap-1.5">
+        <PhaseIcon className="h-3.5 w-3.5 shrink-0" aria-label={dayPhase.name} />
+        <span
+          className={cn(
+            HUD_LABEL_BRIGHT,
+            "whitespace-nowrap tabular-nums",
+            compact && "text-[10px] tracking-normal text-gold/75",
+          )}
+        >
+          {formatGameClockDuration(phaseSecondsLeft)}
+        </span>
       </span>
       {clock.remainingRatio !== null && (
         <div

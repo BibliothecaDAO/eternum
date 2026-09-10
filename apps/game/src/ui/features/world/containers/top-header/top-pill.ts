@@ -8,4 +8,4 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 // (h-8 mobile, h-10 desktop). Pair the icon-button form with
 // `<CircleButton size="topbar" .../>` so circular icons line up with the pills.
 
-export const TOP_PILL = `pointer-events-auto inline-flex h-9 items-center gap-2 rounded-md px-3 ${OVERLAY_SURFACE_BASE}`;
+export const TOP_PILL = `pointer-events-auto inline-flex h-9 max-lg:h-11 items-center gap-2 rounded-md px-3 ${OVERLAY_SURFACE_BASE}`;

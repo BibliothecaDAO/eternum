@@ -28,7 +28,6 @@ enum BuildingFilenames {
   FishingVillage = "fishery.glb",
   FragmentMine = "mine.glb",
   Camp = "camp.glb",
-  EssenceRift = "essence_rift.glb",
   Market = "market.glb",
   Resource = "mine.glb",
   Stable = "stable.glb",
@@ -50,16 +49,14 @@ enum BuildingFilenames {
   WonderAnimated = "wonder2.glb",
 }
 
-enum ChestFilenames {
-  Chest = "chest_model.glb",
-}
-
-export const ChestModelPath = "/models/new-buildings-opt/" + ChestFilenames.Chest;
+export const ChestModelPath = "/models/reward-tiles/chest.glb";
+export const RiftModelPath = "/models/reward-tiles/rift.glb";
 export const ReservedHyperstructureModelPath = "/models/new-buildings-opt/" + BuildingFilenames.HyperstructureInit;
 
-export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths(
-  Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
-);
+export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
+  ...Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
+  RiftModelPath,
+]);
 
 export const SHARED_CHEST_MODEL_PATHS = buildUniqueAssetPaths([ChestModelPath]);
 
@@ -124,9 +121,9 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [BuildingType.ResourceWheat]: BUILDINGS_MODELS_PATH + BuildingFilenames.Farm,
       [BuildingType.ResourceFish]: BUILDINGS_MODELS_PATH + BuildingFilenames.FishingVillage,
       [BuildingType.ResourceAncientFragment]: isBlitz
-        ? BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift
+        ? RiftModelPath
         : BUILDINGS_MODELS_PATH + BuildingFilenames.FragmentMine,
-      [BuildingType.ResourceEssence]: BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift,
+      [BuildingType.ResourceEssence]: RiftModelPath,
       [BuildingType.ResourceDonkey]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
       [BuildingType.Storehouse]: BUILDINGS_MODELS_PATH + BuildingFilenames.Storehouse,
       [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
@@ -180,9 +177,7 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
       BUILDINGS_MODELS_PATH + BuildingFilenames.Hyperstructure,
     ],
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
-    [StructureType.FragmentMine]: isBlitz
-      ? [BUILDINGS_MODELS_PATH + BuildingFilenames.EssenceRift]
-      : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
+    [StructureType.FragmentMine]: isBlitz ? [RiftModelPath] : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
     [StructureType.Village]: isBlitz
       ? [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp]
       : [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],

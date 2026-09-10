@@ -45,3 +45,15 @@ it("retains urgency and the finished review entry", async () => {
   expect(container.textContent).toBe("Game finished");
   expect(document.body.className).not.toContain("urgency-border");
 });
+
+it("stacks a concise mobile countdown while preserving its full accessible label", async () => {
+  mocks.now = 120;
+  mocks.gameEndAt = 90120;
+  try {
+    await act(async () => root.render(<GameClock compact />));
+    expect(container.textContent).toBe("1d 1h left0m 30s");
+    expect(container.querySelector('[aria-label="1d 01h 0m 00s left"]')).not.toBeNull();
+  } finally {
+    mocks.gameEndAt = 720;
+  }
+});

@@ -1,0 +1,48 @@
+[
+  {
+    "id": "chest",
+    "passed": true,
+    "bytes": 519580,
+    "extensions": [
+      "EXT_meshopt_compression",
+      "KHR_materials_emissive_strength",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ],
+    "bounds": {
+      "min": [
+        -0.8660024961383961,
+        -0.15999016366688146,
+        -0.9965339303016663
+      ],
+      "max": [
+        0.8660024961383961,
+        0.960150558522157,
+        0.9965339303016663
+      ]
+    }
+  },
+  {
+    "id": "rift",
+    "passed": true,
+    "bytes": 1120924,
+    "extensions": [
+      "EXT_meshopt_compression",
+      "KHR_materials_clearcoat",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ],
+    "bounds": {
+      "min": [
+        -0.8660461898862621,
+        -0.15999650863954162,
+        -0.9982669949531555
+      ],
+      "max": [
+        0.8660461898862621,
+        0.6399894520314175,
+        0.9982669949531555
+      ]
+    }
+  }
+]

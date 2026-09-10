@@ -79,48 +79,20 @@ describe("TouchGestureRecognizer", () => {
     expect(harness.gestures).toEqual([]);
   });
 
-  it("emits tap then double-tap for two taps close in time and space", () => {
+  it("keeps repeated short presses as selection taps, never a double-click action", () => {
     const harness = createHarness();
-
-    harness.feed("down", 1, 100, 100, 0);
-    harness.feed("up", 1, 100, 100, 50);
-    harness.feed("down", 2, 110, 105, 200);
-    harness.feed("up", 2, 110, 105, 250);
-
-    expect(harness.gestures).toEqual([
-      { kind: "tap", x: 100, y: 100 },
-      { kind: "tap", x: 110, y: 105 },
-      { kind: "double-tap", x: 110, y: 105 },
-    ]);
+    for (let i = 0; i < 3; i++) {
+      harness.feed("down", i, 100, 100, i * 100);
+      harness.feed("up", i, 100, 100, i * 100 + 50);
+    }
+    expect(harness.gestures).toEqual(Array.from({ length: 3 }, () => ({ kind: "tap", x: 100, y: 100 })));
   });
 
-  it("does not chain a third tap into another double-tap", () => {
+  it("does not select when the release is far away even if the browser omitted move events", () => {
     const harness = createHarness();
-
     harness.feed("down", 1, 100, 100, 0);
-    harness.feed("up", 1, 100, 100, 50);
-    harness.feed("down", 2, 100, 100, 200);
-    harness.feed("up", 2, 100, 100, 250);
-    harness.feed("down", 3, 100, 100, 400);
-    harness.feed("up", 3, 100, 100, 450);
-
-    expect(harness.gestures.filter((gesture) => gesture.kind === "double-tap")).toHaveLength(1);
-  });
-
-  it("does not emit double-tap when the second tap is too late or too far", () => {
-    const late = createHarness();
-    late.feed("down", 1, 100, 100, 0);
-    late.feed("up", 1, 100, 100, 50);
-    late.feed("down", 2, 100, 100, 400);
-    late.feed("up", 2, 100, 100, 450);
-    expect(late.gestures.map((gesture) => gesture.kind)).toEqual(["tap", "tap"]);
-
-    const far = createHarness();
-    far.feed("down", 1, 100, 100, 0);
-    far.feed("up", 1, 100, 100, 50);
-    far.feed("down", 2, 140, 100, 200);
-    far.feed("up", 2, 140, 100, 250);
-    expect(far.gestures.map((gesture) => gesture.kind)).toEqual(["tap", "tap"]);
+    harness.feed("up", 1, 160, 100, 100);
+    expect(harness.gestures).toEqual([]);
   });
 
   it("cancels tap and long press when a second pointer lands, and emits pinch steps on movement", () => {
