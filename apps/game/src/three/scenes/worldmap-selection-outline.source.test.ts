@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 
 it("keeps the selected hex outlined, independent of hover, across a local flight", () => {
   const manager = readFileSync("src/three/managers/selected-hex-manager.ts", "utf8");
-  expect(manager).toContain('this.outline.setVisualMode("outline")');
+  expect(manager).toContain("preserveOutlineOnly: true");
   expect(manager).not.toContain("Particles");
 
   const worldmap = readFileSync("src/three/scenes/worldmap.tsx", "utf8");
