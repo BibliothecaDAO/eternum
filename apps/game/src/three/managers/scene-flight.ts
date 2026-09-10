@@ -1,4 +1,5 @@
 import { Vector3 } from "three";
+import { traceFlightMark } from "../flight-trace";
 import type { HexagonScene } from "../scenes/hexagon-scene";
 import { SceneName } from "../types";
 
@@ -67,6 +68,7 @@ export class SceneFlight {
         const factor = this.destination === SceneName.Hexception ? 1.15 : 0.85;
         incoming.getCamera().position.copy(target).add(settled.clone().sub(target).multiplyScalar(factor));
         incoming.cameraAnimate(settled, target, 0.3);
+        traceFlightMark("reveal: incoming scene presentable, frame fades on its next render");
         this.revealPending = true;
       });
   }

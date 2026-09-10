@@ -1,3 +1,4 @@
+import { traceFlightMark } from "../flight-trace";
 import { Position } from "@bibliothecadao/eternum";
 import { getGameModeId } from "@/config/game-modes";
 import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
@@ -40,8 +41,10 @@ function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName)
 }
 
 function dispatchSceneNavigation(navigationUrl: string): void {
+  traceFlightMark(`navigate ${navigationUrl}`);
   window.history.pushState({}, "", navigationUrl);
   window.dispatchEvent(new Event("urlChanged"));
+  traceFlightMark("urlChanged listeners done");
 }
 
 /**

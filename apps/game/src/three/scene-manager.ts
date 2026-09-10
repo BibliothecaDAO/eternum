@@ -1,6 +1,7 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { HexagonScene, type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
+import { traceFlightMark } from "@/three/flight-trace";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
 import {
   resolvePendingTransitionStart,
@@ -47,6 +48,7 @@ export class SceneManager {
   }
 
   switchScene(sceneName: SceneName) {
+    traceFlightMark(`switchScene ${sceneName} requested`);
     const scene = this.scenes.get(sceneName);
     const decision = resolveSceneSwitchRequest({
       requestedSceneName: sceneName,

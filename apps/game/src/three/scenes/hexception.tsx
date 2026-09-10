@@ -15,6 +15,7 @@ import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
+import { traceFlightMark } from "../flight-trace";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -1130,7 +1131,11 @@ export default class HexceptionScene extends HexagonScene {
     return awaitLocalScenePresentable({
       gridBuilt: this.localGridBuilt,
       groundTextures: this.groundTexturesReady,
-      compile: () => this.compilePipelines(this.scene, this.scene),
+      compile: async () => {
+        traceFlightMark("warm-up: compiling local scene pipelines");
+        await this.compilePipelines(this.scene, this.scene);
+        traceFlightMark("warm-up: pipelines compiled");
+      },
     });
   }
 
