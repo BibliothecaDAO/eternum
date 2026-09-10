@@ -74,6 +74,21 @@ describe("identity request router", () => {
     expect((await handleRequest(new Request("https://app.realms.party/api/names?owners=0x1"))).status).toBe(404);
   });
 
+  it("rate-limits profile requests per client and keeps other clients unaffected", async () => {
+    const ask = (client: string) =>
+      handleRequest(new Request("https://app.realms.party/api/profiles?accounts=0x1"), client);
+    for (let index = 0; index < 30; index += 1) expect((await ask("10.0.0.1")).status).toBe(200);
+    expect((await ask("10.0.0.1")).status).toBe(429);
+    expect((await ask("10.0.0.2")).status).toBe(200);
+    const viaEdge = await handleRequest(
+      new Request("https://app.realms.party/api/profiles?accounts=0x1", {
+        headers: { "cf-connecting-ip": "10.0.0.1" },
+      }),
+      "10.0.0.3",
+    );
+    expect(viaEdge.status).toBe(429);
+  });
+
   it("does not treat the API root as a client route", async () => {
     const response = await handleRequest(new Request("https://app.realms.party/api"));
 

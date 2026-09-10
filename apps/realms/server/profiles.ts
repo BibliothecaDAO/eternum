@@ -16,18 +16,30 @@ interface ProfileReaders {
   /** The owner behind a gameplay account, null when the address is not a bound gameplay account. */
   ownerOf(account: string): Promise<string | null>;
   identitiesOf(owners: string[]): Promise<IdentityRow[]>;
+  now?(): number;
 }
 
-/** A binding never changes once made, so an account's owner is remembered for the life of the process. */
-const ownerByAccount = new Map<string, string | null>();
+/** How long an unbound answer is trusted: an address can be bound later, so minutes, not the process life. */
+export const UNBOUND_OWNER_TTL_MS = 5 * 60 * 1000;
+
+interface OwnerAnswer {
+  owner: string | null;
+  /** Bound owners never change; an unbound answer expires. */
+  expiresAt: number | null;
+}
+
+const ownerByAccount = new Map<string, OwnerAnswer>();
 
 const rememberOwner = async (account: string, readers: ProfileReaders): Promise<string | null> => {
+  const now = readers.now?.() ?? Date.now();
   const cached = ownerByAccount.get(account);
-  if (cached !== undefined) return cached;
+  if (cached && (cached.expiresAt === null || cached.expiresAt > now)) return cached.owner;
   const owner = await readers.ownerOf(account);
   const normalized = owner === null ? null : normalizeStarknetAddress(owner);
-  // An unbound address is not cached: it may be bound later.
-  if (normalized !== null) ownerByAccount.set(account, normalized);
+  ownerByAccount.set(account, {
+    owner: normalized,
+    expiresAt: normalized === null ? now + UNBOUND_OWNER_TTL_MS : null,
+  });
   return normalized;
 };
 

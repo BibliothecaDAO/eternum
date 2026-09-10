@@ -4,7 +4,7 @@ vi.mock("@realms-world/db/client", () => ({ db: {} }));
 vi.mock("@realms-world/db", () => ({ user: {} }));
 vi.mock("./binding", () => ({ ownerOfGameplayAccount: vi.fn() }));
 
-import { profilesByAccounts } from "./profiles";
+import { profilesByAccounts, UNBOUND_OWNER_TTL_MS } from "./profiles";
 
 describe("profilesByAccounts", () => {
   it("resolves gameplay accounts to their owners once, keeps unbound addresses as owners, and applies the chosen-name rule", async () => {
@@ -27,9 +27,18 @@ describe("profilesByAccounts", () => {
     await profilesByAccounts(["0xa1"], readers);
     // The binding is immutable: the second lookup for the bound account never asks the chain again.
     expect(ownerOf.mock.calls.filter(([account]) => account === "0xa1")).toHaveLength(1);
-    // An unbound address may be bound later, so it is asked again.
-    await profilesByAccounts(["0xc3"], readers);
-    expect(ownerOf.mock.calls.filter(([account]) => account === "0xc3")).toHaveLength(2);
+  });
+
+  it("trusts an unbound answer for a few minutes, then asks the chain again", async () => {
+    let now = 1_000_000;
+    const ownerOf = vi.fn(async () => null);
+    const readers = { ownerOf, identitiesOf: vi.fn(async () => []), now: () => now };
+    await profilesByAccounts(["0xd4"], readers);
+    await profilesByAccounts(["0xd4"], readers);
+    expect(ownerOf).toHaveBeenCalledTimes(1);
+    now += UNBOUND_OWNER_TTL_MS + 1;
+    await profilesByAccounts(["0xd4"], readers);
+    expect(ownerOf).toHaveBeenCalledTimes(2);
   });
 
   it("answers nothing for no accounts without touching the readers", async () => {
