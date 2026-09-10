@@ -7,7 +7,7 @@ interface HyperstructureVPDisplayProps {
   className?: string;
 }
 
-const formatPointsPerSecond = (value: number): string => (value >= 10 ? value.toFixed(0) : value.toFixed(2));
+const formatPointsPerSecond = (value: number): string => Math.round(value).toLocaleString();
 
 export const HyperstructureVPDisplay = ({
   pointsPerSecond,

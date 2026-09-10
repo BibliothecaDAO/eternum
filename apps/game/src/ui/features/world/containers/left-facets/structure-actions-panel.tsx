@@ -114,7 +114,7 @@ const ActionTile = ({
     aria-pressed={active}
     onClick={onClick}
     className={cn(
-      "relative flex min-w-0 flex-col items-center gap-1.5 px-1 py-2.5 transition first:rounded-l-xl last:rounded-r-xl hover:bg-gold/10",
+      "relative flex min-w-0 flex-col items-center gap-1.5 px-0.5 py-2.5 transition first:rounded-l-xl last:rounded-r-xl hover:bg-gold/10",
       active && "bg-gold/15 shadow-[inset_0_-2px_0_rgba(223,170,84,0.9)]",
     )}
   >
@@ -122,7 +122,7 @@ const ActionTile = ({
     <span
       className={cn(
         HUD_LABEL,
-        "max-w-full truncate tracking-[0.08em] min-[1800px]:tracking-[0.14em]",
+        "max-w-full truncate text-[9px] tracking-[0.04em] min-[1800px]:text-[10px] min-[1800px]:tracking-[0.12em]",
         active && "text-gold",
       )}
     >

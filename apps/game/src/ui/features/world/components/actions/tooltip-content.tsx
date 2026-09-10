@@ -89,6 +89,8 @@ export const TooltipContent = memo(
         ? ACTION_STATE_LABELS[actionType as ActionType]
         : actionType?.toUpperCase();
 
+    if (actionType === ActionType.Chest) return <ChestInfo />;
+
     return (
       <>
         <TooltipTitle>{actionLabel}</TooltipTitle>
@@ -105,8 +107,6 @@ export const TooltipContent = memo(
           </div>
         ) : actionType === ActionType.Quest ? (
           <QuestInfo selectedEntityId={selectedEntityId} path={actionPath} />
-        ) : actionType === ActionType.Chest ? (
-          <ChestInfo />
         ) : actionType === ActionType.CreateArmy ? (
           <CreateArmyInfo />
         ) : actionType === ActionType.SpireTravel ? (
