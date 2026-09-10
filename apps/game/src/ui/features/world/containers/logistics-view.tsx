@@ -1,4 +1,3 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { EntityResourceTable } from "@/ui/features/economy/resources";
@@ -6,7 +5,10 @@ import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { TransferAutomationPanel } from "@/ui/features/economy/transfers/transfer-automation-panel";
 import clsx from "clsx";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 
 const TAB_KEYS = ["arrivals", "transfer", "automation", "balances"] as const;
 type LogisticsTab = (typeof TAB_KEYS)[number];
@@ -19,7 +21,7 @@ const TAB_INDEX_BY_KEY: Record<LogisticsTab, number> = {
 };
 
 const tabClass =
-  "!mx-0 flex items-center justify-center rounded-md border border-gold/30 bg-black/30 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gold transition hover:bg-gold/15";
+  "!mx-0 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-gold/75 transition hover:border-gold/40 hover:text-gold";
 
 interface LogisticsViewProps {
   hasArrivals: boolean;
@@ -86,7 +88,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
           <Tabs.Panel className="h-full overflow-y-auto">
             <TransferAutomationAdvancedModal />
           </Tabs.Panel>
-          <Tabs.Panel className="h-full overflow-y-auto">
+          <Tabs.Panel className="h-full overflow-hidden">
             <AllRealmsBalanceTab structures={playerStructures} />
           </Tabs.Panel>
         </Tabs.Panels>
@@ -99,8 +101,8 @@ interface AllRealmsBalanceTabProps {
   structures: Array<{ entityId: number; structure?: unknown }>;
 }
 
+/** The balances tab: the shared structure switcher on the left, the chosen structure's balances on the right. */
 const AllRealmsBalanceTab = ({ structures }: AllRealmsBalanceTabProps) => {
-  const mode = useGameModeConfig();
   const [selectedId, setSelectedId] = useState<number | null>(structures[0]?.entityId ?? null);
 
   useEffect(() => {
@@ -108,48 +110,25 @@ const AllRealmsBalanceTab = ({ structures }: AllRealmsBalanceTabProps) => {
     setSelectedId(structures[0]?.entityId ?? null);
   }, [selectedId, structures]);
 
-  const options = useMemo(
-    () =>
-      structures.map((structure) => ({
-        id: structure.entityId,
-        // The mode.structure.getName signature expects the Structure component value;
-        // legacy callers pass the wrapper or raw value depending on context.
-        name: mode.structure.getName((structure.structure ?? structure) as Parameters<typeof mode.structure.getName>[0])
-          .name,
-      })),
-    [mode.structure, structures],
-  );
-
-  const selected = options.find((option) => option.id === selectedId) ?? options[0];
-
-  if (!options.length) {
-    return <div className="p-4 text-sm text-gold/70">No realms available.</div>;
+  if (!structures.length) {
+    return <p className={cn(HUD_BODY_MUTED, "p-4")}>No structures yet.</p>;
   }
 
   return (
-    <div className="flex gap-3 p-1">
-      <div className="w-40 flex-shrink-0 space-y-1">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className={clsx(
-              "w-full rounded border px-2 py-1.5 text-left text-xs transition",
-              selected?.id === option.id
-                ? "border-gold/50 bg-gold/10 text-gold"
-                : "border-gold/20 bg-dark/40 text-gold/80 hover:border-gold/40 hover:bg-dark/60",
-            )}
-            onClick={() => setSelectedId(option.id)}
-          >
-            {option.name}
-          </button>
-        ))}
+    <div className="grid h-full min-h-0 grid-cols-12">
+      <div className="col-span-3 min-h-0 border-r border-gold/15">
+        <StructureSidebar
+          selectedEntityId={selectedId ?? 0}
+          onSelectStructure={setSelectedId}
+          title="Your structures"
+          enableCategoryFilter
+        />
       </div>
-      <div className="flex-1 min-w-0 rounded-lg border border-gold/20 bg-black/40 p-2">
-        {selected ? (
-          <EntityResourceTable entityId={selected.id} />
+      <div className="col-span-9 min-h-0 overflow-y-auto px-3 py-2">
+        {selectedId ? (
+          <EntityResourceTable entityId={selectedId} />
         ) : (
-          <div className="p-4 text-sm text-gold/70">Select a realm to view balances.</div>
+          <p className={HUD_BODY_MUTED}>Select a structure.</p>
         )}
       </div>
     </div>

@@ -39,7 +39,7 @@ const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
  * fits the drawer exactly; Tailwind needs the class as a literal, so keep the three in step.
  */
 export const SURFACE_WORKSPACE_CLASS =
-  "w-[1320px] h-[calc(100dvh-7rem)] max-lg:w-screen max-lg:h-[85dvh] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(100dvh-3.5rem-max(1rem,env(safe-area-inset-bottom)))]";
+  "w-[1180px] h-[calc(100dvh-9rem)] max-lg:w-screen max-lg:h-[85dvh] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(100dvh-3.5rem-max(1rem,env(safe-area-inset-bottom)))]";
 
 type PopoverAlign = "start" | "end";
 

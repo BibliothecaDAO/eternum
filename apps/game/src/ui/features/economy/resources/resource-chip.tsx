@@ -6,12 +6,13 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
+import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   divideByPrecision,
   formatTime,
-  getTotalResourceWeightKg,
   isRelic as isResourceRelic,
   relicsArmiesTicksLeft,
   ResourceManager,
@@ -30,8 +31,6 @@ import Factory from "lucide-react/dist/esm/icons/factory";
 import FlaskConical from "lucide-react/dist/esm/icons/flask-conical";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import type { MouseEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
 
@@ -72,13 +71,11 @@ export const ResourceChip = ({
   const {
     setup: { components },
   } = useDojo();
-  const [showPerHour, setShowPerHour] = useState(true);
   const [balance, setBalance] = useState(0);
   const [amountProduced, setAmountProduced] = useState(0n);
   const [amountProducedLimited, setAmountProducedLimited] = useState(0n);
   const [hasReachedMaxCap, setHasReachedMaxCap] = useState(false);
   const [displayBalance, setDisplayBalance] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
 
   const storeDefaultTick = useBlockTimestampStore((state) => state.currentDefaultTick);
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
@@ -139,95 +136,10 @@ export const ResourceChip = ({
   }, [resourceManager, resourceEnumId, currentTick, isProducing, hasReachedMaxCap]);
 
   const icon = useMemo(() => {
-    return (
-      <ResourceIcon
-        withTooltip={false}
-        resource={ResourcesIds[resourceId]}
-        size={size === "large" ? "md" : "sm"}
-        className=" self-center"
-      />
-    );
+    return <ResourceIcon withTooltip={false} resource={ResourcesIds[resourceId]} size="sm" className="self-center" />;
   }, [resourceId, size]);
 
-  const producedWeight = useMemo(() => {
-    return getTotalResourceWeightKg([{ resourceId, amount: Number(amountProduced) }]);
-  }, [amountProduced, resourceId]);
-
-  const handleMouseEnter = useCallback(
-    (event: MouseEvent<HTMLDivElement>) => {
-      setIsHovered(true);
-      // const newDisplayBalance = Number(actualBalance || 0) + Number(amountProduced || 0n);
-      // setDisplayBalance(newDisplayBalance);
-
-      // setTooltip({
-      //   anchorElement: event.currentTarget,
-      //   position: "left",
-      //   content: (
-      //     <div className="space-y-1 max-w-72">
-      //       <div>
-      //         <span className="text-gold font-bold">Total available:</span>{" "}
-      //         <span className="text-gold">{currencyFormat(newDisplayBalance, 2)}</span>{" "}
-      //         {findResourceById(resourceId)?.trait}
-      //       </div>
-      //       {Number(amountProduced || 0n) > 0 && (
-      //         <>
-      //           <p>
-      //             You have{" "}
-      //             <span className={!isStorageFull ? "text-green" : "text-red"}>
-      //               {currencyFormat(Number(amountProduced || 0n), 2)}
-      //             </span>{" "}
-      //             {findResourceById(resourceId)?.trait} waiting to be stored.
-      //           </p>
-      //           <p>
-      //             Whenever you use this resource (building, trading, pause, production, etc.) the produced amount is
-      //             first moved into storage.
-      //             <br />
-      //             Only the portion that fits within your remaining capacity&nbsp;(
-      //             <span className="text-green">
-      //               {storageRemaining.toLocaleString(undefined, { maximumFractionDigits: 0 })}kg
-      //             </span>
-      //             ) will be saved; any excess&nbsp;(
-      //             <span className="text-red">
-      //               of{" "}
-      //               {divideByPrecision(producedWeight, false).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-      //               kg
-      //             </span>
-      //             ) will be permanently burned.
-      //           </p>
-      //           <p>
-      //             {
-      //               // Calculate the net result of claiming all produced weight against remaining storage.
-      //               storageRemaining - divideByPrecision(producedWeight, false) >= 0 ? (
-      //                 <span className="text-green">All will fit if used right now.</span>
-      //               ) : (
-      //                 <>
-      //                   <span className="text-red">
-      //                     {Math.abs(storageRemaining - divideByPrecision(producedWeight, false)).toLocaleString(
-      //                       undefined,
-      //                       { maximumFractionDigits: 0 },
-      //                     )}
-      //                     kg&nbsp;
-      //                   </span>
-      //                   will be burnt if you claim it all.
-      //                 </>
-      //               )
-      //             }
-      //           </p>
-      //         </>
-      //       )}
-      //     </div>
-      //   ),
-      // });
-    },
-    [actualBalance, amountProduced, resourceId, setTooltip, producedWeight, setIsHovered, setDisplayBalance],
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    setIsHovered(false);
-    setTooltip(null);
-    setShowPerHour(true);
-    // setDisplayBalance(actualBalance ? Number(actualBalance) : 0);
-  }, [setTooltip, actualBalance, setShowPerHour, setIsHovered, setDisplayBalance]);
+  const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
 
   const mode = useGameModeConfig();
 
@@ -307,101 +219,55 @@ export const ResourceChip = ({
   if (hideZeroBalance && balance <= 0 && !(isRelic && relicEffectActivated)) {
     return null;
   }
+  const ratePerHour = isProducing && !hasReachedMaxCap ? `+${currencyIntlFormat(productionRate * 60 * 60, 4)}/h` : null;
+  const timeLeft =
+    timeUntilValueReached > 0 && timeUntilValueReached <= 1_000_000_000 ? formatTime(timeUntilValueReached) : null;
+  const actionButton =
+    "rounded p-1 text-gold/80 transition hover:bg-gold/15 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50";
+
   return (
     <div
       data-tooltip-anchor
-      className={`flex relative group items-center ${
-        size === "large" ? "text-base px-3 p-2" : "text-sm px-2 p-1.5"
-      } hover:bg-gold/5 ${
-        relicEffectActivated ? "bg-purple-500/20 border border-purple-500/50 rounded-lg animate-pulse" : ""
-      }`}
-      onMouseEnter={handleMouseEnter}
+      className={cn(
+        "group flex items-center gap-2 rounded-lg border border-gold/15 bg-black/25 transition hover:border-gold/35",
+        size === "large" ? "px-3 py-2" : "px-2 py-1.5",
+        relicEffectActivated && "animate-pulse border-purple-500/50 bg-purple-500/20",
+      )}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="flex flex-wrap w-full items-center">
-        <div className={`self-center flex flex-wrap w-full gap-2 ${size === "large" ? "text-lg" : ""}`}>
-          <div className="flex items-center gap-2">
-            {icon}
-            <CountUpNumber
-              value={displayBalance}
-              format={(v) => currencyFormat(v, 2)}
-              className={`${isHovered ? "font-bold animate-pulse" : ""} ${
-                relicEffectActivated ? "text-relic font-semibold" : ""
-              }`}
-              highlightClassName="text-green font-bold scale-105"
-            />{" "}
-            {relicEffectActivated && (
-              <div className="flex items-center ml-1 gap-1">
-                <Sparkles className="h-3 w-3 text-relic2 animate-pulse" />
-                <span
-                  className="text-xs text-relic2 font-medium"
-                  onMouseEnter={(e) => {
-                    e.stopPropagation();
-                    setTooltip({
-                      anchorElement: e.currentTarget,
-                      position: "top",
-                      content: (
-                        <span className="text-sm">Relic effect expires in {formatTime(relicTimeRemaining)}</span>
-                      ),
-                    });
-                  }}
-                  onMouseLeave={(e) => {
-                    e.stopPropagation();
-                    setTooltip(null);
-                  }}
-                >
-                  {formatTime(relicTimeRemaining)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {amountProduced > 0n && (
-            <div className={` flex  gap-2 self-start text-xs text-gold/50`}>
-              [
-              {/* <span className={!isStorageFull ? "text-green" : "text-red"}>
-                {currencyFormat(Number(amountProduced || 0n), 2)}
-              </span> */}
-              <div className="flex  gap-4 w-full col-span-12">
-                {isProducing && !hasReachedMaxCap ? (
-                  <div className={`self-center flex ${size === "large" ? "text-base" : "text-xs"} justify-end`}>
-                    <div className="text-green">
-                      +
-                      {showPerHour
-                        ? `${currencyIntlFormat(productionRate * 60 * 60, 4)}/h`
-                        : `${currencyIntlFormat(productionRate, 4)}/s`}
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    className={`self-center col-span-5 text-right ${size === "large" ? "text-base" : "text-xs"} font-medium`}
-                  >
-                    {hasReachedMaxCap ? "Max" : ""}
-                  </div>
-                )}
-              </div>
-              ]
-            </div>
-          )}
-        </div>
-
-        {/* {producedWeight > 0 && (
-          <div className="text-xs text-gold/40 col-span-12 flex items-center">
-            {divideByPrecision(Number(producedWeight || 0n), false).toLocaleString(undefined, {
-              maximumFractionDigits: 0,
-            })}{" "}
-            kg produced
-          </div>
-        )} */}
-
-        <div className={`ml-2 text-xs text-gold/40  ${size === "large" ? "" : ""}`}>
-          {timeUntilValueReached > 1000000000
-            ? "∞"
-            : timeUntilValueReached !== 0
-              ? formatTime(timeUntilValueReached)
-              : ""}
-        </div>
-      </div>
+      {icon}
+      <CountUpNumber
+        value={displayBalance}
+        format={(v) => currencyFormat(v, 2)}
+        className={cn(HUD_VALUE, "tabular-nums", relicEffectActivated && "text-relic")}
+        highlightClassName="text-green font-bold scale-105"
+      />
+      {relicEffectActivated && (
+        <span
+          className="inline-flex items-center gap-1 text-[10px] font-semibold text-relic2"
+          onMouseEnter={(e) => {
+            e.stopPropagation();
+            setTooltip({
+              anchorElement: e.currentTarget,
+              position: "top",
+              content: <span className="text-sm">Relic effect expires in {formatTime(relicTimeRemaining)}</span>,
+            });
+          }}
+          onMouseLeave={(e) => {
+            e.stopPropagation();
+            setTooltip(null);
+          }}
+        >
+          <Sparkles className="h-3 w-3 animate-pulse" />
+          {formatTime(relicTimeRemaining)}
+        </span>
+      )}
+      {ratePerHour && <span className="text-[10px] font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
+      {hasReachedMaxCap && amountProduced > 0n && (
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">Max</span>
+      )}
+      {timeLeft && <span className={cn(HUD_CUE, "tracking-normal")}>{timeLeft}</span>}
+      <span className="ml-auto" />
       {canShowProductionShortcut && (
         <button
           data-tooltip-anchor
@@ -418,9 +284,9 @@ export const ResourceChip = ({
           }
           onMouseLeave={() => setTooltip(null)}
           disabled={disableButtons}
-          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          className={actionButton}
         >
-          <Factory className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
+          <Factory className="h-4 w-4" />
         </button>
       )}
       {canOpenCraftRelic && (
@@ -447,9 +313,9 @@ export const ResourceChip = ({
           disabled={disableButtons}
           title="Craft relic from research"
           aria-label="Craft relic from research"
-          className="ml-2 rounded border border-relic/35 bg-relic/10 p-1 text-relic2 transition hover:bg-relic/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={cn(actionButton, "border border-relic/35 bg-relic/10 text-relic2 hover:bg-relic/20")}
         >
-          <FlaskConical className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-current`} />
+          <FlaskConical className="h-4 w-4" />
         </button>
       )}
       {showTransfer && (
@@ -463,11 +329,11 @@ export const ResourceChip = ({
                 toggle();
               }}
               disabled={disableButtons}
-              className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className={actionButton}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`}
+                className="h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -513,9 +379,9 @@ export const ResourceChip = ({
             })
           }
           onMouseLeave={() => setTooltip(null)}
-          className="ml-2 p-1 hover:bg-gold/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          className={actionButton}
         >
-          <Sparkles className={`${size === "large" ? "h-6 w-6" : "h-5 w-5"} text-gold`} />
+          <Sparkles className="h-4 w-4" />
         </button>
       )}
     </div>

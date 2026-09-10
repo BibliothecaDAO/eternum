@@ -2,7 +2,6 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 import {
   getBuildingCount,
-  getEntityIdFromKeys,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   isMilitaryResource,
@@ -12,9 +11,9 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import clsx from "clsx";
-import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
-import ArrowUp from "lucide-react/dist/esm/icons/arrow-up";
+import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import React, { useCallback, useMemo, useState } from "react";
 import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
 import { gameEntityKey } from "@/sync/game-scope";
@@ -85,69 +84,37 @@ export const EntityResourceTableOld = React.memo(
     }, []);
 
     return (
-      <div className="flex flex-col gap-4">
-        <div className="sticky top-0 z-20 -mx-2 -mt-2 px-2 pt-3 pb-2 border-b border-gold/20 bg-black/50 backdrop-blur">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resources</h4>
-              <p className="text-[11px] text-gold/60">Entity #{entityId}</p>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={!showAllResources}
-                    onChange={() => setShowAllResources((prev) => !prev)}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                  </div>
-                </div>
-              </label>
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(showProductionOnly && "text-gold")}>Production only</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={showProductionOnly}
-                    onChange={() => {
-                      const nextValue = !showProductionOnly;
-                      setShowProductionOnly(nextValue);
-                      localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
-                    }}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                  </div>
-                </div>
-              </label>
-              <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1 text-[11px] text-gold/70">
-                <span className={clsx(showMilitaryOnly && "text-gold")}>Military only</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="peer sr-only"
-                    checked={showMilitaryOnly}
-                    onChange={() => {
-                      const nextValue = !showMilitaryOnly;
-                      setShowMilitaryOnly(nextValue);
-                      localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
-                    }}
-                  />
-                  <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                    <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                  </div>
-                </div>
-              </label>
-            </div>
+      <div className="flex flex-col gap-3">
+        <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-gold/15 bg-[#101c23]/95 px-1 pb-2 pt-1 backdrop-blur">
+          <span className={HUD_LABEL}>Resources</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <FilterToggle
+              label="Hide empty"
+              checked={!showAllResources}
+              onToggle={() => setShowAllResources((prev) => !prev)}
+            />
+            <FilterToggle
+              label="Producing"
+              checked={showProductionOnly}
+              onToggle={() => {
+                const nextValue = !showProductionOnly;
+                setShowProductionOnly(nextValue);
+                localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
+              }}
+            />
+            <FilterToggle
+              label="Military"
+              checked={showMilitaryOnly}
+              onToggle={() => {
+                const nextValue = !showMilitaryOnly;
+                setShowMilitaryOnly(nextValue);
+                localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
+              }}
+            />
           </div>
         </div>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-3">
           {Object.entries(mode.resources.getTiers()).map(([tier, resourceIds]) => {
             const resourcesForTier = (resourceIds as ResourcesIds[]).filter((resourceId: ResourcesIds) => {
               const alwaysShow = ALWAYS_SHOW_RESOURCES.includes(resourceId);
@@ -190,21 +157,22 @@ export const EntityResourceTableOld = React.memo(
             const isCollapsed = collapsedTiers[tier] ?? false;
 
             return (
-              <div key={tier} className="pb-3">
+              <div key={tier}>
                 <button
                   type="button"
                   onClick={() => handleToggleTierVisibility(tier)}
-                  className="flex w-full items-center justify-between border-b border-gold/10 pb-1 text-left text-sm font-medium text-gold/80"
+                  aria-expanded={!isCollapsed}
+                  className="flex w-full items-center justify-between border-b border-gold/10 px-1 pb-1 text-left"
                 >
-                  <span>{TIER_DISPLAY_NAMES[tier]}</span>
-                  <span className="flex items-center gap-2 text-[11px] text-gold/60">
+                  <span className={HUD_LABEL}>{TIER_DISPLAY_NAMES[tier]}</span>
+                  <span className={cn(HUD_CUE, "flex items-center gap-1")}>
                     {resourcesForTier.length}
-                    {isCollapsed ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                    <ChevronDown className={cn("h-3 w-3 transition-transform", isCollapsed && "-rotate-90")} />
                   </span>
                 </button>
 
                 {!isCollapsed && (
-                  <div className="mt-3 grid grid-cols-1 gap-2">
+                  <div className="mt-2 grid grid-cols-1 gap-1.5">
                     {resourcesForTier.map((resourceId) => {
                       const buildingType = getBuildingFromResource(resourceId);
                       const hasProductionBuilding =
@@ -241,4 +209,21 @@ export const EntityResourceTableOld = React.memo(
       </div>
     );
   },
+);
+
+/** One filter switch in the balances header: a small caps label that lights while it is on. */
+const FilterToggle = ({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={onToggle}
+    className={cn(
+      "rounded-md border px-2 py-1 transition",
+      HUD_CUE,
+      checked ? "border-gold/60 bg-gold/15 text-gold" : "border-gold/15 bg-black/20 hover:border-gold/40",
+    )}
+  >
+    {label}
+  </button>
 );

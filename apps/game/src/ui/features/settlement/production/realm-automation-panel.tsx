@@ -12,6 +12,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
+import { HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { REALM_PRESETS, RealmPresetId, calculatePresetAllocations, inferRealmPreset } from "@/utils/automation-presets";
 
@@ -519,8 +520,8 @@ export const RealmAutomationPanel = ({
       <header className="flex flex-col gap-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-gold">Production Automation</h4>
-            <p className="text-xs text-gold/60">Adjust sliders or apply a preset, then save to commit your changes.</p>
+            <h4 className={HUD_HEADLINE}>Production automation</h4>
+            <p className={HUD_BODY_MUTED}>Move a slider or apply a preset, then save.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -587,7 +588,7 @@ export const RealmAutomationPanel = ({
       </header>
 
       <section className="space-y-2">
-        <h5 className="text-sm font-semibold text-gold">Resource Usage</h5>
+        <h5 className={HUD_LABEL}>Resource usage</h5>
         {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
@@ -625,8 +626,9 @@ export const RealmAutomationPanel = ({
         )}
       </section>
 
-      {activePresetId === "custom" && (
-        <section aria-label="Custom automation allocations" className="grid grid-cols-4 gap-3">
+      {/* The sliders are always in reach: moving one turns the preset into Custom. */}
+      {
+        <section aria-label="Automation allocations" className="grid grid-cols-4 gap-3">
           {automationRows.map(({ resourceId, percentages, complexInputs, simpleInputs }) => {
             const label = resolveResourceLabel(resourceId);
             const complexImpacted = gatherImpactedResources(complexInputs.map((input) => input.resource));
@@ -747,7 +749,7 @@ export const RealmAutomationPanel = ({
             );
           })}
         </section>
-      )}
+      }
     </div>
   );
 };

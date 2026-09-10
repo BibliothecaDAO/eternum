@@ -4,6 +4,8 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useComponentValue } from "@dojoengine/react";
 import { gameEntityKey } from "@/sync/game-scope";
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
+import { HUD_BODY_MUTED, HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
@@ -280,27 +282,25 @@ export const ResourceProductionControls = ({
       </section>
     );
 
+  const timeRequired = ticks
+    ? formatTime(Math.floor((ticks / buildingCount) * (isVillageLikeStructureCategory(realm.category) ? 2 : 1)))
+    : "0s";
+
   return (
-    <div className="p-6 rounded-lg border border-gold/20 bg-black/30">
-      <div className={`grid ${canUseLabor ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
-        <div className="grid grid-cols-1 gap-4">
-          <div className="mb-4">
-            <h3 className="text-2xl font-bold mb-4">Start Production - {ResourcesIds[selectedResource]}</h3>
-            <p className="text-xl text-gold/80 mb-4">
-              You can input the output here and it will be automatically calculated.
-            </p>
-            <div className="flex items-center gap-4 mb-4 w-72">
-              <div className="flex items-center gap-2">
-                <ResourceIcon resource={ResourcesIds[selectedResource]} size="xl" />
-              </div>
-              <NumberInput
-                value={Math.round(productionAmount)}
-                onChange={(value) => setProductionAmount(value)}
-                min={1}
-                className="rounded-md border-gold/30 hover:border-gold/50"
-              />
-            </div>
+    <div className="space-y-3 rounded-lg border border-gold/15 bg-black/25 p-4">
+      <div className={cn("grid gap-4", canUseLabor ? "grid-cols-2" : "grid-cols-1")}>
+        <div className="space-y-2">
+          <h3 className={HUD_HEADLINE}>Start production · {ResourcesIds[selectedResource]}</h3>
+          <div className="flex items-center gap-2">
+            <ResourceIcon resource={ResourcesIds[selectedResource]} size="md" />
+            <NumberInput
+              value={Math.round(productionAmount)}
+              onChange={(value) => setProductionAmount(value)}
+              min={1}
+              className="h-9 w-52 text-sm"
+            />
           </div>
+          <p className={HUD_BODY_MUTED}>Type the output; the inputs follow.</p>
         </div>
         {selectableTabs.length > 1 ? (
           <Tabs
@@ -309,13 +309,13 @@ export const ResourceProductionControls = ({
               setUseRawResources(selectableTabs[index].isRaw);
             }}
           >
-            <Tabs.List className="p-2 w-full">
+            <Tabs.List className="w-full">
               {selectableTabs.map((tab, index) => (
                 <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
               ))}
             </Tabs.List>
 
-            <Tabs.Panels className="overflow-hidden">
+            <Tabs.Panels className="overflow-hidden pt-2">
               {selectableTabs.map((tab, index) => (
                 <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
               ))}
@@ -332,54 +332,34 @@ export const ResourceProductionControls = ({
               onSelect={() => setUseRawResources(true)}
               outputResourceAmount={outputResourceAmountWithBonus}
             />
-            <div className="text-sm text-gold/70 mt-2">
-              <span>
-                Only standard production is available for this resource. Simple production is not unlocked or not
-                available yet.
-              </span>
-            </div>
+            <p className={HUD_BODY_MUTED}>Only standard production is available for this resource.</p>
           </div>
         )}
       </div>
 
-      {error && <p role="status">{error}</p>}
-      {/* Output */}
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between gap-2">
-          <div>
-            <h2 className="flex items-center gap-2 mt-4">
-              {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
-              <ResourceIcon resource={ResourcesIds[selectedResource]} size="sm" /> to produce
-              {bonus > 1 && (
-                <span className="text-relic-activated text-lg font-semibold animate-pulse">
-                  (+{Math.round((bonus - 1) * 100)}% bonus)
-                </span>
-              )}
-            </h2>
-          </div>
-          <h4 className="flex items-center gap-2">
-            <span className="text-gold/80">Time Required:</span>
-            <span>
-              {ticks
-                ? formatTime(
-                    Math.floor((ticks / buildingCount) * (isVillageLikeStructureCategory(realm.category) ? 2 : 1)),
-                  )
-                : "0s"}
-            </span>
-          </h4>
-        </div>
-
-        <Button
-          onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-          disabled={!ordersAllowed || isDisabled || isLoading}
-          isLoading={isLoading}
-          variant={isDisabled ? "default" : "gold"}
-          className="px-8 py-2"
-          size="lg"
-        >
-          {isDisabled ? "Not enough resources" : "Start Production"}
-        </Button>
+      {error && (
+        <p role="status" className="text-xs text-danger">
+          {error}
+        </p>
+      )}
+      <div className="flex items-center justify-between gap-3 border-t border-gold/15 pt-3">
+        <span className={cn(HUD_VALUE, "flex items-center gap-1.5")}>
+          {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
+          <ResourceIcon resource={ResourcesIds[selectedResource]} size="xs" withTooltip={false} />
+          {bonus > 1 && <span className="text-relic-activated">+{Math.round((bonus - 1) * 100)}% bonus</span>}
+        </span>
+        <span className={HUD_CUE}>Time required {timeRequired}</span>
       </div>
+      <Button
+        onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
+        disabled={!ordersAllowed || isDisabled || isLoading}
+        isLoading={isLoading}
+        variant={isDisabled ? "outline" : "gold"}
+        className="w-full"
+        size="md"
+      >
+        {isDisabled ? "Not enough resources" : "Start production"}
+      </Button>
     </div>
   );
 };
