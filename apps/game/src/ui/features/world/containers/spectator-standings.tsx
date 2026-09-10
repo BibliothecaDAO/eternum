@@ -5,6 +5,7 @@ import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -58,9 +59,7 @@ function StandingsRows() {
       </div>
       {rows.map((row) => {
         const address = BigInt(row.address);
-        const name =
-          players.find((player) => player.address === address)?.name ??
-          `${row.address.slice(0, 6)}…${row.address.slice(-4)}`;
+        const name = displayPlayerName(address, players.find((player) => player.address === address)?.name);
         const capital = structures
           .filter((structure) => structure.owner === address && structure.base.category === StructureType.Realm)
           .toSorted((a, b) => a.entity_id - b.entity_id)[0];

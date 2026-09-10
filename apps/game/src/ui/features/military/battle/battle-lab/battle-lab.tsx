@@ -1,8 +1,8 @@
 import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
@@ -82,7 +82,7 @@ export const BattleLab = ({
   } = useDojo();
 
   const gameMode = useGameModeConfig();
-  const accountName = useAccountStore((s) => s.accountName);
+  const accountName = usePlayerDisplayName(account.address);
   const selectedHex = useUIStore((s) => s.selectedHex);
   const closeSurface = usePopoverStore((s) => s.closeSurface);
   const updateSelectedEntityId = useUIStore((s) => s.updateEntityActionSelectedEntityId);

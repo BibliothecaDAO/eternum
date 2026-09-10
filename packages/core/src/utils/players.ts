@@ -1,5 +1,6 @@
 import { type ClientComponents, type ContractAddress, type Player, type PlayerInfo } from "@bibliothecadao/types";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { displayPlayerName } from "./entities";
 import { getGuild } from "./guild";
 
 export const getPlayerInfo = (
@@ -31,7 +32,7 @@ export const getPlayerInfo = (
       return {
         entity: player.entity,
         address: player.address,
-        name: player.name,
+        name: displayPlayerName(player.address, player.name),
         isAlive,
         guildName: guild?.name,
       };

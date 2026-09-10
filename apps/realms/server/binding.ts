@@ -42,6 +42,18 @@ export const gameplayAccountOf = async (owner: string): Promise<string | null> =
   return account;
 };
 
+/** The owner behind a gameplay account: PlayerRegistry.owner_of(account), null for an unbound address. */
+export const ownerOfGameplayAccount = async (account: string): Promise<string | null> => {
+  const [owner] = await provider.callContract({
+    contractAddress: serverEnv.PLAYER_REGISTRY_ADDRESS,
+    entrypoint: "owner_of",
+    calldata: [account],
+  });
+  if (owner === undefined) throw new Error(`owner_of returned no value for ${account}`);
+  if (BigInt(owner) === 0n) return null;
+  return owner;
+};
+
 export async function bindGameplayAccount({
   owner,
   gameplayAddress,

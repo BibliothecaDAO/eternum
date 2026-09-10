@@ -16,7 +16,7 @@ const signedInPlayer = (overrides: Partial<IdentityChipInput> = {}): IdentityChi
   isExplicitSpectateSession: isExplicitSpectateSession(),
   identity: { status: "signed-in", name: "raschel" },
   gameplayAccount: { address: "0x1234567890abcdef", provisioningError: null },
-  playerName: "RASCHEL",
+  playerName: "raschel",
   owned: { structures: 3, realms: 3 },
   standing: { rank: 12, points: 4100 },
   ...overrides,
@@ -99,7 +99,8 @@ describe("resolveIdentityChipState", () => {
     });
   });
 
-  it("names the player from the players slice, then the identity, then the short address", () => {
+  it("names the player from the players slice, then the session username before the chain row exists, else the short address", () => {
+    expect(resolveIdentityChipState(signedInPlayer({ playerName: "Redbeard" }))).toMatchObject({ name: "Redbeard" });
     expect(resolveIdentityChipState(signedInPlayer({ playerName: null }))).toMatchObject({ name: "raschel" });
     expect(
       resolveIdentityChipState(signedInPlayer({ playerName: null, identity: { status: "signed-in", name: null } })),

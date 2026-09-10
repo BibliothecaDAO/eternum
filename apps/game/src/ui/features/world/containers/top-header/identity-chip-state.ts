@@ -20,6 +20,7 @@ export type IdentityChipState =
 export interface IdentityChipInput {
   /** `isExplicitSpectateSession()` from `utils/spectator-session` — the session-level spectator intent. */
   isExplicitSpectateSession: boolean;
+  /** The session's chosen username: the only name a player has before their gameplay account is registered. */
   identity: { status: IdentitySessionStatus; name: string | null };
   gameplayAccount: { address: string | null; provisioningError: string | null };
   /** The in-game player name for the gameplay address (players slice), when the address has registered one. */
@@ -41,7 +42,7 @@ const shortAddress = (address: string): string => `${address.slice(0, 6)}…${ad
 
 /** The session username is the synced name; the chain name only stands in for a session without one. */
 const resolveDisplayName = ({ identity, gameplayAccount, playerName }: IdentityChipInput): string | null =>
-  identity.name ?? playerName ?? (gameplayAccount.address ? shortAddress(gameplayAccount.address) : null);
+  playerName ?? identity.name ?? (gameplayAccount.address ? shortAddress(gameplayAccount.address) : null);
 
 /**
  * One identity, one output. The session is the only "logged in" fact; the gameplay account only decides between

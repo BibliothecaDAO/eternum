@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -17,8 +18,6 @@ import { CHAT_SHORTCUT } from "./chat-shortcut";
 const isTypingTarget = (target: EventTarget | null) =>
   target instanceof Element &&
   target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
-
-const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 /** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
  *  above the strip and the details above keep whatever room is left. */
@@ -75,7 +74,7 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
   const stripText = !initializer
     ? "Sign in to chat"
     : lastMessage
-      ? `${lastMessage.sender.displayName?.trim() || shortAddress(lastMessage.sender.playerId)}: ${lastMessage.content}`
+      ? `${resolveChatSenderName(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
       : "No messages yet";
 
   return (

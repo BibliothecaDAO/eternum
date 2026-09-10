@@ -41,7 +41,7 @@ describe("army ownership dependencies", () => {
       ]),
       entityIdLabels: labels,
       visibleArmyIndices: new Map(),
-      resolveArmyOwnerNameForAddress: (_id: number, address: bigint) => `Owner ${address}`,
+      resolveArmyOwnerNameForAddress: (address: bigint) => `Owner ${address}`,
       getArmyColor: ({ owner }: { owner: { address: bigint } }) => `colour-${owner.address}`,
       updateArmyLabelData: vi.fn((_id, data, label) => {
         label.color = data.color;

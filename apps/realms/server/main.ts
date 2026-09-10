@@ -7,7 +7,8 @@ import {
   gameplayAccountOf,
   rotateGameplayAccountKey,
 } from "./binding";
-import { leaderboardPopulation, namesByOwners } from "./names";
+import { leaderboardPopulation } from "./names";
+import { profilesByAccounts } from "./profiles";
 import { serverEnv } from "./env";
 import { serveStatic } from "./static";
 
@@ -24,19 +25,21 @@ const sessionOwner = async (request: Request): Promise<string | null> => {
   return session?.user.id ?? null;
 };
 
-const handleNames = async (url: URL): Promise<Response> => {
-  const raw = url.searchParams.get("owners") ?? "";
-  const owners = raw
+const PROFILES_BATCH_LIMIT = 200;
+
+const handleProfiles = async (url: URL): Promise<Response> => {
+  const raw = url.searchParams.get("accounts") ?? "";
+  const accounts = raw
     .split(",")
-    .map((owner) => owner.trim())
+    .map((account) => account.trim())
     .filter(Boolean);
-  if (owners.length === 0 || owners.length > 200) {
-    return json({ error: "owners must list 1 to 200 addresses" }, 400);
+  if (accounts.length === 0 || accounts.length > PROFILES_BATCH_LIMIT) {
+    return json({ error: `accounts must list 1 to ${PROFILES_BATCH_LIMIT} addresses` }, 400);
   }
   try {
-    return json({ names: await namesByOwners(owners) });
+    return json({ profiles: await profilesByAccounts(accounts) });
   } catch {
-    return json({ error: "owners must be Starknet addresses" }, 400);
+    return json({ error: "accounts must be Starknet addresses" }, 400);
   }
 };
 
@@ -79,7 +82,7 @@ const handleApiRequest = async (request: Request, url: URL): Promise<Response> =
     if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
 
     if (request.method === "GET") {
-      if (url.pathname === "/api/names") return handleNames(url);
+      if (url.pathname === "/api/profiles") return handleProfiles(url);
       if (url.pathname === "/api/leaderboard") return handleLeaderboard();
       if (url.pathname === "/api/gameplay-account") return handleGameplayAccount(request);
     }

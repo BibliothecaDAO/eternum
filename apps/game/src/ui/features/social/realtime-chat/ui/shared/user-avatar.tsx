@@ -1,6 +1,6 @@
 import React from "react";
 
-import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import { playerAvatarUrl } from "@/hooks/use-player-profile";
 
 interface UserAvatarProps {
   name: string;
@@ -27,7 +27,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     lg: "h-10 w-10 text-lg",
   };
 
-  const resolvedAvatarUrl = address ? getAvatarUrl(address, avatarUrl ?? undefined) : (avatarUrl ?? null);
+  const resolvedAvatarUrl = address ? (avatarUrl ?? playerAvatarUrl(address)) : (avatarUrl ?? null);
 
   return (
     <div
