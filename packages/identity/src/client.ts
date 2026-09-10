@@ -51,6 +51,17 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return session;
   };
 
+  /** Changes the chosen username or portrait; the server answers 422 with its reason when a name breaks a rule. */
+  const updateUser = async (body: { name?: string; image?: string | null }): Promise<void> => {
+    const response = await request("/update-user", { method: "POST", body: JSON.stringify(body) });
+    if (response.ok) return;
+    const reason = await response
+      .json()
+      .then((payload: { message?: string; code?: string }) => payload.message ?? payload.code)
+      .catch(() => undefined);
+    throw new Error(reason ?? `Identity request failed with status ${response.status}`);
+  };
+
   const signOut = async (): Promise<void> => {
     const response = await request("/sign-out", { method: "POST", body: JSON.stringify({}) });
     if (!response.ok) {
@@ -85,5 +96,5 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return session;
   };
 
-  return { getSession, signIn, signOut };
+  return { getSession, signIn, signOut, updateUser };
 };

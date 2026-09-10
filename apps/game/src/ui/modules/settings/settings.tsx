@@ -1,5 +1,10 @@
 import { AudioCategory, useAudio } from "@/audio";
-import { signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
+import {
+  identityClient,
+  signOutIdentitySession,
+  useIdentitySession,
+  useIdentitySessionStore,
+} from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { playerAvatarUrl, usePlayerProfile } from "@/hooks/use-player-profile";
@@ -22,6 +27,7 @@ import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useDisconnect } from "@starknet-react/core";
+import Pencil from "lucide-react/dist/esm/icons/pencil";
 import { type ReactNode, useState } from "react";
 
 export const SETTINGS_POPOVER_ID = "settings";
@@ -40,6 +46,7 @@ export const SettingsPanel = () => (
 const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 function ProfileHeader() {
+  const { session } = useIdentitySession();
   const address = useAccountStore((state) => state.account?.address ?? null);
   const profile = usePlayerProfile(address);
   const { standingsByAddress } = useInGameLeaderboard();
@@ -66,7 +73,11 @@ function ProfileHeader() {
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>
+          {session && !spectating ? (
+            <UsernameEditor name={name} />
+          ) : (
+            <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>
+          )}
           {address && (
             <button
               type="button"
@@ -86,6 +97,82 @@ function ProfileHeader() {
         )}
       </div>
     </header>
+  );
+}
+
+/** The username lives on the identity account; changing it here reaches players who never open the app. */
+function UsernameEditor({ name }: { name: string | null }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startEditing = () => {
+    setDraft(name ?? "");
+    setError(null);
+    setEditing(true);
+  };
+  const save = async () => {
+    const next = draft.trim();
+    if (!next || next === name) {
+      setEditing(false);
+      return;
+    }
+    setPending(true);
+    try {
+      await identityClient.updateUser({ name: next });
+      await useIdentitySessionStore.getState().refresh();
+      setEditing(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not change the username");
+    } finally {
+      setPending(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        aria-label="Change username"
+        onClick={startEditing}
+        className={cn("flex min-w-0 items-center gap-1.5 font-sans normal-case tracking-normal", HUD_HEADLINE)}
+      >
+        <span className="truncate">{name ?? "Choose a username"}</span>
+        <Pencil className="h-3 w-3 shrink-0 text-gold/60" />
+      </button>
+    );
+  }
+  return (
+    <form
+      className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void save();
+      }}
+    >
+      <input
+        aria-label="Username"
+        autoFocus
+        value={draft}
+        maxLength={31}
+        disabled={pending}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setEditing(false);
+          event.stopPropagation();
+        }}
+        className="min-w-0 flex-1 rounded-md border border-gold/30 bg-black/40 px-2 py-0.5 font-sans text-sm text-gold outline-none focus:border-gold/60"
+      />
+      <button type="submit" disabled={pending} className={HUD_PILL_BUTTON}>
+        {pending ? "Saving…" : "Save"}
+      </button>
+      {error && (
+        <p role="alert" className="basis-full text-xs text-danger">
+          {error}
+        </p>
+      )}
+    </form>
   );
 }
 
