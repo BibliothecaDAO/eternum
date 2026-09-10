@@ -2,9 +2,18 @@ name: Deploy Client
 
 # Ships the game client to play.realms.party as a Cloudflare Pages project
 # (project name in vars.CLOUDFLARE_PAGES_PROJECT; the custom domain is attached
-# in the Pages dashboard once). Manual dispatch keeps deploys deliberate; the
-# build reads .env.production plus the identity RPC secret and stamps the version from the ref.
+# in the Pages dashboard once). Every push to next that touches the client's inputs
+# deploys, like the box services; manual dispatch remains for a redeploy or a version label.
+# The build reads .env.production plus the identity RPC secret and stamps the version from the ref.
 on:
+  push:
+    branches: [next]
+    paths:
+      - "apps/game/**"
+      - "packages/**"
+      - "config/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-client.yml"
   workflow_dispatch:
     inputs:
       version:
