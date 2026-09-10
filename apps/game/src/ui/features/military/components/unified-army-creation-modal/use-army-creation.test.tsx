@@ -65,7 +65,7 @@ let root: Root;
 let container: HTMLDivElement;
 const onSubmit = vi.fn();
 const Harness = (props: { direction?: Direction; isExplorer?: boolean; initialGuardSlot?: number }) => {
-  form = useArmyCreation({ structureId: 42, fixedContext: true, autoMaxOnContextChange: true, onSubmit, ...props });
+  form = useArmyCreation({ structureId: 42, fixedContext: true, onSubmit, ...props });
   return null;
 };
 
@@ -128,6 +128,7 @@ describe("shared army creation form", () => {
     expect(form.guardSlot).toBe(GuardSlot.Alpha);
     expect(form.blockedReason).toBe("No free guard slot.");
     await act(async () => root.render(<Harness isExplorer={false} initialGuardSlot={GuardSlot.Delta} />));
+    await act(async () => form.handleTroopCountChange(2000));
     await act(async () => form.handleCreate());
     expect(mocks.addGuard).toHaveBeenCalledWith(
       expect.anything(),
@@ -136,6 +137,19 @@ describe("shared army creation form", () => {
       2000,
       GuardSlot.Delta,
     );
+  });
+
+  it("opens with every count at zero and keeps Deploy blocked until the player picks a count", async () => {
+    await act(async () => root.render(<Harness direction={Direction.EAST} />));
+    expect(form.troopCount).toBe(0);
+    expect(form.maxAffordable).toBe(2000);
+    expect(form.blockedReason).toBe("Choose a troop count.");
+    await act(async () => form.handleCreate());
+    expect(mocks.createExplorer).not.toHaveBeenCalled();
+    await act(async () => form.handleTroopSelect(TroopType.Paladin, TroopTier.T1));
+    expect(form.troopCount).toBe(0);
+    await act(async () => form.handleTroopCountChange(form.maxAffordable));
+    expect(form.blockedReason).toBeNull();
   });
 
   it("updates availability from the live resource row and explains provisioning first", async () => {

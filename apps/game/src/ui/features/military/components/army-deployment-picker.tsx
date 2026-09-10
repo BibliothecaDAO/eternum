@@ -21,7 +21,6 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
   const form = useArmyCreation({
     ...target,
     fixedContext: true,
-    autoMaxOnContextChange: true,
     onSubmit: () => usePopoverStore.getState().close("army-deployment"),
   });
 
