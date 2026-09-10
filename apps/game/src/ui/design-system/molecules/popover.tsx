@@ -11,7 +11,15 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import type { LucideIcon } from "lucide-react";
 import X from "lucide-react/dist/esm/icons/x";
-import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 const PANEL_GAP_PX = 8;
@@ -79,6 +87,7 @@ export const PopoverPanel = ({
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
+  const drag = useSurfaceDrag();
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
   const resolveAnchorRef = useRef(resolveAnchor);
   resolveAnchorRef.current = resolveAnchor;
@@ -133,7 +142,11 @@ export const PopoverPanel = ({
         OVERLAY_SURFACE_BASE,
         className,
       )}
-      style={panelStyle}
+      style={drag.apply(panelStyle)}
+      onPointerDown={drag.onPointerDown}
+      onPointerMove={drag.onPointerMove}
+      onPointerUp={drag.onPointerUp}
+      onPointerCancel={drag.onPointerUp}
     >
       {children}
     </div>,
@@ -226,9 +239,12 @@ interface PopoverHeaderProps {
   onClose: () => void;
 }
 
-/** The header strip for a large surface: title, optional icon, close. */
+/** The header strip for a large surface: title, optional icon, close. Dragging it moves the surface. */
 const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
-  <div className="flex items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5">
+  <div
+    data-popover-drag-handle
+    className="flex cursor-move select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5"
+  >
     <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
       {Icon && <Icon className="h-4 w-4 text-gold" />}
       {title}
@@ -388,6 +404,34 @@ const resolveAnchoredPanelStyle = (
 };
 
 const viewportHeightBelow = (top: number): number => Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
+
+/**
+ * A surface with a header can be dragged by it: the offset rides on top of the anchored placement until the
+ * surface closes, so a leaderboard or a transfer panel can be moved off whatever it covers.
+ */
+function useSurfaceDrag() {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragStart = useRef<{ pointerX: number; pointerY: number; offsetX: number; offsetY: number } | null>(null);
+  const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const target = event.target as Element;
+    if (!target.closest("[data-popover-drag-handle]") || target.closest("button,a,input,select,textarea")) return;
+    dragStart.current = { pointerX: event.clientX, pointerY: event.clientY, offsetX: offset.x, offsetY: offset.y };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = dragStart.current;
+    if (!start) return;
+    setOffset({ x: start.offsetX + event.clientX - start.pointerX, y: start.offsetY + event.clientY - start.pointerY });
+  };
+  const onPointerUp = () => {
+    dragStart.current = null;
+  };
+  const apply = (style: CSSProperties): CSSProperties =>
+    offset.x === 0 && offset.y === 0
+      ? style
+      : { ...style, transform: [style.transform, `translate(${offset.x}px, ${offset.y}px)`].filter(Boolean).join(" ") };
+  return { apply, onPointerDown, onPointerMove, onPointerUp };
+}
 
 const isInside = (target: EventTarget | null, element: HTMLElement | null): boolean =>
   element !== null && target instanceof Node && element.contains(target);

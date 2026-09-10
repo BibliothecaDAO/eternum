@@ -10,13 +10,14 @@ import { BuildingThumbs } from "@/ui/config";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Popover } from "@/ui/design-system/molecules/popover";
+import { Popover, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { IdentityLogin } from "@/ui/modules/identity/identity-login";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress } from "@bibliothecadao/types";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 import LoaderIcon from "lucide-react/dist/esm/icons/loader-2";
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -59,17 +60,25 @@ export const IdentityChip = () => {
   const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
   const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
 
+  if (state.kind === "player") return <IdentityChipTrigger state={state} isOpen={isOpen} />;
   return (
-    <Popover
-      id={popoverId}
-      ariaLabel={state.kind === "player" ? "Leaderboard" : "Identity"}
-      className={state.kind === "player" ? "w-auto" : undefined}
-      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} />}
-    >
-      {state.kind === "player" ? <SocialBoard focusOwnPlayer /> : <IdentityChipPanelBody state={state} />}
+    <Popover id={popoverId} ariaLabel="Identity" trigger={<IdentityChipTrigger state={state} isOpen={isOpen} />}>
+      <IdentityChipPanelBody state={state} />
     </Popover>
   );
 };
+
+/** The leaderboard hangs from the top centre as a framed, draggable surface instead of a side panel. */
+const LeaderboardSurface = () => (
+  <SurfaceFrame
+    title="Leaderboard"
+    icon={Trophy}
+    onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
+    className="w-[1000px]"
+  >
+    <SocialBoard focusOwnPlayer />
+  </SurfaceFrame>
+);
 
 const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOpen: boolean }) => {
   const togglePopover = usePopoverStore((popovers) => popovers.toggle);
@@ -82,7 +91,8 @@ const IdentityChipTrigger = ({ state, isOpen }: { state: IdentityChipState; isOp
       onClick={() => {
         if (state.kind === "player") {
           useSocialStore.setState({ selectedTab: 0, isExpanded: false });
-          togglePopover(LEADERBOARD_POPOVER_ID);
+          if (isOpen) usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID);
+          else usePopoverStore.getState().openSurface({ id: LEADERBOARD_POPOVER_ID, content: <LeaderboardSurface /> });
         } else {
           togglePopover(IDENTITY_POPOVER_ID);
         }

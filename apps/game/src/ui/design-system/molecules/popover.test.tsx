@@ -10,7 +10,7 @@ import {
   COMPACT_LANDSCAPE_MEDIA_QUERY,
   type CompactLane,
 } from "@/hooks/helpers/use-compact-hud";
-import { Popover, PopoverPanel, SurfaceHost } from "./popover";
+import { Popover, PopoverPanel, SurfaceFrame, SurfaceHost } from "./popover";
 
 const Trigger = ({ id, label }: { id: string; label: string }) => {
   const toggle = usePopoverStore((state) => state.toggle);
@@ -302,6 +302,38 @@ describe("Popover", () => {
     });
     expect(panel("s")).toBeNull();
     expect(usePopoverStore.getState().surface).toBeNull();
+  });
+
+  it("drags a framed surface by its header and leaves buttons in the header clickable", async () => {
+    const onClose = vi.fn();
+    await act(async () => {
+      usePopoverStore.getState().openSurface({
+        id: "s",
+        content: (
+          <SurfaceFrame title="Leaderboard" onClose={onClose}>
+            <span>rows</span>
+          </SurfaceFrame>
+        ),
+      });
+    });
+    const surface = panel("s")!;
+    const handle = surface.querySelector<HTMLElement>("[data-popover-drag-handle]")!;
+    const before = surface.style.transform;
+    const pointer = (type: string, clientX: number, clientY: number, target: Element = handle) =>
+      act(async () => {
+        target.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX, clientY }));
+      });
+
+    await pointer("pointerdown", 10, 10);
+    await pointer("pointermove", 60, 40);
+    await pointer("pointerup", 60, 40);
+    expect(surface.style.transform).toBe(`${before} translate(50px, 30px)`.trim());
+
+    await pointer("pointerdown", 0, 0, handle.querySelector("button")!);
+    await pointer("pointermove", 100, 100, handle.querySelector("button")!);
+    expect(surface.style.transform).toBe(`${before} translate(50px, 30px)`.trim());
+    await act(async () => handle.querySelector("button")!.click());
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("a surface and an element popover are exclusive of each other", async () => {
