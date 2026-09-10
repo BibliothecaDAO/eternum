@@ -9,6 +9,7 @@ import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
 import { TerrainField, type TerrainVisualSample } from "./terrain-field";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER, prepareTerrainPropInstances } from "./terrain-props";
 import { prepareTerrainShroudInstances } from "./terrain-shroud";
+import { applySettlementIslands } from "./terrain-settlement-ground";
 import type {
   PreparedTerrainPage,
   TerrainCellInput,
@@ -69,6 +70,7 @@ const FRONTIER_SKIRT_DEPTH = 0.24;
 
 export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrainPage {
   const startedAt = performance.now();
+  request = applySettlementIslands(request);
   const subdivisions = resolveSubdivisions(request.subdivisions);
   const field = new TerrainField(request);
   const vertexSampler = new TerrainVertexSampler(field);

@@ -611,7 +611,6 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
     }
     previousFrameTime = time;
     runtime.terrain.update(Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000)));
-    runtime.interaction.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000));
     runtime.controls.update();
     runtime.atmosphere.update(
       runtime.cycleProgress,
@@ -619,6 +618,7 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
       LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
     );
     runtime.weather.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.atmosphere);
+    runtime.interaction.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.weather.getWind());
     runtime.renderer.render(runtime.scene, runtime.camera);
   });
   return () => runtime.renderer.setAnimationLoop(null);

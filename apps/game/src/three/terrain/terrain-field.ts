@@ -8,7 +8,6 @@ import { TERRAIN_BIOME_ART_DIRECTIONS, type TerrainBiomeArtDirection } from "./t
 import {
   applyTerrainGroundRoad,
   applyTerrainGroundSlope,
-  applyTerrainGroundStructurePad,
   blendTerrainGroundWeights,
   normalizeTerrainGroundWeights,
   resolveTerrainGroundEcology,
@@ -211,7 +210,12 @@ export class TerrainField {
       candidates,
     );
     const weightedEnvironment = this.sampleWeightedEnvironment(worldX, worldZ, candidates);
-    const vegetation = this.resolveVegetationField(worldX, worldZ, candidates, weightedEnvironment);
+    // Settlements clear props and flatten footing, but their ground keeps the biome's material.
+    const vegetation = this.resolveVegetationField(worldX, worldZ, candidates, {
+      ...weightedEnvironment,
+      clearance: this.sampleRoadClearance(worldX, worldZ),
+      settlementEdgeStrength: 0,
+    });
     const shore = this.sampleShoreProximity(worldX, worldZ, candidates);
     const groundEcology = resolveTerrainGroundEcology(normalizeTerrainGroundWeights(groundWeights), {
       allowsVegetation: !isTerrainWaterBiome(strongestBiome),
@@ -221,14 +225,12 @@ export class TerrainField {
     });
     const road = this.sampleRoadProximity(worldX, worldZ);
     const roadGroundWeights = applyTerrainGroundRoad(groundEcology.weights, road);
-    const structurePad = this.resolveStructurePadWeight(worldX, worldZ, candidates);
-    const paddedGroundWeights = applyTerrainGroundStructurePad(roadGroundWeights, structurePad);
 
     const macroStrength = macroTintStrength * inverseWeight;
     const wetness = shore * shoreWetness * inverseWeight;
     const macroFactor = 1 + (macroMaterial * 2 - 1) * macroStrength;
     const albedoFactor = macroFactor * (1 - wetness * 0.16) * (1 - road * 0.08);
-    const disturbedColorBlend = Math.max(road * 0.72, vegetation.disturbanceStrength * 0.5, structurePad * 0.78);
+    const disturbedColorBlend = Math.max(road * 0.72, vegetation.disturbanceStrength * 0.5);
     const baseColor = [red * inverseVisualWeight, green * inverseVisualWeight, blue * inverseVisualWeight] as const;
 
     return {
@@ -246,7 +248,7 @@ export class TerrainField {
           groundEcology.tint[2],
       ],
       explored: 1,
-      groundWeights: paddedGroundWeights,
+      groundWeights: roadGroundWeights,
       height: paddedHeight,
       normal: [0, 1, 0],
       roughness: clampUnit(
@@ -707,17 +709,6 @@ export class TerrainField {
     }
     this.lastRoadSample = { x: worldX, z: worldZ, distance: nearest };
     return nearest;
-  }
-
-  private resolveStructurePadWeight(worldX: number, worldZ: number, candidates: readonly CellFieldSample[]): number {
-    let weight = 0;
-    for (const candidate of candidates) {
-      if (!candidate.occupied) continue;
-      const distance = Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ);
-      const candidateWeight = 1 - smoothstep(PAD_INNER_RADIUS, PAD_OUTER_RADIUS, distance);
-      weight = Math.max(weight, candidateWeight);
-    }
-    return weight;
   }
 
   private countBiomeMismatches(): number {

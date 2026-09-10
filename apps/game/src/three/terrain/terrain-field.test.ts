@@ -207,8 +207,8 @@ describe("TerrainField", () => {
     expect(regrowth.disturbanceStrength).toBeGreaterThan(0.2);
     expect(regrowth.successionStrength).toBeGreaterThan(undisturbed.successionStrength + 0.2);
     expect(regrowth.maturity).toBeLessThan(undisturbed.maturity);
-    expect(regrowthGround[1]).toBeGreaterThan(openGround[1]);
-    expect(regrowthColor).not.toEqual(openColor);
+    expect(regrowthGround).toEqual(openGround);
+    expect(regrowthColor).toEqual(openColor);
   });
 
   it("expands the settlement ecology footprint for higher-level Realms", () => {

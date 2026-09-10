@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyTerrainGroundSlope,
-  applyTerrainGroundStructurePad,
   resolveTerrainGroundEcology,
   resolveTerrainGroundRecipe,
   TERRAIN_GROUND_SURFACE_IDS,
@@ -27,16 +26,12 @@ describe("terrain ground profiles", () => {
     expect(wet).toHaveLength(dry.length);
   });
 
-  it("exposes stone on steep ground and calms fragile cover on structure pads", () => {
+  it("exposes stone on steep ground", () => {
     const forest = resolveTerrainGroundRecipe(BiomeType.TemperateRainForest, { elevation: 0.48, moisture: 0.8 });
     const steep = applyTerrainGroundSlope(forest, 0.8);
-    const pad = applyTerrainGroundStructurePad(forest, 1);
 
     expect(steep[5]).toBeGreaterThan(forest[5]);
     expect(steep[4]).toBeLessThan(forest[4]);
-    expect(pad[2]).toBeGreaterThan(forest[2]);
-    expect(pad[4]).toBe(0);
-    expect(pad.reduce((total, weight) => total + weight, 0)).toBeCloseTo(1, 12);
   });
 
   it("resolves mature moss, regenerating cover, and wet ground through the existing surface catalog", () => {
@@ -81,7 +76,6 @@ describe("terrain ground profiles", () => {
         vegetation: vegetation({ canopyCover: 1, maturity: 1 }),
       }),
     ).toEqual({ roughnessOffset: 0, tint: [1, 1, 1], weights: forest });
-    expect(applyTerrainGroundStructurePad(mature.weights, 1)[4]).toBe(0);
   });
 });
 

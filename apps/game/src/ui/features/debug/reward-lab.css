@@ -1,5 +1,5 @@
 .reward-lab {
-  height: 100dvh;
+  height: var(--lab-viewport-height, 100dvh);
   min-height: 680px;
   display: flex;
   flex-direction: column;
@@ -16,11 +16,6 @@
   gap: 24px;
   padding: 18px 28px;
   border-bottom: 1px solid #ffffff12;
-}
-.reward-lab header a {
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  color: #c6a978;
 }
 .reward-lab h1 {
   margin: 2px 0 0;

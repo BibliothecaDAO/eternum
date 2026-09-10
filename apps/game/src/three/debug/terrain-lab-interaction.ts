@@ -1,4 +1,7 @@
-import { TERRAIN_LAB_BUILDINGS, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import { TERRAIN_LAB_BUILDINGS, VILLAGE_DRAFT_PATH, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import { SettlementAnimation } from "@/three/structures/settlement-animation";
+import type { WeatherState } from "@/three/managers/weather-manager";
+import { SettlementAppearance } from "@/three/structures/settlement-appearance";
 import { Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 } from "three";
 
 import { buildArmyModelAssetPath } from "@/three/constants/army-constants";
@@ -31,6 +34,8 @@ export class TerrainLabInteraction {
   private selected: { col: number; row: number };
   private preview = DEFAULT_TERRAIN_LAB_PREVIEW;
   private army: InstancedModel | null = null;
+  private settlementAppearance: SettlementAppearance | null = null;
+  private settlementAnimation: SettlementAnimation | null = null;
   private armyType: TerrainLabPreview["army"] = "none";
   private revision = 0;
   private disposed = false;
@@ -75,13 +80,15 @@ export class TerrainLabInteraction {
     this.selectionDirty = true;
     this.preview = preview;
     this.spinAngle = preview.yaw;
+    this.settlementAppearance?.setRelationship(preview.relationship);
     if (rebuild) await this.presentFixture();
     this.update(0);
   }
 
-  update(delta: number): void {
+  update(delta: number, wind?: Pick<WeatherState, "windX" | "windZ">): void {
     if (this.disposed) return;
     this.advanceExplorationPreview();
+    if (wind && this.models.get(VILLAGE_DRAFT_PATH)?.group.visible) this.settlementAnimation?.update(delta, wind);
     if (this.preview.spin) this.spinAngle += delta * 0.65;
     const moved = this.selectionDirty;
     if (moved) {
@@ -129,7 +136,13 @@ export class TerrainLabInteraction {
     this.cancelExplorationPreview();
     this.exploring = true;
     const revision = this.revision;
-    const request = buildTerrainLabRequest(this.request, this.preview, this.selected, [...this.buildings.values()]);
+    const request = buildTerrainLabRequest(
+      this.request,
+      this.preview,
+      this.selected,
+      [...this.buildings.values()],
+      this.localMode,
+    );
     const selected = { ...this.selected };
     const [covered, revealed] = await Promise.all([
       this.terrain.preparePageAsync(buildLabExplorationRequest(request, selected, false)),
@@ -163,6 +176,8 @@ export class TerrainLabInteraction {
     this.canvas.removeEventListener("pointerdown", this.beginPick);
     this.canvas.removeEventListener("pointerup", this.finishPick);
     this.hover.dispose();
+    this.settlementAnimation?.dispose();
+    this.settlementAppearance?.dispose();
     for (const model of this.models.values()) {
       this.scene.remove(model.group);
       model.dispose();
@@ -205,7 +220,7 @@ export class TerrainLabInteraction {
     const preview = this.preview;
     const selected = this.selected;
     const buildings = [...this.buildings.values()];
-    const request = buildTerrainLabRequest(this.request, preview, selected, buildings);
+    const request = buildTerrainLabRequest(this.request, preview, selected, buildings, this.localMode);
     const prepared = await this.terrain.preparePageAsync(request);
     if (this.disposed || revision !== this.revision) return;
     const fog = await this.terrain.prepareFogMaskAsync([prepared]);
@@ -260,6 +275,11 @@ export class TerrainLabInteraction {
     model.group.visible = false;
     this.models.set(key, model);
     this.scene.add(model.group);
+    if (path === VILLAGE_DRAFT_PATH) {
+      this.settlementAppearance = new SettlementAppearance(gltf.scene, model.instancedMeshes);
+      this.settlementAnimation = new SettlementAnimation(gltf.scene, model.instancedMeshes);
+      this.settlementAppearance.setRelationship(this.preview.relationship);
+    }
     return model;
   }
 
