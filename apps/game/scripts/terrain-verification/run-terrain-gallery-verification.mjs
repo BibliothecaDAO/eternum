@@ -46,7 +46,7 @@ export function buildTerrainGalleryUrl(
   revealProgress = 0,
 ) {
   const url = new URL(baseUrl);
-  url.pathname = "/debug/procedural-terrain";
+  url.pathname = "/lab";
   url.search = "";
   url.searchParams.set("capture", "1");
   url.searchParams.set("rendererMode", rendererMode);

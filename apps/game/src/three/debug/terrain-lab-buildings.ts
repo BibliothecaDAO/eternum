@@ -1,4 +1,5 @@
-import { ChestModelPath, SHARED_BUILDING_MODEL_PATHS } from "@/three/constants/scene-constants";
+import { ChestModelPath, SHARED_BUILDING_MODEL_PATHS, getStructureModelPaths } from "@/three/constants/scene-constants";
+import { StructureType } from "@bibliothecadao/types";
 
 export interface TerrainLabBuilding {
   col: number;
@@ -8,6 +9,7 @@ export interface TerrainLabBuilding {
 }
 
 const BUILDING_LABELS: Record<string, string> = {
+  "village-draft": "Camp / Village · Timber mercenaries",
   archerrange: "Archery range",
   castle0: "Realm · Settlement",
   castle1: "Realm · City",
@@ -21,13 +23,28 @@ const BUILDING_LABELS: Record<string, string> = {
   chest_model: "Chest",
 };
 
-export const TERRAIN_LAB_BUILDINGS = [...SHARED_BUILDING_MODEL_PATHS, ChestModelPath].map((path) => {
-  const filename = path
-    .split("/")
-    .at(-1)!
-    .replace(/\.glb$/, "");
-  return {
-    path,
-    label: BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()),
-  };
-});
+export const VILLAGE_DRAFT_PATH = "/models/settlements/village-draft.glb";
+
+export const TERRAIN_LAB_BUILDINGS = [...SHARED_BUILDING_MODEL_PATHS, ChestModelPath, VILLAGE_DRAFT_PATH].map(
+  (path) => {
+    const filename = path
+      .split("/")
+      .at(-1)!
+      .replace(/\.glb$/, "");
+    return {
+      path,
+      label: BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()),
+    };
+  },
+);
+
+const STRUCTURE_TYPE_BY_PATH = new Map(
+  Object.entries(getStructureModelPaths(false)).flatMap(([type, paths]) =>
+    paths.map((path) => [path, Number(type) as StructureType] as const),
+  ),
+);
+STRUCTURE_TYPE_BY_PATH.set(VILLAGE_DRAFT_PATH, StructureType.Village);
+
+export function resolveTerrainLabStructureType(path: string): StructureType | undefined {
+  return STRUCTURE_TYPE_BY_PATH.get(path);
+}

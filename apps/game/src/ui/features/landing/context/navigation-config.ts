@@ -1,6 +1,6 @@
-import { Box, Bug, Castle, Home, Trees, type LucideIcon } from "lucide-react";
+import { Bug, FlaskConical, Home, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "debug" | "biome-lab" | "local-lab" | "model-lab" | "reward-lab";
+type SectionId = "home" | "debug" | "lab";
 
 interface SubMenuItem {
   id: string;
@@ -35,34 +35,13 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     ],
   },
   {
-    id: "biome-lab",
-    label: "Biome Lab",
-    icon: Trees,
-    basePath: "/biome-lab",
-    subMenu: [{ id: "biome-lab", label: "BIOME LAB", tab: null, href: "/biome-lab" }],
-  },
-  {
-    id: "local-lab",
-    label: "Local Lab",
-    icon: Castle,
-    basePath: "/local-lab",
-    subMenu: [{ id: "local-lab", label: "LOCAL LAB", tab: null, href: "/local-lab" }],
-  },
-  {
-    id: "model-lab",
-    label: "Model Lab",
-    icon: Box,
-    basePath: "/model-lab",
-    subMenu: [{ id: "model-lab", label: "MODEL LAB", tab: null, href: "/model-lab" }],
+    id: "lab",
+    label: "Lab",
+    icon: FlaskConical,
+    basePath: "/lab",
+    subMenu: [{ id: "lab", label: "LAB", tab: null, href: "/lab" }],
   },
   ...buildDebugNavigationSections(),
-  {
-    id: "reward-lab",
-    label: "Reward Lab",
-    icon: Box,
-    basePath: "/reward-lab",
-    subMenu: [{ id: "reward-lab", label: "REWARD LAB", tab: null, href: "/reward-lab" }],
-  },
 ];
 
 const HOME_SECTION_PATHS = new Set(["/", "/learn", "/news", "/factory"]);
@@ -76,7 +55,7 @@ export function getSectionFromPath(pathname: string): SectionConfig {
   }
 
   for (const section of NAVIGATION_SECTIONS) {
-    if (section.basePath !== "/" && pathname.startsWith(section.basePath)) {
+    if (section.basePath !== "/" && (pathname === section.basePath || pathname.startsWith(`${section.basePath}/`))) {
       return section;
     }
   }

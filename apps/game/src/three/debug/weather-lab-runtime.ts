@@ -26,6 +26,10 @@ export class WeatherLabRuntime {
     this.lightning.setup();
   }
 
+  getWind() {
+    return this.weather.getState();
+  }
+
   setWeather(type: WeatherType): void {
     this.weather.setWeather(type);
   }

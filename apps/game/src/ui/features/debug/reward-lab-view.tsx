@@ -1,6 +1,5 @@
 // @refresh reset
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   mountRewardLab,
   REWARD_STUDIES,
@@ -9,7 +8,6 @@ import {
   type RewardLabStats,
 } from "@/three/debug/reward-lab";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
-import { GraphicsLabsNav } from "./graphics-labs-nav";
 import { CHEST_PALETTES, type ChestPalette } from "@/three/debug/reward-lab-presentation";
 import "./reward-lab.css";
 
@@ -63,10 +61,8 @@ export function RewardLabView() {
     <main className="reward-lab" data-ready={ready}>
       <header>
         <div>
-          <Link to="/">ETERNUM</Link>
           <h1>Rewards, brought to life.</h1>
         </div>
-        <GraphicsLabsNav />
         <span className="rl-tag">3D ART STUDIES</span>
       </header>
       <nav className="rl-studies" aria-label="Reward studies">

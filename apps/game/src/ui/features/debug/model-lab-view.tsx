@@ -2,7 +2,6 @@
 import {
   Anchor,
   ArrowDownToLine,
-  ArrowLeft,
   ArrowRight,
   Box,
   Check,
@@ -30,7 +29,6 @@ import {
 } from "@/three/debug/model-lab/model-lab-settings";
 import { MODEL_LAB_BIOMES } from "@/three/debug/model-lab/model-lab-environment";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
-import { GraphicsLabsNav } from "./graphics-labs-nav";
 import "./model-lab.css";
 
 const CLASSES = ["knight", "crossbowman", "paladin"] as const;
@@ -161,15 +159,11 @@ export function ModelLabView() {
   return (
     <main className="model-lab" data-ready={ready} data-debug-route="model-lab">
       <header className="ml-header">
-        <Link to="/" aria-label="Home">
-          <ArrowLeft size={17} />
-        </Link>
         <Box size={25} />
         <div>
-          <strong>MODEL LAB</strong>
-          <span>ETERNUM · ART & MOTION</span>
+          <strong>Models & motion</strong>
+          <span>FLEETS · ARMIES · BIOMES</span>
         </div>
-        <GraphicsLabsNav />
         <button onClick={share}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
           {copied ? "Copied" : "Share setup"}

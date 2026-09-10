@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 import { NAVIGATION_SECTIONS, getActiveSubItem, getSectionFromPath, getSubItemHref } from "./navigation-config";
 
 describe("getActiveSubItem", () => {
-  it.each(["biome-lab", "local-lab", "model-lab"])("exposes %s as a first-class lab", (id) => {
-    const section = getSectionFromPath(`/${id}`);
-    expect(section.id).toBe(id);
-    const item = getActiveSubItem(section, `/${id}`, new URLSearchParams());
-    expect(getSubItemHref(section, item, new URLSearchParams())).toBe(`/${id}`);
+  it("exposes one lab section for every graphics tool", () => {
+    expect(NAVIGATION_SECTIONS.filter((section) => section.basePath.startsWith("/lab"))).toHaveLength(1);
+    expect(NAVIGATION_SECTIONS.some((section) => section.id.endsWith("-lab"))).toBe(false);
+    for (const path of ["/lab", "/lab/models", "/lab/rewards", "/lab/interface"]) {
+      const section = getSectionFromPath(path);
+      expect(section.id).toBe("lab");
+      const item = getActiveSubItem(section, path, new URLSearchParams());
+      expect(getSubItemHref(section, item, new URLSearchParams())).toBe("/lab");
+    }
+    expect(getSectionFromPath("/laboratory").id).toBe("home");
   });
   it("matches the landing home submenu from pathname instead of the legacy tab query", () => {
     const homeSection = NAVIGATION_SECTIONS.find((section) => section.id === "home");

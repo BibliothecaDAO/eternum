@@ -24,11 +24,6 @@ const DebugProceduralWorldGymView = lazy(() =>
 const DebugTerrainPropView = lazy(() =>
   import("./ui/features/debug/terrain-prop-debug-view").then((module) => ({ default: module.TerrainPropDebugView })),
 );
-const DebugProceduralTerrainView = lazy(() =>
-  import("./ui/features/debug/procedural-terrain-debug-view").then((module) => ({
-    default: module.ProceduralTerrainDebugView,
-  })),
-);
 const DebugProceduralTerrainBenchmarkView = lazy(() =>
   import("./ui/features/debug/procedural-terrain-benchmark-view").then((module) => ({
     default: module.ProceduralTerrainBenchmarkView,
@@ -37,11 +32,8 @@ const DebugProceduralTerrainBenchmarkView = lazy(() =>
 const DebugWorldFxGymView = lazy(() =>
   import("./ui/features/debug/world-fx-gym-view").then((module) => ({ default: module.WorldFxGymView })),
 );
-const ModelLabView = lazy(() =>
-  import("./ui/features/debug/model-lab-view").then((module) => ({ default: module.ModelLabView })),
-);
-const RewardLabView = lazy(() =>
-  import("./ui/features/debug/reward-lab-view").then((module) => ({ default: module.RewardLabView })),
+const GraphicsLabView = lazy(() =>
+  import("./ui/features/debug/graphics-lab-view").then((module) => ({ default: module.GraphicsLabView })),
 );
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
@@ -62,34 +54,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route
-          path="/reward-lab"
+          path="/lab/*"
           element={
             <DebugRouteShell>
-              <RewardLabView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/model-lab"
-          element={
-            <DebugRouteShell>
-              <ModelLabView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/local-lab"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralTerrainView localMode />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/biome-lab"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralTerrainView />
+              <GraphicsLabView />
             </DebugRouteShell>
           }
         />
@@ -130,14 +98,6 @@ function App() {
           element={
             <DebugRouteShell>
               <DebugTerrainPropView />
-            </DebugRouteShell>
-          }
-        />
-        <Route
-          path="/debug/procedural-terrain"
-          element={
-            <DebugRouteShell>
-              <DebugProceduralTerrainView />
             </DebugRouteShell>
           }
         />

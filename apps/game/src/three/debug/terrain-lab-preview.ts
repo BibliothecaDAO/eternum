@@ -1,8 +1,10 @@
+import type { SettlementRelationship } from "@/three/structures/settlement-appearance";
 import { ChestModelPath } from "@/three/constants/scene-constants";
-import { BiomeType, StructureType } from "@bibliothecadao/types";
-import type { TerrainLabBuilding } from "./terrain-lab-buildings";
+import { BiomeType } from "@bibliothecadao/types";
+import { resolveTerrainLabStructureType, type TerrainLabBuilding } from "./terrain-lab-buildings";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import type { ModelType } from "@/three/types/army";
+import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
 
 export interface TerrainLabPreview {
   biome: BiomeType | "fixture" | "ethereal";
@@ -11,6 +13,7 @@ export interface TerrainLabPreview {
   army: ModelType | "none";
   spin: boolean;
   yaw: number;
+  relationship: SettlementRelationship;
 }
 
 export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
@@ -20,6 +23,7 @@ export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
   army: "none",
   spin: false,
   yaw: 0,
+  relationship: "owned",
 };
 
 export function buildTerrainLabRequest(
@@ -27,6 +31,7 @@ export function buildTerrainLabRequest(
   preview: TerrainLabPreview,
   selected: { col: number; row: number },
   buildings: readonly TerrainLabBuilding[] = [],
+  localMode = false,
 ): TerrainPageRequest {
   const structures = buildings.filter((building) => building.path !== ChestModelPath);
   const occupied = new Set(structures.map((building) => `${building.col}:${building.row}`));
@@ -55,7 +60,7 @@ export function buildTerrainLabRequest(
   return {
     ...request,
     ...(preview.biome === "ethereal" ? { flatSurface: true } : {}),
-    cells,
+    cells: localMode ? cells.map(resolveSettlementLandCell) : cells,
     halo:
       preview.biome === "ethereal"
         ? request.halo.map((cell) => ({
@@ -66,13 +71,20 @@ export function buildTerrainLabRequest(
         : request.halo,
     settlementAnchors: [
       ...anchors,
-      ...structures.map(({ col, row }) => ({
-        col,
-        row,
-        level: 1,
-        structureId: `lab-building:${col}:${row}`,
-        structureType: StructureType.Village,
-      })),
+      ...structures.flatMap(({ col, row, path }) => {
+        const structureType = resolveTerrainLabStructureType(path);
+        return structureType === undefined
+          ? []
+          : [
+              {
+                col,
+                row,
+                level: 1,
+                structureId: `lab-building:${col}:${row}`,
+                structureType,
+              },
+            ];
+      }),
     ],
   };
 }
