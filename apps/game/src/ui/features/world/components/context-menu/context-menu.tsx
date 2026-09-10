@@ -69,6 +69,7 @@ export const ContextMenu = () => {
       ref={panel}
       role="menu"
       aria-label={menu.title ?? "Actions"}
+      onContextMenu={(event) => event.preventDefault()}
       className={cn("pointer-events-auto fixed z-[140] rounded-xl p-1 text-gold", OVERLAY_SURFACE_BASE)}
       style={{ left, top, width: MENU_WIDTH_PX }}
     >
