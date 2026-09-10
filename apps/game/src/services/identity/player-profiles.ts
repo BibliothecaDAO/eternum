@@ -18,19 +18,22 @@ export const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
 
   const notify = () => listeners.forEach((listener) => listener());
 
+  // A failed batch stays asked: retrying on the next derive would loop, since the derive is what asks. A reload
+  // asks again; until then those players read by their chain name.
   const load = async (accounts: string[]) => {
+    let landed = false;
     for (let start = 0; start < accounts.length; start += IDENTITY_PROFILES_BATCH_LIMIT) {
       const batch = accounts.slice(start, start + IDENTITY_PROFILES_BATCH_LIMIT);
       try {
         Object.entries(await deps.fetchProfiles(batch)).forEach(([account, profile]) =>
           profiles.set(normalize(account), profile),
         );
+        landed = true;
       } catch (error) {
         console.error("identity_profiles_load_failed", error);
-        batch.forEach((account) => requested.delete(account));
       }
     }
-    notify();
+    if (landed) notify();
   };
 
   return {

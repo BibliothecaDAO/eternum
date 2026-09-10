@@ -22,16 +22,18 @@ describe("identity profiles", () => {
     expect(fetchProfiles).toHaveBeenCalledTimes(2);
   });
 
-  it("forgets a failed batch so the addresses are asked again", async () => {
-    const fetchProfiles = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValue({ "0x1": { name: null, portrait: "02" } });
+  it("keeps a failed batch asked and wakes nobody, so a derive never loops on a dead identity server", async () => {
+    const fetchProfiles = vi.fn().mockRejectedValue(new Error("offline"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const profiles = createIdentityProfiles({ fetchProfiles });
+    const listener = vi.fn();
+    profiles.subscribe(listener);
     profiles.request(["0x1"]);
     await vi.waitFor(() => expect(fetchProfiles).toHaveBeenCalledTimes(1));
     profiles.request(["0x1"]);
-    await vi.waitFor(() => expect(profiles.get("0x1")).toEqual({ name: null, portrait: "02" }));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(fetchProfiles).toHaveBeenCalledTimes(1);
+    expect(listener).not.toHaveBeenCalled();
+    expect(profiles.get("0x1")).toBeUndefined();
   });
 });
