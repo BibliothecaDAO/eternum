@@ -12,9 +12,7 @@ export type EmpireSuggestionAction =
   | "deploy-explorer"
   | "expand-population"
   | "garrison"
-  | "provision"
-  | "upgrade"
-  | "upgrade-and-provision";
+  | "upgrade";
 
 export type BlitzBuildKey = "copper" | "coal" | "military" | "wheat" | "wood" | "workerHut";
 type BlitzResourceBuildKey = "wood" | "coal" | "copper";
@@ -48,7 +46,6 @@ export type BlitzRealmSuggestionInput = {
   realmName: string;
   realmLevel: number;
   isBlitzActive: boolean;
-  canProvision: boolean;
   canAffordUpgrade: boolean;
   hasAvailableBuildingTile: boolean;
   buildingTilesOccupied: number | null;
@@ -325,20 +322,6 @@ const resolveExplorerDeploymentSuggestion = (input: BlitzRealmSuggestionInput): 
 
 export const buildBlitzRealmSuggestions = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
-
-  if (input.canProvision) {
-    const canBundleUpgrade = input.canAffordUpgrade;
-
-    return [
-      createBaseSuggestion(
-        input,
-        canBundleUpgrade ? "upgrade-and-provision" : "provision",
-        canBundleUpgrade ? "Provision + level up realm" : "Provision realm",
-        0,
-        canBundleUpgrade ? "Start your economy and upgrade in one action." : "Start your economy before upgrading.",
-      ),
-    ];
-  }
 
   const suggestion =
     resolveUpgradeSuggestion(input) ??

@@ -1,7 +1,4 @@
-import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -54,20 +51,6 @@ export const useStructuresWithMetadata = ({
   const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();
   const { structureGroups } = useStructureGroups();
-
-  // Inputs needed to compute `canProvision` per structure cheaply. All values
-  // are already available in RECS — no direct read calls.
-  const resolvedWorldGameMode = useResolvedWorldGameMode();
-  const currentBlockTimestamp = useCurrentBlockTimestamp();
-  const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
-  const gameEndAt = useUIStore((state) => state.gameEndAt);
-  const devModeOn = useUIStore((state) => state.devModeOn);
-  const ownerAddress = useAccountStore((state) => state.account?.address ?? null);
-  const ownerContract = useMemo(() => (ownerAddress ? ContractAddress(ownerAddress) : null), [ownerAddress]);
-  const isBlitzWorld = resolvedWorldGameMode === "blitz";
-  // dev_mode (sandbox) bypasses the chain's main-phase + season-end gates.
-  const isMainPhase = devModeOn || (typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt);
-  const isSeasonOver = !devModeOn && typeof gameEndAt === "number" && currentBlockTimestamp > gameEndAt;
 
   const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
@@ -140,25 +123,6 @@ export const useStructuresWithMetadata = ({
         paladinT1: getBuildingCount(BuildingType.ResourcePaladinT1, packedCounts),
       };
 
-      // canProvision mirrors useBlitzRealmProvision but reads only RECS-cached
-      // state. There is no separate per-structure `isProvisioned` lookup, so
-      // approximate via the packed building counts (the same fallback the
-      // real hook uses when its provisioning building check is unavailable).
-      let canProvision = false;
-      if (
-        isBlitzWorld &&
-        structure.category === StructureType.Realm &&
-        ownerContract !== null &&
-        isMainPhase &&
-        !isSeasonOver
-      ) {
-        const ownerMatches = structure.structure?.owner === ownerContract;
-        if (ownerMatches) {
-          const provisioned = getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0;
-          canProvision = !provisioned;
-        }
-      }
-
       return {
         ...structure,
         displayName: name,
@@ -172,7 +136,6 @@ export const useStructuresWithMetadata = ({
         groupColor,
         isFavorite,
         canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
-        canProvision,
         buildingCounts,
       };
     });
@@ -184,9 +147,5 @@ export const useStructuresWithMetadata = ({
     favoritesSet,
     mode,
     buildingTileCountsByStructure,
-    isBlitzWorld,
-    isMainPhase,
-    isSeasonOver,
-    ownerContract,
   ]);
 };

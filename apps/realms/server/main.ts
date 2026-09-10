@@ -7,7 +7,9 @@ import {
   gameplayAccountOf,
   rotateGameplayAccountKey,
 } from "./binding";
-import { leaderboardPopulation, namesByOwners } from "./names";
+import { leaderboardPopulation } from "./names";
+import { profilesByAccounts } from "./profiles";
+import { clientAddressOf, createRateLimiter } from "./rate-limit";
 import { serverEnv } from "./env";
 import { serveStatic } from "./static";
 
@@ -24,19 +26,25 @@ const sessionOwner = async (request: Request): Promise<string | null> => {
   return session?.user.id ?? null;
 };
 
-const handleNames = async (url: URL): Promise<Response> => {
-  const raw = url.searchParams.get("owners") ?? "";
-  const owners = raw
+const PROFILES_BATCH_LIMIT = 200;
+/** Public and chain-backed: one client gets this many profile requests a minute. */
+const PROFILES_REQUESTS_PER_MINUTE = 30;
+const profilesRateLimiter = createRateLimiter({ limit: PROFILES_REQUESTS_PER_MINUTE, windowMs: 60_000 });
+
+const handleProfiles = async (url: URL, client: string): Promise<Response> => {
+  if (!profilesRateLimiter.allow(client)) return json({ error: "too_many_requests" }, 429);
+  const raw = url.searchParams.get("accounts") ?? "";
+  const accounts = raw
     .split(",")
-    .map((owner) => owner.trim())
+    .map((account) => account.trim())
     .filter(Boolean);
-  if (owners.length === 0 || owners.length > 200) {
-    return json({ error: "owners must list 1 to 200 addresses" }, 400);
+  if (accounts.length === 0 || accounts.length > PROFILES_BATCH_LIMIT) {
+    return json({ error: `accounts must list 1 to ${PROFILES_BATCH_LIMIT} addresses` }, 400);
   }
   try {
-    return json({ names: await namesByOwners(owners) });
+    return json({ profiles: await profilesByAccounts(accounts) });
   } catch {
-    return json({ error: "owners must be Starknet addresses" }, 400);
+    return json({ error: "accounts must be Starknet addresses" }, 400);
   }
 };
 
@@ -74,12 +82,12 @@ const handleGameplayAccountAction = async (request: Request, action: string): Pr
   }
 };
 
-const handleApiRequest = async (request: Request, url: URL): Promise<Response> => {
+const handleApiRequest = async (request: Request, url: URL, client: string): Promise<Response> => {
   try {
     if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
 
     if (request.method === "GET") {
-      if (url.pathname === "/api/names") return handleNames(url);
+      if (url.pathname === "/api/profiles") return handleProfiles(url, client);
       if (url.pathname === "/api/leaderboard") return handleLeaderboard();
       if (url.pathname === "/api/gameplay-account") return handleGameplayAccount(request);
     }
@@ -99,11 +107,12 @@ const handleApiRequest = async (request: Request, url: URL): Promise<Response> =
 const isGameplayAccountAction = (action: string): action is "bind" | "rotate" =>
   action === "bind" || action === "rotate";
 
-export async function handleRequest(request: Request): Promise<Response> {
+export async function handleRequest(request: Request, socketAddress?: string | null): Promise<Response> {
   const url = new URL(request.url);
 
   if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-    return handleApiCors(request, () => handleApiRequest(request, url));
+    const client = clientAddressOf(request, socketAddress);
+    return handleApiCors(request, () => handleApiRequest(request, url, client));
   }
   if (request.method !== "GET" && request.method !== "HEAD") {
     return json({ error: "method_not_allowed" }, 405);
@@ -121,7 +130,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 if (import.meta.main) {
   const server = Bun.serve({
     port: serverEnv.REALMS_SERVER_PORT,
-    fetch: handleRequest,
+    fetch: (request, bunServer) => handleRequest(request, bunServer.requestIP(request)?.address),
   });
   console.info(`realms identity server listening on :${server.port}`);
 }

@@ -6,7 +6,6 @@ export * from "./biome";
 export * from "./buildings";
 export * from "./combat-simulator";
 export * from "./constants";
-export * from "./crates";
 export * from "./entities";
 export * from "./entry-token";
 export * from "./guild";

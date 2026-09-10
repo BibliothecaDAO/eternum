@@ -1,7 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { Position as PositionType } from "@bibliothecadao/eternum";
-import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 
 import { Button } from "@/ui/design-system/atoms";
@@ -255,7 +255,7 @@ export const PlayerId = ({
 };
 
 const AvatarImage = ({ address }: { address: string }) => {
-  const avatarUrl = getAvatarUrl(address);
+  const avatarUrl = playerAvatarUrl(address);
 
   return (
     <div className="w-24 h-24 rounded-md overflow-hidden border-2 border-gold/20 shadow-lg bg-brown/30">

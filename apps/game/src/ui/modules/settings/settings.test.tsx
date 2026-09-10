@@ -23,8 +23,10 @@ vi.mock("@/hooks/context/identity-session", () => ({
   signOutIdentitySession: mocks.signOut,
 }));
 vi.mock("@/hooks/store/use-account-store", () => ({ useAccountStore: () => "0x123456789" }));
+// The players slice is the one name source; the bridge already merged the session username into it.
 vi.mock("@/hooks/store/use-world-slices-store", () => ({
-  useWorldSlicesStore: () => [{ address: 0x123456789n, name: "Rasch" }],
+  useWorldSlicesStore: (selector: (state: unknown) => unknown) =>
+    selector({ players: [{ address: 0x123456789n, name: "Owner", portrait: null }] }),
 }));
 vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
   useInGameLeaderboard: () => ({ standingsByAddress: new Map([["0x123456789", { rank: 3, points: 1250 }]]) }),

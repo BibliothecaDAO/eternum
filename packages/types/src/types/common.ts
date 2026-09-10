@@ -756,10 +756,13 @@ export interface PlayerInfo {
   guildName: string;
 }
 
+/** A registered player: the identity username (else the chosen chain name), or null when neither was chosen. */
 export interface Player {
   entity: Entity;
   address: ContractAddress;
-  name: string;
+  name: string | null;
+  /** The identity portrait id ("01".."12") when the player picked one. */
+  portrait: string | null;
 }
 
 export type GuildInfo = {

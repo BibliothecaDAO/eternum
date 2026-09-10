@@ -1,5 +1,6 @@
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { consumeDominantFrameWorkOwner, type DominantFrameWorkOwner } from "./frame-work-owner";
+import { traceFlightFrame } from "./flight-trace";
 import { getRendererDiagnosticActiveMode } from "./renderer-diagnostics";
 
 interface InstrumentedTexture {
@@ -164,6 +165,7 @@ function reportCompletedGpuBackendFrame(endedAt: number = performance.now(), war
   hasActiveFrame = false;
 
   const durationMs = endedAt - activeFrame.startedAt;
+  traceFlightFrame(durationMs, owner);
   if (durationMs <= SPIKE_FRAME_THRESHOLD_MS) {
     return;
   }

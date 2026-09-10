@@ -1,7 +1,7 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import type { LandingEntryRouteState } from "@/ui/features/landing/lib/landing-entry-state";
 import { resolveEndpoint } from "@realms-world/chain";
-import { createIdentityClient, type Session } from "@realms-world/identity";
+import { createIdentityClient, profileOfIdentityUser, type Session } from "@realms-world/identity";
 import { useEffect } from "react";
 import { create } from "zustand";
 import { env } from "../../../env";
@@ -40,6 +40,10 @@ interface IdentitySessionStore {
 }
 
 const resolveStatus = (session: Session | null): IdentitySessionStatus => (session ? "signed-in" : "anonymous");
+
+/** The signed-in user's chosen username, null before they choose one (the name then still reads as the address). */
+export const identityUsername = (session: Session | null): string | null =>
+  session ? profileOfIdentityUser(session.user).name : null;
 
 export const useIdentitySessionStore = create<IdentitySessionStore>()((set) => ({
   status: "loading",

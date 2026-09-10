@@ -2,8 +2,7 @@ import { AudioCategory, useAudio } from "@/audio";
 import { signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
-import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import { playerAvatarUrl, usePlayerProfile } from "@/hooks/use-player-profile";
 import {
   readGraphicsPreferences,
   writeGraphicsPreferences,
@@ -41,17 +40,16 @@ export const SettingsPanel = () => (
 const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 function ProfileHeader() {
-  const { session } = useIdentitySession();
   const address = useAccountStore((state) => state.account?.address ?? null);
-  const players = useWorldSlicesStore((state) => state.players);
+  const profile = usePlayerProfile(address);
   const { standingsByAddress } = useInGameLeaderboard();
   const {
     setup: { components },
   } = useDojo();
   const [error, setError] = useState<string | null>(null);
   const owner = address ? ContractAddress(address) : null;
-  // The session username is the synced name; the chain name stands in when the session has none.
-  const name = session?.user.name || (owner && players.find((player) => player.address === owner)?.name) || null;
+  // The players slice already prefers the session username for the signed-in user.
+  const name = profile.name;
   const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, components)?.name ?? null);
   const spectating = isExplicitSpectateSession();
@@ -63,7 +61,9 @@ function ProfileHeader() {
 
   return (
     <header className="flex items-center gap-3 border-b border-gold/20 pb-3">
-      {address && <img src={getAvatarUrl(address)} alt="" className="h-10 w-10 rounded-full border border-gold/30" />}
+      {address && (
+        <img src={playerAvatarUrl(address, profile)} alt="" className="h-10 w-10 rounded-full border border-gold/30" />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>

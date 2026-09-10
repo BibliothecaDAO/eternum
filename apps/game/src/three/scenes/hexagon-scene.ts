@@ -84,6 +84,7 @@ export abstract class HexagonScene {
   protected shortcutManager!: SceneShortcutManager;
   protected interactiveHexManager!: InteractiveHexManager;
   protected worldUpdateListener!: WorldUpdateListener;
+  protected cameraOwnedByFlight = false;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected visibilityManager!: CentralizedVisibilityManager;
@@ -325,6 +326,14 @@ export abstract class HexagonScene {
 
   public activateInputSurface(): void {
     this.inputManager.activate();
+  }
+
+  /**
+   * While a scene flight animates this scene's camera, the flight is the camera's only writer: the scene's own
+   * camera-driven work (zoom smoothing, refresh planning) stands down until the flight hands the camera back.
+   */
+  public setCameraOwnedByFlight(owned: boolean): void {
+    this.cameraOwnedByFlight = owned;
   }
 
   public deactivateInputSurface(): void {

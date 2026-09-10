@@ -81,13 +81,16 @@ const legacyHeadlineFields = (type: string, payload: Record<string, unknown>): R
   return {};
 };
 
+// The leaderboard carries registered points; the log does not repeat them as a story.
+const STORIES_OUTSIDE_THE_LOG = new Set(["PointsRegisteredStory"]);
+
 const storyEventFromValue = (
   value: Record<string, unknown>,
   eventId: string,
   fallbackTransactionHash: string,
 ): StreamStoryEvent | null => {
   const variant = storyVariant(value.story);
-  if (!variant) return null;
+  if (!variant || STORIES_OUTSIDE_THE_LOG.has(variant.type)) return null;
   const transactionHash = String(value.tx_hash ?? fallbackTransactionHash);
   return {
     owner: value.owner === null || value.owner === undefined ? null : String(value.owner),

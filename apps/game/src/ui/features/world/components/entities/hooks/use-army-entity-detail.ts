@@ -3,7 +3,8 @@ import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-com
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getCharacterName } from "@/utils/agent";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
@@ -65,6 +66,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     [currentArmiesTick, currentTroops],
   );
 
+  const ownerProfile = usePlayerProfile(structure?.owner);
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
@@ -85,7 +87,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     const isMine = structure?.owner === userAddress;
 
     const addressName = structure?.owner
-      ? getAddressName(structure?.owner, components)
+      ? (ownerProfile.name ?? undefined)
       : getCharacterName(explorer.troops.tier as TroopTier, explorer.troops.category as TroopType, armyEntityId);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
@@ -99,7 +101,17 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [armyEntityId, components, currentArmiesTick, explorer, mode, staminaSnapshot, structure, userAddress]);
+  }, [
+    armyEntityId,
+    components,
+    currentArmiesTick,
+    explorer,
+    mode,
+    ownerProfile.name,
+    staminaSnapshot,
+    structure,
+    userAddress,
+  ]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;

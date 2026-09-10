@@ -73,9 +73,8 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   }),
 }));
 
-vi.mock("@/hooks/store/use-account-store", () => ({
-  useAccountStore: (selector: (state: { accountName: string }) => unknown) =>
-    selector({ accountName: "Test Commander" }),
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerDisplayName: () => "Test Commander",
 }));
 
 vi.mock("@/hooks/store/use-popover-store", () => ({

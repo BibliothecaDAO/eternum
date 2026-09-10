@@ -5,13 +5,14 @@ import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { EmpireCockpit } from "@/ui/features/world/containers/left-facets/empire-cockpit";
+import { StructureActionsPanel } from "@/ui/features/world/containers/left-facets/structure-actions-panel";
 import { StructureListColumn } from "@/ui/features/world/containers/left-facets/structure-list-column";
 import { memo } from "react";
 
 /**
- * The desktop left column: the player's structures and the active one's token panel, or the standings for a
- * spectator. The action row lives in the tile details of the selected own structure; the Build / Logistics /
- * Military surfaces are `LeftViewSurfaces`, mounted on every layout.
+ * The desktop left column: the player's structures, the active one's actions bubble, then its token panel, or the
+ * standings for a spectator. The Build / Logistics / Military surfaces are `LeftViewSurfaces`, mounted on every
+ * layout.
  */
 export const LeftCommandSidebar = memo(() => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -29,6 +30,7 @@ export const LeftCommandSidebar = memo(() => {
       )}
     >
       <StructureListColumn />
+      <StructureActionsPanel />
       <EmpireCockpit />
     </div>
   );

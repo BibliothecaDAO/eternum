@@ -1,8 +1,21 @@
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 import { POLLING_INTERVALS } from "@/config/polling";
+import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/sync/game-scope";
+import { toast } from "@/ui/features/event-feed/notify";
+import {
+  createRealmProvisionRunner,
+  type RealmProvisionCandidate,
+  type RealmProvisionRetry,
+} from "@/ui/realm-provision-runner";
+import { canIssueOrders } from "@/utils/can-issue-orders";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
 import { extractTransactionHash, resolveTransactionFromGameStream } from "@/ui/utils/transactions";
@@ -12,10 +25,21 @@ import {
   rememberUncertainClaimSharePointsSubmission,
   shouldSkipAutomaticClaimSharePointsSubmission,
 } from "@/ui/utils/uncertain-transaction-registry";
-import { LeaderboardManager, ResourceArrivalManager } from "@bibliothecadao/eternum";
+import {
+  getBuildingCount,
+  getIsBlitz,
+  getStructureName,
+  LeaderboardManager,
+  ResourceArrivalManager,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, type ResourceArrivalInfo } from "@bibliothecadao/types";
+import { BuildingType, ContractAddress, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
+import { getContractByName } from "@dojoengine/core";
+import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { CallData } from "starknet";
+import { dojoConfig } from "../../dojo-config";
+import { env } from "../../env";
 
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
@@ -308,10 +332,118 @@ const AutoRegisterPoints = () => {
   return null;
 };
 
-/** The two background actors that submit transactions on a timer; every other former store manager is the bridge. */
+type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: number } };
+
+/**
+ * Provisions every owned realm once the main phase is open, at each confirmed head. The chain marks a provisioned
+ * realm by its labor building, so the candidates read that count from RECS; there is no other flag.
+ */
+const AutoProvisionRealms = () => {
+  const {
+    account: { account },
+    setup: { components },
+  } = useDojo();
+  const isBlitzWorld = useResolvedWorldGameMode() === "blitz";
+
+  useEffect(() => {
+    if (!isBlitzWorld || !account?.address || account.address === "0x0") return;
+
+    const readRealms = (): ProvisionableRealm[] =>
+      useUIStore
+        .getState()
+        .playerStructures.filter((structure) => structure.category === StructureType.Realm)
+        .flatMap((structure) => {
+          const buildings = getComponentValue(
+            components.StructureBuildings,
+            gameEntityKey([BigInt(structure.entityId)]),
+          );
+          if (!buildings) return [];
+          const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
+            (count) => BigInt(count ?? 0),
+          );
+          return [
+            {
+              entityId: Number(structure.entityId),
+              name: getStructureName(structure.structure, getIsBlitz()).name,
+              provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
+              location: { x: structure.structure.base.coord_x, y: structure.structure.base.coord_y },
+            },
+          ];
+        });
+
+    const runner = createRealmProvisionRunner({
+      readRealms,
+      readPhase: () => {
+        const { gameStartMainAt, gameEndAt, devModeOn } = useUIStore.getState();
+        return { mainStartsAt: gameStartMainAt ?? null, endsAt: gameEndAt ?? null, devModeOn };
+      },
+      nowSeconds: () => useChainTimeStore.getState().getNowSeconds(),
+      hasSigner: () => Boolean(useAccountStore.getState().account) && canIssueOrders(),
+      submit: (realmIds) => submitRealmProvisions(account, realmIds),
+      report: {
+        provisioned: (realms) => {
+          toast.dismiss(provisionBatchNoticeId(realms));
+          realms.forEach((realm) =>
+            toast.success(`Provisioned ${realm.name}`, { location: (realm as ProvisionableRealm).location }),
+          );
+        },
+        // One row per batch: a repeat failure replaces it, a success dismisses it.
+        failed: (realms, error, retry) =>
+          toast.error(describeProvisionFailure(realms, error, retry), { id: provisionBatchNoticeId(realms) }),
+      },
+    });
+
+    void runner.onConfirmedHead();
+    return useConnectionStore.subscribe((state, previous) => {
+      if (state.lastConfirmedBlock !== previous.lastConfirmedBlock) void runner.onConfirmedHead();
+    });
+  }, [account, components.StructureBuildings, isBlitzWorld]);
+
+  return null;
+};
+
+const provisionBatchNoticeId = (realms: RealmProvisionCandidate[]): string =>
+  `provision:${realms.map((realm) => realm.entityId).join(",")}`;
+
+const describeProvisionFailure = (
+  realms: RealmProvisionCandidate[],
+  error: unknown,
+  retry: RealmProvisionRetry,
+): string => {
+  const names = realms.map((realm) => realm.name).join(", ");
+  const reason = extractReadableErrorMessage(error, "transaction rejected");
+  const next =
+    retry.nextAttemptInHeads === null
+      ? "giving up until reload"
+      : `retry in ${retry.nextAttemptInHeads} ${retry.nextAttemptInHeads === 1 ? "block" : "blocks"}`;
+  return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
+};
+
+const submitRealmProvisions = async (
+  account: NonNullable<ReturnType<typeof useDojo>["account"]["account"]>,
+  realmIds: number[],
+): Promise<void> => {
+  const contract = getContractByName(dojoConfig.manifest, getGameNamespace(), "blitz_realm_systems");
+  if (!contract?.address) throw new Error("blitz_realm_systems is missing from the active manifest");
+  await executeObservedClientTransaction({
+    account,
+    calls: realmIds.map((realmId) => ({
+      contractAddress: contract.address,
+      entrypoint: "provision_realm",
+      calldata: CallData.compile([...gameCallArgs(), realmId]),
+    })),
+    surface: "settlement",
+    operation: "blitz_realm_systems.provision_realm",
+    chain: env.VITE_PUBLIC_CHAIN,
+    waitForConfirmation: true,
+  });
+};
+
+/** The background actors that submit transactions on their own; every other former store manager is the bridge. */
 export const ActionRunners = () => (
   <>
     <ResourceArrivalAutoClaim />
     <AutoRegisterPoints />
+    <AutoProvisionRealms />
   </>
 );

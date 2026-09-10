@@ -100,7 +100,7 @@ export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
   <>
     <OfflineRow />
     {pinned.map((headline) => (
-      <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "bg-gold/25")}>
+      <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "border-gold/60")}>
         <HeadlineIcon type={headline.type} />
         <span className="min-w-0 flex-1 truncate">{headline.description}</span>
       </div>
@@ -129,7 +129,7 @@ function OfflineRow() {
   );
   if (status !== "disconnected") return null;
   return (
-    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "bg-danger/30 text-danger")}>
+    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border-danger/60 text-danger")}>
       <WifiOff className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">Offline</span>
       <button

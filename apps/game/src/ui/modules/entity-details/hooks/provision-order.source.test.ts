@@ -13,12 +13,6 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
  * level-up is affordable reverts the whole transaction.
  */
 describe("blitz bootstrap fires provision before level_up", () => {
-  it("useRealmActions multicall lists the provision call first", () => {
-    const src = readSource("src/ui/modules/entity-details/hooks/use-realm-actions.ts");
-    expect(src).toContain("[provisionCall, upgradeCall]");
-    expect(src).not.toContain("[upgradeCall, provisionCall]");
-  });
-
   it("useRealmUpgradeAndProvision builds provision_realm before level_up", () => {
     const src = readSource("src/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision.ts");
     const provisionIdx = src.indexOf('entrypoint: "provision_realm"');
@@ -36,14 +30,6 @@ describe("blitz bootstrap fires provision before level_up", () => {
     // through torii sync); the bundled upgrade is the affordable-only branch.
     expect(src).toContain("if (!canUpgrade)");
     expect(src).toContain("provision.handleProvision()");
-  });
-
-  it("suggestions bundle level_up only when the upgrade is affordable", () => {
-    const src = readSource("src/ui/features/world/containers/left-facets/blitz-suggestions.ts");
-    expect(src).toContain("if (input.canProvision)");
-    expect(src).toContain("input.canAffordUpgrade");
-    expect(src).toContain('"provision"');
-    expect(src).toContain('"upgrade-and-provision"');
   });
 
   it("chip + castle enable the bootstrap pickaxe on canProvision, not canUpgradeAndProvision", () => {

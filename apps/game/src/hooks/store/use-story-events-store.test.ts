@@ -40,6 +40,22 @@ describe("story event stream", () => {
     });
   });
 
+  it("keeps the points-registered story out of the log; the leaderboard carries it", () => {
+    const event = toStreamStoryEvent({
+      hashed_keys: "0x2",
+      models: {
+        StoryEvent: {
+          owner: "0xabc",
+          entity_id: "0x1",
+          tx_hash: "0x9",
+          story: { PointsRegisteredStory: { points: "0x64" } },
+          timestamp: "0x64",
+        },
+      },
+    });
+    expect(event).toBeNull();
+  });
+
   it("ignores non-story event models", () => {
     expect(toStreamStoryEvent({ hashed_keys: "0x1", models: { BattleEvent: {} } })).toBeNull();
   });

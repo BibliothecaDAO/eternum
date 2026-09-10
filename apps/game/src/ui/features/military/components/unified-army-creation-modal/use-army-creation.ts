@@ -44,7 +44,6 @@ interface ArmyCreationOptions {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
-  autoMaxOnContextChange?: boolean;
   fixedContext?: boolean;
   onSubmit?: () => void;
 }
@@ -64,7 +63,6 @@ export const useArmyCreation = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
-  autoMaxOnContextChange = false,
   fixedContext = false,
   onSubmit,
 }: ArmyCreationOptions) => {
@@ -362,14 +360,6 @@ export const useArmyCreation = ({
   useEffect(() => {
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordable)));
   }, [maxAffordable]);
-
-  // Smart-default mode: snap troopCount to maxAffordable whenever the player
-  // changes the action context (slot, army type, troop pick). One click to
-  // open the action, one click to submit — no manual MAX press needed.
-  useEffect(() => {
-    if (!autoMaxOnContextChange) return;
-    setTroopCount(maxAffordable);
-  }, [autoMaxOnContextChange, maxAffordable, armyType, guardSlot, selectedTroopCombo.type, selectedTroopCombo.tier]);
 
   const selectedGuardLabel =
     selectedGuardTier && selectedGuardCategory ? `${selectedGuardTier} ${selectedGuardCategory}` : null;

@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -18,9 +19,8 @@ const isTypingTarget = (target: EventTarget | null) =>
   target instanceof Element &&
   target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
 
-const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
-
-/** The strip at the foot of the right column: last message and unread count. Open, it takes the details' place. */
+/** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
+ *  above the strip and the details above keep whatever room is left. */
 export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const address = useAccountStore((state) => state.account?.address);
   const zoneId = `game:${configManager.getActiveGameId()}`;
@@ -74,17 +74,17 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
   const stripText = !initializer
     ? "Sign in to chat"
     : lastMessage
-      ? `${lastMessage.sender.displayName?.trim() || shortAddress(lastMessage.sender.playerId)}: ${lastMessage.content}`
+      ? `${resolveChatSenderName(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
       : "No messages yet";
 
   return (
-    <>
+    <div className="mt-auto flex shrink-0 flex-col gap-2">
       {open && (
         <section
           ref={pane}
           aria-label="Chat"
           className={cn(
-            "pointer-events-auto mt-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
+            "pointer-events-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
             OVERLAY_SURFACE_BASE,
           )}
         >
@@ -117,6 +117,6 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
           </span>
         )}
       </button>
-    </>
+    </div>
   );
 }

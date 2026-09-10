@@ -19,6 +19,7 @@ import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/use-season-pass-inventory";
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
@@ -2456,7 +2457,8 @@ export const GameEntryModal = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const account = useAccountStore((state) => state.account);
-  const accountName = useAccountStore((state) => state.accountName);
+  // The chain name written at registration is the identity username, when one was chosen.
+  const accountName = useIdentitySessionStore((state) => identityUsername(state.session));
   const usernameFelt = useMemo(
     () => (account?.address ? resolvePlayerNameFelt(account.address, accountName) : null),
     [account?.address, accountName],

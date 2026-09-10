@@ -6,8 +6,9 @@ import { HudChatWindow } from "./hud-chat-window";
 
 type RightColumnFocus = "none" | "chat" | "log";
 
-/** Feed at the top, tile details anchored to the bottom, the chat strip under them. Chat or the log takes the
- *  details' place while open, so nothing overlays anything. */
+/** Feed at the top, tile details directly under it growing to their content, the chat strip anchored to the
+ *  bottom. Open chat raises a fixed pane above the strip and the details scroll in what is left; the log takes
+ *  the details' place while open. */
 export const RightHudColumn = ({ children }: { children?: ReactNode }) => {
   const [focus, setFocus] = useState<RightColumnFocus>("none");
   const toggleLog = useCallback(() => setFocus((current) => (current === "log" ? "none" : "log")), []);
@@ -23,10 +24,10 @@ export const RightHudColumn = ({ children }: { children?: ReactNode }) => {
       )}
     >
       <QuickFeed logOpen={focus === "log"} onLogToggle={toggleLog} />
-      {focus === "none" && (
+      {focus !== "log" && (
         <div
           aria-label={children ? "Tile details" : undefined}
-          className="pointer-events-auto mt-auto flex min-h-0 max-h-[60%] shrink-0 flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20"
+          className="pointer-events-auto flex min-h-0 shrink flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gold/20"
         >
           {children}
         </div>

@@ -150,6 +150,14 @@ export type ExplorerRewardSystemUpdate = {
   rawAmount: bigint | number | string | null;
   timestamp: number;
 };
+/** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
+export type RelicChestOpenedSystemUpdate = {
+  explorerId: ID;
+  hex: { x: number; y: number };
+  relics: ResourcesIds[];
+  timestamp: number;
+};
+
 export type RealmSystemUpdate = {
   level: number;
   hexCoords: HexPosition;

@@ -8,7 +8,7 @@ import { useDojo, useHyperstructureUpdates } from "@bibliothecadao/react";
 import { ContractAddress, ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
-import { getAvatarUrl } from "@/hooks/use-player-avatar";
+import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { gameEntityKey } from "@/sync/game-scope";
 
 const LEADERBOARD_AUTO_REFRESH_INTERVAL_MS = 30_000;
@@ -90,7 +90,7 @@ export const Leaderboard = ({
       {playerPointsLeaderboard.map(([address, points], index) => {
         const playerName = getAddressName(address, components) || "Player not found";
         const playerAddress = toHexString(address);
-        const avatarUrl = getAvatarUrl(playerAddress);
+        const avatarUrl = playerAvatarUrl(playerAddress);
 
         const isOwner = address === ContractAddress(account.address);
 

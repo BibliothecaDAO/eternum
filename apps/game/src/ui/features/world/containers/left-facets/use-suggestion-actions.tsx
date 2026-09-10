@@ -32,7 +32,7 @@ export const useSuggestionActions = () => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
 
-  const { fireUpgrade, fireProvision, fireUpgradeAndProvision, pendingRealmId } = useRealmActions();
+  const { fireUpgrade, pendingRealmId } = useRealmActions();
 
   const focusRealm = useCallback(
     async (realmId: ID, forceMap = false) => {
@@ -97,14 +97,8 @@ export const useSuggestionActions = () => {
       if (!canIssueOrders()) return;
 
       switch (suggestion.action) {
-        case "upgrade-and-provision":
-          await fireUpgradeAndProvision(suggestion.realmId);
-          return;
         case "upgrade":
           await fireUpgrade(suggestion.realmId);
-          return;
-        case "provision":
-          await fireProvision(suggestion.realmId);
           return;
         case "deploy-explorer":
           usePopoverStore.getState().close();
@@ -133,15 +127,7 @@ export const useSuggestionActions = () => {
           });
       }
     },
-    [
-      fireProvision,
-      fireUpgrade,
-      fireUpgradeAndProvision,
-      focusRealm,
-      runAutoBuildSuggestion,
-      setLeftNavigationView,
-      openSurface,
-    ],
+    [fireUpgrade, focusRealm, runAutoBuildSuggestion, setLeftNavigationView, openSurface],
   );
 
   const beginPendingSuggestion = useCallback((suggestionId: string) => {

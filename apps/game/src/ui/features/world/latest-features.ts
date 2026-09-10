@@ -35,6 +35,41 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-10",
+    title: "Usernames and portraits everywhere",
+    description:
+      "Your identity username and portrait now show on armies, tiles, chat, standings and the settings header, and registration writes that username to the chain.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
+    title: "Surfaces open beside the right column",
+    description:
+      "The guard slot picker, the army swap surface and the attack details now open beside the right column instead of over it, and the picker names the slot it is for.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
+    title: "Realms provision themselves",
+    description:
+      "Once the main phase opens, every realm you own is provisioned automatically, with one feed row per realm and a retry at the next block on failure.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-10",
+    title: "Relic crates open from the map",
+    description:
+      "Right-click a crate with an adjacent army selected, or press Open in the crate tile, to open it; the relics burst from the hex and the tile lists what you found.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-10",
+    title: "Actions bubble and calmer HUD",
+    description:
+      "Build, Production, Military and Transfer sit in their own Actions bubble; tile details stay visible under the feed while chat is open; feed rows are easier to read over bright terrain; building cards build directly in the world view; the deployment picker opens at zero troops.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
     title: "Touch Controls on the Map",
     description:
       "The map now answers to fingers. Tap an army or realm to select it, tap a reachable hex to preview the path and its cost, then tap it again (or press and hold) to give the order. Pinch to zoom the world map in and out.",
