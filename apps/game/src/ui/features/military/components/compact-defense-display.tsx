@@ -4,12 +4,12 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { OVERLAY_SURFACE_ACTIVE } from "@/ui/design-system/atoms/overlay-surface";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick, useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
-import { getEntityIdFromKeys, getTroopResourceId } from "@bibliothecadao/eternum";
+import { getGuardSlotCooldownRemaining, getGuardsByStructure, getTroopResourceId } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
@@ -32,8 +32,10 @@ import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COU
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
-import { DefenseTroop } from "./structure-defence";
+import { GuardCooldownBadge } from "./guard-cooldown-badge";
 import { gameEntityKey } from "@/sync/game-scope";
+
+type DefenseTroop = ReturnType<typeof getGuardsByStructure>[number];
 
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];
@@ -72,6 +74,7 @@ export const CompactDefenseDisplay = ({
     setup: { components },
   } = useDojo();
   const currentArmiesTick = useCurrentArmiesTick();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
   const isBanner = variant === "banner";
   const canOpenPicker = Boolean(canManageDefense && structureId && structureId > 0 && ordersAllowed);
   // The slot whose picker is open stays lit until the picker closes.
@@ -175,12 +178,15 @@ export const CompactDefenseDisplay = ({
     const slotIconSrc = SLOT_ICON_MAP[rawSlot] ?? SLOT_ICON_MAP[guardSlotKey];
     const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
     const isEmptySlot = troopCount === 0;
+    const cooldownSeconds = getGuardSlotCooldownRemaining(defense, currentBlockTimestamp);
     const isSlotUnlocked = unlockedSlotSet.has(rawSlot);
     if (!isSlotUnlocked) {
       return null;
     }
 
-    const isSlotInteractive = isEmptySlot ? canOpenPicker && hasAvailableDefenseSlot : canOpenPicker;
+    const isSlotInteractive = isEmptySlot
+      ? canOpenPicker && hasAvailableDefenseSlot && cooldownSeconds === 0
+      : canOpenPicker;
     const interactiveClasses = isSlotInteractive
       ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
       : "cursor-default";
@@ -208,13 +214,21 @@ export const CompactDefenseDisplay = ({
           highlightedSlot === guardSlotKey && OVERLAY_SURFACE_ACTIVE,
         )}
         data-picker-open={highlightedSlot === guardSlotKey ? "true" : undefined}
-        title={isEmptySlot ? `Defense Slot ${slotDisplayNumber} is empty` : `Defense Slot ${slotDisplayNumber}`}
+        title={
+          cooldownSeconds > 0
+            ? `Defense Slot ${slotDisplayNumber} is rebuilding`
+            : isEmptySlot
+              ? `Defense Slot ${slotDisplayNumber} is empty`
+              : `Defense Slot ${slotDisplayNumber}`
+        }
         role={isSlotInteractive ? "button" : undefined}
         tabIndex={isSlotInteractive ? 0 : undefined}
         onClick={isSlotInteractive ? onSlotClick : undefined}
         onKeyDown={isSlotInteractive ? onSlotKeyDown : undefined}
       >
-        {isEmptySlot ? (
+        {cooldownSeconds > 0 ? (
+          <GuardCooldownBadge seconds={cooldownSeconds} />
+        ) : isEmptySlot ? (
           <>
             {isSlotInteractive && <Plus className="h-3.5 w-3.5 text-gold" strokeWidth={2.5} />}
             <span

@@ -87,7 +87,7 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
   );
 };
 
-export const ArmyCreate = ({
+const ArmyCreate = ({
   owner_entity,
   army,
   armyManager,

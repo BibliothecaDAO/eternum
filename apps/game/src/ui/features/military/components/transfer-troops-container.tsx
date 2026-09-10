@@ -10,6 +10,7 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
+  getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
   multiplyByPrecision,
@@ -270,14 +271,13 @@ export const TransferTroopsContainer = ({
     if (!targetStructure) return [];
     const guards = getGuardsByStructure(targetStructure).filter((guard) => targetGuardSlotSet.has(Number(guard.slot)));
     return guards.map((guard) => {
-      const cooldownEnd = guard.cooldownEnd !== undefined && guard.cooldownEnd !== null ? Number(guard.cooldownEnd) : 0;
       const troopCategory = guard.troops.category as TroopType;
       const troopTier = guard.troops.tier as TroopTier;
       const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
 
       return {
         ...guard,
-        cooldownEnd,
+        cooldownRemaining: getGuardSlotCooldownRemaining(guard, currentBlockTimestamp),
         troops: {
           ...guard.troops,
           tier: troopTier,
@@ -288,7 +288,7 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [targetStructure, targetGuardSlotSet, currentArmiesTick]);
+  }, [targetStructure, targetGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
 
   // list of guards
   const selectedGuards = useMemo(() => {
@@ -297,14 +297,13 @@ export const TransferTroopsContainer = ({
       selectedGuardSlotSet.has(Number(guard.slot)),
     );
     return guards.map((guard) => {
-      const cooldownEnd = guard.cooldownEnd !== undefined && guard.cooldownEnd !== null ? Number(guard.cooldownEnd) : 0;
       const troopCategory = guard.troops.category as TroopType;
       const troopTier = guard.troops.tier as TroopTier;
       const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
 
       return {
         ...guard,
-        cooldownEnd,
+        cooldownRemaining: getGuardSlotCooldownRemaining(guard, currentBlockTimestamp),
         troops: {
           ...guard.troops,
           tier: troopTier,
@@ -315,7 +314,7 @@ export const TransferTroopsContainer = ({
         },
       };
     });
-  }, [selectedStructure, selectedGuardSlotSet, currentArmiesTick]);
+  }, [selectedStructure, selectedGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
 
   const selectedTroop = useMemo(() => {
     if (transferDirection === TransferDirection.StructureToExplorer) {
@@ -653,9 +652,7 @@ export const TransferTroopsContainer = ({
       for (const slotId of availableGuards) {
         const guard = targetGuards.find((entry) => entry.slot === slotId);
         const troop = guard?.troops;
-        const cooldownEnd = guard?.cooldownEnd ?? 0;
-
-        if (cooldownEnd > currentBlockTimestamp) {
+        if ((guard?.cooldownRemaining ?? 0) > 0) {
           continue;
         }
 
@@ -754,10 +751,10 @@ export const TransferTroopsContainer = ({
       return;
     }
 
-    if ((guard.cooldownEnd ?? 0) > currentBlockTimestamp) {
+    if (guard.cooldownRemaining > 0) {
       setGuardSlot(null);
     }
-  }, [transferDirection, guardSlot, targetGuards, currentBlockTimestamp]);
+  }, [transferDirection, guardSlot, targetGuards]);
 
   // Handle transfer
   const handleTransfer = async () => {
@@ -903,7 +900,7 @@ export const TransferTroopsContainer = ({
       if (!targetGuard) {
         return true;
       }
-      if ((targetGuard.cooldownEnd ?? 0) > currentBlockTimestamp) {
+      if (targetGuard.cooldownRemaining > 0) {
         return true;
       }
 
@@ -1036,9 +1033,8 @@ export const TransferTroopsContainer = ({
     if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
       const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
       if (targetGuard) {
-        const cooldownRemaining = Math.max(0, (targetGuard.cooldownEnd ?? 0) - currentBlockTimestamp);
-        if (cooldownRemaining > 0) {
-          return `Cannot transfer troops: Slot is on cooldown (${formatTime(cooldownRemaining)} remaining)`;
+        if (targetGuard.cooldownRemaining > 0) {
+          return `Cannot transfer troops: Slot is rebuilding (${formatTime(targetGuard.cooldownRemaining)} remaining)`;
         }
       }
 
@@ -1294,7 +1290,6 @@ export const TransferTroopsContainer = ({
                         }
                         frontlineSlot={frontlineSlot}
                         lastGuardSlot={lastGuardSlot}
-                        currentBlockTimestamp={currentBlockTimestamp}
                       />
                     </div>
                   )}

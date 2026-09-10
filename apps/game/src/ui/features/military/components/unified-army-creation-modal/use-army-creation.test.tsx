@@ -34,6 +34,7 @@ vi.mock("@dojoengine/react", () => ({
 vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "structure" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentArmiesTick: () => 1,
+  useCurrentBlockTimestamp: () => 60,
   useCurrentDefaultTick: () => 1,
 }));
 vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => mocks.tiles }));

@@ -1,11 +1,17 @@
-import { useCurrentArmiesTick, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import {
+  useCurrentArmiesTick,
+  useCurrentBlockTimestamp,
+  useCurrentDefaultTick,
+} from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   ArmyManager,
   configManager,
   divideByPrecision,
+  formatTime,
   getBalance,
+  getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
 } from "@bibliothecadao/eternum";
@@ -83,6 +89,7 @@ export const useArmyCreation = ({
   const [armyType, setArmyType] = useState(isExplorer);
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = useCurrentDefaultTick();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
   const previousStructureIdRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -192,6 +199,7 @@ export const useArmyCreation = ({
 
       map.set(numericSlot, {
         slot: guard.slot,
+        cooldownRemaining: getGuardSlotCooldownRemaining(guard, currentBlockTimestamp),
         troops: troops
           ? {
               category,
@@ -204,7 +212,7 @@ export const useArmyCreation = ({
       });
     });
     return map;
-  }, [guardsData, availableGuardSlotSet, currentArmiesTick]);
+  }, [guardsData, availableGuardSlotSet, currentArmiesTick, currentBlockTimestamp]);
 
   const selectedGuard = guardsBySlot.get(guardSlot);
   const selectedGuardCountValue = Number(selectedGuard?.troops?.count ?? 0);
@@ -226,6 +234,7 @@ export const useArmyCreation = ({
     selectedGuardCount === 0 ||
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
+  const selectedSlotCooldown = selectedGuard?.cooldownRemaining ?? 0;
   const structureCoordX = structureBase?.coord_x;
   const structureCoordY = structureBase?.coord_y;
 
@@ -368,9 +377,11 @@ export const useArmyCreation = ({
   const defenseSlotErrorMessage = !armyType
     ? !isDefenseSlotCompatible && selectedGuardLabelUpper
       ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabelUpper}. Reinforce it with the same troop type and tier.`
-      : isDefenseSlotCreationBlocked
-        ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
-        : null
+      : selectedSlotCooldown > 0
+        ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} was wiped out and is rebuilding for ${formatTime(selectedSlotCooldown)}.`
+        : isDefenseSlotCreationBlocked
+          ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
+          : null
     : null;
 
   const defenseSlotInfoMessage =
@@ -379,7 +390,8 @@ export const useArmyCreation = ({
       : null;
 
   const isDefenseActionDisabled =
-    !armyType && (!canInteractWithDefense || isDefenseSlotCreationBlocked || !isDefenseSlotCompatible);
+    !armyType &&
+    (!canInteractWithDefense || isDefenseSlotCreationBlocked || !isDefenseSlotCompatible || selectedSlotCooldown > 0);
 
   const actionLabel = armyType
     ? "CREATE FIELD ARMY"

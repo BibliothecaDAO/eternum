@@ -191,9 +191,15 @@ export const getGuardsByStructure = (structure: ComponentValue<ClientComponents[
     },
   ];
 
-  // Filter out guards with no troops
   return guards;
 };
+
+/** Seconds before a wiped guard slot accepts troops again; 0 when it is open. The contract only enforces the
+ *  resurrection delay on an empty slot, so a slot that still holds troops never reads as cooling down. */
+export const getGuardSlotCooldownRemaining = (
+  guard: { troops: { count: bigint | number }; cooldownEnd: number },
+  currentBlockTimestamp: number,
+): number => (Number(guard.troops.count) > 0 ? 0 : Math.max(0, guard.cooldownEnd - currentBlockTimestamp));
 
 export const hasAdjacentOwnedStructure = (
   position: { x: number; y: number },

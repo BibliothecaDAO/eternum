@@ -1,7 +1,7 @@
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
-import Timer from "lucide-react/dist/esm/icons/timer";
+import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";
 import { TroopBadge } from "./transfer-troop-badge";
@@ -15,7 +15,7 @@ interface SlotTroopInfo {
     staminaCurrent?: number;
     staminaMax?: number;
   };
-  cooldownEnd?: number;
+  cooldownRemaining?: number;
 }
 
 interface BalanceOption {
@@ -42,7 +42,6 @@ interface TransferSlotSelectionProps {
   targetTroop?: { tier?: TroopTier; category?: TroopType | string; count?: number | bigint };
   frontlineSlot?: number;
   lastGuardSlot?: number;
-  currentBlockTimestamp: number;
 }
 
 export const TransferSlotSelection = ({
@@ -57,7 +56,6 @@ export const TransferSlotSelection = ({
   targetTroop,
   frontlineSlot,
   lastGuardSlot,
-  currentBlockTimestamp,
 }: TransferSlotSelectionProps) => {
   const renderTroopPill = (troop?: {
     tier: TroopTier;
@@ -123,9 +121,8 @@ export const TransferSlotSelection = ({
           const troopInfo = guardData?.troops;
           const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
           const slotLabel = GUARD_SLOT_NAMES[slotId as keyof typeof GUARD_SLOT_NAMES] ?? `Slot ${displayedSlotNumber}`;
-          const guardCooldownEnd = guardData?.cooldownEnd ?? 0;
-          const cooldownSeconds = Math.max(0, guardCooldownEnd - currentBlockTimestamp);
-          const isCooldownActive = guardCooldownEnd > currentBlockTimestamp;
+          const cooldownSeconds = guardData?.cooldownRemaining ?? 0;
+          const isCooldownActive = cooldownSeconds > 0;
           const isActive = selectedSlot === slotId;
           const isSourceSelection = transferDirection === TransferDirection.StructureToExplorer;
           const isReceivingSelection = transferDirection === TransferDirection.ExplorerToStructure;
@@ -200,12 +197,7 @@ export const TransferSlotSelection = ({
 
               {orderedSlots.length > 0 && <span className={orderBadgeClass}>{orderBadgeText}</span>}
 
-              {isCooldownActive && (
-                <div className="mt-1 flex items-center gap-1.5 text-xxs text-gold/70">
-                  <Timer className="w-3 h-3" />
-                  <span>Cooldown — {cooldownSeconds}s</span>
-                </div>
-              )}
+              {isCooldownActive && <GuardCooldownBadge seconds={cooldownSeconds} className="mt-1 self-start" />}
             </button>
           );
         })}
