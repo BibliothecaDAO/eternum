@@ -68,7 +68,8 @@ import {
 } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER } from "@/ui/config";
-import { ChestModal, HelpModal } from "@/ui/features/military";
+import { HelpModal } from "@/ui/features/military";
+import { openRelicCrateContextMenu } from "./context-menu/relic-crate-context-menu";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -1605,6 +1606,16 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
+    this.registerRelicChestWorldUpdateSubscriptions();
+  }
+
+  // A flourish only: the relics themselves land in RECS on the explorer, and the feed row is the UI's.
+  private registerRelicChestWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
+        void this.resourceFXManager.playRelicBurst(opening.relics, opening.hex.x, opening.hex.y);
+      }),
+    );
   }
 
   private registerBattleWorldUpdateSubscriptions(): void {
@@ -2527,7 +2538,7 @@ export default class WorldmapScene extends WarpTravel {
         } else if (actionType === ActionType.Help) {
           this.onArmyHelp(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Chest) {
-          this.onChestSelection(actionPath, selectedEntityId);
+          this.onChestSelection(event, actionPath, selectedEntityId);
         } else if (actionType === ActionType.CreateArmy) {
           this.onArmyCreate(actionPath, selectedEntityId);
         }
@@ -2939,7 +2950,7 @@ export default class WorldmapScene extends WarpTravel {
     const { path, selectedEntityId } = action;
     if (type === ActionType.Attack) this.onArmyAttack(path, selectedEntityId);
     else if (type === ActionType.Help) this.onArmyHelp(path, selectedEntityId);
-    else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
+    else if (type === ActionType.Chest) this.onChestSelection(event, path, selectedEntityId);
     else this.onArmySpireTravel(path, selectedEntityId);
     return true;
   }
@@ -3464,24 +3475,13 @@ export default class WorldmapScene extends WarpTravel {
     })();
   }
 
-  private onChestSelection(actionPath: ActionPath[], selectedEntityId: ID) {
-    const selectedPath = actionPath.map((path) => path.hex);
-
-    // Get the target hex (last hex in the path)
-    const targetHex = selectedPath[selectedPath.length - 1];
-
-    this.openTargetActionSurface(targetHex, {
-      id: "chest",
-      content: (
-        <ChestModal
-          selected={{
-            type: ActorType.Explorer,
-            id: selectedEntityId,
-            hex: { x: targetHex.col, y: targetHex.row },
-          }}
-          chestHex={{ x: targetHex.col, y: targetHex.row }}
-        />
-      ),
+  private onChestSelection(event: MouseEvent, actionPath: ActionPath[], selectedEntityId: ID) {
+    const targetHex = actionPath[actionPath.length - 1].hex;
+    openRelicCrateContextMenu({
+      event,
+      hexCoords: targetHex,
+      explorerId: selectedEntityId,
+      systemCalls: this.dojo.systemCalls,
     });
   }
 

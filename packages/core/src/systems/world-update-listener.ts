@@ -2,7 +2,12 @@ import type { SetupResult } from "@bibliothecadao/dojo";
 import { BuildingType, type ContractAddress, type HexPosition, type ID, ResourcesIds } from "@bibliothecadao/types";
 import { type Component, defineComponentSystem, defineQuery, HasValue, isComponentUpdate } from "@dojoengine/recs";
 import { divideByPrecision } from "../utils";
-import type { BattleEventSystemUpdate, BuildingSystemUpdate, ExplorerRewardSystemUpdate } from "./types";
+import type {
+  BattleEventSystemUpdate,
+  BuildingSystemUpdate,
+  ExplorerRewardSystemUpdate,
+  RelicChestOpenedSystemUpdate,
+} from "./types";
 
 interface SubscriptionHandle {
   unsubscribe(): void;
@@ -106,6 +111,33 @@ export class WorldUpdateListener {
         );
       },
     };
+  }
+
+  public get RelicChest() {
+    return {
+      onRelicChestOpened: (callback: (value: RelicChestOpenedSystemUpdate) => void) =>
+        this.setupSystem(
+          this.setup.components.events.OpenRelicChestEvent,
+          callback,
+          (update: any) => {
+            if (!isComponentUpdate(update, this.setup.components.events.OpenRelicChestEvent)) return;
+            const [current] = update.value;
+            return current ? this.parseRelicChestOpenedEvent(current) : undefined;
+          },
+          false,
+        ),
+    };
+  }
+
+  private parseRelicChestOpenedEvent(current: any): RelicChestOpenedSystemUpdate | undefined {
+    const explorerId = this.toNumber(current?.explorer_id);
+    const x = this.toNumber(current?.chest_coord?.x);
+    const y = this.toNumber(current?.chest_coord?.y);
+    if (explorerId === null || x === null || y === null || !Array.isArray(current?.relics)) return;
+    const relics = current.relics
+      .map((relic: unknown) => this.toNumber(relic))
+      .filter((relic: number | null): relic is number => relic !== null) as ResourcesIds[];
+    return { explorerId, hex: { x, y }, relics, timestamp: this.toNumber(current?.timestamp) ?? 0 };
   }
 
   public get BattleEvent() {

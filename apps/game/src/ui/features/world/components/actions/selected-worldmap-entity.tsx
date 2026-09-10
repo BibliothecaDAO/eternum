@@ -1,5 +1,9 @@
 import { ChestTileDetails } from "./chest-tile-details";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useRelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
+import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
+import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacent-own-explorer";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
@@ -29,7 +33,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { useQuery } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -71,6 +75,7 @@ const SelectedWorldmapEntityContent = ({
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
+  const crateOpening = useRelicCrateOpening(selectedHex);
 
   const biome = useMemo(() => {
     return configManager.getBiome(selectedHex.col || 0, selectedHex.row || 0);
@@ -111,6 +116,21 @@ const SelectedWorldmapEntityContent = ({
       {headerAction}
     </div>
   ) : null;
+
+  // A crate opened this session keeps its panel after the tile empties, now listing what it yielded.
+  if (isChest || crateOpening) {
+    return (
+      <RelicCrateTilePanel
+        crateEntityId={isChest ? tile.occupier_id : null}
+        opening={crateOpening}
+        selectedHex={selectedHex}
+        biome={biome}
+        coordsLabel={coordsLabel}
+        headerAction={headerAction}
+        onSimulateBattle={handleSimulateBattle}
+      />
+    );
+  }
 
   if (!hasOccupier) {
     return <UnoccupiedTileQuadrants biome={biome} coordsLabel={coordsLabel} headerAction={headerAction} />;
@@ -157,14 +177,6 @@ const SelectedWorldmapEntityContent = ({
             onSimulateBattle={handleSimulateBattle}
           />
         </div>
-      ) : isChest ? (
-        <ChestTileDetails
-          crateEntityId={occupierEntityId}
-          biome={biome}
-          coordsLabel={coordsLabel}
-          headerAction={headerAction}
-          onSimulateBattle={handleSimulateBattle}
-        />
       ) : isQuest ? (
         <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
       ) : (
@@ -177,6 +189,48 @@ const SelectedWorldmapEntityContent = ({
         />
       )}
     </div>
+  );
+};
+
+// The crate panel opens with the player's adjacent explorer; the contract accepts no other opener.
+const RelicCrateTilePanel = ({
+  crateEntityId,
+  opening,
+  selectedHex,
+  biome,
+  coordsLabel,
+  headerAction,
+  onSimulateBattle,
+}: {
+  crateEntityId: ID | null;
+  opening: ReturnType<typeof useRelicCrateOpening>;
+  selectedHex: HexPosition;
+  biome: BiomeType;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+  onSimulateBattle: () => void;
+}) => {
+  const {
+    setup: { systemCalls },
+  } = useDojo();
+  const account = useAccountStore((state) => state.account);
+  const explorerId = useAdjacentOwnExplorer(selectedHex);
+  const canOpen = Boolean(account) && explorerId !== null;
+  const handleOpen = useCallback(() => {
+    if (!account || explorerId === null) return;
+    void openRelicCrate({ systemCalls, account, explorerId, hex: selectedHex });
+  }, [account, explorerId, selectedHex, systemCalls]);
+  return (
+    <ChestTileDetails
+      crateEntityId={crateEntityId}
+      biome={biome}
+      coordsLabel={coordsLabel}
+      headerAction={headerAction}
+      opening={opening}
+      onOpen={canOpen ? handleOpen : undefined}
+      openBlockedReason={canOpen ? undefined : "Move one of your armies next to the crate."}
+      onSimulateBattle={onSimulateBattle}
+    />
   );
 };
 

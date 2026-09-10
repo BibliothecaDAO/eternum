@@ -37,7 +37,6 @@ const SANCTIONED_CLIENT_FILES = new Set([
   "src/three/utils/performance-monitor.ts",
   "src/three/webgpu-postprocess-runtime.ts",
   "src/ui/features/landing/components/game-entry-modal.tsx",
-  "src/ui/features/military/chest/chest-container.tsx",
   "src/ui/features/social/components/register-points-button.tsx",
   "src/ui/features/social/realtime-chat/model/store.ts",
   "src/ui/action-runners.tsx",
