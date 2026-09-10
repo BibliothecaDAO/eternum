@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-10",
+    title: "Arcane Chests and Essence Rifts",
+    type: "improvement",
+    description:
+      "New map chests emerge through violet shadows. Collecting one lights it from within and reveals your three relics before the whole altar sinks into the biome. Existing chests stay settled as you browse. Essence rifts now churn and erupt with textured liquid spray.",
+  },
+  {
+    date: "2026-09-10",
     title: "Tap To Select, Hold To Move",
     description:
       "Tap the map to select or inspect. Hold a highlighted destination for half a second to issue an order. Dragging or pinching cancels the hold, and repeated taps no longer issue orders.",
