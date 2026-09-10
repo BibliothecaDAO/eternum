@@ -1620,11 +1620,15 @@ export default class WorldmapScene extends WarpTravel {
     this.registerRelicChestWorldUpdateSubscriptions();
   }
 
-  // A flourish only: the relics themselves land in RECS on the explorer, and the feed row is the UI's.
+  // A flourish only, for crates inside the loaded chunk: the relics themselves land in RECS on the explorer,
+  // and the feed row (the UI's) covers every opening in the world.
   private registerRelicChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
-        void this.resourceFXManager.playRelicBurst(opening.relics, opening.hex.x, opening.hex.y);
+        if (this.currentChunk === "null") return;
+        const hex = new Position({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
+        if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
+        void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
       }),
     );
   }
