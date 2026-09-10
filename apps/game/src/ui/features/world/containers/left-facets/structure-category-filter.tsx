@@ -73,7 +73,7 @@ export const FilterChipsRow = memo(({ availableCategories, filterValue, onFilter
             type="button"
             onClick={() => onFilterChange(option.value)}
             className={cn(
-              "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border transition",
+              "inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border transition",
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
                 : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
@@ -82,7 +82,7 @@ export const FilterChipsRow = memo(({ availableCategories, filterValue, onFilter
             aria-label={option.label}
             title={option.label}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon className="h-4 w-4" />
           </button>
         );
       })}

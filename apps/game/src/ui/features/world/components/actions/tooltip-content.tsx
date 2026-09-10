@@ -6,7 +6,6 @@ import { ActionPath, ActionPaths, ActionType, divideByPrecision } from "@bibliot
 import { ID, ResourcesIds } from "@bibliothecadao/types";
 
 import { AttackInfo } from "./attack-info";
-import { ChestInfo } from "./chest-info";
 import { CreateArmyInfo } from "./create-army-info";
 import { formatAmount } from "./format-amount";
 import { HelpInfo } from "./help-info";
@@ -88,8 +87,6 @@ export const TooltipContent = memo(
       actionType && ACTION_STATE_LABELS[actionType as ActionType]
         ? ACTION_STATE_LABELS[actionType as ActionType]
         : actionType?.toUpperCase();
-
-    if (actionType === ActionType.Chest) return <ChestInfo />;
 
     return (
       <>

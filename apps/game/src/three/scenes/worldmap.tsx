@@ -2422,6 +2422,8 @@ export default class WorldmapScene extends WarpTravel {
     this.handleHexSelection(hexCoords, clickPlan.isMine);
 
     if (clickPlan.selection.type === "army") {
+      // The pulse marks a selected army; the selected-hex fill under it would only tint the unit.
+      this.selectedHexManager.resetPosition();
       this.onArmySelection(clickPlan.selection.entityId, accountAddress);
       this.logInteractionDebug("army_selected_via_left_click", {
         entityId: clickPlan.selection.entityId,
@@ -3701,7 +3703,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private redrawHeldSelection(): void {
     const selectedHex = this.state.selectedHex;
-    if (!selectedHex) return;
+    if (!selectedHex || getLiveWorldmapEntityActions().selectedEntityId !== null) return;
     const position = getWorldPositionForHex({
       col: selectedHex.col - FELT_CENTER(),
       row: selectedHex.row - FELT_CENTER(),
