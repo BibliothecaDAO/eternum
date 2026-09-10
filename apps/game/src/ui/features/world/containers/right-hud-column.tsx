@@ -17,8 +17,7 @@ export const RightHudColumn = ({ children }: { children?: ReactNode }) => {
     <aside
       aria-label="Right column"
       className={cn(
-        "pointer-events-none fixed bottom-4 right-3 flex flex-col gap-2",
-        focus === "chat" ? "z-[130]" : "z-30",
+        "pointer-events-none fixed bottom-4 right-3 z-30 flex flex-col gap-2",
         HUD_COLUMN_TOP,
         HUD_COLUMN_WIDTH,
       )}

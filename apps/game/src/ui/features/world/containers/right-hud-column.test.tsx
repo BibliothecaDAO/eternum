@@ -48,7 +48,6 @@ it("stacks feed, details under it, the chat strip at the bottom; chat keeps the 
     await click("Chat strip");
     expect(container.querySelector('[aria-label="Tile details"]')?.textContent).toBe("Realm");
     expect(container.querySelector('[aria-label="Chat"]')?.nextElementSibling?.textContent).toBe("Chat strip");
-    expect(aside.className).toContain("z-[130]");
     await click("Log");
     expect(container.querySelector('[aria-label="Log"]')?.getAttribute("aria-expanded")).toBe("true");
     expect(container.querySelector('[aria-label="Chat strip"]')?.getAttribute("aria-expanded")).toBe("false");

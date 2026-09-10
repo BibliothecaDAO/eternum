@@ -28,6 +28,7 @@ vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("./construction-groups", () => ({
   getConstructionBuildingGroups: () => [{ label: "Economic", buildings: [1] }],
+  resolveBuildingRequirements: () => [{ resource: 1, amount: 10, current: 25 }],
 }));
 vi.mock("./construction-buildability", () => ({
   resolveConstructionBuildability: () =>

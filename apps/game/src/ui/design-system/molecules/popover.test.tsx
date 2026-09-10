@@ -336,6 +336,40 @@ describe("Popover", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("every free desk opens where the last one was left", async () => {
+    window.localStorage.clear();
+    await act(async () => {
+      usePopoverStore.getState().openSurface({
+        id: "build",
+        content: (
+          <SurfaceFrame title="Build" onClose={() => {}}>
+            {null}
+          </SurfaceFrame>
+        ),
+      });
+    });
+    const handle = panel("build")!.querySelector<HTMLElement>("[data-popover-drag-handle]")!;
+    const pointer = (type: string, clientX: number, clientY: number) =>
+      act(async () => handle.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX, clientY })));
+    await pointer("pointerdown", 0, 0);
+    await pointer("pointermove", 120, 80);
+    await pointer("pointerup", 120, 80);
+    await act(async () => usePopoverStore.getState().close("build"));
+
+    await act(async () => {
+      usePopoverStore.getState().openSurface({
+        id: "military",
+        content: (
+          <SurfaceFrame title="Military" onClose={() => {}}>
+            {null}
+          </SurfaceFrame>
+        ),
+      });
+    });
+    expect(panel("military")!.style.transform).toContain("translate(120px, 80px)");
+    window.localStorage.clear();
+  });
+
   it("a surface and an element popover are exclusive of each other", async () => {
     await act(async () => {
       usePopoverStore.getState().openSurface({ id: "s", content: <span>surface body</span> });
