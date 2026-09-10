@@ -2895,8 +2895,10 @@ export default class WorldmapScene extends WarpTravel {
     const point = projectHexToScreen({ col: normalized.x, row: normalized.y }, this.camera);
     openArmyDeploymentPicker(
       { direction, structureId: selectedEntityId, isExplorer: true },
-      { left: point.x, right: point.x, top: point.y, bottom: point.y },
-      { reanchor: (event) => this.reanchorArmyDeployment(event) },
+      {
+        anchor: { left: point.x, right: point.x, top: point.y, bottom: point.y },
+        mapClick: { reanchor: (event) => this.reanchorArmyDeployment(event) },
+      },
     );
   }
 

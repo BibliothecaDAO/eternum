@@ -1,6 +1,7 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Position } from "@bibliothecadao/eternum";
 
@@ -114,9 +115,11 @@ const ArmyChip = ({
     return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
   }, [army.troops]);
 
-  const onTroopSwap = useCallback(() => {
+  const onTroopSwap = useCallback((trigger: Element) => {
     openSurface({
       id: "help",
+      anchor: surfaceAnchorFrom(trigger),
+      placement: "beside",
       content: (
         <HelpModal
           selected={{
@@ -190,9 +193,9 @@ const ArmyChip = ({
                             className={`w-5 h-5 fill-gold hover:fill-gold/50 hover:scale-110 transition-all duration-300 cursor-pointer ${
                               army ? "defensive-army-swap-selector" : "attacking-army-swap-selector"
                             }`}
-                            onClick={() => {
+                            onClick={(event) => {
                               setTooltip(null);
-                              onTroopSwap();
+                              onTroopSwap(event.currentTarget);
                             }}
                             onMouseEnter={() =>
                               setTooltip({

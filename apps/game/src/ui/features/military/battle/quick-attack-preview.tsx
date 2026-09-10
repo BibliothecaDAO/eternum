@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useBlockTimestamp, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -10,6 +10,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   CombatSimulator,
@@ -509,9 +510,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // The Claim button garrisons the survivors only when the opt-in toggle is enabled.
   const handlePrimaryAction = () => (canGarrison && garrisonEnabled ? handleClaimAndGarrison() : handleAttack());
 
-  const handleShowDetails = () => {
+  const handleShowDetails = (event: MouseEvent<HTMLButtonElement>) => {
     openSurface({
       id: "combat-details",
+      anchor: surfaceAnchorFrom(event.currentTarget),
+      placement: "beside",
       content: (
         <CombatModal
           selected={{ type: attacker.type, id: attacker.id, hex: attacker.hex }}

@@ -113,6 +113,42 @@ describe("Popover", () => {
     expect(picker.className).toContain("overflow-y-auto");
   });
 
+  it("sits beside a right-column anchor, tops aligned and clamped, and hangs below when the left has no room", async () => {
+    vi.stubGlobal("innerHeight", 900);
+    vi.stubGlobal("innerWidth", 1600);
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(360);
+    const slot = { left: 1270, right: 1580, top: 300, bottom: 340 };
+    await act(async () =>
+      usePopoverStore.getState().openSurface({ id: "picker", content: <div>Deploy</div>, anchor: slot, placement: "beside" }),
+    );
+    const beside = panel("picker")!;
+    expect(beside.style.top).toBe("300px");
+    expect(beside.style.right).toBe(`${1600 - 1270 + 8}px`);
+    expect(beside.style.maxWidth).toBe(`${1270 - 16}px`);
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "low",
+        content: <div>Deploy</div>,
+        anchor: { ...slot, top: 800, bottom: 840 },
+        placement: "beside",
+      }),
+    );
+    expect(panel("low")!.style.top).toBe(`${900 - 400 - 8}px`);
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "cramped",
+        content: <div>Deploy</div>,
+        anchor: { left: 200, right: 500, top: 300, bottom: 340 },
+        placement: "beside",
+      }),
+    );
+    const below = panel("cramped")!;
+    expect(below.style.top).toBe("348px");
+    expect(below.style.left).toBe("200px");
+    expect(below.style.right).toBe("");
+  });
+
   it("collapses every anchor to a bottom sheet on a compact viewport held upright", async () => {
     stubCompactLane("portrait");
     for (const anchor of COMPACT_ANCHORS) {

@@ -1,4 +1,9 @@
-import { usePopoverStore, type PopoverMapClick, type SurfaceAnchor } from "@/hooks/store/use-popover-store";
+import {
+  usePopoverStore,
+  type PopoverMapClick,
+  type SurfaceAnchor,
+  type SurfacePlacement,
+} from "@/hooks/store/use-popover-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import type { Direction } from "@bibliothecadao/types";
@@ -12,19 +17,19 @@ export interface ArmyDeploymentTarget {
   maxDefenseSlots?: number;
 }
 
+export const ARMY_DEPLOYMENT_SURFACE_ID = "army-deployment";
+
 export function openArmyDeploymentPicker(
   target: ArmyDeploymentTarget,
-  anchor: SurfaceAnchor,
-  mapClick?: PopoverMapClick,
+  surface: { anchor: SurfaceAnchor; placement?: SurfacePlacement; mapClick?: PopoverMapClick },
 ) {
   if (!canIssueOrders()) return;
   useTooltipStore.getState().setTooltip(null);
   usePopoverStore.getState().openSurface({
-    id: "army-deployment",
+    id: ARMY_DEPLOYMENT_SURFACE_ID,
     content: (
       <ArmyDeploymentPicker key={`${target.structureId}-${target.isExplorer}-${target.initialGuardSlot}`} {...target} />
     ),
-    anchor,
-    mapClick,
+    ...surface,
   });
 }

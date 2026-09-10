@@ -1,6 +1,11 @@
 import { useAudio } from "@/audio/hooks/useAudio";
 import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
-import { type PopoverMapClick, type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
+import {
+  type PopoverMapClick,
+  type SurfaceAnchor,
+  type SurfacePlacement,
+  usePopoverStore,
+} from "@/hooks/store/use-popover-store";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -41,6 +46,8 @@ interface PopoverPanelProps {
   /** What the panel hangs from: a rect (live, when a function) or a viewport edge. */
   anchor: PanelAnchor | (() => PanelAnchor);
   align?: PopoverAlign;
+  /** Against a rect anchor: under it, or beside it to the left with tops aligned (below when there is no room). */
+  placement?: SurfacePlacement;
   className?: string;
   children: ReactNode;
   /** Escape or a pointer-down outside the panel (and outside its anchor) asks the owner to close it. */
@@ -63,6 +70,7 @@ export const PopoverPanel = ({
   ariaLabel,
   anchor,
   align = "start",
+  placement = "below",
   className,
   children,
   onDismiss,
@@ -82,11 +90,12 @@ export const PopoverPanel = ({
   isInsideAnchorRef.current = isInsideAnchor;
 
   useLayoutEffect(() => {
-    const place = () => setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, panelRef.current));
+    const place = () =>
+      setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
-  }, [align, anchor, Boolean(panelStyle)]);
+  }, [align, anchor, placement, Boolean(panelStyle)]);
 
   useEffect(() => {
     const closeOnOutsidePointer = (event: PointerEvent) => {
@@ -201,6 +210,7 @@ export const SurfaceHost = () => {
       id={surface.id}
       ariaLabel={surface.id}
       anchor={surface.anchor ?? "top-center"}
+      placement={surface.placement}
       mapClick={surface.mapClick}
       className="w-auto p-0"
       onDismiss={() => close(surface.id)}
@@ -275,11 +285,41 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
  * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. Desktop placement
  * hangs from the anchor as before.
  */
-const resolvePanelStyle = (anchor: PanelAnchor, align: PopoverAlign, panel: HTMLElement | null): CSSProperties => {
+const resolvePanelStyle = (
+  anchor: PanelAnchor,
+  align: PopoverAlign,
+  placement: SurfacePlacement,
+  panel: HTMLElement | null,
+): CSSProperties => {
   const lane = resolveCompactLane();
   if (lane === "portrait") return resolveCompactSheetStyle();
   if (lane === "landscape") return resolveCompactDrawerStyle();
+  if (placement === "beside" && typeof anchor !== "string") {
+    return resolveBesidePanelStyle(anchor, panel) ?? resolveAnchoredPanelStyle(anchor, align, panel);
+  }
   return resolveAnchoredPanelStyle(anchor, align, panel);
+};
+
+/**
+ * Beside: the panel's right edge a gap left of the anchor's left edge, tops aligned, clamped to the viewport.
+ * Null when the panel does not fit on the left, so the caller falls back to hanging below.
+ */
+const resolveBesidePanelStyle = (anchor: SurfaceAnchor, panel: HTMLElement | null): CSSProperties | null => {
+  const panelWidth = panel?.offsetWidth ?? 0;
+  const roomOnTheLeft = anchor.left - PANEL_GAP_PX - VIEWPORT_MARGIN_PX;
+  if (panelWidth > roomOnTheLeft) return null;
+  const contentHeight = panel?.scrollHeight ?? 0;
+  const visibleHeight = Math.min(contentHeight, viewportHeightBelow(HEADER_CLEARANCE_PX));
+  const top = Math.max(
+    HEADER_CLEARANCE_PX,
+    Math.min(anchor.top, window.innerHeight - visibleHeight - VIEWPORT_MARGIN_PX),
+  );
+  return {
+    top,
+    right: window.innerWidth - anchor.left + PANEL_GAP_PX,
+    maxHeight: viewportHeightBelow(top),
+    maxWidth: roomOnTheLeft,
+  };
 };
 
 const resolveCompactSheetStyle = (): CSSProperties => ({
