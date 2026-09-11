@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 describe("settlement relationship colors", () => {
-  it("imprints the village emblem on the banner, preserves relationship color beneath it and releases the texture", () => {
+  it("imprints the camp helmet on the banner, preserves relationship color beneath it and releases the texture", () => {
     const fills: string[] = [];
     const context = {
       fillStyle: "",
@@ -19,6 +19,7 @@ describe("settlement relationship colors", () => {
       lineTo: vi.fn(),
       closePath: vi.fn(),
       fill: vi.fn(),
+      bezierCurveTo: vi.fn(),
     };
     vi.stubGlobal("document", { createElement: () => ({ getContext: () => context }) });
     const geometry = new BoxGeometry();
@@ -32,7 +33,7 @@ describe("settlement relationship colors", () => {
     const appearance = new SettlementAppearance(source, [instance]);
     appearance.setRelationship("owned");
     const texture = instance.material.map!;
-    expect(texture.name).toBe("Village huts and palisade imprint");
+    expect(texture.name).toBe("Camp horned helmet imprint");
     expect(texture.flipY).toBe(false);
     expect(instance.material.color.getHexString()).toBe("ffffff");
     expect(fills[0]).toBe(SETTLEMENT_RELATIONSHIPS.owned.color);

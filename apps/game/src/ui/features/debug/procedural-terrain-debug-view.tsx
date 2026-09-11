@@ -1,6 +1,7 @@
+import { orders } from "@bibliothecadao/types";
 import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
-import { TERRAIN_LAB_BUILDINGS, VILLAGE_DRAFT_PATH } from "@/three/debug/terrain-lab-buildings";
+import { TERRAIN_LAB_BUILDINGS, VILLAGE_DRAFT_PATH, REALM_DRAFT_PATH } from "@/three/debug/terrain-lab-buildings";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -384,6 +385,23 @@ export const ProceduralTerrainDebugView = () => {
                 ))}
               </select>
             </label>
+            {buildingPath === REALM_DRAFT_PATH && (
+              <label className="flex flex-col gap-1 text-sm">
+                Realm order
+                <select
+                  aria-label="Realm order"
+                  className="bg-stone-900 p-2"
+                  value={preview.realmOrderId}
+                  onChange={(event) => setPreview({ ...preview, realmOrderId: Number(event.target.value) })}
+                >
+                  {orders.map((order) => (
+                    <option key={order.orderId} value={order.orderId}>
+                      {order.fullOrderName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {buildingPath === VILLAGE_DRAFT_PATH && (
               <label className="flex flex-col gap-1 text-sm">
                 Village relationship

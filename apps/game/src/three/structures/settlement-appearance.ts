@@ -1,4 +1,5 @@
-import { CanvasTexture, SRGBColorSpace, Mesh, MeshStandardMaterial, type Object3D } from "three";
+import { orders } from "@bibliothecadao/types";
+import { CanvasTexture, SRGBColorSpace, ImageLoader, Mesh, MeshStandardMaterial, type Object3D } from "three";
 import { MaterialPool } from "../utils/material-pool";
 
 export const SETTLEMENT_RELATIONSHIPS = {
@@ -13,12 +14,17 @@ export class SettlementAppearance {
   private readonly cloth: MeshStandardMaterial[] = [];
   private readonly banners = new Set<MeshStandardMaterial>();
   private bannerTexture: CanvasTexture | null = null;
+  private revision = 0;
+  private disposed = false;
 
   constructor(source: Object3D, instances: readonly Mesh[]) {
     const surfaces = new Map<string, boolean>();
     source.traverse((node) => {
-      if (node instanceof Mesh && node.userData.relationshipCloth) {
-        surfaces.set(node.geometry.uuid, node.userData.settlementMotion === "banner");
+      if (node instanceof Mesh && (node.userData.relationshipCloth || node.userData.orderCloth)) {
+        surfaces.set(
+          node.geometry.uuid,
+          node.userData.settlementMotion === "banner" || node.userData.orderCloth === "banner",
+        );
       }
     });
     const pool = MaterialPool.getInstance();
@@ -41,8 +47,25 @@ export class SettlementAppearance {
     if (!appearance) throw new Error(`Unknown settlement relationship: ${relationship}`);
     for (const material of this.cloth) material.color.set(appearance.color);
     if (this.banners.size === 0) return;
-    this.bannerTexture ??= createVillageBannerTexture();
+    this.bannerTexture ??= createBannerTexture();
     paintVillageBanner(this.bannerTexture, appearance.color);
+    this.applyBannerTexture();
+  }
+
+  async setOrder(orderId: number): Promise<void> {
+    const order = orders.find((candidate) => candidate.orderId === orderId);
+    if (!order) throw new Error(`Unknown realm order: ${orderId}`);
+    if (this.disposed) return;
+    const revision = ++this.revision;
+    const artwork = await new ImageLoader().loadAsync(`/images/orders/${order.orderName.toLowerCase()}.png`);
+    if (this.disposed || revision !== this.revision) return;
+    for (const material of this.cloth) material.color.set(order.color);
+    this.bannerTexture ??= createBannerTexture();
+    paintOrderBanner(this.bannerTexture, order.color, artwork);
+    this.applyBannerTexture();
+  }
+
+  private applyBannerTexture(): void {
     for (const material of this.banners) {
       material.color.set("#ffffff");
       material.map = this.bannerTexture;
@@ -51,6 +74,8 @@ export class SettlementAppearance {
   }
 
   dispose(): void {
+    this.disposed = true;
+    this.revision++;
     this.bannerTexture?.dispose();
     this.bannerTexture = null;
     this.banners.clear();
@@ -58,12 +83,12 @@ export class SettlementAppearance {
   }
 }
 
-function createVillageBannerTexture(): CanvasTexture {
+function createBannerTexture(): CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 512;
   const texture = new CanvasTexture(canvas);
-  texture.name = "Village huts and palisade imprint";
+  texture.name = "Camp horned helmet imprint";
   texture.colorSpace = SRGBColorSpace;
   texture.flipY = false;
   return texture;
@@ -76,32 +101,72 @@ function paintVillageBanner(texture: CanvasTexture, color: string): void {
   context.fillStyle = color;
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#f3e5c7";
-  // Flat stamp of the existing village label's two huts and pointed palisade.
-  drawStampPolygon(context, [
-    [52, 190],
-    [93, 144],
-    [134, 190],
-  ]);
-  context.fillRect(66, 192, 54, 48);
-  drawStampPolygon(context, [
-    [105, 190],
-    [153, 134],
-    [201, 190],
-  ]);
-  context.fillRect(121, 192, 64, 48);
-  for (let i = 0; i < 5; i++) {
-    const x = 56 + i * 32;
-    drawStampPolygon(context, [
-      [x, 235],
-      [x + 9, 219],
-      [x + 18, 235],
-      [x + 18, 281],
-      [x, 281],
-    ]);
-  }
-  context.fillRect(48, 247, 158, 9);
+  drawCampHelmet(context);
   context.fillStyle = color;
-  context.fillRect(146, 205, 15, 31);
+  // Eye openings and the open lower face reveal the relationship-colored cloth.
+  for (const side of [-1, 1]) {
+    drawStampPolygon(context, [
+      [128 + side * 14, 212],
+      [128 + side * 47, 204],
+      [128 + side * 43, 226],
+      [128 + side * 18, 232],
+    ]);
+    context.fillRect(side < 0 ? 75 : 139, 188, 42, 5);
+  }
+  drawStampPolygon(context, [
+    [80, 259],
+    [114, 244],
+    [114, 282],
+    [80, 282],
+  ]);
+  drawStampPolygon(context, [
+    [142, 244],
+    [176, 259],
+    [176, 282],
+    [142, 282],
+  ]);
+  texture.needsUpdate = true;
+}
+
+function drawCampHelmet(context: CanvasRenderingContext2D): void {
+  for (const side of [-1, 1]) {
+    context.beginPath();
+    context.moveTo(128 + side * 53, 173);
+    context.bezierCurveTo(128 + side * 99, 151, 128 + side * 114, 95, 128 + side * 85, 62);
+    context.bezierCurveTo(128 + side * 94, 108, 128 + side * 63, 119, 128 + side * 42, 133);
+    context.closePath();
+    context.fill();
+  }
+  context.beginPath();
+  context.moveTo(61, 195);
+  context.bezierCurveTo(61, 148, 86, 119, 128, 111);
+  context.bezierCurveTo(170, 119, 195, 148, 195, 195);
+  context.lineTo(188, 255);
+  context.lineTo(143, 278);
+  context.lineTo(128, 296);
+  context.lineTo(113, 278);
+  context.lineTo(68, 255);
+  context.closePath();
+  context.fill();
+}
+
+function paintOrderBanner(texture: CanvasTexture, color: string, artwork: HTMLImageElement): void {
+  const canvas = texture.image as HTMLCanvasElement;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Realm banner canvas is unavailable");
+  context.clearRect(0, 0, 256, 512);
+  const scale = 172 / Math.max(artwork.width, artwork.height);
+  const width = artwork.width * scale;
+  const height = artwork.height * scale;
+  context.drawImage(artwork, (256 - width) / 2, 205 - height / 2, width, height);
+  context.globalCompositeOperation = "source-in";
+  context.fillStyle = "#f3e5c7";
+  context.fillRect(0, 0, 256, 512);
+  context.globalCompositeOperation = "destination-over";
+  context.fillStyle = color;
+  context.fillRect(0, 0, 256, 512);
+  context.globalCompositeOperation = "source-over";
+  texture.name = "Realm order heraldry";
   texture.needsUpdate = true;
 }
 

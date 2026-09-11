@@ -1,4 +1,9 @@
-import { TERRAIN_LAB_BUILDINGS, VILLAGE_DRAFT_PATH, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import {
+  TERRAIN_LAB_BUILDINGS,
+  VILLAGE_DRAFT_PATH,
+  REALM_DRAFT_PATH,
+  type TerrainLabBuilding,
+} from "./terrain-lab-buildings";
 import { SettlementAnimation } from "@/three/structures/settlement-animation";
 import type { WeatherState } from "@/three/managers/weather-manager";
 import { SettlementAppearance } from "@/three/structures/settlement-appearance";
@@ -34,8 +39,8 @@ export class TerrainLabInteraction {
   private selected: { col: number; row: number };
   private preview = DEFAULT_TERRAIN_LAB_PREVIEW;
   private army: InstancedModel | null = null;
-  private settlementAppearance: SettlementAppearance | null = null;
-  private settlementAnimation: SettlementAnimation | null = null;
+  private readonly settlementAppearances = new Map<string, SettlementAppearance>();
+  private readonly settlementAnimations = new Map<string, SettlementAnimation>();
   private armyType: TerrainLabPreview["army"] = "none";
   private revision = 0;
   private disposed = false;
@@ -70,6 +75,7 @@ export class TerrainLabInteraction {
     if (this.localMode && preview.biome === "ethereal") {
       throw new Error("The Ethereal layer preview belongs to the world biome lab");
     }
+    const orderChanged = preview.realmOrderId !== this.preview.realmOrderId;
     const wasExploring = this.exploring;
     if (wasExploring) this.cancelExplorationPreview();
     const rebuild =
@@ -80,15 +86,22 @@ export class TerrainLabInteraction {
     this.selectionDirty = true;
     this.preview = preview;
     this.spinAngle = preview.yaw;
-    this.settlementAppearance?.setRelationship(preview.relationship);
-    if (rebuild) await this.presentFixture();
+    this.settlementAppearances.get(VILLAGE_DRAFT_PATH)?.setRelationship(preview.relationship);
+    await Promise.all([
+      orderChanged ? this.settlementAppearances.get(REALM_DRAFT_PATH)?.setOrder(preview.realmOrderId) : undefined,
+      rebuild ? this.presentFixture() : undefined,
+    ]);
     this.update(0);
   }
 
   update(delta: number, wind?: Pick<WeatherState, "windX" | "windZ">): void {
     if (this.disposed) return;
     this.advanceExplorationPreview();
-    if (wind && this.models.get(VILLAGE_DRAFT_PATH)?.group.visible) this.settlementAnimation?.update(delta, wind);
+    if (wind) {
+      for (const [path, animation] of this.settlementAnimations) {
+        if (this.models.get(path)?.group.visible) animation.update(delta, wind);
+      }
+    }
     if (this.preview.spin) this.spinAngle += delta * 0.65;
     const moved = this.selectionDirty;
     if (moved) {
@@ -176,8 +189,10 @@ export class TerrainLabInteraction {
     this.canvas.removeEventListener("pointerdown", this.beginPick);
     this.canvas.removeEventListener("pointerup", this.finishPick);
     this.hover.dispose();
-    this.settlementAnimation?.dispose();
-    this.settlementAppearance?.dispose();
+    for (const animation of this.settlementAnimations.values()) animation.dispose();
+    for (const appearance of this.settlementAppearances.values()) appearance.dispose();
+    this.settlementAnimations.clear();
+    this.settlementAppearances.clear();
     for (const model of this.models.values()) {
       this.scene.remove(model.group);
       model.dispose();
@@ -275,10 +290,12 @@ export class TerrainLabInteraction {
     model.group.visible = false;
     this.models.set(key, model);
     this.scene.add(model.group);
-    if (path === VILLAGE_DRAFT_PATH) {
-      this.settlementAppearance = new SettlementAppearance(gltf.scene, model.instancedMeshes);
-      this.settlementAnimation = new SettlementAnimation(gltf.scene, model.instancedMeshes);
-      this.settlementAppearance.setRelationship(this.preview.relationship);
+    if (path === VILLAGE_DRAFT_PATH || path === REALM_DRAFT_PATH) {
+      const appearance = new SettlementAppearance(gltf.scene, model.instancedMeshes);
+      this.settlementAppearances.set(path, appearance);
+      this.settlementAnimations.set(path, new SettlementAnimation(gltf.scene, model.instancedMeshes));
+      if (path === REALM_DRAFT_PATH) await appearance.setOrder(this.preview.realmOrderId);
+      else appearance.setRelationship(this.preview.relationship);
     }
     return model;
   }

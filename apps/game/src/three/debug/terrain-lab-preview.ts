@@ -14,6 +14,7 @@ export interface TerrainLabPreview {
   spin: boolean;
   yaw: number;
   relationship: SettlementRelationship;
+  realmOrderId: number;
 }
 
 export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
@@ -24,6 +25,7 @@ export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
   spin: false,
   yaw: 0,
   relationship: "owned",
+  realmOrderId: 1,
 };
 
 export function buildTerrainLabRequest(
