@@ -1,3 +1,12 @@
+import { SettlementAnimation } from "../structures/settlement-animation";
+import {
+  SettlementAppearance,
+  resolveSettlementRelationship,
+  type SettlementRelationship,
+} from "../structures/settlement-appearance";
+import { VILLAGE_MODEL_PATH } from "../constants/scene-constants";
+import { arePlayersAllied } from "@/utils/entity-ownership";
+import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
 import { createHexceptionTerrainRequest, getLocalHexDisk } from "./hexception-terrain";
@@ -152,6 +161,11 @@ export default class HexceptionScene extends HexagonScene {
     BUILDINGS_GROUPS,
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
   > = new Map();
+  private villagePresentation?: {
+    appearance: SettlementAppearance;
+    animation: SettlementAnimation;
+    relationship?: SettlementRelationship;
+  };
   private buildingInstances: Map<string, Group> = new Map();
   private pendingBuildingKeys: Set<string> = new Set();
   private wonderInstances: Map<string, Group> = new Map();
@@ -493,6 +507,16 @@ export default class HexceptionScene extends HexagonScene {
               child.receiveShadow = true;
             }
           });
+          if (path === VILLAGE_MODEL_PATH) {
+            const meshes: Mesh[] = [];
+            model.traverse((node) => {
+              if (node instanceof Mesh) meshes.push(node);
+            });
+            this.villagePresentation = {
+              appearance: new SettlementAppearance(model, meshes),
+              animation: new SettlementAnimation(model, meshes),
+            };
+          }
           resolve({ model, animations: gltf.animations });
         },
         undefined,
@@ -697,6 +721,10 @@ export default class HexceptionScene extends HexagonScene {
     });
     this.buildingInstances.clear();
     this.wonderInstances.clear();
+
+    this.villagePresentation?.animation.dispose();
+    this.villagePresentation?.appearance.dispose();
+    this.villagePresentation = undefined;
 
     // Dispose of loaded building models (geometries and materials)
     const disposedBuildingModels = new Set<Group>();
@@ -1765,8 +1793,28 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
+  private updateVillagePresentation(deltaTime: number): void {
+    const presentation = this.villagePresentation;
+    if (!presentation || !this.isEntered) return;
+    const structure = getComponentValue(
+      this.dojo.components.Structure,
+      gameEntityKey([BigInt(this.state.structureEntityId)]),
+    );
+    if (!structure || !isVillageLikeStructureCategory(structure.base.category)) return;
+    const relationship = resolveSettlementRelationship({
+      isMine: isAddressEqualToAccount(structure.owner),
+      isAlly: arePlayersAllied(this.dojo.components, useAccountStore.getState().account?.address, structure.owner),
+    });
+    if (relationship !== presentation.relationship) {
+      presentation.appearance.setRelationship(relationship);
+      presentation.relationship = relationship;
+    }
+    presentation.animation.update(deltaTime, this.getWeatherAtmosphereState() ?? { windX: 0, windZ: 0 });
+  }
+
   update(deltaTime: number) {
     super.update(deltaTime);
+    this.updateVillagePresentation(deltaTime);
     this.buildingMixers.forEach((mixer) => {
       mixer.update(deltaTime);
     });

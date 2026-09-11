@@ -1,8 +1,11 @@
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { RiftModelPath } from "../constants/scene-constants";
+import { VillageModel } from "../structures/village-model";
+import { resolveSettlementRelationship } from "../structures/settlement-appearance";
+import { RiftModelPath, VILLAGE_MODEL_PATH } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
@@ -899,16 +902,7 @@ export class StructureManager {
         (gltf) => {
           recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
           try {
-            const instancedModel =
-              modelPath === RiftModelPath
-                ? new RewardTileModel(gltf, STRUCTURE_INSTANCE_CAPACITY)
-                : new InstancedModel(
-                    gltf,
-                    STRUCTURE_INSTANCE_CAPACITY,
-                    false,
-                    modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
-                  );
-            resolve(instancedModel);
+            resolve(this.createStructureModel(gltf, structureType, modelPath));
           } catch (error) {
             reject(error);
           }
@@ -922,6 +916,17 @@ export class StructureManager {
         },
       );
     });
+  }
+
+  private createStructureModel(gltf: GLTF, structureType: StructureType, modelPath: string): StructureModel {
+    if (modelPath === RiftModelPath) return new RewardTileModel(gltf, STRUCTURE_INSTANCE_CAPACITY);
+    if (modelPath === VILLAGE_MODEL_PATH) return new VillageModel(gltf, STRUCTURE_INSTANCE_CAPACITY);
+    return new InstancedModel(
+      gltf,
+      STRUCTURE_INSTANCE_CAPACITY,
+      false,
+      modelPath.includes("wonder") ? "wonder" : StructureType[structureType],
+    );
   }
 
   /**
@@ -1509,6 +1514,11 @@ export class StructureManager {
     const bindings = this.hasCosmeticSkin(structure)
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
+    for (const binding of bindings) {
+      if (binding.model instanceof VillageModel) {
+        binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure));
+      }
+    }
     if (bindings.length > 0) {
       this.structureInstanceBindings.set(structure.entityId, bindings);
     }
@@ -1846,6 +1856,7 @@ export class StructureManager {
       const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
       this.forEachStructureModel((model) => {
         if (model instanceof RewardTileModel) model.updatePresentation(nightAmount);
+        if (model instanceof VillageModel) model.setWind(this.hexagonScene?.getWeatherAtmosphereState());
         model.updateAnimations(deltaTime, context);
       });
     }

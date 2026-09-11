@@ -1,5 +1,13 @@
 import { orders } from "@bibliothecadao/types";
-import { CanvasTexture, SRGBColorSpace, ImageLoader, Mesh, MeshStandardMaterial, type Object3D } from "three";
+import {
+  CanvasTexture,
+  SRGBColorSpace,
+  LinearFilter,
+  ImageLoader,
+  Mesh,
+  MeshStandardMaterial,
+  type Object3D,
+} from "three";
 import { MaterialPool } from "../utils/material-pool";
 
 export const SETTLEMENT_RELATIONSHIPS = {
@@ -8,6 +16,7 @@ export const SETTLEMENT_RELATIONSHIPS = {
   enemy: { label: "Enemy / unowned · red", color: "#aa3028" },
 } as const;
 export type SettlementRelationship = keyof typeof SETTLEMENT_RELATIONSHIPS;
+export const SETTLEMENT_RELATIONSHIP_ORDER = Object.keys(SETTLEMENT_RELATIONSHIPS) as SettlementRelationship[];
 
 /** Relationship cloth is isolated from pooled materials; the model owns its clones. */
 export class SettlementAppearance {
@@ -176,4 +185,30 @@ function drawStampPolygon(context: CanvasRenderingContext2D, points: readonly (r
   for (const point of points.slice(1)) context.lineTo(...point);
   context.closePath();
   context.fill();
+}
+
+/** Three fixed atlas rows keep each instanced village's cloth and emblem independent. */
+export function createVillageBannerAtlas(): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 512 * SETTLEMENT_RELATIONSHIP_ORDER.length;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Village banner atlas canvas is unavailable");
+  const stamp = createBannerTexture();
+  for (const [row, relationship] of SETTLEMENT_RELATIONSHIP_ORDER.entries()) {
+    paintVillageBanner(stamp, SETTLEMENT_RELATIONSHIPS[relationship].color);
+    context.drawImage(stamp.image as HTMLCanvasElement, 0, row * 512);
+  }
+  stamp.dispose();
+  const atlas = new CanvasTexture(canvas);
+  atlas.name = "Village relationship banners";
+  atlas.colorSpace = SRGBColorSpace;
+  atlas.flipY = false;
+  atlas.generateMipmaps = false;
+  atlas.minFilter = LinearFilter;
+  return atlas;
+}
+
+export function resolveSettlementRelationship(ownership: { isMine: boolean; isAlly: boolean }): SettlementRelationship {
+  return ownership.isMine ? "owned" : ownership.isAlly ? "allied" : "enemy";
 }

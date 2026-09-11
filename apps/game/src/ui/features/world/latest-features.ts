@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-11",
+    title: "Villages on the Map",
+    description:
+      "Villages and mercenary camps now use the new huts and palisades in world and local views, with animated campfires and banners colored for owned, allied, and enemy settlements.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
     title: "Consistent Rain Direction",
     description: "Rain falls straight down across camera angles, with consistent streaks and ground splashes.",
     type: "fix",

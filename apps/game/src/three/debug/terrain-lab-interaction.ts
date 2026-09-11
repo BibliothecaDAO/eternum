@@ -1,3 +1,4 @@
+import { VillageModel } from "../structures/village-model";
 import {
   TERRAIN_LAB_BUILDINGS,
   VILLAGE_DRAFT_PATH,
@@ -86,7 +87,7 @@ export class TerrainLabInteraction {
     this.selectionDirty = true;
     this.preview = preview;
     this.spinAngle = preview.yaw;
-    this.settlementAppearances.get(VILLAGE_DRAFT_PATH)?.setRelationship(preview.relationship);
+    this.updateVillageRelationship();
     await Promise.all([
       orderChanged ? this.settlementAppearances.get(REALM_DRAFT_PATH)?.setOrder(preview.realmOrderId) : undefined,
       rebuild ? this.presentFixture() : undefined,
@@ -98,6 +99,11 @@ export class TerrainLabInteraction {
     if (this.disposed) return;
     this.advanceExplorationPreview();
     if (wind) {
+      const village = this.models.get(VILLAGE_DRAFT_PATH);
+      if (village instanceof VillageModel && village.group.visible) {
+        village.setWind(wind);
+        village.updateAnimations(delta);
+      }
       for (const [path, animation] of this.settlementAnimations) {
         if (this.models.get(path)?.group.visible) animation.update(delta, wind);
       }
@@ -267,6 +273,7 @@ export class TerrainLabInteraction {
       this.matrix.setPosition(center.x, this.terrain.sampleSurface(center.x, center.z).height + 0.025, center.z);
       const index = counts.get(building.path) ?? 0;
       model.setMatrixAt(index, this.matrix);
+      if (model instanceof VillageModel) model.setRelationshipAt(index, this.preview.relationship);
       counts.set(building.path, index + 1);
     }
     for (const [path, model] of this.models) {
@@ -281,7 +288,8 @@ export class TerrainLabInteraction {
     const existing = this.models.get(key);
     if (existing) return existing;
     const gltf = await gltfLoader.loadAsync(path);
-    const model = new InstancedModel(gltf, capacity, false, name);
+    const model =
+      path === VILLAGE_DRAFT_PATH ? new VillageModel(gltf, capacity) : new InstancedModel(gltf, capacity, false, name);
     if (this.disposed || this.models.has(key)) {
       model.dispose();
       return this.models.get(key) ?? null;
@@ -290,14 +298,22 @@ export class TerrainLabInteraction {
     model.group.visible = false;
     this.models.set(key, model);
     this.scene.add(model.group);
-    if (path === VILLAGE_DRAFT_PATH || path === REALM_DRAFT_PATH) {
+    if (path === REALM_DRAFT_PATH) {
       const appearance = new SettlementAppearance(gltf.scene, model.instancedMeshes);
       this.settlementAppearances.set(path, appearance);
       this.settlementAnimations.set(path, new SettlementAnimation(gltf.scene, model.instancedMeshes));
-      if (path === REALM_DRAFT_PATH) await appearance.setOrder(this.preview.realmOrderId);
-      else appearance.setRelationship(this.preview.relationship);
+      await appearance.setOrder(this.preview.realmOrderId);
     }
+    this.updateVillageRelationship();
     return model;
+  }
+
+  private updateVillageRelationship(): void {
+    const village = this.models.get(VILLAGE_DRAFT_PATH);
+    if (!(village instanceof VillageModel)) return;
+    for (let index = 0; index < village.getCount(); index++) {
+      village.setRelationshipAt(index, this.preview.relationship);
+    }
   }
 
   private beginPick = (event: PointerEvent): void => {
