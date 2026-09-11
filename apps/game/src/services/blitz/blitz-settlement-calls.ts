@@ -54,14 +54,7 @@ const buildSettleCall = ({
   return {
     contractAddress: blitzSystemsAddress,
     entrypoint: "settle",
-    // `Option<u128>::None` serializes as enum index `1` in the current manifest.
-    calldata: CallData.compile([
-      ...gameCalldata,
-      usernameFelt,
-      "1",
-      ...cosmeticCalldata,
-      grantStartingTroops ? "1" : "0",
-    ]),
+    calldata: CallData.compile([...gameCalldata, usernameFelt, ...cosmeticCalldata, grantStartingTroops ? "1" : "0"]),
   };
 };
 
@@ -90,5 +83,31 @@ export const buildBlitzSettleCalls = ({
     }),
   );
 
+  return calls;
+};
+
+export const buildEternumSettleCalls = ({
+  realmSystemsAddress,
+  signerAddress,
+  usernameFelt,
+  gameId,
+  vrfProviderAddress,
+}: {
+  realmSystemsAddress: string;
+  signerAddress: string;
+  usernameFelt: string;
+  gameId: number;
+  vrfProviderAddress?: string | null;
+}): Call[] => {
+  if (!Number.isInteger(gameId) || gameId <= 0) throw new Error("A game id is required for settlement");
+  const calls: Call[] = [];
+  if (hasConfiguredAddress(vrfProviderAddress)) {
+    calls.push(buildRequestRandomCall({ vrfProviderAddress, blitzSystemsAddress: realmSystemsAddress, signerAddress }));
+  }
+  calls.push({
+    contractAddress: realmSystemsAddress,
+    entrypoint: "settle",
+    calldata: CallData.compile([gameId, usernameFelt]),
+  });
   return calls;
 };

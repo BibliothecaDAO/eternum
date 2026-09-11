@@ -48,7 +48,6 @@ const quickBlitz = {
     start_main_at: 200,
     end_at: 3800,
     end_grace_seconds: 60,
-    registration_grace_seconds: 120,
   },
   registration: { count: 3, max: 60, start_at: 50 },
   settlement: {

@@ -4,9 +4,6 @@ export type GameEntryModalPhase =
   | "loading"
   | "settlement-waiting"
   | "settlement"
-  | "settlement-planner"
-  | "season-pass-required"
-  | "season-placement"
   | "village-pass-required"
   | "village-placement"
   | "village-reveal"
@@ -32,13 +29,8 @@ interface ResolveGameEntryModalPhaseInput {
   isEternumMode: boolean;
   isLoadingEternumPrereqs: boolean;
   hasVillageRevealResult: boolean;
-  unifiedSettlementPlannerEnabled: boolean;
-  hasSettledRealm: boolean;
-  entryIntent: "play" | "settle";
-  seasonSettlementComplete: boolean;
   eternumSettlementMode: "realm" | "village";
   hasVillagePass: boolean;
-  hasSeasonPass: boolean;
   checksComplete: boolean;
   needsSettlement: boolean;
   canPlay: boolean;
@@ -56,7 +48,7 @@ export const isGameEntryPreflightComplete = ({
   isSpectateMode,
   settlementCheckComplete,
 }: GameEntryPreflightInput): boolean => {
-  const waitsForPlayerSettlementCheck = !isEternumMode && !isSpectateMode;
+  const waitsForPlayerSettlementCheck = !isSpectateMode;
 
   return !waitsForPlayerSettlementCheck || settlementCheckComplete;
 };
@@ -112,13 +104,8 @@ export const resolveGameEntryModalPhase = ({
   isEternumMode,
   isLoadingEternumPrereqs,
   hasVillageRevealResult,
-  unifiedSettlementPlannerEnabled,
-  hasSettledRealm,
-  entryIntent,
-  seasonSettlementComplete,
   eternumSettlementMode,
   hasVillagePass,
-  hasSeasonPass,
   checksComplete,
   needsSettlement,
   canPlay,
@@ -141,6 +128,10 @@ export const resolveGameEntryModalPhase = ({
   }
 
   if (isEternumMode) {
+    if (eternumSettlementMode === "realm") {
+      if (!checksComplete) return "loading";
+      return resolveBlitzSettlementPhase({ canPlay, isSettlementUnlocked: isBlitzSettlementUnlocked });
+    }
     if (isLoadingEternumPrereqs) {
       return "loading";
     }
@@ -149,19 +140,7 @@ export const resolveGameEntryModalPhase = ({
       return "village-reveal";
     }
 
-    if (unifiedSettlementPlannerEnabled) {
-      return hasSettledRealm && entryIntent === "play" && !seasonSettlementComplete ? "ready" : "settlement-planner";
-    }
-
-    if (eternumSettlementMode === "village") {
-      return hasVillagePass ? "village-placement" : "village-pass-required";
-    }
-
-    if (seasonSettlementComplete || (hasSettledRealm && entryIntent === "play")) {
-      return "ready";
-    }
-
-    return hasSeasonPass ? "season-placement" : "season-pass-required";
+    return hasVillagePass ? "village-placement" : "village-pass-required";
   }
 
   if (!checksComplete) {

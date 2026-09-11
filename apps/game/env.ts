@@ -164,11 +164,6 @@ const envSchema = z
       .transform((v) => v === "true")
       .optional()
       .default("true"),
-    VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER: z
-      .string()
-      .transform((v) => v === "true")
-      .optional()
-      .default("true"),
   })
   .superRefine((value, context) => {
     const hasMasterAddress = Boolean(value.VITE_PUBLIC_MASTER_ADDRESS);

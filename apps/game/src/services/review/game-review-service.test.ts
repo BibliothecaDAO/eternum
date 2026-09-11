@@ -58,9 +58,7 @@ const reviewSnapshot = (): HeraldGameSnapshot => ({
   confirmed_block: REVIEW_BLOCK,
   game_id: String(GAME_ID),
   models: [
-    model("GameRegistry", [
-      { start_main_at: 10, end_at: 90, registration_grace_seconds: 0, dev_mode_on: false, final_trial_id: TRIAL_ID },
-    ]),
+    model("GameRegistry", [{ start_main_at: 10, end_at: 90, dev_mode_on: false, final_trial_id: TRIAL_ID }]),
     model("WorldConfig", [{ blitz_registration_config: { registration_count: 4 } }]),
     model("BlitzSettlement", [{ player: PLAYER }]),
     model("PlayerRegisteredPoints", [{ address: PLAYER, registered_points: "0x77359400" }]),

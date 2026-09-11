@@ -985,7 +985,7 @@ export const useFactoryV2 = () => {
 
     const adminSecret = factoryAdminSecret.trim();
 
-    if (environmentId !== "madara.blitz" && !adminSecret) {
+    if (!environmentId.startsWith("madara.") && !adminSecret) {
       setNotice("Add the factory admin secret above to stop auto-retry.");
       return;
     }
@@ -1015,7 +1015,7 @@ export const useFactoryV2 = () => {
 
     const adminSecret = factoryAdminSecret.trim();
 
-    if (environmentId !== "madara.blitz" && !adminSecret) {
+    if (!environmentId.startsWith("madara.") && !adminSecret) {
       setNotice("Add the factory admin secret above to delete this run.");
       return false;
     }
@@ -1143,7 +1143,7 @@ export const useFactoryV2 = () => {
     isResolvingRunName,
     factoryAdminSecret,
     hasSavedFactoryAdminSecret,
-    requiresFactoryAdminSecret: selectedEnvironment.id !== "madara.blitz",
+    requiresFactoryAdminSecret: !selectedEnvironment.id.startsWith("madara."),
     notice,
     moreOptions,
     biomeClimateOptions,

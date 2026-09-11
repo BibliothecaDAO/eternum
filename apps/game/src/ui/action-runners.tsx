@@ -1,11 +1,10 @@
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
-import { POLLING_INTERVALS } from "@/config/polling";
+
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { shouldClaimSharePoints } from "@/ui/share-points-claim-policy";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/sync/game-scope";
@@ -18,24 +17,10 @@ import {
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
-import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { extractTransactionHash, resolveTransactionFromGameStream } from "@/ui/utils/transactions";
-import {
-  clearUncertainClaimSharePointsSubmission,
-  isNoHashSubmissionTimeout,
-  rememberUncertainClaimSharePointsSubmission,
-  shouldSkipAutomaticClaimSharePointsSubmission,
-} from "@/ui/utils/uncertain-transaction-registry";
-import {
-  getBlockTimestamp,
-  getBuildingCount,
-  getIsBlitz,
-  getStructureName,
-  LeaderboardManager,
-  ResourceArrivalManager,
-} from "@bibliothecadao/eternum";
+
+import { getBuildingCount, getIsBlitz, getStructureName, ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { BuildingType, ContractAddress, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
+import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { getContractByName } from "@dojoengine/core";
 import { getComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -221,127 +206,8 @@ const ResourceArrivalAutoClaim = () => {
   return null;
 };
 
-const AUTO_REGISTER_POINTS_DEBUG = VERBOSE_LOGS_ENABLED;
-
-/** Registers shareholder points on completed hyperstructures once they are worth a transaction, or in the endgame. */
-const AutoRegisterPoints = () => {
-  const {
-    account: { account },
-    setup: {
-      components,
-      systemCalls: { claim_share_points },
-    },
-  } = useDojo();
-
-  const isProcessingRef = useRef(false);
-  const hyperstructures = useWorldSlicesStore((state) => state.hyperstructures);
-  // Read through a ref so slice churn does not tear down and re-register the interval.
-  const hyperstructuresRef = useRef(hyperstructures);
-  hyperstructuresRef.current = hyperstructures;
-
-  useEffect(() => {
-    // No usable account (spectators, pre-login): no interval at all; the effect re-runs when an account connects.
-    if (!account?.address || account.address === "0x0") {
-      return;
-    }
-
-    const log = (...args: unknown[]) => {
-      if (AUTO_REGISTER_POINTS_DEBUG) {
-        console.log("[AutoRegisterPoints]", ...args);
-      }
-    };
-
-    const checkAndRegisterPoints = async () => {
-      log("Checking points...");
-      if (isProcessingRef.current) {
-        log("Skipped: already processing");
-        return;
-      }
-
-      const leaderboardManager = LeaderboardManager.instance(components);
-      const playerAddress = ContractAddress(account.address);
-      const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(playerAddress);
-      const unregisteredPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress);
-      log(`Registered: ${registeredPoints}, Unregistered: ${unregisteredPoints}`);
-      const gameEndAt = useUIStore.getState().gameEndAt;
-      const secondsToGameEnd = gameEndAt ? gameEndAt - getBlockTimestamp().currentBlockTimestamp : null;
-      if (!shouldClaimSharePoints({ registeredPoints, unregisteredPoints, secondsToGameEnd })) {
-        log("Skipped: unregistered points not worth a transaction yet");
-        return;
-      }
-
-      const hyperstructureIds = hyperstructuresRef.current
-        .filter((hyperstructure) => hyperstructure.completed)
-        .map((hyperstructure) => hyperstructure.hyperstructure_id);
-      if (hyperstructureIds.length === 0) {
-        log("Skipped: no completed hyperstructures");
-        return;
-      }
-
-      log(`Registering points for ${hyperstructureIds.length} hyperstructures...`);
-      isProcessingRef.current = true;
-      let txHash: string | null = null;
-      try {
-        if (shouldSkipAutomaticClaimSharePointsSubmission(playerAddress)) {
-          log("Skipped: unresolved no-hash claim submission");
-          return;
-        }
-        const claimedPointsAtSubmit = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
-          playerAddress,
-          { ignorePendingClaimOverride: true },
-        );
-
-        const transactionResult = await claim_share_points({
-          signer: account,
-          hyperstructure_ids: hyperstructureIds,
-        });
-        txHash = extractTransactionHash(transactionResult);
-
-        if (claimedPointsAtSubmit > 0) {
-          leaderboardManager.setPendingSharePointsClaim(playerAddress, claimedPointsAtSubmit, txHash ?? undefined);
-        }
-        leaderboardManager.updatePoints();
-        log("Points registration transaction submitted", txHash);
-
-        if (txHash) {
-          await resolveTransactionFromGameStream({ txHash, label: "auto-register points" });
-        }
-
-        leaderboardManager.confirmPendingSharePointsClaim(playerAddress, txHash ?? undefined);
-        clearUncertainClaimSharePointsSubmission(playerAddress);
-        leaderboardManager.forceRefresh();
-        leaderboardManager.updatePoints();
-        log("Points registered and leaderboard refreshed");
-      } catch (error) {
-        if (isNoHashSubmissionTimeout(error)) {
-          rememberUncertainClaimSharePointsSubmission({
-            walletAddress: playerAddress,
-            failureKind: "submission_timeout_no_hash",
-          });
-        }
-        leaderboardManager.clearPendingSharePointsClaim(playerAddress, txHash ?? undefined);
-        leaderboardManager.updatePoints();
-        console.error("[AutoRegisterPoints] Failed:", error);
-      } finally {
-        isProcessingRef.current = false;
-      }
-    };
-
-    checkAndRegisterPoints();
-    log(`Interval set: ${POLLING_INTERVALS.autoRegisterPointsMs}ms`);
-    const intervalId = setInterval(checkAndRegisterPoints, POLLING_INTERVALS.autoRegisterPointsMs);
-    return () => clearInterval(intervalId);
-  }, [account, components, claim_share_points]);
-
-  return null;
-};
-
 type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: number } };
 
-/**
- * Provisions every owned realm once the main phase is open, at each confirmed head. The chain marks a provisioned
- * realm by its labor building, so the candidates read that count from RECS; there is no other flag.
- */
 const AutoProvisionRealms = () => {
   const {
     account: { account },
@@ -447,7 +313,6 @@ const submitRealmProvisions = async (
 export const ActionRunners = () => (
   <>
     <ResourceArrivalAutoClaim />
-    <AutoRegisterPoints />
     <AutoProvisionRealms />
   </>
 );

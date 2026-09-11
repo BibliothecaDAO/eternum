@@ -54,13 +54,8 @@ describe("game entry phase resolution", () => {
       isEternumMode: false,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
       eternumSettlementMode: "realm",
       hasVillagePass: false,
-      hasSeasonPass: false,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
@@ -82,13 +77,8 @@ describe("game entry phase resolution", () => {
       isEternumMode: false,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
       eternumSettlementMode: "realm",
       hasVillagePass: false,
-      hasSeasonPass: false,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
@@ -110,13 +100,8 @@ describe("game entry phase resolution", () => {
       isEternumMode: false,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
       eternumSettlementMode: "realm",
       hasVillagePass: false,
-      hasSeasonPass: false,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
@@ -138,13 +123,8 @@ describe("game entry phase resolution", () => {
       isEternumMode: false,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
       eternumSettlementMode: "realm",
       hasVillagePass: false,
-      hasSeasonPass: false,
       checksComplete: true,
       needsSettlement: false,
       canPlay: true,
@@ -154,7 +134,7 @@ describe("game entry phase resolution", () => {
     expect(phase).toBe("ready");
   });
 
-  it("keeps eternum planner worlds in the planner flow until the player is ready to enter", () => {
+  it("waits for Eternum settlement to open without offering position selection", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "ready",
       hasPhaseError: false,
@@ -166,19 +146,14 @@ describe("game entry phase resolution", () => {
       isEternumMode: true,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: true,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
       eternumSettlementMode: "realm",
       hasVillagePass: false,
-      hasSeasonPass: true,
       checksComplete: true,
       needsSettlement: false,
       canPlay: false,
       isBlitzSettlementUnlocked: false,
     });
 
-    expect(phase).toBe("settlement-planner");
+    expect(phase).toBe("settlement-waiting");
   });
 });

@@ -1,6 +1,4 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
-import { finalizeGameRanking, type GameReviewData } from "@/services/review/game-review-service";
+import { type GameReviewData } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzAwardsOptionSixCardWithSelector } from "@/ui/shared/components/blitz-awards-variant-cards";
 import { BlitzLeaderboardCardWithSelector } from "@/ui/shared/components/blitz-leaderboard-card";
@@ -8,9 +6,8 @@ import { BlitzMapFingerprintCardWithSelector } from "@/ui/shared/components/blit
 import { BLITZ_CARD_DIMENSIONS } from "@/ui/shared/lib/blitz-highlight";
 import { buildGameReviewStepShareMessage } from "@/ui/shared/lib/x-share-messages";
 import { displayAddress } from "@/ui/utils/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
-import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, Shield, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -50,26 +47,8 @@ const MAP_FINGERPRINT_ZOOM_LEVELS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.25, 1.5] as c
 const MAP_FINGERPRINT_DEFAULT_ZOOM = MAP_FINGERPRINT_ZOOM_LEVELS[3];
 const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
 const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
-const BLOCK_TIMESTAMP_REFRESH_MS = 10_000;
 
 const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message?: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
-  }
-
-  return fallback;
-};
 
 const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
@@ -77,72 +56,13 @@ const STEP_LABELS: Record<ReviewStepId, string> = {
   awards: "Blitz Awards",
   "map-fingerprint": "Map Fingerprint",
   leaderboard: "Global Leaderboard",
-  "submit-score": "Submit Results",
+  "submit-score": "Final Results",
   "result-outcome": "Result Outcome",
   "next-game": "Next Deployed Games Calendar",
 };
 
 const isAwardsStep = (step: ReviewStepId): boolean => {
   return step === "awards";
-};
-
-const formatCountdown = (seconds: number): string => {
-  if (seconds <= 0) return "0s";
-
-  const days = Math.floor(seconds / 86_400);
-  const hours = Math.floor((seconds % 86_400) / 3_600);
-  const minutes = Math.floor((seconds % 3_600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m ${secs}s`;
-  return `${secs}s`;
-};
-
-const getSecondsUntilScoreSubmissionOpen = (
-  finalization: GameReviewData["finalization"],
-  nowTs: number,
-): number | null => {
-  const opensAt = finalization.scoreSubmissionOpensAt;
-  if (finalization.rankingFinalized) {
-    return 0;
-  }
-  if (!opensAt) return null;
-
-  const remaining = opensAt - nowTs + 1;
-  return remaining > 0 ? remaining : 0;
-};
-
-const getSecondsUntilSeasonEnd = (finalization: GameReviewData["finalization"], nowTs: number): number | null => {
-  const seasonEndAt = finalization.seasonEndAt;
-  if (seasonEndAt == null) return null;
-
-  const remaining = seasonEndAt - nowTs;
-  return remaining > 0 ? remaining : 0;
-};
-
-const isScoreSubmissionWindowOpen = (finalization: GameReviewData["finalization"], nowTs: number): boolean => {
-  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(finalization, nowTs);
-  return secondsUntilOpen === 0;
-};
-
-const getScoreSubmissionLockedDescription = (finalization: GameReviewData["finalization"], nowTs: number): string => {
-  const secondsUntilSeasonEnd = getSecondsUntilSeasonEnd(finalization, nowTs);
-  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(finalization, nowTs);
-
-  if (secondsUntilSeasonEnd != null && secondsUntilSeasonEnd > 0) {
-    if (secondsUntilOpen != null && secondsUntilOpen > 0) {
-      return `Season ends in ${formatCountdown(secondsUntilSeasonEnd)}. Submission unlocks in ${formatCountdown(secondsUntilOpen)}.`;
-    }
-    return "Season is still running. Submission unlocks once the season and registration grace period end.";
-  }
-
-  if (secondsUntilOpen != null && secondsUntilOpen > 0) {
-    return `Point registration closes in ${formatCountdown(secondsUntilOpen)}.`;
-  }
-
-  return "Submission opens once the game and registration grace period end.";
 };
 
 const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
@@ -175,136 +95,17 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
   );
 };
 
-const SubmitScoreStep = ({
-  data,
-  nowTs,
-  hasSigner,
-  isSubmitting,
-  submitError,
-  onSubmit,
-  onRequireSignIn,
-}: {
-  data: GameReviewData;
-  nowTs: number;
-  hasSigner: boolean;
-  isSubmitting: boolean;
-  submitError: string | null;
-  onSubmit: () => void;
-  onRequireSignIn: () => void;
-}) => {
-  const scoreSubmitted = data.finalization.rankingFinalized;
-  const isDevModeGame = data.finalization.devModeOn;
-  const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(data.finalization, nowTs);
-  const secondsUntilSeasonEnd = getSecondsUntilSeasonEnd(data.finalization, nowTs);
-  const submissionWindowOpen = isScoreSubmissionWindowOpen(data.finalization, nowTs);
-  const seasonStillRunning = !scoreSubmitted && secondsUntilSeasonEnd != null && secondsUntilSeasonEnd > 0;
-  const canSubmitScore = !scoreSubmitted && submissionWindowOpen;
-  const canRunPrimaryAction = !isDevModeGame && canSubmitScore;
-  const seasonEndTime =
-    data.finalization.seasonEndAt != null ? new Date((data.finalization.seasonEndAt + 1) * 1000) : null;
-  const submissionUnlockTime =
-    data.finalization.scoreSubmissionOpensAt != null
-      ? new Date((data.finalization.scoreSubmissionOpensAt + 1) * 1000)
-      : null;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-gold">
-        <Shield className="h-4 w-4" />
-        <h3 className="font-serif text-xl">Submit Final Results</h3>
-      </div>
-      <p className="text-xs uppercase tracking-wider text-gold/60">Game: {data.worldName}</p>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Score Submission Status</p>
-          <p className="mt-1 text-sm text-white">
-            {scoreSubmitted ? "Score is already submitted and finalized." : "Score submission is pending."}
-          </p>
-        </div>
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Value Settlement</p>
-          <p className="mt-1 text-sm text-white">
-            Mainnet payouts and MMR are applied by the game operator after these ordered results finalize.
-          </p>
-        </div>
-      </div>
-
-      {!hasSigner && canRunPrimaryAction && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
-          Connect a wallet to submit score.
-        </div>
-      )}
-      {!scoreSubmitted && isDevModeGame && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
-          Score submission is disabled for dev mode games.
-        </div>
-      )}
-
-      {!scoreSubmitted && !submissionWindowOpen && secondsUntilOpen != null && secondsUntilOpen > 0 && (
-        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
-          <div className="font-medium">
-            {seasonStillRunning ? "Season is still running." : "Point registration is still open."}
-          </div>
-          {seasonStillRunning && secondsUntilSeasonEnd != null && secondsUntilSeasonEnd > 0 && (
-            <div className="mt-1">Season ends in {formatCountdown(secondsUntilSeasonEnd)}.</div>
-          )}
-          <div className="mt-1">Score submission unlocks in {formatCountdown(secondsUntilOpen)}.</div>
-          {seasonStillRunning && seasonEndTime && (
-            <div className="mt-1 text-xs text-gold/75">
-              Season ends at {seasonEndTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
-            </div>
-          )}
-          {submissionUnlockTime && (
-            <div className="mt-1 text-xs text-gold/75">
-              Opens at {submissionUnlockTime.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}.
-            </div>
-          )}
-        </div>
-      )}
-      {!scoreSubmitted && !submissionWindowOpen && secondsUntilOpen == null && (
-        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
-          Submission opens once the game and registration grace period end.
-        </div>
-      )}
-      {isSubmitting && (
-        <div className="rounded-xl border border-gold/35 bg-gold/10 p-3 text-sm text-gold">
-          Transaction pending. Confirm in your wallet and wait for onchain confirmation.
-        </div>
-      )}
-      {submitError && !isSubmitting && (
-        <div className="rounded-xl border border-danger/40 bg-danger/10 p-3 text-sm text-lightest">{submitError}</div>
-      )}
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button
-          onClick={hasSigner ? onSubmit : onRequireSignIn}
-          variant="gold"
-          className="w-full justify-center !px-4 !py-2.5"
-          forceUppercase={false}
-          isLoading={isSubmitting}
-          disabled={isSubmitting || !hasSigner || !canRunPrimaryAction}
-        >
-          {isSubmitting
-            ? "Submitting..."
-            : scoreSubmitted
-              ? "Score already submitted"
-              : isDevModeGame
-                ? "Disabled in dev mode"
-                : !submissionWindowOpen && secondsUntilOpen != null
-                  ? `Opens in ${formatCountdown(secondsUntilOpen)}`
-                  : !submissionWindowOpen
-                    ? "Waiting for window"
-                    : "Submit score now"}
-        </Button>
-      </div>
-
-      <div className="rounded-xl border border-gold/20 bg-dark/80 p-3 text-sm text-gold/75">
-        Result submission writes no prizes on this chain. The mainnet ledger is the only value plane.
-      </div>
-    </div>
-  );
-};
+const FinalResultsStep = ({ data }: { data: GameReviewData }) => (
+  <div className="space-y-4">
+    <h3 className="font-serif text-xl text-gold">Final Results</h3>
+    <p className="text-sm text-white">
+      {data.finalization.rankingFinalized
+        ? "Results are finalized."
+        : "The game operator will finalize results after the game ends. Your earned points are included automatically."}
+    </p>
+    <p className="text-xs text-gold/70">The game operator applies payouts and MMR once results are final.</p>
+  </div>
+);
 
 const ResultOutcomeStep = ({
   data,
@@ -338,7 +139,7 @@ const ResultOutcomeStep = ({
 
       {!scoreSubmitted && (
         <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
-          Submit final results before the operator can settle the mainnet ledger.
+          Final results are awaiting the game operator.
         </div>
       )}
 
@@ -395,17 +196,12 @@ export const GameReviewModal = ({
   const worldName = world?.name;
   const worldChain = world?.chain;
 
-  const account = useAccountStore((state) => state.account);
-  const currentBlockTimestamp = useBlockTimestampStore((state) => state.currentBlockTimestamp);
-  const refreshBlockTimestamp = useBlockTimestampStore((state) => state.tick);
-  const reviewPlayerAddress = account?.address && account.address !== "0x0" ? account.address : "anonymous";
   const { data, isLoading, error, refetch } = useGameReviewData({
     worldName,
     chain: worldChain,
     enabled: isOpen,
   });
 
-  const queryClient = useQueryClient();
   const [stepIndex, setStepIndex] = useState(0);
   const [frozenSnapshot, setFrozenSnapshot] = useState<Pick<
     GameReviewData,
@@ -413,10 +209,8 @@ export const GameReviewModal = ({
   > | null>(null);
   const captureRef = useRef<HTMLDivElement | null>(null);
   const [isCopying, setIsCopying] = useState(false);
-  const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   const [mapFingerprintZoom, setMapFingerprintZoom] = useState<number>(MAP_FINGERPRINT_DEFAULT_ZOOM);
   const [mapFingerprintGoldLevel, setMapFingerprintGoldLevel] = useState<number>(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
-  const [submitTxError, setSubmitTxError] = useState<string | null>(null);
   const currentMapZoomIndex = useMemo(() => {
     const exactIndex = MAP_FINGERPRINT_ZOOM_LEVELS.findIndex(
       (zoomLevel) => Math.abs(mapFingerprintZoom - zoomLevel) < 0.001,
@@ -472,10 +266,6 @@ export const GameReviewModal = ({
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)] ?? "finished";
   const currentStepLabel = STEP_LABELS[currentStep];
-  const reviewQueryKey = useMemo(
-    () => ["gameReview", worldChain ?? "unknown", worldName ?? "", reviewPlayerAddress] as const,
-    [reviewPlayerAddress, worldChain, worldName],
-  );
   const isStepShareable = useMemo(() => {
     if (isAwardsStep(currentStep) || currentStep === "leaderboard") {
       return true;
@@ -510,34 +300,12 @@ export const GameReviewModal = ({
     return withFrozenSnapshot;
   }, [data, frozenSnapshot]);
 
-  const canProceedToNextStep = useMemo(() => {
-    if (!reviewData) return true;
-    if (currentStep === "submit-score") {
-      if (reviewData.finalization.devModeOn) return true;
-      return reviewData.finalization.rankingFinalized;
-    }
-    return true;
-  }, [currentStep, reviewData]);
-
-  const nextStepBlockedReason = useMemo(() => {
-    if (!reviewData) return null;
-    if (
-      currentStep === "submit-score" &&
-      !reviewData.finalization.devModeOn &&
-      !reviewData.finalization.rankingFinalized
-    ) {
-      return "Submit score before continuing.";
-    }
-    return null;
-  }, [currentStep, reviewData]);
-
   useEffect(() => {
     if (!isOpen) return;
     setStepIndex(0);
     setFrozenSnapshot(null);
     setMapFingerprintZoom(MAP_FINGERPRINT_DEFAULT_ZOOM);
     setMapFingerprintGoldLevel(MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL);
-    setSubmitTxError(null);
   }, [isOpen, worldName, worldChain]);
 
   useEffect(() => {
@@ -551,107 +319,6 @@ export const GameReviewModal = ({
     if (stepIndex < steps.length) return;
     setStepIndex(Math.max(0, steps.length - 1));
   }, [stepIndex, steps.length]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    refreshBlockTimestamp();
-    const interval = setInterval(() => {
-      refreshBlockTimestamp();
-    }, BLOCK_TIMESTAMP_REFRESH_MS);
-    return () => clearInterval(interval);
-  }, [isOpen, refreshBlockTimestamp]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (currentBlockTimestamp > 0) {
-      setNowTs(currentBlockTimestamp);
-      return;
-    }
-    setNowTs(Math.floor(Date.now() / 1000));
-  }, [currentBlockTimestamp, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const interval = setInterval(() => {
-      setNowTs((previous) => previous + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isOpen]);
-
-  const finalizeMutation = useMutation({
-    mutationFn: async () => {
-      if (!worldName || !worldChain || !account) {
-        throw new Error("Missing world selection or signer.");
-      }
-
-      return finalizeGameRanking({
-        worldName,
-        chain: worldChain,
-        signer: account,
-      });
-    },
-    onMutate: () => {
-      setSubmitTxError(null);
-    },
-    onSuccess: async (result) => {
-      setSubmitTxError(null);
-      toast.success("Result submission completed.", {
-        description: `${result.totalPlayers} players processed and ready for the mainnet relay.`,
-      });
-      await queryClient.invalidateQueries({ queryKey: reviewQueryKey });
-      setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
-    },
-    onError: (caughtError) => {
-      console.error("Failed to submit final results", caughtError);
-      const errorMessage = getErrorMessage(caughtError, "Unknown error while submitting final results.");
-      const normalizedErrorMessage = errorMessage.toLowerCase();
-      const isSubmissionWindowError =
-        normalizedErrorMessage.includes("registration grace period is not over") ||
-        normalizedErrorMessage.includes("season is not over");
-
-      if (isSubmissionWindowError && reviewData) {
-        const description = getScoreSubmissionLockedDescription(reviewData.finalization, nowTs);
-        setSubmitTxError(`Score submission is not open yet. ${description}`);
-        toast.error("Score submission is not open yet.", {
-          description,
-        });
-        return;
-      }
-
-      setSubmitTxError(errorMessage);
-      toast.error("Failed to submit final results.", { description: errorMessage });
-    },
-  });
-
-  const handleSubmitScore = useCallback(() => {
-    if (!account) {
-      onRequireSignIn();
-      return;
-    }
-
-    if (reviewData) {
-      if (reviewData.finalization.devModeOn) {
-        toast.error("Score submission is disabled for dev mode games.");
-        return;
-      }
-
-      if (reviewData.finalization.rankingFinalized) {
-        toast.error("Results are already finalized.");
-        return;
-      } else {
-        const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
-        if (secondsUntilOpen == null || secondsUntilOpen > 0) {
-          const description = getScoreSubmissionLockedDescription(reviewData.finalization, nowTs);
-          toast.error("Score submission is not open yet.", {
-            description,
-          });
-          return;
-        }
-      }
-    }
-
-    finalizeMutation.mutate();
-  }, [account, finalizeMutation, nowTs, onRequireSignIn, reviewData]);
 
   const handleCopyStep = useCallback(async () => {
     if (!isStepShareable || !captureRef.current) return;
@@ -757,20 +424,13 @@ export const GameReviewModal = ({
   }, [shareMessage]);
 
   const handleNextStep = useCallback(() => {
-    if (!canProceedToNextStep) {
-      if (nextStepBlockedReason) {
-        toast.error(nextStepBlockedReason);
-      }
-      return;
-    }
-
     if (stepIndex >= steps.length - 1) {
       onClose();
       return;
     }
 
     setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
-  }, [canProceedToNextStep, nextStepBlockedReason, onClose, stepIndex, steps.length]);
+  }, [onClose, stepIndex, steps.length]);
 
   const handlePrevStep = useCallback(() => {
     setStepIndex((prev) => Math.max(0, prev - 1));
@@ -947,17 +607,7 @@ export const GameReviewModal = ({
                 </div>
               )}
 
-              {currentStep === "submit-score" && (
-                <SubmitScoreStep
-                  data={reviewData}
-                  nowTs={nowTs}
-                  hasSigner={Boolean(account)}
-                  isSubmitting={finalizeMutation.isPending}
-                  submitError={submitTxError}
-                  onSubmit={handleSubmitScore}
-                  onRequireSignIn={onRequireSignIn}
-                />
-              )}
+              {currentStep === "submit-score" && <FinalResultsStep data={reviewData} />}
 
               {currentStep === "result-outcome" && <ResultOutcomeStep data={reviewData} captureRef={captureRef} />}
 
@@ -986,7 +636,7 @@ export const GameReviewModal = ({
                 variant="gold"
                 className="gap-2 !px-3 !py-2 shadow-lg shadow-gold/20"
                 forceUppercase={false}
-                disabled={isLoading || Boolean(error) || !canProceedToNextStep}
+                disabled={isLoading || Boolean(error)}
               >
                 {stepIndex >= steps.length - 1 ? "Close" : "Next"}
                 <ArrowRight className="h-4 w-4" />

@@ -41,10 +41,11 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     name: "Standard world",
     description: "The usual Eternum launch.",
     defaults: {
+      version: "10",
       startRule: "next_hour",
       devMode: false,
       twoPlayerMode: false,
-      singleRealmMode: false,
+      singleRealmMode: true,
     },
   },
   // Blitz launches run on registered registrar presets: 8 = Regular Fast

@@ -19,8 +19,8 @@ describe("factory catalog environments", () => {
     publicEnv.VITE_PUBLIC_CHAIN = "madara";
   });
 
-  it("offers Blitz on the lab for a madara build", () => {
-    expect(getFactoryModeDefinitions().map((mode) => mode.id)).toEqual(["blitz"]);
+  it("offers Blitz and Eternum on the lab for a madara build", () => {
+    expect(getFactoryModeDefinitions().map((mode) => mode.id)).toEqual(["eternum", "blitz"]);
     expect(getDefaultFactoryMode()).toBe("blitz");
     expect(resolveFactoryEnvironmentForMode("blitz")).toEqual({
       id: "madara.blitz",
@@ -30,8 +30,8 @@ describe("factory catalog environments", () => {
     });
   });
 
-  it("refuses a mode the build chain has no environment for", () => {
-    expect(() => resolveFactoryEnvironmentForMode("eternum")).toThrow(/eternum/);
+  it("resolves Eternum in the same persistent world environment", () => {
+    expect(resolveFactoryEnvironmentForMode("eternum").id).toBe("madara.eternum");
   });
 
   it("labels run-record environment ids by chain", () => {

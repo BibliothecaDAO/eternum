@@ -1,5 +1,3 @@
-import { tileDataToTile } from "@bibliothecadao/types";
-
 import { feltEquals, fetchHeraldGameSnapshot, snapshotModelRows } from "./herald-http";
 import type { WorldDeployment } from "./world-directory";
 
@@ -24,43 +22,7 @@ export interface RealmVillageSlot {
   directions_left: DirectionSlots;
 }
 
-export interface SettlementPlannerRealm {
-  coordX: number;
-  coordY: number;
-  directionsLeft: DirectionSlots;
-  entityId: number;
-  ownerAddress: string;
-  ownerName: string | null;
-  realmId: number | null;
-  villagesCount: number;
-}
-
-export interface SettlementPlannerVillage {
-  coordX: number;
-  coordY: number;
-  entityId: number;
-}
-
-export interface SettlementPlannerSnapshot {
-  realms: SettlementPlannerRealm[];
-  villages: SettlementPlannerVillage[];
-}
-
-export interface SettlementPlannerTile {
-  alt: boolean;
-  biome: number;
-  coordX: number;
-  coordY: number;
-}
-
-export interface ExploredTileBounds {
-  maxX: number;
-  maxY: number;
-  minX: number;
-  minY: number;
-}
-
-export interface StructureLocation {
+interface StructureLocation {
   coord_x: number;
   coord_y: number;
   entity_id: number;
@@ -73,13 +35,11 @@ export interface SettlementSnapshot {
   settledCount: number;
 }
 
-export interface HeraldPreSessionReader {
+interface HeraldPreSessionReader {
   fetchAddressName: (address: string) => Promise<unknown | null>;
-  fetchExploredTilesInBounds: (bounds: ExploredTileBounds) => Promise<SettlementPlannerTile[]>;
   fetchPlayerStructures: (owner: string) => Promise<PlayerStructure[]>;
   fetchRealmSettlements: () => Promise<StructureLocation[]>;
   fetchRealmVillageSlots: () => Promise<RealmVillageSlot[]>;
-  fetchSettlementPlannerSnapshot: () => Promise<SettlementPlannerSnapshot>;
   fetchSettlementSnapshot: (player: string) => Promise<SettlementSnapshot>;
 }
 
@@ -162,37 +122,10 @@ const toVillageSlot = (row: Record<string, unknown>): RealmVillageSlot => {
   };
 };
 
-const ownerNames = (rows: Record<string, unknown>[]): Map<string, string> =>
-  new Map(
-    rows.flatMap((row) => {
-      if (row.address == null || row.name == null || BigInt(row.name as string) === 0n) return [];
-      const encoded = BigInt(row.name as string).toString(16);
-      const padded = encoded.length % 2 === 0 ? encoded : `0${encoded}`;
-      const bytes = padded.match(/.{2}/g) ?? [];
-      return [[toAddress(row.address), String.fromCharCode(...bytes.map((byte) => Number.parseInt(byte, 16)))]];
-    }),
-  );
-
 export const createHeraldPreSessionReader = (world: WorldDeployment, gameId: number): HeraldPreSessionReader => ({
   fetchAddressName: async (address) => {
     const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["AddressName"]);
     return snapshotModelRows(snapshot, "AddressName").find((row) => feltEquals(row.address, address))?.name ?? null;
-  },
-
-  fetchExploredTilesInBounds: async (bounds) => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["TileOpt"]);
-    return snapshotModelRows(snapshot, "TileOpt")
-      .map((row) => tileDataToTile(row.data as string))
-      .filter(
-        (tile) =>
-          !tile.alt &&
-          tile.biome !== 0 &&
-          tile.col >= bounds.minX &&
-          tile.col <= bounds.maxX &&
-          tile.row >= bounds.minY &&
-          tile.row <= bounds.maxY,
-      )
-      .map((tile) => ({ alt: tile.alt, biome: tile.biome, coordX: tile.col, coordY: tile.row }));
   },
 
   fetchPlayerStructures: async (owner) => {
@@ -213,46 +146,6 @@ export const createHeraldPreSessionReader = (world: WorldDeployment, gameId: num
   fetchRealmVillageSlots: async () => {
     const snapshot = await fetchHeraldGameSnapshot(world, gameId, ["StructureVillageSlots"]);
     return snapshotModelRows(snapshot, "StructureVillageSlots").map(toVillageSlot);
-  },
-
-  fetchSettlementPlannerSnapshot: async () => {
-    const snapshot = await fetchHeraldGameSnapshot(world, gameId, [
-      "AddressName",
-      "Structure",
-      "StructureVillageSlots",
-    ]);
-    const names = ownerNames(snapshotModelRows(snapshot, "AddressName"));
-    const slots = new Map(
-      snapshotModelRows(snapshot, "StructureVillageSlots").map((row) => {
-        const slot = toVillageSlot(row);
-        return [slot.connected_realm_entity_id, slot.directions_left];
-      }),
-    );
-    const structures = snapshotModelRows(snapshot, "Structure");
-    return {
-      realms: structures
-        .filter((row) => structureCategory(row) === 1)
-        .map((row): SettlementPlannerRealm => {
-          const location = toStructureLocation(row);
-          const { metadata } = structureDetails(row);
-          return {
-            coordX: location.coord_x,
-            coordY: location.coord_y,
-            directionsLeft: slots.get(location.entity_id) ?? [],
-            entityId: location.entity_id,
-            ownerAddress: location.owner,
-            ownerName: names.get(location.owner) ?? null,
-            realmId: metadata.realm_id == null ? null : toNumber(metadata.realm_id, "Structure.metadata.realm_id"),
-            villagesCount: toNumber(metadata.villages_count ?? 0, "Structure.metadata.villages_count"),
-          };
-        }),
-      villages: structures
-        .filter((row) => structureCategory(row) === 5)
-        .map((row): SettlementPlannerVillage => {
-          const location = toStructureLocation(row);
-          return { coordX: location.coord_x, coordY: location.coord_y, entityId: location.entity_id };
-        }),
-    };
   },
 
   fetchSettlementSnapshot: async (player) => {

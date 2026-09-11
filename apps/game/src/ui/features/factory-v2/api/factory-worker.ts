@@ -23,7 +23,7 @@ export type FactoryWorkerRunRecoveryState = "active" | "transitioning" | "stalle
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 
 const factoryAdminHeaders = (environment: FactoryWorkerEnvironmentId, adminSecret: string) =>
-  environment === "madara.blitz" ? {} : { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret };
+  environment.startsWith("madara.") ? {} : { [FACTORY_WORKER_ADMIN_SECRET_HEADER]: adminSecret };
 
 export interface FactoryWorkerRunRecovery {
   state: FactoryWorkerRunRecoveryState;

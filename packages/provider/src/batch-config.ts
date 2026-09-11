@@ -60,8 +60,7 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
 
   // Complex operations
   [TransactionType.CONTRIBUTE]: TransactionCostCategory.HIGH,
-  [TransactionType.MAKE_HYPERSTRUCTURES]: TransactionCostCategory.HIGH,
-  [TransactionType.SETTLE_REALMS]: TransactionCostCategory.HIGH,
+  [TransactionType.SETTLE]: TransactionCostCategory.HIGH,
   [TransactionType.REGISTER]: TransactionCostCategory.HIGH,
   [TransactionType.SEASON_CLOSE]: TransactionCostCategory.HIGH,
   [TransactionType.END_GAME]: TransactionCostCategory.HIGH,
@@ -110,7 +109,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION]: TransactionCostCategory.MEDIUM,
   [TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION]: TransactionCostCategory.MEDIUM,
   [TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION]: TransactionCostCategory.MEDIUM,
-  [TransactionType.MINT_STARTING_RESOURCES]: TransactionCostCategory.MEDIUM,
   [TransactionType.MINT]: TransactionCostCategory.MEDIUM,
   [TransactionType.MINT_TEST_LORDS]: TransactionCostCategory.MEDIUM,
 
@@ -175,7 +173,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Hyperstructures (claims and simple ops)
   [TransactionType.UPDATE_CONSTRUCTION_ACCESS]: TransactionCostCategory.LOW,
   [TransactionType.CLAIM_CONSTRUCTION_POINTS]: TransactionCostCategory.LOW,
-  [TransactionType.CLAIM_SHARE_POINTS]: TransactionCostCategory.LOW,
   [TransactionType.ALLOCATE_SHARES]: TransactionCostCategory.LOW,
   [TransactionType.CLAIM_WONDER_PRODUCTION_BONUS]: TransactionCostCategory.LOW,
   [TransactionType.CONTRIBUTE_TO_CONSTRUCTION]: TransactionCostCategory.LOW,
@@ -191,7 +188,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_ACCESS]: TransactionCostCategory.LOW,
 
   // Settlement
-  [TransactionType.ASSIGN_REALM_POSITIONS]: TransactionCostCategory.LOW,
   [TransactionType.TOKEN_LOCK]: TransactionCostCategory.LOW,
 
   // Quests
@@ -206,7 +202,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Season/Leaderboard claims
   [TransactionType.SEASON_PRIZE_CLAIM]: TransactionCostCategory.LOW,
   [TransactionType.CLAIM_LEADERBOARD_REWARDS]: TransactionCostCategory.LOW,
-  [TransactionType.REGISTER_TO_LEADERBOARD]: TransactionCostCategory.LOW,
   [TransactionType.BLITZ_PRIZE_PLAYER_RANK]: TransactionCostCategory.LOW,
 
   // Bank fees

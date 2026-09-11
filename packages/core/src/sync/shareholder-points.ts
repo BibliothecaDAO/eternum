@@ -36,7 +36,7 @@ const gameClock = (rows: ShareholderPointRows, gameId: bigint, nowSeconds: numbe
   const endAt = scalar(game.end_at, "GameRegistry.end_at");
   const now = BigInt(Math.floor(nowSeconds));
   return {
-    currentTimestamp: endAt > 0n && now >= endAt ? endAt : now,
+    currentTimestamp: game.dev_mode_on !== true && endAt > 0n && now >= endAt ? endAt : now,
     presetId: scalar(game.preset_id, "GameRegistry.preset_id"),
   };
 };
@@ -75,19 +75,20 @@ export const calculateUnregisteredShareholderPoints = (
     const hyperstructureId = scalar(row.hyperstructure_id, "HyperstructureShareholders.hyperstructure_id").toString();
     const multiplier = multipliers.get(hyperstructureId);
     if (multiplier === undefined) throw new Error(`Hyperstructure row missing for shareholders ${hyperstructureId}`);
-    const elapsed = clock.currentTimestamp - scalar(row.start_at, "HyperstructureShareholders.start_at");
+    const startAt = scalar(row.start_at, "HyperstructureShareholders.start_at");
+    if (startAt === 0n) continue;
+    const elapsed = clock.currentTimestamp - startAt;
     if (elapsed <= 0n) continue;
-    const shares = new Map<string, bigint>();
-    decodeHyperstructureShares(row.shareholders).forEach(({ playerAddress, basisPoints }) => {
+    for (const { playerAddress, basisPoints } of decodeHyperstructureShares(row.shareholders)) {
       const address = normalizeAddress(playerAddress);
-      shares.set(address, (shares.get(address) ?? 0n) + basisPoints);
-    });
-    for (const [address, basisPoints] of shares) {
-      const earned =
-        (basePointsPerSecond * multiplier * basisPoints * elapsed) / (POINTS_PRECISION * SHARE_BASIS_POINTS);
-      points.set(address, (points.get(address) ?? 0) + Number(earned));
+      const earned = accruedSharePoints(basePointsPerSecond, multiplier, basisPoints, elapsed);
+      points.set(address, (points.get(address) ?? 0) + Number(earned) / Number(POINTS_PRECISION));
     }
   }
 
   return points;
 };
+
+/** Contract precision: round each share entry once, before converting to display points. */
+export const accruedSharePoints = (rate: bigint, multiplier: bigint, basisPoints: bigint, elapsed: bigint): bigint =>
+  elapsed > 0n ? (rate * multiplier * basisPoints * elapsed) / SHARE_BASIS_POINTS : 0n;

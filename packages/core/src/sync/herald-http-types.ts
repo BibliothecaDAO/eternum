@@ -5,7 +5,7 @@ export type HeraldGameStatus = "Created" | "Registration" | "Live" | "Ended" | "
 export interface HeraldGameClock {
   end_at: number;
   end_grace_seconds: number;
-  registration_grace_seconds: number;
+
   start_main_at: number;
   start_settling_at: number;
 }

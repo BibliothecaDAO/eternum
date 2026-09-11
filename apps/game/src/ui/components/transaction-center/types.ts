@@ -104,8 +104,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Used labor for production";
     case TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION:
       return "Converted resources to labor";
-    case TransactionType.MINT_STARTING_RESOURCES:
-      return "Received starting resources";
     case TransactionType.MINT:
       return "Minted tokens";
     case TransactionType.MINT_TEST_LORDS:
@@ -188,22 +186,16 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Contributed to hyperstructure";
     case TransactionType.UPDATE_CONSTRUCTION_ACCESS:
       return "Updated construction access";
-    case TransactionType.MAKE_HYPERSTRUCTURES:
-      return "Created hyperstructures";
     case TransactionType.CLAIM_CONSTRUCTION_POINTS:
       return "Claimed construction points";
-    case TransactionType.CLAIM_SHARE_POINTS:
-      return "Claimed share points";
     case TransactionType.ALLOCATE_SHARES:
       return "Allocated shares";
     case TransactionType.CLAIM_WONDER_PRODUCTION_BONUS:
       return "Claimed wonder production bonus";
 
     // Realms & Settlement
-    case TransactionType.SETTLE_REALMS:
-      return "Settled realms";
-    case TransactionType.ASSIGN_REALM_POSITIONS:
-      return "Assigned realm positions";
+    case TransactionType.SETTLE:
+      return "Settled realm";
     case TransactionType.REGISTER:
       return "Registered in the realm";
     case TransactionType.TOKEN_LOCK:
@@ -244,8 +236,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Claimed season prize";
     case TransactionType.CLAIM_LEADERBOARD_REWARDS:
       return "Claimed leaderboard rewards";
-    case TransactionType.REGISTER_TO_LEADERBOARD:
-      return "Registered for leaderboard";
     case TransactionType.END_GAME:
       return "Game has ended";
 
@@ -411,7 +401,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION:
     case TransactionType.BURN_RESOURCE_FOR_LABOR_PRODUCTION:
       return "🔥";
-    case TransactionType.MINT_STARTING_RESOURCES:
     case TransactionType.MINT:
     case TransactionType.MINT_TEST_LORDS:
       return "✨";
@@ -479,18 +468,14 @@ export const getTxIcon = (type: TransactionType): string => {
       return "🏗️";
     case TransactionType.UPDATE_CONSTRUCTION_ACCESS:
       return "🔑";
-    case TransactionType.MAKE_HYPERSTRUCTURES:
-      return "🏛️";
     case TransactionType.CLAIM_CONSTRUCTION_POINTS:
-    case TransactionType.CLAIM_SHARE_POINTS:
     case TransactionType.ALLOCATE_SHARES:
       return "📊";
     case TransactionType.CLAIM_WONDER_PRODUCTION_BONUS:
       return "✨";
 
     // Realms & Settlement
-    case TransactionType.SETTLE_REALMS:
-    case TransactionType.ASSIGN_REALM_POSITIONS:
+    case TransactionType.SETTLE:
       return "🏰";
     case TransactionType.REGISTER:
     case TransactionType.TOKEN_LOCK:
@@ -502,7 +487,6 @@ export const getTxIcon = (type: TransactionType): string => {
       return "👑";
     case TransactionType.APPROVE:
     case TransactionType.SET_APPROVAL_FOR_ALL:
-    case TransactionType.REGISTER_TO_LEADERBOARD:
     case TransactionType.SET_CO_OWNERS:
       return "📜";
     case TransactionType.SET_ACCESS:
