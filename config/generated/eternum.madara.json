@@ -2243,7 +2243,7 @@
   "realmMaxLevel": 4,
   "villageMaxLevel": 1,
   "victoryPoints": {
-    "pointsForWin": "0",
+    "pointsForWin": "10000000000000",
     "hyperstructurePointsPerCycle": "1000000",
     "pointsForHyperstructureClaimAgainstBandits": "3000000000",
     "pointsForNonHyperstructureClaimAgainstBandits": "500000000",
@@ -3841,7 +3841,7 @@
         },
         {
           "address": "0x1239757ce96d0a5d15ef6d422ccd563e0839acfb49eaf9885f217abd65fa6d9",
-          "class_hash": "0x51d0a1d7fe720f73aa1470f689c920054ec0e1ad3ac6705b11cf984febfd202",
+          "class_hash": "0x30eb57c4026f062dc862feb2b45adeab0699e14e9a6dbb402a48cff7cb2038",
           "init_calldata": [],
           "tag": "s2-alt_movement_systems",
           "selector": "0x7a0748f310a218b245cf8225f1c22391cff786962c85b0c0f959d4cf5042837",
@@ -3852,7 +3852,7 @@
         },
         {
           "address": "0x444fbe6881e97f83efa728fb3751ebbf5715f5b007d3c9ca9320131702e13ad",
-          "class_hash": "0x48b3f2ac31c1935c3941fd3da8238d09c17a948e4e890bc347ef0aeaecc558c",
+          "class_hash": "0x5f78b0730eef7e724f421c2bc36665da8762e7f3fd622553ac806f618ab0952",
           "init_calldata": [],
           "tag": "s2-artificer_systems",
           "selector": "0x1c84002a713c32809fb1ed3b3646b263f8e643208fb1fe7645ed316e810536d",
@@ -3863,7 +3863,7 @@
         },
         {
           "address": "0x507ea088e667a4b9f613c3d4b40e6fbe596f0c96c9f43cb1c321cc4d79d8303",
-          "class_hash": "0x179e84d74f0e739aa9b8dc63ce94725b3ab04337529a50ad848d191d9af4a82",
+          "class_hash": "0x552090f1c3ca91f629d7109bca830cbe2084a2f78eb00feff398cc8cb5d4e62",
           "init_calldata": [],
           "tag": "s2-bank_systems",
           "selector": "0x73e968dc553c4888fe990f7f2d677c813c7d46438b982b770d0ebfc4c5ba9e1",
@@ -3884,7 +3884,7 @@
         },
         {
           "address": "0x4c55473994f031bd77593855e9e076fbce214a3ef4422a115cd828043e688f2",
-          "class_hash": "0x5b858f0f8aa443db71432c584ebf2597b871d507b5812136316c17eca16bb2b",
+          "class_hash": "0x7a4bc3d4de2e3e6d1855b98ace958f31fdbe22da24acfa7b3c0bcd43ff5d33b",
           "init_calldata": [],
           "tag": "s2-bitcoin_mine_systems",
           "selector": "0x6b644b5ad75bac2dbcf4fc9ca9eb167bfc4986eff173d67ecf19f56046bbdf4",
@@ -3896,7 +3896,7 @@
         },
         {
           "address": "0x24a29eca64b5968c56ea4109fc22ee791a9f9f5df641550724a95dadf1d44ce",
-          "class_hash": "0x176507ce17a6546ddcdd538f51a3b6951e5b6b8f450259143036e42369cb6fa",
+          "class_hash": "0x60aadb5e32fa308157a356734014e153e904b830d7882458a9648fb8b040fc4",
           "init_calldata": [],
           "tag": "s2-blitz_realm_systems",
           "selector": "0x2f457be35501fb088476ae8ad493f012f5b4bb4060d8a639a9b8fb45e6b8c3",
@@ -3940,11 +3940,12 @@
         },
         {
           "address": "0x60ea0760babfeada75390c32a462dd2eef72deebd264413129fea329b792a7f",
-          "class_hash": "0x75ac1f3db12c31377fefd3c25a71540bf26f3c5db4f86a036898174cc9e6ae0",
+          "class_hash": "0x48648cef205438687258dc930eb941ff272306205ef1f8ef1a4d1ceb94398fb",
           "init_calldata": [],
           "tag": "s2-faith_prize_systems",
           "selector": "0x54e38ca25a11d71812b250fad1fef534ba27a8ed5f8063d53e31eb5b8ef2e14",
           "systems": [
+            "fund_prizes",
             "distribute_wonder_prizes",
             "claim_player_prize",
             "upgrade"
@@ -3952,7 +3953,7 @@
         },
         {
           "address": "0x5d28a9e5627d953344bcaa6d3d12c53977719add6c6a96cae528a24d6ae518",
-          "class_hash": "0x6e78bc110322f66eeaf881826c852bc70692696b04b39961d020f9e9ebb93cc",
+          "class_hash": "0x6a3466762b969be69eed99093dec48e818e4caef5b98187c25b8f30722df053",
           "init_calldata": [],
           "tag": "s2-faith_systems",
           "selector": "0x5e232d2f0244cd5f3e181cf9d2107ec4395e638a8ee135e0e8cacc99d5d1322",
@@ -3970,7 +3971,7 @@
         },
         {
           "address": "0x20c78041e32a364908928457c30feea98929c4515648bff42dc8ac4cfdf7c42",
-          "class_hash": "0x121800ac8ba106c8705070b16993b29b4a4b3c114c33273705d1f923a8f4a91",
+          "class_hash": "0x7a2a38ca28247da6f9bbaba8b507b5a827810b6a6a0fad5b6bc8f52f39fb5c2",
           "init_calldata": [],
           "tag": "s2-guild_systems",
           "selector": "0x5ece639575c025f471d361a3088773e18bcd3cb514b4f68f2d055ec58cd4277",
@@ -3995,7 +3996,7 @@
         },
         {
           "address": "0x4fdc10f11826ae91b807f819f7f6327e38aa31092fdcd243cbb5a8236530888",
-          "class_hash": "0x7db620b43b96a6a4d86ced8c6beaf73b6600370f6fe5658bcc05f800109c6e1",
+          "class_hash": "0xa2c2ae8eeaa00e7615703a7379a743dbb027c2be5bf66981548ff659b43762",
           "init_calldata": [],
           "tag": "s2-hyperstructure_create_systems",
           "selector": "0x1696302d09890ddce3c1ea176cdd45c8d53934cbbfc493fd3c8a42496c34b82",
@@ -4007,7 +4008,7 @@
         },
         {
           "address": "0x4b01b93cce6b5dbfd5f881374fd0012f8250c8daa60cb33b6112a5a0b26b87e",
-          "class_hash": "0xd34fc5d6be2830c35fa44b33d34d15f3cfea61221b67ffcd1b6f5ce5948b58",
+          "class_hash": "0xea5603297074537650e99a1ba14b0f52ecc2818d631e243e5c0eab7df90e74",
           "init_calldata": [],
           "tag": "s2-hyperstructure_discovery_systems",
           "selector": "0x1e7eb38cc340c53be39c039e55684b33e2a70ac89e8e4e46dc9cc9956be62b5",
@@ -4017,7 +4018,7 @@
         },
         {
           "address": "0x39f94d1972ae1b783e1fc2f05ab3926cc0d1c7479e56b792f0da73f40263ef",
-          "class_hash": "0x7a7a6b969d65b8e1958defbc3985736498135f332f814b34ced3f53e271d224",
+          "class_hash": "0x672b7f36a04fd57bf5f722a6e41ea78d28bbe26b0bc794985c181419c233efb",
           "init_calldata": [],
           "tag": "s2-hyperstructure_systems",
           "selector": "0x6712ea3e6f0bb1ab77a969cc5c99866e1697139eb93b61fd182bceeb7413c6a",
@@ -4026,13 +4027,12 @@
             "contribute",
             "allocate_shares",
             "update_construction_access",
-            "claim_share_points",
             "upgrade"
           ]
         },
         {
           "address": "0x68722061887bda3931d9bd5480cbb51793f0aa1fecb81015cbe5d43758f15a1",
-          "class_hash": "0xfb117f4fc73a4b43b56815783da47f2095a36eb3ce3bd804d9238eb8fb95c6",
+          "class_hash": "0x636fdb3d1a1a0fe45efe8cd3d593ca16244f350bdfe91e0325596581183b835",
           "init_calldata": [],
           "tag": "s2-liquidity_systems",
           "selector": "0x2561a5f7a8d40bf75a6abf17ff561ded28a54414703220dbd7274161e8695e4",
@@ -4065,7 +4065,7 @@
         },
         {
           "address": "0x1aaf02ca786539f4500176b518f138723cf71ea437add371ff648fc45601624",
-          "class_hash": "0x250b8bdc3b094a99198322f5895ef640f15e864c8e2b794418879168c8e56e1",
+          "class_hash": "0x1018f3006b96e6ffd84f8ed01f76bd8f8a366290abf8dc005f90928bc681229",
           "init_calldata": [],
           "tag": "s2-ownership_systems",
           "selector": "0x5b91b9dd3e18200a0d83b0052450799431a3c996a8db43ab750852f98fc9b4f",
@@ -4087,7 +4087,7 @@
         },
         {
           "address": "0x362d9977c3a795d8fbabd37843efa82e2df47a7f16225648faefaecd5021052",
-          "class_hash": "0x7f8cebd0e76ccd69d64b97aafa7bb5c64c38d1f25fa8cd13646602fb59edf01",
+          "class_hash": "0x4217a2f61fde127d72beba280416e58d3b8ee10e258db09a9f590d5244bacae",
           "init_calldata": [],
           "tag": "s2-prize_distribution_systems",
           "selector": "0x12aecde0aeb831c6bd68cd5136815edd4f4db05e9a55c4b734534601718437d",
@@ -4101,7 +4101,7 @@
         },
         {
           "address": "0x6cb7491ef804ad6664e2d3f02e2089ee2564b774f69f3cb55732473bee76c90",
-          "class_hash": "0x3c16458f6d4460e1cef64fee246c061e19eeb1ab899f8cbe4d184f9a4b45987",
+          "class_hash": "0x7cb2f4bdfbe2119ee5ad8887e8f08587a4d117467801d87d2b987b8baaaebe9",
           "init_calldata": [],
           "tag": "s2-production_systems",
           "selector": "0x4e7d3887a854bdfe780deea047c072c709e83e70d9c6611df26e69ce21af3aa",
@@ -4118,7 +4118,7 @@
         },
         {
           "address": "0x513f86a0238cf603785512b80d5e75c01ddb958f0f9b5109cc0456b828a58cb",
-          "class_hash": "0x3b1f6bbe9b10f270b28d932d6e8e3368bad75e9e5594186413e57d49c0b5387",
+          "class_hash": "0x70a7c6185e1305da772fe9db9c014729dd3c2653572bcf10f1b8d072d2e2547",
           "init_calldata": [],
           "tag": "s2-quest_systems",
           "selector": "0x540595f0c6797a5aeda35fd5237d8542c354d6dcf6b150c243d3b80709438cd",
@@ -4147,18 +4147,18 @@
         },
         {
           "address": "0x477eabbcf73904cb9734857241ad65d2f0f25e9f2d5dc8c70c9923f1aa82951",
-          "class_hash": "0x5fe9de9c2bd92dddbdbaca88c6a7920c87fe9044fe99e41575adf02bdfaf307",
+          "class_hash": "0x42c843d7ba980d39187f2dffe429f44e12a2ecaed49ac7ffe3fc00501d76e60",
           "init_calldata": [],
           "tag": "s2-realm_systems",
           "selector": "0x15840f61f67edf5690ea72dd3e54dfe561477810b5684035e0476bef3436923",
           "systems": [
-            "create",
+            "settle",
             "upgrade"
           ]
         },
         {
           "address": "0x765e9ea6caf96b51e28c22337869615e101db8f61665750830c2bf51eb6a553",
-          "class_hash": "0x1bdc6655b14a583738957fb6fcf666a7fef602500c2739e24e25dbf17209159",
+          "class_hash": "0x312c22e33a1c4e46bf20c2b5d49c65cf1224570cd6e50bb47ac4cdd60aa1a23",
           "init_calldata": [],
           "tag": "s2-registrar_systems",
           "selector": "0x4804d037c91147634be0c5239a0c366e59e0365a3dbb5da3c4c4c5e9cfd6014",
@@ -4169,6 +4169,9 @@
             "create_game",
             "sync_game_status",
             "reset_trial",
+            "backfill_completed_hyperstructures",
+            "checkpoint_share_points",
+            "rank_players",
             "mark_game_settled",
             "set_ledger_operator",
             "upgrade"
@@ -4186,7 +4189,7 @@
         },
         {
           "address": "0x6ad2cedfb88e875147fe203e05205a6dbd8faccf7faccd156b9382c9010835f",
-          "class_hash": "0x1277779288fdf524e6655b801de2c5d8b6a32624f798fe848e047b9a8481719",
+          "class_hash": "0x1403787d0a3b8e1f1bf8fd7b9240b1260747a2af515fb7b84efe71159cdd007",
           "init_calldata": [],
           "tag": "s2-relic_systems",
           "selector": "0x59ae849f6b5f2fb35aac5a3c8b8daee0c0083bef0717a05ab47d361b30bafc5",
@@ -4198,7 +4201,7 @@
         },
         {
           "address": "0x2012bb66d44dd66ac8b0889deada91817f7ccb83e92ed5849731e61359863d7",
-          "class_hash": "0x5eaadeddabd4893d8bafdfc7732cdae752c79850045778b599663ce94fcda0f",
+          "class_hash": "0x432a4e8b24dd9f1b0a3d6d30c4477aa53b813ba90537d56c1c21b7e10a4f27e",
           "init_calldata": [],
           "tag": "s2-resource_bridge_systems",
           "selector": "0x4157f73bc343f1c3729cb8d993e7a12c1d4bf8a4f335978df83e2d489638011",
@@ -4211,7 +4214,7 @@
         },
         {
           "address": "0xe56a5f2516ce0578d332cb3b038ac814a01e5368b8a36d4e740680ea346d84",
-          "class_hash": "0x9c155ad12f5807f332cf78fdd0077e9d7231858bf5ded82565b74eee92b7d9",
+          "class_hash": "0x274da8a7d9d09df00edfad87ce1744883344d9dccb9a0f9d75fc5e12a8c708b",
           "init_calldata": [],
           "tag": "s2-resource_systems",
           "selector": "0x7b684d925313a76f3f6b00e657b8d10247a72fce77dafb1b1e31cd7501fb52a",
@@ -4231,7 +4234,7 @@
         },
         {
           "address": "0xa65cf5a57d37b86116296f58dea3a7b65814115cdeed63326294a7eb8c2b17",
-          "class_hash": "0x5d39512031a13f7ba7e988f8877b6a325505987952dba07b46c0bd3bc5367dc",
+          "class_hash": "0x59500c789cc9855d5e8a3715a0c3f994f791d50a748fc1927cb1e853227fcee",
           "init_calldata": [],
           "tag": "s2-season_systems",
           "selector": "0x647b9e1ced068c5c41511cf3851a373962bfe18fe4a1a469657f9d2c362208f",
@@ -4242,7 +4245,7 @@
         },
         {
           "address": "0x98a121ecd7a0e56485c38798275af785f666d3b41bcf55d91f4fd4d10bb015",
-          "class_hash": "0x7b35da3e075cf437658a98b1a44c3bbac8b73b208b2b0e295d9ffc42a7364f0",
+          "class_hash": "0x271eb91be53138924f00278304dbab5cf6fe0c8b45fe7af319d547b7f2f8ba7",
           "init_calldata": [],
           "tag": "s2-spire_systems",
           "selector": "0xa00423907c74d1d633a22ec1c4fb0617044b5aa02badae7d69d21be273d874",
@@ -4253,7 +4256,7 @@
         },
         {
           "address": "0x3ce159003fa421cd7e1de59bbaa4ad205a342d814228f20100c47c3f395097f",
-          "class_hash": "0x1e8122ba4a397052b3ec5f01d4b3429e7075cfe2f16d80751e793e02a3ecd1b",
+          "class_hash": "0x477bfd4424d0c3c9dec1dd24268775e29cc73c5bf937b712dc41a20cf8ee675",
           "init_calldata": [],
           "tag": "s2-structure_systems",
           "selector": "0x2ad85fc53b7641bd7384db9df083b2933792ca78cecd410cae0b29190ab889c",
@@ -4264,7 +4267,7 @@
         },
         {
           "address": "0x707dc3ccf90e96612573c52a1e47e07d4813fa99dcab7a8ba79f80e9727cb7",
-          "class_hash": "0x6deddd1cf28b39b09e44e41d14c39c7651090afd839818697b42259608fc2c",
+          "class_hash": "0x1b28fb79cea2b24d8af45f3cb997e99553c1e97eb412992272166c39c76dda",
           "init_calldata": [],
           "tag": "s2-swap_systems",
           "selector": "0x7f8b75330f52d8ef715c833018ec8cc7f8ab49a72b18cc6646a317b79a68de2",
@@ -4276,7 +4279,7 @@
         },
         {
           "address": "0x8872006b149513f88df7daf82ce17143e854adf7d5a86b956f8606e92617a0",
-          "class_hash": "0x30610c817e468a1fe4bdad1c5dbfd2ccd60d0cc1ca0b729af0ed16d775d3cc",
+          "class_hash": "0x1c496156b731ff7db8d54829910efb929dbc2aa43371ce8f54042fcf82538d6",
           "init_calldata": [],
           "tag": "s2-trade_systems",
           "selector": "0x2e9d493f482cbae3686cc97204e9c9810b82ed6bf1c5c6a56c8e7f9eb373ee0",
@@ -4289,7 +4292,7 @@
         },
         {
           "address": "0x3e88dd57cafee0eef0264b59865a13eaf986470979892e43041dbcb8adc820",
-          "class_hash": "0x7088f626a2e86f0feb74a85497838c40b0f5a0e4031560698fd82d6cf920122",
+          "class_hash": "0x77b5852dd8a044c6bda8af2f1767b77549da2dbe56f3144009da291c80c01d",
           "init_calldata": [],
           "tag": "s2-troop_battle_systems",
           "selector": "0x25b78a11c862d0bda3ff8aaec76e9f1dca6de6c6fe97aed5434a606695dbff",
@@ -4302,7 +4305,7 @@
         },
         {
           "address": "0x4db549d37af331d9e872a79bebf5bf3d2c088a6e262182250a3cb5195a39451",
-          "class_hash": "0x55bf858287886a2755c243b5f23617e8b2636825a0386e04e1e5cd1f86a8840",
+          "class_hash": "0x5d222a362c0ce3f4375ca5d0b6abbd6ee184ed1b2e2fff591d85d0df0b80e70",
           "init_calldata": [],
           "tag": "s2-troop_management_systems",
           "selector": "0x6a6e0b89963cd143f8ac59715bb8703b82846a949938ed025fca425ad293739",
@@ -4320,7 +4323,7 @@
         },
         {
           "address": "0xc1068e7f9d112f3e70f7869a243ab81c0bc37247799bf8c0b70fa418e38e29",
-          "class_hash": "0xea49baef1bf8cb9c4e9ee8bfefa59d12f727d85e120173c53d6daf7efc8d58",
+          "class_hash": "0x1b2485ac6e1df024959a5be9f49be0b605f7e4967e64da632d33aac4ade0a67",
           "init_calldata": [],
           "tag": "s2-troop_movement_systems",
           "selector": "0x3660164eb20db73a2286ce100d274c9631ca84fae00bd5c45d0b763017b56b2",
@@ -4342,7 +4345,7 @@
         },
         {
           "address": "0x1c74a99f09cf98904d2f7fda73cf84778138c5833e2d25f873261702ae8297a",
-          "class_hash": "0x789a9cb0df957dd5a2eb2647434506e6c5359e39d176dfe61059b7f381a6885",
+          "class_hash": "0x7617aaa472b46513736e1f9721b028f5a7c5800a395108a3cb3f460f9581005",
           "init_calldata": [],
           "tag": "s2-troop_raid_systems",
           "selector": "0x6a85660241b94f0f911a3e401027baecca8e3c962797e77362aa07761a19de6",
@@ -4353,7 +4356,7 @@
         },
         {
           "address": "0x20a8aa583cde37a57cc2c256bdaa46c37675b657e5bb9f1eace20b7e13d6e42",
-          "class_hash": "0x4cfa676db669ce45a5c3253d414c3e0c01415f6aa07077c55801513c67ed72b",
+          "class_hash": "0x2ea1a81dc74139d71aa85a41aaa403a921e934d8ae35230ce09be74c66fab84",
           "init_calldata": [],
           "tag": "s2-village_systems",
           "selector": "0x7edd79ed540ae459d77f2b23976b0539de02ccbc8b43d723de2564369d38f8c",
@@ -4394,11 +4397,11 @@
           "version": "0_1_16"
         },
         {
-          "class_hash": "0xefabcbe30d3920e19406c726d9c502e489284df70f9cc1bca1696452db2db4",
-          "tag": "s2-structure_creation_library_v0_1_18",
+          "class_hash": "0x3b221a5e6ddddae9b9f8fe6ae75e19c0de29eb59f4b6bb2f71afb3af6730173",
+          "tag": "s2-structure_creation_library_v0_1_19",
           "selector": "0x16f1565db366652914b03f1d4a3f923e8a68907f7de2b08d94515bbdec88b00",
           "systems": [],
-          "version": "0_1_18"
+          "version": "0_1_19"
         }
       ],
       "models": [
@@ -4523,33 +4526,6 @@
           "class_hash": "0x5d7e473b029efa453c0258becd510ae81e3e1679ad78d118675fa6fadb8f1fc",
           "tag": "s2-AgentOwner",
           "selector": "0x13298d7dfea1ab8cf6652cdb9e2098152fe67e6e225442bc665f27af2cbcfe6"
-        },
-        {
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32",
-              "key": true
-            },
-            {
-              "name": "caller",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "key": true
-            },
-            {
-              "name": "tx_hash",
-              "type": "core::felt252",
-              "key": true
-            },
-            {
-              "name": "used",
-              "type": "core::bool",
-              "key": false
-            }
-          ],
-          "class_hash": "0x2ab00e44cbd29bf84b4d6d063558d980f43a534cf8ea24c9feb3dbfe1a6d0ea",
-          "tag": "s2-AntiBot",
-          "selector": "0x557eb4c618d818addc4f912669ed859c46facb97e08fb1d6e9c0cab3253f756"
         },
         {
           "members": [
@@ -4887,6 +4863,28 @@
               "key": true
             },
             {
+              "name": "index",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "hyperstructure_id",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x75a77b86688aef0c8581d61cbe44ef1bdce41840d249869703f8be3dbe69703",
+          "tag": "s2-CompletedHyperstructure",
+          "selector": "0x5250d374cb0b7593aa79fc57e664d70b0f2ebe30bd05b84cbb9bced86a50914"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
               "name": "entity_id",
               "type": "core::integer::u32",
               "key": true
@@ -4932,6 +4930,45 @@
           "class_hash": "0x53e28f819f1bc1b8fcf5b3d8aa571de472be7881310c61cb57f997a0cf3e77c",
           "tag": "s2-ExplorerTroops",
           "selector": "0xbe0b28837eb913e8ed5809a4c914d3ab6ca5f409a3b048ee4334b0bdd2ca38"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "funded_amount",
+              "type": "core::integer::u128",
+              "key": false
+            },
+            {
+              "name": "distributed",
+              "type": "core::bool",
+              "key": false
+            }
+          ],
+          "class_hash": "0x598ad6d55d784770f20396773ee75cfa48826e69cf45bf63cea479bbf0df207",
+          "tag": "s2-FaithPrizePool",
+          "selector": "0x43f6cbbc67b62a661663958972322e983f5ee448f0945b35e55b8b02bb7ddf4"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "wonder_ids",
+              "type": "core::array::Array::<core::integer::u32>",
+              "key": false
+            }
+          ],
+          "class_hash": "0x470929fda35a225f8669511413424c5e8c0c559e7ff1fbedbaf84300541aa49",
+          "tag": "s2-FaithWonders",
+          "selector": "0x24155d99584e40026a141d6fae08ebba4a084234784e7fe6f24314c78d5715d"
         },
         {
           "members": [
@@ -5289,6 +5326,28 @@
           "class_hash": "0x2a4d6147989b2052e4560f49d46a7c93f7417560adfae092851d523aa275d7e",
           "tag": "s2-HyperstructureGlobals",
           "selector": "0x36ebd328a34e1f92e88cd430f8331f1dcbeffb8b53a85756b7d899dbd3bf77b"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "hyperstructure_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "index_plus_one",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x7145593b980f125ac87203684f79a10725f6bb151646efa525953f97b57ea41",
+          "tag": "s2-HyperstructureIndex",
+          "selector": "0x1b88328b3bc4a4743f5d66cdbc0e44d6e1e2fca8c8bb5e000c62733e7349a89"
         },
         {
           "members": [
@@ -5699,6 +5758,33 @@
           "class_hash": "0x79f2c0596763494181ab60d2391b5fd203cce65847f6f35cc1f6de7b20c166f",
           "tag": "s2-PlayerRegisteredPoints",
           "selector": "0x1ae53ffaeedb26b02aa79fa8bdc3f82c57039f564e7d0ac62591dd3a90807db"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": true
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x42a7efe3a6931069d6672ec8d7bf316ac2667c177dbaa1377ae2ce1496dd80a",
+          "tag": "s2-PlayerSettlement",
+          "selector": "0xcd09b69ab5b4e26c09bded67df7d5bad8232db20a9760b215c67612a5fbe67"
         },
         {
           "members": [
@@ -6336,6 +6422,77 @@
           "class_hash": "0x532f3162932b62a579fb306905701e6b1b7c95fac27c53c2a9219848be0efb1",
           "tag": "s2-RankPrize",
           "selector": "0x4ccd81de11cfa27a544ef2fdb0c91ce9801817c4b658d9decd9e12fdfd08841"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress",
+              "key": false
+            },
+            {
+              "name": "index_plus_one",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x1123e3b1a737a513751544d76af08dcff9f20faf0ae2395f91d3b77e09d704f",
+          "tag": "s2-RealmAllocation",
+          "selector": "0x79a4addfe0a7a10ffb8eae0b990642bc14de0631d165e38449867f8423447e0"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "initialized",
+              "type": "core::bool",
+              "key": false
+            },
+            {
+              "name": "remaining",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x21593d354fcf382efa95bb9dce6631d51e16b641a950ffff1da9fdc2f96fd8",
+          "tag": "s2-RealmAllocationPool",
+          "selector": "0x7ab01ba321c2b69f20dcbb8d93b0fc5ee118f434aefa66c769a7b1cf66dcbea"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32",
+              "key": false
+            }
+          ],
+          "class_hash": "0x683e1388b577b26d2e1a3c9047e3d5785b00fb2f698d6f89dcbfc813037a018",
+          "tag": "s2-RealmAllocationSlot",
+          "selector": "0x37f0c8d75886430415e511477ced907b08ebc2731741ea48a523c4aad9d3fb7"
         },
         {
           "members": [
@@ -7428,6 +7585,28 @@
           "class_hash": "0x2f663468bf0268e584f0dafb3ca4e92c1acbba22131712f4e1f2c8bef3c94d9",
           "tag": "s2-SeriesChestRewardState",
           "selector": "0x12e16001281c64150163f32e16556d9b45004ff08ad0c393a5f3bf8245cdf63"
+        },
+        {
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32",
+              "key": true
+            },
+            {
+              "name": "completed_count",
+              "type": "core::integer::u32",
+              "key": false
+            },
+            {
+              "name": "end_at",
+              "type": "core::integer::u64",
+              "key": false
+            }
+          ],
+          "class_hash": "0x6bb1f14e4a9f8527143a24bc3cb00ba0e225eb0dac69f6cff43c3da67d4ac7a",
+          "tag": "s2-SharePointsCheckpoint",
+          "selector": "0xf73657d1f49d6eda14bb017bf4d6db1aef44b0d61810efab1e28832668cb27"
         },
         {
           "members": [
@@ -14355,6 +14534,62 @@
         },
         {
           "type": "struct",
+          "name": "eternum::models::faith::FaithPrizePool",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "funded_amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "distributed",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::FaithPrizePoolValue",
+          "members": [
+            {
+              "name": "funded_amount",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "distributed",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::FaithWonders",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "wonder_ids",
+              "type": "core::array::Array::<core::integer::u32>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::faith::FaithWondersValue",
+          "members": [
+            {
+              "name": "wonder_ids",
+              "type": "core::array::Array::<core::integer::u32>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
           "name": "eternum::models::faith::FaithfulStructure",
           "members": [
             {
@@ -14660,6 +14895,18 @@
               "type": "core::array::Array::<core::integer::u32>"
             }
           ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_FaithPrizePool::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::faith::m_FaithWonders::Event",
+          "kind": "enum",
+          "variants": []
         },
         {
           "type": "event",
@@ -15108,6 +15355,34 @@
           "variants": []
         },
         {
+          "type": "struct",
+          "name": "eternum::models::hyperstructure::CompletedHyperstructure",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "hyperstructure_id",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::hyperstructure::CompletedHyperstructureValue",
+          "members": [
+            {
+              "name": "hyperstructure_id",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
           "type": "enum",
           "name": "eternum::models::hyperstructure::ConstructionAccess",
           "variants": [
@@ -15187,6 +15462,34 @@
             },
             {
               "name": "completed_count",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::hyperstructure::HyperstructureIndex",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "hyperstructure_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "index_plus_one",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::hyperstructure::HyperstructureIndexValue",
+          "members": [
+            {
+              "name": "index_plus_one",
               "type": "core::integer::u32"
             }
           ]
@@ -15534,6 +15837,44 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "eternum::models::hyperstructure::SharePointsCheckpoint",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "completed_count",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "end_at",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::hyperstructure::SharePointsCheckpointValue",
+          "members": [
+            {
+              "name": "completed_count",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "end_at",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::hyperstructure::m_CompletedHyperstructure::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
           "type": "event",
           "name": "eternum::models::hyperstructure::m_Hyperstructure::Event",
           "kind": "enum",
@@ -15542,6 +15883,12 @@
         {
           "type": "event",
           "name": "eternum::models::hyperstructure::m_HyperstructureGlobals::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::hyperstructure::m_HyperstructureIndex::Event",
           "kind": "enum",
           "variants": []
         },
@@ -15566,6 +15913,12 @@
         {
           "type": "event",
           "name": "eternum::models::hyperstructure::m_PlayerRegisteredPoints::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::hyperstructure::m_SharePointsCheckpoint::Event",
           "kind": "enum",
           "variants": []
         },
@@ -15622,8 +15975,50 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "eternum::models::ledger::PlayerSettlement",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "owner",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::ledger::PlayerSettlementValue",
+          "members": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "structure_id",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::models::ledger::m_LedgerRegistration::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::ledger::m_PlayerSettlement::Event",
           "kind": "enum",
           "variants": []
         },
@@ -16612,6 +17007,120 @@
         {
           "type": "event",
           "name": "eternum::models::rank::m_RankPrize::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::realm_allocation::RealmAllocation",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "index_plus_one",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::realm_allocation::RealmAllocationPool",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "initialized",
+              "type": "core::bool"
+            },
+            {
+              "name": "remaining",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::realm_allocation::RealmAllocationPoolValue",
+          "members": [
+            {
+              "name": "initialized",
+              "type": "core::bool"
+            },
+            {
+              "name": "remaining",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::realm_allocation::RealmAllocationSlot",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "index",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::realm_allocation::RealmAllocationSlotValue",
+          "members": [
+            {
+              "name": "realm_id",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::realm_allocation::RealmAllocationValue",
+          "members": [
+            {
+              "name": "player",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "index_plus_one",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::realm_allocation::m_RealmAllocation::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::realm_allocation::m_RealmAllocationPool::Event",
+          "kind": "enum",
+          "variants": []
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::realm_allocation::m_RealmAllocationSlot::Event",
           "kind": "enum",
           "variants": []
         },
@@ -22042,6 +22551,22 @@
           "items": [
             {
               "type": "function",
+              "name": "fund_prizes",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
               "name": "distribute_wonder_prizes",
               "inputs": [
                 {
@@ -22277,22 +22802,6 @@
                 {
                   "name": "access",
                   "type": "eternum::models::hyperstructure::ConstructionAccess"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "claim_share_points",
-              "inputs": [
-                {
-                  "name": "game_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "hyperstructure_ids",
-                  "type": "core::array::Span::<core::integer::u32>"
                 }
               ],
               "outputs": [],
@@ -23253,23 +23762,15 @@
           "items": [
             {
               "type": "function",
-              "name": "create",
+              "name": "settle",
               "inputs": [
                 {
                   "name": "game_id",
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "owner",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
-                  "name": "realm_id",
-                  "type": "core::integer::u32"
-                },
-                {
-                  "name": "settlement",
-                  "type": "eternum::systems::realm::season::contracts::RealmSettlement"
+                  "name": "name",
+                  "type": "core::felt252"
                 }
               ],
               "outputs": [
@@ -23278,56 +23779,6 @@
                 }
               ],
               "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::realm::season::contracts::RealmSettlement",
-          "members": [
-            {
-              "name": "side",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "layer",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "point",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::realm::season::contracts::realm_systems::AntiBot",
-          "members": [
-            {
-              "name": "game_id",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "caller",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "tx_hash",
-              "type": "core::felt252"
-            },
-            {
-              "name": "used",
-              "type": "core::bool"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::systems::realm::season::contracts::realm_systems::AntiBotValue",
-          "members": [
-            {
-              "name": "used",
-              "type": "core::bool"
             }
           ]
         },
@@ -23347,12 +23798,6 @@
               "kind": "nested"
             }
           ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::realm::season::contracts::realm_systems::m_AntiBot::Event",
-          "kind": "enum",
-          "variants": []
         },
         {
           "type": "interface",
@@ -23475,10 +23920,6 @@
             },
             {
               "name": "end_grace_seconds",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "registration_grace_seconds",
               "type": "core::integer::u32"
             },
             {
@@ -23618,6 +24059,70 @@
                 {
                   "name": "game_id",
                   "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "backfill_completed_hyperstructures",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "start_index",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "ids",
+                  "type": "core::array::Span::<core::integer::u32>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "checkpoint_share_points",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "start_index",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "count",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "rank_players",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "trial_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "total_player_count_committed",
+                  "type": "core::integer::u16"
+                },
+                {
+                  "name": "players_list",
+                  "type": "core::array::Array::<core::starknet::contract_address::ContractAddress>"
                 }
               ],
               "outputs": [],

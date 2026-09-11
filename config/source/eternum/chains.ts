@@ -3,6 +3,7 @@ import type { GameChain } from "@realms-world/chain";
 import type { ConfigPatch } from "../common/merge-config";
 import { type EnvironmentContext, resolveConfiguredAddress } from "../common/environment";
 import { mergeConfigPatches } from "../common/merge-config";
+import { VICTORY_POINTS_MULTIPLIER } from "./points";
 
 const APPCHAIN_ETERNUM_CHAIN_CONFIG: ConfigPatch = {
   troop: {
@@ -75,6 +76,8 @@ export function resolveEternumChainConfig(chain: GameChain, context: Environment
     return mergeConfigPatches(
       {
         season: { startSettlingAfterSeconds: 20, startMainAfterSeconds: 60, durationSeconds: 60 * 60 * 24 * 30 },
+        // The sandbox season closes on victory points; the base sheet leaves the target unset.
+        victoryPoints: { pointsForWin: 10_000_000n * BigInt(VICTORY_POINTS_MULTIPLIER) },
         dev: { mode: { on: false } },
       },
       resolveEternumContractAddressConfig(context),

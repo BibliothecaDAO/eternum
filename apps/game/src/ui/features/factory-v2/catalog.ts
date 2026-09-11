@@ -41,7 +41,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     name: "Standard world",
     description: "The usual Eternum launch.",
     defaults: {
-      version: "10",
+      version: "11",
       startRule: "next_hour",
       devMode: false,
       twoPlayerMode: false,
