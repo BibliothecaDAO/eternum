@@ -52,11 +52,7 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
       </button>
       <FeedNotices pinned={pinned} />
       {visible.map((row) => (
-        <FeedRowLine
-          key={row.id}
-          row={row}
-          style={{ opacity: Math.min(1, (QUICK_FEED_WINDOW_MS - (nowMs - row.at)) / QUICK_FEED_FADE_MS) }}
-        />
+        <QuickFeedRow key={row.id} row={row} />
       ))}
       {logOpen && (
         <EventLogPanel
@@ -65,6 +61,18 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
         />
       )}
     </div>
+  );
+};
+
+/** A row fades out over its last seconds on the compositor: the delay is fixed at mount, so the once-a-second
+ *  clock that removes it never restarts or steps the fade. */
+const QuickFeedRow = ({ row }: { row: ImportantFeedRow }) => {
+  const [delayMs] = useState(() => Math.max(0, row.at + QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS - Date.now()));
+  return (
+    <FeedRowLine
+      row={row}
+      style={{ animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${delayMs}ms forwards` }}
+    />
   );
 };
 
@@ -100,7 +108,7 @@ export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
   <>
     <OfflineRow />
     {pinned.map((headline) => (
-      <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "border-gold/60")}>
+      <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "border border-gold/60")}>
         <HeadlineIcon type={headline.type} />
         <span className="min-w-0 flex-1 truncate">{headline.description}</span>
       </div>
@@ -129,7 +137,7 @@ function OfflineRow() {
   );
   if (status !== "disconnected") return null;
   return (
-    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border-danger/60 text-danger")}>
+    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border border-danger/60 text-danger")}>
       <WifiOff className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">Offline</span>
       <button
