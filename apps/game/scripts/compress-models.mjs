@@ -20,10 +20,11 @@ const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const modelsRoot = resolve(appRoot, "public/models");
 const gltfTransform = resolve(appRoot, "node_modules/.bin/gltf-transform");
 const heroModels = new Set([
-  "new-buildings-opt/castle0.glb",
+  "settlements/settlement.glb",
+  "settlements/city.glb",
+  "settlements/kingdom.glb",
+  "settlements/empire.glb",
   "new-buildings-opt/castle1.glb",
-  "new-buildings-opt/castle2.glb",
-  "new-buildings-opt/castle3.glb",
   "new-buildings-opt/hyperstructure.glb",
   "new-buildings-opt/hyperstructure_finish.glb",
   "new-buildings-opt/hyperstructure_half.glb",

@@ -69,6 +69,7 @@ vi.mock("@bibliothecadao/types", () => {
   );
   return new Proxy(
     {
+      orders: [],
       BuildingType: enumProxy,
       StructureType: enumProxy,
     } as Record<string, unknown>,

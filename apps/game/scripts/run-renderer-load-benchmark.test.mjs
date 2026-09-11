@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildRendererLoadBenchmarkUrl,
+  collectRendererLoadErrors,
   compareRendererLoadBenchmarkSummary,
   deriveRendererLoadRunMetrics,
   evaluateRendererLoadBenchmarkSummary,
+  hasEntryFinished,
   summarizeRendererLoadBenchmarkResults,
 } from "./run-renderer-load-benchmark.mjs";
 
@@ -51,10 +53,12 @@ describe("deriveRendererLoadRunMetrics", () => {
         { elapsedMs: 1000, name: "renderer-init-started" },
         { elapsedMs: 3500, name: "renderer-init-completed" },
         { elapsedMs: 7200, name: "entry-ready" },
+        { elapsedMs: 9600, name: "world-interactive" },
       ],
     });
 
     assert.deepEqual(metrics, {
+      worldInteractiveMs: 9600,
       entryReadyMs: 7200,
       backendTotalMs: 1450,
       rendererBackendAwaitMs: 1600,
@@ -63,6 +67,19 @@ describe("deriveRendererLoadRunMetrics", () => {
       webgpuModuleImportMs: 320,
       webgpuRendererInitMs: 840,
     });
+  });
+});
+
+describe("hasEntryFinished", () => {
+  it("waits through canvas creation, bootstrap readiness and backend fallback", () => {
+    expect(
+      hasEntryFinished({
+        canvasExists: true,
+        milestones: [{ name: "entry-ready", elapsedMs: 2500 }],
+        diagnostics: { fallbackReason: "WebGPU unavailable" },
+      }),
+    ).toBe(false);
+    expect(hasEntryFinished({ milestones: [{ name: "world-interactive", elapsedMs: 9500 }] })).toBe(true);
   });
 });
 
@@ -96,6 +113,19 @@ describe("summarizeRendererLoadBenchmarkResults", () => {
 });
 
 describe("evaluateRendererLoadBenchmarkSummary", () => {
+  it("rejects a bootstrapped game that never becomes interactive", () => {
+    const result = {
+      diagnostics: { activeMode: "webgl2-fallback" },
+      metrics: { entryReadyMs: 2500, worldInteractiveMs: null },
+      rendererMode: "webgpu-force-webgl",
+    };
+    expect(evaluateRendererLoadBenchmarkSummary({ results: [result] }).failures).toContain(
+      "webgpu-force-webgl: world-interactive exceeded 30000ms",
+    );
+    result.metrics.worldInteractiveMs = 9500;
+    expect(evaluateRendererLoadBenchmarkSummary({ results: [result] }).ok).toBe(true);
+  });
+
   it("fails when experimental startup remains stuck after renderer-init-started", () => {
     const evaluation = evaluateRendererLoadBenchmarkSummary({
       results: [
@@ -164,4 +194,14 @@ describe("compareRendererLoadBenchmarkSummary", () => {
     assert.equal(comparison.ok, false);
     assert.match(comparison.failures.join("\n"), /entryReadyMs p95 regressed/);
   });
+});
+
+it("fails entry on logged manager timeouts even when no exception escaped", () => {
+  expect(
+    collectRendererLoadErrors("", "[warn] [WorldmapScene] Manager updates timed out: army, structure\n[log] ready"),
+  ).toEqual(["[warn] [WorldmapScene] Manager updates timed out: army, structure"]);
+  expect(collectRendererLoadErrors("uncaught failure", "[error] shader failed")).toEqual([
+    "uncaught failure",
+    "[error] shader failed",
+  ]);
 });

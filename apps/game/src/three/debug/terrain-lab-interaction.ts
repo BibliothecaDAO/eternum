@@ -1,13 +1,14 @@
-import { VillageModel } from "../structures/village-model";
+import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import {
-  TERRAIN_LAB_BUILDINGS,
-  VILLAGE_DRAFT_PATH,
-  REALM_DRAFT_PATH,
-  type TerrainLabBuilding,
-} from "./terrain-lab-buildings";
-import { SettlementAnimation } from "@/three/structures/settlement-animation";
+  ChestModelPath,
+  RiftModelPath,
+  VILLAGE_MODEL_PATH,
+  isSettlementModelPath,
+} from "@/three/constants/scene-constants";
+import { SettlementModel } from "../structures/settlement-model";
+import { TERRAIN_LAB_BUILDINGS, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
-import { SettlementAppearance } from "@/three/structures/settlement-appearance";
 import { Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 } from "three";
 
 import { buildArmyModelAssetPath } from "@/three/constants/army-constants";
@@ -35,13 +36,12 @@ export class TerrainLabInteraction {
   private readonly hit = new Vector3();
   private readonly matrix = new Matrix4();
   private readonly armyPosition = new Vector3();
-  private readonly models = new Map<string, InstancedModel>();
+  private readonly models = new Map<string, InstancedModel | RewardTileModel>();
+  private readonly pendingModels = new Map<string, Promise<InstancedModel | RewardTileModel | null>>();
   private readonly buildings = new Map<string, TerrainLabBuilding>();
   private selected: { col: number; row: number };
   private preview = DEFAULT_TERRAIN_LAB_PREVIEW;
   private army: InstancedModel | null = null;
-  private readonly settlementAppearances = new Map<string, SettlementAppearance>();
-  private readonly settlementAnimations = new Map<string, SettlementAnimation>();
   private armyType: TerrainLabPreview["army"] = "none";
   private revision = 0;
   private disposed = false;
@@ -64,6 +64,7 @@ export class TerrainLabInteraction {
     private readonly request: TerrainPageRequest,
     private readonly onError: (error: unknown) => void,
     private readonly onPresented: (prepared: PreparedTerrainPage, commitMs: number) => void,
+    private readonly compilePipelines: PipelineCompiler,
     private readonly localMode = false,
   ) {
     this.hover = new HoverHexManager(scene, terrain);
@@ -76,7 +77,6 @@ export class TerrainLabInteraction {
     if (this.localMode && preview.biome === "ethereal") {
       throw new Error("The Ethereal layer preview belongs to the world biome lab");
     }
-    const orderChanged = preview.realmOrderId !== this.preview.realmOrderId;
     const wasExploring = this.exploring;
     if (wasExploring) this.cancelExplorationPreview();
     const rebuild =
@@ -87,11 +87,8 @@ export class TerrainLabInteraction {
     this.selectionDirty = true;
     this.preview = preview;
     this.spinAngle = preview.yaw;
-    this.updateVillageRelationship();
-    await Promise.all([
-      orderChanged ? this.settlementAppearances.get(REALM_DRAFT_PATH)?.setOrder(preview.realmOrderId) : undefined,
-      rebuild ? this.presentFixture() : undefined,
-    ]);
+    this.updateSettlementHeraldry();
+    if (rebuild) await this.presentFixture();
     this.update(0);
   }
 
@@ -99,13 +96,8 @@ export class TerrainLabInteraction {
     if (this.disposed) return;
     this.advanceExplorationPreview();
     if (wind) {
-      const village = this.models.get(VILLAGE_DRAFT_PATH);
-      if (village instanceof VillageModel && village.group.visible) {
-        village.setWind(wind);
-        village.updateAnimations(delta);
-      }
-      for (const [path, animation] of this.settlementAnimations) {
-        if (this.models.get(path)?.group.visible) animation.update(delta, wind);
+      for (const model of this.models.values()) {
+        if (model instanceof SettlementModel && model.group.visible) model.setWind(wind);
       }
     }
     if (this.preview.spin) this.spinAngle += delta * 0.65;
@@ -119,7 +111,10 @@ export class TerrainLabInteraction {
     }
     this.hover.update(delta);
     for (const [key, model] of this.models) {
-      if (key.startsWith("/") && model.group.visible) model.updateAnimations(delta);
+      if (key.startsWith("/") && model.group.visible) {
+        if (model instanceof RewardTileModel) model.updatePresentation(0, this.camera.position);
+        model.updateAnimations(delta);
+      }
     }
     if (!this.army) return;
     if (moved || this.preview.spin) {
@@ -195,10 +190,6 @@ export class TerrainLabInteraction {
     this.canvas.removeEventListener("pointerdown", this.beginPick);
     this.canvas.removeEventListener("pointerup", this.finishPick);
     this.hover.dispose();
-    for (const animation of this.settlementAnimations.values()) animation.dispose();
-    for (const appearance of this.settlementAppearances.values()) appearance.dispose();
-    this.settlementAnimations.clear();
-    this.settlementAppearances.clear();
     for (const model of this.models.values()) {
       this.scene.remove(model.group);
       model.dispose();
@@ -257,7 +248,7 @@ export class TerrainLabInteraction {
     this.onPresented(prepared, performance.now() - commitStarted);
     this.selectionDirty = true;
     if (this.army) this.army.group.visible = false;
-    this.army = model;
+    this.army = model instanceof InstancedModel ? model : null;
     this.armyType = preview.army;
     if (model) model.group.visible = true;
     this.updateBuildings(buildings);
@@ -273,7 +264,7 @@ export class TerrainLabInteraction {
       this.matrix.setPosition(center.x, this.terrain.sampleSurface(center.x, center.z).height + 0.025, center.z);
       const index = counts.get(building.path) ?? 0;
       model.setMatrixAt(index, this.matrix);
-      if (model instanceof VillageModel) model.setRelationshipAt(index, this.preview.relationship);
+      if (model instanceof SettlementModel) this.applySettlementHeraldry(model, index);
       counts.set(building.path, index + 1);
     }
     for (const [path, model] of this.models) {
@@ -284,36 +275,80 @@ export class TerrainLabInteraction {
     }
   }
 
-  private async loadModel(key: string, path: string, capacity: number, name: string): Promise<InstancedModel | null> {
+  private async loadModel(
+    key: string,
+    path: string,
+    capacity: number,
+    name: string,
+  ): Promise<InstancedModel | RewardTileModel | null> {
     const existing = this.models.get(key);
     if (existing) return existing;
-    const gltf = await gltfLoader.loadAsync(path);
-    const model =
-      path === VILLAGE_DRAFT_PATH ? new VillageModel(gltf, capacity) : new InstancedModel(gltf, capacity, false, name);
-    if (this.disposed || this.models.has(key)) {
-      model.dispose();
-      return this.models.get(key) ?? null;
+    const pending = this.pendingModels.get(key);
+    if (pending) return pending;
+    const preparation = this.prepareModel(key, path, capacity, name);
+    this.pendingModels.set(key, preparation);
+    try {
+      return await preparation;
+    } finally {
+      this.pendingModels.delete(key);
     }
-    model.setCount(1);
-    model.group.visible = false;
-    this.models.set(key, model);
-    this.scene.add(model.group);
-    if (path === REALM_DRAFT_PATH) {
-      const appearance = new SettlementAppearance(gltf.scene, model.instancedMeshes);
-      this.settlementAppearances.set(path, appearance);
-      this.settlementAnimations.set(path, new SettlementAnimation(gltf.scene, model.instancedMeshes));
-      await appearance.setOrder(this.preview.realmOrderId);
-    }
-    this.updateVillageRelationship();
-    return model;
   }
 
-  private updateVillageRelationship(): void {
-    const village = this.models.get(VILLAGE_DRAFT_PATH);
-    if (!(village instanceof VillageModel)) return;
-    for (let index = 0; index < village.getCount(); index++) {
-      village.setRelationshipAt(index, this.preview.relationship);
+  private async prepareModel(
+    key: string,
+    path: string,
+    capacity: number,
+    name: string,
+  ): Promise<InstancedModel | RewardTileModel | null> {
+    const gltf = await gltfLoader.loadAsync(path);
+    if (this.disposed) return null;
+    const model = this.createPreviewModel(gltf, path, capacity, name);
+    let retained = false;
+    try {
+      model.setCount(1);
+      if (model instanceof SettlementModel) {
+        this.applySettlementHeraldry(model, 0);
+        await model.prepare();
+      }
+      // Keep the group detached while compiling with the destination scene's lighting.
+      await this.compilePipelines(model.group, this.scene);
+      if (this.disposed) return null;
+      model.group.visible = false;
+      this.models.set(key, model);
+      this.scene.add(model.group);
+      retained = true;
+      return model;
+    } finally {
+      if (!retained) {
+        model.dispose();
+      }
     }
+  }
+
+  private createPreviewModel(
+    gltf: Awaited<ReturnType<typeof gltfLoader.loadAsync>>,
+    path: string,
+    capacity: number,
+    name: string,
+  ): InstancedModel | RewardTileModel {
+    if (isSettlementModelPath(path))
+      return new SettlementModel(gltf, capacity, path === VILLAGE_MODEL_PATH ? "village" : "realm");
+    if (path === ChestModelPath || path === RiftModelPath) return new RewardTileModel(gltf, capacity);
+    return new InstancedModel(gltf, capacity, false, name);
+  }
+
+  private updateSettlementHeraldry(): void {
+    for (const village of this.models.values()) {
+      if (!(village instanceof SettlementModel)) continue;
+      for (let index = 0; index < village.getCount(); index++) {
+        this.applySettlementHeraldry(village, index);
+      }
+    }
+  }
+
+  private applySettlementHeraldry(model: SettlementModel, index: number): void {
+    if (model.kind === "village") model.setRelationshipAt(index, this.preview.relationship);
+    else model.setOrderAt(index, this.preview.realmOrderId);
   }
 
   private beginPick = (event: PointerEvent): void => {

@@ -3,9 +3,10 @@ import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { VillageModel } from "../structures/village-model";
+import { resolveSettlementRotationY } from "../structures/settlement-orientation";
+import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
-import { RiftModelPath, VILLAGE_MODEL_PATH } from "../constants/scene-constants";
+import { RiftModelPath, VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
@@ -570,6 +571,7 @@ export class StructureManager {
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
       hasWonder: renderInfo.hasWonder,
+      realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
@@ -901,34 +903,29 @@ export class StructureManager {
     return pending;
   }
 
-  private loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
+  private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
     const startedAt = performance.now();
-    return new Promise((resolve, reject) => {
-      gltfLoader.load(
-        modelPath,
-        (gltf) => {
-          recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
-          recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
-          try {
-            resolve(this.createStructureModel(gltf, structureType, modelPath));
-          } catch (error) {
-            reject(error);
-          }
-        },
-        undefined,
-        (error) => {
-          recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
-          console.error(modelPath);
-          console.error(`An error occurred while loading the ${StructureType[structureType]} model:`, error);
-          reject(error);
-        },
-      );
-    });
+    const gltf = await gltfLoader.loadAsync(modelPath);
+    recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
+    recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
+    const model = this.createStructureModel(gltf, structureType, modelPath);
+    try {
+      if (model instanceof SettlementModel) await model.prepare();
+      return model;
+    } catch (error) {
+      model.dispose();
+      throw error;
+    }
   }
 
   private createStructureModel(gltf: GLTF, structureType: StructureType, modelPath: string): StructureModel {
     if (modelPath === RiftModelPath) return new RewardTileModel(gltf, STRUCTURE_INSTANCE_CAPACITY);
-    if (modelPath === VILLAGE_MODEL_PATH) return new VillageModel(gltf, STRUCTURE_INSTANCE_CAPACITY);
+    if (isSettlementModelPath(modelPath))
+      return new SettlementModel(
+        gltf,
+        STRUCTURE_INSTANCE_CAPACITY,
+        modelPath === VILLAGE_MODEL_PATH ? "village" : "realm",
+      );
     return new InstancedModel(
       gltf,
       STRUCTURE_INSTANCE_CAPACITY,
@@ -1386,7 +1383,7 @@ export class StructureManager {
 
     const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
     const rotationIndex = Math.floor(rotationSeed * 6);
-    return (rotationIndex * Math.PI) / 3;
+    return resolveSettlementRotationY(structure.structureType, (rotationIndex * Math.PI) / 3);
   }
 
   private syncVisibleStructurePresentation(
@@ -1523,8 +1520,9 @@ export class StructureManager {
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
-      if (binding.model instanceof VillageModel) {
-        binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure));
+      if (binding.model instanceof SettlementModel) {
+        if (binding.model.kind === "realm") binding.model.setOrderAt(binding.instanceIndex, structure.realmOrder);
+        else binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure));
       }
     }
     if (bindings.length > 0) {
@@ -1864,7 +1862,7 @@ export class StructureManager {
       const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
       this.forEachStructureModel((model) => {
         if (model instanceof RewardTileModel) model.updatePresentation(nightAmount);
-        if (model instanceof VillageModel) model.setWind(this.hexagonScene?.getWeatherAtmosphereState());
+        if (model instanceof SettlementModel) model.setWind(this.hexagonScene?.getWeatherAtmosphereState());
         model.updateAnimations(deltaTime, context);
       });
     }

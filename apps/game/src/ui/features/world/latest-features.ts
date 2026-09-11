@@ -43,21 +43,22 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-11",
-    title: "Smoother Village Rendering",
-    description: "Villages render more efficiently while keeping their ownership colors, banners, and campfires.",
-    type: "improvement",
-  },
-  {
-    date: "2026-09-11",
-    title: "Faster Map Preparation",
-    description: "Enter the map faster around villages and essence rifts, with their shapes and animation preserved.",
-    type: "improvement",
-  },
-  {
-    date: "2026-09-11",
-    title: "Villages on the Map",
+    title: "Smoother Game Entry",
     description:
-      "Villages and mercenary camps now use the new huts and palisades in world and local views, with animated campfires and banners colored for owned, allied, and enemy settlements.",
+      "Game entry avoids a blocking wallet network request, and the first local view prepares its graphics before appearing.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Smaller Wildlife Downloads",
+    description: "Wildlife assets use 43% less download data with compressed textures.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Livelier Realms and Villages",
+    description:
+      "Realms grow from timber settlements into golden imperial palaces, with furnished courtyards, order banners, flickering fires and spinning gems in world and local views. Villages feature rounded yurts, and penguins keep their feet on the ground.",
     type: "improvement",
   },
   {
@@ -73,43 +74,12 @@ const allLatestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
-    date: "2026-09-11",
-    title: "First Realm Settlement",
-    description:
-      "Preview the lowest-tier realm with rounded wall corners and an oak courtyard gate. The adjoining tower is accessible only through a door from the keep's first-floor terrace. Its animated banner and wall hangings use the realm's order colors and emblem.",
-    type: "improvement",
-    readMore: "/lab",
-  },
-  {
-    date: "2026-09-10",
-    title: "Village Fire and Banners",
-    description:
-      "A central campfire flickers while village banners ripple in the wind with a horned-helmet emblem. Preview green for owned, blue for allied, red for enemy or unowned settlements.",
-    type: "improvement",
-    readMore: "/lab",
-  },
-  {
     date: "2026-09-10",
     title: "Stable Lab Dropdowns",
     description:
       "Live terrain statistics update independently of the Lab controls, keeping dropdown selections undisturbed while you browse models and settings.",
     type: "fix",
     readMore: "/lab",
-  },
-  {
-    date: "2026-09-10",
-    title: "Village Huts and Palisades",
-    description:
-      "Preview five small huts around an open courtyard, with a uniform timber palisade and taller entrance posts. Relationship colors dress the hut entrances and banner.",
-    type: "improvement",
-    readMore: "/lab",
-  },
-  {
-    date: "2026-09-10",
-    title: "Timber Mercenary Camp",
-    description:
-      "Preview a simpler mercenary camp with timber defenses, muted canvas and an open courtyard in the Lab.",
-    type: "improvement",
   },
   {
     date: "2026-09-10",

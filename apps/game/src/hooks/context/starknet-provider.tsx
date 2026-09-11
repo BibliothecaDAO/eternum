@@ -22,7 +22,10 @@ const controller = new ControllerConnector({
   errorDisplayMode: "notification",
   webauthnPopup: true,
   lazyload: true,
-  chains: [{ rpcUrl: env.VITE_PUBLIC_CONTROLLER_RPC_URL || identityRpcUrl }],
+  // Identity is always mainnet. Pass that fact through so Controller does not synchronously probe an RPC at boot.
+  chains: [
+    { rpcUrl: env.VITE_PUBLIC_CONTROLLER_RPC_URL || identityRpcUrl, chainId: constants.StarknetChainId.SN_MAIN },
+  ],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });
 const identityConnectors = [controller, ready(), braavos()];

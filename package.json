@@ -85,7 +85,7 @@
     "lint:fix": "pnpm --recursive run lint:fix",
     "typecheck": "pnpm --dir ./apps/game typecheck && pnpm --dir ./apps/realtime-server typecheck",
     "test": "pnpm --recursive run test",
-    "check:forbidden-hosts": "node scripts/check-forbidden-hosts.mjs",
+    "check:forbidden-hosts": "node --test scripts/check-forbidden-hosts.test.mjs && node scripts/check-forbidden-hosts.mjs",
     "lab:deploy-gameplay": "bun deploy/madara-lab/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun deploy/madara-lab/harness/run.ts",
     "lab:probe-account": "bun deploy/madara-lab/scripts/probe-deploy-account.ts",

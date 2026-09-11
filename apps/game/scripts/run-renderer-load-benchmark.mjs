@@ -14,6 +14,7 @@ const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const POLL_INTERVAL_MS = 500;
 const RENDERER_STALL_THRESHOLD_MS = 7_000;
 const METRIC_NAMES = [
+  "worldInteractiveMs",
   "entryReadyMs",
   "rendererInitMs",
   "rendererBackendAwaitMs",
@@ -42,12 +43,14 @@ export function deriveRendererLoadRunMetrics({ diagnostics, durations, elapsedMs
   const rendererStarted = findMilestone(milestones, "renderer-init-started");
   const rendererCompleted = findMilestone(milestones, "renderer-init-completed");
   const entryReady = findMilestone(milestones, "entry-ready");
+  const worldInteractive = findMilestone(milestones, "world-interactive");
   const startupTimings = diagnostics?.startupTimings ?? {};
   const rendererInitMs =
     readDuration(durations, "renderer-init") ??
     (rendererStarted && rendererCompleted ? rendererCompleted.elapsedMs - rendererStarted.elapsedMs : null);
 
   return {
+    worldInteractiveMs: worldInteractive?.elapsedMs ?? null,
     entryReadyMs: entryReady?.elapsedMs ?? null,
     backendTotalMs: readTiming(startupTimings, "webgpu-backend-total"),
     rendererBackendAwaitMs: readDuration(durations, "renderer-init-backend-await"),
@@ -100,6 +103,16 @@ export function evaluateRendererLoadBenchmarkSummary(summary, options = {}) {
     }
 
     if (
+      !isFiniteNumber(result.metrics?.worldInteractiveMs) ||
+      result.metrics.worldInteractiveMs > entryReadyTimeoutMs
+    ) {
+      failures.push(formatRunFailure(result, `world-interactive exceeded ${entryReadyTimeoutMs}ms`));
+    }
+    if (result.errors?.length) {
+      failures.push(formatRunFailure(result, `${result.errors.length} browser errors`));
+    }
+
+    if (
       result.rendererMode === "webgpu-auto" &&
       !hasRendererCompletedOrFallback(result) &&
       result.metrics?.rendererStalledAfterStartMs > rendererStallThresholdMs
@@ -127,6 +140,15 @@ export function compareRendererLoadBenchmarkSummary(baseline, current) {
   const failures = [];
 
   for (const mode of Object.keys(current.metricsByMode ?? {})) {
+    compareP95Metric({
+      absoluteThresholdMs: 1_500,
+      baseline,
+      current,
+      failures,
+      metricName: "worldInteractiveMs",
+      mode,
+      percentThreshold: 0.2,
+    });
     compareP95Metric({
       absoluteThresholdMs: 1_500,
       baseline,
@@ -290,6 +312,13 @@ function parseErrorLines(raw) {
     .filter(Boolean);
 }
 
+export function collectRendererLoadErrors(browserErrors, consoleOutput) {
+  const consoleFailures = parseErrorLines(consoleOutput).filter((line) =>
+    /\[error\]|manager.*timed? out|chunk transition hard timeout/i.test(line),
+  );
+  return [...new Set([...parseErrorLines(browserErrors), ...consoleFailures])];
+}
+
 async function runRendererLoadIteration({
   baseUrl,
   chain,
@@ -303,23 +332,31 @@ async function runRendererLoadIteration({
   const session = `renderer-load-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}-${iteration}-${Date.now().toString(36)}`;
   const url = buildRendererLoadBenchmarkUrl({ baseUrl, chain, rendererMode, scene, worldName });
 
-  runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
-  const snapshot = await waitForEntrySnapshot({ headed, session, timeoutMs });
-  const openedUrl = runAgentBrowser(session, ["get", "url"], { headed });
-  const errors = parseErrorLines(runAgentBrowser(session, ["errors"], { headed }));
-  const metrics = deriveRendererLoadRunMetrics(snapshot);
+  try {
+    runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
+    const snapshot = await waitForEntrySnapshot({ headed, session, timeoutMs });
+    const openedUrl = runAgentBrowser(session, ["get", "url"], { headed });
+    const errors = collectRendererLoadErrors(
+      runAgentBrowser(session, ["errors"], { headed }),
+      runAgentBrowser(session, ["console"], { headed }),
+    );
+    const metrics = deriveRendererLoadRunMetrics(snapshot);
 
-  return {
-    ...snapshot,
-    errors,
-    iteration,
-    metrics,
-    ok: errors.length === 0 && snapshot.canvasExists,
-    openedUrl,
-    rendererMode,
-    session,
-    url,
-  };
+    return {
+      ...snapshot,
+      errors,
+      iteration,
+      metrics,
+      ok: errors.length === 0 && snapshot.canvasExists && hasEntryFinished(snapshot),
+      openedUrl,
+      rendererMode,
+      session,
+      url,
+    };
+  } finally {
+    // A previous live game must not keep rendering during the next measurement.
+    runAgentBrowser(session, ["close"], { headed });
+  }
 }
 
 async function waitForEntrySnapshot({ headed, session, timeoutMs }) {
@@ -334,12 +371,8 @@ async function waitForEntrySnapshot({ headed, session, timeoutMs }) {
   return snapshot;
 }
 
-function hasEntryFinished(snapshot) {
-  return Boolean(
-    snapshot.canvasExists ||
-    snapshot.milestones?.some((milestone) => milestone.name === "entry-ready") ||
-    snapshot.diagnostics?.fallbackReason,
-  );
+export function hasEntryFinished(snapshot) {
+  return Boolean(snapshot.milestones?.some((milestone) => milestone.name === "world-interactive"));
 }
 
 function readBrowserSnapshot(session, headed) {

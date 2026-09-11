@@ -43,6 +43,7 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
     toucan: 3.2,
   };
   const baseBody = body.position.clone();
+  const groundFeet = profile === "penguin" ? createFootGrounding(body, joints) : null;
   const torsoScales = body.children.filter((o) => o.isMesh).map((node) => ({ node, scale: node.scale.clone() }));
   const axis = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
   const delta = new THREE.Quaternion();
@@ -180,7 +181,39 @@ export function createCreatureAnimator(root, { seed = 0 } = {}) {
       }
     }
     root.updateMatrixWorld(true);
+    if (groundFeet) {
+      groundFeet();
+      root.updateMatrixWorld(true);
+    }
     return root;
   }
   return { root, rig, profile, joints: joints.map((j) => j.node), update, reset };
+}
+
+/** Keep one sole planted as the body rocks and the other foot swings. */
+function createFootGrounding(body, joints) {
+  const soles = [];
+  for (const { node } of joints) {
+    if (node.userData.joint !== "bird_foot") continue;
+    node.traverse((part) => {
+      if (part.isMesh) soles.push(part);
+    });
+  }
+  if (soles.length === 0) throw new Error("Walking bird has no foot geometry.");
+  const parentInverse = new THREE.Matrix4();
+  const transform = new THREE.Matrix4();
+  const vertex = new THREE.Vector3();
+  return () => {
+    parentInverse.copy(body.parent.matrixWorld).invert();
+    let lowest = Infinity;
+    for (const sole of soles) {
+      transform.multiplyMatrices(parentInverse, sole.matrixWorld);
+      const positions = sole.geometry.getAttribute("position");
+      for (let index = 0; index < positions.count; index++) {
+        vertex.fromBufferAttribute(positions, index).applyMatrix4(transform);
+        lowest = Math.min(lowest, vertex.y);
+      }
+    }
+    body.position.y -= lowest;
+  };
 }

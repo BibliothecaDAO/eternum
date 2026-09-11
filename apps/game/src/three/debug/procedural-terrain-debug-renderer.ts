@@ -1,3 +1,4 @@
+import { createPipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
 import { WeatherType } from "../managers/weather-manager";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
@@ -384,6 +385,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     request,
     input.onError,
     (page, duration) => updateTerrainVerification(terrain, page, duration, realmGeometry),
+    createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera }),
     input.localRadius !== undefined,
   );
   return {
