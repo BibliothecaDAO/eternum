@@ -154,7 +154,6 @@ pub struct SeasonConfig {
     pub start_main_at: u64,
     pub end_at: u64,
     pub end_grace_seconds: u32,
-    pub registration_grace_seconds: u32,
 }
 
 #[generate_trait]
@@ -167,7 +166,6 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
             start_main_at: game.start_main_at,
             end_at: game.end_at,
             end_grace_seconds: game.end_grace_seconds,
-            registration_grace_seconds: game.registration_grace_seconds,
         }
     }
 
@@ -245,24 +243,9 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
             assert!(now <= self.end_at + self.end_grace_seconds.into(), "The Game is Over");
         }
     }
-    fn assert_main_game_started_and_point_registration_grace_not_elapsed(self: SeasonConfig) {
-        self.assert_started_main();
-        if self.has_ended() {
-            let now = starknet::get_block_timestamp();
-            assert!(
-                now <= self.end_at + self.registration_grace_seconds.into(), "The registration grace period is over",
-            );
-        }
-    }
-
-    fn assert_game_ended_and_points_registration_closed(self: SeasonConfig) {
+    fn assert_ended(self: SeasonConfig) {
         self.assert_started_main();
         assert!(self.has_ended(), "Season is not over");
-
-        let now = starknet::get_block_timestamp();
-        assert!(
-            now > self.end_at + self.registration_grace_seconds.into(), "The registration grace period is not over",
-        );
     }
 
     fn end_season(ref world: WorldStorage, game_id: u32) {
@@ -277,6 +260,11 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
 
 #[generate_trait]
 pub impl WorldConfigUtilImpl of WorldConfigTrait {
+    fn assert_eternum_mode(world: WorldStorage, game_id: u32) {
+        let blitz: bool = Self::get_member(world, game_id, selector!("blitz_mode_on"));
+        assert!(!blitz, "Eternum: feature is disabled in Blitz");
+    }
+
     fn get_member<T, impl TSerde: Serde<T>, impl TDojoStore: DojoStore<T>>(
         world: WorldStorage, game_id: u32, selector: felt252,
     ) -> T {
@@ -466,6 +454,7 @@ pub struct SettlementConfig {
     pub base_distance: u8,
     pub layers_skipped: u8,
     pub layer_max: u8,
+    // Reserved serialized slots; random settlement no longer expands this legacy planner.
     pub layer_capacity_increment: u8,
     pub layer_capacity_bps: u16,
     pub spires_layer_distance: u8,
@@ -481,47 +470,8 @@ pub struct RealmCountConfig {
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-    fn _num_hex_directions() -> u32 {
-        6
-    }
-
-    // Calculate sum of x*y + x*(y-1) + x*(y-2) + ... + x*0
-    // Formula: x * (y + 1) * y / 2
-    // Used to calculate total capacity up to a certain layer
-    fn _calculate_sum(x: u32, y: u32) -> u32 {
-        (x * (y + 1) * y) / 2
-    }
-
-
-    fn _max_spots(layer_number: u32, layers_skipped: u32) -> u32 {
-        // this gets the max number of points that can fit
-        // in from layer 1 to layer y where each layer
-        // has capacity of _num_hex_directions() * layer_number
-
-        // we also need to account for layers skipped
-
-        assert!(layer_number >= layers_skipped, "Layer number must be greater than or equal to layers skipped");
-        if layer_number == layers_skipped {
-            return 0;
-        }
-        let a = Self::_calculate_sum(Self::_num_hex_directions(), layer_number);
-        let b = Self::_calculate_sum(Self::_num_hex_directions(), layers_skipped);
-        a - b
-    }
-
     fn _spire_layer_number(layer_number: u32, spires_layer_distance: u8) -> u32 {
         layer_number / spires_layer_distance.into()
-    }
-
-    fn _spire_center_point_count() -> u32 {
-        1
-    }
-
-    fn _max_spire_spots(layer_number: u32, spires_layer_distance: u8) -> u16 {
-        (Self::_spire_center_point_count()
-            + Self::_max_spots(Self::_spire_layer_number(layer_number, spires_layer_distance), 0))
-            .try_into()
-            .unwrap()
     }
 
     fn _max_point_index(layer: u32) -> u32 {
@@ -574,23 +524,6 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
         let destination_coord: Coord = side_first_structure__layer_x
             .neighbor_after_distance(triangle_direction, base_distance * point_index);
         return destination_coord;
-    }
-
-    fn update_max_layer_and_spires(ref self: SettlementConfig, realm_count: u64) {
-        // max realm spots
-        let mut current_max_realm_spots_capacity = Self::_max_spots(self.layer_max.into(), self.layers_skipped.into())
-            // add back the center spire spot that will be taken in _max_spire_spots
-            // because it is not counted in realms spots
-            + Self::_spire_center_point_count()
-            - Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance).into();
-
-        let capacity_threshold = PercentageImpl::get(
-            current_max_realm_spots_capacity.into(), self.layer_capacity_bps.into(),
-        );
-        if realm_count > capacity_threshold {
-            self.layer_max += self.layer_capacity_increment;
-            self.spires_max_count = Self::_max_spire_spots(self.layer_max.into(), self.spires_layer_distance);
-        }
     }
 }
 

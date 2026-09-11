@@ -95,3 +95,20 @@ pub struct WonderFaithBlacklist {
     pub blocked_id: felt252,
     pub is_blocked: bool,
 }
+
+#[derive(Drop, Serde)]
+#[dojo::model]
+pub struct FaithWonders {
+    #[key]
+    pub game_id: u32,
+    pub wonder_ids: Array<ID>,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct FaithPrizePool {
+    #[key]
+    pub game_id: u32,
+    pub funded_amount: u128,
+    pub distributed: bool,
+}

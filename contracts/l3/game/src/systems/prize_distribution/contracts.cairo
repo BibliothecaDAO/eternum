@@ -27,19 +27,17 @@ pub mod prize_distribution_systems {
     use crate::models::config::{BlitzRegistrationConfigImpl, BlitzSettlement, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{PrizeDistributionFinalStory, Story, StoryEvent};
     use crate::models::game::{GameRegistryImpl, Series};
-    use crate::models::hyperstructure::PlayerRegisteredPoints;
+    use crate::models::hyperstructure::{HyperstructureGlobals, PlayerRegisteredPoints, SharePointsCheckpoint};
     use crate::models::ledger::LedgerRegistrationImpl;
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize, RankPrizeImpl};
     use crate::models::season::SeasonPrize;
     use crate::models::series_chest_reward::{GameChestReward, SeriesChestRewardState};
-    use crate::systems::utils::ranking::competition_rank;
+    use crate::systems::utils::ranking::{allocate_tied_chests, competition_rank};
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
     use super::IPrizeDistributionSystems;
 
     pub const SYSTEM_TRIAL_ID: u128 = 1000;
-    const VICTORY_POINTS_MULTIPLIER: u128 = 1_000_000;
-    const GAME_REWARD_CHEST_POINTS_THRESHOLD: u128 = 500 * VICTORY_POINTS_MULTIPLIER;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
@@ -117,7 +115,8 @@ pub mod prize_distribution_systems {
             players_list: Array<ContractAddress>,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world, game_id).assert_game_ended_and_points_registration_closed();
+            assert_caller_is_registrar(world);
+            SeasonConfigImpl::get(world, game_id).assert_ended();
             assert!(is_blitz_game(world, game_id), "Eternum: Not a blitz game");
             assert!(trial_id.is_non_zero() && trial_id != SYSTEM_TRIAL_ID, "Eternum: Invalid trial id");
             assert!(!players_list.is_empty(), "Eternum: Players list is empty");
@@ -128,6 +127,9 @@ pub mod prize_distribution_systems {
             let caller = starknet::get_caller_address();
             let registration = BlitzRegistrationConfigImpl::get(world, game_id);
             let mut trial: PlayersRankTrial = world.read_model(game_id);
+            if trial.owner.is_zero() {
+                assert_share_points_checkpointed(world, game_id);
+            }
             initialize_or_validate_trial(
                 ref trial, game_id, trial_id, caller, total_player_count_committed, registration.registration_count,
             );
@@ -173,6 +175,19 @@ pub mod prize_distribution_systems {
         }
     }
 
+    fn assert_share_points_checkpointed(world: WorldStorage, game_id: u32) {
+        let globals: HyperstructureGlobals = world.read_model(game_id);
+        if globals.completed_count == 0 {
+            return;
+        }
+        let checkpoint: SharePointsCheckpoint = world.read_model(game_id);
+        let game = GameRegistryImpl::get(world, game_id);
+        assert!(
+            checkpoint.end_at == game.end_at && checkpoint.completed_count == globals.completed_count,
+            "Eternum: checkpoint shares before ranking",
+        );
+    }
+
     fn initialize_or_validate_trial(
         ref trial: PlayersRankTrial,
         game_id: u32,
@@ -183,7 +198,6 @@ pub mod prize_distribution_systems {
     ) {
         if trial.owner.is_non_zero() {
             assert!(trial.nonce == trial_id, "Eternum: Trial ID already used");
-            assert!(trial.owner == caller, "Eternum: Trial ID already used by someone else");
             return;
         }
 
@@ -233,15 +247,29 @@ pub mod prize_distribution_systems {
     fn emit_ledger_results(ref world: WorldStorage, trial: PlayersRankTrial) {
         let mut game_chests: GameChestReward = world.read_model(trial.game_id);
         let season_prize: SeasonPrize = world.read_model(trial.game_id);
+        let mut remaining_chests = game_chests.allocated_chests - game_chests.distributed_chests;
         let mut result_index = 0;
         let mut rank = 1;
 
         while rank <= trial.last_rank {
             let rank_prize: RankPrize = world.read_model((trial.game_id, rank));
+            if rank_prize.total_players_same_rank_count == 0 {
+                rank += 1;
+                continue;
+            }
+            let first: RankList = world.read_model((trial.game_id, rank, 0_u16));
+            let points: PlayerRegisteredPoints = world.read_model((trial.game_id, first.player));
+            let chests = allocate_tied_chests(
+                points.registered_points,
+                season_prize.total_registered_points,
+                game_chests.allocated_chests,
+                rank_prize.total_players_same_rank_count,
+                ref remaining_chests,
+            );
             let mut rank_index = 0;
             while rank_index < rank_prize.total_players_same_rank_count {
                 let ranked: RankList = world.read_model((trial.game_id, rank, rank_index));
-                let chests = allocate_chests(world, trial.game_id, ranked.player, season_prize, ref game_chests);
+                game_chests.distributed_chests += chests;
                 let mut player_rank: PlayerRank = world.read_model((trial.game_id, ranked.player));
                 player_rank.chests = chests;
                 world.write_model(@player_rank);
@@ -265,41 +293,6 @@ pub mod prize_distribution_systems {
             .emit_event(
                 @LedgerResultsReady { game_id: trial.game_id, trial_id: trial.nonce, player_count: result_index },
             );
-    }
-
-    fn allocate_chests(
-        world: WorldStorage,
-        game_id: u32,
-        player: ContractAddress,
-        season_prize: SeasonPrize,
-        ref game_chests: GameChestReward,
-    ) -> u16 {
-        if game_chests.distributed_chests >= game_chests.allocated_chests {
-            return 0;
-        }
-
-        let player_points: PlayerRegisteredPoints = world.read_model((game_id, player));
-        let mut chests = 0;
-        if player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
-            chests += 1;
-            game_chests.distributed_chests += 1;
-        }
-
-        if game_chests.distributed_chests >= game_chests.allocated_chests
-            || season_prize.total_registered_points.is_zero() {
-            return chests;
-        }
-
-        let proportional: u128 = (game_chests.allocated_chests.into() * player_points.registered_points)
-            / season_prize.total_registered_points;
-        let chests_left = game_chests.allocated_chests - game_chests.distributed_chests;
-        let proportional: u16 = if proportional > chests_left.into() {
-            chests_left
-        } else {
-            proportional.try_into().unwrap()
-        };
-        game_chests.distributed_chests += proportional;
-        chests + proportional
     }
 
     fn emit_final_story(ref world: WorldStorage, game_id: u32, trial_id: u128, caller: ContractAddress) {

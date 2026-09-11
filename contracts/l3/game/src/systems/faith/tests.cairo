@@ -5,13 +5,17 @@ mod tests {
     use dojo_snf_test::{
         ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world,
     };
-    use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+    use snforge_std::{
+        ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global, start_cheat_caller_address,
+        stop_cheat_caller_address,
+    };
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
     use crate::models::config::{FaithConfig, SeasonConfig, WorldConfigUtilImpl};
     use crate::models::faith::{
-        FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinners,
+        FaithPrizePool, FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithPrize,
+        WonderFaithWinners,
     };
     use crate::models::game::{GameRegistry, GameStatus};
     use crate::models::position::Coord;
@@ -19,6 +23,8 @@ mod tests {
     use crate::models::structure::{Structure, StructureBase, StructureCategory, StructureMetadata, Wonder};
     use crate::models::troop::{GuardTroops, TroopBoosts, TroopTier, TroopType, Troops};
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
+    use crate::systems::faith::prize_contracts::{IFaithPrizeSystemsDispatcher, IFaithPrizeSystemsDispatcherTrait};
+    use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
     use crate::utils::testing::helpers::{TEST_GAME_ID, TEST_PRESET_ID};
 
     // ============================================================================
@@ -45,7 +51,6 @@ mod tests {
             start_main_at: 100,
             end_at: 100000, // Far future
             end_grace_seconds: 3600,
-            registration_grace_seconds: 3600,
             dev_mode_on: false,
         }
     }
@@ -61,11 +66,13 @@ mod tests {
                 TestResource::Model("StructureOwnerStats"), TestResource::Model("Wonder"),
                 // Faith models
                 TestResource::Model("WonderFaith"), TestResource::Model("FaithfulStructure"),
+                TestResource::Model("FaithWonders"), TestResource::Model("FaithPrizePool"),
+                TestResource::Model("WonderFaithPrize"), TestResource::Model("PlayerFaithPrizeClaimed"),
                 TestResource::Model("PlayerFaithPoints"), TestResource::Model("WonderFaithWinners"),
                 TestResource::Model("WonderFaithBlacklist"), // Events
                 TestResource::Event("StoryEvent"),
                 // Contract
-                TestResource::Contract("faith_systems"),
+                TestResource::Contract("faith_systems"), TestResource::Contract("faith_prize_systems"),
             ]
                 .span(),
         }
@@ -73,6 +80,8 @@ mod tests {
 
     fn contract_defs_faith() -> Span<ContractDef> {
         [
+            ContractDefTrait::new(DEFAULT_NS(), @"faith_prize_systems")
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"faith_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ]
@@ -111,7 +120,7 @@ mod tests {
                     start_main_at: season.start_main_at,
                     end_at: season.end_at,
                     end_grace_seconds: season.end_grace_seconds,
-                    registration_grace_seconds: season.registration_grace_seconds,
+                    registration_grace_seconds: 0,
                     final_trial_id: 0,
                     seed: 1,
                 },
@@ -275,6 +284,79 @@ mod tests {
         world.write_model_test(@structure);
 
         structure_id
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: feature is disabled in Blitz")]
+    fn faith_is_disabled_in_blitz_even_if_preset_faith_flag_is_enabled() {
+        let mut world = setup_faith_world();
+        WorldConfigUtilImpl::set_member(ref world, TEST_GAME_ID, selector!("blitz_mode_on"), true);
+        let (_, faith) = get_faith_dispatcher(ref world);
+        faith.claim_wonder_points(TEST_GAME_ID, 123);
+    }
+
+    fn prize_dispatcher(world: WorldStorage) -> IFaithPrizeSystemsDispatcher {
+        let (address, _) = world.dns(@"faith_prize_systems").unwrap();
+        IFaithPrizeSystemsDispatcher { contract_address: address }
+    }
+
+    #[test]
+    fn faith_prize_funding_is_reserved_per_game() {
+        let mut world = setup_faith_world();
+        let (token_address, _) = declare("MockERC20").unwrap().contract_class().deploy(@array![1000, 0, 18]).unwrap();
+        let token = IERC20Dispatcher { contract_address: token_address };
+        let prize = prize_dispatcher(world);
+        let mut config = get_default_faith_config();
+        config.reward_token = token_address;
+        WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("faith_config"), config);
+        let mut second: GameRegistry = world.read_model(TEST_GAME_ID);
+        second.game_id = TEST_GAME_ID + 1;
+        world.write_model_test(@second);
+        start_cheat_block_timestamp_global(1000);
+        token.approve(prize.contract_address, 700);
+        prize.fund_prizes(TEST_GAME_ID, 300);
+        prize.fund_prizes(TEST_GAME_ID + 1, 400);
+        let first: FaithPrizePool = world.read_model(TEST_GAME_ID);
+        let second: FaithPrizePool = world.read_model(TEST_GAME_ID + 1);
+        assert!(first.funded_amount == 300 && second.funded_amount == 400, "faith prize pools crossed games");
+        assert!(token.balance_of(prize.contract_address) == 700, "funds not deposited");
+    }
+
+    #[test]
+    #[should_panic(expected: "Prizes already distributed")]
+    fn faith_prize_zero_pool_is_finalized_once() {
+        let world = setup_faith_world();
+        let prize = prize_dispatcher(world);
+        start_cheat_block_timestamp_global(100001);
+        prize.distribute_wonder_prizes(TEST_GAME_ID);
+        prize.distribute_wonder_prizes(TEST_GAME_ID);
+    }
+
+    #[test]
+    fn faith_prizes_settle_unclaimed_wonders_before_selecting_winner() {
+        let mut world = setup_faith_world();
+        let (_, faith) = get_faith_dispatcher(ref world);
+        let owner = starknet::contract_address_const::<'owner'>();
+        let early = spawn_test_wonder(ref world, owner, Coord { alt: false, x: 10, y: 10 });
+        let late = spawn_test_wonder(ref world, owner, Coord { alt: false, x: 20, y: 20 });
+        start_cheat_block_timestamp_global(1000);
+        faith.pledge_faith(TEST_GAME_ID, early, early);
+        start_cheat_block_timestamp_global(2000);
+        faith.pledge_faith(TEST_GAME_ID, late, late);
+        start_cheat_block_timestamp_global(3000);
+        faith.claim_wonder_points(TEST_GAME_ID, late);
+        let before: WonderFaithWinners = world.read_model(TEST_GAME_ID);
+        assert!(*before.wonder_ids.at(0) == late, "test did not create stale winner");
+        start_cheat_block_timestamp_global(100001);
+        prize_dispatcher(world).distribute_wonder_prizes(TEST_GAME_ID);
+        let winners: WonderFaithWinners = world.read_model(TEST_GAME_ID);
+        assert!(
+            winners.wonder_ids.len() == 1 && *winners.wonder_ids.at(0) == early,
+            "unclaimed wonder excluded from finalization",
+        );
+        let pool: FaithPrizePool = world.read_model(TEST_GAME_ID);
+        let allocation: WonderFaithPrize = world.read_model((TEST_GAME_ID, early));
+        assert!(pool.distributed && allocation.amount_won == 0, "zero prize pool not frozen");
     }
 
     // ============================================================================
@@ -1373,45 +1455,40 @@ mod tests {
     }
 
     #[test]
-    fn test_claim_wonder_points_updates_ownership_first() {
-        // Verify that claim_wonder_points triggers ownership update
+    fn test_owner_store_settles_faith_before_capture_or_transfer() {
         let mut world = setup_faith_world();
         let (system_addr, dispatcher) = get_faith_dispatcher(ref world);
-
-        let wonder_orig = starknet::contract_address_const::<'w_orig'>();
-        let wonder_new = starknet::contract_address_const::<'w_new'>();
-
-        let wonder_coord = Coord { alt: false, x: 10, y: 10 };
-        let wonder_id = spawn_test_wonder(ref world, wonder_orig, wonder_coord);
-
+        let previous: ContractAddress = 'previous'.try_into().unwrap();
+        let next: ContractAddress = 'next'.try_into().unwrap();
+        let wonder_id = spawn_test_wonder(ref world, previous, Coord { alt: false, x: 10, y: 10 });
         start_cheat_block_timestamp_global(1000);
-
-        start_cheat_caller_address(system_addr, wonder_orig);
         dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
-        stop_cheat_caller_address(system_addr);
-
-        // Change ownership
-        let mut structure: Structure = world.read_model((TEST_GAME_ID, wonder_id));
-        structure.owner = wonder_new;
-        world.write_model_test(@structure);
-
+        start_cheat_block_timestamp_global(1500);
+        crate::models::structure::StructureOwnerStoreImpl::store(next, ref world, TEST_GAME_ID, wonder_id);
         start_cheat_block_timestamp_global(2000);
+        dispatcher.claim_player_points(TEST_GAME_ID, previous, wonder_id);
+        dispatcher.claim_player_points(TEST_GAME_ID, next, wonder_id);
+        let old: PlayerFaithPoints = world.read_model((TEST_GAME_ID, previous, wonder_id));
+        let new: PlayerFaithPoints = world.read_model((TEST_GAME_ID, next, wonder_id));
+        assert!(old.points_claimed == 250000, "outgoing owner lost its interval");
+        assert!(new.points_claimed == 250000, "incoming owner received the outgoing interval");
+        assert!(old.points_per_sec_as_owner == 0 && old.points_per_sec_as_pledger == 0, "old owner still accrues");
+    }
 
-        // Claim wonder points (should trigger ownership update internally)
-        start_cheat_caller_address(system_addr, wonder_new);
+    #[test]
+    fn test_wonder_points_can_settle_after_season_end() {
+        let mut world = setup_faith_world();
+        let (_, dispatcher) = get_faith_dispatcher(ref world);
+        let owner: ContractAddress = 'owner'.try_into().unwrap();
+        let wonder_id = spawn_test_wonder(ref world, owner, Coord { alt: false, x: 10, y: 10 });
+        start_cheat_block_timestamp_global(1000);
+        dispatcher.pledge_faith(TEST_GAME_ID, wonder_id, wonder_id);
+        start_cheat_block_timestamp_global(200000);
         dispatcher.claim_wonder_points(TEST_GAME_ID, wonder_id);
-        stop_cheat_caller_address(system_addr);
-
-        // Verify ownership was updated
-        let wonder_faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
-        assert!(wonder_faith.last_recorded_owner == wonder_new, "Owner should be updated");
-
-        // Verify rates were transferred
-        let orig_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_orig, wonder_id));
-        assert!(orig_fp.points_per_sec_as_owner == 0, "Orig should have 0 owner rate");
-
-        let new_fp: PlayerFaithPoints = world.read_model((TEST_GAME_ID, wonder_new, wonder_id));
-        assert!(new_fp.points_per_sec_as_owner == 150, "New should have 150 owner rate");
+        dispatcher.claim_wonder_points(TEST_GAME_ID, wonder_id);
+        let faith: WonderFaith = world.read_model((TEST_GAME_ID, wonder_id));
+        assert!(faith.claim_last_at == 100000, "claim cursor crossed the season cutoff");
+        assert!(faith.claimed_points == 49500000, "post-season faith total incorrect");
     }
 
     // ============================================================================

@@ -30,6 +30,7 @@ pub mod season_systems {
     use crate::models::config::{SeasonConfigImpl, VictoryPointsWinConfig, WorldConfigUtilImpl};
     use crate::models::game::{GameRegistryImpl, GameStatus};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
+    use crate::systems::utils::share_points::settle_completed_hyperstructures;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
 
 
@@ -55,6 +56,7 @@ pub mod season_systems {
             assert!(blitz_mode_on == false, "Eternum: Not Season Game Mode");
 
             // ensure the the caller's points are enough to end the game
+            settle_completed_hyperstructures(ref world, game_id);
             let player_address = starknet::get_caller_address();
             let player_points: PlayerRegisteredPoints = world.read_model((game_id, player_address));
             let victory_points_win_config: VictoryPointsWinConfig = WorldConfigUtilImpl::get_member(

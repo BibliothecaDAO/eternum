@@ -12,13 +12,6 @@ pub mod registrar {
     mod tests;
 }
 
-// Legacy per-world config replay retired in favor of registrar-owned presets (D2/D12).
-// pub mod config {
-//     pub mod contracts;
-//     #[cfg(test)]
-//     mod tests;
-// }
-
 pub mod village {
     pub mod contracts;
     #[cfg(test)]
@@ -123,15 +116,19 @@ pub mod utils {
     pub mod distance;
     pub mod donkey;
     pub mod erc20;
+    pub mod faith;
     pub mod holysite;
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
     pub mod ranking;
     pub mod realm;
+    pub mod realm_metadata;
     pub mod relic;
     pub mod resource;
     pub mod series_chest_reward;
+    pub mod settlement;
+    pub mod share_points;
     pub mod structure;
     pub mod troop;
     pub mod village;

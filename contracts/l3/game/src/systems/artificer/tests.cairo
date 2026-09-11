@@ -50,7 +50,6 @@ mod tests {
             start_main_at: 100,
             end_at: 100000, // Far future
             end_grace_seconds: 3600,
-            registration_grace_seconds: 3600,
             dev_mode_on: false,
         }
     }
@@ -61,7 +60,6 @@ mod tests {
             start_main_at: 100,
             end_at: 500, // Already ended
             end_grace_seconds: 3600,
-            registration_grace_seconds: 3600,
             dev_mode_on: false,
         }
     }
@@ -163,7 +161,7 @@ mod tests {
                     start_main_at: season.start_main_at,
                     end_at: season.end_at,
                     end_grace_seconds: season.end_grace_seconds,
-                    registration_grace_seconds: season.registration_grace_seconds,
+                    registration_grace_seconds: 0,
                     final_trial_id: 0,
                     seed: 1,
                 },

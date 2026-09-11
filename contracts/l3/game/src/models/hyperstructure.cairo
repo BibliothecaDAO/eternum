@@ -18,6 +18,166 @@ pub struct HyperstructureGlobals {
     pub completed_count: u32,
 }
 
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct CompletedHyperstructure {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub index: u32,
+    pub hyperstructure_id: ID,
+}
+
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct HyperstructureIndex {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub hyperstructure_id: ID,
+    pub index_plus_one: u32,
+}
+
+#[generate_trait]
+pub impl CompletedHyperstructureImpl of CompletedHyperstructureTrait {
+    fn record(ref world: WorldStorage, game_id: u32, hyperstructure_id: ID) {
+        let mut globals: HyperstructureGlobals = world.read_model(game_id);
+        Self::write_entry(ref world, game_id, globals.completed_count, hyperstructure_id);
+        globals.completed_count += 1;
+        world.write_model(@globals);
+    }
+
+    fn backfill(ref world: WorldStorage, game_id: u32, start_index: u32, ids: Span<ID>) {
+        let globals: HyperstructureGlobals = world.read_model(game_id);
+        assert!(
+            !ids.is_empty() && start_index + ids.len() <= globals.completed_count,
+            "Eternum: invalid completion backfill range",
+        );
+        for offset in 0..ids.len() {
+            let id = *ids.at(offset);
+            let hyperstructure: Hyperstructure = world.read_model((game_id, id));
+            assert!(
+                hyperstructure.initialized && hyperstructure.completed,
+                "Eternum: backfill requires a completed hyperstructure",
+            );
+            Self::write_entry(ref world, game_id, start_index + offset, id);
+        }
+    }
+
+    fn write_entry(ref world: WorldStorage, game_id: u32, index: u32, hyperstructure_id: ID) {
+        let existing: CompletedHyperstructure = world.read_model((game_id, index));
+        assert!(
+            existing.hyperstructure_id == 0 || existing.hyperstructure_id == hyperstructure_id,
+            "Eternum: completion index already assigned",
+        );
+        let reverse: HyperstructureIndex = world.read_model((game_id, hyperstructure_id));
+        assert!(
+            reverse.index_plus_one == 0 || reverse.index_plus_one == index + 1, "Eternum: duplicate completion index",
+        );
+        world.write_model(@CompletedHyperstructure { game_id, index, hyperstructure_id });
+        world.write_model(@HyperstructureIndex { game_id, hyperstructure_id, index_plus_one: index + 1 });
+    }
+
+    fn get(world: WorldStorage, game_id: u32, index: u32) -> ID {
+        let entry: CompletedHyperstructure = world.read_model((game_id, index));
+        assert!(entry.hyperstructure_id.is_non_zero(), "Eternum: completed hyperstructure index is incomplete");
+        entry.hyperstructure_id
+    }
+}
+
+#[cfg(test)]
+mod completion_tests {
+    use dojo::model::{ModelStorage, ModelStorageTest};
+    use dojo::world::WorldStorage;
+    use dojo_snf_test::{NamespaceDef, TestResource, spawn_test_world};
+    use crate::constants::DEFAULT_NS_STR;
+    use super::{CompletedHyperstructureImpl, ConstructionAccess, Hyperstructure, HyperstructureGlobals};
+
+    fn setup() -> WorldStorage {
+        spawn_test_world(
+            [
+                NamespaceDef {
+                    namespace: DEFAULT_NS_STR(),
+                    resources: [
+                        TestResource::Model("SharePointsCheckpoint"), TestResource::Model("HyperstructureGlobals"),
+                        TestResource::Model("Hyperstructure"), TestResource::Model("CompletedHyperstructure"),
+                        TestResource::Model("HyperstructureIndex"),
+                    ]
+                        .span(),
+                }
+            ]
+                .span(),
+        )
+    }
+
+    #[test]
+    fn completion_index_preserves_discovery_count_and_game_isolation() {
+        let mut world = setup();
+        world.write_model_test(@HyperstructureGlobals { game_id: 1, created_count: 5, completed_count: 0 });
+        world.write_model_test(@HyperstructureGlobals { game_id: 2, created_count: 3, completed_count: 0 });
+        CompletedHyperstructureImpl::record(ref world, 1, 101);
+        CompletedHyperstructureImpl::record(ref world, 2, 201);
+        CompletedHyperstructureImpl::record(ref world, 1, 105);
+
+        let first: HyperstructureGlobals = world.read_model(1_u32);
+        let second: HyperstructureGlobals = world.read_model(2_u32);
+        assert!(first.created_count == 5 && first.completed_count == 2, "first game counters changed incorrectly");
+        assert!(second.created_count == 3 && second.completed_count == 1, "second game counters changed incorrectly");
+        assert!(CompletedHyperstructureImpl::get(world, 1, 0) == 101, "first completion missing");
+        assert!(CompletedHyperstructureImpl::get(world, 1, 1) == 105, "second completion missing");
+        assert!(CompletedHyperstructureImpl::get(world, 2, 0) == 201, "games share an index");
+    }
+
+    #[test]
+    fn backfill_is_idempotent_and_preserves_existing_counters() {
+        let mut world = setup();
+        world.write_model_test(@HyperstructureGlobals { game_id: 1, created_count: 3, completed_count: 1 });
+        world
+            .write_model_test(
+                @Hyperstructure {
+                    game_id: 1,
+                    hyperstructure_id: 105,
+                    initialized: true,
+                    completed: true,
+                    access: ConstructionAccess::Public,
+                    randomness: 0,
+                    points_multiplier: 2,
+                },
+            );
+        CompletedHyperstructureImpl::backfill(ref world, 1, 0, [105].span());
+        CompletedHyperstructureImpl::backfill(ref world, 1, 0, [105].span());
+        let globals: HyperstructureGlobals = world.read_model(1_u32);
+        assert!(globals.created_count == 3 && globals.completed_count == 1, "backfill changed counters");
+        assert!(CompletedHyperstructureImpl::get(world, 1, 0) == 105, "backfill missing");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: duplicate completion index")]
+    fn backfill_cannot_count_a_hyperstructure_twice() {
+        let mut world = setup();
+        world.write_model_test(@HyperstructureGlobals { game_id: 1, created_count: 3, completed_count: 2 });
+        world
+            .write_model_test(
+                @Hyperstructure {
+                    game_id: 1,
+                    hyperstructure_id: 105,
+                    initialized: true,
+                    completed: true,
+                    access: ConstructionAccess::Public,
+                    randomness: 0,
+                    points_multiplier: 2,
+                },
+            );
+        CompletedHyperstructureImpl::backfill(ref world, 1, 0, [105, 105].span());
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: completed hyperstructure index is incomplete")]
+    fn missing_completion_cannot_be_silently_skipped() {
+        CompletedHyperstructureImpl::get(setup(), 1, 0);
+    }
+}
+
 #[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Hyperstructure {
@@ -270,4 +430,14 @@ pub impl HyperstructureConstructionAccessImpl of HyperstructureConstructionAcces
             },
         }
     }
+}
+
+/// Records a contiguous prefix checkpointed after the game's immutable end time.
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct SharePointsCheckpoint {
+    #[key]
+    pub game_id: u32,
+    pub completed_count: u32,
+    pub end_at: u64,
 }

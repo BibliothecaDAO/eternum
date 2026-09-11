@@ -740,7 +740,6 @@ pub fn set_test_season_config(ref world: WorldStorage, season: SeasonConfig) {
     game.start_main_at = season.start_main_at;
     game.end_at = season.end_at;
     game.end_grace_seconds = season.end_grace_seconds;
-    game.registration_grace_seconds = season.registration_grace_seconds;
     world.write_model_test(@game);
 }
 

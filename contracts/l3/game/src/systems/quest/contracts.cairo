@@ -66,6 +66,7 @@ pub mod quest_systems {
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, ErrorMessages, resource_type_name};
+    use crate::models::config::WorldConfigUtilImpl;
     use crate::models::map::Tile;
     use crate::models::position::TravelTrait;
     use crate::models::quest::{Level, Quest, QuestDetails, QuestFeatureFlag, QuestGameRegistry, QuestLevels, QuestTile};
@@ -170,6 +171,7 @@ pub mod quest_systems {
 
         fn create_quest(ref self: ContractState, game_id: u32, tile: Tile, vrf_seed: u256) {
             let mut world = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let mut tile = tile;
 
             // ensure caller is the troop movement util systems
@@ -275,6 +277,7 @@ pub mod quest_systems {
 
         fn claim_reward(ref self: ContractState, game_id: u32, game_token_id: u64, game_address: ContractAddress) {
             let mut world = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
 
             let feature_toggle: QuestFeatureFlag = world.read_model((game_id, VERSION));
             assert!(feature_toggle.enabled, "Quest feature is disabled");
@@ -327,6 +330,7 @@ pub mod quest_systems {
 
         fn enable_quests(ref self: ContractState, game_id: u32) {
             let mut world = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             assert(
                 world
                     .dispatcher
@@ -343,6 +347,7 @@ pub mod quest_systems {
 
         fn disable_quests(ref self: ContractState, game_id: u32) {
             let mut world = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             assert(
                 world
                     .dispatcher

@@ -1259,7 +1259,7 @@ pub mod troop_management_systems {
 //             start_main_at: future_start + 1000,
 //             end_at: 0,
 //             end_grace_seconds: 0,
-//             registration_grace_seconds: 0,
+//
 //             dev_mode_on: false,
 //         };
 //         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
@@ -1598,7 +1598,7 @@ pub mod troop_management_systems {
 //             start_main_at: future_start + 1000,
 //             end_at: 0,
 //             end_grace_seconds: 0,
-//             registration_grace_seconds: 0,
+//
 //             dev_mode_on: false,
 //         };
 //         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
@@ -1811,7 +1811,7 @@ pub mod troop_management_systems {
 //             start_main_at: future_start + 1000,
 //             end_at: 0,
 //             end_grace_seconds: 0,
-//             registration_grace_seconds: 0,
+//
 //             dev_mode_on: false,
 //         };
 //         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
@@ -2194,7 +2194,7 @@ pub mod troop_management_systems {
 //             start_main_at: future_start + 1000,
 //             end_at: 0,
 //             end_grace_seconds: 0,
-//             registration_grace_seconds: 0,
+//
 //             dev_mode_on: false,
 //         };
 //         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
@@ -2531,7 +2531,7 @@ pub mod troop_management_systems {
 //             start_main_at: future_start + 1000,
 //             end_at: 0,
 //             end_grace_seconds: 0,
-//             registration_grace_seconds: 0,
+//
 //             dev_mode_on: false,
 //         };
 //         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);
@@ -2853,7 +2853,7 @@ pub mod troop_management_systems {
 //             start_main_at: future_start + 1000,
 //             end_at: 0,
 //             end_grace_seconds: 0,
-//             registration_grace_seconds: 0,
+//
 //             dev_mode_on: false,
 //         };
 //         WorldConfigUtilImpl::set_member(ref world, selector!("season_config"), inactive_season_config);

@@ -60,6 +60,7 @@ pub mod swap_systems {
             amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
 
             // ensure season is open
             let season_config = SeasonConfigImpl::get(world, game_id);
@@ -178,6 +179,7 @@ pub mod swap_systems {
             amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
 
             // ensure season is open
             SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();

@@ -1,216 +1,12 @@
 use starknet::ContractAddress;
 use crate::alias::ID;
 
-/// # Faith Prize Systems Interface
-///
-/// Handles end-of-season prize distribution for the Faith leaderboard.
-/// The prize pool (in $LORDS or configured reward token) is distributed to
-/// the top-ranking wonders and their faithful followers.
-///
-/// ## Overview
-///
-/// The faith prize system operates in two phases:
-///
-/// 1. **Distribution Phase** (`distribute_wonder_prizes`)
-///    - Called once after season ends
-///    - Splits prize pool evenly among winning wonders (those tied for highest FP)
-///    - Records each winner's prize amount in `WonderFaithPrize`
-///
-/// 2. **Claim Phase** (`claim_player_prize`)
-///    - Called by/for each player who holds FP in a winning wonder
-///    - Calculates player's share: `(player_points / total_wonder_points) * wonder_prize`
-///    - Transfers reward tokens directly to player
-///
-/// ## Prize Distribution Formula
-///
-/// For each winning wonder:
-/// ```
-/// wonder_prize = total_prize_pool / number_of_winners
-/// player_share = (player_points_claimed / wonder_claimed_points) * wonder_prize
-/// ```
-///
-/// ## Prerequisites
-///
-/// Before calling these functions:
-///
-/// 1. **Deposit reward tokens** into this contract's address
-/// 2. **Configure `FaithConfig.reward_token`** with the ERC20 token address
-/// 3. **Wait for season to end** (and grace period to close)
-/// 4. **Ensure all players have claimed their FP** (`claim_player_points`)
-///
-/// ## Client Integration Workflow
-///
-/// ### Admin/DAO Setup (before season end)
-/// ```
-/// // 1. Transfer prize tokens to this contract
-/// lords_token.transfer(faith_prize_systems_address, prize_amount);
-/// ```
-///
-/// ### After Season End
-/// ```
-/// // 2. Distribute prizes to winning wonders (call once)
-/// faith_prize_systems.distribute_wonder_prizes(game_id);
-///
-/// // 3. Each player claims their share (or anyone can claim for them)
-/// for player in all_players_with_fp:
-///     for wonder_id in winning_wonders:
-///         faith_prize_systems.claim_player_prize(game_id, player, wonder_id);
-/// ```
-///
-/// ## Data Models
-///
-/// | Model | Key | Description |
-/// |-------|-----|-------------|
-/// | `WonderFaithPrize` | `(game_id, wonder_id)` | Tracks prize amount won by each wonder |
-/// | `PlayerFaithPrizeClaimed` | `(game_id, player, wonder_id)` | Tracks if player claimed their share |
-/// | `WonderFaithWinners` | `game_id` | List of winning wonder IDs and high score |
-///
-/// ## Security Notes
-///
-/// - Prize distribution can only happen once (checks `amount_won == 0`)
-/// - Player claims are idempotent (checks `claimed` flag)
-/// - All functions are permissionless but have proper state guards
 #[starknet::interface]
 pub trait IFaithPrizeSystems<T> {
-    /// Distribute the prize pool to winning wonders.
-    ///
-    /// # Description
-    ///
-    /// Takes the total balance of the reward token held by this contract and splits
-    /// it evenly among all wonders that achieved the highest faith point score.
-    /// This function should be called exactly once after the season ends.
-    ///
-    /// # When to Call
-    ///
-    /// - After season ends AND points registration grace period closes
-    /// - After all wonder and player points have been claimed/settled
-    /// - Before any player attempts to claim their prize share
-    ///
-    /// # What It Does
-    ///
-    /// 1. Verifies season has ended and registration is closed
-    /// 2. Gets the list of winning wonders from `WonderFaithWinners`
-    /// 3. Checks the contract's balance of the reward token
-    /// 4. Calculates `prize_per_wonder = total_balance / num_winners`
-    /// 5. For each winning wonder:
-    ///    - Calls `claim_wonder_points` to finalize their score
-    ///    - Records the prize amount in `WonderFaithPrize`
-    ///
-    /// # Requirements
-    ///
-    /// - Season must be ended with grace period closed
-    /// - At least one wonder must have accumulated FP (winners list not empty)
-    /// - Prizes must not have been distributed yet (`WonderFaithPrize.amount_won == 0`)
-    /// - Reward token must be configured in `FaithConfig`
-    /// - Contract must hold a non-zero balance of reward tokens
-    ///
-    /// # Authorization
-    ///
-    /// **Permissionless** - Anyone can call this after conditions are met.
-    /// This allows for automated/decentralized prize distribution.
-    ///
-    /// # Errors
-    ///
-    /// - `"No winners to distribute prizes to"` - No wonders accumulated FP
-    /// - `"Prizes already distributed"` - Function was already called
-    /// - `"Reward token not configured"` - `FaithConfig.reward_token` is zero
-    /// - `"No prize balance to distribute"` - Contract holds no reward tokens
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// // After season ends and all points are settled
-    /// faith_prize_systems.distribute_wonder_prizes();
-    ///
-    /// // Check distribution result
-    /// let prize: WonderFaithPrize = world.read_model(winning_wonder_id);
-    /// assert!(prize.amount_won > 0, "Prize should be set");
-    /// ```
+    /// Reserve a token deposit for this game's prize pool.
+    fn fund_prizes(ref self: T, game_id: u32, amount: u128);
+    /// Settle every wonder through season end, then freeze winners and allocations once.
     fn distribute_wonder_prizes(ref self: T, game_id: u32);
-
-    /// Claim a player's share of a wonder's prize based on their faith points.
-    ///
-    /// # Description
-    ///
-    /// Calculates and transfers a player's proportional share of a winning wonder's
-    /// prize pool. The share is based on the ratio of the player's `points_claimed`
-    /// to the wonder's total `claimed_points`.
-    ///
-    /// # Parameters
-    ///
-    /// * `player` - The address of the player claiming the prize
-    /// * `wonder_id` - The ID of the winning wonder to claim prize from
-    ///
-    /// # Formula
-    ///
-    /// ```
-    /// player_share = (player_fp.points_claimed * wonder_prize.amount_won) / wonder_faith.claimed_points
-    /// ```
-    ///
-    /// # When to Call
-    ///
-    /// - After `distribute_wonder_prizes` has been called
-    /// - After the player's FP has been fully settled (`claim_player_points`)
-    /// - Can be called multiple times for different wonders if player has FP in several
-    ///
-    /// # What It Does
-    ///
-    /// 1. Verifies season ended and registration closed
-    /// 2. Checks player hasn't already claimed for this wonder
-    /// 3. Verifies wonder has a prize (`amount_won > 0`)
-    /// 4. Calls `claim_player_points` to settle any pending FP
-    /// 5. Calculates player's proportional share
-    /// 6. If share > 0:
-    ///    - Marks claim as complete (`PlayerFaithPrizeClaimed.claimed = true`)
-    ///    - Transfers reward tokens to player
-    ///
-    /// # Authorization
-    ///
-    /// **Permissionless** - Anyone can call this on behalf of any player.
-    /// This allows batch claiming for gas efficiency or helping inactive players.
-    ///
-    /// # Requirements
-    ///
-    /// - Season must be ended with grace period closed
-    /// - Player address must be non-zero
-    /// - Player must not have already claimed for this wonder
-    /// - Wonder must have a prize (be in winners list and `distribute_wonder_prizes` called)
-    /// - Wonder must have accumulated points (`claimed_points > 0`)
-    ///
-    /// # Returns Early (No Transfer)
-    ///
-    /// - If player has no `points_claimed` for this wonder
-    /// - If calculated share is 0 (due to rounding)
-    ///
-    /// # Errors
-    ///
-    /// - `"Invalid player address"` - Zero address provided
-    /// - `"Player already claimed prize for this wonder"` - Double-claim attempt
-    /// - `"No prize for this wonder"` - Wonder didn't win or prizes not distributed
-    /// - `"Wonder has no claimed points"` - Division by zero guard
-    /// - `"Failed to transfer prize"` - ERC20 transfer failed
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// // Claim your own prize
-    /// faith_prize_systems.claim_player_prize(my_address, winning_wonder_id);
-    ///
-    /// // Claim on behalf of another player (permissionless)
-    /// faith_prize_systems.claim_player_prize(inactive_player, winning_wonder_id);
-    ///
-    /// // Batch claim for multiple players (client code)
-    /// for player in players_with_fp_in_wonder:
-    ///     faith_prize_systems.claim_player_prize(player, wonder_id);
-    /// ```
-    ///
-    /// # Multi-Wonder Scenario
-    ///
-    /// A player can have FP in multiple wonders. They need to claim separately for each:
-    /// ```
-    /// faith_prize_systems.claim_player_prize(player, wonder_a_id);
-    /// faith_prize_systems.claim_player_prize(player, wonder_b_id);
-    /// ```
     fn claim_player_prize(ref self: T, game_id: u32, player: ContractAddress, wonder_id: ID);
 }
 
@@ -224,59 +20,62 @@ pub mod faith_prize_systems {
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::faith::{
-        PlayerFaithPoints, PlayerFaithPrizeClaimed, WonderFaith, WonderFaithPrize, WonderFaithWinners,
+        FaithPrizePool, FaithWonders, PlayerFaithPoints, PlayerFaithPrizeClaimed, WonderFaith, WonderFaithPrize,
+        WonderFaithWinners,
     };
     use crate::systems::faith::contracts::{IFaithSystemsDispatcher, IFaithSystemsDispatcherTrait};
     use crate::systems::realm::utils::contracts::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use crate::systems::utils::faith::FaithAccrualImpl;
 
     #[abi(embed_v0)]
     impl FaithPrizeSystemsImpl of super::IFaithPrizeSystems<ContractState> {
+        fn fund_prizes(ref self: ContractState, game_id: u32, amount: u128) {
+            let mut world = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
+            let season = SeasonConfigImpl::get(world, game_id);
+            assert!(!season.has_ended(), "Season is over");
+            assert!(amount > 0, "Faith prize funding must be positive");
+            let config: FaithConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("faith_config"));
+            assert!(config.enabled && config.reward_token.is_non_zero(), "Reward token not configured");
+            let token = IERC20Dispatcher { contract_address: config.reward_token };
+            let recipient = starknet::get_contract_address();
+            let before = token.balance_of(recipient);
+            assert!(
+                token.transfer_from(starknet::get_caller_address(), recipient, amount.into()),
+                "Faith prize funding failed",
+            );
+            assert!(token.balance_of(recipient) == before + amount.into(), "Faith prize funding amount mismatch");
+            let mut pool: FaithPrizePool = world.read_model(game_id);
+            assert!(!pool.distributed, "Prizes already distributed");
+            pool.funded_amount += amount;
+            world.write_model(@pool);
+        }
+
         fn distribute_wonder_prizes(ref self: ContractState, game_id: u32) {
-            let mut world: WorldStorage = self.world(DEFAULT_NS());
-            let season_config = SeasonConfigImpl::get(world, game_id);
-            season_config.assert_game_ended_and_points_registration_closed();
-
-            // Get winners
+            let mut world = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
+            let season = SeasonConfigImpl::get(world, game_id);
+            season.assert_ended();
+            let mut pool: FaithPrizePool = world.read_model(game_id);
+            assert!(!pool.distributed, "Prizes already distributed");
+            settle_all_wonders(ref world, game_id, season.end_at);
             let winners: WonderFaithWinners = world.read_model(game_id);
-            assert!(winners.wonder_ids.len() > 0, "No winners to distribute prizes to");
-
-            // Check if prizes already distributed (first winner has amount_won > 0)
-            let first_winner_id = *winners.wonder_ids.at(0);
-            let first_prize: WonderFaithPrize = world.read_model((game_id, first_winner_id));
-            assert!(first_prize.amount_won == 0, "Prizes already distributed");
-
-            // Get reward token from faith config
-            let faith_config: FaithConfig = WorldConfigUtilImpl::get_member(world, game_id, selector!("faith_config"));
-            assert!(faith_config.reward_token.is_non_zero(), "Reward token not configured");
-
-            let reward_token = IERC20Dispatcher { contract_address: faith_config.reward_token };
-            let this = starknet::get_contract_address();
-            let total_prize_balance: u256 = reward_token.balance_of(this);
-            assert!(total_prize_balance > 0, "No prize balance to distribute");
-
-            // Get faith systems dispatcher to update wonder points
-            let (faith_systems_addr, _) = world.dns(@"faith_systems").unwrap();
-            let faith_systems = IFaithSystemsDispatcher { contract_address: faith_systems_addr };
-
-            // Split evenly among winners
-            let num_winners: u256 = winners.wonder_ids.len().into();
-            let prize_per_wonder: u128 = (total_prize_balance / num_winners).try_into().unwrap();
-
-            // Update each winner's WonderFaith to season end time and record prize
+            pool.distributed = true;
+            world.write_model(@pool);
+            if winners.wonder_ids.is_empty() {
+                return;
+            }
+            let prize_per_wonder = pool.funded_amount / winners.wonder_ids.len().into();
             for wonder_id in winners.wonder_ids.span() {
-                // Call claim_wonder_points to ensure wonder's last_updated_at is at season end
-                faith_systems.claim_wonder_points(game_id, *wonder_id);
-
-                // Record the prize amount for this wonder
-                let wonder_prize = WonderFaithPrize { game_id, wonder_id: *wonder_id, amount_won: prize_per_wonder };
-                world.write_model(@wonder_prize);
+                world.write_model(@WonderFaithPrize { game_id, wonder_id: *wonder_id, amount_won: prize_per_wonder });
             }
         }
 
         fn claim_player_prize(ref self: ContractState, game_id: u32, player: ContractAddress, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
-            season_config.assert_game_ended_and_points_registration_closed();
+            season_config.assert_ended();
 
             assert!(player.is_non_zero(), "Invalid player address");
 
@@ -308,7 +107,9 @@ pub mod faith_prize_systems {
             assert!(wonder_faith.claimed_points > 0, "Wonder has no claimed points");
 
             // Calculate player's share: (player_points / total_wonder_points) * wonder_prize
-            let player_share: u128 = (player_fp.points_claimed * wonder_prize.amount_won) / wonder_faith.claimed_points;
+            let player_share: u256 = Into::<u128, u256>::into(player_fp.points_claimed)
+                * wonder_prize.amount_won.into()
+                / wonder_faith.claimed_points.into();
 
             if player_share > 0 {
                 // Mark as claimed
@@ -322,6 +123,13 @@ pub mod faith_prize_systems {
                 let reward_token = IERC20Dispatcher { contract_address: faith_config.reward_token };
                 assert!(reward_token.transfer(player, player_share.into()), "Failed to transfer prize");
             }
+        }
+    }
+    fn settle_all_wonders(ref world: WorldStorage, game_id: u32, end_at: u64) {
+        let wonders: FaithWonders = world.read_model(game_id);
+        for wonder_id in wonders.wonder_ids.span() {
+            let mut wonder: WonderFaith = world.read_model((game_id, *wonder_id));
+            FaithAccrualImpl::settle_wonder(ref world, game_id, ref wonder, end_at, end_at);
         }
     }
 }
