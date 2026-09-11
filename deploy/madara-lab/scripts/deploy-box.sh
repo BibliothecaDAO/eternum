@@ -16,43 +16,47 @@ REPO_DIR=/opt/realms/eternum
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-next}"
 REALMS_PATH=/home/realms/.bun/bin:/usr/local/bin:/usr/bin:/bin
 HEALTH_TIMEOUT_SECONDS=120
+DEPLOY_STEP=startup
+DEPLOYED_REF=refs/deployments/box
 
 declare -A SERVICE_PORT=([herald]=3003 [realms-identity]=3000 [realms-launch]=3006 [realms-chat]=3005)
-declare -A SERVICE_INPUTS=(
-  [herald]='^(apps/herald/|packages/|pnpm-lock\.yaml$)'
-  [realms-identity]='^(apps/realms/|packages/|pnpm-lock\.yaml$)'
-  [realms-launch]='^(apps/launch-service/|packages/|pnpm-lock\.yaml$)'
-  [realms-chat]='^(apps/realtime-server/|pnpm-lock\.yaml$)'
-)
 
 main() {
+  trap report_failure EXIT
   require_root
-  fetch_deploy_branch
+  run_step fetch_deploy_branch
   local from to
-  from=$(repo rev-parse HEAD)
+  from=$(repo rev-parse --verify "$DEPLOYED_REF" 2>/dev/null || true)
   to=$(repo rev-parse "origin/$DEPLOY_BRANCH")
-  require_clean_worktree "$from"
+  run_step require_clean_worktree "$(repo rev-parse HEAD)"
 
   if [ "$from" = "$to" ]; then
     emit_result noop "$from" "$to" "" "" "$(probe_all_services)"
     return 0
   fi
 
-  local changed
-  changed=$(repo diff --name-only "$from" "$to")
-  local services
-  services=$(select_services_to_restart "$changed")
+  local changed="" services plan build_shared
+  if [ -n "$from" ]; then
+    changed=$(repo diff --name-only "$from" "$to")
+  fi
 
-  checkout_deploy_branch
-  install_workspace
-  build_shared_packages
-  for service in $services; do prepare_service "$service"; done
-  for service in $services; do systemctl restart "$service"; done
+  run_step checkout_deploy_branch "$to"
+  DEPLOY_STEP=plan
+  plan=$(as_realms bun "$REPO_DIR/deploy/madara-lab/scripts/deploy-box-plan.mjs" "$from" "$to")
+  services=$(read_plan_field "$plan" services)
+  build_shared=$(read_plan_field "$plan" buildShared)
+  printf '[box-deploy] plan %s\n' "$plan"
+  if [ -n "$services" ]; then run_step install_workspace; fi
+  if [ "$build_shared" = true ]; then run_step build_shared_packages; fi
+  for service in $services; do run_step prepare_service "$service"; done
+  for service in $services; do run_step systemctl restart "$service"; done
 
   local health
+  DEPLOY_STEP=health
   health=$(await_services_healthy "$services")
   local status
   status=$(restart_outcome "$services")
+  if [ "$status" = ok ]; then run_step repo update-ref "$DEPLOYED_REF" "$to"; fi
   emit_result "$status" "$from" "$to" "$changed" "$services" "$health"
   [ "$status" = ok ]
 }
@@ -64,8 +68,25 @@ require_root() {
   fi
 }
 
-as_realms() { sudo -u realms env PATH="$REALMS_PATH" "$@"; }
+as_realms() { (cd "$REPO_DIR" && sudo -u realms env PATH="$REALMS_PATH" "$@"); }
 repo() { as_realms git -C "$REPO_DIR" "$@"; }
+
+run_step() {
+  DEPLOY_STEP="$*"
+  printf '[box-deploy] %s\n' "$DEPLOY_STEP"
+  "$@"
+}
+
+report_failure() {
+  local status=$?
+  if [ "$status" -ne 0 ]; then
+    printf '{"event":"box_deploy","status":"failed","step":"%s","exitCode":%d}\n' "$DEPLOY_STEP" "$status"
+  fi
+}
+
+read_plan_field() {
+  printf '%s' "$1" | python3 -c 'import json,sys; value=json.load(sys.stdin)[sys.argv[1]]; print("\n".join(value) if isinstance(value,list) else str(value).lower())' "$2"
+}
 
 fetch_deploy_branch() { repo fetch --quiet origin "$DEPLOY_BRANCH"; }
 
@@ -80,24 +101,17 @@ require_clean_worktree() {
 
 # `checkout -B` moves the local branch onto origin, which also carries a box left on an old branch
 # over to the deploy branch. The clean-worktree check above is what makes that safe.
-checkout_deploy_branch() { repo checkout --quiet -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"; }
+checkout_deploy_branch() { repo checkout --quiet -B "$DEPLOY_BRANCH" "$1"; }
 
-install_workspace() { as_realms pnpm --dir "$REPO_DIR" install --frozen-lockfile --silent; }
+install_workspace() { as_realms pnpm --dir "$REPO_DIR" install --frozen-lockfile --reporter=append-only; }
 
-build_shared_packages() { as_realms pnpm --dir "$REPO_DIR" run build:packages >/dev/null; }
-
-select_services_to_restart() {
-  local changed=$1
-  for service in herald realms-identity realms-launch realms-chat; do
-    if echo "$changed" | grep -Eq "${SERVICE_INPUTS[$service]}"; then echo "$service"; fi
-  done
-}
+build_shared_packages() { as_realms pnpm --dir "$REPO_DIR" run build:packages; }
 
 # Identity is the one unit with build steps of its own: the SPA bundle and the session schema.
 prepare_service() {
   if [ "$1" = realms-identity ]; then
-    as_realms env DATABASE_SSL=false pnpm --dir "$REPO_DIR" --filter @realms-world/db push >/dev/null
-    as_realms pnpm --dir "$REPO_DIR" --filter @realms-world/realms build >/dev/null
+    as_realms env DATABASE_SSL=false pnpm --dir "$REPO_DIR" --filter @realms-world/db push
+    as_realms pnpm --dir "$REPO_DIR" --filter @realms-world/realms build
   fi
 }
 
@@ -129,7 +143,7 @@ restart_outcome() {
   echo ok
 }
 
-json_array() { printf '%s' "$1" | awk 'NF { printf "%s\"%s\"", (n++ ? "," : ""), $0 }' | sed 's/^/[/; s/$/]/'; }
+json_array() { printf '%s' "$1" | awk 'BEGIN { printf "[" } NF { printf "%s\"%s\"", (n++ ? "," : ""), $0 } END { print "]" }'; }
 
 emit_result() {
   local status=$1 from=$2 to=$3 changed=$4 restarted=$5 health=$6 error=${7:-}
