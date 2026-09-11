@@ -1,6 +1,6 @@
 import { Box3, Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { gltfLoader } from "../../utils/gltf-loader";
 import { creatureMovement } from "./biome-creature-catalog";
 import { createCreatureAnimator } from "./biome-creature-animator.js";
 
@@ -9,7 +9,7 @@ export async function loadBiomeCreature(
   species: string,
   reveal: (material: MeshStandardNodeMaterial) => void,
 ): Promise<Group> {
-  const { scene } = await new GLTFLoader().loadAsync(`/models/biome-creatures/${species}.glb`);
+  const { scene } = await gltfLoader.loadAsync(`/models/biome-creatures/${species}.glb`);
   try {
     createCreatureAnimator(scene).reset();
     prepareCreatureMaterials(scene, creatureMovement(species) !== "water", reveal);

@@ -14,6 +14,7 @@ interface RendererFrameSceneController {
   getScene(): Scene;
   hasActiveLabelAnimations(): boolean;
   onFrameRendered?(atMs: number): void;
+  isReadyToRender?(): boolean;
   setWeatherAtmosphereState(weatherState: unknown): void;
   update(deltaTime: number): void;
 }
@@ -76,6 +77,9 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
 
   resolvedFrame.sceneController.setWeatherAtmosphereState(weatherState);
   resolvedFrame.sceneController.update(input.deltaTime);
+  // Keep the transition frame while asynchronous preparation owns the incoming scene.
+  // Drawing it now would synchronously compile pipelines that are still being prepared.
+  if (resolvedFrame.sceneController.isReadyToRender?.() === false) return false;
 
   const shouldRenderLabels = input.labelRuntime.shouldRender({
     cadenceView: resolvedFrame.cadenceView,

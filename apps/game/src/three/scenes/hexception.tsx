@@ -200,6 +200,8 @@ export default class HexceptionScene extends HexagonScene {
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
   private localGridBuilt: Promise<void> = Promise.resolve();
+  private localPresentation: Promise<void> = Promise.resolve();
+  private localPresentationReady = true;
   private groundTexturesReady: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
@@ -554,7 +556,7 @@ export default class HexceptionScene extends HexagonScene {
     this.loadBuildingModels();
   }
 
-  setup() {
+  async setup() {
     this.isEntered = false;
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
@@ -649,6 +651,8 @@ export default class HexceptionScene extends HexagonScene {
 
     this.isInitialized = true;
     this.lastRealmKey = realmKey;
+    if (realmChanged) this.prepareLocalPresentation();
+    await this.localPresentation;
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
@@ -1147,14 +1151,27 @@ export default class HexceptionScene extends HexagonScene {
    * renderer has compiled their pipelines; both happen behind the held world frame.
    */
   public override whenPresentable(): Promise<void> {
-    return awaitLocalScenePresentable({
+    return this.localPresentation;
+  }
+
+  public isReadyToRender(): boolean {
+    return this.localPresentationReady;
+  }
+
+  private prepareLocalPresentation(): void {
+    const generation = this.activeRealmGeneration;
+    this.localPresentationReady = false;
+    this.localPresentation = awaitLocalScenePresentable({
       gridBuilt: this.localGridBuilt,
       groundTextures: this.groundTexturesReady,
       compile: async () => {
+        if (!this.ownsRealmGeneration(generation)) return;
         traceFlightMark("warm-up: compiling local scene pipelines");
         await this.compilePipelines(this.scene, this.scene);
         traceFlightMark("warm-up: pipelines compiled");
       },
+    }).finally(() => {
+      if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });
   }
 

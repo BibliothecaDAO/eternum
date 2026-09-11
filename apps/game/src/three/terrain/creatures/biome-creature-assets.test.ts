@@ -5,6 +5,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { describe, expect, it, vi } from "vitest";
 import { Box3, Mesh, Vector3 } from "three";
 import { createCreatureAnimator } from "./biome-creature-animator.js";
+import { gltfLoader } from "../../utils/gltf-loader";
 import { loadBiomeCreature, disposeBiomeCreature } from "./biome-creature-assets";
 
 const directory = new URL("../../../../public/models/biome-creatures/", import.meta.url);
@@ -56,6 +57,24 @@ function parseWithoutTextures(bytes: Buffer) {
   return new GLTFLoader().parseAsync(packed.buffer.slice(packed.byteOffset, packed.byteOffset + packed.byteLength), "");
 }
 
+function expectCompressedTextures(bytes: Buffer): void {
+  const source = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString());
+  expect(source.extensionsRequired).toContain("KHR_texture_basisu");
+  const binaryOffset = 28 + bytes.readUInt32LE(12);
+  for (const image of source.images) {
+    expect(image.mimeType).toBe("image/ktx2");
+    const view = source.bufferViews[image.bufferView];
+    const texture = bytes.subarray(
+      binaryOffset + (view.byteOffset ?? 0),
+      binaryOffset + (view.byteOffset ?? 0) + view.byteLength,
+    );
+    expect(createHash("sha256").update(texture).digest("hex")).toBe(image.extras.eternumContentHash);
+    expect(texture.subarray(0, 12).toString("hex")).toBe("ab4b5458203230bb0d0a1a0a");
+    expect(Math.max(texture.readUInt32LE(20), texture.readUInt32LE(24))).toBeLessThanOrEqual(480);
+    expect(texture.readUInt32LE(40)).toBeGreaterThan(1);
+  }
+}
+
 describe("supplied creature assets", () => {
   it("contains all 16 LOD2 species", () => {
     expect(manifest.creatures).toHaveLength(16);
@@ -65,11 +84,14 @@ describe("supplied creature assets", () => {
   for (const entry of manifest.creatures)
     it(`${entry.id}: intact, articulated, finite and seekable`, async () => {
       const bytes = readFileSync(fileURLToPath(new URL(entry.file, directory)));
+      expect(bytes.length).toBe(entry.bytes);
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(entry.sha256);
       const source = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString());
       expect(
         source.meshes.reduce((total: number, mesh: { primitives: unknown[] }) => total + mesh.primitives.length, 0),
       ).toBeLessThanOrEqual(28);
+      expect(gltfLoader.ktx2Loader).not.toBeNull();
+      expectCompressedTextures(bytes);
       const gltf = await parseWithoutTextures(bytes);
       expect(gltf.animations).toHaveLength(0);
       const animator = createCreatureAnimator(gltf.scene, { seed: 5 });

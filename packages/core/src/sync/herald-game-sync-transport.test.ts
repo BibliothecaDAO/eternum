@@ -86,6 +86,44 @@ afterEach(() => {
 });
 
 describe("HeraldGameSyncTransport", () => {
+  it("retries a stalled handshake without waiting for the browser's close event", async () => {
+    vi.useFakeTimers();
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    const stalled = harness.sockets[0]!;
+    const staleMessage = stalled.onmessage!;
+    vi.spyOn(stalled, "close").mockImplementation(() => {});
+
+    await vi.advanceTimersByTimeAsync(10_200);
+    expect(stalled.close).toHaveBeenCalledOnce();
+    expect(harness.sockets).toHaveLength(2);
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining("No hello within 10000ms"));
+    staleMessage({ data: JSON.stringify(hello("stale", 0)) });
+    expect(harness.sockets[1]!.sent).toEqual([]);
+    harness.sockets[1]!.receive(hello("current", 0));
+    const writer = await subscribed;
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(harness.sockets).toHaveLength(2);
+    writer.cancel();
+    warning.mockRestore();
+  });
+
+  it("cancels the reconnect handshake when its subscription is stopped", async () => {
+    vi.useFakeTimers();
+    const harness = streamHarness();
+    const subscribed = harness.transport.subscribe(harness.handlers);
+    harness.sockets[0]!.receive(hello("current", 0));
+    const writer = await subscribed;
+    harness.sockets[0]!.close();
+    await vi.advanceTimersByTimeAsync(200);
+    expect(harness.sockets).toHaveLength(2);
+    writer.cancel();
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(harness.sockets).toHaveLength(2);
+    expect(harness.sockets[1]!.closed).toBe(true);
+  });
+
   it("hydrates a snapshot and keeps a pre-confirmed row through an overlay reset", async () => {
     const harness = streamHarness();
     const subscribed = harness.transport.subscribe(harness.handlers);

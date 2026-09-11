@@ -65,4 +65,5 @@ catalogs:
     zod: ^4.3.6
 
 patchedDependencies:
+  "@cartridge/controller@0.13.16": patches/@cartridge__controller@0.13.16.patch
   three@0.185.1: patches/three@0.185.1.patch

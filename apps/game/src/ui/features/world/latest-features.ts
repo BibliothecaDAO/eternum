@@ -35,6 +35,19 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-11",
+    title: "Smoother Game Entry",
+    description:
+      "Game entry avoids a blocking wallet network request, and the first local view prepares its graphics before appearing.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Smaller Wildlife Downloads",
+    description: "Wildlife assets use 43% less download data with compressed textures.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
     title: "Livelier Realms and Villages",
     description:
       "Realms grow from timber settlements into golden imperial palaces, with furnished courtyards, order banners, flickering fires and spinning gems in world and local views. Villages feature rounded yurts, and penguins keep their feet on the ground.",

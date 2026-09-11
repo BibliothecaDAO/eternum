@@ -1,4 +1,4 @@
-import { BufferGeometry, Mesh, PerspectiveCamera, Scene } from "three";
+import { BoxGeometry, BufferGeometry, Mesh, PerspectiveCamera, Scene } from "three";
 import Renderer from "three/src/renderers/common/Renderer.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -21,6 +21,7 @@ function createCompilation() {
   const work = objects.map((object) => ({ object, material: object.material, scene, camera }));
   const pipelines = work.map(() => deferred());
   const renderList = {
+    push: vi.fn(),
     begin: vi.fn(),
     finish: vi.fn(),
     opaque: work,
@@ -34,6 +35,8 @@ function createCompilation() {
   });
   const renderer = {
     _initialized: true,
+    _createObjectPipeline: vi.fn(),
+    _handleObjectFunction: vi.fn(),
     _renderTarget: null,
     _outputRenderTarget: null,
     _nodes: {
@@ -58,7 +61,7 @@ function createCompilation() {
     transparent: false,
   };
   const compile = () => Renderer.prototype.compileAsync.call(renderer as unknown as Renderer, scene, camera);
-  return { compile, pipelines, submit, updateAfter, work, renderer, buildNodes };
+  return { compile, pipelines, submit, updateAfter, work, renderer, buildNodes, renderList, objects, camera };
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -96,4 +99,23 @@ describe("Three pipeline submission", () => {
     await compilation;
     expect(submit).toHaveBeenCalledTimes(2);
   });
+});
+
+// Use Three's real frustum projection so this catches a prewarm that silently skips empty/off-camera models.
+it("precompiles off-camera models while retaining frustum culling for actual draws", async () => {
+  const { compile, renderer, renderList, objects, camera, pipelines } = createCompilation();
+  const mesh = objects[0];
+  mesh.geometry = new BoxGeometry();
+  mesh.position.set(100_000, 100_000, 100_000);
+  mesh.updateMatrixWorld();
+  const projectObject = Reflect.get(Renderer.prototype, "_projectObject");
+  renderer._projectObject.mockImplementation(() => projectObject.call(renderer, mesh, camera, 0, renderList, {}));
+  pipelines.forEach((pipeline) => pipeline.resolve());
+  await compile();
+  expect(renderList.push).toHaveBeenCalledOnce();
+  expect(mesh.frustumCulled).toBe(true);
+  renderList.push.mockClear();
+  renderer._projectObject();
+  expect(renderList.push).not.toHaveBeenCalled();
+  mesh.geometry.dispose();
 });
