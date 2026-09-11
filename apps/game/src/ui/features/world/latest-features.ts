@@ -41,8 +41,8 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-11",
-    title: "Faster Reward Model Preparation",
-    description: "Enter the map faster around essence rifts, with their original shapes and animation preserved.",
+    title: "Faster Map Preparation",
+    description: "Enter the map faster around villages and essence rifts, with their shapes and animation preserved.",
     type: "improvement",
   },
   {
