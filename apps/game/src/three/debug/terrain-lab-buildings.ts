@@ -1,4 +1,9 @@
-import { ChestModelPath, SHARED_BUILDING_MODEL_PATHS, getStructureModelPaths } from "@/three/constants/scene-constants";
+import {
+  VILLAGE_MODEL_PATH,
+  ChestModelPath,
+  SHARED_BUILDING_MODEL_PATHS,
+  getStructureModelPaths,
+} from "@/three/constants/scene-constants";
 import { StructureType } from "@bibliothecadao/types";
 
 export interface TerrainLabBuilding {
@@ -26,13 +31,10 @@ const BUILDING_LABELS: Record<string, string> = {
 
 export const REALM_DRAFT_PATH = "/models/settlements/realm-settlement-draft.glb";
 
-export const VILLAGE_DRAFT_PATH = "/models/settlements/village-draft.glb";
+export const VILLAGE_DRAFT_PATH = VILLAGE_MODEL_PATH;
 
 export const TERRAIN_LAB_BUILDINGS = [
-  ...SHARED_BUILDING_MODEL_PATHS,
-  ChestModelPath,
-  VILLAGE_DRAFT_PATH,
-  REALM_DRAFT_PATH,
+  ...new Set([...SHARED_BUILDING_MODEL_PATHS, ChestModelPath, VILLAGE_DRAFT_PATH, REALM_DRAFT_PATH]),
 ].map((path) => {
   const filename = path
     .split("/")

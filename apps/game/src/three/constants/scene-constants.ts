@@ -104,6 +104,8 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | StructureType.Village
   | StructureType.Camp;
 
+export const VILLAGE_MODEL_PATH = "/models/settlements/village-draft.glb";
+
 export const buildingModelPaths = (isBlitz: boolean) => {
   return {
     [BUILDINGS_GROUPS.BUILDINGS]: {
@@ -143,10 +145,8 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
     },
     [BUILDINGS_GROUPS.VILLAGE]: {
-      [StructureType.Village]: isBlitz
-        ? BUILDINGS_MODELS_PATH + BuildingFilenames.Camp
-        : BUILDINGS_MODELS_PATH + BuildingFilenames.Village,
-      [StructureType.Camp]: BUILDINGS_MODELS_PATH + BuildingFilenames.Camp,
+      [StructureType.Village]: VILLAGE_MODEL_PATH,
+      [StructureType.Camp]: VILLAGE_MODEL_PATH,
     },
     [BUILDINGS_GROUPS.HYPERSTRUCTURE]: {
       [HyperstructureTypesNames.STAGE_1]: BUILDINGS_MODELS_PATH + BuildingFilenames.HyperstructureInit,
@@ -178,11 +178,9 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
     ],
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.FragmentMine]: isBlitz ? [RiftModelPath] : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
-    [StructureType.Village]: isBlitz
-      ? [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp]
-      : [BUILDINGS_MODELS_PATH + BuildingFilenames.Village],
+    [StructureType.Village]: [VILLAGE_MODEL_PATH],
     [StructureType.HolySite]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Castle],
-    [StructureType.Camp]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Camp],
+    [StructureType.Camp]: [VILLAGE_MODEL_PATH],
     [StructureType.BitcoinMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
   };
 }
