@@ -28,6 +28,7 @@ export interface StructureInfo {
   owner: { address: bigint; ownerName: string; guildName: string };
   structureType: StructureType;
   hasWonder: boolean;
+  realmOrder?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];
   usesFallbackCosmeticSkin?: boolean;

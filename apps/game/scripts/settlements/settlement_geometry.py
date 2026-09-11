@@ -1,4 +1,4 @@
-"""Shared Blender geometry and export for settlement drafts."""
+"""Shared Blender geometry and export for settlement assets."""
 
 import json
 from pathlib import Path
@@ -103,9 +103,16 @@ def consolidate_static_materials():
     # motion surfaces retain their own bounds and animation phase.
     groups = {}
     for obj in bpy.context.scene.objects:
-        if obj.type != "MESH" or len(obj.data.materials) != 1 or obj.get("settlementMotion"):
+        if (
+            obj.type != "MESH"
+            or len(obj.data.materials) != 1
+            or obj.get("settlementMotion")
+        ):
             continue
-        key = (obj.data.materials[0].name, json.dumps(dict(obj.items()), sort_keys=True))
+        key = (
+            obj.data.materials[0].name,
+            json.dumps(dict(obj.items()), sort_keys=True),
+        )
         groups.setdefault(key, []).append(obj)
     for (material_name, _), group in groups.items():
         if len(group) < 2:

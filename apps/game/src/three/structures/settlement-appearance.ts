@@ -32,7 +32,7 @@ export class SettlementAppearance {
       if (node instanceof Mesh && (node.userData.relationshipCloth || node.userData.orderCloth)) {
         surfaces.set(
           node.geometry.uuid,
-          node.userData.settlementMotion === "banner" || node.userData.orderCloth === "banner",
+          node.userData.relationshipCloth === "banner" || node.userData.orderCloth === "banner",
         );
       }
     });
@@ -61,12 +61,22 @@ export class SettlementAppearance {
     this.applyBannerTexture();
   }
 
-  async setOrder(orderId: number): Promise<void> {
-    const order = orders.find((candidate) => candidate.orderId === orderId);
-    if (!order) throw new Error(`Unknown realm order: ${orderId}`);
+  async setOrder(orderId: number | undefined): Promise<void> {
     if (this.disposed) return;
     const revision = ++this.revision;
-    const artwork = await new ImageLoader().loadAsync(`/images/orders/${order.orderName.toLowerCase()}.png`);
+    this.bannerTexture ??= createBannerTexture();
+    for (const material of this.cloth) material.color.set("#94a3b8");
+    const canvas = this.bannerTexture.image as HTMLCanvasElement;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Realm banner canvas is unavailable");
+    context.fillStyle = "#94a3b8";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    this.bannerTexture.needsUpdate = true;
+    this.applyBannerTexture();
+    if (orderId === undefined) return;
+    const row = resolveRealmBannerRow(orderId);
+    const order = orders[row];
+    const artwork = (await loadOrderArtwork())[row];
     if (this.disposed || revision !== this.revision) return;
     for (const material of this.cloth) material.color.set(order.color);
     this.bannerTexture ??= createBannerTexture();
@@ -211,4 +221,64 @@ export function createVillageBannerAtlas(): CanvasTexture {
 
 export function resolveSettlementRelationship(ownership: { isMine: boolean; isAlly: boolean }): SettlementRelationship {
   return ownership.isMine ? "owned" : ownership.isAlly ? "allied" : "enemy";
+}
+
+export const REALM_ATLAS_COLUMNS = 4;
+export const REALM_NEUTRAL_ROW = orders.length;
+export const REALM_ATLAS_ROWS = Math.ceil((orders.length + 1) / REALM_ATLAS_COLUMNS);
+const orderRows = new Map(orders.map((order, index) => [order.orderId, index]));
+let orderArtwork: Promise<HTMLImageElement[]> | undefined;
+
+export function resolveRealmBannerRow(orderId: number | undefined): number {
+  if (orderId === undefined) return REALM_NEUTRAL_ROW;
+  const row = orderRows.get(orderId);
+  if (row === undefined) throw new Error(`Unknown realm order: ${orderId}`);
+  return row;
+}
+
+export function createRealmBannerAtlas(): CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = REALM_ATLAS_COLUMNS * 128;
+  canvas.height = REALM_ATLAS_ROWS * 256;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Realm banner atlas canvas is unavailable");
+  // Missing snapshot metadata has its own unmarked cloth, never another order's emblem.
+  context.fillStyle = "#94a3b8";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const atlas = new CanvasTexture(canvas);
+  atlas.name = "Realm order banners";
+  atlas.colorSpace = SRGBColorSpace;
+  atlas.flipY = false;
+  atlas.generateMipmaps = false;
+  atlas.minFilter = LinearFilter;
+  return atlas;
+}
+
+function loadOrderArtwork(): Promise<HTMLImageElement[]> {
+  return (orderArtwork ??= Promise.all(
+    orders.map((order) => new ImageLoader().loadAsync(`/images/orders/${order.orderName.toLowerCase()}.png`)),
+  ).catch((error) => {
+    orderArtwork = undefined;
+    throw error;
+  }));
+}
+
+export async function prepareRealmBannerAtlas(atlas: CanvasTexture): Promise<void> {
+  const images = await loadOrderArtwork();
+  const canvas = atlas.image as HTMLCanvasElement;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Realm banner atlas canvas is unavailable");
+  const stamp = createBannerTexture();
+  for (const [index, order] of orders.entries()) {
+    paintOrderBanner(stamp, order.color, images[index]);
+    context.drawImage(
+      stamp.image as HTMLCanvasElement,
+      (index % REALM_ATLAS_COLUMNS) * 128,
+      Math.floor(index / REALM_ATLAS_COLUMNS) * 256,
+      128,
+      256,
+    );
+  }
+  stamp.dispose();
+  atlas.needsUpdate = true;
 }

@@ -1,7 +1,7 @@
-"""Build a palisaded village of small huts with relationship banners.
+"""Build a palisaded village of three broad yurts with relationship banners.
 
 Run with Blender --background --python apps/game/scripts/settlements/build-village.py.
-Then: node apps/game/scripts/compress-models.mjs --only settlements/village-draft.glb
+Then: node apps/game/scripts/compress-models.mjs --only settlements/village.glb
 Geometry uses Z-up, entrance toward -Y. Exported mesh transforms are baked for
 the terrain lab's instanced renderer. No biome or ground plate belongs here.
 """
@@ -11,9 +11,13 @@ import sys
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from courtyard_props import build_supplies
+from round_dwellings import round_dwelling
+from timber_defenses import palisade
+from town_architecture import banner
 from settlement_geometry import (
     material,
     glowing_material,
@@ -23,25 +27,32 @@ from settlement_geometry import (
     save_asset,
 )
 
+YURT_RADIUS = 0.26
+YURT_WALL_HEIGHT = 0.39
+YURT_ROOF_PEAK = 0.56
+PALISADE_HEIGHT = 0.52
+GATE_POST_HEIGHT = 0.60
+
 
 def build_village():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     materials = create_materials()
-    build_hut_cluster(materials)
+    build_yurt_cluster(materials)
     build_fence(materials)
-    build_supplies(materials)
-    build_campfire(materials)
+    build_courtyard_hearth(materials)
+    build_supplies(materials, 0.35, 0.29)
     build_banner(materials)
     save_asset(
-        "village-draft",
-        "User palisade reference; five small conical huts, uniform palisade, open yard, no ground mesh",
+        "village",
+        "village: three broad felt yurts with shallow rounded roofs, palisade and central campfire",
         "Runtime wind banner and flickering campfire",
     )
 
 
 def create_materials():
     return {
+        "canvas": material("Yurt felt", (0.56, 0.47, 0.32)),
         "wood": material("Weathered oak", (0.24, 0.115, 0.042)),
         "roof": material("Warm hide roofing", (0.235, 0.112, 0.043)),
         "roof_light": material("Sun faded hide roofing", (0.285, 0.15, 0.068)),
@@ -58,110 +69,28 @@ def create_materials():
     }
 
 
-def build_hut_cluster(m):
-    """Five peer dwellings face the courtyard and leave the gate approach clear."""
-    huts = [
-        (-0.35, 0.34, 0.18, "roof"),
-        (0.04, 0.39, 0.18, "roof_light"),
-        (0.40, 0.24, 0.17, "roof"),
-        (-0.40, -0.18, 0.18, "roof_dark"),
-        (0.39, -0.23, 0.18, "roof_light"),
+def build_yurt_cluster(m):
+    """A rear apex and two evenly spaced shoulders separate all roofs from the south camera."""
+    yurts = [
+        (-0.12, 0.38, "roof_light"),
+        (-0.41, -0.16, "roof_light"),
+        (0.41, -0.16, "roof_light"),
     ]
-    for x, y, radius, roof in huts:
+    for x, y, roof in yurts:
         facing = math.atan2(-0.05 - y, -x)
-        build_hut_walls(m, x, y, radius, facing)
-        build_hut_roof(m[roof], x, y, radius, facing)
-        build_hut_door_cloth(m, x, y, radius, facing)
-
-
-def hut_point(x, y, radius, angle, height):
-    return (x + radius * math.cos(angle), y + radius * math.sin(angle), height)
-
-
-def build_hut_walls(m, x, y, radius, facing):
-    sides = 12
-    wall_radius = radius * 0.82
-    # The missing front panel is the actual doorway, opening onto the courtyard.
-    for side in range(1, sides):
-        a = facing + (side - 0.5) * math.tau / sides
-        b = a + math.tau / sides
-        mesh(
-            "Hut timber wall",
-            [
-                hut_point(x, y, wall_radius, angle, z)
-                for angle, z in [(a, 0), (b, 0), (b, 0.18), (a, 0.18)]
-            ],
-            [(0, 1, 2, 3)],
-            m["wood"],
-            thickness=0.008,
+        dwelling_materials = dict(m, roof=m[roof])
+        round_dwelling(
+            dwelling_materials,
+            "Camp yurt",
+            x,
+            y,
+            YURT_RADIUS,
+            YURT_WALL_HEIGHT,
+            YURT_ROOF_PEAK,
+            "yurt",
+            facing,
+            True,
         )
-        beam(
-            "Hut wall upright",
-            hut_point(x, y, wall_radius, a, 0),
-            hut_point(x, y, wall_radius, a, 0.18),
-            0.008,
-            m["frame"],
-            5,
-        )
-    for side in [-1, 1]:
-        angle = facing + side * math.pi / sides
-        beam(
-            "Door jamb",
-            hut_point(x, y, wall_radius, angle, 0),
-            hut_point(x, y, wall_radius, angle, 0.18),
-            0.012,
-            m["frame"],
-            6,
-        )
-
-
-def build_hut_roof(mat, x, y, radius, facing):
-    # Three broad overlapping hide courses read as a simple cone at map scale.
-    sides = 12
-    peak, eave = 0.43, 0.16
-    for course in range(3):
-        upper = course / 3
-        lower = min(1.04, (course + 1) / 3 + 0.035)
-        vertices = [
-            hut_point(
-                x,
-                y,
-                radius * t,
-                facing + (side - 0.5) * math.tau / sides,
-                peak - (peak - eave) * t + 0.005 * course,
-            )
-            for t in [upper, lower]
-            for side in range(sides)
-        ]
-        if course == 0:
-            vertices = [vertices[0], *vertices[sides:]]
-            faces = [(0, i + 1, (i + 1) % sides + 1) for i in range(sides)]
-        else:
-            faces = [
-                (i, i + sides, (i + 1) % sides + sides, (i + 1) % sides)
-                for i in range(sides)
-            ]
-        mesh("Layered conical hide roof", vertices, faces, mat, thickness=0.004)
-
-
-def build_hut_door_cloth(m, x, y, radius, facing):
-    # Small entrance valances carry relationship color without adding another large roof.
-    forward = Vector((math.cos(facing), math.sin(facing), 0))
-    right = Vector((-math.sin(facing), math.cos(facing), 0))
-    center = Vector((x, y, 0.18)) + forward * radius * 0.85
-    vertices = [
-        tuple(center + right * u + forward * depth + Vector((0, 0, z)))
-        for u, depth, z in [
-            (-0.052, 0, 0),
-            (0.052, 0, 0),
-            (0.065, 0.045, -0.03),
-            (-0.065, 0.045, -0.03),
-        ]
-    ]
-    cloth = mesh(
-        "HutRelationshipCloth", vertices, [(0, 1, 2, 3)], m["awning"], thickness=0.003
-    )
-    cloth["relationshipCloth"] = True
 
 
 def build_fence(m):
@@ -176,46 +105,21 @@ def build_fence(m):
         (0.64, -0.44),
         (0.25, -0.62),
     ]
-    for start, end in zip(corners, corners[1:]):
-        count = max(2, round(math.dist(start, end) / 0.075))
-        height = 0.25
-        for i in range(count):
-            t = i / count
-            x = start[0] + (end[0] - start[0]) * t
-            y = start[1] + (end[1] - start[1]) * t
-            if (x, y) != corners[0]:
-                build_stake(m, x, y, height)
-        for z in [0.055, height * 0.65]:
-            beam("Palisade cross rail", (*start, z), (*end, z), 0.014, m["frame"], 6)
-    for x in [-0.25, 0.25]:
-        build_stake(m, x, -0.62, 0.35, radius=0.038)
-        for z in [0.09, 0.23]:
-            beam(
-                "Gate iron band", (x, -0.62, z), (x, -0.62, z + 0.025), 0.041, m["iron"]
-            )
+    corners = [(x * 1.065, y * 1.065) for x, y in corners]
+    palisade(m, corners, PALISADE_HEIGHT, GATE_POST_HEIGHT, spacing=0.075)
 
 
-def build_stake(m, x, y, height, radius=0.028):
-    beam("Palisade timber", (x, y, 0), (x, y, height - 0.075), radius, m["wood"], 6)
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=6,
-        radius1=radius,
-        radius2=0,
-        depth=0.075,
-        location=(x, y, height - 0.0375),
+def build_courtyard_hearth(m):
+    before = set(bpy.context.scene.objects)
+    build_campfire(m)
+    # Leave walking space around the hearth as well as between the dwellings.
+    placement = (
+        Matrix.Translation((0, -0.28, 0))
+        @ Matrix.Diagonal((0.82, 0.82, 1, 1))
+        @ Matrix.Translation((0, 0.07, 0))
     )
-    bpy.context.object.name = "Sharpened palisade tip"
-    bpy.context.object.data.materials.append(m["wood"])
-
-
-def build_supplies(m):
-    # One deliberate supply cluster; the approach and central muster yard stay empty.
-    for x, y, size in [(-0.51, 0.07, 0.09), (-0.49, -0.025, 0.07)]:
-        block("Supply crate", (x, y, size / 2), (size, size, size), m["wood"])
-        for offset in [-size * 0.3, size * 0.3]:
-            block(
-                "Crate strap", (x + offset, y, size), (0.012, size, 0.008), m["iron"], 0
-            )
+    for obj in set(bpy.context.scene.objects) - before:
+        obj.matrix_world = placement @ obj.matrix_world
 
 
 def build_campfire(m):
@@ -284,37 +188,18 @@ def build_flame(mat, x, y, radius, height):
     faces.extend(
         (2 * sides + i, 2 * sides + (i + 1) % sides, 3 * sides) for i in range(sides)
     )
+    faces.append(tuple(reversed(range(sides))))
     flame = mesh("Campfire flame", vertices, faces, mat)
     flame["settlementMotion"] = "flame"
 
 
 def build_banner(m):
-    x, y = 0.47, 0.49
-    beam("Banner pole", (x, y, 0.02), (x, y, 0.90), 0.012, m["wood"])
-    beam(
-        "Banner crossbar", (x - 0.025, y, 0.865), (x + 0.19, y, 0.865), 0.009, m["wood"]
-    )
-    vertices, uv = [], []
-    for row in range(9):
-        v = row / 8
-        for col in range(9):
-            u = col / 8
-            vertices.append(
-                (
-                    x + 0.012 + u * 0.15,
-                    y - 0.014 + 0.012 * math.sin(u * math.tau + v * 2),
-                    0.855 - v * 0.29 + 0.04 * abs(2 * u - 1) * v**6,
-                )
-            )
-            uv.append((u, 1 - v))
-    faces = [
-        (j * 9 + i, (j + 1) * 9 + i, (j + 1) * 9 + i + 1, j * 9 + i + 1)
-        for j in range(8)
-        for i in range(8)
-    ]
-    banner = mesh("VillageBanner", vertices, faces, m["banner"], uv, thickness=0.0015)
-    banner["relationshipCloth"] = True
-    banner["settlementMotion"] = "banner"
+    # A raised banner on the east edge clears the roof silhouettes from the game camera.
+    banner_materials = dict(m, timber=m["wood"], gold=m["iron"], cloth=m["banner"])
+    banner(banner_materials, "VillageBanner", 0.65, 0.13, 1.28, span=-0.22, height=0.32)
+    cloth = bpy.data.objects["VillageBanner"]
+    del cloth["orderCloth"]
+    cloth["relationshipCloth"] = "banner"
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Scene } from "three";
+import { Group, PerspectiveCamera, Scene, type Object3D } from "three";
 import { describe, expect, it, vi } from "vitest";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import type { PreparedTerrainPage, TerrainPageRequest } from "@/three/terrain/terrain-types";
@@ -14,8 +14,17 @@ vi.mock("@/three/managers/hover-hex-manager", () => ({
     dispose() {}
   },
 }));
-vi.mock("@/three/managers/instanced-model", () => ({ default: class {} }));
-vi.mock("@/three/utils/utils", () => ({ gltfLoader: {} }));
+vi.mock("@/three/managers/instanced-model", () => ({
+  default: class {
+    group = new Group();
+    instancedMeshes = [];
+    setCount = vi.fn();
+    setMatrixAt = vi.fn();
+    updateAnimations = vi.fn();
+    dispose = vi.fn();
+  },
+}));
+vi.mock("@/three/utils/utils", () => ({ gltfLoader: { loadAsync: vi.fn(async () => ({ scene: new Group() })) } }));
 const { TerrainLabInteraction } = await import("./terrain-lab-interaction");
 
 function createHarness() {
@@ -31,16 +40,19 @@ function createHarness() {
     setSurfacePresentation: vi.fn(),
   };
   const canvas = { addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as HTMLCanvasElement;
+  const scene = new Scene();
+  const compilePipelines = vi.fn(async (_object: Object3D, _scene: Scene) => {});
   const interaction = new TerrainLabInteraction(
     canvas,
     new PerspectiveCamera(),
-    new Scene(),
+    scene,
     terrain as unknown as ProceduralTerrain,
     request,
     vi.fn(),
     vi.fn(),
+    compilePipelines,
   );
-  return { terrain, interaction };
+  return { terrain, interaction, scene, compilePipelines };
 }
 
 describe("lab exploration preview", () => {
@@ -158,6 +170,87 @@ describe("lab exploration preview", () => {
     interaction.update(0.016);
     expect(terrain.present).toHaveBeenCalledTimes(count);
     expect(terrain.queueShroudReveal).not.toHaveBeenCalled();
+    interaction.dispose();
+  });
+});
+
+describe("lab model preparation", () => {
+  const path = "/models/new-buildings-opt/bank.glb";
+
+  it("keeps a model detached and placement atomic until its pipelines are ready", async () => {
+    const { interaction, terrain, scene, compilePipelines } = createHarness();
+    let finish!: () => void;
+    compilePipelines.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const placement = interaction.placeBuilding(path, 0);
+    await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+    const group = compilePipelines.mock.calls[0][0];
+    expect(compilePipelines.mock.calls[0][1]).toBe(scene);
+    expect(group.visible).toBe(true);
+    expect(group.parent).toBeNull();
+    expect(interaction.getState().buildings).toEqual([]);
+    expect(terrain.present).not.toHaveBeenCalled();
+    interaction.update(0.016);
+    finish();
+    await placement;
+    expect(group.parent).toBe(scene);
+    expect(group.visible).toBe(true);
+    expect(interaction.getState().buildings).toHaveLength(1);
+    await interaction.placeBuilding(path, 0.5);
+    expect(compilePipelines).toHaveBeenCalledOnce();
+    interaction.dispose();
+  });
+
+  it("shares pending preparation across repeated placement requests", async () => {
+    const { interaction, compilePipelines } = createHarness();
+    let finish!: () => void;
+    compilePipelines.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const first = interaction.placeBuilding(path, 0);
+    const second = interaction.placeBuilding(path, 0);
+    await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+    finish();
+    await Promise.all([first, second]);
+    expect(compilePipelines).toHaveBeenCalledOnce();
+    expect(interaction.getState().buildings).toHaveLength(1);
+    interaction.dispose();
+  });
+
+  it("does not attach a model when the lab closes during compilation", async () => {
+    const { interaction, scene, compilePipelines } = createHarness();
+    let finish!: () => void;
+    compilePipelines.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const placement = interaction.placeBuilding(path, 0);
+    await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledOnce());
+    interaction.dispose();
+    finish();
+    await placement;
+    expect(scene.children).toEqual([]);
+    expect(interaction.getState().buildings).toEqual([]);
+  });
+
+  it("reports a preparation failure and allows a fresh retry", async () => {
+    const { interaction, scene, compilePipelines } = createHarness();
+    compilePipelines.mockRejectedValueOnce(new Error("GPU compilation failed"));
+    await expect(interaction.placeBuilding(path, 0)).rejects.toThrow("GPU compilation failed");
+    expect(scene.children).toEqual([]);
+    expect(interaction.getState().buildings).toEqual([]);
+    await interaction.placeBuilding(path, 0);
+    expect(compilePipelines).toHaveBeenCalledTimes(2);
+    expect(interaction.getState().buildings).toHaveLength(1);
     interaction.dispose();
   });
 });

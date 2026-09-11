@@ -10,6 +10,23 @@ import { loadBiomeCreature, disposeBiomeCreature } from "./biome-creature-assets
 const directory = new URL("../../../../public/models/biome-creatures/", import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL("manifest.json", directory), "utf8"));
 
+it("keeps the penguin's supporting foot on the ground throughout its waddle", async () => {
+  const { scene } = await parseWithoutTextures(readFileSync(new URL("emperor-penguin.glb", directory)));
+  const animator = createCreatureAnimator(scene);
+  try {
+    for (const activity of ["idle", "move"]) {
+      for (let frame = 0; frame <= 60; frame++) {
+        animator.update(frame / 60, { activity });
+        const feet = animator.joints.filter((joint) => joint.userData.joint === "bird_foot");
+        const lowest = Math.min(...feet.map((foot) => new Box3().setFromObject(foot, true).min.y));
+        expect(lowest, `${activity} frame ${frame}`).toBeCloseTo(0, 5);
+      }
+    }
+  } finally {
+    disposeBiomeCreature(scene);
+  }
+});
+
 function parseWithoutTextures(bytes: Buffer) {
   const length = bytes.readUInt32LE(12);
   const gltf = JSON.parse(bytes.subarray(20, 20 + length).toString());

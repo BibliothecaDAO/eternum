@@ -52,7 +52,7 @@ vi.mock("@bibliothecadao/eternum", () => {
 
 vi.mock("@bibliothecadao/types", () => {
   const enumProxy = new Proxy({}, { get: (_, key) => key });
-  return new Proxy({ BuildingType: enumProxy, StructureType: enumProxy } as Record<string, unknown>, {
+  return new Proxy({ orders: [], BuildingType: enumProxy, StructureType: enumProxy } as Record<string, unknown>, {
     get: (target, prop) => (prop in target ? target[prop as string] : enumProxy),
     has: () => true,
   });
