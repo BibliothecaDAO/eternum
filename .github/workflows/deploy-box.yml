@@ -20,6 +20,7 @@ on:
       - "pnpm-workspace.yaml"
       - "patches/**"
       - "deploy/madara-lab/scripts/deploy-box*"
+      - "deploy/madara-lab/scripts/test_deploy_box.py"
       - ".github/workflows/deploy-box.yml"
   workflow_dispatch:
 
