@@ -99,18 +99,15 @@ def bake_instance_transforms():
 
 
 def consolidate_static_materials():
-    # Static geometry is consolidated by material; the imprint surface stays separate.
-    for mat in bpy.data.materials:
-        group = [
-            obj
-            for obj in list(bpy.context.scene.objects)
-            if obj.type == "MESH"
-            and obj.data.materials
-            and obj.data.materials[0] == mat
-            and not obj.get("relationshipCloth")
-            and not obj.get("orderCloth")
-            and not obj.get("settlementMotion")
-        ]
+    # Static cloth can share a draw just like timber. Preserve its appearance tags;
+    # motion surfaces retain their own bounds and animation phase.
+    groups = {}
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH" or len(obj.data.materials) != 1 or obj.get("settlementMotion"):
+            continue
+        key = (obj.data.materials[0].name, json.dumps(dict(obj.items()), sort_keys=True))
+        groups.setdefault(key, []).append(obj)
+    for (material_name, _), group in groups.items():
         if len(group) < 2:
             continue
         bpy.ops.object.select_all(action="DESELECT")
@@ -118,7 +115,7 @@ def consolidate_static_materials():
             obj.select_set(True)
         bpy.context.view_layer.objects.active = group[0]
         bpy.ops.object.join()
-        group[0].name = mat.name
+        group[0].name = material_name
 
 
 def export_glb(output):

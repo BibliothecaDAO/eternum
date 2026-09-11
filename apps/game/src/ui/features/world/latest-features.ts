@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-11",
+    title: "Smoother Village Rendering",
+    description: "Villages render more efficiently while keeping their ownership colors, banners, and campfires.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
     title: "Faster Reward Model Preparation",
     description: "Enter the map faster around essence rifts, with their original shapes and animation preserved.",
     type: "improvement",
