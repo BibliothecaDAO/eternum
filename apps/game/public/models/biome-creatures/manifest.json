@@ -9,8 +9,8 @@
       "profile": "angler",
       "file": "lantern-anglerfish.glb",
       "triangles": 3345,
-      "bytes": 1010052,
-      "sha256": "82f5a28e1ae63d73c0d5eea80f70a03c0e39a42edd6146337219b69c31a6be48"
+      "bytes": 529324,
+      "sha256": "374a77527c4fbc86c9a52af320d4327b706b1d3bc10ffdfd7ed856130d2ee214"
     },
     {
       "id": "green-sea-turtle",
@@ -18,8 +18,8 @@
       "profile": "turtle",
       "file": "green-sea-turtle.glb",
       "triangles": 4150,
-      "bytes": 1007252,
-      "sha256": "4ffc1c13fc11070776bce6a1841b5485b71102da1cc9b3b809204a4b73ced96a"
+      "bytes": 512824,
+      "sha256": "60965dfa60f83143ceb670dc10d1da341f4831eff86052d699864a4ab94888a6"
     },
     {
       "id": "shore-crab",
@@ -27,8 +27,8 @@
       "profile": "crab",
       "file": "shore-crab.glb",
       "triangles": 2494,
-      "bytes": 972012,
-      "sha256": "03dd5f10be1a8f564f966b055c3f3081e60f9b1419179f55084fa2c7a3a9d8c2"
+      "bytes": 489116,
+      "sha256": "901748e213db9783fb4926320ee0d42803d849feebd5eaea075f581c1ccd4a79"
     },
     {
       "id": "fire-beetle",
@@ -36,8 +36,8 @@
       "profile": "beetle",
       "file": "fire-beetle.glb",
       "triangles": 2891,
-      "bytes": 974816,
-      "sha256": "985f80832b06dcaddb6ceddeacd14f355991884ecdcacb5817cc9c646d414014"
+      "bytes": 493480,
+      "sha256": "022e29d26e9a8332603474e9a66387ddd542d19708608f694796263f5d4cbd3f"
     },
     {
       "id": "mountain-goat",
@@ -45,8 +45,8 @@
       "profile": "goat",
       "file": "mountain-goat.glb",
       "triangles": 4916,
-      "bytes": 1138644,
-      "sha256": "12c280c751353085b760b0b9e8f06c17606b25e56c6f97a374a2f130bed60e60"
+      "bytes": 721544,
+      "sha256": "004ddc19152a87ee9c683a67760296ffbec5a900d88cf4554d1b9b86bd083b40"
     },
     {
       "id": "arctic-fox",
@@ -54,8 +54,8 @@
       "profile": "fox",
       "file": "arctic-fox.glb",
       "triangles": 5275,
-      "bytes": 1135312,
-      "sha256": "32ae6d6ced3386ccf93a7741c221e9e6e6ff302c342c38a064c0dcb83a40d218"
+      "bytes": 717796,
+      "sha256": "bb0f07e8a30e3a63b00b88a46791de822a8a7be52ba1625538e6d0d1e15faa4e"
     },
     {
       "id": "emperor-penguin",
@@ -63,8 +63,8 @@
       "profile": "penguin",
       "file": "emperor-penguin.glb",
       "triangles": 2685,
-      "bytes": 895188,
-      "sha256": "ea8a6c77911f81bcd4b9b9dfc599b29688fbdc182a804c938c9b6849871a7552"
+      "bytes": 482204,
+      "sha256": "4c8cce5404fa981a003870da0181892a54752453f7ce3e6d03b48f0885b28f84"
     },
     {
       "id": "jackrabbit",
@@ -72,8 +72,8 @@
       "profile": "rabbit",
       "file": "jackrabbit.glb",
       "triangles": 5070,
-      "bytes": 1087960,
-      "sha256": "96b58f73ea2d9fd922771ee0460706186b9c129594e88d718c6c3a08394c3a5f"
+      "bytes": 671016,
+      "sha256": "c7556d31082f715a77ab38ff34a981dfe1c416280b8ab2b9cf94f5893476d89c"
     },
     {
       "id": "mediterranean-tortoise",
@@ -81,8 +81,8 @@
       "profile": "tortoise",
       "file": "mediterranean-tortoise.glb",
       "triangles": 4094,
-      "bytes": 1058920,
-      "sha256": "301197a50eb7d2d03994ec384226c5bb14a917d78ba08106090d9158aa8cc584"
+      "bytes": 563784,
+      "sha256": "e58d1dbd4cec66cbd52cdd564b582262aea0b08386a0da1277d76565cc551ad2"
     },
     {
       "id": "moose",
@@ -90,8 +90,8 @@
       "profile": "moose",
       "file": "moose.glb",
       "triangles": 4577,
-      "bytes": 1081492,
-      "sha256": "c69c55e3267622c767e146f82f4d4872721f8f30ea1be3ff6e2728de9aba2821"
+      "bytes": 664392,
+      "sha256": "0dbe96486d36fa6f9aed67160e8eafd954fb5351a393fda3c58fdac9eb84478c"
     },
     {
       "id": "plains-zebra",
@@ -99,8 +99,8 @@
       "profile": "zebra",
       "file": "plains-zebra.glb",
       "triangles": 5185,
-      "bytes": 1057528,
-      "sha256": "95e6c0c2d2211123424969d67036d536691740ba41e44331a8d5c1033685c64b"
+      "bytes": 640032,
+      "sha256": "98bb1fed400bd6c80ad2537db8462ead886a81d4183cf50af304e3bd85c00925"
     },
     {
       "id": "red-deer",
@@ -108,8 +108,8 @@
       "profile": "deer",
       "file": "red-deer.glb",
       "triangles": 4443,
-      "bytes": 1058988,
-      "sha256": "b3779750398b9eb8cc12eec78bf4bb6d93b8c841fd7b1b0882b8340149fe49f9"
+      "bytes": 641884,
+      "sha256": "13b7910c77448e41448f84be8bf211c589933e2b830cb6bfc35273eafddaf66a"
     },
     {
       "id": "red-backed-salamander",
@@ -117,8 +117,8 @@
       "profile": "salamander",
       "file": "red-backed-salamander.glb",
       "triangles": 2826,
-      "bytes": 1001784,
-      "sha256": "79e99cf09867ef0bf489da795fa5b9cd343eda0f35403ae99930e2dff251e0b6"
+      "bytes": 506264,
+      "sha256": "e5eeb25ff31510bc4d6f0395f203f75834ccfeeac833a2e60d237436938fd205"
     },
     {
       "id": "desert-scorpion",
@@ -126,8 +126,8 @@
       "profile": "scorpion",
       "file": "desert-scorpion.glb",
       "triangles": 3060,
-      "bytes": 1008144,
-      "sha256": "4b55134645ceb042b2ee18863899a37434859e698fbb9d36de510f3c9047889f"
+      "bytes": 524004,
+      "sha256": "d0d003414ce3fdc8ad9fdb2012039cb0c57d781ec4e4096d8eabdda2c2879cca"
     },
     {
       "id": "bengal-tiger",
@@ -135,8 +135,8 @@
       "profile": "tiger",
       "file": "bengal-tiger.glb",
       "triangles": 5595,
-      "bytes": 1100540,
-      "sha256": "7ed9832bfc2a4b109b7936835ad4c09b4c8ba395219626e36ba491a2a4740458"
+      "bytes": 683024,
+      "sha256": "68b17a6d2da173699881e00b7646bdecfd45a5dd38d9814e72863c714f3b09c1"
     },
     {
       "id": "keel-billed-toucan",
@@ -144,8 +144,8 @@
       "profile": "toucan",
       "file": "keel-billed-toucan.glb",
       "triangles": 3171,
-      "bytes": 935212,
-      "sha256": "94f8607bb1726591fd9daa760164f9bf6dd833932c9fcac5ee73005cb539203c"
+      "bytes": 522160,
+      "sha256": "cd82ef964db43359dd3ea323b4ec6a9e77effc8940be51408a1218211fbee92b"
     }
   ]
 }

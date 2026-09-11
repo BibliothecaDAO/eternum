@@ -1,7 +1,13 @@
 import { orders } from "@bibliothecadao/types";
 import { BoxGeometry, Group, ImageLoader, Mesh, MeshStandardMaterial } from "three";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { SettlementAppearance } from "./settlement-appearance";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+let SettlementAppearance: typeof import("./settlement-appearance").SettlementAppearance;
+
+beforeEach(async () => {
+  vi.resetModules();
+  ({ SettlementAppearance } = await import("./settlement-appearance"));
+});
 
 const artwork = { width: 100, height: 100 } as HTMLImageElement;
 function harness() {
@@ -55,9 +61,11 @@ describe("realm order heraldry", () => {
     const model = harness();
     const first = model.appearance.setOrder(1);
     const latest = model.appearance.setOrder(7);
-    expect(load).toHaveBeenNthCalledWith(1, "/images/orders/giants.png");
-    expect(load).toHaveBeenNthCalledWith(2, "/images/orders/reflection.png");
-    pending[1](artwork);
+    expect(load).toHaveBeenCalledTimes(orders.length);
+    for (const order of orders) {
+      expect(load).toHaveBeenCalledWith(`/images/orders/${order.orderName.toLowerCase()}.png`);
+    }
+    for (const resolve of pending) resolve(artwork);
     await latest;
     const selected = model.banner.material.map;
     expect(selected?.name).toBe("Realm order heraldry");
@@ -65,7 +73,6 @@ describe("realm order heraldry", () => {
       orders.find((order) => order.orderId === 7)!.color.toLowerCase(),
     );
     expect(model.trim.material.map).toBeNull();
-    pending[0](artwork);
     await first;
     expect(model.banner.material.map).toBe(selected);
     expect(model.context.drawImage).toHaveBeenCalledOnce();
@@ -73,20 +80,23 @@ describe("realm order heraldry", () => {
   });
 
   it("does not install late artwork after disposal and rejects unknown orders", async () => {
-    let resolve!: (image: HTMLImageElement) => void;
+    const finishes: Array<(image: HTMLImageElement) => void> = [];
     vi.spyOn(ImageLoader.prototype, "loadAsync").mockImplementation(
       () =>
         new Promise((done) => {
-          resolve = done;
+          finishes.push(done);
         }),
     );
     const model = harness();
     await expect(model.appearance.setOrder(-1)).rejects.toThrow("Unknown realm order");
     const pending = model.appearance.setOrder(1);
+    const placeholder = model.banner.material.map;
+    const release = vi.spyOn(placeholder!, "dispose");
     model.appearance.dispose();
-    resolve(artwork);
+    for (const resolve of finishes) resolve(artwork);
     await pending;
-    expect(model.banner.material.map).toBeNull();
+    expect(model.banner.material.map).toBe(placeholder);
+    expect(release).toHaveBeenCalledOnce();
     expect(model.context.drawImage).not.toHaveBeenCalled();
     model.dispose();
   });

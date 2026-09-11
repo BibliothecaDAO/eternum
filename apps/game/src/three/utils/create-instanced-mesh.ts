@@ -35,6 +35,27 @@ export function createInstancedMesh<G extends BufferGeometry, M extends Material
   return mesh;
 }
 
+/** Bind followers to the source's final backend attribute before either mesh first draws. */
+export function createInstancedMeshWithSharedMatrices<G extends BufferGeometry, M extends Material | Material[]>(
+  geometry: G,
+  material: M,
+  source: InstancedMesh,
+): InstancedMesh<G, M> {
+  const mesh = new InstancedMesh(geometry, material, source.instanceMatrix.count);
+  mesh.instanceMatrix = source.instanceMatrix;
+  mesh.count = source.count;
+  const beforeRender = mesh.onBeforeRender;
+  mesh.onBeforeRender = function (renderer, ...args) {
+    // The source may replace its attribute for native WebGPU on its first preparation.
+    // Prepare it first even if this follower is compiled or rendered ahead of it.
+    source.onBeforeRender.call(source, renderer, ...args);
+    mesh.instanceMatrix = source.instanceMatrix;
+    mesh.onBeforeRender = beforeRender;
+    beforeRender.call(this, renderer, ...args);
+  };
+  return mesh;
+}
+
 function initializeHiddenInstances(mesh: InstancedMesh): void {
   // Sparse pools draw through their highest occupied slot. Three initializes
   // unused slots to identity, which would draw phantom models at world origin.

@@ -1,6 +1,6 @@
 import { BoxGeometry, Camera, Group, Matrix4, MeshBasicMaterial, Scene } from "three";
 import { describe, expect, it } from "vitest";
-import { createInstancedMesh } from "./create-instanced-mesh";
+import { createInstancedMesh, createInstancedMeshWithSharedMatrices } from "./create-instanced-mesh";
 
 function prepare(mesh: ReturnType<typeof createInstancedMesh>, nativeWebGPU: boolean) {
   const renderer = { backend: { isWebGPUBackend: nativeWebGPU } } as unknown as Parameters<
@@ -15,6 +15,32 @@ function prepare(mesh: ReturnType<typeof createInstancedMesh>, nativeWebGPU: boo
     new Group(),
   );
 }
+
+describe.each([true, false])("shared transforms with native WebGPU %s", (nativeWebGPU) => {
+  it.each([true, false])("keeps followers attached when source prepares first: %s", (sourceFirst) => {
+    const geometry = new BoxGeometry();
+    const material = new MeshBasicMaterial();
+    const source = createInstancedMesh(geometry, material, 8);
+    const follower = createInstancedMeshWithSharedMatrices(geometry, material, source);
+    const prepareOrder = sourceFirst ? [source, follower] : [follower, source];
+    for (const mesh of prepareOrder) prepare(mesh, nativeWebGPU);
+    const captured = follower.instanceMatrix;
+    expect(captured).toBe(source.instanceMatrix);
+    expect(
+      Boolean((captured as { isStorageInstancedBufferAttribute?: boolean }).isStorageInstancedBufferAttribute),
+    ).toBe(nativeWebGPU);
+    const moved = new Matrix4().makeTranslation(7, 8, 9);
+    source.setMatrixAt(3, moved);
+    source.instanceMatrix.needsUpdate = true;
+    for (const mesh of prepareOrder) prepare(mesh, nativeWebGPU);
+    expect(follower.instanceMatrix).toBe(captured);
+    expect(new Matrix4().fromArray(captured.array, 3 * 16).elements).toEqual(moved.elements);
+    source.dispose();
+    follower.dispose();
+    geometry.dispose();
+    material.dispose();
+  });
+});
 
 it("retains writes made before compilation and keeps the native GPU buffer stable afterwards", () => {
   const mesh = createInstancedMesh(new BoxGeometry(), new MeshBasicMaterial(), 8);

@@ -1,7 +1,8 @@
 import { orders } from "@bibliothecadao/types";
 import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
-import { TERRAIN_LAB_BUILDINGS, VILLAGE_DRAFT_PATH, REALM_DRAFT_PATH } from "@/three/debug/terrain-lab-buildings";
+import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
+import { VILLAGE_MODEL_PATH, isRealmModelPath } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -103,6 +104,7 @@ export const ProceduralTerrainDebugView = () => {
   const [buildingYaw, setBuildingYaw] = useState(0);
   const [cycleProgress, setCycleProgress] = useState(50);
   const [entryEdge, setEntryEdge] = useState(0);
+  const [preparingBuilding, setPreparingBuilding] = useState(false);
   const [preparingExploration, setPreparingExploration] = useState(false);
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
@@ -385,7 +387,7 @@ export const ProceduralTerrainDebugView = () => {
                 ))}
               </select>
             </label>
-            {buildingPath === REALM_DRAFT_PATH && (
+            {isRealmModelPath(buildingPath) && (
               <label className="flex flex-col gap-1 text-sm">
                 Realm order
                 <select
@@ -402,7 +404,7 @@ export const ProceduralTerrainDebugView = () => {
                 </select>
               </label>
             )}
-            {buildingPath === VILLAGE_DRAFT_PATH && (
+            {buildingPath === VILLAGE_MODEL_PATH && (
               <label className="flex flex-col gap-1 text-sm">
                 Village relationship
                 <select
@@ -438,25 +440,30 @@ export const ProceduralTerrainDebugView = () => {
             </p>
             <button
               className="border border-emerald-300/25 p-2 text-sm"
-              disabled={!ready}
-              onClick={() =>
-                void rendererRef.current
-                  ?.placeBuilding(buildingPath, buildingYaw)
-                  .catch((reason) => setError(String(reason)))
-              }
+              disabled={!ready || preparingBuilding}
+              onClick={async () => {
+                setPreparingBuilding(true);
+                try {
+                  await rendererRef.current?.placeBuilding(buildingPath, buildingYaw);
+                } catch (reason) {
+                  setError(String(reason));
+                } finally {
+                  setPreparingBuilding(false);
+                }
+              }}
             >
-              Place on selected tile
+              {preparingBuilding ? "Preparing model…" : "Place on selected tile"}
             </button>
             <button
               className="border border-white/15 p-2 text-sm"
-              disabled={!ready}
+              disabled={!ready || preparingBuilding}
               onClick={() => void rendererRef.current?.removeBuilding().catch((reason) => setError(String(reason)))}
             >
               Remove from selected tile
             </button>
             <button
               className="border border-white/15 p-2 text-sm"
-              disabled={!ready}
+              disabled={!ready || preparingBuilding}
               onClick={() => void rendererRef.current?.removeBuilding(true).catch((reason) => setError(String(reason)))}
             >
               Clear buildings

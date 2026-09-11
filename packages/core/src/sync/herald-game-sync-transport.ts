@@ -84,6 +84,8 @@ export interface HeraldGameSyncTransportOptions {
 }
 
 const DEFAULT_RECONNECT_MS = 200;
+// A stalled browser WebSocket handshake took 31 seconds before retrying during entry profiling.
+const HELLO_TIMEOUT_MS = 10_000;
 
 const deferred = <Value>(): Deferred<Value> => {
   let rejectPromise!: (error: Error) => void;
@@ -159,6 +161,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private snapshotRows?: Map<string, StoredRow>;
   private socket?: HeraldSocket;
   private reconnectTimer?: ReturnType<typeof setTimeout>;
+  private helloTimer?: ReturnType<typeof setTimeout>;
   private epoch = "";
   private seq = 0;
   private stopped = true;
@@ -231,15 +234,37 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     if (this.stopped) return;
     const socket = this.socketFactory(this.options.url);
     this.socket = socket;
-    socket.onopen = () => undefined;
-    socket.onmessage = ({ data }) => this.acceptMessage(data);
-    socket.onerror = () => socket.close();
-    socket.onclose = () => {
+    this.helloTimer = setTimeout(() => {
       if (this.socket !== socket) return;
-      this.socket = undefined;
-      this.snapshotRows = undefined;
-      this.scheduleReconnect();
+      console.warn(`[Herald] No hello within ${HELLO_TIMEOUT_MS}ms; reconnecting`);
+      this.reconnectSocket(socket);
+    }, HELLO_TIMEOUT_MS);
+    socket.onmessage = ({ data }) => {
+      if (this.socket === socket) this.acceptMessage(data);
     };
+    socket.onerror = () => this.reconnectSocket(socket);
+    socket.onclose = () => this.reconnectSocket(socket);
+  }
+
+  private reconnectSocket(socket: HeraldSocket): void {
+    if (this.socket !== socket) return;
+    this.closeSocket();
+    this.snapshotRows = undefined;
+    this.scheduleReconnect();
+  }
+
+  private clearHelloTimer(): void {
+    if (this.helloTimer !== undefined) clearTimeout(this.helloTimer);
+    this.helloTimer = undefined;
+  }
+
+  private closeSocket(): void {
+    this.clearHelloTimer();
+    const socket = this.socket;
+    this.socket = undefined;
+    if (!socket) return;
+    socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+    socket.close();
   }
 
   private acceptMessage(data: unknown): void {
@@ -268,11 +293,12 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         this.initialSnapshotPageWaiter = null;
       }
       this.forceFreshSnapshot = true;
-      this.socket?.close();
+      if (this.socket) this.reconnectSocket(this.socket);
     }
   }
 
   private acceptHello(message: Extract<HeraldMessage, { type: "hello" }>): void {
+    this.clearHelloTimer();
     this.socket?.send(
       JSON.stringify({
         type: "resume",
@@ -444,8 +470,6 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.stopped = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
-    const socket = this.socket;
-    this.socket = undefined;
-    socket?.close();
+    this.closeSocket();
   }
 }

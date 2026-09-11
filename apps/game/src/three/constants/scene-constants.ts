@@ -27,7 +27,6 @@ enum BuildingFilenames {
   Farm = "farm.glb",
   FishingVillage = "fishery.glb",
   FragmentMine = "mine.glb",
-  Camp = "camp.glb",
   Market = "market.glb",
   Resource = "mine.glb",
   Stable = "stable.glb",
@@ -41,11 +40,6 @@ enum BuildingFilenames {
   HyperstructureInit = "hyperstructure_init.glb",
   HyperstructureHalf = "hyperstructure_half.glb",
   Hyperstructure = "hyperstructure_finish.glb",
-  Realm0 = "castle0.glb",
-  Realm1 = "castle1.glb",
-  Realm2 = "castle2.glb",
-  Realm3 = "castle3.glb",
-  Village = "village.glb",
   WonderAnimated = "wonder2.glb",
 }
 
@@ -53,9 +47,27 @@ export const ChestModelPath = "/models/reward-tiles/chest.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
 export const ReservedHyperstructureModelPath = "/models/new-buildings-opt/" + BuildingFilenames.HyperstructureInit;
 
+export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
+export const REALM_MODEL_PATHS = {
+  [RealmLevelNames.Settlement]: "/models/settlements/settlement.glb",
+  [RealmLevelNames.City]: "/models/settlements/city.glb",
+  [RealmLevelNames.Kingdom]: "/models/settlements/kingdom.glb",
+  [RealmLevelNames.Empire]: "/models/settlements/empire.glb",
+} as const;
+
+export function isRealmModelPath(path: string): boolean {
+  return Object.values(REALM_MODEL_PATHS).some((realmPath) => realmPath === path);
+}
+
+export function isSettlementModelPath(path: string): boolean {
+  return path === VILLAGE_MODEL_PATH || isRealmModelPath(path);
+}
+
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   ...Object.values(BuildingFilenames).map((fileName) => `${BUILDINGS_MODELS_PATH}${fileName}`),
   RiftModelPath,
+  ...Object.values(REALM_MODEL_PATHS),
+  VILLAGE_MODEL_PATH,
 ]);
 
 export const SHARED_CHEST_MODEL_PATHS = buildUniqueAssetPaths([ChestModelPath]);
@@ -104,8 +116,6 @@ export type BUILDINGS_CATEGORIES_TYPES =
   | StructureType.Village
   | StructureType.Camp;
 
-export const VILLAGE_MODEL_PATH = "/models/settlements/village-draft.glb";
-
 export const buildingModelPaths = (isBlitz: boolean) => {
   return {
     [BUILDINGS_GROUPS.BUILDINGS]: {
@@ -138,12 +148,7 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [ResourceMiningTypes.LumberMill]: BUILDINGS_MODELS_PATH + BuildingFilenames.LumberMill,
       [ResourceMiningTypes.Dragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
     },
-    [BUILDINGS_GROUPS.REALMS]: {
-      [RealmLevelNames.Settlement]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-      [RealmLevelNames.City]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-      [RealmLevelNames.Kingdom]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-      [RealmLevelNames.Empire]: BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
-    },
+    [BUILDINGS_GROUPS.REALMS]: REALM_MODEL_PATHS,
     [BUILDINGS_GROUPS.VILLAGE]: {
       [StructureType.Village]: VILLAGE_MODEL_PATH,
       [StructureType.Camp]: VILLAGE_MODEL_PATH,
@@ -165,10 +170,10 @@ const PROGRESS_FINAL_THRESHOLD = 100;
 export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, string[]> {
   return {
     [StructureType.Realm]: [
-      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm0,
-      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm1,
-      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm2,
-      BUILDINGS_MODELS_PATH + BuildingFilenames.Realm3,
+      REALM_MODEL_PATHS[RealmLevelNames.Settlement],
+      REALM_MODEL_PATHS[RealmLevelNames.City],
+      REALM_MODEL_PATHS[RealmLevelNames.Kingdom],
+      REALM_MODEL_PATHS[RealmLevelNames.Empire],
       BUILDINGS_MODELS_PATH + BuildingFilenames.WonderAnimated,
     ],
     [StructureType.Hyperstructure]: [

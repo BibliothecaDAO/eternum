@@ -91,6 +91,38 @@ describe("runRendererFrame", () => {
     expect(labelRuntime.shouldRender).not.toHaveBeenCalled();
   });
 
+  it("keeps updating a preparing scene without drawing it, then resumes presentation when ready", () => {
+    const local = { ...createScene("hexception"), isReadyToRender: vi.fn(() => false) };
+    const backend = createBackend();
+    const labelRuntime = { render: vi.fn(), shouldRender: vi.fn(() => true) };
+    const input = {
+      backend: backend as never,
+      camera: "camera" as never,
+      captureStatsSample: vi.fn(),
+      currentScene: SceneName.Hexception,
+      currentTime: 100,
+      cycleProgress: 0.25,
+      deltaTime: 0.016,
+      hexceptionScene: local as never,
+      hudScene: createHudScene() as never,
+      labelRuntime: labelRuntime as never,
+      worldmapScene: createScene("worldmap") as never,
+    };
+
+    expect(runRendererFrame(input)).toBe(false);
+    expect(local.update).toHaveBeenCalledOnce();
+    expect(local.setWeatherAtmosphereState).toHaveBeenCalledOnce();
+    expect(backend.renderFrame).not.toHaveBeenCalled();
+    expect(local.onFrameRendered).not.toHaveBeenCalled();
+    expect(labelRuntime.shouldRender).not.toHaveBeenCalled();
+    expect(input.captureStatsSample).not.toHaveBeenCalled();
+
+    local.isReadyToRender.mockReturnValue(true);
+    expect(runRendererFrame(input)).toBe(true);
+    expect(backend.renderFrame).toHaveBeenCalledOnce();
+    expect(local.onFrameRendered).toHaveBeenCalledOnce();
+  });
+
   it("renders the world map frame through the backend-owned pipeline", () => {
     const hudScene = createHudScene();
     const worldmapScene = createScene("worldmap", 1);

@@ -124,8 +124,11 @@ overrides:
 packageExtensionsChecksum: sha256-2XhCmL8hTN3oqYW8jQHF2j7T7zZfCdxiCgOiQlYn6rU=
 
 patchedDependencies:
+  '@cartridge/controller@0.13.16':
+    hash: fbafe2385e9760ac2c5a414ddc801db85a9accc4709f27138759aad1de5efc0e
+    path: patches/@cartridge__controller@0.13.16.patch
   three@0.185.1:
-    hash: 0544a384f81d31bd3cd625dfd8fe01352bbfe8530e407144c86eae4b8e3bcb1a
+    hash: 4c2e8c8c846d87eb9df0981ba244f9060ecf93cbf39fab2c400fb7379c7114d1
     path: patches/three@0.185.1.patch
 
 importers:
@@ -301,7 +304,7 @@ importers:
         version: 0.13.16(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@cartridge/controller':
         specifier: catalog:game
-        version: 0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+        version: 0.13.16(patch_hash=fbafe2385e9760ac2c5a414ddc801db85a9accc4709f27138759aad1de5efc0e)(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@dojoengine/core':
         specifier: catalog:game
         version: 1.7.0-preview.3(typescript@5.9.3)(viem@2.55.19(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
@@ -424,7 +427,7 @@ importers:
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))
       three:
         specifier: ^0.185.1
-        version: 0.185.1(patch_hash=0544a384f81d31bd3cd625dfd8fe01352bbfe8530e407144c86eae4b8e3bcb1a)
+        version: 0.185.1(patch_hash=4c2e8c8c846d87eb9df0981ba244f9060ecf93cbf39fab2c400fb7379c7114d1)
       type-fest:
         specifier: catalog:game
         version: 2.19.0
@@ -18003,7 +18006,7 @@ snapshots:
 
   '@cartridge/connector@0.13.16(@starknet-react/core@5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10))(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@cartridge/controller': 0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@cartridge/controller': 0.13.16(patch_hash=fbafe2385e9760ac2c5a414ddc801db85a9accc4709f27138759aad1de5efc0e)(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@starknet-react/core': 5.0.3(bufferutil@4.1.0)(get-starknet-core@4.0.0)(react@18.3.1)(starknet@8.9.2)(typescript@5.9.3)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -18040,7 +18043,7 @@ snapshots:
 
   '@cartridge/controller-wasm@0.10.1': {}
 
-  '@cartridge/controller@0.13.16(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@cartridge/controller@0.13.16(patch_hash=fbafe2385e9760ac2c5a414ddc801db85a9accc4709f27138759aad1de5efc0e)(@types/react@18.3.28)(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.4.1)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.1)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.16.0)(bun-types@1.4.0)(gel@2.2.0)(kysely@0.28.17)(pg@8.18.0)))(encoding@0.1.13)(immer@11.1.4)(ioredis@5.9.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@cartridge/controller-wasm': 0.10.1
       '@cartridge/penpal': 6.2.4
@@ -35027,7 +35030,7 @@ snapshots:
 
   three@0.174.0: {}
 
-  three@0.185.1(patch_hash=0544a384f81d31bd3cd625dfd8fe01352bbfe8530e407144c86eae4b8e3bcb1a): {}
+  three@0.185.1(patch_hash=4c2e8c8c846d87eb9df0981ba244f9060ecf93cbf39fab2c400fb7379c7114d1): {}
 
   timeout-abort-controller@3.0.0:
     dependencies:

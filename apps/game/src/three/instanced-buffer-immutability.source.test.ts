@@ -21,6 +21,11 @@ const threeRoot = resolve(currentDir);
 // mesh. File-wide exceptions would also permit unsafe writes after first draw.
 const CREATION_ASSIGNMENT_SCOPES = [
   {
+    file: "utils/create-instanced-mesh.ts",
+    start: "export function createInstancedMeshWithSharedMatrices",
+    end: "function initializeHiddenInstances",
+  },
+  {
     // One-shot initialization before compilation; the callback removes itself before the first draw.
     file: "utils/create-instanced-mesh.ts",
     start: "mesh.onBeforeRender = function (",

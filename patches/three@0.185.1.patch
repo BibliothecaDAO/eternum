@@ -1,5 +1,5 @@
 diff --git a/src/renderers/common/Renderer.js b/src/renderers/common/Renderer.js
-index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..96c9bc77be379cca743c01c63fdad17b5be69eed 100644
+index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..2ec2f4f30ab165de54bfd9a8b84bdc74f2d2eb06 100644
 --- a/src/renderers/common/Renderer.js
 +++ b/src/renderers/common/Renderer.js
 @@ -1031,8 +1031,10 @@ class Renderer {
@@ -44,3 +44,22 @@ index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..96c9bc77be379cca743c01c63fdad17b
  	}
  
  	/**
+@@ -3103,7 +3103,7 @@ class Renderer {
+ 
+ 				const frustum = camera.isArrayCamera ? _frustumArray : _frustum;
+ 
+-				if ( ! object.frustumCulled || frustum.intersectsSprite( object ) ) {
++				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || frustum.intersectsSprite( object ) ) {
+ 
+ 					if ( this.sortObjects === true ) {
+ 
+@@ -3129,7 +3129,8 @@ class Renderer {
+ 
+ 				const frustum = camera.isArrayCamera ? _frustumArray : _frustum;
+ 
+-				if ( ! object.frustumCulled || frustum.intersectsObject( object ) ) {
++				// Precompilation precedes instance placement; camera culling would skip their pipelines.
++				if ( this._handleObjectFunction === this._createObjectPipeline || ! object.frustumCulled || frustum.intersectsObject( object ) ) {
+ 
+ 					const { geometry, material } = object;
+ 

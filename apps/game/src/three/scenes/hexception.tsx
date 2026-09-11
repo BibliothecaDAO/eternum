@@ -4,7 +4,7 @@ import {
   resolveSettlementRelationship,
   type SettlementRelationship,
 } from "../structures/settlement-appearance";
-import { VILLAGE_MODEL_PATH } from "../constants/scene-constants";
+import { VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
@@ -20,6 +20,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
@@ -161,11 +162,15 @@ export default class HexceptionScene extends HexagonScene {
     BUILDINGS_GROUPS,
     Map<BUILDINGS_CATEGORIES_TYPES, { model: Group; animations: AnimationClip[] }>
   > = new Map();
-  private villagePresentation?: {
-    appearance: SettlementAppearance;
-    animation: SettlementAnimation;
-    relationship?: SettlementRelationship;
-  };
+  private readonly settlementPresentations = new Map<
+    string,
+    {
+      appearance: SettlementAppearance;
+      animation: SettlementAnimation;
+      relationship?: SettlementRelationship;
+      orderId?: number;
+    }
+  >();
   private buildingInstances: Map<string, Group> = new Map();
   private pendingBuildingKeys: Set<string> = new Set();
   private wonderInstances: Map<string, Group> = new Map();
@@ -195,6 +200,8 @@ export default class HexceptionScene extends HexagonScene {
   private lastRealmKey?: string;
   private activeRealmGeneration = 0;
   private localGridBuilt: Promise<void> = Promise.resolve();
+  private localPresentation: Promise<void> = Promise.resolve();
+  private localPresentationReady = true;
   private groundTexturesReady: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
@@ -478,7 +485,7 @@ export default class HexceptionScene extends HexagonScene {
       for (const [building, path] of Object.entries(categoryPaths)) {
         let sourceLoad = modelLoadsByPath.get(path);
         if (!sourceLoad) {
-          sourceLoad = this.loadBuildingModel(path, building);
+          sourceLoad = this.loadBuildingModel(path);
           modelLoadsByPath.set(path, sourceLoad);
         }
         const loadPromise = sourceLoad.then((modelData) => {
@@ -489,43 +496,28 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
-  private loadBuildingModel(path: string, building: string): Promise<{ model: Group; animations: AnimationClip[] }> {
-    return new Promise((resolve, reject) => {
-      loader.load(
-        path,
-        (gltf) => {
-          const model = gltf.scene as Group;
-          model.position.set(0, 0, 0);
-          model.rotation.y = Math.PI;
-          model.traverse((child) => {
-            if (
-              child instanceof Mesh &&
-              !child.name.includes(SMALL_DETAILS_NAME) &&
-              !child.parent?.name.includes(SMALL_DETAILS_NAME)
-            ) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-          if (path === VILLAGE_MODEL_PATH) {
-            const meshes: Mesh[] = [];
-            model.traverse((node) => {
-              if (node instanceof Mesh) meshes.push(node);
-            });
-            this.villagePresentation = {
-              appearance: new SettlementAppearance(model, meshes),
-              animation: new SettlementAnimation(model, meshes),
-            };
-          }
-          resolve({ model, animations: gltf.animations });
-        },
-        undefined,
-        (error) => {
-          console.error(`Error loading ${building} model:`, error);
-          reject(error);
-        },
-      );
+  private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
+    const gltf = await loader.loadAsync(path);
+    const model = gltf.scene as Group;
+    model.position.set(0, 0, 0);
+    model.rotation.y = Math.PI;
+    const meshes: Mesh[] = [];
+    model.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      meshes.push(child);
+      if (!child.name.includes(SMALL_DETAILS_NAME) && !child.parent?.name.includes(SMALL_DETAILS_NAME)) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
     });
+    if (isSettlementModelPath(path)) {
+      const appearance = new SettlementAppearance(model, meshes);
+      if (path === VILLAGE_MODEL_PATH) appearance.setRelationship("enemy");
+      else await appearance.setOrder(undefined);
+      this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
+      model.userData.settlementModelPath = path;
+    }
+    return { model, animations: gltf.animations };
   }
 
   private getOrCreateBuildingPreview(): BuildingPreview {
@@ -564,7 +556,7 @@ export default class HexceptionScene extends HexagonScene {
     this.loadBuildingModels();
   }
 
-  setup() {
+  async setup() {
     this.isEntered = false;
     const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
     const routeWorldPosition = routeTarget.routeWorldPosition;
@@ -659,6 +651,8 @@ export default class HexceptionScene extends HexagonScene {
 
     this.isInitialized = true;
     this.lastRealmKey = realmKey;
+    if (realmChanged) this.prepareLocalPresentation();
+    await this.localPresentation;
   }
 
   onSwitchOff(_nextSceneName?: SceneName) {
@@ -722,9 +716,11 @@ export default class HexceptionScene extends HexagonScene {
     this.buildingInstances.clear();
     this.wonderInstances.clear();
 
-    this.villagePresentation?.animation.dispose();
-    this.villagePresentation?.appearance.dispose();
-    this.villagePresentation = undefined;
+    for (const presentation of this.settlementPresentations.values()) {
+      presentation.animation.dispose();
+      presentation.appearance.dispose();
+    }
+    this.settlementPresentations.clear();
 
     // Dispose of loaded building models (geometries and materials)
     const disposedBuildingModels = new Set<Group>();
@@ -1155,14 +1151,27 @@ export default class HexceptionScene extends HexagonScene {
    * renderer has compiled their pipelines; both happen behind the held world frame.
    */
   public override whenPresentable(): Promise<void> {
-    return awaitLocalScenePresentable({
+    return this.localPresentation;
+  }
+
+  public isReadyToRender(): boolean {
+    return this.localPresentationReady;
+  }
+
+  private prepareLocalPresentation(): void {
+    const generation = this.activeRealmGeneration;
+    this.localPresentationReady = false;
+    this.localPresentation = awaitLocalScenePresentable({
       gridBuilt: this.localGridBuilt,
       groundTextures: this.groundTexturesReady,
       compile: async () => {
+        if (!this.ownsRealmGeneration(generation)) return;
         traceFlightMark("warm-up: compiling local scene pipelines");
         await this.compilePipelines(this.scene, this.scene);
         traceFlightMark("warm-up: pipelines compiled");
       },
+    }).finally(() => {
+      if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });
   }
 
@@ -1466,6 +1475,10 @@ export default class HexceptionScene extends HexagonScene {
 
     const instance = buildingData.model.clone();
     instance.applyMatrix4(building.matrix);
+    if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
+      // Apply after the template and tile transforms so neither can turn the entrance away.
+      instance.rotation.set(0, resolveSettlementRotationY(this.tileManager.structureType(), instance.rotation.y), 0);
+    }
     instance.scale.set(0.01, 0.01, 0.01);
     instance.userData[BUILDING_RENDER_SIGNATURE] = signature;
     this.applyMiningBuildingMaterial(instance, building, selection.type);
@@ -1803,28 +1816,42 @@ export default class HexceptionScene extends HexagonScene {
     }
   }
 
-  private updateVillagePresentation(deltaTime: number): void {
-    const presentation = this.villagePresentation;
-    if (!presentation || !this.isEntered) return;
+  private updateSettlementPresentations(deltaTime: number): void {
+    if (!this.isEntered) return;
     const structure = getComponentValue(
       this.dojo.components.Structure,
       gameEntityKey([BigInt(this.state.structureEntityId)]),
     );
-    if (!structure || !isVillageLikeStructureCategory(structure.base.category)) return;
-    const relationship = resolveSettlementRelationship({
-      isMine: isAddressEqualToAccount(structure.owner),
-      isAlly: arePlayersAllied(this.dojo.components, useAccountStore.getState().account?.address, structure.owner),
-    });
-    if (relationship !== presentation.relationship) {
-      presentation.appearance.setRelationship(relationship);
-      presentation.relationship = relationship;
+    const activePaths = new Set(
+      Array.from(this.buildingInstances.values(), (model) => model.userData.settlementModelPath),
+    );
+    const wind = this.getWeatherAtmosphereState() ?? { windX: 0, windZ: 0 };
+    for (const [path, presentation] of this.settlementPresentations) {
+      if (!activePaths.has(path)) continue;
+      if (path === VILLAGE_MODEL_PATH) {
+        const relationship = resolveSettlementRelationship({
+          isMine: !!structure && isAddressEqualToAccount(structure.owner),
+          isAlly:
+            !!structure &&
+            arePlayersAllied(this.dojo.components, useAccountStore.getState().account?.address, structure.owner),
+        });
+        if (relationship !== presentation.relationship) {
+          presentation.appearance.setRelationship(relationship);
+          presentation.relationship = relationship;
+        }
+      } else if (structure?.metadata.order !== presentation.orderId) {
+        presentation.orderId = structure?.metadata.order;
+        void presentation.appearance.setOrder(presentation.orderId).catch((error) => {
+          console.error("[Hexception] Unable to prepare realm heraldry", error);
+        });
+      }
+      presentation.animation.update(deltaTime, wind);
     }
-    presentation.animation.update(deltaTime, this.getWeatherAtmosphereState() ?? { windX: 0, windZ: 0 });
   }
 
   update(deltaTime: number) {
     super.update(deltaTime);
-    this.updateVillagePresentation(deltaTime);
+    this.updateSettlementPresentations(deltaTime);
     this.buildingMixers.forEach((mixer) => {
       mixer.update(deltaTime);
     });
