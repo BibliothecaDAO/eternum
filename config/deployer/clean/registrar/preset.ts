@@ -616,9 +616,9 @@ export function buildCreateGameParams(config: Config, input: CreateGamePayloadIn
     start_main_at: input.startMainAt,
     duration_seconds: input.durationSeconds,
     end_grace_seconds: resolveEndGraceSeconds(config),
-    registration_grace_seconds: config.season.pointRegistrationCloseAfterEndSeconds,
+
     dev_mode_on: input.devModeOn,
-    single_realm_mode: input.singleRealmMode,
+    single_realm_mode: !config.blitz.mode.on || input.singleRealmMode,
     two_player_mode: input.twoPlayerMode,
     registration_count_max: registrationCountMax,
     registration_start_at: registrationStartAt,

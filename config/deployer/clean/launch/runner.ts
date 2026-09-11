@@ -5,7 +5,7 @@ import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "..
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  DEFAULT_MADARA_PRESET_ID,
+  defaultPresetForEnvironment,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import {
@@ -74,8 +74,8 @@ function resolveSponsoredPool(request: LaunchGameRequest): bigint | undefined {
   return BigInt(request.sponsoredPoolLords) * LORDS_UNIT;
 }
 
-function resolvePresetId(version: string | undefined): number {
-  const configuredPresetId = version ?? DEFAULT_MADARA_PRESET_ID;
+function resolvePresetId(version: string): number {
+  const configuredPresetId = version;
   const presetId = Number(configuredPresetId);
   if (!Number.isInteger(presetId) || presetId <= 0 || presetId > 0xffff_ffff) {
     throw new Error(`Preset id must be a positive u32, received "${configuredPresetId}"`);
@@ -91,7 +91,7 @@ function createRuntime(request: LaunchGameRequest): LaunchRuntime {
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     rpcUrl,
     startTime: parseStartTime(request.startTime),
-    presetId: resolvePresetId(request.version),
+    presetId: resolvePresetId(request.version ?? defaultPresetForEnvironment(request.environmentId)),
     progress: createProgressReporter(),
   };
 }
@@ -104,7 +104,7 @@ function resolveLaunchConfig(runtime: LaunchRuntime, request: LaunchGameRequest)
     singleRealmMode: request.singleRealmMode,
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
-    pointRegistrationGraceSeconds: request.pointRegistrationGraceSeconds,
+
     mapConfigOverrides: request.mapConfigOverrides,
     biomeClimateOverrides: request.biomeClimateOverrides,
     blitzRegistrationOverrides: request.blitzRegistrationOverrides,

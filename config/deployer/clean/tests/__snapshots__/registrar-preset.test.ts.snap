@@ -2128,7 +2128,6 @@ exports[`appchain registrar preset keeps launch clocks and mode overrides in Cre
   "2000000000",
   "7200",
   "86400",
-  "600",
   "1",
   "0",
   "1",

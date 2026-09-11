@@ -5,7 +5,12 @@ import { openLedgerGame, type LedgerTarget } from "../ledger/calls";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId, WorldDeployment } from "../types";
 
-type RegistrarEntrypoint = "bootstrap_chain_config" | "register_preset" | "register_series" | "create_game";
+type RegistrarEntrypoint =
+  | "bootstrap_chain_config"
+  | "register_preset"
+  | "register_series"
+  | "create_game"
+  | "backfill_completed_hyperstructures";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -350,4 +355,19 @@ export function isRegistrarAlreadyInitializedError(error: unknown): boolean {
 
 export function isRegistrarAlreadyRegisteredError(error: unknown): boolean {
   return /(preset|series) already registered/i.test(error instanceof Error ? error.message : String(error));
+}
+
+export async function backfillCompletedHyperstructures(
+  account: Account,
+  gameId: number,
+  startIndex: number,
+  ids: number[],
+  target: RegistrarTarget,
+): Promise<RegistrarTransactionResult> {
+  const calldata = CallData.compile([gameId, startIndex, ids]);
+  return executeRegistrarCall(
+    account,
+    buildRegistrarCall("backfill_completed_hyperstructures", calldata, target),
+    target,
+  );
 }

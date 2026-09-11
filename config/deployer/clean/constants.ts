@@ -7,9 +7,14 @@ export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 // presets: 2/3 local dev balance, 4/5 registered WITHOUT balance profiles,
 // 6/7 baked the base sheet's 24-tick spawn immunity — never offered again.
 export const DEFAULT_MADARA_PRESET_ID = "8";
+export const DEFAULT_ETERNUM_PRESET_ID = "10";
 export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
 export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;
 export const BLITZ_REGISTRATION_COUNT_CAP = 96;
+export function defaultPresetForEnvironment(environment: DeploymentEnvironmentId): string {
+  return environment === "madara.eternum" ? DEFAULT_ETERNUM_PRESET_ID : DEFAULT_MADARA_PRESET_ID;
+}
+
 export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, DeploymentEnvironment> = {
   "madara.blitz": {
     id: "madara.blitz",
@@ -21,5 +26,13 @@ export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, Deployment
       namespace: "s2",
       manifestPath: "contracts/l3/game/manifest_madara.json",
     },
+  },
+  "madara.eternum": {
+    id: "madara.eternum",
+    chain: "madara",
+    gameType: "eternum",
+    toriiEnv: "madara",
+    configPath: "config/generated/eternum.madara.json",
+    world: { namespace: "s2", manifestPath: "contracts/l3/game/manifest_madara.json" },
   },
 };

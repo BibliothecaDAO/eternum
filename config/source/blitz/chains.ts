@@ -9,7 +9,6 @@ const STANDARD_BLITZ_CHAIN_CONFIG: ConfigPatch = {
     startSettlingAfterSeconds: 59,
     startMainAfterSeconds: 60,
     durationSeconds: 60 * 60 * 2,
-    pointRegistrationCloseAfterEndSeconds: 60 * 10,
   },
   battle: {
     regularImmunityTicks: 0,
