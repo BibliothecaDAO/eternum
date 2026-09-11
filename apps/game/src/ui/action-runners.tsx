@@ -5,6 +5,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { shouldClaimSharePoints } from "@/ui/share-points-claim-policy";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, gameEntityKey, getGameNamespace } from "@/sync/game-scope";
@@ -26,6 +27,7 @@ import {
   shouldSkipAutomaticClaimSharePointsSubmission,
 } from "@/ui/utils/uncertain-transaction-registry";
 import {
+  getBlockTimestamp,
   getBuildingCount,
   getIsBlitz,
   getStructureName,
@@ -221,7 +223,7 @@ const ResourceArrivalAutoClaim = () => {
 
 const AUTO_REGISTER_POINTS_DEBUG = VERBOSE_LOGS_ENABLED;
 
-/** Registers unregistered shareholder points on completed hyperstructures on a slow timer. */
+/** Registers shareholder points on completed hyperstructures once they are worth a transaction, or in the endgame. */
 const AutoRegisterPoints = () => {
   const {
     account: { account },
@@ -261,8 +263,10 @@ const AutoRegisterPoints = () => {
       const registeredPoints = leaderboardManager.getPlayerRegisteredPoints(playerAddress);
       const unregisteredPoints = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress);
       log(`Registered: ${registeredPoints}, Unregistered: ${unregisteredPoints}`);
-      if (unregisteredPoints <= 0) {
-        log("Skipped: no unregistered points");
+      const gameEndAt = useUIStore.getState().gameEndAt;
+      const secondsToGameEnd = gameEndAt ? gameEndAt - getBlockTimestamp().currentBlockTimestamp : null;
+      if (!shouldClaimSharePoints({ registeredPoints, unregisteredPoints, secondsToGameEnd })) {
+        log("Skipped: unregistered points not worth a transaction yet");
         return;
       }
 
