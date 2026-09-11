@@ -7,7 +7,13 @@ import { Account, BlockTag, logger, RpcProvider } from "starknet";
 import { assertChainId, assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
-import { prepareHarnessBots, runWorkload, type HarnessSystemAddresses, type TrackedTransaction } from "./driver";
+import {
+  prepareHarnessBots,
+  runWorkload,
+  type HarnessGameType,
+  type HarnessSystemAddresses,
+  type TrackedTransaction,
+} from "./driver";
 import {
   bindLedgerGameplayAccounts,
   finalizeLedgerGame,
@@ -24,7 +30,7 @@ import { readLedgerSweepManifest, sweepLedgerBalances, writeLedgerSweepReceipt }
 import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
 
 interface HarnessCliOptions {
-  gameType: "blitz" | "eternum";
+  gameType: HarnessGameType;
   bots: number;
   gameId?: number;
   gameName?: string;
