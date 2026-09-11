@@ -66,6 +66,15 @@ function isOutsideDocumentation(path) {
   return !path.startsWith("docs/");
 }
 
+function isIdentityConnectorPatch(path) {
+  // Allowed identity SDKs contain their own vendor URLs. A pnpm patch includes unchanged
+  // bundle text; that is dependency code, not a new first-party browser endpoint.
+  return (
+    path.endsWith(".patch") &&
+    allowedIdentityConnectorPackages.some((pkg) => path.startsWith(`patches/${pkg.replace("/", "__")}@`))
+  );
+}
+
 function checkEnvironmentHttp(violations, path, contents, prefix) {
   for (const [index, line] of contents.split("\n").entries()) {
     const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(\S.*)?$/);
@@ -102,7 +111,7 @@ function runChecks() {
     if (isDependencyManifest(path)) {
       recordLiteralMatches(violations, path, contents, forbiddenScope, "forbidden-dependency");
     }
-    if (isOutsideDocumentation(path)) {
+    if (isOutsideDocumentation(path) && !isIdentityConnectorPatch(path)) {
       recordLiteralMatches(violations, path, contents, forbiddenHost, "forbidden-host");
     }
     checkBrowserFacingHttp(violations, path, contents);
