@@ -18,6 +18,7 @@ import { disposeSkinnedSceneTemplates } from "../characters/skinned-asset-resour
 import { createArcaneStoneMaterial, createRuneFlameMaterials } from "./reward-summoning-effects";
 import { ChestPresentation } from "./chest-presentation";
 import { RiftPresentation } from "./rift-presentation";
+import { RewardTileBatch, resolveRewardBatchKey } from "./reward-tile-batch";
 
 /** Keeps the authored hierarchy and morph animation while batching visible reward tiles. */
 export class RewardTileModel {
@@ -28,6 +29,7 @@ export class RewardTileModel {
   private readonly pose: Group;
   private readonly mixer: AnimationMixer;
   private readonly sources: Mesh[] = [];
+  private readonly batches: RewardTileBatch[] = [];
   private readonly placements = new Map<number, Matrix4>();
   private readonly composed = new Matrix4();
   private readonly hidden = new Matrix4().makeScale(0, 0, 0);
@@ -50,12 +52,12 @@ export class RewardTileModel {
     this.mixer = new AnimationMixer(this.pose);
     gltf.animations.forEach((clip) => this.mixer.clipAction(clip).play());
     this.energy.glyphStrength.value = 0.8;
-    const materials = new Map<Material, Material>();
-    this.pose.traverse((source) => {
-      if (!(source instanceof Mesh)) return;
-      this.addInstancedPart(source, materials);
-    });
+    this.prepareParts();
     this.samplePose();
+  }
+
+  get renderMeshes() {
+    return [...this.instancedMeshes, ...this.batches.map((batch) => batch.mesh)];
   }
 
   setMatrixAt(index: number, matrix: Matrix4): void {
@@ -69,6 +71,7 @@ export class RewardTileModel {
 
   removeInstance(index: number): void {
     this.placements.delete(index);
+    this.batches.forEach((batch) => batch.removeTile(index));
     for (const mesh of this.instancedMeshes) {
       this.writeMatrix(mesh, index, this.hidden);
     }
@@ -76,6 +79,9 @@ export class RewardTileModel {
 
   setCount(count: number): void {
     this.count = count;
+    this.batches.forEach((batch) => {
+      batch.mesh.visible = count > 0;
+    });
     for (const index of this.placements.keys()) if (index >= count) this.removeInstance(index);
     for (const mesh of this.instancedMeshes) {
       mesh.count = count;
@@ -85,7 +91,7 @@ export class RewardTileModel {
 
   setWorldBounds(bounds?: { box: Box3; sphere: Sphere }): void {
     this.bounds = bounds;
-    for (const mesh of this.instancedMeshes) {
+    for (const mesh of this.renderMeshes) {
       mesh.boundingBox = bounds?.box.clone() ?? null;
       mesh.boundingSphere = bounds?.sphere.clone() ?? null;
       mesh.frustumCulled = Boolean(bounds);
@@ -116,6 +122,7 @@ export class RewardTileModel {
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.pose);
     this.instancedMeshes.forEach((mesh) => mesh.dispose());
+    this.batches.forEach((batch) => batch.dispose());
     this.ownedMaterials.forEach((material) => material.dispose());
     this.chest?.dispose();
     this.rift?.dispose();
@@ -123,6 +130,31 @@ export class RewardTileModel {
     this.energy.flame.dispose();
     disposeSkinnedSceneTemplates([this.template.scene]);
     this.placements.clear();
+  }
+
+  private prepareParts(): void {
+    const materials = new Map<Material, Material>();
+    const batchCandidates = new Map<string, Mesh[]>();
+    this.pose.traverse((source) => {
+      if (!(source instanceof Mesh)) return;
+      const key = resolveRewardBatchKey(source);
+      if (!key) {
+        this.addInstancedPart(source, materials);
+        return;
+      }
+      const parts = batchCandidates.get(key) ?? [];
+      parts.push(source);
+      batchCandidates.set(key, parts);
+    });
+    for (const parts of batchCandidates.values()) {
+      if (parts.length === 1) {
+        this.addInstancedPart(parts[0], materials);
+        continue;
+      }
+      const batch = new RewardTileBatch(parts, this.prepareMaterial(parts[0].material as Material));
+      this.batches.push(batch);
+      this.group.add(batch.mesh);
+    }
   }
 
   private addInstancedPart(source: Mesh, materials: Map<Material, Material>): void {
@@ -169,6 +201,7 @@ export class RewardTileModel {
 
   private writePose(index: number, placement: Matrix4): void {
     this.chest?.faceCamera(this.cameraPosition, placement);
+    this.batches.forEach((batch) => batch.writePose(index, placement));
     this.instancedMeshes.forEach((mesh, part) => {
       const source = this.sources[part];
       this.composed.multiplyMatrices(placement, source.matrixWorld);

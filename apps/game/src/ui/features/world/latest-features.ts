@@ -36,7 +36,7 @@ const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-11",
     title: "Faster Reward Model Preparation",
-    description: "Prepare multi-part map models together to reduce entry stalls around essence rifts.",
+    description: "Enter the map faster around essence rifts, with their original shapes and animation preserved.",
     type: "improvement",
   },
   {

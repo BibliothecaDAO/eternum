@@ -753,7 +753,8 @@ export class StructureManager {
     const enableContactShadows = !enableCasting;
 
     this.forEachStructureModel((model) => {
-      model.instancedMeshes.forEach((mesh) => {
+      const meshes = model instanceof RewardTileModel ? model.renderMeshes : model.instancedMeshes;
+      meshes.forEach((mesh) => {
         if (mesh.name === LAND_NAME) {
           mesh.castShadow = false;
           return;
