@@ -12,6 +12,7 @@ import {
 import { MeshBasicNodeMaterial } from "three/webgpu";
 import { attribute, positionLocal, uniform, uv, vec3 } from "three/tsl";
 import type { WeatherState } from "../managers/weather-manager";
+import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 
 interface Emitter {
   x: number;
@@ -112,12 +113,8 @@ export class SettlementAtmosphere {
     const placement = this.placement!;
     const effect =
       placement instanceof InstancedMesh
-        ? new InstancedMesh(geometry, material, placement.instanceMatrix.count)
+        ? createInstancedMeshWithSharedMatrices(geometry, material, placement)
         : new Mesh(geometry, material);
-    if (effect instanceof InstancedMesh && placement instanceof InstancedMesh) {
-      effect.instanceMatrix = placement.instanceMatrix;
-      effect.count = placement.count;
-    }
     effect.name = name;
     effect.frustumCulled = false;
     effect.raycast = () => {};
