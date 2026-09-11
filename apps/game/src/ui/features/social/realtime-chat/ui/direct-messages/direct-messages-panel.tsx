@@ -7,7 +7,7 @@ import {
   useRealtimeTypingIndicators,
 } from "../../hooks/use-realtime-chat";
 import type { DirectMessage } from "../../model/types";
-import { computeDateSeparators, computeGroupFlags } from "../../model/message-grouping";
+import { computeDateSeparators } from "../../model/message-grouping";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 
@@ -137,7 +137,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   }, [resolvedThreadId, typingIndicators]);
 
   const dmMessages = thread?.messages ?? [];
-  const groupFlags = useMemo(() => computeGroupFlags(dmMessages), [dmMessages]);
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
 
   useEffect(() => {
@@ -202,7 +201,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                   const displayLabel = isOwn
                     ? "You"
                     : (onlinePlayers[message.senderId]?.displayName ?? truncateIdentifier(message.senderId));
-                  const showHeader = groupFlags[index];
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -212,26 +210,17 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                           <div className="flex-1 border-t border-gold/20" />
                         </li>
                       )}
-                      <li className="text-[13px] leading-tight text-white/90">
-                        {showHeader ? (
-                          <div className="flex items-start gap-2">
-                            <UserAvatar
-                              name={displayLabel}
-                              address={message.senderId}
-                              size="sm"
-                              className="mt-0.5 shrink-0"
-                            />
-                            <div>
-                              <span className="text-white/20">[{toDisplayTime(message)}]</span>{" "}
-                              <span className="text-gold/90">&lt;{displayLabel}&gt;</span>{" "}
-                              <span className="break-words">{message.content}</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="pl-8">
-                            <span className="break-words">{message.content}</span>
-                          </div>
-                        )}
+                      <li className="flex items-start gap-2 text-[13px] leading-snug text-white/90">
+                        <UserAvatar
+                          name={displayLabel}
+                          address={message.senderId}
+                          size="sm"
+                          className="mt-0.5 shrink-0"
+                        />
+                        <p className="min-w-0 flex-1 break-words">
+                          <span className="text-white/30">[{toDisplayTime(message)}]</span>{" "}
+                          <span className="text-gold/90">&lt;{displayLabel}&gt;</span> {message.content}
+                        </p>
                       </li>
                     </Fragment>
                   );

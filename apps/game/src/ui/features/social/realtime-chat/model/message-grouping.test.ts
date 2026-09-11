@@ -1,54 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { computeGroupFlags, computeDateSeparators } from "./message-grouping";
-
-describe("computeGroupFlags", () => {
-  it("returns true for the first message (always starts a group)", () => {
-    const msgs = [{ id: "1", senderId: "alice", createdAt: "2024-01-01T10:00:00Z" }];
-    expect(computeGroupFlags(msgs)[0]).toBe(true);
-  });
-
-  it("groups consecutive messages from same sender within 2-minute window", () => {
-    const msgs = [
-      { id: "1", senderId: "alice", createdAt: "2024-01-01T10:00:00Z" },
-      { id: "2", senderId: "alice", createdAt: "2024-01-01T10:01:00Z" },
-      { id: "3", senderId: "alice", createdAt: "2024-01-01T10:01:30Z" },
-    ];
-    const flags = computeGroupFlags(msgs);
-    expect(flags).toEqual([true, false, false]);
-  });
-
-  it("starts a new group after 2-minute gap", () => {
-    const msgs = [
-      { id: "1", senderId: "alice", createdAt: "2024-01-01T10:00:00Z" },
-      { id: "2", senderId: "alice", createdAt: "2024-01-01T10:02:01Z" },
-    ];
-    const flags = computeGroupFlags(msgs);
-    expect(flags).toEqual([true, true]);
-  });
-
-  it("starts a new group when sender changes", () => {
-    const msgs = [
-      { id: "1", senderId: "alice", createdAt: "2024-01-01T10:00:00Z" },
-      { id: "2", senderId: "bob", createdAt: "2024-01-01T10:00:30Z" },
-    ];
-    const flags = computeGroupFlags(msgs);
-    expect(flags).toEqual([true, true]);
-  });
-
-  it("returns empty array for empty input", () => {
-    expect(computeGroupFlags([])).toEqual([]);
-  });
-
-  it("handles Date objects as createdAt", () => {
-    const msgs = [
-      { id: "1", senderId: "alice", createdAt: new Date("2024-01-01T10:00:00Z") },
-      { id: "2", senderId: "alice", createdAt: new Date("2024-01-01T10:01:00Z") },
-    ];
-    const flags = computeGroupFlags(msgs);
-    expect(flags).toEqual([true, false]);
-  });
-});
+import { computeDateSeparators } from "./message-grouping";
 
 describe("computeDateSeparators", () => {
   it("inserts separator between messages from different calendar days", () => {
