@@ -1,9 +1,20 @@
 name: test-contracts
 
 on:
+  push:
+    branches:
+      - next
+    paths:
+      - "contracts/l3/game/**"
+      - "config/source/**"
+      - "config/deployer/clean/**"
+      - ".github/workflows/test-contracts.yml"
   pull_request:
     paths:
       - "contracts/l3/game/**"
+      - "config/source/**"
+      - "config/deployer/clean/**"
+      - ".github/workflows/test-contracts.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -21,6 +32,7 @@ jobs:
   test-various:
     needs: [setup-environment]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # strategy:
     #   matrix:
     #     # Only troop_management has active tests (40 tests)
