@@ -1,23 +1,12 @@
+import { executeMadaraAndWait } from "./transactions";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
-import {
-  Account,
-  CallData,
-  RpcProvider,
-  ec,
-  uint256,
-  validateAndParseAddress,
-  type Call,
-} from "starknet";
+import { Account, CallData, RpcProvider, ec, uint256, validateAndParseAddress, type Call } from "starknet";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
-import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
+
 import { decodeGameLedgerGame } from "../../../packages/core/src/data/abi/GameLedger";
-import {
-  mapWithConcurrency,
-  type HarnessAccount,
-  type HarnessGameplayIdentity,
-} from "./account-factory";
+import { mapWithConcurrency, type HarnessAccount, type HarnessGameplayIdentity } from "./account-factory";
 import { HeraldObserver } from "./herald-observer";
 import {
   estimateLedgerStrkFeeFloor,
@@ -117,7 +106,7 @@ interface FinalizeLedgerGameOptions {
   mainnetRpcUrl: string;
   ledgerAddress: string;
   provider: RpcProvider;
-  rankingSystemAddress: string;
+  registrarSystemAddress: string;
   registrations: readonly LedgerRegistrationRuntime[];
   sweepManifestPath: string;
   lordsAddress: string;
@@ -131,8 +120,6 @@ interface LedgerPresetCosts {
   swordPrice: bigint;
 }
 
-const MADARA_RESOURCE_BOUNDS = resolveGameTransactionResourceBounds("madara");
-const MADARA_RECEIPT_POLL_MS = 50;
 const FUNDING_BATCH_SIZE = 12;
 const BINDING_BATCH_SIZE = 24;
 const RELAY_TIMEOUT_MS = 15 * 60 * 1_000;
@@ -150,7 +137,10 @@ export function parseLedgerBotIdentities(parsed: unknown, expectedCount: number)
   }
 
   const identities = parsed.map((value, index) => parseLedgerBotIdentity(value, index));
-  assertUnique(identities.map(({ mainnetAddress }) => mainnetAddress), "mainnet address");
+  assertUnique(
+    identities.map(({ mainnetAddress }) => mainnetAddress),
+    "mainnet address",
+  );
   assertUnique(
     identities.map(({ gameplayPrivateKey }) => ec.starkCurve.getStarkKey(gameplayPrivateKey)),
     "gameplay public key",
@@ -158,9 +148,7 @@ export function parseLedgerBotIdentities(parsed: unknown, expectedCount: number)
   return identities;
 }
 
-export function toHarnessGameplayIdentities(
-  identities: readonly LedgerBotIdentity[],
-): HarnessGameplayIdentity[] {
+export function toHarnessGameplayIdentities(identities: readonly LedgerBotIdentity[]): HarnessGameplayIdentity[] {
   return identities.map(({ gameplayPrivateKey, mainnetAddress }) => ({
     owner: mainnetAddress,
     privateKey: gameplayPrivateKey,
@@ -307,14 +295,20 @@ export async function waitForRelayedLedgerRegistrations(
           .filter((row) => truthyFelt(row.registered))
           .map((row) => normalizeFelt(row.owner)),
       );
-      return relayedOwners.size === expectedOwners.size && [...expectedOwners].every((owner) => relayedOwners.has(owner));
+      return (
+        relayedOwners.size === expectedOwners.size && [...expectedOwners].every((owner) => relayedOwners.has(owner))
+      );
     },
     RELAY_TIMEOUT_MS,
   );
 }
 
 export async function waitForGameStart(provider: RpcProvider, startAt: number): Promise<void> {
-  await waitForChainTimestamp(provider, startAt, Math.max(120_000, (startAt - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000));
+  await waitForChainTimestamp(
+    provider,
+    startAt,
+    Math.max(120_000, (startAt - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000),
+  );
 }
 
 export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Promise<LedgerFinalizationEvidence> {
@@ -325,10 +319,11 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
   const schedule = await readGameSchedule(observer, options.gameId);
   await waitForChainTimestamp(
     options.provider,
-    schedule.endAt + schedule.registrationGraceSeconds + 1,
-    Math.max(120_000, (schedule.endAt + schedule.registrationGraceSeconds - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000),
+    schedule.endAt + 1,
+    Math.max(120_000, (schedule.endAt - Math.floor(Date.now() / 1_000)) * 1_000 + 120_000),
   );
 
+  await checkpointGameShares(observer, options, schedule.endAt);
   const players = await readRankedPlayers(observer, options.gameId);
   if (players.length !== options.registrations.length) {
     throw new Error(
@@ -339,8 +334,8 @@ export async function finalizeLedgerGame(options: FinalizeLedgerGameOptions): Pr
   const rankingTransactionHash = await executeMadaraAndWait(
     options.account,
     {
-      contractAddress: options.rankingSystemAddress,
-      entrypoint: "blitz_prize_player_rank",
+      contractAddress: options.registrarSystemAddress,
+      entrypoint: "rank_players",
       calldata: [
         options.gameId.toString(),
         trialId.toString(),
@@ -459,8 +454,14 @@ async function prepareRegistrationAccounts(
   const baselineByOwner = new Map(baselines.map((baseline) => [normalizeFelt(baseline.owner), baseline]));
   return mapWithConcurrency(options.identities, options.concurrency, async (identity) => {
     await provider.getClassHashAt(identity.mainnetAddress);
-    const registered = await readLedgerRegistration(provider, options.ledgerAddress, options.gameId, identity.mainnetAddress);
-    if (registered) throw new Error(`Owner ${identity.mainnetAddress} is already registered for game ${options.gameId}`);
+    const registered = await readLedgerRegistration(
+      provider,
+      options.ledgerAddress,
+      options.gameId,
+      identity.mainnetAddress,
+    );
+    if (registered)
+      throw new Error(`Owner ${identity.mainnetAddress} is already registered for game ${options.gameId}`);
     const payment =
       costs.entryFee + (identity.sword ? costs.swordPrice : 0n) + (identity.shield ? costs.shieldPrice : 0n);
     const baseline = baselineByOwner.get(normalizeFelt(identity.mainnetAddress));
@@ -516,14 +517,7 @@ async function submitRegistrations(
   concurrency: number,
 ): Promise<string[]> {
   return mapWithConcurrency(registrations, concurrency, async ({ account, identity, payment }) => {
-    const calls = buildRegistrationCalls(
-      ledgerAddress,
-      lordsAddress,
-      gameId,
-      payment,
-      identity.sword,
-      identity.shield,
-    );
+    const calls = buildRegistrationCalls(ledgerAddress, lordsAddress, gameId, payment, identity.sword, identity.shield);
     return executeMainnetAndWait(account, calls, `register ${identity.mainnetAddress} for ledger game ${gameId}`);
   });
 }
@@ -615,11 +609,47 @@ async function readGameSchedule(observer: HeraldObserver, gameId: number) {
   if (!game) throw new Error(`GameRegistry ${gameId} is absent from Herald`);
   return {
     endAt: safeNumber(game.end_at, "GameRegistry.end_at"),
-    registrationGraceSeconds: safeNumber(
-      game.registration_grace_seconds,
-      "GameRegistry.registration_grace_seconds",
-    ),
   };
+}
+
+async function checkpointGameShares(
+  observer: HeraldObserver,
+  options: { account: Account; gameId: number; registrarSystemAddress: string },
+  cutoff: number,
+): Promise<void> {
+  const models = await observer.readModelRows(options.gameId, ["HyperstructureGlobals"]);
+  const globals = models.get("HyperstructureGlobals")![0];
+  const count = globals ? safeNumber(globals.completed_count, "HyperstructureGlobals.completed_count") : 0;
+  for (let start = 0; start < count; start += 16) {
+    await executeMadaraAndWait(
+      options.account,
+      {
+        contractAddress: options.registrarSystemAddress,
+        entrypoint: "checkpoint_share_points",
+        calldata: [options.gameId.toString(), start.toString(), Math.min(16, count - start).toString()],
+      },
+      `checkpoint completed hyperstructures ${start}–${Math.min(start + 16, count)}`,
+    );
+  }
+  if (count === 0) return;
+  await observer.waitForModelRows(
+    options.gameId,
+    ["CompletedHyperstructure", "HyperstructureShareholders"],
+    (rows) => {
+      const completed = rows.get("CompletedHyperstructure")!;
+      const shares = new Map(
+        rows.get("HyperstructureShareholders")!.map((row) => [String(row.hyperstructure_id), row]),
+      );
+      return (
+        completed.length === count &&
+        completed.every((row) => {
+          const share = shares.get(String(row.hyperstructure_id));
+          return share && safeNumber(share.start_at, "HyperstructureShareholders.start_at") >= cutoff;
+        })
+      );
+    },
+    120_000,
+  );
 }
 
 async function readRankedPlayers(observer: HeraldObserver, gameId: number): Promise<string[]> {
@@ -672,24 +702,6 @@ async function waitForChainTimestamp(provider: RpcProvider, target: number, time
     await sleep(1_000);
   }
   throw new Error(`Chain timestamp did not reach ${target} within ${Math.ceil(timeoutMs / 1_000)} seconds`);
-}
-
-async function executeMadaraAndWait(account: Account, calls: Call | Call[], label: string): Promise<string> {
-  const transaction = await account.execute(calls, { resourceBounds: MADARA_RESOURCE_BOUNDS, tip: 0 });
-  return waitForSuccessfulTransaction(account, transaction.transaction_hash, label, MADARA_RECEIPT_POLL_MS);
-}
-
-async function waitForSuccessfulTransaction(
-  account: Account,
-  transactionHash: string,
-  label: string,
-  retryInterval: number,
-): Promise<string> {
-  const receipt = await account.waitForTransaction(transactionHash, { retryInterval });
-  const status = receipt as { execution_status?: string; isSuccess?: () => boolean };
-  const succeeded = typeof status.isSuccess === "function" ? status.isSuccess() : status.execution_status === "SUCCEEDED";
-  if (!succeeded) throw new Error(`${label} failed for transaction ${transactionHash}`);
-  return transactionHash;
 }
 
 function readUint256(values: readonly string[], index: number): bigint {

@@ -23,6 +23,7 @@ const snapshot: GameSnapshot = {
 const handler = createHeraldRequestHandler({
   chain: "madara",
   confirmedBlock: () => 12,
+  chainTimestamp: () => 100,
   decodedModelCount: 50,
   fold: {
     modelRows: (model) => {
@@ -40,7 +41,6 @@ const handler = createHeraldRequestHandler({
               start_main_at: "0x2",
               end_at: "0x3",
               end_grace_seconds: "0x4",
-              registration_grace_seconds: "0x5",
             },
           },
         ];
@@ -139,6 +139,7 @@ it("passes a battle-only history filter to the store before pagination", async (
   const battleHandler = createHeraldRequestHandler({
     chain: "madara",
     confirmedBlock: () => 12,
+    chainTimestamp: () => 100,
     decodedModelCount: 0,
     metrics,
     fold: { modelRows: () => [], snapshot: () => snapshot },

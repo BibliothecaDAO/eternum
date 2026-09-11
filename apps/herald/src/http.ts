@@ -1,3 +1,4 @@
+import { buildLiveLeaderboard } from "./live-leaderboard";
 import { buildGameDirectory } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
@@ -10,6 +11,7 @@ interface SnapshotSource {
 interface HeraldHttpState {
   chain: string;
   confirmedBlock: () => number;
+  chainTimestamp: () => number;
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
@@ -117,9 +119,16 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
 
     const leaderboardMatch = request.method === "GET" ? leaderboardPath.exec(url.pathname) : null;
     if (leaderboardMatch) {
-      if (!state.history) return jsonResponse({ error: "history_unavailable" }, 503);
-      const leaderboard = state.history.leaderboard(leaderboardMatch[1]);
-      return leaderboard ? jsonResponse(leaderboard) : jsonResponse({ error: "leaderboard_warming_up" }, 503);
+      try {
+        const gameId = leaderboardMatch[1];
+        const timestamp = state.chainTimestamp();
+        if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
+        return jsonResponse(
+          buildLiveLeaderboard(state.fold.modelRows, gameId, timestamp, state.history?.leaderboard(gameId) ?? null),
+        );
+      } catch (error) {
+        return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
+      }
     }
 
     const historyMatch = request.method === "GET" ? historyPath.exec(url.pathname) : null;

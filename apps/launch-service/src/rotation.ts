@@ -9,7 +9,7 @@ import type { CreateRotationRequest } from "./schemas";
 import { PostgresLaunchStore } from "./store";
 
 const toRotationJobRequest = (request: LaunchRotationRequest): CreateRotationRequest => ({
-  environment: "madara.blitz",
+  environment: request.environmentId,
   rotationName: request.rotationName,
   firstGameStartTime: String(request.firstGameStartTime),
   gameIntervalMinutes: request.gameIntervalMinutes,
@@ -35,8 +35,8 @@ const toRotationJobRequest = (request: LaunchRotationRequest): CreateRotationReq
 const loadRotationRequest = (configPath: string, rpcUrl: string): CreateRotationRequest => {
   const args = resolveLaunchRequestArgs({ "config-path": configPath, "rpc-url": rpcUrl });
   const request = buildLaunchRequest(args);
-  if (request.launchKind !== "rotation" || request.environmentId !== "madara.blitz") {
-    throw new Error(`${configPath} must describe a madara.blitz rotation`);
+  if (request.launchKind !== "rotation") {
+    throw new Error(`${configPath} must describe a game rotation`);
   }
   return toRotationJobRequest(request);
 };

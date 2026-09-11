@@ -1,6 +1,9 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, shortString, type Account, type Call, type RpcProvider } from "starknet";
-import { buildBlitzSettleCalls } from "../../../apps/game/src/services/blitz/blitz-settlement-calls";
+import {
+  buildBlitzSettleCalls,
+  buildEternumSettleCalls,
+} from "../../../apps/game/src/services/blitz/blitz-settlement-calls";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
 import { Biome } from "../../../packages/core/src/utils/biome/biome";
 import { BiomeType } from "../../../packages/types/src/constants/hex";
@@ -63,6 +66,8 @@ export interface TrackedTransaction {
 }
 
 export interface HarnessSystemAddresses {
+  realm: string;
+  registrar: string;
   blitzRealm: string;
   prizeDistribution: string;
   production: string;
@@ -123,6 +128,7 @@ interface ExplorerPriority {
 }
 
 interface PrepareHarnessBotsOptions {
+  gameType?: "blitz" | "eternum";
   accounts: HarnessAccount[];
   beforeProvision?: () => Promise<void>;
   gameId: number;
@@ -314,6 +320,7 @@ const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
 ];
 
 export async function prepareHarnessBots({
+  gameType = "blitz",
   accounts,
   beforeProvision,
   gameId,
@@ -327,7 +334,7 @@ export async function prepareHarnessBots({
   const mapCenter = await readMapCenter(heraldObserver, gameId);
 
   await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const settle = await settleBot({ harnessAccount, gameId, provider, systems });
+    const settle = await settleBot({ harnessAccount, gameId, gameType, provider, systems });
     setupTransactions.push(settle);
     assertCompleted(settle);
   });
@@ -338,16 +345,18 @@ export async function prepareHarnessBots({
     const structureIds = await readSettlementStructureIds(heraldObserver, gameId, harnessAccount.address);
     const structures = await readStructures(heraldObserver, gameId, structureIds, mapCenter);
 
-    const provision = await provisionBot({
-      account: harnessAccount.account,
-      botId: harnessAccount.botId,
-      gameId,
-      provider,
-      structureIds,
-      systems,
-    });
-    setupTransactions.push(provision);
-    assertCompleted(provision);
+    if (gameType === "blitz") {
+      const provision = await provisionBot({
+        account: harnessAccount.account,
+        botId: harnessAccount.botId,
+        gameId,
+        provider,
+        structureIds,
+        systems,
+      });
+      setupTransactions.push(provision);
+      assertCompleted(provision);
+    }
 
     const troopTypes = await readStartingTroopTypes(heraldObserver, gameId, structureIds);
 
@@ -559,24 +568,34 @@ export function prioritizeExplorer<T extends ExplorerPriority>(
 }
 
 async function settleBot({
+  gameType,
   harnessAccount,
   gameId,
   provider,
   systems,
 }: {
+  gameType: "blitz" | "eternum";
   harnessAccount: HarnessAccount;
   gameId: number;
   provider: RpcProvider;
   systems: HarnessSystemAddresses;
 }): Promise<TrackedTransaction> {
   const usernameFelt = shortString.encodeShortString(`bot-${harnessAccount.botId.toString().padStart(3, "0")}`);
-  const calls = buildBlitzSettleCalls({
-    blitzSystemsAddress: systems.blitzRealm,
-    signerAddress: harnessAccount.address,
-    usernameFelt,
-    gameId,
-    cosmeticTokenIds: [],
-  });
+  const calls =
+    gameType === "eternum"
+      ? buildEternumSettleCalls({
+          realmSystemsAddress: systems.realm,
+          signerAddress: harnessAccount.address,
+          usernameFelt,
+          gameId,
+        })
+      : buildBlitzSettleCalls({
+          blitzSystemsAddress: systems.blitzRealm,
+          signerAddress: harnessAccount.address,
+          usernameFelt,
+          gameId,
+          cosmeticTokenIds: [],
+        });
 
   return trackTransaction({
     account: harnessAccount.account,
@@ -854,9 +873,7 @@ function planExplorerAction(
         ].join(",")}`,
     )
     .join("; ");
-  throw new HarnessPathingError(
-    `No collision-free ${kind} route is available for bot ${bot.botId}: ${routeState}`,
-  );
+  throw new HarnessPathingError(`No collision-free ${kind} route is available for bot ${bot.botId}: ${routeState}`);
 }
 
 function chooseExploreDirections(explorer: ExplorerState, structures: StructureState[]): number[] {

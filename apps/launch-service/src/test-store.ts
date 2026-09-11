@@ -1,3 +1,4 @@
+import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { randomUUID } from "node:crypto";
 import type {
   LaunchGameSummary,
@@ -37,13 +38,13 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     return run;
   }
 
-  async list(environment: "madara.blitz", kind?: LaunchKind): Promise<LaunchRun[]> {
+  async list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]> {
     return Array.from(this.runs.values()).filter(
       (run) => run.environment === environment && (kind === undefined || run.kind === kind),
     );
   }
 
-  async find(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<LaunchRun | null> {
+  async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {
     return this.runs.get(this.key(kind, environment, name)) ?? null;
   }
 
@@ -114,7 +115,7 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     });
   }
 
-  async cancel(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<boolean> {
+  async cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const key = this.key(kind, environment, name);
     const run = this.runs.get(key);
     if (!run || run.status === "running") return false;
@@ -122,19 +123,19 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     return true;
   }
 
-  async delete(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<boolean> {
+  async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const key = this.key(kind, environment, name);
     const run = this.runs.get(key);
     return !run || run.status === "running" ? false : this.runs.delete(key);
   }
 
   async loadGame(environment: LaunchGameSummary["environment"], gameName: string): Promise<LaunchGameSummary | null> {
-    const summary = (await this.find("game", environment as "madara.blitz", gameName))?.summary;
+    const summary = (await this.find("game", environment as GameEnvironmentId, gameName))?.summary;
     return summary && "gameName" in summary ? summary : null;
   }
 
   async saveGame(summary: LaunchGameSummary): Promise<LaunchGameSummary> {
-    const environment = summary.environment as "madara.blitz";
+    const environment = summary.environment as GameEnvironmentId;
     if (this.runs.has(this.key("game", environment, summary.gameName))) {
       await this.attachSummary("game", environment, summary.gameName, summary);
       return summary;
@@ -148,12 +149,12 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     environment: LaunchSeriesSummary["environment"],
     seriesName: string,
   ): Promise<LaunchSeriesSummary | null> {
-    const summary = (await this.find("series", environment as "madara.blitz", seriesName))?.summary;
+    const summary = (await this.find("series", environment as GameEnvironmentId, seriesName))?.summary;
     return summary && "seriesName" in summary && !("rotationName" in summary) ? summary : null;
   }
 
   async saveSeries(summary: LaunchSeriesSummary): Promise<LaunchSeriesSummary> {
-    await this.attachSummary("series", summary.environment as "madara.blitz", summary.seriesName, summary);
+    await this.attachSummary("series", summary.environment as GameEnvironmentId, summary.seriesName, summary);
     return summary;
   }
 
@@ -161,18 +162,18 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     environment: LaunchRotationSummary["environment"],
     rotationName: string,
   ): Promise<LaunchRotationSummary | null> {
-    const summary = (await this.find("rotation", environment as "madara.blitz", rotationName))?.summary;
+    const summary = (await this.find("rotation", environment as GameEnvironmentId, rotationName))?.summary;
     return summary && "rotationName" in summary ? summary : null;
   }
 
   async saveRotation(summary: LaunchRotationSummary): Promise<LaunchRotationSummary> {
-    await this.attachSummary("rotation", summary.environment as "madara.blitz", summary.rotationName, summary);
+    await this.attachSummary("rotation", summary.environment as GameEnvironmentId, summary.rotationName, summary);
     return summary;
   }
 
   private async attachSummary(
     kind: LaunchKind,
-    environment: "madara.blitz",
+    environment: GameEnvironmentId,
     name: string,
     summary: LaunchSummary,
   ): Promise<void> {
@@ -182,7 +183,7 @@ export class InMemoryLaunchStore implements LaunchServiceStore {
     this.runs.set(key, { ...run, summary });
   }
 
-  private findParentRun(environment: "madara.blitz", gameName: string): LaunchRun | undefined {
+  private findParentRun(environment: GameEnvironmentId, gameName: string): LaunchRun | undefined {
     return Array.from(this.runs.values()).find(
       (run) =>
         run.environment === environment &&

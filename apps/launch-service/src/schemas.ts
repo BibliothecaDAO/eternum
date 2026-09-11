@@ -1,3 +1,4 @@
+import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { Schema } from "effect";
 import type { LaunchRotationWeekday } from "../../../config/deployer/clean/types";
 
@@ -5,11 +6,9 @@ const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
 const SharedOptions = {
-  environment: Schema.Literal("madara.blitz"),
-  // The offered registrar presets: 8 = Regular Fast, 9 = Duel (6/7 retired —
-  // they baked 24-tick spawn immunity). The client's preset catalog is the
-  // authority on which one a launch uses.
-  version: Schema.optional(Schema.Literals(["8", "9"])),
+  environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
+  // Registrar presets: 8 = Regular Fast, 9 = Duel, 10 = Eternum.
+  version: Schema.optional(Schema.Literals(["8", "9", "10"])),
   devModeOn: Schema.optional(Schema.Boolean),
   twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
@@ -66,8 +65,8 @@ export const CreateRotationRequestSchema = Schema.Struct({
 });
 
 interface SharedLaunchOptions {
-  environment: "madara.blitz";
-  version?: "8" | "9";
+  environment: "madara.blitz" | "madara.eternum";
+  version?: "8" | "9" | "10";
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
@@ -121,10 +120,11 @@ export const applyDurableLaunchDefaults = (
   request: LaunchJobRequest,
   now = Date.now(),
 ): LaunchJobRequest => {
-  // Request values are honored, never overwritten — the client's preset is the
-  // authority (devModeOn: Sandbox on, real games off; version: 6 = Regular Fast,
-  // 7 = Duel). Defaults here only fill absent fields, once, before persistence.
-  const shared = { ...request, version: request.version ?? ("8" as const) };
+  const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "8" | "10");
+  if ((request.environment === "madara.eternum") !== (version === "10")) {
+    throw new Error("Preset does not match the requested game format");
+  }
+  const shared = { ...request, version };
   if (kind === "game" && "gameName" in shared) {
     return { ...shared, gameStartTime: shared.gameStartTime ?? new Date(now + 15 * 60_000).toISOString() };
   }

@@ -1,3 +1,4 @@
+import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Effect, Result, Schema } from "effect";
 import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
@@ -60,8 +61,8 @@ const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<
   return Effect.runPromise(Schema.decodeUnknownEffect(schema)(payload));
 };
 
-const readEnvironment = (value: string | undefined): "madara.blitz" => {
-  if (value !== "madara.blitz") throw new Error('environment must be "madara.blitz"');
+const readEnvironment = (value: string | undefined): GameEnvironmentId => {
+  if (!value || !isGameEnvironmentId(value)) throw new Error("Unsupported game environment");
   return value;
 };
 

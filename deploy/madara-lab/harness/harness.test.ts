@@ -28,15 +28,20 @@ import {
   summarizeRpcMetrics,
 } from "./report";
 import { createHarnessProvider, parseHarnessArgs } from "./run";
-import {
-  parseLedgerBotIdentities,
-  rankPlayersByRegisteredPoints,
-  toHarnessGameplayIdentities,
-} from "./ledger-mode";
+import { parseLedgerBotIdentities, rankPlayersByRegisteredPoints, toHarnessGameplayIdentities } from "./ledger-mode";
 import { BlockTag } from "starknet";
 import { HeraldObserver } from "./herald-observer";
 
 describe("Madara harness workload", () => {
+  it("selects Eternum and rejects incompatible ledger registration", () => {
+    expect(parseHarnessArgs([]).gameType).toBe("blitz");
+    expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
+    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be blitz or eternum");
+    expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
+      "The ledger harness currently registers Blitz passes only",
+    );
+  });
+
   it("separates the requested mix from completed outcomes", () => {
     const actions = [
       { kind: "move", outcome: "completed" },
@@ -138,6 +143,8 @@ describe("Madara harness workload", () => {
       minutes: 0.001,
       provider: provider as never,
       systems: {
+        registrar: "0x9",
+        realm: "0xa",
         blitzRealm: "0x1",
         prizeDistribution: "0x5",
         production: "0x2",
@@ -349,9 +356,7 @@ describe("Madara harness Herald observer", () => {
     try {
       const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const before = await observer.readResource(7, "11");
-      await expect(observer.waitForResource(7, "11", before, 12, 20)).rejects.toThrow(
-        "did not show a labor or wood",
-      );
+      await expect(observer.waitForResource(7, "11", before, 12, 20)).rejects.toThrow("did not show a labor or wood");
     } finally {
       server.stop(true);
     }

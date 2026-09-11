@@ -1,3 +1,4 @@
+import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Context, Effect, Layer } from "effect";
@@ -17,7 +18,7 @@ const migrationUrl = new URL("../migrations/0001_launch_runs.sql", import.meta.u
 interface LaunchRunRow extends QueryResultRow {
   id: string;
   kind: LaunchKind;
-  environment: "madara.blitz";
+  environment: GameEnvironmentId;
   name: string;
   request: LaunchJobRequest;
   status: LaunchRun["status"];
@@ -35,15 +36,15 @@ export interface LaunchServiceStore extends LaunchRunStore {
   initialize(): Promise<void>;
   close(): Promise<void>;
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
-  list(environment: "madara.blitz", kind?: LaunchKind): Promise<LaunchRun[]>;
-  find(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<LaunchRun | null>;
+  list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
+  find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null>;
   claim(leaseMs: number): Promise<ClaimedLaunchRun | null>;
   heartbeat(runId: string, leaseToken: string, leaseMs: number): Promise<boolean>;
   complete(runId: string, leaseToken: string, summary: LaunchSummary): Promise<LaunchRun>;
   retry(runId: string, leaseToken: string, errorMessage: string, retryDelayMs: number): Promise<void>;
   fail(runId: string, leaseToken: string, errorMessage: string): Promise<void>;
-  cancel(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<boolean>;
-  delete(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<boolean>;
+  cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
+  delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean>;
 }
 
 export class LaunchDatabase extends Context.Service<LaunchDatabase, LaunchServiceStore>()("launch/LaunchDatabase") {}
@@ -118,7 +119,7 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     return run;
   }
 
-  async list(environment: "madara.blitz", kind?: LaunchKind): Promise<LaunchRun[]> {
+  async list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]> {
     const result = kind
       ? await this.pool.query<LaunchRunRow>(
           "SELECT * FROM launch_runs WHERE environment = $1 AND kind = $2 ORDER BY updated_at DESC",
@@ -131,7 +132,7 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     return result.rows.map(toRun);
   }
 
-  async find(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<LaunchRun | null> {
+  async find(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<LaunchRun | null> {
     const result = await this.pool.query<LaunchRunRow>(
       "SELECT * FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3",
       [kind, environment, name],
@@ -214,7 +215,7 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     );
   }
 
-  async cancel(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<boolean> {
+  async cancel(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const result = await this.pool.query(
       `UPDATE launch_runs SET status = 'cancelled', claimed_until = NULL, lease_token = NULL, updated_at = now()
        WHERE kind = $1 AND environment = $2 AND name = $3 AND status <> 'running'`,
@@ -223,7 +224,7 @@ export class PostgresLaunchStore implements LaunchServiceStore {
     return result.rowCount === 1;
   }
 
-  async delete(kind: LaunchKind, environment: "madara.blitz", name: string): Promise<boolean> {
+  async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const result = await this.pool.query(
       "DELETE FROM launch_runs WHERE kind = $1 AND environment = $2 AND name = $3 AND status <> 'running'",
       [kind, environment, name],
