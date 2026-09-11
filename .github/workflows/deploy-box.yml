@@ -13,9 +13,13 @@ on:
       - "apps/realms/**"
       - "apps/launch-service/**"
       - "apps/realtime-server/**"
+      - "config/**"
       - "packages/**"
+      - "package.json"
       - "pnpm-lock.yaml"
-      - "deploy/madara-lab/scripts/deploy-box.sh"
+      - "pnpm-workspace.yaml"
+      - "patches/**"
+      - "deploy/madara-lab/scripts/deploy-box*"
       - ".github/workflows/deploy-box.yml"
   workflow_dispatch:
 
@@ -25,6 +29,8 @@ permissions:
 concurrency:
   group: deploy-box
   cancel-in-progress: false
+  # Keep the active deployment and replace an older pending run with the latest push.
+  queue: single
 
 jobs:
   deploy:
@@ -44,6 +50,16 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: next
+
+      - name: Set up Bun for deployment checks
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Check deployment recipe
+        run: python3 -m unittest discover -s deploy/madara-lab/scripts -p test_deploy_box.py -v
 
       - name: Prepare SSH
         env:
@@ -60,7 +76,7 @@ jobs:
         run: |
           set -o pipefail
           scp -i ~/.ssh/box -o BatchMode=yes deploy/madara-lab/scripts/deploy-box.sh "ubuntu@$BOX_SSH_HOST:/tmp/deploy-box.sh"
-          ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=next bash /tmp/deploy-box.sh" | tee deploy-box.log
+          ssh -i ~/.ssh/box -o BatchMode=yes "ubuntu@$BOX_SSH_HOST" "sudo DEPLOY_BRANCH=next bash /tmp/deploy-box.sh" 2>&1 | tee deploy-box.log
 
       - name: Publish deploy result
         if: always()
