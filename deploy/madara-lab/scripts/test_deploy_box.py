@@ -24,6 +24,9 @@ class DeployBoxTest(unittest.TestCase):
         self.repo.mkdir()
         self.events = self.root / "commands.log"
         self.restarts = self.root / "restarts.log"
+        self.pnpm_calls = self.root / "pnpm.log"
+        self.bin = self.root / "bin"
+        self.install_fake_pnpm()
         self.git("init", "-b", "next")
         self.git("config", "user.name", "Deploy test")
         self.git("config", "user.email", "deploy-test@example.invalid")
@@ -56,6 +59,19 @@ class DeployBoxTest(unittest.TestCase):
         self.git("push", "-u", "origin", "next")
         self.git("checkout", "--detach", self.base)
 
+    def install_fake_pnpm(self):
+        # `env DATABASE_SSL=false pnpm ...` needs an executable, not a shell function.
+        self.bin.mkdir()
+        pnpm = self.bin / "pnpm"
+        pnpm.write_text(r'''#!/usr/bin/env bash
+printf '%s:%s\n' "${DATABASE_SSL:-unset}" "$*" >> "$TEST_PNPM_CALLS"
+if [[ " $* " == *" install "* && "${TEST_INSTALL_FAIL:-0}" == 1 ]]; then
+  echo 'pnpm install failed' >&2
+  exit 243
+fi
+''')
+        pnpm.chmod(0o755)
+
     def git(self, *args):
         return subprocess.check_output(
             ["git", "-C", str(self.repo), *args], stderr=subprocess.DEVNULL, text=True
@@ -83,21 +99,17 @@ sudo() {
   printf '%s\n' "$PWD" >> "$TEST_COMMANDS"
   "$@"
 }
-pnpm() {
-  if [[ " $* " == *" install "* && "${TEST_INSTALL_FAIL:-0}" == 1 ]]; then
-    echo 'pnpm install failed' >&2
-    return 243
-  fi
-}
 systemctl() { echo "$2" >> "$TEST_RESTARTS"; }
 curl() { echo "${TEST_HEALTH_CODE:-200}"; }
 main
 '''
         env = {
             **os.environ,
+            "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}",
             "TEST_REPO": str(self.repo),
             "TEST_COMMANDS": str(self.events),
             "TEST_RESTARTS": str(self.restarts),
+            "TEST_PNPM_CALLS": str(self.pnpm_calls),
             **settings,
         }
         result = subprocess.run(
@@ -132,6 +144,10 @@ main
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(set(payload["restarted"]), SERVICES)
         self.assertEqual(self.git("rev-parse", REF), self.target)
+        self.assertIn(
+            f"false:--dir {self.repo} --filter @realms-world/db push",
+            self.pnpm_calls.read_text().splitlines(),
+        )
 
     def test_failed_health_does_not_mark_checkout_as_deployed(self):
         result, payload = self.deploy(TEST_HEALTH_CODE="503")
