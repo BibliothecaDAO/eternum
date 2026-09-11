@@ -42,10 +42,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "ui",
     reason: "reveal animation and registration countdown",
   },
-  "apps/game/src/ui/features/landing/components/game-review-modal.tsx": {
-    class: "clock",
-    reason: "review playback interpolation",
-  },
   "apps/game/src/ui/features/social/player/use-leaderboard-effects.ts": {
     class: "debug",
     reason: "opt-in mock effect generator",
@@ -59,7 +55,6 @@ const ALLOWED_TIMERS: Record<string, AllowedTimer> = {
     class: "clock",
     reason: "local chain-time interpolation",
   },
-  "apps/game/src/ui/action-runners.tsx": { class: "scheduler", reason: "submits due point claims on chain time" },
 };
 
 const ALLOWED_RECURRING_TIMEOUTS: Record<string, AllowedTimer & { callback: string }> = {
@@ -158,7 +153,6 @@ describe("polling discipline", () => {
       "apps/game/src/hooks/use-world-availability.ts",
       "apps/game/src/hooks/use-worlds-summary.ts",
       "apps/game/src/ui/features/landing/components/game-entry-modal.tsx",
-      "apps/game/src/ui/features/landing/components/use-settlement-planner-data.ts",
       "apps/game/src/ui/features/social/faith/faith-leaderboard-panel.tsx",
       "apps/game/src/ui/features/social/faith/wonder-faith-detail-panel.tsx",
       "apps/game/src/ui/features/world/components/actions/faith-devotion-action-panel.tsx",
