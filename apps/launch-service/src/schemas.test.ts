@@ -30,7 +30,7 @@ describe("applyDurableLaunchDefaults", () => {
 
 it("selects the Eternum preset and rejects cross-mode presets", () => {
   const request: CreateGameRequest = { environment: "madara.eternum", gameName: "eternum-test", devModeOn: false };
-  expect(applyDurableLaunchDefaults("game", request).version).toBe("10");
+  expect(applyDurableLaunchDefaults("game", request).version).toBe("11");
   expect(() => applyDurableLaunchDefaults("game", { ...request, version: "8" })).toThrow();
-  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "10" })).toThrow();
+  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "11" })).toThrow();
 });

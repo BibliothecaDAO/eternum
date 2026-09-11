@@ -7,7 +7,7 @@ export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 // presets: 2/3 local dev balance, 4/5 registered WITHOUT balance profiles,
 // 6/7 baked the base sheet's 24-tick spawn immunity — never offered again.
 export const DEFAULT_MADARA_PRESET_ID = "8";
-export const DEFAULT_ETERNUM_PRESET_ID = "10";
+export const DEFAULT_ETERNUM_PRESET_ID = "11";
 export const DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS = 2 * 60 * 1_000;
 export const DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS = 2_000;
 export const BLITZ_REGISTRATION_COUNT_CAP = 96;

@@ -1,4 +1,4 @@
-import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
+import { DEFAULT_ETERNUM_PRESET_ID, defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { Schema } from "effect";
 import type { LaunchRotationWeekday } from "../../../config/deployer/clean/types";
 
@@ -8,7 +8,7 @@ const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema
 const SharedOptions = {
   environment: Schema.Literals(["madara.blitz", "madara.eternum"]),
   // Registrar presets: 8 = Regular Fast, 9 = Duel, 10 = Eternum.
-  version: Schema.optional(Schema.Literals(["8", "9", "10"])),
+  version: Schema.optional(Schema.Literals(["8", "9", "11"])),
   devModeOn: Schema.optional(Schema.Boolean),
   twoPlayerMode: Schema.optional(Schema.Boolean),
   singleRealmMode: Schema.optional(Schema.Boolean),
@@ -66,7 +66,7 @@ export const CreateRotationRequestSchema = Schema.Struct({
 
 interface SharedLaunchOptions {
   environment: "madara.blitz" | "madara.eternum";
-  version?: "8" | "9" | "10";
+  version?: "8" | "9" | "11";
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
@@ -120,8 +120,8 @@ export const applyDurableLaunchDefaults = (
   request: LaunchJobRequest,
   now = Date.now(),
 ): LaunchJobRequest => {
-  const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "8" | "10");
-  if ((request.environment === "madara.eternum") !== (version === "10")) {
+  const version = request.version ?? (defaultPresetForEnvironment(request.environment) as "8" | "11");
+  if ((request.environment === "madara.eternum") !== (version === DEFAULT_ETERNUM_PRESET_ID)) {
     throw new Error("Preset does not match the requested game format");
   }
   const shared = { ...request, version };
