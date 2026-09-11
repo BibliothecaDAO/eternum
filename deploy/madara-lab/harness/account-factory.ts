@@ -48,14 +48,15 @@ export async function createHarnessAccounts({
   return mapWithConcurrency(botIds, concurrency, async (botId, index) => {
     const identity = identities?.[index];
     const { privateKey, publicKey } = identity ? gameplayKey(identity.privateKey) : createHarnessKey();
-    const owner = identity?.owner ?? "0x0";
+    // Guests deploy with no owner in the account itself; they are bound to themselves afterwards.
+    const constructorOwner = identity?.owner ?? "0x0";
     const startedAt = performance.now();
 
     try {
       const account = await ensureGameplayAccount({
         authority,
         classHash,
-        owner,
+        owner: constructorOwner,
         privateKey,
         provider,
         publicKey,
@@ -67,7 +68,7 @@ export async function createHarnessAccounts({
         botId,
         deployedInMs: elapsedMs(startedAt),
         gameId,
-        owner,
+        owner: identity?.owner ?? account.address,
         privateKey,
         publicKey,
       };

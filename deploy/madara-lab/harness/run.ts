@@ -377,15 +377,19 @@ async function prepareGameRun({
   });
 
   let binding: LedgerHarnessEvidence["binding"] | undefined;
-  if (ledger && ledgerEnvironment) {
-    console.log(`Binding ${accounts.length} gameplay accounts to their mainnet owners`);
+  // Settlement is keyed by the bound owner whenever the chain has a player registry, so guests bind as their own owners.
+  const authorityPrivateKey = ledgerEnvironment?.authorityPrivateKey ?? process.env.BINDING_AUTHORITY_PRIVATE_KEY?.trim();
+  if (authorityPrivateKey) {
+    console.log(`Binding ${accounts.length} gameplay accounts to their ${ledger ? "mainnet" : "own"} owners`);
     binding = await bindLedgerGameplayAccounts({
       accounts,
       authorityAddress: gameplayContracts.bindingAuthorityAddress,
-      authorityPrivateKey: ledgerEnvironment.authorityPrivateKey,
+      authorityPrivateKey,
       playerRegistryAddress: gameplayContracts.playerRegistryAddress,
       provider,
     });
+  }
+  if (ledger && ledgerEnvironment) {
     console.log(`Waiting for ${accounts.length} mainnet registrations to reach the L3 fold`);
     await waitForRelayedLedgerRegistrations(
       options.heraldUrl,
