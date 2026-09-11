@@ -4,6 +4,7 @@ import Hammer from "lucide-react/dist/esm/icons/hammer";
 import { useEffect, useRef, useState } from "react";
 
 import { Tabs } from "@/ui/design-system/atoms";
+import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 
 import { BuildingsList } from "./buildings-list";
@@ -52,14 +53,9 @@ export const ProductionWorkflows = ({
       description: "Direct control over buildings and output",
       icon: Hammer,
       content: (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {!selectedResource && (
-            <div className="flex items-start gap-3 rounded-lg border border-gold/30 bg-dark-brown/70 px-4 py-3 text-sm text-gold/80">
-              <span className="font-semibold text-gold">Select a building</span>
-              <span className="text-left">
-                Choose any resource card below to inspect its buildings and manage production.
-              </span>
-            </div>
+            <p className={HUD_BODY_MUTED}>Pick a resource below to inspect its buildings and start production.</p>
           )}
 
           <BuildingsList
@@ -92,14 +88,14 @@ export const ProductionWorkflows = ({
   return (
     <section className="space-y-3">
       <Tabs selectedIndex={activeTab} onChange={handleTabChange} className="w-full" variant="default">
-        <Tabs.List className="flex flex-row items-stretch gap-1 rounded-lg border border-gold/25 bg-dark-brown/80 p-1">
+        <Tabs.List className="flex flex-row items-stretch gap-1 rounded-lg border border-gold/15 bg-black/25 p-1">
           {workflows.map((workflow, index) => {
             const Icon = workflow.icon;
             const isActive = activeTab === index;
             const tabClass = `flex flex-1 items-center justify-center gap-2 rounded-md border !space-x-0 ${
               isActive
                 ? "border-gold/60 bg-gold/15 text-gold"
-                : "border-transparent bg-dark-brown/90 text-gold/75 hover:border-gold/40 hover:text-gold"
+                : "border-transparent text-gold/65 hover:border-gold/40 hover:text-gold"
             } !px-3 !py-1.5 text-center !transition-none`;
             return (
               <Tabs.Tab key={workflow.label} className={tabClass} title={workflow.description}>
@@ -110,9 +106,9 @@ export const ProductionWorkflows = ({
           })}
         </Tabs.List>
 
-        <Tabs.Panels className="mt-4">
+        <Tabs.Panels className="mt-3">
           {workflows.map((workflow) => (
-            <Tabs.Panel key={workflow.label} className="flex flex-col gap-4">
+            <Tabs.Panel key={workflow.label} className="flex flex-col gap-3">
               {workflow.content}
             </Tabs.Panel>
           ))}

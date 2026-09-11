@@ -45,7 +45,14 @@ const ActiveViewSurface = () => {
 
   if (surface === "build") {
     return (
-      <PopoverPanel id="build" ariaLabel="Build" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
+      <PopoverPanel
+        id="build"
+        ariaLabel="Build"
+        anchor="top-center"
+        rememberPosition
+        className="w-auto p-0"
+        onDismiss={closeView}
+      >
         <ConstructionModal structureEntityId={structureEntityId} />
       </PopoverPanel>
     );
@@ -56,6 +63,7 @@ const ActiveViewSurface = () => {
         id="logistics"
         ariaLabel="Logistics"
         anchor="top-center"
+        rememberPosition
         className="w-auto p-0"
         onDismiss={closeView}
       >
@@ -73,7 +81,14 @@ const ActiveViewSurface = () => {
   }
   if (surface === "military") {
     return (
-      <PopoverPanel id="military" ariaLabel="Military" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
+      <PopoverPanel
+        id="military"
+        ariaLabel="Military"
+        anchor="top-center"
+        rememberPosition
+        className="w-auto p-0"
+        onDismiss={closeView}
+      >
         <MilitaryModal structureEntityId={structureEntityId} />
       </PopoverPanel>
     );

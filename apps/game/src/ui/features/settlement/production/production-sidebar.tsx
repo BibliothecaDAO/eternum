@@ -7,7 +7,8 @@ import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecada
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, runQuery } from "@dojoengine/recs";
 import clsx from "clsx";
-import CheckCircle2Icon from "lucide-react/dist/esm/icons/check-circle-2";
+import { HUD_BODY, HUD_HEADLINE, HUD_LABEL, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import Button from "@/ui/design-system/atoms/button";
@@ -168,9 +169,10 @@ const SidebarRealm = ({
   return (
     <div
       className={clsx(
-        "rounded-lg bg-black/30 transition-all cursor-pointer border border-transparent",
-        "px-3 py-2",
-        isSelected ? "border-gold/70 bg-gold/5 shadow-[0_0_18px_rgba(255,204,102,0.45)]" : "hover:bg-gold/5",
+        "cursor-pointer rounded-xl px-2.5 py-2 transition",
+        isSelected
+          ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)]"
+          : clsx(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),
       )}
       onClick={onSelect}
       aria-selected={isSelected}
@@ -178,23 +180,14 @@ const SidebarRealm = ({
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-lg font-bold text-gold">{mode.structure.getName(realm.structure).name}</h3>
-            <p className="text-xs text-gold/60">
+            <h3 className={clsx(HUD_HEADLINE, "truncate")}>{mode.structure.getName(realm.structure).name}</h3>
+            <p className={HUD_BODY}>
               {hasProduction
-                ? `${buildings.size} buildings • ${activeProductionBuildings}/${totalProductionBuildings} producing`
-                : `${buildings.size} buildings • no production`}
+                ? `${buildings.size} buildings · ${activeProductionBuildings}/${totalProductionBuildings} producing`
+                : `${buildings.size} buildings · no production`}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {isSelected && (
-              <div
-                className="flex items-center gap-1 rounded bg-gold/20 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gold shadow-[0_0_12px_rgba(255,204,102,0.25)]"
-                title="Selected structure"
-              >
-                <CheckCircle2Icon className="h-4 w-4" aria-hidden="true" />
-                <span>Selected</span>
-              </div>
-            )}
             {(hasActivatedWonderBonus || activeRelics.length > 0) && (
               <div className="flex gap-1 shrink-0">
                 {hasActivatedWonderBonus && (
@@ -215,7 +208,7 @@ const SidebarRealm = ({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5 px-1 pt-1">
           {hasProduction ? (
             resourceProductionSummary
               .toSorted((a, b) => {
@@ -254,13 +247,13 @@ const SidebarRealm = ({
                     isProducing={summary.isProducing}
                     timeRemainingSeconds={effectiveRemainingSeconds}
                     totalCount={summary.totalBuildings}
-                    size="sm"
+                    size="xs"
                     onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
                   />
                 );
               })
           ) : (
-            <span className="text-xs text-gold/60">No production buildings</span>
+            <span className={HUD_BODY}>No production buildings</span>
           )}
         </div>
       </div>
@@ -418,9 +411,9 @@ export const ProductionSidebar = memo(
       : null;
 
     return (
-      <div className="space-y-4">
-        <div className="space-y-3">
-          <div className="flex gap-2">
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <div className="flex gap-1.5">
             {tabButtons.map((tab) => {
               const isActive = activeTab === tab.key;
               const disabled = tab.count === 0;
@@ -431,12 +424,13 @@ export const ProductionSidebar = memo(
                   disabled={disabled}
                   onClick={() => handleChangeTab(tab.key)}
                   className={clsx(
-                    "rounded border px-4 py-2 text-xs font-semibold uppercase tracking-wide transition",
+                    "rounded-md border px-2.5 py-1 transition",
+                    HUD_LABEL_BRIGHT,
                     disabled
                       ? "cursor-not-allowed border-gold/10 text-gold/30"
                       : isActive
-                        ? "border-gold/60 bg-black/25 text-gold shadow-[0_0_10px_rgba(255,204,102,0.25)]"
-                        : "border-gold/20 text-gold/60 hover:border-gold/40 hover:text-gold",
+                        ? "border-gold/60 bg-gold/15 text-gold"
+                        : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
                   )}
                 >
                   {tab.label} ({tab.count})
@@ -446,11 +440,9 @@ export const ProductionSidebar = memo(
           </div>
 
           {activeStructures.length > 0 && (
-            <div className="space-y-2 rounded border border-gold/15 bg-black/10 p-3">
-              <div className="text-[10px] uppercase tracking-wide text-gold/50">
-                Apply preset to all {activeLabel.toLowerCase()}
-              </div>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-1.5 rounded-lg border border-gold/15 bg-black/20 px-2.5 py-2">
+              <div className={HUD_LABEL}>Apply preset to all {activeLabel.toLowerCase()}</div>
+              <div className="flex flex-wrap gap-1.5">
                 {REALM_PRESETS.filter((preset) => preset.id !== "custom").map((preset) => {
                   const isPending =
                     pendingPreset?.presetId === preset.id && pendingPreset?.tab === activeTab && !!pendingPreset;
@@ -460,7 +452,7 @@ export const ProductionSidebar = memo(
                       type="button"
                       onClick={() => handleStagePreset(preset.id)}
                       className={clsx(
-                        "rounded border px-3 py-1 text-xs transition-colors",
+                        "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors",
                         activeStructures.length === 0
                           ? "cursor-not-allowed border-gold/10 text-gold/30"
                           : isPending
@@ -476,8 +468,8 @@ export const ProductionSidebar = memo(
                 })}
               </div>
               {pendingPreset && pendingPreset.tab === activeTab && (
-                <div className="flex flex-wrap items-center gap-2 rounded border border-gold/20 bg-black/20 px-3 py-2">
-                  <span className="text-xs text-gold/70">
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-gold/20 bg-black/20 px-2 py-1.5">
+                  <span className={HUD_BODY}>
                     Pending {pendingPresetLabel} for {pendingPreset.realmIds.length} {activeLabel.toLowerCase()}.
                   </span>
                   <div className="flex gap-2">
@@ -495,7 +487,7 @@ export const ProductionSidebar = memo(
         </div>
 
         {activeStructures.length === 0 ? (
-          <div className="rounded-lg border border-gold/20 bg-black/15 p-4 text-sm text-gold/70">
+          <div className={clsx(HUD_BODY, "rounded-lg border border-gold/15 bg-black/20 p-3")}>
             {activeTab === "realm"
               ? `You do not control any ${mode.labels.realms.toLowerCase()} yet.`
               : `You do not control any ${mode.labels.villages.toLowerCase()} yet.`}

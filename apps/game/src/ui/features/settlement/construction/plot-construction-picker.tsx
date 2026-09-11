@@ -2,10 +2,13 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
 import { usePlotConstruction, type PlotConstructionTarget } from "./use-plot-construction";
 
 export function PlotConstructionPicker(target: PlotConstructionTarget) {
   const form = usePlotConstruction(target);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   useEffect(() => {
     if (!form.visible) usePopoverStore.getState().close("plot-construction");
   }, [form.visible]);
@@ -39,10 +42,17 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                 <button
                   key={building.type}
                   type="button"
-                  disabled={building.disabled}
+                  // aria-disabled, not disabled: a blocked tile still answers hover with what it is missing.
+                  aria-disabled={building.disabled}
                   aria-label={building.label}
                   title={building.reason ?? building.label}
-                  onClick={() => void form.build(building.type)}
+                  onClick={() => {
+                    if (!building.disabled) void form.build(building.type);
+                  }}
+                  onMouseEnter={() =>
+                    setTooltip({ content: <RequirementChips requirements={building.requirements} />, position: "top" })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
                   className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-xs"
                 >
                   <img
@@ -52,7 +62,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                   />
                   <span className="block font-semibold">{building.label}</span>
                   <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-[10px] tabular-nums">
-                    {building.costs?.map((cost) => (
+                    {building.requirements.map((cost) => (
                       <span
                         key={cost.resource}
                         className="inline-flex items-center gap-0.5"
@@ -65,7 +75,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                         />
                         {cost.amount.toLocaleString()}
                       </span>
-                    )) ?? "Cost unavailable"}
+                    ))}
                   </span>
                   {building.disabled && (
                     <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/50" />

@@ -39,7 +39,7 @@ const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
  * fits the drawer exactly; Tailwind needs the class as a literal, so keep the three in step.
  */
 export const SURFACE_WORKSPACE_CLASS =
-  "w-[1320px] h-[calc(100dvh-7rem)] max-lg:w-screen max-lg:h-[85dvh] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(100dvh-3.5rem-max(1rem,env(safe-area-inset-bottom)))]";
+  "w-[1180px] h-[calc(100dvh-9rem)] max-lg:w-screen max-lg:h-[85dvh] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(100dvh-3.5rem-max(1rem,env(safe-area-inset-bottom)))]";
 
 type PopoverAlign = "start" | "end";
 
@@ -64,6 +64,8 @@ interface PopoverPanelProps {
   mapClick?: PopoverMapClick;
   /** Pointer-downs inside the anchor are the trigger's own clicks, never an outside dismiss. */
   isInsideAnchor?: (target: EventTarget | null) => boolean;
+  /** A desk the player can move: it opens where the last remembered desk was left. */
+  rememberPosition?: boolean;
 }
 
 const neverInsideAnchor = () => false;
@@ -84,10 +86,11 @@ export const PopoverPanel = ({
   onDismiss,
   isInsideAnchor = neverInsideAnchor,
   mapClick = "dismiss",
+  rememberPosition = false,
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
-  const drag = useSurfaceDrag();
+  const drag = useSurfaceDrag(rememberPosition);
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
   const resolveAnchorRef = useRef(resolveAnchor);
   resolveAnchorRef.current = resolveAnchor;
@@ -223,6 +226,7 @@ export const SurfaceHost = () => {
       id={surface.id}
       ariaLabel={surface.id}
       anchor={surface.anchor ?? "top-center"}
+      rememberPosition={surface.anchor === null}
       placement={surface.placement}
       mapClick={surface.mapClick}
       className="w-auto p-0"
@@ -405,12 +409,33 @@ const resolveAnchoredPanelStyle = (
 
 const viewportHeightBelow = (top: number): number => Math.max(0, window.innerHeight - top - VIEWPORT_MARGIN_PX);
 
+const FREE_SURFACE_OFFSET_KEY = "eternum.free-surface-offset";
+
+/** Where the player last left a free-floating desk; every desk (Build, Production, Military, Transfer) opens there. */
+const readFreeSurfaceOffset = (): { x: number; y: number } => {
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(FREE_SURFACE_OFFSET_KEY) ?? "null");
+    if (stored && Number.isFinite(stored.x) && Number.isFinite(stored.y)) return { x: stored.x, y: stored.y };
+  } catch {
+    // No stored position: the desk opens where it is placed.
+  }
+  return { x: 0, y: 0 };
+};
+
+const writeFreeSurfaceOffset = (offset: { x: number; y: number }): void => {
+  try {
+    window.localStorage.setItem(FREE_SURFACE_OFFSET_KEY, JSON.stringify(offset));
+  } catch {
+    // Storage refused: the position still holds for this open.
+  }
+};
+
 /**
- * A surface with a header can be dragged by it: the offset rides on top of the anchored placement until the
- * surface closes, so a leaderboard or a transfer panel can be moved off whatever it covers.
+ * A surface with a header can be dragged by it. An anchored popover keeps its offset until it closes; a free desk
+ * remembers where it was left and every free desk opens there.
  */
-function useSurfaceDrag() {
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+function useSurfaceDrag(isFreeSurface: boolean) {
+  const [offset, setOffset] = useState(() => (isFreeSurface ? readFreeSurfaceOffset() : { x: 0, y: 0 }));
   const dragStart = useRef<{ pointerX: number; pointerY: number; offsetX: number; offsetY: number } | null>(null);
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const target = event.target as Element;
@@ -421,7 +446,12 @@ function useSurfaceDrag() {
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const start = dragStart.current;
     if (!start) return;
-    setOffset({ x: start.offsetX + event.clientX - start.pointerX, y: start.offsetY + event.clientY - start.pointerY });
+    const next = {
+      x: start.offsetX + event.clientX - start.pointerX,
+      y: start.offsetY + event.clientY - start.pointerY,
+    };
+    setOffset(next);
+    if (isFreeSurface) writeFreeSurfaceOffset(next);
   };
   const onPointerUp = () => {
     dragStart.current = null;

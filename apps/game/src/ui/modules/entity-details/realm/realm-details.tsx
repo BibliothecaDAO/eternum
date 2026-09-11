@@ -1,6 +1,7 @@
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
@@ -30,8 +31,7 @@ import CrownIcon from "lucide-react/dist/esm/icons/crown";
 
 // One chip style for every requirement / produces row — matches the
 // building-tile inspector so the castle reads with the same vocabulary.
-const CHIP_BASE =
-  "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
+const CHIP_BASE = REQUIREMENT_CHIP;
 
 const SectionRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="space-y-1">
@@ -184,24 +184,7 @@ export const RealmUpgradeCompact = () => {
       </SectionRow>
 
       <SectionRow label={`Upgrade to ${upgradeTargetLabel}`}>
-        {requirements.map((req) => {
-          const isMet = req.current >= req.amount;
-          const incomingTitle = req.incoming
-            ? ` (+${Math.floor(req.incoming.amount).toLocaleString()} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
-            : "";
-          return (
-            <span
-              key={`${req.resource}-${req.amount}`}
-              className={CHIP_BASE}
-              title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}${incomingTitle}`}
-            >
-              <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
-              <span className={isMet ? "text-gold" : "text-red-300"}>{Math.floor(req.current).toLocaleString()}</span>
-              <span className={isMet ? "text-gold/55" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
-              {req.incoming && <span className="text-emerald-300/90">↑</span>}
-            </span>
-          );
-        })}
+        <RequirementChips requirements={requirements} />
       </SectionRow>
 
       {isOwner && (

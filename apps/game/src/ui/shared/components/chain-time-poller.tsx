@@ -1,4 +1,8 @@
-import { setBlockTimestampSource, setChainTimestampEvidenceSink } from "@bibliothecadao/eternum";
+import {
+  setBlockTimestampSource,
+  setChainProvenTimestampSource,
+  setChainTimestampEvidenceSink,
+} from "@bibliothecadao/eternum";
 import { useEffect } from "react";
 
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -33,6 +37,11 @@ const bindRowEvidenceSink = () => {
 export const ChainTimePoller = () => {
   useEffect(() => {
     setBlockTimestampSource(() => useChainTimeStore.getState().getNowSeconds());
+    // Heartbeats are chain-written timestamps (closed heads and row evidence), the floor a transaction executes at.
+    setChainProvenTimestampSource(() => {
+      const heartbeat = useChainTimeStore.getState().lastHeartbeat;
+      return heartbeat ? Math.floor(heartbeat.timestamp / 1000) : null;
+    });
     bindRowEvidenceSink();
     logChainTimeDebug("source_bound", {
       source: "herald head + row-evidence sink",
@@ -41,6 +50,7 @@ export const ChainTimePoller = () => {
 
     return () => {
       setBlockTimestampSource(null);
+      setChainProvenTimestampSource(null);
       setChainTimestampEvidenceSink(null);
     };
   }, []);

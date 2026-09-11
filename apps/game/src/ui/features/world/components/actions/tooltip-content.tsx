@@ -6,7 +6,6 @@ import { ActionPath, ActionPaths, ActionType, divideByPrecision } from "@bibliot
 import { ID, ResourcesIds } from "@bibliothecadao/types";
 
 import { AttackInfo } from "./attack-info";
-import { ChestInfo } from "./chest-info";
 import { CreateArmyInfo } from "./create-army-info";
 import { formatAmount } from "./format-amount";
 import { HelpInfo } from "./help-info";
@@ -105,8 +104,6 @@ export const TooltipContent = memo(
           </div>
         ) : actionType === ActionType.Quest ? (
           <QuestInfo selectedEntityId={selectedEntityId} path={actionPath} />
-        ) : actionType === ActionType.Chest ? (
-          <ChestInfo />
         ) : actionType === ActionType.CreateArmy ? (
           <CreateArmyInfo />
         ) : actionType === ActionType.SpireTravel ? (

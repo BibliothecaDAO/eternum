@@ -255,7 +255,7 @@ describe("HeraldGameSyncTransport", () => {
       { hashed_keys: "0xbeef", models: { BattleEvent: { game_id: "0x36", timestamp: "0x7" } } },
     ]);
     expect(harness.transactions).toEqual([{ block: null, hash: "0xabc", status: "PRE_CONFIRMED" }]);
-    expect(harness.heads).toEqual([{ block: 13, timestamp: 100 }]);
+    expect(harness.heads).toEqual([{ block: 13, preconfirmed: false, timestamp: 100 }]);
   });
 
   it("preserves the pre-confirmed transaction boundary for atomic ingest", async () => {

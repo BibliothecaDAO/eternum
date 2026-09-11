@@ -21,6 +21,8 @@ const army = {
   tier: TroopTier.T2,
   isDaydreamsAgent: false,
   troopCount: 1500,
+  currentStamina: 75,
+  maxStamina: 100,
 } satisfies ArmyData;
 
 const structure = {
@@ -53,7 +55,10 @@ describe("entity label view model", () => {
       iconKey: "army",
     });
     expect(model.detailRows).toEqual(
-      expect.arrayContaining([expect.objectContaining({ label: "Troops", value: "1.5k", meta: "Knight T2" })]),
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Troops", value: "1.5k", meta: "Knight T2" }),
+        expect.objectContaining({ label: "Stamina", value: "75/100" }),
+      ]),
     );
   });
 

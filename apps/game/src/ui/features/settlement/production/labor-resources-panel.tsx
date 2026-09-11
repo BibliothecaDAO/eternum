@@ -1,4 +1,7 @@
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourcesIds } from "@bibliothecadao/types";
 
@@ -51,43 +54,30 @@ export const LaborResourcesPanel = ({
   };
 
   return (
-    <div className={`cursor-pointer`} onClick={onSelect}>
-      <div>
-        {laborInputResources?.map((input) => {
-          const balance = resourceBalances[input.resource] || 0;
-          return (
-            <div key={input.resource} className="flex items-center gap-3 my-1  transition-colors">
-              <ResourceIcon resource={ResourcesIds[input.resource]} size="lg" />
-              <div className="flex items-center justify-between w-full">
-                <span
-                  className={`text-xl font-bold ${
-                    resourceBalances[input.resource] <
-                    Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)
-                      ? "text-order-giants"
-                      : "text-gold"
-                  }`}
-                >
-                  {balance.toLocaleString()}
-                </span>
-                <div className="w-2/3">
-                  <NumberInput
-                    value={Math.round((input.amount * productionAmount) / resourceOutputPerInputResources)}
-                    onChange={(value) => handleInputChange(value, input.resource)}
-                    min={0}
-                    className="rounded-md border-gold/30 hover:border-gold/50"
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        <button
-          onClick={handleMaxClick}
-          className="mt-2 px-3 py-1 text-sm bg-gold/20 hover:bg-gold/30 text-gold rounded"
-        >
-          MAX
-        </button>
-      </div>
+    <div className="cursor-pointer space-y-1" onClick={onSelect}>
+      <div className={HUD_LABEL}>Labor required</div>
+      {laborInputResources?.map((input) => {
+        const balance = resourceBalances[input.resource] || 0;
+        const needed = Math.round((input.amount * productionAmount) / resourceOutputPerInputResources);
+        const isShort = balance < needed;
+        return (
+          <div key={input.resource} className="flex items-center gap-2 py-0.5">
+            <ResourceIcon resource={ResourcesIds[input.resource]} size="sm" withTooltip={false} />
+            <span className={cn(HUD_VALUE, "w-24 shrink-0 tabular-nums", isShort && "text-red-300")}>
+              {balance.toLocaleString()}
+            </span>
+            <NumberInput
+              value={needed}
+              onChange={(value) => handleInputChange(value, input.resource)}
+              min={0}
+              className="h-8 flex-1 text-sm"
+            />
+          </div>
+        );
+      })}
+      <Button variant="outline" size="xs" onClick={handleMaxClick} className="mt-1">
+        Max
+      </Button>
     </div>
   );
 };

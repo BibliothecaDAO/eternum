@@ -27,7 +27,9 @@ export interface EntityLabelViewModel {
 }
 
 type ArmyLabelSource = Pick<ArmyData, "entityId" | "owner"> &
-  Partial<Pick<ArmyData, "category" | "isDaydreamsAgent" | "isMine" | "tier" | "troopCount">> & { isAlly?: boolean };
+  Partial<
+    Pick<ArmyData, "category" | "currentStamina" | "isDaydreamsAgent" | "isMine" | "maxStamina" | "tier" | "troopCount">
+  > & { isAlly?: boolean };
 
 type StructureLabelSource = Pick<
   StructureInfo,
@@ -110,6 +112,13 @@ function buildArmyDetailRows(army: ArmyLabelSource): EntityLabelDetailRow[] {
       label: "Troops",
       meta: army.category && army.tier ? `${army.category} ${army.tier}` : undefined,
       value: formatCompactLabelNumber(army.troopCount),
+    });
+  }
+
+  if (army.currentStamina !== undefined && army.maxStamina !== undefined) {
+    rows.push({
+      label: "Stamina",
+      value: `${army.currentStamina}/${army.maxStamina}`,
     });
   }
 

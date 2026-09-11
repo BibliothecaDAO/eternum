@@ -54,6 +54,8 @@ export interface GameSyncTransport {
 
 export interface GameSyncHead {
   block: number;
+  /** The sequencer clock read off the pre-confirmed block, not a confirmed block. */
+  preconfirmed: boolean;
   timestamp: number;
 }
 

@@ -105,6 +105,7 @@ const rpcFixture = (block: RpcBlockWithReceipts, confirmedEvents: RawWorldEvent[
   ({
     blockNumber: async () => 12,
     getBlockWithReceipts: async () => block,
+    getPreconfirmedHeader: async () => ({ block_number: block.block_number, timestamp: block.timestamp + 3 }),
     getEvents: async function* () {
       if (confirmedEvents.length > 0) yield { events: confirmedEvents, page: 1 };
     },
@@ -220,6 +221,15 @@ describe("LiveWorld", () => {
     releaseCommit();
     await advancing;
     expect(socket.messages).toContainEqual(expect.objectContaining({ type: "head", block: 13 }));
+  });
+
+  it("publishes the pre-confirmed clock as a head only while it advances", async () => {
+    const { live } = liveFixture();
+    const socket = attachResumed(live);
+    await live.publishChainClock();
+    await live.publishChainClock();
+    const clocks = socket.messages.filter((message) => message.type === "head" && message.preconfirmed === true);
+    expect(clocks).toEqual([expect.objectContaining({ block: 13, preconfirmed: true, timestamp: 103 })]);
   });
 
   it("advances history completeness through confirmed blocks without history events", async () => {

@@ -19,6 +19,8 @@ import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { resolveConstructionBuildability } from "./construction-buildability";
+import { resolveBuildingRequirements } from "./construction-groups";
+import { RequirementChips, type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
 import {
   buildRealmBuildingSummary,
@@ -679,6 +681,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           <BuildingCard
                             key={resourceId}
                             buildingId={building}
+                            requirements={resolveBuildingRequirements(
+                              entityId,
+                              dojo.setup.components,
+                              building,
+                              useSimpleCost,
+                              currentDefaultTick,
+                            )}
                             resourceId={resourceId}
                             onClick={() => {
                               if (!canBuild) return;
@@ -758,6 +767,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           <BuildingCard
                             key={resourceId}
                             buildingId={building}
+                            requirements={resolveBuildingRequirements(
+                              entityId,
+                              dojo.setup.components,
+                              building,
+                              useSimpleCost,
+                              currentDefaultTick,
+                            )}
                             resourceId={resourceId}
                             onClick={() => {
                               if (!canBuild) return;
@@ -867,6 +883,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     })}
                     key={index}
                     buildingId={building}
+                    requirements={resolveBuildingRequirements(
+                      entityId,
+                      dojo.setup.components,
+                      building,
+                      useSimpleCost,
+                      currentDefaultTick,
+                    )}
                     onClick={() => {
                       if (!canBuild) return;
                       selectBuildingCard({ type: building }, () => {
@@ -1001,6 +1024,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 })}
                                 key={index}
                                 buildingId={building}
+                                requirements={resolveBuildingRequirements(
+                                  entityId,
+                                  dojo.setup.components,
+                                  building,
+                                  useSimpleCost,
+                                  currentDefaultTick,
+                                )}
                                 onClick={() => {
                                   if (!canBuild) return;
                                   selectBuildingCard({ type: building }, () => {});
@@ -1138,6 +1168,7 @@ const BuildingCard = ({
   productionStatus,
   currentTime,
   toolTip,
+  requirements,
   resourceId,
   className,
   disabled = false,
@@ -1165,6 +1196,8 @@ const BuildingCard = ({
   productionStatus?: ResourceProductionStatus;
   currentTime?: number;
   toolTip: React.ReactElement;
+  /** Held / needed per resource, shown while the card is hovered. */
+  requirements: ResourceRequirement[];
   resourceId?: ResourcesIds;
   /**
    * Optional "this resource feeds X troop tier" hint for the blitz T2/T3
@@ -1253,6 +1286,8 @@ const BuildingCard = ({
   return (
     <div
       onClick={handleClick}
+      onMouseEnter={() => setTooltip({ content: <RequirementChips requirements={requirements} />, position: "top" })}
+      onMouseLeave={() => setTooltip(null)}
       className={clsx(
         "overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 rounded border border-gold/20 bg-black/20 transition-colors hover:border-gold/50 hover:bg-gold/15",
         {
