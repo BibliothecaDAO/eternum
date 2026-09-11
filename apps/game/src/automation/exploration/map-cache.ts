@@ -71,7 +71,9 @@ export const buildExplorationSnapshot = async ({
   const questHexes = new Map<number, Map<number, HexEntityInfo>>();
   const chestHexes = new Map<number, Map<number, HexEntityInfo>>();
 
-  worldSpatialProjection.getTilesInBounds(bounds).forEach((tile) => {
+  // Automation explores the surface; layer-aware exploration is the ethereal slice, item 4.
+  const surfaceBounds = { ...bounds, alt: false };
+  worldSpatialProjection.getTilesInBounds(surfaceBounds).forEach((tile) => {
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
     if (tile.biome !== 0) {
       setNestedValue(exploredTiles, normalized.x, normalized.y, tile.biome as unknown as BiomeType);
@@ -86,7 +88,7 @@ export const buildExplorationSnapshot = async ({
     }
   });
 
-  worldSpatialProjection.getStructuresInBounds(bounds).forEach((structure) => {
+  worldSpatialProjection.getStructuresInBounds(surfaceBounds).forEach((structure) => {
     if (structure.entityId === null) return;
     const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
     setNestedValue(
@@ -97,7 +99,7 @@ export const buildExplorationSnapshot = async ({
     );
   });
 
-  worldSpatialProjection.getArmiesInBounds(bounds).forEach((army) => {
+  worldSpatialProjection.getArmiesInBounds(surfaceBounds).forEach((army) => {
     const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
     setNestedValue(
       armyHexes,

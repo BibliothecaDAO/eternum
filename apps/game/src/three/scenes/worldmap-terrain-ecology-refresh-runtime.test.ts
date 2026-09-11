@@ -168,7 +168,7 @@ function createHarness() {
     return {
       cells: cells.map((cell) => ({
         ...cell,
-        occupied: projection.getStructuresAtHex(cell).some((structure) => !structure.reserved),
+        occupied: projection.getStructuresAtHex({ ...cell, alt: false }).some((structure) => !structure.reserved),
       })),
       commitMode: "atomic",
       mapCenter: 0,
@@ -290,7 +290,7 @@ function collectCurrentAnchors(
     },
     normalizeStructureHex: ({ col, row }) => ({ col, row }),
     projection,
-    toProjectionBounds: (bounds) => bounds,
+    toProjectionBounds: (bounds) => ({ ...bounds, alt: false }),
   });
 }
 

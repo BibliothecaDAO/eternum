@@ -1,3 +1,4 @@
+import { activeMapLayer } from "@/three/map-layer";
 import { ReservedHyperstructureModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
@@ -136,7 +137,7 @@ export class ReservedHyperstructureManager {
 
   private getReservedHyperstructureHexes(): HexPosition[] {
     return this.worldSpatialProjection
-      .getStructures()
+      .getStructures(activeMapLayer())
       .filter((structure) => structure.reserved)
       .map((structure) => this.normalizeHexCoords(structure.hexCoords));
   }

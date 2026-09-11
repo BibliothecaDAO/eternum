@@ -1,3 +1,4 @@
+import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
@@ -846,7 +847,8 @@ export class StructureManager {
   }
 
   getTotalStructures() {
-    return this.worldSpatialProjection.getStructures().filter((structure) => !structure.reserved).length;
+    return this.worldSpatialProjection.getStructures(activeMapLayer()).filter((structure) => !structure.reserved)
+      .length;
   }
 
   public prewarmChunkAssets(chunkKey: string): Promise<void> {
@@ -1057,6 +1059,7 @@ export class StructureManager {
     const bounds = expandBoundsForStructurePresentation(renderBounds, this.chunkStride);
     const center = FELT_CENTER();
     return {
+      alt: activeMapLayer(),
       minCol: bounds.minCol + center,
       maxCol: bounds.maxCol + center,
       minRow: bounds.minRow + center,
@@ -1129,7 +1132,7 @@ export class StructureManager {
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
     const center = FELT_CENTER();
     const renderable = this.worldSpatialProjection
-      .getStructuresAtHex({ col: hexCoords.col + center, row: hexCoords.row + center })
+      .getStructuresAtHex({ alt: activeMapLayer(), col: hexCoords.col + center, row: hexCoords.row + center })
       .find((structure) => !structure.reserved);
     return renderable ? this.resolveStructureInfo(renderable) : undefined;
   }
@@ -1144,7 +1147,7 @@ export class StructureManager {
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     const normalizedOwner = BigInt(owner);
-    const refreshEntityIds = this.worldSpatialProjection.getStructures().flatMap((renderable) => {
+    const refreshEntityIds = this.worldSpatialProjection.getStructures(activeMapLayer()).flatMap((renderable) => {
       if (renderable.reserved || !this.components?.Structure) return [];
       const matchesOwner =
         getComponentValue(this.components.Structure, gameEntityKey([BigInt(renderable.entityId)]))?.owner ===
@@ -2163,7 +2166,7 @@ export class StructureManager {
     const nowSeconds = useChainTimeStore.getState().getNowSeconds();
     this.incomingTroopArrivalsByStructure.clear();
 
-    this.worldSpatialProjection.getStructures().forEach((renderable) => {
+    this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((renderable) => {
       if (renderable.reserved) return;
 
       const nextArrivals = arrivalsByStructure[String(renderable.entityId)];

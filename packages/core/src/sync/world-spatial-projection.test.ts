@@ -1,7 +1,11 @@
 import { TileOccupier } from "@bibliothecadao/types";
 import { Type, createWorld, defineComponent, removeComponent, setComponent } from "@dojoengine/recs";
 import { describe, expect, it, vi } from "vitest";
-import { WorldSpatialProjection } from "./world-spatial-projection";
+import {
+  WorldSpatialProjection,
+  ArmySpatialProjectionChange,
+  projectionChangesForLayer,
+} from "./world-spatial-projection";
 
 const encodeTile = (input: {
   alt?: boolean;
@@ -129,11 +133,11 @@ describe("WorldSpatialProjection", () => {
 
     projection.start();
 
-    expect(projection.getTiles()).toEqual([
+    expect(projection.getTiles(false)).toEqual([
       {
         kind: "tile",
-        spatialId: "tile:100:200",
-        hexCoords: { col: 100, row: 200 },
+        spatialId: "tile:0:100:200",
+        hexCoords: { alt: false, col: 100, row: 200 },
         biome: 4,
         occupierId: 7,
         occupierType: TileOccupier.RealmRegularLevel1,
@@ -141,8 +145,10 @@ describe("WorldSpatialProjection", () => {
         rewardExtracted: true,
       },
     ]);
-    expect(projection.getTileAtHex({ col: 100, row: 200 })?.occupierId).toBe(7);
-    expect(projection.getTilesInBounds({ minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })).toHaveLength(1);
+    expect(projection.getTileAtHex({ alt: false, col: 100, row: 200 })?.occupierId).toBe(7);
+    expect(projection.getTilesInBounds({ alt: false, minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })).toHaveLength(
+      1,
+    );
   });
 
   it("rebuilds a surface-chest index from RECS and excludes non-renderable tiles", () => {
@@ -153,11 +159,13 @@ describe("WorldSpatialProjection", () => {
 
     projection.start();
 
-    expect(projection.getChests()).toEqual([{ kind: "chest", entityId: 7, hexCoords: { col: 100, row: 200 } }]);
-    expect(projection.getChestsAtHex({ col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
+    expect(projection.getChests(false)).toEqual([
+      { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 100, row: 200 } },
+    ]);
+    expect(projection.getChestsAtHex({ alt: false, col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
     expect(
       projection
-        .getChestsInBounds({ minCol: 96, maxCol: 100, minRow: 196, maxRow: 204 })
+        .getChestsInBounds({ alt: false, minCol: 96, maxCol: 100, minRow: 196, maxRow: 204 })
         .map(({ entityId }) => entityId),
     ).toEqual([7]);
   });
@@ -197,25 +205,25 @@ describe("WorldSpatialProjection", () => {
       spatialId: "entity:7",
       entityId: 7,
       reserved: false,
-      hexCoords: { col: 100, row: 200 },
+      hexCoords: { alt: false, col: 100, row: 200 },
       occupierType: TileOccupier.RealmWonderLevel2,
     });
-    expect(projection.getStructuresAtHex({ col: 101, row: 200 })).toEqual([
+    expect(projection.getStructuresAtHex({ alt: false, col: 101, row: 200 })).toEqual([
       {
         kind: "structure",
-        spatialId: "reserved:101:200",
+        spatialId: "reserved:0:101:200",
         entityId: null,
         reserved: true,
-        hexCoords: { col: 101, row: 200 },
+        hexCoords: { alt: false, col: 101, row: 200 },
         occupierType: TileOccupier.ReservedHyperstructure,
       },
     ]);
     expect(
       projection
-        .getStructuresInBounds({ minCol: 100, maxCol: 102, minRow: 200, maxRow: 200 })
+        .getStructuresInBounds({ alt: false, minCol: 100, maxCol: 102, minRow: 200, maxRow: 200 })
         .map(({ spatialId }) => spatialId),
-    ).toEqual(["entity:7", "reserved:101:200", "reserved:102:200"]);
-    expect(projection.getStructures()).toHaveLength(3);
+    ).toEqual(["entity:7", "reserved:0:101:200", "reserved:0:102:200"]);
+    expect(projection.getStructures(false)).toHaveLength(3);
   });
 
   it("indexes live surface armies from ExplorerTroops only", () => {
@@ -232,19 +240,19 @@ describe("WorldSpatialProjection", () => {
 
     projection.start();
 
-    expect(projection.getArmies()).toEqual([
+    expect(projection.getArmies(false)).toEqual([
       {
         kind: "army",
         entityId: 7,
-        hexCoords: { col: 100, row: 200 },
+        hexCoords: { alt: false, col: 100, row: 200 },
         troopCategory: "Paladin",
         troopTier: "T2",
       },
     ]);
-    expect(projection.getArmiesAtHex({ col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
+    expect(projection.getArmiesAtHex({ alt: false, col: 100, row: 200 }).map(({ entityId }) => entityId)).toEqual([7]);
     expect(
       projection
-        .getArmiesInBounds({ minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })
+        .getArmiesInBounds({ alt: false, minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 })
         .map(({ entityId }) => entityId),
     ).toEqual([7]);
     expect(projection.getArmy(10)).toBeUndefined();
@@ -266,11 +274,52 @@ describe("WorldSpatialProjection", () => {
         writeTile("destination", { col: 20, row: 21, occupierId: 7 });
       }
 
-      expect(projection.getChest(7)?.hexCoords).toEqual({ col: 20, row: 21 });
-      expect(projection.getChestsAtHex({ col: 10, row: 11 })).toEqual([]);
-      expect(projection.getChestsAtHex({ col: 20, row: 21 }).map(({ entityId }) => entityId)).toEqual([7]);
+      expect(projection.getChest(7)?.hexCoords).toEqual({ alt: false, col: 20, row: 21 });
+      expect(projection.getChestsAtHex({ alt: false, col: 10, row: 11 })).toEqual([]);
+      expect(projection.getChestsAtHex({ alt: false, col: 20, row: 21 }).map(({ entityId }) => entityId)).toEqual([7]);
     },
   );
+
+  it("keeps the surface and the ethereal layer apart at the same coordinate", () => {
+    const { projection, writeArmy, writeTile } = createHarness();
+    writeTile("spire-surface", { col: 100, row: 200, occupierId: 5, occupierType: TileOccupier.Spire });
+    writeTile("spire-ethereal", { alt: true, col: 100, row: 200, occupierId: 5, occupierType: TileOccupier.Spire });
+    writeArmy("ethereal-army", { explorerId: 9, col: 101, row: 200, alt: true });
+    projection.start();
+
+    expect(projection.getTileAtHex({ alt: false, col: 100, row: 200 })?.spatialId).toBe("tile:0:100:200");
+    expect(projection.getTileAtHex({ alt: true, col: 100, row: 200 })?.spatialId).toBe("tile:1:100:200");
+    expect(projection.getArmies(false)).toEqual([]);
+    expect(projection.getArmies(true).map(({ entityId }) => entityId)).toEqual([9]);
+    expect(projection.getArmy(9)?.hexCoords).toEqual({ alt: true, col: 101, row: 200 });
+    expect(projection.getArmiesInBounds({ alt: true, minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 }).length).toBe(
+      1,
+    );
+    expect(projection.getArmiesInBounds({ alt: false, minCol: 96, maxCol: 104, minRow: 196, maxRow: 204 }).length).toBe(
+      0,
+    );
+  });
+
+  it("publishes a spire crossing as a removal on one layer and a creation on the other", () => {
+    const { projection, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 100, row: 200 });
+    projection.start();
+    const changes: ArmySpatialProjectionChange[][] = [];
+    projection.subscribeArmies((published) => changes.push([...published]));
+
+    writeArmy("army", { explorerId: 7, col: 100, row: 200, alt: true });
+    projection.flush();
+
+    const [crossing] = changes;
+    expect(crossing).toHaveLength(1);
+    expect(projectionChangesForLayer(crossing!, false)).toEqual([
+      { ...crossing![0], previous: crossing![0]!.previous, current: undefined },
+    ]);
+    expect(projectionChangesForLayer(crossing!, true)).toEqual([
+      { ...crossing![0], previous: undefined, current: crossing![0]!.current },
+    ]);
+    expect(projectionChangesForLayer(crossing!, true)[0]!.current?.hexCoords.alt).toBe(true);
+  });
 
   it("restores missed updates and deletions from a full rebuild", () => {
     const { projection, tileOpt, writeTile } = createHarness();
@@ -292,7 +341,9 @@ describe("WorldSpatialProjection", () => {
 
     removeComponent(tileOpt, "offscreen-chest");
 
-    expect(projection.getChestsInBounds({ minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([]);
+    expect(projection.getChestsInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual(
+      [],
+    );
   });
 
   it("publishes one complete change and detaches cleanly", () => {
@@ -307,17 +358,17 @@ describe("WorldSpatialProjection", () => {
     expect(listener).toHaveBeenCalledWith([
       expect.objectContaining({
         kind: "tile",
-        spatialId: "tile:10:11",
+        spatialId: "tile:0:10:11",
         current: expect.objectContaining({
           kind: "tile",
-          spatialId: "tile:10:11",
-          hexCoords: { col: 10, row: 11 },
+          spatialId: "tile:0:10:11",
+          hexCoords: { alt: false, col: 10, row: 11 },
         }),
       }),
       expect.objectContaining({
         kind: "chest",
         entityId: 7,
-        current: { kind: "chest", entityId: 7, hexCoords: { col: 10, row: 11 } },
+        current: { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 10, row: 11 } },
       }),
     ]);
 
@@ -328,7 +379,7 @@ describe("WorldSpatialProjection", () => {
 
     projection.dispose();
     writeTile("third", { col: 14, row: 15, occupierId: 9 });
-    expect(projection.getChests()).toEqual([]);
+    expect(projection.getChests(false)).toEqual([]);
   });
 
   it("publishes structure variant, move, and reserved-site removal changes", () => {
@@ -365,19 +416,19 @@ describe("WorldSpatialProjection", () => {
         spatialId: "entity:7",
         previous: expect.objectContaining({
           entityId: 7,
-          hexCoords: { col: 10, row: 11 },
+          hexCoords: { alt: false, col: 10, row: 11 },
           occupierType: TileOccupier.RealmRegularLevel1,
         }),
         current: expect.objectContaining({
           entityId: 7,
-          hexCoords: { col: 20, row: 21 },
+          hexCoords: { alt: false, col: 20, row: 21 },
           occupierType: TileOccupier.RealmWonderLevel2,
         }),
       },
       {
         kind: "structure",
-        spatialId: "reserved:12:13",
-        previous: expect.objectContaining({ reserved: true, hexCoords: { col: 12, row: 13 } }),
+        spatialId: "reserved:0:12:13",
+        previous: expect.objectContaining({ reserved: true, hexCoords: { alt: false, col: 12, row: 13 } }),
       },
     ]);
   });
@@ -399,16 +450,20 @@ describe("WorldSpatialProjection", () => {
       {
         kind: "army",
         entityId: 7,
-        current: expect.objectContaining({ hexCoords: { col: 10, row: 11 }, troopCategory: "Knight", troopTier: "T1" }),
+        current: expect.objectContaining({
+          hexCoords: { alt: false, col: 10, row: 11 },
+          troopCategory: "Knight",
+          troopTier: "T1",
+        }),
       },
     ]);
     expect(listener).toHaveBeenNthCalledWith(2, [
       {
         kind: "army",
         entityId: 7,
-        previous: expect.objectContaining({ hexCoords: { col: 10, row: 11 } }),
+        previous: expect.objectContaining({ hexCoords: { alt: false, col: 10, row: 11 } }),
         current: expect.objectContaining({
-          hexCoords: { col: 20, row: 21 },
+          hexCoords: { alt: false, col: 20, row: 21 },
           troopCategory: "Crossbowman",
           troopTier: "T3",
         }),
@@ -418,7 +473,7 @@ describe("WorldSpatialProjection", () => {
       {
         kind: "army",
         entityId: 7,
-        previous: expect.objectContaining({ hexCoords: { col: 20, row: 21 } }),
+        previous: expect.objectContaining({ hexCoords: { alt: false, col: 20, row: 21 } }),
       },
     ]);
   });
@@ -430,9 +485,9 @@ describe("WorldSpatialProjection", () => {
 
     writeArmy("army", { explorerId: 7, col: 200, row: 201 });
 
-    expect(projection.getArmiesInBounds({ minCol: 96, maxCol: 104, minRow: 96, maxRow: 104 })).toEqual([]);
-    expect(projection.getArmiesInBounds({ minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([
-      expect.objectContaining({ entityId: 7, hexCoords: { col: 200, row: 201 } }),
+    expect(projection.getArmiesInBounds({ alt: false, minCol: 96, maxCol: 104, minRow: 96, maxRow: 104 })).toEqual([]);
+    expect(projection.getArmiesInBounds({ alt: false, minCol: 196, maxCol: 204, minRow: 196, maxRow: 204 })).toEqual([
+      expect.objectContaining({ entityId: 7, hexCoords: { alt: false, col: 200, row: 201 } }),
     ]);
   });
 
@@ -444,7 +499,7 @@ describe("WorldSpatialProjection", () => {
     writeArmy("army", { explorerId: 8, col: 20, row: 21 });
 
     expect(projection.getArmy(7)).toBeUndefined();
-    expect(projection.getArmy(8)).toMatchObject({ entityId: 8, hexCoords: { col: 20, row: 21 } });
+    expect(projection.getArmy(8)).toMatchObject({ entityId: 8, hexCoords: { alt: false, col: 20, row: 21 } });
   });
 
   it("replaces a reserved construction site with its new hyperstructure immediately", () => {
@@ -466,12 +521,12 @@ describe("WorldSpatialProjection", () => {
       occupierType: TileOccupier.HyperstructureLevel1,
     });
 
-    expect(projection.getStructuresAtHex({ col: 12, row: 13 })).toEqual([
+    expect(projection.getStructuresAtHex({ alt: false, col: 12, row: 13 })).toEqual([
       expect.objectContaining({ spatialId: "entity:77", entityId: 77, reserved: false }),
     ]);
     projection.flush();
     expect(listener).toHaveBeenCalledWith([
-      expect.objectContaining({ spatialId: "reserved:12:13", current: undefined }),
+      expect.objectContaining({ spatialId: "reserved:0:12:13", current: undefined }),
       expect.objectContaining({ spatialId: "entity:77", previous: undefined }),
     ]);
   });
@@ -489,7 +544,7 @@ describe("WorldSpatialProjection", () => {
 
     expect(projection.getStructure(88)).toMatchObject({
       entityId: 88,
-      hexCoords: { col: 30, row: 31 },
+      hexCoords: { alt: false, col: 30, row: 31 },
       occupierType: TileOccupier.RealmRegularLevel1,
     });
   });
@@ -514,7 +569,7 @@ describe("WorldSpatialProjection", () => {
 
     expect(entitiesSpy).toHaveBeenCalledTimes(1);
     expect(projection.getStructure(7)).toMatchObject({
-      hexCoords: { col: 20, row: 21 },
+      hexCoords: { alt: false, col: 20, row: 21 },
       occupierType: TileOccupier.RealmWonderLevel2,
     });
   });
@@ -557,9 +612,9 @@ describe("WorldSpatialProjection", () => {
 
     expect(tileListener).toHaveBeenCalledOnce();
     expect(tileListener).toHaveBeenCalledWith([
-      expect.objectContaining({ spatialId: "tile:10:11" }),
-      expect.objectContaining({ spatialId: "tile:12:13" }),
-      expect.objectContaining({ spatialId: "tile:14:15" }),
+      expect.objectContaining({ spatialId: "tile:0:10:11" }),
+      expect.objectContaining({ spatialId: "tile:0:12:13" }),
+      expect.objectContaining({ spatialId: "tile:0:14:15" }),
     ]);
     expect(armyListener).toHaveBeenCalledOnce();
     expect(armyListener).toHaveBeenCalledWith([
@@ -570,9 +625,9 @@ describe("WorldSpatialProjection", () => {
     expect(structureListener).not.toHaveBeenCalled();
     expect(listener).toHaveBeenCalledOnce();
     expect(listener).toHaveBeenCalledWith([
-      expect.objectContaining({ kind: "tile", spatialId: "tile:10:11" }),
-      expect.objectContaining({ kind: "tile", spatialId: "tile:12:13" }),
-      expect.objectContaining({ kind: "tile", spatialId: "tile:14:15" }),
+      expect.objectContaining({ kind: "tile", spatialId: "tile:0:10:11" }),
+      expect.objectContaining({ kind: "tile", spatialId: "tile:0:12:13" }),
+      expect.objectContaining({ kind: "tile", spatialId: "tile:0:14:15" }),
       expect.objectContaining({ kind: "army", entityId: 7 }),
       expect.objectContaining({ kind: "army", entityId: 8 }),
     ]);
@@ -596,8 +651,8 @@ describe("WorldSpatialProjection", () => {
     projection.flush();
 
     expect(listener).not.toHaveBeenCalled();
-    expect(projection.getChests()).toEqual([]);
-    expect(projection.getArmies().map(({ entityId }) => entityId)).toEqual([9]);
+    expect(projection.getChests(false)).toEqual([]);
+    expect(projection.getArmies(false).map(({ entityId }) => entityId)).toEqual([9]);
   });
 
   it("publishes one net change for a row moved twice inside one slice", () => {
@@ -616,8 +671,8 @@ describe("WorldSpatialProjection", () => {
       {
         kind: "army",
         entityId: 7,
-        previous: expect.objectContaining({ hexCoords: { col: 10, row: 11 } }),
-        current: expect.objectContaining({ hexCoords: { col: 30, row: 31 } }),
+        previous: expect.objectContaining({ hexCoords: { alt: false, col: 10, row: 11 } }),
+        current: expect.objectContaining({ hexCoords: { alt: false, col: 30, row: 31 } }),
       },
     ]);
   });
@@ -630,11 +685,13 @@ describe("WorldSpatialProjection", () => {
     projection.subscribeArmies(listener);
 
     writeArmy("army", { explorerId: 7, col: 20, row: 21 });
-    expect(projection.getArmy(7)?.hexCoords).toEqual({ col: 20, row: 21 });
-    expect(projection.getArmiesAtHex({ col: 10, row: 11 })).toEqual([]);
+    expect(projection.getArmy(7)?.hexCoords).toEqual({ alt: false, col: 20, row: 21 });
+    expect(projection.getArmiesAtHex({ alt: false, col: 10, row: 11 })).toEqual([]);
     writeArmy("army", { explorerId: 7, col: 30, row: 31 });
     expect(
-      projection.getArmiesInBounds({ minCol: 24, maxCol: 32, minRow: 24, maxRow: 32 }).map(({ entityId }) => entityId),
+      projection
+        .getArmiesInBounds({ alt: false, minCol: 24, maxCol: 32, minRow: 24, maxRow: 32 })
+        .map(({ entityId }) => entityId),
     ).toEqual([7]);
     expect(listener).not.toHaveBeenCalled();
 
@@ -655,8 +712,14 @@ describe("WorldSpatialProjection", () => {
 
     expect(listener).toHaveBeenCalledOnce();
     expect(listener).toHaveBeenCalledWith([
-      expect.objectContaining({ entityId: 7, current: expect.objectContaining({ hexCoords: { col: 10, row: 11 } }) }),
-      expect.objectContaining({ entityId: 8, current: expect.objectContaining({ hexCoords: { col: 12, row: 13 } }) }),
+      expect.objectContaining({
+        entityId: 7,
+        current: expect.objectContaining({ hexCoords: { alt: false, col: 10, row: 11 } }),
+      }),
+      expect.objectContaining({
+        entityId: 8,
+        current: expect.objectContaining({ hexCoords: { alt: false, col: 12, row: 13 } }),
+      }),
     ]);
   });
 

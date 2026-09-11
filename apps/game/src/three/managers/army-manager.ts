@@ -1,3 +1,4 @@
+import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -1596,6 +1597,7 @@ export class ArmyManager {
     const bounds = this.getChunkBounds(startRow, startCol);
     const center = FELT_CENTER();
     return this.worldSpatialProjection.getArmiesInBounds({
+      alt: activeMapLayer(),
       minCol: bounds.minCol + center,
       maxCol: bounds.maxCol + center,
       minRow: bounds.minRow + center,

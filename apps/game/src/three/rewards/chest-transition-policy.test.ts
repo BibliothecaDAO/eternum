@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ChestSpatialRenderable, GameSyncRuntimeStatus } from "@bibliothecadao/eternum/game-sync";
 import { resolveChestTransition } from "./chest-transition-policy";
 
-const chest: ChestSpatialRenderable = { kind: "chest", entityId: 7, hexCoords: { col: 10, row: 20 } };
+const chest: ChestSpatialRenderable = { kind: "chest", entityId: 7, hexCoords: { alt: false, col: 10, row: 20 } };
 const created = { kind: "chest" as const, entityId: 7, current: chest };
 
 describe("map chest transition eligibility", () => {
