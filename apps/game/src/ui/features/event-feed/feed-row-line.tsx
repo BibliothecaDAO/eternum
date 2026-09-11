@@ -1,7 +1,6 @@
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { LucideIcon } from "lucide-react";
@@ -29,11 +28,10 @@ import { transferRowLabel } from "./event-feed-rows";
 import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
 import { resolveStoryEventPosition } from "./story-feed-row";
 
-/** One feed row on the shared solid surface: a fixed icon column, one line of text, the time flush right. */
-export const FEED_ROW_CLASS = cn(
-  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-xs text-gold",
-  OVERLAY_SURFACE_BASE,
-);
+/** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, one line of
+ *  text, the time flush right. */
+export const FEED_ROW_CLASS =
+  "pointer-events-auto flex h-8 w-full items-center gap-2 rounded-md bg-black/50 px-2.5 text-xs text-gold backdrop-blur-[2px]";
 const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
 
 const HEADLINE_ICONS: Record<HeadlineType, LucideIcon> = {
@@ -74,7 +72,7 @@ export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSS
     <button
       type="button"
       onClick={() => navigate(target)}
-      className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:border-gold/50")}
+      className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-black/70")}
       style={style}
     >
       {content}

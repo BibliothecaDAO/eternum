@@ -340,6 +340,16 @@ body {
   }
 }
 
+/* A quick-feed row's exit: one linear fade the compositor runs on its own. */
+@keyframes quickFeedFade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* One quick fill around a resource token each time its held amount changes. */
 @property --accrual-angle {
   syntax: "<angle>";

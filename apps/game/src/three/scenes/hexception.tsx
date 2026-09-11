@@ -1245,6 +1245,8 @@ export default class HexceptionScene extends HexagonScene {
           ];
           const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
           this.highlights = [];
+          // The buildable set belongs to this realm and its level; a previous realm's must not linger.
+          this.interactiveHexManager.clearHexes();
 
           // compute matrices to update biome models for each of the large hexes
           for (const center in centers) {
@@ -1299,6 +1301,14 @@ export default class HexceptionScene extends HexagonScene {
     const fallbackBiome = configManager.getBiome(this.centerColRow[0], this.centerColRow[1]);
     const cellsByKey = new Map<string, TerrainCellInput>();
     const worldPosition = new Vector3();
+    // Only a cell with a building gets the packed structure pad; an empty buildable cell keeps its ground.
+    const builtKeys = new Set(
+      this.buildings.map((building) => {
+        worldPosition.setFromMatrixPosition(building.matrix);
+        const coordinate = getHexForWorldPosition(worldPosition);
+        return `${coordinate.col}:${coordinate.row}`;
+      }),
+    );
 
     Object.entries(terrainMatricesByBiome).forEach(([biomeKey, matrices]) => {
       const biome = resolveHexceptionBiome(biomeKey, fallbackBiome);
@@ -1310,7 +1320,7 @@ export default class HexceptionScene extends HexagonScene {
           biome,
           col: coordinate.col,
           explored: true,
-          occupied: biomeKey === "Empty",
+          occupied: builtKeys.has(key),
           previewBiome: biome,
           row: coordinate.row,
         });

@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
-/** The buildable-hex band: a quiet parchment line that reads on every biome and never writes depth. */
+/** The buildable-hex band: the terrain grid's grey, a step more present, and it never writes depth. */
 export const interactiveHexMaterial = new THREE.MeshBasicMaterial({
-  color: 0xf6f1e5,
+  color: 0xc9c4b9,
   transparent: true,
-  opacity: 0.45,
+  opacity: 0.7,
   depthWrite: false,
   toneMapped: false,
 });
