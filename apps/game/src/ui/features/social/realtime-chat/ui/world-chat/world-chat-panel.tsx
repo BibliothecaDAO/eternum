@@ -113,6 +113,9 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
   const resolvedZoneId = zoneId ?? fallbackZoneId;
+  const hasChannelAccess = useRealtimeChatSelector((state) =>
+    resolvedZoneId ? state.joinedZoneIds.includes(resolvedZoneId) : false,
+  );
   const actions = useRealtimeChatActions();
   const { zone, isActive } = useRealtimeWorldZone(resolvedZoneId);
   const { sendMessage, loadHistory, markAsRead, setActive } = useWorldChatControls(resolvedZoneId);
@@ -152,11 +155,11 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   };
 
   useEffect(() => {
-    if (resolvedZoneId) {
+    if (resolvedZoneId && hasChannelAccess) {
       actions.joinZone(resolvedZoneId);
       actions.setActiveZone(resolvedZoneId);
     }
-  }, [actions, resolvedZoneId]);
+  }, [actions, resolvedZoneId, hasChannelAccess]);
 
   useEffect(() => {
     if (isActive && resolvedZoneId) {
@@ -167,6 +170,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   // Initial load of messages
   useEffect(() => {
     if (
+      hasChannelAccess &&
       resolvedZoneId &&
       zone &&
       messages.length === 0 &&
@@ -176,7 +180,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     ) {
       loadHistory(undefined);
     }
-  }, [resolvedZoneId, zone, messages.length]);
+  }, [hasChannelAccess, resolvedZoneId, zone, messages.length]);
 
   // Auto-scroll to bottom on new messages. Once we've ever pinned to bottom we
   // mark the panel as "anchored" so the history-loading observer can start.
@@ -270,8 +274,8 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!zone && <p className="text-sm text-gold/50">Join a zone to view chat.</p>}
-        {zone && (
+        {!hasChannelAccess && <p className="text-sm text-gold/50">Chat unavailable.</p>}
+        {hasChannelAccess && zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollContainerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1 scroll-smooth">
               {/* Sentinel for auto-loading older messages */}
@@ -359,7 +363,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
             await sendMessage({ content: value, zoneId: resolvedZoneId });
           }}
           placeholder={resolvedZoneId ? "Message world chat…" : "Select a zone to chat"}
-          disabled={!resolvedZoneId}
+          disabled={!hasChannelAccess}
         />
       </div>
     </section>

@@ -117,6 +117,7 @@ import {
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
 import { gameEntityKey } from "@/sync/game-scope";
+import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
   isFrameBudgetWorkQueueDisposedError,
   scheduleFrameBudgetWork,
@@ -755,7 +756,8 @@ export class StructureManager {
     const enableContactShadows = !enableCasting;
 
     this.forEachStructureModel((model) => {
-      model.instancedMeshes.forEach((mesh) => {
+      const meshes = model instanceof RewardTileModel ? model.renderMeshes : model.instancedMeshes;
+      meshes.forEach((mesh) => {
         if (mesh.name === LAND_NAME) {
           mesh.castShadow = false;
           return;
@@ -880,7 +882,12 @@ export class StructureManager {
 
     const pending = this.loadStructureModel(structureType, modelPath)
       .then(async (model) => {
-        await this.compileModelPipelines([model]);
+        const compileStartedAt = performance.now();
+        try {
+          await this.compileModelPipelines([model]);
+        } finally {
+          recordGameEntryDuration(`structure-model-compile:${modelPath}`, performance.now() - compileStartedAt);
+        }
         const variants = this.structureModels.get(structureType) ?? new Map<number, StructureModel>();
         variants.set(modelIndex, model);
         this.structureModels.set(structureType, variants);
@@ -901,6 +908,7 @@ export class StructureManager {
         modelPath,
         (gltf) => {
           recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
+          recordGameEntryDuration(`structure-model-load:${modelPath}`, performance.now() - startedAt);
           try {
             resolve(this.createStructureModel(gltf, structureType, modelPath));
           } catch (error) {

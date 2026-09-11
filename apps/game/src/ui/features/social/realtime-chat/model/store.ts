@@ -211,6 +211,7 @@ const loadActiveTabIdFromStorage = () => {
 const initialState: Omit<RealtimeChatStore, "actions"> = {
   client: null,
   connectionStatus: "idle",
+  joinedZoneIds: [],
   lastConnectionError: undefined,
   identity: undefined,
   baseUrl: undefined,
@@ -238,35 +239,51 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const client = new RealtimeClient({
         baseUrl: params.baseUrl,
         onOpen: () => {
+          if (get().client !== client) return;
           set({
-            connectionStatus: "connected",
+            connectionStatus: "connecting",
+            joinedZoneIds: [],
             lastConnectionError: undefined,
           });
-          params.joinZones?.forEach((zoneId) => client.joinZone(zoneId));
         },
         onClose: (event) => {
+          if (get().client !== client) return;
           set({
             connectionStatus: event.wasClean ? "idle" : "error",
+            joinedZoneIds: [],
             lastConnectionError: event.reason || undefined,
           });
         },
         onError: (event) => {
+          if (get().client !== client) return;
           set({
             connectionStatus: "error",
+            joinedZoneIds: [],
             lastConnectionError: event instanceof Event ? event.type : String(event),
           });
         },
         onMessage: (message) => {
+          if (get().client !== client) return;
           const { actions } = get();
 
           switch (message.type) {
             case "connected":
               set({
+                connectionStatus: "connected",
+                joinedZoneIds: message.channels as string[],
                 identity: {
                   playerId: message.playerId as string,
                   displayName: (message.displayName as string | null | undefined) ?? undefined,
                 },
               });
+              // The server has already joined the channels it authorized for this identity.
+              params.joinZones?.forEach((zoneId) => actions.joinZone(zoneId));
+              break;
+            case "joined:zone":
+              set((state) => ({ joinedZoneIds: [...new Set([...state.joinedZoneIds, message.zoneId as string])] }));
+              break;
+            case "left:zone":
+              set((state) => ({ joinedZoneIds: state.joinedZoneIds.filter((zoneId) => zoneId !== message.zoneId) }));
               break;
             case "world:message":
               actions.receiveWorldMessage(message.zoneId as string, message.message as WorldChatMessage, {
@@ -329,6 +346,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         identity: undefined,
         baseUrl: httpBaseUrl,
         connectionStatus: "connecting",
+        joinedZoneIds: [],
         lastConnectionError: undefined,
       });
     },
@@ -346,7 +364,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     joinZone: (zoneId: string) => {
-      const { client, worldZones } = get();
+      const { joinedZoneIds, worldZones } = get();
+      if (!joinedZoneIds.includes(zoneId)) return;
       if (!worldZones[zoneId]) {
         set({
           worldZones: {
@@ -355,11 +374,25 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           },
         });
       }
-      client?.joinZone(zoneId);
     },
-    leaveZone: (zoneId: string) => {
-      const { client } = get();
-      client?.leaveZone(zoneId);
+    setWorldChatChannel: (zoneId) => {
+      const { actions, openTabs, activeTabId } = get();
+      actions.joinZone(zoneId);
+      actions.setActiveZone(zoneId);
+      const directTabs = openTabs.filter((tab) => tab.type === "dm");
+      const worldTab = {
+        id: `world-${zoneId}`,
+        type: "world" as const,
+        label: "World",
+        targetId: zoneId,
+        unreadCount: get().worldZones[zoneId]?.unreadCount ?? 0,
+        closeable: false,
+      };
+      const nextTabs = [worldTab, ...directTabs];
+      const nextActiveTabId = directTabs.some((tab) => tab.id === activeTabId) ? activeTabId : worldTab.id;
+      set({ openTabs: nextTabs, activeTabId: nextActiveTabId });
+      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
+      localStorage.setItem("realtime-chat-active-tab", nextActiveTabId!);
     },
     setActiveZone: (zoneId) => {
       const { worldZones, unreadWorldTotal, activeZoneId } = get();
@@ -747,8 +780,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     sendWorldMessage: async (zoneId, payload) => {
-      const { client, identity, worldZones } = get();
-      if (!client) return;
+      const { client, identity, worldZones, joinedZoneIds } = get();
+      if (!client || !joinedZoneIds.includes(zoneId)) return;
 
       const optimisticId =
         (typeof crypto !== "undefined" && "randomUUID" in crypto && crypto.randomUUID()) ||
@@ -881,8 +914,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     loadWorldHistory: async ({ zoneId, cursor, limit, since, replaceExisting }: LoadWorldChatHistoryParams) => {
-      const { baseUrl } = get();
-      if (!baseUrl || get().worldZones[zoneId]?.isFetchingHistory) return;
+      const { baseUrl, joinedZoneIds } = get();
+      if (!baseUrl || !joinedZoneIds.includes(zoneId) || get().worldZones[zoneId]?.isFetchingHistory) return;
 
       set((state) => {
         const zoneState = state.worldZones[zoneId] ?? createWorldZoneState(zoneId);

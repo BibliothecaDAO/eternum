@@ -1,0 +1,46 @@
+diff --git a/src/renderers/common/Renderer.js b/src/renderers/common/Renderer.js
+index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..96c9bc77be379cca743c01c63fdad17b5be69eed 100644
+--- a/src/renderers/common/Renderer.js
++++ b/src/renderers/common/Renderer.js
+@@ -1031,8 +1031,10 @@ class Renderer {
+ 		this._handleObjectFunction = previousHandleObjectFunction;
+ 		this._compilationPromises = previousCompilationPromises;
+ 
+-		// Process compilation work items sequentially to avoid freezing
+-		// Yields between objects to keep animation smooth
++		// Build shaders cooperatively, but submit GPU pipelines without waiting
++		// for the previous object. compileAsync still waits for every pipeline.
++
++		const pendingCompilations = [];
+ 
+ 		for ( const item of compilationPromises ) {
+ 
+@@ -1048,22 +1050,20 @@ class Renderer {
+ 			this._nodes.updateForRender( renderObject );
+ 			this._bindings.updateForRender( renderObject );
+ 
+-			// Wait for pipeline creation
+ 			const pipelinePromises = [];
+ 			this._pipelines.getForRender( renderObject, pipelinePromises );
+-			if ( pipelinePromises.length > 0 ) {
+-
+-				await Promise.all( pipelinePromises );
+-
+-			}
+-
+-			this._nodes.updateAfter( renderObject );
++			const completion = Promise.all( pipelinePromises ).then( () => this._nodes.updateAfter( renderObject ) );
++			// Observe early rejection while later shaders yield; the final await propagates it.
++			completion.catch( () => {} );
++			pendingCompilations.push( completion );
+ 
+ 			// Yield between objects to allow animation frames
+ 			await yieldToMain();
+ 
+ 		}
+ 
++		await Promise.all( pendingCompilations );
++
+ 	}
+ 
+ 	/**

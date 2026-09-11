@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Effect } from "effect";
 
 import type { MembershipResolver } from "../../../channels/membership";
+import { createChatChannelPolicy } from "../../../channels/chat-policy";
 import { createAttachPlayerSession, type AppEnv } from "../../middleware/auth";
 import { createWorldChatRoutes } from "../world-chat";
 
@@ -20,7 +21,7 @@ describe("game channel authorization", () => {
           Effect.succeed({ playerId: "0xa", membershipPlayerId: "0xgame", displayName: "Alice", aliases: ["0xa"] }),
       }),
     );
-    app.route("/chat", createWorldChatRoutes(membership));
+    app.route("/chat", createWorldChatRoutes(createChatChannelPolicy(membership)));
     const headers = { cookie: "better-auth.session_token=trusted", "content-type": "application/json" };
 
     const history = await app.request("/chat?zoneId=game:7", { headers });

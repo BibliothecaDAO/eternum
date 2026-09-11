@@ -173,3 +173,60 @@ describe("reward animation uploads", () => {
     model.dispose();
   });
 });
+
+describe("reward part batching", () => {
+  it("shares a pipeline while preserving distinct geometry, animation, sparse tiles and removal", () => {
+    const scene = new Group();
+    const material = new MeshStandardMaterial();
+    const first = new Mesh(new PlaneGeometry(2, 2), material);
+    first.name = "DropletA";
+    const second = new Mesh(new PlaneGeometry(4, 4), material);
+    second.position.y = 3;
+    scene.add(first, second);
+    const animations = [
+      new AnimationClip("rise", 2, [new VectorKeyframeTrack("DropletA.position", [0, 2], [0, 0, 0, 0, 2, 0])]),
+    ];
+    const model = new RewardTileModel({ scene, animations } as unknown as GLTF, 1000);
+    expect(model.renderMeshes).toHaveLength(1);
+    const batch = model.renderMeshes[0] as import("three").BatchedMesh;
+    expect(batch.isBatchedMesh).toBe(true);
+    expect(batch.geometry.attributes.position.count).toBe(8);
+    expect(batch.maxInstanceCount).toBeLessThan(1000);
+    const initialCapacity = batch.maxInstanceCount;
+    model.setMatrixAt(0, new Matrix4());
+    model.setMatrixAt(7, new Matrix4().makeTranslation(10, 0, 0));
+    model.setCount(8);
+    expect(batch.instanceCount).toBe(4);
+    expect(batch.maxInstanceCount).toBe(initialCapacity);
+    const matrix = new Matrix4();
+    batch.getMatrixAt(2, matrix);
+    expect(new Vector3().setFromMatrixPosition(matrix).toArray()).toEqual([10, 1, 0]);
+    model.updateAnimations(0.5);
+    batch.getMatrixAt(2, matrix);
+    expect(new Vector3().setFromMatrixPosition(matrix).toArray()).toEqual([10, 1.5, 0]);
+    batch.getMatrixAt(3, matrix);
+    expect(new Vector3().setFromMatrixPosition(matrix).toArray()).toEqual([10, 3, 0]);
+    model.removeInstance(0);
+    expect(batch.instanceCount).toBe(2);
+    model.setMatrixAt(4, new Matrix4());
+    expect(batch.maxInstanceCount).toBe(initialCapacity);
+    const materialVersion = batch.material.version;
+    for (let tile = 0; tile < 20; tile++) model.setMatrixAt(tile, new Matrix4());
+    expect(batch.material.version).toBeGreaterThan(materialVersion);
+    expect(batch.maxInstanceCount).toBeGreaterThan(initialCapacity);
+    model.setCount(0);
+    expect(batch.instanceCount).toBe(0);
+    expect(batch.visible).toBe(false);
+    model.dispose();
+  });
+
+  it("leaves transparent and morphing parts on their original instancing path", () => {
+    const asset = createAsset();
+    const material = new MeshStandardMaterial({ transparent: true });
+    asset.scene.add(new Mesh(new PlaneGeometry(), material), new Mesh(new PlaneGeometry(), material));
+    const model = new RewardTileModel(asset, 2);
+    expect(model.renderMeshes).toHaveLength(3);
+    expect(model.instancedMeshes).toHaveLength(3);
+    model.dispose();
+  });
+});

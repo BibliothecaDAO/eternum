@@ -13,6 +13,8 @@ import {
 
 const MAX_MESSAGE_BATCH = 100;
 
+export const GLOBAL_CHAT_CHANNEL_ID = "world:global";
+
 export const worldChatSenderSchema = z.object({
   playerId: playerIdSchema,
   displayName: displayNameSchema.optional(),

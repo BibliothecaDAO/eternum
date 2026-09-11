@@ -35,10 +35,28 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-11",
+    title: "Smoother Village Rendering",
+    description: "Villages render more efficiently while keeping their ownership colors, banners, and campfires.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Faster Map Preparation",
+    description: "Enter the map faster around villages and essence rifts, with their shapes and animation preserved.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
     title: "Villages on the Map",
     description:
       "Villages and mercenary camps now use the new huts and palisades in world and local views, with animated campfires and banners colored for owned, allied, and enemy settlements.",
     type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Global and Game Chat",
+    description: "Start in Global chat with players across all games, or switch to Game chat for your current match.",
+    type: "fix",
   },
   {
     date: "2026-09-11",

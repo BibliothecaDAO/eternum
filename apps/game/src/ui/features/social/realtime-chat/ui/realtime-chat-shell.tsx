@@ -1,5 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ReactNode, useEffect, useState } from "react";
+import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import {
   useRealtimeChatActions,
@@ -18,8 +19,8 @@ import { RealtimeChatToggleButton } from "./shared/realtime-chat-toggle-button";
 
 interface RealtimeChatShellProps {
   initializer?: InitializeRealtimeClientParams | null;
-  zoneIds?: string[];
   defaultZoneId?: string;
+  gameZoneId?: string;
   threadId?: string;
   className?: string;
   children?: ReactNode;
@@ -30,8 +31,8 @@ interface RealtimeChatShellProps {
 
 export function RealtimeChatShell({
   initializer,
-  zoneIds,
   defaultZoneId,
+  gameZoneId,
   threadId,
   className,
   children,
@@ -45,6 +46,10 @@ export function RealtimeChatShell({
   const isExpanded = isEmbedded || shellOpen;
   const openTabs = useRealtimeChatSelector((state) => state.openTabs);
   const activeTabId = useRealtimeChatSelector((state) => state.activeTabId);
+  const activeZoneId = useRealtimeChatSelector((state) => state.activeZoneId);
+  const hasGameChat = useRealtimeChatSelector((state) =>
+    Boolean(gameZoneId && state.joinedZoneIds.includes(gameZoneId)),
+  );
   useRealtimeChatInitializer(autoInitializeClient ? initializer : null);
   const { connectionStatus, lastConnectionError } = useRealtimeConnection();
   const presence = useRealtimePresence();
@@ -54,43 +59,14 @@ export function RealtimeChatShell({
     const stored = localStorage.getItem("realtime-chat-pinned-users");
     return stored ? new Set(JSON.parse(stored)) : new Set();
   });
-  const zoneKey = zoneIds?.join("|") ?? "";
-
   useEffect(() => {
-    if (!zoneIds || zoneIds.length === 0) {
-      if (defaultZoneId) {
-        actions.joinZone(defaultZoneId);
-        actions.setActiveZone(defaultZoneId);
-        // Create default world tab if no tabs exist
-        if (openTabs.length === 0) {
-          actions.addTab({
-            id: `world-${defaultZoneId}`,
-            type: "world",
-            label: `World`,
-            targetId: defaultZoneId,
-            unreadCount: 0,
-            closeable: false, // World tab cannot be closed
-          });
-        }
-      }
-      return;
-    }
-    zoneIds.forEach((zoneId) => actions.joinZone(zoneId));
-    if (defaultZoneId) {
-      actions.setActiveZone(defaultZoneId);
-      // Create default world tab if no tabs exist
-      if (openTabs.length === 0) {
-        actions.addTab({
-          id: `world-${defaultZoneId}`,
-          type: "world",
-          label: `World`,
-          targetId: defaultZoneId,
-          unreadCount: 0,
-          closeable: false, // World tab cannot be closed
-        });
-      }
-    }
-  }, [actions, defaultZoneId, zoneKey]);
+    if (defaultZoneId) actions.setWorldChatChannel(defaultZoneId);
+  }, [actions, defaultZoneId, gameZoneId]);
+
+  const selectWorldChannel = (zoneId: string) => {
+    actions.setWorldChatChannel(zoneId);
+    actions.setActiveTab(`world-${zoneId}`);
+  };
 
   const toggleHeightExpand = () => {
     setIsHeightExpanded(!isHeightExpanded);
@@ -204,6 +180,36 @@ export function RealtimeChatShell({
 
         {isExpanded && (
           <>
+            {gameZoneId && (
+              <div className="flex gap-1 border-b border-gold/10 px-3 py-2" role="group" aria-label="Chat channel">
+                <button
+                  type="button"
+                  aria-pressed={activeZoneId === GLOBAL_CHAT_CHANNEL_ID}
+                  className={cn(
+                    "rounded px-3 py-1 text-sm",
+                    activeZoneId === GLOBAL_CHAT_CHANNEL_ID ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold",
+                  )}
+                  onClick={() => selectWorldChannel(GLOBAL_CHAT_CHANNEL_ID)}
+                >
+                  Global
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={activeZoneId === gameZoneId}
+                  disabled={!hasGameChat}
+                  title={
+                    hasGameChat ? "Chat with players in this game" : "Game chat requires registration in this game"
+                  }
+                  className={cn(
+                    "rounded px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40",
+                    activeZoneId === gameZoneId ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold",
+                  )}
+                  onClick={() => selectWorldChannel(gameZoneId)}
+                >
+                  Game
+                </button>
+              </div>
+            )}
             {/* Tab Bar */}
             <div className="relative">
               <TabBar
