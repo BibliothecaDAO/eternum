@@ -6,7 +6,7 @@ import { Vector2 } from "three";
  *
  * Provides a single source of truth for wind direction and speed that can be
  * consumed by:
- * - Rain particles (drift direction)
+ * - Settlement banners and campfire flames
  * - Cloud scrolling (future)
  * - Vegetation sway (future)
  * - Audio panning/filtering

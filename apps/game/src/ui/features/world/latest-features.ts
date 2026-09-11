@@ -34,6 +34,73 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-11",
+    title: "Villages on the Map",
+    description:
+      "Villages and mercenary camps now use the new huts and palisades in world and local views, with animated campfires and banners colored for owned, allied, and enemy settlements.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Consistent Rain Direction",
+    description: "Rain falls straight down across camera angles, with consistent streaks and ground splashes.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-11",
+    title: "First Realm Settlement",
+    description:
+      "Preview the lowest-tier realm with rounded wall corners and an oak courtyard gate. The adjoining tower is accessible only through a door from the keep's first-floor terrace. Its animated banner and wall hangings use the realm's order colors and emblem.",
+    type: "improvement",
+    readMore: "/lab",
+  },
+  {
+    date: "2026-09-10",
+    title: "Village Fire and Banners",
+    description:
+      "A central campfire flickers while village banners ripple in the wind with a horned-helmet emblem. Preview green for owned, blue for allied, red for enemy or unowned settlements.",
+    type: "improvement",
+    readMore: "/lab",
+  },
+  {
+    date: "2026-09-10",
+    title: "Stable Lab Dropdowns",
+    description:
+      "Live terrain statistics update independently of the Lab controls, keeping dropdown selections undisturbed while you browse models and settings.",
+    type: "fix",
+    readMore: "/lab",
+  },
+  {
+    date: "2026-09-10",
+    title: "Village Huts and Palisades",
+    description:
+      "Preview five small huts around an open courtyard, with a uniform timber palisade and taller entrance posts. Relationship colors dress the hut entrances and banner.",
+    type: "improvement",
+    readMore: "/lab",
+  },
+  {
+    date: "2026-09-10",
+    title: "Timber Mercenary Camp",
+    description:
+      "Preview a simpler mercenary camp with timber defenses, muted canvas and an open courtyard in the Lab.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-10",
+    title: "Sandy Settlement Islands",
+    description:
+      "Camps, villages and realms keep the terrain beneath them. Water settlements gain procedural sand, including in local views.",
+    type: "improvement",
+    readMore: "/lab",
+  },
+  {
+    date: "2026-09-10",
+    title: "One Graphics Lab",
+    description: "Work on biomes, settlements, models and rewards from one lab. The HUD experiment has been removed.",
+    type: "improvement",
+    readMore: "/lab",
+  },
+  {
     date: "2026-09-10",
     title: "Clearer Terrain and Smoother Storms",
     type: "improvement",
@@ -473,7 +540,7 @@ const allLatestFeatures: LatestFeature[] = [
     type: "improvement",
     description:
       "Compare all nine detailed ships in the Model Lab: Knight cannon ships, Crossbowman ballista ships and Paladin sacred vessels. Each tier has its own silhouette, with player sail prints, sailing animation and the same hex footprint.",
-    readMore: "/model-lab",
+    readMore: "/lab/models",
   },
   {
     date: "2026-09-07",

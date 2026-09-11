@@ -1,5 +1,6 @@
 import { StructureType, getNeighborHexes } from "@bibliothecadao/types";
 import type { TerrainCellInput, TerrainPageRequest } from "@/three/terrain/terrain-types";
+import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
 
 export function getLocalHexDisk(center: { col: number; row: number }, radius: number) {
   const cells = new Map([[`${center.col}:${center.row}`, { ...center, isBorder: false }]]);
@@ -26,7 +27,9 @@ export function createHexceptionTerrainRequest(
   climate: TerrainPageRequest["climate"],
   pageKey: string,
 ): TerrainPageRequest {
-  const ordered = [...cells].sort((left, right) => left.row - right.row || left.col - right.col);
+  const ordered = [...cells]
+    .map(resolveSettlementLandCell)
+    .sort((left, right) => left.row - right.row || left.col - right.col);
   return {
     cells: ordered,
     climate,

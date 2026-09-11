@@ -9,7 +9,7 @@ import {
 describe("terrain gallery verification", () => {
   it("builds the auth-free fixed capture URL", () => {
     expect(buildTerrainGalleryUrl("https://localhost:4173/play/anything", "webgpu-force-webgl")).toBe(
-      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes&quality=detail",
+      "https://localhost:4173/lab?capture=1&rendererMode=webgpu-force-webgl&groundMode=textured&scene=all-biomes&quality=detail",
     );
   });
 
@@ -17,7 +17,7 @@ describe("terrain gallery verification", () => {
     expect(
       buildTerrainGalleryUrl("https://localhost:4173", "webgpu-auto", "textured", "fog-reveal", "detail", 0.5),
     ).toBe(
-      "https://localhost:4173/debug/procedural-terrain?capture=1&rendererMode=webgpu-auto&groundMode=textured&scene=fog-reveal&quality=detail&reveal=0.5",
+      "https://localhost:4173/lab?capture=1&rendererMode=webgpu-auto&groundMode=textured&scene=fog-reveal&quality=detail&reveal=0.5",
     );
   });
 

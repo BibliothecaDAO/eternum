@@ -1026,6 +1026,10 @@ export abstract class HexagonScene {
     PerformanceMonitor.end("scene.update");
   }
 
+  public getWeatherAtmosphereState(): Readonly<WeatherState> | undefined {
+    return this.weatherAtmosphereState;
+  }
+
   public setWeatherAtmosphereState(state?: WeatherState): void {
     this.weatherAtmosphereState = state ? { ...state } : undefined;
   }

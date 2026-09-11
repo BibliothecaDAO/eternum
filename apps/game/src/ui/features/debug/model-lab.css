@@ -2,7 +2,7 @@
   --ml-muted: #81959e;
   --ml-gold: #d4b986;
   position: relative;
-  height: 100dvh;
+  height: var(--lab-viewport-height, 100dvh);
   min-height: 720px;
   overflow: hidden;
   background: #121c25;
@@ -39,9 +39,6 @@
 .ml-header > svg {
   color: var(--ml-gold);
 }
-.ml-header > a {
-  color: #8da2a9;
-}
 .ml-header strong {
   display: block;
   font:
@@ -57,11 +54,8 @@
   font-size: 8px;
   letter-spacing: 1.6px;
 }
-.ml-header nav {
-  margin-left: auto;
-}
 .ml-header > button {
-  margin-left: 22px;
+  margin-left: auto;
   display: flex;
   gap: 7px;
   align-items: center;

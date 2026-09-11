@@ -1,10 +1,11 @@
+import { orders } from "@bibliothecadao/types";
 import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
-import { GraphicsLabsNav } from "./graphics-labs-nav";
-import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
+import { TERRAIN_LAB_BUILDINGS, VILLAGE_DRAFT_PATH, REALM_DRAFT_PATH } from "@/three/debug/terrain-lab-buildings";
+import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
 import { RefreshCw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   mountProceduralTerrainDebugRenderer,
@@ -86,8 +87,9 @@ const EMPTY_STATS: ProceduralTerrainDebugStats = {
   waterVertices: 0,
 };
 
-export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: boolean }) => {
-  const [searchParams] = useSearchParams();
+export const ProceduralTerrainDebugView = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const localMode = searchParams.get("layout") === "settlement";
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
   const capture = searchParams.get("capture") === "1";
@@ -105,7 +107,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
   const qualityTier = resolveQualityTier(searchParams.get("quality"));
   const revealProgress = resolveRevealProgress(searchParams.get("reveal"));
   const [preview, setPreview] = useState<TerrainLabPreview>(DEFAULT_TERRAIN_LAB_PREVIEW);
-  const [stats, setStats] = useState(EMPTY_STATS);
+  const [buildingCount, setBuildingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   useBootDocumentState(
@@ -116,8 +118,9 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    setReady(false);
+    setError(null);
     let active = true;
-    let statsTimer: number | null = null;
     const mountFrame = window.requestAnimationFrame(() => {
       void mountProceduralTerrainDebugRenderer({
         canvas,
@@ -133,8 +136,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
         },
         onReady: (nextStats) => {
           if (!active) return;
-          setStats(nextStats);
-          setReady(true);
+          setBuildingCount(nextStats.buildingInstances);
         },
       })
         .then((renderer) => {
@@ -143,7 +145,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             return;
           }
           rendererRef.current = renderer;
-          statsTimer = window.setInterval(() => setStats(renderer.getStats()), 500);
+          setReady(true);
         })
         .catch((reason) => {
           if (!active) return;
@@ -154,7 +156,6 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
     return () => {
       active = false;
       window.cancelAnimationFrame(mountFrame);
-      if (statsTimer !== null) window.clearInterval(statsTimer);
       rendererRef.current?.dispose();
       rendererRef.current = null;
     };
@@ -170,68 +171,53 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
     if (ready) rendererRef.current?.setCycleProgress(cycleProgress);
   }, [cycleProgress, ready]);
 
-  const setRendererMode = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("rendererMode", value);
-    window.location.search = next.toString();
-  };
-
-  const setGroundMode = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("groundMode", value);
-    window.location.search = next.toString();
-  };
-
-  const setSceneId = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("scene", value);
-    window.location.search = next.toString();
-  };
-
-  const setQualityTier = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("quality", value);
-    window.location.search = next.toString();
-  };
-
-  const setRevealProgress = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("reveal", value);
-    window.location.search = next.toString();
+  const changeSceneSetting = (key: string, value: string) => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set(key, value);
+        return next;
+      },
+      { replace: true },
+    );
   };
 
   return (
     <section
       className={cn(
-        "min-h-screen bg-stone-950 text-stone-100",
+        "min-h-[var(--lab-viewport-height)] bg-stone-950 text-stone-100",
         capture ? "block" : "flex flex-col gap-4 p-4 xl:grid xl:grid-cols-[380px_1fr]",
       )}
       data-debug-route="procedural-terrain"
       data-ready={ready ? "true" : "false"}
     >
       {!capture && (
-        <aside className="flex max-h-[calc(100vh-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">
-                {localMode ? "Local Mode Lab" : "Biome Lab"}
-              </p>
-              <h1 className="mt-1 text-2xl font-semibold text-white">
-                {localMode ? "Settlement Workshop" : "Living Biomes"}
-              </h1>
-              <p className="mt-2 text-sm leading-5 text-stone-400">
-                {localMode
-                  ? "Preview a local settlement with the game’s buildable tiles and building models."
-                  : "A seeded field exercises every biome across connected hexes."}{" "}
-                Drag to pan, scroll to zoom, and right-drag to orbit. Offworld Trading Company is our visual reference.
-              </p>
-            </div>
-            <Link to="/" className="border border-white/15 px-3 py-2 text-xs font-semibold uppercase text-stone-200">
-              Exit
-            </Link>
+        <aside className="flex max-h-[calc(var(--lab-viewport-height)-2rem)] flex-col gap-4 overflow-y-auto border border-white/10 bg-black/60 p-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200/70">Terrain & buildings</p>
+            <h1 className="mt-1 text-2xl font-semibold text-white">
+              {localMode ? "Settlement Workshop" : "Living Biomes"}
+            </h1>
+            <p className="mt-2 text-sm leading-5 text-stone-400">
+              {localMode
+                ? "Preview a local settlement with the game’s buildable tiles and building models."
+                : "A seeded field exercises every biome across connected hexes."}{" "}
+              Drag to pan, scroll to zoom, and right-drag to orbit. Offworld Trading Company is our visual reference.
+            </p>
           </div>
 
-          <GraphicsLabsNav />
+          <label className="flex flex-col gap-1 text-sm">
+            Layout
+            <select
+              aria-label="Terrain layout"
+              className="bg-stone-900 p-2"
+              value={localMode ? "settlement" : "world"}
+              onChange={(event) => changeSceneSetting("layout", event.target.value)}
+            >
+              <option value="world">World biomes</option>
+              <option value="settlement">Local settlement</option>
+            </select>
+          </label>
           {localMode && (
             <label className="flex flex-col gap-1 text-sm">
               Buildable radius
@@ -239,11 +225,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
                 aria-label="Buildable radius"
                 className="bg-stone-900 p-2"
                 value={localRadius}
-                onChange={(event) => {
-                  const next = new URLSearchParams(searchParams);
-                  next.set("radius", event.target.value);
-                  window.location.search = next.toString();
-                }}
+                onChange={(event) => changeSceneSetting("radius", event.target.value)}
               >
                 {[1, 2, 3, 4, 5].map((radius) => (
                   <option key={radius} value={radius}>
@@ -253,6 +235,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
               </select>
             </label>
           )}
+          {localMode && <p className="text-xs text-stone-400">Water biomes use sand in the settlement view.</p>}
           <fieldset className="flex flex-col gap-3 border border-white/15 p-3">
             <legend className="px-1 text-sm text-emerald-200">Interaction preview</legend>
             <p className="text-xs text-stone-400">
@@ -386,7 +369,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             </button>
           </fieldset>
           <fieldset className="flex flex-col gap-3 border border-white/15 p-3">
-            <legend className="px-1 text-sm text-emerald-200">Buildings and chests · {stats.buildingInstances}</legend>
+            <legend className="px-1 text-sm text-emerald-200">Buildings and chests · {buildingCount}</legend>
             <label className="flex flex-col gap-1 text-sm">
               Model
               <select
@@ -402,6 +385,42 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
                 ))}
               </select>
             </label>
+            {buildingPath === REALM_DRAFT_PATH && (
+              <label className="flex flex-col gap-1 text-sm">
+                Realm order
+                <select
+                  aria-label="Realm order"
+                  className="bg-stone-900 p-2"
+                  value={preview.realmOrderId}
+                  onChange={(event) => setPreview({ ...preview, realmOrderId: Number(event.target.value) })}
+                >
+                  {orders.map((order) => (
+                    <option key={order.orderId} value={order.orderId}>
+                      {order.fullOrderName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {buildingPath === VILLAGE_DRAFT_PATH && (
+              <label className="flex flex-col gap-1 text-sm">
+                Village relationship
+                <select
+                  aria-label="Village relationship"
+                  className="bg-stone-900 p-2"
+                  value={preview.relationship}
+                  onChange={(event) =>
+                    setPreview({ ...preview, relationship: event.target.value as SettlementRelationship })
+                  }
+                >
+                  {Object.entries(SETTLEMENT_RELATIONSHIPS).map(([relationship, appearance]) => (
+                    <option key={relationship} value={relationship}>
+                      {appearance.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="flex flex-col gap-1 text-sm">
               Building rotation
               <input
@@ -494,7 +513,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             Terrain quality
             <select
               value={qualityTier}
-              onChange={(event) => setQualityTier(event.target.value)}
+              onChange={(event) => changeSceneSetting("quality", event.target.value)}
               className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
             >
               {TERRAIN_QUALITY_TIERS.map((value) => (
@@ -510,7 +529,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
               Exploration
               <select
                 value={String(revealProgress)}
-                onChange={(event) => setRevealProgress(event.target.value)}
+                onChange={(event) => changeSceneSetting("reveal", event.target.value)}
                 className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
               >
                 <option value="0">Covered</option>
@@ -526,8 +545,9 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             <label className="flex flex-col gap-2 text-xs font-semibold uppercase text-stone-300">
               Scene
               <select
+                aria-label="Terrain scene"
                 value={sceneId}
-                onChange={(event) => setSceneId(event.target.value)}
+                onChange={(event) => changeSceneSetting("scene", event.target.value)}
                 className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
               >
                 {TERRAIN_VERIFICATION_SCENE_IDS.map((value) => (
@@ -543,7 +563,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             Renderer
             <select
               value={forceWebGL ? "webgpu-force-webgl" : "webgpu-auto"}
-              onChange={(event) => setRendererMode(event.target.value)}
+              onChange={(event) => changeSceneSetting("rendererMode", event.target.value)}
               className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
             >
               <option value="webgpu-auto">WebGPU auto</option>
@@ -555,7 +575,7 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             Ground shading
             <select
               value={texturedGround ? "textured" : "flat"}
-              onChange={(event) => setGroundMode(event.target.value)}
+              onChange={(event) => changeSceneSetting("groundMode", event.target.value)}
               className="h-10 border border-white/15 bg-stone-950 px-3 text-sm font-medium normal-case text-white"
             >
               <option value="textured">Textured PBR</option>
@@ -563,62 +583,12 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
             </select>
           </label>
 
-          <dl className="grid grid-cols-3 gap-2 text-sm">
-            <DebugMetric label="Backend" value={stats.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
-            <DebugMetric label="Scene" value={localMode ? "Local settlement" : formatSceneLabel(stats.sceneId)} />
-            <DebugMetric label="Quality" value={formatSceneLabel(stats.qualityTier)} />
-            <DebugMetric label="Reveal" value={`${Math.round(stats.revealProgress * 100)}%`} />
-            <DebugMetric label="Biomes" value={String(stats.biomeCount || "--")} />
-            <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
-            <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
-            <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
-            <DebugMetric label="Ground cover" value={stats.groundCoverInstances.toLocaleString()} />
-            <DebugMetric label="Realms" value={stats.realmInstances.toLocaleString()} />
-            <DebugMetric label="Roads" value={stats.roadSegments.toLocaleString()} />
-            <DebugMetric label="Settlements" value={stats.settlementSites.toLocaleString()} />
-            <DebugMetric label="Settlement tiers" value={stats.settlementTierCount.toLocaleString()} />
-            <DebugMetric label="Road verge" value={stats.roadVergeSuccession.toFixed(2)} />
-            <DebugMetric label="Wetland edge" value={stats.wetlandEdgeStrength.toFixed(2)} />
-            <DebugMetric label="Water vertices" value={stats.waterVertices.toLocaleString()} />
-            <DebugMetric label="Water contour" value={stats.waterShorelineVertices.toLocaleString()} />
-            <DebugMetric
-              label="Water depth"
-              value={`${stats.waterDepthMin.toFixed(3)}–${stats.waterDepthMax.toFixed(3)}`}
-            />
-            <DebugMetric label="Foam coast" value={stats.waterFoamVertices.toLocaleString()} />
-            <DebugMetric label="Water FX" value={stats.waterInteractionInstances.toLocaleString()} />
-            <DebugMetric label="Boat wakes" value={stats.waterWakeInstances.toLocaleString()} />
-            <DebugMetric
-              label="Dust puffs"
-              value={`${stats.dustActiveParticles.toLocaleString()}/${stats.dustCapacity.toLocaleString()}`}
-            />
-            <DebugMetric label="Dust movers" value={stats.dustEmitterCount.toLocaleString()} />
-            <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
-            <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
-            <DebugMetric label="Fog terrain" value={stats.fogTerrainCells.toLocaleString()} />
-            <DebugMetric
-              label="Fog mask"
-              value={stats.fogMaskWidth ? `${stats.fogMaskWidth}×${stats.fogMaskHeight}` : "--"}
-            />
-            <DebugMetric label="Fog KB" value={Math.round(stats.fogMaskBytes / 1024).toLocaleString()} />
-            <DebugMetric label="Fog opacity" value={`${Math.round(stats.fogOpacity * 100)}%`} />
-            <DebugMetric label="Active reveal" value={stats.shroudActiveReveals.toLocaleString()} />
-            <DebugMetric label="Ground" value={`${stats.groundTextureLayers || "--"} layers`} />
-            <DebugMetric label="Ground KB" value={Math.round(stats.groundTextureBytes / 1024).toLocaleString()} />
-            <DebugMetric label="Frame p50" value={`${stats.frameP50Ms.toFixed(1)} ms`} />
-            <DebugMetric label="Frame p95" value={`${stats.frameP95Ms.toFixed(1)} ms`} />
-            <DebugMetric label="Frame worst" value={`${stats.frameWorstMs.toFixed(1)} ms`} />
-            <DebugMetric label="Textures" value={String(stats.textures || "--")} />
-            <DebugMetric label="Triangles" value={stats.triangles.toLocaleString()} />
-            <DebugMetric label="Prepare" value={`${stats.prepareMs.toFixed(1)} ms`} />
-            <DebugMetric label="Commit" value={`${stats.commitMs.toFixed(1)} ms`} />
-            <DebugMetric label="First render" value={`${stats.firstRenderMs.toFixed(1)} ms`} />
-          </dl>
-
-          <div className="flex items-center justify-between gap-3 text-[0.68rem] text-stone-500">
-            <span>Fingerprint</span>
-            <code>{stats.fingerprint}</code>
-          </div>
+          <TerrainLabMetrics
+            rendererRef={rendererRef}
+            ready={ready}
+            localMode={localMode}
+            onBuildingCount={setBuildingCount}
+          />
 
           <button
             type="button"
@@ -631,11 +601,16 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
         </aside>
       )}
 
-      <div className={cn("relative overflow-hidden bg-[#d8d0ba]", capture ? "h-screen w-screen" : "min-h-[720px]")}>
+      <div
+        className={cn(
+          "relative overflow-hidden bg-[#d8d0ba]",
+          capture ? "h-screen w-screen" : "h-[max(600px,calc(var(--lab-viewport-height)-2rem))]",
+        )}
+      >
         <canvas
           ref={canvasRef}
           id="procedural-terrain-debug-canvas"
-          className={cn("h-full w-full touch-none", !capture && "min-h-[720px]")}
+          className="h-full w-full touch-none"
           aria-label="Game-scale procedural terrain biome field"
         />
         {error && (
@@ -650,6 +625,95 @@ export const ProceduralTerrainDebugView = ({ localMode = false }: { localMode?: 
     </section>
   );
 };
+
+function TerrainLabMetrics({
+  rendererRef,
+  ready,
+  localMode,
+  onBuildingCount,
+}: {
+  rendererRef: RefObject<ProceduralTerrainDebugRendererHandle | null>;
+  ready: boolean;
+  localMode: boolean;
+  onBuildingCount: (count: number) => void;
+}) {
+  const [stats, setStats] = useState(EMPTY_STATS);
+  useEffect(() => {
+    if (!ready) return;
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+    // Frame telemetry must not rerender native selects while their menus are open.
+    const refresh = () => {
+      const next = renderer.getStats();
+      setStats(next);
+      onBuildingCount(next.buildingInstances);
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 500);
+    return () => window.clearInterval(timer);
+  }, [ready, rendererRef, onBuildingCount]);
+
+  return (
+    <>
+      <dl className="grid grid-cols-3 gap-2 text-sm">
+        <DebugMetric label="Backend" value={stats.activeMode === "webgpu" ? "WebGPU" : "WebGL2"} />
+        <DebugMetric label="Scene" value={localMode ? "Local settlement" : formatSceneLabel(stats.sceneId)} />
+        <DebugMetric label="Quality" value={formatSceneLabel(stats.qualityTier)} />
+        <DebugMetric label="Reveal" value={`${Math.round(stats.revealProgress * 100)}%`} />
+        <DebugMetric label="Biomes" value={String(stats.biomeCount || "--")} />
+        <DebugMetric label="Hexes" value={stats.cellCount.toLocaleString()} />
+        <DebugMetric label="Calls" value={String(stats.drawCalls || "--")} />
+        <DebugMetric label="Props" value={stats.propInstances.toLocaleString()} />
+        <DebugMetric label="Ground cover" value={stats.groundCoverInstances.toLocaleString()} />
+        <DebugMetric label="Realms" value={stats.realmInstances.toLocaleString()} />
+        <DebugMetric label="Roads" value={stats.roadSegments.toLocaleString()} />
+        <DebugMetric label="Settlements" value={stats.settlementSites.toLocaleString()} />
+        <DebugMetric label="Settlement tiers" value={stats.settlementTierCount.toLocaleString()} />
+        <DebugMetric label="Road verge" value={stats.roadVergeSuccession.toFixed(2)} />
+        <DebugMetric label="Wetland edge" value={stats.wetlandEdgeStrength.toFixed(2)} />
+        <DebugMetric label="Water vertices" value={stats.waterVertices.toLocaleString()} />
+        <DebugMetric label="Water contour" value={stats.waterShorelineVertices.toLocaleString()} />
+        <DebugMetric
+          label="Water depth"
+          value={`${stats.waterDepthMin.toFixed(3)}–${stats.waterDepthMax.toFixed(3)}`}
+        />
+        <DebugMetric label="Foam coast" value={stats.waterFoamVertices.toLocaleString()} />
+        <DebugMetric label="Water FX" value={stats.waterInteractionInstances.toLocaleString()} />
+        <DebugMetric label="Boat wakes" value={stats.waterWakeInstances.toLocaleString()} />
+        <DebugMetric
+          label="Dust puffs"
+          value={`${stats.dustActiveParticles.toLocaleString()}/${stats.dustCapacity.toLocaleString()}`}
+        />
+        <DebugMetric label="Dust movers" value={stats.dustEmitterCount.toLocaleString()} />
+        <DebugMetric label="Fog cells" value={stats.shroudInstances.toLocaleString()} />
+        <DebugMetric label="Frontier" value={stats.shroudFrontierInstances.toLocaleString()} />
+        <DebugMetric label="Fog terrain" value={stats.fogTerrainCells.toLocaleString()} />
+        <DebugMetric
+          label="Fog mask"
+          value={stats.fogMaskWidth ? `${stats.fogMaskWidth}×${stats.fogMaskHeight}` : "--"}
+        />
+        <DebugMetric label="Fog KB" value={Math.round(stats.fogMaskBytes / 1024).toLocaleString()} />
+        <DebugMetric label="Fog opacity" value={`${Math.round(stats.fogOpacity * 100)}%`} />
+        <DebugMetric label="Active reveal" value={stats.shroudActiveReveals.toLocaleString()} />
+        <DebugMetric label="Ground" value={`${stats.groundTextureLayers || "--"} layers`} />
+        <DebugMetric label="Ground KB" value={Math.round(stats.groundTextureBytes / 1024).toLocaleString()} />
+        <DebugMetric label="Frame p50" value={`${stats.frameP50Ms.toFixed(1)} ms`} />
+        <DebugMetric label="Frame p95" value={`${stats.frameP95Ms.toFixed(1)} ms`} />
+        <DebugMetric label="Frame worst" value={`${stats.frameWorstMs.toFixed(1)} ms`} />
+        <DebugMetric label="Textures" value={String(stats.textures || "--")} />
+        <DebugMetric label="Triangles" value={stats.triangles.toLocaleString()} />
+        <DebugMetric label="Prepare" value={`${stats.prepareMs.toFixed(1)} ms`} />
+        <DebugMetric label="Commit" value={`${stats.commitMs.toFixed(1)} ms`} />
+        <DebugMetric label="First render" value={`${stats.firstRenderMs.toFixed(1)} ms`} />
+      </dl>
+
+      <div className="flex items-center justify-between gap-3 text-[0.68rem] text-stone-500">
+        <span>Fingerprint</span>
+        <code>{stats.fingerprint}</code>
+      </div>
+    </>
+  );
+}
 
 const DebugMetric = ({ label, value }: { label: string; value: string }) => (
   <div className="border border-white/10 bg-white/[0.04] px-2 py-2">
