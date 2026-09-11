@@ -74,15 +74,15 @@ Grep("similar_concept", "contracts/l3/game/src/models")
 Grep("similar_action", "contracts/l3/game/src/systems")
 
 # Find config patterns (if your feature needs config)
-Grep("set_.*_config", "contracts/l3/game/src/systems/config")
+Grep("register_preset", "contracts/l3/game/src/systems/registrar")
 Grep("Config", "contracts/l3/game/src/models/config.cairo")
 
 # Find deployer integration patterns
-Grep("set.*Config", "config/deployer/config.ts")
+Grep("buildPresetRegistration", "config/deployer/clean/registrar/preset.ts")
 ```
 
-**Copy existing patterns exactly** before adapting. If `set_world_config` exists, your `set_feature_config` should
-follow the same structure.
+Follow the registrar preset pattern. Add immutable preset fields and their payload builders; do not add legacy per-world
+configuration setters.
 
 ### 1.4 Create Todo List
 
@@ -338,18 +338,19 @@ A feature is not complete until the entire stack is wired up. Before marking don
 - [ ] **Models** - Defined in `contracts/l3/game/src/models/`
 - [ ] **Systems** - Implemented in `contracts/l3/game/src/systems/`
 - [ ] **Config Model** - If feature has settings, add to `models/config.cairo`
-- [ ] **Config System** - Add `set_<feature>_config()` function (pattern: see `set_world_config`)
+- [ ] **Preset Registration** - Wire immutable fields into `systems/registrar/contracts.cairo`
 - [ ] **Provider Types** - Add TypeScript types in `packages/provider/src/index.ts`
 - [ ] **Common Types** - Add types in `packages/types/src/types/`
-- [ ] **Shared Config** - Add config values in `config/environments/_shared_.ts`
-- [ ] **Deployer Integration** - Add `set<Feature>Config()` call in `config/deployer/config.ts`
+- [ ] **Shared Config** - Add config values in `config/source/`
+- [ ] **Deployer Integration** - Add the field to `buildPresetRegistration()` in
+      `config/deployer/clean/registrar/preset.ts`
 
 **Self-Learning Principle**: Before implementing a new pattern (like config setters), search for existing examples:
 
 ```bash
 # Find existing config patterns
 Grep("set_.*_config", "contracts/l3/game/src/systems")
-Grep("setWorldConfig", "config/deployer")
+Grep("buildPresetRegistration", "config/deployer/clean/registrar")
 ```
 
 ### 4.4 Run Full Test Suite
@@ -381,11 +382,11 @@ when values are aggregated (e.g., summing multiple `u16` rates into a `u32` tota
 
 **Scaling and precision belong in the client/config layer, not contracts.**
 
-| Layer                             | Responsibility                                     |
-| --------------------------------- | -------------------------------------------------- |
-| `config/environments/_shared_.ts` | Apply precision multipliers, human-readable values |
-| `config/deployer/config.ts`       | Pass scaled values to contracts                    |
-| `contracts/`                      | Store and compute with pre-scaled integers         |
+| Layer                                       | Responsibility                                     |
+| ------------------------------------------- | -------------------------------------------------- |
+| `config/source/`                            | Apply precision multipliers, human-readable values |
+| `config/deployer/clean/registrar/preset.ts` | Pass scaled values to contracts                    |
+| `contracts/`                                | Store and compute with pre-scaled integers         |
 
 **Bad** (precision in contracts):
 
