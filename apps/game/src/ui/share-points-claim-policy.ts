@@ -1,7 +1,7 @@
 /** Unregistered shareholder points worth a transaction: a tenth of what is already registered. */
-export const CLAIM_SHARE_POINTS_GROWTH = 0.1;
+const CLAIM_SHARE_POINTS_GROWTH = 0.1;
 /** Inside the endgame every claim counts, so the runner claims whatever is unregistered. */
-export const CLAIM_SHARE_POINTS_ENDGAME_SECONDS = 15 * 60;
+const CLAIM_SHARE_POINTS_ENDGAME_SECONDS = 15 * 60;
 
 /**
  * Standings already show live shareholder points, so registering them on chain is worth a transaction only when
