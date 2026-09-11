@@ -67,7 +67,7 @@ function AttentionCycle() {
   return (
     <button
       type="button"
-      className={cn(TOP_PILL, "relative", items.length > 0 && "border-gold bg-gold text-dark-brown")}
+      className={cn(TOP_PILL, "relative", items.length > 0 && "border-gold bg-none bg-gold text-dark-brown")}
       onClick={goToNext}
       disabled={items.length === 0}
       aria-label={`Attention: ${items.length}. Go to next item`}

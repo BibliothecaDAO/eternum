@@ -48,7 +48,7 @@ afterEach(async () => {
 it("counts distinct attention targets and suggestions, then cycles without submitting orders", async () => {
   await act(async () => root.render(<AttentionPill />));
   expect(container.textContent).toBe("Attention3");
-  expect(container.querySelector("button")?.className).toContain("bg-gold text-dark-brown");
+  expect(container.querySelector("button")?.className).toContain("bg-none bg-gold text-dark-brown");
   await act(async () => container.querySelector("button")!.click());
   expect(mocks.go).toHaveBeenLastCalledWith(1, expect.objectContaining({ coords: { x: 10, y: 11 } }), true);
   await act(async () => container.querySelector("button")!.click());
