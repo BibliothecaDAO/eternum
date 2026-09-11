@@ -56,6 +56,7 @@ const MAX_INSTANCES = 1000;
 export class ChestManager {
   private scene: THREE.Scene;
   private chestModel?: RewardTileModel;
+  private modelLoadPromise?: Promise<void>;
   private chestTransitions?: ChestTransitions;
   private renderedChunk: string | null = null;
   private renderChunkSize: RenderChunkSize;
@@ -97,11 +98,6 @@ export class ChestManager {
     this.chunkSize = chunkSize;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
     this.contentLadder = resolveWorldmapContentLadder(this.currentCameraView);
-    this.loadModel().then(() => {
-      if (isCommittedManagerChunk(this.currentChunkKey)) {
-        void this.requestVisibleChestsRefresh(this.currentChunkKey);
-      }
-    });
 
     // Initialize points-based icon renderer
     this.initializePointsRenderer();
@@ -227,6 +223,15 @@ export class ChestManager {
     this.transitionChunkByToken.clear();
   }
 
+  private prepareModel(): Promise<void> {
+    if (this.chestModel || this.isDestroyed) return Promise.resolve();
+    // Chest geometry and effects belong to the noncritical chunk stage. Eager
+    // compilation competes with the structures that gate the first visible map.
+    return (this.modelLoadPromise ??= this.loadModel().finally(() => {
+      this.modelLoadPromise = undefined;
+    }));
+  }
+
   private async loadModel(): Promise<void> {
     let model: RewardTileModel | undefined;
     let transitions: ChestTransitions | undefined;
@@ -248,7 +253,7 @@ export class ChestManager {
     } catch (error) {
       transitions?.dispose();
       model?.dispose();
-      console.error("[ChestManager] Failed to prepare arcane chests", error);
+      throw error;
     }
   }
 
@@ -299,6 +304,8 @@ export class ChestManager {
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
     await runManagerChunkUpdateRuntime({
       chunkKey,
+      isDestroyed: () => this.isDestroyed,
+      prepareForUpdate: () => this.prepareModel(),
       executeChunkUpdate: (nextChunkKey, nextOptions) => {
         if (
           !shouldRunManagerChunkUpdate({

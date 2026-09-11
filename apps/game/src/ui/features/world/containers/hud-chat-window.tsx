@@ -10,6 +10,7 @@ import {
   useRealtimeChatSelector,
 } from "@/ui/features/social";
 import { configManager } from "@bibliothecadao/eternum";
+import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square";
 import { useEffect, useMemo, useRef } from "react";
 import { env } from "../../../../../env";
@@ -23,13 +24,17 @@ const isTypingTarget = (target: EventTarget | null) =>
  *  above the strip and the details above keep whatever room is left. */
 export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const address = useAccountStore((state) => state.account?.address);
-  const zoneId = `game:${configManager.getActiveGameId()}`;
+  const gameZoneId = `game:${configManager.getActiveGameId()}`;
+  const zoneId = useRealtimeChatSelector((state) =>
+    state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
+  );
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () => (address && env.VITE_PUBLIC_CHAT_URL ? { baseUrl: env.VITE_PUBLIC_CHAT_URL, joinZones: [zoneId] } : null),
-    [address, zoneId],
+    () => (address && env.VITE_PUBLIC_CHAT_URL ? { baseUrl: env.VITE_PUBLIC_CHAT_URL, joinZones: [gameZoneId] } : null),
+    [address, gameZoneId],
   );
   useRealtimeChatInitializer(initializer);
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
+  const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
   const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
   const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
@@ -38,8 +43,8 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
 
   // The strip shows the last message before the chat was ever opened, so history loads on connect.
   useEffect(() => {
-    if (connection === "connected") void loadWorldHistory({ zoneId, limit: 10 });
-  }, [connection, loadWorldHistory, zoneId]);
+    if (initializer && connection === "connected" && hasGameChat) void loadWorldHistory({ zoneId, limit: 10 });
+  }, [initializer, connection, hasGameChat, loadWorldHistory, zoneId]);
   useEffect(() => {
     setShellOpen(open);
     return () => setShellOpen(false);
@@ -73,9 +78,11 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
 
   const stripText = !initializer
     ? "Sign in to chat"
-    : lastMessage
-      ? `${resolveChatSenderName(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
-      : "No messages yet";
+    : connection === "connected" && !hasGameChat
+      ? "Chat unavailable"
+      : lastMessage
+        ? `${resolveChatSenderName(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
+        : "No messages yet";
 
   return (
     <div className="mt-auto flex shrink-0 flex-col gap-2">
@@ -89,7 +96,8 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
           )}
         >
           <RealtimeChatShell
-            defaultZoneId={zoneId}
+            defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
+            gameZoneId={gameZoneId}
             displayMode="embedded"
             autoInitializeClient={false}
             showInlineToggle={false}

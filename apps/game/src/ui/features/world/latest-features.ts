@@ -34,6 +34,24 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-11",
+    title: "Consistent Rain Direction",
+    description: "Rain falls straight down across camera angles, with consistent streaks and ground splashes.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-11",
+    title: "Faster Reward Model Preparation",
+    description: "Prepare multi-part map models together to reduce entry stalls around essence rifts.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-11",
+    title: "Global and Game Chat",
+    description: "Start in Global chat with players across all games, or switch to Game chat for your current match.",
+    type: "fix",
+  },
+  {
     date: "2026-09-10",
     title: "Village Fire and Banners",
     description:

@@ -6,14 +6,13 @@ import { Effect } from "effect";
 
 import { worldChatHistoryQuerySchema, worldChatPublishSchema } from "@bibliothecadao/types";
 import { worldChatMessages } from "../../db/schema/world-chat";
-import { parseGameChannel } from "../../channels/channel";
-import type { MembershipResolver } from "../../channels/membership";
+import type { ChatChannelPolicy } from "../../channels/chat-policy";
 import type { AppEnv } from "../middleware/auth";
 import { requirePlayerSession } from "../middleware/auth";
 import { formatZodError } from "../utils/zod";
 import { databaseEffect } from "../../effect/database";
 
-export const createWorldChatRoutes = (membership: MembershipResolver) => {
+export const createWorldChatRoutes = (chat: ChatChannelPolicy) => {
   const worldChatRoutes = new Hono<AppEnv>();
   worldChatRoutes.use("/*", requirePlayerSession);
 
@@ -31,11 +30,8 @@ export const createWorldChatRoutes = (membership: MembershipResolver) => {
 
     const payload = payloadResult.data;
     const player = c.get("playerSession")!;
-    if (!parseGameChannel(payload.zoneId)) return c.json({ error: "A valid game channel is required." }, 400);
-    if (
-      !player.membershipPlayerId ||
-      !(await Effect.runPromise(membership.isMember(player.membershipPlayerId, payload.zoneId)))
-    ) {
+    if (!chat.isValidChannel(payload.zoneId)) return c.json({ error: "A valid chat channel is required." }, 400);
+    if (!(await Effect.runPromise(chat.isMember(player.membershipPlayerId, payload.zoneId)))) {
       return c.json({ error: "Channel membership required." }, 403);
     }
     const filters: SQL[] = [eq(worldChatMessages.zoneId, payload.zoneId)];
@@ -52,7 +48,7 @@ export const createWorldChatRoutes = (membership: MembershipResolver) => {
 
     const limit = payload.limit ?? 50;
     const messages = await Effect.runPromise(
-      databaseEffect("read game chat history", (database) =>
+      databaseEffect("read world chat history", (database) =>
         database
           .select()
           .from(worldChatMessages)
@@ -80,16 +76,13 @@ export const createWorldChatRoutes = (membership: MembershipResolver) => {
 
     const payload = payloadResult.data;
     const player = c.get("playerSession")!;
-    if (!parseGameChannel(payload.zoneId)) return c.json({ error: "A valid game channel is required." }, 400);
-    if (
-      !player.membershipPlayerId ||
-      !(await Effect.runPromise(membership.isMember(player.membershipPlayerId, payload.zoneId)))
-    ) {
+    if (!chat.isValidChannel(payload.zoneId)) return c.json({ error: "A valid chat channel is required." }, 400);
+    if (!(await Effect.runPromise(chat.isMember(player.membershipPlayerId, payload.zoneId)))) {
       return c.json({ error: "Channel membership required." }, 403);
     }
 
     const [created] = await Effect.runPromise(
-      databaseEffect("publish game chat message", (database) =>
+      databaseEffect("publish world chat message", (database) =>
         database
           .insert(worldChatMessages)
           .values({

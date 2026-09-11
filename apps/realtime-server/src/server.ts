@@ -10,6 +10,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import {
+  GLOBAL_CHAT_CHANNEL_ID,
   type DirectMessage,
   directMessageCreateSchema,
   type DirectMessageSendMessage,
@@ -23,7 +24,7 @@ import {
 } from "@bibliothecadao/types";
 import type { DirectMessageRecord, DirectMessageThreadRecord } from "./db/schema/direct-messages";
 import { worldChatMessages, type WorldChatMessageRecord } from "./db/schema/world-chat";
-import { parseGameChannel } from "./channels/channel";
+import { createChatChannelPolicy } from "./channels/chat-policy";
 import type { MembershipResolver } from "./channels/membership";
 import { isAllowedOrigin, readSecurityConfig, resolveAllowedOrigin, type SecurityConfig } from "./config/security";
 import {
@@ -107,6 +108,7 @@ const toDirectThread = (record: DirectMessageThreadRecord, participants: [string
 export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDependencies) => {
   const app = new Hono<AppEnv>();
   const channels = createZoneRegistry();
+  const chat = createChatChannelPolicy(membership);
   const presence = createPresenceRegistry<Socket>();
   const sessionBySocket = new WeakMap<Socket, PlayerSession>();
   const acceptedSockets = new WeakSet<Socket>();
@@ -146,18 +148,15 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
 
   const handleJoin = async (socket: Socket, session: PlayerSession, value: unknown) => {
     const parsed = zoneIdSchema.safeParse(value);
-    if (!parsed.success || !parseGameChannel(parsed.data)) {
-      sendError(socket, "invalid_channel", "Expected a game:<positive-id> channel.");
+    if (!parsed.success || !chat.isValidChannel(parsed.data)) {
+      sendError(socket, "invalid_channel", "Expected world:global or game:<positive-id>.");
       return;
     }
     if (channels.getZonesForSocket(socket).size >= security.maxChannelsPerSocket) {
       sendError(socket, "channel_cap", "This connection has joined too many channels.");
       return;
     }
-    if (
-      !session.membershipPlayerId ||
-      !(await Effect.runPromise(membership.isMember(session.membershipPlayerId, parsed.data)))
-    ) {
+    if (!(await Effect.runPromise(chat.isMember(session.membershipPlayerId, parsed.data)))) {
       sendError(socket, "channel_access_denied", "Channel membership required.");
       return;
     }
@@ -175,7 +174,7 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
       return;
     }
     const channelId = result.data.zoneId;
-    if (message.zoneId !== channelId || !parseGameChannel(channelId)) {
+    if (message.zoneId !== channelId || !chat.isValidChannel(channelId)) {
       sendError(socket, "invalid_channel", "Message channel does not match its payload.");
       return;
     }
@@ -183,16 +182,13 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
       sendError(socket, "channel_not_joined", "Join the channel before publishing.");
       return;
     }
-    if (
-      !session.membershipPlayerId ||
-      !(await Effect.runPromise(membership.isMember(session.membershipPlayerId, channelId)))
-    ) {
+    if (!(await Effect.runPromise(chat.isMember(session.membershipPlayerId, channelId)))) {
       sendError(socket, "channel_access_denied", "Channel membership required.");
       return;
     }
 
     const [created] = await Effect.runPromise(
-      databaseEffect("publish websocket game chat message", (database) =>
+      databaseEffect("publish websocket world chat message", (database) =>
         database
           .insert(worldChatMessages)
           .values({
@@ -245,6 +241,7 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
   };
 
   const disconnect = (socket: Socket, session: PlayerSession) => {
+    sessionBySocket.delete(socket);
     if (!acceptedSockets.has(socket)) return;
     acceptedSockets.delete(socket);
     const recipients = socketsSharingChannels(socket);
@@ -269,7 +266,7 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
   );
   app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
   app.route("/api/notes", createNotesRoutes(membership));
-  app.route("/api/chat/world", createWorldChatRoutes(membership));
+  app.route("/api/chat/world", createWorldChatRoutes(chat));
   app.route("/api/chat/dm", directMessageRoutes);
 
   app.use("/ws", requirePlayerSession);
@@ -295,24 +292,25 @@ export const createRealtimeApp = ({ membership, sessions, security }: RealtimeDe
           acceptedSockets.add(socket);
           sessionBySocket.set(socket, session);
           presence.connect(session, socket);
+          channels.addSocketToZone(socket, GLOBAL_CHAT_CHANNEL_ID);
+          send(socket, {
+            type: "connected",
+            playerId: session.playerId,
+            displayName: session.displayName ?? null,
+            channels: [GLOBAL_CHAT_CHANNEL_ID],
+          });
+          send(socket, { type: "presence:sync", players: presence.snapshot(playerIdsSharingChannels(socket)) });
+          const ownPresence = presence.get(session.playerId);
+          if (ownPresence) broadcastPresence(socket, ownPresence);
           try {
-            const memberships = session.membershipPlayerId
-              ? Array.from(await Effect.runPromise(membership.channelsForPlayer(session.membershipPlayerId)))
-              : [];
-            const joinedChannels = memberships.slice(0, security.maxChannelsPerSocket);
-            for (const channelId of joinedChannels) channels.addSocketToZone(socket, channelId);
-            send(socket, {
-              type: "connected",
-              playerId: session.playerId,
-              displayName: session.displayName ?? null,
-              channels: joinedChannels,
-            });
-            send(socket, { type: "presence:sync", players: presence.snapshot(playerIdsSharingChannels(socket)) });
-            const ownPresence = presence.get(session.playerId);
-            if (ownPresence) broadcastPresence(socket, ownPresence);
+            const memberships = await Effect.runPromise(chat.gameChannelsForPlayer(session.membershipPlayerId));
+            if (!sessionBySocket.has(socket)) return;
+            for (const channelId of Array.from(memberships).slice(0, security.maxChannelsPerSocket - 1)) {
+              channels.addSocketToZone(socket, channelId);
+              send(socket, { type: "joined:zone", zoneId: channelId });
+            }
           } catch (error) {
-            console.error("realtime_membership_bootstrap_failed", error);
-            context.close(1011, "Membership lookup failed");
+            console.error("realtime_game_membership_failed", error);
           }
         },
         async onMessage(event, context: WSContext) {

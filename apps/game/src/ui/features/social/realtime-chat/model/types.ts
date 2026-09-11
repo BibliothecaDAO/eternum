@@ -69,6 +69,7 @@ export interface DirectMessageThreadState {
 export interface RealtimeChatState {
   client: RealtimeClient | null;
   connectionStatus: RealtimeConnectionStatus;
+  joinedZoneIds: string[];
   lastConnectionError?: string;
   identity?: RealtimePlayerIdentity;
   baseUrl?: string;
@@ -101,7 +102,7 @@ export interface RealtimeChatActions {
   resetClient(): void;
   setConnectionStatus(status: RealtimeConnectionStatus, errorMessage?: string): void;
   joinZone(zoneId: string): void;
-  leaveZone(zoneId: string): void;
+  setWorldChatChannel(zoneId: string): void;
   setActiveZone(zoneId: string | undefined): void;
   setShellOpen(isOpen: boolean): void;
   openDirectThread(playerId: string): string | undefined;
