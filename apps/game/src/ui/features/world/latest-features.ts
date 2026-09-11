@@ -34,10 +34,24 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-11",
+    title: "Consistent Rain Direction",
+    description: "Rain falls straight down across camera angles, with consistent streaks and ground splashes.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-11",
+    title: "First Realm Settlement",
+    description:
+      "Preview the lowest-tier realm with rounded wall corners and an oak courtyard gate. The adjoining tower is accessible only through a door from the keep's first-floor terrace. Its animated banner and wall hangings use the realm's order colors and emblem.",
+    type: "improvement",
+    readMore: "/lab",
+  },
+  {
     date: "2026-09-10",
     title: "Village Fire and Banners",
     description:
-      "A central campfire flickers while village banners ripple in the wind with a huts-and-palisade emblem. Preview green for owned, blue for allied, red for enemy or unowned settlements.",
+      "A central campfire flickers while village banners ripple in the wind with a horned-helmet emblem. Preview green for owned, blue for allied, red for enemy or unowned settlements.",
     type: "improvement",
     readMore: "/lab",
   },

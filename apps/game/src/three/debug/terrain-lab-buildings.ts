@@ -9,6 +9,7 @@ export interface TerrainLabBuilding {
 }
 
 const BUILDING_LABELS: Record<string, string> = {
+  "realm-settlement-draft": "Realm · Settlement draft",
   "village-draft": "Camp / Village · Timber mercenaries",
   archerrange: "Archery range",
   castle0: "Realm · Settlement",
@@ -23,20 +24,25 @@ const BUILDING_LABELS: Record<string, string> = {
   chest_model: "Chest",
 };
 
+export const REALM_DRAFT_PATH = "/models/settlements/realm-settlement-draft.glb";
+
 export const VILLAGE_DRAFT_PATH = "/models/settlements/village-draft.glb";
 
-export const TERRAIN_LAB_BUILDINGS = [...SHARED_BUILDING_MODEL_PATHS, ChestModelPath, VILLAGE_DRAFT_PATH].map(
-  (path) => {
-    const filename = path
-      .split("/")
-      .at(-1)!
-      .replace(/\.glb$/, "");
-    return {
-      path,
-      label: BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()),
-    };
-  },
-);
+export const TERRAIN_LAB_BUILDINGS = [
+  ...SHARED_BUILDING_MODEL_PATHS,
+  ChestModelPath,
+  VILLAGE_DRAFT_PATH,
+  REALM_DRAFT_PATH,
+].map((path) => {
+  const filename = path
+    .split("/")
+    .at(-1)!
+    .replace(/\.glb$/, "");
+  return {
+    path,
+    label: BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()),
+  };
+});
 
 const STRUCTURE_TYPE_BY_PATH = new Map(
   Object.entries(getStructureModelPaths(false)).flatMap(([type, paths]) =>
@@ -44,6 +50,7 @@ const STRUCTURE_TYPE_BY_PATH = new Map(
   ),
 );
 STRUCTURE_TYPE_BY_PATH.set(VILLAGE_DRAFT_PATH, StructureType.Village);
+STRUCTURE_TYPE_BY_PATH.set(REALM_DRAFT_PATH, StructureType.Realm);
 
 export function resolveTerrainLabStructureType(path: string): StructureType | undefined {
   return STRUCTURE_TYPE_BY_PATH.get(path);

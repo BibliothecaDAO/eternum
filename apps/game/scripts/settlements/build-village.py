@@ -6,16 +6,22 @@ Geometry uses Z-up, entrance toward -Y. Exported mesh transforms are baked for
 the terrain lab's instanced renderer. No biome or ground plate belongs here.
 """
 
-import json
 import math
+import sys
 from pathlib import Path
 
 import bpy
 from mathutils import Vector
 
-ROOT = Path(__file__).resolve().parents[4]
-OUTPUT = ROOT / "apps/game/public/models/settlements/village-draft.glb"
-SOURCE = ROOT / ".context/graphics-lab/realm-progression/village-draft"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from settlement_geometry import (
+    material,
+    glowing_material,
+    mesh,
+    block,
+    beam,
+    save_asset,
+)
 
 
 def build_village():
@@ -27,25 +33,11 @@ def build_village():
     build_supplies(materials)
     build_campfire(materials)
     build_banner(materials)
-    save_asset()
-
-
-def material(name, color, roughness=0.85):
-    result = bpy.data.materials.new(name)
-    result.diffuse_color = (*color, 1)
-    result.use_nodes = True
-    shader = result.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = (*color, 1)
-    shader.inputs["Roughness"].default_value = roughness
-    return result
-
-
-def glowing_material(name, color, strength):
-    result = material(name, color)
-    shader = result.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Emission Color"].default_value = (*color, 1)
-    shader.inputs["Emission Strength"].default_value = strength
-    return result
+    save_asset(
+        "village-draft",
+        "User palisade reference; five small conical huts, uniform palisade, open yard, no ground mesh",
+        "Runtime wind banner and flickering campfire",
+    )
 
 
 def create_materials():
@@ -64,57 +56,6 @@ def create_materials():
         "iron": material("Blackened iron", (0.075, 0.085, 0.085), 0.65),
         "banner": material("Red village banner", (0.40, 0.030, 0.020)),
     }
-
-
-def mesh(name, vertices, faces, mat, uv=None, thickness=0):
-    data = bpy.data.meshes.new(name)
-    data.from_pydata(vertices, [], faces)
-    data.update()
-    obj = bpy.data.objects.new(name, data)
-    bpy.context.collection.objects.link(obj)
-    data.materials.append(mat)
-    layer = data.uv_layers.new(name="UVMap")
-    for face in data.polygons:
-        for loop in face.loop_indices:
-            index = data.loops[loop].vertex_index
-            x, y, z = vertices[index]
-            layer.data[loop].uv = uv[index] if uv else (x * 2 + y * 0.3, z * 2 + y)
-    if thickness:
-        bpy.context.view_layer.objects.active = obj
-        modifier = obj.modifiers.new("Material thickness", "SOLIDIFY")
-        modifier.thickness = thickness
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
-    return obj
-
-
-def block(name, center, size, mat, bevel=0.003):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=center)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = size
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    obj.data.materials.append(mat)
-    if bevel:
-        modifier = obj.modifiers.new("Worn edges", "BEVEL")
-        modifier.width = bevel
-        modifier.segments = 1
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
-    return obj
-
-
-def beam(name, start, end, radius, mat, sides=8):
-    direction = Vector(end) - Vector(start)
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=sides,
-        radius=radius,
-        depth=direction.length,
-        location=(Vector(start) + Vector(end)) / 2,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
-    obj.data.materials.append(mat)
-    return obj
 
 
 def build_hut_cluster(m):
@@ -374,83 +315,6 @@ def build_banner(m):
     banner = mesh("VillageBanner", vertices, faces, m["banner"], uv, thickness=0.0015)
     banner["relationshipCloth"] = True
     banner["settlementMotion"] = "banner"
-
-
-def save_asset():
-    SOURCE.mkdir(parents=True, exist_ok=True)
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    bake_instance_transforms()
-    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE / "village-draft.blend"))
-    consolidate_static_materials()
-    export_glb()
-    write_asset_report()
-
-
-def bake_instance_transforms():
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
-    for obj in meshes:
-        bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-
-
-def consolidate_static_materials():
-    # Static geometry is consolidated by material; the imprint surface stays separate.
-    for mat in bpy.data.materials:
-        group = [
-            obj
-            for obj in list(bpy.context.scene.objects)
-            if obj.type == "MESH"
-            and obj.data.materials
-            and obj.data.materials[0] == mat
-            and not obj.get("relationshipCloth")
-            and not obj.get("settlementMotion")
-        ]
-        if len(group) < 2:
-            continue
-        bpy.ops.object.select_all(action="DESELECT")
-        for obj in group:
-            obj.select_set(True)
-        bpy.context.view_layer.objects.active = group[0]
-        bpy.ops.object.join()
-        group[0].name = mat.name
-
-
-def export_glb():
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.export_scene.gltf(
-        filepath=str(OUTPUT),
-        export_format="GLB",
-        use_selection=True,
-        export_extras=True,
-        export_yup=True,
-    )
-
-
-def write_asset_report():
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
-    vertices = [
-        obj.matrix_world @ vertex.co for obj in meshes for vertex in obj.data.vertices
-    ]
-    bounds = [
-        [min(v[i] for v in vertices), max(v[i] for v in vertices)] for i in range(3)
-    ]
-    triangles = sum(
-        sum(len(face.vertices) - 2 for face in obj.data.polygons) for obj in meshes
-    )
-    report = {
-        "sourceConcept": "User palisade reference; five small conical huts, uniform palisade, open yard, no ground mesh",
-        "sizeBlenderXYZ": [round(b - a, 4) for a, b in bounds],
-        "triangles": triangles,
-        "meshCount": len(meshes),
-        "uncompressedBytes": OUTPUT.stat().st_size,
-        "groundMesh": False,
-        "animation": "Runtime wind banner and flickering campfire",
-        "relationshipBanner": "VillageBanner",
-    }
-    (SOURCE / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps(report))
 
 
 if __name__ == "__main__":
