@@ -3,6 +3,8 @@ import { FELT_CENTER } from "@/ui/config";
 import { BaseThreeTooltip, Position } from "@/ui/design-system/molecules/base-three-tooltip";
 import {
   ActionPath,
+  ActionPaths,
+  ActionType,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   getBalance,
@@ -36,8 +38,10 @@ export const ActionInfo = memo(() => {
       .entityActions.actionPaths.get(`${hoveredHex.col + FELT_CENTER()},${hoveredHex.row + FELT_CENTER()}`);
   }, [hoveredHex]);
 
+  // A crate explains itself on its own label; every other action gets the cost sheet.
   const showTooltip = useMemo(() => {
-    return actionPath !== undefined && actionPath.length >= 2 && selectedEntityId !== null;
+    if (actionPath === undefined || actionPath.length < 2 || selectedEntityId === null) return false;
+    return ActionPaths.getActionType(actionPath) !== ActionType.Chest;
   }, [actionPath, selectedEntityId]);
 
   const isExplored = useMemo(() => {

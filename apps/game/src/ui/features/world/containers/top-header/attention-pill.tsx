@@ -67,14 +67,14 @@ function AttentionCycle() {
   return (
     <button
       type="button"
-      className={cn(TOP_PILL, "relative", items.length > 0 && "border-gold/70 bg-gold/20 text-gold")}
+      className={cn(TOP_PILL, "relative", items.length > 0 && "border-gold bg-none bg-gold text-dark-brown")}
       onClick={goToNext}
       disabled={items.length === 0}
       aria-label={`Attention: ${items.length}. Go to next item`}
       title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
     >
       <Bell className="h-3.5 w-3.5" />
-      <span className={cn(HUD_LABEL_BRIGHT, "max-lg:hidden")}>Attention</span>
+      <span className={cn(HUD_LABEL_BRIGHT, "max-lg:hidden", items.length > 0 && "text-dark-brown")}>Attention</span>
       {items.length > 0 && (
         <span className="absolute -bottom-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold tabular-nums text-white shadow">
           {items.length}
