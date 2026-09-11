@@ -7,7 +7,6 @@
       "@bibliothecadao/provider": ["../../packages/provider/src/index.ts"],
       "@bibliothecadao/provider/*": ["../../packages/provider/src/*"],
       "@config": ["../../config/utils/utils"],
-      "@config-deployer/config": ["src/types/config-deployer-stub.d.ts"],
       "@config-deployer/*": ["../../config/deployer/*"],
       "@contracts": ["../../contracts/utils/utils"],
       "@realms-world/chain": ["../../packages/chain/src/index.ts"],

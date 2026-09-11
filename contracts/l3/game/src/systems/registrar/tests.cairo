@@ -61,7 +61,7 @@ mod two_games {
                 1200
             },
             end_grace_seconds: 60,
-            registration_grace_seconds: 60,
+            registration_grace_seconds: 0,
             final_trial_id: 0,
             seed,
         }
@@ -200,8 +200,8 @@ mod dispatcher_lifecycle {
         spawn_test_world,
     };
     use snforge_std::{
-        start_cheat_block_timestamp_global, start_cheat_caller_address, start_cheat_chain_id_global,
-        stop_cheat_caller_address,
+        ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global, start_cheat_caller_address,
+        start_cheat_chain_id_global, stop_cheat_caller_address,
     };
     use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, ResourceTypes, WORLD_CONFIG_ID};
@@ -212,21 +212,33 @@ mod dispatcher_lifecycle {
         PresetConfig, PresetGameConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
         SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTroopConfig, WeightConfig,
+        WorldConfigUtilImpl,
     };
     use crate::models::game::{GameRegistryImpl, GameStatus};
+    use crate::models::hyperstructure::{
+        CompletedHyperstructureImpl, Hyperstructure, HyperstructureShareholders, PlayerRegisteredPoints,
+    };
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
     use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
+    use crate::models::season::SeasonPrize;
+    use crate::models::series_chest_reward::{GameChestReward, SeriesChestRewardState};
+    use crate::systems::bank::contracts::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
     use crate::systems::prize_distribution::contracts::{
         IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
     };
+    use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
     use crate::systems::realm::blitz::contracts::{IBlitzRealmSystemsDispatcher, IBlitzRealmSystemsDispatcherTrait};
+    use crate::systems::realm::season::contracts::IRealmSystemsDispatcherTrait;
     use crate::systems::registrar::contracts::{
         CreateGameParams, IRegistrarSystemsDispatcher, IRegistrarSystemsDispatcherTrait, PresetSideTables,
     };
     use crate::systems::resources::contracts::resource_systems::{
         IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait,
     };
+    use crate::systems::season::contracts::{ISeasonSystemsDispatcher, ISeasonSystemsDispatcherTrait};
+    use crate::systems::trade::contracts::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait};
     use crate::systems::utils::camp::iCampDiscoveryImpl;
+    use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
     use crate::utils::testing::helpers::{
         MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_STRUCTURE_CAPACITY_CONFIG, TEST_PRESET_ID,
     };
@@ -263,16 +275,30 @@ mod dispatcher_lifecycle {
                 TestResource::Model("Wonder"), TestResource::Model("AddressName"), TestResource::Model("RNG"),
                 TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
                 TestResource::Model("RankPrize"), TestResource::Model("RankList"), TestResource::Model("QuestLevels"),
+                TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureShareholders"),
+                TestResource::Model("SeriesChestRewardState"), TestResource::Model("SharePointsCheckpoint"),
+                TestResource::Model("HyperstructureGlobals"), TestResource::Model("CompletedHyperstructure"),
+                TestResource::Model("HyperstructureIndex"), TestResource::Model("PlayerRegisteredPoints"),
+                TestResource::Model("SeasonPrize"), TestResource::Model("GameChestReward"),
+                TestResource::Model("PlayerSettlement"), TestResource::Model("RealmAllocationPool"),
+                TestResource::Model("RealmAllocationSlot"), TestResource::Model("RealmAllocation"),
+                TestResource::Model("LedgerRegistration"), TestResource::Model("StructureVillageSlots"),
+                TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
+                TestResource::Model("BuildingCategoryConfig"), TestResource::Model("ResourceFactoryConfig"),
+                TestResource::Model("ProductionBoostBonus"), TestResource::Model("ResourceList"),
                 TestResource::Model("QuestGameRegistry"), TestResource::Model("QuestFeatureFlag"),
                 TestResource::Contract("registrar_systems"), TestResource::Contract("hyperstructure_create_systems"),
                 TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_systems"),
                 TestResource::Contract("realm_internal_systems"), TestResource::Contract("prize_distribution_systems"),
-                TestResource::Contract("resource_systems"),
+                TestResource::Contract("resource_systems"), TestResource::Contract("bank_systems"),
+                TestResource::Contract("trade_systems"), TestResource::Contract("quest_systems"),
+                TestResource::Contract("season_systems"),
                 TestResource::Library(("structure_creation_library", "0_1_18")),
                 TestResource::Library(("rng_library", "0_1_16")), TestResource::Event("GameCreated"),
                 TestResource::Event("BlitzSettlementEvent"), TestResource::Event("StoryEvent"),
                 TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
-                TestResource::Event("TrophyProgression"),
+                TestResource::Event("TrophyProgression"), TestResource::Event("LedgerResultRowReady"),
+                TestResource::Event("LedgerResultsReady"), TestResource::Event("SeasonEnded"),
             ]
                 .span(),
         }
@@ -288,6 +314,7 @@ mod dispatcher_lifecycle {
             ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"prize_distribution_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"resource_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"season_systems").with_writer_of([namespace].span()),
         ]
             .span()
     }
@@ -438,6 +465,220 @@ mod dispatcher_lifecycle {
         LifecycleContext { world, registrar, blitz, resources, player }
     }
 
+    #[test]
+    #[should_panic(expected: "Eternum: feature is disabled in Blitz")]
+    fn bank_creation_is_disabled_in_blitz() {
+        let context = setup_lifecycle();
+        let (address, _) = context.world.dns(@"bank_systems").unwrap();
+        IBankSystemsDispatcher { contract_address: address }.create_banks(GAME_A, [].span());
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: feature is disabled in Blitz")]
+    fn trade_is_disabled_in_blitz() {
+        let context = setup_lifecycle();
+        let (address, _) = context.world.dns(@"trade_systems").unwrap();
+        ITradeSystemsDispatcher { contract_address: address }.cancel_order(GAME_A, 1);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: feature is disabled in Blitz")]
+    fn quests_cannot_be_enabled_in_blitz() {
+        let context = setup_lifecycle();
+        let (address, _) = context.world.dns(@"quest_systems").unwrap();
+        IQuestSystemsDispatcher { contract_address: address }.enable_quests(GAME_A);
+    }
+
+    fn setup_eternum_game() -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
+        let player = get_default_caller_address();
+        let world = spawn_lifecycle_world();
+        let registrar = registrar_dispatcher(world);
+        registrar.bootstrap_chain_config(chain_config_with_ledger_operator(player, Zero::zero()));
+        let mut rules = preset_game_config();
+        rules.blitz_mode_on = false;
+        let mut tables = preset_side_tables();
+        tables
+            .resource_factories =
+                [
+                    crate::models::config::ResourceFactoryConfig {
+                        preset_id: 0,
+                        resource_type: ResourceTypes::LABOR,
+                        realm_output_per_second: 1000000,
+                        village_output_per_second: 1000000,
+                        labor_output_per_resource: 0,
+                        output_per_simple_input: 0,
+                        output_per_complex_input: 0,
+                        simple_input_list_id: 0,
+                        complex_input_list_id: 0,
+                        simple_input_list_count: 0,
+                        complex_input_list_count: 0,
+                    }
+                ]
+            .span();
+        registrar.register_preset(preset_config(), rules, tables);
+        registrar.register_series(SERIES_ID, player, 2, 0, 10_000);
+        let mut params = create_game_params(1, 111);
+        params.dev_mode_on = false;
+        params.registration_count_max = 0;
+        params.two_player_mode = false;
+        registrar.create_game(params);
+        let (address, _) = world.dns(@"realm_systems").unwrap();
+        let season = crate::systems::realm::season::contracts::IRealmSystemsDispatcher { contract_address: address };
+        (
+            LifecycleContext {
+                world, registrar, blitz: blitz_dispatcher(world), resources: resource_dispatcher(world), player,
+            },
+            season,
+        )
+    }
+
+    #[test]
+    fn eternum_open_entry_settles_after_main_start_with_canonical_metadata() {
+        let (context, season) = setup_eternum_game();
+        start_cheat_block_timestamp_global(250);
+        let structure_id = season.settle(GAME_A, 'late-player');
+        let structure: crate::models::structure::Structure = context.world.read_model((GAME_A, structure_id));
+        let metadata = structure.metadata;
+        let (wonder, order, resources) = crate::systems::utils::realm_metadata::realm_attributes(
+            metadata.realm_id.into(),
+        );
+        assert!(
+            structure
+                .resources_packed == crate::models::structure::StructureResourcesImpl::pack_resource_types(
+                    resources.span(),
+                ),
+            "canonical production traits were lost",
+        );
+        assert!(metadata.order == order, "canonical Order was lost");
+        assert!(metadata.has_wonder == (wonder != 1), "canonical wonder was lost");
+        let reservation: crate::models::ledger::PlayerSettlement = context.world.read_model((GAME_A, context.player));
+        assert!(reservation.structure_id == structure_id, "settlement entitlement not consumed");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: Player is already settled")]
+    fn eternum_open_entry_cannot_settle_twice() {
+        let (_, season) = setup_eternum_game();
+        start_cheat_block_timestamp_global(250);
+        season.settle(GAME_A, 'first');
+        season.settle(GAME_A, 'second');
+    }
+
+    fn bind_eternum_entry_owner(ref context: LifecycleContext, paid: bool) {
+        let (registry, _) = declare("SharedOwnerRegistryMock").unwrap().contract_class().deploy(@array![]).unwrap();
+        let mut chain: ChainConfig = context.world.read_model(WORLD_CONFIG_ID);
+        chain.player_registry_address = registry;
+        if paid {
+            chain.ledger_operator_address = context.player;
+        }
+        context.world.write_model_test(@chain);
+        context
+            .world
+            .write_model_test(
+                @crate::models::ledger::LedgerRegistration {
+                    game_id: GAME_A,
+                    owner: 123.try_into().unwrap(),
+                    realm_id: 87,
+                    // Seven attribute bytes: geography, Coal, Twins, Eternal Orchard.
+                    metadata: (0x20502010101010007, 0, 0),
+                    pass_kind: 1,
+                    registered: true,
+                },
+            );
+    }
+
+    #[test]
+    fn eternum_paid_entry_preserves_registered_realm_metadata() {
+        let (mut context, season) = setup_eternum_game();
+        bind_eternum_entry_owner(ref context, true);
+        start_cheat_block_timestamp_global(250);
+        let id = season.settle(GAME_A, 'paid-player');
+        let structure: crate::models::structure::Structure = context.world.read_model((GAME_A, id));
+        assert!(
+            structure.metadata.realm_id == 87 && structure.metadata.order == 5 && structure.metadata.has_wonder,
+            "registered realm metadata changed",
+        );
+        assert!(
+            structure
+                .resources_packed == crate::models::structure::StructureResourcesImpl::pack_resource_types([2].span()),
+            "registered production traits changed",
+        );
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: Player is already settled")]
+    fn eternum_paid_owner_cannot_reuse_entitlement_from_another_account() {
+        let (mut context, season) = setup_eternum_game();
+        bind_eternum_entry_owner(ref context, true);
+        start_cheat_block_timestamp_global(250);
+        season.settle(GAME_A, 'first-account');
+        start_cheat_caller_address(season.contract_address, 'another-account'.try_into().unwrap());
+        season.settle(GAME_A, 'second-account');
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: Player is already settled")]
+    fn eternum_open_owner_cannot_reenter_through_another_bound_account() {
+        let (mut context, season) = setup_eternum_game();
+        bind_eternum_entry_owner(ref context, false);
+        start_cheat_block_timestamp_global(250);
+        season.settle(GAME_A, 'first-account');
+        start_cheat_caller_address(season.contract_address, 'another-account'.try_into().unwrap());
+        season.settle(GAME_A, 'second-account');
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: Player is already settled")]
+    fn blitz_paid_owner_cannot_settle_through_two_accounts() {
+        let mut context = setup_dev_off_game('operator'.try_into().unwrap());
+        bind_eternum_entry_owner(ref context, true);
+        let mut registration: BlitzRegistrationGameConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("blitz_registration_config"),
+        );
+        registration.registration_count_max = 2;
+        WorldConfigUtilImpl::set_member(
+            ref context.world, GAME_A, selector!("blitz_registration_config"), registration,
+        );
+        settle_inside_registration_window(@context);
+        start_cheat_caller_address(context.blitz.contract_address, 'another-account'.try_into().unwrap());
+        context.blitz.settle(GAME_A, 'second-account', [].span(), false);
+    }
+
+    #[test]
+    fn open_entry_never_reuses_a_canonical_realm() {
+        let (mut context, season) = setup_eternum_game();
+        start_cheat_block_timestamp_global(250);
+        let tx_hash = starknet::get_tx_info().unbox().transaction_hash;
+        context.world.write_model_test(@crate::models::rng::RNG { tx_hash, seed: 42 });
+        let first_id = season.settle(GAME_A, 'first');
+        context.world.write_model_test(@crate::models::rng::RNG { tx_hash, seed: 42 });
+        start_cheat_caller_address(season.contract_address, 'another-account'.try_into().unwrap());
+        let second_id = season.settle(GAME_A, 'second');
+        let first: crate::models::structure::Structure = context.world.read_model((GAME_A, first_id));
+        let second: crate::models::structure::Structure = context.world.read_model((GAME_A, second_id));
+        assert!(first.metadata.realm_id != second.metadata.realm_id, "canonical realm allocated twice");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: checkpoint shares before ranking")]
+    fn ranking_requires_completed_share_checkpoints() {
+        let mut context = setup_lifecycle();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = false;
+        game.end_at = 200;
+        context.world.write_model_test(@game);
+        let mut registration: BlitzRegistrationGameConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("blitz_registration_config"),
+        );
+        registration.registration_count = 2;
+        WorldConfigUtilImpl::set_member(
+            ref context.world, GAME_A, selector!("blitz_registration_config"), registration,
+        );
+        seed_completed_shares(ref context.world, GAME_A, context.player, 123.try_into().unwrap());
+        start_cheat_block_timestamp_global(201);
+        context.registrar.rank_players(GAME_A, 88, 2, array![context.player]);
+    }
+
     fn settle_inside_registration_window(context: @LifecycleContext) {
         start_cheat_block_timestamp_global(150);
         start_cheat_caller_address(*context.blitz.contract_address, *context.player);
@@ -565,8 +806,162 @@ mod dispatcher_lifecycle {
 
         let attacker: ContractAddress = 'bound_attacker'.try_into().unwrap();
         let prize = prize_dispatcher(context.world);
-        start_cheat_caller_address(prize.contract_address, attacker);
-        prize.blitz_prize_player_rank(GAME_A, 88, 1, array![attacker]);
+        context.registrar.rank_players(GAME_A, 88, 1, array![attacker]);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: caller is not the registrar")]
+    fn player_cannot_start_or_squat_a_ranking_trial() {
+        let context = setup_lifecycle();
+        prize_dispatcher(context.world).blitz_prize_player_rank(GAME_A, 88, 1, array![context.player]);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: caller is not admin")]
+    fn player_cannot_forward_ranking_through_registrar() {
+        let context = setup_lifecycle();
+        start_cheat_caller_address(context.registrar.contract_address, 'attacker'.try_into().unwrap());
+        context.registrar.rank_players(GAME_A, 88, 1, array![context.player]);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: checkpoint range leaves a gap")]
+    fn checkpoint_cannot_skip_unsettled_hyperstructures() {
+        let mut context = setup_lifecycle();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = false;
+        context.world.write_model_test(@game);
+        seed_completed_shares(ref context.world, GAME_A, context.player, 123.try_into().unwrap());
+        start_cheat_block_timestamp_global(301);
+        context.registrar.checkpoint_share_points(GAME_A, 1, 1);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: invalid checkpoint range")]
+    fn checkpoint_rejects_more_than_sixteen_hyperstructures() {
+        let mut context = setup_lifecycle();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = false;
+        context.world.write_model_test(@game);
+        context
+            .world
+            .write_model_test(
+                @crate::models::hyperstructure::HyperstructureGlobals {
+                    game_id: GAME_A, created_count: 17, completed_count: 17,
+                },
+            );
+        start_cheat_block_timestamp_global(301);
+        context.registrar.checkpoint_share_points(GAME_A, 0, 17);
+    }
+
+    fn seed_completed_shares(ref world: WorldStorage, game_id: u32, first: ContractAddress, second: ContractAddress) {
+        WorldConfigUtilImpl::set_member(
+            ref world,
+            TEST_PRESET_ID,
+            selector!("victory_points_grant_config"),
+            VictoryPointsGrantConfig {
+                hyp_points_per_second: 5_000_000,
+                claim_hyperstructure_points: 0,
+                claim_otherstructure_points: 0,
+                explore_tiles_points: 0,
+                relic_open_points: 0,
+            },
+        );
+        for hyperstructure_id in 700..702_u32 {
+            world
+                .write_model_test(
+                    @Hyperstructure {
+                        game_id,
+                        hyperstructure_id,
+                        initialized: true,
+                        completed: true,
+                        access: Default::default(),
+                        randomness: 0,
+                        points_multiplier: 1,
+                    },
+                );
+            world
+                .write_model_test(
+                    @HyperstructureShareholders {
+                        game_id, hyperstructure_id, start_at: 100, shareholders: [(first, 5000), (second, 5000)].span(),
+                    },
+                );
+            CompletedHyperstructureImpl::record(ref world, game_id, hyperstructure_id);
+        }
+    }
+
+    #[test]
+    fn registrar_finalizes_all_shares_and_ties_independently_of_input_order() {
+        let mut context = setup_lifecycle();
+        let second: ContractAddress = 123.try_into().unwrap();
+        let mut state = SeriesChestRewardStateImpl::new(SERIES_ID, 22, 10_000);
+        state.game_index = 2;
+        context.world.write_model_test(@state);
+        for game_id in GAME_A..3_u32 {
+            let mut game = GameRegistryImpl::get(context.world, game_id);
+            game.dev_mode_on = false;
+            game.end_at = 200;
+            game.registration_grace_seconds = 9999;
+            context.world.write_model_test(@game);
+            let mut registration: BlitzRegistrationGameConfig = WorldConfigUtilImpl::get_member(
+                context.world, game_id, selector!("blitz_registration_config"),
+            );
+            registration.registration_count = 2;
+            WorldConfigUtilImpl::set_member(
+                ref context.world, game_id, selector!("blitz_registration_config"), registration,
+            );
+            context
+                .world
+                .write_model_test(
+                    @crate::models::config::BlitzSettlement { game_id, player: second, structure_ids: [1000].span() },
+                );
+            context.world.write_model_test(@GameChestReward { game_id, allocated_chests: 11, distributed_chests: 0 });
+            seed_completed_shares(ref context.world, game_id, context.player, second);
+        }
+        start_cheat_block_timestamp_global(201);
+        context.registrar.checkpoint_share_points(GAME_A, 0, 2);
+        context.registrar.checkpoint_share_points(GAME_A, 0, 2);
+        context.registrar.rank_players(GAME_A, 88, 2, array![context.player]);
+        context.registrar.rank_players(GAME_A, 88, 2, array![second]);
+        context.registrar.checkpoint_share_points(GAME_B, 0, 1);
+        context.registrar.checkpoint_share_points(GAME_B, 1, 1);
+        context.registrar.rank_players(GAME_B, 89, 2, array![second, context.player]);
+        for game_id in GAME_A..3_u32 {
+            let first_rank: PlayerRank = context.world.read_model((game_id, context.player));
+            let second_rank: PlayerRank = context.world.read_model((game_id, second));
+            let points: PlayerRegisteredPoints = context.world.read_model((game_id, context.player));
+            let total: SeasonPrize = context.world.read_model(game_id);
+            let chests: GameChestReward = context.world.read_model(game_id);
+            assert!(first_rank.rank == 1 && second_rank.rank == 1, "tied ranks changed with ordering");
+            assert!(first_rank.chests == 5 && second_rank.chests == 5, "tied chest entitlements changed with ordering");
+            assert!(
+                points.registered_points == 500_000_000 && total.total_registered_points == 1_000_000_000,
+                "finalization did not checkpoint every share",
+            );
+            assert!(
+                chests.allocated_chests == 11 && chests.distributed_chests == 10, "indivisible chest was allocated",
+            );
+            assert!(GameRegistryImpl::get(context.world, game_id).final_trial_id != 0, "ranking did not finalize");
+        }
+    }
+
+    #[test]
+    fn eternum_season_close_counts_unclaimed_shares_before_testing_victory() {
+        let (mut context, _) = setup_eternum_game();
+        WorldConfigUtilImpl::set_member(
+            ref context.world,
+            TEST_PRESET_ID,
+            selector!("victory_points_win_config"),
+            VictoryPointsWinConfig { points_for_win: 500_000_000 },
+        );
+        seed_completed_shares(ref context.world, GAME_A, context.player, 123.try_into().unwrap());
+        start_cheat_block_timestamp_global(200);
+        let (address, _) = context.world.dns(@"season_systems").unwrap();
+        ISeasonSystemsDispatcher { contract_address: address }.season_close(GAME_A);
+        let game = GameRegistryImpl::get(context.world, GAME_A);
+        let total: SeasonPrize = context.world.read_model(GAME_A);
+        assert!(game.status == GameStatus::Ended && game.end_at == 200, "season did not close at the winning cutoff");
+        assert!(total.total_registered_points == 1_000_000_000, "other shareholder was not settled at the same cutoff");
     }
 
     fn seed_unfinalized_trial(ref context: LifecycleContext) {
@@ -785,7 +1180,6 @@ mod dispatcher_lifecycle {
             start_main_at: 200,
             duration_seconds: 100,
             end_grace_seconds: 10,
-            registration_grace_seconds: 10,
             dev_mode_on: true,
             single_realm_mode: false,
             two_player_mode: false,
@@ -802,6 +1196,19 @@ mod dispatcher_lifecycle {
             use_map_override: false,
             map_override: MOCK_MAP_CONFIG(),
             seed,
+        }
+    }
+}
+
+#[cfg(test)]
+#[starknet::contract]
+mod SharedOwnerRegistryMock {
+    #[storage]
+    struct Storage {}
+    #[abi(embed_v0)]
+    impl Registry of crate::models::ledger::IPlayerRegistry<ContractState> {
+        fn owner_of(self: @ContractState, account: starknet::ContractAddress) -> starknet::ContractAddress {
+            123.try_into().unwrap()
         }
     }
 }

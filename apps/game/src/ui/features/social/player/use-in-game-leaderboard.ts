@@ -26,14 +26,16 @@ interface InGameLeaderboard {
 }
 
 const buildLiveLeaderboard = (components: ClientComponents): InGameLeaderboard => {
-  const manager = LeaderboardManager.instance(components, LEADERBOARD_UPDATE_INTERVAL);
+  const manager = LeaderboardManager.instance(components);
   manager.updatePoints();
 
   const standingsByAddress = new Map<string, InGameLeaderboardStanding>();
+  let rank = 0;
   manager.playersByRank.forEach(([address, points], index) => {
+    if (index === 0 || points !== manager.playersByRank[index - 1][1]) rank = index + 1;
     standingsByAddress.set(normalizeLeaderboardAddress(address), {
       address,
-      rank: index + 1,
+      rank,
       points,
       includesLiveShareholderPoints: manager.getPlayerHyperstructureUnregisteredShareholderPoints(address) > 0,
     });

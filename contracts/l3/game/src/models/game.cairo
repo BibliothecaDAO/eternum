@@ -34,6 +34,7 @@ pub struct GameRegistry {
     pub start_main_at: u64,
     pub end_at: u64,
     pub end_grace_seconds: u32,
+    // Reserved for the deployed model layout; point registration no longer uses a grace period.
     pub registration_grace_seconds: u32,
     pub final_trial_id: u128,
     pub seed: felt252,

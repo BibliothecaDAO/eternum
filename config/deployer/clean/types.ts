@@ -7,7 +7,7 @@ import type { GameChain } from "@realms-world/chain";
 
 export type DeploymentChain = GameChain;
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "madara.blitz";
+export type DeploymentEnvironmentId = import("../../shared/game-environments").GameEnvironmentId;
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
@@ -68,7 +68,7 @@ export interface LaunchGameRequest extends LedgerLaunchOptions {
   singleRealmMode?: boolean;
   twoPlayerMode?: boolean;
   durationSeconds?: number;
-  pointRegistrationGraceSeconds?: number;
+
   mapConfigOverrides?: FactoryMapConfigOverrides;
   biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;

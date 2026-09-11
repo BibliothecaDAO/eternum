@@ -67,17 +67,11 @@ function resolveBunExecutable(): string {
 }
 
 function resolveEnvFilePath(configDirectory: string, network: GameChain, gameType: GameType): string {
-  const envFilePath = path.resolve(configDirectory, `../apps/game/.env.${network}.${gameType}`);
-  if (fs.existsSync(envFilePath)) {
-    return envFilePath;
-  }
-
-  if (network === "madara") {
-    const sampleEnvFilePath = `${envFilePath}.sample`;
-    if (fs.existsSync(sampleEnvFilePath)) {
-      return sampleEnvFilePath;
-    }
-  }
+  const envFilePath = path.resolve(
+    configDirectory,
+    network === "madara" ? "../apps/game/.env" : `../apps/game/.env.${network}.${gameType}`,
+  );
+  if (fs.existsSync(envFilePath)) return envFilePath;
 
   console.error(`Missing environment file for ${gameType} on ${network}: ${envFilePath}`);
   process.exit(1);

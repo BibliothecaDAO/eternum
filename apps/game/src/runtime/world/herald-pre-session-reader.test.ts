@@ -68,7 +68,7 @@ describe("Herald pre-session reader", () => {
     ]);
   });
 
-  it("joins realm owners and village slots from one selective snapshot", async () => {
+  it("reads village placement slots from the confirmed snapshot", async () => {
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockResolvedValueOnce(
       respondWith(
@@ -89,16 +89,15 @@ describe("Herald pre-session reader", () => {
       ),
     );
 
-    const snapshot = await createHeraldPreSessionReader(world, 7).fetchSettlementPlannerSnapshot();
+    const slots = await createHeraldPreSessionReader(world, 7).fetchRealmVillageSlots();
 
-    expect(snapshot.realms).toEqual([
-      expect.objectContaining({
-        directionsLeft: [{ East: [] }, { NorthWest: [] }],
-        entityId: 42,
-        ownerName: "Ayla",
-        realmId: 9,
-      }),
+    expect(slots).toEqual([
+      {
+        connected_realm_coord: { col: 10, row: 11 },
+        connected_realm_entity_id: 42,
+        connected_realm_id: 9,
+        directions_left: [{ East: [] }, { NorthWest: [] }],
+      },
     ]);
-    expect(snapshot.villages).toEqual([{ coordX: 12, coordY: 13, entityId: 43 }]);
   });
 });

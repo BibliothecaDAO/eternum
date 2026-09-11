@@ -4,7 +4,6 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import { RegisterPointsButton } from "../components/register-points-button";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -462,9 +461,7 @@ const PlayerRow = ({
           {player.isUser && (
             // Register unregistered shareholder points straight from the row.
             // Don't let the click bubble up to the row-select handler.
-            <span onClick={(event) => event.stopPropagation()}>
-              <RegisterPointsButton variant="inline" />
-            </span>
+            <span onClick={(event) => event.stopPropagation()}></span>
           )}
         </div>
       </div>

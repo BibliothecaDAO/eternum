@@ -64,7 +64,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -85,7 +85,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     const signer = { estimateInvokeFee: vi.fn() };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -117,7 +117,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -138,7 +138,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -343,48 +343,6 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(provider.execute).not.toHaveBeenCalled();
   });
 
-  it("rejects batch flushes that combine multiple VRF request_random calls", async () => {
-    const provider = makeProvider();
-    provider.VRF_PROVIDER_ADDRESS = "0x999";
-
-    const signer = {
-      address: "0xabc",
-      estimateInvokeFee: vi.fn().mockResolvedValue({
-        resourceBounds: makeResourceBounds(1_000_000_000n),
-      }),
-    };
-
-    provider.beginBatch({ signer });
-    await provider.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0x1"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ]);
-    await provider.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: "0x999",
-        entrypoint: "request_random",
-        calldata: ["0x123", 1, "0x2"],
-      },
-      {
-        contractAddress: "0x123",
-        entrypoint: "open_chest",
-        calldata: [],
-      },
-    ]);
-
-    await expect(provider.flushBatch()).rejects.toThrow(/multiple VRF request_random/i);
-    expect(provider.execute).not.toHaveBeenCalled();
-    await provider.endBatch({ flush: false });
-  });
-
   it("emits readable submission failures for object-shaped errors", async () => {
     const provider = makeProvider();
     const submitError = {
@@ -400,7 +358,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -409,7 +367,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       message: "Transaction failed to submit: insufficient balance",
       stage: "submit",
-      entrypoints: ["settle_realms"],
+      entrypoints: ["settle"],
       contractAddresses: ["0x1"],
     });
     expect(findTransactionFailedPayload(provider)?.error).toBe(submitError);
@@ -430,7 +388,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -545,7 +503,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -575,7 +533,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -604,7 +562,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -627,7 +585,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -650,7 +608,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -681,7 +639,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -716,7 +674,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 
@@ -817,7 +775,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "claim_share_points",
+      entrypoint: "allocate_shares",
       calldata: [],
     };
 
@@ -1003,7 +961,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "claim_share_points",
+      entrypoint: "allocate_shares",
       calldata: [],
     };
 
@@ -1012,7 +970,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     expect(provider.transactionSubmitGuard).toHaveBeenCalledWith(
       expect.objectContaining({
-        transactionType: TransactionType.CLAIM_SHARE_POINTS,
+        transactionType: TransactionType.ALLOCATE_SHARES,
       }),
     );
     expect(provider.execute).not.toHaveBeenCalled();
@@ -1035,7 +993,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     };
     const call: Call = {
       contractAddress: "0x1",
-      entrypoint: "settle_realms",
+      entrypoint: "settle",
       calldata: [],
     };
 

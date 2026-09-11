@@ -447,6 +447,7 @@ pub trait IFaithSystems<T> {
 
 #[dojo::contract]
 pub mod faith_systems {
+    use alexandria_data_structures::span_ext::SpanTraitExt;
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
@@ -457,17 +458,19 @@ pub mod faith_systems {
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{FaithPledgedStory, FaithPointsClaimedStory, FaithRemovedStory, Story, StoryEvent};
     use crate::models::faith::{
-        FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinners,
+        FaithWonders, FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinners,
     };
     use crate::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl, Wonder,
     };
+    use crate::systems::utils::faith::FaithAccrualImpl;
     use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
     #[abi(embed_v0)]
     impl FaithSystemsImpl of super::IFaithSystems<ContractState> {
         fn pledge_faith(ref self: ContractState, game_id: u32, structure_id: ID, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
@@ -544,9 +547,7 @@ pub mod faith_systems {
             world.write_model(@faithful_structure);
 
             // Update wonder faith state
-            InternalImpl::_claim_wonder_points_internal(
-                ref world, game_id, ref wonder_faith, now, season_config.end_at,
-            );
+            FaithAccrualImpl::settle_wonder(ref world, game_id, ref wonder_faith, now, season_config.end_at);
             wonder_faith.claim_per_sec += to_owner.into() + to_pledger.into();
             wonder_faith.owner_claim_per_sec += to_owner.into();
             wonder_faith.num_structures_pledged += 1;
@@ -554,10 +555,10 @@ pub mod faith_systems {
 
             // Update player points rates (ADD)
             let sea = season_config.end_at;
-            InternalImpl::_update_player_rates(
+            FaithAccrualImpl::update_player_rates(
                 ref world, game_id, true, structure_owner, wonder_id, 0, to_pledger.into(), now, sea,
             );
-            InternalImpl::_update_player_rates(
+            FaithAccrualImpl::update_player_rates(
                 ref world, game_id, true, wonder_owner, wonder_id, to_owner.into(), 0, now, sea,
             );
 
@@ -586,6 +587,7 @@ pub mod faith_systems {
 
         fn remove_faith(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
@@ -653,6 +655,7 @@ pub mod faith_systems {
 
         fn update_wonder_ownership(ref self: ContractState, game_id: u32, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
@@ -667,21 +670,26 @@ pub mod faith_systems {
             // Check if ownership changed
             let mut wonder_faith: WonderFaith = world.read_model((game_id, wonder_id));
             let wonder_old_owner: ContractAddress = wonder_faith.last_recorded_owner;
+            if wonder_old_owner.is_zero() {
+                let mut wonders: FaithWonders = world.read_model(game_id);
+                if !wonders.wonder_ids.span().contains(@wonder_id) {
+                    wonders.wonder_ids.append(wonder_id);
+                    world.write_model(@wonders);
+                }
+            }
             if wonder_old_owner != wonder_new_owner {
                 // Claim wonder points
                 let now = starknet::get_block_timestamp();
-                InternalImpl::_claim_wonder_points_internal(
-                    ref world, game_id, ref wonder_faith, now, season_config.end_at,
-                );
+                FaithAccrualImpl::settle_wonder(ref world, game_id, ref wonder_faith, now, season_config.end_at);
 
                 // Deduct accruing points from old owner
                 // and reassign points to new owner
                 let owner_claim_per_sec = wonder_faith.owner_claim_per_sec;
                 let sea = season_config.end_at;
-                InternalImpl::_update_player_rates(
+                FaithAccrualImpl::update_player_rates(
                     ref world, game_id, false, wonder_old_owner, wonder_id, owner_claim_per_sec, 0, now, sea,
                 );
-                InternalImpl::_update_player_rates(
+                FaithAccrualImpl::update_player_rates(
                     ref world, game_id, true, wonder_new_owner, wonder_id, owner_claim_per_sec, 0, now, sea,
                 );
 
@@ -695,6 +703,7 @@ pub mod faith_systems {
 
         fn update_structure_ownership(ref self: ContractState, game_id: u32, structure_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_and_not_over();
 
@@ -716,10 +725,10 @@ pub mod faith_systems {
 
                 // Transfer pledger rate from old owner to new owner
                 let wonder_id = faithful_structure.wonder_id;
-                InternalImpl::_update_player_rates(
+                FaithAccrualImpl::update_player_rates(
                     ref world, game_id, false, structure_old_owner, wonder_id, 0, to_pledger.into(), now, sea,
                 );
-                InternalImpl::_update_player_rates(
+                FaithAccrualImpl::update_player_rates(
                     ref world, game_id, true, structure_new_owner, wonder_id, 0, to_pledger.into(), now, sea,
                 );
 
@@ -730,24 +739,21 @@ pub mod faith_systems {
 
         fn claim_wonder_points(ref self: ContractState, game_id: u32, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_main();
 
             let wonder: Wonder = world.read_model((game_id, wonder_id));
             assert!(wonder.realm_id > 0, "Invalid wonder");
 
-            // Update wonder ownership before claiming
-            self.update_wonder_ownership(game_id, wonder_id);
-
             let now = starknet::get_block_timestamp();
             let mut wonder_faith: WonderFaith = world.read_model((game_id, wonder_id));
-            InternalImpl::_claim_wonder_points_internal(
-                ref world, game_id, ref wonder_faith, now, season_config.end_at,
-            );
+            FaithAccrualImpl::settle_wonder(ref world, game_id, ref wonder_faith, now, season_config.end_at);
         }
 
         fn claim_player_points(ref self: ContractState, game_id: u32, player: ContractAddress, wonder_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let season_config = SeasonConfigImpl::get(world, game_id);
             season_config.assert_started_main();
 
@@ -778,6 +784,7 @@ pub mod faith_systems {
 
         fn blacklist(ref self: ContractState, game_id: u32, wonder_id: ID, blocked_id: felt252) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let caller = starknet::get_caller_address();
 
             let wonder: Wonder = world.read_model((game_id, wonder_id));
@@ -806,6 +813,7 @@ pub mod faith_systems {
 
         fn unblacklist(ref self: ContractState, game_id: u32, wonder_id: ID, blocked_id: felt252) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             let caller = starknet::get_caller_address();
 
             let wonder: Wonder = world.read_model((game_id, wonder_id));
@@ -867,7 +875,7 @@ pub mod faith_systems {
             season_end_at: u64,
         ) {
             // Claim wonder points before state change
-            Self::_claim_wonder_points_internal(ref world, game_id, ref wonder_faith, now, season_end_at);
+            FaithAccrualImpl::settle_wonder(ref world, game_id, ref wonder_faith, now, season_end_at);
 
             // Update wonder faith state (subtract rates)
             let to_owner = faithful_structure.fp_to_wonder_owner_per_sec;
@@ -891,121 +899,12 @@ pub mod faith_systems {
             world.write_model(@faithful_structure);
 
             // Update player points rates (subtract)
-            Self::_update_player_rates(
+            FaithAccrualImpl::update_player_rates(
                 ref world, game_id, false, structure_owner, wonder_id, 0, to_pledger.into(), now, season_end_at,
             );
-            Self::_update_player_rates(
+            FaithAccrualImpl::update_player_rates(
                 ref world, game_id, false, wonder_owner, wonder_id, to_owner.into(), 0, now, season_end_at,
             );
-        }
-
-        fn _claim_wonder_points_internal(
-            ref world: WorldStorage, game_id: u32, ref wonder_faith: WonderFaith, now: u64, season_end_at: u64,
-        ) {
-            // Determine end time (cap at season end)
-            let end_time = crate::utils::math::min(season_end_at, now);
-
-            // Skip if no time elapsed or not yet initialized
-            if wonder_faith.claim_last_at == 0 || end_time <= wonder_faith.claim_last_at {
-                if wonder_faith.claim_last_at == 0 {
-                    wonder_faith.claim_last_at = now;
-                    world.write_model(@wonder_faith);
-                }
-                return;
-            }
-
-            // Calculate time elapsed since last claim
-            let time_elapsed = end_time - wonder_faith.claim_last_at;
-
-            // Calculate new points
-            let new_points: u128 = wonder_faith.claim_per_sec.into() * time_elapsed.into();
-
-            // Update wonder faith
-            wonder_faith.claimed_points += new_points;
-            wonder_faith.claim_last_at = end_time;
-            world.write_model(@wonder_faith);
-
-            // Check and update winners
-            let wonder_id = wonder_faith.wonder_id;
-            let mut winners: WonderFaithWinners = world.read_model(game_id);
-
-            if wonder_faith.claimed_points > winners.high_score {
-                // New high score - replace all previous winners with this one
-                winners.high_score = wonder_faith.claimed_points;
-                winners.wonder_ids = array![wonder_id];
-                world.write_model(@winners);
-            } else if wonder_faith.claimed_points == winners.high_score && winners.high_score > 0 {
-                // Tied for high score - add to winners if not already present
-                let mut already_winner = false;
-                for existing_id in winners.wonder_ids.span() {
-                    if *existing_id == wonder_id {
-                        already_winner = true;
-                        break;
-                    }
-                }
-
-                if !already_winner {
-                    winners.wonder_ids.append(wonder_id);
-                    world.write_model(@winners);
-                }
-            }
-
-            // Emit event
-            world
-                .emit_event(
-                    @StoryEvent {
-                        game_id,
-                        id: world.dispatcher.uuid(),
-                        owner: Option::None,
-                        entity_id: Option::Some(wonder_id),
-                        tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: Story::FaithPointsClaimedStory(
-                            FaithPointsClaimedStory {
-                                wonder_id, new_points, total_points: wonder_faith.claimed_points,
-                            },
-                        ),
-                        timestamp: now,
-                    },
-                );
-        }
-
-        fn _update_player_rates(
-            ref world: WorldStorage,
-            game_id: u32,
-            add: bool,
-            player: ContractAddress,
-            wonder_id: ID,
-            owner_delta: u32,
-            pledger_delta: u32,
-            now: u64,
-            season_end_at: u64,
-        ) {
-            if player.is_zero() {
-                return;
-            }
-            let end_time = crate::utils::math::min(season_end_at, now);
-            let mut player_fp: PlayerFaithPoints = world.read_model((game_id, player, wonder_id));
-            let time_elapsed = if player_fp.last_updated_at > 0 {
-                end_time - player_fp.last_updated_at
-            } else {
-                0
-            };
-
-            // Claim previously accrued points
-            let player_total_points_per_sec = player_fp.points_per_sec_as_owner + player_fp.points_per_sec_as_pledger;
-            player_fp.points_claimed += player_total_points_per_sec.into() * time_elapsed.into();
-            player_fp.last_updated_at = end_time;
-
-            if add {
-                // Update rates (add)
-                player_fp.points_per_sec_as_owner += owner_delta;
-                player_fp.points_per_sec_as_pledger += pledger_delta;
-            } else {
-                // Update rates (subtract)
-                player_fp.points_per_sec_as_owner -= owner_delta;
-                player_fp.points_per_sec_as_pledger -= pledger_delta;
-            }
-            world.write_model(@player_fp);
         }
     }
 }

@@ -1,12 +1,12 @@
 import type { Config as EternumConfig } from "@bibliothecadao/types";
 import chalk from "chalk";
-import { nodeReadConfig } from "deployer/config";
+import { buildConfig } from "../source/build-config";
 import { logNetwork } from "utils/environment";
 import { createQuestCommandContext, resolveQuestGameTypeArg } from "./quest-command-context";
 
 const gameType = resolveQuestGameTypeArg(process.argv);
 const context = await createQuestCommandContext(gameType);
-const config: EternumConfig = await nodeReadConfig(context.network, gameType);
+const config: EternumConfig = await buildConfig({ chain: context.network, gameType });
 const questGames = config.questGames;
 
 function renderQuestGamesPreview() {

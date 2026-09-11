@@ -7,7 +7,6 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ ui: { showGuildsTab: false } }),
 }));
 vi.mock("@/hooks/use-player-avatar", () => ({ getAvatarUrl: () => null }));
-vi.mock("../components/register-points-button", () => ({ RegisterPointsButton: () => null }));
 vi.mock("./leaderboard-effects", () => ({ LeaderboardEffectsOverlay: () => null }));
 vi.mock("./use-leaderboard-effects", async () => {
   const { useRef } = await import("react");

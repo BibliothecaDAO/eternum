@@ -115,7 +115,6 @@ export enum TransactionType {
   BURN_RESOURCE_FOR_RESOURCE_PRODUCTION = "burn_resource_for_resource_production",
   BURN_LABOR_FOR_RESOURCE_PRODUCTION = "burn_labor_for_resource_production",
   BURN_RESOURCE_FOR_LABOR_PRODUCTION = "burn_resource_for_labor_production",
-  MINT_STARTING_RESOURCES = "mint_starting_resources",
   MINT = "mint",
   MINT_TEST_LORDS = "mint_test_lords",
 
@@ -162,9 +161,7 @@ export enum TransactionType {
   // Hyperstructures
   CONTRIBUTE = "contribute",
   UPDATE_CONSTRUCTION_ACCESS = "update_construction_access",
-  MAKE_HYPERSTRUCTURES = "make_hyperstructures",
   CLAIM_CONSTRUCTION_POINTS = "claim_construction_points",
-  CLAIM_SHARE_POINTS = "claim_share_points",
   ALLOCATE_SHARES = "allocate_shares",
   CLAIM_WONDER_PRODUCTION_BONUS = "claim_wonder_production_bonus",
   PLEDGE_FAITH = "pledge_faith",
@@ -173,8 +170,7 @@ export enum TransactionType {
   UPDATE_STRUCTURE_OWNERSHIP = "update_structure_ownership",
 
   // Realms & Settlement
-  SETTLE_REALMS = "settle_realms",
-  ASSIGN_REALM_POSITIONS = "assign_realm_positions",
+  SETTLE = "settle",
   REGISTER = "register",
   TOKEN_LOCK = "token_lock",
   MAKE_SPIRES = "make_spires",
@@ -199,7 +195,6 @@ export enum TransactionType {
   SEASON_CLOSE = "season_close",
   SEASON_PRIZE_CLAIM = "season_prize_claim",
   CLAIM_LEADERBOARD_REWARDS = "claim_leaderboard_rewards",
-  REGISTER_TO_LEADERBOARD = "register_to_leaderboard",
   END_GAME = "end_game",
 
   // Blitz

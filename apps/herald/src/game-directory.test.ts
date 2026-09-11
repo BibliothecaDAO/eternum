@@ -15,7 +15,6 @@ const registry = {
   start_main_at: "0xc8",
   end_at: "0x12c",
   end_grace_seconds: "0x3c",
-  registration_grace_seconds: "0x78",
 };
 
 const worldConfig = {
@@ -73,7 +72,6 @@ describe("Herald game directory", () => {
           clock: {
             end_at: 300,
             end_grace_seconds: 60,
-            registration_grace_seconds: 120,
             start_main_at: 200,
             start_settling_at: 100,
           },

@@ -6,12 +6,16 @@ on:
       - next
     paths:
       - "contracts/l3/game/**"
+      - "packages/core/src/data/full-realms.json"
+      - "scripts/generate-realm-metadata.py"
       - "config/source/**"
       - "config/deployer/clean/**"
       - ".github/workflows/test-contracts.yml"
   pull_request:
     paths:
       - "contracts/l3/game/**"
+      - "packages/core/src/data/full-realms.json"
+      - "scripts/generate-realm-metadata.py"
       - "config/source/**"
       - "config/deployer/clean/**"
       - ".github/workflows/test-contracts.yml"
@@ -73,5 +77,7 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: "2.13.1"
+      - name: Check canonical realm metadata
+        run: python3 scripts/generate-realm-metadata.py --check
       - name: Run scarb fmt check
         run: cd contracts/l3/game && scarb fmt --check

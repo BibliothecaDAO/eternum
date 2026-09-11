@@ -1,7 +1,7 @@
 import {
   DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
-  DEFAULT_MADARA_PRESET_ID,
+  defaultPresetForEnvironment,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import type {
@@ -488,16 +488,16 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchDefaults() {
+function resolveSharedLaunchDefaults(environment: DeploymentEnvironment) {
   return {
-    version: DEFAULT_MADARA_PRESET_ID,
+    version: defaultPresetForEnvironment(environment.id),
     waitForFactoryIndexTimeoutMs: DEFAULT_APPCHAIN_GAME_INDEX_TIMEOUT_MS,
     waitForFactoryIndexPollMs: DEFAULT_APPCHAIN_GAME_INDEX_POLL_MS,
   };
 }
 
 function resolveSharedLaunchRequestOptions(args: Args, environment: DeploymentEnvironment) {
-  const defaults = resolveSharedLaunchDefaults();
+  const defaults = resolveSharedLaunchDefaults(environment);
 
   return {
     rpcUrl: requireRpcUrl(args["rpc-url"] || process.env.RPC_URL, "--rpc-url or RPC_URL"),

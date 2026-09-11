@@ -123,10 +123,6 @@ const buildGameEntry = (
     clock: {
       end_at: asNumber(registry.end_at, "GameRegistry.end_at"),
       end_grace_seconds: asNumber(registry.end_grace_seconds, "GameRegistry.end_grace_seconds"),
-      registration_grace_seconds: asNumber(
-        registry.registration_grace_seconds,
-        "GameRegistry.registration_grace_seconds",
-      ),
       start_main_at: asNumber(registry.start_main_at, "GameRegistry.start_main_at"),
       start_settling_at: asNumber(registry.start_settling_at, "GameRegistry.start_settling_at"),
     },

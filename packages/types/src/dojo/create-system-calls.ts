@@ -32,32 +32,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
-  const blitz_realm_make_hyperstructures = async (
-    props: SystemProps.BlitzRealmMakeHyperstructuresProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_make_hyperstructures(props);
-  };
-
   const spire_make_spires = async (props: SystemProps.SpireMakeSpiresProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.spire_make_spires(props);
-  };
-
-  const blitz_realm_assign_realm_positions = async (
-    props: SystemProps.BlitzRealmAssignRealmPositionsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_assign_realm_positions(props);
-  };
-
-  const blitz_realm_settle_realms = async (
-    props: SystemProps.BlitzRealmSettleRealmsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_settle_realms(props);
-  };
-
-  const blitz_realm_assign_and_settle_realms = async (
-    props: SystemProps.BlitzRealmSettleRealmsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_realm_assign_and_settle_realms(props);
   };
 
   const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
@@ -114,12 +90,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const upgrade_realm = async (props: SystemProps.UpgradeRealmProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.upgrade_realm(props);
-  };
-
-  const create_multiple_realms = async (
-    props: SystemProps.CreateMultipleRealmsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.create_multiple_realms(props);
   };
 
   const send_resources = async (props: SystemProps.SendResourcesProps): Promise<GetTransactionReceiptResponse> => {
@@ -194,10 +164,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.remove_liquidity(props);
   };
 
-  const mint_resources = async (props: SystemProps.MintResourcesProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.mint_resources(props);
-  };
-
   const initialize_hyperstructure = async (
     props: SystemProps.InitializeHyperstructureProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -232,30 +198,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
   const update_whitelist = async (props: SystemProps.UpdateWhitelist): Promise<GetTransactionReceiptResponse> => {
     return await provider.update_whitelist(props);
-  };
-
-  const claim_construction_points = async (
-    props: SystemProps.ClaimConstructionPointsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.claim_construction_points(props);
-  };
-
-  const claim_share_points = async (
-    props: SystemProps.ClaimSharePointsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.claim_share_points(props);
-  };
-
-  const season_prize_claim = async (
-    props: SystemProps.ClaimLeaderboardRewardsProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.season_prize_claim(props);
-  };
-
-  const blitz_prize_player_rank = async (
-    props: SystemProps.BlitzPrizePlayerRankProps,
-  ): Promise<GetTransactionReceiptResponse> => {
-    return await provider.blitz_prize_player_rank(props);
   };
 
   const remove_guild_member = async (props: SystemProps.RemoveGuildMember): Promise<GetTransactionReceiptResponse> => {
@@ -511,11 +453,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   };
 
   const systemCalls = {
-    blitz_realm_make_hyperstructures: withAuth(blitz_realm_make_hyperstructures),
     spire_make_spires: withAuth(spire_make_spires),
-    blitz_realm_assign_realm_positions: withAuth(blitz_realm_assign_realm_positions),
-    blitz_realm_settle_realms: withAuth(blitz_realm_settle_realms),
-    blitz_realm_assign_and_settle_realms: withAuth(blitz_realm_assign_and_settle_realms),
 
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
@@ -533,7 +471,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),
     upgrade_realm: withAuth(upgrade_realm),
-    create_multiple_realms: withAuth(create_multiple_realms),
     create_village: withAuth(create_village),
     receive_army_grant: withAuth(receive_army_grant),
     destroy_building: withAuth(destroy_building),
@@ -554,12 +491,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     contribute_to_construction: withAuth(contribute_to_construction),
     set_access: withAuth(set_access),
     end_game: withAuth(end_game),
-    claim_construction_points: withAuth(claim_construction_points),
-    claim_share_points: withAuth(claim_share_points),
-    season_prize_claim: withAuth(season_prize_claim),
-    blitz_prize_player_rank: withAuth(blitz_prize_player_rank),
-
-    mint_resources: withAuth(mint_resources),
 
     create_guild: withAuth(create_guild),
     join_guild: withAuth(join_guild),

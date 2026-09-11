@@ -93,6 +93,7 @@ describe("appchain registrar preset", () => {
       });
       expect(BigInt(params.seed as string)).not.toBe(0n);
       expect(params).not.toHaveProperty("fee_amount");
+      expect(params).not.toHaveProperty("registration_grace_seconds");
       expect(buildCreateGameCalldata(params)).toMatchSnapshot();
     } finally {
       Date.now = originalDateNow;

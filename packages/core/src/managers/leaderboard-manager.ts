@@ -1,3 +1,5 @@
+import { getBlockTimestamp } from "../utils/timestamp";
+import { accruedSharePoints } from "../sync/shareholder-points";
 import { type ClientComponents, ContractAddress, type ID } from "@bibliothecadao/types";
 import {
   type Component,
@@ -8,27 +10,11 @@ import {
   getComponentValue,
   runQuery,
 } from "@dojoengine/recs";
-import { getGuildFromPlayerAddress, getRealmCountPerHyperstructure } from "../utils";
+import { getGuildFromPlayerAddress } from "../utils";
 import { decodeHyperstructureShares } from "../utils/hyperstructure-shareholders";
 import { belongsToActiveGame, ClientConfigManager, gameEntityKey } from "./config-manager";
 
-interface PendingSharePointsClaim {
-  claimedPoints: number;
-  txHash?: string;
-  submittedAtMs: number;
-  confirmedAtMs?: number;
-  status: "submitted" | "confirmed";
-}
-
-/**
- * Legacy leaderboard read-model boundary.
- *
- * Registered points remain authoritative in RECS, but this singleton also
- * materializes rank maps, time-derived shareholder points, and a TTL claim
- * overlay with several imperative writers. Keep new live facts out of these
- * maps. Consolidating its ownership and lifecycle is deferred until the
- * leaderboard itself is changed as a dedicated slice.
- */
+/** Derives standings and accrued shares from the current RECS rows and game clock. */
 export class LeaderboardManager {
   private static _instance: LeaderboardManager;
   public pointsPerPlayer: Map<ContractAddress, number> = new Map();
@@ -36,24 +22,13 @@ export class LeaderboardManager {
   public pointsPerGuild: Map<ContractAddress, number> = new Map();
   public guildsByRank: [ContractAddress, number][] = [];
 
-  // Hyperstructure unregistered shareholder points cache
-  private unregisteredShareholderPointsCache: Map<ContractAddress, number> = new Map();
-  private lastUnregisteredShareholderPointsUpdate: number = 0;
-  private readonly unregisteredShareholderPointsUpdateInterval: number;
-  private pendingSharePointsClaims: Map<ContractAddress, PendingSharePointsClaim> = new Map();
-  private readonly pendingSharePointsClaimTtlMs: number = 2 * 60 * 1000;
-  private readonly warnedMissingHyperstructureEntities: Set<Entity> = new Set();
+  private unregisteredShareholderPoints: Map<ContractAddress, number> = new Map();
 
-  constructor(
-    private components: ClientComponents,
-    unregisteredShareholderPointsUpdateInterval: number = 10000,
-  ) {
-    this.unregisteredShareholderPointsUpdateInterval = unregisteredShareholderPointsUpdateInterval;
-  }
+  constructor(private components: ClientComponents) {}
 
-  public static instance(components: ClientComponents, unregisteredShareholderPointsUpdateInterval?: number) {
+  public static instance(components: ClientComponents) {
     if (!LeaderboardManager._instance) {
-      LeaderboardManager._instance = new LeaderboardManager(components, unregisteredShareholderPointsUpdateInterval);
+      LeaderboardManager._instance = new LeaderboardManager(components);
     } else if (LeaderboardManager._instance.components !== components) {
       // The game route rebuilds its RECS world (and components) on every boot
       // (retry, reconnect, re-entry). A singleton pinned to the first boot's
@@ -67,7 +42,6 @@ export class LeaderboardManager {
 
   private rebindComponents(components: ClientComponents) {
     this.components = components;
-    this.pendingSharePointsClaims.clear();
     this.forceRefresh();
   }
 
@@ -89,7 +63,7 @@ export class LeaderboardManager {
   }
 
   public initialize() {
-    this.updateUnregisteredShareholderPointsCache();
+    this.updateUnregisteredShareholderPoints();
     this.pointsPerPlayer = this.getPlayerPoints();
     this.pointsPerGuild = this.getGuildsPoints();
     this.playersByRank = this.getPlayersByRank();
@@ -97,179 +71,54 @@ export class LeaderboardManager {
   }
 
   public forceRefresh() {
-    // Reset the last update timestamp to force cache update
-    this.lastUnregisteredShareholderPointsUpdate = 0;
     this.initialize();
   }
 
   public updatePoints() {
-    // Update unregistered shareholder points cache if needed
-    this.updateUnregisteredShareholderPointsCacheIfNeeded();
-
-    // Refresh player points (now includes cached unregistered shareholder points)
-    this.pointsPerPlayer = this.getPlayerPoints();
-
-    // Refresh guild points
-    this.pointsPerGuild = this.getGuildsPoints();
-
-    // Update guild rankings
-    this.guildsByRank = this.getGuildsByRank();
-
-    // Update player rankings
-    this.playersByRank = this.getPlayersByRank();
+    this.initialize();
   }
 
-  public setPendingSharePointsClaim(playerAddress: ContractAddress, claimedPoints: number, txHash?: string) {
-    if (claimedPoints <= 0) return;
-
-    this.pendingSharePointsClaims.set(playerAddress, {
-      claimedPoints,
-      txHash,
-      submittedAtMs: Date.now(),
-      status: "submitted",
+  private readAccruedShares() {
+    const rows = this.activeGameRows(this.components.HyperstructureShareholders);
+    if (rows.length === 0) return [];
+    const config = ClientConfigManager.instance();
+    const rate = BigInt(Math.round(config.getHyperstructureConfig().pointsPerCycle * 1_000_000));
+    const now = getBlockTimestamp().currentBlockTimestamp;
+    const endAt = Number(config.getSeasonConfig().endAt);
+    const cutoff = !config.getDevModeConfig().dev_mode_on && endAt > 0 ? Math.min(now, endAt) : now;
+    return rows.flatMap(({ entity, value }) => {
+      const hyperstructure = getComponentValue(this.components.Hyperstructure, entity);
+      if (!hyperstructure) {
+        console.warn("LeaderboardManager: waiting for hyperstructure row", { entity: String(entity) });
+        return [];
+      }
+      const start = Number(value.start_at);
+      if (start === 0 || cutoff <= start) return [];
+      const elapsed = BigInt(cutoff - start);
+      const multiplier = BigInt(hyperstructure.points_multiplier);
+      return decodeHyperstructureShares(value.shareholders).map((share) => ({
+        ...share,
+        hyperstructureId: value.hyperstructure_id,
+        elapsed: Number(elapsed),
+        rate: Number(rate * multiplier * share.basisPoints) / 10_000_000_000,
+        points: Number(accruedSharePoints(rate, multiplier, share.basisPoints, elapsed)) / 1_000_000,
+      }));
     });
   }
 
-  public confirmPendingSharePointsClaim(playerAddress: ContractAddress, txHash?: string) {
-    const pendingClaim = this.pendingSharePointsClaims.get(playerAddress);
-    if (!pendingClaim) return;
-    if (txHash && pendingClaim.txHash && pendingClaim.txHash !== txHash) return;
-
-    pendingClaim.status = "confirmed";
-    pendingClaim.confirmedAtMs = Date.now();
-    if (txHash && !pendingClaim.txHash) {
-      pendingClaim.txHash = txHash;
-    }
-    this.pendingSharePointsClaims.set(playerAddress, pendingClaim);
-  }
-
-  public clearPendingSharePointsClaim(playerAddress: ContractAddress, txHash?: string) {
-    const pendingClaim = this.pendingSharePointsClaims.get(playerAddress);
-    if (!pendingClaim) return;
-    if (txHash && pendingClaim.txHash && pendingClaim.txHash !== txHash) return;
-    this.pendingSharePointsClaims.delete(playerAddress);
-  }
-
-  /**
-   * Update unregistered shareholder points cache if enough time has passed
-   */
-  private updateUnregisteredShareholderPointsCacheIfNeeded() {
-    const now = Date.now();
-    // Always update if cache has never been populated (lastUnregisteredShareholderPointsUpdate === 0)
-    // or if the cache is empty (indicating it needs initial population)
-    // or if enough time has passed since last update
-    if (
-      this.lastUnregisteredShareholderPointsUpdate === 0 ||
-      this.unregisteredShareholderPointsCache.size === 0 ||
-      now - this.lastUnregisteredShareholderPointsUpdate >= this.unregisteredShareholderPointsUpdateInterval
-    ) {
-      this.updateUnregisteredShareholderPointsCache();
+  private updateUnregisteredShareholderPoints() {
+    this.unregisteredShareholderPoints.clear();
+    for (const share of this.readAccruedShares()) {
+      const current = this.unregisteredShareholderPoints.get(share.playerAddress) ?? 0;
+      this.unregisteredShareholderPoints.set(share.playerAddress, current + share.points);
     }
   }
 
   /**
-   * Calculate and cache all unregistered shareholder points at once for efficiency
+   * Get current unregistered shareholder points for a specific player
    */
-  private updateUnregisteredShareholderPointsCache() {
-    this.pruneExpiredPendingSharePointsClaims();
-
-    const configManager = ClientConfigManager.instance();
-    const pointsPerSecondWithoutMultiplier = configManager.getHyperstructureConfig().pointsPerCycle;
-    const seasonConfig = configManager.getSeasonConfig();
-
-    // Use season end time if season has ended, otherwise use current time
-    let now = Math.floor(Date.now() / 1000);
-    const currentTimestamp =
-      seasonConfig.endAt && Number(seasonConfig.endAt) > 0 && now >= Number(seasonConfig.endAt)
-        ? Number(seasonConfig.endAt)
-        : now;
-
-    // Clear previous cache
-    this.unregisteredShareholderPointsCache.clear();
-
-    // Get the active game's hyperstructures
-    for (const { entity: hyperstructureShareholdersEntityId, value: hyperstructureShareholders } of this.activeGameRows(
-      this.components.HyperstructureShareholders,
-    )) {
-      const hyperstructure = getComponentValue(this.components.Hyperstructure, hyperstructureShareholdersEntityId);
-      if (!hyperstructure && !this.warnedMissingHyperstructureEntities.has(hyperstructureShareholdersEntityId)) {
-        // A shareholders row without its Hyperstructure row zeroes every
-        // shareholder's live points via the fallback below — that must be a
-        // loud sync gap, never a silent zero.
-        this.warnedMissingHyperstructureEntities.add(hyperstructureShareholdersEntityId);
-        console.warn(
-          `[LeaderboardManager] Hyperstructure row missing for shareholders entity ${String(hyperstructureShareholdersEntityId)}; shareholder points read as 0`,
-        );
-      }
-
-      const pointsPerSecond = hyperstructure ? pointsPerSecondWithoutMultiplier * hyperstructure.points_multiplier : 0;
-      const shareholders = decodeHyperstructureShares(hyperstructureShareholders.shareholders);
-      const startTimestamp = Number(hyperstructureShareholders.start_at);
-      if (startTimestamp === 0) continue;
-      const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
-
-      // Aggregate shareholder percentages by player address to handle duplicates
-      const playerShareholderMap = new Map<ContractAddress, number>();
-
-      for (const { playerAddress, basisPoints } of shareholders) {
-        const shareholderPercentage = Number(basisPoints) / 10_000;
-
-        // Add to existing percentage or set new percentage
-        const existingPercentage = playerShareholderMap.get(playerAddress) || 0;
-        playerShareholderMap.set(playerAddress, existingPercentage + shareholderPercentage);
-      }
-
-      // Calculate points for each unique player in this hyperstructure
-      for (const [playerAddress, totalShareholderPercentage] of playerShareholderMap) {
-        const hyperstructurePoints = Math.floor(pointsPerSecond * totalShareholderPercentage * timeElapsed);
-
-        // Add to player's total unregistered shareholder points
-        const currentPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
-        this.unregisteredShareholderPointsCache.set(playerAddress, currentPoints + hyperstructurePoints);
-      }
-    }
-
-    this.lastUnregisteredShareholderPointsUpdate = Date.now();
-  }
-
-  private pruneExpiredPendingSharePointsClaims() {
-    const now = Date.now();
-    for (const [playerAddress, pendingClaim] of this.pendingSharePointsClaims) {
-      if (now - pendingClaim.submittedAtMs > this.pendingSharePointsClaimTtlMs) {
-        this.pendingSharePointsClaims.delete(playerAddress);
-      }
-    }
-  }
-
-  private applyPendingSharePointsClaimOverride(playerAddress: ContractAddress, rawUnregisteredPoints: number): number {
-    this.pruneExpiredPendingSharePointsClaims();
-
-    const pendingClaim = this.pendingSharePointsClaims.get(playerAddress);
-    if (!pendingClaim) return rawUnregisteredPoints;
-
-    // Apply a pending claim offset to avoid double-counting immediately after submission,
-    // then clear the override once post-claim data has been observed.
-    if (pendingClaim.status === "confirmed" && rawUnregisteredPoints <= pendingClaim.claimedPoints) {
-      this.pendingSharePointsClaims.delete(playerAddress);
-      return rawUnregisteredPoints;
-    }
-
-    return Math.max(0, rawUnregisteredPoints - pendingClaim.claimedPoints);
-  }
-
-  /**
-   * Get cached unregistered shareholder points for a specific player
-   */
-  public getPlayerHyperstructureUnregisteredShareholderPoints(
-    playerAddress: ContractAddress,
-    options?: { ignorePendingClaimOverride?: boolean },
-  ): number {
-    this.updateUnregisteredShareholderPointsCacheIfNeeded();
-    const rawUnregisteredPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
-    if (options?.ignorePendingClaimOverride) {
-      return rawUnregisteredPoints;
-    }
-    return this.applyPendingSharePointsClaimOverride(playerAddress, rawUnregisteredPoints);
+  public getPlayerHyperstructureUnregisteredShareholderPoints(playerAddress: ContractAddress): number {
+    return this.unregisteredShareholderPoints.get(playerAddress) ?? 0;
   }
 
   /**
@@ -279,7 +128,7 @@ export class LeaderboardManager {
     for (const { value: playerRegisteredPoints } of this.activeGameRows(this.components.PlayerRegisteredPoints)) {
       if (ContractAddress(playerRegisteredPoints.address) === playerAddress) {
         const pointsPrecision = 1_000_000n;
-        return Number(playerRegisteredPoints.registered_points / pointsPrecision);
+        return Number(playerRegisteredPoints.registered_points) / Number(pointsPrecision);
       }
     }
 
@@ -318,60 +167,31 @@ export class LeaderboardManager {
     timeElapsed: number;
     totalPoints: number;
   }> {
-    const configManager = ClientConfigManager.instance();
-    const pointsPerSecondPerRealmCount = configManager.getHyperstructureConfig().pointsPerCycle;
-    const seasonConfig = configManager.getSeasonConfig();
-
-    // Use season end time if season has ended, otherwise use current time
-    const currentTimestamp =
-      seasonConfig.endAt && Number(seasonConfig.endAt) > 0 ? Number(seasonConfig.endAt) : Math.floor(Date.now() / 1000);
-
-    const breakdown: Array<{
-      hyperstructureId: ID;
-      shareholderPercentage: number;
-      pointsPerSecond: number;
-      timeElapsed: number;
-      totalPoints: number;
-    }> = [];
-
-    const realmCountPerHyperstructure = getRealmCountPerHyperstructure(this.components);
-
-    for (const { value: hyperstructureShareholders } of this.activeGameRows(
-      this.components.HyperstructureShareholders,
-    )) {
-      const shareholders = decodeHyperstructureShares(hyperstructureShareholders.shareholders);
-      const startTimestamp = Number(hyperstructureShareholders.start_at);
-
-      // Aggregate shareholder percentages for the specific player to handle duplicates
-      let totalShareholderPercentage = 0;
-
-      for (const share of shareholders) {
-        if (share.playerAddress === playerAddress) {
-          const shareholderPercentage = Number(share.basisPoints) / 10_000;
-          totalShareholderPercentage += shareholderPercentage;
-        }
+    const grouped = new Map<
+      ID,
+      {
+        hyperstructureId: ID;
+        shareholderPercentage: number;
+        pointsPerSecond: number;
+        timeElapsed: number;
+        totalPoints: number;
       }
-
-      // Skip if player has no shares in this hyperstructure
-      if (totalShareholderPercentage === 0) continue;
-
-      const timeElapsed = Math.max(0, currentTimestamp - startTimestamp);
-      const playerPointsPerSecond =
-        pointsPerSecondPerRealmCount *
-        (realmCountPerHyperstructure.get(hyperstructureShareholders.hyperstructure_id) || 0) *
-        totalShareholderPercentage;
-      const totalPoints = Math.floor(playerPointsPerSecond * timeElapsed);
-
-      breakdown.push({
-        hyperstructureId: hyperstructureShareholders.hyperstructure_id,
-        shareholderPercentage: totalShareholderPercentage,
-        pointsPerSecond: playerPointsPerSecond,
-        timeElapsed,
-        totalPoints,
-      });
+    >();
+    for (const share of this.readAccruedShares()) {
+      if (share.playerAddress !== playerAddress) continue;
+      const entry = grouped.get(share.hyperstructureId) ?? {
+        hyperstructureId: share.hyperstructureId,
+        shareholderPercentage: 0,
+        pointsPerSecond: 0,
+        timeElapsed: share.elapsed,
+        totalPoints: 0,
+      };
+      entry.shareholderPercentage += Number(share.basisPoints) / 10_000;
+      entry.pointsPerSecond += share.rate;
+      entry.totalPoints += share.points;
+      grouped.set(share.hyperstructureId, entry);
     }
-
-    return breakdown;
+    return [...grouped.values()];
   }
 
   private getPlayerPoints(): Map<ContractAddress, number> {
@@ -381,25 +201,19 @@ export class LeaderboardManager {
     for (const { value: playerRegisteredPoints } of this.activeGameRows(this.components.PlayerRegisteredPoints)) {
       const playerAddress = ContractAddress(playerRegisteredPoints.address);
       const pointsPrecision = 1_000_000n;
-      const registeredPoints = Number(playerRegisteredPoints.registered_points / pointsPrecision);
+      const registeredPoints = Number(playerRegisteredPoints.registered_points) / Number(pointsPrecision);
 
       // Add cached unregistered shareholder points to registered points
-      const rawUnregisteredShareholderPoints = this.unregisteredShareholderPointsCache.get(playerAddress) || 0;
-      const unregisteredShareholderPoints = this.applyPendingSharePointsClaimOverride(
-        playerAddress,
-        rawUnregisteredShareholderPoints,
-      );
+      const rawUnregisteredShareholderPoints = this.unregisteredShareholderPoints.get(playerAddress) || 0;
+      const unregisteredShareholderPoints = rawUnregisteredShareholderPoints;
       const totalPoints = registeredPoints + unregisteredShareholderPoints;
 
       pointsPerPlayer.set(playerAddress, totalPoints);
     }
 
     // Also add players who only have unregistered shareholder points but no registered points
-    for (const [playerAddress, rawUnregisteredShareholderPoints] of this.unregisteredShareholderPointsCache) {
-      const unregisteredShareholderPoints = this.applyPendingSharePointsClaimOverride(
-        playerAddress,
-        rawUnregisteredShareholderPoints,
-      );
+    for (const [playerAddress, rawUnregisteredShareholderPoints] of this.unregisteredShareholderPoints) {
+      const unregisteredShareholderPoints = rawUnregisteredShareholderPoints;
       if (!pointsPerPlayer.has(playerAddress) && unregisteredShareholderPoints > 0) {
         pointsPerPlayer.set(playerAddress, unregisteredShareholderPoints);
       }

@@ -9,7 +9,7 @@ vi.mock("./blitz-settlement-options", () => ({
   resolveBlitzGrantStartingTroops: mocks.resolveBlitzGrantStartingTroops,
 }));
 
-import { buildBlitzSettleCalls } from "./blitz-settlement-calls";
+import { buildBlitzSettleCalls, buildEternumSettleCalls } from "./blitz-settlement-calls";
 
 describe("buildBlitzSettleCalls", () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe("buildBlitzSettleCalls", () => {
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",
       entrypoint: "settle",
-      calldata: ["291", "1", "0", "1"],
+      calldata: ["291", "0", "1"],
     });
   });
 
@@ -64,7 +64,7 @@ describe("buildBlitzSettleCalls", () => {
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",
       entrypoint: "settle",
-      calldata: ["291", "1", "2", "1", "2", "1"],
+      calldata: ["291", "2", "1", "2", "1"],
     });
   });
 
@@ -80,7 +80,19 @@ describe("buildBlitzSettleCalls", () => {
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",
       entrypoint: "settle",
-      calldata: ["291", "1", "0", "0"],
+      calldata: ["291", "0", "0"],
     });
   });
+});
+
+it("builds Eternum entry with only the game id and player name", () => {
+  const calls = buildEternumSettleCalls({
+    realmSystemsAddress: "0xabc",
+    signerAddress: "0x456",
+    usernameFelt: "0x123",
+    gameId: 7,
+    vrfProviderAddress: "0x999",
+  });
+  expect(calls.map((call) => call.entrypoint)).toEqual(["request_random", "settle"]);
+  expect(calls[1].calldata).toEqual(["7", "291"]);
 });

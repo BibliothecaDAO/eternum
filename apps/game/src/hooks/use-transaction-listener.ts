@@ -12,7 +12,6 @@ import {
 } from "@/observability/transaction-failure-reporting";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
-import { clearUncertainClaimSharePointsSubmission } from "@/ui/utils/uncertain-transaction-registry";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 interface TransactionSubmittedPayload extends TransactionLifecycleMeta {
@@ -44,16 +43,6 @@ export const useTransactionListener = () => {
   const updateTransaction = useTransactionStore((state) => state.updateTransaction);
 
   useEffect(() => {
-    const clearRecoveredClaimSharePointsMarker = (payload: TransactionLifecycleMeta) => {
-      if (
-        payload.recoveredFromSubmissionTimeout &&
-        payload.type === TransactionType.CLAIM_SHARE_POINTS &&
-        payload.signerAddress
-      ) {
-        clearUncertainClaimSharePointsSubmission(payload.signerAddress);
-      }
-    };
-
     // Called immediately when transaction is submitted to the network
     const handleTransactionSubmitted = (payload: TransactionSubmittedPayload) => {
       addClientTransactionBreadcrumb({
@@ -114,7 +103,6 @@ export const useTransactionListener = () => {
 
     const handleTransactionComplete = (payload: TransactionCompletePayload) => {
       const hash = payload.details.transaction_hash;
-      clearRecoveredClaimSharePointsMarker(payload);
       addClientTransactionBreadcrumb({
         stage: "completed",
         message: payload.type ? getTxMessage(payload.type) : "Transaction completed",
@@ -160,7 +148,6 @@ export const useTransactionListener = () => {
       const classified = classifyTransactionError("error" in payload ? payload.error : payload.message);
       const message =
         classified.reason ?? extractReadableErrorMessage(payload.revertReason ?? payload.message, "Transaction failed");
-      clearRecoveredClaimSharePointsMarker(payload);
       void reportClientTransactionFailure({
         error: payload.error ?? new Error(message),
         context: {

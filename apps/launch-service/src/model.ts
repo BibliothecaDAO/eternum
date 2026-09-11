@@ -1,3 +1,4 @@
+import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import type {
   LaunchGameSummary,
   LaunchRotationSummary,
@@ -11,7 +12,7 @@ export type LaunchSummary = LaunchGameSummary | LaunchSeriesSummary | LaunchRota
 export interface LaunchRun {
   id: string;
   kind: LaunchKind;
-  environment: "madara.blitz";
+  environment: GameEnvironmentId;
   name: string;
   request: LaunchJobRequest;
   status: LaunchJobStatus;

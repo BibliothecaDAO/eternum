@@ -1,3 +1,4 @@
+import type { SeasonFinalizationEvidence } from "./season-lifecycle";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
@@ -85,6 +86,7 @@ export interface HarnessReportInput {
   heraldUrl: string;
   workload: WorkloadResult;
   valuePlane?: LedgerHarnessEvidence;
+  seasonFinalizations?: SeasonFinalizationEvidence[];
 }
 
 interface PercentileSummary {
@@ -168,6 +170,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
     preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
     setup: setupFailures.length === 0,
+    seasonsClosed: input.seasonFinalizations?.every((result) => result.status === "closed") ?? true,
     zeroBlockingFailures: blockingFailures.length === 0,
     zeroBlockingReverts: blockingReverts.length === 0,
   };
@@ -219,7 +222,8 @@ function buildHarnessManifest(
       executionModel: "single_process",
       instances: input.games,
     },
-    valuePlane: input.valuePlane ?? { mode: "dev" },
+    valuePlane: input.valuePlane ?? { mode: "open-entry" },
+    seasonFinalizations: input.seasonFinalizations ?? [],
     workload: {
       bots: input.botCount,
       minutes: input.minutes,
@@ -323,9 +327,7 @@ export function summarizeRevertReasons(actions: readonly Pick<TrackedTransaction
   return counts;
 }
 
-export function isThresholdBlockingFailure(
-  action: Pick<TrackedTransaction, "outcome" | "revertReason">,
-): boolean {
+export function isThresholdBlockingFailure(action: Pick<TrackedTransaction, "outcome" | "revertReason">): boolean {
   if (action.outcome === "completed") return false;
   const isRevert = action.outcome === "reverted" || action.outcome === "rejected";
   return !isRevert || action.revertReason !== "tile_contention";
@@ -443,7 +445,9 @@ async function captureBlockStats(since: string, until: string): Promise<BlockSta
     }
     return { ...summary, window: { since, until } };
   } catch (error) {
-    console.warn(`Block stats unavailable (${since}..${until}): ${error instanceof Error ? error.message : String(error)}`);
+    console.warn(
+      `Block stats unavailable (${since}..${until}): ${error instanceof Error ? error.message : String(error)}`,
+    );
     return null;
   }
 }

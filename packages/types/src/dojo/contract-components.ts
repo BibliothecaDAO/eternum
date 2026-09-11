@@ -619,6 +619,7 @@ export function defineContractComponents(world: World, namespace: string) {
           start_main_at: RecsType.BigInt,
           end_at: RecsType.BigInt,
           end_grace_seconds: RecsType.Number,
+
           registration_grace_seconds: RecsType.Number,
           final_trial_id: RecsType.BigInt,
           seed: RecsType.BigInt,
@@ -640,7 +641,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u64", // start_main_at
               "u64", // end_at
               "u32", // end_grace_seconds
-              "u32", // registration_grace_seconds
+              "u32", // reserved registration_grace_seconds storage slot
               "u128", // final_trial_id
               "felt252", // seed
             ],

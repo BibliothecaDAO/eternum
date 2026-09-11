@@ -29,7 +29,6 @@ const APPCHAIN_ETERNUM_CHAIN_CONFIG: ConfigPatch = {
     startSettlingAfterSeconds: 59,
     startMainAfterSeconds: 60,
     durationSeconds: 60 * 60 * 24 * 30,
-    pointRegistrationCloseAfterEndSeconds: 60 * 10,
   },
   dev: {
     mode: {
@@ -72,6 +71,15 @@ function resolveEternumContractAddressConfig(context: EnvironmentContext): Confi
 }
 
 export function resolveEternumChainConfig(chain: GameChain, context: EnvironmentContext): ConfigPatch {
+  if (chain === "madara") {
+    return mergeConfigPatches(
+      {
+        season: { startSettlingAfterSeconds: 20, startMainAfterSeconds: 60, durationSeconds: 60 * 60 * 24 * 30 },
+        dev: { mode: { on: false } },
+      },
+      resolveEternumContractAddressConfig(context),
+    );
+  }
   if (chain !== "appchain") {
     throw new Error(`Eternum is not configured for ${chain}`);
   }

@@ -14,23 +14,23 @@ pub mod blitz_realm_systems {
     use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, blitz_produceable_resources, blitz_target_open_settlement_count};
+    use crate::constants::{DEFAULT_NS, blitz_produceable_resources};
     use crate::models::config::{
         BlitzCosmeticAttrsRegister, BlitzExplorationConfig, BlitzHypersSettlementConfig,
         BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlement,
-        BlitzSettlementConfig, BlitzSettlementConfigImpl, BlitzSettlementPosition, RealmCountConfig, SeasonConfigImpl,
-        WorldConfigUtilImpl,
+        BlitzSettlementConfig, RealmCountConfig, SeasonConfigImpl, WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
-    use crate::models::ledger::LedgerRegistrationImpl;
+    use crate::models::ledger::{LedgerRegistrationImpl, PlayerSettlement, PlayerSettlementImpl};
     use crate::models::name::AddressName;
     use crate::models::owner::OwnerAddressImpl;
-    use crate::models::position::{Coord, CoordImpl};
+    use crate::models::position::Coord;
     use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::realm::utils::contracts::{
         IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
+    use crate::systems::utils::settlement::SettlementPoolImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::collectibles::iCollectiblesImpl;
@@ -92,6 +92,7 @@ pub mod blitz_realm_systems {
             if LedgerRegistrationImpl::entry_requires_ledger(world) {
                 LedgerRegistrationImpl::for_account(world, game_id, caller);
             }
+            let owner = PlayerSettlementImpl::reserve(ref world, game_id, caller);
 
             ////////////////////////////////////////////////
             // Validate Hyperstructure Reservations
@@ -122,12 +123,12 @@ pub mod blitz_realm_systems {
             // Open Current Settlement Window
             ////////////////////////////////////////////////
 
-            let target_open_settlement_count = BlitzSettlementPoolInternalImpl::target_open_settlement_count(
+            let target_open_settlement_count = SettlementPoolImpl::target_open_settlement_count(
                 blitz_registration_config.registration_count - 1,
                 blitz_registration_config.registration_count_max,
                 blitz_settlement_config.two_player_mode,
             );
-            BlitzSettlementPoolInternalImpl::fill_open_settlement_pool(
+            SettlementPoolImpl::fill_open_settlement_pool(
                 ref world,
                 game_id,
                 ref blitz_settlement_config,
@@ -142,7 +143,7 @@ pub mod blitz_realm_systems {
             let rng_library_dispatcher = rng_library::get_dispatcher(@world);
             let vrf_seed: u256 = rng_library_dispatcher
                 .get_random_number(game_id, Source::Nonce(starknet::get_caller_address()), world);
-            let settlement_coords = BlitzSettlementPoolInternalImpl::claim_open_settlement(
+            let settlement_coords = SettlementPoolImpl::claim_open_settlement(
                 ref world, game_id, ref blitz_settlement_config, vrf_seed,
             );
             let settlement_structure_ids = BlitzRealmSettlementInternalImpl::create_player_realms(
@@ -151,6 +152,10 @@ pub mod blitz_realm_systems {
             world
                 .write_model(
                     @BlitzSettlement { game_id, player: caller, structure_ids: settlement_structure_ids.span() },
+                );
+            world
+                .write_model(
+                    @PlayerSettlement { game_id, owner, player: caller, structure_id: *settlement_structure_ids.at(0) },
                 );
 
             ////////////////////////////////////////////////
@@ -276,73 +281,6 @@ pub mod blitz_realm_systems {
     ////////////////////////////////////////////////
     // Settlement Pool Helpers
     ////////////////////////////////////////////////
-
-    #[generate_trait]
-    impl BlitzSettlementPoolInternalImpl of BlitzSettlementPoolInternalTrait {
-        fn target_open_settlement_count(
-            settled_player_count: u16, settlement_count_max: u16, two_player_mode: bool,
-        ) -> u16 {
-            blitz_target_open_settlement_count(settled_player_count, settlement_count_max, two_player_mode)
-        }
-
-        fn open_next_settlement(
-            ref world: WorldStorage,
-            game_id: u32,
-            ref blitz_settlement_config: BlitzSettlementConfig,
-            map_center: Coord,
-            reward_profile_id: u8,
-        ) {
-            let settlement_coords = blitz_settlement_config.generate_coords(map_center, reward_profile_id);
-            let settlement_number = blitz_settlement_config.open_settlement_count + 1;
-
-            world
-                .write_model(@BlitzSettlementPosition { game_id, settlement_number, coords: settlement_coords.span() });
-
-            blitz_settlement_config.next();
-            blitz_settlement_config.open_settlement_count += 1;
-        }
-
-        fn fill_open_settlement_pool(
-            ref world: WorldStorage,
-            game_id: u32,
-            ref blitz_settlement_config: BlitzSettlementConfig,
-            reward_profile_id: u8,
-            target_open_settlement_count: u16,
-        ) {
-            let map_center = CoordImpl::center(ref world, game_id);
-            while blitz_settlement_config.open_settlement_count < target_open_settlement_count {
-                Self::open_next_settlement(
-                    ref world, game_id, ref blitz_settlement_config, map_center, reward_profile_id,
-                );
-            }
-        }
-
-        fn claim_open_settlement(
-            ref world: WorldStorage, game_id: u32, ref blitz_settlement_config: BlitzSettlementConfig, vrf_seed: u256,
-        ) -> Span<Coord> {
-            let open_settlement_count = blitz_settlement_config.open_settlement_count;
-            assert!(open_settlement_count.is_non_zero(), "Eternum: No open settlements available");
-
-            let rng_library_dispatcher = rng_library::get_dispatcher(@world);
-            let settlement_number: u16 = 1
-                + rng_library_dispatcher
-                    .get_random_in_range(vrf_seed, 98139, open_settlement_count.into())
-                    .try_into()
-                    .unwrap();
-
-            let open_settlement: BlitzSettlementPosition = world.read_model((game_id, settlement_number));
-            if settlement_number != open_settlement_count {
-                let last_open_settlement: BlitzSettlementPosition = world.read_model((game_id, open_settlement_count));
-                world
-                    .write_model(
-                        @BlitzSettlementPosition { game_id, settlement_number, coords: last_open_settlement.coords },
-                    );
-            }
-
-            blitz_settlement_config.open_settlement_count -= 1;
-            open_settlement.coords
-        }
-    }
 
     ////////////////////////////////////////////////
     // Realm Settlement Helpers

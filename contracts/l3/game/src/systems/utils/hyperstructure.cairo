@@ -3,14 +3,16 @@ use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{Model, ModelStorage};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use crate::models::config::{
-    BlitzMapDistanceProfileImpl, BlitzSettlementConfig, MapConfig, TickImpl, TickInterval, TroopLimitConfig,
-    TroopStaminaConfig, WorldConfigUtilImpl,
+    BlitzExplorationConfig, BlitzMapDistanceProfileImpl, BlitzSettlementConfig, MapConfig, TickImpl, TickInterval,
+    TroopLimitConfig, TroopStaminaConfig, WorldConfigUtilImpl,
 };
-use crate::models::hyperstructure::{ConstructionAccess, Hyperstructure, HyperstructureGlobals};
+use crate::models::hyperstructure::{
+    CompletedHyperstructureImpl, ConstructionAccess, Hyperstructure, HyperstructureGlobals,
+};
 use crate::models::map::{Tile, TileOccupier};
 use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordImpl, Direction, TravelImpl};
-use crate::models::structure::{Structure, StructureCategory, StructureImpl};
+use crate::models::structure::{Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl};
 use crate::models::troop::{GuardSlot, TroopTier, TroopType};
 use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
 use crate::system_libraries::structure_libraries::structure_creation_library::{
@@ -154,10 +156,10 @@ pub impl iHyperstructureDiscoveryImpl of iHyperstructureDiscoveryTrait {
         let mut hyperstructure_globals: HyperstructureGlobals = world.read_model(game_id);
         hyperstructure_globals.game_id = game_id;
         hyperstructure_globals.created_count += 1;
-        if hyperstructure_completed {
-            hyperstructure_globals.completed_count += 1;
-        }
         world.write_model(@hyperstructure_globals);
+        if hyperstructure_completed {
+            CompletedHyperstructureImpl::record(ref world, game_id, structure_id);
+        }
     }
 }
 
@@ -207,4 +209,23 @@ pub impl iHyperstructureBlitzImpl of iHyperstructureBlitzTrait {
         }
         return count;
     }
+}
+
+/// Blitz keeps its surrounding-realm multiplier; Eternum accrues at the base rate.
+pub fn resolve_points_multiplier(ref world: WorldStorage, game_id: u32, hyperstructure_id: crate::alias::ID) -> u8 {
+    let blitz: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
+    if !blitz {
+        return 1;
+    }
+    let structure: StructureBase = StructureBaseStoreImpl::retrieve(ref world, game_id, hyperstructure_id);
+    let coord = Coord { alt: false, x: structure.coord_x, y: structure.coord_y };
+    let settlement: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
+        world, game_id, selector!("blitz_settlement_config"),
+    );
+    let exploration: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+        world, game_id, selector!("blitz_exploration_config"),
+    );
+    iHyperstructureBlitzImpl::count_surrounding_realms(
+        ref world, game_id, coord, settlement, exploration.reward_profile_id,
+    )
 }

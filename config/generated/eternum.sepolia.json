@@ -73,7 +73,6 @@
     "durationSeconds": 5400,
     "endGraceSeconds": 86400,
     "bridgeCloseAfterEndSeconds": 3600,
-    "pointRegistrationCloseAfterEndSeconds": 3600,
     "startSettlingAt": 0,
     "startMainAt": 0
   },

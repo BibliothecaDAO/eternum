@@ -55,6 +55,7 @@ export const Guilds = ({
   // Aggregate player data per guild
   const guildsWithStats = useMemo(() => {
     const leaderboardManager = LeaderboardManager.instance(components);
+    leaderboardManager.updatePoints();
 
     const guildStats = new Map<
       string,
@@ -148,6 +149,7 @@ export const Guilds = ({
 
   const generateSocialData = () => {
     const leaderboardManager = LeaderboardManager.instance(components);
+    leaderboardManager.updatePoints();
 
     const socialData = {
       timestamp: new Date().toISOString(),

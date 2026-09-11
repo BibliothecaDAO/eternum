@@ -105,6 +105,7 @@ pub mod trade_systems {
             expires_at: u32,
         ) -> ID {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure maker resource is not taker resource
@@ -217,6 +218,7 @@ pub mod trade_systems {
 
         fn accept_order(ref self: ContractState, game_id: u32, taker_id: ID, trade_id: ID, taker_buys_count: u64) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             SeasonConfigImpl::get(world, game_id).assert_started_and_not_over();
 
             // ensure trade exists
@@ -398,6 +400,7 @@ pub mod trade_systems {
 
         fn cancel_order(ref self: ContractState, game_id: u32, trade_id: ID) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
             SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
 
             // ensure trade exists

@@ -209,7 +209,6 @@ mod tests {
             start_main_at: future_start + 1000,
             end_at: 0,
             end_grace_seconds: 0,
-            registration_grace_seconds: 0,
             dev_mode_on: false,
         };
         set_test_season_config(ref world, inactive_season_config);
@@ -525,7 +524,6 @@ mod tests {
             start_main_at: future_start + 1000,
             end_at: 0,
             end_grace_seconds: 0,
-            registration_grace_seconds: 0,
             dev_mode_on: false,
         };
         set_test_season_config(ref world, inactive_season_config);
@@ -724,7 +722,6 @@ mod tests {
             start_main_at: future_start + 1000,
             end_at: 0,
             end_grace_seconds: 0,
-            registration_grace_seconds: 0,
             dev_mode_on: false,
         };
         set_test_season_config(ref world, inactive_season_config);
@@ -1081,7 +1078,6 @@ mod tests {
             start_main_at: future_start + 1000,
             end_at: 0,
             end_grace_seconds: 0,
-            registration_grace_seconds: 0,
             dev_mode_on: false,
         };
         set_test_season_config(ref world, inactive_season_config);
@@ -1399,7 +1395,6 @@ mod tests {
             start_main_at: future_start + 1000,
             end_at: 0,
             end_grace_seconds: 0,
-            registration_grace_seconds: 0,
             dev_mode_on: false,
         };
         set_test_season_config(ref world, inactive_season_config);
@@ -1666,7 +1661,6 @@ mod tests {
             start_main_at: future_start + 1000,
             end_at: 0,
             end_grace_seconds: 0,
-            registration_grace_seconds: 0,
             dev_mode_on: false,
         };
         set_test_season_config(ref world, inactive_season_config);

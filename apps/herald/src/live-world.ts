@@ -106,6 +106,10 @@ export class LiveWorld {
     return this.confirmedBlockValue;
   }
 
+  public get chainTimestamp(): number {
+    return this.lastClockTimestamp;
+  }
+
   public get preconfirmedBlock(): number | null {
     return this.preconfirmedBlockValue;
   }

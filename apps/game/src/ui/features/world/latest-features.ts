@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-11",
+    title: "Eternum Factory and Entry",
+    description:
+      "Create Eternum games and settle a realm with its canonical traits at a random position. Entry remains open after the game starts. Earned points register automatically.",
+    type: "feature",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-09-11",
     title: "Smoother Game Entry",
     description:
       "Game entry avoids a blocking wallet network request, and the first local view prepares its graphics before appearing.",

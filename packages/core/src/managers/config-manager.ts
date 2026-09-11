@@ -134,7 +134,6 @@ export class ClientConfigManager {
         start_main_at: game.start_main_at,
         end_at: game.end_at,
         end_grace_seconds: game.end_grace_seconds,
-        registration_grace_seconds: game.registration_grace_seconds,
       };
     }
     return (this.getWorldConfig() as unknown as { season_config?: any })?.season_config;

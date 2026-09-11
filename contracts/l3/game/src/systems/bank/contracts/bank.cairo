@@ -42,6 +42,7 @@ pub mod bank_systems {
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_banks(ref self: ContractState, game_id: u32, banks: Span<super::BankCreateParams>) -> Span<ID> {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
 
             // ensure caller is game admin
             iGameAdminImpl::assert_chain_admin(world);

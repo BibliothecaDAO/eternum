@@ -30,7 +30,9 @@
   ],
   "workspaces": {
     ".": {
-      "entry": ["deploy/madara-lab/scripts/deploy-box-plan.mjs"]
+      "entry": [
+        "deploy/madara-lab/scripts/deploy-box-plan.mjs"
+      ]
     },
     "apps/realms": {
       "entry": [
@@ -643,6 +645,18 @@
     ],
     "apps/game/src/ui/features/cosmetics/chest-opening/utils/types.ts": [
       "types"
+    ],
+    "!(packages)/**": [
+      "classMembers"
+    ],
+    "packages/!(provider)/**": [
+      "classMembers"
     ]
-  }
+  },
+  "rules": {
+    "classMembers": "error"
+  },
+  "include": [
+    "classMembers"
+  ]
 }

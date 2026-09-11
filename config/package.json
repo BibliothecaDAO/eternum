@@ -1,13 +1,13 @@
 {
   "name": "eternum-config-deploy",
   "scripts": {
-    "madara:blitz": "bun --env-file=../apps/game/.env run ./deployer/index.ts madara blitz",
     "sync:madara:blitz": "bun run ./scripts/run-sync.ts madara blitz",
     "sync:appchain": "bun run ./scripts/run-sync.ts appchain",
     "sync:appchain:blitz": "bun run ./scripts/run-sync.ts appchain blitz",
     "sync:appchain:eternum": "bun run ./scripts/run-sync.ts appchain eternum",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "sync:madara:eternum": "bun run ./scripts/run-sync.ts madara eternum"
   },
   "dependencies": {
     "@bibliothecadao/eternum": "workspace:*",

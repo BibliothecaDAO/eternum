@@ -73,7 +73,7 @@ describe("cosmetic pipeline integration", () => {
 
     expect(settleCall).toMatchObject({
       entrypoint: "settle",
-      calldata: ["2", "1", "1", "2748", "1"],
+      calldata: ["2", "1", "2748", "1"],
     });
 
     playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");

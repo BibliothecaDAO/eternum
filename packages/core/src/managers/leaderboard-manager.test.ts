@@ -1,16 +1,21 @@
+import { setBlockTimestampSource } from "../utils/timestamp";
 // @vitest-environment node
 
 import { ContractAddress, createClientComponents, defineContractComponents } from "@bibliothecadao/types";
-import { createWorld, setComponent } from "@dojoengine/recs";
+import { createWorld, setComponent, removeComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ClientConfigManager } from "./config-manager";
 import { LeaderboardManager } from "./leaderboard-manager";
 
 const PLAYER = 0x3e1a40b7n;
 const POINTS_PRECISION = 1_000_000n;
 
-afterEach(() => ClientConfigManager.instance().setActiveGame(0, 0));
+afterEach(() => {
+  ClientConfigManager.instance().setActiveGame(0, 0);
+  setBlockTimestampSource(null);
+  vi.restoreAllMocks();
+});
 
 describe("LeaderboardManager game scoping", () => {
   it("reads registered points from the active game's row, not another game's row for the same address", () => {
@@ -69,3 +74,58 @@ function seedRegisteredPoints(
     registered_points: points * POINTS_PRECISION,
   });
 }
+
+it("replaces elapsed shares with registered points immediately after a checkpoint", () => {
+  const components = createTestComponents();
+  const config = ClientConfigManager.instance();
+  config.setActiveGame(23, 0);
+  vi.spyOn(config, "getHyperstructureConfig").mockReturnValue({ pointsPerCycle: 1 } as ReturnType<
+    typeof config.getHyperstructureConfig
+  >);
+  vi.spyOn(config, "getSeasonConfig").mockReturnValue({ endAt: 200 } as ReturnType<typeof config.getSeasonConfig>);
+  vi.spyOn(config, "getDevModeConfig").mockReturnValue({ dev_mode_on: false });
+  setBlockTimestampSource(() => 150);
+  const entity = getEntityIdFromKeys([23n, 7n]);
+  setComponent(components.Hyperstructure, entity, {
+    game_id: 23,
+    hyperstructure_id: 7,
+    initialized: true,
+    completed: true,
+    access: "Public",
+    randomness: 0n,
+    points_multiplier: 2,
+  });
+  const shares = {
+    game_id: 23,
+    hyperstructure_id: 7,
+    start_at: 100n,
+    shareholders: [[PLAYER, 10000n]] as unknown as number[],
+  };
+  setComponent(components.HyperstructureShareholders, entity, shares);
+  const manager = new LeaderboardManager(components);
+  manager.updatePoints();
+  const readConfig = vi.spyOn(config, "getHyperstructureConfig");
+  readConfig.mockClear();
+  for (let index = 0; index < 20; index++) {
+    expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(ContractAddress(PLAYER))).toBe(100);
+  }
+  expect(readConfig).not.toHaveBeenCalled();
+  expect(manager.getPlayerHyperstructurePointsBreakdown(ContractAddress(PLAYER))[0].totalPoints).toBe(100);
+  seedRegisteredPoints(components, 23, PLAYER, 100n);
+  setComponent(components.HyperstructureShareholders, entity, { ...shares, start_at: 150n });
+  manager.updatePoints();
+  expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(ContractAddress(PLAYER))).toBe(0);
+  expect(manager.getPlayerRegisteredPoints(ContractAddress(PLAYER))).toBe(100);
+
+  const hyperstructure = getComponentValue(components.Hyperstructure, entity)!;
+  removeComponent(components.Hyperstructure, entity);
+  setComponent(components.HyperstructureShareholders, entity, shares);
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+  expect(() => manager.updatePoints()).not.toThrow();
+  expect(warning).toHaveBeenCalledWith("LeaderboardManager: waiting for hyperstructure row", {
+    entity: String(entity),
+  });
+  setComponent(components.Hyperstructure, entity, hyperstructure);
+  manager.updatePoints();
+  expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(ContractAddress(PLAYER))).toBe(100);
+});

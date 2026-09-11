@@ -156,6 +156,7 @@ const main = async (): Promise<void> => {
   const http = createHeraldRequestHandler({
     chain: config.chain,
     confirmedBlock: () => live.confirmedBlock,
+    chainTimestamp: () => live.chainTimestamp,
     decodedModelCount: registry.bySelector.size,
     fold: {
       modelRows: (model) => live.modelRows(model),

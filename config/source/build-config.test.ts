@@ -42,6 +42,16 @@ const REALM_RESOURCE_IDS_WITH_ERECTION_COSTS: ResourcesIds[] = [
 ];
 
 describe("buildConfig", () => {
+  test("runs Madara Eternum with its own balance and dev mode off", async () => {
+    const config = await buildConfig({ chain: "madara", gameType: "eternum" });
+    expect(config.dev.mode.on).toBe(false);
+    expect(config.blitz.mode.on).toBe(false);
+    expect(config.blitz.registration.registration_count_max).toBe(0);
+    expect(config.faith?.enabled).toBe(true);
+    expect(config.season.durationSeconds).toBe(30 * 24 * 3600);
+    expect(config.speed.donkey_for_resources).toBeGreaterThan(0);
+  });
+
   test("resolves the expected chain overlays for Blitz and Eternum", async () => {
     const appchainBlitz = await buildConfig({ chain: "appchain", gameType: "blitz" });
     const appchainEternum = await buildConfig({ chain: "appchain", gameType: "eternum" });

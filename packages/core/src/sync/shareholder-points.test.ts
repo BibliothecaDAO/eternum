@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateUnregisteredShareholderPoints } from "./shareholder-points";
+import { accruedSharePoints, calculateUnregisteredShareholderPoints } from "./shareholder-points";
 
 describe("calculateUnregisteredShareholderPoints", () => {
   const rows = {
@@ -40,4 +40,9 @@ describe("calculateUnregisteredShareholderPoints", () => {
       "Hyperstructure row missing",
     );
   });
+});
+
+it("floors each share at contract precision rather than merging duplicate shares first", () => {
+  expect(accruedSharePoints(1n, 1n, 5000n, 1n) + accruedSharePoints(1n, 1n, 5000n, 1n)).toBe(0n);
+  expect(accruedSharePoints(1n, 1n, 10_000n, 1n)).toBe(1n);
 });

@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { closeHarnessSeason } from "./season-lifecycle";
+import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Account, BlockTag, logger, RpcProvider } from "starknet";
@@ -18,14 +20,11 @@ import {
   type LedgerHarnessEvidence,
   type LedgerRegistrationRuntime,
 } from "./ledger-mode";
-import {
-  readLedgerSweepManifest,
-  sweepLedgerBalances,
-  writeLedgerSweepReceipt,
-} from "./ledger-money";
+import { readLedgerSweepManifest, sweepLedgerBalances, writeLedgerSweepReceipt } from "./ledger-money";
 import { collectHarnessEvidenceBeforeRun, finishHarnessEvidence, writeHarnessReport } from "./report";
 
 interface HarnessCliOptions {
+  gameType: "blitz" | "eternum";
   bots: number;
   gameId?: number;
   gameName?: string;
@@ -107,15 +106,19 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
   const games = positiveInteger(values.games ?? "1", "games");
   const ledger = values.ledger === "true";
+  const gameType = values["game-type"] ?? "blitz";
+  if (gameType !== "blitz" && gameType !== "eternum") throw new Error("--game-type must be blitz or eternum");
+  if (ledger && gameType === "eternum") throw new Error("The ledger harness currently registers Blitz passes only");
   const sweepOnlyManifestPath = values["sweep-only"];
   const ledgerStartDelaySeconds = positiveInteger(
     values["ledger-start-delay-seconds"] ?? "900",
     "ledger-start-delay-seconds",
   );
 
-  if (bots > 96) throw new Error(`The Madara Blitz preset supports at most 96 bots, received ${bots}`);
+  if (bots > 96) throw new Error(`The harness supports at most 96 bots, received ${bots}`);
   if (gameId !== undefined && games !== 1) throw new Error("--game-id can only be used with --games 1");
-  if (ledger && gameId !== undefined) throw new Error("--ledger always creates a fresh game; --game-id is not supported");
+  if (ledger && gameId !== undefined)
+    throw new Error("--ledger always creates a fresh game; --game-id is not supported");
   if (ledger && games !== 1) throw new Error("--ledger supports one game per run");
   if (ledger && sweepOnlyManifestPath) throw new Error("--ledger and --sweep-only are separate modes");
   if ((ledger || sweepOnlyManifestPath) && !values["ledger-accounts"]) {
@@ -132,6 +135,7 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   }
 
   return {
+    gameType,
     bots,
     gameId,
     gameName: values["game-name"],
@@ -207,6 +211,21 @@ async function main(): Promise<void> {
     heraldUrl: options.heraldUrl,
   });
 
+  const seasonFinalizations = [];
+  if (options.gameType === "eternum") {
+    for (const run of gameRuns) {
+      seasonFinalizations.push(
+        await closeHarnessSeason({
+          accounts: run.accounts,
+          gameId: run.game.gameId,
+          heraldUrl: options.heraldUrl,
+          provider,
+          seasonSystemAddress: requireContract(manifest, "s2-season_systems"),
+        }),
+      );
+    }
+  }
+
   const valuePlane = await finalizeValuePlaneRun({
     gameRuns,
     ledgerEnvironment,
@@ -231,6 +250,7 @@ async function main(): Promise<void> {
     heraldUrl: options.heraldUrl,
     workload,
     valuePlane,
+    seasonFinalizations,
   });
 
   console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
@@ -255,18 +275,17 @@ async function resolveHarnessGames(
     const startAt = Math.floor(Date.now() / 1_000) + (options.ledger ? options.ledgerStartDelaySeconds : 60);
     const summary = await launchGame({
       accountAddress: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
-      devModeOn: !options.ledger,
+      devModeOn: options.gameType === "blitz" && !options.ledger,
       durationSeconds: Math.ceil(options.minutes * 60) + (options.ledger ? 300 : 3_600),
-      environmentId: "madara.blitz",
+      environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
       gameName,
       ledgerAddress: ledgerEnvironment?.ledgerAddress,
       ledgerRpcUrl: ledgerEnvironment?.mainnetRpcUrl,
       lordsAddress: ledgerEnvironment?.lordsAddress,
-      pointRegistrationGraceSeconds: options.ledger ? 5 : undefined,
       privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
       rpcUrl: options.rpcUrl,
       startTime: startAt,
-      version: "6", // preset 6 (official-60) — the lab default we play; 96-player cap comes from the madara env
+      version: defaultPresetForEnvironment(options.gameType === "eternum" ? "madara.eternum" : "madara.blitz"),
     });
     if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
     games.push({ gameId: summary.gameId, gameName, startAt });
@@ -276,6 +295,8 @@ async function resolveHarnessGames(
 
 function resolveSystemAddresses(manifest: WorldManifest): HarnessSystemAddresses {
   return {
+    realm: requireContract(manifest, "s2-realm_systems"),
+    registrar: requireContract(manifest, "s2-registrar_systems"),
     blitzRealm: requireContract(manifest, "s2-blitz_realm_systems"),
     prizeDistribution: requireContract(manifest, "s2-prize_distribution_systems"),
     production: requireContract(manifest, "s2-production_systems"),
@@ -374,7 +395,9 @@ async function prepareGameRun({
   }
 
   console.log(`Settling, provisioning, and creating three explorers per bot for game ${game.gameId}`);
+  if (options.gameType === "eternum" && game.startAt) await waitForGameStart(provider, game.startAt);
   const bots = await prepareHarnessBots({
+    gameType: options.gameType,
     accounts,
     beforeProvision:
       ledger && game.startAt
@@ -394,7 +417,8 @@ async function prepareGameRun({
     accounts,
     bots,
     game,
-    ledger: ledger && binding ? { binding, registration: ledger.evidence, registrations: ledger.registrations } : undefined,
+    ledger:
+      ledger && binding ? { binding, registration: ledger.evidence, registrations: ledger.registrations } : undefined,
   };
 }
 
@@ -480,7 +504,11 @@ async function finalizeValuePlaneRun({
   if (!run?.ledger || !ledgerEnvironment) return undefined;
   console.log(`Waiting for game ${run.game.gameId} to close, then publishing its competition ranking`);
   const finalization = await finalizeLedgerGame({
-    account: run.accounts[0]!.account,
+    account: new Account({
+      provider,
+      address: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
+      signer: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+    }),
     concurrency: options.setupConcurrency,
     gameId: run.game.gameId,
     heraldUrl: options.heraldUrl,
@@ -488,7 +516,7 @@ async function finalizeValuePlaneRun({
     lordsAddress: ledgerEnvironment.lordsAddress,
     mainnetRpcUrl: ledgerEnvironment.mainnetRpcUrl,
     provider,
-    rankingSystemAddress: systems.prizeDistribution,
+    registrarSystemAddress: systems.registrar,
     registrations: run.ledger.registrations,
     sweepManifestPath: run.ledger.registration.sweepManifestPath,
     treasuryAddress: ledgerEnvironment.treasuryAddress,
@@ -560,11 +588,12 @@ function printUsage(): void {
 Usage: bun deploy/madara-lab/harness/run.ts [options]
 
   --bots <count>                 default: 96, maximum: 96
+  --game-type <blitz|eternum>     default: blitz
   --games <count>                default: 1; runs all games concurrently in this process
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
-  --game-id <id>                 use an existing dev-mode game instead of creating one
+  --game-id <id>                 use an existing game instead of creating one
   --game-name <name>             name for a new game or report label for --game-id
   --rpc-url <url>                default: ${DEFAULT_RPC_URL}
   --herald-url <url>             default: ${DEFAULT_HERALD_URL}

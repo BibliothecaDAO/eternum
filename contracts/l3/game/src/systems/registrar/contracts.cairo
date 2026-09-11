@@ -27,7 +27,6 @@ pub struct CreateGameParams {
     pub start_main_at: u64,
     pub duration_seconds: u64,
     pub end_grace_seconds: u32,
-    pub registration_grace_seconds: u32,
     pub dev_mode_on: bool,
     pub single_realm_mode: bool,
     pub two_player_mode: bool,
@@ -57,6 +56,15 @@ pub trait IRegistrarSystems<T> {
     fn create_game(ref self: T, params: CreateGameParams) -> u32;
     fn sync_game_status(ref self: T, game_id: u32);
     fn reset_trial(ref self: T, game_id: u32);
+    fn backfill_completed_hyperstructures(ref self: T, game_id: u32, start_index: u32, ids: Span<u32>);
+    fn checkpoint_share_points(ref self: T, game_id: u32, start_index: u32, count: u32);
+    fn rank_players(
+        ref self: T,
+        game_id: u32,
+        trial_id: u128,
+        total_player_count_committed: u16,
+        players_list: Array<starknet::ContractAddress>,
+    );
     fn mark_game_settled(ref self: T, game_id: u32);
     /// The mainnet ledger operator that relays paid registrations into this chain. Zero
     /// means the chain has no value plane: entry is open and results belong to the player.
@@ -66,6 +74,13 @@ pub trait IRegistrarSystems<T> {
 
 #[starknet::interface]
 trait IPrizeLifecycle<T> {
+    fn blitz_prize_player_rank(
+        ref self: T,
+        game_id: u32,
+        trial_id: u128,
+        total_player_count_committed: u16,
+        players_list: Array<starknet::ContractAddress>,
+    );
     fn reset_trial(ref self: T, game_id: u32);
 }
 
@@ -90,6 +105,7 @@ pub mod registrar_systems {
         RealmCountConfig, WorldConfig,
     };
     use crate::models::game::{GAME_COUNTER_ID, GameCounter, GameRegistry, GameRegistryImpl, GameStatus, Preset, Series};
+    use crate::models::hyperstructure::{CompletedHyperstructureImpl, HyperstructureGlobals, SharePointsCheckpoint};
     use crate::models::position::CENTER_COL;
     use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry, QuestLevels};
     use crate::systems::quest::constants::VERSION;
@@ -218,6 +234,34 @@ pub mod registrar_systems {
             prize_lifecycle_dispatcher(world).reset_trial(game_id);
         }
 
+        fn backfill_completed_hyperstructures(ref self: ContractState, game_id: u32, start_index: u32, ids: Span<u32>) {
+            let mut world = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            crate::models::hyperstructure::CompletedHyperstructureImpl::backfill(ref world, game_id, start_index, ids);
+        }
+
+        fn checkpoint_share_points(ref self: ContractState, game_id: u32, start_index: u32, count: u32) {
+            let mut world = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            crate::models::config::SeasonConfigImpl::assert_ended(
+                crate::models::config::SeasonConfigImpl::get(world, game_id),
+            );
+            checkpoint_completed_shares(ref world, game_id, start_index, count);
+        }
+
+        fn rank_players(
+            ref self: ContractState,
+            game_id: u32,
+            trial_id: u128,
+            total_player_count_committed: u16,
+            players_list: Array<ContractAddress>,
+        ) {
+            let world = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+            prize_lifecycle_dispatcher(world)
+                .blitz_prize_player_rank(game_id, trial_id, total_player_count_committed, players_list);
+        }
+
         fn mark_game_settled(ref self: ContractState, game_id: u32) {
             let mut world = self.world(DEFAULT_NS());
             assert_caller_is_admin(world);
@@ -320,9 +364,32 @@ pub mod registrar_systems {
         (preset_rules, preset_game_config)
     }
 
+    fn checkpoint_completed_shares(ref world: WorldStorage, game_id: u32, start_index: u32, count: u32) {
+        let globals: HyperstructureGlobals = world.read_model(game_id);
+        let game = GameRegistryImpl::get(world, game_id);
+        let mut checkpoint: SharePointsCheckpoint = world.read_model(game_id);
+        assert!(
+            count > 0 && count <= 16 && start_index + count <= globals.completed_count,
+            "Eternum: invalid checkpoint range",
+        );
+        if checkpoint.end_at != game.end_at {
+            checkpoint.completed_count = 0;
+        }
+        assert!(start_index <= checkpoint.completed_count, "Eternum: checkpoint range leaves a gap");
+        for index in start_index..start_index + count {
+            let id = CompletedHyperstructureImpl::get(world, game_id, index);
+            crate::systems::utils::share_points::settle_hyperstructure_shares(ref world, game_id, id);
+        }
+        checkpoint.game_id = game_id;
+        checkpoint.end_at = game.end_at;
+        checkpoint.completed_count = core::cmp::max(checkpoint.completed_count, start_index + count);
+        world.write_model(@checkpoint);
+    }
+
     fn validate_registration_capacity(params: CreateGameParams, blitz_mode_on: bool) {
         if !blitz_mode_on {
             assert!(params.registration_count_max == 0, "Eternum: season presets do not use blitz registration");
+            assert!(!params.two_player_mode, "Eternum: season presets do not use duel settlement");
             return;
         }
         assert!(params.registration_count_max.is_non_zero(), "Eternum: registration capacity is zero");
@@ -371,7 +438,7 @@ pub mod registrar_systems {
             start_main_at: params.start_main_at,
             end_at,
             end_grace_seconds: params.end_grace_seconds,
-            registration_grace_seconds: params.registration_grace_seconds,
+            registration_grace_seconds: 0,
             final_trial_id: 0,
             seed: params.seed,
         }
@@ -385,7 +452,7 @@ pub mod registrar_systems {
         blitz_settlement.step = 1;
         blitz_settlement.point = 1;
         blitz_settlement.open_settlement_count = 0;
-        blitz_settlement.single_realm_mode = params.single_realm_mode;
+        blitz_settlement.single_realm_mode = !preset.blitz_mode_on || params.single_realm_mode;
         blitz_settlement.two_player_mode = params.two_player_mode;
 
         let mut registration = preset.blitz_registration_config;

@@ -26,7 +26,7 @@ mod liquidity_systems {
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
     use crate::models::bank::liquidity::Liquidity;
     use crate::models::bank::market::{Market, MarketTrait};
-    use crate::models::config::SeasonConfigImpl;
+    use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::owner::OwnerAddressTrait;
     use crate::models::resource::resource::{
         ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl, WeightStoreImpl,
@@ -72,6 +72,7 @@ mod liquidity_systems {
             lords_amount: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
 
             // ensure liquidity can only be added during main game time
             if !iGameAdminImpl::is_chain_admin(world) {
@@ -161,6 +162,7 @@ mod liquidity_systems {
             ref self: ContractState, game_id: u32, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: u128,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
+            WorldConfigUtilImpl::assert_eternum_mode(world, game_id);
 
             // only liquidity removal is only allowed when main game has started
             // and grace period has not elapsed

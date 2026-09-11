@@ -106,6 +106,12 @@ pub impl StructureOwnerStoreImpl of StructureOwnerStoreTrait {
 
     fn store(owner: ContractAddress, ref world: WorldStorage, game_id: u32, structure_id: ID) {
         let previous_owner: ContractAddress = Self::retrieve(ref world, game_id, structure_id);
+        if previous_owner == owner {
+            return;
+        }
+        if previous_owner.is_non_zero() {
+            crate::systems::utils::faith::transfer_faith_ownership(ref world, game_id, structure_id, owner);
+        }
         StructureOwnerStatsImpl::decrease(ref world, game_id, previous_owner);
 
         world.write_member(Model::<Structure>::ptr_from_keys((game_id, structure_id)), selector!("owner"), owner);

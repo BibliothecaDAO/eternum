@@ -76,3 +76,38 @@ pub impl LedgerRegistrationImpl of LedgerRegistrationTrait {
         assert!(self.realm_id == village_pass_token_id.into(), "Eternum: village pass id mismatch");
     }
 }
+
+/// Entry entitlement is independent of which bound account performs settlement.
+#[derive(Copy, Drop, Serde, Introspect)]
+#[dojo::model]
+pub struct PlayerSettlement {
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub owner: ContractAddress,
+    pub player: ContractAddress,
+    pub structure_id: crate::alias::ID,
+}
+
+#[generate_trait]
+pub impl PlayerSettlementImpl of PlayerSettlementTrait {
+    fn owner(world: WorldStorage, account: ContractAddress) -> ContractAddress {
+        let config: ChainConfig = world.read_model(WORLD_CONFIG_ID);
+        if config.player_registry_address.is_non_zero() {
+            LedgerRegistrationImpl::owner_for_account(world, account)
+        } else {
+            assert!(
+                !LedgerRegistrationImpl::entry_requires_ledger(world), "Eternum: player registry is not configured",
+            );
+            account
+        }
+    }
+
+    fn reserve(ref world: WorldStorage, game_id: u32, player: ContractAddress) -> ContractAddress {
+        let owner = Self::owner(world, player);
+        let existing: PlayerSettlement = world.read_model((game_id, owner));
+        assert!(existing.player.is_zero(), "Eternum: Player is already settled");
+        world.write_model(@PlayerSettlement { game_id, owner, player, structure_id: 0 });
+        owner
+    }
+}

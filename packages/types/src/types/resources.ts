@@ -13,13 +13,6 @@ export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: 
   return multipliedCosts;
 };
 
-export const scaleResources = (resources: any[], multiplier: number): any[] => {
-  return resources.map((resource) => ({
-    ...resource,
-    amount: resource.amount * multiplier,
-  }));
-};
-
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   const multipliedCosts: ResourceOutputs = {};
 
