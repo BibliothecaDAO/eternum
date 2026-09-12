@@ -6,11 +6,10 @@
  *
  * Run from the repo root (`pnpm build:packages` first so packages/*\/dist exists):
  *
- *   pnpm exec tsx --tsconfig apps/game/tsconfig.json packages/core/scripts/run-game-client-headless.mjs --game-id 33
+ *   pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs --game-id 33
  *
- * `--tsconfig apps/game/tsconfig.json` exists only so the app-local RECS store's `@/` imports resolve; M1a moves that
- * store into packages/core/src/client and the flag goes away. `bun packages/core/scripts/run-game-client-headless.mjs`
- * also runs it, but that exercises bun's WebSocket rather than Node's.
+ * `bun packages/core/scripts/run-game-client-headless.mjs` also runs it, but that exercises bun's WebSocket rather
+ * than Node's.
  *
  * Options:
  *   --herald-url <url>     Herald base URL (default: https://herald.realms.party)
@@ -23,6 +22,7 @@
 
 import { parseArgs as parseNodeArgs } from "node:util";
 
+import { createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
 import {
   GameSyncRuntime,
   HeraldGameSyncTransport,
@@ -31,9 +31,6 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import { defineContractComponents } from "@bibliothecadao/types";
 import { createWorld } from "@dojoengine/recs";
-// M1a relocates this store to packages/core/src/client/recs-game-sync-store.ts; until then the spike reaches across
-// the app boundary so the smoke writes through the same coercion path the web client uses.
-import { createRecsGameSyncStore } from "../../../apps/game/src/sync/recs-game-sync-store.ts";
 
 const DEFAULT_HERALD_URL = "https://herald.realms.party";
 const DEFAULT_CHAIN = "madara";
@@ -315,7 +312,7 @@ const printManifest = (manifest) => {
 
 const printUsage = () => {
   console.log(
-    "Usage: pnpm exec tsx --tsconfig apps/game/tsconfig.json packages/core/scripts/run-game-client-headless.mjs " +
+    "Usage: pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs " +
       "[--herald-url <url>] [--chain <name>] [--game-id <number>] [--models <a,b>] [--timeout-ms <n>] [--watch-ms <n>]",
   );
 };

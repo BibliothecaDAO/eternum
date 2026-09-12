@@ -1,10 +1,4 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
-import type {
-  GameSyncEntityStoreOperation,
-  GameSyncSessionStart,
-  GameSyncStore,
-} from "@bibliothecadao/eternum/game-sync";
-import { cairoTupleMembers } from "@bibliothecadao/eternum/game-sync";
 import type { Component, ComponentValue, Entity, Metadata, Schema } from "@dojoengine/recs";
 import {
   getComponentEntities,
@@ -14,8 +8,9 @@ import {
   Type as RecsType,
   updateComponent,
 } from "@dojoengine/recs";
-import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
-import { requestFrameOrTimeout } from "@/utils/frame-or-timeout";
+
+import { cairoTupleMembers } from "../sync/cairo-tuple";
+import type { GameSyncEntityStoreOperation, GameSyncStore } from "../sync/game-sync-types";
 
 type ValueCoercer = (value: unknown) => unknown;
 type AuthoritativeComponent = Component<Schema, Metadata, undefined>;
@@ -262,11 +257,3 @@ export const createRecsGameSyncStore = (setup: SetupResult, syncModels: readonly
     },
   };
 };
-
-const GAME_SYNC_FRAME_FALLBACK_MS = 100;
-
-export const createBrowserScheduler = (): NonNullable<GameSyncSessionStart["scheduler"]> => ({
-  schedule(task) {
-    return requestFrameOrTimeout(() => runWithFrameWorkOwner("sync:ingest", task), GAME_SYNC_FRAME_FALLBACK_MS);
-  },
-});

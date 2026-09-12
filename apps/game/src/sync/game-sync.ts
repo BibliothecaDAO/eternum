@@ -5,7 +5,6 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { publishSyncMetrics } from "@/observability/sync-metrics";
-import { createHeraldGameSyncSession } from "@/sync/herald-game-sync-session";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import {
   disposeActiveGameSyncRuntime,
@@ -18,7 +17,14 @@ import {
 import type { GameSyncSnapshotProgress } from "@bibliothecadao/eternum/game-sync";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { env } from "../../env";
-import { gameEntityKey, getScopedGameId, isGameScoped } from "@bibliothecadao/eternum/game-client";
+import {
+  createHeraldGameSyncSession,
+  gameEntityKey,
+  getScopedGameId,
+  isGameScoped,
+} from "@bibliothecadao/eternum/game-client";
+import { createBrowserScheduler } from "./browser-scheduler";
+import { createGameSyncObserver } from "./game-sync-observer";
 import { resolveInitialStructureSelection } from "./initial-structure-selection";
 
 export const disposeGameSyncSession = (): void => {
@@ -71,10 +77,12 @@ const createActiveGamewideSyncSession = (input: {
     entityModels: getEntityModels(),
     eventModels: getEventModels(),
     gameId: getScopedGameId(),
+    observer: createGameSyncObserver(),
     onSubscriptionActive: recordGamewideSubscriptionActive,
     onLiveUpdate: recordGamewideLiveUpdate,
     onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
     onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
+    scheduler: createBrowserScheduler(),
     setup: input.setup,
   });
 };

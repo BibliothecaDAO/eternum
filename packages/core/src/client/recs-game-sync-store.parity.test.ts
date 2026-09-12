@@ -16,7 +16,7 @@ interface ParityFixture {
 }
 
 const fixture = JSON.parse(
-  readFileSync(resolve(process.cwd(), "src/sync/recs-game-sync-store.parity.json"), "utf8"),
+  readFileSync(resolve(process.cwd(), "src/client/recs-game-sync-store.parity.json"), "utf8"),
 ) as ParityFixture;
 
 const componentValue = (
