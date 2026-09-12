@@ -7,7 +7,7 @@ import config from "./.knip.json";
 function systemCallProviderMethods(): string[] {
   const callSites = [
     "./packages/types/src/dojo/create-system-calls.ts",
-    "./apps/game/src/sync/game-sync.ts",
+    "./packages/core/src/client/game-client.ts",
     "./config/scripts/add-quest-games.ts",
     "./config/scripts/enable-quests.ts",
     "./config/scripts/disable-quests.ts",

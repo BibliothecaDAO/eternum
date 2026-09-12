@@ -466,6 +466,17 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     }, this.reconnectMs);
   }
 
+  /** Stops reconnecting and fails a subscribe or snapshot page still waiting on the socket. */
+  public dispose(): void {
+    const wasRunning = !this.stopped;
+    this.stop();
+    if (!wasRunning) return;
+    const failure = new Error("Herald transport was disposed before its subscription became active");
+    this.ready.reject(failure);
+    this.initialSnapshotPageWaiter?.reject(failure);
+    this.initialSnapshotPageWaiter = null;
+  }
+
   private stop(): void {
     this.stopped = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);

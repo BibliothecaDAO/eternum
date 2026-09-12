@@ -51,6 +51,7 @@ const createEmptyMetrics = (): GameSyncRuntimeMetrics => ({
   projectionPublishCount: 0,
   snapshotEntityCount: 0,
   snapshotPageCount: 0,
+  snapshotApplyDurationMs: 0,
   totalLiveEntityUpdates: 0,
   totalLiveEntityOperationsApplied: 0,
   totalLiveEventUpdates: 0,
@@ -193,6 +194,8 @@ export class GameSyncRuntime {
   public dispose(): void {
     this.generation += 1;
     this.cancelWriterImmediately();
+    // A subscribe that never resolved has no writer to cancel; only the transport can stop its reconnects.
+    this.session?.transport.dispose?.();
     this.sliceAppliedListeners.clear();
     this.disposeWorldSpatialProjection();
     this.ingestQueue?.dispose();
@@ -413,9 +416,12 @@ export class GameSyncRuntime {
         info.applyDurationMs,
       );
     }
-    if (this.status === "snapshotting" && this.snapshotExpectedOperations > 0) {
-      this.snapshotAppliedOperations += info.operationCount;
-      this.reportSnapshotApplyProgress();
+    if (this.status === "snapshotting") {
+      this.metrics.snapshotApplyDurationMs += info.applyDurationMs;
+      if (this.snapshotExpectedOperations > 0) {
+        this.snapshotAppliedOperations += info.operationCount;
+        this.reportSnapshotApplyProgress();
+      }
     }
     this.worldSpatialProjection?.flush();
     this.sliceAppliedListeners.forEach((listener) => listener());

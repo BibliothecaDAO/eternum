@@ -8,17 +8,24 @@ import type {
   GameSyncSessionStart,
   GameSyncSnapshotProgress,
 } from "../sync/game-sync-types";
-import { HeraldGameSyncTransport } from "../sync/herald-game-sync-transport";
+import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-sync-transport";
 import type { GameSyncScheduler } from "../sync/scheduler";
 import { createRecsGameSyncStore } from "./recs-game-sync-store";
 
 export type GameSyncSnapshotPhase = GameSyncSnapshotProgress["phase"];
 
 /**
- * What a client wants to know about the Herald session beyond the rows landing in RECS. The web client feeds
- * its stores and entry timeline from these; a headless client may log them or ignore them. Every field is optional.
+ * What a client wants to know about its boot and Herald session beyond the rows landing in RECS. The web client
+ * feeds its stores, progress bar, and entry timeline from these; a headless client may log them or ignore them.
+ * Every field is optional.
  */
 export interface GameClientObserver {
+  /** setup() finished: components and the provider exist, the Herald session has not started. */
+  onSetupCompleted?: (setup: SetupResult) => void;
+  /** The Herald subscription is active; the snapshot follows. */
+  onSubscriptionActive?: () => void;
+  /** A live delivery arrived: liveness, not content. */
+  onLiveUpdate?: (kind: "entity" | "event") => void;
   /** A live entity batch failed to apply; the stream is no longer trustworthy. */
   onLiveApplyFailed?: (error: Error) => void;
   /** Herald reported a head: a confirmed block, or the pre-confirmed sequencer clock. */
@@ -31,6 +38,8 @@ export interface GameClientObserver {
   onDiffReceived?: (transactionHash: string) => void;
   /** The diff for a submitted transaction is in RECS. */
   onRecsApplied?: (transactionHash: string) => void;
+  onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
+  onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
   onSnapshotPhaseStarted?: (phase: GameSyncSnapshotPhase) => void;
   onSnapshotPhaseCompleted?: (phase: GameSyncSnapshotPhase, durationMs: number) => void;
 }
@@ -42,17 +51,13 @@ export interface CreateHeraldGameSyncSessionInput {
   eventModels: readonly string[];
   gameId: number;
   observer?: GameClientObserver;
-  onLiveUpdate?: (kind: "entity" | "event") => void;
-  onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
-  onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
-  onSubscriptionActive?: () => void;
   scheduler: GameSyncScheduler;
   setup: SetupResult;
+  socketFactory?: (url: string) => HeraldSocket;
 }
 
 const createSnapshotProgressObserver = (
   observer: GameClientObserver,
-  onProgress?: (progress: GameSyncSnapshotProgress) => void,
 ): ((progress: GameSyncSnapshotProgress) => void) => {
   const startedAt = new Map<GameSyncSnapshotPhase, number>();
   const completed = new Set<GameSyncSnapshotPhase>();
@@ -67,7 +72,7 @@ const createSnapshotProgressObserver = (
       completed.add(progress.phase);
       observer.onSnapshotPhaseCompleted?.(progress.phase, performance.now() - startedAt.get(progress.phase)!);
     }
-    onProgress?.(progress);
+    observer.onSnapshotProgress?.(progress);
   };
 };
 
@@ -76,22 +81,23 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
   observer.onStoryEventsReset?.();
   const syncModels = [...input.entityModels, ...input.eventModels];
   return {
-    onLiveUpdate: input.onLiveUpdate,
+    onLiveUpdate: observer.onLiveUpdate,
     onError: (error) => {
       observer.onLiveApplyFailed?.(error);
       console.error(`[GameSync] live entity apply failed: ${error.message}`);
     },
     onEvent: observer.onStoryEvent,
-    onMetrics: input.onMetrics,
-    onSnapshotProgress: createSnapshotProgressObserver(observer, input.onSnapshotProgress),
+    onMetrics: observer.onMetrics,
+    onSnapshotProgress: createSnapshotProgressObserver(observer),
     onTransactionEntitiesApplied: observer.onRecsApplied,
     onTransactionEntitiesReceived: observer.onDiffReceived,
-    onSubscriptionActive: input.onSubscriptionActive,
+    onSubscriptionActive: observer.onSubscriptionActive,
     onHead: observer.onHead,
     scheduler: input.scheduler,
     snapshotModels: input.entityModels,
     store: createRecsGameSyncStore(input.setup, syncModels),
     transport: new HeraldGameSyncTransport({
+      socketFactory: input.socketFactory,
       url: buildHeraldGameStreamUrl(input.baseUrl, input.chain, input.gameId),
     }),
   };

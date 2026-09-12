@@ -36,9 +36,9 @@ describe("buildHeraldGameStreamUrl", () => {
 
 describe("createHeraldGameSyncSession", () => {
   it("reports each snapshot phase once, with its duration, and forwards real progress", () => {
-    const observer = { onSnapshotPhaseStarted: vi.fn(), onSnapshotPhaseCompleted: vi.fn() };
     const onSnapshotProgress = vi.fn();
-    const session = createSession({ observer, onSnapshotProgress });
+    const observer = { onSnapshotPhaseStarted: vi.fn(), onSnapshotPhaseCompleted: vi.fn(), onSnapshotProgress };
+    const session = createSession({ observer });
 
     session.onSnapshotProgress?.({ completed: 1, phase: "receiving", streaming: true, total: 2 });
     session.onSnapshotProgress?.({ completed: 2, phase: "receiving", streaming: false, total: 2 });

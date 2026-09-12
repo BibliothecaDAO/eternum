@@ -1,52 +1,74 @@
 #!/usr/bin/env node
 /**
- * Headless game client smoke: hydrates one live game from Herald through the shared sync runtime into RECS in plain
- * Node (no DOM, no `ws` package, Node 22's built-in WebSocket) and prints one JSON manifest line with the baseline
- * snapshot/apply timings. M0 item 2 in docs/plans/hired-agents-milestones.md.
+ * Headless game client smoke: boots one live game through `createGameClient` (the same composition the web client's
+ * bootstrap uses) in plain Node (no DOM, no `ws` package, Node 22's built-in WebSocket) and prints one JSON manifest
+ * line with the snapshot/apply timings. M0 item 2 and the M1b gate in docs/plans/hired-agents-milestones.md.
  *
  * Run from the repo root (`pnpm build:packages` first so packages/*\/dist exists):
  *
  *   pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs --game-id 33
  *
- * `bun packages/core/scripts/run-game-client-headless.mjs` also runs it, but that exercises bun's WebSocket rather
- * than Node's.
+ * The world is built from the committed manifest (contracts/l3/game/manifest_<chain>.json) plus the gameplay-account
+ * contracts, which come from flags or the same env vars apps/game/.env carries. The lab stack's values live in that
+ * .env (VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH, VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS, VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS):
+ *
+ *   set -a; source apps/game/.env; set +a; pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs
  *
  * Options:
- *   --herald-url <url>     Herald base URL (default: https://herald.realms.party)
- *   --chain <name>         Herald chain segment (default: madara)
- *   --game-id <number>     Game to hydrate; omitted: the first `Live` game in GET {herald}/{chain}/games
- *   --models <a,b,c>       Snapshot models (default: every gamewide-entity model in the sync manifest)
- *   --timeout-ms <number>  Give up on the snapshot after this long (default: 60000)
- *   --watch-ms <number>    How long to wait for the first live diff after the snapshot (default: 5000)
+ *   --rpc-url <url>                       Chain RPC (default: https://rpc.realms.party)
+ *   --herald-url <url>                    Herald base URL (default: https://herald.realms.party)
+ *   --chain <name>                        madara | appchain (default: madara)
+ *   --game-id <number>                    Game to hydrate; omitted: the first `Live` game in the Herald directory
+ *   --player-account-class-hash <felt>    or VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH
+ *   --player-registry-address <felt>      or VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS
+ *   --binding-authority-address <felt>    or VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS
+ *   --timeout-ms <number>                 Give up on the boot after this long (default: 60000)
+ *   --watch-ms <number>                   How long to wait for the first live diff after the snapshot (default: 5000)
  */
 
+import { readFileSync } from "node:fs";
 import { parseArgs as parseNodeArgs } from "node:util";
 
-import { buildHeraldGameStreamUrl, createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
+import { createGameClient } from "@bibliothecadao/eternum";
+import { buildWorldDeployment, fetchHeraldGameDirectory, worldConfigKey } from "@bibliothecadao/eternum/game-client";
 import {
-  GameSyncRuntime,
-  HeraldGameSyncTransport,
   createMicrotaskGameSyncScheduler,
+  disposeActiveGameSyncRuntime,
   getGameSyncModelsForChannel,
 } from "@bibliothecadao/eternum/game-sync";
-import { defineContractComponents } from "@bibliothecadao/types";
-import { createWorld } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 
+// The balance config lives in the config workspace as TypeScript; tsx links it only through a dynamic import.
+const { getConfigFromNetwork } = await import("../../../config/utils/utils.ts");
+
+const DEFAULT_RPC_URL = "https://rpc.realms.party";
 const DEFAULT_HERALD_URL = "https://herald.realms.party";
 const DEFAULT_CHAIN = "madara";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_WATCH_MS = 5_000;
-// Every chain the app knows resolves to this namespace (packages/core/src/client/game-scope.ts `namespaceForChain`).
-const NAMESPACE = "s2";
+// Every deployed world is the Blitz world for now; the manifest is the one the web client bundles for the chain.
+const WORLD_ID = "blitz";
+const MANIFEST_BY_CHAIN = {
+  madara: "manifest_madara.json",
+  appchain: "manifest_appchain_blitz.json",
+};
+const ACCOUNT_FIELDS = [
+  ["playerAccountClassHash", "player-account-class-hash", "VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH"],
+  ["playerRegistryAddress", "player-registry-address", "VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS"],
+  ["bindingAuthorityAddress", "binding-authority-address", "VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS"],
+];
 
 const parseArgs = (args) => {
   const { values } = parseNodeArgs({
     args,
     options: {
+      "rpc-url": { type: "string", default: DEFAULT_RPC_URL },
       "herald-url": { type: "string", default: DEFAULT_HERALD_URL },
       chain: { type: "string", default: DEFAULT_CHAIN },
       "game-id": { type: "string" },
-      models: { type: "string" },
+      "player-account-class-hash": { type: "string" },
+      "player-registry-address": { type: "string" },
+      "binding-authority-address": { type: "string" },
       "timeout-ms": { type: "string", default: String(DEFAULT_TIMEOUT_MS) },
       "watch-ms": { type: "string", default: String(DEFAULT_WATCH_MS) },
       help: { type: "boolean", short: "h", default: false },
@@ -55,16 +77,21 @@ const parseArgs = (args) => {
 
   return {
     help: values.help,
+    rpcUrl: values["rpc-url"],
     heraldUrl: values["herald-url"],
-    chain: values.chain,
+    chain: requireKnownChain(values.chain),
     gameId: values["game-id"] === undefined ? undefined : requirePositiveInteger("--game-id", values["game-id"]),
-    models: values.models
-      ?.split(",")
-      .map((model) => model.trim())
-      .filter(Boolean),
+    ...resolveAccountFields(values),
     timeoutMs: requirePositiveInteger("--timeout-ms", values["timeout-ms"]),
     watchMs: requireNonNegativeInteger("--watch-ms", values["watch-ms"]),
   };
+};
+
+const requireKnownChain = (chain) => {
+  if (!(chain in MANIFEST_BY_CHAIN)) {
+    throw new Error(`--chain must be one of ${Object.keys(MANIFEST_BY_CHAIN).join(", ")}; received ${chain}`);
+  }
+  return chain;
 };
 
 const requirePositiveInteger = (flag, raw) => {
@@ -81,87 +108,105 @@ const requireNonNegativeInteger = (flag, raw) => {
   return value;
 };
 
-const resolveGameId = async (config) => {
-  if (config.gameId !== undefined) return config.gameId;
-  const directory = await fetchGameDirectory(config);
-  const live = directory.games.find((game) => game.status === "Live");
-  if (!live) {
-    throw new Error(`No Live game on ${config.heraldUrl}/${config.chain}/games; pass --game-id explicitly`);
+/** Flags win over env; a missing field exits naming both spellings rather than booting a client that cannot settle. */
+const resolveAccountFields = (values) =>
+  Object.fromEntries(
+    ACCOUNT_FIELDS.map(([field, flag, envVar]) => {
+      const value = values[flag] ?? process.env[envVar];
+      if (!value) throw new Error(`Missing --${flag} (or ${envVar} in the environment)`);
+      return [field, value];
+    }),
+  );
+
+const readCommittedManifest = (chain) =>
+  JSON.parse(readFileSync(new URL(`../../../contracts/l3/game/${MANIFEST_BY_CHAIN[chain]}`, import.meta.url), "utf8"));
+
+const buildWorld = (config, manifest) =>
+  buildWorldDeployment({
+    id: WORLD_ID,
+    chain: config.chain,
+    manifest,
+    heraldBaseUrl: config.heraldUrl,
+    rpcUrl: config.rpcUrl,
+    browserFacing: false,
+    playerAccountClassHash: config.playerAccountClassHash,
+    playerRegistryAddress: config.playerRegistryAddress,
+    bindingAuthorityAddress: config.bindingAuthorityAddress,
+  });
+
+/** The registry row carries the preset the game runs on, so the directory is read even when the id is given. */
+const resolveGame = async (config, world) => {
+  const directory = await fetchHeraldGameDirectory(world);
+  const game =
+    config.gameId === undefined
+      ? directory.games.find((candidate) => candidate.status === "Live")
+      : directory.games.find((candidate) => candidate.game_id === config.gameId);
+  if (!game) {
+    const wanted = config.gameId === undefined ? "a Live game" : `game ${config.gameId}`;
+    throw new Error(`No ${wanted} in ${world.heraldBaseUrl}/${world.chain}/games`);
   }
-  console.error(`[headless] no --game-id; using first Live game ${live.game_id} (${live.name})`);
-  return live.game_id;
+  if (config.gameId === undefined)
+    console.error(`[headless] no --game-id; using first Live game ${game.game_id} (${game.name})`);
+  return game;
 };
 
-const fetchGameDirectory = async (config) => {
-  const url = buildHeraldUrl(config.heraldUrl, `/${config.chain}/games`);
-  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) throw new Error(`Herald directory ${url} failed: ${response.status} ${response.statusText}`);
-  return response.json();
+/** The web client reads the game mode off WorldConfig once the snapshot landed; the smoke resolves config the same way. */
+const resolveGameConfig = (chain) => (setup) => {
+  const worldConfig = getComponentValue(setup.components.WorldConfig, worldConfigKey());
+  return getConfigFromNetwork(chain, worldConfig?.blitz_mode_on ? "blitz" : "eternum");
 };
 
-const buildHeraldUrl = (baseUrl, pathname) => {
-  const url = new URL(baseUrl);
-  url.pathname = `${url.pathname.replace(/\/+$/, "")}${pathname}`;
-  url.search = "";
-  url.hash = "";
-  return url.toString();
-};
-
-const resolveSyncModels = (config) => {
-  const manifestModels = (channel) =>
-    getGameSyncModelsForChannel(channel, { includeS2Only: true }).map(({ name }) => name);
-  const entityModels = config.models ?? manifestModels("gamewide-entity");
-  return { entityModels, eventModels: manifestModels("global-event") };
-};
-
-/** The real RECS store plus a meter: rows per model and the apply time spent while the runtime is still snapshotting. */
-const createHeadlessStore = (world, contractComponents, syncModels, isSnapshotting) => {
-  const store = createRecsGameSyncStore({ network: { world, contractComponents } }, syncModels);
-  let snapshotApplyMs = 0;
-
-  return {
-    store: {
-      applyEntityOperations(operations) {
-        const startedAt = performance.now();
-        store.applyEntityOperations(operations);
-        if (isSnapshotting()) snapshotApplyMs += performance.now() - startedAt;
-      },
-      applyEvent: (event) => store.applyEvent(event),
-      listModelEntityIds: (model) => store.listModelEntityIds(model),
-    },
-    snapshotApplyMs: () => Math.round(snapshotApplyMs),
-  };
-};
-
-/** Wraps the Herald transport to time the handshake and the snapshot stream, and to count the rows each model sent. */
-const observeSnapshotTransport = (transport) => {
+/** Node 22's global WebSocket, watched for the handshake, the snapshot rows per model, and the first failure. */
+const createObservedSocketFactory = () => {
   const rowsByModel = new Map();
+  let reported = false;
   let connectStartedAt = 0;
   let connectedAt = 0;
   let snapshotEndedAt = 0;
 
-  const countRows = (page) => {
-    page.items.forEach((entity) => {
-      Object.keys(entity.models).forEach((model) => rowsByModel.set(model, (rowsByModel.get(model) ?? 0) + 1));
+  const observeMessage = (data) => {
+    const message = JSON.parse(String(data));
+    if (message.type === "hello") connectedAt = performance.now();
+    if (message.type === "snapshot" && message.rows.length > 0) {
+      rowsByModel.set(message.model, (rowsByModel.get(message.model) ?? 0) + message.rows.length);
+    }
+    if (message.type === "snapshot_end") snapshotEndedAt = performance.now();
+  };
+
+  const socketFactory = (url) => {
+    connectStartedAt = performance.now();
+    const socket = new WebSocket(url);
+    socket.addEventListener("error", (event) => {
+      if (reported) return;
+      reported = true;
+      console.error(`[headless] websocket error on ${url}: ${event.message ?? event.error?.message ?? "unknown"}`);
     });
+    // The transport assigns handlers as properties; wrapping onmessage here keeps the observation off its code path.
+    return {
+      close: () => socket.close(),
+      send: (data) => socket.send(data),
+      set onopen(handler) {
+        socket.onopen = handler;
+      },
+      set onerror(handler) {
+        socket.onerror = handler;
+      },
+      set onclose(handler) {
+        socket.onclose = handler;
+      },
+      set onmessage(handler) {
+        socket.onmessage =
+          handler &&
+          ((event) => {
+            observeMessage(event.data);
+            handler(event);
+          });
+      },
+    };
   };
 
   return {
-    transport: {
-      transactionStatusChannel: transport.transactionStatusChannel,
-      async subscribe(handlers) {
-        connectStartedAt = performance.now();
-        const writer = await transport.subscribe(handlers);
-        connectedAt = performance.now();
-        return writer;
-      },
-      async fetchSnapshotPage(cursor) {
-        const page = await transport.fetchSnapshotPage(cursor);
-        countRows(page);
-        if (!page.nextCursor) snapshotEndedAt = performance.now();
-        return page;
-      },
-    },
+    socketFactory,
     summary: () => ({
       rows: [...rowsByModel.values()].reduce((total, count) => total + count, 0),
       models: rowsByModel.size,
@@ -172,37 +217,32 @@ const observeSnapshotTransport = (transport) => {
   };
 };
 
-const createFirstDiffProbe = (startedAt) => {
+/** First live diff after the snapshot and the confirmed head. */
+const createSmokeObserver = (startedAt) => {
   let firstDiffMs;
-  let notify;
-  const seen = new Promise((resolve) => {
-    notify = resolve;
+  let confirmedBlock;
+  let notifyFirstDiff;
+  const firstDiffSeen = new Promise((resolve) => {
+    notifyFirstDiff = resolve;
   });
 
   return {
-    onLiveUpdate(kind) {
-      if (kind !== "entity" || firstDiffMs !== undefined) return;
-      firstDiffMs = Math.round(performance.now() - startedAt);
-      notify();
+    observer: {
+      onLiveUpdate(kind) {
+        if (kind !== "entity" || firstDiffMs !== undefined) return;
+        firstDiffMs = Math.round(performance.now() - startedAt);
+        notifyFirstDiff();
+      },
+      onHead(head) {
+        if (!head.preconfirmed) confirmedBlock = head.block;
+      },
+      onLiveApplyFailed: (error) => console.error(`[headless] live apply failed: ${error.message}`),
     },
-    async waitFor(watchMs) {
-      if (firstDiffMs === undefined) await Promise.race([seen, delay(watchMs)]);
+    confirmedBlock: () => confirmedBlock,
+    async waitForFirstDiff(watchMs) {
+      if (firstDiffMs === undefined) await Promise.race([firstDiffSeen, delay(watchMs)]);
       return firstDiffMs;
     },
-  };
-};
-
-// Node 22's global WebSocket; the transport reconnects every 200ms, so only the first failure is worth a line.
-const createNodeSocketFactory = () => {
-  let reported = false;
-  return (url) => {
-    const socket = new WebSocket(url);
-    socket.addEventListener("error", (event) => {
-      if (reported) return;
-      reported = true;
-      console.error(`[headless] websocket error on ${url}: ${event.message ?? event.error?.message ?? "unknown"}`);
-    });
-    return socket;
   };
 };
 
@@ -217,27 +257,19 @@ const withTimeout = async (promise, timeoutMs, describe) => {
     return await Promise.race([promise, timeout]);
   } finally {
     clearTimeout(timer);
+    // The boot keeps running after a timeout until the runtime is disposed; its eventual rejection is not news.
+    promise.catch(() => undefined);
   }
 };
 
-// Distinct entities that reached RECS, read back through the store: `world.getEntities()` only lists ids that went
-// through `registerEntity`, which component writes do not.
-const countStoredEntities = (store, models) => {
+// Distinct entities that reached RECS, read back through the components: `world.getEntities()` only lists ids that
+// went through `registerEntity`, which component writes do not.
+const countStoredEntities = (contractComponents) => {
   const entities = new Set();
-  models.forEach((model) => {
-    for (const entityId of store.listModelEntityIds(model)) entities.add(entityId);
+  getGameSyncModelsForChannel("gamewide-entity", { includeS2Only: true }).forEach(({ name }) => {
+    for (const entity of contractComponents[name]?.entities() ?? []) entities.add(entity);
   });
   return entities.size;
-};
-
-const createHeadProbe = () => {
-  let confirmedBlock;
-  return {
-    onHead(head) {
-      if (!head.preconfirmed) confirmedBlock = head.block;
-    },
-    confirmedBlock: () => confirmedBlock,
-  };
 };
 
 const bytesToMb = (bytes) => Math.round((bytes / 1024 / 1024) * 10) / 10;
@@ -245,56 +277,48 @@ const bytesToMb = (bytes) => Math.round((bytes / 1024 / 1024) * 10) / 10;
 // Node reports maxRSS in kilobytes on every platform.
 const peakRssMb = () => bytesToMb(process.resourceUsage().maxRSS * 1024);
 
-const runSmoke = async (config, gameId) => {
+const runSmoke = async (config) => {
   const startedAt = performance.now();
-  const streamUrl = buildHeraldGameStreamUrl(config.heraldUrl, config.chain, gameId);
-  const { entityModels, eventModels } = resolveSyncModels(config);
-  const world = createWorld();
-  const contractComponents = defineContractComponents(world, NAMESPACE);
-  const runtime = new GameSyncRuntime();
-  const headlessStore = createHeadlessStore(
-    world,
-    contractComponents,
-    [...entityModels, ...eventModels],
-    () => runtime.getStatus() === "snapshotting",
+  const world = buildWorld(config, readCommittedManifest(config.chain));
+  const game = await resolveGame(config, world);
+  const socket = createObservedSocketFactory();
+  const smoke = createSmokeObserver(startedAt);
+
+  const client = await withTimeout(
+    createGameClient({
+      world,
+      gameId: game.game_id,
+      presetId: game.preset_id,
+      dojoConfig: { rpcUrl: world.rpcUrl, manifest: readCommittedManifest(config.chain) },
+      setupEnvironment: { vrfProviderAddress: "0x0" },
+      scheduler: createMicrotaskGameSyncScheduler(),
+      socketFactory: socket.socketFactory,
+      observer: smoke.observer,
+      resolveGameConfig: resolveGameConfig(config.chain),
+    }),
+    config.timeoutMs,
+    () => `Timed out after ${config.timeoutMs}ms booting game ${game.game_id} against ${world.heraldBaseUrl}`,
   );
-  const snapshot = observeSnapshotTransport(
-    new HeraldGameSyncTransport({ url: streamUrl, socketFactory: createNodeSocketFactory() }),
-  );
-  const firstDiff = createFirstDiffProbe(startedAt);
-  const head = createHeadProbe();
 
   try {
-    await withTimeout(
-      runtime.startSession({
-        transport: snapshot.transport,
-        store: headlessStore.store,
-        snapshotModels: entityModels,
-        scheduler: createMicrotaskGameSyncScheduler(),
-        onLiveUpdate: firstDiff.onLiveUpdate,
-        onHead: head.onHead,
-        onError: (error) => console.error(`[headless] live apply failed: ${error.message}`),
-      }),
-      config.timeoutMs,
-      () => `Timed out after ${config.timeoutMs}ms while ${runtime.getStatus()} against ${streamUrl}`,
-    );
-    const firstDiffMs = await firstDiff.waitFor(config.watchMs);
-
+    const firstDiffMs = await smoke.waitForFirstDiff(config.watchMs);
+    const metrics = client.runtime.getMetrics();
     return {
       event: "game_client_headless_smoke",
-      gameId,
-      status: runtime.getStatus(),
-      snapshot: { ...snapshot.summary(), applyMs: headlessStore.snapshotApplyMs() },
+      gameId: game.game_id,
+      presetId: game.preset_id,
+      status: client.runtime.getStatus(),
+      snapshot: { ...socket.summary(), applyMs: Math.round(metrics.snapshotApplyDurationMs) },
       ...(firstDiffMs === undefined ? {} : { firstDiffMs }),
-      confirmedBlock: head.confirmedBlock() ?? null,
-      entities: countStoredEntities(headlessStore.store, entityModels),
-      metrics: runtime.getMetrics(),
+      confirmedBlock: smoke.confirmedBlock() ?? null,
+      entities: countStoredEntities(client.setup.network.contractComponents),
+      metrics,
       rssMb: bytesToMb(process.memoryUsage().rss),
       peakRssMb: peakRssMb(),
       totalMs: Math.round(performance.now() - startedAt),
     };
   } finally {
-    runtime.dispose();
+    client.dispose();
   }
 };
 
@@ -305,7 +329,9 @@ const printManifest = (manifest) => {
 const printUsage = () => {
   console.log(
     "Usage: pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs " +
-      "[--herald-url <url>] [--chain <name>] [--game-id <number>] [--models <a,b>] [--timeout-ms <n>] [--watch-ms <n>]",
+      "[--rpc-url <url>] [--herald-url <url>] [--chain <name>] [--game-id <number>] " +
+      "[--player-account-class-hash <felt>] [--player-registry-address <felt>] [--binding-authority-address <felt>] " +
+      "[--timeout-ms <n>] [--watch-ms <n>]",
   );
 };
 
@@ -314,11 +340,10 @@ try {
   if (config.help) {
     printUsage();
   } else {
-    const gameId = await resolveGameId(config);
-    printManifest(await runSmoke(config, gameId));
+    printManifest(await runSmoke(config));
   }
 } catch (error) {
-  // A transport that never connected has no writer for the runtime to cancel, so its reconnect timer would keep
-  // the process alive; exit once the failure line has flushed.
+  // A boot that timed out still owns the active runtime; disposing it stops the transport's reconnects.
+  disposeActiveGameSyncRuntime();
   process.stderr.write(`[headless] ${error instanceof Error ? error.message : String(error)}\n`, () => process.exit(1));
 }

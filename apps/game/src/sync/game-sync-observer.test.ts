@@ -3,7 +3,10 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { describe, expect, it } from "vitest";
 
-import { createGameSyncObserver } from "./game-sync-observer";
+import { createGameSyncObserver as createObserver } from "./game-sync-observer";
+
+const createGameSyncObserver = () =>
+  createObserver({ reportProgress: () => undefined, onSetupCompleted: () => undefined });
 
 const withStoreSnapshot = (run: () => void) => {
   const previous = useChainTimeStore.getState();
