@@ -134,10 +134,8 @@ protected ticket lifecycle, embedded/sidecar comparison and recovery gates. It p
 The slice uses injected raw roots while that work proceeds. Slice week and randomness week are planned and measured
 separately; progress reports name passed gates and evidence, not percentages against an estimate.
 
-The earlier VRF smoke demonstrated Rust/Cairo agreement and 1.882 ms p95 witness generation, but its Cartridge-authored
-primitive has since been rejected. The randomness track now implements an owned RFC-9381-based Stark suite and repeats
-those gates. The old numbers do not validate the replacement or measure a deployed explore. No production value uses its
-draws before the primitive security review and required integration gates.
+The randomness track implements an owned RFC-9381-based Stark suite and must pass its cryptographic and integration
+gates. No production value uses its draws before the primitive security review and required integration gates.
 
 ## After the slice
 

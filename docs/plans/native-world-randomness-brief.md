@@ -1,8 +1,7 @@
 # Native world randomness
 
-Updated 2026-09-12. Sequencer-integrated randomness is the agreed direction. The earlier third-party VRF smoke passed,
-but that primitive is rejected. Our own ECVRF is now the target; its cryptographic tests, sequencer integration and
-end-to-end pre-confirmation latency remain outstanding.
+Updated 2026-09-12. Sequencer-integrated randomness with our own ECVRF is the agreed direction. Its cryptographic tests,
+sequencer integration and end-to-end pre-confirmation latency remain outstanding.
 
 ## Decision
 
@@ -89,7 +88,7 @@ invalid points/scalars, wrong keys/messages, hint/counter tampering and determin
 benchmark for the replacement; no previous pass or timing is inherited.
 
 Schedule a security review of the owned primitive and suite before value rides on draws; completion is not a testnet
-blocker. The rejected primitive's successful smoke remains historical evidence only, not clearance of this replacement.
+blocker. Commit machine-readable evidence when the owned ECVRF passes its cross-language vectors.
 
 Generate full-width entropy keys from the OS, private to sequencing and separate from account keys. Never export them
 through APIs, logs, manifests or client/agent artifacts. Publish only the verification key and epoch, and version the
@@ -97,50 +96,26 @@ witness envelope. Accepted actions retain their entropy epoch across rotation. R
 access to the original protected key/witness material; generating a replacement key is not recovery. Record the secure
 key-retention and promotion procedure before the failover gate.
 
-## Historical local test: rejected primitive
+## Historical local test
 
-The [machine-readable results](./evidence/native-world-vrf-smoke-2026-09-12.json) record a local test of the minimal
-Rust VRF primitive and its Cairo verifier. No server, sequencer integration or chain deployment was involved. These
-results apply only to the discarded `stark_vrf` implementation.
+A third-party primitive was smoke-tested and rejected. Its timings are not carried over; the owned ECVRF must produce
+its own test and benchmark evidence.
 
-| Check                                  | Result                                             |
-| -------------------------------------- | -------------------------------------------------- |
-| Rust proof generation and verification | 210 inputs passed                                  |
-| Identical input and key                | All 210 repeated proofs were identical             |
-| Wrong game, wrong key, modified proof  | All 210 cases of each were rejected                |
-| Rust/Cairo compatibility               | 16 generated proofs produced identical outputs     |
-| Cairo rejection cases                  | 16 wrong-game and 16 modified-proof cases rejected |
-| Cairo suite                            | 48 passed, 0 failed on Cairo 2.13.1                |
+## Verifier failure handling
 
-The historical test generated an OS-random full-width scalar key; the secret was not exported. It used Rust 1.98.0,
-Scarb 2.13.1, and matching snforge/snforge_std 0.52.0. This is compatibility and rejection evidence, not a cryptographic
-security audit or statistical proof of randomness.
-
-| Local measurement                                   | Median   | p95      | p99      |
-| --------------------------------------------------- | -------- | -------- | -------- |
-| Complete witness generation: proof, hint and output | 1.064 ms | 1.882 ms | 2.142 ms |
-| Rust proof verification                             | 0.638 ms | 1.092 ms | 1.134 ms |
-
-Measurements used an optimized Rust build on a shared AMD Ryzen 7 5800H host, with 200 timed samples after ten warmups.
-They exclude compilation, networking, durable recording, sequencing, Cairo execution and Herald delivery. Successful
-Cairo test functions used 162,974 Sierra gas each, including fixture deserialization and assertions; that is not a
-deployed transaction fee.
-
-The wrong-game Cairo tests rejected by panic because the changed message invalidates the proof's square-root hint.
-Modified response scalars returned verification errors. Retain explicit tests for both failure shapes in the action
-wrapper even if the owned verifier returns structured errors. The wrapper treats both as rejected executions of the same
-accepted ticket. Neither allocates another ticket or draw. Test both deployed wrapper paths explicitly, including retry
-after rejection; a replacement draw is never the error-recovery policy.
+The action wrapper must cover a wrong-message square-root hint panic and a modified-response verification error, even if
+the owned verifier returns structured errors. Both are rejected executions of the same accepted ticket. Neither
+allocates another ticket or draw. Test both deployed wrapper paths explicitly, including retry after rejection; a
+replacement draw is never the error-recovery policy.
 
 ## Pre-confirmation impact
 
 The proposed flow requires no additional block wait or external VRF round trip. The random outcome can be executed and
 published in the action's first pre-confirmed result.
 
-It does add processing: witness generation, Cairo verification and durable recording. The measured 1.882 ms p95 is only
-witness generation. End-to-end pre-confirmation impact is not yet measured, and zero added latency is not a claim of
-this brief. If published results must survive primary-host loss, replication must finish before publication; include
-that acknowledgement in the latency measurement.
+It does add processing: witness generation, Cairo verification and durable recording. End-to-end pre-confirmation impact
+is not yet measured, and zero added latency is not a claim of this brief. If published results must survive primary-host
+loss, replication must finish before publication; include that acknowledgement in the latency measurement.
 
 ## Predeclared comparison budget
 
@@ -156,10 +131,9 @@ engineering tolerances fixed here before the run, not measured results. Report p
 well as row latency; do not hide tails in averages or change the budget after seeing results. A result inside the budget
 is described as within budget. Claim no measurable impact only if the comparison supports that narrower claim.
 
-The rejected implementation’s 1.882 ms p95 local generation cost was small beside the 250 ms pre-confirmed cadence.
-Repeat this measurement for the owned ECVRF. It does not account for the Cairo verifier or the complete deployed action.
-Choose embedded placement on the measured comparison, including its ordering/recovery behavior and the maintenance cost
-of the patch; the preferred direction remains embedded.
+Measure the owned ECVRF against the 250 ms pre-confirmed cadence, including the Cairo verifier and complete deployed
+action. Choose embedded placement on the measured comparison, including its ordering/recovery behavior and the
+maintenance cost of the patch; the preferred direction remains embedded.
 
 ## Next integration gate
 
@@ -205,5 +179,5 @@ batch order and retry must not affect the draw. This is recorded in the
 [frozen feature brief](./native-world-mines-bitcoin-villages-frozen-brief.md).
 
 Slice week and randomness week are separate tracks and are measured separately. Report completed gates and their
-artifacts, not progress against an estimate. The five native commits stand; the local cryptographic smoke does not
-complete the deployed action, parity or harness gates.
+artifacts, not progress against an estimate. The five native commits stand; primitive tests alone do not complete the
+deployed action, parity or harness gates.
