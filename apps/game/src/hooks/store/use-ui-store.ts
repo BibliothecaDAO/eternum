@@ -198,7 +198,7 @@ export const useUIStore = create(
       set({ showBlankOverlay: show });
     },
     mapLayer: false,
-    setMapLayer: (alt) => set({ mapLayer: alt }),
+    setMapLayer: (mapLayer) => set({ mapLayer }),
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: readLocalBool("soundEnabled", true),

@@ -240,7 +240,6 @@ vi.mock("@bibliothecadao/types", () => {
 vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} }));
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
-vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
 vi.mock("../../env", () => ({
   env: {
     VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
@@ -350,7 +349,6 @@ describe("GameRenderer destroy lifecycle", () => {
         renderer: fixture.subject.renderer,
         routeRuntime: fixture.routeRuntime,
         scenes: {
-          fastTravelScene: fixture.subject.fastTravelScene,
           hexceptionScene: fixture.subject.hexceptionScene,
           hudScene: fixture.subject.hudScene,
           worldmapScene: fixture.subject.worldmapScene,

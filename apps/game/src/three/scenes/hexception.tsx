@@ -556,7 +556,7 @@ export default class HexceptionScene extends HexagonScene {
 
   async setup() {
     this.isEntered = false;
-    const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
+    const routeTarget = resolvePlayRouteTarget(window.location);
     const routeWorldPosition = routeTarget.routeWorldPosition;
     const contractPosition = routeTarget.hexRealmPosition;
 

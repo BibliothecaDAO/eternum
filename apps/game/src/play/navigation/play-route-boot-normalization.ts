@@ -24,7 +24,7 @@ const buildCanonicalMapFirstRoute = (
 
 // A hex or travel entry boots map-first for players and spectators alike: the world map readies first and hands
 // off, which is the only path a direct hex link completes on.
-const shouldBootMapFirst = (route: PlayRouteDescriptor): boolean => route.scene === "hex" || route.scene === "travel";
+const shouldBootMapFirst = (route: PlayRouteDescriptor): boolean => route.scene === "hex";
 
 const buildCanonicalPlayerBootHref = ({
   route,

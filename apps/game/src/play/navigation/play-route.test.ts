@@ -38,11 +38,11 @@ describe("play-route", () => {
       buildPlayHref({
         chain: "madara",
         worldName: "iron-age",
-        scene: "travel",
+        scene: "hex",
         col: 7,
         row: 9,
       }),
-    ).toBe("/play/madara/iron-age/travel?col=7&row=9");
+    ).toBe("/play/madara/iron-age/hex?col=7&row=9");
   });
 
   it("retains renderer diagnostics when switching scenes and finishing the loading handoff", () => {

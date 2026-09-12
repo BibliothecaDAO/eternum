@@ -14,7 +14,6 @@ import { renderProfile } from "./render-profile";
 import { getContactShadowResources } from "./utils/contact-shadow";
 import type { TrackableGuiFolder } from "./utils/gui-folder-lifecycle";
 import type { SceneManager } from "@/three/scene-manager";
-import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
@@ -25,7 +24,6 @@ type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLik
 export interface GameRendererRuntimeState {
   backend?: RendererBackendRuntime;
   controls?: MapControls;
-  fastTravelScene?: FastTravelScene;
   hexceptionScene?: HexceptionScene;
   hudScene?: HUDScene;
   labelRuntime?: RendererLabelRuntime;
@@ -38,7 +36,6 @@ export interface GameRendererRuntimeState {
 interface CreateGameRendererRuntimeAssemblyInput {
   addWindowListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
   createFolder: (name: string) => TrackableGuiFolder;
-  fastTravelEnabled: () => boolean;
   isGraphicsDevEnabled: boolean;
   isMemoryMonitoringEnabled: boolean;
   isMobileDevice: boolean;
@@ -71,8 +68,6 @@ export function createGameRendererRuntimeAssembly(
 function createGameRendererControlBridgeRuntime(input: CreateGameRendererRuntimeAssemblyInput) {
   return createRendererControlBridgeRuntime({
     createFolder: input.createFolder,
-    fastTravelEnabled: input.fastTravelEnabled,
-    getCurrentScene: () => input.resolveRuntimeState().sceneManager?.getCurrentScene(),
     getRenderer: () => input.resolveRuntimeState().renderer,
     markLabelsDirty: () => {
       input.resolveRuntimeState().labelRuntime?.markDirty();
@@ -82,9 +77,6 @@ function createGameRendererControlBridgeRuntime(input: CreateGameRendererRuntime
     },
     moveCameraToXYZ: (x, y, z, duration) => {
       input.resolveRuntimeState().worldmapScene?.moveCameraToXYZ(x, y, z, duration);
-    },
-    requestFastTravelSceneRefresh: () => {
-      input.resolveRuntimeState().fastTravelScene?.requestSceneRefresh();
     },
     switchScene: (sceneName) => {
       input.resolveRuntimeState().sceneManager?.switchScene(sceneName);
@@ -106,7 +98,6 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
         isGraphicsDevEnabled: input.isGraphicsDevEnabled,
         resolvePixelRatio: input.resolvePixelRatio,
         scenes: {
-          fastTravelScene: runtimeState.fastTravelScene,
           hexceptionScene: runtimeState.hexceptionScene as HexceptionScene,
           worldmapScene: runtimeState.worldmapScene as WorldmapScene,
         },
@@ -137,9 +128,7 @@ function createGameRendererRouteRuntime(input: CreateGameRendererRuntimeAssembly
     fadeIn: () => {
       input.resolveRuntimeState().transitionManager?.fadeIn();
     },
-    fastTravelEnabled: input.fastTravelEnabled,
     getCurrentScene: () => input.resolveRuntimeState().sceneManager?.getCurrentScene(),
-    hasFastTravelScene: () => Boolean(input.resolveRuntimeState().fastTravelScene),
     markLabelsDirty: () => {
       input.resolveRuntimeState().labelRuntime?.markDirty();
     },

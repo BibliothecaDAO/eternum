@@ -7,10 +7,8 @@ type SceneCoordinates = {
 
 interface PlayRouteReadinessState {
   bootToken: number;
-  fastTravelReady: boolean;
   hexCoordinates: SceneCoordinates | null;
   hexReady: boolean;
-  markFastTravelReady: (token: number) => void;
   markHexReady: (token: number, coords?: SceneCoordinates | null) => void;
   markWorldmapConverged: (token: number) => void;
   markWorldmapReady: (token: number) => void;
@@ -21,19 +19,8 @@ interface PlayRouteReadinessState {
 
 export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) => ({
   bootToken: 0,
-  fastTravelReady: false,
   hexCoordinates: null,
   hexReady: false,
-  markFastTravelReady: (token) =>
-    set((state) => {
-      if (token !== state.bootToken) {
-        return state;
-      }
-
-      return {
-        fastTravelReady: true,
-      };
-    }),
   markHexReady: (token, coords = null) =>
     set((state) => {
       if (token !== state.bootToken) {
@@ -68,7 +55,6 @@ export const usePlayRouteReadinessStore = create<PlayRouteReadinessState>((set) 
   reset: (token) =>
     set({
       bootToken: token,
-      fastTravelReady: false,
       hexCoordinates: null,
       hexReady: false,
       worldmapConverged: false,

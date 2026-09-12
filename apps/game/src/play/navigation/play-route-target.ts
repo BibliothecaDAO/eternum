@@ -2,7 +2,6 @@ import { Position, configManager } from "@bibliothecadao/eternum";
 import { resolveSpectateIntent } from "@/utils/spectator-session";
 
 import { parsePlayRoute, type PlayRouteDescriptor, type PlayScene } from "./play-route";
-import { resolvePlaySceneTarget } from "./play-scene-target";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
@@ -86,14 +85,11 @@ const resolveHexRealmPosition = (
   };
 };
 
-export const resolvePlayRouteTarget = (
-  location: LocationLike,
-  { fastTravelEnabled }: { fastTravelEnabled: boolean },
-): ResolvedPlayRouteTarget => {
+export const resolvePlayRouteTarget = (location: LocationLike): ResolvedPlayRouteTarget => {
   const playRoute = parsePlayRoute(location);
   const routeWorldPosition = resolveRouteWorldPositionFromPlayRoute(playRoute);
   const requestedScene = playRoute?.scene ?? null;
-  const scene = resolvePlaySceneTarget(requestedScene, fastTravelEnabled);
+  const scene = requestedScene ?? "map";
 
   return {
     scene,

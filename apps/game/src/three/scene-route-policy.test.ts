@@ -9,10 +9,6 @@ describe("resolveSceneNameFromRouteSegment", () => {
     expect(resolveSceneNameFromRouteSegment(SceneName.Hexception)).toBe(SceneName.Hexception);
   });
 
-  it("accepts the fast-travel slug as a valid scene name", () => {
-    expect(resolveSceneNameFromRouteSegment(SceneName.FastTravel)).toBe(SceneName.FastTravel);
-  });
-
   it("falls back to WorldMap for unknown slugs", () => {
     expect(resolveSceneNameFromRouteSegment("unknown-scene")).toBe(SceneName.WorldMap);
   });

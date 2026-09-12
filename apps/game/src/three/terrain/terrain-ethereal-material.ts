@@ -18,7 +18,7 @@ import {
 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 
-import { createFastTravelSurfacePalette } from "../scenes/fast-travel-surface-material";
+import { createEtherealSurfacePalette } from "./ethereal-surface-palette";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import { TERRAIN_GROUND_SURFACE_IDS } from "./terrain-ground-profile";
 import type { TerrainGroundTextures } from "./terrain-ground-textures";
@@ -26,14 +26,14 @@ import type { TerrainGroundTextures } from "./terrain-ground-textures";
 const STONE_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("stone");
 const DUST_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("dry-earth");
 
-/** A visual preview of the secondary layer; it does not define another gameplay biome. */
+/** The alternate layer changes terrain presentation without inventing a gameplay biome. */
 export function createEtherealTerrainMaterial(
   textures: TerrainGroundTextures,
   groundMotion: UniformNode<"float", number>,
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
-  material.name = "terrain-ethereal-preview";
-  const palette = createFastTravelSurfacePalette();
+  material.name = "terrain-ethereal";
+  const palette = createEtherealSurfacePalette();
   const ground = positionWorld.xz;
   const drift = time.mul(groundMotion);
   const cloud = mx_noise_float(vec3(ground.mul(0.38), 0))
@@ -70,7 +70,7 @@ export function createEtherealTerrainMaterial(
 
 /** Reuse the existing cloud field in fog: no extra noise samples, geometry, or hidden world data. */
 export function createEtherealEnergy(ground: Node<"vec2">, drift: Node<"float">, cloud: Node<"float">): Node<"vec3"> {
-  const palette = createFastTravelSurfacePalette();
+  const palette = createEtherealSurfacePalette();
   const contour = cloud.sub(0.51).abs();
   const pixelWidth = fwidth(cloud).max(0.001);
   const thread = smoothstep(0.003, pixelWidth.add(0.009), contour).oneMinus();

@@ -162,7 +162,6 @@ export function createGameRendererRuntimeHarness() {
         },
         worldmapScene,
         hexceptionScene,
-        fastTravelScene: undefined,
         sceneManager,
         captureStatsSample: vi.fn(),
         lastTime: performance.now() - 16,

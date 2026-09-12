@@ -35,9 +35,6 @@ type TrackableFolderLike = {
 };
 
 interface RendererEffectsScenes {
-  fastTravelScene?: {
-    applyRenderVisualProfile(features: RenderVisualProfile): void;
-  };
   hexceptionScene: {
     applyRenderVisualProfile(features: RenderVisualProfile): void;
   };
@@ -126,7 +123,6 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     }
 
     await applyRendererBackendEnvironment(this.input.backend, {
-      fastTravelScene: this.input.scenes.fastTravelScene as never,
       hexceptionScene: this.input.scenes.hexceptionScene as never,
       intensity: environmentPolicy.intensity,
       worldmapScene: this.input.scenes.worldmapScene as never,
@@ -151,7 +147,6 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     }
 
     this.input.scenes.worldmapScene.applyRenderVisualProfile(features);
-    this.input.scenes.fastTravelScene?.applyRenderVisualProfile(features);
     this.input.scenes.hexceptionScene.applyRenderVisualProfile(features);
   }
 

@@ -1,19 +1,10 @@
 import { traceFlightMark } from "../flight-trace";
 import { Position } from "@bibliothecadao/eternum";
-import { getGameModeId } from "@/config/game-modes";
 import { buildPlayHref, parsePlayRoute } from "@/play/navigation/play-route";
 
 import { Structure } from "@bibliothecadao/types";
 import { resolveNavigationSceneTarget } from "../scene-navigation-boundary";
-import {
-  resolveEnterFastTravelTransition,
-  resolveExitFastTravelTransition,
-} from "../scenes/fast-travel-navigation-policy";
-import type { FastTravelHexCoords } from "../scenes/fast-travel-hydration";
-import type { FastTravelSpireMapping } from "../scenes/fast-travel-spire-mapping";
 import { SceneName } from "../types";
-
-const isFastTravelEnabled = (): boolean => getGameModeId() !== "blitz";
 
 function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName): string {
   const position = new Position({ x: col, y: row });
@@ -33,10 +24,6 @@ function buildSceneLocationUrl(col: number, row: number, targetScene: SceneName)
     return `/play/hex?col=${col}&row=${row}`;
   }
 
-  if (targetScene === SceneName.FastTravel) {
-    return `/play/${SceneName.FastTravel}?col=${col}&row=${row}`;
-  }
-
   return `/play/map?col=${col}&row=${row}`;
 }
 
@@ -54,42 +41,10 @@ function dispatchSceneNavigation(navigationUrl: string): void {
  * @param structure - The structure to navigate to
  * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
  */
-export function navigateToStructure(col: number, row: number, scene?: "hex" | "map" | "travel") {
+export function navigateToStructure(col: number, row: number, scene?: "hex" | "map") {
   const targetScene = resolveNavigationSceneTarget({
-    requestedScene:
-      scene === "hex"
-        ? SceneName.Hexception
-        : scene === "map"
-          ? SceneName.WorldMap
-          : scene === "travel"
-            ? SceneName.FastTravel
-            : undefined,
+    requestedScene: scene === "hex" ? SceneName.Hexception : scene === "map" ? SceneName.WorldMap : undefined,
     currentPath: window.location.pathname,
-    fastTravelEnabled: isFastTravelEnabled(),
-  });
-
-  dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
-}
-
-/**
- * Navigate to a position by updating the URL and dispatching a URL change event
- *
- * @param col - Column coordinate
- * @param row - Row coordinate
- * @param scene - Optional scene to navigate to ('hex' or 'map'). Defaults to current scene.
- */
-function navigateToPosition(col: number, row: number, scene?: "hex" | "map" | "travel") {
-  const targetScene = resolveNavigationSceneTarget({
-    requestedScene:
-      scene === "hex"
-        ? SceneName.Hexception
-        : scene === "map"
-          ? SceneName.WorldMap
-          : scene === "travel"
-            ? SceneName.FastTravel
-            : undefined,
-    currentPath: window.location.pathname,
-    fastTravelEnabled: isFastTravelEnabled(),
   });
 
   dispatchSceneNavigation(buildSceneLocationUrl(col, row, targetScene));
@@ -106,7 +61,7 @@ function navigateToPosition(col: number, row: number, scene?: "hex" | "map" | "t
 export function selectNextStructure(
   playerStructures: Structure[],
   currentIndex: number,
-  scene?: "hex" | "map" | "travel",
+  scene?: "hex" | "map",
 ): number {
   if (playerStructures.length === 0) return currentIndex;
 
@@ -116,40 +71,6 @@ export function selectNextStructure(
   navigateToStructure(structure.position.x, structure.position.y, scene);
 
   return nextIndex;
-}
-
-function navigateIntoFastTravelSpire(
-  worldHexCoords: FastTravelHexCoords,
-  spireMappings: readonly FastTravelSpireMapping[],
-): boolean {
-  const transition = resolveEnterFastTravelTransition({
-    worldHexCoords,
-    spireMappings,
-  });
-
-  if (!transition) {
-    return false;
-  }
-
-  navigateToPosition(transition.col, transition.row, "travel");
-  return true;
-}
-
-function navigateOutOfFastTravelSpire(
-  travelHexCoords: FastTravelHexCoords,
-  spireMappings: readonly FastTravelSpireMapping[],
-): boolean {
-  const transition = resolveExitFastTravelTransition({
-    travelHexCoords,
-    spireMappings,
-  });
-
-  if (!transition) {
-    return false;
-  }
-
-  navigateToPosition(transition.col, transition.row, "map");
-  return true;
 }
 
 /**

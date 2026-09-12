@@ -230,10 +230,10 @@ describe("usePlayRouteBootController", () => {
       navigate?.("/play/madara/iron-age/hex?col=4&row=9");
     });
     await act(async () => {
-      navigate?.("/play/madara/iron-age/map?boot=map-first&resumeScene=travel&col=7&row=11");
+      navigate?.("/play/madara/iron-age/map?boot=map-first&resumeScene=hex&col=7&row=11");
     });
     await act(async () => {
-      navigate?.("/play/madara/iron-age/travel?col=7&row=11");
+      navigate?.("/play/madara/iron-age/hex?col=7&row=11");
     });
     await act(async () => {
       navigate?.("/play/madara/iron-age/map?col=12&row=3");

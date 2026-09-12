@@ -35,6 +35,31 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Clean realm upgrades",
+    type: "fix",
+    description: "Upgrading a realm removes its previous model, including when a map refresh is interrupted.",
+  },
+  {
+    date: "2026-09-12",
+    title: "Travel between the layers",
+    type: "feature",
+    description: "Armies keep their selection after crossing a spire, and explore and fight on their current layer.",
+  },
+  {
+    date: "2026-09-12",
+    title: "Spires on the map",
+    type: "feature",
+    description: "Find animated spires on both layers and select their tiles to inspect a crossing.",
+  },
+  {
+    date: "2026-09-12",
+    title: "One map, two layers",
+    description:
+      "Switch between Surface and Ethereal to see each layer's terrain, armies, structures and chests in the world map.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
     title: "Refined Realms and Clear Ownership",
     description:
       "Realm masonry grows paler and finer with each tier, with hand-laid roofs, a raised kingdom drawbridge, and full-height empire gates. Settlement supplies sit beside a clear entrance. Owned realms and villages fly green banners; all others fly red. Every realm hanging displays its order emblem. Chests are 30% smaller on the map. Game entry loads entity models as the selected world needs them.",
