@@ -27,10 +27,30 @@ describe("runner config", () => {
       bindingAuthorityAddress: "0x3",
       signer: { mode: "none" },
       dataDir: null,
-      modelProfile: "default",
+      modelProfile: "balanced",
+      offline: false,
+      maxTicks: null,
+      quietWindowMs: 5_000,
+      heartbeatMs: null,
     });
     expect(config.manifestPath).toMatch(/contracts\/l3\/game\/manifest_madara\.json$/);
     expect(resolveDataDir(config, 12)).toMatch(/\.agent-data\/12$/);
+  });
+
+  it("reads the loop flags and rejects a profile the routing table does not know", () => {
+    const config = resolve([
+      ...["--game-id", "1", "--signer", "none", "--offline", "--max-ticks", "3"],
+      ...["--quiet-window-ms", "250", "--heartbeat-ms", "1000", "--model-profile", "cheap"],
+    ]);
+
+    expect(config).toMatchObject({ offline: true, maxTicks: 3, quietWindowMs: 250, heartbeatMs: 1000 });
+    expect(config.modelProfile).toBe("cheap");
+    expect(() => resolve(["--game-id", "1", "--signer", "none", "--model-profile", "default"])).toThrow(
+      "--model-profile must be one of cheap, balanced, strong",
+    );
+    expect(() => resolve(["--game-id", "1", "--signer", "none", "--max-ticks", "0"])).toThrow(
+      "--max-ticks must be a positive integer",
+    );
   });
 
   it("lets flags win over env and accepts the web client's env names", () => {

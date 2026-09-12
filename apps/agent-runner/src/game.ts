@@ -21,6 +21,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 
 import type { RunnerConfig, RunnerGameSelector } from "./config";
+import { logEvent } from "./log";
 
 /** A story event as the `events` focus shows it: model names and a clipped payload, never a row store. */
 export interface RecentStoryEvent {
@@ -37,6 +38,8 @@ export interface RunnerGame {
   /** The connected signer's address, or zero while spectating. */
   viewer(): ContractAddress;
   recentEvents(): RecentStoryEvent[];
+  /** The live stream stopped being trustworthy; the loop stops rather than play on stale rows. */
+  onSyncFailed(listener: (error: Error) => void): () => void;
 }
 
 /** The manifest's contracts carry the tag the harness resolves systems by; the world deployment keeps only selectors. */
@@ -55,6 +58,7 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
   const world = buildRunnerWorld(config, manifest);
   const listing = await resolveGameListing(world, config.game);
   const events = createStoryEventRing();
+  const syncFailures = new Set<(error: Error) => void>();
   const client = await createGameClient({
     world,
     gameId: listing.game_id,
@@ -65,7 +69,7 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
       executionResourceBounds: resolveGameTransactionResourceBounds(config.chain),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
-    observer: createRunnerObserver(listing.game_id, events),
+    observer: createRunnerObserver(listing.game_id, events, syncFailures),
     resolveGameConfig: resolveGameConfig(config),
   });
   return {
@@ -74,6 +78,10 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
     systems: { blitzRealm: requireContract(manifest, BLITZ_REALM_SYSTEMS_TAG) },
     viewer: () => ContractAddress(client.signer?.address ?? 0n),
     recentEvents: events.list,
+    onSyncFailed: (listener) => {
+      syncFailures.add(listener);
+      return () => syncFailures.delete(listener);
+    },
   };
 }
 
@@ -133,13 +141,20 @@ const resolveGameConfig =
  * One JSON line per sync milestone, and two side effects the runner needs from the stream: confirmed heads anchor
  * the chain-proven clock production math reads, and story events feed the bounded ring the `events` focus shows.
  */
-const createRunnerObserver = (gameId: number, events: StoryEventRing): GameClientObserver => {
+const createRunnerObserver = (
+  gameId: number,
+  events: StoryEventRing,
+  syncFailures: Set<(error: Error) => void>,
+): GameClientObserver => {
   let confirmedHeadTimestamp: number | null = null;
   setChainProvenTimestampSource(() => confirmedHeadTimestamp);
   return {
     onSubscriptionActive: () => logSync("subscribed", { gameId }),
     onSnapshotPhaseCompleted: (phase, durationMs) => logSync("snapshot_phase", { gameId, phase, durationMs }),
-    onLiveApplyFailed: (error) => logSync("live_apply_failed", { gameId, error: error.message }),
+    onLiveApplyFailed: (error) => {
+      logSync("live_apply_failed", { gameId, error: error.message });
+      syncFailures.forEach((listener) => listener(error));
+    },
     onHead: (head) => {
       if (!head.preconfirmed) confirmedHeadTimestamp = head.timestamp;
     },
@@ -148,9 +163,7 @@ const createRunnerObserver = (gameId: number, events: StoryEventRing): GameClien
   };
 };
 
-const logSync = (name: string, fields: Record<string, unknown>): void => {
-  console.log(JSON.stringify({ event: `agent_runner_sync_${name}`, ...fields }));
-};
+const logSync = (name: string, fields: Record<string, unknown>): void => logEvent(`agent_runner_sync_${name}`, fields);
 
 interface StoryEventRing {
   push(event: GameSyncEntity): void;

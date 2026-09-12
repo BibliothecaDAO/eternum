@@ -3,11 +3,9 @@ import {
   gameEntityKey,
   getAddressName,
   getBlockTimestamp,
-  getEntityIdFromKeys,
   LeaderboardManager,
   type GameClient,
 } from "@bibliothecadao/eternum";
-import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import {
   type ArmyInfo,
   type BuildingType,
@@ -27,6 +25,7 @@ import type { AgentTool } from "@mariozechner/pi-agent-core";
 import { Type } from "typebox";
 
 import type { RunnerGame } from "../game";
+import { readGameRegistry, resolveGamePhase, type GameRegistryClock } from "../game-phase";
 import { clipList, clipText, textResult } from "./result";
 import { StringEnum } from "./schema";
 
@@ -36,8 +35,8 @@ type ObserveFocus = (typeof OBSERVE_FOCUSES)[number];
 /** Summaries stay under this many characters so a turn's context is spent on judgement, not on a dump. */
 export const OBSERVE_TEXT_LIMIT = 2_000;
 const LIST_LIMIT = 12;
-/** Hexes around each explorer the `nearby` focus reports; explorers plan within a few tiles of where they stand. */
-const NEARBY_REACH = 3;
+/** Hexes around each own asset that count as "in reach": what `nearby` reports and what the delta gate watches. */
+export const NEARBY_REACH = 3;
 const STAPLE_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish, ResourcesIds.Labor, ResourcesIds.Essence];
 
 const ObserveParams = Type.Object({
@@ -80,20 +79,15 @@ export const renderFocus = (game: RunnerGame, focus: ObserveFocus): string => {
 
 const renderClock = (game: RunnerGame): string => {
   const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
-  const phase = resolveGamePhase(game.client, currentBlockTimestamp);
+  const phase = describePhase(readGameRegistry(game.client), currentBlockTimestamp);
   return `Game ${game.client.gameId} "${game.listing.name}" | phase ${phase} | tick ${currentDefaultTick} (armies ${currentArmiesTick}) | chain time ${new Date(currentBlockTimestamp * 1000).toISOString()} | me ${describeViewer(game)}`;
 };
 
-/** The registry row is the game's clock; a finite end closes the game even before the status row says so. */
-const resolveGamePhase = (client: GameClient, now: number): string => {
-  const registry = getComponentValue(
-    client.setup.components.GameRegistry,
-    getEntityIdFromKeys([BigInt(client.gameId)]),
-  );
-  if (!registry) return "unknown";
-  if (hasGameEnded(registry.status, Number(registry.end_at), now)) return "ended";
-  if (now < Number(registry.start_main_at)) return `settling (main starts in ${Number(registry.start_main_at) - now}s)`;
-  return `live (${Number(registry.end_at) - now}s left)`;
+const describePhase = (registry: GameRegistryClock | null, now: number): string => {
+  const phase = resolveGamePhase(registry, now);
+  if (phase === "registration") return `settling (main starts in ${Math.max(0, registry!.startMainAt - now)}s)`;
+  if (phase === "live") return `live (${registry!.endAt - now}s left)`;
+  return phase;
 };
 
 const describeViewer = (game: RunnerGame): string =>

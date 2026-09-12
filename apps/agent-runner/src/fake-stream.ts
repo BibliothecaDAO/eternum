@@ -8,7 +8,7 @@ import {
 import { OBSERVE_GAME_TOOL_NAME } from "./smoke-agent";
 
 // The scripted model only ever finishes cleanly, which is what the `done` event's reason type requires.
-type ScriptedMessage = AssistantMessage & { stopReason: "stop" | "toolUse" };
+export type ScriptedMessage = AssistantMessage & { stopReason: "stop" | "toolUse" };
 
 const FAKE_USAGE = {
   input: 100,
@@ -33,16 +33,16 @@ function hasToolResult(context: Context): boolean {
 }
 
 function observeGameCall(model: Model<any>): ScriptedMessage {
-  return assistantMessage(model, "toolUse", [
+  return scriptedAssistantMessage(model, "toolUse", [
     { type: "toolCall", id: "call_1", name: OBSERVE_GAME_TOOL_NAME, arguments: {} },
   ]);
 }
 
 function finalAnswer(model: Model<any>): ScriptedMessage {
-  return assistantMessage(model, "stop", [{ type: "text", text: "Pull Vanguard back to defend Ashfall." }]);
+  return scriptedAssistantMessage(model, "stop", [{ type: "text", text: "Pull Vanguard back to defend Ashfall." }]);
 }
 
-function assistantMessage(
+export function scriptedAssistantMessage(
   model: Model<any>,
   stopReason: ScriptedMessage["stopReason"],
   content: AssistantMessage["content"],

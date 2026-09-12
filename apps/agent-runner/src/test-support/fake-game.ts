@@ -32,6 +32,10 @@ interface FakeGame extends RunnerGame {
   actions: { [Key in keyof GameActions]: ReturnType<typeof vi.fn> };
   /** Announce a submitted hash the way the provider does after an action signs. */
   announceSubmitted(transactionHash: string): void;
+  /** Tell slice subscribers a batch of rows landed, the way the runtime does after each applied slice. */
+  applySlice(): void;
+  /** Report the live stream as broken, the way the observer's onLiveApplyFailed does. */
+  failSync(error: Error): void;
   events: RecentStoryEvent[];
 }
 
@@ -55,9 +59,14 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
   const actions = Object.fromEntries(
     Object.keys(createGameActions({ setup: { components } } as GameClient)).map((name) => [name, vi.fn()]),
   ) as FakeGame["actions"];
+  const sliceListeners = new Set<() => void>();
+  const syncFailureListeners = new Set<(error: Error) => void>();
   const runtime = {
     waitForTransaction: vi.fn(async (hash: string) => ({ hash, status: "ACCEPTED_ON_L2", block: 7 })),
-    subscribeSliceApplied: () => () => {},
+    subscribeSliceApplied: (listener: () => void) => {
+      sliceListeners.add(listener);
+      return () => sliceListeners.delete(listener);
+    },
   };
   const client = {
     gameId: GAME_ID,
@@ -74,17 +83,23 @@ export const createFakeGame = (signer: AccountInterface | null = PLAYER_SIGNER):
     components,
     actions,
     events,
-    listing: { name: "lab-game", game_id: GAME_ID } as HeraldGameDirectoryEntry,
+    listing: { name: "lab-game", game_id: GAME_ID, mode: "blitz" } as HeraldGameDirectoryEntry,
     systems: { blitzRealm: "0xb117" },
     viewer: () => ContractAddress(client.signer?.address ?? 0n),
     recentEvents: () => events,
+    onSyncFailed: (listener) => {
+      syncFailureListeners.add(listener);
+      return () => syncFailureListeners.delete(listener);
+    },
     announceSubmitted: (transactionHash) => listeners.forEach((listener) => listener({ transactionHash })),
+    applySlice: () => sliceListeners.forEach((listener) => listener()),
+    failSync: (error) => syncFailureListeners.forEach((listener) => listener(error)),
   };
 };
 
 export const seedStructure = (
   components: ClientComponents,
-  input: { entityId: number; owner: ContractAddress; x: number; y: number; category?: StructureType },
+  input: { entityId: number; owner: ContractAddress; x: number; y: number; category?: StructureType; level?: number },
 ): void =>
   setComponent(
     components.Structure,
@@ -98,7 +113,7 @@ export const seedStructure = (
         category: input.category ?? StructureType.Realm,
         coord_x: input.x,
         coord_y: input.y,
-        level: 1,
+        level: input.level ?? 1,
         troop_max_guard_count: 4,
         troop_max_explorer_count: 3,
       },
