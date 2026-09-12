@@ -286,7 +286,10 @@ export const MergedResourcePanel = memo(
           />
         )}
         {tokens.length > 0 && (
-          <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-4 px-2 pt-1.5">{tokens}</div>
+          // Two token rows stay visible; more scroll inside. The inner padding keeps rings and badges off the clip edge.
+          <div className="max-h-[152px] overflow-y-auto overscroll-contain">
+            <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-5 px-3 pb-2 pt-2.5">{tokens}</div>
+          </div>
         )}
       </div>
     );

@@ -168,12 +168,20 @@ it("opens the chat window from the Chat tab and lifts the shell above other surf
   expect(tab("Chat")?.getAttribute("aria-expanded")).toBe("false");
 });
 
-it("auto-opens Details on a new selection and keeps its navigation target when selection clears", async () => {
+it("keeps the sheet closed on a new selection so the map stays free for the next tap", async () => {
   await act(async () => store.setState({ selectedHex: { col: 4, row: 7 } }));
-  expect(tabLabels()).toContain("Details");
-  expect(sheetContent()).toBe("Map tile");
-  await tap("Map");
+  expect(sheet()).toBeNull();
   await act(async () => store.setState({ selectedHex: { col: 5, row: 7 } }));
+  expect(sheet()).toBeNull();
+  await tap("Details");
+  expect(sheetContent()).toBe("Map tile");
+});
+
+it("keeps an open sheet on its tab as the selection changes or clears", async () => {
+  await tap("Map");
+  await act(async () => store.setState({ selectedHex: { col: 4, row: 7 } }));
+  expect(tab("Map")?.getAttribute("aria-expanded")).toBe("true");
+  await tap("Details");
   expect(sheetContent()).toBe("Map tile");
   await act(async () => store.setState({ selectedHex: null }));
   expect(tabLabels()).toContain("Details");
@@ -185,6 +193,7 @@ it("follows the selected building in local view", async () => {
   await act(async () =>
     store.setState({ selectedBuildingHex: { outerCol: 1, outerRow: 1, innerCol: 2, innerRow: 3 } }),
   );
+  await tap("Details");
   expect(sheetContent()).toBe("Local tile");
 });
 

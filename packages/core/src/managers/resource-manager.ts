@@ -735,7 +735,12 @@ export class ResourceManager {
       (isContinuousProductionResource || remainingOutput > 0n);
 
     const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
-    const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
+    // Continuous production never runs out, so it has no time remaining; a finite value here is one tick of noise.
+    const timeRemainingSeconds = isContinuousProductionResource
+      ? Number.POSITIVE_INFINITY
+      : productionPerSecond > 0
+        ? outputRemainingNumber / productionPerSecond
+        : 0;
 
     return {
       productionPerSecond,
