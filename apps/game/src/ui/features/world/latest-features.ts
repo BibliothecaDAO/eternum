@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Travel between the layers",
+    type: "feature",
+    description: "Armies keep their selection after crossing a spire, and explore and fight on their current layer.",
+  },
+  {
+    date: "2026-09-12",
     title: "Spires on the map",
     type: "feature",
     description: "Find animated spires on both layers and select their tiles to inspect a crossing.",

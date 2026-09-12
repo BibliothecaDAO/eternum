@@ -1,6 +1,6 @@
 import { TileOccupier, type HexPosition, type ID } from "@bibliothecadao/types";
 
-type EtherealTileReference = {
+type DestinationTileReference = {
   occupier_id: ID;
   occupier_type: number;
   occupier_is_structure: boolean;
@@ -10,6 +10,7 @@ type SpireTraversalAction =
   | {
       kind: "attack";
       targetArmyId: ID;
+      defenderAlt: boolean;
       targetHex: HexPosition;
     }
   | {
@@ -24,26 +25,21 @@ function isExplorerTileOccupier(occupierType: number): boolean {
 }
 
 export function resolveSpireTraversalAction(input: {
-  targetHex: HexPosition;
-  etherealTile: EtherealTileReference | undefined;
+  attackerHex: HexPosition;
+  attackerAlt: boolean;
+  getTile: (alt: boolean, col: number, row: number) => DestinationTileReference | undefined;
 }): SpireTraversalAction {
-  const { targetHex, etherealTile } = input;
+  const targetHex = input.attackerHex;
+  const defenderAlt = !input.attackerAlt;
+  const destinationTile = input.getTile(defenderAlt, targetHex.col, targetHex.row);
 
   if (
-    etherealTile &&
-    Number(etherealTile.occupier_id) !== 0 &&
-    !etherealTile.occupier_is_structure &&
-    isExplorerTileOccupier(etherealTile.occupier_type)
+    destinationTile &&
+    Number(destinationTile.occupier_id) !== 0 &&
+    !destinationTile.occupier_is_structure &&
+    isExplorerTileOccupier(destinationTile.occupier_type)
   ) {
-    return {
-      kind: "attack",
-      targetArmyId: etherealTile.occupier_id,
-      targetHex,
-    };
+    return { kind: "attack", targetArmyId: destinationTile.occupier_id, targetHex, defenderAlt };
   }
-
-  return {
-    kind: "travel",
-    targetHex,
-  };
+  return { kind: "travel", targetHex };
 }
