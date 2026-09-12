@@ -10,6 +10,8 @@ const sentry = vi.hoisted(() => ({
   setTags: vi.fn(),
 }));
 
+const gameLifecycle = vi.hoisted(() => ({ ended: false }));
+
 vi.mock("@sentry/react", () => ({
   captureException: sentry.captureException,
   getCurrentScope: () => ({ setTags: sentry.setTags }),
@@ -31,6 +33,7 @@ vi.mock("@bibliothecadao/eternum", () => {
         STAGE_3: 3,
       },
       FELT_CENTER: 0,
+      configManager: { isGameOver: () => gameLifecycle.ended, getActiveGameId: () => 1 },
     } as Record<string, unknown>,
     {
       get: (target, prop) => (prop in target ? target[prop as string] : scalar),
@@ -105,6 +108,7 @@ const { default: GameRenderer } = await import("./game-renderer");
 
 describe("GameRenderer runtime harness", () => {
   beforeEach(() => {
+    gameLifecycle.ended = false;
     discardGpuBackendFrame();
     sentry.captureException.mockReset();
     sentry.setTags.mockReset();
@@ -152,6 +156,26 @@ describe("GameRenderer runtime harness", () => {
       sceneName: SceneName.WorldMap,
     });
   });
+
+  it.each([SceneName.WorldMap, SceneName.Hexception])(
+    "keeps rendering and camera controls active after %s freezes",
+    async (sceneName) => {
+      gameLifecycle.ended = true;
+      const harness = createGameRendererRuntimeHarness();
+      const subject = Object.assign(Object.create(GameRenderer.prototype), harness.createSubject());
+      vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+      const scene = sceneName === SceneName.WorldMap ? harness.worldmapScene : harness.hexceptionScene;
+
+      harness.sceneManager.switchScene(sceneName);
+      await vi.waitFor(() => expect(scene.activateInputSurface).toHaveBeenCalledTimes(1));
+      subject.animate();
+
+      expect(scene.setAnimationsPaused).toHaveBeenCalledWith(true);
+      expect(subject.hudScene.update).not.toHaveBeenCalled();
+      expect(subject.controls.update).toHaveBeenCalled();
+      expect(harness.backend.renderFrame).toHaveBeenCalledWith(expect.objectContaining({ sceneName }));
+    },
+  );
 
   it("reports a repeated frame failure once while rendering and scheduling continue", async () => {
     const harness = createGameRendererRuntimeHarness();
