@@ -834,3 +834,50 @@ describe("LiveWorld wire economy", () => {
     });
   });
 });
+
+describe("timed review snapshots", () => {
+  it("freezes a dev game's confirmed snapshot when its clock ends without a status change", async () => {
+    const registryCodec = codec({ ...gameModel, name: "GameRegistry" }, "0x103");
+    const timedRegistry: ModelRegistry = { ...registry, persistent: [registryCodec] };
+    const fold = WorldFold.restore(timedRegistry, {
+      version: 1,
+      world_address: registry.worldAddress,
+      models: [
+        {
+          model: "GameRegistry",
+          rows: [
+            { entity_id: "0x1", key: { game_id: "0x7" }, value: { status: "Live", end_at: "0x64", dev_mode_on: true } },
+          ],
+        },
+        { model: "LastBattle", rows: [] },
+      ],
+    });
+    const historyStore = {
+      appendEvents: vi.fn(async () => undefined),
+      freezeReviewSnapshot: vi.fn(async () => undefined),
+    } as unknown as HistoryStore;
+    const live = new LiveWorld({
+      chain: "madara",
+      checkpointEveryBlocks: 100,
+      checkpointStore: { save: async () => undefined },
+      confirmedBlock: 12,
+      confirmedFold: fold,
+      decodeMonitor: new WorldEventDecodeMonitor(),
+      historyStore,
+      registry: timedRegistry,
+      rpc: rpcFixture({ ...replacementBlock(), transactions: [] }),
+    });
+    await live.freezeEndedReviewSnapshots(99);
+    expect(historyStore.freezeReviewSnapshot).not.toHaveBeenCalled();
+    await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
+    expect(historyStore.freezeReviewSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
+    );
+    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
+    // Startup recovery uses the timestamp of the loaded confirmed head as well.
+    await live.freezeEndedReviewSnapshots(101);
+    expect(historyStore.freezeReviewSnapshot).toHaveBeenLastCalledWith(
+      expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
+    );
+  });
+});

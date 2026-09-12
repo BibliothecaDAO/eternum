@@ -165,9 +165,7 @@ pub impl SeasonConfigImpl of SeasonConfigTrait {
     }
 
     fn has_ended(self: SeasonConfig) -> bool {
-        if self.dev_mode_on {
-            return false;
-        }
+        // Dev mode may skip the start gate, but finite games still close at their end timestamp.
         let now = starknet::get_block_timestamp();
         if self.end_at == 0 {
             return false;
@@ -1376,4 +1374,38 @@ pub struct BlitzCosmeticAttrsRegister {
     #[key]
     pub player: ContractAddress,
     pub attrs: Span<u128>,
+}
+
+
+#[cfg(test)]
+mod game_end_tests {
+    use snforge_std::start_cheat_block_timestamp_global;
+    use super::{SeasonConfig, SeasonConfigTrait};
+
+    fn season(dev_mode_on: bool, end_at: u64) -> SeasonConfig {
+        SeasonConfig { dev_mode_on, start_settling_at: 1, start_main_at: 2, end_at, end_grace_seconds: 0 }
+    }
+
+    #[test]
+    fn finite_games_end_in_both_modes() {
+        start_cheat_block_timestamp_global(99);
+        assert!(!season(true, 100).has_ended());
+        assert!(!season(false, 100).has_ended());
+        start_cheat_block_timestamp_global(100);
+        assert!(season(true, 100).has_ended());
+        assert!(season(false, 100).has_ended());
+    }
+
+    #[test]
+    fn untimed_dev_games_stay_open() {
+        start_cheat_block_timestamp_global(100);
+        assert!(!season(true, 0).has_ended());
+    }
+
+    #[test]
+    #[should_panic(expected: "Season is over")]
+    fn dev_game_rejects_gameplay_after_end() {
+        start_cheat_block_timestamp_global(100);
+        season(true, 100).assert_started_and_not_over();
+    }
 }

@@ -2,7 +2,6 @@ import type { SetupResult } from "@bibliothecadao/dojo";
 import type { Raycaster, Vector2 } from "three";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 import type { SceneManager } from "@/three/scene-manager";
-import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
@@ -15,13 +14,7 @@ import {
   type RendererSceneRegistry,
 } from "./renderer-scene-bootstrap";
 
-type GameRendererSceneRegistry = RendererSceneRegistry<
-  TransitionManager,
-  SceneManager,
-  HexceptionScene,
-  WorldmapScene,
-  FastTravelScene
->;
+type GameRendererSceneRegistry = RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene>;
 
 interface PrepareGameRendererScenesInput {
   applySceneRegistry: (registry: GameRendererSceneRegistry) => void;
@@ -31,7 +24,6 @@ interface PrepareGameRendererScenesInput {
     RendererEffectsBridgeRuntime,
     "applyEnvironment" | "applyRenderVisualProfile" | "setupPostProcessingEffects"
   >;
-  fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
   compilePipelines?: PipelineCompiler;
   markLabelsDirty?: () => void;
@@ -45,7 +37,6 @@ export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput)
     compilePipelines: input.compilePipelines,
     controls: input.controls,
     dojo: input.dojo,
-    fastTravelEnabled: input.fastTravelEnabled,
     inputSurface: input.inputSurface,
     markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,

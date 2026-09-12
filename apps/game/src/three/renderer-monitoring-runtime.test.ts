@@ -132,7 +132,7 @@ describe("renderer monitoring runtime", () => {
   it("captures, starts, stops, and exports stats through the recorder", () => {
     const runtime = createRendererMonitoringRuntime({
       debugWindow,
-      getSceneName: () => "travel",
+      getSceneName: () => "hex",
       isGraphicsDevEnabled: false,
       isMemoryMonitoringEnabled: false,
       renderer: {

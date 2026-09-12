@@ -24,6 +24,7 @@ vi.mock("@bibliothecadao/eternum", () => {
         STAGE_3: 3,
       },
       FELT_CENTER: 0,
+      configManager: { isGameOver: () => false, getActiveGameId: () => 1 },
     } as Record<string, unknown>,
     {
       get: (target, prop) => (prop in target ? target[prop as string] : scalar),
@@ -62,7 +63,6 @@ vi.mock("@bibliothecadao/types", () => {
 vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} }));
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
-vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
 vi.mock("../../env", () => ({
   env: {
     VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
@@ -254,7 +254,6 @@ describe("GameRenderer backend seam", () => {
       getCurrentCameraView: vi.fn(() => undefined),
       hasActiveLabelAnimations: vi.fn(() => false),
     };
-    subject.fastTravelScene = undefined;
     subject.hexceptionScene = {
       update: vi.fn(),
       setWeatherAtmosphereState: vi.fn(),

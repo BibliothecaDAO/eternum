@@ -16,7 +16,6 @@ type GuiFolderLike = {
 interface SetupRendererDevGuiInput {
   contactShadowOpacity: number;
   createFolder: (name: string) => GuiFolderLike;
-  fastTravelEnabled: boolean;
   moveCameraToColRow: (col: number, row: number, duration: number) => void;
   moveCameraToXYZ: (x: number, y: number, z: number, duration: number) => void;
   renderer: { toneMapping: number; toneMappingExposure: number } | undefined;
@@ -34,9 +33,7 @@ export function setupRendererDevGui(input: SetupRendererDevGuiInput): void {
 function setupSceneSwitchingFolder(input: SetupRendererDevGuiInput): void {
   const folder = input.createFolder("Switch scene");
   const params = { scene: SceneName.WorldMap };
-  const sceneOptions = input.fastTravelEnabled
-    ? [SceneName.WorldMap, SceneName.Hexception, SceneName.FastTravel]
-    : [SceneName.WorldMap, SceneName.Hexception];
+  const sceneOptions = [SceneName.WorldMap, SceneName.Hexception];
 
   folder.add(params, "scene", sceneOptions).name("Scene");
   folder.add({ switchScene: () => input.switchScene(params.scene) }, "switchScene");

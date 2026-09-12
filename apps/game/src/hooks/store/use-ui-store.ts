@@ -48,8 +48,7 @@ interface UIStore {
   gameStartMainAt: number | null;
   setGameStartMainAt: (seasonStartMainAt: number | null) => void;
   // season_config.dev_mode_on — when set, the chain bypasses settling/main-phase
-  // and season-end time gates (see SeasonConfigImpl). Mirror it client-side so
-  // sandbox worlds let players settle/provision/upgrade at any time.
+  // start gates (see SeasonConfigImpl). Finite end timers still close dev games.
   devModeOn: boolean;
   setDevModeOn: (devModeOn: boolean) => void;
   showBlurOverlay: boolean;
@@ -58,6 +57,7 @@ interface UIStore {
   setShowBlankOverlay: (show: boolean) => void;
   /** The map layer the scene shows: false is the surface, true the ethereal layer, as in TileOpt.alt. */
   mapLayer: boolean;
+  setMapLayer: (alt: boolean) => void;
   isSideMenuOpened: boolean;
   toggleSideMenu: () => void;
   isSoundOn: boolean;
@@ -197,6 +197,7 @@ export const useUIStore = create(
       set({ showBlankOverlay: show });
     },
     mapLayer: false,
+    setMapLayer: (mapLayer) => set({ mapLayer }),
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: readLocalBool("soundEnabled", true),

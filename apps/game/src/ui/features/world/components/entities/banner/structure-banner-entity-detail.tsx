@@ -311,7 +311,7 @@ const StructureBannerEntityDetailContent = memo(
 
         {showFaithTab && (
           <InfoBubble variant="section" title="Faith" icon={Sparkles}>
-            <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
+            <FaithDevotionActionPanel structureEntityId={structureEntityId} />
           </InfoBubble>
         )}
       </div>

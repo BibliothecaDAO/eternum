@@ -1,4 +1,4 @@
-import { DynamicDrawUsage, InstancedMesh, type BufferGeometry, type Material } from "three";
+import { DynamicDrawUsage, InstancedMesh, Mesh, type BufferGeometry, type Material } from "three";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 
 /**
@@ -14,6 +14,9 @@ export function createInstancedMesh<G extends BufferGeometry, M extends Material
   capacity: number,
 ): InstancedMesh<G, M> {
   const mesh = new InstancedMesh(geometry, material, capacity);
+  // Three's instanced constructor skips these weights, but its node morph path
+  // requires them when compiling an empty pool or drawing a single instance.
+  Mesh.prototype.updateMorphTargets.call(mesh);
   initializeHiddenInstances(mesh);
   const beforeRender = mesh.onBeforeRender;
   // onBeforeRender runs before shader compilation too. Resolve the actual

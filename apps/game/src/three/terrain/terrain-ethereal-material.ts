@@ -1,3 +1,4 @@
+import { applyGameEndFrost, mapAnimationTime as time } from "../effects/game-end-freeze";
 import { NormalRGPacking } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
@@ -11,14 +12,13 @@ import {
   positionWorld,
   smoothstep,
   texture,
-  time,
   uv,
   vec2,
   vec3,
 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
 
-import { createFastTravelSurfacePalette } from "../scenes/fast-travel-surface-material";
+import { createEtherealSurfacePalette } from "./ethereal-surface-palette";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import { TERRAIN_GROUND_SURFACE_IDS } from "./terrain-ground-profile";
 import type { TerrainGroundTextures } from "./terrain-ground-textures";
@@ -26,14 +26,14 @@ import type { TerrainGroundTextures } from "./terrain-ground-textures";
 const STONE_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("stone");
 const DUST_LAYER = TERRAIN_GROUND_SURFACE_IDS.indexOf("dry-earth");
 
-/** A visual preview of the secondary layer; it does not define another gameplay biome. */
+/** The alternate layer changes terrain presentation without inventing a gameplay biome. */
 export function createEtherealTerrainMaterial(
   textures: TerrainGroundTextures,
   groundMotion: UniformNode<"float", number>,
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
-  material.name = "terrain-ethereal-preview";
-  const palette = createFastTravelSurfacePalette();
+  material.name = "terrain-ethereal";
+  const palette = createEtherealSurfacePalette();
   const ground = positionWorld.xz;
   const drift = time.mul(groundMotion);
   const cloud = mx_noise_float(vec3(ground.mul(0.38), 0))
@@ -56,7 +56,7 @@ export function createEtherealTerrainMaterial(
   const energy = createEtherealEnergy(ground, drift, flowingCloud);
   const edgeDistance = terrainHexEdgeDistance(ground);
   const border = smoothstep(0.006, fwidth(edgeDistance).max(0.001).add(0.006), edgeDistance).oneMinus();
-  material.colorNode = base;
+  material.colorNode = applyGameEndFrost(base);
   // Emission keeps the void's identity through the day cycle without specular glare.
   material.emissiveNode = base.mul(0.16).add(energy.mul(0.38)).add(color(palette.glowColor).mul(border).mul(0.035));
   const surfaceMaterial = mix(stoneMaterial, dustMaterial, dustCover.mul(0.72));
@@ -70,7 +70,7 @@ export function createEtherealTerrainMaterial(
 
 /** Reuse the existing cloud field in fog: no extra noise samples, geometry, or hidden world data. */
 export function createEtherealEnergy(ground: Node<"vec2">, drift: Node<"float">, cloud: Node<"float">): Node<"vec3"> {
-  const palette = createFastTravelSurfacePalette();
+  const palette = createEtherealSurfacePalette();
   const contour = cloud.sub(0.51).abs();
   const pixelWidth = fwidth(cloud).max(0.001);
   const thread = smoothstep(0.003, pixelWidth.add(0.009), contour).oneMinus();

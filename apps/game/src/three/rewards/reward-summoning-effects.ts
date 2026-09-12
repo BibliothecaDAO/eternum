@@ -6,8 +6,9 @@ import {
   Vector3,
   type MeshStandardMaterial,
 } from "three";
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { color, mix, positionLocal, smoothstep, uniform, uv, vec3 } from "three/tsl";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 
 export function createRuneFlameMaterials() {
   const clock = uniform(0);
@@ -96,7 +97,7 @@ export function createArcaneStoneMaterial(
   source: MeshStandardMaterial,
   energy: ReturnType<typeof createRuneFlameMaterials>,
 ) {
-  const material = new MeshStandardNodeMaterial({
+  const material = new FrostedStandardNodeMaterial({
     map: source.map,
     color: source.color,
     roughness: 0.88,

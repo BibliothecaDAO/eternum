@@ -1,7 +1,7 @@
 # Three.js client
 
-This folder contains Eternum's browser renderer: the world map, settlement view, fast travel, HUD, managers, effects,
-and renderer instrumentation.
+This folder contains Eternum's browser renderer: the world map, settlement view, HUD, managers, effects, and renderer
+instrumentation.
 
 ## Quick start
 
@@ -35,7 +35,6 @@ must be identical between them.
 - `scenes/hexagon-scene.ts`: shared camera, lighting, fog, shadow refresh, input, and visibility behavior.
 - `scenes/worldmap.tsx`: chunked world traversal rendered from the session spatial projection.
 - `scenes/hexception.tsx`: settlement view and lazy building preview.
-- `scenes/fast-travel.ts`: fast-travel traversal and its merged static grid.
 - `scenes/hud-scene.ts`: renderer-owned HUD overlay.
 
 ## Frame flow
@@ -90,8 +89,8 @@ Do not dispose cosmetic- or FX-cache-owned geometry or textures from a scene man
 - `frame-budget-work-queue.ts` schedules atomic presentation and surrounding scene work.
 - `shadow-refresh-policy.ts` refreshes shadows only for sun, content, or camera-cell changes.
 - `perf/renderer-gpu-telemetry.ts`, `stats-recorder.ts`, and world-map diagnostics provide DEV-only measurement.
-- `compact-entity-label-renderer.ts`, the fast-travel grid, and `PathRenderer` share or retain GPU resources to avoid
-  per-entity draw/material churn.
+- `compact-entity-label-renderer.ts` and `PathRenderer` share or retain GPU resources to avoid per-entity draw/material
+  churn.
 
 Keep DEV instrumentation out of production paths and preserve the forced-WebGL smoke whenever renderer ownership or
 effects code changes.

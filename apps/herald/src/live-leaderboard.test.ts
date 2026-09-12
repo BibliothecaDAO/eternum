@@ -13,9 +13,10 @@ it("uses registered plus elapsed shares, independent of story totals and other g
         game_id: 1,
         hyperstructure_id: 7,
         start_at: 100,
+        // Herald keeps the starknet.js tuple record, not the RECS array.
         shareholders: [
-          ["0xa", 5000],
-          ["0xb", 5000],
+          { "0": "0xa", "1": 5000 },
+          { "0": "0xb", "1": 5000 },
         ],
       },
     ],

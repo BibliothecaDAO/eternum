@@ -17,6 +17,8 @@ import {
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "./game-entity-keys";
 import { disposeActiveGameSyncRuntime } from "../sync/game-sync-runtime";
+import { hasGameEnded } from "../sync/game-lifecycle";
+import { getBlockTimestamp } from "../utils/timestamp";
 import { Biome, BiomeClimateConfig, NEUTRAL_BIOME_CLIMATE } from "../utils/biome";
 import { setGameEntityKeyGameId } from "./game-entity-keys";
 import { getTotalResourceWeightKg, gramToKg } from "../utils";
@@ -90,13 +92,11 @@ export class ClientConfigManager {
     return this.gameId;
   }
 
-  /** s2 only: whether the active game's registry row says the game is over.
-   *  Legacy worlds signal this via the SeasonEnded event instead. */
+  /** Game status and the finite registry clock both close gameplay. */
   public isGameOver(): boolean {
     const game = this.getGameRegistry();
     if (!game) return false;
-    const status = String(game.status);
-    return status === "Ended" || status === "Settled";
+    return hasGameEnded(String(game.status), Number(game.end_at), getBlockTimestamp().currentBlockTimestamp);
   }
 
   /** Per-game state row: WorldConfig[gameId] on s2, WorldConfig[WORLD_CONFIG_ID] legacy. */

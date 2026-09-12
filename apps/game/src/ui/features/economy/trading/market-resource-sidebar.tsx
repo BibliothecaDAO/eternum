@@ -1,21 +1,22 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import TextInput from "@/ui/design-system/atoms/text-input";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
+const SEARCH_INPUT_CLASS =
+  "h-8 w-full rounded-md border border-gold/25 bg-black/40 px-2 text-xs text-gold placeholder:text-gold/40 focus:border-gold/60 focus:outline-none";
+
 export const MarketResourceSidebar = ({
   entityId,
-  search,
   onClick,
   selectedResource,
   resourceAskOffers,
   resourceBidOffers,
 }: {
   entityId: ID;
-  search: string;
   onClick: (value: number) => void;
   selectedResource: number;
   resourceAskOffers: MarketInterface[];
@@ -23,95 +24,84 @@ export const MarketResourceSidebar = ({
 }) => {
   const dojo = useDojo();
   const mode = useGameModeConfig();
-  const [localSearch, setLocalSearch] = useState(search);
+  const [search, setSearch] = useState("");
 
-  const filteredResources = useMemo(() => {
-    return Object.entries(mode.resources.getTiers()).flatMap(([_, resourceIds]) => {
-      return resourceIds;
-    });
-  }, [mode.resources]);
+  const tradableResources = useMemo(
+    () =>
+      Object.values(mode.resources.getTiers())
+        .flat()
+        .filter((resourceId) => resourceId !== ResourcesIds.Lords),
+    [mode.resources],
+  );
 
   const ammPrices = useMemo(() => {
-    const prices: Record<number, number> = {};
-    filteredResources
-      .filter((resourceId) => resourceId !== ResourcesIds.Lords)
-      .forEach((resourceId) => {
-        const marketManager = new MarketManager(dojo.setup.components, 0n, resourceId);
-        prices[resourceId] = marketManager?.getMarketPrice() || 0;
-      });
+    const prices = new Map<number, number>();
+    for (const resourceId of tradableResources) {
+      prices.set(resourceId, new MarketManager(dojo.setup.components, 0n, resourceId).getMarketPrice() || 0);
+    }
     return prices;
-  }, [filteredResources, dojo.setup.components]);
+  }, [tradableResources, dojo.setup.components]);
 
-  // Pre-index best prices per resource - O(offers) instead of O(resources * offers)
-  const priceIndex = useMemo(() => {
-    const bestBid = new Map<number, number>(); // highest bid per resource
-    const bestAsk = new Map<number, number>(); // lowest ask per resource
-
+  // Best price per resource, indexed once per offer set instead of once per row.
+  const bestPrices = useMemo(() => {
+    const highestBid = new Map<number, number>();
+    const lowestAsk = new Map<number, number>();
     for (const offer of resourceBidOffers) {
-      const rid = offer.makerGets[0]?.resourceId;
-      if (rid !== undefined) {
-        const current = bestBid.get(rid);
-        if (current === undefined || offer.perLords > current) {
-          bestBid.set(rid, offer.perLords);
-        }
+      const resourceId = offer.makerGets[0]?.resourceId;
+      if (resourceId !== undefined && offer.perLords > (highestBid.get(resourceId) ?? -Infinity)) {
+        highestBid.set(resourceId, offer.perLords);
       }
     }
-
     for (const offer of resourceAskOffers) {
-      const rid = offer.takerGets[0]?.resourceId;
-      if (rid !== undefined) {
-        const current = bestAsk.get(rid);
-        if (current === undefined || offer.perLords < current) {
-          bestAsk.set(rid, offer.perLords);
-        }
+      const resourceId = offer.takerGets[0]?.resourceId;
+      if (resourceId !== undefined && offer.perLords < (lowestAsk.get(resourceId) ?? Infinity)) {
+        lowestAsk.set(resourceId, offer.perLords);
       }
     }
-
-    return { bestBid, bestAsk };
+    return { highestBid, lowestAsk };
   }, [resourceBidOffers, resourceAskOffers]);
 
-  const resourceList = useMemo(() => {
-    return filteredResources
-      .filter((resourceId) => resourceId !== ResourcesIds.Lords)
-      .filter((resourceId) => {
-        if (!localSearch) return true;
-        const name = findResourceById(resourceId)?.trait || "";
-        return name.toLowerCase().includes(localSearch.toLowerCase());
-      })
-      .map((resourceId) => (
-        <MarketResourceRow
-          key={resourceId}
-          entityId={entityId || 0}
-          resourceId={resourceId}
-          active={selectedResource == resourceId}
-          onClick={onClick}
-          askPrice={priceIndex.bestBid.get(resourceId) || 0}
-          bidPrice={priceIndex.bestAsk.get(resourceId) || 0}
-          ammPrice={ammPrices[resourceId] || 0}
-        />
-      ));
-  }, [filteredResources, selectedResource, entityId, onClick, ammPrices, priceIndex, localSearch]);
+  const visibleResources = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return tradableResources;
+    return tradableResources.filter((resourceId) =>
+      (findResourceById(resourceId)?.trait ?? "").toLowerCase().includes(needle),
+    );
+  }, [tradableResources, search]);
 
   return (
-    <div className="market-resource-bar-selector border-t border-gold/25">
-      <div className="px-2 py-1.5">
-        <TextInput
-          placeholder="Search resources..."
-          onChange={(val) => setLocalSearch(val)}
-          value={localSearch}
-          className="w-full"
+    <div className="market-resource-bar-selector flex min-h-0 flex-1 flex-col">
+      <div className="px-3 py-2">
+        <input
+          type="text"
+          value={search}
+          placeholder="Search resources…"
+          autoComplete="off"
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          onKeyDown={(event) => event.stopPropagation()}
+          className={SEARCH_INPUT_CLASS}
         />
       </div>
-      <div className="w-full mb-1 border-b border-gold/25">
-        <div className="grid grid-cols-5 text-xs uppercase py-2 h6">
-          <div className="col-span-2 px-2">Resource</div>
-          <div className="market-resource-bar-buy-selector flex items-center justify-center">Buy</div>
-          <div className="market-resource-bar-sell-selector flex items-center justify-center">Sell</div>
-          <div className="market-resource-bar-amm-selector flex items-center justify-center">AMM</div>
-        </div>
+      <div className={`grid grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] border-b border-gold/15 px-3 pb-1.5 ${HUD_LABEL}`}>
+        <span>Resource</span>
+        <span className="market-resource-bar-buy-selector text-right">Buy</span>
+        <span className="market-resource-bar-sell-selector text-right">Sell</span>
+        <span className="market-resource-bar-amm-selector text-right">AMM</span>
       </div>
-
-      <div className="flex flex-col h-full gap-[0.1]">{resourceList}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-1">
+        {visibleResources.map((resourceId) => (
+          <MarketResourceRow
+            key={resourceId}
+            entityId={entityId}
+            resourceId={resourceId}
+            active={selectedResource === resourceId}
+            onClick={onClick}
+            buyPrice={bestPrices.lowestAsk.get(resourceId) ?? 0}
+            sellPrice={bestPrices.highestBid.get(resourceId) ?? 0}
+            ammPrice={ammPrices.get(resourceId) ?? 0}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -145,3 +145,9 @@ describe("realm provision runner", () => {
     await first;
   });
 });
+
+it("closes dev provisioning at the exact finite end timestamp", async () => {
+  const { runner, submit } = harness({ now: 1000, phase: { devModeOn: true } });
+  await runner.onConfirmedHead();
+  expect(submit).not.toHaveBeenCalled();
+});

@@ -1,6 +1,7 @@
 import { BufferGeometry, InstancedBufferAttribute, Mesh, type CanvasTexture, type MeshStandardMaterial } from "three";
 import MeshStandardNodeMaterial from "three/src/materials/nodes/MeshStandardNodeMaterial.js";
-import { attribute, texture, uv, vec2 } from "three/tsl";
+import { attribute, texture, uv, vec2, varying } from "three/tsl";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import InstancedModel from "../managers/instanced-model";
 import type { WeatherState } from "../managers/weather-manager";
@@ -70,11 +71,12 @@ export class SettlementModel extends InstancedModel {
   }
 
   private createClothMaterial(previous: MeshStandardMaterial, banner: boolean): MeshStandardNodeMaterial {
-    const material = new MeshStandardNodeMaterial();
+    const material = new FrostedStandardNodeMaterial();
     material.roughness = previous.roughness;
     material.metalness = previous.metalness;
     material.side = previous.side;
-    const row = attribute<"float">("settlementHeraldry", "float");
+    // Atlas indices must not interpolate: tiny rounding differences can cross an ownership row boundary.
+    const row = varying(attribute<"float">("settlementHeraldry", "float")).setInterpolation("flat");
     const tileWidth = this.kind === "village" ? 256 : 128;
     const tileHeight = this.kind === "village" ? 512 : 256;
     const clothUv = banner

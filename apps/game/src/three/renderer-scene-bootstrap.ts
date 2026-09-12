@@ -1,6 +1,5 @@
 import { TransitionManager } from "@/three/managers/transition-manager";
 import { SceneManager } from "@/three/scene-manager";
-import FastTravelScene from "@/three/scenes/fast-travel";
 import HexceptionScene from "@/three/scenes/hexception";
 import WorldmapScene from "@/three/scenes/worldmap";
 import type { SetupResult } from "@bibliothecadao/dojo";
@@ -18,14 +17,7 @@ interface SceneManagerLike<TScene> {
   moveCameraForScene(): void;
 }
 
-export interface RendererSceneRegistry<
-  TTransitionManager,
-  TSceneManager,
-  THexceptionScene,
-  TWorldmapScene,
-  TFastTravelScene = THexceptionScene,
-> {
-  fastTravelScene?: TFastTravelScene;
+export interface RendererSceneRegistry<TTransitionManager, TSceneManager, THexceptionScene, TWorldmapScene> {
   hexceptionScene: THexceptionScene;
   sceneManager: TSceneManager;
   transitionManager: TTransitionManager;
@@ -38,19 +30,11 @@ interface CreateRendererSceneRegistryInput<
   TMouse,
   TRaycaster,
   TTransitionManager,
-  TSceneManager extends SceneManagerLike<THexceptionScene | TWorldmapScene | TFastTravelScene>,
+  TSceneManager extends SceneManagerLike<THexceptionScene | TWorldmapScene>,
   THexceptionScene extends SceneInputSurfaceOwner,
   TWorldmapScene extends SceneInputSurfaceOwner,
-  TFastTravelScene extends SceneInputSurfaceOwner,
 > {
   controls: TControls;
-  createFastTravelScene?: (input: {
-    controls: TControls;
-    dojo: TDojo;
-    mouse: TMouse;
-    raycaster: TRaycaster;
-    sceneManager: TSceneManager;
-  }) => TFastTravelScene;
   createHexceptionScene: (input: {
     compilePipelines: PipelineCompiler;
     controls: TControls;
@@ -72,7 +56,6 @@ interface CreateRendererSceneRegistryInput<
   }) => TWorldmapScene;
   dojo: TDojo;
   compilePipelines?: PipelineCompiler;
-  fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
   markLabelsDirty?: () => void;
   mouse: TMouse;
@@ -93,16 +76,15 @@ interface BootstrapRendererSceneRuntimeInput<
   sceneManager: TSceneManager;
 }
 
-export function createRendererSceneRegistry<
+function createRendererSceneRegistry<
   TControls,
   TDojo,
   TMouse,
   TRaycaster,
   TTransitionManager,
-  TSceneManager extends SceneManagerLike<THexceptionScene | TWorldmapScene | TFastTravelScene>,
+  TSceneManager extends SceneManagerLike<THexceptionScene | TWorldmapScene>,
   THexceptionScene extends SceneInputSurfaceOwner,
   TWorldmapScene extends SceneInputSurfaceOwner,
-  TFastTravelScene extends SceneInputSurfaceOwner,
 >(
   input: CreateRendererSceneRegistryInput<
     TControls,
@@ -112,10 +94,9 @@ export function createRendererSceneRegistry<
     TTransitionManager,
     TSceneManager,
     THexceptionScene,
-    TWorldmapScene,
-    TFastTravelScene
+    TWorldmapScene
   >,
-): RendererSceneRegistry<TTransitionManager, TSceneManager, THexceptionScene, TWorldmapScene, TFastTravelScene> {
+): RendererSceneRegistry<TTransitionManager, TSceneManager, THexceptionScene, TWorldmapScene> {
   const transitionManager = input.createTransitionManager();
   const sceneManager = input.createSceneManager(transitionManager);
   const hexceptionScene = input.createHexceptionScene({
@@ -141,21 +122,7 @@ export function createRendererSceneRegistry<
   sceneManager.addScene(SceneName.Hexception, hexceptionScene);
   sceneManager.addScene(SceneName.WorldMap, worldmapScene);
 
-  let fastTravelScene: TFastTravelScene | undefined;
-  if (input.fastTravelEnabled && input.createFastTravelScene) {
-    fastTravelScene = input.createFastTravelScene({
-      controls: input.controls,
-      dojo: input.dojo,
-      mouse: input.mouse,
-      raycaster: input.raycaster,
-      sceneManager,
-    });
-    attachRendererSceneToSurface(fastTravelScene, input.inputSurface);
-    sceneManager.addScene(SceneName.FastTravel, fastTravelScene);
-  }
-
   return {
-    fastTravelScene,
     hexceptionScene,
     sceneManager,
     transitionManager,
@@ -167,17 +134,14 @@ export function createGameRendererSceneRegistry(input: {
   compilePipelines?: PipelineCompiler;
   controls: MapControls;
   dojo: SetupResult;
-  fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
   markLabelsDirty?: () => void;
   mouse: Vector2;
   raycaster: Raycaster;
-}): RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene, FastTravelScene> {
+}): RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene> {
   return createRendererSceneRegistry({
     compilePipelines: input.compilePipelines,
     controls: input.controls,
-    createFastTravelScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-      new FastTravelScene(dojo, raycaster, controls, mouse, sceneManager),
     createHexceptionScene: ({ compilePipelines, controls, dojo, mouse, raycaster, sceneManager }) =>
       new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager, compilePipelines),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
@@ -185,7 +149,6 @@ export function createGameRendererSceneRegistry(input: {
     createWorldmapScene: ({ compilePipelines, controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>
       new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager, markLabelsDirty, compilePipelines),
     dojo: input.dojo,
-    fastTravelEnabled: input.fastTravelEnabled,
     inputSurface: input.inputSurface,
     markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,

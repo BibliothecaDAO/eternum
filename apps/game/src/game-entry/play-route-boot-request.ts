@@ -1,5 +1,4 @@
 import { parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
-import { resolvePlaySceneTarget } from "@/play/navigation/play-scene-target";
 import { resolveSpectateIntent } from "@/utils/spectator-session";
 
 export interface ResolvedPlayBootRequest {
@@ -15,10 +14,7 @@ export interface ResolvedPlayBootRequest {
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
-export const resolvePlayBootRequest = (
-  location: LocationLike,
-  { fastTravelEnabled }: { fastTravelEnabled: boolean },
-): ResolvedPlayBootRequest | null => {
+export const resolvePlayBootRequest = (location: LocationLike): ResolvedPlayBootRequest | null => {
   const route = parsePlayRoute(location);
   if (!route) {
     return null;
@@ -27,7 +23,7 @@ export const resolvePlayBootRequest = (
   const routeWorldPosition =
     typeof route.col === "number" && typeof route.row === "number" ? { col: route.col, row: route.row } : null;
   const requestedScene = route.bootMode === "map-first" ? (route.resumeScene ?? route.scene) : route.scene;
-  const resolvedScene = resolvePlaySceneTarget(requestedScene, fastTravelEnabled);
+  const resolvedScene = requestedScene ?? "map";
   const resumeScene = route.bootMode === "map-first" && resolvedScene !== "map" ? resolvedScene : null;
 
   return {

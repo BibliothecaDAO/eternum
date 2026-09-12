@@ -534,6 +534,7 @@ export class ArmyModel {
     ) as AnimatedInstancedMesh;
 
     instancedMesh.frustumCulled = true;
+    instancedMesh.userData.gameEndFrost = true;
     instancedMesh.castShadow = true;
     instancedMesh.instanceMatrix.needsUpdate = true;
     instancedMesh.renderOrder = 10 + meshIndex;

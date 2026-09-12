@@ -16,6 +16,7 @@ interface RendererFrameSceneController {
   onFrameRendered?(atMs: number): void;
   isReadyToRender?(): boolean;
   setWeatherAtmosphereState(weatherState: unknown): void;
+  setAnimationsPaused?(paused: boolean): void;
   update(deltaTime: number): void;
 }
 
@@ -49,11 +50,11 @@ interface RunRendererFrameInput {
   currentTime: number;
   cycleProgress: number;
   deltaTime: number;
+  animationsPaused?: boolean;
   effectsBridgeRuntime?: Pick<
     { updateWeatherPostProcessing(weatherState?: RendererWeatherState): void },
     "updateWeatherPostProcessing"
   >;
-  fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render" | "shouldRender">;
@@ -66,7 +67,6 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
   const resolvedFrame = resolveRendererFrame({
     camera: input.camera,
     currentScene: input.currentScene,
-    fastTravelScene: input.fastTravelScene,
     hexceptionScene: input.hexceptionScene,
     hudScene: input.hudScene,
     worldmapScene: input.worldmapScene,
@@ -75,6 +75,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     return false;
   }
 
+  resolvedFrame.sceneController.setAnimationsPaused?.(input.animationsPaused ?? false);
   resolvedFrame.sceneController.setWeatherAtmosphereState(weatherState);
   resolvedFrame.sceneController.update(input.deltaTime);
   // Keep the transition frame while asynchronous preparation owns the incoming scene.
@@ -103,16 +104,15 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
 }
 
 function advanceHudAndResolveWeatherState(
-  input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene">,
+  input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene" | "animationsPaused">,
 ): RendererWeatherState {
-  input.hudScene.update(input.deltaTime, input.cycleProgress);
+  if (!input.animationsPaused) input.hudScene.update(input.deltaTime, input.cycleProgress);
   return input.hudScene.getWeatherState() as RendererWeatherState;
 }
 
 function resolveRendererFrame(input: {
   camera: Camera;
   currentScene: SceneName | undefined;
-  fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   worldmapScene: RendererFrameSceneController;
@@ -123,13 +123,11 @@ function resolveRendererFrame(input: {
 
   const sceneController = resolveActiveSceneController({
     currentScene: input.currentScene,
-    fastTravelScene: input.fastTravelScene,
     hexceptionScene: input.hexceptionScene,
     worldmapScene: input.worldmapScene,
   });
   const labelState = resolveRendererFrameLabelState({
     currentScene: input.currentScene,
-    fastTravelScene: input.fastTravelScene,
     hexceptionScene: input.hexceptionScene,
     hudScene: input.hudScene,
     worldmapScene: input.worldmapScene,
@@ -151,19 +149,13 @@ function resolveRendererFrame(input: {
 
 function resolveActiveSceneController(input: {
   currentScene: SceneName;
-  fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   worldmapScene: RendererFrameSceneController;
 }): RendererFrameSceneController {
   const isWorldMap = input.currentScene === SceneName.WorldMap;
-  const isFastTravel = input.currentScene === SceneName.FastTravel && Boolean(input.fastTravelScene);
 
   if (isWorldMap) {
     return input.worldmapScene;
-  }
-
-  if (isFastTravel && input.fastTravelScene) {
-    return input.fastTravelScene;
   }
 
   return input.hexceptionScene;
@@ -171,7 +163,6 @@ function resolveActiveSceneController(input: {
 
 function resolveRendererFrameLabelState(input: {
   currentScene: SceneName;
-  fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   worldmapScene: RendererFrameSceneController;
@@ -185,9 +176,6 @@ function resolveRendererFrameLabelState(input: {
   if (input.currentScene === SceneName.WorldMap) {
     view = input.worldmapScene.getCurrentCameraView();
     labelsActive = input.worldmapScene.hasActiveLabelAnimations();
-  } else if (input.currentScene === SceneName.FastTravel && input.fastTravelScene) {
-    view = input.fastTravelScene.getCurrentCameraView();
-    labelsActive = input.fastTravelScene.hasActiveLabelAnimations();
   } else if (input.currentScene === SceneName.Hexception) {
     view = input.hexceptionScene.getCurrentCameraView();
     labelsActive = input.hexceptionScene.hasActiveLabelAnimations();

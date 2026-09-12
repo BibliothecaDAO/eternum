@@ -1,7 +1,7 @@
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { useUISound } from "@/audio";
-import clsx from "clsx";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useEffect, useState } from "react";
 
 type NumberInputProps = {
@@ -50,10 +50,10 @@ export const NumberInput = ({
   };
 
   return (
-    <div className={clsx("flex items-center h-10 text-lg bg-gold/20 w-full rounded-xl", className)}>
+    <div className={cn("flex items-center h-10 text-lg bg-gold/20 w-full rounded-xl", className)}>
       {arrows && (
         <div
-          className={clsx(
+          className={cn(
             "flex items-center justify-center h-full px-1 border-r border-gold/10",
             disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
           )}
@@ -112,7 +112,7 @@ export const NumberInput = ({
 
       {arrows && (
         <div
-          className={clsx(
+          className={cn(
             "flex items-center justify-center h-full px-1 border-l border-gold/10",
             disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
           )}
