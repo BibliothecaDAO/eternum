@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Living hyperstructure towers",
+    description:
+      "Hyperstructures rise piece by piece into distinctive magic towers, including instant builds in Blitz. Six architectural families and eight crowns feature moving wings, orbiting gems and swirling power cores: unstable violet or calm teal. They awaken on completion and freeze when the game ends.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
     title: "Map and game-end fixes",
     description:
       "Local zoom shows two rings of terrain. Tile details follow your view in a narrower panel, and ground outlines mark selected armies and structures. Finished games close gameplay and freeze the map, including dev games.",

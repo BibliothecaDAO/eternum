@@ -8,6 +8,8 @@ export interface PipelineCompilingRenderer {
   compileAsync?(object: Object3D, camera: Camera, targetScene?: Scene | null): Promise<unknown>;
 }
 
+const pendingRendererCompiles = new WeakMap<PipelineCompilingRenderer, Promise<void>>();
+
 export function createPipelineCompiler(input: {
   getRenderer: () => PipelineCompilingRenderer | undefined;
   getCamera: () => Camera;
@@ -24,10 +26,30 @@ export function createPipelineCompiler(input: {
     }
     const startedAt = performance.now();
     try {
-      await renderer.compileAsync(object, input.getCamera(), targetScene);
+      const camera = input.getCamera();
+      await serializeRendererCompile(renderer, () => renderer.compileAsync!(object, camera, targetScene));
       incrementWorldmapRenderCounter("pipelinePrecompiles");
     } finally {
       recordWorldmapRenderDuration("pipelineCompileMs", performance.now() - startedAt);
     }
   };
+}
+
+/** Shared material node builders cannot prepare overlapping WebGPU binding layouts safely. */
+async function serializeRendererCompile(
+  renderer: PipelineCompilingRenderer,
+  compile: () => Promise<unknown>,
+): Promise<void> {
+  const previous = pendingRendererCompiles.get(renderer) ?? Promise.resolve();
+  const compilation = previous.then(compile);
+  const settled = compilation.then(
+    () => {},
+    () => {},
+  );
+  pendingRendererCompiles.set(renderer, settled);
+  try {
+    await compilation;
+  } finally {
+    if (pendingRendererCompiles.get(renderer) === settled) pendingRendererCompiles.delete(renderer);
+  }
 }

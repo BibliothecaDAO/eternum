@@ -5,12 +5,15 @@ import {
   getStructureModelPaths,
 } from "@/three/constants/scene-constants";
 import { StructureType } from "@bibliothecadao/types";
+import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 
 export interface TerrainLabBuilding {
   col: number;
   row: number;
   path: string;
   yaw: number;
+  hyperstructureId?: number;
+  constructionProgress?: number;
 }
 
 const BUILDING_LABELS: Record<string, string> = {
@@ -22,9 +25,6 @@ const BUILDING_LABELS: Record<string, string> = {
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
-  hyperstructure_init: "Hyperstructure · Foundation",
-  hyperstructure_half: "Hyperstructure · Half built",
-  hyperstructure_finish: "Hyperstructure · Complete",
   wonder2: "Wonder",
   chest_model: "Chest",
   spire: "Spire · Levitating portal",
@@ -39,7 +39,10 @@ export const TERRAIN_LAB_BUILDINGS = [
     .replace(/\.glb$/, "");
   return {
     path,
-    label: BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()),
+    label:
+      path === HYPERSTRUCTURE_MODEL_PATH
+        ? "Hyperstructure · Procedural tower"
+        : (BUILDING_LABELS[filename] ?? filename.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase())),
   };
 });
 
