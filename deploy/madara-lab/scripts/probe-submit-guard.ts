@@ -16,8 +16,8 @@ import { EternumProvider, TransactionType } from "../../../packages/provider/src
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
 import { buildBlitzSettleCalls, configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { createHarnessAccounts } from "../harness/account-factory";
-import { parseStructureIds, type HarnessSystemAddresses } from "../harness/driver";
-import { HeraldObserver } from "../harness/herald-observer";
+import type { HarnessSystemAddresses } from "../harness/driver";
+import { HeraldObserver, parseStructureIds } from "../harness/herald-observer";
 
 logger.setLogLevel("FATAL");
 

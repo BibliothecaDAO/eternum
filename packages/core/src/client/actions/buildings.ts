@@ -1,8 +1,7 @@
 import type { BuildingType, HexPosition, ID } from "@bibliothecadao/types";
 
 import { TileManager } from "../../managers/tile-manager";
-import type { GameClient } from "../game-client";
-import { requireSigner } from "./signer";
+import { type ActionClient, requireSigner } from "./signer";
 
 export interface PlaceBuildingInput {
   structureId: ID;
@@ -19,7 +18,7 @@ export interface BuildingSlotInput {
 
 export type PlaceBuildingResult = Awaited<ReturnType<TileManager["placeBuilding"]>>;
 
-export const placeBuilding = async (client: GameClient, input: PlaceBuildingInput): Promise<PlaceBuildingResult> =>
+export const placeBuilding = async (client: ActionClient, input: PlaceBuildingInput): Promise<PlaceBuildingResult> =>
   structureTiles(client, input.structureId).placeBuilding(
     requireSigner(client),
     input.structureId,
@@ -28,7 +27,7 @@ export const placeBuilding = async (client: GameClient, input: PlaceBuildingInpu
     input.useSimpleCost,
   );
 
-export const destroyBuilding = async (client: GameClient, input: BuildingSlotInput): Promise<void> =>
+export const destroyBuilding = async (client: ActionClient, input: BuildingSlotInput): Promise<void> =>
   structureTiles(client, input.structureId).destroyBuilding(
     requireSigner(client),
     input.structureId,
@@ -36,7 +35,7 @@ export const destroyBuilding = async (client: GameClient, input: BuildingSlotInp
     input.hex.row,
   );
 
-export const pauseProduction = async (client: GameClient, input: BuildingSlotInput): Promise<void> =>
+export const pauseProduction = async (client: ActionClient, input: BuildingSlotInput): Promise<void> =>
   structureTiles(client, input.structureId).pauseProduction(
     requireSigner(client),
     input.structureId,
@@ -44,7 +43,7 @@ export const pauseProduction = async (client: GameClient, input: BuildingSlotInp
     input.hex.row,
   );
 
-export const resumeProduction = async (client: GameClient, input: BuildingSlotInput): Promise<void> =>
+export const resumeProduction = async (client: ActionClient, input: BuildingSlotInput): Promise<void> =>
   structureTiles(client, input.structureId).resumeProduction(
     requireSigner(client),
     input.structureId,
@@ -52,5 +51,5 @@ export const resumeProduction = async (client: GameClient, input: BuildingSlotIn
     input.hex.row,
   );
 
-const structureTiles = (client: GameClient, structureId: ID): TileManager =>
+const structureTiles = (client: ActionClient, structureId: ID): TileManager =>
   TileManager.forStructure(client.setup.components, client.setup.systemCalls, structureId);

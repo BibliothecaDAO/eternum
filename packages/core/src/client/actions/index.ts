@@ -1,3 +1,5 @@
+import type { AccountInterface } from "starknet";
+
 import type { ActionPaths } from "../../utils/action-paths";
 import type { GameClient } from "../game-client";
 import {
@@ -26,6 +28,7 @@ import {
   type PlaceBuildingResult,
   resumeProduction,
 } from "./buildings";
+import { actingAs } from "./signer";
 
 export * from "./armies";
 export * from "./buildings";
@@ -51,17 +54,28 @@ export interface GameActions {
   resumeProduction(input: BuildingSlotInput): Promise<void>;
 }
 
-/** Submits sign with client.signer, so connect(signer) must precede any action that writes. */
-export const createGameActions = (client: GameClient): GameActions => ({
-  armyPaths: (input) => findArmyPaths(client, input),
-  structurePaths: (input) => findStructurePaths(input),
-  moveArmy: (input) => moveArmy(client, input),
-  createExplorerArmy: (input) => createExplorerArmy(client, input),
-  addTroopsToExplorer: (input) => addTroopsToExplorer(client, input),
-  addTroopsToGuard: (input) => addTroopsToGuard(client, input),
-  deleteExplorerArmy: (input) => deleteExplorerArmy(client, input),
-  placeBuilding: (input) => placeBuilding(client, input),
-  destroyBuilding: (input) => destroyBuilding(client, input),
-  pauseProduction: (input) => pauseProduction(client, input),
-  resumeProduction: (input) => resumeProduction(client, input),
-});
+interface CreateGameActionsOptions {
+  /**
+   * Sign with this account instead of the client's connected signer. One client holds the game once; a process that
+   * plays many players over it (the lab harness's bots) gets one facade per account, with no shared signer to race on.
+   */
+  signer?: AccountInterface;
+}
+
+/** Submits sign with client.signer, so connect(signer) must precede any action that writes, unless a signer is named. */
+export const createGameActions = (client: GameClient, options: CreateGameActionsOptions = {}): GameActions => {
+  const actor = options.signer ? actingAs(client, options.signer) : client;
+  return {
+    armyPaths: (input) => findArmyPaths(actor, input),
+    structurePaths: (input) => findStructurePaths(input),
+    moveArmy: (input) => moveArmy(actor, input),
+    createExplorerArmy: (input) => createExplorerArmy(actor, input),
+    addTroopsToExplorer: (input) => addTroopsToExplorer(actor, input),
+    addTroopsToGuard: (input) => addTroopsToGuard(actor, input),
+    deleteExplorerArmy: (input) => deleteExplorerArmy(actor, input),
+    placeBuilding: (input) => placeBuilding(actor, input),
+    destroyBuilding: (input) => destroyBuilding(actor, input),
+    pauseProduction: (input) => pauseProduction(actor, input),
+    resumeProduction: (input) => resumeProduction(actor, input),
+  };
+};

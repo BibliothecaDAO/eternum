@@ -195,19 +195,24 @@ config.
 
 The harness creates a fresh dev-mode game, deploys 96 guest gameplay accounts, settles and provisions each player,
 then rotates actions across the three realm explorers each settlement receives. The measured window starts when every
-bot has enough explorer stamina for one legal action; it does not wait for every explorer to refill. Run the acceptance
-workload from the repository root:
+bot has enough explorer stamina for one legal action; it does not wait for every explorer to refill. The harness plays
+through the shared game client (`@bibliothecadao/eternum`): one client subscribes to the game's Herald stream and holds
+it in RECS, and each bot acts through its own `createGameActions(client, { signer })` facade, so build the packages
+first. Run the acceptance workload from the repository root:
 
 ```bash
+pnpm build:packages
 pnpm lab:harness -- --bots 96 --minutes 10
 # equivalent: bun deploy/madara-lab/harness/run.ts --bots 96 --minutes 10
 ```
 
 Every transaction records hash submission, the first observed `PRE_CONFIRMED` status, and `ACCEPTED_ON_L2`. Receipt
 status is polled every 50 ms, and the interval is stored in the report. Pre-confirmed latency is therefore quantized at
-the poll boundary; it is an observed upper bound, not Madara's internal execution time. Setup and action state reads use
-Herald's selective confirmed snapshots; Produce completes only after Herald shows a labor or wood production-output
-delta. Every action also records the call count and summed wall time for `getBlock` and status polling.
+the poll boundary; it is an observed upper bound, not Madara's internal execution time. Setup and action state reads
+come from RECS as the client applies Herald's confirmed snapshot and live diffs; explorer moves are planned by the
+client's `armyPaths` and a Produce completes only after RECS shows a labor or wood production-output delta. Every action
+also records the call count and summed wall time for `getBlock` and status polling. The client holds one game per
+process, so a run plays exactly one game.
 
 The JSON report is written under `deploy/madara-lab/.lab/runs/`. It includes the source revision, image digest, exact
 requested and completed action mixes, latency percentiles, RPC load, host-state snapshots, threshold results, and
@@ -654,7 +659,7 @@ deploy/madara-lab/
   docker-compose.yml       madara + caddy (+ web/postgres profile), pinned images, localhost ports
   Caddyfile                TLS front: *.realms.test → dev servers, madara, herald, identity RPC upstream
   chain-config.yaml        full chain config (see Pinning)
-  harness/                 account factory, workload driver, Herald observer, and JSON report writer
+  harness/                 account factory, game client boot, workload driver, and JSON report writer
   scripts/issue-certs.sh   wildcard certificate from the shared mkcert root into .lab/certs/
   scripts/deploy-world.sh  sozo build + migrate with the Madara-specific flags
   scripts/bootstrap-game.sh  gameplay contracts + ChainConfig + preset 1

@@ -75,6 +75,17 @@ describe("game actions", () => {
     expect(() => client.views.buildingTiles(STRUCTURE_ID)).toThrow("Structure 12 is not in RECS");
   });
 
+  it("acts for a named signer over a client that never connected", async () => {
+    const { components, systemCalls, client } = createHarness(null);
+    const path = seedExplorerWithTravelPath(components);
+    const bot = { address: "0xb07" } as AccountInterface;
+
+    await createGameActions(client, { signer: bot }).moveArmy({ explorerId: EXPLORER_ID, path, currentArmiesTick: 7 });
+
+    expect(systemCalls.explorer_travel).toHaveBeenCalledWith(expect.objectContaining({ signer: bot }));
+    expect(client.signer).toBeNull();
+  });
+
   it("refuses to submit before connect(signer)", async () => {
     const { components, systemCalls, client } = createHarness(null);
     const path = seedExplorerWithTravelPath(components);

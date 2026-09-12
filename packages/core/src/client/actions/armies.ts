@@ -13,8 +13,7 @@ import { ArmyActionManager } from "../../managers/army-action-manager";
 import { ArmyManager } from "../../managers/army-manager";
 import { StructureActionManager } from "../../managers/structure-action-manager";
 import { type ActionPath, ActionPaths, ActionType } from "../../utils/action-paths";
-import type { GameClient } from "../game-client";
-import { requireSigner } from "./signer";
+import { type ActionClient, requireSigner } from "./signer";
 
 /** Entities keyed by normalized col, then row: the indexes a caller projects from the world spatial projection. */
 export type HexIndex<T> = Map<number, Map<number, T>>;
@@ -77,7 +76,7 @@ export interface DeleteExplorerArmyInput {
   explorerId: ID;
 }
 
-export const findArmyPaths = (client: GameClient, input: ArmyPathsInput): ActionPaths =>
+export const findArmyPaths = (client: ActionClient, input: ArmyPathsInput): ActionPaths =>
   armyActionManager(client, input.explorerId).findActionPaths(
     input.structureHexes,
     input.armyHexes,
@@ -98,7 +97,7 @@ export const findStructurePaths = (input: StructurePathsInput): ActionPaths =>
   );
 
 /** A Move path travels over explored tiles; any other path reveals its destination. Spire travel is routed by the manager. */
-export const moveArmy = async (client: GameClient, input: MoveArmyInput): Promise<MoveArmyResult> =>
+export const moveArmy = async (client: ActionClient, input: MoveArmyInput): Promise<MoveArmyResult> =>
   armyActionManager(client, input.explorerId).moveArmy(
     requireSigner(client),
     input.path,
@@ -106,7 +105,7 @@ export const moveArmy = async (client: GameClient, input: MoveArmyInput): Promis
     input.currentArmiesTick,
   );
 
-export const createExplorerArmy = async (client: GameClient, input: CreateExplorerArmyInput): Promise<void> =>
+export const createExplorerArmy = async (client: ActionClient, input: CreateExplorerArmyInput): Promise<void> =>
   armyManager(client, input.structureId).createExplorerArmy(
     requireSigner(client),
     input.troopType,
@@ -115,7 +114,7 @@ export const createExplorerArmy = async (client: GameClient, input: CreateExplor
     input.spawnDirection,
   );
 
-export const addTroopsToExplorer = async (client: GameClient, input: AddTroopsToExplorerInput): Promise<void> =>
+export const addTroopsToExplorer = async (client: ActionClient, input: AddTroopsToExplorerInput): Promise<void> =>
   armyManager(client, input.structureId).addTroopsToExplorer(
     requireSigner(client),
     input.explorerId,
@@ -123,7 +122,7 @@ export const addTroopsToExplorer = async (client: GameClient, input: AddTroopsTo
     input.homeDirection,
   );
 
-export const addTroopsToGuard = async (client: GameClient, input: AddTroopsToGuardInput): Promise<void> =>
+export const addTroopsToGuard = async (client: ActionClient, input: AddTroopsToGuardInput): Promise<void> =>
   armyManager(client, input.structureId).addTroopsToGuard(
     requireSigner(client),
     input.troopType,
@@ -132,12 +131,12 @@ export const addTroopsToGuard = async (client: GameClient, input: AddTroopsToGua
     input.slot,
   );
 
-export const deleteExplorerArmy = async (client: GameClient, input: DeleteExplorerArmyInput): Promise<void> =>
+export const deleteExplorerArmy = async (client: ActionClient, input: DeleteExplorerArmyInput): Promise<void> =>
   armyManager(client, input.structureId).deleteExplorerArmy(requireSigner(client), input.explorerId);
 
-const armyActionManager = (client: GameClient, explorerId: ID): ArmyActionManager =>
+const armyActionManager = (client: ActionClient, explorerId: ID): ArmyActionManager =>
   new ArmyActionManager(client.setup.components, client.setup.systemCalls, explorerId);
 
 /** The army manager is bound to the structure the armies belong to. */
-const armyManager = (client: GameClient, structureId: ID): ArmyManager =>
+const armyManager = (client: ActionClient, structureId: ID): ArmyManager =>
   new ArmyManager(client.setup.systemCalls, structureId);

@@ -1,11 +1,18 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { CallData, shortString, type Account, type Call, type RpcProvider } from "starknet";
+import { shortString, type Account, type Call, type RpcProvider } from "starknet";
+import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { buildBlitzSettleCalls, buildEternumSettleCalls } from "@bibliothecadao/eternum/game-client";
-import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
-import { Biome } from "../../../packages/core/src/utils/biome/biome";
-import { BiomeType } from "../../../packages/types/src/constants/hex";
+import { ContractAddress, TroopTier, type ID, type TroopType } from "../../../packages/types";
 import { mapWithConcurrency, type HarnessAccount } from "./account-factory";
-import { HeraldObserver, type HeraldExplorer as ExplorerRow } from "./herald-observer";
+import {
+  EXPLORER_TROOP_COUNT,
+  type ChainTicks,
+  type Coord,
+  type ExplorerRow,
+  type HarnessGame,
+  type HarnessSubmission,
+  type ProductionState,
+} from "./harness-game";
 
 export type WorkloadActionKind = "move" | "explore" | "produce";
 export type TransactionStage = "setup" | "workload";
@@ -74,6 +81,8 @@ export interface HarnessSystemAddresses {
 
 export interface HarnessBot {
   account: Account;
+  /** This bot's facade over the shared client: every submit signs with `account`. */
+  actions: GameActions;
   address: string;
   botId: number;
   explorers: ExplorerState[];
@@ -92,32 +101,22 @@ export interface WorkloadResult {
   ticks: number;
 }
 
+/** The harness's own route memory for an explorer; its position and stamina are read from RECS when needed. */
 interface ExplorerState {
   atFrontier: boolean;
   blockedDirections: Map<string, Set<number>>;
-  coord: Coord;
-  explorerId: string;
+  explorerId: ID;
   lastUsedAt: number;
   outwardDirection: number;
   pathDirections: number[];
-  stamina: number;
-  staminaUpdatedTick: number;
-  structureId: string;
-  troopType: CairoTroopType;
+  structureId: ID;
 }
 
 interface StructureState {
   coord: Coord;
   direction: number;
-  structureId: string;
+  structureId: ID;
 }
-
-interface Coord {
-  x: number;
-  y: number;
-}
-
-type CairoTroopType = 0 | 1 | 2;
 
 interface ExplorerPriority {
   atFrontier: boolean;
@@ -128,74 +127,51 @@ interface PrepareHarnessBotsOptions {
   gameType?: HarnessGameType;
   accounts: HarnessAccount[];
   beforeProvision?: () => Promise<void>;
-  gameId: number;
+  game: HarnessGame;
   provider: RpcProvider;
   setupConcurrency?: number;
   setupTransactions: TrackedTransaction[];
   systems: HarnessSystemAddresses;
-  heraldUrl: string;
 }
 
 interface RunWorkloadOptions {
   bots: HarnessBot[];
+  game: HarnessGame;
   intervalSeconds: number;
   minutes: number;
   onTick?: (completedTicks: number, totalTicks: number) => void;
   provider: RpcProvider;
-  systems: HarnessSystemAddresses;
-  heraldUrl: string;
 }
 
 interface ExplorerActionPlan {
-  calls: Call[];
   direction: number;
   explorer: ExplorerState;
+  from: Coord;
+  path: ActionPath[];
   target: Coord;
 }
 
 interface PathReservation {
-  explorerId: string;
+  explorerId: ID;
   from: Coord;
   target: Coord;
 }
 
 interface TrackTransactionOptions {
-  account: Account;
   actionIndex?: number;
   botId: number;
-  calls: Call | Call[];
   exploreRequested?: boolean;
   gameId: number;
   kind: string;
   provider: RpcProvider;
   rpc?: RpcMetrics;
   scheduledAtMs?: number;
+  /** Sends the transaction and resolves with its hash once the chain accepted it. */
+  send: () => Promise<HarnessSubmission>;
   stage: TransactionStage;
   tick?: number;
 }
 
-const CENTER_COORD = 2_147_483_646;
-const ARMY_TICK_SECONDS = 60;
-const STAMINA_GAIN_PER_TICK = 30;
-const STAMINA_MAX = 120;
-const EXPLORE_STAMINA_COST = 30;
-const MOVE_STAMINA_COST = 20;
-const PALADIN_TROOP_TYPE: CairoTroopType = 1;
-const PALADIN_FAVORED_TRAVEL_BIOMES = new Set([
-  BiomeType.Bare,
-  BiomeType.Tundra,
-  BiomeType.TemperateDesert,
-  BiomeType.Shrubland,
-  BiomeType.Grassland,
-  BiomeType.SubtropicalDesert,
-]);
-const PALADIN_UNFAVORED_TRAVEL_BIOMES = new Set([
-  BiomeType.Taiga,
-  BiomeType.TemperateDeciduousForest,
-  BiomeType.TemperateRainForest,
-  BiomeType.TropicalSeasonalForest,
-  BiomeType.TropicalRainForest,
-]);
 export type HarnessGameType = "blitz" | "eternum";
 
 const BLITZ_STRUCTURES_PER_BOT = 3;
@@ -203,53 +179,52 @@ const ETERNUM_STRUCTURES_PER_BOT = 1;
 
 const settlementStructureCount = (gameType: HarnessGameType) =>
   gameType === "eternum" ? ETERNUM_STRUCTURES_PER_BOT : BLITZ_STRUCTURES_PER_BOT;
-const EXPLORER_TROOP_AMOUNT = 10_000_000_000n;
-const WOOD_RESOURCE_ID = 3;
 export const RECEIPT_POLL_INTERVAL_MS = 50;
-export const FIRST_ACTION_REQUIRED_STAMINA = EXPLORE_STAMINA_COST;
+/** The Blitz explore cost: the measured window opens once every bot can afford one explorer action. */
+export const FIRST_ACTION_REQUIRED_STAMINA = 30;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
 const ACTION_READINESS_TIMEOUT_MS = 360_000;
 const ACTION_READINESS_POLL_INTERVAL_MS = 1_000;
 const DEFAULT_SETUP_CONCURRENCY = 6;
-const MADARA_RESOURCE_BOUNDS = resolveGameTransactionResourceBounds("madara");
 
 class GameRuleLimitError extends Error {}
 class HarnessPathingError extends Error {}
 
+/** Where bots intend to be: RECS knows where they are, this knows which tiles are spoken for by an in-flight move. */
 class PathReservations {
-  private readonly occupiedByExplorer = new Map<string, string>();
-  private readonly reservedByExplorer = new Map<string, string>();
+  private readonly occupiedByExplorer = new Map<string, ID>();
+  private readonly reservedByExplorer = new Map<string, ID>();
   private readonly structureCoords = new Set<string>();
 
-  constructor(bots: readonly HarnessBot[]) {
+  constructor(bots: readonly HarnessBot[], game: HarnessGame) {
     for (const bot of bots) {
       for (const structure of bot.structures) this.structureCoords.add(coordKey(structure.coord));
       for (const explorer of bot.explorers) {
-        const key = coordKey(explorer.coord);
+        const key = coordKey(requireExplorer(game, explorer.explorerId).coord);
         const occupant = this.occupiedByExplorer.get(key);
-        if (occupant) throw new Error(`Explorers ${occupant} and ${explorer.explorerId} share ${key}`);
+        if (occupant !== undefined) throw new Error(`Explorers ${occupant} and ${explorer.explorerId} share ${key}`);
         this.occupiedByExplorer.set(key, explorer.explorerId);
       }
     }
   }
 
-  canReserve(explorerId: string, target: Coord): boolean {
+  canReserve(explorerId: ID, target: Coord): boolean {
     const key = coordKey(target);
     if (this.structureCoords.has(key)) return false;
     const occupant = this.occupiedByExplorer.get(key);
-    if (occupant && occupant !== explorerId) return false;
+    if (occupant !== undefined && occupant !== explorerId) return false;
     const reservation = this.reservedByExplorer.get(key);
-    return !reservation || reservation === explorerId;
+    return reservation === undefined || reservation === explorerId;
   }
 
-  reserve(explorer: ExplorerState, target: Coord): PathReservation {
-    if (!this.canReserve(explorer.explorerId, target)) {
-      throw new HarnessPathingError(`Explorer ${explorer.explorerId} target ${coordKey(target)} is occupied`);
+  reserve(explorerId: ID, from: Coord, target: Coord): PathReservation {
+    if (!this.canReserve(explorerId, target)) {
+      throw new HarnessPathingError(`Explorer ${explorerId} target ${coordKey(target)} is occupied`);
     }
-    this.reservedByExplorer.set(coordKey(target), explorer.explorerId);
-    return { explorerId: explorer.explorerId, from: explorer.coord, target };
+    this.reservedByExplorer.set(coordKey(target), explorerId);
+    return { explorerId, from, target };
   }
 
   complete(reservation: PathReservation, actual: Coord): void {
@@ -326,18 +301,14 @@ export async function prepareHarnessBots({
   gameType = "blitz",
   accounts,
   beforeProvision,
-  gameId,
+  game,
   provider,
   setupConcurrency = DEFAULT_SETUP_CONCURRENCY,
   setupTransactions,
   systems,
-  heraldUrl,
 }: PrepareHarnessBotsOptions): Promise<HarnessBot[]> {
-  const heraldObserver = new HeraldObserver(heraldUrl, "madara");
-  const mapCenter = await readMapCenter(heraldObserver, gameId);
-
   await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const settle = await settleBot({ harnessAccount, gameId, gameType, provider, systems });
+    const settle = await settleBot({ harnessAccount, game, gameType, provider, systems });
     setupTransactions.push(settle);
     assertCompleted(settle);
   });
@@ -345,50 +316,31 @@ export async function prepareHarnessBots({
   await beforeProvision?.();
 
   return mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const structureIds = await readSettlementStructureIds(heraldObserver, gameId, harnessAccount.address, gameType);
-    const structures = await readStructures(heraldObserver, gameId, structureIds, mapCenter);
+    const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
+    const structures = await waitForStructures(game, structureIds);
 
     if (gameType === "blitz") {
-      const provision = await provisionBot({
-        account: harnessAccount.account,
-        botId: harnessAccount.botId,
-        gameId,
-        provider,
-        structureIds,
-        systems,
-      });
+      const provision = await provisionBot({ harnessAccount, game, provider, structureIds, systems });
       setupTransactions.push(provision);
       assertCompleted(provision);
     }
 
-    const troopTypes = await readStartingTroopTypes(heraldObserver, gameId, structureIds);
+    const troopTypes = await waitForStartingTroopTypes(game, structureIds);
+    const actions = game.actionsFor(harnessAccount.account);
+    for (const structure of structures) {
+      const createExplorer = await createBotExplorer({ actions, harnessAccount, game, provider, structure, troopTypes });
+      setupTransactions.push(createExplorer);
+      assertCompleted(createExplorer);
+    }
 
-    const createExplorers = await createBotExplorers({
-      account: harnessAccount.account,
-      botId: harnessAccount.botId,
-      gameId,
-      provider,
-      structures,
-      systems,
-      troopTypes,
-    });
-    setupTransactions.push(createExplorers);
-    assertCompleted(createExplorers);
-
-    const explorerRows = await readExplorers(heraldObserver, gameId, structureIds);
-    const explorers = structures.map((structure) => {
-      const troopType = troopTypes.get(structure.structureId);
-      if (troopType === undefined)
-        throw new Error(`No troop type is configured for structure ${structure.structureId}`);
-      return buildExplorerState(structure, explorerRows, troopType);
-    });
-
+    const explorers = await waitForExplorers(game, structures);
     return {
       account: harnessAccount.account,
+      actions,
       address: harnessAccount.address,
       botId: harnessAccount.botId,
       explorers,
-      gameId,
+      gameId: game.gameId,
       nextProductionStructure: 0,
       structures,
     };
@@ -397,23 +349,21 @@ export async function prepareHarnessBots({
 
 export async function runWorkload({
   bots,
+  game,
   intervalSeconds,
   minutes,
   onTick,
   provider,
-  systems,
-  heraldUrl,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
   const overheadRpc = createRpcMetrics();
-  const readinessWaitMs = await waitForEveryBotToHaveActionStamina(provider, bots, overheadRpc);
+  const readinessWaitMs = await waitForEveryBotToHaveActionStamina(game, provider, bots, overheadRpc);
 
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
   const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
   const botSpacingMs = (intervalSeconds * 1_000) / bots.length;
-  const pathReservations = createPathReservationsByGame(bots);
-  const heraldObserver = new HeraldObserver(heraldUrl, "madara");
+  const pathReservations = new PathReservations(bots, game);
 
   for (let tick = 0; tick < ticks; tick += 1) {
     for (const [botIndex, bot] of bots.entries()) {
@@ -428,15 +378,13 @@ export async function runWorkload({
           const action = await runBotAction({
             actionIndex,
             bot,
-            gameId: bot.gameId,
+            game,
             kind: resolveActionKind(tick),
-            pathReservations: pathReservations.get(bot.gameId)!,
+            pathReservations,
             provider,
             rpc,
             scheduledAtMs,
-            systems,
             tick,
-            heraldObserver,
           });
           actions.push(action);
         }),
@@ -465,68 +413,14 @@ export function resolveActionKind(tick: number): WorkloadActionKind {
   return STEADY_ACTION_PATTERN[(tick - ACTION_PATTERN.length) % STEADY_ACTION_PATTERN.length]!;
 }
 
-export function resolveExplorerActionStaminaCost(
-  kind: "move" | "explore",
-  biome: BiomeType,
-  troopType: CairoTroopType,
-): number {
-  if (kind === "explore") return EXPLORE_STAMINA_COST;
-  if (biome === BiomeType.DeepOcean || biome === BiomeType.Ocean) return MOVE_STAMINA_COST - 10;
-  if (biome === BiomeType.Scorched) return MOVE_STAMINA_COST + 10;
-  if (troopType !== PALADIN_TROOP_TYPE) return MOVE_STAMINA_COST;
-  if (PALADIN_FAVORED_TRAVEL_BIOMES.has(biome)) {
-    return MOVE_STAMINA_COST - 10;
-  }
-  if (PALADIN_UNFAVORED_TRAVEL_BIOMES.has(biome)) {
-    return MOVE_STAMINA_COST + 10;
-  }
-  return MOVE_STAMINA_COST;
-}
-
 export function resolveWorkloadTicks(minutes: number, intervalSeconds: number): number {
   return Math.ceil((minutes * 60) / intervalSeconds);
-}
-
-export function hasExplorerWithStamina(
-  explorers: readonly { stamina: number; staminaUpdatedTick: number }[],
-  chainTick: number,
-  requiredStamina: number,
-): boolean {
-  return explorers.some((explorer) => estimatedStamina(explorer, chainTick) >= requiredStamina);
-}
-
-export function parseStructureIds(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map(parseEntityId);
-  }
-  if (typeof value !== "string") {
-    throw new Error(`Unexpected settlement structure_ids value: ${String(value)}`);
-  }
-
-  try {
-    const decoded = JSON.parse(value) as unknown;
-    if (Array.isArray(decoded)) return decoded.map(parseEntityId);
-  } catch {
-    // Preserve compatibility with historical string encodings in saved fixtures.
-  }
-
-  const ids = value.match(/0x[0-9a-f]+|\d+/gi)?.map(parseEntityId) ?? [];
-  if (ids.length === 0) {
-    throw new Error(`Could not parse settlement structure_ids: ${value}`);
-  }
-  return ids;
 }
 
 export function chooseOutwardDirection(coord: Coord, center: Coord): number {
   return [0, 1, 2, 3, 4, 5]
     .map((direction) => ({ direction, distance: cubeDistance(neighbor(coord, direction), center) }))
     .sort((left, right) => right.distance - left.distance || left.direction - right.direction)[0]!.direction;
-}
-
-export function millisecondsUntilNextArmyTick(nowMs: number): number {
-  const nowSeconds = Math.floor(nowMs / 1_000);
-  const nextTickSeconds = (Math.floor(nowSeconds / ARMY_TICK_SECONDS) + 1) * ARMY_TICK_SECONDS;
-  return (nextTickSeconds - nowSeconds + 1) * 1_000;
 }
 
 export function neighbor(coord: Coord, direction: number): Coord {
@@ -570,16 +464,22 @@ export function prioritizeExplorer<T extends ExplorerPriority>(
   })[0];
 }
 
+/** Raw calls a bot signs itself: settlement and provisioning have no client action, so they go straight to the account. */
+export async function submitCalls(account: Account, calls: Call | Call[]): Promise<HarnessSubmission> {
+  const { transaction_hash } = await account.execute(calls);
+  return { transactionHash: transaction_hash };
+}
+
 async function settleBot({
   gameType,
   harnessAccount,
-  gameId,
+  game,
   provider,
   systems,
 }: {
   gameType: HarnessGameType;
   harnessAccount: HarnessAccount;
-  gameId: number;
+  game: HarnessGame;
   provider: RpcProvider;
   systems: HarnessSystemAddresses;
 }): Promise<TrackedTransaction> {
@@ -590,90 +490,87 @@ async function settleBot({
           realmSystemsAddress: systems.realm,
           signerAddress: harnessAccount.address,
           usernameFelt,
-          gameId,
+          gameId: game.gameId,
         })
       : buildBlitzSettleCalls({
           blitzSystemsAddress: systems.blitzRealm,
           signerAddress: harnessAccount.address,
           usernameFelt,
-          gameId,
+          gameId: game.gameId,
           cosmeticTokenIds: [],
           grantStartingTroops: true,
         });
 
   return trackTransaction({
-    account: harnessAccount.account,
     botId: harnessAccount.botId,
-    calls,
-    gameId,
+    gameId: game.gameId,
     kind: "settle",
     provider,
+    send: () => submitCalls(harnessAccount.account, calls),
     stage: "setup",
   });
 }
 
 async function provisionBot({
-  account,
-  botId,
-  gameId,
+  harnessAccount,
+  game,
   provider,
   structureIds,
   systems,
 }: {
-  account: Account;
-  botId: number;
-  gameId: number;
+  harnessAccount: HarnessAccount;
+  game: HarnessGame;
   provider: RpcProvider;
-  structureIds: string[];
+  structureIds: ID[];
   systems: HarnessSystemAddresses;
 }): Promise<TrackedTransaction> {
+  const calls = structureIds.map((structureId) => ({
+    contractAddress: systems.blitzRealm,
+    entrypoint: "provision_realm",
+    calldata: [game.gameId.toString(), structureId.toString()],
+  }));
   return trackTransaction({
-    account,
-    botId,
-    calls: structureIds.map((structureId) => ({
-      contractAddress: systems.blitzRealm,
-      entrypoint: "provision_realm",
-      calldata: CallData.compile([gameId, structureId]),
-    })),
-    gameId,
+    botId: harnessAccount.botId,
+    gameId: game.gameId,
     kind: "provision",
     provider,
+    send: () => submitCalls(harnessAccount.account, calls),
     stage: "setup",
   });
 }
 
-async function createBotExplorers({
-  account,
-  botId,
-  gameId,
+async function createBotExplorer({
+  actions,
+  harnessAccount,
+  game,
   provider,
-  structures,
-  systems,
+  structure,
   troopTypes,
 }: {
-  account: Account;
-  botId: number;
-  gameId: number;
+  actions: GameActions;
+  harnessAccount: HarnessAccount;
+  game: HarnessGame;
   provider: RpcProvider;
-  structures: StructureState[];
-  systems: HarnessSystemAddresses;
-  troopTypes: Map<string, number>;
+  structure: StructureState;
+  troopTypes: Map<ID, TroopType>;
 }): Promise<TrackedTransaction> {
+  const troopType = troopTypes.get(structure.structureId);
+  if (troopType === undefined) throw new Error(`No starting troop type exists for structure ${structure.structureId}`);
   return trackTransaction({
-    account,
-    botId,
-    calls: structures.map(({ direction, structureId }) => {
-      const troopType = troopTypes.get(structureId);
-      if (troopType === undefined) throw new Error(`No starting troop type exists for structure ${structureId}`);
-      return {
-        contractAddress: systems.troopManagement,
-        entrypoint: "explorer_create",
-        calldata: CallData.compile([gameId, structureId, troopType, 0, EXPLORER_TROOP_AMOUNT, direction]),
-      };
-    }),
-    gameId,
-    kind: "create-explorers",
+    botId: harnessAccount.botId,
+    gameId: game.gameId,
+    kind: "create-explorer",
     provider,
+    send: () =>
+      game.submit(harnessAccount.account, () =>
+        actions.createExplorerArmy({
+          structureId: structure.structureId,
+          troopType,
+          troopTier: TroopTier.T1,
+          troopCount: EXPLORER_TROOP_COUNT,
+          spawnDirection: structure.direction,
+        }),
+      ),
     stage: "setup",
   });
 }
@@ -681,28 +578,26 @@ async function createBotExplorers({
 interface RunBotActionOptions {
   actionIndex: number;
   bot: HarnessBot;
-  gameId: number;
+  game: HarnessGame;
   kind: WorkloadActionKind;
   pathReservations: PathReservations;
   provider: RpcProvider;
   rpc: RpcMetrics;
   scheduledAtMs: number;
-  systems: HarnessSystemAddresses;
   tick: number;
-  heraldObserver: HeraldObserver;
 }
 
-type ExecuteBotActionOptions = RunBotActionOptions & { chainTick: number };
+type ExecuteBotActionOptions = RunBotActionOptions & { chainTicks: ChainTicks };
 
 async function runBotAction(options: RunBotActionOptions): Promise<TrackedTransaction> {
   try {
-    const chainTick = await readCurrentArmyTick(options.provider, options.rpc);
-    const transaction = await executeBotAction({ ...options, chainTick });
+    const chainTicks = await readChainTicks(options.game, options.provider, options.rpc);
+    const transaction = await executeBotAction({ ...options, chainTicks });
     classifyTransactionFailure(transaction);
     return transaction;
   } catch (error) {
-    const { actionIndex, bot, gameId, kind, rpc, scheduledAtMs, tick } = options;
-    return driverFailure({ actionIndex, botId: bot.botId, error, gameId, kind, rpc, scheduledAtMs, tick });
+    const { actionIndex, bot, kind, rpc, scheduledAtMs, tick } = options;
+    return driverFailure({ actionIndex, botId: bot.botId, error, gameId: bot.gameId, kind, rpc, scheduledAtMs, tick });
   }
 }
 
@@ -714,32 +609,25 @@ async function executeBotAction(options: ExecuteBotActionOptions): Promise<Track
 async function runProductionAction({
   actionIndex,
   bot,
-  gameId,
+  game,
   provider,
   rpc,
   scheduledAtMs,
-  systems,
   tick,
-  heraldObserver,
-}: Omit<ExecuteBotActionOptions, "chainTick" | "kind" | "pathReservations">): Promise<TrackedTransaction> {
+}: Omit<ExecuteBotActionOptions, "chainTicks" | "kind" | "pathReservations">): Promise<TrackedTransaction> {
   const structure = bot.structures[bot.nextProductionStructure % bot.structures.length]!;
   bot.nextProductionStructure += 1;
-  const resourceBefore = await heraldObserver.readResource(gameId, structure.structureId);
+  const before = requireProduction(game, structure.structureId);
 
   const transaction = await trackTransaction({
-    account: bot.account,
     actionIndex,
     botId: bot.botId,
-    calls: {
-      contractAddress: systems.production,
-      entrypoint: "burn_labor_for_resource_production",
-      calldata: CallData.compile([gameId, structure.structureId, [1], [WOOD_RESOURCE_ID]]),
-    },
-    gameId,
+    gameId: bot.gameId,
     kind: "produce",
     provider,
     rpc,
     scheduledAtMs,
+    send: () => game.submit(bot.account, () => game.produceWood(bot.account, structure.structureId)),
     stage: "workload",
     tick,
   });
@@ -748,18 +636,16 @@ async function runProductionAction({
   }
 
   try {
-    const resourceAfter = await heraldObserver.waitForResource(
-      gameId,
-      structure.structureId,
-      resourceBefore,
-      requiredAcceptedBlock(transaction),
+    const after = await game.waitFor(
+      () => changedProduction(before, game.production(structure.structureId)),
       MODEL_UPDATE_TIMEOUT_MS,
+      () => `Resource ${structure.structureId} labor or wood output delta`,
     );
     transaction.productionDelta = {
-      laborBalance: resourceAfter.laborBalance.toString(),
-      laborDelta: (resourceAfter.laborBalance - resourceBefore.laborBalance).toString(),
-      woodOutput: resourceAfter.woodOutput.toString(),
-      woodOutputDelta: (resourceAfter.woodOutput - resourceBefore.woodOutput).toString(),
+      laborBalance: after.laborBalance.toString(),
+      laborDelta: (after.laborBalance - before.laborBalance).toString(),
+      woodOutput: after.woodOutput.toString(),
+      woodOutputDelta: (after.woodOutput - before.woodOutput).toString(),
     };
   } catch (error) {
     transaction.outcome = "driver_failed";
@@ -772,34 +658,38 @@ async function runProductionAction({
 async function runExplorerAction({
   actionIndex,
   bot,
-  chainTick,
-  gameId,
+  chainTicks,
+  game,
   kind,
   pathReservations,
   provider,
   rpc,
   scheduledAtMs,
-  systems,
   tick,
-  heraldObserver,
 }: ExecuteBotActionOptions & { kind: "move" | "explore" }): Promise<TrackedTransaction> {
-  const plan = planExplorerAction(bot, kind, chainTick, gameId, systems.troopMovement, pathReservations);
+  const plan = planExplorerAction(bot, kind, chainTicks, game, pathReservations);
   const selectedExplorer = plan.explorer;
-  const previousCoord = selectedExplorer.coord;
   selectedExplorer.lastUsedAt = actionIndex;
-  const reservation = pathReservations.reserve(selectedExplorer, plan.target);
+  const reservation = pathReservations.reserve(selectedExplorer.explorerId, plan.from, plan.target);
+  const before = requireExplorer(game, selectedExplorer.explorerId);
 
   const transaction = await trackTransaction({
-    account: bot.account,
     actionIndex,
     botId: bot.botId,
-    calls: plan.calls,
     exploreRequested: kind === "explore",
-    gameId,
+    gameId: bot.gameId,
     kind,
     provider,
     rpc,
     scheduledAtMs,
+    send: () =>
+      game.submit(bot.account, () =>
+        bot.actions.moveArmy({
+          explorerId: selectedExplorer.explorerId,
+          path: plan.path,
+          currentArmiesTick: chainTicks.armies,
+        }),
+      ),
     stage: "workload",
     tick,
   });
@@ -809,21 +699,13 @@ async function runExplorerAction({
   }
 
   try {
-    const updated = await heraldObserver.waitForExplorer(
-      gameId,
-      selectedExplorer.explorerId,
-      {
-        alt: false,
-        x: selectedExplorer.coord.x,
-        y: selectedExplorer.coord.y,
-        stamina: selectedExplorer.stamina,
-        staminaUpdatedTick: selectedExplorer.staminaUpdatedTick,
-      },
-      requiredAcceptedBlock(transaction),
+    const after = await game.waitFor(
+      () => changedExplorer(before, game.explorer(selectedExplorer.explorerId)),
       MODEL_UPDATE_TIMEOUT_MS,
+      () => `Explorer ${selectedExplorer.explorerId}`,
     );
-    pathReservations.complete(reservation, { x: updated.x, y: updated.y });
-    applyExplorerUpdate(selectedExplorer, kind, plan.direction, previousCoord, updated);
+    pathReservations.complete(reservation, after.coord);
+    applyExplorerUpdate(selectedExplorer, kind, plan.direction, before.coord, after.coord);
   } catch (error) {
     pathReservations.complete(reservation, plan.target);
     transaction.outcome = "driver_failed";
@@ -833,61 +715,65 @@ async function runExplorerAction({
   return transaction;
 }
 
+/**
+ * The client plans every legal step from the explorer's RECS position (occupancy, biome stamina, food); the harness
+ * only chooses which of those steps keeps its route outward and clear of the other bots' reservations.
+ */
 function planExplorerAction(
   bot: HarnessBot,
   kind: "move" | "explore",
-  chainTick: number,
-  gameId: number,
-  troopMovementAddress: string,
+  chainTicks: ChainTicks,
+  game: HarnessGame,
   pathReservations: PathReservations,
 ): ExplorerActionPlan {
   const routeReady = bot.explorers.filter((explorer) =>
-    kind === "explore" ? explorerAtFrontier(explorer) : explorer.pathDirections.length > 0,
+    kind === "explore" ? explorer.atFrontier : explorer.pathDirections.length > 0,
   );
+  const indexes = game.armyPathIndexes();
+  const wantedActionType = kind === "explore" ? ActionType.Explore : ActionType.Move;
   const remaining = [...routeReady];
-  let minimumRequiredStamina = Number.POSITIVE_INFINITY;
+  let staminaShort = false;
   while (remaining.length > 0) {
     const explorer = prioritizeExplorer(remaining, kind)!;
     remaining.splice(remaining.indexOf(explorer), 1);
+    const from = requireExplorer(game, explorer.explorerId).coord;
+    const paths = bot.actions.armyPaths({
+      explorerId: explorer.explorerId,
+      ...indexes,
+      currentDefaultTick: chainTicks.default,
+      currentArmiesTick: chainTicks.armies,
+      playerAddress: ContractAddress(bot.address),
+    });
     const directions =
-      kind === "explore" ? chooseExploreDirections(explorer, bot.structures) : [chooseMoveDirection(explorer)];
+      kind === "explore" ? chooseExploreDirections(explorer, from, bot.structures) : [chooseMoveDirection(explorer)];
     for (const direction of directions) {
-      const target = neighbor(explorer.coord, direction);
+      const target = neighbor(from, direction);
       if (!pathReservations.canReserve(explorer.explorerId, target)) continue;
-      const staminaCost = resolveExplorerActionStaminaCost(
-        kind,
-        Biome.getBiome(target.x, target.y),
-        explorer.troopType,
-      );
-      minimumRequiredStamina = Math.min(minimumRequiredStamina, staminaCost);
-      if (estimatedStamina(explorer, chainTick) < staminaCost) continue;
-      return {
-        calls: buildExplorerCalls(explorer.explorerId, direction, kind === "explore", gameId, troopMovementAddress),
-        direction,
-        explorer,
-        target,
-      };
+      const path = paths.get(ActionPaths.posKey({ col: target.x, row: target.y }));
+      if (path && ActionPaths.getActionType(path) === wantedActionType) {
+        return { direction, explorer, from, path, target };
+      }
+      staminaShort ||= game.explorerStamina(explorer.explorerId, chainTicks.armies) < game.minimumStaminaFor(kind);
     }
   }
 
-  if (Number.isFinite(minimumRequiredStamina)) {
+  if (staminaShort) {
     throw new GameRuleLimitError(
-      `No explorer has enough route-adjusted stamina for ${kind}; minimum route cost is ${minimumRequiredStamina}`,
+      `No explorer has enough stamina for ${kind}; the cheapest ${kind} costs ${game.minimumStaminaFor(kind)}`,
     );
   }
   const routeState = bot.explorers
-    .map(
-      (explorer) =>
-        `${explorer.explorerId}@${coordKey(explorer.coord)} path=${explorer.pathDirections.length} blocked=${[
-          ...(explorer.blockedDirections.get(coordKey(explorer.coord)) ?? []),
-        ].join(",")}`,
-    )
+    .map((explorer) => {
+      const at = coordKey(requireExplorer(game, explorer.explorerId).coord);
+      const blocked = [...(explorer.blockedDirections.get(at) ?? [])].join(",");
+      return `${explorer.explorerId}@${at} path=${explorer.pathDirections.length} blocked=${blocked}`;
+    })
     .join("; ");
   throw new HarnessPathingError(`No collision-free ${kind} route is available for bot ${bot.botId}: ${routeState}`);
 }
 
-function chooseExploreDirections(explorer: ExplorerState, structures: StructureState[]): number[] {
-  const blocked = explorer.blockedDirections.get(coordKey(explorer.coord)) ?? new Set<number>();
+function chooseExploreDirections(explorer: ExplorerState, from: Coord, structures: StructureState[]): number[] {
+  const blocked = explorer.blockedDirections.get(coordKey(from)) ?? new Set<number>();
   const previousDirection = explorer.pathDirections.at(-1);
   const preferredDirection = previousDirection ?? explorer.outwardDirection;
   const center = resolveSettlementCenter(structures);
@@ -897,7 +783,7 @@ function chooseExploreDirections(explorer: ExplorerState, structures: StructureS
     .map((direction) => ({
       direction,
       preferred: direction === preferredDirection,
-      distance: cubeDistance(neighbor(explorer.coord, direction), center),
+      distance: cubeDistance(neighbor(from, direction), center),
     }))
     .sort((left, right) => {
       return (
@@ -912,31 +798,7 @@ function chooseExploreDirections(explorer: ExplorerState, structures: StructureS
 function chooseMoveDirection(explorer: ExplorerState): number {
   const pathDirection = explorer.pathDirections.at(-1);
   if (pathDirection === undefined) throw new Error(`Explorer ${explorer.explorerId} has no discovered path to travel`);
-  return explorerAtFrontier(explorer) ? oppositeDirection(pathDirection) : pathDirection;
-}
-
-function buildExplorerCalls(
-  explorerId: string,
-  direction: number,
-  explore: boolean,
-  gameId: number,
-  troopMovementAddress: string,
-): Call[] {
-  const calls: Call[] = [
-    {
-      contractAddress: troopMovementAddress,
-      entrypoint: "explorer_move",
-      calldata: CallData.compile([gameId, explorerId, [direction], explore]),
-    },
-  ];
-  if (explore) {
-    calls.push({
-      contractAddress: troopMovementAddress,
-      entrypoint: "explorer_extract_reward",
-      calldata: CallData.compile([gameId, explorerId]),
-    });
-  }
-  return calls;
+  return explorer.atFrontier ? oppositeDirection(pathDirection) : pathDirection;
 }
 
 function applyExplorerUpdate(
@@ -944,9 +806,9 @@ function applyExplorerUpdate(
   kind: "move" | "explore",
   direction: number,
   previousCoord: Coord,
-  updated: ExplorerRow,
+  updatedCoord: Coord,
 ): void {
-  const moved = updated.x !== previousCoord.x || updated.y !== previousCoord.y;
+  const moved = updatedCoord.x !== previousCoord.x || updatedCoord.y !== previousCoord.y;
   if (kind === "explore" && moved) {
     explorer.pathDirections.push(direction);
     explorer.atFrontier = true;
@@ -958,22 +820,10 @@ function applyExplorerUpdate(
     explorer.atFrontier = true;
   }
   if (kind === "move") explorer.atFrontier = !explorer.atFrontier;
-
-  explorer.coord = { x: updated.x, y: updated.y };
-  explorer.stamina = updated.stamina;
-  explorer.staminaUpdatedTick = updated.staminaUpdatedTick;
-}
-
-function explorerAtFrontier(explorer: ExplorerState): boolean {
-  return explorer.atFrontier;
-}
-
-function estimatedStamina(explorer: ExplorerState, chainTick: number): number {
-  const elapsedTicks = Math.max(0, chainTick - explorer.staminaUpdatedTick);
-  return Math.min(STAMINA_MAX, explorer.stamina + elapsedTicks * STAMINA_GAIN_PER_TICK);
 }
 
 async function waitForEveryBotToHaveActionStamina(
+  game: HarnessGame,
   provider: RpcProvider,
   bots: HarnessBot[],
   rpc: RpcMetrics,
@@ -982,10 +832,10 @@ async function waitForEveryBotToHaveActionStamina(
   const deadline = startedAtMs + ACTION_READINESS_TIMEOUT_MS;
 
   while (Date.now() <= deadline) {
-    const chainTick = await readCurrentArmyTick(provider, rpc);
-    const everyBotReady = bots.every((bot) => {
-      return hasExplorerWithStamina(bot.explorers, chainTick, FIRST_ACTION_REQUIRED_STAMINA);
-    });
+    const { armies } = await readChainTicks(game, provider, rpc);
+    const everyBotReady = bots.every((bot) =>
+      bot.explorers.some((explorer) => game.explorerStamina(explorer.explorerId, armies) >= FIRST_ACTION_REQUIRED_STAMINA),
+    );
     if (everyBotReady) return Date.now() - startedAtMs;
     await sleep(ACTION_READINESS_POLL_INTERVAL_MS);
   }
@@ -995,9 +845,9 @@ async function waitForEveryBotToHaveActionStamina(
   );
 }
 
-async function readCurrentArmyTick(provider: RpcProvider, rpc: RpcMetrics): Promise<number> {
+async function readChainTicks(game: HarnessGame, provider: RpcProvider, rpc: RpcMetrics): Promise<ChainTicks> {
   const block = await measureRpc(rpc, "getBlock", () => provider.getBlock("latest"));
-  return Math.floor(Number(block.timestamp) / ARMY_TICK_SECONDS);
+  return game.ticksAt(Number(block.timestamp));
 }
 
 export async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
@@ -1019,16 +869,14 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
     tick: options.tick,
   };
 
+  let submission: HarnessSubmission;
   let transactionHash: string;
   try {
     const submitStartedAtMs = Date.now();
     record.submitStartedAt = toIso(submitStartedAtMs);
-    const submitted = await options.account.execute(options.calls, {
-      resourceBounds: MADARA_RESOURCE_BOUNDS,
-      tip: 0,
-    });
+    submission = await options.send();
     const submittedAtMs = Date.now();
-    transactionHash = normalizeTransactionHash(submitted.transaction_hash);
+    transactionHash = normalizeTransactionHash(submission.transactionHash);
     record.transactionHash = transactionHash;
     record.submittedAt = toIso(submittedAtMs);
     record.submitMs = submittedAtMs - submitStartedAtMs;
@@ -1039,14 +887,26 @@ export async function trackTransaction(options: TrackTransactionOptions): Promis
     return record;
   }
 
+  // The receipt lifecycle is the measurement (pre-confirmed and L2 timings at the poll boundary); the client's own
+  // confirmation rides alongside so a bot never plans its next step before the client processed this one.
   const timeoutMs = transactionTimeoutMs(options.stage);
-  Object.assign(
-    record,
-    await waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs, rpc),
-  );
+  const [lifecycle] = await Promise.all([
+    waitForReceiptLifecycle(options.provider, transactionHash, Date.parse(record.submittedAt!), timeoutMs, rpc),
+    settleQuietly(submission.confirmed),
+  ]);
+  Object.assign(record, lifecycle);
   record.rpc = snapshotRpcMetrics(rpc);
   return record;
 }
+
+/** An action's rejection is the same revert the receipt lifecycle records, so only its completion matters here. */
+const settleQuietly = (confirmed: Promise<unknown> | undefined): Promise<void> =>
+  confirmed
+    ? confirmed.then(
+        () => undefined,
+        () => undefined,
+      )
+    : Promise.resolve();
 
 async function waitForReceiptLifecycle(
   provider: RpcProvider,
@@ -1123,31 +983,12 @@ async function waitForReceiptLifecycle(
   };
 }
 
-async function readMapCenter(observer: HeraldObserver, gameId: number): Promise<Coord> {
-  const rows = (await observer.readModelRows(gameId, ["WorldConfig"])).get("WorldConfig")!;
-  const row = rows[0];
-  if (!row) throw new Error(`WorldConfig ${gameId} is absent from Herald`);
-  const coordinate = CENTER_COORD - asNumber(row.map_center_offset, "WorldConfig.map_center_offset");
-  return { x: coordinate, y: coordinate };
-}
-
-async function readSettlementStructureIds(
-  observer: HeraldObserver,
-  gameId: number,
-  address: string,
-  gameType: HarnessGameType,
-): Promise<string[]> {
-  const rows = (
-    await observer.waitForModelRows(
-      gameId,
-      ["BlitzSettlement"],
-      (models) => models.get("BlitzSettlement")!.some((candidate) => feltEquals(candidate.player, address)),
-      MODEL_UPDATE_TIMEOUT_MS,
-    )
-  ).get("BlitzSettlement")!;
-  const row = rows.find((candidate) => feltEquals(candidate.player, address));
-  if (!row) throw new Error(`Settlement for ${address} in game ${gameId} is absent from Herald`);
-  const structureIds = parseStructureIds(row.structure_ids);
+async function waitForSettlement(game: HarnessGame, address: string, gameType: HarnessGameType): Promise<ID[]> {
+  const structureIds = await game.waitFor(
+    () => game.settlementStructureIds(address),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Settlement for ${address} in game ${game.gameId}`,
+  );
   const expected = settlementStructureCount(gameType);
   if (structureIds.length !== expected) {
     throw new Error(`Expected ${expected} structures for ${address}, found ${structureIds.length}`);
@@ -1155,112 +996,91 @@ async function readSettlementStructureIds(
   return structureIds;
 }
 
-async function readStructures(
-  observer: HeraldObserver,
-  gameId: number,
-  structureIds: string[],
-  mapCenter: Coord,
-): Promise<StructureState[]> {
-  const requestedIds = new Set(structureIds);
-  const rows = (
-    await observer.waitForModelRows(
-      gameId,
-      ["Structure"],
-      (models) =>
-        models.get("Structure")!.filter((row) => requestedIds.has(parseEntityId(row.entity_id))).length ===
-        structureIds.length,
-      MODEL_UPDATE_TIMEOUT_MS,
-    )
-  )
-    .get("Structure")!
-    .filter((row) => requestedIds.has(parseEntityId(row.entity_id)));
-  if (rows.length !== structureIds.length) {
-    throw new Error(`Expected ${structureIds.length} structures in Herald, found ${rows.length}`);
-  }
-
-  const byId = new Map(rows.map((row) => [parseEntityId(row.entity_id), asRecord(row.base, "Structure.base")]));
-  return structureIds.map((structureId) => {
-    const base = byId.get(structureId);
-    if (!base) throw new Error(`Structure ${structureId} is absent from Herald`);
-    const coord = {
-      x: asNumber(base.coord_x, "Structure.base.coord_x"),
-      y: asNumber(base.coord_y, "Structure.base.coord_y"),
-    };
-    return { coord, direction: chooseOutwardDirection(coord, mapCenter), structureId };
-  });
-}
-
-async function readExplorers(observer: HeraldObserver, gameId: number, structureIds: string[]): Promise<ExplorerRow[]> {
-  const requestedOwners = new Set(structureIds);
-  await observer.waitForModelRows(
-    gameId,
-    ["ExplorerTroops"],
-    (models) =>
-      models.get("ExplorerTroops")!.filter((row) => requestedOwners.has(parseEntityId(row.owner))).length ===
-      structureIds.length,
+async function waitForStructures(game: HarnessGame, structureIds: ID[]): Promise<StructureState[]> {
+  const mapCenter = game.mapCenter();
+  return game.waitFor(
+    () =>
+      collectAll(structureIds, (structureId) => {
+        const coord = game.structureCoord(structureId);
+        return coord && { coord, direction: chooseOutwardDirection(coord, mapCenter), structureId };
+      }),
     MODEL_UPDATE_TIMEOUT_MS,
-  );
-  const rows = (await observer.readExplorers(gameId)).filter((row) => requestedOwners.has(row.owner));
-  if (rows.length !== structureIds.length) {
-    throw new Error(`Expected ${structureIds.length} explorers in Herald, found ${rows.length}`);
-  }
-  return rows;
-}
-
-async function readStartingTroopTypes(
-  observer: HeraldObserver,
-  gameId: number,
-  structureIds: string[],
-): Promise<Map<string, number>> {
-  const requestedIds = new Set(structureIds);
-  const rows = (
-    await observer.waitForModelRows(
-      gameId,
-      ["Resource"],
-      (models) =>
-        models.get("Resource")!.filter((row) => requestedIds.has(parseEntityId(row.entity_id))).length ===
-        structureIds.length,
-      MODEL_UPDATE_TIMEOUT_MS,
-    )
-  )
-    .get("Resource")!
-    .filter((row) => requestedIds.has(parseEntityId(row.entity_id)));
-  if (rows.length !== structureIds.length) {
-    throw new Error(`Expected resources for ${structureIds.length} structures in Herald, found ${rows.length}`);
-  }
-
-  return new Map(
-    rows.map((row) => {
-      const balances = [row.KNIGHT_T1_BALANCE, row.PALADIN_T1_BALANCE, row.CROSSBOWMAN_T1_BALANCE];
-      const troopType = balances.findIndex((balance) => BigInt(balance) >= EXPLORER_TROOP_AMOUNT);
-      if (troopType < 0) throw new Error(`Structure ${row.entity_id} has no funded T1 troop type`);
-      return [parseEntityId(row.entity_id), troopType];
-    }),
+    () => `Structures ${structureIds.join(", ")}`,
   );
 }
 
-function buildExplorerState(structure: StructureState, rows: ExplorerRow[], troopType: number): ExplorerState {
-  const row = rows.find((candidate) => candidate.owner === structure.structureId);
-  if (!row) throw new Error(`Explorer for structure ${structure.structureId} is absent from Herald`);
+async function waitForStartingTroopTypes(game: HarnessGame, structureIds: ID[]): Promise<Map<ID, TroopType>> {
+  const troopTypes = await game.waitFor(
+    () => collectAll(structureIds, (structureId) => game.startingTroopType(structureId)),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Resources of structures ${structureIds.join(", ")}`,
+  );
+  return new Map(structureIds.map((structureId, index) => [structureId, troopTypes[index]!]));
+}
+
+async function waitForExplorers(game: HarnessGame, structures: StructureState[]): Promise<ExplorerState[]> {
+  return game.waitFor(
+    () =>
+      collectAll(structures, (structure) => {
+        const explorerId = game.explorerOf(structure.structureId);
+        return explorerId === undefined ? undefined : buildExplorerState(structure, explorerId);
+      }),
+    MODEL_UPDATE_TIMEOUT_MS,
+    () => `Explorers of structures ${structures.map(({ structureId }) => structureId).join(", ")}`,
+  );
+}
+
+/** Every item resolved, or nothing yet: the shape a RECS wait needs for a set of rows that land independently. */
+function collectAll<T, R>(items: readonly T[], read: (item: T) => R | undefined): R[] | undefined {
+  const collected: R[] = [];
+  for (const item of items) {
+    const value = read(item);
+    if (value === undefined) return undefined;
+    collected.push(value);
+  }
+  return collected;
+}
+
+function buildExplorerState(structure: StructureState, explorerId: ID): ExplorerState {
   return {
     atFrontier: true,
     blockedDirections: new Map(),
-    coord: { x: row.x, y: row.y },
-    explorerId: row.explorerId,
+    explorerId,
     lastUsedAt: -1,
     outwardDirection: structure.direction,
     pathDirections: [],
-    stamina: row.stamina,
-    staminaUpdatedTick: row.staminaUpdatedTick,
     structureId: structure.structureId,
-    troopType: parseCairoTroopType(troopType),
   };
 }
 
-function parseCairoTroopType(value: number): CairoTroopType {
-  if (value === 0 || value === 1 || value === 2) return value;
-  throw new Error(`Unknown Cairo troop type ${value}`);
+function requireExplorer(game: HarnessGame, explorerId: ID): ExplorerRow {
+  const explorer = game.explorer(explorerId);
+  if (!explorer) throw new Error(`Explorer ${explorerId} is not in RECS`);
+  return explorer;
 }
+
+function requireProduction(game: HarnessGame, structureId: ID): ProductionState {
+  const production = game.production(structureId);
+  if (!production) throw new Error(`Resource ${structureId} is not in RECS`);
+  return production;
+}
+
+const changedExplorer = (before: ExplorerRow, current: ExplorerRow | undefined): ExplorerRow | undefined =>
+  current &&
+  (current.coord.x !== before.coord.x ||
+    current.coord.y !== before.coord.y ||
+    current.staminaAmount !== before.staminaAmount ||
+    current.staminaUpdatedTick !== before.staminaUpdatedTick)
+    ? current
+    : undefined;
+
+const changedProduction = (
+  before: ProductionState,
+  current: ProductionState | undefined,
+): ProductionState | undefined =>
+  current && (current.laborBalance !== before.laborBalance || current.woodOutput !== before.woodOutput)
+    ? current
+    : undefined;
 
 function assertCompleted(transaction: TrackedTransaction): void {
   if (transaction.outcome !== "completed") {
@@ -1268,13 +1088,6 @@ function assertCompleted(transaction: TrackedTransaction): void {
       `Bot ${transaction.botId} ${transaction.kind} failed (${transaction.outcome}): ${transaction.error ?? "unknown error"}`,
     );
   }
-}
-
-function requiredAcceptedBlock(transaction: TrackedTransaction): number {
-  if (transaction.acceptedOnL2Block === undefined) {
-    throw new Error(`Completed transaction ${transaction.transactionHash ?? "unknown"} has no accepted block`);
-  }
-  return transaction.acceptedOnL2Block;
 }
 
 function driverFailure({
@@ -1348,16 +1161,6 @@ function classifyTransactionFailure(transaction: TrackedTransaction): void {
   }
 }
 
-function createPathReservationsByGame(bots: readonly HarnessBot[]): Map<number, PathReservations> {
-  const botsByGame = new Map<number, HarnessBot[]>();
-  for (const bot of bots) {
-    const gameBots = botsByGame.get(bot.gameId) ?? [];
-    gameBots.push(bot);
-    botsByGame.set(bot.gameId, gameBots);
-  }
-  return new Map([...botsByGame].map(([gameId, gameBots]) => [gameId, new PathReservations(gameBots)]));
-}
-
 export function createRpcMetrics(): RpcMetrics {
   return {
     estimateInvokeFee: { calls: 0, wallMs: 0 },
@@ -1420,36 +1223,6 @@ function normalizeTransactionHash(value: string): string {
   const digits = value.toLowerCase().replace(/^0x/, "");
   if (!/^[0-9a-f]+$/.test(digits)) throw new Error(`Invalid transaction hash ${value}`);
   return `0x${digits.padStart(64, "0")}`;
-}
-
-function parseEntityId(value: unknown): string {
-  if (typeof value !== "string" && typeof value !== "number" && typeof value !== "bigint") {
-    throw new Error(`Invalid entity id ${String(value)}`);
-  }
-  const parsed = BigInt(value);
-  if (parsed < 0n) throw new Error(`Invalid entity id ${String(value)}`);
-  return parsed.toString();
-}
-
-function feltEquals(left: unknown, right: unknown): boolean {
-  try {
-    return BigInt(left as string | number | bigint) === BigInt(right as string | number | bigint);
-  } catch {
-    return false;
-  }
-}
-
-function asRecord(value: unknown, field: string): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`Herald ${field} must be an object`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function asNumber(value: unknown, field: string): number {
-  const parsed = Number(BigInt(value as string | number | bigint));
-  if (!Number.isSafeInteger(parsed)) throw new Error(`Herald ${field} must be a safe integer`);
-  return parsed;
 }
 
 function coordKey(coord: Coord): string {
