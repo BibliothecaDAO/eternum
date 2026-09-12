@@ -12,6 +12,7 @@ import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { clientDataPlugin } from "./build/client-data";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
+import { createPwaReleasePlugin } from "./build/pwa-release";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
@@ -62,6 +63,13 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           globPatterns: PWA_PRECACHE_FILES.filter((file) => file !== "manifest.webmanifest"),
           maximumFileSizeToCacheInBytes: PWA_PRECACHE_BUDGET_BYTES,
           sourcemap: false,
+          buildPlugins: {
+            rollup: [
+              createPwaReleasePlugin(
+                process.env.VITE_PUBLIC_GAME_VERSION || appEnv.VITE_PUBLIC_GAME_VERSION || "development",
+              ),
+            ],
+          },
         },
         manifest: {
           id: "/",

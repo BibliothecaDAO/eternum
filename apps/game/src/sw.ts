@@ -8,11 +8,6 @@ declare const self: ServiceWorkerGlobalScope & {
 cleanupOutdatedCaches();
 precacheAndRoute(self.__WB_MANIFEST);
 
-// Include the release in worker bytes even when the offline document has not changed.
-self.addEventListener("install", () => {
-  console.info("pwa_worker_installed", { release: import.meta.env.VITE_PUBLIC_GAME_VERSION || "development" });
-});
-
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") event.waitUntil(self.skipWaiting());
 });
