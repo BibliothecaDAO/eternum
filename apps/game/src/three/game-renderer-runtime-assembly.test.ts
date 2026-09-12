@@ -77,7 +77,6 @@ describe("createGameRendererRuntimeAssembly", () => {
     const runtimeState = {
       backend: { renderer: { toneMapping: 1, toneMappingExposure: 0.9 } },
       controls: { id: "controls" },
-      fastTravelScene: { requestSceneRefresh: vi.fn() },
       hexceptionScene: { id: "hexception-scene" },
       hudScene: {
         getWeatherManager: vi.fn(() => ({
@@ -120,7 +119,6 @@ describe("createGameRendererRuntimeAssembly", () => {
     const result = createGameRendererRuntimeAssembly({
       addWindowListener,
       createFolder,
-      fastTravelEnabled: () => true,
       isGraphicsDevEnabled: true,
       isMemoryMonitoringEnabled: false,
       isMobileDevice: false,
@@ -136,16 +134,12 @@ describe("createGameRendererRuntimeAssembly", () => {
         runtimeAssemblyMocks.createRendererControlBridgeRuntime.mock.lastCall as unknown as [unknown] | undefined
       )?.[0] as
         | {
-            fastTravelEnabled(): boolean;
-            getCurrentScene(): string | undefined;
             getRenderer(): unknown;
             markLabelsDirty(): void;
           }
         | undefined,
       "control bridge",
     );
-    expect(controlBridgeInput.fastTravelEnabled()).toBe(true);
-    expect(controlBridgeInput.getCurrentScene()).toBe("world-map");
     expect(controlBridgeInput.getRenderer()).toBe(runtimeState.renderer);
 
     controlBridgeInput.markLabelsDirty();
@@ -174,7 +168,6 @@ describe("createGameRendererRuntimeAssembly", () => {
       isGraphicsDevEnabled: true,
       resolvePixelRatio: expect.any(Function),
       scenes: {
-        fastTravelScene: runtimeState.fastTravelScene,
         hexceptionScene: runtimeState.hexceptionScene,
         worldmapScene: runtimeState.worldmapScene,
       },
@@ -199,17 +192,13 @@ describe("createGameRendererRuntimeAssembly", () => {
     const routeInput = requireMockCallInput(
       (runtimeAssemblyMocks.createRendererRouteRuntime.mock.lastCall as unknown as [unknown] | undefined)?.[0] as
         | {
-            fastTravelEnabled(): boolean;
             getCurrentScene(): string | undefined;
-            hasFastTravelScene(): boolean;
             markLabelsDirty(): void;
           }
         | undefined,
       "route runtime",
     );
-    expect(routeInput.fastTravelEnabled()).toBe(true);
     expect(routeInput.getCurrentScene()).toBe("world-map");
-    expect(routeInput.hasFastTravelScene()).toBe(true);
 
     routeInput.markLabelsDirty();
     expect(runtimeState.labelRuntime.markDirty).toHaveBeenCalledTimes(2);

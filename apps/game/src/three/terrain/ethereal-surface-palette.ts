@@ -1,4 +1,4 @@
-export interface FastTravelSurfacePalette {
+export interface EtherealSurfacePalette {
   backgroundColor: "#000000";
   fillColor: "#05000a";
   fillOpacity: 0;
@@ -8,7 +8,7 @@ export interface FastTravelSurfacePalette {
   accentColor: "#ffd6f7";
 }
 
-export function createFastTravelSurfacePalette(): FastTravelSurfacePalette {
+export function createEtherealSurfacePalette(): EtherealSurfacePalette {
   return {
     backgroundColor: "#000000",
     fillColor: "#05000a",

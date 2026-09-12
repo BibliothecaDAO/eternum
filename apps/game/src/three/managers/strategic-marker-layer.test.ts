@@ -21,6 +21,23 @@ const meshNamed = (layer: StrategicMarkerLayer, name: string) => {
 };
 
 describe("StrategicMarkerLayer", () => {
+  it("drops all old-layer markers and reuses the pools on a return crossing", () => {
+    const { layer } = createLayer();
+    const realms = meshNamed(layer, "strategic-structure:realm");
+    layer.setStructure(7, "realm", 12, 3, new Color("red"));
+    layer.setArmy(9, "T1", 13, 3, new Color("green"));
+    layer.commit();
+    layer.clear();
+    expect(layer.metrics).toMatchObject({ structures: 0, armies: 0, drawCalls: 0 });
+    expect(layer.object3d.children.every((mesh) => (mesh as import("three").InstancedMesh).count === 0)).toBe(true);
+    layer.setStructure(7, "realm", 12, 3, new Color("red"));
+    layer.commit();
+    expect(meshNamed(layer, "strategic-structure:realm")).toBe(realms);
+    expect(realms.count).toBe(1);
+    expect(layer.metrics).toMatchObject({ structures: 1, armies: 0 });
+    layer.dispose();
+  });
+
   it("places one tinted instance per structure in its kind's pool and uploads only the touched range", () => {
     const { layer } = createLayer();
     layer.setStructure(7, "realm", 12.5, -3, new Color(0xff0000));

@@ -183,6 +183,12 @@ export class StrategicMarkerLayer {
     this.metrics.armies = this.armyTierByEntity.size;
   }
 
+  clear(): void {
+    for (const entityId of this.structureKindByEntity.keys()) this.removeStructure(entityId);
+    for (const entityId of this.armyTierByEntity.keys()) this.removeArmy(entityId);
+    this.commit();
+  }
+
   setVisible(visible: boolean): void {
     this.object3d.visible = visible;
   }

@@ -15,17 +15,25 @@ import {
   useImportantFeed,
   useUnreadFeedCount,
 } from "@/ui/features/event-feed/quick-feed";
-import { LocalTilePanel, MapTilePanel, MinimapPanel } from "@/ui/features/world/components/bottom-right-panel";
+import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { useQuery } from "@bibliothecadao/react";
 import type { LucideIcon } from "lucide-react";
 import Castle from "lucide-react/dist/esm/icons/castle";
 import Crosshair from "lucide-react/dist/esm/icons/crosshair";
 import MapIcon from "lucide-react/dist/esm/icons/map";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square";
 import ScrollText from "lucide-react/dist/esm/icons/scroll-text";
-import { type CSSProperties, memo, type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  memo,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { HudChatWindow } from "./hud-chat-window";
 import { EmpireCockpit } from "./left-facets/empire-cockpit";
 import { StructureListColumn } from "./left-facets/structure-list-column";
@@ -84,7 +92,7 @@ const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
 export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const ordersAllowed = useUIStore(canIssueOrders);
-  const { isMapView, selectionKey } = useTileSelection();
+  const tileDetails = useSelectedTileDetails();
   const { open, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
   const { rows, pinned } = useImportantFeed();
   const unread = useUnreadFeedCount(rows, open === "log");
@@ -142,12 +150,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
               </button>
             </header>
             <div className="min-h-0 overflow-y-auto overscroll-contain p-2 touch-pan-y">
-              <SheetContent
-                tab={open}
-                isMapView={isMapView}
-                ordersAllowed={ordersAllowed}
-                hasSelection={selectionKey !== null}
-              />
+              <SheetContent tab={open} ordersAllowed={ordersAllowed} tileDetails={tileDetails} />
             </div>
           </section>
         )}
@@ -218,24 +221,22 @@ const TabButton = ({
 
 const SheetContent = ({
   tab,
-  isMapView,
   ordersAllowed,
-  hasSelection,
+  tileDetails,
 }: {
   tab: CompactTab;
-  isMapView: boolean;
   ordersAllowed: boolean;
-  hasSelection: boolean;
+  tileDetails: ReactNode;
 }) => {
   if (tab === "map") return <MinimapPanel compact />;
-  if (tab === "details" && !hasSelection)
+  if (tab === "details" && tileDetails === null)
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
         <Crosshair aria-hidden="true" className="h-6 w-6 text-gold" />
         <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
       </div>
     );
-  if (tab === "details") return isMapView ? <MapTilePanel /> : <LocalTilePanel />;
+  if (tab === "details") return tileDetails;
   if (tab === "empire") return ordersAllowed ? <EmpireColumn /> : <SpectatorStandingsBody />;
   return null;
 };
@@ -249,27 +250,6 @@ const EmpireColumn = () => {
       <EmpireCockpit />
     </>
   );
-};
-
-/**
- * Tile details follow the same rule as the desktop `BottomRightPanel`: the selected hex in map view, the selected
- * building hex in local view. The key is null with no selection. Selecting a tile never opens the sheet on its own:
- * on a phone the sheet covers the map, and the next tap or hold is usually the order for the unit just selected.
- */
-const useTileSelection = () => {
-  const { isMapView } = useQuery();
-  const selectedHex = useUIStore((state) => state.selectedHex);
-  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
-  const selectionKey = isMapView
-    ? selectedHex && `${selectedHex.col},${selectedHex.row}`
-    : selectedBuildingHex &&
-      [
-        selectedBuildingHex.outerCol,
-        selectedBuildingHex.outerRow,
-        selectedBuildingHex.innerCol,
-        selectedBuildingHex.innerRow,
-      ].join(",");
-  return { isMapView, selectionKey: selectionKey ?? null };
 };
 
 function useCompactPanels() {

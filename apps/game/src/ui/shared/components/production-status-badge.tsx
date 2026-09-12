@@ -7,7 +7,6 @@ import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
-const PRODUCTION_PULSE_THRESHOLD_SECONDS = 2 * 60;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
@@ -39,6 +38,8 @@ interface ProductionStatusBadgeProps {
    * (e.g. green/red for positive/negative net production rates).
    */
   cornerTopRightClassName?: string;
+  /** Changes when the caller wants one accrual sweep around the token; unchanged keys never replay it. */
+  accrualKey?: number;
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
@@ -57,6 +58,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   cornerTopRight,
   cornerBottomRight,
   cornerTopRightClassName,
+  accrualKey,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
   const progressPercent = !isProducing
@@ -64,9 +66,6 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
     : effectiveRemaining === null || effectiveRemaining >= PRODUCTION_DEPLETION_WINDOW_SECONDS
       ? 100
       : clamp((effectiveRemaining / PRODUCTION_DEPLETION_WINDOW_SECONDS) * 100, 0, 100);
-
-  const shouldPulse =
-    isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
   const [r, g, b] = isProducing ? PRODUCING_COLOR : IDLE_COLOR;
 
@@ -153,12 +152,6 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           ))}
         </div>
       )}
-      {shouldPulse && (
-        <span
-          className={clsx("absolute pointer-events-none rounded-full animate-ping", preset.ringOffset)}
-          style={{ backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)` }}
-        />
-      )}
       {isProducing && (
         <span
           className={clsx("absolute pointer-events-none rounded-full", preset.ringOffset)}
@@ -201,9 +194,9 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           {cornerTopLeft}
         </span>
       )}
-      {cornerTopRight && (
+      {accrualKey !== undefined && accrualKey > 0 && (
         <span
-          key={cornerTopRight}
+          key={accrualKey}
           aria-hidden
           className={clsx("absolute pointer-events-none rounded-full accrual-sweep", preset.progressOffset)}
         />

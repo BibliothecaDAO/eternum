@@ -1,14 +1,10 @@
-import { SceneName } from "../types";
-
 interface WorldmapSwitchOffRuntimeStateInput {
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
   hydratedChunkRefreshes: Set<string>;
   hydratedRefreshSuppressionAreaKeys: Set<string>;
-  nextSceneName?: SceneName;
   clearStreamingWork: () => void;
   clearQueuedPrefetchState: () => void;
-  releaseInactiveResources: () => void;
 }
 
 interface WorldmapSwitchOffRuntimeStateResult {
@@ -34,10 +30,8 @@ export const applyWorldmapSwitchOffRuntimeState = ({
   pinnedRenderAreas,
   hydratedChunkRefreshes,
   hydratedRefreshSuppressionAreaKeys,
-  nextSceneName,
   clearStreamingWork,
   clearQueuedPrefetchState,
-  releaseInactiveResources,
 }: WorldmapSwitchOffRuntimeStateInput): WorldmapSwitchOffRuntimeStateResult => {
   clearStreamingWork();
   clearQueuedPrefetchState();
@@ -45,10 +39,6 @@ export const applyWorldmapSwitchOffRuntimeState = ({
   pinnedRenderAreas.clear();
   hydratedChunkRefreshes.clear();
   hydratedRefreshSuppressionAreaKeys.clear();
-
-  if (nextSceneName === SceneName.FastTravel) {
-    releaseInactiveResources();
-  }
 
   return {
     isSwitchedOff: true,

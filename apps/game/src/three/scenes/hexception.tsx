@@ -556,7 +556,7 @@ export default class HexceptionScene extends HexagonScene {
 
   async setup() {
     this.isEntered = false;
-    const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
+    const routeTarget = resolvePlayRouteTarget(window.location);
     const routeWorldPosition = routeTarget.routeWorldPosition;
     const contractPosition = routeTarget.hexRealmPosition;
 
@@ -656,6 +656,7 @@ export default class HexceptionScene extends HexagonScene {
 
   onSwitchOff(_nextSceneName?: SceneName) {
     this.isEntered = false;
+    this.state.setSelectedBuildingHex(null);
     usePopoverStore.getState().close("plot-construction");
     // Capture a zoom still waiting on its debounce so quick scene switches keep it.
     this.flushPendingLocalZoomPersist();

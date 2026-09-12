@@ -3,7 +3,9 @@ import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { getActiveWorld } from "@/runtime/world";
 import { fetchHeraldGameHistory } from "@/runtime/world/herald-http";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
-import { Checkbox } from "@/ui/design-system/atoms/checkbox";
+import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { SelectResource } from "@/ui/design-system/molecules/select-resource";
 import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./trade-history-event";
@@ -14,11 +16,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 
 const TRADES_PER_PAGE = 25;
 
-export const MarketTradingHistory = () => {
-  return <MarketTradingHistoryContent />;
-};
-
-const MarketTradingHistoryContent = memo(() => {
+export const MarketTradingHistory = memo(() => {
   const {
     account: {
       account: { address },
@@ -110,57 +108,67 @@ const MarketTradingHistoryContent = memo(() => {
     setCurrentPage(1);
   }, [showOnlyYourSwaps, selectedResourceId]);
 
+  const showPagination = totalPages > 1;
+
   return (
-    <div className="flex flex-col px-8 mt-8">
-      <div className="text-gold/70 text-sm mb-6">
-        ⚠️ Currently showing AMM Swaps events only. Orderbook events coming back soon.
-      </div>
-      <div className="flex flex-row items-center justify-between mb-6">
-        <div onClick={() => setShowOnlyYourSwaps((prev) => !prev)} className="flex items-center space-x-2">
-          <Checkbox enabled={showOnlyYourSwaps} />
-          <div className="text-sm  hover:text-white transition-colors duration-200">Show only your swaps</div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-pressed={showOnlyYourSwaps}
+            onClick={() => setShowOnlyYourSwaps((prev) => !prev)}
+            className={cn(HUD_PILL_BUTTON, showOnlyYourSwaps ? "border-gold/60 bg-gold/15" : "text-gold/65")}
+          >
+            Only mine
+          </button>
+          <span className={HUD_CUE}>{filteredAndSortedEvents.length} swaps</span>
         </div>
-        <div className="text-sm ">Total Swaps: {filteredAndSortedEvents.length}</div>
-        <div className="w-1/3">
-          <SelectResource onSelect={(resourceId) => setSelectedResourceId(resourceId)} className="w-full" />
-        </div>
+        <SelectResource onSelect={(resourceId) => setSelectedResourceId(resourceId)} className="w-48" />
       </div>
+      <p className={cn(HUD_BODY_MUTED, "px-3 pb-2")}>AMM swaps only. Order book fills return later.</p>
       <TradeHistoryRowHeader />
-      {isLoading ? (
-        <div className="flex justify-center items-center">
-          <LoadingAnimation />
-        </div>
-      ) : (
-        paginatedEvents.map((trade, index) => {
-          return (
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <LoadingAnimation />
+          </div>
+        ) : paginatedEvents.length === 0 ? (
+          <p className={cn(HUD_BODY_MUTED, "px-3 py-6 text-center")}>No swaps yet</p>
+        ) : (
+          paginatedEvents.map((trade, index) => (
             <TradeHistoryEvent
               key={`${trade.event.eventTime.getTime()}-${trade.event.takerAddress}-${index}`}
               trade={trade}
             />
-          );
-        })
-      )}
-
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center space-x-4 mt-4 mb-4">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 rounded bg-gray text-gold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
-        >
-          ←
-        </button>
-        <span className="text-gold text-sm">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 rounded bg-gray text-gold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
-        >
-          →
-        </button>
+          ))
+        )}
       </div>
+      {showPagination && (
+        <div className="flex items-center justify-center gap-3 border-t border-gold/15 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className={HUD_PILL_BUTTON}
+          >
+            Prev
+          </button>
+          <span className={HUD_CUE}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className={HUD_PILL_BUTTON}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 });
+
+MarketTradingHistory.displayName = "MarketTradingHistory";

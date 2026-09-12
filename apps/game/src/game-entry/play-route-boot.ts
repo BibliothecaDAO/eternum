@@ -2,7 +2,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type IdentitySessionStatus, useIdentitySession } from "@/hooks/context/identity-session";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type BootstrapTask, useGameEntryBootstrapController } from "@/game-entry/bootstrap-controller";
-import { getGameModeId } from "@/config/game-modes";
 import { resolveEntryContextFromPlayRoute, type ResolvedEntryContext } from "@/game-entry/context";
 import type { PlayScene } from "@/play/navigation/play-route";
 import type { SetupResult } from "@/init/bootstrap";
@@ -198,10 +197,6 @@ const resolveBootPhase = ({
     return "handoff_scene";
   }
 
-  if (resolvedRequest.resumeScene === "travel" && !readiness.fastTravelReady) {
-    return "handoff_scene";
-  }
-
   return "ready";
 };
 
@@ -279,14 +274,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     context: bootstrapContext,
     enabled: bootstrapContext !== null,
   });
-  const fastTravelEnabled = useMemo(
-    () => (bootstrap.setupResult ? getGameModeId() !== "blitz" : true),
-    [bootstrap.setupResult],
-  );
-  const resolvedRequest = useMemo(
-    () => resolvePlayBootRequest(location, { fastTravelEnabled }),
-    [fastTravelEnabled, location.pathname, location.search],
-  );
+  const resolvedRequest = useMemo(() => resolvePlayBootRequest(location), [location.pathname, location.search]);
   const [bootToken, setBootToken] = useState(0);
   const readiness = usePlayRouteReadinessStore();
   const nextBootTokenRef = useRef(0);

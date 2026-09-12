@@ -40,29 +40,6 @@ function createFolderDouble() {
 }
 
 describe("setupRendererDevGui", () => {
-  it("gates the scene switcher options by fast-travel availability", () => {
-    const createdFolders: Record<string, ReturnType<typeof createFolderDouble>> = {};
-
-    setupRendererDevGui({
-      contactShadowOpacity: 0.2,
-      createFolder: (name) => {
-        const folder = createFolderDouble();
-        createdFolders[name] = folder;
-        return folder.folder as never;
-      },
-      fastTravelEnabled: false,
-      moveCameraToColRow: vi.fn(),
-      moveCameraToXYZ: vi.fn(),
-      renderer: undefined,
-      switchScene: vi.fn(),
-      updateContactShadowOpacity: vi.fn(),
-    });
-
-    const switchRecord = createdFolders["Switch scene"]?.records[0];
-
-    expect(switchRecord?.args[0]).toEqual([SceneName.WorldMap, SceneName.Hexception]);
-  });
-
   it("wires scene switch, camera move, and camera view actions through the provided callbacks", () => {
     const createdFolders: Record<string, ReturnType<typeof createFolderDouble>> = {};
     const switchScene = vi.fn();
@@ -76,7 +53,6 @@ describe("setupRendererDevGui", () => {
         createdFolders[name] = folder;
         return folder.folder as never;
       },
-      fastTravelEnabled: true,
       moveCameraToColRow,
       moveCameraToXYZ,
       renderer: undefined,
@@ -88,7 +64,7 @@ describe("setupRendererDevGui", () => {
     const cameraFolderRecords = createdFolders["Move Camera"]?.records ?? [];
     const sceneParams = sceneFolderRecords[0]?.object;
     const switchAction = sceneFolderRecords[1]?.object.switchScene as (() => void) | undefined;
-    sceneParams!.scene = SceneName.FastTravel;
+    sceneParams!.scene = SceneName.Hexception;
     switchAction?.();
 
     const colRowAction = cameraFolderRecords[5]?.object.move as (() => void) | undefined;
@@ -96,7 +72,7 @@ describe("setupRendererDevGui", () => {
     colRowAction?.();
     xyzAction?.();
 
-    expect(switchScene).toHaveBeenCalledWith(SceneName.FastTravel);
+    expect(switchScene).toHaveBeenCalledWith(SceneName.Hexception);
     expect(moveCameraToColRow).toHaveBeenCalledWith(0, 0, 0);
     expect(moveCameraToXYZ).toHaveBeenCalledWith(0, 0, 0, 0);
   });
@@ -110,7 +86,6 @@ describe("setupRendererDevGui", () => {
         createdFolders.push(name);
         return createFolderDouble().folder as never;
       },
-      fastTravelEnabled: true,
       moveCameraToColRow: vi.fn(),
       moveCameraToXYZ: vi.fn(),
       renderer: undefined,
@@ -134,7 +109,6 @@ describe("setupRendererDevGui", () => {
         createdFolders[name] = folder;
         return folder.folder as never;
       },
-      fastTravelEnabled: true,
       moveCameraToColRow: vi.fn(),
       moveCameraToXYZ: vi.fn(),
       renderer,

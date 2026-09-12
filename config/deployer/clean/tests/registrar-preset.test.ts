@@ -150,10 +150,10 @@ describe("appchain registrar preset", () => {
 });
 
 describe("Eternum portal preset", () => {
-  test("places seven public portals four ethereal steps apart with a fee each way", () => {
+  test("places six public portals four ethereal steps apart with a fee each way", () => {
     const config = loadEnvironmentConfiguration("madara.eternum");
     const payload = buildPresetRegistration(config, 12);
-    expect(config.settlement.spires_max_count).toBe(7);
+    expect(config.settlement.spires_max_count).toBe(6);
     expect(config.settlement.base_distance * config.settlement.spires_layer_distance).toBe(60);
     expect(payload.presetConfig.spire_travel_essence_cost).toBe(10_000_000_000n);
     expect(payload.presetConfig).toMatchObject({

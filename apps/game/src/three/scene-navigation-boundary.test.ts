@@ -20,40 +20,6 @@ describe("resolveNavigationSceneTarget", () => {
     ).toBe(SceneName.Hexception);
   });
 
-  it("can still fall back to the current stable scene when fast travel is explicitly disabled", () => {
-    expect(
-      resolveNavigationSceneTarget({
-        requestedScene: SceneName.FastTravel,
-        currentPath: "/play/map?col=1&row=1",
-        fastTravelEnabled: false,
-      }),
-    ).toBe(SceneName.WorldMap);
-
-    expect(
-      resolveNavigationSceneTarget({
-        currentPath: "/play/travel?col=1&row=1",
-        fastTravelEnabled: false,
-      }),
-    ).toBe(SceneName.WorldMap);
-  });
-
-  it("can resolve fast travel once the boundary is explicitly enabled", () => {
-    expect(
-      resolveNavigationSceneTarget({
-        requestedScene: SceneName.FastTravel,
-        currentPath: "/play/map?col=1&row=1",
-        fastTravelEnabled: true,
-      }),
-    ).toBe(SceneName.FastTravel);
-
-    expect(
-      resolveNavigationSceneTarget({
-        currentPath: "/play/travel?col=1&row=1",
-        fastTravelEnabled: true,
-      }),
-    ).toBe(SceneName.FastTravel);
-  });
-
   it("uses the current path when no explicit scene is requested", () => {
     expect(
       resolveNavigationSceneTarget({
@@ -70,15 +36,6 @@ describe("resolveNavigationSceneTarget", () => {
     expect(
       resolveNavigationSceneTarget({
         currentPath: "/play/travel?col=1&row=1",
-      }),
-    ).toBe(SceneName.WorldMap);
-  });
-
-  it("can still keep fast travel dormant when the boundary override disables it", () => {
-    expect(
-      resolveNavigationSceneTarget({
-        currentPath: "/play/travel?col=1&row=1",
-        fastTravelEnabled: false,
       }),
     ).toBe(SceneName.WorldMap);
   });
