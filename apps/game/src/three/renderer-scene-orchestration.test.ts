@@ -15,7 +15,6 @@ const { prepareGameRendererScenes } = await import("./renderer-scene-orchestrati
 describe("prepareGameRendererScenes", () => {
   it("creates the scene registry, assigns it, and boots scene effects through the bridge", () => {
     const registry = {
-      fastTravelScene: { id: "travel" },
       hexceptionScene: { id: "hex" },
       sceneManager: { moveCameraForScene: vi.fn() },
       transitionManager: { id: "transition" },
@@ -48,7 +47,6 @@ describe("prepareGameRendererScenes", () => {
       controls: { id: "controls" } as never,
       dojo: { id: "dojo" } as never,
       effectsBridgeRuntime: effectsBridgeRuntime as never,
-      fastTravelEnabled: true,
       inputSurface: document.createElement("canvas"),
       mouse: { id: "mouse" } as never,
       renderVisuals,

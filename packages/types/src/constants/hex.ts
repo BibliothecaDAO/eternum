@@ -158,6 +158,16 @@ export const getNeighborHexes = (col: number, row: number, steps: Steps = Steps.
   }
 };
 
+/** Matches Coord.neighbor: scale the row's offsets, without walking intermediate rows. */
+export function getLayerNeighborHexes(col: number, row: number, alt: boolean): NeighborHex[] {
+  const stride = alt ? ETHEREAL_STRIDE : 1;
+  return getNeighborOffsets(row).map(({ i, j, direction }) => ({
+    col: col + i * stride,
+    row: row + j * stride,
+    direction,
+  }));
+}
+
 export const getHexesWithinRadius = (col: number, row: number, radius: number): NeighborHex[] => {
   if (radius <= 0) return [];
 

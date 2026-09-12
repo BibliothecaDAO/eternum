@@ -1,5 +1,9 @@
 import {
   BiomeType,
+  Direction,
+  ETHEREAL_STRIDE,
+  getLayerNeighborHexes,
+  packTileSeed,
   getDirectionBetweenAdjacentHexes,
   getHexesWithinRadius,
   getNeighborHexes,
@@ -56,10 +60,12 @@ function buildTileOptData(input: {
   biome: number;
   occupierType: number;
   occupierId: number;
+  alt?: boolean;
 }): {
   data: bigint;
 } {
   const data =
+    BigInt(input.alt ?? false) |
     (BigInt(input.occupierType) << 1n) |
     (BigInt(input.occupierId) << 9n) |
     (BigInt(input.biome) << 41n) |
@@ -84,7 +90,7 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
         TEST_ENTITY_ID.toString(),
         {
           owner: 77,
-          coord: { x: oldFeltStart.col, y: oldFeltStart.row },
+          coord: { alt: false, x: oldFeltStart.col, y: oldFeltStart.row },
           troops: {
             category: TroopType.Knight,
             count: BigInt(RESOURCE_PRECISION),
@@ -244,6 +250,46 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const spireActionPath = actionPaths.get(ActionPaths.posKey(spireHex));
     expect(spireActionPath).toBeDefined();
     expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
+  });
+
+  it.each([false, true])("uses stride-one portal access on the army's layer (alt=%s)", (alt) => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = alt;
+    const spire = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    components.TileOpt.set(
+      toTileEntityKey(alt, spire.col, spire.row),
+      buildTileOptData({ ...spire, alt, biome: 1, occupierType: TileOccupier.Spire, occupierId: 999 }),
+    );
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0, 0x123n as any);
+    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(spire)) ?? [])).toBe(ActionType.SpireTravel);
+    if (alt) {
+      const step = getLayerNeighborHexes(oldFeltStart.col, oldFeltStart.row, true)[1];
+      expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(step)) ?? [])).toBe(ActionType.Explore);
+      expect(step.row - oldFeltStart.row).toBe(ETHEREAL_STRIDE);
+      const surfaceStep = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[1];
+      expect(paths.get(ActionPaths.posKey(surfaceStep))).toBeUndefined();
+    }
+  });
+
+  it("uses ethereal attack distance for mines and armies", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = true;
+    const mineHex = { col: oldFeltStart.col + ETHEREAL_STRIDE, row: oldFeltStart.row };
+    const tooFar = { col: mineHex.col + 1, row: mineHex.row };
+    setNestedMapValue(structureHexes, mineHex.col - TEST_FELT_CENTER, mineHex.row - TEST_FELT_CENTER, {
+      id: 21,
+      owner: 0x999n,
+    } as HexEntityInfo);
+    setNestedMapValue(armyHexes, tooFar.col - TEST_FELT_CENTER, tooFar.row - TEST_FELT_CENTER, {
+      id: 22,
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 5n, updated_tick: 0n } as any);
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0, 0x123n as any);
+    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(mineHex)) ?? [])).toBe(ActionType.Attack);
+    expect(paths.get(ActionPaths.posKey(tooFar))).toBeUndefined();
   });
 
   it("omits adjacent enemy structure attack paths when attack stamina is below the required threshold", () => {
@@ -433,13 +479,14 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
 });
 
 describe("ArmyActionManager.moveArmy spire traversal", () => {
-  it("calls toggle_alternate for spire travel action paths", async () => {
+  it.each([false, true])("calls toggle_alternate at stride one on either layer (alt=%s)", async (alt) => {
     const systemCalls = {
       toggle_alternate: vi.fn().mockResolvedValue({}),
       explorer_travel: vi.fn().mockResolvedValue({}),
       explorer_explore: vi.fn().mockResolvedValue({}),
     };
-    const { manager, oldFeltStart } = createTestSetup(systemCalls);
+    const { manager, components, oldFeltStart } = createTestSetup(systemCalls);
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = alt;
     const spireHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
     const spireDirection = getDirectionBetweenAdjacentHexes(oldFeltStart, spireHex);
 
@@ -467,5 +514,58 @@ describe("ArmyActionManager.moveArmy spire traversal", () => {
     });
     expect(systemCalls.explorer_travel).not.toHaveBeenCalled();
     expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
+  });
+});
+
+describe("ArmyActionManager ethereal submissions", () => {
+  it.each([
+    [false, 100],
+    [true, 100],
+    [true, 101],
+  ] as const)("packs the layer and follows contract row parity (alt=%s, row=%s)", async (alt, row) => {
+    const explorer_explore = vi.fn().mockResolvedValue({});
+    const { manager, components, oldFeltStart } = createTestSetup({ explorer_explore });
+    oldFeltStart.row = row;
+    Object.assign(components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord, { alt, y: row });
+    const stride = alt ? ETHEREAL_STRIDE : 1;
+    const destination = {
+      col: oldFeltStart.col + (row % 2 === 0 ? stride : 0),
+      row: row + stride,
+      direction: Direction.NORTH_EAST,
+    };
+    await manager.moveArmy(
+      {} as any,
+      [
+        { hex: oldFeltStart, actionType: ActionType.Move },
+        { hex: destination, actionType: ActionType.Explore },
+      ],
+      false,
+      0,
+    );
+    expect(explorer_explore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        directions: [destination.direction],
+        vrf_source_salt: packTileSeed({ alt, col: destination.col, row: destination.row }),
+      }),
+    );
+  });
+
+  it("rejects a stale surface path after the army crosses", async () => {
+    const explorer_travel = vi.fn();
+    const { manager, components, oldFeltStart } = createTestSetup({ explorer_travel });
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString()).coord.alt = true;
+    const destination = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    await expect(
+      manager.moveArmy(
+        {} as any,
+        [
+          { hex: oldFeltStart, actionType: ActionType.Move },
+          { hex: destination, actionType: ActionType.Move },
+        ],
+        true,
+        0,
+      ),
+    ).rejects.toThrow("Invalid travel direction");
+    expect(explorer_travel).not.toHaveBeenCalled();
   });
 });

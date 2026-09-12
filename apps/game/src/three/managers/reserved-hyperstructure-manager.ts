@@ -2,7 +2,11 @@ import { activeMapLayer } from "@/three/map-layer";
 import { ReservedHyperstructureModelPath } from "@/three/constants";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import type { StructureSpatialProjectionChange, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import {
+  projectionChangesForLayer,
+  type StructureSpatialProjectionChange,
+  type WorldSpatialProjection,
+} from "@bibliothecadao/eternum/game-sync";
 import { type HexPosition } from "@bibliothecadao/types";
 import { Color, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene } from "three";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
@@ -61,7 +65,7 @@ export class ReservedHyperstructureManager {
     private readonly terrainSurface: TerrainSurface = FLAT_TERRAIN_SURFACE,
   ) {
     this.unsubscribeProjection = worldSpatialProjection.subscribeStructures((changes) => {
-      if (!changesTouchReservedSites(changes)) return;
+      if (!changesTouchReservedSites(projectionChangesForLayer(changes, activeMapLayer()))) return;
       this.renderReservedHyperstructures();
     });
     void this.loadModel();
@@ -109,6 +113,10 @@ export class ReservedHyperstructureManager {
     } catch (error) {
       console.error("[ReservedHyperstructureManager] Failed to load reserved hyperstructure model", error);
     }
+  }
+
+  public resetLayer(): void {
+    this.renderReservedHyperstructures();
   }
 
   private renderReservedHyperstructures(): void {

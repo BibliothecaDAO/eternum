@@ -54,7 +54,6 @@ describe("runRendererFrame", () => {
   it("updates the hud before bailing when no scene is active", () => {
     const hudScene = createHudScene();
     const worldmapScene = createScene("worldmap");
-    const fastTravelScene = createScene("travel");
     const hexceptionScene = createScene("hexception");
     const backend = createBackend();
     const labelRuntime = {
@@ -73,7 +72,6 @@ describe("runRendererFrame", () => {
       currentTime: 100,
       cycleProgress: 0.25,
       deltaTime: 0.016,
-      fastTravelScene: fastTravelScene as never,
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
@@ -84,7 +82,6 @@ describe("runRendererFrame", () => {
     expect(rendered).toBe(false);
     expect(hudScene.update).toHaveBeenCalledWith(0.016, 0.25);
     expect(worldmapScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
-    expect(fastTravelScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
     expect(hexceptionScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
     expect(effectsBridgeRuntime.updateWeatherPostProcessing).not.toHaveBeenCalled();
     expect(backend.renderFrame).not.toHaveBeenCalled();
@@ -145,7 +142,6 @@ describe("runRendererFrame", () => {
       currentTime: 120,
       cycleProgress: 0.5,
       deltaTime: 0.02,
-      fastTravelScene: undefined,
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
@@ -211,51 +207,5 @@ describe("runRendererFrame", () => {
       }),
     ).toThrow("render failed");
     expect(worldmapScene.onFrameRendered).not.toHaveBeenCalled();
-  });
-
-  it("routes fast-travel rendering and label activity through the travel scene when available", () => {
-    const hudScene = createHudScene();
-    const worldmapScene = createScene("worldmap", 1);
-    const fastTravelScene = createScene("travel", 3);
-    fastTravelScene.hasActiveLabelAnimations.mockReturnValue(true);
-    const hexceptionScene = createScene("hexception", 2);
-    const backend = createBackend();
-    const labelRuntime = {
-      render: vi.fn(),
-      shouldRender: vi.fn(() => false),
-    };
-    const effectsBridgeRuntime = {
-      updateWeatherPostProcessing: vi.fn(),
-    };
-
-    runRendererFrame({
-      backend: backend as never,
-      camera: "camera" as never,
-      captureStatsSample: vi.fn(),
-      currentScene: SceneName.FastTravel,
-      currentTime: 220,
-      cycleProgress: 0.9,
-      deltaTime: 0.05,
-      fastTravelScene: fastTravelScene as never,
-      hexceptionScene: hexceptionScene as never,
-      hudScene: hudScene as never,
-      labelRuntime: labelRuntime as never,
-      effectsBridgeRuntime,
-      worldmapScene: worldmapScene as never,
-    });
-
-    expect(fastTravelScene.update).toHaveBeenCalledWith(0.05);
-    expect(hexceptionScene.update).not.toHaveBeenCalled();
-    expect(labelRuntime.shouldRender).toHaveBeenCalledWith({
-      cadenceView: "far",
-      labelsActive: true,
-      now: 220,
-    });
-    expect(backend.renderFrame).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mainScene: "travel-scene",
-        sceneName: SceneName.FastTravel,
-      }),
-    );
   });
 });
