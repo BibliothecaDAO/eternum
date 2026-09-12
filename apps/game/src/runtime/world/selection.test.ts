@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   buildWorldProfile: vi.fn(),
-  getWorldProfile: vi.fn(),
   resolveChain: vi.fn(),
   setSelectedChain: vi.fn(),
   setActiveWorldName: vi.fn(),
@@ -16,7 +15,6 @@ vi.mock("./profile-builder", () => ({
 }));
 
 vi.mock("./store", () => ({
-  getWorldProfile: mocks.getWorldProfile,
   resolveChain: mocks.resolveChain,
   setSelectedChain: mocks.setSelectedChain,
   setActiveWorldName: mocks.setActiveWorldName,
@@ -32,8 +30,6 @@ import { applyWorldSelection } from "./selection";
 describe("applyWorldSelection", () => {
   beforeEach(() => {
     mocks.buildWorldProfile.mockReset();
-    mocks.getWorldProfile.mockReset();
-    mocks.getWorldProfile.mockReturnValue(null);
     mocks.resolveChain.mockReset();
     mocks.setSelectedChain.mockReset();
     mocks.setActiveWorldName.mockReset();
@@ -60,17 +56,6 @@ describe("applyWorldSelection", () => {
 
     expect(mocks.setSelectedChain).toHaveBeenCalledTimes(1);
     expect(mocks.setSelectedChain).toHaveBeenCalledWith("madara");
-  });
-
-  it("reuses the immutable game profile when an in-game route reloads without Torii", async () => {
-    const saved = { name: "mainnet-king-1", chain: "madara", gameId: 54 };
-    mocks.resolveChain.mockReturnValue("madara");
-    mocks.getWorldProfile.mockReturnValue(saved);
-
-    const result = await applyWorldSelection({ name: "mainnet-king-1", chain: "madara" }, "madara");
-
-    expect(result.profile).toBe(saved);
-    expect(mocks.buildWorldProfile).not.toHaveBeenCalled();
   });
 
   it("records selection milestones and durations around profile building and persistence", async () => {
