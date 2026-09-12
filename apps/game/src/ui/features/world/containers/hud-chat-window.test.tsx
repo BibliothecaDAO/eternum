@@ -63,6 +63,7 @@ it("shows the last message with the unread count, opens on Enter and closes on E
     await act(async () => strip.click());
     expect(container.querySelector("input")).not.toBeNull();
     const canvas = document.createElement("canvas");
+    canvas.addEventListener("pointerdown", (event) => event.stopImmediatePropagation(), true);
     document.body.append(canvas);
     await act(async () => canvas.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
     canvas.remove();

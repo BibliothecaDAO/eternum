@@ -274,14 +274,8 @@ import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visib
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
   normalizeWorldmapWheelDelta,
-  resolveWorldmapPinchZoomDelta,
   resolveWorldmapWheelPixelDelta,
 } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
-import {
-  TOUCH_POINTER_EVENT_TYPES,
-  TouchGestureRecognizer,
-  toTouchPointerSample,
-} from "@/three/utils/touch-gesture-recognizer";
 import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
@@ -672,21 +666,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private zoomInputTarget: HTMLElement | null = null;
-  private readonly pinchZoomRecognizer = new TouchGestureRecognizer((gesture) => {
-    if (gesture.kind !== "pinch") {
-      return;
-    }
-    this.applyWorldmapZoomIntent({
-      type: "continuous_delta",
-      delta: resolveWorldmapPinchZoomDelta({ scale: gesture.scale }),
-    });
-  });
-  private readonly pinchPointerHandler = (event: PointerEvent) => {
-    const sample = toTouchPointerSample(event);
-    if (sample) {
-      this.pinchZoomRecognizer.feed(sample);
-    }
-  };
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
     minDistance: WORLDMAP_CAMERA_ZOOM.minDistance,
@@ -1830,7 +1809,7 @@ export default class WorldmapScene extends WarpTravel {
     this.attachWorldmapZoomInput();
   }
 
-  /** Wheel and touch pinch share the zoom coordinator; MapControls' own zoom stays disabled. */
+  /** Desktop wheel uses easing; the shared touch controller applies direct camera updates. */
   private attachWorldmapZoomInput(): void {
     if (!this.wheelHandler) {
       return;
@@ -1842,9 +1821,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
-    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
-      canvas.addEventListener(pointerEventType, this.pinchPointerHandler);
-    }
     this.zoomInputTarget = canvas;
   }
 
@@ -1858,10 +1834,6 @@ export default class WorldmapScene extends WarpTravel {
     if (this.wheelHandler) {
       target.removeEventListener("wheel", this.wheelHandler);
     }
-    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
-      target.removeEventListener(pointerEventType, this.pinchPointerHandler);
-    }
-    this.pinchZoomRecognizer.reset();
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
@@ -1871,6 +1843,20 @@ export default class WorldmapScene extends WarpTravel {
 
   private applyWorldmapZoomIntent(intent: ZoomIntent): void {
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.applyIntent(intent));
+  }
+
+  protected override beginTouchNavigation(): void {
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.beginDirectManipulation(this.getCurrentCameraDistance()));
+  }
+
+  protected override applyTouchZoomDistance(distance: number): void {
+    const snapshot = this.zoomCoordinator.applyDirectDistance(distance);
+    this.positionWorldmapCameraAtDistance(snapshot.actualDistance);
+    this.publishWorldmapZoomSnapshot(snapshot);
+  }
+
+  protected override endTouchNavigation(): void {
+    this.zoomCoordinator.endDirectManipulation();
   }
 
   public override getCurrentCameraView(): CameraView {
@@ -1936,6 +1922,8 @@ export default class WorldmapScene extends WarpTravel {
     }
     incrementWorldmapRenderCounter("zoomTransitionsCompleted");
     this.persistSettledWorldmapZoom(settledDistance);
+    // Direct manipulation ends without another camera move to flush deferred terrain work.
+    if (this.zoomRefreshPlannerState.pendingLevel !== "none") this.handleWorldmapControlsChange();
   }
 
   private persistSettledWorldmapZoom(distance: number): void {
@@ -2007,6 +1995,11 @@ export default class WorldmapScene extends WarpTravel {
 
   /** Places the camera on the worldmap's fixed azimuth at `distance`, pitched per the zoom profile. */
   private placeWorldmapCameraAtDistance(distance: number): void {
+    this.positionWorldmapCameraAtDistance(distance);
+    this.notifyControlsChanged();
+  }
+
+  private positionWorldmapCameraAtDistance(distance: number): void {
     const pitch = resolveWorldmapCameraPitchRadians(distance);
     this.cameraAngle = pitch;
     this.strategicMarkers.setViewPitch(pitch);
@@ -2015,7 +2008,6 @@ export default class WorldmapScene extends WarpTravel {
       this.controls.target.y + Math.sin(pitch) * distance,
       this.controls.target.z + Math.cos(pitch) * distance,
     );
-    this.notifyControlsChanged();
   }
 
   private focusCameraOnEvent(col: number, row: number, message: string) {
