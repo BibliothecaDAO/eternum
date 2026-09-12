@@ -30,7 +30,7 @@ import {
 import { startGameEntryTimeline, markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
-import { getWorldById } from "@/runtime/world/world-directory";
+import { getGameEnvironmentsForChain } from "@config";
 import { GameReviewModal } from "../components/game-review-modal";
 import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
 import { setGameReviewDismissed } from "../lib/game-review-storage";
@@ -512,10 +512,12 @@ const ModeCoexistenceHero = ({
     setBackgroundId(bgMap[modeFilter]);
   }, [modeFilter, setBackgroundId]);
 
-  // Eternum seasons open in phase 3: the hero only offers modes whose world
-  // is actually deployed in the Herald-backed world directory.
+  // One world hosts both formats; the hero offers Eternum when the build chain has an Eternum environment.
+  const hasEternumEnvironment = getGameEnvironmentsForChain(env.VITE_PUBLIC_CHAIN).some(
+    (environment) => environment.gameType === "eternum",
+  );
   const availableModes = (Object.keys(MODE_VISUALS) as Array<LandingModeFilter>).filter(
-    (mode) => mode !== "season" || getWorldById("eternum") != null,
+    (mode) => mode !== "season" || hasEternumEnvironment,
   );
 
   return (
