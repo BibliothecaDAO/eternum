@@ -1,12 +1,12 @@
 // Agent runner CLI: boot the game client, connect a signer, make sure the player is settled, build the agent, and
 // run the decision loop until the game ends or a stop condition fires.
 import path from "node:path";
-import { Agent, type AgentTool } from "@mariozechner/pi-agent-core";
+import { Agent, type AgentTool, type StreamFn } from "@mariozechner/pi-agent-core";
 
 import { parseArgs, resolveConfig, resolveDataDir, RunnerConfigError, type RunnerConfig } from "./config";
 import { createFileDirectionSource, createScriptedDirectionSource, type DirectionSource } from "./directions";
 import { defaultUsername, ensureSettled, type SettledEmpire } from "./entry";
-import { fakeStreamFn } from "./fake-stream";
+import { createOfflineStreamFn, resolveOfflineScout } from "./fake-stream";
 import { connectRunnerGame, type RunnerGame } from "./game";
 import { logEvent } from "./log";
 import { resolveLoopSettings, runAgentLoop } from "./loop";
@@ -37,7 +37,7 @@ async function main(): Promise<number> {
       gameSummary: describeGame(game, config, empire),
       toolGuide: tools,
     });
-    const agent = await buildAgent(config, model, tools, systemPrompt);
+    const agent = await buildAgent(model, tools, systemPrompt, resolveStreamFn(config, game, empire));
     const manifest = createRunManifest({
       dataDir,
       chain: { chain: config.chain, rpcUrl: config.rpcUrl, heraldUrl: config.heraldUrl },
@@ -77,15 +77,17 @@ function loadConfig(): RunnerConfig {
 }
 
 async function buildAgent(
-  config: RunnerConfig,
   model: ReturnType<typeof resolveModel>,
   tools: AgentTool[],
   systemPrompt: SystemPromptSource,
+  streamFn: StreamFn | undefined,
 ): Promise<Agent> {
-  return new Agent({
-    initialState: { systemPrompt: await systemPrompt.current(), model, tools },
-    streamFn: config.offline ? fakeStreamFn : undefined,
-  });
+  return new Agent({ initialState: { systemPrompt: await systemPrompt.current(), model, tools }, streamFn });
+}
+
+/** Offline runs play against the scripted model, scouting with one explorer; live runs stream from OpenRouter. */
+function resolveStreamFn(config: RunnerConfig, game: RunnerGame, empire: SettledEmpire): StreamFn | undefined {
+  return config.offline ? createOfflineStreamFn(resolveOfflineScout(game, empire)) : undefined;
 }
 
 function describeGame(game: RunnerGame, config: RunnerConfig, empire: SettledEmpire): string {

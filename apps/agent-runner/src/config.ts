@@ -10,7 +10,7 @@ import {
 } from "./model-profiles";
 
 /** Only the lab chain runs guest agents today; other chains arrive with the M4 signing lane. */
-type RunnerChain = "madara";
+export type RunnerChain = "madara";
 
 export type RunnerGameSelector = { id: number } | { name: string };
 

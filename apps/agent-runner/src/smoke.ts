@@ -1,7 +1,7 @@
 // M0 "Pi runtime smoke": one prompt, one tool, one steer() through pi-agent-core.
 // Env: OPENROUTER_API_KEY (required unless --offline), OPENROUTER_MODEL (default below).
 import { getEnvApiKey, getModels, type Model } from "@mariozechner/pi-ai";
-import { fakeStreamFn } from "./fake-stream";
+import { createOfflineStreamFn } from "./fake-stream";
 import { buildAgent, runSmoke, type SmokeReport } from "./smoke-agent";
 
 const DEFAULT_MODEL_ID = "openai/gpt-4o-mini";
@@ -9,7 +9,7 @@ const DEFAULT_MODEL_ID = "openai/gpt-4o-mini";
 async function main(): Promise<void> {
   const offline = process.argv.includes("--offline");
   if (!offline) requireOpenRouterKey();
-  const agent = buildAgent(resolveModel(), offline ? fakeStreamFn : undefined);
+  const agent = buildAgent(resolveModel(), offline ? createOfflineStreamFn(null) : undefined);
   const report = await runSmoke(agent);
   writeManifest(report, offline);
 }

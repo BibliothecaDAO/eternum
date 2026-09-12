@@ -7,11 +7,7 @@
     "moduleResolution": "bundler",
     "noEmit": true,
     "resolveJsonModule": true,
-    "types": ["bun-types", "node"],
-    "baseUrl": ".",
-    "paths": {
-      "@config": ["../../config/utils/utils"]
-    }
+    "types": ["bun-types", "node"]
   },
   "include": ["src/**/*"]
 }

@@ -35,3 +35,6 @@ deploy/madara-lab/.lab/
 # Local animation captures and benchmark reports
 /output/
 .gstack/
+
+# Agent runner data dirs (guest keys, memory, run manifests); never committed.
+.agent-data/

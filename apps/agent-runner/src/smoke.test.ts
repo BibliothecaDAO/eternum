@@ -1,11 +1,11 @@
 import { getModel } from "@mariozechner/pi-ai";
 import { describe, expect, it } from "vitest";
-import { fakeStreamFn } from "./fake-stream";
+import { createOfflineStreamFn } from "./fake-stream";
 import { buildAgent, OBSERVE_GAME_TOOL_NAME, runSmoke, WORLD_STATE_UPDATE_PREFIX } from "./smoke-agent";
 
 describe("agent runner smoke (offline)", () => {
   it("runs the tool, injects the steer message mid-run, and aggregates usage", async () => {
-    const agent = buildAgent(getModel("openrouter", "openai/gpt-4o-mini"), fakeStreamFn);
+    const agent = buildAgent(getModel("openrouter", "openai/gpt-4o-mini"), createOfflineStreamFn(null));
 
     const report = await runSmoke(agent);
 

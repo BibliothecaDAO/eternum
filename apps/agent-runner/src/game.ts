@@ -1,5 +1,4 @@
 import { readFile } from "node:fs/promises";
-import { getConfigFromNetwork } from "@config";
 import {
   createGameClient,
   resolveGameTransactionResourceBounds,
@@ -17,10 +16,12 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncEntity, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress } from "@bibliothecadao/types";
+import { type Config, ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 
-import type { RunnerConfig, RunnerGameSelector } from "./config";
+import blitzMadaraConfig from "../../../config/generated/blitz.madara.json";
+import eternumMadaraConfig from "../../../config/generated/eternum.madara.json";
+import type { RunnerChain, RunnerConfig, RunnerGameSelector } from "./config";
 import { logEvent } from "./log";
 
 /** A story event as the `events` focus shows it: model names and a clipped payload, never a row store. */
@@ -49,6 +50,13 @@ interface TaggedManifest extends CommittedManifest {
 
 // Every deployed lab world is the Blitz world; the id only labels the deployment.
 const WORLD_ID = "blitz";
+/**
+ * The generated balance documents, imported directly: the runner ships these two files, not the config authoring
+ * sources that `config/utils` drags in behind `getConfigFromNetwork`.
+ */
+const GAME_CONFIGS: Record<RunnerChain, Record<"blitz" | "eternum", { configuration: unknown }>> = {
+  madara: { blitz: blitzMadaraConfig, eternum: eternumMadaraConfig },
+};
 const BLITZ_REALM_SYSTEMS_TAG = "s2-blitz_realm_systems";
 const RECENT_EVENT_LIMIT = 50;
 const EVENT_SUMMARY_LENGTH = 200;
@@ -134,7 +142,7 @@ const resolveGameConfig =
   (config: RunnerConfig): CreateGameClientInput["resolveGameConfig"] =>
   (setup) => {
     const worldConfig = getComponentValue(setup.components.WorldConfig, worldConfigKey());
-    return getConfigFromNetwork(config.chain, worldConfig?.blitz_mode_on ? "blitz" : "eternum");
+    return GAME_CONFIGS[config.chain][worldConfig?.blitz_mode_on ? "blitz" : "eternum"].configuration as Config;
   };
 
 /**
