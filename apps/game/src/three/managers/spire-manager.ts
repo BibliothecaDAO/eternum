@@ -2,7 +2,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { SPIRE_MODEL_PATH } from "@/three/constants/scene-constants";
 import { activeMapLayer } from "@/three/map-layer";
 import { FELT_CENTER } from "@/ui/config";
-import { projectionChangesForLayer, type TileSpatialRenderable, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import {
+  projectionChangesForLayer,
+  type TileSpatialRenderable,
+  type WorldSpatialProjection,
+} from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
 import { Group, Object3D, Scene } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
