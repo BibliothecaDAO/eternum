@@ -19,6 +19,7 @@ interface UpdateWorldmapZoomBandStateInput {
   actualDistance: number;
   targetDistance: number;
   status: WorldmapZoomStatus;
+  isDirectManipulation?: boolean;
   nowMs: number;
   closeMediumBoundary?: number;
   mediumFarBoundary?: number;
@@ -52,7 +53,7 @@ export function updateWorldmapZoomBandState(
   const settleFrameRequirement = input.settleFrameRequirement ?? 2;
   const settleTimeoutMs = input.settleTimeoutMs ?? 120;
   const isDistanceSettled = Math.abs(input.actualDistance - input.targetDistance) <= settleDistanceEpsilon;
-  const isActivelyZooming = input.status === "zooming" && !isDistanceSettled;
+  const isActivelyZooming = input.status === "zooming" && (!isDistanceSettled || input.isDirectManipulation === true);
 
   if (isActivelyZooming) {
     return {

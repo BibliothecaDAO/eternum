@@ -290,10 +290,10 @@ function useCompactPanels() {
       if (event.target instanceof HTMLCanvasElement) close();
     };
     window.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onMapPointerDown);
+    document.addEventListener("pointerdown", onMapPointerDown, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onMapPointerDown);
+      document.removeEventListener("pointerdown", onMapPointerDown, true);
     };
   }, [open, close, closeAndFocusTab]);
 

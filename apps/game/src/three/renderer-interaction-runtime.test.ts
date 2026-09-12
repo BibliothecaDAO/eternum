@@ -69,6 +69,22 @@ vi.mock("three/addons/controls/MapControls.js", () => ({
 const { createRendererInteractionRuntime } = await import("./renderer-interaction-runtime");
 
 describe("createRendererInteractionRuntime", () => {
+  it("blocks native touch tracking even between scenes and releases the old surface guard", () => {
+    const runtime = createRendererInteractionRuntime({ onControlsChange: vi.fn() });
+    const surface = document.createElement("canvas");
+    runtime.attachSurface(surface);
+    const nativePointerDown = vi.fn();
+    surface.addEventListener("pointerdown", nativePointerDown);
+    surface.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "touch", cancelable: true }));
+    expect(nativePointerDown).not.toHaveBeenCalled();
+    surface.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "mouse" }));
+    expect(nativePointerDown).toHaveBeenCalledTimes(1);
+    runtime.attachSurface(document.createElement("canvas"));
+    surface.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "touch" }));
+    expect(nativePointerDown).toHaveBeenCalledTimes(2);
+    runtime.dispose();
+  });
+
   beforeEach(() => {
     controlsInstances.length = 0;
   });

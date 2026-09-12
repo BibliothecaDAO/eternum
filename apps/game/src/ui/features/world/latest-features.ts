@@ -49,6 +49,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-12",
+    title: "Smoother Mobile Map Gestures",
+    description:
+      "Pan the world map with one finger and pinch to zoom around your fingers. Switching gestures stays steady, and interrupted touches no longer affect the next drag.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
     title: "Map and game-end fixes",
     description:
       "Local zoom shows two rings of terrain. Tile details follow your view in a narrower panel, and ground outlines mark selected armies and structures. Finished games close gameplay and freeze the map, including dev games.",
