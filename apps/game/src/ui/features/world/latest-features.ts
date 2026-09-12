@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-12",
+    title: "Mobile Selection Keeps the Map Clear",
+    description:
+      "Selecting an army or structure on a phone no longer opens the details sheet over the map. Tap the next hex or hold to move straight away, and open the Details tab when you want the full view.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-11",
     title: "Eternum Factory and Entry",
     description:
