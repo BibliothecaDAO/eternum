@@ -57,11 +57,14 @@ pub struct PresetConfig {
     pub battle_config: BattleConfig,
     pub bank_config: BankConfig,
     pub trade_config: TradeConfig,
+    // Reserved: preserve existing preset storage; the quest system is retired.
+    pub quest_config: QuestConfig,
     pub faith_config: FaithConfig,
     pub bitcoin_mine_config: BitcoinMineConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     pub village_troop_config: VillageTroopConfig,
+    pub quest_games: Span<PresetQuestGame>, // Reserved; new presets leave this empty.
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
     pub village_find_resources_config: VillageFoundResourcesConfig,
@@ -367,6 +370,7 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
+    pub holysite_capacity: u64, // Reserved for stored presets.
     pub camp_capacity: u64, // grams
     pub bitcoin_mine_capacity: u64 // grams
 }
@@ -399,6 +403,9 @@ pub struct MapConfig {
     pub agent_discovery_fail_prob: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
+    // Reserved: removing these shifts the packed map config of existing games.
+    pub holysite_win_probability: u16,
+    pub holysite_fail_probability: u16,
     pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
     pub bitcoin_mine_fail_probability: u16, // 9800
     pub hyps_win_prob: u32,
@@ -413,10 +420,32 @@ pub struct MapConfig {
     pub relic_chest_relics_per_chest: u8,
 }
 
+// Serialized compatibility records only. No quest contracts, models or gameplay remain.
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct QuestConfig {
+    pub quest_discovery_prob: u16,
+    pub quest_discovery_fail_prob: u16,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct PresetQuestGame {
+    pub address: ContractAddress,
+    pub levels: Span<Level>,
+}
+
+// Keep the deployed type name as well as its fields for Dojo upgrade compatibility.
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct Level {
+    pub target_score: u32,
+    pub settings_id: u32,
+    pub time_limit: u64,
+}
+
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct FaithConfig {
     pub enabled: bool,
     pub wonder_base_fp_per_sec: u16,
+    pub holy_site_fp_per_sec: u16, // Reserved; standalone holy sites are retired.
     pub realm_fp_per_sec: u16,
     pub village_fp_per_sec: u16,
     pub owner_share_percent: u16,

@@ -1152,9 +1152,11 @@ mod dispatcher_lifecycle {
             },
             bank_config: BankConfig { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 },
             trade_config: TradeConfig { max_count: 0 },
+            quest_config: crate::models::config::QuestConfig { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
             faith_config: FaithConfig {
                 enabled: false,
                 wonder_base_fp_per_sec: 0,
+                holy_site_fp_per_sec: 0,
                 realm_fp_per_sec: 0,
                 village_fp_per_sec: 0,
                 owner_share_percent: 0,
@@ -1177,6 +1179,7 @@ mod dispatcher_lifecycle {
                 season_pool_fee_recipient: Zero::zero(),
             },
             village_troop_config: VillageTroopConfig { troop_delay_ticks: 0 },
+            quest_games: [].span(),
             realm_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_find_resources_config: VillageFoundResourcesConfig {

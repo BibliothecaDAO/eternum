@@ -39,7 +39,7 @@ describe("appchain registrar preset", () => {
       resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_090);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_097);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
     expect(payload.gameConfig.blitz_registration_config).toEqual({
@@ -156,7 +156,13 @@ describe("Eternum portal preset", () => {
     expect(config.settlement.spires_max_count).toBe(7);
     expect(config.settlement.base_distance * config.settlement.spires_layer_distance).toBe(60);
     expect(payload.presetConfig.spire_travel_essence_cost).toBe(10_000_000_000n);
-    expect(payload.presetConfig.map_config).not.toHaveProperty("holysite_win_probability");
+    expect(payload.presetConfig).toMatchObject({
+      map_config: { holysite_win_probability: 0, holysite_fail_probability: 0 },
+      faith_config: { holy_site_fp_per_sec: 0 },
+      structure_capacity_config: { holysite_capacity: 0 },
+      quest_config: { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
+      quest_games: [],
+    });
     expect(config.exploration.bitcoinMineWinProbability).toBeGreaterThan(0);
   });
 });

@@ -1196,20 +1196,6 @@
         return labelDiv;
       }
 
-      function createQuestLabel(data, cameraView) {
-        const labelDiv = createLabelBase(false, cameraView);
-        labelDiv.style.setProperty("color", "#fbbf24", "important");
-        labelDiv.style.setProperty("background-color", "rgba(251, 191, 36, 0.3)", "important");
-        labelDiv.style.setProperty("border-color", "rgba(245, 158, 11, 0.5)", "important");
-        const img = document.createElement("img");
-        img.src = getAssetUrl("/images/labels/quest.png");
-        img.classList.add("w-auto", "h-full", "inline-block", "object-contain", "max-w-[32px]");
-        img.setAttribute("data-component", "quest-icon");
-        labelDiv.appendChild(img);
-        // Quest markers remain icon-only; no text label in the preview.
-        return labelDiv;
-      }
-
       const SAMPLE_GROUPS = [
         {
           title: "Army Labels",
@@ -1479,14 +1465,7 @@
         },
         {
           title: "World Interactives",
-          renderer: (item, view) => {
-            if (item.type === "quest") {
-              const { type, ...rest } = item;
-              return createQuestLabel(rest, view);
-            }
-            const { type, ...rest } = item;
-            return createChestLabel(rest, view);
-          },
+          renderer: createChestLabel,
           items: [
             {
               title: "Relic chest",
@@ -1495,17 +1474,6 @@
                 entityId: 301,
                 hexCoords: makePosition(5, 60),
                 type: "chest",
-              },
-            },
-            {
-              title: "Quest objective",
-              note: "Quest markers inherit the condensed layout automatically.",
-              data: {
-                entityId: 302,
-                hexCoords: makePosition(6, 61),
-                type: "quest",
-                questType: 1,
-                occupierId: 10,
               },
             },
           ],

@@ -113,6 +113,9 @@ function buildMapConfig(config: Config) {
     agent_discovery_fail_prob: config.exploration.agentFindFailProbability,
     camp_win_probability: config.exploration.campFindProbability,
     camp_fail_probability: config.exploration.campFindFailProbability,
+    // Reserved layout slots for existing games; standalone holy sites are retired.
+    holysite_win_probability: 0,
+    holysite_fail_probability: 0,
     bitcoin_mine_win_probability: config.exploration.bitcoinMineWinProbability,
     bitcoin_mine_fail_probability: config.exploration.bitcoinMineFailProbability,
     hyps_win_prob: config.exploration.hyperstructureWinProbAtCenter,
@@ -196,6 +199,7 @@ function buildStructureCapacityConfig(config: Config) {
     hyperstructure_capacity: config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
     fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
+    holysite_capacity: 0, // Reserved serialized slot.
     camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
     bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
   };
@@ -392,6 +396,7 @@ function buildFaithConfig(config: Config) {
   return {
     enabled,
     wonder_base_fp_per_sec: config.faith?.wonder_base_fp_per_sec ?? 0,
+    holy_site_fp_per_sec: 0, // Reserved serialized slot.
     realm_fp_per_sec: config.faith?.realm_fp_per_sec ?? 0,
     village_fp_per_sec: config.faith?.village_fp_per_sec ?? 0,
     owner_share_percent: (config.faith?.owner_share_percent ?? 0) * 100,
@@ -462,6 +467,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         owner_fee_denom: config.banks.ownerFeesDenominator,
       },
       trade_config: { max_count: config.trade.maxCount },
+      quest_config: { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 }, // Reserved.
 
       faith_config: buildFaithConfig(config),
       bitcoin_mine_config: buildBitcoinMineConfig(config),
@@ -479,6 +485,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         season_pool_fee_recipient: config.bridge.season_pool_fee_recipient,
       },
       village_troop_config: { troop_delay_ticks: config.battle.delaySeconds },
+      quest_games: [], // Reserved; keep the old span position without registering quest games.
       realm_start_resources_config: {
         resources_list_id: realmStart.id,
         resources_list_count: realmStart.count,

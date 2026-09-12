@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { beforeEach, describe, expect, it } from "vitest";
@@ -14,28 +14,45 @@ import {
   setGameScope,
 } from "./game-scope";
 
-type ManifestEntry = { tag: string; members?: Array<{ name: string; key?: boolean }> };
-
-const manifest = JSON.parse(
-  readFileSync(resolve(process.cwd(), "../../contracts/l3/game/manifest_appchain_blitz.json"), "utf8"),
-) as { models?: ManifestEntry[]; events?: ManifestEntry[] };
-
-const deriveGlobalNames = (entries: ManifestEntry[] = []): string[] =>
-  entries
-    .filter((entry) => {
-      const keyNames = (entry.members ?? []).filter((member) => member.key).map((member) => member.name);
-      return keyNames[0] !== "game_id";
-    })
-    .map((entry) => entry.tag.split("-", 2)[1] ?? entry.tag);
+// Deployment manifests describe previously deployed classes, including retired models.
+// Read current declarations so this check follows model additions and removals.
+function readContractModelKeys(): Array<{ name: string; firstKey: string | undefined }> {
+  const sourceRoot = resolve(process.cwd(), "../../contracts/l3/game/src");
+  return readdirSync(sourceRoot, { recursive: true, encoding: "utf8" })
+    .filter((path) => path.endsWith(".cairo"))
+    .flatMap((path) => {
+      const source = readFileSync(resolve(sourceRoot, path), "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
+      const declarations = [
+        ...source.matchAll(
+          /#\[dojo::(?:model|event)[^\]]*\]\s*(?:#\[[^\]]*\]\s*)*(?:pub\s+)?struct\s+(\w+)\s*\{([^}]+)\}/g,
+        ),
+      ];
+      expect(declarations.length, `Unparsed model declaration in ${path}`).toBe(
+        [...source.matchAll(/#\[dojo::(?:model|event)\b/g)].length,
+      );
+      return declarations.map(([, name, body]) => ({
+        name,
+        firstKey: body.match(/#\[key\]\s*(?:pub\s+)?(\w+)\s*:/)?.[1],
+      }));
+    });
+}
 
 describe("game-scope", () => {
   beforeEach(() => {
     setGameScope("s2", 0);
   });
 
-  it("pins S2_GLOBAL_MODELS to the manifest's key flags", () => {
-    const expected = [...deriveGlobalNames(manifest.models), ...deriveGlobalNames(manifest.events)].sort();
+  it("pins S2_GLOBAL_MODELS to current contract key declarations", () => {
+    const models = readContractModelKeys();
+    const expected = models
+      .filter(({ firstKey }) => firstKey !== "game_id")
+      .map(({ name }) => name)
+      .sort();
     expect([...s2GlobalModelNames()].sort()).toEqual(expected);
+    setGameScope("s2", 7);
+    for (const { name, firstKey } of models) {
+      expect(isGameScopedModel(gameModel(name)), name).toBe(firstKey === "game_id");
+    }
   });
 
   it("maps chains to namespaces", () => {

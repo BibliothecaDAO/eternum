@@ -540,6 +540,8 @@ export function defineContractComponents(world: World, namespace: string) {
             agent_discovery_fail_prob: RecsType.Number,
             camp_win_probability: RecsType.Number,
             camp_fail_probability: RecsType.Number,
+            holysite_win_probability: RecsType.Number,
+            holysite_fail_probability: RecsType.Number,
             bitcoin_mine_win_probability: RecsType.Number,
             bitcoin_mine_fail_probability: RecsType.Number,
             hyps_win_prob: RecsType.Number,
@@ -564,6 +566,8 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // MapConfig agent_discovery_fail_prob
               "u16", // MapConfig camp_win_probability
               "u16", // MapConfig camp_fail_probability
+              "u16", // MapConfig holysite_win_probability (reserved)
+              "u16", // MapConfig holysite_fail_probability (reserved)
               "u16", // MapConfig bitcoin_mine_win_probability
               "u16", // MapConfig bitcoin_mine_fail_probability
               "u32", // MapConfig hyps_win_prob
@@ -1120,6 +1124,8 @@ export function defineContractComponents(world: World, namespace: string) {
             agent_discovery_fail_prob: RecsType.Number,
             camp_win_probability: RecsType.Number,
             camp_fail_probability: RecsType.Number,
+            holysite_win_probability: RecsType.Number,
+            holysite_fail_probability: RecsType.Number,
             bitcoin_mine_win_probability: RecsType.Number,
             bitcoin_mine_fail_probability: RecsType.Number,
             hyps_win_prob: RecsType.Number,
@@ -1200,9 +1206,11 @@ export function defineContractComponents(world: World, namespace: string) {
             owner_fee_denom: RecsType.Number,
           },
           trade_config: { max_count: RecsType.Number },
+          quest_config: { quest_discovery_prob: RecsType.Number, quest_discovery_fail_prob: RecsType.Number },
           faith_config: {
             enabled: RecsType.Boolean,
             wonder_base_fp_per_sec: RecsType.Number,
+            holy_site_fp_per_sec: RecsType.Number,
             realm_fp_per_sec: RecsType.Number,
             village_fp_per_sec: RecsType.Number,
             owner_share_percent: RecsType.Number,
@@ -1227,6 +1235,7 @@ export function defineContractComponents(world: World, namespace: string) {
             season_pool_fee_recipient: RecsType.BigInt,
           },
           village_troop_config: { troop_delay_ticks: RecsType.Number },
+          quest_games: RecsType.T,
           realm_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_find_resources_config: {
@@ -1239,6 +1248,7 @@ export function defineContractComponents(world: World, namespace: string) {
             hyperstructure_capacity: RecsType.BigInt,
             fragment_mine_capacity: RecsType.BigInt,
             bank_structure_capacity: RecsType.BigInt,
+            holysite_capacity: RecsType.BigInt,
             camp_capacity: RecsType.BigInt,
             bitcoin_mine_capacity: RecsType.BigInt,
           },
@@ -1273,6 +1283,8 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // MapConfig agent_discovery_fail_prob
               "u16", // MapConfig camp_win_probability
               "u16", // MapConfig camp_fail_probability
+              "u16", // MapConfig holysite_win_probability (reserved)
+              "u16", // MapConfig holysite_fail_probability (reserved)
               "u16", // MapConfig bitcoin_mine_win_probability
               "u16", // MapConfig bitcoin_mine_fail_probability
               "u32", // MapConfig hyps_win_prob
@@ -1340,8 +1352,11 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // BankConfig owner_fee_num
               "u32", // BankConfig owner_fee_denom
               "u8", // TradeConfig max_count
+              "u16", // QuestConfig quest_discovery_prob (reserved)
+              "u16", // QuestConfig quest_discovery_fail_prob (reserved)
               "bool", // FaithConfig enabled
               "u16", // FaithConfig wonder_base_fp_per_sec
+              "u16", // FaithConfig holy_site_fp_per_sec (reserved)
               "u16", // FaithConfig realm_fp_per_sec
               "u16", // FaithConfig village_fp_per_sec
               "u16", // FaithConfig owner_share_percent
@@ -1362,6 +1377,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // VillageTroopConfig troop_delay_ticks
+              "Span<PresetQuestGame>", // quest_games (reserved)
               "u32", // StartingResourcesConfig resources_list_id
               "u8", // StartingResourcesConfig resources_list_count
               "u32", // StartingResourcesConfig resources_list_id
@@ -1373,6 +1389,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u64", // StructureCapacityConfig hyperstructure_capacity
               "u64", // StructureCapacityConfig fragment_mine_capacity
               "u64", // StructureCapacityConfig bank_structure_capacity
+              "u64", // StructureCapacityConfig holysite_capacity (reserved)
               "u64", // StructureCapacityConfig camp_capacity
               "u64", // StructureCapacityConfig bitcoin_mine_capacity
               "u32", // VictoryPointsGrantConfig hyp_points_per_second

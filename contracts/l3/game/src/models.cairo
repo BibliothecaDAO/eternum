@@ -37,6 +37,9 @@ pub mod resource {
     }
 }
 pub mod bitcoin_mine;
+
+#[cfg(test)]
+mod config_layout_test;
 pub mod rank;
 
 pub mod realm_allocation;

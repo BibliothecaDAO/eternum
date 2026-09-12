@@ -73,6 +73,8 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         relic_hex_dist_from_center: 10,
         relic_discovery_interval_sec: 60,
         camp_fail_probability: 1,
+        holysite_win_probability: 0,
+        holysite_fail_probability: 0,
         camp_win_probability: 0,
         bitcoin_mine_win_probability: 200, // 2%
         bitcoin_mine_fail_probability: 9800,
@@ -149,6 +151,7 @@ pub fn MOCK_STRUCTURE_CAPACITY_CONFIG() -> StructureCapacityConfig {
         hyperstructure_capacity: 1000000000000000, // grams
         fragment_mine_capacity: 1000000000000000, // grams
         bank_structure_capacity: 1000000000000000, // grams
+        holysite_capacity: 0,
         camp_capacity: 1000000000000000, // grams
         bitcoin_mine_capacity: 1000000000000000 // grams
     }
