@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useDojo } from "@bibliothecadao/react";
 import { useComponentValue } from "@dojoengine/react";
-import { getRealmInfo, type TileManager } from "@bibliothecadao/eternum";
+import { type BuildingTiles, getRealmInfo } from "@bibliothecadao/eternum";
 import { BuildingType, BuildingTypeToString, ContractAddress, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { buildingEntityKey, gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "./construction-buildability";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
@@ -15,7 +16,7 @@ import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./co
 export interface PlotConstructionTarget {
   entityId: number;
   spot: HexPosition;
-  tileManager: TileManager;
+  tileManager: BuildingTiles;
   isCurrentTarget: () => boolean;
 }
 
@@ -75,8 +76,12 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     submitting.current = true;
     setPending(true);
     try {
-      // Keep TileManager and the observed system call's existing pending building lifecycle.
-      await target.tileManager.placeBuilding(account, target.entityId, type, target.spot, useSimpleCost);
+      await requireActiveGameClient().actions.placeBuilding({
+        structureId: target.entityId,
+        buildingType: type,
+        hex: target.spot,
+        useSimpleCost,
+      });
       usePopoverStore.getState().close("plot-construction");
     } catch (reason) {
       console.error("[Plot construction] placement failed", reason);

@@ -202,15 +202,13 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }),
   },
   ResourceIdToMiningType: {},
-  TileManager: class {
-    existingBuildings() {
-      return [];
-    }
+}));
 
-    isHexOccupied() {
-      return false;
-    }
-  },
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({
+    views: { buildingTiles: () => ({ existingBuildings: () => [], isHexOccupied: () => false }) },
+    actions: {},
+  }),
 }));
 
 describe("SelectPreviewBuildingMenu production badge", () => {

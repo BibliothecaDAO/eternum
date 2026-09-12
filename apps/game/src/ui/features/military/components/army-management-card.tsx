@@ -11,7 +11,6 @@ import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
-  ArmyManager,
   configManager,
   divideByPrecision,
   getBalance,
@@ -36,6 +35,7 @@ import LockIcon from "lucide-react/dist/esm/icons/lock";
 import Pen from "lucide-react/dist/esm/icons/pen";
 import { useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -46,7 +46,6 @@ type ArmyManagementCardProps = {
 type ArmyCreateProps = {
   owner_entity: ID;
   army: ArmyInfo | undefined;
-  armyManager: ArmyManager;
   isExplorer: boolean;
   guardSlot?: number;
   onCancel?: () => void;
@@ -87,18 +86,9 @@ const DirectionButton: React.FC<DirectionButtonProps> = ({
   );
 };
 
-const ArmyCreate = ({
-  owner_entity,
-  army,
-  armyManager,
-  isExplorer,
-  guardSlot,
-  onCancel,
-  onSuccess,
-}: ArmyCreateProps) => {
+const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuccess }: ArmyCreateProps) => {
   const {
     setup: { components },
-    account: { account },
   } = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
@@ -171,28 +161,39 @@ const ArmyCreate = ({
             )
           : null;
 
+      const { actions } = requireActiveGameClient();
       if (isExplorer) {
         if (army) {
           if (army.isHome && homeDirection !== null) {
-            await armyManager.addTroopsToExplorer(
-              account,
-              army.entityId,
-              troopType,
-              troopTier,
+            await actions.addTroopsToExplorer({
+              structureId: owner_entity,
+              explorerId: army.entityId,
               troopCount,
               homeDirection,
-            );
+            });
           }
         } else {
           if (selectedDirection === null) {
             console.error("No direction selected");
             return;
           }
-          await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
+          await actions.createExplorerArmy({
+            structureId: owner_entity,
+            troopType,
+            troopTier,
+            troopCount,
+            spawnDirection: selectedDirection,
+          });
         }
       } else {
         if (guardSlot !== undefined) {
-          await armyManager.addTroopsToGuard(account, troopType, troopTier, troopCount, guardSlot);
+          await actions.addTroopsToGuard({
+            structureId: owner_entity,
+            troopType,
+            troopTier,
+            troopCount,
+            slot: guardSlot,
+          });
         }
       }
 
@@ -517,10 +518,6 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
     network: { provider },
   } = useDojo();
 
-  const dojo = useDojo();
-
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, owner_entity as ID);
-
   const [isLoading, setIsLoading] = useState(false);
 
   const [editName, setEditName] = useState(false);
@@ -594,7 +591,7 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
             )}
           </div>
 
-          <ArmyCreate owner_entity={owner_entity} army={army} armyManager={armyManager} isExplorer={true} />
+          <ArmyCreate owner_entity={owner_entity} army={army} isExplorer={true} />
         </div>
       </div>
     )

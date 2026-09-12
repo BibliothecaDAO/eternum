@@ -1,5 +1,5 @@
 import { setup, type DojoSetupConfig, type SetupNetworkEnvironment, type SetupResult } from "@bibliothecadao/dojo";
-import type { Config, SystemCallAuthHandler } from "@bibliothecadao/types";
+import { type Config, ContractAddress, type SystemCallAuthHandler } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
 import { configManager } from "../managers/config-manager";
@@ -14,8 +14,10 @@ import type { HeraldSocket } from "../sync/herald-game-sync-transport";
 import { getGameSyncModelsForChannel, type GameSyncChannel } from "../sync/model-manifest";
 import type { GameSyncScheduler } from "../sync/scheduler";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
+import { createGameActions, type GameActions } from "./actions";
 import { isGameScoped, setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
+import { createGameViews, type GameViews } from "./views";
 import type { WorldDeployment } from "./world-directory";
 
 /** The setup() inputs a host still owns: the world's VRF provider and the chain's fee bounds. */
@@ -43,9 +45,18 @@ export interface GameClient {
   setup: SetupResult;
   runtime: GameSyncRuntime;
   projection: WorldSpatialProjection;
-  /** The account that signs this client's transactions; nothing in core reads it until actions land. */
-  signer: AccountInterface | null;
+  /** The account that signs this client's actions; null until connect(). */
+  readonly signer: AccountInterface | null;
+  /**
+   * The game seen from the connected signer. Before connect() the client is a spectator: views see the game from no
+   * player, so isMine is false everywhere, and any action that submits throws. Callers wanting another viewer use
+   * createGameViews directly.
+   */
+  readonly views: GameViews;
+  readonly actions: GameActions;
   connect(signer: AccountInterface): void;
+  /** Back to spectating: the next action throws until a signer connects again. */
+  disconnect(): void;
   /** Reconnect through the same convergent subscribe → snapshot → replay routine used at boot. */
   recover(): Promise<void>;
   /** Tears down the runtime and its transport, including a subscribe that never resolved. */
@@ -143,6 +154,9 @@ const buildGameClient = (
   runtime: GameSyncRuntime,
   projection: WorldSpatialProjection,
 ): GameClient => {
+  let signer: AccountInterface | null = null;
+  let views: GameViews | null = null;
+  let actions: GameActions | null = null;
   const client: GameClient = {
     world: input.world,
     gameId: input.gameId,
@@ -150,15 +164,31 @@ const buildGameClient = (
     setup: setupResult,
     runtime,
     projection,
-    signer: null,
-    connect: (signer) => {
-      client.signer = signer;
+    get signer() {
+      return signer;
+    },
+    get views() {
+      return (views ??= createGameViews(client, viewerOf(signer)));
+    },
+    get actions() {
+      return (actions ??= createGameActions(client));
+    },
+    connect: (next) => {
+      signer = next;
+      views = null;
+    },
+    disconnect: () => {
+      signer = null;
+      views = null;
     },
     recover: () => runtime.recover(),
     dispose: () => disposeRuntime(runtime),
   };
   return client;
 };
+
+/** A spectator views the game as address zero, which owns nothing. */
+const viewerOf = (signer: AccountInterface | null): ContractAddress => ContractAddress(signer?.address ?? 0n);
 
 /** The active-runtime pointer must not outlive its runtime; a runtime that was already replaced just stops. */
 const disposeRuntime = (runtime: GameSyncRuntime): void => {

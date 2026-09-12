@@ -9,6 +9,7 @@ import {
   type RealmInfo,
   type Structure,
   StructureType,
+  type SystemCalls,
 } from "@bibliothecadao/types";
 import {
   type ComponentValue,
@@ -20,6 +21,7 @@ import {
 } from "@dojoengine/recs";
 
 import { configManager } from "../../managers/config-manager";
+import { TileManager } from "../../managers/tile-manager";
 import { getRealmInfo } from "../../utils/realm";
 import { getStructure } from "../../utils/structure";
 import { isDefined, readRows } from "./rows";
@@ -29,6 +31,24 @@ export type HyperstructureRow = ComponentValue<ClientComponents["Hyperstructure"
 type BuildingRow = ComponentValue<ClientComponents["Building"]["schema"]>;
 
 // Structures
+
+/** TileManager's read half over a structure's local building slots; its write half is reached through actions. */
+export type BuildingTiles = Pick<
+  TileManager,
+  | "getHexCoords"
+  | "getRealmLevel"
+  | "getWonder"
+  | "existingBuildings"
+  | "getBuilding"
+  | "isHexOccupied"
+  | "structureType"
+>;
+
+export const readBuildingTiles = (
+  components: ClientComponents,
+  systemCalls: SystemCalls,
+  structureEntityId: ID,
+): BuildingTiles => TileManager.forStructure(components, systemCalls, structureEntityId);
 
 export const structuresByOwnerQuery = (components: ClientComponents, owner: ContractAddress): QueryFragment[] => [
   HasValue(components.Structure, { owner }),

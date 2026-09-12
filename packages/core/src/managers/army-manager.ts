@@ -8,11 +8,10 @@ export class ArmyManager {
     private readonly realmEntityId: ID,
   ) {}
 
+  /** The chain adds troops of the explorer's own type and tier, so neither is an input. */
   public async addTroopsToExplorer(
     signer: Account | AccountInterface,
     armyEntityId: ID,
-    troopType: TroopType,
-    troopTier: TroopTier,
     troopCount: number,
     homeDirection: Direction,
   ): Promise<void> {

@@ -13,3 +13,4 @@ export * from "./utils/resource-arrivals";
 // the barrel's manager exports partially forwarded under vitest.
 export * from "./client/game-client";
 export * from "./client/views";
+export * from "./client/actions";

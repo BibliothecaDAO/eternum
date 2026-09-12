@@ -6,8 +6,9 @@ import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store"
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ArmyManager, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
+import { requireActiveGameClient } from "@/sync/active-game-client";
+import { useExplorersByStructure } from "@bibliothecadao/react";
 import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import Check from "lucide-react/dist/esm/icons/check";
 import Compass from "lucide-react/dist/esm/icons/compass";
@@ -59,11 +60,6 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const currentArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
-  const {
-    account: { account },
-    setup: { components, systemCalls },
-  } = useDojo();
-
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -101,8 +97,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     if (deleting) return;
     setDeleting(true);
     try {
-      const manager = new ArmyManager(systemCalls, structureId);
-      await manager.deleteExplorerArmy(account, army.entityId);
+      await requireActiveGameClient().actions.deleteExplorerArmy({ structureId, explorerId: army.entityId });
       // Free the hex on the deploy map.
       bumpMilitaryMapVersion();
       setConfirming(false);

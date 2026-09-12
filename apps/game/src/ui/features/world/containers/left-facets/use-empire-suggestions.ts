@@ -248,7 +248,7 @@ const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
-    setup: { components, systemCalls },
+    setup: { components },
   } = useDojo();
   const mode = useGameModeConfig();
   const resolvedWorldGameMode = useResolvedWorldGameMode();
@@ -285,10 +285,6 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
         const hasAvailableBuildingTile = resolveRealmHasAvailableBuildingTile({
           entityId,
           realmPosition: realm?.position,
-          world: {
-            components,
-            systemCalls,
-          },
         });
         const buildabilityContext: BuildabilityContext = {
           entityId,
@@ -328,5 +324,5 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
       })
       .toSorted(compareSuggestionDrafts)
       .map(decorateSuggestion);
-  }, [metadata, components, systemCalls, mode, useSimpleCost, isBlitzActive]);
+  }, [metadata, components, mode, useSimpleCost, isBlitzActive]);
 };

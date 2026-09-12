@@ -153,10 +153,9 @@ export const MergedResourcePanel = memo(
       return resolveRealmHasAvailableBuildingTile({
         entityId,
         realmPosition: realm.position,
-        world: { components, systemCalls: dojo.setup.systemCalls },
       });
       // the clock keeps this fresh as synced building occupancy changes.
-    }, [realm?.position, entityId, components, dojo.setup.systemCalls, currentTime]);
+    }, [realm?.position, entityId, currentTime]);
 
     const handleAutoBuild = useCallback(
       async (buildingType: BuildingType, resourceId: ResourcesIds) => {
@@ -167,14 +166,9 @@ export const MergedResourcePanel = memo(
           mode,
           target: { type: buildingType, resource: resourceId },
           useSimpleCost,
-          world: {
-            account: dojo.account.account,
-            components,
-            systemCalls: dojo.setup.systemCalls,
-          },
         });
       },
-      [dojo.account.account, dojo.setup.systemCalls, components, entityId, realm, mode, useSimpleCost],
+      [entityId, realm, mode, useSimpleCost],
     );
 
     const renderToken = useCallback(

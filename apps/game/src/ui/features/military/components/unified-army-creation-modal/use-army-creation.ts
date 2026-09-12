@@ -6,7 +6,6 @@ import {
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
-  ArmyManager,
   configManager,
   divideByPrecision,
   formatTime,
@@ -40,6 +39,7 @@ import {
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { resolveArmyCreationBlockedReason, resolveArmyTroopAvailability } from "./army-creation-policy";
@@ -73,8 +73,7 @@ export const useArmyCreation = ({
   onSubmit,
 }: ArmyCreationOptions) => {
   const {
-    setup: { components, systemCalls },
-    account: { account },
+    setup: { components },
   } = useDojo();
   const submittingRef = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -289,11 +288,6 @@ export const useArmyCreation = ({
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
 
-  const armyManager = useMemo(() => {
-    if (!activeStructureId) return null;
-    return new ArmyManager(systemCalls, activeStructureId as ID);
-  }, [activeStructureId, systemCalls]);
-
   useEffect(() => {
     if (previousStructureIdRef.current === activeStructureId) return;
     previousStructureIdRef.current = activeStructureId;
@@ -412,7 +406,7 @@ export const useArmyCreation = ({
   const isActionDisabled = blockedReason !== null;
 
   const handleCreate = async () => {
-    if (!armyManager || isActionDisabled || submittingRef.current) return;
+    if (!activeStructureId || isActionDisabled || submittingRef.current) return;
     const target = armyType
       ? selectedDirection === null
         ? null
@@ -424,7 +418,7 @@ export const useArmyCreation = ({
     setIsLoading(true);
     onSubmit?.();
     try {
-      await submitArmyCreation(armyManager, account, selectedTroopCombo, troopCount, target);
+      await submitArmyCreation(activeStructureId, selectedTroopCombo, troopCount, target);
     } catch (error) {
       console.error("Failed to create army:", error);
     } finally {
@@ -487,16 +481,17 @@ export const useArmyCreation = ({
 
 /** Both surfaces submit through ArmyManager and its existing observed system calls. */
 async function submitArmyCreation(
-  manager: ArmyManager,
-  account: Parameters<ArmyManager["createExplorerArmy"]>[0],
+  structureId: ID,
   troop: SelectedTroopCombo,
   count: number,
   target: { kind: "field"; direction: Direction } | { kind: "guard"; slot: number },
 ): Promise<void> {
+  const { actions } = requireActiveGameClient();
+  const troops = { structureId, troopType: troop.type, troopTier: troop.tier, troopCount: count };
   if (target.kind === "guard") {
-    await manager.addTroopsToGuard(account, troop.type, troop.tier, count, target.slot);
+    await actions.addTroopsToGuard({ ...troops, slot: target.slot });
     return;
   }
-  await manager.createExplorerArmy(account, troop.type, troop.tier, count, target.direction);
+  await actions.createExplorerArmy({ ...troops, spawnDirection: target.direction });
   useUIStore.getState().bumpMilitaryMapVersion();
 }

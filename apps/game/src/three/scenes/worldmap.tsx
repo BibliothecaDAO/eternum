@@ -93,7 +93,6 @@ import {
   ActionPath,
   ActionPaths,
   ActionType,
-  ArmyActionManager,
   BattleEventSystemUpdate,
   ExplorerRewardSystemUpdate,
   getBlockTimestamp,
@@ -101,8 +100,8 @@ import {
   getTileAt,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
-  StructureActionManager,
 } from "@bibliothecadao/eternum";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import {
   ActorType,
   BiomeType,
@@ -120,7 +119,6 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import throttle from "lodash/throttle";
-import { Account, AccountInterface } from "starknet";
 import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
@@ -2573,7 +2571,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         if (actionType === ActionType.Explore || actionType === ActionType.Move) {
-          this.onArmyMovement(account, actionPath, selectedEntityId);
+          this.onArmyMovement(actionPath, selectedEntityId);
         } else if (actionType === ActionType.Attack) {
           this.onArmyAttack(actionPath, selectedEntityId);
         } else if (actionType === ActionType.SpireTravel) {
@@ -2605,7 +2603,7 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
+  private onArmyMovement(actionPath: ActionPath[], selectedEntityId: ID) {
     if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
       toast.info("Army movement is still resolving");
       this.state.updateEntityActionHoveredHex(null);
@@ -2636,7 +2634,6 @@ export default class WorldmapScene extends WarpTravel {
 
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
-      const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
       const selectedArmy = this.armyManager.getArmy(selectedEntityId);
       playUnitCommandSoundForWorldmapAction(actionType);
 
@@ -2780,8 +2777,8 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
 
-      armyActionManager
-        .moveArmy(account!, actionPath, isTravelAction, currentArmiesTick)
+      requireActiveGameClient()
+        .actions.moveArmy({ explorerId: selectedEntityId, path: actionPath, currentArmiesTick })
         .then((result: any) => {
           const txHash = result?.transaction_hash;
           recordArmyMovementLatencyPhase({
@@ -2926,7 +2923,7 @@ export default class WorldmapScene extends WarpTravel {
         <SpireTravelModal
           explorerId={selectedEntityId}
           essenceCost={configManager.getSpireTravelEssenceCost()}
-          onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)}
+          onTravelThroughSpire={() => this.onArmyMovement(actionPath, selectedEntityId)}
         />
       ),
     });
@@ -3070,7 +3067,6 @@ export default class WorldmapScene extends WarpTravel {
 
     this.showSelectedStructure(selectedEntityId, hexCoords);
 
-    const structure = new StructureActionManager();
     const structureData = getComponentValue(this.dojo.components.Structure, gameEntityKey([BigInt(selectedEntityId)]));
     const attackRange = structureData
       ? Math.max(
@@ -3092,13 +3088,13 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const actionPaths = structure.findActionPaths(
-      hexCoords,
-      this.buildProjectedArmyActionIndex(),
-      this.buildProjectedExploredTileIndex(),
-      ContractAddress(playerAddress),
+    const actionPaths = requireActiveGameClient().actions.structurePaths({
+      hex: hexCoords,
+      armyHexes: this.buildProjectedArmyActionIndex(),
+      exploredHexes: this.buildProjectedExploredTileIndex(),
+      playerAddress: ContractAddress(playerAddress),
       attackRange,
-    );
+    });
 
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
@@ -3363,8 +3359,6 @@ export default class WorldmapScene extends WarpTravel {
       return true;
     }
 
-    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
-
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
     // Action paths plan from RECS ExplorerTroops — the same coord the submit
@@ -3383,15 +3377,16 @@ export default class WorldmapScene extends WarpTravel {
       return true;
     }
 
-    const actionPaths = armyActionManager.findActionPaths(
-      this.buildProjectedStructureActionIndex(),
-      this.buildProjectedArmyActionIndex(),
-      this.buildProjectedExploredTileIndex(),
-      this.buildProjectedChestActionIndex(),
+    const actionPaths = requireActiveGameClient().actions.armyPaths({
+      explorerId: selectedEntityId,
+      structureHexes: this.buildProjectedStructureActionIndex(),
+      armyHexes: this.buildProjectedArmyActionIndex(),
+      exploredHexes: this.buildProjectedExploredTileIndex(),
+      chestHexes: this.buildProjectedChestActionIndex(),
       currentDefaultTick,
       currentArmiesTick,
       playerAddress,
-    );
+    });
 
     const paths = actionPaths.getPaths();
     const highlightedHexes = actionPaths.getHighlightDescriptors();

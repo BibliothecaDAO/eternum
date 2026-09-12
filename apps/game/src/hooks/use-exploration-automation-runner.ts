@@ -1,12 +1,4 @@
-import {
-  ActionPaths,
-  ActionType,
-  ArmyActionManager,
-  configManager,
-  getBlockTimestamp,
-  Position,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { ActionPaths, configManager, getBlockTimestamp, Position, StaminaManager } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
@@ -15,7 +7,6 @@ import { getComponentValue, getEntityString } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import type { Account, AccountInterface } from "starknet";
 
 import { getExplorationStrategy } from "@/automation/exploration";
 import { buildExplorationSnapshot } from "@/automation/exploration/map-cache";
@@ -26,6 +17,7 @@ import {
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
   computeEffectiveStaminaCost,
@@ -61,7 +53,7 @@ type SnapshotCache = {
 
 export const useExplorationAutomationRunner = () => {
   const {
-    setup: { components, systemCalls },
+    setup: { components },
     account: { account },
   } = useDojo();
 
@@ -273,17 +265,21 @@ export const useExplorationAutomationRunner = () => {
               });
             }
 
-            const manager = new ArmyActionManager(components, systemCalls, explorerId);
-            const actionPaths = manager.findActionPaths(
-              snapshot.structureHexes,
-              snapshot.armyHexes,
-              snapshot.exploredTiles,
-              snapshot.chestHexes,
-              currentDefaultTick,
-              currentArmiesTick,
-              ContractAddress(account.address),
-            );
-            let actionPathMap = actionPaths.getPaths();
+            const { actions } = requireActiveGameClient();
+            const planPaths = (map: ExplorationMapSnapshot) =>
+              actions
+                .armyPaths({
+                  explorerId,
+                  structureHexes: map.structureHexes,
+                  armyHexes: map.armyHexes,
+                  exploredHexes: map.exploredTiles,
+                  chestHexes: map.chestHexes,
+                  currentDefaultTick,
+                  currentArmiesTick,
+                  playerAddress: ContractAddress(account.address),
+                })
+                .getPaths();
+            let actionPathMap = planPaths(snapshot);
 
             if (useFastCache && cached) {
               const filtered = filterFreshExplorationPaths(actionPathMap, cached.recentlyExplored, (hex) => {
@@ -309,16 +305,7 @@ export const useExplorationAutomationRunner = () => {
                   reusableUntilProjectionChange: false,
                   recentlyExplored: new Set(),
                 });
-                const refreshedPaths = manager.findActionPaths(
-                  snapshot.structureHexes,
-                  snapshot.armyHexes,
-                  snapshot.exploredTiles,
-                  snapshot.chestHexes,
-                  currentDefaultTick,
-                  currentArmiesTick,
-                  ContractAddress(account.address),
-                );
-                actionPathMap = refreshedPaths.getPaths();
+                actionPathMap = planPaths(snapshot);
               } else {
                 actionPathMap = filtered;
               }
@@ -338,13 +325,7 @@ export const useExplorationAutomationRunner = () => {
             }
 
             const actionType = ActionPaths.getActionType(selection.path);
-            const isExplored = actionType === ActionType.Move;
-            await manager.moveArmy(
-              account as Account | AccountInterface,
-              selection.path,
-              isExplored,
-              currentArmiesTick,
-            );
+            await actions.moveArmy({ explorerId, path: selection.path, currentArmiesTick });
 
             const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
             const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
@@ -395,7 +376,6 @@ export const useExplorationAutomationRunner = () => {
     scheduleNext,
     scheduleNextCheck,
     stopAutomation,
-    systemCalls,
     remove,
     resolveExplorerEntity,
     update,

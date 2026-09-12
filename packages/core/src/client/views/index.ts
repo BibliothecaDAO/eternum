@@ -27,10 +27,12 @@ import { arrivalsByStructureQuery, readResourceArrivals, readResourceManager } f
 import {
   allRealmsQuery,
   buildingsAtQuery,
+  type BuildingTiles,
   type HyperstructureRow,
   hyperstructuresByOwnerQuery,
   hyperstructureUpdatesQuery,
   readBuildings,
+  readBuildingTiles,
   readHyperstructureUpdates,
   readRealmInfos,
   readStructureIds,
@@ -59,6 +61,8 @@ export interface GameViews {
   hyperstructureIds(owner: ContractAddress): ID[];
   hyperstructureUpdates(hyperstructureEntityId: ID): (HyperstructureRow | undefined)[];
   buildings(outerCol: number, outerRow: number): Building[];
+  /** Occupancy, level, and the buildings standing on a structure's own slots, as the construction surfaces read them. */
+  buildingTiles(structureEntityId: ID): BuildingTiles;
   resources(entityId: ID): ResourceManager;
   resourceArrivals(structureEntityId: ID): ResourceArrivalInfo[];
   guildMembers(guildEntityId: ContractAddress): GuildMemberInfo[];
@@ -73,7 +77,7 @@ export interface GameViews {
  * isUser are relative to it.
  */
 export const createGameViews = (client: GameClient, viewer: ContractAddress): GameViews => {
-  const components = client.setup.components;
+  const { components, systemCalls } = client.setup;
   const query = (fragments: QueryFragment[]): Entity[] => [...runQuery(fragments)];
 
   return {
@@ -89,6 +93,7 @@ export const createGameViews = (client: GameClient, viewer: ContractAddress): Ga
       readHyperstructureUpdates(components, query(hyperstructureUpdatesQuery(components, hyperstructureEntityId))),
     buildings: (outerCol, outerRow) =>
       readBuildings(components, query(buildingsAtQuery(components, outerCol, outerRow))),
+    buildingTiles: (structureEntityId) => readBuildingTiles(components, systemCalls, structureEntityId),
     resources: (entityId) => readResourceManager(components, entityId),
     resourceArrivals: (structureEntityId) =>
       readResourceArrivals(components, query(arrivalsByStructureQuery(components, structureEntityId))),

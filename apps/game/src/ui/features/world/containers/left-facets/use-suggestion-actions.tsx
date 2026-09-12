@@ -17,7 +17,7 @@ import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 /** Explicit suggestion actions focus their realm and use the existing order flows. */
 export const useSuggestionActions = () => {
-  const { account, setup } = useDojo();
+  const { setup } = useDojo();
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
   const mode = useGameModeConfig();
@@ -71,23 +71,10 @@ export const useSuggestionActions = () => {
         mode,
         target,
         useSimpleCost,
-        world: {
-          account: account.account,
-          components: setup.components,
-          systemCalls: setup.systemCalls,
-        },
         onBuildSuccess: setSelectedBuildingHex,
       });
     },
-    [
-      account.account,
-      mode,
-      setLeftNavigationView,
-      setSelectedBuildingHex,
-      setup.components,
-      setup.systemCalls,
-      useSimpleCost,
-    ],
+    [mode, setLeftNavigationView, setSelectedBuildingHex, setup.components, useSimpleCost],
   );
 
   const runSuggestionClick = useCallback(
