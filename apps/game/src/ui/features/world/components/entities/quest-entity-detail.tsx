@@ -7,7 +7,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useComponentValue } from "@dojoengine/react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 import {
   EntityDetailLayoutVariant,

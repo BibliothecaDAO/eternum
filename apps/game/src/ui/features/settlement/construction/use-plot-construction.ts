@@ -6,7 +6,7 @@ import { BuildingType, BuildingTypeToString, ContractAddress, type HexPosition }
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
+import { buildingEntityKey, gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "./construction-buildability";

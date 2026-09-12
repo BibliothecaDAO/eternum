@@ -32,7 +32,7 @@ import Shield from "lucide-react/dist/esm/icons/shield";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Wheat from "lucide-react/dist/esm/icons/wheat";
 import { useMemo } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import {
   buildBlitzRealmSuggestions,
   type BlitzBuildKey,

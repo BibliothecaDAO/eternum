@@ -39,7 +39,7 @@ import {
 } from "../../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { resolveArmyCreationBlockedReason, resolveArmyTroopAvailability } from "./army-creation-policy";

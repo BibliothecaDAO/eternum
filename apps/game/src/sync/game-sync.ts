@@ -18,7 +18,7 @@ import {
 import type { GameSyncSnapshotProgress } from "@bibliothecadao/eternum/game-sync";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { env } from "../../env";
-import { gameEntityKey, getScopedGameId, isGameScoped } from "./game-scope";
+import { gameEntityKey, getScopedGameId, isGameScoped } from "@bibliothecadao/eternum/game-client";
 import { resolveInitialStructureSelection } from "./initial-structure-selection";
 
 export const disposeGameSyncSession = (): void => {

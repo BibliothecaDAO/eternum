@@ -9,6 +9,7 @@ export default defineConfig({
     "src/index.ts",
     "src/utils/biome/biome.ts",
     "src/managers/game-entity-keys.ts",
+    "src/client/index.ts",
     "src/sync/index.ts",
     "src/sync/model-manifest.ts",
   ],

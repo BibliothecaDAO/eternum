@@ -23,7 +23,10 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: any) => select({ useSimpleCost: true, setUseSimpleCost: vi.fn() }),
 }));
 vi.mock("@/hooks/store/use-popover-store", () => ({ usePopoverStore: { getState: () => ({ close: mocks.close }) } }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "entity", buildingEntityKey: () => "building" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({
+  gameEntityKey: () => "entity",
+  buildingEntityKey: () => "building",
+}));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("./construction-groups", () => ({

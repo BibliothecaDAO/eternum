@@ -13,7 +13,7 @@ import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/t
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 /** Explicit suggestion actions focus their realm and use the existing order flows. */
 export const useSuggestionActions = () => {

@@ -12,7 +12,7 @@ import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
-import { namespaceForChain, setGameScope, type GameNamespace } from "../sync/game-scope";
+import { namespaceForChain, setGameScope, type GameNamespace } from "@bibliothecadao/eternum/game-client";
 import { disposeGameSyncSession, initialSync } from "../sync/game-sync";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";

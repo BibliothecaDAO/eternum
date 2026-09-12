@@ -7,7 +7,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { buildingEntityKey, gameEntityKey } from "@/sync/game-scope";
+import { buildingEntityKey, gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { formatTilePanelTitle } from "./tile-panel-title";

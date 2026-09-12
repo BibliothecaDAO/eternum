@@ -3,7 +3,7 @@ import type { GameModeId } from "@/config/game-modes";
 import { ClientComponents, ID, StructureType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type SlotValue = bigint | number | null | undefined;
 

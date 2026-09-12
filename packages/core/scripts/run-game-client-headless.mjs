@@ -39,7 +39,7 @@ const DEFAULT_HERALD_URL = "https://herald.realms.party";
 const DEFAULT_CHAIN = "madara";
 const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_WATCH_MS = 5_000;
-// Every chain the app knows resolves to this namespace (apps/game/src/sync/game-scope.ts `namespaceForChain`).
+// Every chain the app knows resolves to this namespace (packages/core/src/client/game-scope.ts `namespaceForChain`).
 const NAMESPACE = "s2";
 
 const parseArgs = (args) => {

@@ -59,7 +59,7 @@ import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
 import { env } from "../../../../../env";
-import { namespaceForChain } from "@/sync/game-scope";
+import { namespaceForChain } from "@bibliothecadao/eternum/game-client";
 
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;

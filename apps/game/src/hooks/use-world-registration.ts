@@ -5,7 +5,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
-import { namespaceForChain } from "@/sync/game-scope";
+import { namespaceForChain } from "@bibliothecadao/eternum/game-client";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import { resolveWorldIdForGame } from "@/runtime/world/game-registry";

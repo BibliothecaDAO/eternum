@@ -1,5 +1,6 @@
 import type { GameChain as Chain } from "@realms-world/chain";
-import { findGameSyncModel, getGameSyncModelsForChannel } from "@bibliothecadao/eternum/game-sync";
+
+import { findGameSyncModel, getGameSyncModelsForChannel } from "../sync/model-manifest";
 
 /**
  * Active game scope for the phase-one s2 worlds.
@@ -54,14 +55,14 @@ export const gameIdKey = (): string => hexKey(activeGameId);
  * never use gameEntityKey for chain-global models (AddressName, preset
  * tables, ChainConfig, ...).
  */
-// Key helpers are core's single implementation, imported via its subpath
-// export rather than the package root: evaluating the core barrel runs
+// Key helpers are core's single implementation, imported by relative path
+// rather than through the package barrel: evaluating the core barrel runs
 // module-scope resource tables that break tests partially mocking
 // @bibliothecadao/types, and drags all of core into every game-scope
-// consumer. The subpath resolves to the same module instance as the barrel
-// re-export (esm chunk splitting in dist, alias to the same source file in
-// vitest), so the active-game-id mirror stays singular.
-export { buildingEntityKey, gameEntityKey, worldConfigKey } from "@bibliothecadao/eternum/game-entity-keys";
+// consumer. The game-client and game-entity-keys subpaths share one esm chunk
+// in dist (and one source file under the vitest aliases), so the
+// active-game-id mirror stays singular.
+export { buildingEntityKey, gameEntityKey, worldConfigKey } from "../managers/game-entity-keys";
 
 // s2 models and events WITHOUT a game_id key[0] (chain singletons, preset
 // rulebook side tables, player identity, series rows). Everything else in the

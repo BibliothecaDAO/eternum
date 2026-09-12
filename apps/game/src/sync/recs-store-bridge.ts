@@ -3,7 +3,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { type AppStore, useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore, type WorldSlicesStore } from "@/hooks/store/use-world-slices-store";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { activeGameRows, allRows } from "@/sync/recs-rows";
 import type { PlayerRelicsData } from "@/types";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";

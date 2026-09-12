@@ -30,10 +30,14 @@ const CONSOLE_FAILURE_PATTERNS = [
   /\b(?:uncaught|unhandled rejection)\b/i,
 ];
 
+// The dev server serves workspace packages from their real path under /@fs/, the same URL the app's own
+// `@bibliothecadao/eternum/game-client` imports resolve to, so this shares the app's game-scope instance.
+const GAME_CLIENT_MODULE_URL = `/@fs${fileURLToPath(new URL("../../../../packages/core/dist/client/index.js", import.meta.url))}`;
+
 const captureScript = `(async () => {
   const [{ getGameNamespace, getScopedGameId }, { getActiveWorld }, { useWorldSlicesStore }] =
     await Promise.all([
-      import('/src/sync/game-scope.ts'),
+      import('${GAME_CLIENT_MODULE_URL}'),
       import('/src/runtime/world/store.ts'),
       import('/src/hooks/store/use-world-slices-store.ts')
     ]);

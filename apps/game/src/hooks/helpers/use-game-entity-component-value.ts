@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import type { ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import type { Component, Schema } from "@dojoengine/recs";

@@ -31,7 +31,7 @@ vi.mock("@bibliothecadao/react", () => ({
 vi.mock("@dojoengine/react", () => ({
   useComponentValue: (component: string) => (component === "Structure" ? mocks.structure : mocks.resource),
 }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "structure" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "structure" }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentArmiesTick: () => 1,
   useCurrentBlockTimestamp: () => 60,

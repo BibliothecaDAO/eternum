@@ -2,7 +2,7 @@ import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { resolveEndpoint } from "@realms-world/chain";
 
-import { namespaceForChain, type GameNamespace } from "@/sync/game-scope";
+import { namespaceForChain, type GameNamespace } from "@bibliothecadao/eternum/game-client";
 import { env } from "../../../env";
 import { normalizeSelector } from "./normalize";
 
