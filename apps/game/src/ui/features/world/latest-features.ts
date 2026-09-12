@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-13",
+    title: "Install Realms Easily",
+    description:
+      "Use Install Realms on the home page or in Settings to install the game or see instructions for your browser.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
     title: "Game Activity Compatibility",
     description: "Game activity remains available as new kinds of events are introduced.",
     type: "fix",

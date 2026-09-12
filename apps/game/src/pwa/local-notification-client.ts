@@ -1,16 +1,12 @@
 import type { LocalNotificationPayload } from "@bibliothecadao/notifications";
 import { create } from "zustand";
 import type { NotificationDevice } from "./notification-database";
+import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
 
 export const useNotificationDeliveryError = create<{ error: string | null }>(() => ({ error: null }));
 
 export function localNotificationCapability(): string | null {
-  const appleMobile =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const standalone =
-    window.matchMedia?.("(display-mode: standalone)").matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone;
-  if (appleMobile && !standalone)
+  if (isAppleMobile() && !isInstalledPwa())
     return "Install the game on your Home Screen and open it there to enable notifications.";
   if (!window.isSecureContext || typeof Notification === "undefined" || !("serviceWorker" in navigator))
     return "Device notifications are unavailable in this browser.";
