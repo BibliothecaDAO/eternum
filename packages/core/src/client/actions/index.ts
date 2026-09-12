@@ -32,6 +32,7 @@ import { actingAs } from "./signer";
 
 export * from "./armies";
 export * from "./buildings";
+export * from "./path-indexes";
 
 /**
  * The orchestration the scenes and panels used to write inline: bind the manager, plan, submit. Each action returns

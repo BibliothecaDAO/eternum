@@ -1,3 +1,4 @@
+export * from "./account/bind-gameplay-accounts";
 export * from "./account/gameplay-account";
 export * from "./account/transaction-resource-bounds";
 export * from "./data";
@@ -14,3 +15,4 @@ export * from "./utils/resource-arrivals";
 export * from "./client/game-client";
 export * from "./client/views";
 export * from "./client/actions";
+export * from "./client/wait-for-world-state";

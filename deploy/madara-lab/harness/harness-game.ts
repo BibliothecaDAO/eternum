@@ -1,24 +1,18 @@
 import {
+  buildArmyPathIndexes,
   configManager,
   createGameActions,
   FELT_CENTER,
   gameEntityKey,
   multiplyByPrecision,
+  type ArmyPathIndexes,
   type GameActions,
   type GameClient,
+  waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import type { Account } from "starknet";
-import {
-  BiomeIdToType,
-  ContractAddress,
-  ResourcesIds,
-  TickIds,
-  TroopType,
-  type BiomeType,
-  type HexEntityInfo,
-  type ID,
-} from "../../../packages/types";
+import { ResourcesIds, TickIds, TroopType, type ID } from "../../../packages/types";
 
 export interface Coord {
   x: number;
@@ -39,16 +33,6 @@ export interface ExplorerRow {
 export interface ProductionState {
   laborBalance: bigint;
   woodOutput: bigint;
-}
-
-type HexIndex<T> = Map<number, Map<number, T>>;
-
-/** The occupancy armyPaths plans around, keyed the way the scenes key it: normalized col, then row. */
-interface ArmyPathIndexes {
-  structureHexes: HexIndex<HexEntityInfo>;
-  armyHexes: HexIndex<HexEntityInfo>;
-  exploredHexes: HexIndex<BiomeType>;
-  chestHexes: HexIndex<HexEntityInfo>;
 }
 
 /** A transaction the chain accepted into its mempool; `confirmed` is the client's own wait on Herald's stream. */
@@ -160,48 +144,6 @@ const configuredTickSeconds = (tick: TickIds): number => {
   return seconds;
 };
 
-/** Bots play the surface layer; owners come from RECS so armyPaths can tell a bot's own units from targets. */
-const buildArmyPathIndexes = (client: GameClient): ArmyPathIndexes => {
-  const { components } = client.setup;
-  const projection = client.projection;
-  const structureOwner = (structureId: ID): ContractAddress =>
-    ContractAddress(getComponentValue(components.Structure, gameEntityKey([BigInt(structureId)]))?.owner ?? 0n);
-  const armyOwner = (explorerId: ID): ContractAddress => {
-    const home = getComponentValue(components.ExplorerTroops, gameEntityKey([BigInt(explorerId)]))?.owner;
-    return home === undefined ? ContractAddress(0n) : structureOwner(home);
-  };
-
-  const structureHexes: HexIndex<HexEntityInfo> = new Map();
-  for (const structure of projection.getStructures(false)) {
-    if (structure.reserved) continue;
-    indexHex(structureHexes, structure.hexCoords, { id: structure.entityId, owner: structureOwner(structure.entityId) });
-  }
-  const armyHexes: HexIndex<HexEntityInfo> = new Map();
-  for (const army of projection.getArmies(false)) {
-    indexHex(armyHexes, army.hexCoords, { id: army.entityId, owner: armyOwner(army.entityId) });
-  }
-  const exploredHexes: HexIndex<BiomeType> = new Map();
-  for (const tile of projection.getTiles(false)) indexHex(exploredHexes, tile.hexCoords, biomeTypeOf(tile.biome));
-  const chestHexes: HexIndex<HexEntityInfo> = new Map();
-  for (const chest of projection.getChests(false)) {
-    indexHex(chestHexes, chest.hexCoords, { id: chest.entityId, owner: ContractAddress(0n) });
-  }
-  return { structureHexes, armyHexes, exploredHexes, chestHexes };
-};
-
-const indexHex = <T>(index: HexIndex<T>, hex: { col: number; row: number }, value: T): void => {
-  const col = hex.col - FELT_CENTER();
-  const row = index.get(col) ?? new Map<number, T>();
-  row.set(hex.row - FELT_CENTER(), value);
-  index.set(col, row);
-};
-
-const biomeTypeOf = (biomeId: number): BiomeType => {
-  const biome = BiomeIdToType[biomeId];
-  if (!biome) throw new Error(`Tile carries unknown biome id ${biomeId}`);
-  return biome;
-};
-
 /**
  * The provider announces every hash it sent with the signer that sent it, and a bot submits one action at a time,
  * so the next announcement for this signer is this action's. The action itself resolves once the client saw the
@@ -239,32 +181,3 @@ const captureSubmission = (
 };
 
 const normalizeAddress = (address: string): string => `0x${BigInt(address).toString(16)}`;
-
-const waitForWorldState = <T>(
-  client: GameClient,
-  read: () => T | undefined,
-  timeoutMs: number,
-  describe: () => string,
-): Promise<T> =>
-  new Promise<T>((resolve, reject) => {
-    let unsubscribe = () => {};
-    const timer = setTimeout(() => {
-      unsubscribe();
-      reject(new Error(`${describe()} did not reach the required state within ${timeoutMs / 1_000} seconds`));
-    }, timeoutMs);
-    const check = () => {
-      try {
-        const value = read();
-        if (value === undefined) return;
-        clearTimeout(timer);
-        unsubscribe();
-        resolve(value);
-      } catch (error) {
-        clearTimeout(timer);
-        unsubscribe();
-        reject(error);
-      }
-    };
-    unsubscribe = client.runtime.subscribeSliceApplied(check);
-    check();
-  });

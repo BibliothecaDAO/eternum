@@ -5,12 +5,18 @@
   "type": "module",
   "scripts": {
     "smoke": "bun run src/smoke.ts",
+    "start": "bun src/main.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/types": "workspace:*",
+    "@dojoengine/recs": "catalog:game",
     "@mariozechner/pi-agent-core": "^0.73.1",
     "@mariozechner/pi-ai": "^0.73.1",
+    "starknet": "catalog:game",
     "typebox": "^1.1.24"
   },
   "devDependencies": {
