@@ -4,6 +4,56 @@ Read this for realm, spire, reward, or terrain work. Paths below are relative to
 current implementations and recent commits before exporting; these notes describe the approved direction, not permission
 to redesign unrelated assets.
 
+## Prerequisites and setup
+
+Use the repository's declared versions and existing tools. The current source was validated with Blender 4.5 LTS and
+KTX-Software 4.4; check the builders before moving to another major version. System tools are separate from workspace
+dependencies: `pnpm install` does not install Blender or Khronos KTX-Software.
+
+From the repository root, inspect the available tools:
+
+```bash
+node --version
+pnpm --version
+blender --version
+ktx --version
+pnpm --dir apps/game exec gltf-transform --version
+```
+
+The workspace declares Node >=20.19 and pnpm 10.25.0. Vite needs Node 20.19+ or 22.12+ on those release lines; avoid the
+unsupported Node 21 runtime. Use `pnpm install --frozen-lockfile` if dependencies are missing, then
+`pnpm run build:packages` if workspace imports are not built. The client dependencies provide glTF Transform, Draco, and
+Meshopt tooling; `ktx` must also be on PATH for texture compression.
+
+Builders import `bpy`: run them inside Blender, not ordinary system Python. The shared stone bake uses Cycles, and the
+export requires Blender's glTF exporter. Before a rebuild, inspect the builder's output paths and source texture files;
+some builders overwrite production GLBs and some rebuild a whole family. A direct invocation, when that asset is the
+intended target, is:
+
+```bash
+blender --background --python apps/game/scripts/settlements/build-kingdom.py
+```
+
+A Blender connector is optional for these scripts. Preserve reusable texture inputs and source scripts; use the
+builder's `.context` locations for local studies, baked intermediates, and captures. Check that required inputs exist in
+a fresh checkout rather than depending silently on a previous session's temporary files.
+
+For visual iteration, launch the client with graphics tools enabled and open the reported local HTTPS URL at `/lab`:
+
+```bash
+VITE_PUBLIC_GRAPHICS_DEV=true pnpm --dir apps/game dev --host 127.0.0.1 --port 4186
+```
+
+Use a browser with working WebGL, accept the local development certificate, and verify there are no shader or model
+decode errors. `apps/game/src/three/utils/gltf-loader.ts` configures the Draco decoder, Meshopt decoder, and
+`/basis-v2/` KTX2 transcoder. Confirm their requests succeed in the target environment. For a cold production check,
+build the client with graphics debug mode disabled and run its preview server in a fresh browser context. Existing
+production assets can be verified without regenerating them.
+
+Live interaction checks need the appropriate game mode, entity state, and account access. Reuse an existing signed-in
+session where available; account access is not a prerequisite for a public lab or dashboard check. State any missing
+live-world prerequisite separately from the model's visual readiness.
+
 ## Material and construction direction
 
 - Stone quality comes from construction as well as texture: uneven courses, fine fractures, worn edges, and restrained
@@ -64,8 +114,9 @@ detail. Extend those sources instead of duplicating the stone shader or editing 
 
 Realm and spire compression is centralized in `apps/game/scripts/optimize-structure-models.mjs`. The current structure
 instancing path skips scaled child nodes. Draco preserves the baked transforms used here; Meshopt quantization can
-introduce node scale. Rewards and ships use their own Meshopt-compatible paths. Verify this constraint against the
-loader when changing the pipeline, rather than converting every GLB to the same codec.
+introduce node scale. The fleet optimizer also uses Draco. Rewards use their own Meshopt-compatible path, including
+welding, bounded simplification, animation resampling, and pruning before compression. Verify this constraint against
+the loader when changing the pipeline, rather than converting every GLB to the same codec.
 
 Use fresh source exports for optimization. The verification command inspects already compressed assets without
 recompressing them. Preserve texture resolution and normal detail when the existing settings already meet the target; do

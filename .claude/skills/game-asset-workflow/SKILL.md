@@ -11,6 +11,26 @@ description:
 Establish the visual direction in images, prove one representative asset in the game, then expand the family. A
 beautiful concept is a reference, not evidence of a production-ready model.
 
+## Check prerequisites
+
+Check only the capabilities needed for the requested stage before starting expensive work:
+
+- For concepts, confirm access to the supplied references and an image-generation tool when new artwork is needed.
+  Continue from an approved direction without regenerating it.
+- For creation, locate editable sources, texture inputs, output paths, and the existing builder. Confirm a compatible
+  Blender installation with its Python API, glTF export, and the required baking engine; a modeling connector is
+  optional when the reproducible builder can run directly.
+- For optimization, verify the project's package manager, installed geometry tools, texture encoder, and runtime decoder
+  support. Record tool versions and inspect existing codec settings before replacing them.
+- For validation, have a working client/lab, the real lighting and terrain, a browser with graphics support, and any
+  account access needed for the requested live interactions. Keep preview artifacts separate from shipped outputs.
+- Establish a clean view of the intended worktree and existing changes, plus the target mode, asset footprint, and
+  performance baseline. Use the project's established budgets; do not invent a universal triangle or texture limit.
+
+If a prerequisite is missing, identify the affected stage and use an available compatible path where possible. Missing
+rendering or generation capability must not be presented as successful visual validation. Eternum setup commands and
+known loader constraints are in [the project reference](references/eternum-assets.md).
+
 ## Establish the brief
 
 Extract the user's references, gameplay camera, footprint, tier or class distinctions, customization, animation needs,
@@ -74,9 +94,13 @@ Inspect the project's existing export, compression, and loading pipeline and rec
 another path. Record a baseline for delivered bytes, triangles, draw calls, materials, texture dimensions, and
 cold-entry model requests. Optimize the measured cost while preserving the approved appearance.
 
-- Remove unused data and merge compatible static parts where this reduces draw calls. Preserve animated pivots, morph
-  targets, attachment names, customization metadata, decal UVs, and bounds. Reuse materials and textures where
-  appropriate; retain independent animation phases for separate placements.
+- Inspect topology as well as file size: remove unused data, degenerate triangles, and genuinely hidden surfaces; weld
+  duplicate vertices only where normals, UV seams, and deformation allow it. Merge compatible static parts where this
+  reduces draw calls. Preserve animated pivots, morph targets, attachment names, customization metadata, decal UVs, and
+  bounds. Reuse materials and textures where appropriate; retain independent animation phases for separate placements.
+- Simplify geometry or add levels of detail only when the measured cost warrants it and the runtime supports them.
+  Compare silhouette, shading, and animation after each reduction. Geometry compression reduces delivery size; it does
+  not by itself reduce triangles or draw calls. Record those measures separately.
 - Bake procedural materials into runtime-supported textures when needed. Apply the project's geometry compression and
   GPU texture compression, such as Draco or Meshopt and KTX2, using settings appropriate to color, normals, and masks.
   Preserve editable sources and reproducible export/optimization commands. Avoid repeatedly recompressing lossy textures
