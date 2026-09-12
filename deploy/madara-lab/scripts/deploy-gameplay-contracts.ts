@@ -6,7 +6,12 @@ import { fileURLToPath } from "node:url";
 import { type Account, addAddressPadding, hash, RpcProvider } from "starknet";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 
-import { declareClass, readClassArtifact, rpcErrorCode, waitForSuccess } from "../../../config/deployer/clean/shared/declare";
+import {
+  declareClass,
+  readClassArtifact,
+  rpcErrorCode,
+  waitForSuccess,
+} from "../../../config/deployer/clean/shared/declare";
 
 import { createMadaraAccount } from "../../../config/deployer/clean/shared/madara-account";
 
@@ -22,8 +27,7 @@ const DEPLOYER_ADDRESS =
 const DEPLOYER_PRIVATE_KEY =
   process.env.DOJO_PRIVATE_KEY || "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07";
 const BINDING_AUTHORITY_ADDRESS =
-  process.env.BINDING_AUTHORITY_ADDRESS ||
-  "0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4";
+  process.env.BINDING_AUTHORITY_ADDRESS || "0x008a1719e7ca19f3d91e8ef50a48fc456575f645497a1d55f30e3781f786afe4";
 
 const PLAYER_ACCOUNT_ARTIFACT = "realms_player_account_RealmsPlayerAccount.contract_class.json";
 const PLAYER_REGISTRY_ARTIFACT = "realms_player_account_PlayerRegistry.contract_class.json";
@@ -59,21 +63,21 @@ async function declareGameplayContracts(account: Account) {
       resolve(ARTIFACT_DIRECTORY, name.replace(".contract_class.json", ".compiled_contract_class.json")),
     ),
   );
-  for (const artifact of artifacts) await declareClass(account, artifact);
+  for (const artifact of artifacts) {
+    await declareClass(account, artifact, (transactionHash) => {
+      console.error(
+        JSON.stringify({ event: "gameplay_class_declared", classHash: artifact.classHash, transactionHash }),
+      );
+    });
+  }
   return { playerAccountClassHash: artifacts[0].classHash, playerRegistryClassHash: artifacts[1].classHash };
 }
 
 function resolvePlayerRegistryAddress(classHash: string): string {
-  return addAddressPadding(
-    hash.calculateContractAddressFromHash("0x0", classHash, [BINDING_AUTHORITY_ADDRESS], "0x0"),
-  );
+  return addAddressPadding(hash.calculateContractAddressFromHash("0x0", classHash, [BINDING_AUTHORITY_ADDRESS], "0x0"));
 }
 
-async function isExpectedContractDeployed(
-  provider: RpcProvider,
-  address: string,
-  classHash: string,
-): Promise<boolean> {
+async function isExpectedContractDeployed(provider: RpcProvider, address: string, classHash: string): Promise<boolean> {
   try {
     const deployedClassHash = await provider.getClassHashAt(address);
     if (BigInt(deployedClassHash) !== BigInt(classHash)) {
@@ -86,21 +90,20 @@ async function isExpectedContractDeployed(
   }
 }
 
-async function deployPlayerRegistryIfNeeded(
-  provider: Account,
-  classHash: string,
-  address: string,
-): Promise<void> {
+async function deployPlayerRegistryIfNeeded(provider: Account, classHash: string, address: string): Promise<void> {
   if (await isExpectedContractDeployed(provider, address, classHash)) {
     return;
   }
 
-  const result = await provider.deployContract({
-    classHash,
-    salt: "0x0",
-    constructorCalldata: [BINDING_AUTHORITY_ADDRESS],
-    unique: false,
-  }, { tip: 0 });
+  const result = await provider.deployContract(
+    {
+      classHash,
+      salt: "0x0",
+      constructorCalldata: [BINDING_AUTHORITY_ADDRESS],
+      unique: false,
+    },
+    { tip: 0 },
+  );
   await waitForSuccess(provider, result.transaction_hash);
 
   if (!(await isExpectedContractDeployed(provider, address, classHash))) {

@@ -22,7 +22,14 @@ export function buildWorldManifest(local: LocalWorld, plan: WorldPlan): WorldMan
   };
   const abis = new Map<string, WorldManifest["abis"][number]>();
   const comparisons = new Map(plan.resources.map((resource) => [resource.tag, resource]));
-  for (const artifact of [local.world, ...local.resources]) {
+  // Match the manifest ABI collision order used by the existing deployment tooling.
+  const orderedArtifacts = [
+    local.world,
+    ...(["contract", "model", "event", "library"] as const).flatMap((kind) =>
+      local.resources.filter((resource) => resource.kind === kind),
+    ),
+  ];
+  for (const artifact of orderedArtifacts) {
     for (const entry of artifact.sierra.abi) if (entry.type !== "impl") abis.set(entry.name, entry);
   }
   for (const resource of local.resources) {

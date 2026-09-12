@@ -1,11 +1,5 @@
-import type { Abi, CompiledSierra, CompiledSierraCasm } from "starknet";
-
-export interface ClassArtifact {
-  classHash: string;
-  compiledClassHash: string;
-  sierra: CompiledSierra;
-  casm: CompiledSierraCasm;
-}
+import type { Abi } from "starknet";
+import type { ClassArtifact } from "../shared/declare";
 
 export interface WorldProfile {
   namespace: { default: string };

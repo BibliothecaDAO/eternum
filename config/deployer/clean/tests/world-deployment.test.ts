@@ -155,6 +155,30 @@ describe("world deployment", () => {
     expect(manifest.contracts[0].init_calldata).toEqual(["9", "10"]);
   });
 
+  test("preserves the existing manifest precedence for repeated ABI helper names", async () => {
+    const { local, account } = fixture();
+    const plan = await inspectWorld(local, account);
+    local.resources = [...local.resources].sort((a, b) => a.tag.localeCompare(b.tag));
+    for (const resource of local.resources) {
+      resource.sierra = {
+        ...resource.sierra,
+        abi: [
+          {
+            type: "function",
+            name: "ensure_abi",
+            inputs: [{ name: "row", type: resource.kind }],
+            outputs: [],
+            state_mutability: "view",
+          },
+        ],
+      };
+    }
+    const manifest = buildWorldManifest(local, plan);
+    expect(manifest.abis.find((entry) => entry.name === "ensure_abi")).toEqual(
+      local.resources.find((resource) => resource.kind === "library")!.sierra.abi[0],
+    );
+  });
+
   test("blocks an existing library version with a different hash before declaring anything", async () => {
     const { local, account, writes, state } = fixture();
     await deployWorld(local, account, () => {});
@@ -197,8 +221,10 @@ describe("world deployment", () => {
   test("stops at a reverted transaction instead of reporting a successful deployment", async () => {
     const { local, account, writes } = fixture();
     account.waitForTransaction = async () => ({ isSuccess: () => false }) as any;
-    await expect(deployWorld(local, account, () => {})).rejects.toThrow("failed");
+    const submitted: string[] = [];
+    await expect(deployWorld(local, account, (record) => submitted.push(record.hash))).rejects.toThrow("failed");
     expect(writes.map((write) => write.kind)).toEqual(["declare"]);
+    expect(submitted).toEqual(["0x1"]);
   });
 
   test("does not interpret RPC failures as absent resources", async () => {

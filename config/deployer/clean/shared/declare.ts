@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { hash, json, type Account, type RpcProvider, type CompiledSierra, type CompiledSierraCasm } from "starknet";
-import type { ClassArtifact } from "../world/types";
+
+export interface ClassArtifact {
+  classHash: string;
+  compiledClassHash: string;
+  sierra: CompiledSierra;
+  casm: CompiledSierraCasm;
+}
 
 export function readClassArtifact(sierraPath: string, casmPath: string): ClassArtifact {
   const sierra = json.parse(readFileSync(sierraPath, "utf8")) as CompiledSierra;
@@ -30,8 +36,12 @@ export async function isClassDeclared(provider: RpcProvider, classHash: string, 
   }
 }
 
-export async function declareClass(account: Account, artifact: ClassArtifact): Promise<string | undefined> {
-  if (await isClassDeclared(account, artifact.classHash)) return undefined;
+export async function declareClass(
+  account: Account,
+  artifact: ClassArtifact,
+  onSubmitted: (transactionHash: string) => void,
+): Promise<void> {
+  if (await isClassDeclared(account, artifact.classHash)) return;
   const result = await account.declare(
     {
       contract: artifact.sierra,
@@ -40,8 +50,8 @@ export async function declareClass(account: Account, artifact: ClassArtifact): P
     },
     { tip: 0 },
   );
+  onSubmitted(result.transaction_hash);
   await waitForSuccess(account, result.transaction_hash);
-  return result.transaction_hash;
 }
 
 export async function waitForSuccess(provider: RpcProvider, transactionHash: string): Promise<void> {

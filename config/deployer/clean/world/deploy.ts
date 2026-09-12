@@ -50,8 +50,7 @@ type ExecuteWorldCall = (entrypoint: string, resource: string, args: Record<stri
 
 async function declareWorldClasses(local: LocalWorld, account: Account, record: RecordTransaction) {
   for (const resource of [{ ...local.world, tag: "world" }, ...local.resources]) {
-    const hash = await declareClass(account, resource);
-    if (hash) record("declare", resource.tag, hash);
+    await declareClass(account, resource, (hash) => record("declare", resource.tag, hash));
   }
 }
 

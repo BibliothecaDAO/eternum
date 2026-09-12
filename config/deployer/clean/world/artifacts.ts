@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { byteArray, CallData, ec, hash, shortString, type Abi } from "starknet";
-import { readClassArtifact } from "../shared/declare";
-import type { ClassArtifact, LocalResource, LocalWorld, WorldProfile } from "./types";
+import { readClassArtifact, type ClassArtifact } from "../shared/declare";
+import type { LocalResource, LocalWorld, WorldProfile } from "./types";
 
 const RESOURCE_INTERFACES = {
   "dojo::world::iworld::IWorld": "world",
