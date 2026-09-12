@@ -267,6 +267,8 @@ pub struct ExplorerTroops {
 
 #[derive(Copy, Drop, Serde)]
 pub struct CombatContext {
+    pub attacker_roll: u8,
+    pub defender_roll: u8,
     pub attacker_biome: Biome,
     pub defender_biome: Biome,
     pub attack_distance: u32,
@@ -279,6 +281,8 @@ pub struct CombatContext {
 pub impl TroopsImpl of TroopsTrait {
     fn standard_combat_context(biome: Biome) -> CombatContext {
         CombatContext {
+            attacker_roll: 0,
+            defender_roll: 0,
             attacker_biome: biome,
             defender_biome: biome,
             attack_distance: 1,
@@ -809,6 +813,9 @@ pub impl TroopsImpl of TroopsTrait {
             / BRAVO_TIER_BONUS
             / TOTAL_NUM_TROOPS.pow(EFFECTIVE_BETA));
 
+        assert!(context.attacker_roll <= 20 && context.defender_roll <= 20, "invalid combat die");
+        ALPHA_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.attacker_roll.into());
+        BRAVO_DAMAGE_DEALT *= Self::_combat_percent_multiplier(100 + context.defender_roll.into());
         ALPHA_DAMAGE_DEALT *= alpha._outgoing_damage_multiplier(context);
         ALPHA_DAMAGE_DEALT *= bravo._incoming_damage_multiplier(context.defender_is_structure_guard);
         BRAVO_DAMAGE_DEALT *= alpha._incoming_damage_multiplier(context.attacker_is_structure_guard);
@@ -1029,6 +1036,58 @@ mod tests {
         }
     }
 
+    fn dice_damage(attacker_roll: u8, defender_roll: u8) -> (u128, u128) {
+        let mut attacker = test_troops(TroopType::Knight, TroopTier::T2, 10000, 100);
+        let mut defender = test_troops(TroopType::Knight, TroopTier::T2, 10000, 100);
+        let (outgoing, incoming, _, _) = attacker
+            .damage_with_context(
+                ref defender,
+                CombatContext {
+                    attacker_roll,
+                    defender_roll,
+                    attacker_biome: Biome::Underground,
+                    defender_biome: Biome::Underground,
+                    attack_distance: 1,
+                    attacker_is_structure_guard: false,
+                    defender_is_structure_guard: false,
+                },
+                TROOP_STAMINA_CONFIG(),
+                TROOP_DAMAGE_CONFIG(),
+                1,
+                1,
+            );
+        (outgoing, incoming)
+    }
+
+    #[test]
+    fn ethereal_d20_adds_each_sides_roll_as_a_positive_damage_percentage() {
+        let (base_outgoing, base_incoming) = dice_damage(0, 0);
+        for roll in 1_u8..21 {
+            let (outgoing, incoming) = dice_damage(roll, 0);
+            let expected = base_outgoing * (100 + roll.into()) / 100;
+            assert!(
+                outgoing <= expected + RESOURCE_PRECISION && expected <= outgoing + RESOURCE_PRECISION,
+                "attacker die percentage wrong",
+            );
+            assert_eq!(incoming, base_incoming);
+            let (outgoing, incoming) = dice_damage(0, roll);
+            let expected = base_incoming * (100 + roll.into()) / 100;
+            assert!(
+                incoming <= expected + RESOURCE_PRECISION && expected <= incoming + RESOURCE_PRECISION,
+                "defender die percentage wrong",
+            );
+            assert_eq!(outgoing, base_outgoing);
+        }
+        let (outgoing, incoming) = dice_damage(1, 20);
+        assert!(incoming > outgoing, "independent dice were not applied");
+    }
+
+    #[test]
+    #[should_panic(expected: "invalid combat die")]
+    fn combat_rejects_a_die_above_twenty() {
+        dice_damage(21, 1);
+    }
+
     #[test]
     fn tests_troop_attack_simple_1() {
         let mut alpha = Troops {
@@ -1100,6 +1159,8 @@ mod tests {
             .attack_with_context(
                 ref adjacent_bravo,
                 CombatContext {
+                    attacker_roll: 0,
+                    defender_roll: 0,
                     attacker_biome: Biome::Taiga,
                     defender_biome: Biome::Taiga,
                     attack_distance: 1,
@@ -1115,6 +1176,8 @@ mod tests {
             .attack_with_context(
                 ref ranged_bravo,
                 CombatContext {
+                    attacker_roll: 0,
+                    defender_roll: 0,
                     attacker_biome: Biome::Taiga,
                     defender_biome: Biome::Taiga,
                     attack_distance: 2,
@@ -1143,6 +1206,8 @@ mod tests {
             .attack_with_context(
                 ref field_bravo,
                 CombatContext {
+                    attacker_roll: 0,
+                    defender_roll: 0,
                     attacker_biome: Biome::Taiga,
                     defender_biome: Biome::Taiga,
                     attack_distance: 2,
@@ -1158,6 +1223,8 @@ mod tests {
             .attack_with_context(
                 ref structure_bravo,
                 CombatContext {
+                    attacker_roll: 0,
+                    defender_roll: 0,
                     attacker_biome: Biome::Taiga,
                     defender_biome: Biome::Taiga,
                     attack_distance: 2,
@@ -1185,6 +1252,8 @@ mod tests {
             .attack_with_context(
                 ref guard_bravo,
                 CombatContext {
+                    attacker_roll: 0,
+                    defender_roll: 0,
                     attacker_biome: Biome::Taiga,
                     defender_biome: Biome::Taiga,
                     attack_distance: 1,
@@ -1212,6 +1281,8 @@ mod tests {
             .attack_with_context(
                 ref guard_bravo,
                 CombatContext {
+                    attacker_roll: 0,
+                    defender_roll: 0,
                     attacker_biome: Biome::Taiga,
                     defender_biome: Biome::Taiga,
                     attack_distance: 1,

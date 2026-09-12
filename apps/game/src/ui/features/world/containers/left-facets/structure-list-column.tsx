@@ -62,7 +62,6 @@ export const StructureListColumn = memo(() => {
 
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
-      if (entityId === structureEntityId) return;
       const target = playerStructures.find((structure) => structure.entityId === entityId);
       const coords = target?.structure?.base;
       if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
@@ -76,7 +75,7 @@ export const StructureListColumn = memo(() => {
         setStructureEntityId(entityId);
       }
     },
-    [goToStructure, isMapView, playerStructures, setSelectedHex, setStructureEntityId, structureEntityId],
+    [goToStructure, isMapView, playerStructures, setSelectedHex, setStructureEntityId],
   );
 
   const handleRequestRename = useCallback(

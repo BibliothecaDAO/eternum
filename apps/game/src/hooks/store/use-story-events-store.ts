@@ -4,6 +4,7 @@ import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { getActiveWorld } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
 import type { GameSyncEntity, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import { storyEventIdentity, storyEventScopeKey, type StoryEventScope } from "@bibliothecadao/eternum/game-sync";
 import { useDojo } from "@bibliothecadao/react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
@@ -11,6 +12,7 @@ import { create } from "zustand";
 import { useConnectionStore } from "./use-connection-store";
 
 interface StoryEventData {
+  scopeKey: string;
   entity_id: number | null;
   event_id: string;
   id: string | null;
@@ -85,41 +87,37 @@ const legacyHeadlineFields = (type: string, payload: Record<string, unknown>): R
 // The leaderboard carries registered points; the log does not repeat them as a story.
 const STORIES_OUTSIDE_THE_LOG = new Set(["PointsRegisteredStory"]);
 
-const storyEventFromValue = (
-  value: Record<string, unknown>,
-  eventId: string,
-  fallbackTransactionHash: string,
-): StreamStoryEvent | null => {
+const storyEventFromValue = (value: Record<string, unknown>, scope: StoryEventScope): StreamStoryEvent | null => {
   const variant = storyVariant(value.story);
   if (!variant || STORIES_OUTSIDE_THE_LOG.has(variant.type)) return null;
-  const transactionHash = String(value.tx_hash ?? fallbackTransactionHash);
   return {
+    scopeKey: storyEventScopeKey(scope),
     owner: value.owner === null || value.owner === undefined ? null : String(value.owner),
     entity_id: toOptionalNumber(value.entity_id),
     id: value.id === undefined ? null : String(value.id),
-    tx_hash: transactionHash,
+    tx_hash: String(value.tx_hash),
     story: variant.type,
     timestamp: String(value.timestamp ?? "0x0"),
-    event_id: eventId,
+    event_id: storyEventIdentity(scope, value),
     storyPayload: variant.payload,
     rawStory: value.story,
     ...legacyHeadlineFields(variant.type, variant.payload),
   };
 };
 
-export const toStreamStoryEvent = (event: GameSyncEntity): StreamStoryEvent | null => {
+export const toStreamStoryEvent = (event: GameSyncEntity, scope: StoryEventScope): StreamStoryEvent | null => {
   const modelEntry = Object.entries(event.models).find(
     ([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"),
   );
   const value = modelEntry ? asRecord(modelEntry[1]) : null;
-  return value ? storyEventFromValue(value, `${event.hashed_keys}:${String(value.tx_hash ?? "0x0")}`, "0x0") : null;
+  return value ? storyEventFromValue(value, scope) : null;
 };
 
-const historyStoryEvent = (event: HeraldHistoryEvent): StreamStoryEvent | null =>
-  storyEventFromValue(event.value, `${event.transaction_hash}:${event.event_index}`, event.transaction_hash);
+const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
+  storyEventFromValue(event.value, scope);
 
-export const acceptGameSyncStoryEvent = (event: GameSyncEntity): void => {
-  const storyEvent = toStreamStoryEvent(event);
+export const acceptGameSyncStoryEvent = (event: GameSyncEntity, scope: StoryEventScope): void => {
+  const storyEvent = toStreamStoryEvent(event, scope);
   if (storyEvent) useStoryEventsStore.getState().accept(storyEvent);
 };
 
@@ -127,7 +125,6 @@ export const resetGameSyncStoryEvents = (): void => useStoryEventsStore.getState
 
 const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
-  index: number,
   components: Parameters<typeof buildStoryEventPresentation>[1],
 ): ProcessedStoryEvent => {
   const timestampMs = Number(BigInt(event.timestamp)) * 1_000;
@@ -145,8 +142,7 @@ const processStoryEvent = (
     components,
     getPlayerName,
   );
-  const id = event.event_id ?? `${event.tx_hash}-${event.timestamp}-${event.entity_id ?? "unknown"}-${index}`;
-  return { ...event, id, timestampMs, presentation };
+  return { ...event, id: event.event_id, timestampMs, presentation };
 };
 
 export const useStoryEvents = (limit: number = 100, story?: string) => {
@@ -157,16 +153,18 @@ export const useStoryEvents = (limit: number = 100, story?: string) => {
   const profile = getActiveWorld();
   const world = getWorldById(profile?.worldId ?? "blitz") ?? getDefaultWorld();
   const gameId = configManager.getActiveGameId();
+  const scope = { chain: world.chain, worldAddress: world.worldAddress, gameId };
+  const scopeKey = storyEventScopeKey(scope);
 
   const confirmedBlock = useConnectionStore((state) => (story ? state.lastConfirmedBlock : null));
   const handshake = useConnectionStore((state) => (story ? state.lastGlobalHandshake : null));
 
   const query = useQuery({
-    queryKey: ["heraldStoryEvents", world.heraldBaseUrl, world.chain, world.id, gameId, limit, story],
+    queryKey: ["heraldStoryEvents", world.heraldBaseUrl, scopeKey, limit, story],
     queryFn: async (): Promise<StoryEventData[]> => {
       const page = await fetchHeraldGameHistory(world, gameId, { limit, model: "StoryEvent", story });
       return page.items.flatMap((event) => {
-        const story = historyStoryEvent(event);
+        const story = historyStoryEvent(event, scope);
         return story ? [story] : [];
       });
     },
@@ -183,17 +181,18 @@ export const useStoryEvents = (limit: number = 100, story?: string) => {
   const data = useMemo(() => {
     const identities = new Set<string>();
     return [...streamed, ...(query.data ?? [])]
+      .filter((event) => event.scopeKey === scopeKey)
       .filter((event) => !story || event.story === story)
       .filter((event) => {
-        const identity = event.event_id ?? `${event.tx_hash}:${event.timestamp}`;
+        const identity = event.event_id;
         if (identities.has(identity)) return false;
         identities.add(identity);
         return true;
       })
       .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
       .slice(0, limit)
-      .map((event, index) => processStoryEvent(event, index, components));
-  }, [components, limit, query.data, streamed, story]);
+      .map((event) => processStoryEvent(event, components));
+  }, [components, limit, query.data, streamed, story, scopeKey]);
 
   return { ...query, data };
 };

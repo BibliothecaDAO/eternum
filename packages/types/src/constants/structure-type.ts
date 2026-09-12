@@ -5,7 +5,6 @@ export enum StructureType {
   Bank = 3,
   FragmentMine = 4,
   Village = 5,
-  HolySite = 6,
   Camp = 7,
   BitcoinMine = 8,
 }

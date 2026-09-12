@@ -22,7 +22,7 @@ import { buildExplorationSnapshot } from "./map-cache";
 describe("buildExplorationSnapshot", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("builds the automation view from the projection and live RECS owners", async () => {
+  it.each([false, true])("builds the automation view on the exploring army layer (alt=%s)", async (alt) => {
     const explorerOwnerStructureId = 2001;
     const structureId = 201;
     const armyId = 301;
@@ -30,7 +30,7 @@ describe("buildExplorationSnapshot", () => {
     const armyOwner = 0x98765n;
     const components = {
       ExplorerTroops: new Map([
-        ["1", { coord: { x: 10, y: 10 } }],
+        ["1", { coord: { alt, x: 10, y: 10 } }],
         [armyId.toString(), { owner: explorerOwnerStructureId }],
       ]),
       Structure: new Map([
@@ -41,14 +41,14 @@ describe("buildExplorationSnapshot", () => {
     const worldSpatialProjection = {
       getTilesInBounds: vi.fn(() => [
         {
-          hexCoords: { col: 10, row: 10 },
+          hexCoords: { alt, col: 10, row: 10 },
           biome: 1,
           occupierId: 0,
           occupierType: 0,
         },
       ]),
-      getStructuresInBounds: vi.fn(() => [{ entityId: structureId, hexCoords: { col: 10, row: 11 } }]),
-      getArmiesInBounds: vi.fn(() => [{ entityId: armyId, hexCoords: { col: 11, row: 10 } }]),
+      getStructuresInBounds: vi.fn(() => [{ entityId: structureId, hexCoords: { alt, col: 10, row: 11 } }]),
+      getArmiesInBounds: vi.fn(() => [{ entityId: armyId, hexCoords: { alt, col: 11, row: 10 } }]),
     };
 
     const snapshot = await buildExplorationSnapshot({
@@ -58,6 +58,13 @@ describe("buildExplorationSnapshot", () => {
       worldSpatialProjection: worldSpatialProjection as never,
     });
 
+    expect(snapshot?.alt).toBe(alt);
+    for (const query of [
+      worldSpatialProjection.getTilesInBounds,
+      worldSpatialProjection.getStructuresInBounds,
+      worldSpatialProjection.getArmiesInBounds,
+    ])
+      expect(query).toHaveBeenCalledWith(expect.objectContaining({ alt }));
     expect(snapshot?.structureHexes.get(10)?.get(11)?.owner).toBe(structureOwner);
     expect(snapshot?.armyHexes.get(11)?.get(10)?.owner).toBe(armyOwner);
     expect(snapshot?.exploredTiles.get(10)?.get(10)).toBe(1);

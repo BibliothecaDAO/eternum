@@ -1,3 +1,4 @@
+import { mapAnimationTime as time } from "../effects/game-end-freeze";
 import {
   ClampToEdgeWrapping,
   DataTexture,
@@ -24,7 +25,6 @@ import {
   positionWorld,
   smoothstep,
   texture,
-  time,
   uniform,
   vec2,
   vec3,

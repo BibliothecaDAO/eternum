@@ -1,6 +1,8 @@
 import { Color, Group, Material, Matrix4, Mesh, MeshStandardMaterial, Vector3 } from "three";
-import { MeshStandardNodeMaterial } from "three/webgpu";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { color, texture, uniform, vec3 } from "three/tsl";
+
+const CHEST_BODY_SCALE = 0.7;
 
 /** Shared chest finish and orientation for settled instances and tile transitions. */
 export class ChestPresentation {
@@ -15,6 +17,7 @@ export class ChestPresentation {
     private readonly object: Group,
     private readonly shellColor = "#bc9de8",
   ) {
+    object.getObjectByName("ChestBody")?.scale.multiplyScalar(CHEST_BODY_SCALE);
     for (const name of ["ChestBody", "OrbitGems"]) {
       const part = object.getObjectByName(name);
       if (part) this.facing.add(part);
@@ -51,7 +54,7 @@ export class ChestPresentation {
     const cached = this.materials.get(source);
     if (cached) return cached;
     if (source instanceof MeshStandardMaterial && source.name.startsWith("Purple enamel")) {
-      const material = new MeshStandardNodeMaterial({ roughness: 0.55, metalness: 0.12 });
+      const material = new FrostedStandardNodeMaterial({ roughness: 0.55, metalness: 0.12 });
       material.name = "Chest enamel preview";
       const grain = source.map
         ? texture(source.map)

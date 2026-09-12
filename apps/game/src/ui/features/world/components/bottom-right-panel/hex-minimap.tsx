@@ -64,7 +64,6 @@ const LABEL_ICONS = {
   villageEnemy: "/images/labels/enemy_village.png",
   hyperstructure: "/images/labels/hyperstructure.png",
   fragmentMine: "/images/labels/fragment_mine.png",
-  quest: "/images/labels/quest.png",
   chest: "/images/labels/chest.png",
 } as const;
 
@@ -443,10 +442,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       const occupierType = tile.occupier_type ?? 0;
       if (occupierType === TileOccupier.Chest) {
         return { iconSrc: LABEL_ICONS.chest } satisfies TileMarker;
-      }
-
-      if (occupierType === TileOccupier.Quest) {
-        return { iconSrc: LABEL_ICONS.quest } satisfies TileMarker;
       }
 
       const hasStructure = isTileOccupierStructure(occupierType);

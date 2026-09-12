@@ -10,7 +10,6 @@ export const EternumStructureTypeToNameMapping: Record<StructureType, string> = 
   [StructureType.Bank]: "Bank",
   [StructureType.FragmentMine]: "Fragment Mine",
   [StructureType.Village]: "Village",
-  [StructureType.HolySite]: "Holy Site",
   [StructureType.Camp]: "Camp",
   [StructureType.BitcoinMine]: "Bitcoin Mine",
 };
@@ -21,7 +20,6 @@ export const BlitzStructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Bank]: "Bank",
   [StructureType.FragmentMine]: "Essence Rift",
   [StructureType.Village]: "Village",
-  [StructureType.HolySite]: "Holy Site",
   [StructureType.Camp]: "Camp",
   [StructureType.BitcoinMine]: "Bitcoin Mine",
 };
@@ -291,7 +289,6 @@ export enum CapacityConfig {
   HyperstructureStructure = 6,
   BankStructure = 7,
   FragmentMineStructure = 8,
-  HolySiteStructure = 9,
   CampStructure = 10,
   BitcoinMineStructure = 11,
 }

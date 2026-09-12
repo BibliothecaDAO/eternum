@@ -4,11 +4,11 @@ import type { BiomeType, HexEntityInfo, HexPosition } from "@bibliothecadao/type
 export type ExplorationStrategyId = "basic-frontier";
 
 export type ExplorationMapSnapshot = {
+  alt: boolean;
   position: HexPosition;
   exploredTiles: Map<number, Map<number, BiomeType>>;
   structureHexes: Map<number, Map<number, HexEntityInfo>>;
   armyHexes: Map<number, Map<number, HexEntityInfo>>;
-  questHexes: Map<number, Map<number, HexEntityInfo>>;
   chestHexes: Map<number, Map<number, HexEntityInfo>>;
 };
 

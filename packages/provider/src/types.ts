@@ -60,6 +60,8 @@ interface TransactionStreamStatus {
 export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
+  BITCOIN_MINE_CONTRIBUTE_LABOR = "bitcoin_mine_contribute_labor",
+  BITCOIN_MINE_CLAIM_PHASE_REWARD = "bitcoin_mine_claim_phase_reward",
   // Exploration & Movement
   EXPLORE = "explore",
   TRAVEL_HEX = "travel_hex",
@@ -183,14 +185,6 @@ export enum TransactionType {
   SET_CO_OWNERS = "set_co_owners",
   SET_ACCESS = "set_access",
 
-  // Quests
-  START_QUEST = "start_quest",
-  CLAIM_REWARD = "claim_reward",
-  ADD_GAME = "add_game",
-  GAME_COUNT = "game_count",
-  DISABLE_QUESTS = "disable_quests",
-  ENABLE_QUESTS = "enable_quests",
-
   // Season & Leaderboard
   SEASON_CLOSE = "season_close",
   SEASON_PRIZE_CLAIM = "season_prize_claim",
@@ -246,7 +240,6 @@ export enum TransactionType {
   SET_SETTLEMENT_CONFIG = "set_settlement_config",
   SET_BLITZ_EXPLORATION_CONFIG = "set_blitz_exploration_config",
   SET_BLITZ_REGISTRATION_CONFIG = "set_blitz_registration_config",
-  SET_QUEST_CONFIG = "set_quest_config",
 
   // Legacy (kept for compatibility)
   RESUME_PRODUCTION = "resume_production",
@@ -257,6 +250,5 @@ export enum TransactionType {
   ACCEPT_MARKETPLACE_ORDER = "accept_marketplace_order",
   CANCEL_MARKETPLACE_ORDER = "cancel_marketplace_order",
   EDIT_MARKETPLACE_ORDER = "edit_marketplace_order",
-  GET_GAME_COUNT = "get_game_count",
   CONTRIBUTE_TO_CONSTRUCTION = "contribute_to_construction",
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyDurableLaunchDefaults, type CreateGameRequest } from "./schemas";
 
-const gameRequest = (devModeOn?: boolean, version?: "8" | "9"): CreateGameRequest => ({
+const gameRequest = (devModeOn?: boolean, version?: "2" | "3"): CreateGameRequest => ({
   environment: "madara.blitz",
   gameName: "bltz-test",
   ...(devModeOn === undefined ? {} : { devModeOn }),
@@ -19,18 +19,18 @@ describe("applyDurableLaunchDefaults", () => {
 
   it("defaults an absent version to 8 and stamps a default game start time", () => {
     const result = applyDurableLaunchDefaults("game", gameRequest(false), 0);
-    expect(result.version).toBe("8");
+    expect(result.version).toBe("2");
     expect("gameStartTime" in result && result.gameStartTime).toBeTruthy();
   });
 
   it("keeps a Duel launch version 9 instead of forcing the default", () => {
-    expect(applyDurableLaunchDefaults("game", gameRequest(false, "9")).version).toBe("9");
+    expect(applyDurableLaunchDefaults("game", gameRequest(false, "3")).version).toBe("3");
   });
 });
 
 it("selects the Eternum preset and rejects cross-mode presets", () => {
   const request: CreateGameRequest = { environment: "madara.eternum", gameName: "eternum-test", devModeOn: false };
-  expect(applyDurableLaunchDefaults("game", request).version).toBe("11");
-  expect(() => applyDurableLaunchDefaults("game", { ...request, version: "8" })).toThrow();
-  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "11" })).toThrow();
+  expect(applyDurableLaunchDefaults("game", request).version).toBe("1");
+  expect(() => applyDurableLaunchDefaults("game", { ...request, version: "2" })).toThrow();
+  expect(() => applyDurableLaunchDefaults("game", { ...gameRequest(), version: "1" })).toThrow();
 });

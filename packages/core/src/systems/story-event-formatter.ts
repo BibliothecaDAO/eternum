@@ -216,6 +216,12 @@ const formatters: Record<string, StoryFormatter> = {
         defenderTroop
           ? `Defender forces: ${defenderTroop}${defenderStrength ? ` [ ${defenderStrength} ]` : ""}`
           : undefined,
+        Number(payload.attacker_roll) > 0
+          ? `Attacker d20: ${Number(payload.attacker_roll)} (+${Number(payload.attacker_roll)}% damage)`
+          : undefined,
+        Number(payload.defender_roll) > 0
+          ? `Defender d20: ${Number(payload.defender_roll)} (+${Number(payload.defender_roll)}% damage)`
+          : undefined,
         attackerLosses ? `Attacker losses: ${attackerLosses}` : undefined,
         defenderLosses ? `Defender losses: ${defenderLosses}` : undefined,
         attackerLeft ? `Attacker Troops Left: ${attackerLeft} Troops` : undefined,

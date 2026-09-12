@@ -1,3 +1,5 @@
+export const ETHEREAL_STRIDE = 15;
+
 export const biomes = {
   deep_ocean: { color: "#193E60", depth: 0.1, name: "Deep Ocean" },
   ocean: { color: "#1A6C87", depth: 0.1, name: "Ocean" },
@@ -19,6 +21,7 @@ export const biomes = {
 
 export enum BiomeType {
   None = "None",
+  Underground = "Underground",
   DeepOcean = "DeepOcean",
   Ocean = "Ocean",
   Beach = "Beach",
@@ -40,6 +43,7 @@ export enum BiomeType {
 // Mapping from BiomeType to numeric ID (matching Cairo contract values)
 export const BiomeTypeToId: Record<BiomeType, number> = {
   [BiomeType.None]: 0,
+  [BiomeType.Underground]: 17,
   [BiomeType.DeepOcean]: 1,
   [BiomeType.Ocean]: 2,
   [BiomeType.Beach]: 3,
@@ -154,6 +158,16 @@ export const getNeighborHexes = (col: number, row: number, steps: Steps = Steps.
   }
 };
 
+/** Matches Coord.neighbor: scale the row's offsets, without walking intermediate rows. */
+export function getLayerNeighborHexes(col: number, row: number, alt: boolean): NeighborHex[] {
+  const stride = alt ? ETHEREAL_STRIDE : 1;
+  return getNeighborOffsets(row).map(({ i, j, direction }) => ({
+    col: col + i * stride,
+    row: row + j * stride,
+    direction,
+  }));
+}
+
 export const getHexesWithinRadius = (col: number, row: number, radius: number): NeighborHex[] => {
   if (radius <= 0) return [];
 
@@ -222,3 +236,13 @@ export const getDirectionBetweenAdjacentHexes = (
   const neighbors = getNeighborHexes(from.col, from.row, Steps.One);
   return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 };
+
+/** Attack distance uses movement steps; cross-layer attacks require the same coordinate. */
+export function getLayeredAttackDistance(
+  attacker: { col: number; row: number; alt: boolean },
+  defender: { col: number; row: number; alt: boolean },
+): number {
+  const distance = getHexDistance(attacker, defender);
+  if (attacker.alt !== defender.alt) return distance === 0 ? 1 : Infinity;
+  return distance / (defender.alt ? ETHEREAL_STRIDE : 1);
+}

@@ -8,6 +8,7 @@ import {
 } from "@/three/utils/touch-gesture-recognizer";
 import * as THREE from "three";
 import { SceneName } from "../types";
+import type { TouchNavigation } from "./touch-camera-navigation";
 
 type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mousedown";
 type InputCallback = (event: MouseEvent, raycaster: THREE.Raycaster) => void;
@@ -34,6 +35,7 @@ export class InputManager {
   private readonly touchPointerHandler = (event: PointerEvent) => this.handleTouchPointerEvent(event);
   private latestTouchEvent: PointerEvent | null = null;
   private lastPointerWasTouch = false;
+  private readonly capturedTouches = new Set<number>();
   private readonly cancelTouchGesture = () => this.resetTouchTracking();
   private readonly handleVisibilityChange = () => {
     if (document.hidden) this.resetTouchTracking();
@@ -45,6 +47,7 @@ export class InputManager {
     private raycaster: THREE.Raycaster,
     private mouse: THREE.Vector2,
     private camera: THREE.Camera,
+    private readonly touchNavigation?: TouchNavigation,
   ) {
     this.mouseDownHandler = this.handleMouseDown.bind(this);
     this.touchGestures = new TouchGestureRecognizer((gesture) => this.dispatchTouchGesture(gesture));
@@ -192,7 +195,7 @@ export class InputManager {
       this.surface.addEventListener(listener.event, listener.handler);
     }
     for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
-      this.surface.addEventListener(pointerEventType, this.touchPointerHandler);
+      this.surface.addEventListener(pointerEventType, this.touchPointerHandler, { capture: true, passive: false });
     }
   }
 
@@ -209,7 +212,7 @@ export class InputManager {
       this.surface?.removeEventListener(listener.event, listener.handler);
     }
     for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
-      this.surface?.removeEventListener(pointerEventType, this.touchPointerHandler);
+      this.surface?.removeEventListener(pointerEventType, this.touchPointerHandler, true);
     }
   }
 
@@ -221,15 +224,27 @@ export class InputManager {
       return;
     }
 
+    // Capture phase owns touch before MapControls' bubble listeners can track it.
+    event.stopImmediatePropagation();
+    if (this.sceneManager.getCurrentScene() !== this.sceneName) {
+      this.resetTouchTracking();
+      return;
+    }
+    if (sample.kind === "cancel" && !this.capturedTouches.has(event.pointerId)) return;
+
     if (sample.kind === "down") {
       // No compatibility mousedown/mousemove/mouseup for touch: the recognizer owns touch input.
       event.preventDefault();
       this.lastPointerWasTouch = true;
       this.isDragged = false;
+      this.capturedTouches.add(event.pointerId);
+      this.surface?.setPointerCapture?.(event.pointerId);
     }
 
     this.latestTouchEvent = event;
     this.touchGestures.feed(sample);
+    if (sample.kind === "up") this.releaseTouchPointer(event.pointerId);
+    if (sample.kind === "cancel") this.resetTouchTracking();
   }
 
   /** Browsers still fire click (and, on Android, contextmenu) after a touch; the recognizer already handled it. */
@@ -240,7 +255,18 @@ export class InputManager {
   }
 
   private dispatchTouchGesture(gesture: TouchGesture): void {
-    if (gesture.kind === "pinch") return;
+    if (gesture.kind === "start") {
+      this.touchNavigation?.begin();
+      return;
+    }
+    if (gesture.kind === "end") {
+      this.touchNavigation?.end();
+      return;
+    }
+    if (gesture.kind === "pan" || gesture.kind === "pinch") {
+      if (this.surface) this.touchNavigation?.move(gesture, this.surface);
+      return;
+    }
     const listenerType = gesture.kind === "tap" ? "click" : "contextmenu";
     const touchEvent = this.latestTouchEvent;
     if (!touchEvent || !this.isActive || this.isDestroyed) {
@@ -272,6 +298,12 @@ export class InputManager {
   private resetTouchTracking(): void {
     this.touchGestures.reset();
     this.latestTouchEvent = null;
+    for (const pointerId of this.capturedTouches) this.releaseTouchPointer(pointerId);
+  }
+
+  private releaseTouchPointer(pointerId: number): void {
+    this.capturedTouches.delete(pointerId);
+    if (this.surface?.hasPointerCapture?.(pointerId)) this.surface.releasePointerCapture(pointerId);
   }
 
   private handleMouseDown(e: MouseEvent): void {

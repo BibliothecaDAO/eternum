@@ -15,9 +15,17 @@ describe("decodeHyperstructureShares", () => {
     ]);
   });
 
+  it("decodes the numeric-key tuple records Herald streams", () => {
+    expect(decodeHyperstructureShares([{ "0": "0xa", "1": "0x2710" }])).toEqual([
+      { playerAddress: 10n, basisPoints: 10_000n },
+    ]);
+  });
+
   it("rejects malformed tuples with a domain-specific error", () => {
-    expect(() => decodeHyperstructureShares([["0xa"]])).toThrow(
-      "Hyperstructure shareholder tuple must contain address and basis points",
-    );
+    for (const malformed of [[["0xa"]], [{ "0": "0xa" }], [{ address: "0xa", bps: 1 }]]) {
+      expect(() => decodeHyperstructureShares(malformed)).toThrow(
+        "Hyperstructure shareholder tuple must contain address and basis points",
+      );
+    }
   });
 });

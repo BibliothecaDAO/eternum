@@ -13,7 +13,6 @@ const NO_LOADING = {
   [LoadingStateKey.Hyperstructure]: false,
   [LoadingStateKey.MarketHistory]: false,
   [LoadingStateKey.Leaderboard]: false,
-  [LoadingStateKey.Quest]: false,
   [LoadingStateKey.ChunkTransition]: false,
 };
 
@@ -54,7 +53,7 @@ describe("WorldLoading", () => {
     expect(container.querySelector('[role="status"]')?.textContent).toContain(label);
   });
 
-  it.each([LoadingStateKey.ChunkTransition, LoadingStateKey.Quest])(
+  it.each([LoadingStateKey.ChunkTransition])(
     "does not show an empty panel for unlabeled %s loading state",
     async (key) => {
       useUIStore.setState({ loadingStates: { ...NO_LOADING, [key]: true } });

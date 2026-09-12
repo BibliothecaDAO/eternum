@@ -62,15 +62,6 @@ pub const WONDER_STARTING_RESOURCES_BOOST: u128 = 3;
 // TODO: Move to Onchain config
 pub const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
-pub fn is_bank(entity_id: ID) -> bool {
-    return entity_id == REGIONAL_BANK_ONE_ID
-        || entity_id == REGIONAL_BANK_TWO_ID
-        || entity_id == REGIONAL_BANK_THREE_ID
-        || entity_id == REGIONAL_BANK_FOUR_ID
-        || entity_id == REGIONAL_BANK_FIVE_ID
-        || entity_id == REGIONAL_BANK_SIX_ID;
-}
-
 // Note: Please update this list whenever ResourceTypes are updated
 pub fn all_resource_ids() -> Array<u8> {
     array![
@@ -360,43 +351,6 @@ pub mod ResourceTiers {
     pub const RARE: u8 = 7;
     pub const UNIQUE: u8 = 8;
     pub const MYTHIC: u8 = 9;
-}
-
-
-pub fn get_resources_without_earthenshards() -> Span<u8> {
-    return array![
-        ResourceTypes::WOOD, ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER, ResourceTypes::OBSIDIAN,
-        ResourceTypes::SILVER, ResourceTypes::IRONWOOD, ResourceTypes::COLD_IRON, ResourceTypes::GOLD,
-        ResourceTypes::HARTWOOD, ResourceTypes::DIAMONDS, ResourceTypes::SAPPHIRE, ResourceTypes::RUBY,
-        ResourceTypes::DEEP_CRYSTAL, ResourceTypes::IGNIUM, ResourceTypes::ETHEREAL_SILICA, ResourceTypes::TRUE_ICE,
-        ResourceTypes::TWILIGHT_QUARTZ, ResourceTypes::ALCHEMICAL_SILVER, ResourceTypes::ADAMANTINE,
-        ResourceTypes::MITHRAL, ResourceTypes::DRAGONHIDE, ResourceTypes::LABOR, ResourceTypes::DONKEY,
-        ResourceTypes::KNIGHT_T1, ResourceTypes::KNIGHT_T2, ResourceTypes::KNIGHT_T3, ResourceTypes::CROSSBOWMAN_T1,
-        ResourceTypes::CROSSBOWMAN_T2, ResourceTypes::CROSSBOWMAN_T3, ResourceTypes::PALADIN_T1,
-        ResourceTypes::PALADIN_T2, ResourceTypes::PALADIN_T3, ResourceTypes::LORDS, ResourceTypes::WHEAT,
-        ResourceTypes::FISH,
-    ]
-        .span();
-}
-
-pub fn get_hyperstructure_construction_resources() -> Span<u8> {
-    return array![
-        ResourceTypes::WOOD, ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER, ResourceTypes::OBSIDIAN,
-        ResourceTypes::SILVER, ResourceTypes::IRONWOOD, ResourceTypes::COLD_IRON, ResourceTypes::GOLD,
-        ResourceTypes::HARTWOOD, ResourceTypes::DIAMONDS, ResourceTypes::SAPPHIRE, ResourceTypes::RUBY,
-        ResourceTypes::DEEP_CRYSTAL, ResourceTypes::IGNIUM, ResourceTypes::ETHEREAL_SILICA, ResourceTypes::TRUE_ICE,
-        ResourceTypes::TWILIGHT_QUARTZ, ResourceTypes::ALCHEMICAL_SILVER, ResourceTypes::ADAMANTINE,
-        ResourceTypes::MITHRAL, ResourceTypes::DRAGONHIDE,
-    ]
-        .span();
-}
-
-pub fn get_resources_without_earthenshards_probs() -> Span<u128> {
-    // 36
-    return array![
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    ]
-        .span();
 }
 
 

@@ -32,7 +32,6 @@
     "6": "18446744073709551615",
     "7": "18446744073709551615",
     "8": "18446744073709551615",
-    "9": "18446744073709551615",
     "10": "18446744073709551615",
     "11": "18446744073709551615"
   },
@@ -92,39 +91,6 @@
     "within_tile_distance": 12,
     "bonus_percent_num": 0
   },
-  "questGames": [
-    {
-      "address": "0x01e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-      "levels": [
-        {
-          "target_score": 26,
-          "settings_id": 3,
-          "time_limit": 86400
-        },
-        {
-          "target_score": 26,
-          "settings_id": 6,
-          "time_limit": 86400
-        },
-        {
-          "target_score": 26,
-          "settings_id": 4,
-          "time_limit": 86400
-        },
-        {
-          "target_score": 51,
-          "settings_id": 1,
-          "time_limit": 86400
-        },
-        {
-          "target_score": 101,
-          "settings_id": 5,
-          "time_limit": 86400
-        }
-      ],
-      "overwrite": true
-    }
-  ],
   "dev": {
     "mode": {
       "on": false
@@ -141,8 +107,6 @@
     "agentFindFailProbability": 100,
     "campFindProbability": 1500,
     "campFindFailProbability": 48500,
-    "holysiteFindProbability": 500,
-    "holysiteFindFailProbability": 49500,
     "bitcoinMineWinProbability": 200,
     "bitcoinMineFailProbability": 9800,
     "hyperstructureWinProbAtCenter": 2000,
@@ -151,8 +115,6 @@
     "hyperstructureFailProbIncreasePerHyperstructureFound": 1,
     "shardsMineInitialWheatBalance": 1000,
     "shardsMineInitialFishBalance": 1000,
-    "questFindProbability": 1,
-    "questFindFailProbability": 99,
     "relicDiscoveryIntervalSeconds": 0,
     "relicHexDistanceFromCenter": 0,
     "relicChestRelicsPerChest": 0
@@ -2314,7 +2276,6 @@
   "faith": {
     "enabled": true,
     "wonder_base_fp_per_sec": 500,
-    "holy_site_fp_per_sec": 300,
     "realm_fp_per_sec": 100,
     "village_fp_per_sec": 50,
     "owner_share_percent": 30,
@@ -21950,7 +21911,6 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "holy_site_fp_per_sec",
               "type": "core::integer::u16"
             },
             {
@@ -22064,11 +22024,9 @@
               "type": "core::integer::u16"
             },
             {
-              "name": "holysite_win_probability",
               "type": "core::integer::u16"
             },
             {
-              "name": "holysite_fail_probability",
               "type": "core::integer::u16"
             },
             {
@@ -22472,7 +22430,6 @@
               "type": "core::integer::u64"
             },
             {
-              "name": "holysite_capacity",
               "type": "core::integer::u64"
             },
             {
@@ -31341,7 +31298,6 @@
                   "type": "core::integer::u16"
                 },
                 {
-                  "name": "holy_site_fp_per_sec",
                   "type": "core::integer::u16"
                 },
                 {

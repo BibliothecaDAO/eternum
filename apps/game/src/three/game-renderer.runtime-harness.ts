@@ -16,6 +16,7 @@ function createFakeScene(name: string) {
     getCurrentCameraView: vi.fn(() => undefined),
     hasActiveLabelAnimations: vi.fn(() => false),
     setWeatherAtmosphereState: vi.fn(),
+    setAnimationsPaused: vi.fn(),
     applyRenderVisualProfile: vi.fn(),
     destroy: vi.fn(),
   };
@@ -162,7 +163,6 @@ export function createGameRendererRuntimeHarness() {
         },
         worldmapScene,
         hexceptionScene,
-        fastTravelScene: undefined,
         sceneManager,
         captureStatsSample: vi.fn(),
         lastTime: performance.now() - 16,

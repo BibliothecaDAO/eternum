@@ -10,7 +10,6 @@ use crate::models::hyperstructure::{
     CompletedHyperstructureImpl, Hyperstructure, HyperstructureGlobals, HyperstructureShareholders,
     PlayerRegisteredPointsImpl,
 };
-use crate::utils::achievements::index::{AchievementTrait, Tasks};
 use crate::utils::math::PercentageValueImpl;
 
 pub fn settle_completed_hyperstructures(ref world: WorldStorage, game_id: u32) {
@@ -62,14 +61,8 @@ fn record_share_points(
         return;
     }
     PlayerRegisteredPointsImpl::register_points(ref world, game_id, address, points);
-    let achievement_points = points / 1_000_000;
-    let achievement_points: u32 = if achievement_points > 0xffffffff {
-        0xffffffff
-    } else {
-        achievement_points.try_into().unwrap()
-    };
     let now = starknet::get_block_timestamp();
-    AchievementTrait::progress(world, address.into(), Tasks::VICTORY_POINTS, achievement_points, now);
+
     world
         .emit_event(
             @StoryEvent {
@@ -114,7 +107,7 @@ mod tests {
                         TestResource::Model("SharePointsCheckpoint"), TestResource::Model("HyperstructureGlobals"),
                         TestResource::Model("CompletedHyperstructure"), TestResource::Model("HyperstructureIndex"),
                         TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
-                        TestResource::Event("StoryEvent"), TestResource::Event("TrophyProgression"),
+                        TestResource::Event("StoryEvent"),
                     ]
                         .span(),
                 }

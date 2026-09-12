@@ -10,6 +10,7 @@ import type {
 } from "../sync/game-sync-types";
 import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-sync-transport";
 import type { GameSyncScheduler } from "../sync/scheduler";
+import type { StoryEventScope } from "../sync/story-event-identity";
 import { createRecsGameSyncStore } from "./recs-game-sync-store";
 
 export type GameSyncSnapshotPhase = GameSyncSnapshotProgress["phase"];
@@ -30,8 +31,8 @@ export interface GameClientObserver {
   onLiveApplyFailed?: (error: Error) => void;
   /** Herald reported a head: a confirmed block, or the pre-confirmed sequencer clock. */
   onHead?: (head: GameSyncHead) => void;
-  /** A story event row arrived on the live stream. */
-  onStoryEvent?: (event: GameSyncEntity) => void;
+  /** A story event row arrived on the live stream, scoped to the chain, world and game it belongs to. */
+  onStoryEvent?: (event: GameSyncEntity, scope: StoryEventScope) => void;
   /** A new session starts; story events from the previous one are stale. */
   onStoryEventsReset?: () => void;
   /** The diff for a submitted transaction reached the client. */
@@ -50,6 +51,7 @@ export interface CreateHeraldGameSyncSessionInput {
   entityModels: readonly string[];
   eventModels: readonly string[];
   gameId: number;
+  worldAddress: string;
   observer?: GameClientObserver;
   scheduler: GameSyncScheduler;
   setup: SetupResult;
@@ -78,6 +80,7 @@ const createSnapshotProgressObserver = (
 
 export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionInput): GameSyncSessionStart {
   const observer = input.observer ?? {};
+  const scope: StoryEventScope = { chain: input.chain, worldAddress: input.worldAddress, gameId: input.gameId };
   observer.onStoryEventsReset?.();
   const syncModels = [...input.entityModels, ...input.eventModels];
   return {
@@ -86,7 +89,7 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
       observer.onLiveApplyFailed?.(error);
       console.error(`[GameSync] live entity apply failed: ${error.message}`);
     },
-    onEvent: observer.onStoryEvent,
+    onEvent: (event) => observer.onStoryEvent?.(event, scope),
     onMetrics: observer.onMetrics,
     onSnapshotProgress: createSnapshotProgressObserver(observer),
     onTransactionEntitiesApplied: observer.onRecsApplied,

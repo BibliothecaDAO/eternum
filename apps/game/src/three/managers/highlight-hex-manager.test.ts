@@ -19,7 +19,6 @@ vi.mock("@bibliothecadao/eternum", () => {
         Attack: "Attack",
         Help: "Help",
         Build: "Build",
-        Quest: "Quest",
         Chest: "Chest",
         CreateArmy: "CreateArmy",
       },

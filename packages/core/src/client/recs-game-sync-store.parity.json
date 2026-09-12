@@ -227,42 +227,6 @@
       }
     },
     {
-      "hashed_keys": "0x5216c2d1da6ad4895d9aa9db47cbed96fab1933a841d16f127c30c4a82837c1",
-      "models": {
-        "QuestLevels": {
-          "game_id": "0xb",
-          "game_address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-          "levels": [
-            {
-              "target_score": "0x1a",
-              "settings_id": "0x3",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x1a",
-              "settings_id": "0x6",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x1a",
-              "settings_id": "0x4",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x33",
-              "settings_id": "0x1",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x65",
-              "settings_id": "0x5",
-              "time_limit": "0x15180"
-            }
-          ]
-        }
-      }
-    },
-    {
       "hashed_keys": "0x48a5ce5dc85a6ca7b49e545c89c377010bb673ff9f62edf1c2bcb02a4b1f9",
       "models": {
         "AddressName": {
@@ -461,8 +425,6 @@
             "agent_discovery_fail_prob": "0x64",
             "camp_win_probability": "0x5dc",
             "camp_fail_probability": "0xbd74",
-            "holysite_win_probability": "0x0",
-            "holysite_fail_probability": "0x1",
             "bitcoin_mine_win_probability": "0x0",
             "bitcoin_mine_fail_probability": "0x1",
             "hyps_win_prob": "0x0",
@@ -471,7 +433,9 @@
             "hyps_fail_prob_increase_p_fnd": "0x1",
             "relic_discovery_interval_sec": "0x12c",
             "relic_hex_dist_from_center": "0xa",
-            "relic_chest_relics_per_chest": "0x3"
+            "relic_chest_relics_per_chest": "0x3",
+            "holysite_win_probability": "0x0",
+            "holysite_fail_probability": "0x1"
           },
           "tick_config": {
             "armies_tick_in_seconds": "0x3c",
@@ -551,18 +515,14 @@
           "trade_config": {
             "max_count": "0x0"
           },
-          "quest_config": {
-            "quest_discovery_prob": "0x1",
-            "quest_discovery_fail_prob": "0x63"
-          },
           "faith_config": {
             "enabled": false,
             "wonder_base_fp_per_sec": "0x0",
-            "holy_site_fp_per_sec": "0x0",
             "realm_fp_per_sec": "0x0",
             "village_fp_per_sec": "0x0",
             "owner_share_percent": "0x0",
-            "reward_token": "0x0"
+            "reward_token": "0x0",
+            "holy_site_fp_per_sec": "0x0"
           },
           "bitcoin_mine_config": {
             "enabled": false,
@@ -587,6 +547,53 @@
           },
           "village_troop_config": {
             "troop_delay_ticks": "0x0"
+          },
+          "realm_start_resources_config": {
+            "resources_list_id": "0x1",
+            "resources_list_count": "0x9"
+          },
+          "village_start_resources_config": {
+            "resources_list_id": "0x2",
+            "resources_list_count": "0x3"
+          },
+          "village_find_resources_config": {
+            "resources_mm_list_id": "0x1",
+            "resources_mm_list_count": "0x3"
+          },
+          "structure_capacity_config": {
+            "realm_capacity": "0xffffffffffffffff",
+            "village_capacity": "0xffffffffffffffff",
+            "hyperstructure_capacity": "0xffffffffffffffff",
+            "fragment_mine_capacity": "0xffffffffffffffff",
+            "bank_structure_capacity": "0xffffffffffffffff",
+            "camp_capacity": "0xffffffffffffffff",
+            "bitcoin_mine_capacity": "0xffffffffffffffff",
+            "holysite_capacity": "0xffffffffffffffff"
+          },
+          "victory_points_grant_config": {
+            "hyp_points_per_second": "0xf4240",
+            "claim_hyperstructure_points": "0xb2d05e00",
+            "claim_otherstructure_points": "0x1dcd6500",
+            "explore_tiles_points": "0x989680",
+            "relic_open_points": "0x3b9aca00"
+          },
+          "victory_points_win_config": {
+            "points_for_win": "0x0"
+          },
+          "blitz_exploration_config": {
+            "reward_profile_id": "0x2"
+          },
+          "artificer_config": {
+            "research_cost_for_relic": "0x0"
+          },
+          "blitz_registration_rules_config": {
+            "collectibles_cosmetics_max": "0x5"
+          },
+          "mercenaries_name": "0x5468652056616e6775617264",
+          "spire_travel_essence_cost": "0x0",
+          "quest_config": {
+            "quest_discovery_prob": "0x1",
+            "quest_discovery_fail_prob": "0x63"
           },
           "quest_games": [
             {
@@ -619,49 +626,7 @@
                 }
               ]
             }
-          ],
-          "realm_start_resources_config": {
-            "resources_list_id": "0x1",
-            "resources_list_count": "0x9"
-          },
-          "village_start_resources_config": {
-            "resources_list_id": "0x2",
-            "resources_list_count": "0x3"
-          },
-          "village_find_resources_config": {
-            "resources_mm_list_id": "0x1",
-            "resources_mm_list_count": "0x3"
-          },
-          "structure_capacity_config": {
-            "realm_capacity": "0xffffffffffffffff",
-            "village_capacity": "0xffffffffffffffff",
-            "hyperstructure_capacity": "0xffffffffffffffff",
-            "fragment_mine_capacity": "0xffffffffffffffff",
-            "bank_structure_capacity": "0xffffffffffffffff",
-            "holysite_capacity": "0xffffffffffffffff",
-            "camp_capacity": "0xffffffffffffffff",
-            "bitcoin_mine_capacity": "0xffffffffffffffff"
-          },
-          "victory_points_grant_config": {
-            "hyp_points_per_second": "0xf4240",
-            "claim_hyperstructure_points": "0xb2d05e00",
-            "claim_otherstructure_points": "0x1dcd6500",
-            "explore_tiles_points": "0x989680",
-            "relic_open_points": "0x3b9aca00"
-          },
-          "victory_points_win_config": {
-            "points_for_win": "0x0"
-          },
-          "blitz_exploration_config": {
-            "reward_profile_id": "0x2"
-          },
-          "artificer_config": {
-            "research_cost_for_relic": "0x0"
-          },
-          "blitz_registration_rules_config": {
-            "collectibles_cosmetics_max": "0x5"
-          },
-          "mercenaries_name": "0x5468652056616e6775617264"
+          ]
         }
       }
     },
@@ -688,8 +653,6 @@
             "agent_discovery_fail_prob": "0x64",
             "camp_win_probability": "0x5dc",
             "camp_fail_probability": "0xbd74",
-            "holysite_win_probability": "0x0",
-            "holysite_fail_probability": "0x1",
             "bitcoin_mine_win_probability": "0x0",
             "bitcoin_mine_fail_probability": "0x1",
             "hyps_win_prob": "0x0",
@@ -698,7 +661,9 @@
             "hyps_fail_prob_increase_p_fnd": "0x1",
             "relic_discovery_interval_sec": "0x12c",
             "relic_hex_dist_from_center": "0xa",
-            "relic_chest_relics_per_chest": "0x3"
+            "relic_chest_relics_per_chest": "0x3",
+            "holysite_win_probability": "0x0",
+            "holysite_fail_probability": "0x1"
           },
           "tick_config": {
             "armies_tick_in_seconds": "0x3c",
@@ -778,18 +743,14 @@
           "trade_config": {
             "max_count": "0x0"
           },
-          "quest_config": {
-            "quest_discovery_prob": "0x1",
-            "quest_discovery_fail_prob": "0x63"
-          },
           "faith_config": {
             "enabled": false,
             "wonder_base_fp_per_sec": "0x0",
-            "holy_site_fp_per_sec": "0x0",
             "realm_fp_per_sec": "0x0",
             "village_fp_per_sec": "0x0",
             "owner_share_percent": "0x0",
-            "reward_token": "0x0"
+            "reward_token": "0x0",
+            "holy_site_fp_per_sec": "0x0"
           },
           "bitcoin_mine_config": {
             "enabled": false,
@@ -814,6 +775,53 @@
           },
           "village_troop_config": {
             "troop_delay_ticks": "0x0"
+          },
+          "realm_start_resources_config": {
+            "resources_list_id": "0x1",
+            "resources_list_count": "0x9"
+          },
+          "village_start_resources_config": {
+            "resources_list_id": "0x2",
+            "resources_list_count": "0x3"
+          },
+          "village_find_resources_config": {
+            "resources_mm_list_id": "0x1",
+            "resources_mm_list_count": "0x3"
+          },
+          "structure_capacity_config": {
+            "realm_capacity": "0xffffffffffffffff",
+            "village_capacity": "0xffffffffffffffff",
+            "hyperstructure_capacity": "0xffffffffffffffff",
+            "fragment_mine_capacity": "0xffffffffffffffff",
+            "bank_structure_capacity": "0xffffffffffffffff",
+            "camp_capacity": "0xffffffffffffffff",
+            "bitcoin_mine_capacity": "0xffffffffffffffff",
+            "holysite_capacity": "0xffffffffffffffff"
+          },
+          "victory_points_grant_config": {
+            "hyp_points_per_second": "0xf4240",
+            "claim_hyperstructure_points": "0x3b9aca00",
+            "claim_otherstructure_points": "0xee6b280",
+            "explore_tiles_points": "0x4c4b40",
+            "relic_open_points": "0xee6b280"
+          },
+          "victory_points_win_config": {
+            "points_for_win": "0x0"
+          },
+          "blitz_exploration_config": {
+            "reward_profile_id": "0x1"
+          },
+          "artificer_config": {
+            "research_cost_for_relic": "0x0"
+          },
+          "blitz_registration_rules_config": {
+            "collectibles_cosmetics_max": "0x5"
+          },
+          "mercenaries_name": "0x5468652056616e6775617264",
+          "spire_travel_essence_cost": "0x0",
+          "quest_config": {
+            "quest_discovery_prob": "0x1",
+            "quest_discovery_fail_prob": "0x63"
           },
           "quest_games": [
             {
@@ -846,49 +854,7 @@
                 }
               ]
             }
-          ],
-          "realm_start_resources_config": {
-            "resources_list_id": "0x1",
-            "resources_list_count": "0x9"
-          },
-          "village_start_resources_config": {
-            "resources_list_id": "0x2",
-            "resources_list_count": "0x3"
-          },
-          "village_find_resources_config": {
-            "resources_mm_list_id": "0x1",
-            "resources_mm_list_count": "0x3"
-          },
-          "structure_capacity_config": {
-            "realm_capacity": "0xffffffffffffffff",
-            "village_capacity": "0xffffffffffffffff",
-            "hyperstructure_capacity": "0xffffffffffffffff",
-            "fragment_mine_capacity": "0xffffffffffffffff",
-            "bank_structure_capacity": "0xffffffffffffffff",
-            "holysite_capacity": "0xffffffffffffffff",
-            "camp_capacity": "0xffffffffffffffff",
-            "bitcoin_mine_capacity": "0xffffffffffffffff"
-          },
-          "victory_points_grant_config": {
-            "hyp_points_per_second": "0xf4240",
-            "claim_hyperstructure_points": "0x3b9aca00",
-            "claim_otherstructure_points": "0xee6b280",
-            "explore_tiles_points": "0x4c4b40",
-            "relic_open_points": "0xee6b280"
-          },
-          "victory_points_win_config": {
-            "points_for_win": "0x0"
-          },
-          "blitz_exploration_config": {
-            "reward_profile_id": "0x1"
-          },
-          "artificer_config": {
-            "research_cost_for_relic": "0x0"
-          },
-          "blitz_registration_rules_config": {
-            "collectibles_cosmetics_max": "0x5"
-          },
-          "mercenaries_name": "0x5468652056616e6775617264"
+          ]
         }
       }
     },
@@ -915,8 +881,6 @@
             "agent_discovery_fail_prob": "0x64",
             "camp_win_probability": "0x5dc",
             "camp_fail_probability": "0xbd74",
-            "holysite_win_probability": "0x0",
-            "holysite_fail_probability": "0x1",
             "bitcoin_mine_win_probability": "0x0",
             "bitcoin_mine_fail_probability": "0x1",
             "hyps_win_prob": "0x0",
@@ -925,7 +889,9 @@
             "hyps_fail_prob_increase_p_fnd": "0x1",
             "relic_discovery_interval_sec": "0x12c",
             "relic_hex_dist_from_center": "0xa",
-            "relic_chest_relics_per_chest": "0x3"
+            "relic_chest_relics_per_chest": "0x3",
+            "holysite_win_probability": "0x0",
+            "holysite_fail_probability": "0x1"
           },
           "tick_config": {
             "armies_tick_in_seconds": "0x3c",
@@ -1005,18 +971,14 @@
           "trade_config": {
             "max_count": "0x0"
           },
-          "quest_config": {
-            "quest_discovery_prob": "0x1",
-            "quest_discovery_fail_prob": "0x63"
-          },
           "faith_config": {
             "enabled": false,
             "wonder_base_fp_per_sec": "0x0",
-            "holy_site_fp_per_sec": "0x0",
             "realm_fp_per_sec": "0x0",
             "village_fp_per_sec": "0x0",
             "owner_share_percent": "0x0",
-            "reward_token": "0x0"
+            "reward_token": "0x0",
+            "holy_site_fp_per_sec": "0x0"
           },
           "bitcoin_mine_config": {
             "enabled": false,
@@ -1041,6 +1003,53 @@
           },
           "village_troop_config": {
             "troop_delay_ticks": "0x0"
+          },
+          "realm_start_resources_config": {
+            "resources_list_id": "0x1",
+            "resources_list_count": "0x9"
+          },
+          "village_start_resources_config": {
+            "resources_list_id": "0x2",
+            "resources_list_count": "0x3"
+          },
+          "village_find_resources_config": {
+            "resources_mm_list_id": "0x1",
+            "resources_mm_list_count": "0x3"
+          },
+          "structure_capacity_config": {
+            "realm_capacity": "0xffffffffffffffff",
+            "village_capacity": "0xffffffffffffffff",
+            "hyperstructure_capacity": "0xffffffffffffffff",
+            "fragment_mine_capacity": "0xffffffffffffffff",
+            "bank_structure_capacity": "0xffffffffffffffff",
+            "camp_capacity": "0xffffffffffffffff",
+            "bitcoin_mine_capacity": "0xffffffffffffffff",
+            "holysite_capacity": "0xffffffffffffffff"
+          },
+          "victory_points_grant_config": {
+            "hyp_points_per_second": "0xf4240",
+            "claim_hyperstructure_points": "0xb2d05e00",
+            "claim_otherstructure_points": "0x1dcd6500",
+            "explore_tiles_points": "0x989680",
+            "relic_open_points": "0x3b9aca00"
+          },
+          "victory_points_win_config": {
+            "points_for_win": "0x0"
+          },
+          "blitz_exploration_config": {
+            "reward_profile_id": "0x2"
+          },
+          "artificer_config": {
+            "research_cost_for_relic": "0x0"
+          },
+          "blitz_registration_rules_config": {
+            "collectibles_cosmetics_max": "0x5"
+          },
+          "mercenaries_name": "0x5468652056616e6775617264",
+          "spire_travel_essence_cost": "0x0",
+          "quest_config": {
+            "quest_discovery_prob": "0x1",
+            "quest_discovery_fail_prob": "0x63"
           },
           "quest_games": [
             {
@@ -1073,49 +1082,7 @@
                 }
               ]
             }
-          ],
-          "realm_start_resources_config": {
-            "resources_list_id": "0x1",
-            "resources_list_count": "0x9"
-          },
-          "village_start_resources_config": {
-            "resources_list_id": "0x2",
-            "resources_list_count": "0x3"
-          },
-          "village_find_resources_config": {
-            "resources_mm_list_id": "0x1",
-            "resources_mm_list_count": "0x3"
-          },
-          "structure_capacity_config": {
-            "realm_capacity": "0xffffffffffffffff",
-            "village_capacity": "0xffffffffffffffff",
-            "hyperstructure_capacity": "0xffffffffffffffff",
-            "fragment_mine_capacity": "0xffffffffffffffff",
-            "bank_structure_capacity": "0xffffffffffffffff",
-            "holysite_capacity": "0xffffffffffffffff",
-            "camp_capacity": "0xffffffffffffffff",
-            "bitcoin_mine_capacity": "0xffffffffffffffff"
-          },
-          "victory_points_grant_config": {
-            "hyp_points_per_second": "0xf4240",
-            "claim_hyperstructure_points": "0xb2d05e00",
-            "claim_otherstructure_points": "0x1dcd6500",
-            "explore_tiles_points": "0x989680",
-            "relic_open_points": "0x3b9aca00"
-          },
-          "victory_points_win_config": {
-            "points_for_win": "0x0"
-          },
-          "blitz_exploration_config": {
-            "reward_profile_id": "0x2"
-          },
-          "artificer_config": {
-            "research_cost_for_relic": "0x0"
-          },
-          "blitz_registration_rules_config": {
-            "collectibles_cosmetics_max": "0x5"
-          },
-          "mercenaries_name": "0x5468652056616e6775617264"
+          ]
         }
       }
     },
@@ -2689,5 +2656,6 @@
       }
     }
   ],
-  "fixturePurpose": "Captured Herald rows used to verify the manifest-generated RECS schemas and ingest coercion."
+  "fixturePurpose": "Captured Herald rows used to verify the manifest-generated RECS schemas and ingest coercion.",
+  "schemaAdaptation": "2026-09-12: retired quest/achievement models removed; original reserved config slots retained; zero portal fee appended to captured Blitz presets."
 }

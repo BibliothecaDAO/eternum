@@ -35,7 +35,6 @@ describe("renderer effects runtime", () => {
     runtime.applyRenderVisualProfile(createRenderProfile("capped").visuals);
 
     expect(backend.applyEnvironment).toHaveBeenCalledWith({
-      fastTravelScene: scenes.fastTravelScene,
       hexceptionScene: scenes.hexceptionScene,
       intensity: 0.55,
       worldmapScene: scenes.worldmapScene,
@@ -47,7 +46,6 @@ describe("renderer effects runtime", () => {
       width: 1024,
     });
     expect(scenes.worldmapScene.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
-    expect(scenes.fastTravelScene.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
     expect(scenes.hexceptionScene.applyRenderVisualProfile).toHaveBeenCalledTimes(1);
   });
 
@@ -113,7 +111,6 @@ function createBackend() {
 
 function createScenes() {
   return {
-    fastTravelScene: { applyRenderVisualProfile: vi.fn(), setEnvironment: vi.fn() },
     hexceptionScene: { applyRenderVisualProfile: vi.fn(), setEnvironment: vi.fn() },
     worldmapScene: { applyRenderVisualProfile: vi.fn(), setEnvironment: vi.fn() },
   };

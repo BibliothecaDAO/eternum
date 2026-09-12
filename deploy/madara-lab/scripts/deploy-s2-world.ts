@@ -80,7 +80,7 @@ async function bootstrapRegistrar(params: {
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
   const environmentId = resolveEnvironmentId();
-  console.log("World migration is reviewer-owned. Run: sozo build --profile madara && sozo migrate --profile madara");
+  console.log("Bootstrap the world deployed by deploy/madara-lab/scripts/deploy-world.sh.");
   assertRegistrarAvailable(environmentId);
 
   const environment = resolveDeploymentEnvironment(environmentId);
@@ -109,10 +109,14 @@ async function deployS2World(): Promise<void> {
     playerRegistryAddress: requiredEnvironmentAddress("PLAYER_REGISTRY_ADDRESS"),
     dryRun,
   });
+  // The stored sheet is the raw base balance; the Blitz default preset is Regular Fast, which is the
+  // 60-minute official profile applied at registration. Registering without it would ship base balance
+  // under the Regular Fast label, and presets are immutable per world.
   await registerEnvironmentPreset({
     presetId: Number(DEFAULT_MADARA_PRESET_ID),
     environmentId,
     rpcUrl,
+    balanceProfile: environmentId === "madara.blitz" ? "official-60" : undefined,
     sponsored: false,
     dryRun,
   });

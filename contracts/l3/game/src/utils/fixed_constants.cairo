@@ -7,42 +7,16 @@ pub fn _0() -> Fixed {
 
 
 #[inline(always)]
-pub fn _0_02() -> Fixed {
-    FixedTrait::new(368934881474191032, false)
-}
-
-
-#[inline(always)]
-pub fn _0_05() -> Fixed {
-    FixedTrait::new(922337203685477581, false)
-}
-
-#[inline(always)]
 pub fn _0_083333() -> Fixed {
     FixedTrait::new(1537228672809129301, false)
 }
 
 
 #[inline(always)]
-pub fn _0_09() -> Fixed {
-    FixedTrait::new(1660206966633859645, false)
-}
-
-#[inline(always)]
 pub fn _0_1() -> Fixed {
     FixedTrait::new(1844674407370955161, false)
 }
 
-
-#[inline(always)]
-pub fn _0_13() -> Fixed {
-    FixedTrait::new(2398076729582241710, false)
-}
-
-#[inline(always)]
-pub fn _0_16() -> Fixed {
-    FixedTrait::new(2951479051793528258, false)
-}
 
 #[inline(always)]
 pub fn _0_17() -> Fixed {
@@ -53,12 +27,6 @@ pub fn _0_17() -> Fixed {
 pub fn _0_2() -> Fixed {
     FixedTrait::new(3689348814741910323, false)
 }
-
-#[inline(always)]
-pub fn _0_25() -> Fixed {
-    FixedTrait::new(4611686018427387904, false)
-}
-
 
 #[inline(always)]
 pub fn _0_26() -> Fixed {
@@ -75,12 +43,6 @@ pub fn _0_3() -> Fixed {
 #[inline(always)]
 pub fn _0_31() -> Fixed {
     FixedTrait::new(5718490662849961000, false)
-}
-
-
-#[inline(always)]
-pub fn _0_33() -> Fixed {
-    FixedTrait::new(6087425544324152033, false)
 }
 
 
@@ -114,11 +76,6 @@ pub fn _0_5() -> Fixed {
 }
 
 #[inline(always)]
-pub fn _0_53() -> Fixed {
-    FixedTrait::new(9776774359066062356, false)
-}
-
-#[inline(always)]
 pub fn _0_56() -> Fixed {
     FixedTrait::new(10330176681277348904, false)
 }
@@ -134,49 +91,13 @@ pub fn _0_62() -> Fixed {
 }
 
 #[inline(always)]
-pub fn _0_64() -> Fixed {
-    FixedTrait::new(11805916207174113034, false)
-}
-
-#[inline(always)]
-pub fn _0_66() -> Fixed {
-    FixedTrait::new(12174851088648304066, false)
-}
-
-#[inline(always)]
 pub fn _0_7() -> Fixed {
     FixedTrait::new(12912720851596686131, false)
 }
 
 #[inline(always)]
-pub fn _0_72() -> Fixed {
-    FixedTrait::new(13281655733070877163, false)
-}
-
-
-#[inline(always)]
 pub fn _0_8() -> Fixed {
     FixedTrait::new(14757395258967641292, false)
-}
-
-#[inline(always)]
-pub fn _0_83() -> Fixed {
-    FixedTrait::new(15310797581178927841, false)
-}
-
-
-#[inline(always)]
-pub fn _0_9() -> Fixed {
-    FixedTrait::new(16602069666338596454, false)
-}
-
-#[inline(always)]
-pub fn _0_93() -> Fixed {
-    FixedTrait::new(17155471988549883002, false)
-}
-
-pub fn _0_95() -> Fixed {
-    FixedTrait::new(17524406870024074035, false)
 }
 
 #[inline(always)]
@@ -186,11 +107,6 @@ pub fn _1() -> Fixed {
 
 
 #[inline(always)]
-pub fn _1_03() -> Fixed {
-    FixedTrait::new(19000146395920838164, false)
-}
-
-#[inline(always)]
 pub fn _2() -> Fixed {
     FixedTrait::new_unscaled(2, false)
 }
@@ -198,20 +114,4 @@ pub fn _2() -> Fixed {
 #[inline(always)]
 pub fn _100() -> Fixed {
     FixedTrait::new_unscaled(100, false)
-}
-
-#[inline(always)]
-pub fn _1000() -> Fixed {
-    FixedTrait::new_unscaled(1000, false)
-}
-
-
-#[inline(always)]
-pub fn _3_3() -> Fixed {
-    FixedTrait::new(60874255443241520333, false)
-}
-
-#[inline(always)]
-pub fn PI() -> Fixed {
-    FixedTrait::new(57952155664616982739, false)
 }

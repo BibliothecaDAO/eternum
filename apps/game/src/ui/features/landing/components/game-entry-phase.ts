@@ -31,6 +31,8 @@ interface ResolveGameEntryModalPhaseInput {
   hasVillageRevealResult: boolean;
   eternumSettlementMode: "realm" | "village";
   hasVillagePass: boolean;
+  isEternumDevMode?: boolean;
+  isSettlingAdditionalRealm?: boolean;
   checksComplete: boolean;
   needsSettlement: boolean;
   canPlay: boolean;
@@ -106,6 +108,8 @@ export const resolveGameEntryModalPhase = ({
   hasVillageRevealResult,
   eternumSettlementMode,
   hasVillagePass,
+  isEternumDevMode = false,
+  isSettlingAdditionalRealm = false,
   checksComplete,
   needsSettlement,
   canPlay,
@@ -130,7 +134,10 @@ export const resolveGameEntryModalPhase = ({
   if (isEternumMode) {
     if (eternumSettlementMode === "realm") {
       if (!checksComplete) return "loading";
-      return resolveBlitzSettlementPhase({ canPlay, isSettlementUnlocked: isBlitzSettlementUnlocked });
+      return resolveBlitzSettlementPhase({
+        canPlay: canPlay && !(isEternumDevMode && isSettlingAdditionalRealm),
+        isSettlementUnlocked: isBlitzSettlementUnlocked,
+      });
     }
     if (isLoadingEternumPrereqs) {
       return "loading";
@@ -140,7 +147,7 @@ export const resolveGameEntryModalPhase = ({
       return "village-reveal";
     }
 
-    return hasVillagePass ? "village-placement" : "village-pass-required";
+    return hasVillagePass || isEternumDevMode ? "village-placement" : "village-pass-required";
   }
 
   if (!checksComplete) {

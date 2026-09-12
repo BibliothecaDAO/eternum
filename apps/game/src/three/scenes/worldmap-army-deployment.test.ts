@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const state = vi.hoisted(() => ({ isSpectating: false, explicit: false, tooltip: null as any, setTooltip: vi.fn() }));
+const state = vi.hoisted(() => ({
+  isSpectating: false,
+  explicit: false,
+  gameEnded: false,
+  tooltip: null as any,
+  setTooltip: vi.fn(),
+}));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { getState: () => state } }));
 vi.mock("@/hooks/store/use-tooltip-store", () => ({ useTooltipStore: { getState: () => state } }));
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => state.explicit }));
 vi.mock("@bibliothecadao/eternum", () => ({
+  configManager: { isGameOver: () => state.gameEnded },
   ActionType: { CreateArmy: "create_army" },
   ActionPaths: {
     posKey: ({ col, row }: any) => `${col + 100},${row + 100}`,
@@ -21,6 +28,7 @@ const paths = new Map([
 beforeEach(() => {
   state.isSpectating = false;
   state.explicit = false;
+  state.gameEnded = false;
   state.tooltip = null;
   vi.clearAllMocks();
 });
@@ -32,7 +40,7 @@ describe("world map deployment affordance", () => {
     expect(resolveSpawnActionPath({ col: 3, row: 2 }, paths)).toBeNull();
     expect(resolveSpawnActionPath(null, paths)).toBeNull();
   });
-  it.each(["isSpectating", "explicit"] as const)("suppresses spawn actions and tooltips for %s", (key) => {
+  it.each(["isSpectating", "explicit", "gameEnded"] as const)("suppresses spawn actions and tooltips for %s", (key) => {
     state[key] = true;
     expect(resolveSpawnActionPath({ col: 1, row: 2 }, paths)).toBeNull();
     showArmyDeploymentTooltip({ x: 200, y: 200 });

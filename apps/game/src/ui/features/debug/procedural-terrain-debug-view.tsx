@@ -94,6 +94,7 @@ export const ProceduralTerrainDebugView = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
   const capture = searchParams.get("capture") === "1";
+  const gameEnded = searchParams.get("gameEnded") === "1";
   const forceWebGL = searchParams.get("rendererMode") === "webgpu-force-webgl";
   const texturedGround = searchParams.get("groundMode") !== "flat";
   const sceneId = localMode ? "temperate-grove" : resolveSceneId(searchParams.get("scene"));
@@ -172,6 +173,10 @@ export const ProceduralTerrainDebugView = () => {
   useEffect(() => {
     if (ready) rendererRef.current?.setCycleProgress(cycleProgress);
   }, [cycleProgress, ready]);
+
+  useEffect(() => {
+    if (ready) rendererRef.current?.setGameEnded(gameEnded);
+  }, [gameEnded, ready]);
 
   const changeSceneSetting = (key: string, value: string) => {
     setSearchParams(
@@ -404,11 +409,11 @@ export const ProceduralTerrainDebugView = () => {
                 </select>
               </label>
             )}
-            {buildingPath === VILLAGE_MODEL_PATH && (
+            {(buildingPath === VILLAGE_MODEL_PATH || isRealmModelPath(buildingPath)) && (
               <label className="flex flex-col gap-1 text-sm">
-                Village relationship
+                Ownership
                 <select
-                  aria-label="Village relationship"
+                  aria-label="Ownership"
                   className="bg-stone-900 p-2"
                   value={preview.relationship}
                   onChange={(event) =>
@@ -468,6 +473,22 @@ export const ProceduralTerrainDebugView = () => {
             >
               Clear buildings
             </button>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2 border border-sky-200/20 p-3">
+            <legend className="px-1 text-sm text-sky-200">Game end preview</legend>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={gameEnded}
+                disabled={!ready}
+                onChange={(event) => changeSceneSetting("gameEnded", event.target.checked ? "1" : "0")}
+              />
+              Freeze map
+            </label>
+            <p className="text-xs text-stone-400">
+              Frost covers the terrain and animations stop. Pan, zoom and select tiles as usual. Uncheck to resume.
+            </p>
           </fieldset>
 
           <WeatherLabControls

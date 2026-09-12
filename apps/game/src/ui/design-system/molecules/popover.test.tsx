@@ -276,6 +276,7 @@ describe("Popover", () => {
 
   it("dismisses map clicks by default and forwards a store surface's map policy", async () => {
     const canvas = document.createElement("canvas");
+    canvas.addEventListener("pointerdown", (event) => event.stopImmediatePropagation(), true);
     document.body.appendChild(canvas);
     await act(async () => trigger("open a").click());
     await act(async () => canvas.dispatchEvent(new Event("pointerdown", { bubbles: true })));

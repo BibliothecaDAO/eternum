@@ -18,7 +18,7 @@ import {
   VILLAGE_MODEL_PATH,
   REALM_MODEL_PATHS,
 } from "../constants/scene-constants";
-import { REALM_NEUTRAL_ROW, resolveRealmBannerRow } from "./settlement-appearance";
+import { resolveRealmBannerRow } from "./settlement-appearance";
 import { StructureType, RealmLevelNames, orders } from "@bibliothecadao/types";
 
 vi.mock("../utils/contact-shadow", () => ({
@@ -72,18 +72,18 @@ describe("gameplay villages", () => {
     model.setCount(3);
     for (let index = 0; index < 3; index++) model.setMatrixAt(index, new Matrix4().makeTranslation(index * 3, 0, 0));
     model.setRelationshipAt(0, "owned");
-    model.setRelationshipAt(1, "allied");
+    model.setRelationshipAt(1, "enemy");
     model.setRelationshipAt(2, "enemy");
     const [timber, flag, trim] = model.instancedMeshes;
     expect(timber.geometry.getAttribute("settlementHeraldry")).toBeUndefined();
-    expect(flag.geometry.getAttribute("settlementHeraldry").array.slice(0, 3)).toEqual(new Float32Array([0, 1, 2]));
+    expect(flag.geometry.getAttribute("settlementHeraldry").array.slice(0, 3)).toEqual(new Float32Array([0, 1, 1]));
     expect(trim.geometry.getAttribute("settlementHeraldry")).toBe(flag.geometry.getAttribute("settlementHeraldry"));
     expect(banner.geometry.getAttribute("settlementHeraldry")).toBeUndefined();
     expect(hutCloth.geometry.getAttribute("settlementHeraldry")).toBeUndefined();
     model.removeInstance(0);
     model.setMatrixAt(0, new Matrix4());
     model.setRelationshipAt(0, "enemy");
-    expect(flag.geometry.getAttribute("settlementHeraldry").array.slice(0, 3)).toEqual(new Float32Array([2, 1, 2]));
+    expect(flag.geometry.getAttribute("settlementHeraldry").array.slice(0, 3)).toEqual(new Float32Array([1, 1, 1]));
     const originalPositions = Array.from(banner.geometry.getAttribute("position").array);
     model.setWind({ windX: 0.4, windZ: 0.6 });
     model.updateAnimations(0.5);
@@ -117,20 +117,26 @@ describe("gameplay realms", () => {
     const { model, banner, hutCloth } = fixture("realm");
     await model.prepare();
     model.setCount(3);
+    model.setRelationshipAt(0, "owned");
     model.setOrderAt(0, 0);
     model.setOrderAt(1, orders.at(-1)!.orderId);
     const [, flag, trim] = model.instancedMeshes;
     const heraldry = flag.geometry.getAttribute("settlementHeraldry");
     expect(heraldry.array.slice(0, 3)).toEqual(
-      new Float32Array([resolveRealmBannerRow(0), resolveRealmBannerRow(orders.at(-1)!.orderId), REALM_NEUTRAL_ROW]),
+      new Float32Array([
+        resolveRealmBannerRow(0, "owned"),
+        resolveRealmBannerRow(orders.at(-1)!.orderId),
+        resolveRealmBannerRow(undefined),
+      ]),
     );
     expect(trim.geometry.getAttribute("settlementHeraldry")).toBe(heraldry);
     expect(trim.geometry).not.toBe(hutCloth.geometry);
     expect(banner.geometry.getAttribute("settlementHeraldry")).toBeUndefined();
     model.removeInstance(0);
     model.setMatrixAt(0, new Matrix4());
+    model.setRelationshipAt(0, "enemy");
     model.setOrderAt(0, undefined);
-    expect(heraldry.getX(0)).toBe(REALM_NEUTRAL_ROW);
+    expect(heraldry.getX(0)).toBe(resolveRealmBannerRow(undefined));
     expect(heraldry.getX(1)).toBe(resolveRealmBannerRow(orders.at(-1)!.orderId));
     expect(() => model.setOrderAt(0, -1)).toThrow("Unknown realm order");
     const disposeTrim = vi.spyOn(trim.geometry, "dispose");

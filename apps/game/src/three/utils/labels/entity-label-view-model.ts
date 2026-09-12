@@ -208,8 +208,6 @@ function resolveStructureTypeLabel(structureType: StructureType): string {
       return "Fragment Mine";
     case StructureType.BitcoinMine:
       return "Mine";
-    case StructureType.HolySite:
-      return "Holy Site";
     default:
       return "Structure";
   }

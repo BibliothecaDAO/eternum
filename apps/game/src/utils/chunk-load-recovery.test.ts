@@ -15,6 +15,14 @@ function createBrowser() {
 }
 
 describe("deployment chunk recovery", () => {
+  it("does not interrupt a pending transaction or consume its recovery attempt", () => {
+    const browser = createBrowser();
+    recoverChunkLoad(new Event("vite:preloadError"), "release", browser as unknown as Window, true);
+    expect(browser.location.reload).not.toHaveBeenCalled();
+    expect(browser.sessionStorage.setItem).not.toHaveBeenCalled();
+    recoverChunkLoad(new Event("vite:preloadError"), "release", browser as unknown as Window, false);
+    expect(browser.location.reload).toHaveBeenCalledTimes(1);
+  });
   it("reloads once per version and leaves repeated failures to the crash UI", () => {
     const browser = createBrowser();
     const first = new Event("vite:preloadError", { cancelable: true });

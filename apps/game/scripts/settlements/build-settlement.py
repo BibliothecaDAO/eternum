@@ -5,22 +5,25 @@ from pathlib import Path
 import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from courtyard_props import build_supplies
+from construction_finish import finish_construction
+from courtyard_props import build_supplies, build_barrel
 from settlement_geometry import block, beam, save_asset
 from fortification_geometry import build_recessed_doorway, build_vertical_prism
-from town_architecture import palette, well, fence, roof, window, banner
+from town_architecture import palette, fence, roof, window, banner
 
 
 def build_realm():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    m = palette()
+    m = palette("settlement")
     build_hall(m)
-    build_entrance_porch(m)
     banner(m, "Settlement order banner", 0.51, -0.22, 1.13, span=-0.22, height=0.34)
-    well(m, -0.30, -0.26)
-    build_supplies(m, 0.38, -0.35)
+    build_barrel(m, -0.42, -0.23)
+    build_barrel(m, -0.42, -0.35)
+    build_barrel(m, 0.42, -0.22)
+    build_supplies(m, 0.39, -0.35)
     fence(m)
+    finish_construction(m, "settlement")
     save_asset(
         "settlement",
         "Timber hall: broad gable, heavy framing, defensive palisade and open yard",
@@ -140,27 +143,6 @@ def build_hall_framing(m, front, eave, ridge):
         m["timber"],
         0,
     )
-
-
-def build_entrance_porch(m):
-    roof(m, "Hall porch", 0, -0.175, 0.34, 0.24, 0.39, 0.54, "thatch")
-    for sign in [-1, 1]:
-        block(
-            "Porch oak post",
-            (sign * 0.145, -0.29, 0.195),
-            (0.025, 0.025, 0.39),
-            m["timber"],
-            0.001,
-        )
-        beam(
-            "Porch knee brace",
-            (sign * 0.145, -0.29, 0.27),
-            (sign * 0.055, -0.29, 0.385),
-            0.009,
-            m["timber"],
-            4,
-        )
-    block("Porch lintel", (0, -0.29, 0.385), (0.32, 0.028, 0.026), m["timber"], 0.001)
 
 
 def build_side_framing(m, width, depth, y, eave):

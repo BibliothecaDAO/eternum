@@ -23,7 +23,6 @@ import {
   readGuildWhitelist,
 } from "./guilds";
 import { type MarketView, openTradesQuery, readMarket, readOpenTrades } from "./market";
-import { questForExplorerQuery, readQuestEntity } from "./quests";
 import { arrivalsByStructureQuery, readResourceArrivals, readResourceManager } from "./resources";
 import {
   allRealmsQuery,
@@ -46,7 +45,6 @@ import {
 export * from "./armies";
 export * from "./guilds";
 export * from "./market";
-export * from "./quests";
 export * from "./resources";
 export * from "./structures";
 
@@ -67,7 +65,6 @@ export interface GameViews {
   guildWhitelist(guildEntityId: ContractAddress): GuildMemberInfo[];
   playerWhitelist(playerAddress: ContractAddress): GuildMemberInfo[];
   market(owner: ContractAddress, currentBlockTimestamp: number): MarketView;
-  questForExplorer(explorerId: ID, questTileId: ID): Entity | undefined;
 }
 
 /**
@@ -106,8 +103,6 @@ export const createGameViews = (client: GameClient, viewer: ContractAddress): Ga
         readOpenTrades(components, query(openTradesQuery(components)), currentBlockTimestamp),
         playerStructureEntities(components, owner),
       ),
-    questForExplorer: (explorerId, questTileId) =>
-      readQuestEntity(query(questForExplorerQuery(components, explorerId, questTileId))),
   };
 };
 

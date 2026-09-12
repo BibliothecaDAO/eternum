@@ -17,9 +17,7 @@ use crate::models::resource::resource::{
     ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, StructureSingleResourceFoodImpl,
     WeightStoreImpl,
 };
-use crate::models::structure::{
-    StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureOwnerStoreImpl,
-};
+use crate::models::structure::{StructureCategory, StructureImpl, StructureOwnerStoreImpl};
 use crate::models::weight::{Weight, WeightImpl, WeightTrait};
 use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
@@ -324,31 +322,12 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
         if self._is_storage_capacity_booster() {
             self._boost_storage_capacity(ref world, add);
         }
-        // if self._is_explorer_capacity_booster() {
-    //     self._boost_explorer_capacity(ref world, add);
-    // }
     }
 
     fn _is_storage_capacity_booster(self: Building) -> bool {
         let category: BuildingCategory = self.category.into();
         match category {
             BuildingCategory::Storehouse => true,
-            _ => false,
-        }
-    }
-
-    fn _is_explorer_capacity_booster(self: Building) -> bool {
-        let category: BuildingCategory = self.category.into();
-        match category {
-            BuildingCategory::ResourceKnightT1 => true,
-            BuildingCategory::ResourceKnightT2 => true,
-            BuildingCategory::ResourceKnightT3 => true,
-            BuildingCategory::ResourceCrossbowmanT1 => true,
-            BuildingCategory::ResourceCrossbowmanT2 => true,
-            BuildingCategory::ResourceCrossbowmanT3 => true,
-            BuildingCategory::ResourcePaladinT1 => true,
-            BuildingCategory::ResourcePaladinT2 => true,
-            BuildingCategory::ResourcePaladinT3 => true,
             _ => false,
         }
     }
@@ -365,24 +344,6 @@ pub impl BuildingPerksImpl of BuildingPerksTrait {
             structure_weight.deduct_capacity(capacity, false);
         }
         structure_weight.store(ref world, self.game_id, self.outer_entity_id);
-    }
-
-    fn _boost_explorer_capacity(self: Building, ref world: WorldStorage, add: bool) {
-        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(
-            ref world, self.game_id, self.outer_entity_id,
-        );
-        if add {
-            structure_base.troop_max_explorer_count += 1;
-        } else {
-            structure_base.troop_max_explorer_count -= 1;
-
-            // ensure explorer count does not exceed troop capacity
-            assert!(
-                structure_base.troop_explorer_count <= structure_base.troop_max_explorer_count,
-                "delete an explorer troop unit before removing this building",
-            );
-        }
-        StructureBaseStoreImpl::store(ref structure_base, ref world, self.game_id, self.outer_entity_id);
     }
 }
 

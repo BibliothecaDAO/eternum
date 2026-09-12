@@ -4,13 +4,16 @@ import type {
   WorldSpatialProjection,
   WorldSpatialProjectionChange,
 } from "@bibliothecadao/eternum/game-sync";
+import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 
 /** Pair discovery with movement from the same shared update, for players and spectators alike. */
 export function subscribeWorldmapTileChanges(
   projection: Pick<WorldSpatialProjection, "subscribe">,
   onTileChange: (change: TileSpatialProjectionChange, source?: WorldSpatialHex) => void,
+  layer: () => boolean,
 ): () => void {
-  return projection.subscribe((changes) => {
+  return projection.subscribe((published) => {
+    const changes = projectionChangesForLayer(published, layer());
     if (!changes.some((change) => change.kind === "tile")) return;
     const movementSources = collectMovementSources(changes);
     for (const change of changes) {
@@ -40,5 +43,5 @@ function collectMovementSources(
 }
 
 function hexKey(hex?: WorldSpatialHex): string {
-  return hex ? `${hex.col},${hex.row}` : "";
+  return hex ? `${hex.alt ? 1 : 0},${hex.col},${hex.row}` : "";
 }

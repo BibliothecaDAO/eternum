@@ -10,7 +10,10 @@ const mocks = vi.hoisted(() => ({
   getGameManifest: vi.fn(),
   getContractByName: vi.fn(),
   normalizeSelector: vi.fn(),
+  canIssueOrders: vi.fn(() => true),
 }));
+
+vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: mocks.canIssueOrders }));
 
 vi.mock("@/observability/observed-client-transaction", () => ({
   executeObservedClientTransaction: mocks.executeObservedClientTransaction,
@@ -46,6 +49,7 @@ import {
 
 describe("createActiveWorldBlitzHyperstructure", () => {
   beforeEach(() => {
+    mocks.canIssueOrders.mockReturnValue(true);
     mocks.executeObservedClientTransaction.mockReset();
     mocks.executeObservedClientTransaction.mockResolvedValue({ transaction_hash: "0xtx" });
     mocks.getActiveWorld.mockReset();
@@ -124,4 +128,20 @@ describe("createActiveWorldBlitzHyperstructure", () => {
       }),
     ).rejects.toThrow("Active world profile is unavailable for hyperstructure creation.");
   });
+});
+
+it("blocks creation before marking the tile pending or submitting a transaction", async () => {
+  mocks.canIssueOrders.mockReturnValue(false);
+  mocks.executeObservedClientTransaction.mockClear();
+  const hexCoords = { col: 12, row: 34 };
+  clearPendingReservedHyperstructureCreation(hexCoords);
+  const account = { address: "0xplayer", execute: vi.fn(), getNonce: vi.fn() };
+  await expect(submitActiveWorldBlitzHyperstructureCreation({ account, hexCoords })).rejects.toThrow(
+    "spectating or after the game ends",
+  );
+  await expect(createActiveWorldBlitzHyperstructure({ account, hexCoords })).rejects.toThrow(
+    "spectating or after the game ends",
+  );
+  expect(isPendingReservedHyperstructureCreation(hexCoords)).toBe(false);
+  expect(mocks.executeObservedClientTransaction).not.toHaveBeenCalled();
 });

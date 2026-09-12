@@ -13,6 +13,7 @@ import {
 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { RewardTileModel } from "./reward-tile-model";
+import { placedModelPhase, placedModelTime } from "../utils/placed-model-phase";
 
 function createAsset(): GLTF {
   const scene = new Group();
@@ -54,14 +55,15 @@ describe("instanced reward hierarchies", () => {
     model.instancedMeshes[0].getMatrixAt(0, actual);
     const position = new Vector3().setFromMatrixPosition(actual);
     expect(position.x).toBeCloseTo(13);
-    expect(position.y).toBeCloseTo(3);
+    const localTime = (seconds: number) => placedModelTime(seconds, placedModelPhase(10, -5)) % 2;
+    expect(position.y).toBeCloseTo(2 + localTime(1));
     expect(position.z).toBeCloseTo(-6.25);
     expect(new Vector3().setFromMatrixScale(actual).x).toBeCloseTo(0.5);
     model.updateAnimations(0.5);
     model.instancedMeshes[0].getMatrixAt(0, actual);
-    expect(new Vector3().setFromMatrixPosition(actual).y).toBeCloseTo(3.5);
-    expect(model.instancedMeshes[0].morphTexture).toBeNull();
-    expect(model.instancedMeshes[0].morphTargetInfluences).toEqual([0.75]);
+    expect(new Vector3().setFromMatrixPosition(actual).y).toBeCloseTo(2 + localTime(1.5));
+    const weights = model.instancedMeshes[0].morphTexture!.image.data as Float32Array;
+    expect(weights[1]).toBeCloseTo(localTime(1.5) / 2);
     model.dispose();
   });
   it("keeps sparse slots hidden and drops truncated placements before animation updates", () => {
@@ -75,7 +77,7 @@ describe("instanced reward hierarchies", () => {
     model.instancedMeshes[0].getMatrixAt(0, actual);
     expect(actual.determinant()).toBe(0);
     model.setCount(1);
-    expect(model.instancedMeshes[0].count).toBe(1);
+    expect(model.instancedMeshes[0].count).toBe(2);
     model.instancedMeshes[0].getMatrixAt(1, actual);
     expect(actual.determinant()).toBe(0);
     expect(() => model.setMatrixAt(4, new Matrix4())).toThrow(RangeError);
@@ -150,26 +152,34 @@ describe("reward animation uploads", () => {
     model.dispose();
   });
 
-  it("shares the current morph pose across sparse instances without capacity-sized textures", () => {
+  it("gives each rift its own transform and morph phase, stable across slot reuse", () => {
     const model = new RewardTileModel(createAsset(), 1000);
+    const secondPlacement = new Matrix4().makeTranslation(10, 0, 0);
     model.setMatrixAt(0, new Matrix4());
-    model.setMatrixAt(7, new Matrix4().makeTranslation(10, 0, 0));
+    model.setMatrixAt(7, secondPlacement);
     model.setCount(8);
     const mesh = model.instancedMeshes[0];
-    const influences = mesh.morphTargetInfluences;
-    expect(influences).toEqual([0.5]);
+    const texture = mesh.morphTexture!;
+    const weights = texture.image.data as Float32Array;
+    expect(weights[1]).not.toBe(weights[15]);
+    const before = weights[15];
     model.updateAnimations(0.5);
-    expect(mesh.morphTargetInfluences).toBe(influences);
-    expect(influences).toEqual([0.75]);
-    expect(mesh.morphTexture).toBeNull();
-    expect(mesh.count).toBe(8);
+    expect(mesh.morphTexture).toBe(texture);
+    expect(weights[15]).not.toBe(before);
+    const samePhase = weights[15];
+    model.removeInstance(7);
+    model.setMatrixAt(2, secondPlacement);
+    expect(weights[5]).toBe(samePhase);
+    expect(weights.byteLength).toBe(1000 * 2 * Float32Array.BYTES_PER_ELEMENT);
     model.setCount(0);
     expect(mesh.count).toBe(0);
     expect(mesh.visible).toBe(false);
     model.setMatrixAt(0, new Matrix4());
     model.setCount(1);
-    expect(mesh.count).toBe(1);
-    expect(mesh.morphTargetInfluences).toBe(influences);
+    expect(mesh.count).toBe(2);
+    const hidden = new Matrix4();
+    mesh.getMatrixAt(1, hidden);
+    expect(hidden.determinant()).toBe(0);
     model.dispose();
   });
 });
@@ -200,10 +210,12 @@ describe("reward part batching", () => {
     expect(batch.maxInstanceCount).toBe(initialCapacity);
     const matrix = new Matrix4();
     batch.getMatrixAt(2, matrix);
-    expect(new Vector3().setFromMatrixPosition(matrix).toArray()).toEqual([10, 1, 0]);
+    const beforeHeight = new Vector3().setFromMatrixPosition(matrix).y;
+    expect(new Vector3().setFromMatrixPosition(matrix).x).toBe(10);
     model.updateAnimations(0.5);
     batch.getMatrixAt(2, matrix);
-    expect(new Vector3().setFromMatrixPosition(matrix).toArray()).toEqual([10, 1.5, 0]);
+    expect(new Vector3().setFromMatrixPosition(matrix).y).not.toBe(beforeHeight);
+    expect(new Vector3().setFromMatrixPosition(matrix).x).toBe(10);
     batch.getMatrixAt(3, matrix);
     expect(new Vector3().setFromMatrixPosition(matrix).toArray()).toEqual([10, 3, 0]);
     model.removeInstance(0);

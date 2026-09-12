@@ -62,7 +62,6 @@ export interface WonderFaithDetail {
 
 const REALM_STRUCTURE_TYPE = 1;
 const VILLAGE_STRUCTURE_TYPE = 5;
-const HOLY_SITE_STRUCTURE_TYPE = 6;
 const OWNER_SHARE_PERCENT = 30;
 const FOLLOWER_SHARE_PERCENT = 70;
 
@@ -143,7 +142,6 @@ const ownerName = (rows: FaithReadModels, owner: unknown): string | null => {
 const structureTypeLabel = (structureType: number): string => {
   if (structureType === REALM_STRUCTURE_TYPE) return "Realm";
   if (structureType === VILLAGE_STRUCTURE_TYPE) return "Village";
-  if (structureType === HOLY_SITE_STRUCTURE_TYPE) return "Holy Site";
   return "Structure";
 };
 
@@ -169,7 +167,7 @@ const followerEntries = (rows: FaithReadModels, wonderId: bigint): WonderFaithFo
     const structure = rows.structures.find((candidate) => sameFelt(candidate.entity_id, structureId));
     if (!structure) return [];
     const structureType = integer(record(structure.base).category);
-    if (![REALM_STRUCTURE_TYPE, VILLAGE_STRUCTURE_TYPE, HOLY_SITE_STRUCTURE_TYPE].includes(structureType)) return [];
+    if (![REALM_STRUCTURE_TYPE, VILLAGE_STRUCTURE_TYPE].includes(structureType)) return [];
     const realmId = integer(record(structure.metadata).realm_id);
     const fpToWonderOwnerPerSec = integer(faithful.fp_to_wonder_owner_per_sec);
     const fpToFollowerOwnerPerSec = integer(faithful.fp_to_struct_owner_per_sec);

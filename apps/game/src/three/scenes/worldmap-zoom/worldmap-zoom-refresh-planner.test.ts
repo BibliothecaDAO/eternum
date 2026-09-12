@@ -3,6 +3,20 @@ import { describe, expect, it } from "vitest";
 import { createWorldmapZoomRefreshPlannerState, planWorldmapZoomRefresh } from "./worldmap-zoom-refresh-planner";
 
 describe("planWorldmapZoomRefresh", () => {
+  it("flushes deferred zoom work on release even when the camera has already reached its distance", () => {
+    const pending = planWorldmapZoomRefresh(createWorldmapZoomRefreshPlannerState(), {
+      distanceChanged: true,
+      shouldForceRefresh: true,
+      status: "zooming",
+    });
+    const released = planWorldmapZoomRefresh(pending.nextState, {
+      distanceChanged: false,
+      shouldForceRefresh: false,
+      status: "idle",
+    });
+    expect(released.immediateLevel).toBe("forced");
+    expect(released.nextState.pendingLevel).toBe("none");
+  });
   it("requests a debounced refresh for pan-only motion", () => {
     const result = planWorldmapZoomRefresh(createWorldmapZoomRefreshPlannerState(), {
       distanceChanged: false,

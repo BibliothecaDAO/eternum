@@ -236,6 +236,9 @@ export class WorldmapProceduralTerrain {
     { page: PreparedTerrainPage; revision: number; signature: string }
   >();
   private visibleCellCount = 0;
+  private surfacePresentation: "world" | "ethereal" = "world";
+  private groundTexturesReady = false;
+  private disposed = false;
 
   constructor() {
     this.object3d = this.terrain.object3d;
@@ -267,8 +270,16 @@ export class WorldmapProceduralTerrain {
     return this.terrain.loadProps();
   }
 
-  loadGroundTextures(): Promise<void> {
-    return this.terrain.loadGroundTextures();
+  async loadGroundTextures(): Promise<void> {
+    await this.terrain.loadGroundTextures();
+    if (this.disposed) return;
+    this.groundTexturesReady = true;
+    this.terrain.setSurfacePresentation(this.surfacePresentation);
+  }
+
+  setSurfacePresentation(presentation: "world" | "ethereal"): void {
+    this.surfacePresentation = presentation;
+    if (this.groundTexturesReady) this.terrain.setSurfacePresentation(presentation);
   }
 
   setPropLod(lod: TerrainPropLod): void {
@@ -347,6 +358,7 @@ export class WorldmapProceduralTerrain {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.cancelActiveRun?.();
     this.cancelActiveRun = null;
     this.presentationRevision += 1;

@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 
+import { configManager } from "../managers";
 import { type Army, CombatSimulator } from "./combat-simulator";
 
 vi.mock("../managers", () => ({
   configManager: {
-    getBiomeCombatBonus: () => 1,
+    getBiomeCombatBonus: vi.fn(() => 1),
   },
 }));
 
@@ -123,4 +124,62 @@ describe("CombatSimulator Combat v3 context", () => {
     expect(params.stamina_attack_req).toBe(50);
     expect(params.stamina_defense_req).toBe(40);
   });
+});
+
+describe("ethereal preview", () => {
+  it("assumes +10% outgoing damage independently for both sides", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+    const attacker = baseArmy(TroopType.Knight);
+    const defender = baseArmy(TroopType.Paladin);
+    const surface = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
+    const ethereal = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
+      defenderAlt: true,
+    });
+    expect(ethereal.attackerDamage).toBeCloseTo(surface.attackerDamage * 1.1);
+    expect(ethereal.defenderDamage).toBeCloseTo(surface.defenderDamage * 1.1);
+    const intoSurface = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
+      defenderBiome: BiomeType.Taiga,
+    });
+    expect(intoSurface.attackerDamage).toBeCloseTo(surface.attackerDamage);
+    expect(intoSurface.defenderDamage).toBeCloseTo(surface.defenderDamage);
+  });
+});
+
+it("keys ethereal preview dice on the defender layer, independently of the biome", () => {
+  const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+  const attacker = baseArmy(TroopType.Knight);
+  const defender = baseArmy(TroopType.Paladin);
+  const surface = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
+    defenderAlt: false,
+  });
+  const alternate = simulator.simulateBattle(0, attacker, defender, BiomeType.Grassland, [], [], { defenderAlt: true });
+  expect(alternate.attackerDamage).toBeCloseTo(surface.attackerDamage * 1.1);
+  expect(alternate.defenderDamage).toBeCloseTo(surface.defenderDamage * 1.1);
+});
+
+it("keeps ethereal terrain neutral even when the caller supplies a surface biome", () => {
+  const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+  const bonus = vi.mocked(configManager.getBiomeCombatBonus);
+  bonus.mockReturnValue(1.5);
+  try {
+    const surface = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Knight),
+      baseArmy(TroopType.Paladin),
+      BiomeType.Grassland,
+    );
+    const ethereal = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Knight),
+      baseArmy(TroopType.Paladin),
+      BiomeType.Grassland,
+      [],
+      [],
+      { defenderAlt: true },
+    );
+    expect(ethereal.attackerDamage).toBeCloseTo((surface.attackerDamage / 1.5) * 1.1);
+    expect(ethereal.defenderDamage).toBeCloseTo((surface.defenderDamage / 1.5) * 1.1);
+  } finally {
+    bonus.mockReturnValue(1);
+  }
 });

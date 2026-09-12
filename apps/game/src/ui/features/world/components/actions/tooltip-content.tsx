@@ -10,7 +10,6 @@ import { CreateArmyInfo } from "./create-army-info";
 import { formatAmount } from "./format-amount";
 import { HelpInfo } from "./help-info";
 import { InfoLabel } from "./info-label";
-import { QuestInfo } from "./quest-info";
 import { SpireTravelInfo } from "./spire-travel-info";
 import { StaminaSummary } from "./stamina-summary";
 
@@ -48,7 +47,6 @@ const ACTION_STATE_LABELS: Record<ActionType, string> = {
   [ActionType.Build]: "Construct",
   [ActionType.Help]: "Transfer",
   [ActionType.Explore]: "Explore",
-  [ActionType.Quest]: "Quest",
   [ActionType.Chest]: "Treasure",
   [ActionType.CreateArmy]: "Create Army",
 };
@@ -102,8 +100,6 @@ export const TooltipContent = memo(
               <StaminaSummary selectedEntityId={selectedEntityId} isExplored={isExplored} path={actionPath.slice(1)} />
             </InfoLabel>
           </div>
-        ) : actionType === ActionType.Quest ? (
-          <QuestInfo selectedEntityId={selectedEntityId} path={actionPath} />
         ) : actionType === ActionType.CreateArmy ? (
           <CreateArmyInfo />
         ) : actionType === ActionType.SpireTravel ? (

@@ -14,8 +14,6 @@ pub mod registrar {
 
 pub mod village {
     pub mod contracts;
-    #[cfg(test)]
-    mod tests;
 }
 
 pub mod structure {
@@ -53,8 +51,6 @@ pub mod name {
 }
 pub mod hyperstructure {
     pub mod contracts;
-    #[cfg(test)]
-    mod tests;
 }
 pub mod entry {
     pub mod contracts;
@@ -102,8 +98,6 @@ pub mod ownership {
 }
 pub mod season {
     pub mod contracts;
-    #[cfg(test)]
-    mod tests;
 }
 
 pub mod utils {
@@ -117,7 +111,6 @@ pub mod utils {
     pub mod donkey;
     pub mod erc20;
     pub mod faith;
-    pub mod holysite;
     pub mod hyperstructure;
     pub mod map;
     pub mod mine;
@@ -132,11 +125,6 @@ pub mod utils {
     pub mod structure;
     pub mod troop;
     pub mod village;
-}
-
-pub mod quest {
-    pub mod constants;
-    pub mod contracts;
 }
 
 pub mod prize_distribution {
@@ -166,9 +154,11 @@ pub mod bitcoin_mine {
 }
 
 pub mod spire {
-    pub mod contracts;
+    pub mod creation;
 }
 
 pub mod alt_movement {
     pub mod contracts;
+    #[cfg(test)]
+    mod tests;
 }

@@ -1,6 +1,5 @@
 import type { ActionType } from "@bibliothecadao/eternum";
 
-export type WorldmapSelectionVisualRole = "army" | "structure";
 export type WorldmapHoverVisualMode = "fill" | "outline";
 
 export interface HighlightLayerPalette {
@@ -13,12 +12,6 @@ export interface HoverVisualPalette {
   rimColor: number;
   intensity: number;
   visualMode: WorldmapHoverVisualMode;
-}
-
-export interface PulseVisualPalette {
-  baseColor: number;
-  pulseColor: number;
-  intensity: number;
 }
 
 const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
@@ -46,10 +39,6 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
     routeColor: 0xd3a746,
     endpointColor: 0xf0d08a,
   },
-  quest: {
-    routeColor: 0xf3df77,
-    endpointColor: 0xfff2b0,
-  },
   chest: {
     routeColor: 0xffcb4c,
     endpointColor: 0xffe49a,
@@ -70,27 +59,10 @@ const GENERIC_HOVER_PALETTE: HoverVisualPalette = {
   visualMode: "fill",
 };
 
-const SELECTION_PULSE_PALETTES: Record<WorldmapSelectionVisualRole, PulseVisualPalette> = {
-  army: {
-    baseColor: 0x37b6ff,
-    pulseColor: 0xe3fbff,
-    intensity: 0.28,
-  },
-  structure: {
-    baseColor: 0xff9c4d,
-    pulseColor: 0xffef9d,
-    intensity: 0.34,
-  },
-};
-
 export function resolveHighlightLayerPalette(
   actionType: ActionType | string | null | undefined,
 ): HighlightLayerPalette {
   return HIGHLIGHT_LAYER_PALETTES[actionType ?? "create_army"] ?? HIGHLIGHT_LAYER_PALETTES.create_army;
-}
-
-export function resolveSelectionPulsePalette(selectionRole: WorldmapSelectionVisualRole): PulseVisualPalette {
-  return SELECTION_PULSE_PALETTES[selectionRole];
 }
 
 export function resolveHoverVisualPalette(params: {

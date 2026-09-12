@@ -34,6 +34,114 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-12",
+    title: "Install Realms",
+    description:
+      "Install Realms on your device, retry when your connection returns, and apply game updates when you are ready.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Cleaner Game Activity",
+    description:
+      "Live activity and history now share event identities, so the same event appears only once when history loads.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Smoother Mobile Map Gestures",
+    description:
+      "Pan the world map with one finger and pinch to zoom around your fingers. Switching gestures stays steady, and interrupted touches no longer affect the next drag.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Map and game-end fixes",
+    description:
+      "Local zoom shows two rings of terrain. Tile details follow your view in a narrower panel, and ground outlines mark selected armies and structures. Finished games close gameplay and freeze the map, including dev games.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Frost and calmer banners",
+    description:
+      "End-game frost coats terrain, trees, structures, armies and chests. Preview it with Freeze map in the lab. Heraldry stays clear and banners ease into gusts.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-12",
+    title: "Blitz Entry Config Refresh",
+    description:
+      "Rejoining a game after a world update refreshes its configuration instead of using an outdated saved game.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Eternum Portals and Dev Settlement",
+    description:
+      "Six spires reveal their access hexes on both layers. In Eternum dev games, choose a realm number to preview its name and resources, settle additional realms, and place villages without passes.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Clean realm upgrades",
+    type: "fix",
+    description: "Upgrading a realm removes its previous model, including when a map refresh is interrupted.",
+  },
+  {
+    date: "2026-09-12",
+    title: "Travel between the layers",
+    type: "feature",
+    description: "Armies keep their selection after crossing a spire, and explore and fight on their current layer.",
+  },
+  {
+    date: "2026-09-12",
+    title: "Spires on the map",
+    type: "feature",
+    description: "Find animated spires on both layers and select their tiles to inspect a crossing.",
+  },
+  {
+    date: "2026-09-12",
+    title: "One map, two layers",
+    description:
+      "Switch between Surface and Ethereal to see each layer's terrain, armies, structures and chests in the world map.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Refined Realms and Clear Ownership",
+    description:
+      "Realm masonry grows paler and finer with each tier, with hand-laid roofs, a raised kingdom drawbridge, and full-height empire gates. Settlement supplies sit beside a clear entrance. Owned realms and villages fly green banners; all others fly red. Every realm hanging displays its order emblem. Chests are 30% smaller on the map. Game entry loads entity models as the selected world needs them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-12",
+    title: "Spire Preview and Rift Motion",
+    description:
+      "Preview levitating spires with engraved stone and spherical essence portals in the terrain lab. Essence rifts animate independently across the map.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-12",
+    title: "Retired quest map tiles",
+    description: "Legacy quest tiles and standalone holy sites no longer appear in game creation or map actions.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-12",
+    title: "Ethereal portals and dice",
+    description:
+      "Travel through seven public spires for Essence, contest guarded Bitcoin mines, and roll a d20 damage bonus in ethereal battles. Battle Lab lets you select the defending layer; ethereal previews assume +10% for both sides.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Mobile Selection Keeps the Map Clear",
+    description:
+      "Selecting an army or structure on a phone no longer opens the details sheet over the map. Tap the next hex or hold to move straight away, and open the Details tab when you want the full view.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-11",
     title: "Eternum Factory and Entry",
     description:

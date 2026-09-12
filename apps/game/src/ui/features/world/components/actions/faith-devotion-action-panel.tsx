@@ -9,6 +9,9 @@ import {
 import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { WonderFaithDetailModal, WonderFaithDetailPanel } from "@/ui/features/social/faith/wonder-faith-detail-panel";
 import Button from "@/ui/design-system/atoms/button";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
+import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
@@ -78,7 +81,6 @@ const resolveFaithSplitPercentages = (
 
 interface FaithDevotionActionPanelProps {
   structureEntityId: ID;
-  variant?: "compact" | "tab";
   className?: string;
 }
 
@@ -98,11 +100,8 @@ interface FaithSystemCallSet {
   }) => Promise<unknown>;
 }
 
-export const FaithDevotionActionPanel = ({
-  structureEntityId,
-  variant = "compact",
-  className,
-}: FaithDevotionActionPanelProps) => {
+/** Body of the structure panel's Faith section; the section supplies the title. */
+export const FaithDevotionActionPanel = ({ structureEntityId, className }: FaithDevotionActionPanelProps) => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
   const resolvedWorldMode = useResolvedWorldGameMode();
@@ -193,72 +192,37 @@ export const FaithDevotionActionPanel = ({
   if (!isEternumMode) {
     return null;
   }
-
   if (isLoadingStructure) {
     return (
-      <div className={cn("flex h-full items-center justify-center text-xxs text-gold/70", className)}>
-        <Loader className="h-4 w-4 animate-spin" />
+      <div className={cn("flex items-center gap-2", HUD_BODY_MUTED, className)}>
+        <Loader className="h-3.5 w-3.5 animate-spin" />
+        Loading structure
       </div>
     );
   }
-
   if (!structure) {
-    return (
-      <div className={cn("flex h-full items-center justify-center text-xxs text-gold/70 italic", className)}>
-        Structure data unavailable.
-      </div>
-    );
+    return <p className={cn(HUD_BODY_MUTED, className)}>Structure data unavailable.</p>;
   }
-
   if (!eligibleForDevotion) {
-    return (
-      <div className={cn("flex h-full flex-col justify-between gap-3", className)}>
-        <div className="flex flex-col gap-1 text-left">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Faith</span>
-          <span className={cn("font-semibold text-gold", variant === "compact" ? "text-sm" : "text-base")}>
-            Devotion
-          </span>
-          <p className="text-xxs text-gold/70">Only Realms and Villages can be devoted to a Wonder.</p>
-        </div>
-      </div>
-    );
+    return <p className={cn(HUD_BODY_MUTED, className)}>Only realms and villages can devote themselves to a wonder.</p>;
   }
-
   if (isWonderStructure) {
-    const isCompactVariant = variant === "compact";
-
     return (
-      <div className={cn("flex h-full min-h-0 flex-col", isCompactVariant ? "gap-2" : "gap-3", className)}>
-        <div className="flex flex-col gap-1 text-left">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Faith</span>
-          <span className={cn("font-semibold text-gold", isCompactVariant ? "text-sm" : "text-base")}>
-            Wonder Details
-          </span>
-        </div>
-
+      <div className={cn("flex flex-col gap-2", className)}>
         <WonderFaithDetailPanel
           wonderId={structureEntityId}
           fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
-          compact={isCompactVariant}
-          className={cn("min-h-0", isCompactVariant ? "flex-none" : "flex-1")}
+          compact
+          className="min-h-0 flex-none"
         />
-
-        {isCompactVariant && (
-          <Button
-            size="xs"
-            variant="outline"
-            forceUppercase={false}
-            className="w-full shrink-0 border-gold/40 bg-gold/10 text-gold hover:bg-gold/15"
-            onClick={openWonderDetailModal}
-          >
-            Open Wonder Detail
-          </Button>
-        )}
+        <div>
+          <button type="button" className={HUD_PILL_BUTTON} onClick={openWonderDetailModal}>
+            Open wonder detail
+          </button>
+        </div>
       </div>
     );
   }
-
-  const buttonLabel = devotionStatus ? "Change Devotion" : "Devote to Wonder";
   const canDevote = isMine && !isLoadingWonders;
   const structureOwnerFpPerSec = devotionStatus?.fpToStructureOwnerPerSec ?? 0;
   const wonderOwnerFpPerSec = devotionStatus?.fpToWonderOwnerPerSec ?? 0;
@@ -266,96 +230,62 @@ export const FaithDevotionActionPanel = ({
     structureOwnerFpPerSec,
     wonderOwnerFpPerSec,
   );
-
   return (
-    <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
-      <div className="flex flex-col gap-1 text-left">
-        <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Faith</span>
-        <span className={cn("font-semibold text-gold", variant === "compact" ? "text-sm" : "text-base")}>Devotion</span>
-      </div>
-
-      <div className="rounded-md border border-gold/25 bg-black/35 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Devotion</span>
-          {isLoadingDevotionStatus && <Loader className="h-3.5 w-3.5 animate-spin text-gold/60" />}
-        </div>
-        <div
-          className={cn(
-            "mt-2 inline-flex max-w-full items-center rounded-md border px-2 py-1 text-xs font-semibold",
-            devotionStatus ? "border-gold/35 bg-gold/10 text-gold" : "border-gold/20 bg-black/30 text-gold/75",
-          )}
-        >
-          <span className="truncate">{devotionStatus ? `Devoted to ${currentWonderLabel}` : "Not devoted yet"}</span>
-        </div>
-
-        {devotionStatus ? (
-          <>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <DevotionSplitStat label="You" value={`${formatFaithPerSecond(structureOwnerFpPerSec)} FP/s`} />
-              <DevotionSplitStat label="Owner" value={`${formatFaithPerSecond(wonderOwnerFpPerSec)} FP/s`} />
-            </div>
-
-            <div className="mt-2">
-              <div className="h-1.5 overflow-hidden rounded-full border border-gold/25 bg-black/40">
-                <div className="h-full bg-gold/75" style={{ width: `${structureOwnerPercent}%` }} />
-              </div>
-              <div className="mt-1 flex items-center justify-between text-[10px] uppercase tracking-[0.12em] text-gold/65">
-                <span>You {structureOwnerPercent}%</span>
-                <span>Owner {wonderOwnerPercent}%</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <p className="mt-3 text-xxs text-gold/65">
-            Choose a Wonder to start generating Faith Points for both you and the Wonder owner.
-          </p>
-        )}
-      </div>
-
+    <div className={cn("flex flex-col gap-2.5", className)}>
       {devotionStatus ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            size="xs"
-            variant="outline"
-            forceUppercase={false}
-            className="border-gold/40 bg-gold/10 text-gold hover:bg-gold/15 disabled:cursor-not-allowed disabled:opacity-60"
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <span className={HUD_LABEL}>Devoted to</span>
+            <button
+              type="button"
+              className={cn(HUD_VALUE, "truncate underline-offset-2 hover:underline")}
+              onClick={openCurrentWonderDetailModal}
+              title="Open wonder detail"
+            >
+              {currentWonderLabel}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <DevotionSplitStat
+              label={`You · ${structureOwnerPercent}%`}
+              value={`${formatFaithPerSecond(structureOwnerFpPerSec)} faith/s`}
+            />
+            <DevotionSplitStat
+              label={`Wonder owner · ${wonderOwnerPercent}%`}
+              value={`${formatFaithPerSecond(wonderOwnerFpPerSec)} faith/s`}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <span className={HUD_LABEL}>Not devoted</span>
+          <p className={HUD_BODY}>
+            Devote this structure to a wonder and both you and the wonder's owner earn faith every second.
+          </p>
+        </div>
+      )}
+      {isMine ? (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={cn(HUD_PILL_BUTTON, !canDevote && "cursor-not-allowed opacity-60")}
             disabled={!canDevote}
             onClick={openDevotionModal}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            <span>{isMine ? buttonLabel : "Only owner can devote"}</span>
-          </Button>
-          <Button
-            size="xs"
-            variant="outline"
-            forceUppercase={false}
-            className="border-gold/30 bg-black/30 text-gold/90 hover:bg-gold/10"
-            onClick={openCurrentWonderDetailModal}
-          >
-            View Wonder
-          </Button>
+            {devotionStatus ? "Change devotion" : "Devote to a wonder"}
+          </button>
         </div>
       ) : (
-        <Button
-          size="xs"
-          variant="outline"
-          forceUppercase={false}
-          className="w-full border-gold/40 bg-gold/10 text-gold hover:bg-gold/15 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={!canDevote}
-          onClick={openDevotionModal}
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>{isMine ? buttonLabel : "Only owner can devote"}</span>
-        </Button>
+        <p className={HUD_BODY_MUTED}>Only the owner can change its devotion.</p>
       )}
     </div>
   );
 };
-
 const DevotionSplitStat = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded border border-gold/20 bg-black/30 px-2 py-1.5">
-    <div className="text-[10px] uppercase tracking-[0.16em] text-gold/60">{label}</div>
-    <div className="mt-1 font-mono text-sm font-semibold text-gold">{value}</div>
+  <div className={cn(REQUIREMENT_CHIP, "flex-col items-start gap-0.5")}>
+    <span className={HUD_CUE}>{label}</span>
+    <span className={HUD_VALUE}>{value}</span>
   </div>
 );
 

@@ -100,6 +100,7 @@ const startSync = async (
       entityModels: syncModelNames("gamewide-entity"),
       eventModels: syncModelNames("global-event"),
       gameId: input.gameId,
+      worldAddress: input.world.worldAddress,
       observer: input.observer,
       scheduler: input.scheduler,
       setup: setupResult,

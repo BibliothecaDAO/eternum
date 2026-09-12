@@ -196,14 +196,9 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
     tileOccupier === TileOccupier.FragmentMine ||
     tileOccupier === TileOccupier.Village ||
     tileOccupier === TileOccupier.Bank ||
-    tileOccupier === TileOccupier.HolySite ||
     tileOccupier === TileOccupier.Camp ||
     tileOccupier === TileOccupier.BitcoinMine
   );
-};
-
-export const isTileOccupierQuest = (tileOccupier: TileOccupier) => {
-  return tileOccupier === TileOccupier.Quest;
 };
 
 export const isTileOccupierChest = (tileOccupier: TileOccupier) => {

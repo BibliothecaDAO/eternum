@@ -21,13 +21,15 @@
     "coverage:three": "vitest run --coverage src/three",
     "compress:weather": "node ./scripts/compress-weather-textures.mjs",
     "compress:models": "node ./scripts/compress-models.mjs",
+    "verify:structures": "node ./scripts/optimize-structure-models.mjs --verify settlements/settlement.glb settlements/city.glb settlements/kingdom.glb settlements/empire.glb ethereal/spire.glb",
+    "optimize:realms": "node ./scripts/optimize-structure-models.mjs settlements/settlement.glb settlements/city.glb settlements/kingdom.glb settlements/empire.glb",
+    "optimize:spire": "node ./scripts/optimize-structure-models.mjs ethereal/spire.glb",
     "optimize:reward-tiles": "node ./scripts/reward-tiles/optimize-reward-tiles.mjs",
     "optimize:fleet": "node ./scripts/fleet/optimize-fleet.mjs",
     "verify:reward-tiles": "node ./scripts/reward-tiles/verify-reward-tiles.mjs",
     "dev": "vite",
     "dev:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-auto vite",
     "dev:webgpu:force-webgl": "VITE_PUBLIC_RENDERER_BUILD_MODE=webgpu-force-webgl vite",
-    "generate-pwa-assets": "pwa-assets-generator",
     "format": "npx prettier --write . --root=..",
     "format:check": "npx prettier --check . --root=..",
     "lint": "eslint .",
@@ -49,7 +51,8 @@
     "typecheck:character-gym": "tsc --pretty false -p tsconfig.character-gym.json",
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
-    "typecheck": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc --pretty false"
+    "typecheck": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc --pretty false",
+    "verify:pwa": "node scripts/verify-pwa-build.mjs dist"
   },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",
@@ -126,6 +129,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "2.1.9",
     "@vitest/ui": "2.1.9",
+    "acorn": "8.15.0",
     "depcheck": "^1.4.7",
     "draco3dgltf": "1.5.7",
     "eslint-config-love": "^114.0.0",
@@ -143,6 +147,7 @@
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "2.1.9",
+    "workbox-precaching": "7.4.0",
     "workbox-window": "^7.3.0"
   }
 }

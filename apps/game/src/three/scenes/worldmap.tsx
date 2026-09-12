@@ -1,3 +1,7 @@
+import { followArmyLayerChange } from "./worldmap-layer-follow";
+import { TileOccupier } from "@bibliothecadao/types";
+import { SpireManager } from "../managers/spire-manager";
+import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
@@ -33,7 +37,6 @@ import { BattleDirectionManager } from "@/three/managers/battle-direction-manage
 import { ChestManager } from "@/three/managers/chest-manager";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
-import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import {
   FrameBudgetWorkQueue,
@@ -60,6 +63,7 @@ import {
   type WorldSpatialHex,
   type TileSpatialRenderable,
   type WorldSpatialProjection,
+  projectionChangesForLayer,
 } from "@bibliothecadao/eternum/game-sync";
 import {
   gameWorkerManager,
@@ -155,7 +159,7 @@ import {
   type WorldmapHoverReconciliationSnapshot,
 } from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
+import { resolveHoverVisualPalette } from "../managers/worldmap-interaction-palette";
 import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -270,14 +274,8 @@ import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visib
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
 import {
   normalizeWorldmapWheelDelta,
-  resolveWorldmapPinchZoomDelta,
   resolveWorldmapWheelPixelDelta,
 } from "./worldmap-zoom/worldmap-zoom-input-normalizer";
-import {
-  TOUCH_POINTER_EVENT_TYPES,
-  TouchGestureRecognizer,
-  toTouchPointerSample,
-} from "@/three/utils/touch-gesture-recognizer";
 import {
   createWorldmapZoomRefreshPlannerState,
   planWorldmapZoomRefresh,
@@ -668,21 +666,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private wheelHandler: ((event: WheelEvent) => void) | null = null;
   private zoomInputTarget: HTMLElement | null = null;
-  private readonly pinchZoomRecognizer = new TouchGestureRecognizer((gesture) => {
-    if (gesture.kind !== "pinch") {
-      return;
-    }
-    this.applyWorldmapZoomIntent({
-      type: "continuous_delta",
-      delta: resolveWorldmapPinchZoomDelta({ scale: gesture.scale }),
-    });
-  });
-  private readonly pinchPointerHandler = (event: PointerEvent) => {
-    const sample = toTouchPointerSample(event);
-    if (sample) {
-      this.pinchZoomRecognizer.feed(sample);
-    }
-  };
   private readonly zoomCoordinator = new WorldmapZoomCoordinator({
     initialDistance: this.getCurrentCameraDistance(),
     minDistance: WORLDMAP_CAMERA_ZOOM.minDistance,
@@ -849,7 +832,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private selectedHexManager!: SelectedHexManager;
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
-  private selectionPulseManager!: SelectionPulseManager;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private readonly handleTerrainViewportResize = () => {
     // Renderer resize listeners update projection matrices during the same event dispatch.
@@ -975,7 +957,11 @@ export default class WorldmapScene extends WarpTravel {
   private structureLabelsGroup!: Group;
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
+  private spireManager!: SpireManager;
+  private spireLabelsGroup!: Group;
 
+  private renderedMapLayer?: boolean;
+  private layerRevision = 0;
   private storeSubscriptions: Array<() => void> = [];
 
   dojo: SetupResult;
@@ -1152,6 +1138,8 @@ export default class WorldmapScene extends WarpTravel {
     this.structureLabelsGroup.name = "StructureLabelsGroup";
     this.chestLabelsGroup = new Group();
     this.chestLabelsGroup.name = "ChestLabelsGroup";
+    this.spireLabelsGroup = new Group();
+    this.spireLabelsGroup.name = "SpireLabelsGroup";
 
     this.armyManager = new ArmyManager(
       this.scene,
@@ -1211,6 +1199,13 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.worldSpatialProjection,
       this.getTerrainSurface(),
+    );
+    this.spireManager = new SpireManager(
+      this.scene,
+      this.worldSpatialProjection,
+      this.spireLabelsGroup,
+      this.getTerrainSurface(),
+      this.markLabelsDirty,
     );
     this.chestManager = new ChestManager(
       this.scene,
@@ -1308,10 +1303,16 @@ export default class WorldmapScene extends WarpTravel {
 
   private bindWorldSpatialProjectionLifecycle(): void {
     this.seedStrategicMarkers();
-    const unsubscribeTiles = subscribeWorldmapTileChanges(this.worldSpatialProjection, (change, source) => {
-      this.applyProjectedTileChange(change, source);
-    });
-    const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((changes) => {
+    const unsubscribeTiles = subscribeWorldmapTileChanges(
+      this.worldSpatialProjection,
+      (change, source) => {
+        this.applyProjectedTileChange(change, source);
+      },
+      activeMapLayer,
+    );
+    const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((published) => {
+      const changes = projectionChangesForLayer(published, activeMapLayer());
+      if (changes.length === 0) return;
       this.syncProjectedStructurePathfinding(changes);
       changes.forEach(({ previous, current }) => {
         if (previous?.reserved && !current?.reserved) {
@@ -1331,7 +1332,10 @@ export default class WorldmapScene extends WarpTravel {
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
       structureComponent: this.dojo.components.Structure,
     });
-    const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
+    const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((published) => {
+      this.followSelectedArmyLayer(published);
+      const changes = projectionChangesForLayer(published, activeMapLayer());
+      if (changes.length === 0) return;
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
@@ -1361,8 +1365,9 @@ export default class WorldmapScene extends WarpTravel {
 
   /** The far band's subjects: every structure and army in the world, coloured by owner, from the projection. */
   private seedStrategicMarkers(): void {
-    this.worldSpatialProjection.getStructures().forEach((structure) => this.writeStructureMarker(structure));
-    this.worldSpatialProjection.getArmies().forEach((army) => this.writeArmyMarker(army));
+    const layer = activeMapLayer();
+    this.worldSpatialProjection.getStructures(layer).forEach((structure) => this.writeStructureMarker(structure));
+    this.worldSpatialProjection.getArmies(layer).forEach((army) => this.writeArmyMarker(army));
     this.commitStrategicMarkers();
   }
 
@@ -1378,9 +1383,9 @@ export default class WorldmapScene extends WarpTravel {
 
   private refreshStructureMarkersForEntity(entityId: ID): void {
     const structure = this.worldSpatialProjection.getStructure(entityId);
-    if (!structure) return;
+    if (!structure || structure.hexCoords.alt !== activeMapLayer()) return;
     this.writeStructureMarker(structure);
-    this.worldSpatialProjection.getArmies().forEach((army) => {
+    this.worldSpatialProjection.getArmies(activeMapLayer()).forEach((army) => {
       if (this.getArmyOwnerStructureId(army.entityId) === entityId) this.writeArmyMarker(army);
     });
     this.commitStrategicMarkers();
@@ -1502,6 +1507,22 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
+  private followSelectedArmyLayer(changes: readonly ArmySpatialProjectionChange[]): void {
+    void followArmyLayerChange({
+      changes,
+      getSelectedId: () => getLiveWorldmapEntityActions().selectedEntityId,
+      getLayer: activeMapLayer,
+      isSceneActive: () => !this.isSwitchedOff,
+      setLayer: (alt) => useUIStore.getState().setMapLayer(alt),
+      finishMovement: (entityId) => {
+        this.completePendingArmyMovementVisuals(entityId);
+        this.disposePendingMovementVisualLifecycle(entityId);
+      },
+      refresh: () => this.updateVisibleChunks(true, { reason: "default", triggerReason: "spire_crossing" }),
+      select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId) ?? 0n),
+    }).catch((error) => console.error("[WorldmapScene] Failed to follow army crossing", error));
+  }
+
   private handleProjectedArmyChanges(changes: readonly ArmySpatialProjectionChange[]): void {
     changes.forEach(({ entityId, current }) => {
       if (!current) {
@@ -1576,6 +1597,7 @@ export default class WorldmapScene extends WarpTravel {
     this.resourceFXManager.setVisible(ladder.fx);
     this.combatPresentation?.setVisible(ladder.fx);
     this.reservedHyperstructureManager.setModelVisible(ladder.structureModels);
+    this.spireManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
     this.commitStrategicMarkers();
     this.refreshLabelPriorityContext();
@@ -1667,7 +1689,6 @@ export default class WorldmapScene extends WarpTravel {
       selectedHexManager: this.selectedHexManager,
       dojoComponents: this.dojo.components,
     });
-    this.selectionPulseManager = new SelectionPulseManager(this.scene, this.getTerrainSurface());
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
@@ -1788,7 +1809,7 @@ export default class WorldmapScene extends WarpTravel {
     this.attachWorldmapZoomInput();
   }
 
-  /** Wheel and touch pinch share the zoom coordinator; MapControls' own zoom stays disabled. */
+  /** Desktop wheel uses easing; the shared touch controller applies direct camera updates. */
   private attachWorldmapZoomInput(): void {
     if (!this.wheelHandler) {
       return;
@@ -1800,9 +1821,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     canvas.addEventListener("wheel", this.wheelHandler, { passive: false });
-    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
-      canvas.addEventListener(pointerEventType, this.pinchPointerHandler);
-    }
     this.zoomInputTarget = canvas;
   }
 
@@ -1816,10 +1834,6 @@ export default class WorldmapScene extends WarpTravel {
     if (this.wheelHandler) {
       target.removeEventListener("wheel", this.wheelHandler);
     }
-    for (const pointerEventType of TOUCH_POINTER_EVENT_TYPES) {
-      target.removeEventListener(pointerEventType, this.pinchPointerHandler);
-    }
-    this.pinchZoomRecognizer.reset();
   }
 
   private applyDirectionalZoomIntent(zoomOut: boolean) {
@@ -1829,6 +1843,20 @@ export default class WorldmapScene extends WarpTravel {
 
   private applyWorldmapZoomIntent(intent: ZoomIntent): void {
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.applyIntent(intent));
+  }
+
+  protected override beginTouchNavigation(): void {
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.beginDirectManipulation(this.getCurrentCameraDistance()));
+  }
+
+  protected override applyTouchZoomDistance(distance: number): void {
+    const snapshot = this.zoomCoordinator.applyDirectDistance(distance);
+    this.positionWorldmapCameraAtDistance(snapshot.actualDistance);
+    this.publishWorldmapZoomSnapshot(snapshot);
+  }
+
+  protected override endTouchNavigation(): void {
+    this.zoomCoordinator.endDirectManipulation();
   }
 
   public override getCurrentCameraView(): CameraView {
@@ -1894,6 +1922,8 @@ export default class WorldmapScene extends WarpTravel {
     }
     incrementWorldmapRenderCounter("zoomTransitionsCompleted");
     this.persistSettledWorldmapZoom(settledDistance);
+    // Direct manipulation ends without another camera move to flush deferred terrain work.
+    if (this.zoomRefreshPlannerState.pendingLevel !== "none") this.handleWorldmapControlsChange();
   }
 
   private persistSettledWorldmapZoom(distance: number): void {
@@ -1965,6 +1995,11 @@ export default class WorldmapScene extends WarpTravel {
 
   /** Places the camera on the worldmap's fixed azimuth at `distance`, pitched per the zoom profile. */
   private placeWorldmapCameraAtDistance(distance: number): void {
+    this.positionWorldmapCameraAtDistance(distance);
+    this.notifyControlsChanged();
+  }
+
+  private positionWorldmapCameraAtDistance(distance: number): void {
     const pitch = resolveWorldmapCameraPitchRadians(distance);
     this.cameraAngle = pitch;
     this.strategicMarkers.setViewPitch(pitch);
@@ -1973,7 +2008,6 @@ export default class WorldmapScene extends WarpTravel {
       this.controls.target.y + Math.sin(pitch) * distance,
       this.controls.target.z + Math.cos(pitch) * distance,
     );
-    this.notifyControlsChanged();
   }
 
   private focusCameraOnEvent(col: number, row: number, message: string) {
@@ -2022,7 +2056,7 @@ export default class WorldmapScene extends WarpTravel {
   private getArmyAtHex(hexCoords: HexPosition): HexEntityInfo | undefined {
     const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const renderable = this.worldSpatialProjection
-      .getArmiesAtHex({ col: contract.x, row: contract.y })
+      .getArmiesAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
       .find(({ entityId }) => {
         const pendingPosition = this.getArmyDisplayPosition(entityId);
         return pendingPosition?.col === hexCoords.col && pendingPosition.row === hexCoords.row;
@@ -2231,6 +2265,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
+    if (!canIssueOrders()) return;
     if (isPendingReservedHyperstructureCreation(hexCoords)) {
       return;
     }
@@ -2261,7 +2296,7 @@ export default class WorldmapScene extends WarpTravel {
   private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
     const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return this.worldSpatialProjection
-      .getStructuresAtHex({ col: contractPosition.x, row: contractPosition.y })
+      .getStructuresAtHex({ alt: activeMapLayer(), col: contractPosition.x, row: contractPosition.y })
       .some((structure) => structure.reserved);
   }
 
@@ -2291,12 +2326,13 @@ export default class WorldmapScene extends WarpTravel {
     const contractHex = position.getContract();
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
     const projectedStructure = this.worldSpatialProjection
-      .getStructuresAtHex({ col: contractHex.x, row: contractHex.y })
+      .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
       .find((candidate) => !candidate.reserved);
     const structure = projectedStructure
       ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) ?? 0n }
       : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
+      alt: activeMapLayer(),
       col: contractHex.x,
       row: contractHex.y,
     })[0];
@@ -2605,7 +2641,8 @@ export default class WorldmapScene extends WarpTravel {
       playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
-      const targetHex = actionPath[actionPath.length - 1].hex;
+      const targetHex =
+        actionType === ActionType.SpireTravel ? actionPath[0].hex : actionPath[actionPath.length - 1].hex;
       const exploreLatencyActionId =
         actionType === ActionType.Explore
           ? beginClientActionLatency({
@@ -2825,6 +2862,7 @@ export default class WorldmapScene extends WarpTravel {
       type: target.army ? ActorType.Explorer : ActorType.Structure,
       id: target.army?.id || target.structure?.id || 0,
       hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+      alt: activeMapLayer(),
     };
 
     this.openTargetActionSurface(targetHex, {
@@ -2848,10 +2886,12 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const selected = this.getHexagonEntity(selectedHex);
-    const etherealTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+    const attacker = this.worldSpatialProjection.getArmy(selectedEntityId);
+    if (!attacker) return;
     const traversalAction = resolveSpireTraversalAction({
-      targetHex,
-      etherealTile,
+      attackerHex: { col: attacker.hexCoords.col, row: attacker.hexCoords.row },
+      attackerAlt: attacker.hexCoords.alt,
+      getTile: (alt, col, row) => getTileAt(this.dojo.components, alt, col, row),
     });
 
     if (traversalAction.kind === "attack") {
@@ -2863,8 +2903,8 @@ export default class WorldmapScene extends WarpTravel {
       const targetSummary = {
         type: ActorType.Explorer,
         id: traversalAction.targetArmyId,
-        hex: new Position({ x: traversalAction.targetHex.col, y: traversalAction.targetHex.row }).getContract(),
-        alt: true,
+        hex: { x: traversalAction.targetHex.col, y: traversalAction.targetHex.row },
+        alt: traversalAction.defenderAlt,
       };
 
       this.openTargetActionSurface(targetHex, {
@@ -2883,7 +2923,11 @@ export default class WorldmapScene extends WarpTravel {
     this.openTargetActionSurface(targetHex, {
       id: "spire-travel",
       content: (
-        <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />
+        <SpireTravelModal
+          explorerId={selectedEntityId}
+          essenceCost={configManager.getSpireTravelEssenceCost()}
+          onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)}
+        />
       ),
     });
   }
@@ -3058,7 +3102,7 @@ export default class WorldmapScene extends WarpTravel {
 
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
-      const tile = this.worldSpatialProjection.getTileAtHex(destination);
+      const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
       if (ActionPaths.getActionType(path) === ActionType.CreateArmy && (!tile || Number(tile.occupierId) !== 0)) {
         actionPaths.getPaths().delete(key);
       }
@@ -3076,8 +3120,7 @@ export default class WorldmapScene extends WarpTravel {
       spectator: !canIssueOrders(),
     });
     const position = getWorldPositionForHex(hex);
-    this.selectionPulseManager.showSelection(position.x, position.z, structureId);
-    this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("structure"));
+    this.selectedHexManager.setPosition(position.x, position.z);
   }
 
   private clearEvictedArmyMovementVisuals(entityId: ID): void {
@@ -3316,7 +3359,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (this.isArmyMovementActionUnavailable(selectedEntityId)) {
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
-      this.showSelectedArmyPulse(selectedEntityId);
+      this.showSelectedArmyTile(selectedEntityId);
       return true;
     }
 
@@ -3336,7 +3379,7 @@ export default class WorldmapScene extends WarpTravel {
         console.error(`[Worldmap] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
       }
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
-      this.showSelectedArmyPulse(selectedEntityId);
+      this.showSelectedArmyTile(selectedEntityId);
       return true;
     }
 
@@ -3356,14 +3399,14 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
-    this.showSelectedArmyPulse(selectedEntityId);
+    this.showSelectedArmyTile(selectedEntityId);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
   }
 
   private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getChests().forEach((chest) => {
+    this.worldSpatialProjection.getChests(activeMapLayer()).forEach((chest) => {
       const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
@@ -3374,7 +3417,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedExploredTileIndex(): Map<number, Map<number, BiomeType>> {
     const index = new Map<number, Map<number, BiomeType>>();
-    this.worldSpatialProjection.getTiles().forEach((tile) => {
+    this.worldSpatialProjection.getTiles(activeMapLayer()).forEach((tile) => {
       const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, BiomeType>();
       row.set(normalized.y, requireBiomeTypeFromId(tile.biome));
@@ -3385,7 +3428,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedArmyActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getArmies().forEach(({ entityId }) => {
+    this.worldSpatialProjection.getArmies(activeMapLayer()).forEach(({ entityId }) => {
       const position = this.getArmyDisplayPosition(entityId);
       if (!position) return;
       const row = index.get(position.col) ?? new Map<number, HexEntityInfo>();
@@ -3397,7 +3440,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedStructureActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getStructures().forEach((structure) => {
+    this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
       if (structure.reserved) return;
 
       const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
@@ -3423,12 +3466,11 @@ export default class WorldmapScene extends WarpTravel {
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
   }
 
-  private showSelectedArmyPulse(selectedEntityId: ID): void {
+  private showSelectedArmyTile(selectedEntityId: ID): void {
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
-      this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
-      this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("army"));
+      this.selectedHexManager.setPosition(worldPos.x, worldPos.z);
     } else {
       if (import.meta.env.DEV) {
         console.warn(`[Worldmap] No projected army position found for ${selectedEntityId}`);
@@ -3552,7 +3594,6 @@ export default class WorldmapScene extends WarpTravel {
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
-    this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.attachWorldmapManagerLabels();
   }
@@ -3594,15 +3635,19 @@ export default class WorldmapScene extends WarpTravel {
       const contract = new Position({ x: col, y: row }).getContract();
       const hex = { col: contract.x, row: contract.y };
       return (
-        this.worldSpatialProjection.getStructuresAtHex(hex).length > 0 ||
-        this.worldSpatialProjection.getChestsAtHex(hex).length > 0
+        this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
+        this.worldSpatialProjection.getChestsAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
+        this.worldSpatialProjection.getTileAtHex({ ...hex, alt: activeMapLayer() })?.occupierType === TileOccupier.Spire
       );
     });
   }
 
   private isProjectedStructureHex(col: number, row: number): boolean {
     const contract = new Position({ x: col, y: row }).getContract();
-    return this.worldSpatialProjection.getStructuresAtHex({ col: contract.x, row: contract.y }).length > 0;
+    return (
+      this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
+        .length > 0
+    );
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
@@ -3653,7 +3698,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getWorldmapLabelGroups(): Group[] {
-    return [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup];
+    return [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup, this.spireLabelsGroup];
   }
 
   private attachWorldmapLabelGroupsToScene(): void {
@@ -3944,10 +3989,8 @@ export default class WorldmapScene extends WarpTravel {
       pinnedRenderAreas: this.pinnedRenderAreas,
       hydratedChunkRefreshes: this.hydratedChunkRefreshes,
       hydratedRefreshSuppressionAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
-      nextSceneName: nextSceneName,
       clearStreamingWork: () => this.clearStreamingWorkState(),
       clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
-      releaseInactiveResources: () => this.clearCache(),
     });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
@@ -5584,7 +5627,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.terrainContent.capture({
       cells,
       getProjectedBiome: (col, row) => {
-        const tile = this.worldSpatialProjection.getTileAtHex({ col: col + center, row: row + center });
+        const tile = this.worldSpatialProjection.getTileAtHex({
+          alt: activeMapLayer(),
+          col: col + center,
+          row: row + center,
+        });
         return tile ? requireBiomeTypeFromId(tile.biome) : undefined;
       },
       isOccupied: (col, row) => this.isProjectedStructureHex(col, row),
@@ -6223,6 +6270,7 @@ export default class WorldmapScene extends WarpTravel {
   private toContractBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }) {
     const feltCenter = FELT_CENTER();
     return {
+      alt: activeMapLayer(),
       minCol: bounds.minCol + feltCenter,
       maxCol: bounds.maxCol + feltCenter,
       minRow: bounds.minRow + feltCenter,
@@ -6662,6 +6710,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     incrementWorldmapRenderCounter("updateVisibleChunksCalls");
     const updateStartedAt = performance.now();
+    const layerRevision = this.layerRevision;
 
     try {
       await waitForChunkTransitionToSettle(
@@ -6670,6 +6719,7 @@ export default class WorldmapScene extends WarpTravel {
         { isSwitchedOff: () => this.isSwitchedOff },
       );
 
+      if (layerRevision !== this.layerRevision) return false;
       const focusPoint = this.getCameraGroundIntersection().clone();
       const triggerReason = options.triggerReason;
       const chunkDecision = resolveWarpTravelVisibleChunkDecision({
@@ -7403,16 +7453,20 @@ export default class WorldmapScene extends WarpTravel {
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
     this.compactEntityLabelRenderer.updateCamera(this.camera);
-    runWithFrameWorkOwner("armies:update", () => this.armyManager.update(deltaTime, animationContext));
-    this.syncTerrainMovementInteractions();
-    this.proceduralTerrain.update(deltaTime);
-    this.combatPresentation?.update(deltaTime);
-    this.fxManager.update(deltaTime);
-    this.resourceFXManager.update(deltaTime);
-    this.selectionPulseManager.update(deltaTime);
-    this.selectedHexManager.update(deltaTime);
-    this.structureManager.updateAnimations(deltaTime, animationContext);
-    this.chestManager.update(deltaTime);
+    runWithFrameWorkOwner("armies:update", () =>
+      this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
+    );
+    this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
+    if (!this.animationsPaused) {
+      this.spireManager.update(deltaTime);
+      this.syncTerrainMovementInteractions();
+      this.proceduralTerrain.update(deltaTime);
+      this.combatPresentation?.update(deltaTime);
+      this.fxManager.update(deltaTime);
+      this.resourceFXManager.update(deltaTime);
+      this.selectedHexManager.update(deltaTime);
+      this.chestManager.update(deltaTime);
+    }
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
     this.runPendingHoverLabelRecoveryFrame();
@@ -7798,6 +7852,7 @@ export default class WorldmapScene extends WarpTravel {
       armyManager: this.armyManager,
       structureManager: this.structureManager,
       reservedHyperstructureManager: this.reservedHyperstructureManager,
+      spireManager: this.spireManager,
       chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
@@ -7811,9 +7866,6 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     this.clearCache();
-
-    // Clean up selection pulse manager
-    this.selectionPulseManager.dispose();
 
     // Dispose hover label and selected hex managers to release Three.js resources
     this.hoverLabelManager.dispose();
@@ -8111,6 +8163,60 @@ export default class WorldmapScene extends WarpTravel {
     this.controls.enableZoom = false;
   }
 
+  private syncMapLayer(): void {
+    const alt = activeMapLayer();
+    if (this.renderedMapLayer === alt) return;
+    this.renderedMapLayer = alt;
+    this.resetLayerStreamingState();
+    this.proceduralTerrain.setSurfacePresentation(alt ? "ethereal" : "world");
+    this.resetLayerPresentations();
+    this.seedStrategicMarkers();
+    this.syncExploredTilesFromProjection(this.worldSpatialProjection.getTiles(alt));
+    this.refreshTerrainPropOccupancy();
+    this.updateEntityActionPaths(new Map());
+    this.highlightHexManager.highlightHexes([]);
+    this.hoverLabelManager.onHexLeave();
+    this.clearTileEntityCache();
+    this.interactiveHexWindowKey = null;
+    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+    if (!this.isSwitchedOff) {
+      void Promise.all([
+        this.refreshVisualTerrainWindowFromCamera(),
+        this.updateVisibleChunks(true, { reason: "default", triggerReason: "map_layer_changed" }),
+      ]).catch((error) => {
+        console.error("[WorldmapScene] Failed to refresh map layer", error);
+      });
+    }
+  }
+
+  private resetLayerStreamingState(): void {
+    this.terrainVisibilityHealthMonitor.reset();
+    this.visualTerrainGeneration += 1;
+    this.layerRevision += 1;
+    this.chunkTransitionToken += 1;
+    this.globalChunkSwitchPromise = null;
+    this.isChunkTransitioning = false;
+    this.terrainTimeoutRecoveryAuthority = null;
+    this.exactTerrainPreparations.clear();
+    this.cancelHexGridComputation?.();
+    this.cancelHexGridComputation = undefined;
+    this.clearStreamingWorkState();
+    this.clearQueuedPrefetchState();
+    this.clearCache();
+  }
+
+  private resetLayerPresentations(): void {
+    this.pinnedRenderAreas.clear();
+    this.hydratedChunkRefreshes.clear();
+    this.hydratedRefreshSuppressionAreaKeys.clear();
+    this.selectedHexManager.resetPosition();
+    this.armyManager.resetLayer();
+    this.structureManager.resetLayer();
+    this.chestManager.resetLayer();
+    this.reservedHyperstructureManager.resetLayer();
+    this.strategicMarkers.clear();
+  }
+
   private registerStoreSubscriptions() {
     if (this.storeSubscriptions.length > 0) {
       this.logInteractionDebug("store_subscriptions_registration_skipped", {
@@ -8152,6 +8258,13 @@ export default class WorldmapScene extends WarpTravel {
         },
       ),
     );
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.mapLayer,
+        () => this.syncMapLayer(),
+      ),
+    );
+    this.syncMapLayer();
     this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();
     this.bindPersistedZoomPreferenceLifecycle();
@@ -8281,7 +8394,6 @@ export default class WorldmapScene extends WarpTravel {
       if (nextSceneName !== SceneName.Hexception) this.state.setSelectedHex(null);
       this.state.setHoveredHex(null);
       this.highlightHexManager.highlightHexes([]);
-      this.selectionPulseManager.hideSelection();
       if (shouldResetSharedInteractionState) {
         resetWorldmapEntityActions();
       }

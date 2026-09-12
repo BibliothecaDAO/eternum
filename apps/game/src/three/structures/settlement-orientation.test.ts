@@ -14,7 +14,7 @@ describe("settlement orientation", () => {
     },
   );
 
-  it.each([undefined, StructureType.Bank, StructureType.Hyperstructure, StructureType.HolySite])(
+  it.each([undefined, StructureType.Bank, StructureType.Hyperstructure])(
     "preserves the existing rotation for non-settlement category %s",
     (category) => {
       expect(resolveSettlementRotationY(category, 1.25)).toBe(1.25);

@@ -34,6 +34,7 @@ export const TERRAIN_BIOME_ORDER = Object.freeze([
 ] as const);
 
 export const TERRAIN_BIOME_DESCRIPTORS: Readonly<Record<BiomeType, TerrainBiomeDescriptor>> = Object.freeze({
+  [BiomeType.Underground]: descriptor("Ethereal", "#393131", "#626d7b", 0.16, 0.23, 0.055, 0.92, 0, 0.82, 0, 0),
   [BiomeType.None]: descriptor("Unknown", "#303530", "#252a27", -0.04, 0, 0.01, 1, 0, 0, 0, 0),
   [BiomeType.DeepOcean]: descriptor("Deep Ocean", "#214670", "#172c4b", -0.34, 0.04, 0.01, 0.34, 0, 0, 0, 0),
   [BiomeType.Ocean]: descriptor("Ocean", "#368995", "#206777", -0.2, 0.04, 0.012, 0.3, 0, 0, 0, 0),

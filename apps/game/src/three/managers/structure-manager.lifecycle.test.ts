@@ -555,6 +555,11 @@ describe("StructureManager change-set driven visible pass", () => {
     }));
     subject.worldSpatialProjection = { getStructuresInBounds: vi.fn(() => []) };
     subject.previousVisibleIds = new Set([1, 2, 3]);
+    subject.structureInstanceBindings = new Map([
+      [1, []],
+      [2, []],
+      [3, []],
+    ]);
     subject.getModelForStructure = vi.fn(() => model);
     subject.preloadStructureModels = vi.fn(async () => undefined);
     subject.commitVisibleStructureDiff = vi.fn(() => true);
@@ -913,6 +918,10 @@ describe("StructureManager destroy lifecycle", () => {
     const scheduledOwners: string[] = [];
 
     subject.previousVisibleIds = new Set([1, 2]);
+    subject.structureInstanceBindings = new Map([
+      [1, []],
+      [2, []],
+    ]);
     subject.resolveVisibleStructuresForChunk = vi.fn(() => structures);
     subject.getModelForStructure = vi.fn(() => model);
     subject.preloadStructureModels = vi.fn(async () => undefined);
@@ -1053,6 +1062,43 @@ describe("StructureManager destroy lifecycle", () => {
     expect(removeInstance).not.toHaveBeenCalled();
     expect(setMatrixAt).not.toHaveBeenCalled();
     expect([...subject.structureInstanceBindings.keys()].toSorted()).toEqual([2, 3]);
+  });
+
+  it.each([true, false])("retires a partially rendered realm before the next pass (upgrade=%s)", async (upgrade) => {
+    const { subject } = createVisibleStructurePassSubject();
+    const oldModel = { removeInstance: vi.fn(), setCount: vi.fn(), setMatrixAt: vi.fn() };
+    const newModel = { removeInstance: vi.fn(), setCount: vi.fn(), setMatrixAt: vi.fn() };
+    const realm = { entityId: 7, hasWonder: false, hexCoords: { col: 0, row: 0 }, level: 0, structureType: "Realm" };
+    subject.structureModels.set(
+      "Realm",
+      new Map([
+        [0, oldModel],
+        [1, newModel],
+      ]),
+    );
+    subject.hasCosmeticSkin = vi.fn(() => false);
+
+    // A sliced pass has drawn this realm, but was interrupted before committing its visible-ID list.
+    const dirtyModels = new Set();
+    subject.addVisibleStructureInstance(realm, new Set(), dirtyModels);
+    subject.updateVisibleStructureModelCounts(dirtyModels);
+    expect(subject.previousVisibleIds.size).toBe(0);
+    expect(oldModel.setCount).toHaveBeenLastCalledWith(1);
+
+    subject.resolveVisibleStructuresForChunk = vi.fn(() => (upgrade ? [{ ...realm, level: 1 }] : []));
+    subject.preloadStructureModels = vi.fn(async () => {});
+    subject.chunkWorkScheduler = { schedule: vi.fn(async (_lane: string, work: () => void) => work()) };
+    await subject.performVisibleStructuresUpdate({ refreshEntityIds: [7] });
+
+    expect(oldModel.removeInstance).toHaveBeenCalledWith(0);
+    expect(oldModel.setCount).toHaveBeenLastCalledWith(0);
+    expect(subject.structureInstanceSlots.has(oldModel)).toBe(false);
+    if (upgrade) {
+      expect(subject.structureInstanceBindings.get(7)[0].model).toBe(newModel);
+      expect(newModel.setCount).toHaveBeenLastCalledWith(1);
+    } else {
+      expect(subject.structureInstanceBindings.has(7)).toBe(false);
+    }
   });
 
   it("clears an instanced model bucket after its last visible structure leaves", () => {

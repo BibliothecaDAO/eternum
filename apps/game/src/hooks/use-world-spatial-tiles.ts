@@ -1,5 +1,6 @@
 import { getActiveGameSyncRuntime, type TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { useEffect, useMemo, useState } from "react";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 
 interface WorldSpatialTileHex {
   col: number;
@@ -8,6 +9,7 @@ interface WorldSpatialTileHex {
 
 export const useWorldSpatialTiles = (hexes: readonly WorldSpatialTileHex[]): readonly TileSpatialRenderable[] => {
   const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
+  const mapLayer = useUIStore((state) => state.mapLayer);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -19,5 +21,8 @@ export const useWorldSpatialTiles = (hexes: readonly WorldSpatialTileHex[]): rea
     return projection.subscribeTiles(() => setRevision((current) => current + 1));
   }, [projection]);
 
-  return useMemo(() => hexes.flatMap((hex) => projection?.getTileAtHex(hex) ?? []), [hexes, projection, revision]);
+  return useMemo(
+    () => hexes.flatMap((hex) => projection?.getTileAtHex({ ...hex, alt: mapLayer }) ?? []),
+    [hexes, mapLayer, projection, revision],
+  );
 };

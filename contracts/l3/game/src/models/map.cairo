@@ -3,17 +3,6 @@ use core::poseidon::poseidon_hash_span;
 use crate::alias::ID;
 use crate::models::position::Coord;
 
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BiomeDiscovered {
-    #[key]
-    pub by_address: starknet::ContractAddress,
-    #[key]
-    pub biome: u8,
-    pub discovered: bool,
-}
-
-
 #[derive(Copy, Drop, Serde)]
 pub struct Tile {
     pub game_id: u32,
@@ -122,11 +111,9 @@ pub enum TileOccupier {
     ExplorerCrossbowmanT2Daydreams,
     ExplorerCrossbowmanT3Daydreams,
     //
-    Quest,
     Chest,
     Spire,
     //
-    HolySite,
     Camp,
     BitcoinMine,
     ReservedHyperstructure,
@@ -175,11 +162,9 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::ExplorerCrossbowmanT2Daydreams => 31,
             TileOccupier::ExplorerCrossbowmanT3Daydreams => 32,
             //
-            TileOccupier::Quest => 33,
             TileOccupier::Chest => 34,
             TileOccupier::Spire => 35,
             //
-            TileOccupier::HolySite => 36,
             TileOccupier::Camp => 37,
             TileOccupier::BitcoinMine => 38,
             TileOccupier::ReservedHyperstructure => 39,

@@ -286,8 +286,8 @@ describe("Madara harness Herald observer", () => {
     try {
       const observer = new HeraldObserver(`http://127.0.0.1:${server.port}`, "madara", 5);
       const observations = await Promise.all([
-        observer.waitForExplorer(7, "11", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
-        observer.waitForExplorer(7, "12", { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
+        observer.waitForExplorer(7, "11", { alt: false, x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
+        observer.waitForExplorer(7, "12", { alt: false, x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 }, 12, 1_000),
       ]);
 
       expect(observations[0]).toMatchObject({ explorerId: "11", x: 1 });
@@ -313,7 +313,7 @@ describe("Madara harness Herald observer", () => {
       const explorer = await observer.waitForExplorer(
         7,
         "11",
-        { x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 },
+        { alt: false, x: 0, y: 2, stamina: 120, staminaUpdatedTick: 1 },
         12,
         1_000,
       );
@@ -478,7 +478,7 @@ function explorerRow(explorerId: string, x: number) {
     explorer_id: explorerId,
     owner: explorerId,
     troops: { stamina: { amount: "120", updated_tick: "1" } },
-    coord: { x, y: 2 },
+    coord: { alt: false, x, y: 2 },
   };
 }
 

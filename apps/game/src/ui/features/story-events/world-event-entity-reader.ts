@@ -92,7 +92,7 @@ export const createWorldEventEntityReader = (
       return [];
     }
 
-    return projection.getStructures().flatMap((spatial) => {
+    return [...projection.getStructures(false), ...projection.getStructures(true)].flatMap((spatial) => {
       if (spatial.entityId === null) return [];
       const structure = getStructure(Number(spatial.entityId));
       return structure?.ownerAddress === normalizedOwner ? [structure] : [];

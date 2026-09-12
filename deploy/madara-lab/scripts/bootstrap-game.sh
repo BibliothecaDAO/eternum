@@ -6,8 +6,7 @@ set -euo pipefail
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "$LAB_DIR/../.." && pwd)"
 
-# v0_10_2, not v0_9_0: starkli (deploy-gameplay-contracts.ts) shares sozo's v0.9 pre-confirmed-block parse bug on
-# the nightly pin (see deploy-world.sh); the v0.10.2 route serializes those blocks correctly.
+# Keep the same RPC route as world deployment.
 export RPC_URL="${RPC_URL:-http://127.0.0.1:5050/rpc/v0_10_2}"
 export DOJO_ACCOUNT_ADDRESS="${DOJO_ACCOUNT_ADDRESS:-0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fcb225d}"
 export DOJO_PRIVATE_KEY="${DOJO_PRIVATE_KEY:-0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07}"

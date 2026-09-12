@@ -59,6 +59,8 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.APPLY_RELIC]: TransactionCostCategory.HIGH,
 
   // Complex operations
+  [TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR]: TransactionCostCategory.HIGH,
+  [TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD]: TransactionCostCategory.HIGH,
   [TransactionType.CONTRIBUTE]: TransactionCostCategory.HIGH,
   [TransactionType.SETTLE]: TransactionCostCategory.HIGH,
   [TransactionType.REGISTER]: TransactionCostCategory.HIGH,
@@ -190,15 +192,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Settlement
   [TransactionType.TOKEN_LOCK]: TransactionCostCategory.LOW,
 
-  // Quests
-  [TransactionType.START_QUEST]: TransactionCostCategory.LOW,
-  [TransactionType.CLAIM_REWARD]: TransactionCostCategory.LOW,
-  [TransactionType.ADD_GAME]: TransactionCostCategory.LOW,
-  [TransactionType.GAME_COUNT]: TransactionCostCategory.LOW,
-  [TransactionType.GET_GAME_COUNT]: TransactionCostCategory.LOW,
-  [TransactionType.DISABLE_QUESTS]: TransactionCostCategory.LOW,
-  [TransactionType.ENABLE_QUESTS]: TransactionCostCategory.LOW,
-
   // Season/Leaderboard claims
   [TransactionType.SEASON_PRIZE_CLAIM]: TransactionCostCategory.LOW,
   [TransactionType.CLAIM_LEADERBOARD_REWARDS]: TransactionCostCategory.LOW,
@@ -245,7 +238,6 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.SET_SETTLEMENT_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_BLITZ_EXPLORATION_CONFIG]: TransactionCostCategory.LOW,
   [TransactionType.SET_BLITZ_REGISTRATION_CONFIG]: TransactionCostCategory.LOW,
-  [TransactionType.SET_QUEST_CONFIG]: TransactionCostCategory.LOW,
 };
 
 /**

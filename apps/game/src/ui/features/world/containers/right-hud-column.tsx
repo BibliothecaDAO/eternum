@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { QuickFeed } from "@/ui/features/event-feed/quick-feed";
 import { type ReactNode, useCallback, useState } from "react";
-import { HUD_COLUMN_TOP, HUD_COLUMN_WIDTH } from "./hud-layout";
+import { HUD_COLUMN_TOP } from "./hud-layout";
 import { HudChatWindow } from "./hud-chat-window";
 
 type RightColumnFocus = "none" | "chat" | "log";
@@ -19,7 +19,7 @@ export const RightHudColumn = ({ children }: { children?: ReactNode }) => {
       className={cn(
         "pointer-events-none fixed bottom-4 right-3 z-30 flex flex-col gap-2",
         HUD_COLUMN_TOP,
-        HUD_COLUMN_WIDTH,
+        "w-[288px] min-[1800px]:w-[312px]",
       )}
     >
       <QuickFeed logOpen={focus === "log"} onLogToggle={toggleLog} />

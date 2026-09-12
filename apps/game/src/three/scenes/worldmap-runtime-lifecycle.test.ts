@@ -3,7 +3,6 @@ import {
   applyWorldmapSwitchOffRuntimeState,
   invalidateWorldmapSwitchOffTransitionState,
 } from "./worldmap-runtime-lifecycle";
-import { SceneName } from "../types";
 
 describe("worldmap runtime lifecycle", () => {
   it("clears switch-off transient state and returns reset primitives", () => {
@@ -12,7 +11,6 @@ describe("worldmap runtime lifecycle", () => {
 
     const clearQueuedPrefetchStateSpy = vi.fn();
     const clearStreamingWorkSpy = vi.fn();
-    const releaseInactiveResourcesSpy = vi.fn();
 
     const result = applyWorldmapSwitchOffRuntimeState({
       pinnedChunkKeys,
@@ -21,12 +19,10 @@ describe("worldmap runtime lifecycle", () => {
       hydratedRefreshSuppressionAreaKeys: new Set(),
       clearStreamingWork: clearStreamingWorkSpy,
       clearQueuedPrefetchState: clearQueuedPrefetchStateSpy,
-      releaseInactiveResources: releaseInactiveResourcesSpy,
     });
 
     expect(clearStreamingWorkSpy).toHaveBeenCalledTimes(1);
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
-    expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
 
     expect(pinnedChunkKeys.size).toBe(0);
     expect(pinnedRenderAreas.size).toBe(0);
@@ -41,7 +37,6 @@ describe("worldmap runtime lifecycle", () => {
   it("is idempotent with empty collections", () => {
     const clearQueuedPrefetchStateSpy = vi.fn();
     const clearStreamingWorkSpy = vi.fn();
-    const releaseInactiveResourcesSpy = vi.fn();
 
     const result = applyWorldmapSwitchOffRuntimeState({
       pinnedChunkKeys: new Set(),
@@ -50,12 +45,10 @@ describe("worldmap runtime lifecycle", () => {
       hydratedRefreshSuppressionAreaKeys: new Set(),
       clearStreamingWork: clearStreamingWorkSpy,
       clearQueuedPrefetchState: clearQueuedPrefetchStateSpy,
-      releaseInactiveResources: releaseInactiveResourcesSpy,
     });
 
     expect(clearStreamingWorkSpy).toHaveBeenCalledTimes(1);
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
-    expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
     expect(result.currentChunk).toBe("null");
     expect(result.isSwitchedOff).toBe(true);
   });
@@ -73,26 +66,5 @@ describe("worldmap runtime lifecycle", () => {
       isChunkTransitioning: false,
       globalChunkSwitchPromise: null,
     });
-  });
-
-  it("clears hydrated refresh queues and sheds cache when switching to fast travel", () => {
-    const hydratedChunkRefreshes = new Set<string>(["10,10"]);
-    const hydratedRefreshSuppressionAreaKeys = new Set<string>(["10,10:render"]);
-    const releaseInactiveResourcesSpy = vi.fn();
-
-    applyWorldmapSwitchOffRuntimeState({
-      pinnedChunkKeys: new Set(),
-      pinnedRenderAreas: new Set(),
-      hydratedChunkRefreshes,
-      hydratedRefreshSuppressionAreaKeys,
-      nextSceneName: SceneName.FastTravel,
-      clearStreamingWork: vi.fn(),
-      clearQueuedPrefetchState: vi.fn(),
-      releaseInactiveResources: releaseInactiveResourcesSpy,
-    });
-
-    expect(hydratedChunkRefreshes.size).toBe(0);
-    expect(hydratedRefreshSuppressionAreaKeys.size).toBe(0);
-    expect(releaseInactiveResourcesSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,6 @@
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { gameCallArgs, getGameNamespace, normalizeSelector } from "@bibliothecadao/eternum/game-client";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { getActiveWorld, type WorldProfile } from "@/runtime/world";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
@@ -127,6 +128,7 @@ export const createActiveWorldBlitzHyperstructure = async ({
   account: HyperstructureCreationAccount;
   hexCoords: HexPosition;
 }) => {
+  assertHyperstructureCreationAllowed();
   const activeWorld = resolveActiveWorldOrThrow();
   const contractAddress = resolveHyperstructureCreateSystemsAddress(activeWorld);
 
@@ -153,6 +155,7 @@ export const submitActiveWorldBlitzHyperstructureCreation = async ({
   account: HyperstructureCreationAccount;
   hexCoords: HexPosition;
 }) => {
+  assertHyperstructureCreationAllowed();
   const markedPending = markPendingReservedHyperstructureCreation(hexCoords);
   if (!markedPending) {
     return false;
@@ -169,3 +172,8 @@ export const submitActiveWorldBlitzHyperstructureCreation = async ({
     throw error;
   }
 };
+
+function assertHyperstructureCreationAllowed(): void {
+  if (!canIssueOrders())
+    throw new Error("Hyperstructure creation is unavailable while spectating or after the game ends.");
+}

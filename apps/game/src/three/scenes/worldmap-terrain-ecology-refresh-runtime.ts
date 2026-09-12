@@ -19,7 +19,7 @@ interface CollectWorldmapTerrainEcologyAnchorsInput {
   getStructureFacts: (entityId: number) => StructureTerrainEcologyFacts | undefined;
   normalizeStructureHex: (hex: WorldSpatialHex) => { col: number; row: number };
   projection: Pick<WorldSpatialProjection, "getStructuresInBounds">;
-  toProjectionBounds: (bounds: WorldSpatialBounds) => WorldSpatialBounds;
+  toProjectionBounds: (bounds: Omit<WorldSpatialBounds, "alt">) => WorldSpatialBounds;
 }
 
 interface BindWorldmapTerrainEcologyRefreshInput {

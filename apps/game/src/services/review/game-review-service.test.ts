@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { createEmptyActivityBreakdown, type HeraldGameSnapshot } from "@bibliothecadao/eternum/game-sync";
+import { tileDataToTile } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fetchGameReviewData } from "./game-review-service";
@@ -97,6 +98,49 @@ describe("game review Herald read model", () => {
     expect(review.rewards?.isRanked).toBe(true);
     expect(review.rewards?.chests).toBe(2);
     expect(herald.fetchReviewSnapshot).toHaveBeenCalledOnce();
+  });
+
+  it("preserves both layers at one coordinate and fingerprints layer identity", async () => {
+    const snapshot = reviewSnapshot();
+    snapshot.models.find(({ model }) => model === "TileOpt")!.rows = [
+      { key: "0x11", value: { data: "1" } },
+      { key: "0x12", value: { data: "2" } },
+    ];
+    vi.mocked(tileDataToTile).mockImplementation((data) => ({
+      alt: data === "2",
+      col: 10,
+      row: 20,
+      biome: 3,
+      occupier_id: 9,
+      occupier_type: 35,
+      occupier_is_structure: false,
+      reward_extracted: false,
+    }));
+    herald.fetchReviewSnapshot.mockResolvedValue(snapshot);
+    const first = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
+    expect(first.mapSnapshot).toMatchObject({
+      available: true,
+      totalTiles: 2,
+      tiles: [
+        { alt: false, col: 10, row: 20 },
+        { alt: true, col: 10, row: 20 },
+      ],
+    });
+    snapshot.models.find(({ model }) => model === "TileOpt")!.rows.reverse();
+    const reordered = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
+    expect(reordered.mapSnapshot).toEqual(first.mapSnapshot);
+    vi.mocked(tileDataToTile).mockImplementation(() => ({
+      alt: false,
+      col: 10,
+      row: 20,
+      biome: 3,
+      occupier_id: 9,
+      occupier_type: 35,
+      occupier_is_structure: false,
+      reward_extracted: false,
+    }));
+    const collapsed = await fetchGameReviewData({ worldName: "adam-14", chain: "appchain", playerAddress: PLAYER });
+    expect(collapsed.mapSnapshot).not.toEqual(first.mapSnapshot);
   });
 
   it("refuses a review until history covers the frozen snapshot block", async () => {

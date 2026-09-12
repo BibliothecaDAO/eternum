@@ -196,7 +196,7 @@ pub impl IMapImpl of IMapTrait {
     fn is_adjacent_to_spire(ref world: WorldStorage, game_id: u32, coord: Coord) -> bool {
         let directions = DirectionTrait::all();
         for direction in directions {
-            let neighbor_coord = coord.neighbor(direction);
+            let neighbor_coord = coord.spire_neighbor(direction);
             let tile_opt: TileOpt = world.read_model((game_id, coord.alt, neighbor_coord.x, neighbor_coord.y));
             let tile: Tile = tile_opt.into();
             if tile.occupier_type == TileOccupier::Spire.into() {

@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
@@ -32,6 +32,8 @@ import Plus from "lucide-react/dist/esm/icons/plus";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];
+
+const ACCRUAL_SWEEP_INTERVAL_MS = 60_000;
 
 interface MergedResourcePanelProps {
   structureEntityId: ID;
@@ -83,6 +85,24 @@ export const MergedResourcePanel = memo(
     // 1s tick so production timers/rings decay live (same pattern as the
     // production panel + build menu).
     const currentTime = useNowMs();
+
+    // Production accrues every tick, so the held amount changes every second. One sweep per token per
+    // minute, automation's own cadence, is the most a player should see.
+    const accrualSweeps = useRef(new Map<ResourcesIds, { label: string | undefined; at: number; key: number }>());
+    const resolveAccrualKey = (resourceId: ResourcesIds, label: string | undefined): number => {
+      const previous = accrualSweeps.current.get(resourceId);
+      if (!previous) {
+        accrualSweeps.current.set(resourceId, { label, at: currentTime, key: 0 });
+        return 0;
+      }
+      if (label === previous.label || currentTime - previous.at < ACCRUAL_SWEEP_INTERVAL_MS) {
+        previous.label = label;
+        return previous.key;
+      }
+      const next = { label, at: currentTime, key: previous.key + 1 };
+      accrualSweeps.current.set(resourceId, next);
+      return next.key;
+    };
 
     const balanceMap = useMemo(() => {
       const map = new Map<number, number>();
@@ -172,9 +192,11 @@ export const MergedResourcePanel = memo(
         const elapsedSeconds = item ? (currentTime - item.calculatedAt) / 1000 : 0;
         const effectiveRemaining =
           item && item.timeRemainingSeconds !== null ? Math.max(item.timeRemainingSeconds - elapsedSeconds, 0) : null;
+        // Whole minutes only: automation refills inputs every minute, so seconds are noise and anything
+        // under a minute is the normal state of a topped-up resource, not a warning.
         const timer =
-          item?.isProducing && effectiveRemaining !== null
-            ? formatTimeRemaining(Math.ceil(effectiveRemaining))
+          item?.isProducing && effectiveRemaining !== null && effectiveRemaining >= 60
+            ? formatTimeRemaining(Math.ceil(effectiveRemaining / 60) * 60)
             : undefined;
         const count = item && item.totalBuildings > 0 ? `${item.totalBuildings}` : undefined;
         const balanceLabel = balance > 0 ? formatInventoryAmount(balance) : undefined;
@@ -216,6 +238,7 @@ export const MergedResourcePanel = memo(
               cornerTopLeft={count}
               cornerTopRight={balanceLabel}
               cornerBottomRight={timer}
+              accrualKey={resolveAccrualKey(resourceId, balanceLabel)}
             />
             {isBuildable && canBuild && (
               <button
@@ -286,7 +309,10 @@ export const MergedResourcePanel = memo(
           />
         )}
         {tokens.length > 0 && (
-          <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-4 px-2 pt-1.5">{tokens}</div>
+          // Two token rows stay visible; more scroll inside. The inner padding keeps rings and badges off the clip edge.
+          <div className="max-h-[164px] overflow-y-auto overscroll-contain">
+            <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-5 px-5 pb-3 pt-3">{tokens}</div>
+          </div>
         )}
       </div>
     );

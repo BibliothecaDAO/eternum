@@ -209,8 +209,8 @@ mod dispatcher_lifecycle {
         AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
         BlitzExplorationConfig, BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig,
         BlitzSettlementConfig, BuildingConfig, ChainConfig, FaithConfig, HyperstructureConfig, HyperstructureCostConfig,
-        PresetConfig, PresetGameConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        PresetConfig, PresetGameConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, SettlementConfig,
+        SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTroopConfig, WeightConfig,
         WorldConfigUtilImpl,
     };
@@ -218,6 +218,8 @@ mod dispatcher_lifecycle {
     use crate::models::hyperstructure::{
         CompletedHyperstructureImpl, Hyperstructure, HyperstructureShareholders, PlayerRegisteredPoints,
     };
+    use crate::models::map2::TileOpt;
+    use crate::models::position::{CoordTrait, DirectionTrait};
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
     use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
     use crate::models::season::SeasonPrize;
@@ -226,7 +228,6 @@ mod dispatcher_lifecycle {
     use crate::systems::prize_distribution::contracts::{
         IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
     };
-    use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
     use crate::systems::realm::blitz::contracts::{IBlitzRealmSystemsDispatcher, IBlitzRealmSystemsDispatcherTrait};
     use crate::systems::realm::season::contracts::IRealmSystemsDispatcherTrait;
     use crate::systems::registrar::contracts::{
@@ -239,6 +240,7 @@ mod dispatcher_lifecycle {
     use crate::systems::trade::contracts::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait};
     use crate::systems::utils::camp::iCampDiscoveryImpl;
     use crate::systems::utils::series_chest_reward::series_chest_reward_calculator::SeriesChestRewardStateImpl;
+    use crate::systems::village::contracts::IVillageSystemsDispatcherTrait;
     use crate::utils::testing::helpers::{
         MOCK_CAPACITY_CONFIG, MOCK_MAP_CONFIG, MOCK_STRUCTURE_CAPACITY_CONFIG, TEST_PRESET_ID,
     };
@@ -274,7 +276,7 @@ mod dispatcher_lifecycle {
                 TestResource::Model("ResourceAllowance"), TestResource::Model("ResourceArrival"),
                 TestResource::Model("Wonder"), TestResource::Model("AddressName"), TestResource::Model("RNG"),
                 TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
-                TestResource::Model("RankPrize"), TestResource::Model("RankList"), TestResource::Model("QuestLevels"),
+                TestResource::Model("RankPrize"), TestResource::Model("RankList"),
                 TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureShareholders"),
                 TestResource::Model("SeriesChestRewardState"), TestResource::Model("SharePointsCheckpoint"),
                 TestResource::Model("HyperstructureGlobals"), TestResource::Model("CompletedHyperstructure"),
@@ -286,19 +288,18 @@ mod dispatcher_lifecycle {
                 TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
                 TestResource::Model("BuildingCategoryConfig"), TestResource::Model("ResourceFactoryConfig"),
                 TestResource::Model("ProductionBoostBonus"), TestResource::Model("ResourceList"),
-                TestResource::Model("QuestGameRegistry"), TestResource::Model("QuestFeatureFlag"),
                 TestResource::Contract("registrar_systems"), TestResource::Contract("hyperstructure_create_systems"),
                 TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_systems"),
-                TestResource::Contract("realm_internal_systems"), TestResource::Contract("prize_distribution_systems"),
-                TestResource::Contract("resource_systems"), TestResource::Contract("bank_systems"),
-                TestResource::Contract("trade_systems"), TestResource::Contract("quest_systems"),
+                TestResource::Contract("realm_internal_systems"), TestResource::Contract("village_systems"),
+                TestResource::Contract("prize_distribution_systems"), TestResource::Contract("resource_systems"),
+                TestResource::Contract("bank_systems"), TestResource::Contract("trade_systems"),
                 TestResource::Contract("season_systems"),
                 TestResource::Library(("structure_creation_library", "0_1_18")),
-                TestResource::Library(("rng_library", "0_1_16")), TestResource::Event("GameCreated"),
-                TestResource::Event("BlitzSettlementEvent"), TestResource::Event("StoryEvent"),
-                TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
-                TestResource::Event("TrophyProgression"), TestResource::Event("LedgerResultRowReady"),
-                TestResource::Event("LedgerResultsReady"), TestResource::Event("SeasonEnded"),
+                TestResource::Library(("rng_library", "0_1_16")), TestResource::Library(("biome_library", "0_1_13")),
+                TestResource::Event("GameCreated"), TestResource::Event("BlitzSettlementEvent"),
+                TestResource::Event("StoryEvent"), TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
+                TestResource::Event("LedgerResultRowReady"), TestResource::Event("LedgerResultsReady"),
+                TestResource::Event("SeasonEnded"),
             ]
                 .span(),
         }
@@ -312,6 +313,7 @@ mod dispatcher_lifecycle {
             ContractDefTrait::new(DEFAULT_NS(), @"blitz_realm_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"realm_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"realm_internal_systems").with_writer_of([namespace].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"village_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"prize_distribution_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"resource_systems").with_writer_of([namespace].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"season_systems").with_writer_of([namespace].span()),
@@ -481,21 +483,29 @@ mod dispatcher_lifecycle {
         ITradeSystemsDispatcher { contract_address: address }.cancel_order(GAME_A, 1);
     }
 
-    #[test]
-    #[should_panic(expected: "Eternum: feature is disabled in Blitz")]
-    fn quests_cannot_be_enabled_in_blitz() {
-        let context = setup_lifecycle();
-        let (address, _) = context.world.dns(@"quest_systems").unwrap();
-        IQuestSystemsDispatcher { contract_address: address }.enable_quests(GAME_A);
+    fn setup_eternum_game() -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
+        setup_eternum_game_with_spires(1)
     }
 
-    fn setup_eternum_game() -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
+    fn setup_eternum_game_with_spires(
+        count: u16,
+    ) -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
+        setup_eternum_game_with_spire_spacing(count, 15)
+    }
+
+    fn setup_eternum_game_with_spire_spacing(
+        count: u16, spacing: u8,
+    ) -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
         let player = get_default_caller_address();
         let world = spawn_lifecycle_world();
         let registrar = registrar_dispatcher(world);
         registrar.bootstrap_chain_config(chain_config_with_ledger_operator(player, Zero::zero()));
         let mut rules = preset_game_config();
         rules.blitz_mode_on = false;
+        rules.settlement_config.spires_max_count = count;
+        rules.settlement_config.base_distance = spacing;
+        rules.settlement_config.spires_layer_distance = 1;
+        rules.settlement_config.layer_max = 2;
         let mut tables = preset_side_tables();
         tables
             .resource_factories =
@@ -562,6 +572,72 @@ mod dispatcher_lifecycle {
         start_cheat_block_timestamp_global(250);
         season.settle(GAME_A, 'first');
         season.settle(GAME_A, 'second');
+    }
+
+    #[test]
+    fn eternum_dev_entry_selects_multiple_canonical_realms_for_one_player() {
+        let (mut context, season) = setup_eternum_game();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = true;
+        context.world.write_model_test(@game);
+        let first = season.settle_dev(GAME_A, 'builder', 1);
+        let second = season.settle_dev(GAME_A, 'builder', 87);
+        let first_realm: crate::models::structure::Structure = context.world.read_model((GAME_A, first));
+        let second_realm: crate::models::structure::Structure = context.world.read_model((GAME_A, second));
+        assert!(first_realm.metadata.realm_id == 1, "first realm selection lost");
+        assert!(second_realm.metadata.realm_id == 87, "second realm selection lost");
+        assert!(first_realm.resources_packed == 258, "Stolsli resources changed");
+        assert!(second_realm.resources_packed == 2, "Gislegob resources changed");
+        let settlement: crate::models::config::BlitzSettlement = context.world.read_model((GAME_A, context.player));
+        assert!(settlement.structure_ids == array![first, second].span(), "prior realm was lost");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: dev mode required")]
+    fn eternum_production_rejects_selected_realm_entry() {
+        let (_, season) = setup_eternum_game();
+        season.settle_dev(GAME_A, 'builder', 1);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: canonical realm already allocated")]
+    fn eternum_dev_entry_cannot_duplicate_a_canonical_realm() {
+        let (mut context, season) = setup_eternum_game();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = true;
+        context.world.write_model_test(@game);
+        season.settle_dev(GAME_A, 'builder', 1);
+        season.settle_dev(GAME_A, 'builder', 1);
+    }
+
+    #[test]
+    fn eternum_dev_village_entry_does_not_require_a_paid_pass() {
+        let (mut context, season) = setup_eternum_game();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = true;
+        context.world.write_model_test(@game);
+        let realm_id = season.settle_dev(GAME_A, 'builder', 1);
+        bind_eternum_entry_owner(ref context, true);
+        let (address, _) = context.world.dns(@"village_systems").unwrap();
+        let village = crate::systems::village::contracts::IVillageSystemsDispatcher { contract_address: address };
+        let village_id = village.create(GAME_A, 0, realm_id, crate::models::position::Direction::East);
+        let structure: crate::models::structure::Structure = context.world.read_model((GAME_A, village_id));
+        assert!(
+            structure.base.category == crate::models::structure::StructureCategory::Village.into(), "village missing",
+        );
+        assert!(structure.metadata.village_realm == realm_id, "village attached to another realm");
+        assert!(structure.owner == context.player, "village owner lost");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: Not Season Game Mode")]
+    fn blitz_dev_game_rejects_selected_realm_entry() {
+        let (mut context, season) = setup_eternum_game();
+        let mut game = GameRegistryImpl::get(context.world, GAME_A);
+        game.dev_mode_on = true;
+        context.world.write_model_test(@game);
+        WorldConfigUtilImpl::set_member(ref context.world, GAME_A, selector!("blitz_mode_on"), true);
+        season.settle_dev(GAME_A, 'builder', 1);
     }
 
     fn bind_eternum_entry_owner(ref context: LifecycleContext, paid: bool) {
@@ -642,6 +718,129 @@ mod dispatcher_lifecycle {
         settle_inside_registration_window(@context);
         start_cheat_caller_address(context.blitz.contract_address, 'another-account'.try_into().unwrap());
         context.blitz.settle(GAME_A, 'second-account', [].span(), false);
+    }
+
+    #[test]
+    fn season_game_creation_populates_both_spire_layers_before_settling() {
+        start_cheat_block_timestamp_global(1);
+        let (mut context, _) = setup_eternum_game();
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        assert_spire_pair(context.world, center.x, center.y);
+        let config: SettlementConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("settlement_config"),
+        );
+        assert!(config.spires_settled_count == 1, "preset spire count was not initialized");
+    }
+
+    #[test]
+    fn season_game_creation_reveals_only_the_immediate_spire_access_ring() {
+        let (mut context, _) = setup_eternum_game();
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        assert_spire_pair(context.world, center.x, center.y);
+        for direction in DirectionTrait::all() {
+            let beyond = center.neighbor_after_distance(direction, 2);
+            for alt in array![false, true] {
+                let tile: TileOpt = context.world.read_model((GAME_A, alt, beyond.x, beyond.y));
+                assert!(tile.data == 0, "spire revealed beyond its access ring");
+            }
+        }
+    }
+
+    #[test]
+    fn season_game_creation_stops_at_the_six_spire_preset_count() {
+        let (mut context, _) = setup_eternum_game_with_spires(6);
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        assert_spire_pair(context.world, center.x, center.y);
+        for direction in DirectionTrait::all() {
+            let coord = center.neighbor_after_distance(direction, 15);
+            if direction == crate::models::position::Direction::NorthEast {
+                let tile: TileOpt = context.world.read_model((GAME_A, false, coord.x, coord.y));
+                assert!(tile.data == 0, "created a seventh spire");
+            } else {
+                assert_spire_pair(context.world, coord.x, coord.y);
+            }
+        }
+        let config: SettlementConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("settlement_config"),
+        );
+        assert!(config.spires_settled_count == 6, "wrong spire count");
+        let beyond: TileOpt = context.world.read_model((GAME_A, false, center.x + 30, center.y));
+        assert!(beyond.data == 0, "created outside preset count");
+    }
+
+    #[test]
+    fn six_portals_connect_each_ring_access_in_four_ethereal_steps() {
+        let (mut context, _) = setup_eternum_game_with_spire_spacing(6, 60);
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        for direction in DirectionTrait::all() {
+            if direction == crate::models::position::Direction::NorthEast {
+                continue;
+            }
+            let portal = center.neighbor_after_distance(direction, 60);
+            assert_spire_pair(context.world, portal.x, portal.y);
+            let mut access = center.neighbor(crate::models::position::Direction::West);
+            access.alt = true;
+            for _ in 0_u8..4 {
+                access = access.neighbor(direction);
+            }
+            let destination_portal = access.spire_neighbor(crate::models::position::Direction::East);
+            assert_eq!(destination_portal.x, portal.x);
+            assert_eq!(destination_portal.y, portal.y);
+        }
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: spire spacing must align with ethereal steps")]
+    fn season_game_rejects_a_disconnected_portal_lattice() {
+        setup_eternum_game_with_spire_spacing(7, 48);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: season preset requires a spire")]
+    fn season_game_creation_rejects_a_preset_without_spires() {
+        setup_eternum_game_with_spires(0);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: spire count exceeds lattice")]
+    fn season_game_creation_rejects_more_spires_than_the_lattice_holds() {
+        setup_eternum_game_with_spires(20);
+    }
+
+    #[test]
+    fn blitz_game_creation_leaves_the_alternate_layer_empty() {
+        let mut context = setup_dev_off_game('operator'.try_into().unwrap());
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        let tile: TileOpt = context.world.read_model((GAME_A, true, center.x, center.y));
+        assert!(tile.data == 0, "Blitz created an alternate tile");
+        let config: SettlementConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("settlement_config"),
+        );
+        assert!(config.spires_settled_count == 0, "Blitz created spires");
+    }
+
+    fn assert_spire_pair(world: WorldStorage, x: u32, y: u32) {
+        let surface: TileOpt = world.read_model((GAME_A, false, x, y));
+        let alternate: TileOpt = world.read_model((GAME_A, true, x, y));
+        let surface: crate::models::map::Tile = surface.into();
+        let alternate: crate::models::map::Tile = alternate.into();
+        assert!(surface.occupier_type == crate::models::map::TileOccupier::Spire.into(), "surface spire missing");
+        assert!(alternate.occupier_type == surface.occupier_type, "alternate spire missing");
+        assert!(surface.occupier_id != 0 && surface.occupier_id == alternate.occupier_id, "spire identity differs");
+        assert!(surface.biome != 0 && alternate.biome != 0, "spire tiles are undiscovered");
+        let structure: crate::models::structure::Structure = world.read_model((GAME_A, surface.occupier_id));
+        assert!(structure.owner.is_zero(), "portal has an owner");
+        assert!(structure.base.troop_guard_count == 0, "portal has guards");
+        let center = crate::models::position::Coord { alt: false, x, y };
+        for direction in DirectionTrait::all() {
+            let access = center.neighbor(direction);
+            for alt in array![false, true] {
+                let tile: TileOpt = world.read_model((GAME_A, alt, access.x, access.y));
+                let tile: crate::models::map::Tile = tile.into();
+                assert!(tile.biome != 0, "spire access is undiscovered");
+                assert!(tile.occupier_id == 0 && tile.occupier_type == 0, "spire access is occupied");
+            }
+        }
     }
 
     #[test]
@@ -1049,7 +1248,7 @@ mod dispatcher_lifecycle {
             },
             bank_config: BankConfig { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 },
             trade_config: TradeConfig { max_count: 0 },
-            quest_config: QuestConfig { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
+            quest_config: crate::models::config::QuestConfig { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
             faith_config: FaithConfig {
                 enabled: false,
                 wonder_base_fp_per_sec: 0,
@@ -1095,6 +1294,7 @@ mod dispatcher_lifecycle {
             artificer_config: ArtificerConfig { research_cost_for_relic: 0 },
             blitz_registration_rules_config: BlitzRegistrationRulesConfig { collectibles_cosmetics_max: 0 },
             mercenaries_name: 0,
+            spire_travel_essence_cost: 0,
         }
     }
 

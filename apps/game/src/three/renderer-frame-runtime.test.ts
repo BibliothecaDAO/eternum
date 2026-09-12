@@ -21,6 +21,7 @@ function createScene(name: string, view = 1) {
     hasActiveLabelAnimations: vi.fn(() => false),
     onFrameRendered: vi.fn(),
     setWeatherAtmosphereState: vi.fn(),
+    setAnimationsPaused: vi.fn(),
     update: vi.fn(),
   };
 }
@@ -54,7 +55,6 @@ describe("runRendererFrame", () => {
   it("updates the hud before bailing when no scene is active", () => {
     const hudScene = createHudScene();
     const worldmapScene = createScene("worldmap");
-    const fastTravelScene = createScene("travel");
     const hexceptionScene = createScene("hexception");
     const backend = createBackend();
     const labelRuntime = {
@@ -73,7 +73,6 @@ describe("runRendererFrame", () => {
       currentTime: 100,
       cycleProgress: 0.25,
       deltaTime: 0.016,
-      fastTravelScene: fastTravelScene as never,
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
@@ -84,7 +83,6 @@ describe("runRendererFrame", () => {
     expect(rendered).toBe(false);
     expect(hudScene.update).toHaveBeenCalledWith(0.016, 0.25);
     expect(worldmapScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
-    expect(fastTravelScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
     expect(hexceptionScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
     expect(effectsBridgeRuntime.updateWeatherPostProcessing).not.toHaveBeenCalled();
     expect(backend.renderFrame).not.toHaveBeenCalled();
@@ -145,7 +143,6 @@ describe("runRendererFrame", () => {
       currentTime: 120,
       cycleProgress: 0.5,
       deltaTime: 0.02,
-      fastTravelScene: undefined,
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
       labelRuntime: labelRuntime as never,
@@ -212,50 +209,33 @@ describe("runRendererFrame", () => {
     ).toThrow("render failed");
     expect(worldmapScene.onFrameRendered).not.toHaveBeenCalled();
   });
+});
 
-  it("routes fast-travel rendering and label activity through the travel scene when available", () => {
+it.each([SceneName.WorldMap, SceneName.Hexception])(
+  "keeps inspection rendering while pausing animations in %s",
+  (sceneName) => {
+    const worldmapScene = createScene("world");
+    const hexceptionScene = createScene("local");
     const hudScene = createHudScene();
-    const worldmapScene = createScene("worldmap", 1);
-    const fastTravelScene = createScene("travel", 3);
-    fastTravelScene.hasActiveLabelAnimations.mockReturnValue(true);
-    const hexceptionScene = createScene("hexception", 2);
     const backend = createBackend();
-    const labelRuntime = {
-      render: vi.fn(),
-      shouldRender: vi.fn(() => false),
-    };
-    const effectsBridgeRuntime = {
-      updateWeatherPostProcessing: vi.fn(),
-    };
-
+    const scene = sceneName === SceneName.WorldMap ? worldmapScene : hexceptionScene;
     runRendererFrame({
       backend: backend as never,
       camera: "camera" as never,
       captureStatsSample: vi.fn(),
-      currentScene: SceneName.FastTravel,
-      currentTime: 220,
-      cycleProgress: 0.9,
-      deltaTime: 0.05,
-      fastTravelScene: fastTravelScene as never,
+      currentScene: sceneName,
+      currentTime: 100,
+      cycleProgress: 50,
+      deltaTime: 0.016,
+      animationsPaused: true,
+      worldmapScene: worldmapScene as never,
       hexceptionScene: hexceptionScene as never,
       hudScene: hudScene as never,
-      labelRuntime: labelRuntime as never,
-      effectsBridgeRuntime,
-      worldmapScene: worldmapScene as never,
+      labelRuntime: { render: vi.fn(), shouldRender: () => true } as never,
     });
-
-    expect(fastTravelScene.update).toHaveBeenCalledWith(0.05);
-    expect(hexceptionScene.update).not.toHaveBeenCalled();
-    expect(labelRuntime.shouldRender).toHaveBeenCalledWith({
-      cadenceView: "far",
-      labelsActive: true,
-      now: 220,
-    });
-    expect(backend.renderFrame).toHaveBeenCalledWith(
-      expect.objectContaining({
-        mainScene: "travel-scene",
-        sceneName: SceneName.FastTravel,
-      }),
-    );
-  });
-});
+    expect(scene.setAnimationsPaused).toHaveBeenCalledWith(true);
+    expect(scene.update).toHaveBeenCalledWith(0.016);
+    expect(hudScene.update).not.toHaveBeenCalled();
+    expect(backend.renderFrame).toHaveBeenCalledOnce();
+  },
+);

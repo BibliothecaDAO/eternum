@@ -7,7 +7,6 @@ import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacen
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
-import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -16,24 +15,21 @@ import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
 } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
-import { FaithDevotionActionPanel } from "@/ui/features/world/components/actions/faith-devotion-action-panel";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
-import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { BiomeType, HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   configManager,
   Position,
   hasTileOccupier,
   isTileOccupierChest,
-  isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -71,7 +67,6 @@ const SelectedWorldmapEntityContent = ({
   coordsLabel?: string;
   headerAction?: ReactNode;
 }) => {
-  const { handleUrlChange } = useQuery();
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
@@ -90,14 +85,10 @@ const SelectedWorldmapEntityContent = ({
   const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
   const isStructure = isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
-  const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
-  const normalizedSelectedHex = useMemo(() => {
-    return new Position({ x: selectedHex.col, y: selectedHex.row }).getNormalized();
-  }, [selectedHex.col, selectedHex.row]);
-  const handleTravelToEtherealLayer = useCallback(() => {
-    handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
-  }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
+  const mapLayer = useUIStore((state) => state.mapLayer);
+  const setMapLayer = useUIStore((state) => state.setMapLayer);
+  const lookAtOtherLayer = useCallback(() => setMapLayer(!mapLayer), [mapLayer, setMapLayer]);
 
   if (!tile || !isExplored) {
     return null;
@@ -144,11 +135,10 @@ const SelectedWorldmapEntityContent = ({
 
   return (
     <div className={occupiedEntityLayoutClass}>
-      {isQuest ? coordChip : null}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
           <TileChrome title={coordsLabel ?? "Spire tile"} headerAction={headerAction}>
-            <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+            <SpireTravelPanel mapLayer={mapLayer} onLookAtOtherLayer={lookAtOtherLayer} />
           </TileChrome>
           <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
@@ -177,8 +167,6 @@ const SelectedWorldmapEntityContent = ({
             onSimulateBattle={handleSimulateBattle}
           />
         </div>
-      ) : isQuest ? (
-        <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
       ) : (
         <SelectedArmyTilePanel
           armyEntityId={occupierEntityId}
@@ -284,22 +272,9 @@ const SelectedStructureActionPanel = ({
   biome: BiomeType;
   onSimulateBattle: () => void;
 }) => {
-  const { structure, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
-  const resolvedWorldMode = useResolvedWorldGameMode();
-  const isEternumMode = resolvedWorldMode === "eternum";
-
-  const structureCategory = structure?.base?.category;
-  const isFaithEligible =
-    isEternumMode &&
-    structureCategory !== undefined &&
-    [StructureType.Realm, StructureType.Village].includes(Number(structureCategory) as StructureType);
-
+  const { isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
   if (isLoadingStructure) {
     return <div className="flex h-full items-center justify-center text-xxs text-gold/70">Loading structure...</div>;
-  }
-
-  if (isFaithEligible) {
-    return <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="compact" />;
   }
 
   return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;
@@ -360,13 +335,15 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
   );
 };
 
-const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer: () => void }) => (
+const SpireTravelPanel = ({ mapLayer, onLookAtOtherLayer }: { mapLayer: boolean; onLookAtOtherLayer: () => void }) => (
   <div className="flex flex-col gap-2">
-    <p className={HUD_HEADLINE}>Ethereal Layer Gateway</p>
-    <p className={HUD_BODY}>Enter the Ethereal Layer here to fast-travel.</p>
+    <p className={HUD_HEADLINE}>Spire</p>
+    <p className={HUD_BODY}>
+      This spire stands on both layers. An army next to it crosses to the same hex on the other side.
+    </p>
     <div>
-      <button type="button" className={HUD_PILL_BUTTON} onClick={onTravelToEtherealLayer}>
-        Travel to Ethereal Layer
+      <button type="button" className={HUD_PILL_BUTTON} onClick={onLookAtOtherLayer}>
+        {mapLayer ? "Look at the surface" : "Look at the ethereal layer"}
       </button>
     </div>
   </div>

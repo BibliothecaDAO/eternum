@@ -153,6 +153,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getBiome: () => "forest",
   },
   CombatSimulator: class CombatSimulator {
+    static readonly ETHEREAL_PREVIEW_BONUS_PERCENT = 10;
     simulateBattleWithParams() {
       return {
         attackerDamage: 0,
@@ -185,11 +186,12 @@ vi.mock("@bibliothecadao/eternum", () => ({
 }));
 
 vi.mock("@bibliothecadao/types", () => ({
+  BiomeType: { Underground: "Underground" },
   ActorType: {
     Explorer: "explorer",
     Structure: "structure",
   },
-  getHexDistance: () => mocks.targetDistance,
+  getLayeredAttackDistance: () => mocks.targetDistance,
   getTroopAttackRange: () => 1,
   GuardSlot: {
     Delta: 0,
@@ -203,7 +205,6 @@ vi.mock("@bibliothecadao/types", () => ({
     Bank: 2,
     FragmentMine: 3,
     Village: 4,
-    HolySite: 5,
     Camp: 6,
     BitcoinMine: 7,
   },
@@ -288,6 +289,26 @@ describe("QuickAttackPreview", () => {
     container.remove();
     vi.clearAllMocks();
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  it("labels the ethereal +10% assumption and sends the defender layer with the attack", async () => {
+    mocks.attackerStamina = { amount: 50n, updated_tick: 1n };
+    await act(async () => {
+      root.render(
+        <QuickAttackPreview
+          attacker={{ type: "explorer" as never, id: 1 as never, hex: { x: 10, y: 10 }, alt: true }}
+          target={{ type: "structure" as never, id: 2 as never, hex: { x: 11, y: 10 }, alt: true }}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+    expect(container.textContent).toContain("Preview assumes +10% damage for each side");
+    expect(container.textContent).toContain("d20 for +1% to +20%");
+    await act(async () => {
+      findPrimaryActionButton(container)?.click();
+      await waitForAsyncWork();
+    });
+    expect(mocks.attackExplorerVsGuard).toHaveBeenCalledWith(expect.objectContaining({ ethereal: true }));
   });
 
   it("disables unguarded structure claims when stamina is below the required threshold", async () => {

@@ -786,27 +786,4 @@ pub impl iResourceTransferImpl of iResourceTransferTrait {
         let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
         assert!(!blitz_mode_on || from_owner == to_owner, "Eternum: blitz delayed transfers require the same owner");
     }
-
-    fn _emit_event(
-        ref world: WorldStorage, sender_structure_id: ID, recipient_structure_id: ID, resources: Span<(u8, u128)>,
-    ) { // let mut sending_realm_id = 0;
-    // let sending_realm: Realm = world.read_model(sender_structure_id);
-    // if sending_realm.realm_id != 0 {
-    //     sending_realm_id = sending_realm.realm_id;
-    // } else {
-    //     let sending_entity_owner: EntityOwner = world.read_model(sender_structure_id);
-    //     sending_realm_id = sending_entity_owner.get_realm_id(world);
-    // }
-
-    // world
-    //     .emit_event(
-    //         @Transfer {
-    //             recipient_structure_id,
-    //             sending_realm_id,
-    //             sender_structure_id,
-    //             resources,
-    //             timestamp: starknet::get_block_timestamp(),
-    //         },
-    //     );
-    }
 }

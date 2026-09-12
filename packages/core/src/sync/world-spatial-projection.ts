@@ -4,12 +4,15 @@ import { getComponentValue, type Component, type Metadata, type Schema } from "@
 import { isTileOccupierStructure } from "../utils/map/hex";
 import { tileOptToTile } from "../utils/tile-opt";
 
+/** A map hex on one layer: `alt` is false on the surface and true on the ethereal layer, as in TileOpt. */
 export interface WorldSpatialHex {
+  readonly alt: boolean;
   readonly col: number;
   readonly row: number;
 }
 
 export interface WorldSpatialBounds {
+  readonly alt: boolean;
   readonly minCol: number;
   readonly maxCol: number;
   readonly minRow: number;
@@ -18,7 +21,7 @@ export interface WorldSpatialBounds {
 
 export interface TileSpatialRenderable {
   readonly kind: "tile";
-  readonly spatialId: `tile:${number}:${number}`;
+  readonly spatialId: `tile:${0 | 1}:${number}:${number}`;
   /** Contract-space coordinates, matching TileOpt. */
   readonly hexCoords: WorldSpatialHex;
   readonly biome: number;
@@ -56,7 +59,7 @@ interface EntityStructureSpatialRenderable {
 
 interface ReservedHyperstructureSpatialRenderable {
   readonly kind: "structure";
-  readonly spatialId: `reserved:${number}:${number}`;
+  readonly spatialId: `reserved:${0 | 1}:${number}:${number}`;
   /** Reserved construction sites have no Structure entity until construction starts. */
   readonly entityId: null;
   readonly reserved: true;
@@ -94,6 +97,23 @@ export interface TileSpatialProjectionChange {
   readonly previous?: TileSpatialRenderable;
   readonly current?: TileSpatialRenderable;
 }
+
+/**
+ * Narrows a change list to one layer. A renderable that crossed layers (spire travel) becomes a
+ * removal on the layer it left and a creation on the layer it entered.
+ */
+export const projectionChangesForLayer = <
+  TChange extends { previous?: SpatialRenderable; current?: SpatialRenderable },
+>(
+  changes: readonly TChange[],
+  alt: boolean,
+): TChange[] =>
+  changes.flatMap((change) => {
+    const previous = change.previous?.hexCoords.alt === alt ? change.previous : undefined;
+    const current = change.current?.hexCoords.alt === alt ? change.current : undefined;
+    if (!previous && !current) return [];
+    return [{ ...change, previous, current }];
+  });
 
 export type WorldSpatialProjectionChange =
   | TileSpatialProjectionChange
@@ -139,25 +159,31 @@ interface SpatialIndexChange<TKey, TRenderable> {
 
 const DEFAULT_SPATIAL_BUCKET_SIZE = 32;
 
-const spatialHexKey = ({ col, row }: WorldSpatialHex): string => `${col}:${row}`;
+const layerIndex = (alt: boolean): 0 | 1 => (alt ? 1 : 0);
 
-const spatialBucketKey = ({ col, row }: WorldSpatialHex, bucketSize: number): string =>
-  `${Math.floor(col / bucketSize)}:${Math.floor(row / bucketSize)}`;
+const spatialHexKey = ({ alt, col, row }: WorldSpatialHex): string => `${layerIndex(alt)}:${col}:${row}`;
+
+const spatialBucketKey = (alt: boolean, bucketCol: number, bucketRow: number): string =>
+  `${layerIndex(alt)}:${bucketCol}:${bucketRow}`;
+
+const spatialBucketKeyOf = ({ alt, col, row }: WorldSpatialHex, bucketSize: number): string =>
+  spatialBucketKey(alt, Math.floor(col / bucketSize), Math.floor(row / bucketSize));
+
+const isSameHex = (left: WorldSpatialHex, right: WorldSpatialHex): boolean =>
+  left.alt === right.alt && left.col === right.col && left.row === right.row;
 
 const isSameChest = (left: ChestSpatialRenderable, right: ChestSpatialRenderable): boolean =>
-  left.hexCoords.col === right.hexCoords.col && left.hexCoords.row === right.hexCoords.row;
+  isSameHex(left.hexCoords, right.hexCoords);
 
 const isSameStructure = (left: StructureSpatialRenderable, right: StructureSpatialRenderable): boolean =>
   left.entityId === right.entityId &&
   left.occupierType === right.occupierType &&
-  left.hexCoords.col === right.hexCoords.col &&
-  left.hexCoords.row === right.hexCoords.row;
+  isSameHex(left.hexCoords, right.hexCoords);
 
 const isSameArmy = (left: ArmySpatialRenderable, right: ArmySpatialRenderable): boolean =>
   left.troopCategory === right.troopCategory &&
   left.troopTier === right.troopTier &&
-  left.hexCoords.col === right.hexCoords.col &&
-  left.hexCoords.row === right.hexCoords.row;
+  isSameHex(left.hexCoords, right.hexCoords);
 
 const isSameTile = (left: TileSpatialRenderable, right: TileSpatialRenderable): boolean =>
   left.biome === right.biome &&
@@ -170,12 +196,11 @@ const resolveTileRenderable = (tileOpt: TileOpt | undefined): TileSpatialRendera
   if (!tileOpt) return undefined;
 
   const tile = tileOptToTile(tileOpt);
-  if (tile.alt) return undefined;
 
   return Object.freeze({
     kind: "tile" as const,
-    spatialId: `tile:${tile.col}:${tile.row}` as const,
-    hexCoords: Object.freeze({ col: tile.col, row: tile.row }),
+    spatialId: `tile:${layerIndex(tile.alt)}:${tile.col}:${tile.row}` as const,
+    hexCoords: Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row }),
     biome: tile.biome,
     occupierId: tile.occupier_id,
     occupierType: tile.occupier_type,
@@ -188,12 +213,12 @@ const resolveChestRenderable = (tileOpt: TileOpt | undefined): ChestSpatialRende
   if (!tileOpt) return undefined;
 
   const tile = tileOptToTile(tileOpt);
-  if (tile.alt || tile.occupier_type !== TileOccupier.Chest) return undefined;
+  if (tile.occupier_type !== TileOccupier.Chest) return undefined;
 
   return Object.freeze({
     kind: "chest" as const,
     entityId: tile.occupier_id,
-    hexCoords: Object.freeze({ col: tile.col, row: tile.row }),
+    hexCoords: Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row }),
   });
 };
 
@@ -201,13 +226,13 @@ const resolveStructureRenderable = (tileOpt: TileOpt | undefined): StructureSpat
   if (!tileOpt) return undefined;
 
   const tile = tileOptToTile(tileOpt);
-  if (tile.alt || !isTileOccupierStructure(tile.occupier_type)) return undefined;
+  if (!isTileOccupierStructure(tile.occupier_type)) return undefined;
 
-  const hexCoords = Object.freeze({ col: tile.col, row: tile.row });
+  const hexCoords = Object.freeze({ alt: tile.alt, col: tile.col, row: tile.row });
   if (tile.occupier_type === TileOccupier.ReservedHyperstructure) {
     return Object.freeze({
       kind: "structure" as const,
-      spatialId: `reserved:${tile.col}:${tile.row}` as const,
+      spatialId: `reserved:${layerIndex(tile.alt)}:${tile.col}:${tile.row}` as const,
       entityId: null,
       reserved: true as const,
       hexCoords,
@@ -228,7 +253,7 @@ const resolveStructureRenderable = (tileOpt: TileOpt | undefined): StructureSpat
 const resolveArmyRenderable = (
   explorerTroops: ExplorerTroopsSpatialSource | undefined,
 ): ArmySpatialRenderable | undefined => {
-  if (!explorerTroops || explorerTroops.coord.alt || explorerTroops.troops.count <= 0n) return undefined;
+  if (!explorerTroops || explorerTroops.troops.count <= 0n) return undefined;
 
   const col = Number(explorerTroops.coord.x);
   const row = Number(explorerTroops.coord.y);
@@ -237,7 +262,7 @@ const resolveArmyRenderable = (
   return Object.freeze({
     kind: "army" as const,
     entityId: explorerTroops.explorer_id,
-    hexCoords: Object.freeze({ col, row }),
+    hexCoords: Object.freeze({ alt: explorerTroops.coord.alt, col, row }),
     troopCategory: explorerTroops.troops.category as TroopType,
     troopTier: explorerTroops.troops.tier as TroopTier,
   });
@@ -262,7 +287,7 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
     this.resolveChanges(nextByKey).forEach((change) => this.queueChange(change));
     this.byKey = nextByKey;
     this.keysByHex = this.buildIndex((renderable) => spatialHexKey(renderable.hexCoords));
-    this.keysByBucket = this.buildIndex((renderable) => spatialBucketKey(renderable.hexCoords, this.bucketSize));
+    this.keysByBucket = this.buildIndex((renderable) => spatialBucketKeyOf(renderable.hexCoords, this.bucketSize));
   }
 
   public update(key: TKey, current: TRenderable | undefined): void {
@@ -291,8 +316,8 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
     return this.byKey.get(key);
   }
 
-  public getAll(): readonly TRenderable[] {
-    return [...this.byKey.values()];
+  public getAll(alt: boolean): readonly TRenderable[] {
+    return [...this.byKey.values()].filter((renderable) => renderable.hexCoords.alt === alt);
   }
 
   public getAtHex(hexCoords: WorldSpatialHex): readonly TRenderable[] {
@@ -308,7 +333,9 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
 
     for (let bucketCol = startBucketCol; bucketCol <= endBucketCol; bucketCol += 1) {
       for (let bucketRow = startBucketRow; bucketRow <= endBucketRow; bucketRow += 1) {
-        this.keysByBucket.get(`${bucketCol}:${bucketRow}`)?.forEach((key) => candidates.add(key));
+        this.keysByBucket
+          .get(spatialBucketKey(bounds.alt, bucketCol, bucketRow))
+          ?.forEach((key) => candidates.add(key));
       }
     }
 
@@ -366,7 +393,7 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
 
   private addToSpatialIndexes(key: TKey, renderable: TRenderable): void {
     this.addToIndex(this.keysByHex, spatialHexKey(renderable.hexCoords), key);
-    this.addToIndex(this.keysByBucket, spatialBucketKey(renderable.hexCoords, this.bucketSize), key);
+    this.addToIndex(this.keysByBucket, spatialBucketKeyOf(renderable.hexCoords, this.bucketSize), key);
   }
 
   private addToIndex(index: Map<string, Set<TKey>>, spatialKey: string, key: TKey): void {
@@ -377,7 +404,7 @@ class SpatialIndex<TKey, TRenderable extends SpatialRenderable> {
 
   private removeFromSpatialIndexes(key: TKey, renderable: TRenderable): void {
     this.removeFromIndex(this.keysByHex, spatialHexKey(renderable.hexCoords), key);
-    this.removeFromIndex(this.keysByBucket, spatialBucketKey(renderable.hexCoords, this.bucketSize), key);
+    this.removeFromIndex(this.keysByBucket, spatialBucketKeyOf(renderable.hexCoords, this.bucketSize), key);
   }
 
   private removeFromIndex(index: Map<string, Set<TKey>>, spatialKey: string, key: TKey): void {
@@ -668,8 +695,8 @@ export class WorldSpatialProjection {
     return this.chestIndex.get(entityId);
   }
 
-  public getTiles(): readonly TileSpatialRenderable[] {
-    return this.tileIndex.getAll();
+  public getTiles(alt: boolean): readonly TileSpatialRenderable[] {
+    return this.tileIndex.getAll(alt);
   }
 
   public getTileAtHex(hexCoords: WorldSpatialHex): TileSpatialRenderable | undefined {
@@ -680,8 +707,8 @@ export class WorldSpatialProjection {
     return this.tileIndex.getInBounds(bounds);
   }
 
-  public getChests(): readonly ChestSpatialRenderable[] {
-    return this.chestIndex.getAll();
+  public getChests(alt: boolean): readonly ChestSpatialRenderable[] {
+    return this.chestIndex.getAll(alt);
   }
 
   public getChestsAtHex(hexCoords: WorldSpatialHex): readonly ChestSpatialRenderable[] {
@@ -697,8 +724,8 @@ export class WorldSpatialProjection {
     return structure && !structure.reserved ? structure : undefined;
   }
 
-  public getStructures(): readonly StructureSpatialRenderable[] {
-    return this.structureIndex.getAll();
+  public getStructures(alt: boolean): readonly StructureSpatialRenderable[] {
+    return this.structureIndex.getAll(alt);
   }
 
   public getStructuresAtHex(hexCoords: WorldSpatialHex): readonly StructureSpatialRenderable[] {
@@ -713,8 +740,8 @@ export class WorldSpatialProjection {
     return this.armyIndex.get(entityId);
   }
 
-  public getArmies(): readonly ArmySpatialRenderable[] {
-    return this.armyIndex.getAll();
+  public getArmies(alt: boolean): readonly ArmySpatialRenderable[] {
+    return this.armyIndex.getAll(alt);
   }
 
   public getArmiesAtHex(hexCoords: WorldSpatialHex): readonly ArmySpatialRenderable[] {

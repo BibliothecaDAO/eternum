@@ -7,7 +7,6 @@ import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
-const PRODUCTION_PULSE_THRESHOLD_SECONDS = 2 * 60;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
@@ -39,6 +38,8 @@ interface ProductionStatusBadgeProps {
    * (e.g. green/red for positive/negative net production rates).
    */
   cornerTopRightClassName?: string;
+  /** Changes when the caller wants one accrual sweep around the token; unchanged keys never replay it. */
+  accrualKey?: number;
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
@@ -57,6 +58,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   cornerTopRight,
   cornerBottomRight,
   cornerTopRightClassName,
+  accrualKey,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
   const progressPercent = !isProducing
@@ -64,9 +66,6 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
     : effectiveRemaining === null || effectiveRemaining >= PRODUCTION_DEPLETION_WINDOW_SECONDS
       ? 100
       : clamp((effectiveRemaining / PRODUCTION_DEPLETION_WINDOW_SECONDS) * 100, 0, 100);
-
-  const shouldPulse =
-    isProducing && effectiveRemaining !== null && effectiveRemaining <= PRODUCTION_PULSE_THRESHOLD_SECONDS;
 
   const [r, g, b] = isProducing ? PRODUCING_COLOR : IDLE_COLOR;
 
@@ -153,12 +152,6 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           ))}
         </div>
       )}
-      {shouldPulse && (
-        <span
-          className={clsx("absolute pointer-events-none rounded-full animate-ping", preset.ringOffset)}
-          style={{ backgroundColor: `rgba(${r}, ${g}, ${b}, 0.2)` }}
-        />
-      )}
       {isProducing && (
         <span
           className={clsx("absolute pointer-events-none rounded-full", preset.ringOffset)}
@@ -197,13 +190,13 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         <ResourceIcon resource={resourceLabel} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>
       {cornerTopLeft && (
-        <span className="absolute -top-1 -left-1 z-10 flex min-w-[14px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">
+        <span className="absolute -top-1.5 -left-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/40">
           {cornerTopLeft}
         </span>
       )}
-      {cornerTopRight && (
+      {accrualKey !== undefined && accrualKey > 0 && (
         <span
-          key={cornerTopRight}
+          key={accrualKey}
           aria-hidden
           className={clsx("absolute pointer-events-none rounded-full accrual-sweep", preset.progressOffset)}
         />
@@ -211,7 +204,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       {cornerTopRight && (
         <span
           className={clsx(
-            "absolute -top-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold shadow-md border border-gold/40",
+            "absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold shadow-md border border-gold/40",
             cornerTopRightClassName ?? "text-gold/90",
           )}
         >
@@ -219,12 +212,12 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         </span>
       )}
       {cornerBottomRight && (
-        <span className="absolute -bottom-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/80 shadow-md border border-gold/30">
+        <span className="absolute -bottom-1.5 -right-1.5 z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/80 shadow-md border border-gold/30">
           {cornerBottomRight}
         </span>
       )}
       {!cornerTopLeft && !cornerTopRight && !cornerBottomRight && totalCount > 0 && (
-        <span className="absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-[#2a1f14] shadow-md">
+        <span className="absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-[#2a1f14] shadow-md">
           {totalCount}
         </span>
       )}

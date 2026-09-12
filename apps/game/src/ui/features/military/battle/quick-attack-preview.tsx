@@ -34,8 +34,9 @@ import { AttackTarget, TargetType } from "./types";
 import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 import {
+  BiomeType,
   getDirectionBetweenAdjacentHexes,
-  getHexDistance,
+  getLayeredAttackDistance,
   getTroopAttackRange,
   RESOURCE_PRECISION,
   resources,
@@ -132,7 +133,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   } = useAttackTargetData(attacker.id, target.hex, target.alt ?? DEFAULT_COORD_ALT);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
-  const biome = useMemo(() => configManager.getBiome(target.hex.x, target.hex.y), [target.hex.x, target.hex.y]);
+  const ethereal = target.alt ?? false;
+  const biome = useMemo(
+    () => (ethereal ? BiomeType.Underground : configManager.getBiome(target.hex.x, target.hex.y)),
+    [ethereal, target.hex.x, target.hex.y],
+  );
   const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
 
   const attackerRelicResourceIds = useMemo(() => toRelicResourceIds(attackerRelicEffects), [attackerRelicEffects]);
@@ -157,8 +162,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
   const targetDistance = useMemo(() => {
     if (!selectedHex) return Infinity;
-    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
-  }, [selectedHex, target.hex.x, target.hex.y]);
+    return getLayeredAttackDistance(
+      { ...selectedHex, alt: attacker.alt ?? false },
+      { col: target.hex.x, row: target.hex.y, alt: target.alt ?? false },
+    );
+  }, [selectedHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
 
   // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
   const eligibleStructureGuards = useMemo(
@@ -248,11 +256,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // ranged stamina/cooldown model rather than always simulating an adjacent melee.
   const combatSimulationContext = useMemo(
     () => ({
+      defenderAlt: target.alt ?? false,
       attackDistance: targetDistance,
       attackerIsStructureGuard: attackerType === AttackerType.Structure,
       defenderIsStructureGuard: isStructureTarget,
     }),
-    [targetDistance, attackerType, isStructureTarget],
+    [target.alt, targetDistance, attackerType, isStructureTarget],
   );
 
   const battleSimulation = useMemo(() => {
@@ -365,7 +374,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Math.max(0, Math.min(buffered, maxArmySize));
   }, [willCaptureStructure, attackerArmyData, targetArmyData, attackerRemaining, attackerTroopsTotal, targetData]);
 
-  const canGarrison = willCaptureStructure && garrisonGuardSlot !== null && garrisonTroopCount >= 1;
+  const canGarrison = !ethereal && willCaptureStructure && garrisonGuardSlot !== null && garrisonTroopCount >= 1;
 
   // Reset the opt-in toggle when the target stops being garrison-able so a stale "on" state can't
   // carry over to a different target.
@@ -469,6 +478,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
         return attack_guard_vs_explorer({
           signer: account,
+          ethereal,
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: resolvedTarget.id,
@@ -476,6 +486,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else if (resolvedTarget.targetType === TargetType.Army) {
         return attack_explorer_vs_explorer({
           signer: account,
+          ethereal,
           aggressor_id: attacker.id,
           defender_id: resolvedTarget.id,
           steal_resources: targetResources,
@@ -483,6 +494,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       } else {
         return attack_explorer_vs_guard({
           signer: account,
+          ethereal,
           explorer_id: attacker.id,
           structure_id: resolvedTarget.id,
         });
@@ -499,6 +511,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
       return attack_explorer_vs_guard_and_garrison({
         signer: account,
+        ethereal,
         explorer_id: attacker.id,
         structure_id: resolvedTarget.id,
         structure_direction: direction,
@@ -517,8 +530,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       placement: "beside",
       content: (
         <CombatModal
-          selected={{ type: attacker.type, id: attacker.id, hex: attacker.hex }}
-          target={{ type: target.type, id: target.id, hex: target.hex }}
+          selected={{ type: attacker.type, id: attacker.id, hex: attacker.hex, alt: attacker.alt }}
+          target={{ type: target.type, id: target.id, hex: target.hex, alt: target.alt }}
         />
       ),
     });
@@ -584,6 +597,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
+          {ethereal && (
+            <p className="text-xs text-gold/70">
+              Preview assumes +{CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT}% damage for each side. Each side rolls a
+              d20 for +1% to +20% in the fight.
+            </p>
+          )}
           {targetArmyData ? (
             <>
               {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}

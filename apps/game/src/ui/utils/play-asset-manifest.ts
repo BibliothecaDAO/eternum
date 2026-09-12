@@ -1,5 +1,3 @@
-import { SHARED_ARMY_MODEL_PATHS } from "@/three/constants/army-constants";
-import { SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } from "@/three/constants/scene-constants";
 import { TERRAIN_PROP_CATALOG_PATH } from "@/three/terrain/terrain-prop-catalog";
 import { TERRAIN_GROUND_MANIFEST_PATH, TERRAIN_GROUND_TEXTURE_PATHS } from "@/three/terrain/terrain-ground-catalog";
 
@@ -15,12 +13,9 @@ export const DASHBOARD_SHARED_PLAY_FETCH_ASSETS = Object.freeze([
   TERRAIN_GROUND_MANIFEST_PATH,
 ]);
 
-export const DASHBOARD_SHARED_PLAY_MODEL_ASSETS = Object.freeze([
-  ...SHARED_ARMY_MODEL_PATHS,
-  ...SHARED_BUILDING_MODEL_PATHS,
-  ...SHARED_CHEST_MODEL_PATHS,
-  TERRAIN_PROP_CATALOG_PATH,
-]);
+// Entity models are fetched by the active scene's mode and visible-entity preload plans.
+// The dashboard has no selected world and must not warm every mode's model catalog.
+export const DASHBOARD_SHARED_PLAY_MODEL_ASSETS = Object.freeze([TERRAIN_PROP_CATALOG_PATH]);
 
 export const DASHBOARD_SHARED_PLAY_IMAGE_ASSETS = Object.freeze([
   "/images/map.svg",
@@ -44,7 +39,6 @@ export const DASHBOARD_SHARED_PLAY_IMAGE_ASSETS = Object.freeze([
   "/images/labels/chest.png",
   "/images/labels/hyperstructure.png",
   "/images/labels/fragment_mine.png",
-  "/images/labels/quest.png",
   "/images/labels/essence_rift.png",
   "/images/buildings/construction/archery.png",
   "/images/buildings/construction/barracks.png",

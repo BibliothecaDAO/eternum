@@ -215,20 +215,6 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.SET_ACCESS:
       return "Access rights updated";
 
-    // Quests
-    case TransactionType.START_QUEST:
-      return "Started quest";
-    case TransactionType.CLAIM_REWARD:
-      return "Claimed reward";
-    case TransactionType.ADD_GAME:
-      return "Added game";
-    case TransactionType.GAME_COUNT:
-      return "Retrieved game count";
-    case TransactionType.DISABLE_QUESTS:
-      return "Disabled quests";
-    case TransactionType.ENABLE_QUESTS:
-      return "Enabled quests";
-
     // Season & Leaderboard
     case TransactionType.SEASON_CLOSE:
       return "Season closed";
@@ -293,7 +279,6 @@ export const getTxMessage = (type: TransactionType): string => {
     case TransactionType.SET_STAMINA_REFILL_CONFIG:
     case TransactionType.SET_SETTLEMENT_CONFIG:
     case TransactionType.SET_BLITZ_REGISTRATION_CONFIG:
-    case TransactionType.SET_QUEST_CONFIG:
       return "Updated game configuration";
 
     // Legacy
@@ -313,8 +298,6 @@ export const getTxMessage = (type: TransactionType): string => {
       return "Cancelled marketplace order";
     case TransactionType.EDIT_MARKETPLACE_ORDER:
       return "Edited marketplace order";
-    case TransactionType.GET_GAME_COUNT:
-      return "Retrieved game count";
     case TransactionType.CONTRIBUTE_TO_CONSTRUCTION:
       return "Contributed to construction";
 
@@ -329,7 +312,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.EXPLORE:
     case TransactionType.TRAVEL_HEX:
     case TransactionType.EXPLORER_MOVE:
-    case TransactionType.START_QUEST:
       return "🗺️";
     case TransactionType.EXPLORER_CREATE:
     case TransactionType.EXPLORER_ADD:
@@ -492,17 +474,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.SET_ACCESS:
       return "🔑";
 
-    // Quests
-    case TransactionType.CLAIM_REWARD:
-      return "🎁";
-    case TransactionType.ADD_GAME:
-    case TransactionType.GAME_COUNT:
-    case TransactionType.GET_GAME_COUNT:
-      return "🎮";
-    case TransactionType.DISABLE_QUESTS:
-    case TransactionType.ENABLE_QUESTS:
-      return "📋";
-
     // Season & Leaderboard
     case TransactionType.SEASON_CLOSE:
     case TransactionType.END_GAME:
@@ -560,7 +531,6 @@ export const getTxIcon = (type: TransactionType): string => {
     case TransactionType.SET_STAMINA_REFILL_CONFIG:
     case TransactionType.SET_SETTLEMENT_CONFIG:
     case TransactionType.SET_BLITZ_REGISTRATION_CONFIG:
-    case TransactionType.SET_QUEST_CONFIG:
       return "⚙️";
 
     // Legacy

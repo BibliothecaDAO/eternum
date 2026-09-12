@@ -2508,6 +2508,44 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async bitcoin_mine_contribute_labor(props: SystemProps.BitcoinMineContributeLaborProps) {
+    const { signer, mine_id, target_phase_id, labor_amount } = props;
+    return this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`),
+        entrypoint: "contribute_labor",
+        calldata: [mine_id, target_phase_id, labor_amount],
+      },
+      transactionType: TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR,
+    });
+  }
+
+  public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
+    const { signer, phase_id, mine_ids } = props;
+    const contractAddress = getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`);
+    const calls: Call[] = [];
+    if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
+      calls.push(
+        createVrfRequestRandomCall({
+          vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+          addressToCall: contractAddress,
+          source: { type: "nonce", value: signer.address },
+        }),
+      );
+    }
+    calls.push({
+      contractAddress,
+      entrypoint: "claim_phase_reward",
+      calldata: [phase_id, mine_ids.length, ...mine_ids],
+    });
+    return this.promiseQueue.enqueue({
+      signer,
+      calls,
+      transactionType: TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+    });
+  }
+
   /**
    * Toggle explorer to the alternate layer through an adjacent spire
    *
@@ -2629,6 +2667,18 @@ export class EternumProvider extends EnhancedDojoProvider {
       return await this.explorer_travel({ explorer_id, directions, signer });
     }
   }
+  private withCombatRandomness(props: { signer: AccountInterface; ethereal?: boolean }, attack: Call): Call | Call[] {
+    if (!props.ethereal || !isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) return attack;
+    return [
+      createVrfRequestRandomCall({
+        vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+        addressToCall: attack.contractAddress,
+        source: { type: "nonce", value: props.signer.address },
+      }),
+      attack,
+    ];
+  }
+
   /**
    * Attack an explorer with another explorer
    *
@@ -2655,11 +2705,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: {
+      calls: this.withCombatRandomness(props, {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
         entrypoint: "attack_explorer_vs_explorer",
         calldata,
-      },
+      }),
       transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
   }
@@ -2678,11 +2728,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: {
+      calls: this.withCombatRandomness(props, {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
         entrypoint: "attack_explorer_vs_guard",
         calldata: [explorer_id, structure_id],
-      },
+      }),
       transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD,
     });
   }
@@ -2705,11 +2755,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { explorer_id, structure_id, structure_direction, to_guard_slot, count, signer } = props;
 
     const calls: Call[] = [
-      {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
-        entrypoint: "attack_explorer_vs_guard",
-        calldata: [explorer_id, structure_id],
-      },
+      ...this.getTransactionCalls(
+        this.withCombatRandomness(props, {
+          contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
+          entrypoint: "attack_explorer_vs_guard",
+          calldata: [explorer_id, structure_id],
+        }),
+      ),
       {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_management_systems`),
         entrypoint: "explorer_guard_swap",
@@ -2739,11 +2791,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: {
+      calls: this.withCombatRandomness(props, {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
         entrypoint: "attack_guard_vs_explorer",
         calldata: [structure_id, structure_guard_slot, explorer_id],
-      },
+      }),
       transactionType: TransactionType.ATTACK_GUARD_VS_EXPLORER,
     });
   }
@@ -3392,62 +3444,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       throw new Error("Transaction failed - no result returned");
     }
     return result;
-  }
-
-  public async set_quest_games(props: SystemProps.SetQuestGamesProps): Promise<any> {
-    const { signer, quest_games } = props;
-    for (const quest_game of quest_games) {
-      return await this.executeAndCheckTransaction(signer, {
-        contractAddress: getContractByName(this.manifest, `${this.namespace}-quest_systems`),
-        entrypoint: "add_game",
-        calldata: quest_game,
-      });
-    }
-  }
-
-  public async start_quest(props: SystemProps.StartQuestProps) {
-    const { quest_tile_id, explorer_id, player_name, to_address, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-quest_systems`),
-      entrypoint: "start_quest",
-      calldata: [quest_tile_id, explorer_id, player_name, to_address],
-    });
-  }
-
-  public async claim_reward(props: SystemProps.ClaimRewardProps) {
-    const { game_token_id, game_address, signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-quest_systems`),
-      entrypoint: "claim_reward",
-      calldata: [game_token_id, game_address],
-    });
-  }
-
-  public async get_game_count(props: SystemProps.GetGameCountProps) {
-    const { game_address } = props;
-    return await this.provider.callContract({
-      contractAddress: game_address,
-      entrypoint: "game_count",
-      calldata: [],
-    });
-  }
-
-  public async disable_quests(props: SystemProps.DisableQuestsProps) {
-    const { signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-quest_systems`),
-      entrypoint: "disable_quests",
-      calldata: [],
-    });
-  }
-
-  public async enable_quests(props: SystemProps.EnableQuestsProps) {
-    const { signer } = props;
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, `${this.namespace}-quest_systems`),
-      entrypoint: "enable_quests",
-      calldata: [],
-    });
   }
 
   public async transfer_structure_ownership(props: SystemProps.TransferStructureOwnershipProps) {

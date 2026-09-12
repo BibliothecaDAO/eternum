@@ -2,7 +2,7 @@ import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { Position } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import type { ClientComponents, HexEntityInfo } from "@bibliothecadao/types";
-import { BiomeType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeType, ETHEREAL_STRIDE, TileOccupier } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import type { ExplorationMapSnapshot } from "./types";
 
@@ -57,7 +57,8 @@ export const buildExplorationSnapshot = async ({
 
   const centerCol = Number(explorer.coord.x);
   const centerRow = Number(explorer.coord.y);
-  const radius = Math.max(1, Math.round(scopeRadius));
+  const alt = explorer.coord.alt;
+  const radius = Math.max(1, Math.round(scopeRadius)) * (alt ? ETHEREAL_STRIDE : 1);
   const bounds = {
     minCol: centerCol - radius,
     maxCol: centerCol + radius,
@@ -68,10 +69,10 @@ export const buildExplorationSnapshot = async ({
   const exploredTiles = new Map<number, Map<number, BiomeType>>();
   const structureHexes = new Map<number, Map<number, HexEntityInfo>>();
   const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
-  const questHexes = new Map<number, Map<number, HexEntityInfo>>();
   const chestHexes = new Map<number, Map<number, HexEntityInfo>>();
 
-  worldSpatialProjection.getTilesInBounds(bounds).forEach((tile) => {
+  const layerBounds = { ...bounds, alt };
+  worldSpatialProjection.getTilesInBounds(layerBounds).forEach((tile) => {
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
     if (tile.biome !== 0) {
       setNestedValue(exploredTiles, normalized.x, normalized.y, tile.biome as unknown as BiomeType);
@@ -79,14 +80,12 @@ export const buildExplorationSnapshot = async ({
     if (tile.occupierId === 0 || tile.occupierType === TileOccupier.None) return;
 
     const info = buildHexInfo(Number(tile.occupierId), 0n);
-    if (tile.occupierType === TileOccupier.Quest) {
-      setNestedValue(questHexes, normalized.x, normalized.y, info);
-    } else if (tile.occupierType === TileOccupier.Chest) {
+    if (tile.occupierType === TileOccupier.Chest) {
       setNestedValue(chestHexes, normalized.x, normalized.y, info);
     }
   });
 
-  worldSpatialProjection.getStructuresInBounds(bounds).forEach((structure) => {
+  worldSpatialProjection.getStructuresInBounds(layerBounds).forEach((structure) => {
     if (structure.entityId === null) return;
     const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
     setNestedValue(
@@ -97,7 +96,7 @@ export const buildExplorationSnapshot = async ({
     );
   });
 
-  worldSpatialProjection.getArmiesInBounds(bounds).forEach((army) => {
+  worldSpatialProjection.getArmiesInBounds(layerBounds).forEach((army) => {
     const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
     setNestedValue(
       armyHexes,
@@ -108,11 +107,11 @@ export const buildExplorationSnapshot = async ({
   });
 
   return {
+    alt,
     position: { col: centerCol, row: centerRow },
     exploredTiles,
     structureHexes,
     armyHexes,
-    questHexes,
     chestHexes,
   };
 };

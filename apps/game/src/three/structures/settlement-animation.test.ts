@@ -24,6 +24,18 @@ function harness(motion: "banner" | "flame" | "spin" | "foliage") {
 }
 
 describe("settlement animation", () => {
+  it("keeps a gust continuous even after a long session and holds still when paused", () => {
+    const model = harness("banner");
+    model.animation.update(3600, { windX: 0.1, windZ: 0 });
+    const before = model.positions();
+    model.animation.update(0, { windX: 0, windZ: 2 });
+    expect(model.positions()).toEqual(before);
+    model.animation.update(1 / 60, { windX: 0, windZ: 2 });
+    const displacements = model.positions().map((value, index) => Math.abs(value - before[index]));
+    expect(Math.max(...displacements)).toBeLessThan(0.003);
+    model.dispose();
+  });
+
   it("pins the banner to its crossbar, animates its free edge and leaves cached geometry intact", () => {
     const model = harness("banner");
     const rest = Array.from(model.geometry.getAttribute("position").array);

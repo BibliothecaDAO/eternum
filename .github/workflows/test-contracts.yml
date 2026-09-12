@@ -60,11 +60,8 @@ jobs:
       - uses: foundry-rs/setup-snfoundry@v3
         with:
           tool-versions: contracts/l3/game/.tool-versions
-      - name: Download Dojo release artifact
-        run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v1.8.0/dojo_v1.8.0_linux_amd64.tar.gz
-          tar -xzf dojo-linux-x86_64.tar.gz
-          sudo mv sozo /usr/local/bin/
+      - name: Verify deployment does not require sozo
+        run: "! command -v sozo"
       - name: Run Dojo Test
         run: |
           cd contracts/l3/game && scarb test
@@ -81,3 +78,20 @@ jobs:
         run: python3 scripts/generate-realm-metadata.py --check
       - name: Run scarb fmt check
         run: cd contracts/l3/game && scarb fmt --check
+
+  test-world-deployer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install deployment dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify world deployment without sozo
+        run: |
+          ! command -v sozo
+          bun test config/deployer/clean/tests/world-deployment.test.ts

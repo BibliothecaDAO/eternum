@@ -70,15 +70,12 @@ export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   VILLAGE_MODEL_PATH,
 ]);
 
-export const SHARED_CHEST_MODEL_PATHS = buildUniqueAssetPaths([ChestModelPath]);
-
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,
   [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
-  [StructureType.HolySite]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
   [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
 };
@@ -184,7 +181,6 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.FragmentMine]: isBlitz ? [RiftModelPath] : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.HolySite]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Castle],
     [StructureType.Camp]: [VILLAGE_MODEL_PATH],
     [StructureType.BitcoinMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
   };
@@ -282,3 +278,5 @@ export const MinesMaterialsParams: Record<number, { color: Color; emissive: Colo
     emissiveIntensity: 0.8,
   },
 };
+
+export const SPIRE_MODEL_PATH = "/models/ethereal/spire.glb";

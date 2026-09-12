@@ -47,7 +47,6 @@ export interface EnvironmentSceneTarget {
 }
 
 export interface RendererEnvironmentTargets {
-  fastTravelScene?: EnvironmentSceneTarget;
   hexceptionScene: EnvironmentSceneTarget;
   intensity: number;
   worldmapScene: EnvironmentSceneTarget;

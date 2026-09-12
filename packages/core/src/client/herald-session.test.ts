@@ -16,6 +16,7 @@ const createSession = (overrides: Partial<CreateHeraldGameSyncSessionInput> = {}
     entityModels: [],
     eventModels: [],
     gameId: 54,
+    worldAddress: "0x1",
     scheduler: createManualGameSyncScheduler(),
     setup: { network: { contractComponents: {} } } as never,
     ...overrides,
@@ -75,7 +76,7 @@ describe("createHeraldGameSyncSession", () => {
     session.onError?.(new Error("boom"));
 
     expect(observer.onHead).toHaveBeenCalledWith(head);
-    expect(observer.onStoryEvent).toHaveBeenCalledWith(event);
+    expect(observer.onStoryEvent).toHaveBeenCalledWith(event, { chain: "madara", worldAddress: "0x1", gameId: 54 });
     expect(observer.onDiffReceived).toHaveBeenCalledWith("0xabc");
     expect(observer.onRecsApplied).toHaveBeenCalledWith("0xabc");
     expect(observer.onLiveApplyFailed).toHaveBeenCalledWith(expect.objectContaining({ message: "boom" }));

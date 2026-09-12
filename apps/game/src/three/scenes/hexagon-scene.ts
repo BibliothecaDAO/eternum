@@ -8,6 +8,7 @@ import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-cont
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
+import { TouchCameraNavigation } from "@/three/managers/touch-camera-navigation";
 import { InteractiveHexManager } from "@/three/managers/interactive-hex-manager";
 import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
@@ -74,6 +75,14 @@ export interface SceneSetupContext {
 }
 
 export abstract class HexagonScene {
+  protected animationsPaused = false;
+  private frozenCycleProgress = 0;
+
+  public setAnimationsPaused(paused: boolean): void {
+    if (paused && !this.animationsPaused) this.frozenCycleProgress = this.state.cycleProgress || 0;
+    this.animationsPaused = paused;
+  }
+
   protected scene!: Scene;
   protected interactionOverlayScene!: Scene;
   protected camera!: PerspectiveCamera;
@@ -194,7 +203,19 @@ export abstract class HexagonScene {
     this.interactionOverlayScene = new Scene();
     this.camera = this.controls.object as PerspectiveCamera;
     this.locationManager = new LocationManager();
-    this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
+    this.inputManager = new InputManager(
+      this.sceneName,
+      this.sceneManager,
+      this.raycaster,
+      this.mouse,
+      this.camera,
+      new TouchCameraNavigation(this.controls, {
+        begin: () => this.beginTouchNavigation(),
+        zoom: (distance) => this.applyTouchZoomDistance(distance),
+        end: () => this.endTouchNavigation(),
+        changed: () => this.notifyControlsChanged(),
+      }),
+    );
     this.interactiveHexManager = new InteractiveHexManager(this.scene, {
       sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z),
     });
@@ -319,6 +340,15 @@ export abstract class HexagonScene {
 
   public activateInputSurface(): void {
     this.inputManager.activate();
+  }
+
+  protected beginTouchNavigation(): void {}
+
+  protected endTouchNavigation(): void {}
+
+  protected applyTouchZoomDistance(distance: number): void {
+    const offset = this.camera.position.clone().sub(this.controls.target).setLength(distance);
+    this.camera.position.copy(this.controls.target).add(offset);
   }
 
   /**
@@ -1007,6 +1037,14 @@ export abstract class HexagonScene {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
     this.visibilityManager?.beginFrame();
+
+    if (this.animationsPaused) {
+      this.worldAtmosphereController.update(this.frozenCycleProgress, this.controls.target, { snap: true });
+      this.updateLights();
+      this.updateShadowRefresh(deltaTime);
+      PerformanceMonitor.end("scene.update");
+      return;
+    }
 
     PerformanceMonitor.begin("interactiveHexManager.update");
     this.interactiveHexManager.update(deltaTime);

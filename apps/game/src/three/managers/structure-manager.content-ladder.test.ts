@@ -158,7 +158,7 @@ function createStructure(entityId: number, overrides: Record<string, unknown> = 
   return {
     entityId,
     structureName: `Realm ${entityId}`,
-    hexCoords: { col: entityId, row: 0 },
+    hexCoords: { alt: false, col: entityId, row: 0 },
     structureType: "Realm",
     isMine: false,
     isAlly: false,
@@ -227,7 +227,7 @@ function createLiveManager(structures = PRIORITY_STRUCTURES) {
   manager.entityIdLabels.set(6, createHoverLabel(6));
   manager.visibleStructureWindow = {
     chunkKey: "0,0",
-    bounds: { minCol: -10, maxCol: 10, minRow: -10, maxRow: 10 },
+    bounds: { alt: false, minCol: -10, maxCol: 10, minRow: -10, maxRow: 10 },
     structures: new Map(renderables.map((renderable) => [renderable.entityId, renderable])),
   };
   structures.forEach((structure) => manager.structureInfoCache.set(structure.entityId, structure));
@@ -354,7 +354,7 @@ function createFullRefreshSubject(structureCount: number) {
   const structures = Array.from({ length: structureCount }, (_, index) => ({
     entityId: index + 1,
     hasWonder: false,
-    hexCoords: { col: index, row: 0 },
+    hexCoords: { alt: false, col: index, row: 0 },
     stage: 0,
     structureType: "Village",
   }));

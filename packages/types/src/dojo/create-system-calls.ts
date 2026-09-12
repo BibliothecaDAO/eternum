@@ -32,9 +32,13 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
-  const spire_make_spires = async (props: SystemProps.SpireMakeSpiresProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.spire_make_spires(props);
-  };
+  const bitcoin_mine_contribute_labor = async (
+    props: SystemProps.BitcoinMineContributeLaborProps,
+  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_contribute_labor(props);
+
+  const bitcoin_mine_claim_phase_reward = async (
+    props: SystemProps.BitcoinMineClaimPhaseRewardProps,
+  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_claim_phase_reward(props);
 
   const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_order(props);
@@ -406,18 +410,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.update_structure_ownership(props);
   };
 
-  const start_quest = async (props: SystemProps.StartQuestProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.start_quest(props);
-  };
-
-  const claim_reward = async (props: SystemProps.ClaimRewardProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.claim_reward(props);
-  };
-
-  const get_game_count = async (props: SystemProps.GetGameCountProps) => {
-    return await provider.get_game_count(props);
-  };
-
   const transfer_structure_ownership = async (
     props: SystemProps.TransferStructureOwnershipProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -453,8 +445,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   };
 
   const systemCalls = {
-    spire_make_spires: withAuth(spire_make_spires),
-
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
     pickup_resources: withAuth(pickup_resources),
@@ -467,6 +457,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
     isLive: isLive,
+    bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
+    bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
     create_order: withAuth(create_order),
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),
@@ -543,10 +535,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     edit_marketplace_order: withAuth(edit_marketplace_order),
 
     leave_guild: withAuth(leave_guild),
-
-    start_quest: withAuth(start_quest),
-    claim_reward: withAuth(claim_reward),
-    get_game_count: withAuth(get_game_count),
 
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
     transfer_agent_ownership: withAuth(transfer_agent_ownership),

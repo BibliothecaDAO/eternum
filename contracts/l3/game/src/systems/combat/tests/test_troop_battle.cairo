@@ -24,6 +24,53 @@ mod tests {
         spawn_combat_world, spawn_world_minimal,
     };
 
+    #[test]
+    fn ethereal_battle_uses_independent_dice_from_the_rng_library() {
+        let (mut world, systems, attacker, defender) = setup_explorer_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
+        );
+        let mut attacker_row = get_explorer(ref world, attacker.explorer_id);
+        let mut defender_row = get_explorer(ref world, defender.explorer_id);
+        attacker_row.coord.alt = true;
+        defender_row.coord = attacker_row.coord.neighbor(Direction::East);
+        world.write_model_test(@attacker_row);
+        world.write_model_test(@defender_row);
+        attack_explorer_vs_explorer(ref world, systems, attacker, defender.explorer_id);
+        let after = get_explorer(ref world, attacker.explorer_id);
+        let defended = get_explorer(ref world, defender.explorer_id);
+        assert!(after.troops.count < attacker_row.troops.count, "defender dealt no damage");
+        assert!(defended.troops.count < defender_row.troops.count, "attacker dealt no damage");
+    }
+
+    #[test]
+    fn discovered_bitcoin_mine_has_four_t2_garrisons_on_the_ethereal_layer() {
+        let (mut world, _) = crate::utils::testing::helpers::setup_battle_world();
+        let coord = Coord { alt: true, x: 100, y: 100 };
+        let mut limits = MOCK_TROOP_LIMIT_CONFIG();
+        limits.mercenaries_troop_lower_bound = 800;
+        limits.mercenaries_troop_upper_bound = 1500;
+        crate::systems::utils::bitcoin_mine::iBitcoinMineDiscoveryImpl::create(
+            ref world, TEST_GAME_ID, coord, limits, crate::utils::testing::helpers::MOCK_TROOP_STAMINA_CONFIG(), 42,
+        );
+        let packed: crate::models::map2::TileOpt = world.read_model((TEST_GAME_ID, true, 100_u32, 100_u32));
+        let tile: crate::models::map::Tile = packed.into();
+        let mine: crate::models::structure::Structure = world.read_model((TEST_GAME_ID, tile.occupier_id));
+        assert!(mine.base.coord().alt, "mine lost its layer");
+        assert_eq!(mine.base.troop_guard_count, 4);
+        assert_eq!(mine.base.troop_max_guard_count, 4);
+        for guard in array![
+            mine.troop_guards.alpha, mine.troop_guards.bravo, mine.troop_guards.charlie, mine.troop_guards.delta,
+        ] {
+            assert!(guard.tier == TroopTier::T2, "mine guard is not T2");
+            assert!(
+                guard.count >= 800 * RESOURCE_PRECISION && guard.count <= 1500 * RESOURCE_PRECISION,
+                "mine guard strength outside preset bounds",
+            );
+        }
+        let surface: crate::models::map2::TileOpt = world.read_model((TEST_GAME_ID, false, 100_u32, 100_u32));
+        assert_eq!(surface.data, 0);
+    }
+
     // ========================================================================
     // Basic World Tests
     // ========================================================================

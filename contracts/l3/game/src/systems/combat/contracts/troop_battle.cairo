@@ -42,7 +42,6 @@ pub mod troop_battle_systems {
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::random::VRFImpl;
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -168,7 +167,7 @@ pub mod troop_battle_systems {
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
-            let (updated_aggressor, updated_defender) = combat_library
+            let (updated_aggressor, updated_defender, attacker_roll, defender_roll) = combat_library
                 .troops_attack(
                     world,
                     game_id,
@@ -212,18 +211,6 @@ pub mod troop_battle_systems {
             if explorer_aggressor_troops.count.is_zero() {
                 if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
-
-                    // grant kill agent achievement
-                    if explorer_defender_owner_address.is_non_zero() {
-                        // zero addr check ensures it isnt agent on agent crime
-                        AchievementTrait::progress(
-                            world,
-                            explorer_defender_owner_address.into(),
-                            Tasks::KILL_AGENT,
-                            1,
-                            starknet::get_block_timestamp(),
-                        );
-                    }
                 } else {
                     let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                         ref world, game_id, explorer_aggressor.owner,
@@ -264,18 +251,6 @@ pub mod troop_battle_systems {
                 // delete defender
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
-
-                    // grant kill agent achievement
-                    if explorer_aggressor_owner_address.is_non_zero() {
-                        // zero addr check ensures it isnt agent on agent crime
-                        AchievementTrait::progress(
-                            world,
-                            explorer_aggressor_owner_address.into(),
-                            Tasks::KILL_AGENT,
-                            1,
-                            starknet::get_block_timestamp(),
-                        );
-                    }
                 } else {
                     let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                         ref world, game_id, explorer_defender.owner,
@@ -309,13 +284,6 @@ pub mod troop_battle_systems {
                 winner_owner_structure_address = explorer_aggressor_owner_address;
             }
 
-            // grant achievement
-            if winner_owner_structure_address.is_non_zero() {
-                AchievementTrait::progress(
-                    world, winner_owner_structure_address.into(), Tasks::WIN_BATTLE, 1, starknet::get_block_timestamp(),
-                );
-            }
-
             // emit event
             world
                 .emit_event(
@@ -334,6 +302,8 @@ pub mod troop_battle_systems {
 
             // emit story events
             let battle_story = BattleStory {
+                attacker_roll,
+                defender_roll,
                 battle_type: BattleType::ExplorerVsExplorer,
                 attacker_id: explorer_aggressor.explorer_id,
                 attacker_structure: BattleStructureType {
@@ -495,7 +465,7 @@ pub mod troop_battle_systems {
             let guard_troop_count_before_attack = guard_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
-            let (updated_aggressor, updated_guard) = combat_library
+            let (updated_aggressor, updated_guard, attacker_roll, defender_roll) = combat_library
                 .troops_attack(
                     world,
                     game_id,
@@ -527,11 +497,6 @@ pub mod troop_battle_systems {
             if explorer_aggressor_troops.count.is_zero() {
                 if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
-
-                    // grant kill agent achievement
-                    AchievementTrait::progress(
-                        world, guarded_structure_owner.into(), Tasks::KILL_AGENT, 1, starknet::get_block_timestamp(),
-                    );
                 } else {
                     let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                         ref world, game_id, explorer_aggressor.owner,
@@ -603,19 +568,6 @@ pub mod troop_battle_systems {
                 winner_owner_structure_id = explorer_aggressor.owner;
                 winner_owner_structure_address = explorer_aggressor_owner_address;
             }
-            // grant battle winner achievement
-            if winner_owner_structure_address.is_non_zero() {
-                AchievementTrait::progress(
-                    world, winner_owner_structure_address.into(), Tasks::WIN_BATTLE, 1, starknet::get_block_timestamp(),
-                );
-            }
-
-            // grant fortress achievement
-            if guard_troops.count.is_non_zero() {
-                AchievementTrait::progress(
-                    world, guarded_structure_owner.into(), Tasks::DEFEND_STRUCTURE, 1, starknet::get_block_timestamp(),
-                );
-            }
 
             // emit event
             world
@@ -635,6 +587,8 @@ pub mod troop_battle_systems {
 
             // emit story events
             let battle_story = BattleStory {
+                attacker_roll,
+                defender_roll,
                 battle_type: BattleType::ExplorerVsGuard,
                 attacker_id: explorer_id,
                 attacker_structure: BattleStructureType {
@@ -770,7 +724,7 @@ pub mod troop_battle_systems {
             let structure_guard_aggressor_troop_count_before_attack = structure_guard_aggressor_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
-            let (updated_guard, updated_explorer) = combat_library
+            let (updated_guard, updated_explorer, attacker_roll, defender_roll) = combat_library
                 .troops_attack(
                     world,
                     game_id,
@@ -803,11 +757,6 @@ pub mod troop_battle_systems {
             if explorer_defender.troops.count.is_zero() {
                 if explorer_defender.owner == DAYDREAMS_AGENT_ID {
                     iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_defender);
-
-                    // grant kill agent achievement
-                    AchievementTrait::progress(
-                        world, structure_aggressor_owner.into(), Tasks::KILL_AGENT, 1, starknet::get_block_timestamp(),
-                    );
                 } else {
                     let mut explorer_defender_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                         ref world, game_id, explorer_defender.owner,
@@ -871,7 +820,6 @@ pub mod troop_battle_systems {
                 StructureTroopGuardStoreImpl::store(ref structure_guards_aggressor, ref world, game_id, structure_id);
             }
 
-            // grant achievement
             let mut winner_owner_structure_id: ID = Zero::zero();
             let mut winner_owner_structure_address: starknet::ContractAddress = Zero::zero();
             if structure_guard_aggressor_troops.count.is_zero() && explorer_defender.troops.count.is_non_zero() {
@@ -881,11 +829,6 @@ pub mod troop_battle_systems {
             if explorer_defender.troops.count.is_zero() && structure_guard_aggressor_troops.count.is_non_zero() {
                 winner_owner_structure_id = structure_id;
                 winner_owner_structure_address = structure_aggressor_owner;
-            }
-            if winner_owner_structure_address.is_non_zero() {
-                AchievementTrait::progress(
-                    world, winner_owner_structure_address.into(), Tasks::WIN_BATTLE, 1, starknet::get_block_timestamp(),
-                );
             }
 
             // emit event
@@ -906,6 +849,8 @@ pub mod troop_battle_systems {
 
             // emit story events
             let battle_story = BattleStory {
+                attacker_roll,
+                defender_roll,
                 battle_type: BattleType::GuardVsExplorer,
                 attacker_id: structure_id,
                 attacker_structure: BattleStructureType {

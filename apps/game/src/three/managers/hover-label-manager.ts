@@ -20,7 +20,6 @@ type HoverLabelController = {
 type HoverLabelControllers = {
   army?: HoverLabelController;
   structure?: HoverLabelController;
-  quest?: HoverLabelController;
   chest?: HoverLabelController;
 };
 
@@ -29,7 +28,6 @@ export type HoverLabelType = keyof HoverLabelControllers;
 type HexagonEntities = {
   army?: HoverLabelEntity;
   structure?: HoverLabelEntity;
-  quest?: HoverLabelEntity;
   chest?: HoverLabelEntity;
 };
 
@@ -163,11 +161,10 @@ export class HoverLabelManager {
     hexCoords: HexPosition,
     options?: ReconcileHoveredHexLabelsOptions,
   ): HoverLabelReconcileResult {
-    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
     const results = [
       this.toggleLabel("army", army?.id, options),
       this.toggleLabel("structure", structure?.id, options),
-      this.toggleLabel("quest", quest?.id, options),
       this.toggleLabel("chest", chest?.id, options),
     ];
     const labelsNeedRender = results.some((result) => result.labelsNeedRender);

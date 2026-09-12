@@ -11,7 +11,6 @@ function createScene(name: string) {
 
 const transitionManagerInstance = { id: "transition" };
 const sceneManagerInstance = { addScene: vi.fn(), moveCameraForScene: vi.fn() };
-const fastTravelSceneInstance = createScene("travel");
 const hexceptionSceneInstance = createScene("hex");
 const worldmapSceneInstance = createScene("map");
 
@@ -23,10 +22,6 @@ vi.mock("@/three/scene-manager", () => ({
   SceneManager: vi.fn(() => sceneManagerInstance),
 }));
 
-vi.mock("@/three/scenes/fast-travel", () => ({
-  default: vi.fn(() => fastTravelSceneInstance),
-}));
-
 vi.mock("@/three/scenes/hexception", () => ({
   default: vi.fn(() => hexceptionSceneInstance),
 }));
@@ -35,83 +30,17 @@ vi.mock("@/three/scenes/worldmap", () => ({
   default: vi.fn(() => worldmapSceneInstance),
 }));
 
-const { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry, createRendererSceneRegistry } =
-  await import("./renderer-scene-bootstrap");
-
-describe("createRendererSceneRegistry", () => {
-  it("creates and registers the mandatory scenes plus fast travel when enabled", () => {
-    const transitionManager = { id: "transition" };
-    const sceneManager = { addScene: vi.fn() };
-    const hexceptionScene = createScene("hex");
-    const worldmapScene = createScene("map");
-    const fastTravelScene = createScene("travel");
-    const surface = document.createElement("canvas");
-    const compilePipelines = vi.fn(async () => {});
-    const createHexceptionScene = vi.fn(() => hexceptionScene as never);
-
-    const registry = createRendererSceneRegistry({
-      compilePipelines,
-      controls: { id: "controls" } as never,
-      createFastTravelScene: vi.fn(() => fastTravelScene as never),
-      createHexceptionScene,
-      createSceneManager: vi.fn(() => sceneManager as never),
-      createTransitionManager: vi.fn(() => transitionManager as never),
-      createWorldmapScene: vi.fn(() => worldmapScene as never),
-      dojo: { id: "dojo" } as never,
-      fastTravelEnabled: true,
-      inputSurface: surface,
-      mouse: { id: "mouse" } as never,
-      raycaster: { id: "raycaster" } as never,
-    });
-
-    // Both hex scenes warm their pipelines through the one renderer compiler.
-    expect(createHexceptionScene).toHaveBeenCalledWith(expect.objectContaining({ compilePipelines }));
-    expect(registry.transitionManager).toBe(transitionManager);
-    expect(registry.sceneManager).toBe(sceneManager);
-    expect(registry.fastTravelScene).toBe(fastTravelScene);
-    expect(hexceptionScene.setInputSurface).toHaveBeenCalledWith(surface);
-    expect(worldmapScene.setInputSurface).toHaveBeenCalledWith(surface);
-    expect(fastTravelScene.setInputSurface).toHaveBeenCalledWith(surface);
-    expect(sceneManager.addScene).toHaveBeenCalledTimes(3);
-    expect(sceneManager.addScene).toHaveBeenNthCalledWith(1, "hex", hexceptionScene);
-    expect(sceneManager.addScene).toHaveBeenNthCalledWith(2, "map", worldmapScene);
-    expect(sceneManager.addScene).toHaveBeenNthCalledWith(3, "travel", fastTravelScene);
-  });
-
-  it("omits fast travel registration when the mode is disabled", () => {
-    const sceneManager = { addScene: vi.fn() };
-    const hexceptionScene = createScene("hex");
-    const worldmapScene = createScene("map");
-
-    const registry = createRendererSceneRegistry({
-      controls: { id: "controls" } as never,
-      createHexceptionScene: vi.fn(() => hexceptionScene as never),
-      createSceneManager: vi.fn(() => sceneManager as never),
-      createTransitionManager: vi.fn(() => ({ id: "transition" }) as never),
-      createWorldmapScene: vi.fn(() => worldmapScene as never),
-      dojo: { id: "dojo" } as never,
-      fastTravelEnabled: false,
-      inputSurface: document.createElement("canvas"),
-      mouse: { id: "mouse" } as never,
-      raycaster: { id: "raycaster" } as never,
-    });
-
-    expect(registry.fastTravelScene).toBeUndefined();
-    expect(sceneManager.addScene).toHaveBeenCalledTimes(2);
-  });
-});
+const { bootstrapRendererSceneRuntime, createGameRendererSceneRegistry } = await import("./renderer-scene-bootstrap");
 
 describe("createGameRendererSceneRegistry", () => {
   it("assembles the concrete game scenes through the shared registry helper", () => {
     sceneManagerInstance.addScene.mockClear();
     hexceptionSceneInstance.setInputSurface.mockClear();
     worldmapSceneInstance.setInputSurface.mockClear();
-    fastTravelSceneInstance.setInputSurface.mockClear();
 
     const registry = createGameRendererSceneRegistry({
       controls: { id: "controls" } as never,
       dojo: { id: "dojo" } as never,
-      fastTravelEnabled: true,
       inputSurface: document.createElement("canvas"),
       mouse: { id: "mouse" } as never,
       raycaster: { id: "raycaster" } as never,
@@ -121,11 +50,9 @@ describe("createGameRendererSceneRegistry", () => {
     expect(registry.sceneManager).toBe(sceneManagerInstance);
     expect(registry.hexceptionScene).toBe(hexceptionSceneInstance);
     expect(registry.worldmapScene).toBe(worldmapSceneInstance);
-    expect(registry.fastTravelScene).toBe(fastTravelSceneInstance);
-    expect(sceneManagerInstance.addScene).toHaveBeenCalledTimes(3);
+    expect(sceneManagerInstance.addScene).toHaveBeenCalledTimes(2);
     expect(hexceptionSceneInstance.setInputSurface).toHaveBeenCalledTimes(1);
     expect(worldmapSceneInstance.setInputSurface).toHaveBeenCalledTimes(1);
-    expect(fastTravelSceneInstance.setInputSurface).toHaveBeenCalledTimes(1);
   });
 });
 

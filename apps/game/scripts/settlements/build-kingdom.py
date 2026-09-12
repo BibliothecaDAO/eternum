@@ -6,6 +6,7 @@ from pathlib import Path
 import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from construction_finish import finish_construction
 from courtyard_props import (
     build_weapon_rack,
     build_brazier,
@@ -38,7 +39,7 @@ DONJON_UPPER_WINDOW_BASE = 1.16
 def build_kingdom():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    m = palette()
+    m = palette("kingdom")
     donjon = build_donjon(m)
     left = round_tower(m, "Kingdom west tower", -0.50, 0.29, 0.13, 1.04, 1.37)
     right = round_tower(m, "Kingdom east tower", 0.52, -0.015, 0.12, 0.87, 1.15)
@@ -80,6 +81,7 @@ def build_kingdom():
     build_brazier(m, -0.25, -0.08)
     banner(m, "Kingdom order banner", 0.60, -0.36, 1.34, height=0.30)
     crystal(m, "Kingdom gate gem", 0, -0.692, 0.405, 0.017, 0.053)
+    finish_construction(m, "kingdom")
     save_asset(
         "kingdom",
         "donjon, great hall, round towers and drawbridge",

@@ -2,7 +2,7 @@ use crate::alias::ID;
 
 /// # Faith Systems Interface
 ///
-/// The Faith system allows players to pledge their structures (Realms, Villages, Holy Sites)
+/// The Faith system allows players to pledge their structures (Realms, Villages)
 /// to Wonders, creating a faith-based leaderboard with end-of-season prize distribution.
 ///
 /// ## Overview
@@ -17,7 +17,6 @@ use crate::alias::ID;
 /// | Structure Type | Base FP/sec | Owner Share (30%) | Pledger Share (70%) |
 /// |----------------|-------------|-------------------|---------------------|
 /// | Wonder (self)  | 50          | 15                | 35                  |
-/// | Holy Site      | 50          | 15                | 35                  |
 /// | Realm          | 10          | 3                 | 7                   |
 /// | Village        | 1           | 0.3               | 0.7                 |
 ///
@@ -80,7 +79,7 @@ pub trait IFaithSystems<T> {
     ///
     /// # Parameters
     ///
-    /// * `structure_id` - The ID of the structure pledging faith (Realm, Village, Holy Site, or Wonder)
+    /// * `structure_id` - The ID of the structure pledging faith (Realm, Village, or Wonder)
     /// * `wonder_id` - The ID of the wonder receiving the pledge
     ///
     /// # Behavior Cases
@@ -90,7 +89,7 @@ pub trait IFaithSystems<T> {
     /// | Self-Pledge | `structure_id == wonder_id` | Initializes wonder, starts 50 FP/sec |
     /// | Wonder Submission | structure is a wonder, pledging to different wonder | Contributes 50 FP/sec, becomes
     /// subservient |
-    /// | Normal Pledge | structure is Realm/Village/Holy Site | Contributes FP based on structure type |
+    /// | Normal Pledge | structure is Realm/Village | Contributes FP based on structure type |
     ///
     /// # Requirements
     ///
@@ -456,10 +455,8 @@ pub mod faith_systems {
     use crate::alias::ID;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{FaithConfig, SeasonConfigImpl, WorldConfigUtilImpl};
-    use crate::models::events::{FaithPledgedStory, FaithPointsClaimedStory, FaithRemovedStory, Story, StoryEvent};
-    use crate::models::faith::{
-        FaithWonders, FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist, WonderFaithWinners,
-    };
+    use crate::models::events::{FaithPledgedStory, FaithRemovedStory, Story, StoryEvent};
+    use crate::models::faith::{FaithWonders, FaithfulStructure, PlayerFaithPoints, WonderFaith, WonderFaithBlacklist};
     use crate::models::structure::{
         StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl, Wonder,
     };
@@ -845,8 +842,6 @@ pub mod faith_systems {
                 faith_config.realm_fp_per_sec
             } else if category == StructureCategory::Village.into() {
                 faith_config.village_fp_per_sec
-            } else if category == StructureCategory::HolySite.into() {
-                faith_config.holy_site_fp_per_sec
             } else {
                 assert!(false, "Eternum: invalid structure category for faith pledge");
                 faith_config.realm_fp_per_sec // unreachable

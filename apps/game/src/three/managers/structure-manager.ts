@@ -1,3 +1,5 @@
+import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
+import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { RewardTileModel } from "../rewards/reward-tile-model";
@@ -359,7 +361,7 @@ export class StructureManager {
     // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.unsubscribeProjection = worldSpatialProjection.subscribeStructures((changes) => {
-      this.handleStructureProjectionChanges(changes);
+      this.handleStructureProjectionChanges(projectionChangesForLayer(changes, activeMapLayer()));
     });
     this.subscribeToStructurePresentationComponents();
 
@@ -770,6 +772,26 @@ export class StructureManager {
     });
   }
 
+  public resetLayer(): void {
+    this.visibleStructurePassFence.invalidate();
+    const dirtyModels = new Set<StructureModel>();
+    for (const entityId of this.structureInstanceBindings.keys()) {
+      this.removeVisibleStructureInstance(entityId, dirtyModels);
+      this.removeStructurePresentation(entityId);
+    }
+    this.updateVisibleStructureModelCounts(dirtyModels);
+    this.previousVisibleIds.clear();
+    this.structureInfoCache.clear();
+    this.chunkAssetPrewarmPromises.clear();
+    this.visibleStructureWindow = undefined;
+    this.visibleStructureCount = 0;
+    this.pendingVisibleStructureRefreshIds.clear();
+    this.pendingVisibleStructureTransitionToken = undefined;
+    this.shouldRefreshExistingStructures = true;
+    this.hideAllLabels();
+    this.clearStructureCompactLabels();
+  }
+
   public destroy() {
     if (this.isDestroyed) {
       console.warn("StructureManager already destroyed, skipping cleanup");
@@ -846,7 +868,8 @@ export class StructureManager {
   }
 
   getTotalStructures() {
-    return this.worldSpatialProjection.getStructures().filter((structure) => !structure.reserved).length;
+    return this.worldSpatialProjection.getStructures(activeMapLayer()).filter((structure) => !structure.reserved)
+      .length;
   }
 
   public prewarmChunkAssets(chunkKey: string): Promise<void> {
@@ -1057,6 +1080,7 @@ export class StructureManager {
     const bounds = expandBoundsForStructurePresentation(renderBounds, this.chunkStride);
     const center = FELT_CENTER();
     return {
+      alt: activeMapLayer(),
       minCol: bounds.minCol + center,
       maxCol: bounds.maxCol + center,
       minRow: bounds.minRow + center,
@@ -1129,7 +1153,7 @@ export class StructureManager {
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
     const center = FELT_CENTER();
     const renderable = this.worldSpatialProjection
-      .getStructuresAtHex({ col: hexCoords.col + center, row: hexCoords.row + center })
+      .getStructuresAtHex({ alt: activeMapLayer(), col: hexCoords.col + center, row: hexCoords.row + center })
       .find((structure) => !structure.reserved);
     return renderable ? this.resolveStructureInfo(renderable) : undefined;
   }
@@ -1144,7 +1168,7 @@ export class StructureManager {
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
     const normalizedOwner = BigInt(owner);
-    const refreshEntityIds = this.worldSpatialProjection.getStructures().flatMap((renderable) => {
+    const refreshEntityIds = this.worldSpatialProjection.getStructures(activeMapLayer()).flatMap((renderable) => {
       if (renderable.reserved || !this.components?.Structure) return [];
       const matchesOwner =
         getComponentValue(this.components.Structure, gameEntityKey([BigInt(renderable.entityId)]))?.owner ===
@@ -1286,7 +1310,8 @@ export class StructureManager {
 
       const renderableStructures = visibleStructures.filter((structure) => this.getModelForStructure(structure));
       const visibilityDiff = createManagerVisibilityDiff({
-        currentVisibleIds: this.previousVisibleIds,
+        // A superseded sliced pass can own instances before its visible-ID list commits.
+        currentVisibleIds: this.structureInstanceBindings.keys(),
         nextVisibleEntities: renderableStructures,
         getEntityId: (structure) => structure.entityId,
         refreshEntityIds: options.refreshEntityIds,
@@ -1521,8 +1546,8 @@ export class StructureManager {
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
       if (binding.model instanceof SettlementModel) {
+        binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
         if (binding.model.kind === "realm") binding.model.setOrderAt(binding.instanceIndex, structure.realmOrder);
-        else binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure));
       }
     }
     if (bindings.length > 0) {
@@ -1852,12 +1877,12 @@ export class StructureManager {
     return this.visibilityManager?.isBoxVisible(this.currentChunkBounds.box) ?? true;
   }
 
-  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
+  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext, animationsPaused = false) {
     if (!this.isChunkVisible()) {
       return;
     }
 
-    if (this.contentLadder.structureModels) {
+    if (!animationsPaused && this.contentLadder.structureModels) {
       const context = this.resolveAnimationVisibilityContext(visibility);
       const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
       this.forEachStructureModel((model) => {
@@ -2163,7 +2188,7 @@ export class StructureManager {
     const nowSeconds = useChainTimeStore.getState().getNowSeconds();
     this.incomingTroopArrivalsByStructure.clear();
 
-    this.worldSpatialProjection.getStructures().forEach((renderable) => {
+    this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((renderable) => {
       if (renderable.reserved) return;
 
       const nextArrivals = arrivalsByStructure[String(renderable.entityId)];

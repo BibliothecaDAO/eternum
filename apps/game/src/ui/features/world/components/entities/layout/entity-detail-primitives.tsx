@@ -6,11 +6,6 @@ export type EntityDetailLayoutVariant = "default" | "banner";
 
 type LayoutScale = "default" | "compact";
 
-const spacingPadding: Record<LayoutScale, string> = {
-  default: "px-4 py-3",
-  compact: "px-3 py-2",
-};
-
 const spacingGap: Record<LayoutScale, string> = {
   default: "gap-3",
   compact: "gap-2",
@@ -27,47 +22,6 @@ const bodyText: Record<LayoutScale, string> = {
 };
 
 const getScale = (compact: boolean): LayoutScale => (compact ? "compact" : "default");
-
-interface EntityDetailSectionProps {
-  title?: ReactNode;
-  description?: ReactNode;
-  className?: string;
-  children?: ReactNode;
-  tone?: "default" | "highlight";
-  compact?: boolean;
-}
-
-export const EntityDetailSection = ({
-  children,
-  className,
-  description,
-  title,
-  tone = "default",
-  compact = false,
-}: EntityDetailSectionProps) => {
-  const scale = getScale(compact);
-  return (
-    <section
-      className={cn(
-        "rounded-lg border bg-dark-brown/70 shadow-md",
-        tone === "highlight" ? "border-gold/35" : "border-gold/25",
-        spacingPadding[scale],
-        spacingGap[scale],
-        className,
-      )}
-    >
-      {(title || description) && (
-        <header className={cn("flex flex-col", spacingGap[scale])}>
-          {title && (
-            <div className={cn("font-semibold uppercase tracking-[0.2em] text-gold/80", titleText[scale])}>{title}</div>
-          )}
-          {description && <div className={cn("text-gold/70", bodyText[scale])}>{description}</div>}
-        </header>
-      )}
-      {children}
-    </section>
-  );
-};
 
 interface EntityDetailStatListProps {
   className?: string;
@@ -121,9 +75,4 @@ export const EntityDetailStat = ({
       <span className={cn(emphasizeValue ? "text-gold" : "text-gold/80", bodyText[scale])}>{value}</span>
     </div>
   );
-};
-
-export const getLayoutTextClasses = (compact: boolean, weight: "title" | "body") => {
-  const scale = getScale(compact);
-  return weight === "title" ? titleText[scale] : bodyText[scale];
 };

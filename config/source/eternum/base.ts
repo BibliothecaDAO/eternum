@@ -11,7 +11,7 @@ import { eternumResourceConfig } from "./resources";
 import { eternumTroopConfig } from "./troop";
 
 const ETERNUM_SPIRES_LAYER_DISTANCE = 6;
-const ETERNUM_SPIRES_MAX_COUNT = 1;
+const ETERNUM_SPIRES_MAX_COUNT = 6;
 const ETERNUM_SPIRES_SETTLED_COUNT = 0;
 
 const eternumVillageConfig: ConfigPatch = {
@@ -42,7 +42,9 @@ const eternumBlitzModeConfig: ConfigPatch = {
 };
 
 const eternumSettlementConfig: ConfigPatch = {
+  spireTravelEssenceCost: 10,
   settlement: {
+    base_distance: 10,
     spires_layer_distance: ETERNUM_SPIRES_LAYER_DISTANCE,
     spires_max_count: ETERNUM_SPIRES_MAX_COUNT,
     spires_settled_count: ETERNUM_SPIRES_SETTLED_COUNT,

@@ -5,11 +5,10 @@ import {
   type SettlementRelationship,
 } from "../structures/settlement-appearance";
 import { VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
-import { arePlayersAllied } from "@/utils/entity-ownership";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
-import { createHexceptionTerrainRequest, getLocalHexDisk } from "./hexception-terrain";
+import { createHexceptionTerrainRequest, getLocalHexDisk, getLocalTerrainRegions } from "./hexception-terrain";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -104,7 +103,6 @@ import {
   Structure,
   StructureType,
   findResourceById,
-  getNeighborHexes,
   getProducedResource,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
@@ -512,8 +510,7 @@ export default class HexceptionScene extends HexagonScene {
     });
     if (isSettlementModelPath(path)) {
       const appearance = new SettlementAppearance(model, meshes);
-      if (path === VILLAGE_MODEL_PATH) appearance.setRelationship("enemy");
-      else await appearance.setOrder(undefined);
+      appearance.setRelationship("enemy");
       this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
       model.userData.settlementModelPath = path;
     }
@@ -558,7 +555,7 @@ export default class HexceptionScene extends HexagonScene {
 
   async setup() {
     this.isEntered = false;
-    const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
+    const routeTarget = resolvePlayRouteTarget(window.location);
     const routeWorldPosition = routeTarget.routeWorldPosition;
     const contractPosition = routeTarget.hexRealmPosition;
 
@@ -657,6 +654,7 @@ export default class HexceptionScene extends HexagonScene {
 
   onSwitchOff(_nextSceneName?: SceneName) {
     this.isEntered = false;
+    this.state.setSelectedBuildingHex(null);
     usePopoverStore.getState().close("plot-construction");
     // Capture a zoom still waiting on its debounce so quick scene switches keep it.
     this.flushPendingLocalZoomPersist();
@@ -1271,39 +1269,16 @@ export default class HexceptionScene extends HexagonScene {
     this.localGridBuilt = runOwnedBuildingWorkAfterModelsLoad({
       apply: () =>
         runWithFrameWorkOwner("scene:hexception:grid", () => {
-          const centers = [
-            [0, 0], //0, 0 (Main hex)
-            [-6, 5], //-1, 1
-            [7, 4], //1, 0
-            [1, 9], //0, 1
-            [-7, -4], //-1, 0
-            [0, -9], //0, -1
-            [7, -5], //1, -1
-          ];
-          const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+          const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
           this.highlights = [];
           // The buildable set belongs to this realm and its level; a previous realm's must not linger.
           this.interactiveHexManager.clearHexes();
 
-          // compute matrices to update biome models for each of the large hexes
-          for (const center in centers) {
-            const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
+          for (const { center, targetHex, isMainHex } of regions) {
             if (isMainHex) {
-              this.computeMainHexMatrices(
-                radius,
-                dummy,
-                centers[center],
-                this.tileManager.getHexCoords(),
-                terrainMatricesByBiome,
-              );
+              this.computeMainHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
             } else {
-              this.computeNeighborHexMatrices(
-                radius,
-                dummy,
-                centers[center],
-                neighbors[Number(center) - 1],
-                terrainMatricesByBiome,
-              );
+              this.computeNeighborHexMatrices(radius, dummy, center, targetHex, terrainMatricesByBiome);
             }
           }
 
@@ -1828,18 +1803,12 @@ export default class HexceptionScene extends HexagonScene {
     const wind = this.getWeatherAtmosphereState() ?? { windX: 0, windZ: 0 };
     for (const [path, presentation] of this.settlementPresentations) {
       if (!activePaths.has(path)) continue;
-      if (path === VILLAGE_MODEL_PATH) {
-        const relationship = resolveSettlementRelationship({
-          isMine: !!structure && isAddressEqualToAccount(structure.owner),
-          isAlly:
-            !!structure &&
-            arePlayersAllied(this.dojo.components, useAccountStore.getState().account?.address, structure.owner),
-        });
-        if (relationship !== presentation.relationship) {
-          presentation.appearance.setRelationship(relationship);
-          presentation.relationship = relationship;
-        }
-      } else if (structure?.metadata.order !== presentation.orderId) {
+      const relationship = resolveSettlementRelationship(!!structure && isAddressEqualToAccount(structure.owner));
+      if (relationship !== presentation.relationship) {
+        presentation.appearance.setRelationship(relationship);
+        presentation.relationship = relationship;
+      }
+      if (path !== VILLAGE_MODEL_PATH && structure?.metadata.order !== presentation.orderId) {
         presentation.orderId = structure?.metadata.order;
         void presentation.appearance.setOrder(presentation.orderId).catch((error) => {
           console.error("[Hexception] Unable to prepare realm heraldry", error);
@@ -1851,6 +1820,7 @@ export default class HexceptionScene extends HexagonScene {
 
   update(deltaTime: number) {
     super.update(deltaTime);
+    if (this.animationsPaused) return;
     this.updateSettlementPresentations(deltaTime);
     this.buildingMixers.forEach((mixer) => {
       mixer.update(deltaTime);

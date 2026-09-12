@@ -1,3 +1,4 @@
+import { readClientModuleEntries } from "./client-build-files.mjs";
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -9,7 +10,7 @@ const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export async function verifyClientDeployment(dist, origin) {
   const checks = await checkPublishedAssets(dist, origin);
   const modules = checks.length;
-  const entry = await readModuleEntry(dist);
+  const entry = await readClientModuleEntries(dist);
   for (const route of [
     "/",
     "/play/madara/deployment-check/map?spectate=true",
@@ -37,13 +38,6 @@ async function checkPublishedAssets(dist, origin) {
     }),
   );
   return checks;
-}
-
-async function readModuleEntry(dist) {
-  const html = await readFile(join(dist, "index.html"), "utf8");
-  const entry = html.match(/src="(\/assets\/[^" ]+\.js)"/)?.[1];
-  if (!entry) throw new Error("Build HTML has no module entry");
-  return entry;
 }
 
 async function fetchResponse(origin, path) {
@@ -81,7 +75,7 @@ async function checkPublishedRoute(origin, path, entry) {
       cache,
       ok:
         response.status === 200 &&
-        html.includes(entry) &&
+        entry.every((module) => html.includes(module)) &&
         /no-cache|max-age=0\b/.test(cache) &&
         !cache.includes("immutable"),
     };

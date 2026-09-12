@@ -17,13 +17,13 @@
     "@realms-world/chain": "workspace:*",
     "chalk": "^5.4.1",
     "viem": "catalog:game",
-    "yaml": "^2.8.2"
+    "yaml": "^2.8.2",
+    "starknet": "8.9.2"
   },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "starknet": "8.5.2",
     "typescript": "^5.0.0"
   }
 }

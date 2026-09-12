@@ -54,17 +54,6 @@ describe("Herald RECS adapter parity", () => {
       realm_output_per_second: 10_000_000_000n,
       village_output_per_second: 5_000_000_000n,
     });
-    const questLevels = componentValue(
-      components,
-      "QuestLevels",
-      "0x5216c2d1da6ad4895d9aa9db47cbed96fab1933a841d16f127c30c4a82837c1",
-    ) as { game_address: bigint; levels: unknown[] };
-    expect(questLevels.game_address).toBe(0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7n);
-    expect(questLevels.levels[0]).toEqual({
-      target_score: "0x1a",
-      settings_id: "0x3",
-      time_limit: "0x15180",
-    });
   });
 
   it("normalizes live tuple records once while ingesting entity rows", () => {
@@ -73,7 +62,6 @@ describe("Herald RECS adapter parity", () => {
     const models = [
       "HyperstructureShareholders",
       "LedgerRegistration",
-      "QuestTile",
       "ResourceArrival",
       "StructureVillageSlots",
       "TileOpt",
@@ -129,22 +117,6 @@ describe("Herald RECS adapter parity", () => {
             },
           },
           {
-            hashed_keys: "quest-row",
-            models: {
-              QuestTile: {
-                game_id: "0x15",
-                id: "0x1",
-                game_address: shareholderAddress,
-                coord: { alt: false, x: "0x64ae2774", y: "0x64ae277b" },
-                level: "0x2",
-                resource_type: "0x17",
-                amount: "0x3b9aca00",
-                capacity: "0x5",
-                participant_count: "0x1",
-              },
-            },
-          },
-          {
             hashed_keys: "village-slots-row",
             models: {
               StructureVillageSlots: {
@@ -193,10 +165,6 @@ describe("Herald RECS adapter parity", () => {
         ["0x17", "0x1955bafc200"],
         ["0x19", "0x2e90edd000"],
       ],
-    });
-    expect(componentValue(components, "QuestTile", "quest-row")).toMatchObject({
-      game_address: BigInt(shareholderAddress),
-      coord: { alt: false, x: 1_689_134_964, y: 1_689_134_971 },
     });
     expect(componentValue(components, "StructureVillageSlots", "village-slots-row")).toMatchObject({
       directions_left: ["North", "SouthWest"],

@@ -125,7 +125,7 @@ interface ExplorerPriority {
 }
 
 interface PrepareHarnessBotsOptions {
-  gameType?: "blitz" | "eternum";
+  gameType?: HarnessGameType;
   accounts: HarnessAccount[];
   beforeProvision?: () => Promise<void>;
   gameId: number;
@@ -196,7 +196,13 @@ const PALADIN_UNFAVORED_TRAVEL_BIOMES = new Set([
   BiomeType.TropicalSeasonalForest,
   BiomeType.TropicalRainForest,
 ]);
-const EXPLORER_COUNT_PER_BOT = 3;
+export type HarnessGameType = "blitz" | "eternum";
+
+const BLITZ_STRUCTURES_PER_BOT = 3;
+const ETERNUM_STRUCTURES_PER_BOT = 1;
+
+const settlementStructureCount = (gameType: HarnessGameType) =>
+  gameType === "eternum" ? ETERNUM_STRUCTURES_PER_BOT : BLITZ_STRUCTURES_PER_BOT;
 const EXPLORER_TROOP_AMOUNT = 10_000_000_000n;
 const WOOD_RESOURCE_ID = 3;
 export const RECEIPT_POLL_INTERVAL_MS = 50;
@@ -339,7 +345,7 @@ export async function prepareHarnessBots({
   await beforeProvision?.();
 
   return mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const structureIds = await readSettlementStructureIds(heraldObserver, gameId, harnessAccount.address);
+    const structureIds = await readSettlementStructureIds(heraldObserver, gameId, harnessAccount.address, gameType);
     const structures = await readStructures(heraldObserver, gameId, structureIds, mapCenter);
 
     if (gameType === "blitz") {
@@ -571,7 +577,7 @@ async function settleBot({
   provider,
   systems,
 }: {
-  gameType: "blitz" | "eternum";
+  gameType: HarnessGameType;
   harnessAccount: HarnessAccount;
   gameId: number;
   provider: RpcProvider;
@@ -806,7 +812,13 @@ async function runExplorerAction({
     const updated = await heraldObserver.waitForExplorer(
       gameId,
       selectedExplorer.explorerId,
-      selectedExplorer,
+      {
+        alt: false,
+        x: selectedExplorer.coord.x,
+        y: selectedExplorer.coord.y,
+        stamina: selectedExplorer.stamina,
+        staminaUpdatedTick: selectedExplorer.staminaUpdatedTick,
+      },
       requiredAcceptedBlock(transaction),
       MODEL_UPDATE_TIMEOUT_MS,
     );
@@ -988,7 +1000,7 @@ async function readCurrentArmyTick(provider: RpcProvider, rpc: RpcMetrics): Prom
   return Math.floor(Number(block.timestamp) / ARMY_TICK_SECONDS);
 }
 
-async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
+export async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
   const preflightStartedAtMs = Date.now();
   const rpc = options.rpc ?? createRpcMetrics();
   const record: TrackedTransaction = {
@@ -1123,6 +1135,7 @@ async function readSettlementStructureIds(
   observer: HeraldObserver,
   gameId: number,
   address: string,
+  gameType: HarnessGameType,
 ): Promise<string[]> {
   const rows = (
     await observer.waitForModelRows(
@@ -1135,8 +1148,9 @@ async function readSettlementStructureIds(
   const row = rows.find((candidate) => feltEquals(candidate.player, address));
   if (!row) throw new Error(`Settlement for ${address} in game ${gameId} is absent from Herald`);
   const structureIds = parseStructureIds(row.structure_ids);
-  if (structureIds.length !== EXPLORER_COUNT_PER_BOT) {
-    throw new Error(`Expected ${EXPLORER_COUNT_PER_BOT} structures for ${address}, found ${structureIds.length}`);
+  const expected = settlementStructureCount(gameType);
+  if (structureIds.length !== expected) {
+    throw new Error(`Expected ${expected} structures for ${address}, found ${structureIds.length}`);
   }
   return structureIds;
 }
@@ -1386,7 +1400,7 @@ function resolveSettlementCenter(structures: StructureState[]): Coord {
   return { x, y };
 }
 
-function cubeDistance(left: Coord, right: Coord): number {
+export function cubeDistance(left: Coord, right: Coord): number {
   const leftCube = evenRowToCube(left);
   const rightCube = evenRowToCube(right);
   return Math.max(

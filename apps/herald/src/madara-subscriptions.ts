@@ -99,7 +99,7 @@ export class MadaraSubscriptions {
   private subscribe(socket: WebSocket): void {
     this.send(socket, 1, "starknet_subscribeNewHeads", {});
     this.send(socket, 2, "starknet_subscribeEvents", {
-      address: this.registry.worldAddress,
+      from_address: this.registry.worldAddress,
       finality_status: "PRE_CONFIRMED",
       keys: [Object.values(WORLD_EVENT_SELECTORS), [...this.registry.bySelector.keys()]],
     });
