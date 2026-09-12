@@ -11,7 +11,6 @@ The repo already has several strong building blocks:
 
 - a monorepo with client, contracts, config, packages, and deploy tooling
 - step-based launch automation in `config/deployer/clean`
-- agent runtime foundations in `packages/game-agent`
 - path-scoped Claude review workflows in `.github/workflows`
 
 What is missing is the closed loop around those pieces.
@@ -156,7 +155,6 @@ This is only partially present today. The target state is a documented and autom
 
 ### Agent Harness Layer
 
-- `packages/game-agent`
 - any future review, repair, and triage agents
 
 This layer should consume the same shared runtime and control-plane interfaces as humans.
