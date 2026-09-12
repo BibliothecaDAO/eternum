@@ -873,7 +873,7 @@ describe("timed review snapshots", () => {
     expect(historyStore.freezeReviewSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
     );
-    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
+    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13, true);
     // Startup recovery uses the timestamp of the loaded confirmed head as well.
     await live.freezeEndedReviewSnapshots(101);
     expect(historyStore.freezeReviewSnapshot).toHaveBeenLastCalledWith(
