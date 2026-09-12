@@ -4,7 +4,7 @@ import type { GameChain as Chain } from "@realms-world/chain";
 import type { WorldProfile } from "@/runtime/world/types";
 import { hasSpectateQuery, isExplicitSpectateSession } from "@/utils/spectator-session";
 
-export type PlayScene = "map" | "hex" | "travel";
+export type PlayScene = "map" | "hex";
 type EntryIntent = "play" | "settle" | "spectate";
 export type PlayBootMode = "direct" | "map-first";
 
@@ -36,7 +36,7 @@ interface EntryRouteDescriptor {
 type LocationLike = Pick<Location, "pathname" | "search">;
 
 const CHAIN_VALUES: Chain[] = ["madara", "appchain"];
-const PLAY_SCENES: PlayScene[] = ["map", "hex", "travel"];
+const PLAY_SCENES: PlayScene[] = ["map", "hex"];
 const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate"];
 const PLAY_BOOT_MODES: PlayBootMode[] = ["direct", "map-first"];
 

@@ -15,50 +15,6 @@ vi.mock("./renderer-dev-gui-runtime", () => ({
 const { createRendererControlBridgeRuntime } = await import("./renderer-control-bridge-runtime");
 
 describe("renderer control bridge runtime", () => {
-  it("marks labels dirty on every interaction change and refreshes fast travel only for that scene", () => {
-    const markLabelsDirty = vi.fn();
-    const requestFastTravelSceneRefresh = vi.fn();
-    const runtime = createRendererControlBridgeRuntime({
-      createFolder: vi.fn(),
-      fastTravelEnabled: () => true,
-      getCurrentScene: () => SceneName.FastTravel,
-      getRenderer: () => undefined,
-      markLabelsDirty,
-      moveCameraToColRow: vi.fn(),
-      moveCameraToXYZ: vi.fn(),
-      requestFastTravelSceneRefresh,
-      switchScene: vi.fn(),
-      updateContactShadowOpacity: vi.fn(),
-    });
-
-    runtime.handleInteractionChange();
-
-    expect(markLabelsDirty).toHaveBeenCalledTimes(1);
-    expect(requestFastTravelSceneRefresh).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not request a fast-travel refresh outside the fast-travel scene", () => {
-    const markLabelsDirty = vi.fn();
-    const requestFastTravelSceneRefresh = vi.fn();
-    const runtime = createRendererControlBridgeRuntime({
-      createFolder: vi.fn(),
-      fastTravelEnabled: () => true,
-      getCurrentScene: () => SceneName.WorldMap,
-      getRenderer: () => undefined,
-      markLabelsDirty,
-      moveCameraToColRow: vi.fn(),
-      moveCameraToXYZ: vi.fn(),
-      requestFastTravelSceneRefresh,
-      switchScene: vi.fn(),
-      updateContactShadowOpacity: vi.fn(),
-    });
-
-    runtime.handleInteractionChange();
-
-    expect(markLabelsDirty).toHaveBeenCalledTimes(1);
-    expect(requestFastTravelSceneRefresh).not.toHaveBeenCalled();
-  });
-
   it("forwards the current control and contact-shadow state into the dev gui runtime", () => {
     const material = { opacity: 0.24 };
     getContactShadowResources.mockReturnValue({ material });
@@ -69,13 +25,10 @@ describe("renderer control bridge runtime", () => {
     const renderer = { toneMapping: 1, toneMappingExposure: 0.8 };
     const runtime = createRendererControlBridgeRuntime({
       createFolder,
-      fastTravelEnabled: () => false,
-      getCurrentScene: () => SceneName.WorldMap,
       getRenderer: () => renderer as never,
       markLabelsDirty: vi.fn(),
       moveCameraToColRow,
       moveCameraToXYZ,
-      requestFastTravelSceneRefresh: vi.fn(),
       switchScene,
       updateContactShadowOpacity: (opacity) => {
         material.opacity = opacity;
@@ -87,7 +40,6 @@ describe("renderer control bridge runtime", () => {
     expect(setupRendererDevGui).toHaveBeenCalledWith({
       contactShadowOpacity: 0.24,
       createFolder,
-      fastTravelEnabled: false,
       moveCameraToColRow,
       moveCameraToXYZ,
       renderer,
@@ -107,13 +59,10 @@ describe("renderer control bridge runtime", () => {
     });
     const runtime = createRendererControlBridgeRuntime({
       createFolder: vi.fn(),
-      fastTravelEnabled: () => true,
-      getCurrentScene: () => SceneName.WorldMap,
       getRenderer: () => undefined,
       markLabelsDirty: vi.fn(),
       moveCameraToColRow: vi.fn(),
       moveCameraToXYZ: vi.fn(),
-      requestFastTravelSceneRefresh: vi.fn(),
       switchScene: vi.fn(),
       updateContactShadowOpacity: vi.fn(),
     });

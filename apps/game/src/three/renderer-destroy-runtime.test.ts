@@ -37,7 +37,6 @@ describe("destroyRendererRuntime", () => {
     const monitoringRuntime = { dispose: vi.fn() };
     const routeRuntime = { dispose: vi.fn() };
     const worldmapScene = { destroy: vi.fn() };
-    const fastTravelScene = { destroy: vi.fn() };
     const hexceptionScene = { destroy: vi.fn() };
     const hudScene = { destroy: vi.fn() };
     const transitionManager = { destroy: vi.fn() };
@@ -61,7 +60,6 @@ describe("destroyRendererRuntime", () => {
       } as never,
       routeRuntime: routeRuntime as never,
       scenes: {
-        fastTravelScene,
         hexceptionScene,
         hudScene,
         worldmapScene,
@@ -74,7 +72,6 @@ describe("destroyRendererRuntime", () => {
     expect(removeChild).toHaveBeenCalledTimes(1);
     expect(disposeRendererBackend).toHaveBeenCalledTimes(1);
     expect(worldmapScene.destroy).toHaveBeenCalledTimes(1);
-    expect(fastTravelScene.destroy).toHaveBeenCalledTimes(1);
     expect(hexceptionScene.destroy).toHaveBeenCalledTimes(1);
     expect(hudScene.destroy).toHaveBeenCalledTimes(1);
     expect(clearCosmeticAssetCache).toHaveBeenCalledTimes(1);

@@ -14,13 +14,10 @@ interface CreateRendererControlBridgeRuntimeInput {
     };
     close(): void;
   };
-  fastTravelEnabled: () => boolean;
-  getCurrentScene: () => SceneName | undefined;
   getRenderer: () => { toneMapping: number; toneMappingExposure: number } | undefined;
   markLabelsDirty: () => void;
   moveCameraToColRow: (col: number, row: number, duration: number) => void;
   moveCameraToXYZ: (x: number, y: number, z: number, duration: number) => void;
-  requestFastTravelSceneRefresh: () => void;
   switchScene: (sceneName: SceneName) => void;
   updateContactShadowOpacity: (opacity: number) => void;
 }
@@ -37,9 +34,6 @@ export function createRendererControlBridgeRuntime(
   return {
     handleInteractionChange() {
       input.markLabelsDirty();
-      if (input.getCurrentScene() === SceneName.FastTravel) {
-        input.requestFastTravelSceneRefresh();
-      }
     },
 
     markLabelsDirty() {
@@ -53,7 +47,6 @@ export function createRendererControlBridgeRuntime(
         setupRendererDevGui({
           contactShadowOpacity: material.opacity,
           createFolder: input.createFolder,
-          fastTravelEnabled: input.fastTravelEnabled(),
           moveCameraToColRow: input.moveCameraToColRow,
           moveCameraToXYZ: input.moveCameraToXYZ,
           renderer: input.getRenderer(),

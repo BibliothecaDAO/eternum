@@ -1,3 +1,4 @@
+import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
@@ -107,7 +108,9 @@ export class ChestManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
-    this.unsubscribeProjection = worldSpatialProjection.subscribeChests((changes) => this.onChestChanges(changes));
+    this.unsubscribeProjection = worldSpatialProjection.subscribeChests((changes) =>
+      this.onChestChanges(projectionChangesForLayer(changes, activeMapLayer())),
+    );
   }
 
   public hasActiveLabelAnimations(): boolean {
@@ -192,6 +195,19 @@ export class ChestManager {
         console.error("[ChestManager] Failed to load chest icon texture:", error);
       },
     );
+  }
+
+  public resetLayer(): void {
+    this.chestTransitions?.clear();
+    this.chestModel?.setCount(0);
+    this.entityIdLabels.forEach((label) => this.labelsGroup.remove(label));
+    this.entityIdLabels.clear();
+    this.entityIdMap.clear();
+    this.chestInstanceIndices.clear();
+    this.chestInstanceOrder = [];
+    this.visibleChests = [];
+    this.renderedChunk = "null";
+    this.updateChestMarkers();
   }
 
   public destroy() {

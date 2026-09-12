@@ -1,3 +1,4 @@
+import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
@@ -360,7 +361,7 @@ export class StructureManager {
     // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.unsubscribeProjection = worldSpatialProjection.subscribeStructures((changes) => {
-      this.handleStructureProjectionChanges(changes);
+      this.handleStructureProjectionChanges(projectionChangesForLayer(changes, activeMapLayer()));
     });
     this.subscribeToStructurePresentationComponents();
 
@@ -769,6 +770,26 @@ export class StructureManager {
       });
       model.setContactShadowsEnabled(enableContactShadows);
     });
+  }
+
+  public resetLayer(): void {
+    this.visibleStructurePassFence.invalidate();
+    const dirtyModels = new Set<StructureModel>();
+    for (const entityId of this.structureInstanceBindings.keys()) {
+      this.removeVisibleStructureInstance(entityId, dirtyModels);
+      this.removeStructurePresentation(entityId);
+    }
+    this.updateVisibleStructureModelCounts(dirtyModels);
+    this.previousVisibleIds.clear();
+    this.structureInfoCache.clear();
+    this.chunkAssetPrewarmPromises.clear();
+    this.visibleStructureWindow = undefined;
+    this.visibleStructureCount = 0;
+    this.pendingVisibleStructureRefreshIds.clear();
+    this.pendingVisibleStructureTransitionToken = undefined;
+    this.shouldRefreshExistingStructures = true;
+    this.hideAllLabels();
+    this.clearStructureCompactLabels();
   }
 
   public destroy() {

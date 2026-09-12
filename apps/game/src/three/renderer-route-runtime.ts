@@ -9,9 +9,7 @@ export interface RendererRouteRuntime {
 
 interface CreateRendererRouteRuntimeInput {
   fadeIn: () => void;
-  fastTravelEnabled: () => boolean;
   getCurrentScene: () => SceneName | undefined;
-  hasFastTravelScene: () => boolean;
   markLabelsDirty: () => void;
   moveCameraForScene: () => void;
   switchScene: (sceneName: SceneName) => void;
@@ -21,18 +19,13 @@ export function createRendererRouteRuntime(input: CreateRendererRouteRuntimeInpu
   return new GameRendererRouteRuntime(input);
 }
 
-export function resolveRendererRouteSceneFromHref(input: { fastTravelEnabled: boolean; href: string }): SceneName {
+export function resolveRendererRouteSceneFromHref(input: { href: string }): SceneName {
   const url = new URL(input.href);
 
-  return resolvePlayRouteTarget(
-    {
-      pathname: url.pathname,
-      search: url.search,
-    },
-    {
-      fastTravelEnabled: input.fastTravelEnabled,
-    },
-  ).scene as SceneName;
+  return resolvePlayRouteTarget({
+    pathname: url.pathname,
+    search: url.search,
+  }).scene as SceneName;
 }
 
 class GameRendererRouteRuntime implements RendererRouteRuntime {
@@ -55,7 +48,6 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
 
   public syncFromLocation(href: string = window.location.href): void {
     const targetScene = resolveRendererRouteSceneFromHref({
-      fastTravelEnabled: this.input.fastTravelEnabled(),
       href,
     });
 
@@ -84,8 +76,6 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
       return false;
     }
 
-    return (
-      targetScene === SceneName.WorldMap || (targetScene === SceneName.FastTravel && this.input.hasFastTravelScene())
-    );
+    return targetScene === SceneName.WorldMap;
   }
 }
