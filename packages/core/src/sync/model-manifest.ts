@@ -73,6 +73,8 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("WorldConfig"),
   globalEntity("HyperstrtConstructConfig", { s2Scope: "chain" }),
   globalEntity("HyperstructureGlobals"),
+  globalEntity("BitcoinMinePhaseLabor"),
+  globalEntity("BitcoinPhaseLabor"),
   globalEntity("Hyperstructure"),
   // Live shareholder points read these rows; without a stream/snapshot channel
   // a mid-game hyperstructure claim never reaches RECS until a reload.

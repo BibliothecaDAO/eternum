@@ -32,9 +32,13 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.uuid();
   };
 
-  const spire_make_spires = async (props: SystemProps.SpireMakeSpiresProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.spire_make_spires(props);
-  };
+  const bitcoin_mine_contribute_labor = async (
+    props: SystemProps.BitcoinMineContributeLaborProps,
+  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_contribute_labor(props);
+
+  const bitcoin_mine_claim_phase_reward = async (
+    props: SystemProps.BitcoinMineClaimPhaseRewardProps,
+  ): Promise<GetTransactionReceiptResponse> => provider.bitcoin_mine_claim_phase_reward(props);
 
   const create_order = async (props: SystemProps.CreateOrderProps): Promise<GetTransactionReceiptResponse> => {
     return await provider.create_order(props);
@@ -453,8 +457,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   };
 
   const systemCalls = {
-    spire_make_spires: withAuth(spire_make_spires),
-
     send_resources: withAuth(send_resources),
     send_resources_multiple: withAuth(send_resources_multiple),
     pickup_resources: withAuth(pickup_resources),
@@ -467,6 +469,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     set_address_name: withAuth(set_address_name),
     set_entity_name: withAuth(set_entity_name),
     isLive: isLive,
+    bitcoin_mine_contribute_labor: withAuth(bitcoin_mine_contribute_labor),
+    bitcoin_mine_claim_phase_reward: withAuth(bitcoin_mine_claim_phase_reward),
     create_order: withAuth(create_order),
     accept_order: withAuth(accept_order),
     cancel_order: withAuth(cancel_order),

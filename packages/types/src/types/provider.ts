@@ -28,11 +28,6 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
   };
 }
 
-export interface SpireMakeSpiresProps extends SystemSigner {
-  count: number;
-  spiresSettledCount: number;
-}
-
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
   resources: {
     tokenAddress: BigNumberish;
@@ -853,4 +848,15 @@ export interface ApplyRelicProps extends SystemSigner {
   entity_id: BigNumberish;
   relic_resource_id: BigNumberish;
   recipient_type: BigNumberish;
+}
+
+export interface BitcoinMineContributeLaborProps extends SystemSigner {
+  mine_id: BigNumberish;
+  target_phase_id: BigNumberish;
+  labor_amount: BigNumberish;
+}
+
+export interface BitcoinMineClaimPhaseRewardProps extends SystemSigner {
+  phase_id: BigNumberish;
+  mine_ids: BigNumberish[];
 }

@@ -250,6 +250,13 @@ pub impl CoordImpl of CoordTrait {
         }
     }
 
+    // Spire access preserves landing coordinates across layers; movement stride must not change its reach.
+    fn spire_neighbor(self: Coord, direction: Direction) -> Coord {
+        let surface = Coord { alt: false, x: self.x, y: self.y };
+        let adjacent = surface.neighbor(direction);
+        Coord { alt: self.alt, x: adjacent.x, y: adjacent.y }
+    }
+
     fn neighbor_after_distance(self: Coord, direction: Direction, tile_distance: u32) -> Coord {
         let cube: Cube = self.into();
         let neighbor = cube.neighbor_after_distance(direction, tile_distance);

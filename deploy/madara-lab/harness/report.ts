@@ -1,3 +1,4 @@
+import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -87,6 +88,7 @@ export interface HarnessReportInput {
   workload: WorkloadResult;
   valuePlane?: LedgerHarnessEvidence;
   seasonFinalizations?: SeasonFinalizationEvidence[];
+  layerRoundTrips?: LayerRoundTripEvidence[];
 }
 
 interface PercentileSummary {
@@ -170,6 +172,7 @@ function analyzeHarnessResult(input: HarnessReportInput) {
     thresholdEligibleActions: thresholdEligibleActions >= input.minimumThresholdActions,
     preConfirmedP95: passesLatency(percentiles.preConfirmedMs.p95, PRECONFIRMED_P95_LIMIT_MS),
     setup: setupFailures.length === 0,
+    layerRoundTrips: input.layerRoundTrips?.every((result) => result.status === "passed") ?? true,
     seasonsClosed: input.seasonFinalizations?.every((result) => result.status === "closed") ?? true,
     zeroBlockingFailures: blockingFailures.length === 0,
     zeroBlockingReverts: blockingReverts.length === 0,
@@ -224,6 +227,7 @@ function buildHarnessManifest(
     },
     valuePlane: input.valuePlane ?? { mode: "open-entry" },
     seasonFinalizations: input.seasonFinalizations ?? [],
+    layerRoundTrips: input.layerRoundTrips ?? [],
     workload: {
       bots: input.botCount,
       minutes: input.minutes,

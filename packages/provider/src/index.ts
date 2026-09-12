@@ -2508,6 +2508,44 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async bitcoin_mine_contribute_labor(props: SystemProps.BitcoinMineContributeLaborProps) {
+    const { signer, mine_id, target_phase_id, labor_amount } = props;
+    return this.promiseQueue.enqueue({
+      signer,
+      calls: {
+        contractAddress: getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`),
+        entrypoint: "contribute_labor",
+        calldata: [mine_id, target_phase_id, labor_amount],
+      },
+      transactionType: TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR,
+    });
+  }
+
+  public async bitcoin_mine_claim_phase_reward(props: SystemProps.BitcoinMineClaimPhaseRewardProps) {
+    const { signer, phase_id, mine_ids } = props;
+    const contractAddress = getContractByName(this.manifest, `${this.namespace}-bitcoin_mine_systems`);
+    const calls: Call[] = [];
+    if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
+      calls.push(
+        createVrfRequestRandomCall({
+          vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+          addressToCall: contractAddress,
+          source: { type: "nonce", value: signer.address },
+        }),
+      );
+    }
+    calls.push({
+      contractAddress,
+      entrypoint: "claim_phase_reward",
+      calldata: [phase_id, mine_ids.length, ...mine_ids],
+    });
+    return this.promiseQueue.enqueue({
+      signer,
+      calls,
+      transactionType: TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD,
+    });
+  }
+
   /**
    * Toggle explorer to the alternate layer through an adjacent spire
    *

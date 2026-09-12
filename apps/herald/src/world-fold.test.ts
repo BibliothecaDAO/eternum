@@ -293,13 +293,13 @@ describe("WorldFold", () => {
 });
 
 describe("orderSnapshotModelsForStreaming", () => {
-  it("streams structures and explored tiles first and keeps registry order for the rest", () => {
+  it("streams explored tiles before structures and keeps registry order for the rest", () => {
     const ordered = orderSnapshotModelsForStreaming([
       { name: "ExplorerTroops" },
-      { name: "Tile" },
+      { name: "TileOpt" },
       { name: "Hyperstructure" },
       { name: "Structure" },
     ]);
-    expect(ordered.map(({ name }) => name)).toEqual(["Structure", "Tile", "ExplorerTroops", "Hyperstructure"]);
+    expect(ordered.map(({ name }) => name)).toEqual(["TileOpt", "Structure", "ExplorerTroops", "Hyperstructure"]);
   });
 });

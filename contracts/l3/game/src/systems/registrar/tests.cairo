@@ -218,6 +218,8 @@ mod dispatcher_lifecycle {
     use crate::models::hyperstructure::{
         CompletedHyperstructureImpl, Hyperstructure, HyperstructureShareholders, PlayerRegisteredPoints,
     };
+    use crate::models::map2::TileOpt;
+    use crate::models::position::{CoordTrait, DirectionTrait};
     use crate::models::rank::{PlayerRank, PlayersRankTrial, RankList, RankPrize};
     use crate::models::resource::resource::{ResourceAllowance, ResourceImpl, ResourceMinMaxList};
     use crate::models::season::SeasonPrize;
@@ -294,9 +296,9 @@ mod dispatcher_lifecycle {
                 TestResource::Contract("trade_systems"), TestResource::Contract("quest_systems"),
                 TestResource::Contract("season_systems"),
                 TestResource::Library(("structure_creation_library", "0_1_18")),
-                TestResource::Library(("rng_library", "0_1_16")), TestResource::Event("GameCreated"),
-                TestResource::Event("BlitzSettlementEvent"), TestResource::Event("StoryEvent"),
-                TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
+                TestResource::Library(("rng_library", "0_1_16")), TestResource::Library(("biome_library", "0_1_13")),
+                TestResource::Event("GameCreated"), TestResource::Event("BlitzSettlementEvent"),
+                TestResource::Event("StoryEvent"), TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
                 TestResource::Event("TrophyProgression"), TestResource::Event("LedgerResultRowReady"),
                 TestResource::Event("LedgerResultsReady"), TestResource::Event("SeasonEnded"),
             ]
@@ -490,12 +492,22 @@ mod dispatcher_lifecycle {
     }
 
     fn setup_eternum_game() -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
+        setup_eternum_game_with_spires(1)
+    }
+
+    fn setup_eternum_game_with_spires(
+        count: u16,
+    ) -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
         let player = get_default_caller_address();
         let world = spawn_lifecycle_world();
         let registrar = registrar_dispatcher(world);
         registrar.bootstrap_chain_config(chain_config_with_ledger_operator(player, Zero::zero()));
         let mut rules = preset_game_config();
         rules.blitz_mode_on = false;
+        rules.settlement_config.spires_max_count = count;
+        rules.settlement_config.base_distance = 1;
+        rules.settlement_config.spires_layer_distance = 1;
+        rules.settlement_config.layer_max = 2;
         let mut tables = preset_side_tables();
         tables
             .resource_factories =
@@ -642,6 +654,75 @@ mod dispatcher_lifecycle {
         settle_inside_registration_window(@context);
         start_cheat_caller_address(context.blitz.contract_address, 'another-account'.try_into().unwrap());
         context.blitz.settle(GAME_A, 'second-account', [].span(), false);
+    }
+
+    #[test]
+    fn season_game_creation_populates_both_spire_layers_before_settling() {
+        start_cheat_block_timestamp_global(1);
+        let (mut context, _) = setup_eternum_game();
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        assert_spire_pair(context.world, center.x, center.y);
+        let config: SettlementConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("settlement_config"),
+        );
+        assert!(config.spires_settled_count == 1, "preset spire count was not initialized");
+    }
+
+    #[test]
+    fn season_game_creation_fills_the_spire_lattice() {
+        let (mut context, _) = setup_eternum_game_with_spires(9);
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        assert_spire_pair(context.world, center.x, center.y);
+        for direction in DirectionTrait::all() {
+            let coord = center.neighbor(direction);
+            assert_spire_pair(context.world, coord.x, coord.y);
+        }
+        assert_spire_pair(context.world, center.x + 2, center.y);
+        let config: SettlementConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("settlement_config"),
+        );
+        assert!(config.spires_settled_count == 9, "wrong spire count");
+        let second_ring_side = crate::models::config::SettlementConfigImpl::generate_coord(
+            config, true, 1, 2, 0, center,
+        );
+        assert_spire_pair(context.world, second_ring_side.x, second_ring_side.y);
+        let beyond: TileOpt = context.world.read_model((GAME_A, false, center.x + 3, center.y));
+        assert!(beyond.data == 0, "created outside preset count");
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: season preset requires a spire")]
+    fn season_game_creation_rejects_a_preset_without_spires() {
+        setup_eternum_game_with_spires(0);
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: spire count exceeds lattice")]
+    fn season_game_creation_rejects_more_spires_than_the_lattice_holds() {
+        setup_eternum_game_with_spires(20);
+    }
+
+    #[test]
+    fn blitz_game_creation_leaves_the_alternate_layer_empty() {
+        let mut context = setup_dev_off_game('operator'.try_into().unwrap());
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        let tile: TileOpt = context.world.read_model((GAME_A, true, center.x, center.y));
+        assert!(tile.data == 0, "Blitz created an alternate tile");
+        let config: SettlementConfig = WorldConfigUtilImpl::get_member(
+            context.world, GAME_A, selector!("settlement_config"),
+        );
+        assert!(config.spires_settled_count == 0, "Blitz created spires");
+    }
+
+    fn assert_spire_pair(world: WorldStorage, x: u32, y: u32) {
+        let surface: TileOpt = world.read_model((GAME_A, false, x, y));
+        let alternate: TileOpt = world.read_model((GAME_A, true, x, y));
+        let surface: crate::models::map::Tile = surface.into();
+        let alternate: crate::models::map::Tile = alternate.into();
+        assert!(surface.occupier_type == crate::models::map::TileOccupier::Spire.into(), "surface spire missing");
+        assert!(alternate.occupier_type == surface.occupier_type, "alternate spire missing");
+        assert!(surface.occupier_id != 0 && surface.occupier_id == alternate.occupier_id, "spire identity differs");
+        assert!(surface.biome != 0 && alternate.biome != 0, "spire tiles are undiscovered");
     }
 
     #[test]

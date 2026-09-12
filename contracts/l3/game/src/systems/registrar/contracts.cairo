@@ -215,6 +215,8 @@ pub mod registrar_systems {
             // hyperstructures are player-built and the reservation system is blitz-gated.
             if preset_game_config.blitz_mode_on {
                 reserve_hyperstructures_for_game(ref world, game_id);
+            } else {
+                crate::systems::spire::creation::create_preset_spires(ref world, game_id);
             }
             emit_game_created(ref world, registry);
 

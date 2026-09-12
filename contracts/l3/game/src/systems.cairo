@@ -167,8 +167,11 @@ pub mod bitcoin_mine {
 
 pub mod spire {
     pub mod contracts;
+    pub mod creation;
 }
 
 pub mod alt_movement {
     pub mod contracts;
+    #[cfg(test)]
+    mod tests;
 }

@@ -814,7 +814,13 @@ async function runExplorerAction({
     const updated = await heraldObserver.waitForExplorer(
       gameId,
       selectedExplorer.explorerId,
-      selectedExplorer,
+      {
+        alt: false,
+        x: selectedExplorer.coord.x,
+        y: selectedExplorer.coord.y,
+        stamina: selectedExplorer.stamina,
+        staminaUpdatedTick: selectedExplorer.staminaUpdatedTick,
+      },
       requiredAcceptedBlock(transaction),
       MODEL_UPDATE_TIMEOUT_MS,
     );
@@ -996,7 +1002,7 @@ async function readCurrentArmyTick(provider: RpcProvider, rpc: RpcMetrics): Prom
   return Math.floor(Number(block.timestamp) / ARMY_TICK_SECONDS);
 }
 
-async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
+export async function trackTransaction(options: TrackTransactionOptions): Promise<TrackedTransaction> {
   const preflightStartedAtMs = Date.now();
   const rpc = options.rpc ?? createRpcMetrics();
   const record: TrackedTransaction = {
@@ -1396,7 +1402,7 @@ function resolveSettlementCenter(structures: StructureState[]): Coord {
   return { x, y };
 }
 
-function cubeDistance(left: Coord, right: Coord): number {
+export function cubeDistance(left: Coord, right: Coord): number {
   const leftCube = evenRowToCube(left);
   const rightCube = evenRowToCube(right);
   return Math.max(

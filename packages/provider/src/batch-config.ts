@@ -59,6 +59,8 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   [TransactionType.APPLY_RELIC]: TransactionCostCategory.HIGH,
 
   // Complex operations
+  [TransactionType.BITCOIN_MINE_CONTRIBUTE_LABOR]: TransactionCostCategory.HIGH,
+  [TransactionType.BITCOIN_MINE_CLAIM_PHASE_REWARD]: TransactionCostCategory.HIGH,
   [TransactionType.CONTRIBUTE]: TransactionCostCategory.HIGH,
   [TransactionType.SETTLE]: TransactionCostCategory.HIGH,
   [TransactionType.REGISTER]: TransactionCostCategory.HIGH,

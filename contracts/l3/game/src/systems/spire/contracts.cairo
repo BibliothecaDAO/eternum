@@ -19,44 +19,12 @@ pub trait ISpireSystems<T> {
 
 #[dojo::contract]
 pub mod spire_systems {
-    use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
-    use crate::alias::ID;
+    use dojo::world::WorldStorage;
     use crate::constants::DEFAULT_NS;
     use crate::models::config::{SeasonConfigImpl, SettlementConfig, SettlementConfigImpl, WorldConfigUtilImpl};
-    use crate::models::map::{Tile, TileImpl, TileOccupier};
-    use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordImpl};
-    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
-    use crate::systems::utils::map::IMapImpl;
-    use crate::utils::map::biomes::Biome;
+    use crate::systems::spire::creation::create_spire_at_coord;
     use super::SpireSettlement;
-
-    fn explore_if_needed(ref world: WorldStorage, game_id: u32, ref tile: Tile) {
-        if tile.not_discovered() {
-            let biome_library = biome_library::get_dispatcher(@world);
-            let biome: Biome = biome_library.get_biome(world, game_id, tile.alt, tile.col.into(), tile.row.into());
-            IMapImpl::explore(ref world, ref tile, biome);
-        }
-    }
-
-    fn create_spire_at_coord(ref world: WorldStorage, game_id: u32, coord: Coord) {
-        let spire_id: ID = world.dispatcher.uuid();
-
-        let regular_tile_opt: TileOpt = world.read_model((game_id, false, coord.x, coord.y));
-        let mut regular_tile: Tile = regular_tile_opt.into();
-        let alternate_tile_opt: TileOpt = world.read_model((game_id, true, coord.x, coord.y));
-        let mut alternate_tile: Tile = alternate_tile_opt.into();
-
-        assert!(regular_tile.not_occupied(), "Eternum: Spire regular tile occupied");
-        assert!(alternate_tile.not_occupied(), "Eternum: Spire alternate tile occupied");
-
-        explore_if_needed(ref world, game_id, ref regular_tile);
-        explore_if_needed(ref world, game_id, ref alternate_tile);
-
-        IMapImpl::occupy(ref world, ref regular_tile, TileOccupier::Spire, spire_id);
-        IMapImpl::occupy(ref world, ref alternate_tile, TileOccupier::Spire, spire_id);
-    }
 
     #[abi(embed_v0)]
     impl SpireSystemsImpl of super::ISpireSystems<ContractState> {

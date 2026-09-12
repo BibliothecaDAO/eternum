@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { readFile } from "node:fs/promises";
@@ -217,6 +218,22 @@ async function main(): Promise<void> {
     heraldUrl: options.heraldUrl,
   });
 
+  const layerRoundTrips = [];
+  if (options.gameType === "eternum") {
+    for (const run of gameRuns) {
+      layerRoundTrips.push(
+        await runLayerRoundTrip({
+          bots: run.bots,
+          gameId: run.game.gameId,
+          provider,
+          heraldUrl: options.heraldUrl,
+          troopMovementAddress: systems.troopMovement,
+          altMovementAddress: requireContract(manifest, "s2-alt_movement_systems"),
+        }),
+      );
+    }
+  }
+
   const seasonFinalizations = [];
   if (options.gameType === "eternum") {
     for (const run of gameRuns) {
@@ -257,6 +274,7 @@ async function main(): Promise<void> {
     workload,
     valuePlane,
     seasonFinalizations,
+    layerRoundTrips,
   });
 
   console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);

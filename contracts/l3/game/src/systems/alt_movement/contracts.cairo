@@ -19,9 +19,10 @@ pub mod alt_movement_systems {
     use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
-    use crate::models::position::{Coord, CoordTrait, Direction, TravelTrait};
+    use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::structure::StructureOwnerStoreImpl;
     use crate::models::troop::ExplorerTroops;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::troop::iExplorerImpl;
 
@@ -44,13 +45,12 @@ pub mod alt_movement_systems {
             let mut current_tile: Tile = current_tile_opt.into();
             assert!(current_tile.occupier_id == explorer_id, "tile occupier should be explorer");
 
-            let spire_coord = start_coord.neighbor(spire_direction);
+            let spire_coord = start_coord.spire_neighbor(spire_direction);
             let spire_tile_opt: TileOpt = world.read_model((game_id, start_coord.alt, spire_coord.x, spire_coord.y));
             let spire_tile: Tile = spire_tile_opt.into();
             assert!(
                 spire_tile.occupier_type == TileOccupier::Spire.into(), "Eternum: explorer must be adjacent to spire",
             );
-            assert!(explorer.coord.is_adjacent(spire_coord), "Eternum: explorer must be adjacent to spire");
 
             let destination_coord = Coord { alt: !start_coord.alt, x: start_coord.x, y: start_coord.y };
             let destination_tile_opt: TileOpt = world
@@ -58,6 +58,14 @@ pub mod alt_movement_systems {
             let mut destination_tile: Tile = destination_tile_opt.into();
             assert!(destination_tile.not_occupied(), "Eternum: destination tile is occupied");
 
+            // An undiscovered landing tile would be invisible and impossible to travel back onto.
+            if destination_tile.not_discovered() {
+                let biome = biome_library::get_dispatcher(@world)
+                    .get_biome(
+                        world, game_id, destination_coord.alt, destination_coord.x.into(), destination_coord.y.into(),
+                    );
+                IMapImpl::explore(ref world, ref destination_tile, biome);
+            }
             IMapImpl::occupy(ref world, ref current_tile, TileOccupier::None, 0);
             let tile_occupier = IMapImpl::get_troop_occupier(
                 explorer.owner, explorer.troops.category, explorer.troops.tier,
