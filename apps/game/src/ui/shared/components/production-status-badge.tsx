@@ -197,7 +197,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         <ResourceIcon resource={resourceLabel} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
       </div>
       {cornerTopLeft && (
-        <span className="absolute -top-1 -left-1 z-10 flex min-w-[14px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">
+        <span className="absolute -top-1.5 -left-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/40">
           {cornerTopLeft}
         </span>
       )}
@@ -211,7 +211,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       {cornerTopRight && (
         <span
           className={clsx(
-            "absolute -top-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold shadow-md border border-gold/40",
+            "absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold shadow-md border border-gold/40",
             cornerTopRightClassName ?? "text-gold/90",
           )}
         >
@@ -219,12 +219,12 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         </span>
       )}
       {cornerBottomRight && (
-        <span className="absolute -bottom-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/80 shadow-md border border-gold/30">
+        <span className="absolute -bottom-1.5 -right-1.5 z-10 flex h-5 min-w-[24px] items-center justify-center rounded-full bg-black/85 px-1.5 text-[10px] font-semibold text-gold/80 shadow-md border border-gold/30">
           {cornerBottomRight}
         </span>
       )}
       {!cornerTopLeft && !cornerTopRight && !cornerBottomRight && totalCount > 0 && (
-        <span className="absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-[#2a1f14] shadow-md">
+        <span className="absolute -top-1.5 -right-1.5 z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gold px-1 text-[10px] font-semibold text-[#2a1f14] shadow-md">
           {totalCount}
         </span>
       )}
