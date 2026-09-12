@@ -2354,29 +2354,11 @@ export class ArmyManager {
   private slotAuditFrameCounter = 0;
   private readonly loggedSlotViolations = new Set<string>();
 
-  update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
+  update(deltaTime: number, animationContext?: AnimationVisibilityContext, animationsPaused = false) {
     this.flushVisibleArmyPresentation();
 
-    // Update movements in ArmyModel
-    this.armyModel.updateMovements(deltaTime);
-    this.requestMovingArmyShadowRefresh();
-    this.armyModel.updateAnimations(deltaTime, animationContext);
-    this.updateProceduralArmyCharacters(deltaTime, animationContext);
-
-    // Update FX
-    this.fxManager.update(deltaTime);
-
-    // Update path visualization animation
-    this.pathRenderer.update(deltaTime);
-
-    // Update path progress for selected army
-    if (this.selectedArmyForPath !== null) {
-      const numericId = this.toNumericId(this.selectedArmyForPath);
-      const progress = this.armyModel.getMovementProgress(numericId);
-      if (progress !== undefined) {
-        this.pathRenderer.updateProgress(numericId, progress);
-      }
-    }
+    if (!animationsPaused) this.updateAnimatedArmyPresentation(deltaTime, animationContext);
+    this.updateProceduralArmyCharacters(animationsPaused ? 0 : deltaTime, animationContext);
 
     // One pass owns moving labels and attachment transforms.
     this.updateVisibleArmyPresentation();
@@ -2405,6 +2387,28 @@ export class ArmyManager {
       if (import.meta.env?.DEV) {
         // DEV-only mirror/SSOT tripwire — narrows where a desync originated.
         this.auditArmySlotsForGhosts();
+      }
+    }
+  }
+
+  private updateAnimatedArmyPresentation(deltaTime: number, animationContext?: AnimationVisibilityContext): void {
+    // Update movements in ArmyModel
+    this.armyModel.updateMovements(deltaTime);
+    this.requestMovingArmyShadowRefresh();
+    this.armyModel.updateAnimations(deltaTime, animationContext);
+
+    // Update FX
+    this.fxManager.update(deltaTime);
+
+    // Update path visualization animation
+    this.pathRenderer.update(deltaTime);
+
+    // Update path progress for selected army
+    if (this.selectedArmyForPath !== null) {
+      const numericId = this.toNumericId(this.selectedArmyForPath);
+      const progress = this.armyModel.getMovementProgress(numericId);
+      if (progress !== undefined) {
+        this.pathRenderer.updateProgress(numericId, progress);
       }
     }
   }

@@ -517,6 +517,7 @@ export class ProceduralArmyCharacterLayer {
   }
 
   private updateRuntime(deltaSeconds: number): void {
+    if (deltaSeconds <= 0) return;
     this.runtime?.update(deltaSeconds);
     const elapsed = Number.isFinite(deltaSeconds) ? Math.min(Math.max(0, deltaSeconds), 1) : 0;
     this.elapsedSeconds += elapsed;

@@ -3,6 +3,7 @@ import MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMateri
 import { instanceColor } from "three/src/nodes/accessors/Instance.js";
 import { mix, step, texture, uv, vec3, vec4 } from "three/tsl";
 import { SAIL_STRIPE_U } from "./ship-sail-print";
+import { applyGameEndFrost } from "../../effects/game-end-freeze";
 
 export function createOwnershipSailMaterial(source: MeshBasicMaterial | MeshStandardMaterial): MeshBasicNodeMaterial {
   if (!source.map) throw new Error(`Ownership sail ${source.name} has no print texture`);
@@ -15,6 +16,6 @@ export function createOwnershipSailMaterial(source: MeshBasicMaterial | MeshStan
   const print = texture(source.map);
   const stripe = step(SAIL_STRIPE_U.start, uv().x).mul(step(SAIL_STRIPE_U.end, uv().x).oneMinus());
   // A custom fragment applies the instance tint once, only inside the printed stripe.
-  material.fragmentNode = vec4(print.rgb.mul(mix(vec3(1), instanceColor, stripe)), print.a);
+  material.fragmentNode = vec4(applyGameEndFrost(print.rgb.mul(mix(vec3(1), instanceColor, stripe))), print.a);
   return material;
 }

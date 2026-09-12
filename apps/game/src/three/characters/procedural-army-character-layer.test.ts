@@ -95,8 +95,12 @@ describe("ProceduralArmyCharacterLayer", () => {
     );
     expect(scene.getObjectByName("procedural-army-character:42")).toBe(actor.object);
     expect(actor.object.position.toArray()).toEqual([3, 0.5, 7]);
-    expect(characterMocks.updateRuntime).toHaveBeenCalledWith(0);
+    expect(characterMocks.updateRuntime).not.toHaveBeenCalled();
     expect(layer.getStats()).toMatchObject({ actorCount: 1, hitTargetCount: 1, loadState: "ready" });
+
+    layer.sync([{ ...presentation, position: new Vector3(5, 0.5, 9) }], 0);
+    expect(actor.object.position.toArray()).toEqual([5, 0.5, 9]);
+    expect(characterMocks.updateRuntime).not.toHaveBeenCalled();
 
     layer.sync([{ ...presentation, isMoving: true, position: new Vector3(4, 0.5, 8) }], 0.02);
 

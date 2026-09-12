@@ -1,3 +1,4 @@
+import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
@@ -100,9 +101,6 @@ const resolveBlitzRealmSystemsAddress = (): string => {
 const hasMainStarted = (currentBlockTimestamp: number, gameStartMainAt: number | null) =>
   typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt;
 
-const hasSeasonEnded = (currentBlockTimestamp: number, gameEndAt: number | null) =>
-  typeof gameEndAt === "number" && currentBlockTimestamp > gameEndAt;
-
 const isProvisionLoadingState = (provisionActionState: RealmProvisionActionStatus) =>
   provisionActionState === "submitting" || provisionActionState === "syncing";
 
@@ -139,7 +137,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   // dev_mode worlds (sandbox) bypass the chain's main-phase + season-end gates,
   // so a freshly settled realm can provision/upgrade immediately. Mirror that.
   const isMainPhase = devModeOn || hasMainStarted(currentBlockTimestamp, gameStartMainAt);
-  const isSeasonOver = !devModeOn && hasSeasonEnded(currentBlockTimestamp, gameEndAt);
+  const isSeasonOver = hasGameEnded("Live", gameEndAt ?? 0, currentBlockTimestamp);
   const canProvision = Boolean(isBlitzWorld && isRealm && isOwner && isMainPhase && !isSeasonOver && !isProvisioned);
   const needsBootstrap = Boolean(isBlitzWorld && isRealm && isOwner && !isSeasonOver && !isProvisioned);
   const isProvisionLoading = isProvisionLoadingState(provisionActionState);

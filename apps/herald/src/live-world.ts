@@ -122,11 +122,11 @@ export class LiveWorld {
     return this.confirmedFold.modelRows(model);
   }
 
-  public async freezeEndedReviewSnapshots(): Promise<void> {
+  public async freezeEndedReviewSnapshots(confirmedTimestamp: number): Promise<void> {
     if (!this.input.historyStore) return;
     await Promise.all(
       this.confirmedFold
-        .endedGameIds()
+        .endedGameIds(confirmedTimestamp)
         .map((gameId) =>
           this.input.historyStore!.freezeReviewSnapshot(
             this.confirmedFold.reviewSnapshot(gameId, this.confirmedBlockValue),
@@ -265,6 +265,7 @@ export class LiveWorld {
     this.flushPreconfirmedTransaction();
 
     const confirmedChanges = await this.applyConfirmedThrough(head.block_number);
+    await this.freezeEndedReviewSnapshots(head.timestamp);
     for (const [block, changes] of confirmedChanges) this.broadcastConfirmedChanges(changes, block);
     this.resetOverlay();
     await this.rebuildOverlay();
@@ -299,7 +300,6 @@ export class LiveWorld {
     });
     await this.input.historyStore?.appendEvents(historyEvents, targetBlock);
     this.confirmedBlockValue = targetBlock;
-    await this.freezeEndedReviewSnapshots();
     return changes;
   }
 

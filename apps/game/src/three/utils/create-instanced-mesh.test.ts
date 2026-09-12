@@ -124,3 +124,18 @@ describe.each([true, false])("sparse instances with native WebGPU %s", (nativeWe
     material.dispose();
   });
 });
+
+it("initializes morph weights before empty-pool compilation and single-instance draws", () => {
+  const geometry = new BoxGeometry();
+  geometry.morphAttributes.position = [geometry.attributes.position.clone()];
+  const mesh = createInstancedMesh(geometry, new MeshBasicMaterial(), 8);
+  mesh.count = 0;
+  prepare(mesh, true);
+  expect(mesh.morphTargetInfluences).toEqual([0]);
+  mesh.count = 1;
+  expect(mesh.morphTargetInfluences).toEqual([0]);
+  expect(mesh.morphTexture).toBeNull();
+  mesh.dispose();
+  mesh.material.dispose();
+  geometry.dispose();
+});

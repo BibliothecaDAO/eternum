@@ -1,3 +1,4 @@
+import { applyGameEndFrost, mapAnimationTime as time } from "../effects/game-end-freeze";
 import { NormalRGPacking } from "three";
 import type Node from "three/src/nodes/core/Node.js";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
@@ -11,7 +12,6 @@ import {
   positionWorld,
   smoothstep,
   texture,
-  time,
   uv,
   vec2,
   vec3,
@@ -56,7 +56,7 @@ export function createEtherealTerrainMaterial(
   const energy = createEtherealEnergy(ground, drift, flowingCloud);
   const edgeDistance = terrainHexEdgeDistance(ground);
   const border = smoothstep(0.006, fwidth(edgeDistance).max(0.001).add(0.006), edgeDistance).oneMinus();
-  material.colorNode = base;
+  material.colorNode = applyGameEndFrost(base);
   // Emission keeps the void's identity through the day cycle without specular glare.
   material.emissiveNode = base.mul(0.16).add(energy.mul(0.38)).add(color(palette.glowColor).mul(border).mul(0.035));
   const surfaceMaterial = mix(stoneMaterial, dustMaterial, dustCover.mul(0.72));

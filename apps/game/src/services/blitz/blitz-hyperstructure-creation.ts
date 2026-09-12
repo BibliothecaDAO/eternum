@@ -1,4 +1,5 @@
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import { gameCallArgs, getGameNamespace } from "@/sync/game-scope";
 import { getActiveWorld, type WorldProfile } from "@/runtime/world";
 import { normalizeSelector } from "@/runtime/world/normalize";
@@ -128,6 +129,7 @@ export const createActiveWorldBlitzHyperstructure = async ({
   account: HyperstructureCreationAccount;
   hexCoords: HexPosition;
 }) => {
+  assertHyperstructureCreationAllowed();
   const activeWorld = resolveActiveWorldOrThrow();
   const contractAddress = resolveHyperstructureCreateSystemsAddress(activeWorld);
 
@@ -154,6 +156,7 @@ export const submitActiveWorldBlitzHyperstructureCreation = async ({
   account: HyperstructureCreationAccount;
   hexCoords: HexPosition;
 }) => {
+  assertHyperstructureCreationAllowed();
   const markedPending = markPendingReservedHyperstructureCreation(hexCoords);
   if (!markedPending) {
     return false;
@@ -170,3 +173,8 @@ export const submitActiveWorldBlitzHyperstructureCreation = async ({
     throw error;
   }
 };
+
+function assertHyperstructureCreationAllowed(): void {
+  if (!canIssueOrders())
+    throw new Error("Hyperstructure creation is unavailable while spectating or after the game ends.");
+}
