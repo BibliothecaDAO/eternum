@@ -17,7 +17,9 @@ function createHarness() {
       timer.cancelled = true;
     };
   };
-  const recognizer = new TouchGestureRecognizer((gesture) => gestures.push(gesture), schedule);
+  const recognizer = new TouchGestureRecognizer((gesture) => {
+    if (gesture.kind !== "start" && gesture.kind !== "end" && gesture.kind !== "pan") gestures.push(gesture);
+  }, schedule);
 
   const feed = (kind: TouchPointerSample["kind"], pointerId: number, x: number, y: number, time: number) =>
     recognizer.feed({ kind, pointerId, x, y, time });
@@ -107,7 +109,7 @@ describe("TouchGestureRecognizer", () => {
     harness.feed("up", 1, 100, 100, 200);
     harness.feed("up", 2, 300, 100, 210);
 
-    expect(harness.gestures).toEqual([{ kind: "pinch", scale: 2, centerX: 200, centerY: 100 }]);
+    expect(harness.gestures).toMatchObject([{ kind: "pinch", scale: 2, centerX: 200, centerY: 100 }]);
   });
 
   it("emits pinch scale relative to the previous sample, not the initial spread", () => {
@@ -118,7 +120,7 @@ describe("TouchGestureRecognizer", () => {
     harness.feed("move", 2, 200, 0, 20);
     harness.feed("move", 2, 150, 0, 30);
 
-    expect(harness.gestures).toEqual([
+    expect(harness.gestures).toMatchObject([
       { kind: "pinch", scale: 2, centerX: 100, centerY: 0 },
       { kind: "pinch", scale: 0.75, centerX: 75, centerY: 0 },
     ]);

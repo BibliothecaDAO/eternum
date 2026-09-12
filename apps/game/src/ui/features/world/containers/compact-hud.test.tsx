@@ -218,6 +218,7 @@ it("dismisses the sheet when panning the world canvas, but allows interaction wi
   await act(async () => sheet()!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
   expect(sheet()).not.toBeNull();
   const canvas = document.createElement("canvas");
+  canvas.addEventListener("pointerdown", (event) => event.stopImmediatePropagation(), true);
   document.body.append(canvas);
   try {
     await act(async () => canvas.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));

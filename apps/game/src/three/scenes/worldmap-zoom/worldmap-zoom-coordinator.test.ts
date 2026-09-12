@@ -20,6 +20,32 @@ function settle(coordinator: WorldmapZoomCoordinator, startDistance: number) {
 }
 
 describe("WorldmapZoomCoordinator", () => {
+  it("cancels wheel easing on touch, holds bands through direct zoom, and settles after release", () => {
+    const coordinator = createCoordinator();
+    coordinator.applyIntent({ type: "continuous_delta", delta: 120 });
+    coordinator.beginDirectManipulation(20);
+    expect(coordinator.tick({ actualDistance: 20, deltaMs: 16, nowMs: 16 }).didMove).toBe(false);
+    coordinator.applyIntent({ type: "continuous_delta", delta: 120 });
+    expect(coordinator.getSnapshot().targetDistance).toBe(20);
+
+    coordinator.applyDirectDistance(12);
+    for (let frame = 0; frame < 20; frame++) {
+      const result = coordinator.tick({ actualDistance: 12, deltaMs: 16, nowMs: 32 + frame * 16 });
+      expect(result.didMove).toBe(false);
+      expect(result.snapshot).toMatchObject({
+        status: "zooming",
+        resolvedBand: CameraView.Close,
+        stableBand: CameraView.Medium,
+      });
+    }
+    coordinator.endDirectManipulation();
+    coordinator.tick({ actualDistance: 12, deltaMs: 16, nowMs: 400 });
+    const settled = coordinator.tick({ actualDistance: 12, deltaMs: 16, nowMs: 416 });
+    expect(settled.snapshot).toMatchObject({ status: "idle", stableBand: CameraView.Close, targetDistance: 12 });
+    coordinator.applyIntent({ type: "continuous_delta", delta: 120 });
+    expect(coordinator.getSnapshot().targetDistance).toBeGreaterThan(12);
+  });
+
   it("lets the latest wheel delta win while a zoom is already in progress", () => {
     const coordinator = createCoordinator();
 

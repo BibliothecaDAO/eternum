@@ -122,10 +122,11 @@ export const PopoverPanel = ({
       onDismissRef.current();
     };
 
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    // Observe map touches before the canvas claims the navigation gesture.
+    document.addEventListener("pointerdown", closeOnOutsidePointer, true);
     window.addEventListener("keydown", closeOnEscape);
     return () => {
-      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, []);

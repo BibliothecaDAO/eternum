@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Smoother Mobile Map Gestures",
+    description:
+      "Pan the world map with one finger and pinch to zoom around your fingers. Switching gestures stays steady, and interrupted touches no longer affect the next drag.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
     title: "Refined Realms and Clear Ownership",
     description:
       "Realm masonry grows paler and finer with each tier, with hand-laid roofs, a raised kingdom drawbridge, and full-height empire gates. Settlement supplies sit beside a clear entrance. Owned realms and villages fly green banners; all others fly red. Every realm hanging displays its order emblem. Chests are 30% smaller on the map. Game entry loads entity models as the selected world needs them.",

@@ -626,6 +626,7 @@ export default class HexceptionScene extends HexagonScene {
     this.ambienceSystem?.setup(settlementCenter, this.hexceptionRadius);
 
     this.controls.maxDistance = LOCAL_CAMERA_ZOOM.maxDistance;
+    this.controls.minDistance = LOCAL_CAMERA_ZOOM.minDistance;
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.zoomToCursor = false;

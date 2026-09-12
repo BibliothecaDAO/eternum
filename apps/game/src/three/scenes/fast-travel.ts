@@ -2,6 +2,7 @@ import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { PathRenderer } from "../managers/path-renderer";
+import { CONTROL_CONFIG } from "../constants";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
 import { SelectionPulseManager } from "../managers/selection-pulse-manager";
 import {
@@ -125,6 +126,7 @@ export default class FastTravelScene extends WarpTravel {
 
   private configureFastTravelSetupStart(): void {
     this.hasCompletedSwitchOffCleanup = false;
+    this.controls.minDistance = CONTROL_CONFIG.minDistance;
     this.controls.enablePan = true;
     this.controls.enableZoom = true;
     this.interactiveHexManager.setSurfaceVisibility(false);
