@@ -32,6 +32,7 @@ export class WorldmapZoomCoordinator {
   private nextGestureId = 1;
   private bandState: WorldmapZoomBandState;
   private state: WorldmapZoomState;
+  private directManipulation = false;
 
   constructor(options: WorldmapZoomCoordinatorOptions) {
     const initialBand = resolveBandForDistance(options.initialDistance);
@@ -52,6 +53,7 @@ export class WorldmapZoomCoordinator {
   }
 
   public applyIntent(intent: ZoomIntent): WorldmapCameraSnapshot {
+    if (this.directManipulation) return this.getSnapshot();
     const nextTargetDistance = this.resolveTargetDistance(intent);
     const hasTargetChanged = Math.abs(nextTargetDistance - this.state.targetDistance) > 0.001;
 
@@ -70,6 +72,7 @@ export class WorldmapZoomCoordinator {
   }
 
   public syncToDistance(distance: number, nowMs: number = 0): WorldmapCameraSnapshot {
+    this.directManipulation = false;
     const nextDistance = clamp(distance, this.minDistance, this.maxDistance);
     const nextBand = resolveBandForDistance(nextDistance);
 
@@ -93,20 +96,23 @@ export class WorldmapZoomCoordinator {
   }
 
   public tick(input: { actualDistance: number; deltaMs: number; nowMs: number }): WorldmapZoomTickResult {
-    const nextDistance = resolveNextDistance({
-      actualDistance: input.actualDistance,
-      targetDistance: this.state.targetDistance,
-      deltaMs: input.deltaMs,
-      easingPerSecond: this.easingPerSecond,
-    });
+    const nextDistance = this.directManipulation
+      ? input.actualDistance
+      : resolveNextDistance({
+          actualDistance: input.actualDistance,
+          targetDistance: this.state.targetDistance,
+          deltaMs: input.deltaMs,
+          easingPerSecond: this.easingPerSecond,
+        });
     const didMove = Math.abs(nextDistance - input.actualDistance) > 0.0001;
-    const status = Math.abs(this.state.targetDistance - nextDistance) <= 0.05 ? "idle" : "zooming";
+    const status = this.resolveZoomStatus(nextDistance);
 
     this.bandState = updateWorldmapZoomBandState(this.bandState, {
       actualDistance: nextDistance,
       targetDistance: this.state.targetDistance,
       status,
       nowMs: input.nowMs,
+      isDirectManipulation: this.directManipulation,
     });
     this.state = {
       ...this.state,
@@ -122,6 +128,42 @@ export class WorldmapZoomCoordinator {
 
   public getSnapshot(): WorldmapCameraSnapshot {
     return { ...this.state };
+  }
+
+  /** Touch takes the visible distance immediately, cancelling any pending wheel easing. */
+  public beginDirectManipulation(distance: number): WorldmapCameraSnapshot {
+    this.directManipulation = true;
+    this.state = {
+      ...this.state,
+      actualDistance: distance,
+      targetDistance: distance,
+      status: "idle",
+      activeGestureId: null,
+    };
+    return this.getSnapshot();
+  }
+
+  public applyDirectDistance(distance: number): WorldmapCameraSnapshot {
+    const nextDistance = clamp(distance, this.minDistance, this.maxDistance);
+    if (Math.abs(nextDistance - this.state.actualDistance) <= 0.0001) return this.getSnapshot();
+    this.state = {
+      ...this.state,
+      actualDistance: nextDistance,
+      targetDistance: nextDistance,
+      status: "zooming",
+      activeGestureId: this.state.activeGestureId ?? this.nextGestureId++,
+    };
+    return this.getSnapshot();
+  }
+
+  public endDirectManipulation(): void {
+    // The next frame settles the band and publishes the ordinary zoom completion.
+    this.directManipulation = false;
+  }
+
+  private resolveZoomStatus(distance: number): WorldmapZoomState["status"] {
+    if (this.directManipulation) return this.state.status;
+    return Math.abs(this.state.targetDistance - distance) <= 0.05 ? "idle" : "zooming";
   }
 
   private resolveTargetDistance(intent: ZoomIntent): number {

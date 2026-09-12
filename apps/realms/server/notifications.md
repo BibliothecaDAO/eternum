@@ -5,10 +5,10 @@ recipient rules live in `@bibliothecadao/notifications`. Device delivery is not 
 client offers a separate device opt-in for local delivery while its page runs. Subscriptions, VAPID, push delivery, and
 the durable notifier remain separate work. See `apps/game/src/pwa/notifications.md` for local behavior.
 
-Apply `server/migrations/001-notification-preferences.sql` to the identity database before deploying this API. It
-creates a table with level/revision constraints and a cascading reference to the existing identity user. The same table
-is declared in `packages/db/src/schema/notifications.ts` for Drizzle schema management. The SQL is transactional and may
-be reapplied. No existing identity or Herald rows are rewritten.
+The table has one schema source: `packages/db/src/schema/notifications.ts`. Apply it before deploying this API through
+the existing database workflow: `pnpm --dir packages/db push` against the intended identity database. There is no
+parallel handwritten SQL migration. The table has level/revision constraints and a cascading reference to the identity
+user.
 
 `GET /api/notifications/preferences` returns `{owner, level, revision}` for the authenticated account. An account
 without a saved preference reads `off` at revision zero. `POST` accepts the same shape with the desired level and last
@@ -29,6 +29,11 @@ Run integration tests against a disposable PostgreSQL database with `IDENTITY_TE
 pnpm --dir apps/realms test server/main.test.ts server/notification-preference-store.integration.test.ts
 ```
 
-Tests create and remove unique schemas, apply the migration twice, race first saves and updates, verify persistence,
-enforce owner isolation and constraints, and check deletion cascades. The notifications PR workflow supplies PostgreSQL.
-Browser cookie behavior across production origins and physical-device permission UX remain release gates.
+Tests create and remove unique schemas, generate table DDL from the Drizzle declaration, race first saves and updates,
+verify persistence, enforce owner isolation and constraints, and check deletion cascades. The notifications PR workflow
+supplies PostgreSQL. Browser cookie behavior across production origins and physical-device permission UX remain release
+gates.
+
+The preference store is an Effect service with an injectable layer and typed storage failures. The HTTP adapter runs the
+effect at the request boundary and maps validation/authentication/storage failures to explicit no-store responses.
+Writes are not automatically retried: revision conflicts and ambiguous failures require the client to reload.

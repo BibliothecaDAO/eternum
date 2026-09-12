@@ -34,6 +34,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-13",
+    title: "Game Activity Compatibility",
+    description: "Game activity remains available as new kinds of events are introduced.",
+    type: "fix",
+  },
+  {
     date: "2026-09-12",
     title: "Local Game Notifications",
     description:
@@ -64,6 +70,13 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Cleaner Game Activity",
     description:
       "Live activity and history now share event identities, so the same event appears only once when history loads.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Smoother Mobile Map Gestures",
+    description:
+      "Pan the world map with one finger and pinch to zoom around your fingers. Switching gestures stays steady, and interrupted touches no longer affect the next drag.",
     type: "fix",
   },
   {

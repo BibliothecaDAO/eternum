@@ -21,7 +21,7 @@ interface NormalizedWorldmapWheelDelta {
   direction: -1 | 0 | 1;
 }
 
-/** Wheel pixels per e-fold of camera distance; shared by wheel and pinch so both feel the same. */
+/** Wheel pixels per e-fold of camera distance. */
 const DEFAULT_ZOOM_SENSITIVITY = 600;
 
 export function normalizeWorldmapWheelDelta(input: NormalizeWorldmapWheelDeltaInput): NormalizedWorldmapWheelDelta {
@@ -39,18 +39,6 @@ export function applyContinuousWorldmapZoomDelta(input: ApplyContinuousWorldmapZ
   const unclampedDistance = input.currentDistance * zoomScale;
 
   return clamp(unclampedDistance, input.minDistance, input.maxDistance);
-}
-
-/**
- * Maps a pinch step (current spread / previous spread) onto wheel pixels so the camera distance
- * scales by the inverse of the finger spread: doubling the spread halves the distance.
- */
-export function resolveWorldmapPinchZoomDelta(input: { scale: number }): number {
-  if (!Number.isFinite(input.scale) || input.scale <= 0) {
-    return 0;
-  }
-
-  return DEFAULT_ZOOM_SENSITIVITY * Math.log(1 / input.scale);
 }
 
 export function resolveWorldmapWheelPixelDelta(input: ResolveWorldmapWheelPixelDeltaInput): number {

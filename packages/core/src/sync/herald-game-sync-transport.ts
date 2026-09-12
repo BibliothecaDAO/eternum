@@ -389,7 +389,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       this.handlers?.onEvent(toEntity(change), {
         block: confirmation.block,
         preconfirmed: confirmation.preconfirmed,
-        replayed: confirmation.block === null || confirmation.block <= this.attachedThroughBlock,
+        confirmedAfterAttach:
+          !confirmation.preconfirmed && confirmation.block !== null && confirmation.block > this.attachedThroughBlock,
       });
       return [];
     }

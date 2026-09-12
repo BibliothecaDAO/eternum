@@ -32,7 +32,7 @@ vi.mock("./local-notification-client", () => ({
 }));
 import { dispatchLocalStoryNotification } from "./local-story-notifications";
 const scope = { chain: "madara", worldAddress: "0x123", gameId: 7 };
-const live = { block: 20, preconfirmed: false, replayed: false };
+const live = { block: 20, preconfirmed: false, confirmedAfterAttach: true };
 function event() {
   return {
     hashed_keys: "0xabc",
@@ -81,7 +81,7 @@ it("dispatches an eligible new confirmed event and groups mirrored copies", asyn
   expect(firstPayload.owner).toBe("0x1");
 });
 it("never dispatches history, unknown confirmation, provisional events, spectators, off or unrelated activity", async () => {
-  dispatchLocalStoryNotification(event(), scope, { ...live, replayed: true });
+  dispatchLocalStoryNotification(event(), scope, { ...live, confirmedAfterAttach: false });
   dispatchLocalStoryNotification(event(), scope, { block: 20, preconfirmed: false });
   dispatchLocalStoryNotification(event(), scope, { ...live, preconfirmed: true });
   mocks.spectator = true;

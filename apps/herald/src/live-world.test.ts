@@ -241,7 +241,7 @@ describe("LiveWorld", () => {
 
     await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
 
-    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13, true);
+    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
   });
 
   it("deduplicates hints and replaces the overlay from one pre-confirmed block read", async () => {
@@ -873,7 +873,7 @@ describe("timed review snapshots", () => {
     expect(historyStore.freezeReviewSnapshot).toHaveBeenCalledWith(
       expect.objectContaining({ game_id: "7", confirmed_block: 13 }),
     );
-    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13, true);
+    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
     // Startup recovery uses the timestamp of the loaded confirmed head as well.
     await live.freezeEndedReviewSnapshots(101);
     expect(historyStore.freezeReviewSnapshot).toHaveBeenLastCalledWith(

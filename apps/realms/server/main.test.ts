@@ -37,9 +37,22 @@ vi.mock("./profiles", () => ({
   ),
 }));
 vi.mock("./static", () => ({ serveStatic: mocks.serveStatic }));
-vi.mock("./notification-preference-store", () => ({
-  createNotificationPreferenceStore: () => ({ read: mocks.readPreferences, save: mocks.savePreferences }),
-}));
+vi.mock("./notification-preference-store", async () => {
+  const { Context, Effect, Layer } = await import("effect");
+  class NotificationPreferenceStore extends Context.Service<
+    NotificationPreferenceStore,
+    {
+      read: (owner: string) => ReturnType<typeof Effect.promise>;
+      save: (owner: string, level: string, revision: number) => ReturnType<typeof Effect.promise>;
+    }
+  >()("NotificationPreferenceStore") {
+    static readonly layer = Layer.succeed(NotificationPreferenceStore, {
+      read: (owner) => Effect.promise(() => mocks.readPreferences(owner)),
+      save: (owner, level, revision) => Effect.promise(() => mocks.savePreferences(owner, level, revision)),
+    });
+  }
+  return { NotificationPreferenceStore };
+});
 
 import { handleRequest } from "./main";
 

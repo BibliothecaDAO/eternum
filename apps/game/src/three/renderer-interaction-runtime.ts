@@ -27,6 +27,13 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   public readonly pointer = new Vector2();
   public controls?: MapControls;
   private hasDocumentKeyboardLifecycle = false;
+  private surface?: HTMLElement;
+  // Active scene input handles touches in capture phase. Unowned touches must never enter MapControls.
+  private readonly blockNativeTouchNavigation = (event: PointerEvent) => {
+    if (event.pointerType !== "touch") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
 
   private readonly handleDocumentFocus = (event: FocusEvent) => {
     if (event.target instanceof HTMLInputElement && this.controls) {
@@ -44,6 +51,8 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
 
   public attachSurface(surface: HTMLElement): void {
     this.disposeControls();
+    this.surface = surface;
+    surface.addEventListener("pointerdown", this.blockNativeTouchNavigation, { passive: false });
     this.controls = createConfiguredMapControls({
       camera: this.camera,
       onControlsChange: this.input.onControlsChange,
@@ -57,6 +66,8 @@ class GameRendererInteractionRuntime implements RendererInteractionRuntime {
   }
 
   private disposeControls(): void {
+    this.surface?.removeEventListener("pointerdown", this.blockNativeTouchNavigation);
+    this.surface = undefined;
     if (this.hasDocumentKeyboardLifecycle) {
       document.removeEventListener("focus", this.handleDocumentFocus, true);
       document.removeEventListener("blur", this.handleDocumentBlur, true);

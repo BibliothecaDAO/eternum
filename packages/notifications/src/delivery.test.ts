@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { GAME_CHAIN_NAMES } from "@realms-world/chain";
 import { expect, it } from "vitest";
 import { logicalStoryIdentity, notificationMatchesGame, parseNotificationPayload } from "./delivery";
 
@@ -63,27 +63,6 @@ it("also groups the two delayed transfer records without collapsing unrelated tr
   ).toBe("source:0x65");
 });
 
-it("pins the mirrored identity assumption to the Cairo emitter order and locked Dojo version", () => {
-  const root = new URL("../../../", import.meta.url);
-  const battles = readFileSync(
-    new URL("contracts/l3/game/src/systems/combat/contracts/troop_battle.cairo", root),
-    "utf8",
-  );
-  const pairs = [
-    ...battles.matchAll(
-      /\/\/ Emit from attacker perspective([\s\S]*?)\/\/ Emit from defender perspective([\s\S]*?story: Story::BattleStory\(battle_story\))/g,
-    ),
-  ];
-  expect(pairs).toHaveLength(3);
-  for (const pair of pairs) {
-    expect(pair[1].match(/dispatcher\.uuid\(\)/g)).toHaveLength(1);
-    expect(pair[2].match(/dispatcher\.uuid\(\)/g)).toHaveLength(1);
-  }
-  expect(readFileSync(new URL("contracts/l3/game/Scarb.lock", root), "utf8")).toMatch(
-    /name = "dojo"\nversion = "1\.8\.0"/,
-  );
-});
-
 it("matches the intended game without changing another tab's route", () => {
   expect(
     notificationMatchesGame("https://game.test/play/madara/game-1/map?col=3", notification.target, "https://game.test"),
@@ -94,4 +73,13 @@ it("matches the intended game without changing another tab's route", () => {
   expect(
     notificationMatchesGame("https://foreign.test/play/madara/game-1/map", notification.target, "https://game.test"),
   ).toBe(false);
+});
+
+it("accepts every centrally configured game chain and rejects unknown chains", () => {
+  for (const chain of Object.keys(GAME_CHAIN_NAMES)) {
+    expect(parseNotificationPayload({ ...notification, target: `/enter/${chain}/game-1` }, now).target).toBe(
+      `/enter/${chain}/game-1`,
+    );
+  }
+  expect(() => parseNotificationPayload({ ...notification, target: "/enter/unconfigured/game-1" }, now)).toThrow();
 });

@@ -7,7 +7,7 @@ on:
       - "packages/identity/**"
       - "packages/db/**"
       - "apps/realms/**"
-      - "contracts/l3/game/src/models/events.cairo"
+      - "contracts/l3/game/manifest_madara.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - ".github/workflows/test-notifications.yml"
@@ -53,7 +53,7 @@ jobs:
           pnpm --dir packages/chain build
           pnpm --dir packages/notifications build
           pnpm --dir packages/identity build
-      - name: Verify policy against Cairo event inventory
+      - name: Verify policy against the generated event inventory
         run: pnpm --dir packages/notifications test
       - name: Verify authenticated preference transport
         run: pnpm --dir packages/identity test

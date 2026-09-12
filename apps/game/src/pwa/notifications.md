@@ -6,12 +6,13 @@ button gesture. Spectators do not see permission controls; anonymous preferences
 requires sign-in. Home Screen guidance follows
 [WebKit's installation and gesture requirements](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
 
-Herald labels events replayed through the confirmed head advertised on each socket attach. Only explicitly new,
-confirmed StoryEvents enter the local dispatcher. History hydration never dispatches. Account, gameplay recipient,
-preference state, game scope and permission are checked before delivery and account/game/preference changes invalidate
-asynchronous work. Focused game activity stays in the existing feed; a matching focused tab suppresses OS output from
-background tabs too. A browser PushSubscription suppresses local OS output so the later push transport can own device
-delivery.
+The transport's `confirmedAfterAttach` flag is true only for confirmed events newer than the head advertised when that
+socket connected. Local delivery deliberately skips initial catch-up and all events confirmed during a disconnect, even
+if the outage was brief. This avoids a notification burst after reconnect; those events remain in activity history.
+Account, gameplay recipient, preference state, game scope and permission are checked before delivery, and account/game/
+preference changes invalidate asynchronous work. Focused activity stays in the feed; a matching focused tab suppresses
+OS output from background tabs too. A browser PushSubscription suppresses local delivery so a later push transport can
+own it.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
 game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Local payloads expire
@@ -22,9 +23,10 @@ navigation.
 Shared logical identity groups paired battle and delayed-transfer records using the first of their adjacent UUIDs. The
 current Cairo emitters allocate the sender/attacker record first. The locked
 [Dojo 1.8.0 UUID implementation](https://github.com/dojoengine/dojo/blob/v1.8.0/crates/dojo/core/src/world/world_contract.cairo#L984)
-increments its counter once per call; emitting the record does not advance it. Contract-source tests guard the current
-emitter pairing and dependency version. Distinct actions in one transaction retain distinct IDs. Ambiguous perspectives
-are rejected rather than guessed. Feed battle grouping and audio cues use the same identity as notification delivery.
+increments its counter once per call; emitting the record does not advance it. Behavioral fixtures cover mirrored
+records and distinct actions; policy inventory is checked against the generated StoryEvent manifest. Distinct actions in
+one transaction retain distinct IDs. Ambiguous perspectives are rejected rather than guessed. Feed battle grouping and
+audio cues use the same identity as notification delivery.
 
 IndexedDB stores one enabled owner/token and at most 4,096 unexpired delivery IDs. Enablement rotates the token.
 Disablement checks the owner and closes its displayed notices. A serialized worker queue accepts at most 64 pending
@@ -38,10 +40,7 @@ after the claim may lose a local alert, and the same ID will not retry within it
 proof of an OS banner. Local delivery stops when the page is frozen, discarded, or closed; server push remains
 unimplemented.
 
-Verification uses unit fixtures plus the production PWA lifecycle runner. Its seventh check uses native notification
-APIs and real IndexedDB for a tab race, dismissal/replay, worker restart, expiry, disablement and stale tokens. The
-runner uses [full Chromium headless mode](https://playwright.dev/docs/browsers#chromium-new-headless-mode); the smaller
-headless shell rejects worker notification permission grants in this environment. Existing offline/update/chunk-recovery
-gates still run. Physical Android/iOS installation, actual OS banners, a live battle notification, and production-origin
-cookie checks remain release gates. No VAPID keys, PushSubscription mutation, push listener, or durable server notifier
-is implemented here.
+Verification uses dispatcher, worker, policy and permission-control unit fixtures. The deploy-time browser lifecycle
+runner and its Playwright dependency have been removed to match the current deployment pipeline. Physical Android/iOS
+installation, actual OS banners, live battle notification delivery and production-origin cookie checks remain release
+gates. No VAPID keys, PushSubscription mutation, push listener, or durable server notifier is implemented here.

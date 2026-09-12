@@ -52,15 +52,6 @@ const handler = createHeraldRequestHandler({
   metrics,
   history: {
     leaderboard: (gameId) => ({ game_id: gameId, entries: [] }),
-    queryStoryHistory: async () => ({
-      chain: "madara",
-      world_address: "0x123",
-      complete_through_block: 12,
-      through_block: 12,
-      items: [],
-      has_more: false,
-      next_cursor: "next",
-    }),
     queryEvents: async (query) => ({
       complete_through_block: 12,
       items: [
@@ -155,7 +146,6 @@ it("passes a battle-only history filter to the store before pagination", async (
     undecodableEventCount: () => 0,
     history: {
       queryEvents,
-      queryStoryHistory: vi.fn(),
       leaderboard: () => null,
       reviewSnapshot: async () => snapshot,
       transactionCount: async () => ({ game_id: "7", count: 0 }),

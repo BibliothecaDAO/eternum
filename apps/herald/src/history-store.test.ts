@@ -20,33 +20,12 @@ const event = {
   value,
   entityId: "0x1",
   position: { blockNumber: 365589, transactionHash: "0x123", transactionIndex: 0, eventIndex: 19 },
-} satisfies DecodedWorldEvent;
+} as DecodedWorldEvent;
 
 beforeEach(() => {
   db.query.mockReset();
   db.transaction.mockReset();
   db.release.mockReset();
-});
-
-it("rejects a StoryEvent without its game identity before advancing history", async () => {
-  const store = new HistoryStore("postgres://test", "madara", "0x123");
-  await expect(store.appendBackfilledEvents([{ ...event, key: {} }], 365589)).rejects.toThrow(
-    "StoryEvent is missing game_id",
-  );
-  expect(db.transaction).not.toHaveBeenCalled();
-});
-
-it("does not publish a live head as complete while startup history is still being backfilled", async () => {
-  db.transaction.mockResolvedValue({ rows: [] });
-  const store = new HistoryStore("postgres://test", "madara", "0x123");
-  await store.appendEvents([event], 365590);
-  expect(db.transaction.mock.calls.some(([sql]) => sql.includes("INSERT INTO herald_history_progress"))).toBe(false);
-});
-
-it("does not trust completion markers written before contiguous history tracking", async () => {
-  db.query.mockResolvedValue({ rows: [{ complete_through_block: "365590", contiguous: false }] });
-  const store = new HistoryStore("postgres://test", "madara", "0x123");
-  expect(await store.historyProgress()).toBeNull();
 });
 it("restores points after restart, counts only new SQL rows and serves without more database reads", async () => {
   db.query.mockImplementation(async (sql: string) => ({

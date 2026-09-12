@@ -30,7 +30,6 @@ It serves:
   completes. Restored from PostgreSQL before serving and updated only after newly inserted history events commit. Deploy
   Herald before clients consuming this endpoint.
 - `GET /<chain>/games/<game_id>/history?model=StoryEvent&limit=50&offset=0`
-- `GET /<chain>/history/story-events?after_block=123&limit=100` — confirmed story history across games, in chain order
 - `GET /<chain>/games/<game_id>/review/snapshot`
 - `GET /<chain>/games/<game_id>/transactions/count`
 - `WS /<chain>/games/<game_id>`
@@ -38,33 +37,6 @@ It serves:
 The server sends `hello` first. The client answers `resume{epoch,seq}` with its last applied boundary; an empty epoch
 requests a fresh snapshot. A matching retained boundary replays only later messages. A different epoch or an expired
 boundary returns a model-chunked snapshot followed by live messages after that atomic boundary.
-
-## Durable story-history consumption
-
-Start with an explicit `after_block` (exclusive; `-1` includes genesis), then pass only the returned `next_cursor` and
-an optional `limit` on subsequent requests. Limits range from 1 to 500. Each page stays anchored at its `through_block`
-while new confirmed heads arrive. `has_more: false` means the returned cursor is a checkpoint through that entire block;
-the next request can advance to newer completed history. Empty pages also return a durable checkpoint.
-
-Persist `next_cursor` only after processing every item in the page successfully, ideally in the same transaction as an
-outbox. A request can replay after a crash; consumers still need idempotency. Cursors are opaque, versioned, and bound
-to the configured chain and world address. Malformed queries return 400, a wrong scope or unavailable/rewound boundary
-returns 409, and uninitialized history returns 503. No entity snapshots or current game facts are served by this route.
-
-On first deployment of contiguous completion tracking, existing markers are treated as unverified and history is
-backfilled once from genesis. Existing event rows are retained and deduplicated. The backfill runs alongside gameplay;
-live history is stored immediately, but cannot advance the completion marker past unfinished backfill. A validated
-prefix becomes readable as backfill batches commit. Decode failures freeze completion before the gap, while known live
-events can continue to be stored. Repair the decoder/manifest and restart to backfill the missing range.
-
-`HistoryStore.initialize()` adds the completion-validation column and a partial position index for StoryEvent history.
-Allow for the one-time index creation and backfill when planning rollout. This requires the existing single Herald
-writer per chain/world; concurrent independent writers cannot establish contiguity with this in-process startup fence.
-Stop older Herald writers before starting the upgraded process so legacy completion writes cannot override validation.
-
-Run `pnpm --dir apps/herald test` for unit tests. Set `HERALD_TEST_DATABASE_URL` to an isolated PostgreSQL database to
-also run history integration tests; they create and remove uniquely named schemas. The `herald` PR workflow supplies a
-disposable PostgreSQL service and always runs those integration tests.
 
 ## Live state rule
 

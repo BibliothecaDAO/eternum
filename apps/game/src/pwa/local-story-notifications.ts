@@ -30,7 +30,11 @@ export function dispatchLocalStoryNotification(
   scope: StoryEventScope,
   confirmation?: GameSyncEventConfirmation,
 ): void {
-  if (confirmation?.replayed !== false || eventConfirmationRank(confirmation) !== 2 || isExplicitSpectateSession())
+  if (
+    confirmation?.confirmedAfterAttach !== true ||
+    eventConfirmationRank(confirmation) !== 2 ||
+    isExplicitSpectateSession()
+  )
     return;
   const entry = Object.entries(event.models).find(([model]) => model === "StoryEvent" || model.endsWith("-StoryEvent"));
   if (!entry) return;

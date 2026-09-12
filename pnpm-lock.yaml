@@ -534,9 +534,6 @@ importers:
       meshoptimizer:
         specifier: ^1.1.1
         version: 1.1.1
-      playwright:
-        specifier: ^1.63.0
-        version: 1.63.0
       rollup-plugin-visualizer:
         specifier: ^6.0.3
         version: 6.0.5(rolldown@1.2.5)(rollup@2.79.2)
@@ -851,6 +848,9 @@ importers:
       dotenv-cli:
         specifier: catalog:web
         version: 7.4.4
+      drizzle-kit:
+        specifier: catalog:web
+        version: 0.31.9
       eslint:
         specifier: catalog:web
         version: 9.39.2(jiti@2.7.0)
@@ -1498,6 +1498,10 @@ importers:
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/notifications:
+    dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../chain
     devDependencies:
       tsup:
         specifier: ^8.0.2
@@ -16294,18 +16298,6 @@ packages:
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
-
-  playwright@1.63.0:
-    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
-    engines: {node: '>=20'}
-    hasBin: true
-
-
-  playwright-core@1.63.0:
-    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
-    engines: {node: '>=20'}
-    hasBin: true
-
 
 snapshots:
 
@@ -37019,10 +37011,3 @@ snapshots:
     optional: true
 
   zwitch@2.0.4: {}
-
-  playwright@1.63.0:
-    dependencies:
-      playwright-core: 1.63.0
-
-
-  playwright-core@1.63.0: {}

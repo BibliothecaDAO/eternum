@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
+import { notificationPreferences } from "@realms-world/db";
+import { Effect } from "effect";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -12,7 +14,7 @@ describe.skipIf(!databaseUrl)("notification preferences in PostgreSQL", () => {
   let admin: Pool;
   let pool: Pool;
   let schema: string;
-  let store: ReturnType<typeof createNotificationPreferenceStore>;
+  let store: ReturnType<typeof promiseStore>;
   beforeAll(async () => {
     admin = new Pool({ connectionString: databaseUrl });
     schema = `preferences_test_${randomUUID().replaceAll("-", "")}`;
@@ -22,15 +24,15 @@ describe.skipIf(!databaseUrl)("notification preferences in PostgreSQL", () => {
     pool = new Pool({ connectionString: url.toString() });
     await pool.query('CREATE TABLE "user" (id text PRIMARY KEY)');
     await pool.query(`INSERT INTO "user" VALUES ('0x1'), ('0x2')`);
-    const migration = readFileSync(new URL("./migrations/001-notification-preferences.sql", import.meta.url), "utf8");
-    const client = await pool.connect();
-    try {
-      await client.query(migration);
-      await client.query(migration);
-    } finally {
-      client.release();
+    const statements = await generateMigration(
+      generateDrizzleJson({}),
+      generateDrizzleJson({ notificationPreferences }),
+    );
+    for (const statement of statements) {
+      // Relocate generated references into this test's isolated namespace; the table shape comes only from Drizzle.
+      await pool.query(statement.replaceAll('"public".', `"${schema}".`));
     }
-    store = createNotificationPreferenceStore(drizzle(pool));
+    store = promiseStore(pool);
   });
   afterAll(async () => {
     await pool?.end();
@@ -44,7 +46,7 @@ describe.skipIf(!databaseUrl)("notification preferences in PostgreSQL", () => {
     expect(saves.filter(Boolean)).toHaveLength(1);
     const saved = saves.find(Boolean)!;
     expect(saved.revision).toBe(1);
-    expect(await createNotificationPreferenceStore(drizzle(pool)).read("0x1")).toEqual(saved);
+    expect(await promiseStore(pool).read("0x1")).toEqual(saved);
     expect(await store.save("0x1", "standard", 0)).toBeNull();
     expect(await store.read("0x2")).toEqual({ owner: "0x2", level: "off", revision: 0 });
     const updates = await Promise.all([store.save("0x1", "standard", 1), store.save("0x1", "off", 1)]);
@@ -58,8 +60,24 @@ describe.skipIf(!databaseUrl)("notification preferences in PostgreSQL", () => {
     expect(await store.save("0x1", "all", 2147483647)).toBeNull();
     await expect(pool.query("INSERT INTO notification_preferences VALUES ('0x2', 'urgent', 0)")).rejects.toThrow();
     await expect(store.save("0x3", "all", 0)).rejects.toThrow();
+    const failedSave = createNotificationPreferenceStore(drizzle(pool)).save("0x3", "all", 0);
+    expect(
+      await Effect.runPromise(
+        failedSave.pipe(
+          Effect.catchTag("NotificationPreferenceStorageError", (error) => Effect.succeed(error.operation)),
+        ),
+      ),
+    ).toBe("save");
     await store.save("0x2", "all", 0);
     await pool.query(`DELETE FROM "user" WHERE id = '0x2'`);
     expect((await pool.query("SELECT * FROM notification_preferences WHERE owner = '0x2'")).rows).toEqual([]);
   });
 });
+
+function promiseStore(pool: Pool) {
+  const store = createNotificationPreferenceStore(drizzle(pool));
+  return {
+    read: (owner: string) => Effect.runPromise(store.read(owner)),
+    save: (...args: Parameters<typeof store.save>) => Effect.runPromise(store.save(...args)),
+  };
+}

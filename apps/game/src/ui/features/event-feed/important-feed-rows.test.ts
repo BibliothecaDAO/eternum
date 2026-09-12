@@ -1,5 +1,5 @@
 import { TransactionType } from "@bibliothecadao/provider";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRows } from "./event-feed-rows";
 import { formatFeedTime, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
@@ -14,6 +14,18 @@ const battle = (id: string, at: number, owner = "0x1") =>
     owner,
     storyPayload: { attacker_id: 11, defender_id: 22, attacker_owner_address: "0x1", defender_owner_address: "0x2" },
   }) as unknown as ProcessedStoryEvent;
+
+it("keeps the production feed usable when a newer server emits an unknown story", () => {
+  vi.stubEnv("NODE_ENV", "production");
+  try {
+    const future = { ...battle("future", 30), story: "FutureStory" };
+    expect(selectImportantFeedRows([future, battle("fight", 20)], empty, "all", null).map((row) => row.id)).toEqual([
+      "story:fight",
+    ]);
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
 
 it("keeps battles/captures and drops routine movement", () => {
   const move = { ...battle("move", 30), story: "ExplorerMoveStory" };

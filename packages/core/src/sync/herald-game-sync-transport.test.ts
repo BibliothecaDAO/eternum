@@ -101,18 +101,18 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.handlers.onEvent).toHaveBeenNthCalledWith(1, expect.anything(), {
       block: null,
       preconfirmed: true,
-      replayed: true,
+      confirmedAfterAttach: false,
     });
     expect(harness.handlers.onEvent).toHaveBeenNthCalledWith(2, expect.anything(), {
       block: 13,
       preconfirmed: false,
-      replayed: false,
+      confirmedAfterAttach: true,
     });
     socket.receive({ ...diff("epoch-a", 3, "0x1", 1, false), block: 12, set });
     expect(harness.handlers.onEvent).toHaveBeenLastCalledWith(expect.anything(), {
       block: 12,
       preconfirmed: false,
-      replayed: true,
+      confirmedAfterAttach: false,
     });
     writer.cancel();
   });

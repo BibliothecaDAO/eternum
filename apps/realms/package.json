@@ -42,6 +42,7 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4",
     "pg": "^8.18.0",
-    "@types/pg": "^8.16.0"
+    "@types/pg": "^8.16.0",
+    "drizzle-kit": "catalog:web"
   }
 }

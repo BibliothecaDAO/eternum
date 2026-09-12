@@ -52,8 +52,7 @@
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
     "typecheck": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc --pretty false",
-    "verify:pwa": "node scripts/verify-pwa-build.mjs dist",
-    "verify:pwa:lifecycle": "node scripts/verify-pwa-lifecycle.mjs"
+    "verify:pwa": "node scripts/verify-pwa-build.mjs dist"
   },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",
@@ -141,7 +140,6 @@
     "jsdom": "^28.0.0",
     "leva": "^0.9.35",
     "meshoptimizer": "^1.1.1",
-    "playwright": "^1.63.0",
     "rollup-plugin-visualizer": "^6.0.3",
     "typescript-eslint": "^8.53.1",
     "vite": "catalog:game",

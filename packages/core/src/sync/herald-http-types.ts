@@ -84,17 +84,6 @@ export interface HeraldHistoryPage {
   total: number;
 }
 
-/** Persist next_cursor only after every item in this page has been durably processed. */
-export interface HeraldStoryHistoryPage {
-  chain: string;
-  world_address: string;
-  complete_through_block: number;
-  through_block: number;
-  items: HeraldHistoryEvent[];
-  has_more: boolean;
-  next_cursor: string;
-}
-
 export interface HeraldTransactionCount {
   count: number;
   game_id: string;

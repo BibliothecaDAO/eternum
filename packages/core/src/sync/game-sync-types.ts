@@ -14,8 +14,8 @@ export interface GameSyncEntityBatch {
 export interface GameSyncEventConfirmation {
   block: number | null;
   preconfirmed: boolean;
-  /** True for history replay through the head advertised when this socket attached. Unknown is not live delivery. */
-  replayed?: boolean;
+  /** True only for confirmations newer than this socket's advertised head. Disconnect catch-up is excluded. */
+  confirmedAfterAttach?: boolean;
 }
 
 export interface GameSyncSnapshotChunkProgress {

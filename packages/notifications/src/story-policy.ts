@@ -34,7 +34,10 @@ const STORY_RULES = {
 } satisfies Record<string, StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {
-  if (!Object.hasOwn(STORY_RULES, story)) throw new Error(`Unknown notification story: ${story}`);
+  if (!Object.hasOwn(STORY_RULES, story)) {
+    if (process.env.NODE_ENV !== "production") throw new Error(`Unknown notification story: ${story}`);
+    return { excluded: "Unknown story variant" };
+  }
   return STORY_RULES[story as keyof typeof STORY_RULES];
 }
 

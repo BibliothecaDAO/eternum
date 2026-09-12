@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { includesStoryNotification, storyNotificationRule, storyRecipients } from "./story-policy";
 import { NOTIFICATION_LEVELS, parseNotificationPreferenceChange, parseNotificationPreferences } from "./preferences";
 
@@ -39,9 +39,15 @@ const levels = {
 } as const;
 
 it("covers the exact deployed Story enum and tests every cumulative level", () => {
-  const source = readFileSync(new URL("../../../contracts/l3/game/src/models/events.cairo", import.meta.url), "utf8");
-  const body = /pub enum Story \{([\s\S]*?)\n\}/.exec(source)![1];
-  const variants = [...body.matchAll(/(\w+Story):/g)].map((match) => match[1]);
+  const manifest = JSON.parse(
+    readFileSync(new URL("../../../contracts/l3/game/manifest_madara.json", import.meta.url), "utf8"),
+  );
+  const event = manifest.events.find((event: { tag: string }) => event.tag.endsWith("-StoryEvent"));
+  const storyType = event.members.find((member: { name: string }) => member.name === "story").type;
+  const storyEnum = manifest.abis.find(
+    (entry: { name?: string; type: string }) => entry.name === storyType && entry.type === "enum",
+  );
+  const variants = storyEnum.variants.map((variant: { name: string }) => variant.name);
   expect(variants.sort()).toEqual(Object.values(levels).flat().sort());
   for (const [minimum, stories] of Object.entries(levels)) {
     for (const story of stories) {
@@ -98,5 +104,17 @@ it("validates the versioned preference boundary without accepting owner override
     { level: "off", revision: 0, owner: "0x2" },
   ]) {
     expect(() => parseNotificationPreferenceChange(change)).toThrow("invalid_preferences");
+  }
+});
+
+it("excludes unknown variants in production and diagnoses them in development", () => {
+  try {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(includesStoryNotification("all", "FutureStory")).toBe(false);
+    expect(storyRecipients("FutureStory", "0x1", {})).toEqual([]);
+    vi.stubEnv("NODE_ENV", "development");
+    expect(() => includesStoryNotification("all", "FutureStory")).toThrow("Unknown notification story");
+  } finally {
+    vi.unstubAllEnvs();
   }
 });

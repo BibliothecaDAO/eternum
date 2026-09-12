@@ -1,3 +1,4 @@
+import { GAME_CHAIN_NAMES } from "@realms-world/chain";
 export interface LocalNotificationPayload {
   version: 1;
   id: string;
@@ -23,7 +24,7 @@ export function parseNotificationPayload(value: unknown, now: number): LocalNoti
     !boundedText(input.title, 80) ||
     !boundedText(input.body, 240) ||
     typeof input.target !== "string" ||
-    !/^\/enter\/(madara|appchain)\/[a-zA-Z0-9_-]{1,100}$/.test(input.target) ||
+    !isNotificationTarget(input.target) ||
     !Number.isSafeInteger(input.createdAt) ||
     !Number.isSafeInteger(input.expiresAt)
   )
@@ -78,4 +79,9 @@ export function notificationMatchesGame(clientUrl: string, target: string, origi
   if (client.origin !== origin) return false;
   const game = target.replace(/^\/enter\//, "/play/");
   return client.pathname === target || ["map", "hex", "travel"].some((scene) => client.pathname === `${game}/${scene}`);
+}
+
+function isNotificationTarget(target: string): boolean {
+  const match = /^\/enter\/([a-z0-9_-]+)\/[a-zA-Z0-9_-]{1,100}$/.exec(target);
+  return match !== null && Object.hasOwn(GAME_CHAIN_NAMES, match[1]);
 }
