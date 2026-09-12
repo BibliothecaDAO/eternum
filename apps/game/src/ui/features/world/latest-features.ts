@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Blitz Entry Config Refresh",
+    description:
+      "Rejoining a game after a world update refreshes its configuration instead of using an outdated saved game.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
     title: "Eternum Portals and Dev Settlement",
     description:
       "Six spires reveal their access hexes on both layers. In Eternum dev games, choose a realm number to preview its name and resources, settle additional realms, and place villages without passes.",
