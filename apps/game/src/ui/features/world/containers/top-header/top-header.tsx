@@ -14,10 +14,12 @@ import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
 import { IdentityChip } from "./identity-chip";
 import { TOP_PILL } from "./top-pill";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
+import Mountain from "lucide-react/dist/esm/icons/mountain";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
@@ -27,8 +29,6 @@ export const TopHeader = memo(() => {
     setup,
     account: { account },
   } = useDojo();
-
-  const { handleUrlChange } = useQuery();
 
   const playClick = useUISound("ui.click");
 
@@ -59,9 +59,11 @@ export const TopHeader = memo(() => {
   );
 
   const goToStructure = useGoToStructure(setup);
-  const showFastTravelLayerToggle = mode.id === "eternum";
-  const isFastTravelView = currentPathname.includes("/travel");
   const isLocalView = currentPathname.includes("/hex");
+  const mapLayer = useUIStore((state) => state.mapLayer);
+  const setMapLayer = useUIStore((state) => state.setMapLayer);
+  // Blitz presets have no spires, so their maps have one layer.
+  const showLayerSwitch = mode.id === "eternum" && !isLocalView;
 
   useEffect(() => {
     const updatePathname = () => {
@@ -78,31 +80,14 @@ export const TopHeader = memo(() => {
     };
   }, []);
 
-  const navigateToFastTravelLayer = useCallback(() => {
-    playClick();
-
-    if (isFastTravelView) {
-      goToStructure(
-        lastControlledStructureEntityId || structureEntityId,
-        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-        true,
-      );
-      return;
-    }
-
-    const col = selectedStructurePosition.x;
-    const row = selectedStructurePosition.y;
-    handleUrlChange(`/play/travel?col=${col}&row=${row}`);
-  }, [
-    goToStructure,
-    handleUrlChange,
-    isFastTravelView,
-    lastControlledStructureEntityId,
-    playClick,
-    selectedStructurePosition.x,
-    selectedStructurePosition.y,
-    structureEntityId,
-  ]);
+  const switchLayer = useCallback(
+    (alt: boolean) => {
+      if (alt === mapLayer) return;
+      playClick();
+      setMapLayer(alt);
+    },
+    [mapLayer, playClick, setMapLayer],
+  );
 
   const navigateToView = useCallback(
     (world: boolean) => {
@@ -127,10 +112,10 @@ export const TopHeader = memo(() => {
         viewControls={
           <MapViewControls
             isLocalView={isLocalView}
-            isFastTravelView={isFastTravelView}
-            showFastTravel={showFastTravelLayerToggle}
+            mapLayer={mapLayer}
+            showLayerSwitch={showLayerSwitch}
             onNavigate={navigateToView}
-            onFastTravel={navigateToFastTravelLayer}
+            onLayerChange={switchLayer}
           />
         }
       />
@@ -156,50 +141,70 @@ TopHeader.displayName = "TopHeader";
 
 function MapViewControls({
   isLocalView,
-  isFastTravelView,
-  showFastTravel,
+  mapLayer,
+  showLayerSwitch,
   onNavigate,
-  onFastTravel,
+  onLayerChange,
 }: {
   isLocalView: boolean;
-  isFastTravelView: boolean;
-  showFastTravel: boolean;
+  mapLayer: boolean;
+  showLayerSwitch: boolean;
   onNavigate: (world: boolean) => void;
-  onFastTravel: () => void;
+  onLayerChange: (alt: boolean) => void;
 }) {
-  const viewButton = (active: boolean) =>
+  const pillButton = (active: boolean) =>
     cn(
       HUD_LABEL_BRIGHT,
       "min-h-11 min-w-11 rounded-md px-3 font-sans transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
       active ? "bg-gold/20 text-gold" : "text-gold/65",
     );
+  const layerButton = (active: boolean) =>
+    cn(
+      HUD_LABEL_BRIGHT,
+      "inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-3 font-sans transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold lg:min-h-7",
+      active ? "bg-cyan-400/15 text-cyan-100" : "text-gold/65",
+    );
   return (
-    <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
-      <button
-        type="button"
-        aria-pressed={isLocalView}
-        onClick={() => onNavigate(false)}
-        className={viewButton(isLocalView)}
-      >
-        Local
-      </button>
-      <button
-        type="button"
-        aria-pressed={!isLocalView && !isFastTravelView}
-        onClick={() => onNavigate(true)}
-        className={viewButton(!isLocalView && !isFastTravelView)}
-      >
-        World
-      </button>
-      {showFastTravel && (
+    <div className="flex items-center gap-2">
+      <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
         <button
           type="button"
-          aria-pressed={isFastTravelView}
-          onClick={onFastTravel}
-          className={viewButton(isFastTravelView)}
+          aria-pressed={isLocalView}
+          onClick={() => onNavigate(false)}
+          className={pillButton(isLocalView)}
         >
-          Ethereal
+          Local
         </button>
+        <button
+          type="button"
+          aria-pressed={!isLocalView}
+          onClick={() => onNavigate(true)}
+          className={pillButton(!isLocalView)}
+        >
+          World
+        </button>
+      </div>
+      {showLayerSwitch && (
+        <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
+          <button
+            type="button"
+            aria-pressed={!mapLayer}
+            onClick={() => onLayerChange(false)}
+            className={layerButton(!mapLayer)}
+          >
+            <Mountain className="h-3.5 w-3.5" aria-hidden />
+            Surface
+          </button>
+          <button
+            type="button"
+            aria-pressed={mapLayer}
+            onClick={() => onLayerChange(true)}
+            className={layerButton(mapLayer)}
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            Ethereal
+          </button>
+        </div>
       )}
     </div>
   );

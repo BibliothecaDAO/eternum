@@ -29,7 +29,7 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -67,7 +67,6 @@ const SelectedWorldmapEntityContent = ({
   coordsLabel?: string;
   headerAction?: ReactNode;
 }) => {
-  const { handleUrlChange } = useQuery();
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
@@ -87,12 +86,9 @@ const SelectedWorldmapEntityContent = ({
   const isStructure = isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
-  const normalizedSelectedHex = useMemo(() => {
-    return new Position({ x: selectedHex.col, y: selectedHex.row }).getNormalized();
-  }, [selectedHex.col, selectedHex.row]);
-  const handleTravelToEtherealLayer = useCallback(() => {
-    handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
-  }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
+  const mapLayer = useUIStore((state) => state.mapLayer);
+  const setMapLayer = useUIStore((state) => state.setMapLayer);
+  const lookAtOtherLayer = useCallback(() => setMapLayer(!mapLayer), [mapLayer, setMapLayer]);
 
   if (!tile || !isExplored) {
     return null;
@@ -142,7 +138,7 @@ const SelectedWorldmapEntityContent = ({
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
           <TileChrome title={coordsLabel ?? "Spire tile"} headerAction={headerAction}>
-            <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+            <SpireTravelPanel mapLayer={mapLayer} onLookAtOtherLayer={lookAtOtherLayer} />
           </TileChrome>
           <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
@@ -339,13 +335,15 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
   );
 };
 
-const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer: () => void }) => (
+const SpireTravelPanel = ({ mapLayer, onLookAtOtherLayer }: { mapLayer: boolean; onLookAtOtherLayer: () => void }) => (
   <div className="flex flex-col gap-2">
-    <p className={HUD_HEADLINE}>Ethereal Layer Gateway</p>
-    <p className={HUD_BODY}>Enter the Ethereal Layer here to fast-travel.</p>
+    <p className={HUD_HEADLINE}>Spire</p>
+    <p className={HUD_BODY}>
+      This spire stands on both layers. An army next to it crosses to the same hex on the other side.
+    </p>
     <div>
-      <button type="button" className={HUD_PILL_BUTTON} onClick={onTravelToEtherealLayer}>
-        Travel to Ethereal Layer
+      <button type="button" className={HUD_PILL_BUTTON} onClick={onLookAtOtherLayer}>
+        {mapLayer ? "Look at the surface" : "Look at the ethereal layer"}
       </button>
     </div>
   </div>
