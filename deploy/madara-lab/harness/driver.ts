@@ -1,9 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, shortString, type Account, type Call, type RpcProvider } from "starknet";
-import {
-  buildBlitzSettleCalls,
-  buildEternumSettleCalls,
-} from "../../../apps/game/src/services/blitz/blitz-settlement-calls";
+import { buildBlitzSettleCalls, buildEternumSettleCalls } from "@bibliothecadao/eternum/game-client";
 import { resolveGameTransactionResourceBounds } from "../../../packages/core/src/account/transaction-resource-bounds";
 import { Biome } from "../../../packages/core/src/utils/biome/biome";
 import { BiomeType } from "../../../packages/types/src/constants/hex";
@@ -595,6 +592,7 @@ async function settleBot({
           usernameFelt,
           gameId,
           cosmeticTokenIds: [],
+          grantStartingTroops: true,
         });
 
   return trackTransaction({

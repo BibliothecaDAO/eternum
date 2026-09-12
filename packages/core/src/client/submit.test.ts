@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BlockTag, type Account, type AllowArray, type Call, type UniversalDetails } from "starknet";
+import { BlockTag, type AccountInterface, type AllowArray, type Call, type UniversalDetails } from "starknet";
 
-import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } from "./gameplay-account-submit";
+import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } from "./submit";
 
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
 
@@ -116,7 +116,7 @@ describe("gameplay account submits", () => {
   it("installs the same submit policy on generated-system account calls", async () => {
     const account = createAccount("0x123", ["0x9"], async () => ({ transaction_hash: "0x3" }));
     const rawExecute = account.execute;
-    const configured = configureGameplayAccountSubmits(account as unknown as Account, "madara");
+    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara");
 
     await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x3" });
     expect(rawExecute).toHaveBeenCalledWith(
@@ -127,11 +127,35 @@ describe("gameplay account submits", () => {
 
   it("rejects reusing a configured account on another chain", () => {
     const account = createAccount("0x456", ["0x1"], async () => ({ transaction_hash: "0x4" }));
-    configureGameplayAccountSubmits(account as unknown as Account, "madara");
+    configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara");
 
-    expect(() => configureGameplayAccountSubmits(account as unknown as Account, "appchain")).toThrow(
+    expect(() => configureGameplayAccountSubmits(account as unknown as AccountInterface, "appchain")).toThrow(
       "configured for madara, not appchain",
     );
+  });
+
+  it("recovers the signer once on an invalid signature and retries the same calls", async () => {
+    const account = createAccount("0x654", ["0x2", "0x3"], async () => ({ transaction_hash: "0x6" }));
+    const rawExecute = account.execute.mockRejectedValueOnce(invalidSignature());
+    const recoverSigner = vi.fn().mockResolvedValue(true);
+    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara", recoverSigner);
+
+    await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x6" });
+    expect(recoverSigner).toHaveBeenCalledOnce();
+    expect(rawExecute.mock.calls.map(([calls]) => calls)).toEqual([CALL, CALL]);
+  });
+
+  it("does not retry an invalid signature the recovery could not fix", async () => {
+    const account = createAccount("0x655", ["0x2"], async () => {
+      throw invalidSignature();
+    });
+    const rawExecute = account.execute;
+    const recoverSigner = vi.fn().mockResolvedValue(false);
+    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "madara", recoverSigner);
+
+    await expect(configured.execute(CALL)).rejects.toThrow("Validate failure");
+    expect(recoverSigner).toHaveBeenCalledOnce();
+    expect(rawExecute).toHaveBeenCalledOnce();
   });
 });
 
@@ -150,6 +174,9 @@ function createAccount(
     }),
   };
 }
+
+const invalidSignature = () =>
+  Object.assign(new Error("Validate failure"), { code: 55, data: { error: "Account: invalid signature" } });
 
 /** Flushes every pending microtask without firing a faked timer. */
 function endOfMacrotask(): Promise<void> {

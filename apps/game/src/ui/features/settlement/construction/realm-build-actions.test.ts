@@ -29,7 +29,10 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getBasePopulationCapacity: () => 0,
   },
 }));
-vi.mock("@dojoengine/recs", () => ({ getComponentValue: mocks.getComponentValue }));
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
+  getComponentValue: mocks.getComponentValue,
+}));
 vi.mock("@dojoengine/utils", () => ({ getEntityIdFromKeys: (keys: bigint[]) => keys.join(":") }));
 
 const buildableRealm = {

@@ -33,7 +33,7 @@ vi.mock("../asset-cache", () => ({
   ensureCosmeticAsset: () => undefined,
 }));
 
-import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
+import { buildBlitzSettleCalls } from "@bibliothecadao/eternum/game-client";
 import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
@@ -67,6 +67,7 @@ describe("cosmetic pipeline integration", () => {
       signerAddress: "0x456",
       usernameFelt: "0x2",
       cosmeticTokenIds: ["0xabc"],
+      grantStartingTroops: true,
     });
 
     const settleCall = calls.find((call) => call.entrypoint === "settle");

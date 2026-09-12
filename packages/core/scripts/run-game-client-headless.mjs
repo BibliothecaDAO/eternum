@@ -22,7 +22,7 @@
 
 import { parseArgs as parseNodeArgs } from "node:util";
 
-import { createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
+import { buildHeraldGameStreamUrl, createRecsGameSyncStore } from "@bibliothecadao/eternum/game-client";
 import {
   GameSyncRuntime,
   HeraldGameSyncTransport,
@@ -104,14 +104,6 @@ const buildHeraldUrl = (baseUrl, pathname) => {
   url.pathname = `${url.pathname.replace(/\/+$/, "")}${pathname}`;
   url.search = "";
   url.hash = "";
-  return url.toString();
-};
-
-// Mirrors apps/game `buildHeraldGameStreamUrl`: the stream is the directory URL over WebSocket.
-const buildGameStreamUrl = (config, gameId) => {
-  const url = new URL(buildHeraldUrl(config.heraldUrl, `/${config.chain}/games/${gameId}`));
-  if (url.protocol === "http:") url.protocol = "ws:";
-  else if (url.protocol === "https:") url.protocol = "wss:";
   return url.toString();
 };
 
@@ -255,7 +247,7 @@ const peakRssMb = () => bytesToMb(process.resourceUsage().maxRSS * 1024);
 
 const runSmoke = async (config, gameId) => {
   const startedAt = performance.now();
-  const streamUrl = buildGameStreamUrl(config, gameId);
+  const streamUrl = buildHeraldGameStreamUrl(config.heraldUrl, config.chain, gameId);
   const { entityModels, eventModels } = resolveSyncModels(config);
   const world = createWorld();
   const contractComponents = defineContractComponents(world, NAMESPACE);

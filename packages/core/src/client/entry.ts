@@ -1,5 +1,4 @@
 import { CallData, type Call } from "starknet";
-import { resolveBlitzGrantStartingTroops } from "./blitz-settlement-options";
 
 interface BuildBlitzSettleCallsParams {
   blitzSystemsAddress: string;
@@ -9,6 +8,16 @@ interface BuildBlitzSettleCallsParams {
   gameId?: number | null;
   vrfProviderAddress?: string | null;
   cosmeticTokenIds?: readonly string[];
+  /** Whether settle seeds the realm with its starting troops; the web client's dev override may withhold them. */
+  grantStartingTroops: boolean;
+}
+
+interface BuildEternumSettleCallsParams {
+  realmSystemsAddress: string;
+  signerAddress: string;
+  usernameFelt: string;
+  gameId: number;
+  vrfProviderAddress?: string | null;
 }
 
 const hasConfiguredAddress = (value?: string | null): value is string => {
@@ -23,16 +32,16 @@ const hasConfiguredAddress = (value?: string | null): value is string => {
 
 const buildRequestRandomCall = ({
   vrfProviderAddress,
-  blitzSystemsAddress,
+  systemsAddress,
   signerAddress,
 }: {
   vrfProviderAddress: string;
-  blitzSystemsAddress: string;
+  systemsAddress: string;
   signerAddress: string;
 }): Call => ({
   contractAddress: vrfProviderAddress,
   entrypoint: "request_random",
-  calldata: CallData.compile([blitzSystemsAddress, 0, signerAddress]),
+  calldata: CallData.compile([systemsAddress, 0, signerAddress]),
 });
 
 const buildSettleCall = ({
@@ -65,12 +74,12 @@ export const buildBlitzSettleCalls = ({
   gameId,
   vrfProviderAddress,
   cosmeticTokenIds = [],
+  grantStartingTroops,
 }: BuildBlitzSettleCallsParams): Call[] => {
   const calls: Call[] = [];
-  const grantStartingTroops = resolveBlitzGrantStartingTroops();
 
   if (hasConfiguredAddress(vrfProviderAddress)) {
-    calls.push(buildRequestRandomCall({ vrfProviderAddress, blitzSystemsAddress, signerAddress }));
+    calls.push(buildRequestRandomCall({ vrfProviderAddress, systemsAddress: blitzSystemsAddress, signerAddress }));
   }
 
   calls.push(
@@ -92,17 +101,11 @@ export const buildEternumSettleCalls = ({
   usernameFelt,
   gameId,
   vrfProviderAddress,
-}: {
-  realmSystemsAddress: string;
-  signerAddress: string;
-  usernameFelt: string;
-  gameId: number;
-  vrfProviderAddress?: string | null;
-}): Call[] => {
+}: BuildEternumSettleCallsParams): Call[] => {
   if (!Number.isInteger(gameId) || gameId <= 0) throw new Error("A game id is required for settlement");
   const calls: Call[] = [];
   if (hasConfiguredAddress(vrfProviderAddress)) {
-    calls.push(buildRequestRandomCall({ vrfProviderAddress, blitzSystemsAddress: realmSystemsAddress, signerAddress }));
+    calls.push(buildRequestRandomCall({ vrfProviderAddress, systemsAddress: realmSystemsAddress, signerAddress }));
   }
   calls.push({
     contractAddress: realmSystemsAddress,

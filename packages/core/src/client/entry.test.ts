@@ -1,29 +1,17 @@
-// @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-const mocks = vi.hoisted(() => ({
-  resolveBlitzGrantStartingTroops: vi.fn(() => true),
-}));
+import { buildBlitzSettleCalls, buildEternumSettleCalls } from "./entry";
 
-vi.mock("./blitz-settlement-options", () => ({
-  resolveBlitzGrantStartingTroops: mocks.resolveBlitzGrantStartingTroops,
-}));
-
-import { buildBlitzSettleCalls, buildEternumSettleCalls } from "./blitz-settlement-calls";
+const BLITZ_ENTRY = {
+  blitzSystemsAddress: "0xabc",
+  signerAddress: "0x456",
+  usernameFelt: "0x123",
+  grantStartingTroops: true,
+};
 
 describe("buildBlitzSettleCalls", () => {
-  beforeEach(() => {
-    mocks.resolveBlitzGrantStartingTroops.mockReset();
-    mocks.resolveBlitzGrantStartingTroops.mockReturnValue(true);
-  });
-
   it("emits an explicit empty cosmetic span when no cosmetics are selected", () => {
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0xabc",
-      signerAddress: "0x456",
-      usernameFelt: "0x123",
-      cosmeticTokenIds: [],
-    });
+    const calls = buildBlitzSettleCalls({ ...BLITZ_ENTRY, cosmeticTokenIds: [] });
 
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({
@@ -34,12 +22,7 @@ describe("buildBlitzSettleCalls", () => {
   });
 
   it("prepends request_random when a VRF provider is configured", () => {
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0xabc",
-      signerAddress: "0x456",
-      usernameFelt: "0x123",
-      vrfProviderAddress: "0x999",
-    });
+    const calls = buildBlitzSettleCalls({ ...BLITZ_ENTRY, vrfProviderAddress: "0x999" });
 
     expect(calls).toHaveLength(2);
     expect(calls[0]).toMatchObject({
@@ -54,12 +37,7 @@ describe("buildBlitzSettleCalls", () => {
   });
 
   it("serializes selected cosmetic token ids into the settle calldata", () => {
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0xabc",
-      signerAddress: "0x456",
-      usernameFelt: "0x123",
-      cosmeticTokenIds: ["0x1", "0x2"],
-    });
+    const calls = buildBlitzSettleCalls({ ...BLITZ_ENTRY, cosmeticTokenIds: ["0x1", "0x2"] });
 
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",
@@ -68,14 +46,8 @@ describe("buildBlitzSettleCalls", () => {
     });
   });
 
-  it("appends a disabled troop grant flag when the dev override turns it off", () => {
-    mocks.resolveBlitzGrantStartingTroops.mockReturnValue(false);
-
-    const calls = buildBlitzSettleCalls({
-      blitzSystemsAddress: "0xabc",
-      signerAddress: "0x456",
-      usernameFelt: "0x123",
-    });
+  it("appends a disabled troop grant flag when starting troops are withheld", () => {
+    const calls = buildBlitzSettleCalls({ ...BLITZ_ENTRY, grantStartingTroops: false });
 
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",

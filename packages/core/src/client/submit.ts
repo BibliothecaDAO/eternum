@@ -1,16 +1,17 @@
-import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
 import { extractErrorMessage } from "@bibliothecadao/provider/errors";
 import type { GameChain } from "@realms-world/chain";
 import {
   BlockTag,
-  type Account,
+  type AccountInterface,
   type AllowArray,
   type Call,
   type InvokeFunctionResponse,
   type UniversalDetails,
 } from "starknet";
 
-type GameplaySubmitAccount = Pick<Account, "address" | "execute" | "getNonce">;
+import { resolveGameTransactionResourceBounds } from "../account/transaction-resource-bounds";
+
+type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce">;
 type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<InvokeFunctionResponse>;
 
 interface ConfiguredGameplaySubmit {
@@ -49,11 +50,11 @@ interface GameplaySubmit extends ExecuteGameplayAccountTransactionOptions {
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
 const accountNonceDispensers = new Map<string, AccountNonceDispenser>();
 
-export function configureGameplayAccountSubmits(
-  account: Account,
+export function configureGameplayAccountSubmits<TAccount extends AccountInterface>(
+  account: TAccount,
   chain: GameChain,
   recoverSigner?: () => Promise<boolean>,
-): Account {
+): TAccount {
   const configured = configuredGameplaySubmits.get(account);
   if (configured) {
     assertConfiguredChain(account.address, configured.chain, chain);
@@ -67,7 +68,7 @@ export function configureGameplayAccountSubmits(
     signerRevision: 0,
   });
   account.execute = ((calls: AllowArray<Call>, details?: UniversalDetails) =>
-    executeGameplayAccountTransaction({ account, calls, chain, details })) as Account["execute"];
+    executeGameplayAccountTransaction({ account, calls, chain, details })) as AccountInterface["execute"];
   return account;
 }
 

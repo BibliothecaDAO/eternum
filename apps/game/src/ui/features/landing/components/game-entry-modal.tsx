@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
-import { buildBlitzSettleCalls, buildEternumSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
@@ -27,7 +26,13 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { namespaceForChain, normalizeSelector } from "@bibliothecadao/eternum/game-client";
+import {
+  buildBlitzSettleCalls,
+  buildEternumSettleCalls,
+  namespaceForChain,
+  normalizeSelector,
+} from "@bibliothecadao/eternum/game-client";
+import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
 import {
   createHeraldPreSessionReader,
   type PlayerStructure,
@@ -1902,6 +1907,7 @@ export const GameEntryModal = ({
               usernameFelt,
               gameId: worldMeta.gameId,
               vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+              grantStartingTroops: resolveBlitzGrantStartingTroops(),
             }),
         operation: `${realmSystemName}.settle`,
       });
