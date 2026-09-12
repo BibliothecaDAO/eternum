@@ -18,6 +18,7 @@ mod tests {
         WorldConfigUtilImpl,
     };
     use crate::models::game::{GameRegistry, GameStatus};
+    use crate::models::position::{CoordTrait, DirectionTrait};
     use crate::models::resource::resource::{
         ResourceImpl, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
     };
@@ -26,6 +27,9 @@ mod tests {
     use crate::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
     use crate::models::weight::Weight;
     use crate::systems::bitcoin_mine::contracts::{IBitcoinMineSystemsDispatcher, IBitcoinMineSystemsDispatcherTrait};
+    use crate::systems::bitcoin_mine::discovery_systems::{
+        IBitcoinMineDiscoverySystemsDispatcher, IBitcoinMineDiscoverySystemsDispatcherTrait,
+    };
     use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementUtilSystemsDispatcher, ITroopMovementUtilSystemsDispatcherTrait,
     };
@@ -73,6 +77,62 @@ mod tests {
         match find {
             crate::models::events::ExploreFind::None => {},
             _ => panic!("unexpected ethereal discovery"),
+        }
+    }
+
+    #[test]
+    fn bitcoin_mine_discovery_skips_spire_access_before_the_lottery() {
+        let mut world = spawn_test_world(
+            [
+                NamespaceDef {
+                    namespace: DEFAULT_NS_STR(),
+                    resources: [
+                        TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+                        TestResource::Model("GameRegistry"), TestResource::Model("TileOpt"),
+                        TestResource::Contract("troop_movement_util_systems"),
+                        TestResource::Contract("bitcoin_mine_discovery_systems"),
+                    ]
+                        .span(),
+                }
+            ]
+                .span(),
+        );
+        set_test_season(ref world, get_active_season_config());
+        WorldConfigUtilImpl::set_member(
+            ref world, TEST_PRESET_ID, selector!("bitcoin_mine_config"), get_default_bitcoin_mine_config(),
+        );
+        let (utility, _) = world.dns(@"troop_movement_util_systems").unwrap();
+        let (discovery, _) = world.dns(@"bitcoin_mine_discovery_systems").unwrap();
+        start_cheat_caller_address(discovery, utility);
+        let dispatcher = IBitcoinMineDiscoverySystemsDispatcher { contract_address: discovery };
+        // A missing RNG library makes any accidental lottery call fail.
+        for y in array![100_u32, 201_u32] {
+            let coord = crate::models::position::Coord { alt: true, x: 100, y };
+            let mut spire = crate::models::map::TileImpl::keys_only(TEST_GAME_ID, coord);
+            spire.occupier_type = crate::models::map::TileOccupier::Spire.into();
+            spire.occupier_id = 42;
+            let spire: crate::models::map2::TileOpt = spire.into();
+            world.write_model_test(@spire);
+            for direction in DirectionTrait::all() {
+                let tile = crate::models::map::TileImpl::keys_only(TEST_GAME_ID, coord.spire_neighbor(direction));
+                let (found, find) = dispatcher
+                    .find_treasure(
+                        TEST_GAME_ID,
+                        42,
+                        tile,
+                        utility,
+                        crate::utils::testing::helpers::MOCK_MAP_CONFIG(),
+                        crate::utils::testing::helpers::MOCK_TROOP_LIMIT_CONFIG(),
+                        crate::utils::testing::helpers::MOCK_TROOP_STAMINA_CONFIG(),
+                        1,
+                        true,
+                    );
+                assert!(!found, "spire access became a mine");
+                match find {
+                    crate::models::events::ExploreFind::None => {},
+                    _ => panic!("unexpected spire access discovery"),
+                }
+            }
         }
     }
 

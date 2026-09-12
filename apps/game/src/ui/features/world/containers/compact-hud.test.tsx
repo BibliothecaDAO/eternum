@@ -15,7 +15,7 @@ interface TestUiState {
   selectedBuildingHex: { outerCol: number; outerRow: number; innerCol: number; innerRow: number } | null;
 }
 
-const mocks = vi.hoisted(() => ({ isMapView: true, rows: [] as { at: number }[] }));
+const mocks = vi.hoisted(() => ({ rows: [] as { at: number }[] }));
 vi.mock("@/hooks/store/use-ui-store", async () => {
   const { create } = await import("zustand");
   return {
@@ -37,7 +37,6 @@ vi.mock("@/utils/can-issue-orders", () => ({
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: "0x1" } }),
 }));
-vi.mock("@bibliothecadao/react", () => ({ useQuery: () => ({ isMapView: mocks.isMapView }) }));
 vi.mock("@/ui/features/event-feed/quick-feed", () => ({
   useImportantFeed: () => ({ nowMs: 0, rows: mocks.rows, pinned: [] }),
   useUnreadFeedCount: (rows: unknown[], logOpen: boolean) => (logOpen ? 0 : rows.length),
@@ -49,11 +48,19 @@ vi.mock("@/ui/features/event-feed/quick-feed", () => ({
 vi.mock("@/ui/features/event-feed/event-log-panel", () => ({
   EventLogPanel: () => <div role="dialog">Log panel</div>,
 }));
-vi.mock("@/ui/features/world/components/bottom-right-panel", () => ({
-  MinimapPanel: () => <article>Minimap</article>,
-  MapTilePanel: () => <article>Map tile</article>,
-  LocalTilePanel: () => <article>Local tile</article>,
-}));
+vi.mock("@/ui/features/world/components/bottom-right-panel", async () => {
+  const { useUIStore } = await import("@/hooks/store/use-ui-store");
+  return {
+    MinimapPanel: () => <article>Minimap</article>,
+    useSelectedTileDetails: () => {
+      const selectedBuildingHex = useUIStore((state: TestUiState) => state.selectedBuildingHex);
+      const selectedHex = useUIStore((state: TestUiState) => state.selectedHex);
+      if (selectedBuildingHex) return <article>Local tile</article>;
+      if (selectedHex) return <article>Map tile</article>;
+      return null;
+    },
+  };
+});
 vi.mock("@/ui/features/social", () => ({
   useRealtimeChatSelector: (select: (state: { unreadWorldTotal: number; unreadDirectTotal: number }) => number) =>
     select({ unreadWorldTotal: 0, unreadDirectTotal: 0 }),
@@ -87,7 +94,6 @@ const tap = (label: string) => act(async () => tab(label)!.click());
 beforeEach(async () => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   usePopoverStore.getState().close();
-  mocks.isMapView = true;
   mocks.rows = [];
   store.setState({
     leftNavigationView: LeftView.None,
@@ -188,8 +194,8 @@ it("keeps an open sheet on its tab as the selection changes or clears", async ()
   expect(sheet()?.textContent).toContain("Tap a tile on the map");
 });
 
-it("follows the selected building in local view", async () => {
-  mocks.isMapView = false;
+it("follows the selected building hex over the selected world hex", async () => {
+  await act(async () => store.setState({ selectedHex: { col: 5, row: 5 } }));
   await act(async () =>
     store.setState({ selectedBuildingHex: { outerCol: 1, outerRow: 1, innerCol: 2, innerRow: 3 } }),
   );

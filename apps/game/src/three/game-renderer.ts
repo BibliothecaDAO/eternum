@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
-import { getGameModeId } from "@/config/game-modes";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
@@ -45,7 +44,6 @@ import {
 } from "./renderer-failure-reporting";
 import type { SceneManager } from "@/three/scene-manager";
 import type HUDScene from "@/three/scenes/hud-scene";
-import type FastTravelScene from "@/three/scenes/fast-travel";
 import type HexceptionScene from "@/three/scenes/hexception";
 import type WorldmapScene from "@/three/scenes/worldmap";
 import type { TransitionManager } from "@/three/managers/transition-manager";
@@ -77,7 +75,6 @@ export default class GameRenderer {
 
   // Scenes
   private worldmapScene!: WorldmapScene;
-  private fastTravelScene?: FastTravelScene;
   private hexceptionScene!: HexceptionScene;
   private hudScene!: HUDScene;
 
@@ -102,7 +99,6 @@ export default class GameRenderer {
     const runtimeAssembly = createGameRendererRuntimeAssembly({
       addWindowListener: (type, listener) => window.addEventListener(type, listener),
       createFolder: (name) => trackGuiFolder(this.guiFolders, createGuiFolder(name)),
-      fastTravelEnabled: () => this.isFastTravelEnabled(),
       isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,
       isMemoryMonitoringEnabled: MEMORY_MONITORING_ENABLED,
       isMobileDevice: this.isMobileDevice,
@@ -124,7 +120,6 @@ export default class GameRenderer {
     return {
       backend: this.backend,
       controls: this.controls,
-      fastTravelScene: this.fastTravelScene,
       hexceptionScene: this.hexceptionScene,
       hudScene: this.hudScene,
       labelRuntime: this.labelRuntime,
@@ -149,10 +144,6 @@ export default class GameRenderer {
     this.camera = foundationRuntime.camera;
     this.raycaster = foundationRuntime.raycaster;
     this.mouse = foundationRuntime.pointer;
-  }
-
-  private isFastTravelEnabled(): boolean {
-    return getGameModeId() !== "blitz";
   }
 
   private async initializeRendererBackend(backendFactory?: RendererBackendFactory): Promise<void> {
@@ -238,7 +229,6 @@ export default class GameRenderer {
     }
     this.sessionRuntime.startListeners();
     const initialSceneName = resolveRendererRouteSceneFromHref({
-      fastTravelEnabled: this.isFastTravelEnabled(),
       href: window.location.href,
     });
 
@@ -292,7 +282,6 @@ export default class GameRenderer {
       controls: this.controls,
       dojo: this.dojo,
       effectsBridgeRuntime: this.supportRuntimeRegistry.ensureEffectsBridge(),
-      fastTravelEnabled: this.isFastTravelEnabled(),
       inputSurface: this.renderer.domElement,
       compilePipelines: this.pipelineCompiler,
       markLabelsDirty: () => this.labelRuntime?.markDirty(),
@@ -303,7 +292,6 @@ export default class GameRenderer {
   }
 
   private assignRendererSceneRegistry(input: {
-    fastTravelScene?: FastTravelScene;
     hexceptionScene: HexceptionScene;
     sceneManager: SceneManager;
     transitionManager: TransitionManager;
@@ -313,7 +301,6 @@ export default class GameRenderer {
     this.sceneManager = input.sceneManager;
     this.worldmapScene = input.worldmapScene;
     this.hexceptionScene = input.hexceptionScene;
-    this.fastTravelScene = input.fastTravelScene;
   }
   private getTargetPixelRatio() {
     return resolveRendererTargetPixelRatio({
@@ -393,7 +380,6 @@ export default class GameRenderer {
           currentTime,
           cycleProgress,
           deltaTime,
-          fastTravelScene: this.fastTravelScene,
           hexceptionScene: this.hexceptionScene,
           hudScene: this.hudScene,
           labelRuntime: this.labelRuntime,
@@ -490,7 +476,6 @@ export default class GameRenderer {
       renderer: this.renderer,
       routeRuntime: this.supportRuntimeRegistry.getRoute(),
       scenes: {
-        fastTravelScene: this.fastTravelScene,
         hexceptionScene: this.hexceptionScene,
         hudScene: this.hudScene,
         worldmapScene: this.worldmapScene,

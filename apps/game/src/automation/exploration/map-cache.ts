@@ -2,7 +2,7 @@ import { gameEntityKey } from "@/sync/game-scope";
 import { Position } from "@bibliothecadao/eternum";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import type { ClientComponents, HexEntityInfo } from "@bibliothecadao/types";
-import { BiomeType, TileOccupier } from "@bibliothecadao/types";
+import { BiomeType, ETHEREAL_STRIDE, TileOccupier } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import type { ExplorationMapSnapshot } from "./types";
 
@@ -57,7 +57,8 @@ export const buildExplorationSnapshot = async ({
 
   const centerCol = Number(explorer.coord.x);
   const centerRow = Number(explorer.coord.y);
-  const radius = Math.max(1, Math.round(scopeRadius));
+  const alt = explorer.coord.alt;
+  const radius = Math.max(1, Math.round(scopeRadius)) * (alt ? ETHEREAL_STRIDE : 1);
   const bounds = {
     minCol: centerCol - radius,
     maxCol: centerCol + radius,
@@ -70,9 +71,8 @@ export const buildExplorationSnapshot = async ({
   const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
   const chestHexes = new Map<number, Map<number, HexEntityInfo>>();
 
-  // Automation explores the surface; layer-aware exploration is the ethereal slice, item 4.
-  const surfaceBounds = { ...bounds, alt: false };
-  worldSpatialProjection.getTilesInBounds(surfaceBounds).forEach((tile) => {
+  const layerBounds = { ...bounds, alt };
+  worldSpatialProjection.getTilesInBounds(layerBounds).forEach((tile) => {
     const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
     if (tile.biome !== 0) {
       setNestedValue(exploredTiles, normalized.x, normalized.y, tile.biome as unknown as BiomeType);
@@ -85,7 +85,7 @@ export const buildExplorationSnapshot = async ({
     }
   });
 
-  worldSpatialProjection.getStructuresInBounds(surfaceBounds).forEach((structure) => {
+  worldSpatialProjection.getStructuresInBounds(layerBounds).forEach((structure) => {
     if (structure.entityId === null) return;
     const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
     setNestedValue(
@@ -96,7 +96,7 @@ export const buildExplorationSnapshot = async ({
     );
   });
 
-  worldSpatialProjection.getArmiesInBounds(surfaceBounds).forEach((army) => {
+  worldSpatialProjection.getArmiesInBounds(layerBounds).forEach((army) => {
     const normalized = new Position({ x: army.hexCoords.col, y: army.hexCoords.row }).getNormalized();
     setNestedValue(
       armyHexes,
@@ -107,6 +107,7 @@ export const buildExplorationSnapshot = async ({
   });
 
   return {
+    alt,
     position: { col: centerCol, row: centerRow },
     exploredTiles,
     structureHexes,

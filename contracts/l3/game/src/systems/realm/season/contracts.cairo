@@ -3,6 +3,7 @@ use crate::alias::ID;
 #[starknet::interface]
 pub trait IRealmSystems<T> {
     fn settle(ref self: T, game_id: u32, name: felt252) -> ID;
+    fn settle_dev(ref self: T, game_id: u32, name: felt252, realm_id: u32) -> ID;
 }
 
 #[dojo::contract]
@@ -38,30 +39,56 @@ pub mod realm_systems {
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
         fn settle(ref self: ContractState, game_id: u32, name: felt252) -> ID {
             let mut world = self.world(DEFAULT_NS());
-            SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
-            let blitz: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
-            assert!(!blitz, "Eternum: Not Season Game Mode");
-            assert!(name.is_non_zero(), "Eternum: Name cannot be empty");
-            let player = starknet::get_caller_address();
-            let owner = PlayerSettlementImpl::reserve(ref world, game_id, player);
-            let mut count: RealmCountConfig = WorldConfigUtilImpl::get_member(
-                world, game_id, selector!("realm_count_config"),
-            );
-            let seed = rng_library::get_dispatcher(@world).get_random_number(game_id, Source::Nonce(player), world);
-            let (realm_id, wonder, order, resources) = resolve_realm_attributes(world, game_id, player, seed);
-            RealmAllocationImpl::reserve(ref world, game_id, realm_id, player);
-            let coord = claim_settlement(ref world, game_id, count.count, seed);
-            let structure_id = create_and_provision_realm(
-                ref world, game_id, player, realm_id, resources, order, wonder, coord,
-            );
-            count.count += 1;
-            WorldConfigUtilImpl::set_member(ref world, game_id, selector!("realm_count_config"), count);
-            world.write_model(@PlayerSettlement { game_id, owner, player, structure_id });
-            world.write_model(@BlitzSettlement { game_id, player, structure_ids: array![structure_id].span() });
-            world.write_model(@AddressName { address: player.into(), name });
-            emit_settlement(ref world, game_id, player, structure_id, coord);
-            structure_id
+            settle_realm(ref world, game_id, name, Option::None)
         }
+
+        fn settle_dev(ref self: ContractState, game_id: u32, name: felt252, realm_id: u32) -> ID {
+            let mut world = self.world(DEFAULT_NS());
+            assert!(SeasonConfigImpl::get(world, game_id).dev_mode_on, "Eternum: dev mode required");
+            settle_realm(ref world, game_id, name, Option::Some(realm_id))
+        }
+    }
+
+    fn settle_realm(ref world: WorldStorage, game_id: u32, name: felt252, selected_realm_id: Option<u32>) -> ID {
+        SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
+        let blitz: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
+        assert!(!blitz, "Eternum: Not Season Game Mode");
+        assert!(name.is_non_zero(), "Eternum: Name cannot be empty");
+        let player = starknet::get_caller_address();
+        let owner = if selected_realm_id.is_some() {
+            PlayerSettlementImpl::owner(world, player)
+        } else {
+            PlayerSettlementImpl::reserve(ref world, game_id, player)
+        };
+        let mut count: RealmCountConfig = WorldConfigUtilImpl::get_member(
+            world, game_id, selector!("realm_count_config"),
+        );
+        let seed = rng_library::get_dispatcher(@world).get_random_number(game_id, Source::Nonce(player), world);
+        let (realm_id, wonder, order, resources) = match selected_realm_id {
+            Option::Some(realm_id) => {
+                let (wonder, order, resources) = realm_attributes(realm_id);
+                (realm_id, wonder, order, resources)
+            },
+            Option::None => resolve_realm_attributes(world, game_id, player, seed),
+        };
+        RealmAllocationImpl::reserve(ref world, game_id, realm_id, player);
+        let coord = claim_settlement(ref world, game_id, count.count, seed);
+        let structure_id = create_and_provision_realm(
+            ref world, game_id, player, realm_id, resources, order, wonder, coord,
+        );
+        count.count += 1;
+        WorldConfigUtilImpl::set_member(ref world, game_id, selector!("realm_count_config"), count);
+        world.write_model(@PlayerSettlement { game_id, owner, player, structure_id });
+        let previous: BlitzSettlement = world.read_model((game_id, player));
+        let mut structure_ids: Array<ID> = array![];
+        for id in previous.structure_ids {
+            structure_ids.append(*id);
+        }
+        structure_ids.append(structure_id);
+        world.write_model(@BlitzSettlement { game_id, player, structure_ids: structure_ids.span() });
+        world.write_model(@AddressName { address: player.into(), name });
+        emit_settlement(ref world, game_id, player, structure_id, coord);
+        structure_id
     }
 
     fn resolve_realm_attributes(

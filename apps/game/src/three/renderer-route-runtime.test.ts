@@ -22,9 +22,7 @@ describe("renderer route runtime", () => {
     const removeListenerSpy = vi.spyOn(window, "removeEventListener");
     const runtime = createRendererRouteRuntime({
       fadeIn: vi.fn(),
-      fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.WorldMap,
-      hasFastTravelScene: () => true,
       markLabelsDirty: vi.fn(),
       moveCameraForScene: vi.fn(),
       switchScene: vi.fn(),
@@ -46,9 +44,7 @@ describe("renderer route runtime", () => {
     const markLabelsDirty = vi.fn();
     const runtime = createRendererRouteRuntime({
       fadeIn,
-      fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.WorldMap,
-      hasFastTravelScene: () => true,
       markLabelsDirty,
       moveCameraForScene,
       switchScene,
@@ -62,34 +58,11 @@ describe("renderer route runtime", () => {
     expect(markLabelsDirty).toHaveBeenCalledTimes(1);
   });
 
-  it("moves the active fast-travel camera instead of switching when the travel route is already active", () => {
-    const moveCameraForScene = vi.fn();
-    const switchScene = vi.fn();
-    const fadeIn = vi.fn();
-    const runtime = createRendererRouteRuntime({
-      fadeIn,
-      fastTravelEnabled: () => true,
-      getCurrentScene: () => SceneName.FastTravel,
-      hasFastTravelScene: () => true,
-      markLabelsDirty: vi.fn(),
-      moveCameraForScene,
-      switchScene,
-    });
-
-    runtime.syncFromLocation("https://example.com/play/appchain/aurora/travel?col=1&row=2");
-
-    expect(moveCameraForScene).toHaveBeenCalledTimes(1);
-    expect(fadeIn).toHaveBeenCalledTimes(1);
-    expect(switchScene).not.toHaveBeenCalled();
-  });
-
   it("switches scenes when the requested route differs from the active scene", () => {
     const switchScene = vi.fn();
     const runtime = createRendererRouteRuntime({
       fadeIn: vi.fn(),
-      fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.WorldMap,
-      hasFastTravelScene: () => true,
       markLabelsDirty: vi.fn(),
       moveCameraForScene: vi.fn(),
       switchScene,
@@ -104,9 +77,7 @@ describe("renderer route runtime", () => {
     const switchScene = vi.fn();
     const runtime = createRendererRouteRuntime({
       fadeIn: vi.fn(),
-      fastTravelEnabled: () => true,
       getCurrentScene: () => SceneName.Hexception,
-      hasFastTravelScene: () => true,
       markLabelsDirty: vi.fn(),
       moveCameraForScene: vi.fn(),
       switchScene,
@@ -115,22 +86,5 @@ describe("renderer route runtime", () => {
     runtime.syncFromLocation("https://example.com/play/appchain/aurora/hex?col=6&row=8");
 
     expect(switchScene).toHaveBeenCalledWith(SceneName.Hexception);
-  });
-
-  it("falls back to world map when fast travel is disabled", () => {
-    const switchScene = vi.fn();
-    const runtime = createRendererRouteRuntime({
-      fadeIn: vi.fn(),
-      fastTravelEnabled: () => false,
-      getCurrentScene: () => SceneName.Hexception,
-      hasFastTravelScene: () => false,
-      markLabelsDirty: vi.fn(),
-      moveCameraForScene: vi.fn(),
-      switchScene,
-    });
-
-    runtime.syncFromLocation("https://example.com/play/appchain/aurora/travel?col=1&row=2");
-
-    expect(switchScene).toHaveBeenCalledWith(SceneName.WorldMap);
   });
 });

@@ -42,7 +42,6 @@ it("uses camera flights only between world and realm, respecting reduced motion"
   expect(canFlyBetweenScenes(SceneName.Hexception, SceneName.WorldMap, false)).toBe(true);
   expect(canFlyBetweenScenes(SceneName.WorldMap, SceneName.Hexception, true)).toBe(false);
   expect(canFlyBetweenScenes(undefined, SceneName.WorldMap, false)).toBe(false);
-  expect(canFlyBetweenScenes(SceneName.WorldMap, SceneName.FastTravel, false)).toBe(false);
 });
 it("holds the outgoing frame through setup, then crossfades as the incoming camera settles", async () => {
   const outgoing = scene();

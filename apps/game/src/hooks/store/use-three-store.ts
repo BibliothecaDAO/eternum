@@ -23,18 +23,15 @@ export interface ThreeStore {
   setSelectedBuilding: (building: BuildingType) => void;
   selectedBuildingEntityId: ID | null;
   setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => void;
-  selectedBuildingHex: {
-    outerCol: number;
-    outerRow: number;
-    innerCol: number;
-    innerRow: number;
-  };
-  setSelectedBuildingHex: (hexCoords: {
-    outerCol: number;
-    outerRow: number;
-    innerCol: number;
-    innerRow: number;
-  }) => void;
+  selectedBuildingHex: SelectedBuildingHex | null;
+  setSelectedBuildingHex: (hexCoords: SelectedBuildingHex | null) => void;
+}
+
+export interface SelectedBuildingHex {
+  outerCol: number;
+  outerRow: number;
+  innerCol: number;
+  innerRow: number;
 }
 
 interface EntityActions {
@@ -69,14 +66,14 @@ const arePositionsEqual = (left: Position | null, right: Position | null): boole
   return left.x === right.x && left.y === right.y;
 };
 
-const areBuildingHexesEqual = (
-  left: ThreeStore["selectedBuildingHex"],
-  right: ThreeStore["selectedBuildingHex"],
-): boolean =>
-  left.outerCol === right.outerCol &&
-  left.outerRow === right.outerRow &&
-  left.innerCol === right.innerCol &&
-  left.innerRow === right.innerRow;
+const areBuildingHexesEqual = (left: SelectedBuildingHex | null, right: SelectedBuildingHex | null): boolean =>
+  left === right ||
+  (left !== null &&
+    right !== null &&
+    left.outerCol === right.outerCol &&
+    left.outerRow === right.outerRow &&
+    left.innerCol === right.innerCol &&
+    left.innerRow === right.innerRow);
 
 const areCameraDistancesEqual = (left: number | null, right: number | null): boolean => {
   if (left === right) {
@@ -162,19 +159,9 @@ export const createThreeStoreSlice = (
     if (get().selectedBuildingEntityId === selectedBuildingEntityId) return;
     set({ selectedBuildingEntityId });
   },
-  selectedBuildingHex: { outerCol: 0, outerRow: 0, innerCol: 0, innerRow: 0 },
-  setSelectedBuildingHex: ({
-    outerCol,
-    outerRow,
-    innerCol,
-    innerRow,
-  }: {
-    outerCol: number;
-    outerRow: number;
-    innerCol: number;
-    innerRow: number;
-  }) => {
-    const selectedBuildingHex = { outerCol, outerRow, innerCol, innerRow };
+  selectedBuildingHex: null,
+  setSelectedBuildingHex: (hexCoords: SelectedBuildingHex | null) => {
+    const selectedBuildingHex = hexCoords ? { ...hexCoords } : null;
     if (areBuildingHexesEqual(get().selectedBuildingHex, selectedBuildingHex)) return;
     set({ selectedBuildingHex });
   },

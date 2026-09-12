@@ -29,6 +29,7 @@ pub mod bitcoin_mine_discovery_systems {
     use crate::models::map::Tile;
     use crate::models::position::Coord;
     use crate::systems::utils::bitcoin_mine::iBitcoinMineDiscoveryImpl;
+    use crate::systems::utils::map::IMapImpl;
 
     #[abi(embed_v0)]
     impl BitcoinMineDiscoverySystemsImpl of super::IBitcoinMineDiscoverySystems<ContractState> {
@@ -69,6 +70,10 @@ pub mod bitcoin_mine_discovery_systems {
             // Bitcoin mines can only be in Ethereal (alt) layer
             let coord: Coord = tile.into();
             if !coord.alt {
+                return (false, ExploreFind::None);
+            }
+
+            if IMapImpl::is_adjacent_to_spire(ref world, game_id, coord) {
                 return (false, ExploreFind::None);
             }
 

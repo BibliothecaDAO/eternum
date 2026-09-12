@@ -37,10 +37,8 @@ const snapshotState: any = {
 
 const readinessState: any = {
   bootToken: 1,
-  fastTravelReady: false,
   hexCoordinates: null,
   hexReady: false,
-  markFastTravelReady: vi.fn(),
   markHexReady: vi.fn(),
   markWorldmapConverged: vi.fn(),
   markWorldmapReady: vi.fn(),
@@ -102,7 +100,6 @@ describe("PlaySceneHandoff", () => {
     navigateMock.mockReset();
     setShowBlankOverlayMock.mockReset();
     usePlayerStructuresMock.mockReset();
-    readinessState.fastTravelReady = false;
     readinessState.hexReady = false;
     readinessState.worldmapConverged = false;
     readinessState.worldmapReady = false;

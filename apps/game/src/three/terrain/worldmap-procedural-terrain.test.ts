@@ -21,6 +21,28 @@ vi.mock("./terrain-prop-asset-cache", async () => {
 describe("WorldmapProceduralTerrain", () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it("uses the latest layer when ground textures finish loading", async () => {
+    let resolveTextures!: () => void;
+    vi.spyOn(ProceduralTerrain.prototype, "loadGroundTextures").mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveTextures = resolve;
+        }),
+    );
+    const apply = vi.spyOn(ProceduralTerrain.prototype, "setSurfacePresentation").mockImplementation(() => {});
+    const terrain = new WorldmapProceduralTerrain();
+    terrain.setSurfacePresentation("ethereal");
+    const loading = terrain.loadGroundTextures();
+    terrain.setSurfacePresentation("world");
+    expect(apply).not.toHaveBeenCalled();
+    resolveTextures();
+    await loading;
+    expect(apply).toHaveBeenLastCalledWith("world");
+    terrain.setSurfacePresentation("ethereal");
+    expect(apply).toHaveBeenLastCalledWith("ethereal");
+    terrain.dispose();
+  });
+
   it("partitions signed coordinates relative to the visual origin with exact one-ring halos", () => {
     const requests = buildWorldmapTerrainPageRequests({
       cells: [worldCell(-1, 0, BiomeType.Grassland), worldCell(0, 0, BiomeType.Taiga), worldCell(1, 0, "Outline")],

@@ -1,63 +1,33 @@
-import { Tabs } from "@/ui/design-system/atoms";
+import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
 import AddLiquidity from "./add-liquidity";
 import { LiquidityTable } from "./liquidity-table";
 import { ResourceSwap } from "./swap";
 import { ID } from "@bibliothecadao/types";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type BankListProps = {
   structureEntityId: ID;
   selectedResource: number;
 };
 
-export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps) => {
-  const [selectedTab, setSelectedTab] = useState(0);
+const BANK_TABS = [
+  { key: "swap", label: "Swap" },
+  { key: "pools", label: "Pools" },
+] as const;
+type BankTab = (typeof BANK_TABS)[number]["key"];
 
-  const tabs = useMemo(
-    () => [
-      {
-        key: "swap",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div className="text-sm font-medium">Swap</div>
-          </div>
-        ),
-        component: <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />,
-      },
-      {
-        key: "pools",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div className="text-sm font-medium">Pools</div>
-          </div>
-        ),
-        component: (
-          <div>
-            <AddLiquidity entityId={structureEntityId!} listResourceId={selectedResource} />
-          </div>
-        ),
-      },
-    ],
-    [structureEntityId, selectedResource],
-  );
+export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps) => {
+  const [tab, setTab] = useState<BankTab>("swap");
 
   return (
-    <div className="amm-selector p-4 flex flex-col h-full">
-      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-auto">
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index} className="h-full">
-              {tab.component}
-            </Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
-      <div className="border-t border-gold/10 pt-4 mt-4 text-xs flex-1 overflow-y-auto">
+    <div className="amm-selector flex min-h-0 flex-1 flex-col px-3 py-2">
+      <HudTabStrip tabs={BANK_TABS} selected={tab} onSelect={setTab} className="pb-2" />
+      {tab === "swap" ? (
+        <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />
+      ) : (
+        <AddLiquidity entityId={structureEntityId} listResourceId={selectedResource} />
+      )}
+      <div className="mt-3 flex-1 overflow-y-auto border-t border-gold/15 pt-3 text-xs">
         <LiquidityTable entity_id={structureEntityId} />
       </div>
     </div>

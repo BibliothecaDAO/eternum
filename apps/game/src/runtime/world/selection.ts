@@ -1,7 +1,7 @@
 import type { GameChain as Chain } from "@realms-world/chain";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import { buildWorldProfile } from "./profile-builder";
-import { getWorldProfile, resolveChain, setActiveWorldName, setSelectedChain } from "./store";
+import { resolveChain, setActiveWorldName, setSelectedChain } from "./store";
 import type { WorldProfile } from "./types";
 
 export interface WorldSelectionInput {
@@ -17,12 +17,6 @@ interface ApplyWorldSelectionResult {
   chainChanged: boolean;
 }
 
-const resolveWorldProfile = async (chain: Chain, name: string): Promise<WorldProfile> => {
-  const saved = getWorldProfile(name);
-  if (saved?.chain === chain && Number.isSafeInteger(saved.gameId) && (saved.gameId ?? 0) > 0) return saved;
-  return buildWorldProfile(chain, name);
-};
-
 export const applyWorldSelection = async (
   selection: WorldSelectionInput,
   fallbackChain: Chain,
@@ -36,7 +30,9 @@ export const applyWorldSelection = async (
   // even when current and target chains are already equal.
   const profileBuildStartedAt = performance.now();
   markGameEntryMilestone("world-profile-build-started");
-  const profile = await resolveWorldProfile(targetChain, selection.name);
+  // Game names can be reused after a world redeploy. Resolve their current IDs
+  // through Herald instead of bootstrapping with a persisted game's old preset.
+  const profile = await buildWorldProfile(targetChain, selection.name);
   markGameEntryMilestone("world-profile-build-completed");
   markGameEntryMilestone("world-profile-resolved");
   recordGameEntryDuration("world-profile-build", performance.now() - profileBuildStartedAt);
