@@ -1,20 +1,29 @@
 #!/usr/bin/env node
 /**
- * Headless game client smoke: boots one live game through `createGameClient` (the same composition the web client's
+ * Headless game client smoke: boots one game through `createGameClient` (the same composition the web client's
  * bootstrap uses) in plain Node (no DOM, no `ws` package, Node 22's built-in WebSocket) and prints one JSON manifest
- * line with the snapshot/apply timings. M0 item 2 and the M1b gate in docs/plans/hired-agents-milestones.md.
+ * line with the snapshot/apply timings. M0 item 2 and the M1b/M1c gates in docs/plans/hired-agents-milestones.md.
  *
  * Run from the repo root (`pnpm build:packages` first so packages/*\/dist exists):
  *
- *   pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs --game-id 33
+ *   pnpm smoke:game-client --game-id 33
  *
  * The world is built from the committed manifest (contracts/l3/game/manifest_<chain>.json) plus the gameplay-account
  * contracts, which come from flags or the same env vars apps/game/.env carries. The lab stack's values live in that
  * .env (VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH, VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS, VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS):
  *
- *   set -a; source apps/game/.env; set +a; pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs
+ *   set -a; source apps/game/.env; set +a; pnpm smoke:game-client
+ *
+ * Offline (the PR gate): replay the captured parity fixture through a fake Herald socket instead of connecting:
+ *
+ *   pnpm smoke:game-client --fixture packages/core/src/client/recs-game-sync-store.parity.json
+ *
+ * Either way the manifest prints, and the process exits 1 when the runtime did not reach `running` or no entity
+ * reached RECS.
  *
  * Options:
+ *   --fixture <path>                      Replay a captured Herald snapshot offline; the game id comes from the
+ *                                         fixture's GameRegistry row, so --game-id is not accepted alongside it
  *   --rpc-url <url>                       Chain RPC (default: https://rpc.realms.party)
  *   --herald-url <url>                    Herald base URL (default: https://herald.realms.party)
  *   --chain <name>                        madara | appchain (default: madara)
@@ -27,6 +36,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { parseArgs as parseNodeArgs } from "node:util";
 
 import { createGameClient, createGameViews } from "@bibliothecadao/eternum";
@@ -62,6 +72,7 @@ const parseArgs = (args) => {
   const { values } = parseNodeArgs({
     args,
     options: {
+      fixture: { type: "string" },
       "rpc-url": { type: "string", default: DEFAULT_RPC_URL },
       "herald-url": { type: "string", default: DEFAULT_HERALD_URL },
       chain: { type: "string", default: DEFAULT_CHAIN },
@@ -77,10 +88,11 @@ const parseArgs = (args) => {
 
   return {
     help: values.help,
+    fixturePath: values.fixture,
     rpcUrl: values["rpc-url"],
     heraldUrl: values["herald-url"],
     chain: requireKnownChain(values.chain),
-    gameId: values["game-id"] === undefined ? undefined : requirePositiveInteger("--game-id", values["game-id"]),
+    gameId: resolveRequestedGameId(values),
     ...resolveAccountFields(values),
     timeoutMs: requirePositiveInteger("--timeout-ms", values["timeout-ms"]),
     watchMs: requireNonNegativeInteger("--watch-ms", values["watch-ms"]),
@@ -92,6 +104,13 @@ const requireKnownChain = (chain) => {
     throw new Error(`--chain must be one of ${Object.keys(MANIFEST_BY_CHAIN).join(", ")}; received ${chain}`);
   }
   return chain;
+};
+
+/** A fixture names its own game, so a --game-id next to it would be silently ignored; refuse the combination. */
+const resolveRequestedGameId = (values) => {
+  if (values["game-id"] === undefined) return undefined;
+  if (values.fixture !== undefined) throw new Error("--game-id cannot be combined with --fixture");
+  return requirePositiveInteger("--game-id", values["game-id"]);
 };
 
 const requirePositiveInteger = (flag, raw) => {
@@ -134,8 +153,14 @@ const buildWorld = (config, manifest) =>
     bindingAuthorityAddress: config.bindingAuthorityAddress,
   });
 
+/** Where the snapshot comes from: Herald's live stream for the chosen game, or a captured fixture replayed offline. */
+const resolveSource = async (config, world) =>
+  config.fixturePath === undefined
+    ? { kind: "herald", game: await resolveLiveGame(config, world), openSocket: (url) => new WebSocket(url) }
+    : resolveFixtureSource(config.fixturePath);
+
 /** The registry row carries the preset the game runs on, so the directory is read even when the id is given. */
-const resolveGame = async (config, world) => {
+const resolveLiveGame = async (config, world) => {
   const directory = await fetchHeraldGameDirectory(world);
   const game =
     config.gameId === undefined
@@ -150,14 +175,73 @@ const resolveGame = async (config, world) => {
   return game;
 };
 
+const resolveFixtureSource = (fixturePath) => {
+  const fixture = JSON.parse(readFileSync(resolve(fixturePath), "utf8"));
+  const game = resolveFixtureGame(fixture);
+  console.error(
+    `[headless] replaying fixture ${fixturePath} (game ${game.game_id}, captured from ${fixture.capturedFrom})`,
+  );
+  return { kind: "fixture", game, openSocket: createFixtureSocketFactory(fixture) };
+};
+
+/** The fixture's own GameRegistry row names the game it was captured from; Herald rows carry felts as hex strings. */
+const resolveFixtureGame = (fixture) => {
+  const registry = fixture.entities.map((entity) => entity.models.GameRegistry).find(Boolean);
+  if (!registry) throw new Error(`Fixture ${fixture.capturedFrom} carries no GameRegistry row`);
+  return { game_id: Number(registry.game_id), preset_id: Number(registry.preset_id) };
+};
+
+/**
+ * A Herald socket that replays the fixture: hello, one snapshot chunk per model, snapshot_end, then the fixture's
+ * partial rows as one confirmed diff. Messages land on the next tick, after the transport has attached its handlers.
+ */
+const createFixtureSocketFactory = (fixture) => () => {
+  const socket = { onopen: null, onerror: null, onclose: null, onmessage: null, send() {}, close() {} };
+  setTimeout(() => {
+    for (const message of buildFixtureStream(fixture)) socket.onmessage?.({ data: JSON.stringify(message) });
+  }, 0);
+  return socket;
+};
+
+const buildFixtureStream = (fixture) => {
+  const epoch = "fixture";
+  const snapshotChunks = [...groupRowsByModel(fixture.entities)].map(([model, rows]) => ({
+    type: "snapshot",
+    epoch,
+    seq: 0,
+    model,
+    rows,
+  }));
+  return [
+    { type: "hello", epoch, seq: 0, confirmed_block: 0, preconfirmed_block: null },
+    ...snapshotChunks,
+    { type: "snapshot_end", epoch, seq: 0 },
+    { type: "diff", epoch, seq: 1, block: 1, preconfirmed: false, set: toHeraldSets(fixture.partials), del: [] },
+  ];
+};
+
+const groupRowsByModel = (entities) => {
+  const rowsByModel = new Map();
+  for (const { model, key, value } of toHeraldSets(entities)) {
+    rowsByModel.set(model, [...(rowsByModel.get(model) ?? []), { key, value }]);
+  }
+  return rowsByModel;
+};
+
+/** Store entities ({ hashed_keys, models }) back to the per-model rows Herald streams them as. */
+const toHeraldSets = (entities) =>
+  entities.flatMap(({ hashed_keys, models }) =>
+    Object.entries(models).map(([model, value]) => ({ model, key: hashed_keys, value })),
+  );
+
 /** The web client reads the game mode off WorldConfig once the snapshot landed; the smoke resolves config the same way. */
 const resolveGameConfig = (chain) => (setup) => {
   const worldConfig = getComponentValue(setup.components.WorldConfig, worldConfigKey());
   return getConfigFromNetwork(chain, worldConfig?.blitz_mode_on ? "blitz" : "eternum");
 };
 
-/** Node 22's global WebSocket, watched for the handshake, the snapshot rows per model, and the first failure. */
-const createObservedSocketFactory = () => {
+/** The source's socket, watched for the handshake, the snapshot rows per model, and the first failure. */
+const createObservedSocketFactory = (openSocket) => {
   const rowsByModel = new Map();
   let reported = false;
   let connectStartedAt = 0;
@@ -175,8 +259,9 @@ const createObservedSocketFactory = () => {
 
   const socketFactory = (url) => {
     connectStartedAt = performance.now();
-    const socket = new WebSocket(url);
-    socket.addEventListener("error", (event) => {
+    const socket = openSocket(url);
+    // Only a real WebSocket carries the failure detail; the fixture socket never errors.
+    socket.addEventListener?.("error", (event) => {
       if (reported) return;
       reported = true;
       console.error(`[headless] websocket error on ${url}: ${event.message ?? event.error?.message ?? "unknown"}`);
@@ -300,15 +385,15 @@ const peakRssMb = () => bytesToMb(process.resourceUsage().maxRSS * 1024);
 const runSmoke = async (config) => {
   const startedAt = performance.now();
   const world = buildWorld(config, readCommittedManifest(config.chain));
-  const game = await resolveGame(config, world);
-  const socket = createObservedSocketFactory();
+  const source = await resolveSource(config, world);
+  const socket = createObservedSocketFactory(source.openSocket);
   const smoke = createSmokeObserver(startedAt);
 
   const client = await withTimeout(
     createGameClient({
       world,
-      gameId: game.game_id,
-      presetId: game.preset_id,
+      gameId: source.game.game_id,
+      presetId: source.game.preset_id,
       dojoConfig: { rpcUrl: world.rpcUrl, manifest: readCommittedManifest(config.chain) },
       setupEnvironment: { vrfProviderAddress: "0x0" },
       scheduler: createMicrotaskGameSyncScheduler(),
@@ -317,7 +402,7 @@ const runSmoke = async (config) => {
       resolveGameConfig: resolveGameConfig(config.chain),
     }),
     config.timeoutMs,
-    () => `Timed out after ${config.timeoutMs}ms booting game ${game.game_id} against ${world.heraldBaseUrl}`,
+    () => `Timed out after ${config.timeoutMs}ms booting game ${source.game.game_id} from ${source.kind}`,
   );
 
   try {
@@ -325,8 +410,9 @@ const runSmoke = async (config) => {
     const metrics = client.runtime.getMetrics();
     return {
       event: "game_client_headless_smoke",
-      gameId: game.game_id,
-      presetId: game.preset_id,
+      source: source.kind,
+      gameId: source.game.game_id,
+      presetId: source.game.preset_id,
       status: client.runtime.getStatus(),
       snapshot: { ...socket.summary(), applyMs: Math.round(metrics.snapshotApplyDurationMs) },
       ...(firstDiffMs === undefined ? {} : { firstDiffMs }),
@@ -347,9 +433,15 @@ const printManifest = (manifest) => {
   console.log(JSON.stringify(manifest));
 };
 
+/** The CI gate: a client that never reached `running` or hydrated nothing failed the smoke, manifest or not. */
+const assertSmokeHealthy = (manifest) => {
+  if (manifest.status !== "running") throw new Error(`runtime status is ${manifest.status}; expected running`);
+  if (manifest.entities === 0) throw new Error("no entity reached RECS");
+};
+
 const printUsage = () => {
   console.log(
-    "Usage: pnpm exec tsx packages/core/scripts/run-game-client-headless.mjs " +
+    "Usage: pnpm smoke:game-client [--fixture <path>] " +
       "[--rpc-url <url>] [--herald-url <url>] [--chain <name>] [--game-id <number>] " +
       "[--player-account-class-hash <felt>] [--player-registry-address <felt>] [--binding-authority-address <felt>] " +
       "[--timeout-ms <n>] [--watch-ms <n>]",
@@ -361,7 +453,9 @@ try {
   if (config.help) {
     printUsage();
   } else {
-    printManifest(await runSmoke(config));
+    const manifest = await runSmoke(config);
+    printManifest(manifest);
+    assertSmokeHealthy(manifest);
   }
 } catch (error) {
   // A boot that timed out still owns the active runtime; disposing it stops the transport's reconnects.
