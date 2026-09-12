@@ -10,3 +10,4 @@ export * from "./scheduler";
 export * from "./world-spatial-projection";
 export * from "./leaderboard-activity";
 export * from "./story-event-identity";
+export * from "./event-confirmation";

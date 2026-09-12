@@ -1,6 +1,7 @@
 import { EntityIngestQueue, type EntityIngestBatchInfo } from "./entity-ingest-queue";
 import type {
   GameSyncEntity,
+  GameSyncEventConfirmation,
   GameSyncRuntimeMetrics,
   GameSyncSessionStart,
   GameSyncTransaction,
@@ -8,6 +9,7 @@ import type {
 } from "./game-sync-types";
 import { createMicrotaskGameSyncScheduler } from "./scheduler";
 import type { WorldSpatialProjection } from "./world-spatial-projection";
+import { eventConfirmationRank } from "./event-confirmation";
 
 export type GameSyncRuntimeStatus = "idle" | "subscribing" | "snapshotting" | "replaying" | "running" | "stopped";
 
@@ -65,7 +67,7 @@ export class GameSyncRuntime {
   private session: GameSyncSessionStart | null = null;
   private ingestQueue: EntityIngestQueue | null = null;
   private worldSpatialProjection: WorldSpatialProjection | null = null;
-  private recentEventIdentities = new Map<string, true>();
+  private recentEventIdentities = new Map<string, number>();
   private liveUpdateSamples: Array<{ at: number; count: number }> = [];
   private receiveSequence = 0;
   private metrics = createEmptyMetrics();
@@ -250,10 +252,10 @@ export class GameSyncRuntime {
             })
             .catch((error) => this.stopAfterLiveBatchFailure(generation, error));
         },
-        onEvent: (event) => {
+        onEvent: (event, confirmation) => {
           if (!this.isCurrentGeneration(generation)) return;
           this.recordLiveUpdates("event", 1);
-          this.enqueueEventOnce(event);
+          this.enqueueEventOnce(event, confirmation);
         },
         onEventGapFill: (replayedEventCount) => {
           if (!this.isCurrentGeneration(generation) || replayedEventCount <= 0) return;
@@ -371,23 +373,32 @@ export class GameSyncRuntime {
     }
   }
 
-  private enqueueEventOnce(event: GameSyncEntity): void {
+  private enqueueEventOnce(event: GameSyncEntity, confirmation?: GameSyncEventConfirmation): void {
     const session = this.session;
     if (!session) return;
 
     Object.entries(event.models).forEach(([model, value]) => {
-      const identity = `${model}:${event.hashed_keys}:${resolveEventTimestamp(model, value)}`;
-      if (this.recentEventIdentities.has(identity)) return;
+      const timestamp = resolveEventTimestamp(model, value);
+      // StoryEvent keys include a uuid and transaction hash; confirmation may correct the provisional timestamp.
+      const identity =
+        model === "StoryEvent" || model.endsWith("-StoryEvent")
+          ? `${model}:${event.hashed_keys}`
+          : `${model}:${event.hashed_keys}:${timestamp}`;
+      const previous = this.recentEventIdentities.get(identity);
+      const rank = eventConfirmationRank(confirmation);
+      if (previous !== undefined && rank <= previous) return;
 
-      this.recentEventIdentities.set(identity, true);
+      this.recentEventIdentities.set(identity, rank);
       const limit = session.eventIdentityLimit ?? DEFAULT_EVENT_IDENTITY_LIMIT;
       while (this.recentEventIdentities.size > limit) {
         const oldest = this.recentEventIdentities.keys().next().value;
         if (oldest === undefined) break;
         this.recentEventIdentities.delete(oldest);
       }
-      session.onEvent?.({ hashed_keys: event.hashed_keys, models: { [model]: value } });
-      this.ingestQueue?.enqueueEvent({ hashed_keys: event.hashed_keys, models: { [model]: value } });
+      session.onEvent?.({ hashed_keys: event.hashed_keys, models: { [model]: value } }, confirmation);
+      // Promote the story's metadata without replaying its already-delivered ephemeral effects.
+      if (previous === undefined)
+        this.ingestQueue?.enqueueEvent({ hashed_keys: event.hashed_keys, models: { [model]: value } });
     });
   }
 

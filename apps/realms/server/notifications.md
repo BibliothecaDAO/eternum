@@ -1,0 +1,34 @@
+# Notification preferences
+
+The identity service stores one account notification level: `off`, `important`, `standard`, or `all`. Shared policy and
+recipient rules live in `@bibliothecadao/notifications`. Device delivery is not enabled by choosing a level. The game
+client offers a separate device opt-in for local delivery while its page runs. Subscriptions, VAPID, push delivery, and
+the durable notifier remain separate work. See `apps/game/src/pwa/notifications.md` for local behavior.
+
+Apply `server/migrations/001-notification-preferences.sql` to the identity database before deploying this API. It
+creates a table with level/revision constraints and a cascading reference to the existing identity user. The same table
+is declared in `packages/db/src/schema/notifications.ts` for Drizzle schema management. The SQL is transactional and may
+be reapplied. No existing identity or Herald rows are rewritten.
+
+`GET /api/notifications/preferences` returns `{owner, level, revision}` for the authenticated account. An account
+without a saved preference reads `off` at revision zero. `POST` accepts the same shape with the desired level and last
+read revision. The session establishes ownership; the body owner is an account-switch precondition. Wrong owners return
+403, stale revisions return 409, unauthenticated requests return 401, and malformed JSON/values return 400. POST
+requires JSON, reads at most 1 KiB, and shares a 60-request/minute account limit with GET. Responses are `no-store`.
+Existing identity CORS rules apply. Sessions are revalidated without the authentication library's cookie cache.
+
+The client uses the existing identity transport, including credentialed cookies and its loopback bearer support. It
+loads account preferences on login and refreshes on focus/reconnect. Settings and the local dispatcher share the same
+acknowledged preference state. Anonymous choices stay in their own browser storage key and are never uploaded on login.
+Saves update the selected level only after acknowledgment; conflicts and failed requests require reload before another
+save. Account changes discard late responses.
+
+Run integration tests against a disposable PostgreSQL database with `IDENTITY_TEST_DATABASE_URL` set:
+
+```sh
+pnpm --dir apps/realms test server/main.test.ts server/notification-preference-store.integration.test.ts
+```
+
+Tests create and remove unique schemas, apply the migration twice, race first saves and updates, verify persistence,
+enforce owner isolation and constraints, and check deletion cascades. The notifications PR workflow supplies PostgreSQL.
+Browser cookie behavior across production origins and physical-device permission UX remain release gates.

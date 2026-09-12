@@ -65,20 +65,24 @@ it("merges live/history copies, preserves same-transaction stories, and isolates
       </QueryClientProvider>,
     );
   resetGameSyncStoryEvents();
-  state.fetch.mockResolvedValue({ items: [history(2), history(1)] });
+  state.fetch.mockResolvedValue({
+    items: [{ ...history(2), value: { ...history(2).value, owner: "0xbbb" } }, history(1)],
+  });
   const streamed = {
     hashed_keys: "0xdifferent-from-receipt-index",
-    models: { StoryEvent: { ...storyValue(2, "BattleStory"), id: "0x02", tx_hash: "0x0002" } },
+    models: { StoryEvent: { ...storyValue(2, "BattleStory"), id: "0x02", tx_hash: "0x0002", owner: "0xaaa" } },
   };
   try {
     await act(async () => {
-      acceptGameSyncStoryEvent(streamed, scope);
+      acceptGameSyncStoryEvent(streamed, scope, { block: null, preconfirmed: true });
       render();
     });
     await vi.waitFor(async () => {
       await act(async () => {});
       expect(events.map((event) => event.timestamp)).toEqual(["2", "1"]);
     });
+    expect(events[0].owner).toBe("0xbbb");
+    expect(events[0].confirmation).toEqual({ block: 2, preconfirmed: false });
     await act(async () => {
       acceptGameSyncStoryEvent(streamed, scope);
       acceptGameSyncStoryEvent(

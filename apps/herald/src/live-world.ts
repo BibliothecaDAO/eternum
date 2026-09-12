@@ -279,7 +279,7 @@ export class LiveWorld {
     if (targetBlock === this.confirmedBlockValue) return new Map();
     const changes = new Map<number, FoldChange[]>();
     const historyEvents: DecodedWorldEvent[] = [];
-    await replayWorldEvents({
+    const replayed = await replayWorldEvents({
       applyAtomically: true,
       fold: this.confirmedFold,
       fromBlock: this.confirmedBlockValue + 1,
@@ -297,7 +297,7 @@ export class LiveWorld {
       rpc: this.input.rpc,
       toBlock: targetBlock,
     });
-    await this.input.historyStore?.appendEvents(historyEvents, targetBlock);
+    await this.input.historyStore?.appendEvents(historyEvents, targetBlock, replayed.decodedCompletely);
     this.confirmedBlockValue = targetBlock;
     await this.freezeEndedReviewSnapshots();
     return changes;

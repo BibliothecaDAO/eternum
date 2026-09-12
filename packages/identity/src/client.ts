@@ -1,4 +1,5 @@
 import { isLoopbackOrigin, resolveEndpoint } from "@realms-world/chain";
+import { parseNotificationPreferences, type NotificationPreferences } from "@bibliothecadao/notifications";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -31,9 +32,9 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
   const storage =
     typeof window !== "undefined" && isLoopbackOrigin(window.location.origin) ? window.localStorage : null;
   const tokenKey = `identity-session:${authBaseUrl}`;
-  const request = (path: string, init?: RequestInit) => {
+  const request = (path: string, init?: RequestInit, requestBase = authBaseUrl) => {
     const token = storage?.getItem(tokenKey);
-    return fetch(`${authBaseUrl}${path}`, {
+    return fetch(`${requestBase}${path}`, {
       ...init,
       credentials: "include",
       headers: {
@@ -96,5 +97,21 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return session;
   };
 
-  return { getSession, signIn, signOut, updateUser };
+  const preferencesUrl = new URL("../notifications/preferences", `${authBaseUrl}/`).toString();
+  const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
+    parseNotificationPreferences(
+      await readJson(await request("", { method: "GET", cache: "no-store" }, preferencesUrl)),
+    );
+  const saveNotificationPreferences = async (
+    preferences: NotificationPreferences,
+  ): Promise<NotificationPreferences> => {
+    const response = await request("", { method: "POST", body: JSON.stringify(preferences) }, preferencesUrl);
+    if (response.status === 409)
+      throw new Error("Preferences changed on another device. Reload them before saving again.");
+    if (response.status === 403 || response.status === 401)
+      throw new Error("Your account changed or signed out. Reload your preferences.");
+    return parseNotificationPreferences(await readJson(response));
+  };
+
+  return { getSession, signIn, signOut, updateUser, getNotificationPreferences, saveNotificationPreferences };
 };

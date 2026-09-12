@@ -13,6 +13,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
 import { recordClientActionDiffReceived, recordClientActionRecsApplied } from "@/observability/client-action-latency";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { dispatchLocalStoryNotification } from "@/pwa/local-story-notifications";
 
 interface CreateHeraldGameSyncSessionInput {
   baseUrl: string;
@@ -60,7 +61,10 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
       useConnectionStore.getState().setGlobalStatus("failed");
       console.error(`[GameSync] live entity apply failed: ${error.message}`);
     },
-    onEvent: (event) => acceptGameSyncStoryEvent(event, input),
+    onEvent: (event, confirmation) => {
+      acceptGameSyncStoryEvent(event, input, confirmation);
+      dispatchLocalStoryNotification(event, input, confirmation);
+    },
     onMetrics: input.onMetrics,
     onSnapshotProgress: observeSnapshotProgress,
     onTransactionEntitiesApplied: recordClientActionRecsApplied,

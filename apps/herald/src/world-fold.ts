@@ -128,6 +128,7 @@ export class WorldFold {
     if (event.kind === "event") {
       if (event.model.name === "BattleEvent") this.applyLastBattle(event);
       return {
+        event: true,
         gameId: this.eventGameId(event),
         set: {
           key: event.entityId,

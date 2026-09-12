@@ -7,10 +7,12 @@ const empty: FeedRows = { inFlight: [], arrived: [], recent: [] };
 const battle = (id: string, at: number, owner = "0x1") =>
   ({
     id,
+    event_id: `story:v1:madara:0x1:0x7:0x99:0x${(at * 2 + (owner === "0x2" ? 1 : 0)).toString(16)}`,
+    entity_id: owner === "0x2" ? 22 : 11,
     timestampMs: at,
     story: "BattleStory",
     owner,
-    storyPayload: { attacker_owner_address: "0x1", defender_owner_address: "0x2" },
+    storyPayload: { attacker_id: 11, defender_id: 22, attacker_owner_address: "0x1", defender_owner_address: "0x2" },
   }) as unknown as ProcessedStoryEvent;
 
 it("keeps battles/captures and drops routine movement", () => {
@@ -55,7 +57,7 @@ it("keeps only the newest rows inside the quick feed window", () => {
 
 it("shows one battle when Herald records a story for each participant", () => {
   const attacker = battle("attacker", 20);
-  const defender = { ...attacker, id: "defender", owner: "0x2" };
+  const defender = battle("defender", 20, "0x2");
   expect(selectImportantFeedRows([attacker, defender], empty, "all", null)).toHaveLength(1);
 });
 

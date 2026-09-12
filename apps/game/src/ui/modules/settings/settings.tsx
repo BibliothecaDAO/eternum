@@ -29,6 +29,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useDisconnect } from "@starknet-react/core";
 import Pencil from "lucide-react/dist/esm/icons/pencil";
 import { type ReactNode, useState } from "react";
+import { NotificationSettings } from "./notification-settings";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
@@ -38,6 +39,7 @@ export const SettingsPanel = () => (
     <ProfileHeader />
     <VideoSettings />
     <AudioSettings />
+    <NotificationSettings />
     <ShortcutsSection />
     <SessionActions />
   </div>

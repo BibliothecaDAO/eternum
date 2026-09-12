@@ -2,6 +2,7 @@ import { buildLiveLeaderboard } from "./live-leaderboard";
 import { buildGameDirectory } from "./game-directory";
 import type { FoldRow, GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
+import { HistoryCursorError, parseStoryHistoryQuery } from "./history-cursor";
 
 interface SnapshotSource {
   modelRows: (model: string) => FoldRow[];
@@ -15,7 +16,10 @@ interface HeraldHttpState {
   decodedModelCount: number;
   fold: SnapshotSource;
   metrics: ReplayMetrics;
-  history?: Pick<HistoryStore, "queryEvents" | "reviewSnapshot" | "transactionCount" | "leaderboard">;
+  history?: Pick<
+    HistoryStore,
+    "queryEvents" | "queryStoryHistory" | "reviewSnapshot" | "transactionCount" | "leaderboard"
+  >;
   undecodableEventCount: () => number;
 }
 
@@ -78,11 +82,31 @@ const historyQuery = (url: URL, gameId: string): HistoryQuery => ({
   owner: url.searchParams.get("owner") ?? undefined,
 });
 
+async function serveStoryHistory(
+  history: Pick<HistoryStore, "queryStoryHistory"> | undefined,
+  url: URL,
+): Promise<Response> {
+  if (!history) return jsonResponse({ error: "history_unavailable" }, 503);
+  try {
+    return jsonResponse(await history.queryStoryHistory(parseStoryHistoryQuery(url)));
+  } catch (error) {
+    if (error instanceof HistoryCursorError) return jsonResponse({ error: error.message }, error.status);
+    console.error(
+      JSON.stringify({
+        event: "herald_story_history_failed",
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    return jsonResponse({ error: "history_unavailable" }, 503);
+  }
+}
+
 export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: Request) => Promise<Response>) => {
   const escapedChain = state.chain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const directoryPath = `/${state.chain}/games`;
   const snapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/snapshot$`);
   const historyPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/history$`);
+  const storyHistoryPath = `/${state.chain}/history/story-events`;
   const reviewSnapshotPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/review/snapshot$`);
   const leaderboardPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/leaderboard$`);
   const transactionCountPath = new RegExp(`^/${escapedChain}/games/([0-9]+)/transactions/count$`);
@@ -129,6 +153,10 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
       }
+    }
+
+    if (request.method === "GET" && url.pathname === storyHistoryPath) {
+      return serveStoryHistory(state.history, url);
     }
 
     const historyMatch = request.method === "GET" ? historyPath.exec(url.pathname) : null;

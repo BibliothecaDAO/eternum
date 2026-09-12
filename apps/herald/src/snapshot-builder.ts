@@ -3,6 +3,7 @@ import { MadaraRpc } from "./madara-rpc";
 import type { BuiltGameSnapshot, DecodedWorldEvent, FoldChange, RawWorldEvent, ReplayMetrics } from "./types";
 import { WORLD_EVENT_SELECTORS, WorldEventDecodeMonitor } from "./world-event-decoder";
 import { WorldFold } from "./world-fold";
+import { compareWorldEvents } from "./event-position";
 
 interface ReplayWorldEventsInput {
   fold?: WorldFold;
@@ -27,11 +28,6 @@ interface BuiltWorldFold {
   metrics: BuiltGameSnapshot["metrics"];
 }
 
-const compareEvents = (left: RawWorldEvent, right: RawWorldEvent): number =>
-  (left.block_number ?? Number.MAX_SAFE_INTEGER) - (right.block_number ?? Number.MAX_SAFE_INTEGER) ||
-  left.transaction_index - right.transaction_index ||
-  left.event_index - right.event_index;
-
 export const replayWorldEvents = async ({
   registry,
   rpc,
@@ -42,7 +38,11 @@ export const replayWorldEvents = async ({
   onChange,
   decodeMonitor = new WorldEventDecodeMonitor(),
   applyAtomically = false,
-}: ReplayWorldEventsInput): Promise<{ fold: WorldFold; metrics: Omit<ReplayMetrics, "retained_rows"> }> => {
+}: ReplayWorldEventsInput): Promise<{
+  fold: WorldFold;
+  metrics: Omit<ReplayMetrics, "retained_rows">;
+  decodedCompletely: boolean;
+}> => {
   const fold = existingFold ?? new WorldFold(registry);
   const eventSelectors = Object.values(WORLD_EVENT_SELECTORS);
   const modelSelectors = [...registry.bySelector.keys()];
@@ -50,6 +50,7 @@ export const replayWorldEvents = async ({
   let eventMessages = 0;
   let pages = 0;
   let storeEvents = 0;
+  let decodedCompletely = true;
   let previousEvent: RawWorldEvent | undefined;
   const deferredEvents: DecodedWorldEvent[] = [];
 
@@ -61,6 +62,7 @@ export const replayWorldEvents = async ({
   if (fromBlock > toBlock) {
     return {
       fold,
+      decodedCompletely,
       metrics: { decoded_events: 0, event_messages: 0, pages: 0, store_events: 0 },
     };
   }
@@ -73,13 +75,15 @@ export const replayWorldEvents = async ({
     toBlock,
   })) {
     pages = page.page;
-    const events = [...page.events].sort(compareEvents);
+    const events = [...page.events].sort(compareWorldEvents);
     for (const rawEvent of events) {
-      if (previousEvent && compareEvents(previousEvent, rawEvent) > 0) {
+      if (previousEvent && compareWorldEvents(previousEvent, rawEvent) > 0) {
         throw new Error("Madara getEvents pages are not in chain order");
       }
       previousEvent = rawEvent;
+      const failuresBefore = decodeMonitor.failures;
       const event = decodeMonitor.decode(registry, rawEvent);
+      decodedCompletely &&= decodeMonitor.failures === failuresBefore;
       if (!event) continue;
 
       decodedEvents += 1;
@@ -95,6 +99,7 @@ export const replayWorldEvents = async ({
 
   return {
     fold,
+    decodedCompletely,
     metrics: {
       decoded_events: decodedEvents,
       event_messages: eventMessages,

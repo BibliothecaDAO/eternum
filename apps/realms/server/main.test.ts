@@ -4,6 +4,8 @@ const mocks = vi.hoisted(() => ({
   bindGameplayAccount: vi.fn(),
   getSession: vi.fn(),
   serveStatic: vi.fn(),
+  readPreferences: vi.fn(),
+  savePreferences: vi.fn(),
 }));
 
 vi.mock("./auth", () => ({
@@ -35,6 +37,9 @@ vi.mock("./profiles", () => ({
   ),
 }));
 vi.mock("./static", () => ({ serveStatic: mocks.serveStatic }));
+vi.mock("./notification-preference-store", () => ({
+  createNotificationPreferenceStore: () => ({ read: mocks.readPreferences, save: mocks.savePreferences }),
+}));
 
 import { handleRequest } from "./main";
 
@@ -43,6 +48,47 @@ describe("identity request router", () => {
     vi.clearAllMocks();
     mocks.getSession.mockResolvedValue({ session: { id: "session" }, user: { id: "0x1" } });
     mocks.serveStatic.mockResolvedValue(new Response("spa", { headers: { "content-type": "text/html" } }));
+  });
+
+  it("authenticates preference reads, disables cookie caching, and returns private no-store responses", async () => {
+    mocks.readPreferences.mockResolvedValue({ owner: "0x1", level: "off", revision: 0 });
+    const request = new Request("https://app.realms.party/api/notifications/preferences", {
+      headers: { origin: "https://play.realms.party" },
+    });
+    const response = await handleRequest(request);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("access-control-allow-credentials")).toBe("true");
+    expect(mocks.getSession).toHaveBeenCalledWith({ headers: request.headers, query: { disableCookieCache: true } });
+    mocks.getSession.mockResolvedValue(null);
+    expect((await handleRequest(request)).status).toBe(401);
+    expect(mocks.readPreferences).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves only the session owner's revision and reports conflicts, invalid input, and foreign origins", async () => {
+    const post = (body: unknown, origin = "https://play.realms.party") =>
+      handleRequest(
+        new Request("https://app.realms.party/api/notifications/preferences", {
+          method: "POST",
+          headers: { origin, "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+      );
+    const change = { owner: "0x1", level: "important", revision: 2 };
+    mocks.savePreferences.mockResolvedValue({ ...change, revision: 3 });
+    expect((await post(change)).status).toBe(200);
+    expect(mocks.savePreferences).toHaveBeenCalledWith("0x1", "important", 2);
+    mocks.savePreferences.mockResolvedValue(null);
+    expect((await post(change)).status).toBe(409);
+    const calls = mocks.savePreferences.mock.calls.length;
+    expect((await post({ ...change, owner: "0x2" })).status).toBe(403);
+    expect((await post({ ...change, extra: true })).status).toBe(400);
+    expect((await post({ ...change, revision: -1 })).status).toBe(400);
+    expect((await post("x".repeat(1025))).status).toBe(400);
+    expect((await post(change, "https://foreign.example")).status).toBe(403);
+    mocks.getSession.mockResolvedValue(null);
+    expect((await post(change)).status).toBe(401);
+    expect(mocks.savePreferences).toHaveBeenCalledTimes(calls);
   });
 
   it("keeps an unknown API path as a credentialed JSON 404", async () => {

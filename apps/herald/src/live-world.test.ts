@@ -241,7 +241,7 @@ describe("LiveWorld", () => {
 
     await live.acceptSubscribedHead({ block_number: 13, timestamp: 100 });
 
-    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13);
+    expect(historyStore.appendEvents).toHaveBeenCalledWith([], 13, true);
   });
 
   it("deduplicates hints and replaces the overlay from one pre-confirmed block read", async () => {

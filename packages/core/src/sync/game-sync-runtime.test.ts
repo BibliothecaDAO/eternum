@@ -9,6 +9,7 @@ import {
 } from "./game-sync-runtime";
 import type {
   GameSyncEntity,
+  GameSyncEventConfirmation,
   GameSyncEntityStoreOperation,
   GameSyncSessionStart,
   GameSyncStore,
@@ -96,8 +97,8 @@ const createSessionHarness = (input: {
     emitEntityBatch(batch: Parameters<NonNullable<GameSyncSubscriptionHandlers["onEntityBatch"]>>[0]) {
       handlers?.onEntityBatch?.(batch);
     },
-    emitEvent(update: GameSyncEntity) {
-      handlers?.onEvent(update);
+    emitEvent(update: GameSyncEntity, confirmation?: GameSyncEventConfirmation) {
+      handlers?.onEvent(update, confirmation);
     },
     emitTransaction(transaction: GameSyncTransaction) {
       handlers?.onTransaction?.(transaction);
@@ -326,6 +327,27 @@ describe("GameSyncRuntime recovery", () => {
 
     expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1", "event-2"]);
     expect([...memory.rows.values()].some((models) => "BattleEvent" in models)).toBe(false);
+  });
+
+  it("promotes a provisional event to confirmed once without replaying effects or downgrading it", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    harness.session.onEvent = vi.fn();
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const event = entity("story-1", { StoryEvent: { timestamp: 100 } });
+    const confirmed = entity("story-1", { StoryEvent: { timestamp: 101 } });
+    harness.emitEvent(event, { block: null, preconfirmed: true });
+    harness.emitEvent(confirmed, { block: 12, preconfirmed: false });
+    harness.emitEvent(event, { block: null, preconfirmed: true });
+    harness.emitEvent(event);
+    await flushMicrotasks();
+    await runtime.recover();
+    harness.emitEvent(confirmed, { block: 12, preconfirmed: false });
+    await flushMicrotasks();
+    expect(harness.session.onEvent).toHaveBeenCalledTimes(2);
+    expect(harness.session.onEvent).toHaveBeenLastCalledWith(confirmed, { block: 12, preconfirmed: false });
+    expect(memory.events).toHaveLength(1);
   });
 
   it("applies repeat events for the same on-chain key when their timestamps differ", async () => {

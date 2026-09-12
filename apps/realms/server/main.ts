@@ -12,6 +12,7 @@ import { profilesByAccounts } from "./profiles";
 import { clientAddressOf, createRateLimiter } from "./rate-limit";
 import { serverEnv } from "./env";
 import { serveStatic } from "./static";
+import { handleNotificationPreferences } from "./notification-preferences";
 
 /**
  * The identity server for apps/realms, shaped like herald: one Bun fetch
@@ -85,6 +86,7 @@ const handleGameplayAccountAction = async (request: Request, action: string): Pr
 const handleApiRequest = async (request: Request, url: URL, client: string): Promise<Response> => {
   try {
     if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
+    if (url.pathname === "/api/notifications/preferences") return handleNotificationPreferences(request);
 
     if (request.method === "GET") {
       if (url.pathname === "/api/profiles") return handleProfiles(url, client);

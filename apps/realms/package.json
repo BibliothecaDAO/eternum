@@ -23,7 +23,8 @@
     "react": "catalog:web",
     "react-dom": "catalog:web",
     "starknet": "catalog:web",
-    "zod": "catalog:web"
+    "zod": "catalog:web",
+    "@bibliothecadao/notifications": "workspace:*"
   },
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",
@@ -39,6 +40,8 @@
     "typescript": "catalog:web",
     "vite": "catalog:web",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "pg": "^8.18.0",
+    "@types/pg": "^8.16.0"
   }
 }

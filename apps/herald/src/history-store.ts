@@ -6,6 +6,13 @@ import type { HeraldGameSnapshot, HeraldHistoryPage, HeraldTransactionCount } fr
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
 import type { DecodedRecord, DecodedWorldEvent, RpcReceipt } from "./types";
+import {
+  encodeHistoryCursor,
+  resolveHistoryWindow,
+  type HistoryPosition,
+  type StoryHistoryQuery,
+} from "./history-cursor";
+import type { HeraldHistoryEvent, HeraldStoryHistoryPage } from "@bibliothecadao/eternum/game-sync";
 
 interface StoredHistoryEvent {
   block_number: number;
@@ -55,6 +62,7 @@ const storedHistoryEvent = (event: DecodedWorldEvent): StoredHistoryEvent | null
   if (event.kind !== "event" || event.position.blockNumber === null) return null;
   const value = jsonRecord({ ...event.key, ...event.value });
   const gameId = scalarString(event.key.game_id);
+  if (!gameId && event.model.name === "StoryEvent") throw new Error("StoryEvent is missing game_id");
   if (!gameId) return null;
 
   return {
@@ -76,6 +84,10 @@ export class HistoryStore {
   private leaderboardReady = false;
   private writeQueue = Promise.resolve();
   private writeFailure?: Error;
+  private historyWrites = Promise.resolve();
+  private backfillComplete = false;
+  private liveCompleteThroughBlock: number | undefined;
+  private liveHistoryComplete = true;
 
   constructor(
     databaseUrl: string,
@@ -109,6 +121,9 @@ export class HistoryStore {
         ON herald_history_events (chain, world_address, game_id, owner, block_number DESC, transaction_index DESC, event_index DESC);
       CREATE INDEX IF NOT EXISTS herald_history_game_entity_position
         ON herald_history_events (chain, world_address, game_id, entity_id, block_number DESC, transaction_index DESC, event_index DESC);
+      CREATE INDEX IF NOT EXISTS herald_story_history_position
+        ON herald_history_events (chain, world_address, block_number, transaction_index, event_index)
+        WHERE model = 'StoryEvent';
 
       CREATE TABLE IF NOT EXISTS herald_history_progress (
         chain TEXT NOT NULL,
@@ -117,6 +132,8 @@ export class HistoryStore {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         PRIMARY KEY (chain, world_address)
       );
+      -- Older markers could advance ahead of startup backfill. Validate their prefix once before cursor reads.
+      ALTER TABLE herald_history_progress ADD COLUMN IF NOT EXISTS contiguous BOOLEAN NOT NULL DEFAULT false;
 
       CREATE TABLE IF NOT EXISTS herald_game_transactions (
         chain TEXT NOT NULL,
@@ -141,7 +158,46 @@ export class HistoryStore {
     await this.restorePointsLeaderboard();
   }
 
-  public async appendEvents(events: readonly DecodedWorldEvent[], completeThroughBlock?: number): Promise<void> {
+  public appendEvents(
+    events: readonly DecodedWorldEvent[],
+    completeThroughBlock?: number,
+    decodedCompletely = true,
+  ): Promise<void> {
+    return this.enqueueHistoryWrite(async () => {
+      this.liveHistoryComplete &&= decodedCompletely;
+      await this.persistHistoryBatch(
+        events,
+        this.backfillComplete && this.liveHistoryComplete ? completeThroughBlock : undefined,
+      );
+      if (completeThroughBlock !== undefined && this.liveHistoryComplete) {
+        this.liveCompleteThroughBlock = Math.max(this.liveCompleteThroughBlock ?? -1, completeThroughBlock);
+      }
+    });
+  }
+
+  public appendBackfilledEvents(events: readonly DecodedWorldEvent[], completeThroughBlock: number): Promise<void> {
+    return this.enqueueHistoryWrite(() => this.persistHistoryBatch(events, completeThroughBlock));
+  }
+
+  /** The queue fences backfill completion against live batches that are still committing. */
+  public completeHistoryBackfill(throughBlock: number): Promise<void> {
+    return this.enqueueHistoryWrite(async () => {
+      await this.persistHistoryBatch([], Math.max(throughBlock, this.liveCompleteThroughBlock ?? -1));
+      this.backfillComplete = true;
+    });
+  }
+
+  private enqueueHistoryWrite(write: () => Promise<void>): Promise<void> {
+    const result = this.historyWrites.then(write);
+    // The caller receives the rejection; a failed backfill must not stop live history from being stored.
+    this.historyWrites = result.catch(() => {});
+    return result;
+  }
+
+  private async persistHistoryBatch(
+    events: readonly DecodedWorldEvent[],
+    completeThroughBlock?: number,
+  ): Promise<void> {
     const rows = events.flatMap((event) => {
       const stored = storedHistoryEvent(event);
       return stored ? [stored] : [];
@@ -189,13 +245,13 @@ export class HistoryStore {
 
   private async advanceHistoryProgress(client: PoolClient, completeThroughBlock: number): Promise<void> {
     await client.query(
-      `INSERT INTO herald_history_progress (chain, world_address, complete_through_block, updated_at)
-           VALUES ($1, $2, $3, now())
+      `INSERT INTO herald_history_progress (chain, world_address, complete_through_block, contiguous, updated_at)
+           VALUES ($1, $2, $3, true, now())
            ON CONFLICT (chain, world_address) DO UPDATE
-           SET complete_through_block = GREATEST(
-                 herald_history_progress.complete_through_block,
-                 EXCLUDED.complete_through_block
-               ),
+           SET complete_through_block = CASE WHEN herald_history_progress.contiguous
+                 THEN GREATEST(herald_history_progress.complete_through_block, EXCLUDED.complete_through_block)
+                 ELSE EXCLUDED.complete_through_block END,
+               contiguous = true,
                updated_at = now()`,
       [this.chain, this.worldAddress, completeThroughBlock],
     );
@@ -267,13 +323,13 @@ export class HistoryStore {
   }
 
   public async historyProgress(): Promise<number | null> {
-    const result = await this.pool.query<{ complete_through_block: string }>(
-      `SELECT complete_through_block
+    const result = await this.pool.query<{ complete_through_block: string; contiguous: boolean }>(
+      `SELECT complete_through_block, contiguous
        FROM herald_history_progress
        WHERE chain = $1 AND world_address = $2`,
       [this.chain, this.worldAddress],
     );
-    const value = result.rows[0]?.complete_through_block;
+    const value = result.rows[0]?.contiguous ? result.rows[0].complete_through_block : undefined;
     return value === undefined ? null : Number(value);
   }
 
@@ -326,6 +382,47 @@ export class HistoryStore {
     };
   }
 
+  public async queryStoryHistory(query: StoryHistoryQuery): Promise<HeraldStoryHistoryPage> {
+    const complete = await this.historyProgress();
+    const scope = { chain: this.chain, world: this.worldAddress };
+    const window = resolveHistoryWindow(query, scope, complete);
+    const rows = await this.readStoryHistoryWindow(window.after, window.through, query.limit + 1);
+    const hasMore = rows.length > query.limit;
+    const items = rows.slice(0, query.limit);
+    const last = items.at(-1);
+    const after: HistoryPosition =
+      hasMore && last ? [last.block_number, last.transaction_index, last.event_index] : [window.through];
+    return {
+      chain: this.chain,
+      world_address: this.worldAddress,
+      complete_through_block: window.complete,
+      through_block: window.through,
+      items,
+      has_more: hasMore,
+      next_cursor: encodeHistoryCursor(scope, after, hasMore ? window.through : undefined),
+    };
+  }
+
+  private async readStoryHistoryWindow(
+    after: HistoryPosition,
+    through: number,
+    limit: number,
+  ): Promise<HeraldHistoryEvent[]> {
+    const values: Array<string | number> = [this.chain, this.worldAddress, through, ...after, limit];
+    const lowerBound =
+      after.length === 1 ? "block_number > $4" : "(block_number, transaction_index, event_index) > ($4, $5, $6)";
+    const result = await this.pool.query<Omit<HeraldHistoryEvent, "block_number"> & { block_number: string }>(
+      `SELECT block_number, event_index, game_id::text, model, transaction_hash, transaction_index, value
+       FROM herald_history_events
+       WHERE chain = $1 AND world_address = $2 AND model = 'StoryEvent'
+         AND block_number <= $3 AND ${lowerBound}
+       ORDER BY block_number, transaction_index, event_index
+       LIMIT $${values.length}`,
+      values,
+    );
+    return result.rows.map((row) => ({ ...row, block_number: Number(row.block_number) }));
+  }
+
   public async transactionCount(gameId: string): Promise<HeraldTransactionCount> {
     const result = await this.pool.query<{ total: string }>(
       `SELECT COUNT(*) AS total
@@ -337,6 +434,7 @@ export class HistoryStore {
   }
 
   public async close(): Promise<void> {
+    await this.historyWrites;
     await this.writeQueue;
     if (this.writeFailure) throw this.writeFailure;
     await this.pool.end();

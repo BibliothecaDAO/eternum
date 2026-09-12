@@ -5,6 +5,7 @@ import { extname, join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { verifyPwaBuild } from "./verify-pwa-build.mjs";
 import { readClientModuleEntries } from "./client-build-files.mjs";
+import { NOTIFICATION_FIXTURE_PATH, verifyLocalNotifications } from "./pwa-notification-checks.mjs";
 
 const [previousArg, currentArg, outputArg = "output/playwright/pwa"] = process.argv.slice(2);
 if (!previousArg || !currentArg)
@@ -22,7 +23,8 @@ const server = createServer((request, response) => {
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({ headless: true });
+// Full Chromium's headless mode supports native notifications; headless-shell rejects worker permission grants.
+const browser = await chromium.launch({ headless: true, channel: "chromium" });
 const context = await browser.newContext({ serviceWorkers: "allow", reducedMotion: "reduce" });
 // These tests exercise the built shell. They do not need a wallet, a live match, or analytics.
 await context.route("https://**/*", (route) => route.abort());
@@ -157,6 +159,10 @@ try {
       "Only offline resources may enter Cache Storage",
     );
   });
+  workerOverride = undefined;
+  await check("local notifications deduplicate across tabs, dismissal and worker restart", () =>
+    verifyLocalNotifications(browser, origin),
+  );
 } catch (error) {
   const registration = await page
     .evaluate(async () => {
@@ -213,6 +219,13 @@ async function entryInPage(tab) {
 async function serveBuild(request, response) {
   const path = decodeURIComponent(new URL(request.url, origin).pathname);
   response.setHeader("Cache-Control", "no-cache");
+  if (path === NOTIFICATION_FIXTURE_PATH) {
+    response.writeHead(200, { "Content-Type": "text/html" });
+    response.end(
+      "<!doctype html><title>Notification worker verification</title><p>Isolated notification worker fixture</p>",
+    );
+    return;
+  }
   if (path === "/api/pwa-check") {
     response.writeHead(503, { "Content-Type": "application/json" });
     response.end('{"error":"unavailable"}');

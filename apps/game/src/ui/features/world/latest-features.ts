@@ -35,6 +35,25 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Local Game Notifications",
+    description:
+      "Enable device alerts in Settings for new confirmed activity involving you while the game remains running. Test delivery before relying on it.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Notification Preferences",
+    description: "Choose a notification level in Settings and save it to your account.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Confirmed Game Activity",
+    description: "Game activity keeps its confirmed version when live updates and history overlap.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
     title: "Install Realms",
     description:
       "Install Realms on your device, retry when your connection returns, and apply game updates when you are ready.",
