@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Clean realm upgrades",
+    type: "fix",
+    description: "Upgrading a realm removes its previous model, including when a map refresh is interrupted.",
+  },
+  {
+    date: "2026-09-12",
     title: "Travel between the layers",
     type: "feature",
     description: "Armies keep their selection after crossing a spire, and explore and fight on their current layer.",

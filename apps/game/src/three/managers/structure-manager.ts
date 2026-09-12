@@ -1310,7 +1310,8 @@ export class StructureManager {
 
       const renderableStructures = visibleStructures.filter((structure) => this.getModelForStructure(structure));
       const visibilityDiff = createManagerVisibilityDiff({
-        currentVisibleIds: this.previousVisibleIds,
+        // A superseded sliced pass can own instances before its visible-ID list commits.
+        currentVisibleIds: this.structureInstanceBindings.keys(),
         nextVisibleEntities: renderableStructures,
         getEntityId: (structure) => structure.entityId,
         refreshEntityIds: options.refreshEntityIds,
