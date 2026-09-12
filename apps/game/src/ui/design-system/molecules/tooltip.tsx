@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { isCoarsePointer } from "@/utils/pointer";
 import clsx from "clsx";
@@ -229,28 +230,28 @@ const HoverTooltip = ({ className }: TooltipProps) => {
 
   const hiddenTransform = useMemo(() => getHiddenTransform(placement), [placement]);
 
-  return (
-    <>
-      {tooltip && tooltip.content && (
-        <div
-          id="tooltip-root"
-          ref={ref}
-          data-placement={placement}
-          role="tooltip"
-          aria-hidden={!isVisible}
-          style={{
-            ...style,
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? "translate3d(0, 0, 0)" : hiddenTransform,
-          }}
-          className={clsx(
-            "fixed z-[250] pointer-events-none select-none inline-flex border border-gold/30 text-xs px-4 py-2 bg-[#15100a] flex-col justify-start items-center text-gold transition-all duration-150 ease-out",
-            className,
-          )}
-        >
-          {tooltip.content}
-        </div>
+  if (!tooltip || !tooltip.content) return null;
+
+  // Desks and popovers portal to the body above the HUD tree; the tooltip must live there too or it renders behind them.
+  return createPortal(
+    <div
+      id="tooltip-root"
+      ref={ref}
+      data-placement={placement}
+      role="tooltip"
+      aria-hidden={!isVisible}
+      style={{
+        ...style,
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translate3d(0, 0, 0)" : hiddenTransform,
+      }}
+      className={clsx(
+        "fixed z-[250] pointer-events-none select-none inline-flex border border-gold/30 text-xs px-4 py-2 bg-[#15100a] flex-col justify-start items-center text-gold transition-all duration-150 ease-out",
+        className,
       )}
-    </>
+    >
+      {tooltip.content}
+    </div>,
+    document.body,
   );
 };
