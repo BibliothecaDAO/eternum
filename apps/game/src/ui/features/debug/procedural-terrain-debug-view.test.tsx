@@ -50,11 +50,13 @@ describe("terrain lab telemetry and controls", () => {
         ),
     );
     const dispose = vi.fn();
+    const setGameEnded = vi.fn();
     vi.mocked(mountProceduralTerrainDebugRenderer).mockResolvedValue({
       getStats,
       dispose,
       setPreview: vi.fn().mockResolvedValue(undefined),
       setCycleProgress: vi.fn(),
+      setGameEnded,
     } as unknown as Awaited<ReturnType<typeof mountProceduralTerrainDebugRenderer>>);
 
     await act(async () => {
@@ -65,6 +67,14 @@ describe("terrain lab telemetry and controls", () => {
       );
     });
     await act(async () => vi.advanceTimersByTimeAsync(20));
+    expect(setGameEnded).toHaveBeenLastCalledWith(false);
+    const freezeToggle = Array.from(container.querySelectorAll("label"))
+      .find((label) => label.textContent?.trim() === "Freeze map")!
+      .querySelector("input")!;
+    await act(async () => freezeToggle.click());
+    expect(setGameEnded).toHaveBeenLastCalledWith(true);
+    await act(async () => freezeToggle.click());
+    expect(setGameEnded).toHaveBeenLastCalledWith(false);
     const select = container.querySelector<HTMLSelectElement>('[aria-label="Building model"]')!;
     select.focus();
     const selectedWrites = vi.spyOn(HTMLOptionElement.prototype, "selected", "set");

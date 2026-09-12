@@ -21,6 +21,7 @@ function createScene(name: string, view = 1) {
     hasActiveLabelAnimations: vi.fn(() => false),
     onFrameRendered: vi.fn(),
     setWeatherAtmosphereState: vi.fn(),
+    setAnimationsPaused: vi.fn(),
     update: vi.fn(),
   };
 }
@@ -209,3 +210,32 @@ describe("runRendererFrame", () => {
     expect(worldmapScene.onFrameRendered).not.toHaveBeenCalled();
   });
 });
+
+it.each([SceneName.WorldMap, SceneName.Hexception])(
+  "keeps inspection rendering while pausing animations in %s",
+  (sceneName) => {
+    const worldmapScene = createScene("world");
+    const hexceptionScene = createScene("local");
+    const hudScene = createHudScene();
+    const backend = createBackend();
+    const scene = sceneName === SceneName.WorldMap ? worldmapScene : hexceptionScene;
+    runRendererFrame({
+      backend: backend as never,
+      camera: "camera" as never,
+      captureStatsSample: vi.fn(),
+      currentScene: sceneName,
+      currentTime: 100,
+      cycleProgress: 50,
+      deltaTime: 0.016,
+      animationsPaused: true,
+      worldmapScene: worldmapScene as never,
+      hexceptionScene: hexceptionScene as never,
+      hudScene: hudScene as never,
+      labelRuntime: { render: vi.fn(), shouldRender: () => true } as never,
+    });
+    expect(scene.setAnimationsPaused).toHaveBeenCalledWith(true);
+    expect(scene.update).toHaveBeenCalledWith(0.016);
+    expect(hudScene.update).not.toHaveBeenCalled();
+    expect(backend.renderFrame).toHaveBeenCalledOnce();
+  },
+);

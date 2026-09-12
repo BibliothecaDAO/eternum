@@ -115,7 +115,8 @@ const main = async (): Promise<void> => {
     registry,
     rpc,
   });
-  await live.freezeEndedReviewSnapshots();
+  const confirmedHead = await rpc.getBlockWithReceipts(loaded.confirmedBlock);
+  await live.freezeEndedReviewSnapshots(confirmedHead.timestamp);
   let server: ReturnType<typeof Bun.serve<HeraldSocketData>> | undefined;
   let shuttingDown = false;
 

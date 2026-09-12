@@ -1877,12 +1877,12 @@ export class StructureManager {
     return this.visibilityManager?.isBoxVisible(this.currentChunkBounds.box) ?? true;
   }
 
-  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext) {
+  updateAnimations(deltaTime: number, visibility?: AnimationVisibilityContext, animationsPaused = false) {
     if (!this.isChunkVisible()) {
       return;
     }
 
-    if (this.contentLadder.structureModels) {
+    if (!animationsPaused && this.contentLadder.structureModels) {
       const context = this.resolveAnimationVisibilityContext(visibility);
       const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
       this.forEachStructureModel((model) => {

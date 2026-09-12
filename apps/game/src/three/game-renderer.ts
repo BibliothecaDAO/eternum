@@ -1,3 +1,5 @@
+import { configManager } from "@bibliothecadao/eternum";
+import { updateGameEndFreeze } from "./effects/game-end-freeze";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
@@ -372,11 +374,14 @@ export default class GameRenderer {
       onFrameSuccess: () => this.getRendererFrameFailureCircuit().recordSuccess(),
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
         const sceneName = this.sceneManager?.getRenderingScene();
+        const animationsPaused = configManager.isGameOver();
+        updateGameEndFreeze(configManager.getActiveGameId(), animationsPaused, deltaTime);
         const rendered = runRendererFrame({
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
           currentScene: sceneName,
+          animationsPaused,
           currentTime,
           cycleProgress,
           deltaTime,
@@ -452,6 +457,7 @@ export default class GameRenderer {
   }
 
   public destroy(): void {
+    updateGameEndFreeze(0, false, 0);
     // Prevent multiple destroy calls
     if (this.isDestroyed) {
       console.warn("GameRenderer already destroyed, skipping cleanup");

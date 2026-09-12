@@ -1,3 +1,4 @@
+import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -132,7 +133,7 @@ const resolveBlitzActivity = ({
 }: BlitzActivityInput) => {
   const isBlitzWorld = resolvedWorldGameMode === "blitz";
   const isMainPhase = devModeOn || (typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt);
-  const isSeasonOver = !devModeOn && typeof gameEndAt === "number" && currentBlockTimestamp > gameEndAt;
+  const isSeasonOver = hasGameEnded("Live", gameEndAt ?? 0, currentBlockTimestamp);
 
   return isBlitzWorld && isMainPhase && !isSeasonOver;
 };

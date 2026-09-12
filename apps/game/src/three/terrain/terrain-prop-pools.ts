@@ -1,3 +1,5 @@
+import { mapAnimationTime as time } from "../effects/game-end-freeze";
+import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
@@ -25,7 +27,6 @@ import {
   normalGeometry,
   positionLocal,
   smoothstep,
-  time,
   uniform,
   vec3,
   vertexColor,
@@ -403,7 +404,7 @@ function createTerrainPropMaterial(
   animated: boolean,
   windStrength: UniformNode<"float", number> = uniform(0, "float"),
 ): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 1 });
+  const material = new FrostedStandardNodeMaterial({ metalness: 0, roughness: 1 });
   const foliageWeight = attribute<"float">("_wind_weight", "float").clamp(0, 1);
   const plant = attribute<"vec2">("terrainPropBend", "vec2");
   const ecology = attribute<"vec3">("terrainPropEcology", "vec3").clamp(0, 1);
