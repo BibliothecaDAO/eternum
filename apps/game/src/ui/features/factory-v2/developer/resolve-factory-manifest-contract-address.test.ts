@@ -12,7 +12,8 @@ vi.mock("@contracts", () => ({
   getGameManifest: mocks.getGameManifest,
 }));
 
-vi.mock("@/runtime/world/game-registry", () => ({
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   resolveWorldIdForGame: mocks.resolveWorldIdForGame,
 }));
 

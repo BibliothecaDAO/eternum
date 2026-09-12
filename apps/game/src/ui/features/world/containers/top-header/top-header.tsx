@@ -22,7 +22,7 @@ import Mountain from "lucide-react/dist/esm/icons/mountain";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 export const TopHeader = memo(() => {
   const lane = useCompactLane();
   const {

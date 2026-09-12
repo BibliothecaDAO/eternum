@@ -33,7 +33,7 @@ import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { GuardStaminaBar } from "./guard-stamina-bar";
 import { SLOT_ICON_MAP } from "./slot-icon-map";
 import { GuardCooldownBadge } from "./guard-cooldown-badge";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type DefenseTroop = ReturnType<typeof getGuardsByStructure>[number];
 

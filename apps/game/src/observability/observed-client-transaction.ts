@@ -2,7 +2,7 @@ import { type TransactionType } from "@bibliothecadao/provider";
 import { getActiveGameSyncRuntime, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { GameChain } from "@realms-world/chain";
 import { type Account, type AllowArray, type Call } from "starknet";
-import { executeGameplayAccountTransaction } from "@/account/gameplay-account-submit";
+import { executeGameplayAccountTransaction } from "@bibliothecadao/eternum/game-client";
 import { extractTransactionHash } from "@/ui/utils/transactions";
 import {
   addClientTransactionBreadcrumb,

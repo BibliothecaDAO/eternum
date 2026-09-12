@@ -60,6 +60,7 @@ export default defineConfig({
         "../../packages/core/src/managers/game-entity-keys.ts",
       ),
       "@bibliothecadao/eternum/game-sync": path.resolve(__dirname, "../../packages/core/src/sync/index.ts"),
+      "@bibliothecadao/eternum/game-client": path.resolve(__dirname, "../../packages/core/src/client/index.ts"),
       "@bibliothecadao/eternum/biome": path.resolve(__dirname, "../../packages/core/src/utils/biome/biome.ts"),
       "@bibliothecadao/eternum": path.resolve(__dirname, "../../packages/core/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is

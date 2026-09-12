@@ -10,7 +10,10 @@ beforeEach(() => {
   state.gameId = 28;
   state.worldAddress = "0xabc";
 });
-vi.mock("@/runtime/world/herald-http", () => ({ fetchHeraldGameHistory: state.fetch }));
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
+  fetchHeraldGameHistory: state.fetch,
+}));
 vi.mock("@/runtime/world", () => ({ getActiveWorld: () => ({ worldId: "blitz" }) }));
 vi.mock("@/runtime/world/world-directory", () => ({
   getWorldById: () => ({

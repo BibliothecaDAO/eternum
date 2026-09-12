@@ -1,0 +1,78 @@
+# Nightly live smoke of the headless game client against the lab Herald: the first Live game in the directory is
+# hydrated through createGameClient and the JSON manifest is kept as an artifact. Kept apart from the PR gate
+# (test-game-client.yml) so a lab outage is a nightly signal, never a blocked merge.
+#
+# Repository variables this workflow reads (Settings > Secrets and variables > Actions > Variables). They are the
+# public lab values apps/game/.env carries, so they live in `vars`, not `secrets`:
+#   VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH
+#   VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS
+#   VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS
+name: game-client-live-smoke
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  headless-live-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      MANIFEST_PATH: game-client-headless-manifest.json
+      HERALD_URL: https://herald.realms.party
+      RPC_URL: https://rpc.realms.party
+      VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: ${{ vars.VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH }}
+      VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: ${{ vars.VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS }}
+      VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: ${{ vars.VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Run headless game client against the first Live lab game
+        # A failed live boot is the signal this workflow exists for; nothing downstream should soften it.
+        continue-on-error: false
+        run: |
+          set -euo pipefail
+          pnpm --silent smoke:game-client \
+            --herald-url "$HERALD_URL" \
+            --rpc-url "$RPC_URL" \
+            | tee "$MANIFEST_PATH"
+
+      - name: Upload headless manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-client-headless-manifest.json
+          path: game-client-headless-manifest.json
+          if-no-files-found: warn
+
+      - name: Verify the manifest reached running with entities in RECS
+        run: |
+          set -euo pipefail
+          status="$(jq -r '.status' "$MANIFEST_PATH")"
+          entities="$(jq -r '.entities' "$MANIFEST_PATH")"
+          game_id="$(jq -r '.gameId' "$MANIFEST_PATH")"
+          echo "source=herald gameId=$game_id status=$status entities=$entities" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$status" = "running" ] && [ "$entities" -gt 0 ]

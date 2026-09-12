@@ -18,11 +18,14 @@ const herald = vi.hoisted(() => ({
   fetchTransactionCount: vi.fn(),
 }));
 
-vi.mock("@/runtime/world/herald-http", () => ({
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   fetchHeraldGameHistory: herald.fetchHistory,
   fetchHeraldGameLeaderboard: herald.fetchLeaderboard,
   fetchHeraldGameReviewSnapshot: herald.fetchReviewSnapshot,
   fetchHeraldTransactionCount: herald.fetchTransactionCount,
+  resolveWorldIdForGame: vi.fn(async () => "blitz"),
+  resolveGameId: vi.fn(async () => GAME_ID),
 }));
 
 vi.mock("@/runtime/world/world-directory", () => ({
@@ -38,11 +41,6 @@ vi.mock("@/runtime/world/world-directory", () => ({
           contractsBySelector: {},
         }
       : null,
-}));
-
-vi.mock("@/runtime/world/game-registry", () => ({
-  resolveWorldIdForGame: vi.fn(async () => "blitz"),
-  resolveGameId: vi.fn(async () => GAME_ID),
 }));
 
 vi.mock("@bibliothecadao/types", async (importOriginal) => ({

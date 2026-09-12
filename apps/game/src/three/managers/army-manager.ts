@@ -151,7 +151,7 @@ import {
   scheduleFrameBudgetWork,
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;

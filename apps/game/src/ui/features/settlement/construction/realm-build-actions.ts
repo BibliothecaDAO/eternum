@@ -1,18 +1,13 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
-import { TileManager } from "@bibliothecadao/eternum";
+import type { BuildingTiles } from "@bibliothecadao/eternum";
 import { toast } from "@/ui/features/event-feed/notify";
-import { getScopedGameId } from "@/sync/game-scope";
+import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction-buildability";
 
 type RealmPosition = {
   x: bigint | number;
   y: bigint | number;
-};
-
-type BuildWorldContext = {
-  account: any;
-  components: any;
-  systemCalls: any;
 };
 
 type RealmBuildTarget = {
@@ -39,14 +34,12 @@ type RealmBuildActionOptions = {
   mode?: ConstructionBuildabilityInput["mode"];
   target: RealmBuildTarget;
   useSimpleCost: boolean;
-  world: BuildWorldContext;
   onBuildSuccess?: (selection: BuildSelection) => void;
 };
 
 type RealmAvailableTileOptions = {
   entityId: number;
   realmPosition?: RealmPosition | null;
-  world: Omit<BuildWorldContext, "account">;
 };
 
 const buildablePositionsCache = new Map<number, BuildSpot[]>();
@@ -90,12 +83,12 @@ const isCenterBuildSpot = (spot: BuildSpot) => spot.col === BUILDINGS_CENTER[0] 
 
 const toBuildSpotKey = ({ col, row }: BuildSpot) => `${col},${row}`;
 
-const isAvailableBuildSpot = (tileManager: TileManager, spot: BuildSpot) => {
+const isAvailableBuildSpot = (tileManager: BuildingTiles, spot: BuildSpot) => {
   if (isCenterBuildSpot(spot)) return false;
   return !tileManager.isHexOccupied(spot);
 };
 
-const resolveAvailableBuildSpots = (tileManager: TileManager, candidates: BuildSpot[]) =>
+const resolveAvailableBuildSpots = (tileManager: BuildingTiles, candidates: BuildSpot[]) =>
   candidates.filter((candidate) => isAvailableBuildSpot(tileManager, candidate));
 
 const generateBuildablePositions = (radius: number) => {
@@ -134,17 +127,9 @@ const generateBuildablePositions = (radius: number) => {
   return positions;
 };
 
-const createTileManager = (
-  entityId: number,
-  realmPosition: RealmPosition,
-  world: Omit<BuildWorldContext, "account">,
-) => {
-  const outerCol = Number(realmPosition.x);
-  const outerRow = Number(realmPosition.y);
-  const tileManager = new TileManager(world.components, world.systemCalls, {
-    col: outerCol,
-    row: outerRow,
-  });
+const readRealmTiles = (entityId: number) => {
+  const tileManager = requireActiveGameClient().views.buildingTiles(entityId);
+  const { col: outerCol, row: outerRow } = tileManager.getHexCoords();
 
   return {
     outerCol,
@@ -154,10 +139,10 @@ const createTileManager = (
   };
 };
 
-const hasBuildableCandidate = ({ entityId, realmPosition, world }: RealmAvailableTileOptions) => {
+const hasBuildableCandidate = ({ entityId, realmPosition }: RealmAvailableTileOptions) => {
   if (!realmPosition) return true;
 
-  const { tileManager, buildRadiusResolver } = createTileManager(entityId, realmPosition, world);
+  const { tileManager, buildRadiusResolver } = readRealmTiles(entityId);
   const buildRadius = buildRadiusResolver();
   const candidates = generateBuildablePositions(buildRadius);
   return candidates.some((candidate) => isAvailableBuildSpot(tileManager, candidate));
@@ -168,19 +153,18 @@ export const resolveRealmHasAvailableBuildingTile = (options: RealmAvailableTile
 
 const submitRealmBuilding = async ({
   entityId,
-  realmPosition,
   realm,
   mode,
   target,
   useSimpleCost,
-  world,
   onBuildSuccess,
-}: RealmBuildActionOptions & { realmPosition: RealmPosition }) => {
+}: RealmBuildActionOptions) => {
+  const { setup, actions } = requireActiveGameClient();
   const baseBuildability = resolveConstructionBuildability({
     entityId,
     buildingType: target.type,
     useSimpleCost,
-    components: world.components,
+    components: setup.components,
     realm,
     mode,
   });
@@ -190,7 +174,7 @@ const submitRealmBuilding = async ({
     return false;
   }
 
-  const { outerCol, outerRow, tileManager, buildRadiusResolver } = createTileManager(entityId, realmPosition, world);
+  const { outerCol, outerRow, tileManager, buildRadiusResolver } = readRealmTiles(entityId);
   const buildRadius = buildRadiusResolver();
   const candidates = generateBuildablePositions(buildRadius);
   const availableSpots = resolveAvailableBuildSpots(tileManager, candidates);
@@ -208,7 +192,7 @@ const submitRealmBuilding = async ({
         entityId,
         buildingType: target.type,
         useSimpleCost,
-        components: world.components,
+        components: setup.components,
         realm,
         mode,
         targetSpot: availableSpot,
@@ -220,13 +204,12 @@ const submitRealmBuilding = async ({
       }
 
       try {
-        await tileManager.placeBuilding(
-          world.account,
-          entityId,
-          target.type,
-          { col: availableSpot.col, row: availableSpot.row },
+        await actions.placeBuilding({
+          structureId: entityId,
+          buildingType: target.type,
+          hex: { col: availableSpot.col, row: availableSpot.row },
           useSimpleCost,
-        );
+        });
 
         onBuildSuccess?.({
           outerCol,
@@ -264,11 +247,10 @@ const submitRealmBuilding = async ({
 };
 
 export const buildRealmBuilding = async (options: RealmBuildActionOptions) => {
-  const realmPosition = options.realmPosition;
-  if (!realmPosition) {
+  if (!options.realmPosition) {
     toast.error("Select a realm before building.");
     return false;
   }
 
-  return runWithRealmBuildLock(options.entityId, () => submitRealmBuilding({ ...options, realmPosition }));
+  return runWithRealmBuildLock(options.entityId, () => submitRealmBuilding(options));
 };

@@ -14,6 +14,10 @@
       "types": "./dist/managers/game-entity-keys.d.ts",
       "import": "./dist/managers/game-entity-keys.js"
     },
+    "./game-client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js"
+    },
     "./game-sync": {
       "types": "./dist/sync/index.d.ts",
       "import": "./dist/sync/index.js"

@@ -5,12 +5,15 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { identityUsername, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { resolvePlayerNameFelt } from "@/services/identity/player-name";
-import { namespaceForChain } from "@/sync/game-scope";
+import {
+  buildBlitzSettleCalls,
+  namespaceForChain,
+  normalizeSelector,
+  resolveWorldIdForGame,
+} from "@bibliothecadao/eternum/game-client";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { normalizeSelector } from "@/runtime/world/normalize";
-import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
-import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
+import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { getContractByName } from "@dojoengine/core";
@@ -157,6 +160,7 @@ export const useWorldRegistration = ({
         // Settle targets the chosen game explicitly (meta carries its id).
         gameId: config?.gameId,
         vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+        grantStartingTroops: resolveBlitzGrantStartingTroops(),
       });
     },
     [address, config, usernameFelt],

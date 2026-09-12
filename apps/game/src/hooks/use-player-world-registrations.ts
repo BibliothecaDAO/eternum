@@ -8,7 +8,7 @@
  * fans out one request per game.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
-import { fetchHeraldGameDirectory } from "@/runtime/world/herald-http";
+import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
 import { getDefaultWorld, getWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";

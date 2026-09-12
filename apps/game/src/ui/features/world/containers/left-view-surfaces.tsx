@@ -15,7 +15,7 @@ import { type ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import PackageIcon from "lucide-react/dist/esm/icons/package";
 import { memo, useCallback } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 /**
  * The view surfaces — `leftNavigationView` is their open state; each is one popover panel whose frame (header

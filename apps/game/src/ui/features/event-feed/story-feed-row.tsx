@@ -7,7 +7,7 @@ import {
 } from "@/ui/features/story-events/story-event-utils";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import type { ClientComponents } from "@bibliothecadao/types";

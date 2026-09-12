@@ -1,7 +1,5 @@
-import { computeTrades, gameEntityKey } from "@bibliothecadao/eternum";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { openTradesQuery, readMarket, readOpenTrades } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo, usePlayerOwnedRealmEntities, usePlayerOwnedVillageEntities } from "../";
 
@@ -10,37 +8,14 @@ export function useMarket(currentBlockTimestamp: number) {
     setup: { components },
   } = useDojo();
 
-  const playerRealmsEntities = usePlayerOwnedRealmEntities();
-  const playerVillagesEntities = usePlayerOwnedVillageEntities();
+  const playerRealmEntities = usePlayerOwnedRealmEntities();
+  const playerVillageEntities = usePlayerOwnedVillageEntities();
 
-  const allMarket = useEntityQuery([HasValue(components.Trade, { taker_id: 0 })]);
-  const allTrades = useMemo(() => {
-    return computeTrades(allMarket, currentBlockTimestamp, components, false);
-  }, [allMarket]);
+  const tradeEntities = useEntityQuery(openTradesQuery(components));
+  const openTrades = useMemo(() => readOpenTrades(components, tradeEntities, currentBlockTimestamp), [tradeEntities]);
 
-  const userTrades = useMemo(() => {
-    return allTrades.filter((trade) =>
-      [...playerRealmsEntities, ...playerVillagesEntities].includes(gameEntityKey([BigInt(trade.makerId)])),
-    );
-  }, [allTrades, playerRealmsEntities, playerVillagesEntities]);
-
-  const bidOffers = useMemo(() => {
-    if (!allTrades) return [];
-    return [...allTrades].filter(
-      (offer) => offer.takerGets.length === 1 && offer.takerGets[0]?.resourceId === ResourcesIds.Lords,
-    );
-  }, [allTrades]);
-
-  const askOffers = useMemo(() => {
-    if (!allTrades) return [];
-    return [...allTrades].filter(
-      (offer) => offer.takerGets.length === 1 && offer.makerGets[0]?.resourceId === ResourcesIds.Lords,
-    );
-  }, [allTrades]);
-
-  return {
-    userTrades,
-    bidOffers,
-    askOffers,
-  };
+  return useMemo(
+    () => readMarket(openTrades, [...playerRealmEntities, ...playerVillageEntities]),
+    [openTrades, playerRealmEntities, playerVillageEntities],
+  );
 }

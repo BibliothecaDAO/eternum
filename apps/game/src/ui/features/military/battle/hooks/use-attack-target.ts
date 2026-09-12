@@ -1,4 +1,4 @@
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { useGameEntityComponentValue } from "@/hooks/helpers/use-game-entity-component-value";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import {

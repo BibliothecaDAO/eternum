@@ -16,7 +16,7 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));

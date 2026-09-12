@@ -40,8 +40,8 @@ import {
   getRealmInfo,
   ResourceManager,
   ResourceIdToMiningType,
-  TileManager,
 } from "@bibliothecadao/eternum";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import {
   BiomeType,
@@ -65,7 +65,7 @@ import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -170,35 +170,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   currentTimeRef.current = currentTime;
 
   const existingBuildings = useMemo(
-    () =>
-      realm?.position
-        ? new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-            col: Number(realm.position.x),
-            row: Number(realm.position.y),
-          }).existingBuildings()
-        : [],
-    [dojo.setup.components, dojo.setup.systemCalls, realm?.position, structureBuildings],
+    () => (realm?.position ? requireActiveGameClient().views.buildingTiles(entityId).existingBuildings() : []),
+    [entityId, realm?.position, structureBuildings],
   );
   const isDestroyLocked = pendingAction === "destroy";
   const isProductionLocked = pendingAction === "production";
   const hasAvailableBuildingTile = useMemo(() => {
-    return resolveRealmHasAvailableBuildingTile({
-      entityId,
-      realmPosition: realm?.position,
-      world: {
-        components: dojo.setup.components,
-        systemCalls: dojo.setup.systemCalls,
-      },
-    });
-  }, [
-    dojo.setup.components,
-    dojo.setup.systemCalls,
-    entityId,
-    realm?.position?.x,
-    realm?.position?.y,
-    structure?.base?.level,
-    structureBuildings,
-  ]);
+    return resolveRealmHasAvailableBuildingTile({ entityId, realmPosition: realm?.position });
+  }, [entityId, realm?.position?.x, realm?.position?.y, structure?.base?.level, structureBuildings]);
   const getBuildingCountFor = useCallback(
     (buildingType: BuildingType) => {
       if (!structureBuildings) return 0;
@@ -221,29 +200,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         mode,
         target,
         useSimpleCost,
-        world: {
-          account: dojo.account.account,
-          components: dojo.setup.components,
-          systemCalls: dojo.setup.systemCalls,
-        },
         onBuildSuccess: (selection) => {
           setPreviewBuilding(null);
           setSelectedBuildingHex(selection);
         },
       });
     },
-    [
-      dojo.account.account,
-      dojo.setup.components,
-      dojo.setup.systemCalls,
-      entityId,
-      realm,
-      realm?.position,
-      setPreviewBuilding,
-      setSelectedBuildingHex,
-      useSimpleCost,
-      mode,
-    ],
+    [entityId, realm, realm?.position, setPreviewBuilding, setSelectedBuildingHex, useSimpleCost, mode],
   );
 
   // One rule for a card click: the world view has no tile picker, so the click builds on the first free tile
@@ -276,21 +239,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       }
 
       if (isDestroyLocked) return;
-      const outerCol = Number(realm.position.x);
-      const outerRow = Number(realm.position.y);
-      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-        col: outerCol,
-        row: outerRow,
-      });
-
-      const existing = tileManager.existingBuildings().find((building) => building.category === target.type);
+      const { views, actions } = requireActiveGameClient();
+      const existing = views
+        .buildingTiles(entityId)
+        .existingBuildings()
+        .find((building) => building.category === target.type);
       if (!existing) {
         toast.error("No building of this type found to destroy.");
         return;
       }
       setPendingAction("destroy");
       try {
-        await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
+        await actions.destroyBuilding({ structureId: entityId, hex: { col: existing.col, row: existing.row } });
         if (
           previewBuilding?.type === target.type &&
           (!target.resource || previewBuilding?.resource === target.resource)
@@ -304,17 +264,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         setPendingAction(null);
       }
     },
-    [
-      dojo.account.account,
-      dojo.setup.components,
-      dojo.setup.systemCalls,
-      entityId,
-      isDestroyLocked,
-      previewBuilding?.resource,
-      previewBuilding?.type,
-      realm?.position,
-      setPreviewBuilding,
-    ],
+    [entityId, isDestroyLocked, previewBuilding?.resource, previewBuilding?.type, realm?.position, setPreviewBuilding],
   );
 
   const handlePauseResumeAll = useCallback(
@@ -325,14 +275,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       }
 
       if (isProductionLocked) return;
-      const outerCol = Number(realm.position.x);
-      const outerRow = Number(realm.position.y);
-      const tileManager = new TileManager(dojo.setup.components, dojo.setup.systemCalls, {
-        col: outerCol,
-        row: outerRow,
-      });
-
-      const currentBuildings = tileManager.existingBuildings();
+      const { views, actions } = requireActiveGameClient();
+      const currentBuildings = views.buildingTiles(entityId).existingBuildings();
       const categoryBuildings = currentBuildings.filter((b) => b.category === target.type);
 
       if (categoryBuildings.length === 0) {
@@ -348,10 +292,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       try {
         await Promise.all(
           categoryBuildings.map((building) => {
+            const slot = { structureId: entityId, hex: { col: building.col, row: building.row } };
             if (action === "pause" && !building.paused) {
-              return tileManager.pauseProduction(dojo.account.account, entityId, building.col, building.row);
+              return actions.pauseProduction(slot);
             } else if (action === "resume" && building.paused) {
-              return tileManager.resumeProduction(dojo.account.account, entityId, building.col, building.row);
+              return actions.resumeProduction(slot);
             }
             return Promise.resolve();
           }),
@@ -363,14 +308,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         setPendingAction(null);
       }
     },
-    [
-      dojo.account.account,
-      dojo.setup.components,
-      dojo.setup.systemCalls,
-      entityId,
-      isProductionLocked,
-      realm?.position,
-    ],
+    [entityId, isProductionLocked, realm?.position],
   );
 
   const pausedByCategory = useMemo(() => {

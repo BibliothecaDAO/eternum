@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useComponentValue } from "@dojoengine/react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
 import { HUD_BODY_MUTED, HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";

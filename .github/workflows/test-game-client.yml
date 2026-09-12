@@ -1,0 +1,71 @@
+# PR gate for the headless game client: boots createGameClient in Node against the committed Herald parity fixture,
+# so the check is hermetic (no lab infra can fail it). The live counterpart is game-client-live-smoke.yml.
+name: game-client
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-game-client.yml"
+      - "apps/game/src/sync/**"
+      - "packages/core/**"
+      - "packages/dojo/**"
+      - "packages/provider/**"
+      - "packages/types/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  headless-fixture-smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      MANIFEST_PATH: game-client-headless-manifest.json
+      # buildWorldDeployment requires the gameplay-account contracts; a fixture replay never signs, so any felt works.
+      VITE_PUBLIC_PLAYER_ACCOUNT_CLASS_HASH: "0x1"
+      VITE_PUBLIC_PLAYER_REGISTRY_ADDRESS: "0x1"
+      VITE_PUBLIC_BINDING_AUTHORITY_ADDRESS: "0x1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+
+      - name: Build packages
+        run: pnpm run build:packages
+
+      - name: Run headless game client against the parity fixture
+        run: |
+          set -euo pipefail
+          pnpm --silent smoke:game-client \
+            --fixture packages/core/src/client/recs-game-sync-store.parity.json \
+            | tee "$MANIFEST_PATH"
+
+      - name: Upload headless manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-client-headless-manifest.json
+          path: game-client-headless-manifest.json
+          if-no-files-found: warn
+
+      - name: Verify the manifest reached running with entities in RECS
+        run: |
+          set -euo pipefail
+          status="$(jq -r '.status' "$MANIFEST_PATH")"
+          entities="$(jq -r '.entities' "$MANIFEST_PATH")"
+          echo "source=fixture status=$status entities=$entities" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$status" = "running" ] && [ "$entities" -gt 0 ]

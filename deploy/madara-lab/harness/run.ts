@@ -4,10 +4,13 @@ import { closeHarnessSeason } from "./season-lifecycle";
 import { defaultPresetForEnvironment } from "../../../config/deployer/clean/constants";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import type { CommittedManifest } from "@bibliothecadao/eternum/game-client";
 import { Account, BlockTag, logger, RpcProvider } from "starknet";
 import { assertChainId, assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { launchGame } from "../../../config/deployer/clean/launch/runner";
 import { createHarnessAccounts } from "./account-factory";
+import { connectHarnessGameClient, type HarnessGameplayContracts } from "./game-client";
+import { createHarnessGame, type HarnessGame } from "./harness-game";
 import {
   prepareHarnessBots,
   runWorkload,
@@ -35,7 +38,6 @@ interface HarnessCliOptions {
   bots: number;
   gameId?: number;
   gameName?: string;
-  games: number;
   intervalSeconds: number;
   ledger: boolean;
   ledgerAccountsPath?: string;
@@ -47,18 +49,15 @@ interface HarnessCliOptions {
   heraldUrl: string;
 }
 
-interface GameplayContractsArtifact {
-  bindingAuthorityAddress: string;
-  playerAccountClassHash: string;
-  playerRegistryAddress: string;
+interface GameplayContractsArtifact extends HarnessGameplayContracts {
   rpcUrl?: string;
 }
 
-interface WorldManifest {
-  contracts: Array<{ address: string; tag: string }>;
+interface WorldManifest extends CommittedManifest {
+  contracts: Array<{ address: string; selector: string; tag: string }>;
 }
 
-interface HarnessGame {
+interface LaunchedGame {
   gameId: number;
   gameName: string;
   startAt?: number;
@@ -82,7 +81,7 @@ interface LedgerSweepEnvironment {
 interface PreparedGameRun {
   accounts: Awaited<ReturnType<typeof createHarnessAccounts>>;
   bots: Awaited<ReturnType<typeof prepareHarnessBots>>;
-  game: HarnessGame;
+  game: LaunchedGame;
   ledger?: {
     binding: LedgerHarnessEvidence["binding"];
     registration: LedgerHarnessEvidence["registration"];
@@ -111,7 +110,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
-  const games = positiveInteger(values.games ?? "1", "games");
   const ledger = values.ledger === "true";
   const gameType = values["game-type"] ?? "blitz";
   if (gameType !== "blitz" && gameType !== "eternum") throw new Error("--game-type must be blitz or eternum");
@@ -123,10 +121,9 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   );
 
   if (bots > 96) throw new Error(`The harness supports at most 96 bots, received ${bots}`);
-  if (gameId !== undefined && games !== 1) throw new Error("--game-id can only be used with --games 1");
+  if (values.games !== undefined) throw new Error("The game client holds one game per process; run one harness per game");
   if (ledger && gameId !== undefined)
     throw new Error("--ledger always creates a fresh game; --game-id is not supported");
-  if (ledger && games !== 1) throw new Error("--ledger supports one game per run");
   if (ledger && sweepOnlyManifestPath) throw new Error("--ledger and --sweep-only are separate modes");
   if ((ledger || sweepOnlyManifestPath) && !values["ledger-accounts"]) {
     throw new Error("--ledger-accounts is required with --ledger or --sweep-only");
@@ -146,7 +143,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     bots,
     gameId,
     gameName: values["game-name"],
-    games,
     intervalSeconds,
     ledger,
     ledgerAccountsPath: values["ledger-accounts"],
@@ -182,139 +178,130 @@ async function main(): Promise<void> {
   const ledgerIdentities = options.ledger
     ? await loadLedgerBotIdentities(path.resolve(REPOSITORY_ROOT, options.ledgerAccountsPath!), options.bots)
     : undefined;
-  const games = await resolveHarnessGames(options, ledgerEnvironment);
-  const setupTransactions: TrackedTransaction[] = [];
-  const gameRuns: PreparedGameRun[] = [];
-
-  for (const [gameIndex, game] of games.entries()) {
-    gameRuns.push(
-      await prepareGameRun({
-        game,
-        gameIndex,
-        gameplayContracts,
-        ledgerEnvironment,
-        ledgerIdentities,
-        options,
-        provider,
-        setupTransactions,
-        systems,
-      }),
-    );
-  }
-
-  const evidenceBefore = await collectHarnessEvidenceBeforeRun();
-  console.log("Waiting until every bot has explorer stamina for its first action, then starting the measured workload");
-  const workload = await runWorkload({
-    bots: gameRuns.flatMap(({ bots }) => bots),
-    intervalSeconds: options.intervalSeconds,
-    minutes: options.minutes,
-    onTick: (completed, total) => {
-      if (completed === 1 || completed === total || completed % 5 === 0) {
-        console.log(`Scheduled workload tick ${completed}/${total}`);
-      }
-    },
-    provider,
-    systems,
+  const game = await resolveHarnessGame(options, ledgerEnvironment);
+  const client = await connectHarnessGameClient({
+    gameId: game.gameId,
+    gameplayContracts,
     heraldUrl: options.heraldUrl,
-  });
-
-  const layerRoundTrips = [];
-  if (options.gameType === "eternum") {
-    for (const run of gameRuns) {
-      layerRoundTrips.push(
-        await runLayerRoundTrip({
-          bots: run.bots,
-          gameId: run.game.gameId,
-          provider,
-          heraldUrl: options.heraldUrl,
-          troopMovementAddress: systems.troopMovement,
-          altMovementAddress: requireContract(manifest, "s2-alt_movement_systems"),
-        }),
-      );
-    }
-  }
-
-  const seasonFinalizations = [];
-  if (options.gameType === "eternum") {
-    for (const run of gameRuns) {
-      seasonFinalizations.push(
-        await closeHarnessSeason({
-          accounts: run.accounts,
-          gameId: run.game.gameId,
-          heraldUrl: options.heraldUrl,
-          provider,
-          seasonSystemAddress: requireContract(manifest, "s2-season_systems"),
-        }),
-      );
-    }
-  }
-
-  const valuePlane = await finalizeValuePlaneRun({
-    gameRuns,
-    ledgerEnvironment,
-    options,
-    provider,
-    systems,
-  });
-
-  const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
-  const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
-  const report = await writeHarnessReport({
-    accounts: gameRuns.flatMap(({ accounts }) => accounts),
-    botCount: options.bots * options.games,
-    chainId,
-    evidence,
-    games: games.map((game) => ({ ...game, botCount: options.bots })),
-    intervalSeconds: options.intervalSeconds,
-    minimumThresholdActions,
-    minutes: options.minutes,
+    manifest,
     rpcUrl: options.rpcUrl,
-    setupTransactions,
-    heraldUrl: options.heraldUrl,
-    workload,
-    valuePlane,
-    seasonFinalizations,
-    layerRoundTrips,
   });
 
-  console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
-  if (!report.passed) process.exitCode = 1;
+  try {
+    const harnessGame = createHarnessGame(client);
+    const setupTransactions: TrackedTransaction[] = [];
+    const run = await prepareGameRun({
+      game,
+      gameplayContracts,
+      harnessGame,
+      ledgerEnvironment,
+      ledgerIdentities,
+      options,
+      provider,
+      setupTransactions,
+      systems,
+    });
+
+    const evidenceBefore = await collectHarnessEvidenceBeforeRun();
+    console.log("Waiting until every bot has explorer stamina for its first action, then starting the measured workload");
+    const workload = await runWorkload({
+      bots: run.bots,
+      game: harnessGame,
+      intervalSeconds: options.intervalSeconds,
+      minutes: options.minutes,
+      onTick: (completed, total) => {
+        if (completed === 1 || completed === total || completed % 5 === 0) {
+          console.log(`Scheduled workload tick ${completed}/${total}`);
+        }
+      },
+      provider,
+    });
+
+    const layerRoundTrips =
+      options.gameType === "eternum"
+        ? [
+            await runLayerRoundTrip({
+              bots: run.bots,
+              gameId: game.gameId,
+              provider,
+              heraldUrl: options.heraldUrl,
+              troopMovementAddress: systems.troopMovement,
+              altMovementAddress: requireContract(manifest, "s2-alt_movement_systems"),
+            }),
+          ]
+        : [];
+
+    const seasonFinalizations =
+      options.gameType === "eternum"
+        ? [
+            await closeHarnessSeason({
+              accounts: run.accounts,
+              gameId: game.gameId,
+              heraldUrl: options.heraldUrl,
+              provider,
+              seasonSystemAddress: requireContract(manifest, "s2-season_systems"),
+            }),
+          ]
+        : [];
+
+    const valuePlane = await finalizeValuePlaneRun({ run, ledgerEnvironment, options, provider, systems });
+
+    const evidence = await finishHarnessEvidence(evidenceBefore, workload.startedAt, workload.endedAt);
+    const minimumThresholdActions = resolveMinimumThresholdActions(options, workload.plannedActions);
+    const report = await writeHarnessReport({
+      accounts: run.accounts,
+      botCount: options.bots,
+      chainId,
+      evidence,
+      games: [{ ...game, botCount: options.bots }],
+      intervalSeconds: options.intervalSeconds,
+      minimumThresholdActions,
+      minutes: options.minutes,
+      rpcUrl: options.rpcUrl,
+      setupTransactions,
+      heraldUrl: options.heraldUrl,
+      workload,
+      valuePlane,
+      seasonFinalizations,
+      layerRoundTrips,
+    });
+
+    console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
+    if (!report.passed) process.exitCode = 1;
+  } finally {
+    client.dispose();
+  }
 }
 
 export const createHarnessProvider = (rpcUrl: string): RpcProvider =>
   new RpcProvider({ blockIdentifier: BlockTag.PRE_CONFIRMED, nodeUrl: rpcUrl });
 
-async function resolveHarnessGames(
+async function resolveHarnessGame(
   options: HarnessCliOptions,
   ledgerEnvironment?: LedgerEnvironment,
-): Promise<HarnessGame[]> {
+): Promise<LaunchedGame> {
   if (options.gameId !== undefined) {
-    return [{ gameId: options.gameId, gameName: options.gameName! }];
+    return { gameId: options.gameId, gameName: options.gameName! };
   }
 
-  const baseName = options.gameName ?? `lab-${Date.now().toString(36)}`;
-  const games: HarnessGame[] = [];
-  for (let index = 0; index < options.games; index += 1) {
-    const gameName = options.games === 1 ? baseName : `${baseName}-g${index + 1}`;
-    const startAt = Math.floor(Date.now() / 1_000) + (options.ledger ? options.ledgerStartDelaySeconds : 60);
-    const summary = await launchGame({
-      accountAddress: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
-      devModeOn: options.gameType === "blitz" && !options.ledger,
-      durationSeconds: Math.ceil(options.minutes * 60) + (options.ledger ? 300 : 3_600),
-      environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
-      gameName,
-      ledgerAddress: ledgerEnvironment?.ledgerAddress,
-      ledgerRpcUrl: ledgerEnvironment?.mainnetRpcUrl,
-      lordsAddress: ledgerEnvironment?.lordsAddress,
-      privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
-      rpcUrl: options.rpcUrl,
-      startTime: startAt,
-      version: defaultPresetForEnvironment(options.gameType === "eternum" ? "madara.eternum" : "madara.blitz"),
-    });
-    if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
-    games.push({ gameId: summary.gameId, gameName, startAt });
-  }
-  return games;
+  const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
+  const startAt = Math.floor(Date.now() / 1_000) + (options.ledger ? options.ledgerStartDelaySeconds : 60);
+  const summary = await launchGame({
+    accountAddress: process.env.DOJO_ACCOUNT_ADDRESS ?? MADARA_ADMIN_ADDRESS,
+    devModeOn: options.gameType === "blitz" && !options.ledger,
+    durationSeconds: Math.ceil(options.minutes * 60) + (options.ledger ? 300 : 3_600),
+    environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
+    gameName,
+    ledgerAddress: ledgerEnvironment?.ledgerAddress,
+    ledgerRpcUrl: ledgerEnvironment?.mainnetRpcUrl,
+    lordsAddress: ledgerEnvironment?.lordsAddress,
+    privateKey: process.env.DOJO_PRIVATE_KEY ?? MADARA_ADMIN_PRIVATE_KEY,
+    rpcUrl: options.rpcUrl,
+    startTime: startAt,
+    version: defaultPresetForEnvironment(options.gameType === "eternum" ? "madara.eternum" : "madara.blitz"),
+  });
+  if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
+  return { gameId: summary.gameId, gameName, startAt };
 }
 
 function resolveSystemAddresses(manifest: WorldManifest): HarnessSystemAddresses {
@@ -338,8 +325,7 @@ function requireContract(manifest: WorldManifest, tag: string): string {
 }
 
 function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActions: number): number {
-  const isAcceptanceRun =
-    options.games === 1 && options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
+  const isAcceptanceRun = options.bots === 96 && options.minutes === 10 && options.intervalSeconds === 15;
   return isAcceptanceRun ? 3_500 : plannedActions;
 }
 
@@ -363,8 +349,8 @@ function parseFlags(args: string[]): Record<string, string> {
 
 async function prepareGameRun({
   game,
-  gameIndex,
   gameplayContracts,
+  harnessGame,
   ledgerEnvironment,
   ledgerIdentities,
   options,
@@ -372,9 +358,9 @@ async function prepareGameRun({
   setupTransactions,
   systems,
 }: {
-  game: HarnessGame;
-  gameIndex: number;
+  game: LaunchedGame;
   gameplayContracts: GameplayContractsArtifact;
+  harnessGame: HarnessGame;
   ledgerEnvironment?: LedgerEnvironment;
   ledgerIdentities?: LedgerBotIdentity[];
   options: HarnessCliOptions;
@@ -391,7 +377,6 @@ async function prepareGameRun({
   );
   const accounts = await createHarnessAccounts({
     authority: gameplayContracts.bindingAuthorityAddress,
-    botIdOffset: gameIndex * options.bots,
     classHash: gameplayContracts.playerAccountClassHash,
     concurrency: options.setupConcurrency,
     count: options.bots,
@@ -434,12 +419,11 @@ async function prepareGameRun({
             await waitForGameStart(provider, game.startAt!);
           }
         : undefined,
-    gameId: game.gameId,
+    game: harnessGame,
     provider,
     setupConcurrency: options.setupConcurrency,
     setupTransactions,
     systems,
-    heraldUrl: options.heraldUrl,
   });
   return {
     accounts,
@@ -451,7 +435,7 @@ async function prepareGameRun({
 }
 
 async function prepareLedgerRegistrations(
-  game: HarnessGame,
+  game: LaunchedGame,
   identities: LedgerBotIdentity[],
   environment: LedgerEnvironment,
   options: HarnessCliOptions,
@@ -516,20 +500,19 @@ async function runLedgerSweepOnly(options: HarnessCliOptions): Promise<void> {
 }
 
 async function finalizeValuePlaneRun({
-  gameRuns,
+  run,
   ledgerEnvironment,
   options,
   provider,
   systems,
 }: {
-  gameRuns: PreparedGameRun[];
+  run: PreparedGameRun;
   ledgerEnvironment?: LedgerEnvironment;
   options: HarnessCliOptions;
   provider: RpcProvider;
   systems: HarnessSystemAddresses;
 }): Promise<LedgerHarnessEvidence | undefined> {
-  const run = gameRuns[0];
-  if (!run?.ledger || !ledgerEnvironment) return undefined;
+  if (!run.ledger || !ledgerEnvironment) return undefined;
   console.log(`Waiting for game ${run.game.gameId} to close, then publishing its competition ranking`);
   const finalization = await finalizeLedgerGame({
     account: new Account({
@@ -617,7 +600,6 @@ Usage: bun deploy/madara-lab/harness/run.ts [options]
 
   --bots <count>                 default: 96, maximum: 96
   --game-type <blitz|eternum>     default: blitz
-  --games <count>                default: 1; runs all games concurrently in this process
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6

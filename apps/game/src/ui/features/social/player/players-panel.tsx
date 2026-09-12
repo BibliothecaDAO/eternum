@@ -19,7 +19,7 @@ import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
 import Search from "lucide-react/dist/esm/icons/search";
 import { KeyboardEvent, useEffect, useMemo, useState } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
   new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry]));

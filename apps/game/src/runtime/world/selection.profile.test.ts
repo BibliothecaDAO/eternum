@@ -9,8 +9,8 @@ vi.mock("@/ui/layouts/game-entry-timeline", () => ({
 const { deployment } = vi.hoisted(() => ({
   deployment: {
     id: "blitz",
-    chain: "madara",
-    namespace: "s2",
+    chain: "madara" as const,
+    namespace: "s2" as const,
     heraldBaseUrl: "https://herald.realms.test",
     rpcUrl: "https://rpc.realms.test",
     worldAddress: "0x222",
@@ -27,11 +27,14 @@ vi.mock("./world-directory", () => ({
   getWorldDirectory: () => [deployment],
 }));
 
+import { installWorldDirectory } from "@bibliothecadao/eternum/game-client";
 import { applyWorldSelection } from "./selection";
 import { getActiveWorldName, getWorldProfile, saveWorldProfile, setActiveWorldName } from "./store";
 
 describe("game entry profile resolution", () => {
   beforeEach(() => {
+    // The shim mock above never runs the app install, so give core's registry the same single world.
+    installWorldDirectory(() => [deployment]);
     localStorage.clear();
     vi.stubGlobal(
       "fetch",

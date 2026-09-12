@@ -1,10 +1,11 @@
-import { resolveGameId, resolveWorldIdForGame } from "@/runtime/world/game-registry";
 import {
   fetchHeraldGameHistory,
   fetchHeraldGameLeaderboard,
   fetchHeraldGameReviewSnapshot,
   fetchHeraldTransactionCount,
-} from "@/runtime/world/herald-http";
+  resolveGameId,
+  resolveWorldIdForGame,
+} from "@bibliothecadao/eternum/game-client";
 import { getWorldById, type WorldDeployment } from "@/runtime/world/world-directory";
 import {
   buildLandingLeaderboard,

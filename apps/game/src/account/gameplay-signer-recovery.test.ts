@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import type { Account, ProviderInterface } from "starknet";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { configureGameplayAccountSubmits } from "./gameplay-account-submit";
+import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 import { recoverGameplaySigner } from "./gameplay-signer-recovery";
 
 const call = { contractAddress: "0x1", entrypoint: "move", calldata: [] };

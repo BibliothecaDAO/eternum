@@ -26,7 +26,8 @@ vi.mock("../../../env", () => ({
   env: { VITE_PUBLIC_IDENTITY_ORIGIN: "https://realms.test" },
 }));
 
-vi.mock("@/account/gameplay-account-submit", () => ({
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   configureGameplayAccountSubmits: mocks.configureGameplayAccountSubmits,
 }));
 

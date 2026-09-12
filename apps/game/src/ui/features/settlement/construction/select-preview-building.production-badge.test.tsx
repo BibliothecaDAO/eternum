@@ -160,7 +160,8 @@ vi.mock("@dojoengine/react", () => ({
   },
 }));
 
-vi.mock("@dojoengine/recs", () => ({
+vi.mock("@dojoengine/recs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@dojoengine/recs")>()),
   getComponentValue: () => ({ metadata: { has_wonder: false } }),
 }));
 
@@ -201,15 +202,13 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }),
   },
   ResourceIdToMiningType: {},
-  TileManager: class {
-    existingBuildings() {
-      return [];
-    }
+}));
 
-    isHexOccupied() {
-      return false;
-    }
-  },
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({
+    views: { buildingTiles: () => ({ existingBuildings: () => [], isHexOccupied: () => false }) },
+    actions: {},
+  }),
 }));
 
 describe("SelectPreviewBuildingMenu production badge", () => {

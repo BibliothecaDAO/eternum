@@ -2,7 +2,14 @@ import { ETHEREAL_STRIDE } from "../../../packages/types/src/constants/hex";
 import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, type Call, type RpcProvider } from "starknet";
 import { tileDataToTile } from "../../../packages/types/src/utils/tile";
-import { cubeDistance, neighbor, trackTransaction, type HarnessBot, type TrackedTransaction } from "./driver";
+import {
+  cubeDistance,
+  neighbor,
+  submitCalls,
+  trackTransaction,
+  type HarnessBot,
+  type TrackedTransaction,
+} from "./driver";
 import { HeraldObserver, type HeraldExplorer } from "./herald-observer";
 
 type Coord = { alt: boolean; x: number; y: number };
@@ -77,7 +84,7 @@ async function prepareRoundTrip(
   const candidates = options.bots
     .flatMap((bot) =>
       bot.explorers.flatMap(({ explorerId }) => {
-        const explorer = explorers.find((row) => row.explorerId === explorerId && !row.alt);
+        const explorer = explorers.find((row) => row.explorerId === String(explorerId) && !row.alt);
         return explorer ? [{ bot, explorer }] : [];
       }),
     )
@@ -248,11 +255,10 @@ async function moveExplorer(
 async function submitStep(context: RoundTripContext, kind: StepKind, call: Call) {
   const before = context.explorer;
   const transaction = await trackTransaction({
-    account: context.bot.account,
     botId: context.bot.botId,
     gameId: context.gameId,
     provider: context.provider,
-    calls: call,
+    send: () => submitCalls(context.bot.account, call),
     kind: `layer_${kind}`,
     stage: "setup",
   });

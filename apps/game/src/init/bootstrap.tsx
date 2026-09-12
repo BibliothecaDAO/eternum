@@ -1,30 +1,34 @@
 import * as Sentry from "@sentry/react";
 import { DEV_MODE_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
-import { setup } from "@bibliothecadao/dojo";
-import { configManager, resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum";
+import type { DojoSetupConfig, SetupResult } from "@bibliothecadao/dojo";
+import { createGameClient, resolveGameTransactionResourceBounds, type GameClient } from "@bibliothecadao/eternum";
 import { SupersededGameSyncStartError } from "@bibliothecadao/eternum/game-sync";
-import { world } from "@bibliothecadao/types";
+import { world, type SystemCallAuthHandler } from "@bibliothecadao/types";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "@/game-entry/context";
 import { applyWorldSelection, patchManifestWithFactory, type WorldProfile } from "@/runtime/world";
+import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { dojoConfig } from "../../dojo-config";
 import { env } from "../../env";
-import { namespaceForChain, setGameScope, type GameNamespace } from "../sync/game-scope";
-import { disposeGameSyncSession, initialSync } from "../sync/game-sync";
 import useSettlementStore from "../hooks/store/use-settlement-store";
 import { useSyncStore } from "../hooks/store/use-sync-store";
 import { useTransactionStore } from "../hooks/store/use-transaction-store";
 import { useUIStore } from "../hooks/store/use-ui-store";
+import { disposeGameSyncSession, installActiveGameClient } from "../sync/active-game-client";
+import { createBrowserScheduler } from "../sync/browser-scheduler";
+import { createGameSyncObserver } from "../sync/game-sync-observer";
 import { markGameEntryMilestone, recordGameEntryDuration } from "../ui/layouts/game-entry-timeline";
 import { ETERNUM_CONFIG } from "../utils/config";
 import { createBootstrapSession, type BootstrapSelection } from "./bootstrap-session";
 import { resolveCachedEntrySessionForContext } from "./bootstrap-session-context";
 import { prepareGameRenderer } from "./game-renderer";
+import type { GameRendererSession } from "./game-renderer-session";
+import { selectInitialStructure } from "./initial-structure";
 
-export type SetupResult = Awaited<ReturnType<typeof setup>>;
+export type { SetupResult } from "@bibliothecadao/dojo";
 
 export interface BootstrappedEntrySession {
   context: ResolvedEntryContext;
@@ -92,36 +96,25 @@ const runBootstrap = async ({
   profile: WorldProfile;
 }): Promise<BootstrapResult> => {
   const stores = resolveBootstrapStores();
-  const worldContext = {
-    chain: context.chain,
-    profile,
-  };
-  // World-scoped bootstrap: the profile carries its world's namespace + game
-  // id (world directory); scope config reads and sync clauses to that game
-  // before any setup/sync touches component data. Stale stored profiles
-  // without a namespace fall back to the chain-derived one.
-  const worldNamespace = profile.namespace ?? namespaceForChain(context.chain);
-  configManager.setActiveGame(profile.gameId ?? 0, profile.presetId ?? 0);
-  setGameScope(worldNamespace as GameNamespace, profile.gameId ?? 0);
-  verboseLog("[STARTING DOJO SETUP]");
-  configureDojoRuntime(worldContext);
-  const setupResult = await runDojoSetup(worldContext.chain, worldNamespace, profile.gameId ?? 0);
-  const rendererSession = prepareGameRenderer(setupResult, DEV_MODE_ENABLED);
-  bootstrapSession.replaceRendererCleanup(rendererSession.cleanup);
+  const reportProgress = createInitialSyncProgressReporter(stores.syncingStore.setInitialSyncProgress);
+  const renderer = createBootstrapRendererHandoff();
+  reportProgress(0);
   try {
-    await runInitialWorldSync(setupResult, stores);
-    configureGameSystems(setupResult, worldContext.chain);
-    configManager.markConfigSynced();
-    await startGameRenderer(rendererSession.initialize);
+    const client = await createEntryGameClient({
+      chain: context.chain,
+      profile,
+      reportProgress,
+      onSetupCompleted: renderer.prepare,
+    });
+    installActiveGameClient(client);
+    selectInitialStructure(client.setup, stores.uiStore);
+    reportProgress(100);
+    await startGameRenderer(renderer.requireSession().initialize);
+    return { context, profile, setupResult: client.setup };
   } catch (error) {
-    rendererSession.cleanup();
+    renderer.cleanup();
     throw error;
   }
-  return {
-    context,
-    profile,
-    setupResult,
-  };
 };
 export const resetBootstrap = () => {
   verboseLog("[BOOTSTRAP] Resetting bootstrap state");
@@ -174,11 +167,6 @@ type BootstrapStores = {
   uiStore: ReturnType<typeof useUIStore.getState>;
 };
 
-type BootstrapWorldContext = {
-  chain: Chain;
-  profile: WorldProfile;
-};
-
 const resolveBootstrapStores = (): BootstrapStores => ({
   syncingStore: useSyncStore.getState(),
   uiStore: useUIStore.getState(),
@@ -205,62 +193,99 @@ const resetBootstrapForSelectionChange = (selection: BootstrapSelection) => {
   resetBootstrap();
 };
 
-const configureDojoRuntime = ({ chain, profile }: BootstrapWorldContext) => {
+type InitialSyncProgressReporter = (progress: number) => void;
+
+/** The entry screen's bar only moves forward, whatever order the sync phases report in. */
+const createInitialSyncProgressReporter = (setProgress: (progress: number) => void): InitialSyncProgressReporter => {
+  let highestProgress = -1;
+  return (progress) => {
+    if (progress <= highestProgress) {
+      return;
+    }
+
+    highestProgress = progress;
+    setProgress(progress);
+  };
+};
+
+/** Renderer construction starts the GPU handshake, so it runs as soon as setup completes and overlaps the sync. */
+const createBootstrapRendererHandoff = () => {
+  let session: GameRendererSession | null = null;
+  return {
+    prepare: (setup: SetupResult) => {
+      session = prepareGameRenderer(setup, DEV_MODE_ENABLED);
+      bootstrapSession.replaceRendererCleanup(session.cleanup);
+    },
+    requireSession: (): GameRendererSession => {
+      if (!session) throw new Error("Renderer was not prepared before the game client resolved");
+      return session;
+    },
+    cleanup: () => session?.cleanup(),
+  };
+};
+
+interface EntryGameClientInput {
+  chain: Chain;
+  profile: WorldProfile;
+  reportProgress: InitialSyncProgressReporter;
+  onSetupCompleted: (setup: SetupResult) => void;
+}
+
+const createEntryGameClient = async (input: EntryGameClientInput): Promise<GameClient> => {
+  const timing = { syncStartedAt: performance.now() };
+  verboseLog("[STARTING DOJO SETUP]");
+  markGameEntryMilestone("setup-started");
+  const client = await createGameClient({
+    world: getWorldById(input.profile.worldId) ?? getDefaultWorld(),
+    gameId: input.profile.gameId ?? 0,
+    presetId: input.profile.presetId ?? 0,
+    dojoConfig: configureDojoRuntime(input.chain, input.profile),
+    setupEnvironment: {
+      executionResourceBounds: resolveGameTransactionResourceBounds(input.chain),
+      vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
+    },
+    authHandler: bootstrapAuthHandler,
+    scheduler: createBrowserScheduler(),
+    observer: createGameSyncObserver({
+      reportProgress: input.reportProgress,
+      onSetupCompleted: (setup) => {
+        verboseLog("[DOJO SETUP COMPLETED]");
+        input.onSetupCompleted(setup);
+        timing.syncStartedAt = performance.now();
+      },
+    }),
+    resolveGameConfig: (setup) => ETERNUM_CONFIG({ chain: input.chain, components: setup.components }),
+  });
+  markGameEntryMilestone("initial-sync-completed");
+  recordGameEntryDuration("initial-sync", performance.now() - timing.syncStartedAt);
+  verboseLog("[INITIAL SYNC COMPLETED]");
+  return client;
+};
+
+/** Other surfaces read the shared dojoConfig, so the world's RPC and manifest are patched in place and handed on. */
+const configureDojoRuntime = (chain: Chain, profile: WorldProfile): DojoSetupConfig => {
   const mutableDojoConfig = dojoConfig as MutableDojoConfig;
 
-  mutableDojoConfig.rpcUrl = resolveBootstrapRpcUrl(chain, profile);
+  mutableDojoConfig.rpcUrl = profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
   mutableDojoConfig.manifest = patchManifestWithFactory(
     getGameManifest(chain),
     profile.worldAddress,
     profile.contractsBySelector,
   );
+  return { ...dojoConfig };
 };
 
-const resolveBootstrapRpcUrl = (_chain: Chain, profile: WorldProfile): string =>
-  profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
+const bootstrapAuthHandler: SystemCallAuthHandler = {
+  // The identity chip derives "not signed in" from the identity session itself; nothing to open here.
+  onNoAccount: () => verboseLog("[bootstrap] No gameplay account - the identity chip carries the sign-in surface"),
+  onError: (error: unknown) => {
+    console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
 
-const runDojoSetup = async (chain: Chain, namespace: string, gameId: number): Promise<SetupResult> => {
-  markGameEntryMilestone("setup-started");
-  const setupResult = await setup(
-    { ...dojoConfig },
-    {
-      executionResourceBounds: resolveGameTransactionResourceBounds(chain),
-      vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
-      useBurner: false,
-      // The profile's world namespace; the provider also prepends gameId to
-      // every game-system call's calldata on the appchain worlds.
-      namespace,
-      gameId,
-    },
-    {
-      // The identity chip derives "not signed in" from the identity session itself; nothing to open here.
-      onNoAccount: () => verboseLog("[bootstrap] No gameplay account - the identity chip carries the sign-in surface"),
-      onError: (error: unknown) => {
-        console.error(`System call error: ${formatReadableErrorForConsole(error)}`);
-
-        Sentry.captureException(error, {
-          tags: { feature: "bootstrap", error_type: "dojo_system_call", setup_phase: "post-setup" },
-          extra: { context: "System call error during post-setup phase" },
-        });
-      },
-    },
-  );
-  markGameEntryMilestone("setup-completed");
-  verboseLog("[DOJO SETUP COMPLETED]");
-  return setupResult;
-};
-
-const runInitialWorldSync = async (setupResult: SetupResult, stores: BootstrapStores) => {
-  const initialSyncStartedAt = performance.now();
-  markGameEntryMilestone("initial-sync-started");
-  await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress);
-  markGameEntryMilestone("initial-sync-completed");
-  recordGameEntryDuration("initial-sync", performance.now() - initialSyncStartedAt);
-  verboseLog("[INITIAL SYNC COMPLETED]");
-};
-
-const configureGameSystems = (setupResult: SetupResult, chain: Chain) => {
-  configManager.setDojo(setupResult.components, ETERNUM_CONFIG({ chain, components: setupResult.components }));
+    Sentry.captureException(error, {
+      tags: { feature: "bootstrap", error_type: "dojo_system_call", setup_phase: "post-setup" },
+      extra: { context: "System call error during post-setup phase" },
+    });
+  },
 };
 
 const startGameRenderer = async (initialize: () => Promise<void>) => {

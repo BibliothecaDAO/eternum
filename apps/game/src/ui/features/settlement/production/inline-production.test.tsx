@@ -13,7 +13,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
 vi.mock("@dojoengine/react", () => ({ useComponentValue: () => undefined }));
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: any) => select({}) }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => mocks.allowed }));
-vi.mock("@/sync/game-scope", () => ({ gameEntityKey: () => "realm" }));
+vi.mock("@bibliothecadao/eternum/game-client", () => ({ gameEntityKey: () => "realm" }));
 vi.mock("./production-controls", () => ({
   ProductionControls: ({ selectedResource, compact, realm }: any) => (
     <div data-resource={selectedResource} data-compact={compact} data-realm={realm.entityId} />

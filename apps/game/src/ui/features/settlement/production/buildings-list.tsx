@@ -15,7 +15,7 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useMemo } from "react";
-import { gameEntityKey } from "@/sync/game-scope";
+import { gameEntityKey } from "@bibliothecadao/eternum/game-client";
 
 export const BuildingsList = ({
   realm,

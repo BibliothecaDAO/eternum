@@ -50,6 +50,11 @@ export interface GameSyncTransport {
   subscribe: (handlers: GameSyncSubscriptionHandlers) => Promise<GameSyncWriter>;
   fetchSnapshotPage: (cursor?: string) => Promise<GameSyncSnapshotPage>;
   transactionStatusChannel?: true;
+  /**
+   * Tears the transport down, failing a subscribe or snapshot page still in flight. A resolved subscribe is
+   * cancelled through its writer; only a transport that never became active needs this.
+   */
+  dispose?: () => void;
 }
 
 export interface GameSyncHead {
@@ -89,6 +94,8 @@ export interface GameSyncRuntimeMetrics {
   projectionPublishCount: number;
   snapshotEntityCount: number;
   snapshotPageCount: number;
+  /** Store apply time spent while snapshotting: the boot's write cost, separate from the receive wait. */
+  snapshotApplyDurationMs: number;
   totalLiveEntityUpdates: number;
   /** Component writes the store performed for live rows (replay + running); with totalLiveEntityUpdates it is the L1 amplification ratio. */
   totalLiveEntityOperationsApplied: number;

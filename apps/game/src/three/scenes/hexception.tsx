@@ -79,12 +79,13 @@ import { IS_FLAT_MODE } from "@/ui/config";
 
 import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
+import { requireActiveGameClient } from "@/sync/active-game-client";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
+  type BuildingTiles,
   ResourceIdToMiningType,
   ResourceManager,
-  TileManager,
   configManager,
   getRealmInfo,
   getStructureStage,
@@ -126,7 +127,7 @@ import { MapControls } from "three/addons/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
-import { gameEntityKey, buildingEntityKey } from "@/sync/game-scope";
+import { gameEntityKey, buildingEntityKey } from "@bibliothecadao/eternum/game-client";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";
@@ -177,7 +178,8 @@ export default class HexceptionScene extends HexagonScene {
   centerColRow: number[] = [0, 0];
   private highlights: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
-  private tileManager: TileManager;
+  /** The entered structure's building slots; setup() binds it before the scene is entered. */
+  private tileManager!: BuildingTiles;
   private labels: {
     col: number;
     row: number;
@@ -234,8 +236,6 @@ export default class HexceptionScene extends HexagonScene {
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene);
     this.applyAmbienceAppearance();
     this.storeUnsubscribes.push(useWorldAppearanceStore.subscribe(() => this.applyAmbienceAppearance()));
-
-    this.tileManager = new TileManager(this.dojo.components, this.dojo.systemCalls, { col: 0, row: 0 });
 
     this.inputManager.addListener("contextmenu", (raycaster) => {
       this.clearBuildingMode();
@@ -588,7 +588,7 @@ export default class HexceptionScene extends HexagonScene {
     if (realmChanged) {
       const realmGeneration = this.advanceRealmGeneration();
       this.centerColRow = [contractPosition.col, contractPosition.row];
-      this.tileManager.setTile({ col, row });
+      this.tileManager = requireActiveGameClient().views.buildingTiles(useUIStore.getState().structureEntityId);
 
       // remove all previous building instances
       this.buildingInstances.forEach((instance, key) => {
@@ -798,13 +798,12 @@ export default class HexceptionScene extends HexagonScene {
 
       this.clearBuildingMode();
       try {
-        await this.tileManager.placeBuilding(
-          account,
-          structureEntityId,
-          buildingType.type,
-          normalizedCoords,
+        await requireActiveGameClient().actions.placeBuilding({
+          structureId: structureEntityId,
+          buildingType: buildingType.type,
+          hex: normalizedCoords,
           useSimpleCost,
-        );
+        });
         AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
         console.error("[Hexception] building placement failed", error);

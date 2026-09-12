@@ -1,8 +1,7 @@
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { gameCallArgs, getGameNamespace, normalizeSelector } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { gameCallArgs, getGameNamespace } from "@/sync/game-scope";
 import { getActiveWorld, type WorldProfile } from "@/runtime/world";
-import { normalizeSelector } from "@/runtime/world/normalize";
 import { getGameManifest } from "@contracts";
 import type { GameChain as Chain } from "@realms-world/chain";
 import { DEFAULT_COORD_ALT, Position } from "@bibliothecadao/eternum";

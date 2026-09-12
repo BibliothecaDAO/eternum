@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { getActiveWorld } from "@/runtime/world";
-import { fetchHeraldGameHistory } from "@/runtime/world/herald-http";
+import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
