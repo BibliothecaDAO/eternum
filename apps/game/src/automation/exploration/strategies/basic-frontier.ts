@@ -1,5 +1,5 @@
 import { ActionPaths, ActionType, Position } from "@bibliothecadao/eternum";
-import { getNeighborHexes } from "@bibliothecadao/types";
+import { getLayerNeighborHexes } from "@bibliothecadao/types";
 import type { ActionPath } from "@bibliothecadao/eternum";
 import type { ExplorationStrategy, ExplorationStrategyContext } from "../types";
 
@@ -18,7 +18,7 @@ const comparePaths = (a: ActionPath[], b: ActionPath[]) => {
 };
 
 const isFrontierTile = (context: ExplorationStrategyContext, target: { col: number; row: number }) => {
-  const neighbors = getNeighborHexes(target.col, target.row);
+  const neighbors = getLayerNeighborHexes(target.col, target.row, context.alt);
   for (const neighbor of neighbors) {
     const normalized = new Position({ x: neighbor.col, y: neighbor.row }).getNormalized();
     const explored = context.exploredTiles.get(normalized.x)?.has(normalized.y) ?? false;

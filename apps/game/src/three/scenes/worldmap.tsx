@@ -1,3 +1,4 @@
+import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
@@ -1340,6 +1341,7 @@ export default class WorldmapScene extends WarpTravel {
       structureComponent: this.dojo.components.Structure,
     });
     const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((published) => {
+      this.followSelectedArmyLayer(published);
       const changes = projectionChangesForLayer(published, activeMapLayer());
       if (changes.length === 0) return;
       this.syncProjectedArmyPathfinding(changes);
@@ -1511,6 +1513,22 @@ export default class WorldmapScene extends WarpTravel {
         }
       }
     });
+  }
+
+  private followSelectedArmyLayer(changes: readonly ArmySpatialProjectionChange[]): void {
+    void followArmyLayerChange({
+      changes,
+      getSelectedId: () => getLiveWorldmapEntityActions().selectedEntityId,
+      getLayer: activeMapLayer,
+      isSceneActive: () => !this.isSwitchedOff,
+      setLayer: (alt) => useUIStore.getState().setMapLayer(alt),
+      finishMovement: (entityId) => {
+        this.completePendingArmyMovementVisuals(entityId);
+        this.disposePendingMovementVisualLifecycle(entityId);
+      },
+      refresh: () => this.updateVisibleChunks(true, { reason: "default", triggerReason: "spire_crossing" }),
+      select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId) ?? 0n),
+    }).catch((error) => console.error("[WorldmapScene] Failed to follow army crossing", error));
   }
 
   private handleProjectedArmyChanges(changes: readonly ArmySpatialProjectionChange[]): void {
@@ -2617,7 +2635,8 @@ export default class WorldmapScene extends WarpTravel {
       playUnitCommandSoundForWorldmapAction(actionType);
 
       // Get the target position for the effect
-      const targetHex = actionPath[actionPath.length - 1].hex;
+      const targetHex =
+        actionType === ActionType.SpireTravel ? actionPath[0].hex : actionPath[actionPath.length - 1].hex;
       const exploreLatencyActionId =
         actionType === ActionType.Explore
           ? beginClientActionLatency({
@@ -2837,6 +2856,7 @@ export default class WorldmapScene extends WarpTravel {
       type: target.army ? ActorType.Explorer : ActorType.Structure,
       id: target.army?.id || target.structure?.id || 0,
       hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+      alt: activeMapLayer(),
     };
 
     this.openTargetActionSurface(targetHex, {
@@ -2860,10 +2880,12 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const selected = this.getHexagonEntity(selectedHex);
-    const etherealTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+    const attacker = this.worldSpatialProjection.getArmy(selectedEntityId);
+    if (!attacker) return;
     const traversalAction = resolveSpireTraversalAction({
-      targetHex,
-      etherealTile,
+      attackerHex: { col: attacker.hexCoords.col, row: attacker.hexCoords.row },
+      attackerAlt: attacker.hexCoords.alt,
+      getTile: (alt, col, row) => getTileAt(this.dojo.components, alt, col, row),
     });
 
     if (traversalAction.kind === "attack") {
@@ -2875,8 +2897,8 @@ export default class WorldmapScene extends WarpTravel {
       const targetSummary = {
         type: ActorType.Explorer,
         id: traversalAction.targetArmyId,
-        hex: new Position({ x: traversalAction.targetHex.col, y: traversalAction.targetHex.row }).getContract(),
-        alt: true,
+        hex: { x: traversalAction.targetHex.col, y: traversalAction.targetHex.row },
+        alt: traversalAction.defenderAlt,
       };
 
       this.openTargetActionSurface(targetHex, {

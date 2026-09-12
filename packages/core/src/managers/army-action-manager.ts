@@ -3,8 +3,8 @@ import {
   type ClientComponents,
   type ContractAddress,
   type DojoAccount,
-  getDirectionBetweenAdjacentHexes,
-  getHexesWithinRadius,
+  getLayerNeighborHexes,
+  getLayeredAttackDistance,
   getNeighborHexes,
   getTroopAttackRange,
   type HexEntityInfo,
@@ -104,7 +104,8 @@ export class ArmyActionManager {
 
   private readonly _getCurrentPosition = () => {
     const position = getComponentValue(this.components.ExplorerTroops, this.entity)?.coord;
-    return { col: position!.x, row: position!.y };
+    if (!position) throw new Error("Explorer position is unavailable");
+    return { col: position.x, row: position.y, alt: position.alt };
   };
 
   // getFood is without precision
@@ -127,7 +128,7 @@ export class ArmyActionManager {
   }
 
   private isWorldSpireHex(position: HexPosition): boolean {
-    const tile = getTileAt(this.components, false, position.col, position.row);
+    const tile = getTileAt(this.components, this._getCurrentPosition().alt, position.col, position.row);
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
@@ -145,9 +146,9 @@ export class ArmyActionManager {
     playerAddress: ContractAddress,
   ) {
     const attackStaminaCost = this.getAttackStaminaRequirement();
-    const targetHexes = getHexesWithinRadius(startPos.col, startPos.row, attackRange);
+    const targetHexes = this.getAttackHexesInRange(startPos, attackRange, armyHexes, structureHexes);
 
-    for (const { col, row } of targetHexes) {
+    for (const { col, row } of targetHexes.values()) {
       const army = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const structure = structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
       const target = army ?? structure;
@@ -167,6 +168,25 @@ export class ArmyActionManager {
         },
       ]);
     }
+  }
+
+  private getAttackHexesInRange(
+    startPos: HexPosition,
+    attackRange: number,
+    ...indexes: Map<number, Map<number, HexEntityInfo>>[]
+  ): Map<string, HexPosition> {
+    const alt = this._getCurrentPosition().alt;
+    const targets = new Map<string, HexPosition>();
+    for (const index of indexes) {
+      for (const [col, rows] of index) {
+        for (const row of rows.keys()) {
+          const hex = { col: col + this.FELT_CENTER, row: row + this.FELT_CENTER };
+          const distance = getLayeredAttackDistance({ ...startPos, alt }, { ...hex, alt });
+          if (distance > 0 && distance <= attackRange) targets.set(ActionPaths.posKey(hex), hex);
+        }
+      }
+    }
+    return targets;
   }
 
   public findActionPaths(
@@ -198,7 +218,12 @@ export class ArmyActionManager {
     }> = [];
 
     // Process initial neighbors instead of start position
-    const neighbors = getNeighborHexes(startPos.col, startPos.row);
+    // Portal reach is one surface hex on either layer; ordinary moves use the army's stride.
+    const spires = getNeighborHexes(startPos.col, startPos.row).filter((hex) => this.isWorldSpireHex(hex));
+    const neighbors = [
+      ...getLayerNeighborHexes(startPos.col, startPos.row, startPos.alt).filter((hex) => !this.isWorldSpireHex(hex)),
+      ...spires,
+    ];
     for (const { col, row } of neighbors) {
       const isSpire = this.isWorldSpireHex({ col, row });
       const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
@@ -212,7 +237,7 @@ export class ArmyActionManager {
       const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
       // Skip if hex requires exploration but army can't explore
-      if (!isExplored && !canExplore) continue;
+      if (!isSpire && !isExplored && !canExplore) continue;
 
       const isMine = isArmyMine || isStructureMine;
       const canAttack = (hasArmy || hasStructure) && !isMine;
@@ -284,7 +309,7 @@ export class ArmyActionManager {
         // cannot go through these hexes so need to stop here
         if (!isExplored || hasArmy || hasStructure || hasChest || hasSpire) continue;
 
-        const neighbors = getNeighborHexes(current.col, current.row);
+        const neighbors = getLayerNeighborHexes(current.col, current.row, startPos.alt);
         for (const { col, row } of neighbors) {
           const neighborKey = ActionPaths.posKey({ col, row });
           const nextDistance = distance + 1;
@@ -342,12 +367,14 @@ export class ArmyActionManager {
     return actionPaths;
   }
 
-  private readonly _findDirection = (path: HexPosition[]) => {
+  private readonly _findDirection = (path: HexPosition[], spire = false) => {
     if (path.length !== 2) return undefined;
 
     const startPos = { col: path[0].col, row: path[0].row };
     const endPos = { col: path[1].col, row: path[1].row };
-    return getDirectionBetweenAdjacentHexes(startPos, endPos);
+    return getLayerNeighborHexes(startPos.col, startPos.row, spire ? false : this._getCurrentPosition().alt).find(
+      (hex) => hex.col === endPos.col && hex.row === endPos.row,
+    )?.direction;
   };
 
   private readonly _exploreHex = async (signer: DojoAccount, path: ActionPath[], currentArmiesTick: number) => {
@@ -384,7 +411,11 @@ export class ArmyActionManager {
       }
     }
 
-    const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
+    const vrfSourceSalt = packTileSeed({
+      alt: this._getCurrentPosition().alt,
+      col: destinationHex.col,
+      row: destinationHex.row,
+    });
     return this.systemCalls.explorer_explore({
       explorer_id: this.entityId,
       directions: [direction],
@@ -398,19 +429,14 @@ export class ArmyActionManager {
     path: ActionPath[],
     currentArmiesTick: number,
   ) => {
-    const directions = path
-      .map((_, i) => {
-        if (path[i + 1] === undefined) return undefined;
-        return this._findDirection([
-          { col: path[i].hex.col, row: path[i].hex.row },
-          { col: path[i + 1].hex.col, row: path[i + 1].hex.row },
-        ]);
-      })
-      .filter((d) => d !== undefined) as number[];
+    const directions = path.slice(0, -1).map((step, index) => this._findDirection([step.hex, path[index + 1].hex]));
+    if (!directions.length || directions.some((direction) => direction === undefined)) {
+      throw new Error("Invalid travel direction for the army's layer");
+    }
     return this.systemCalls.explorer_travel({
       signer,
       explorer_id: this.entityId,
-      directions,
+      directions: directions as number[],
     });
   };
 
@@ -419,7 +445,10 @@ export class ArmyActionManager {
     path: ActionPath[],
     currentArmiesTick: number,
   ) => {
-    const direction = this._findDirection(path.map((p) => p.hex));
+    const direction = this._findDirection(
+      path.map((p) => p.hex),
+      true,
+    );
     if (direction === undefined || direction === null) {
       return Promise.reject(new Error("Invalid spire direction"));
     }
