@@ -1,3 +1,5 @@
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getRelativeTimeString } from "@/ui/utils/time-utils";
 import { currencyIntlFormat, formatNumber } from "@/ui/utils/utils";
@@ -19,19 +21,16 @@ export interface TradeEvent {
   };
 }
 
-export const TradeHistoryRowHeader = () => {
-  const headers = ["Time", "Type", "Taker", "Trade", "Price"];
+const HISTORY_GRID = "grid grid-cols-[5rem_1fr_2fr_1.2fr] items-center gap-2 px-3";
 
-  return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow mb-4">
-      {headers.map((header, index) => (
-        <div key={index} className="uppercase text-xs font-bold">
-          {header}
-        </div>
-      ))}
-    </div>
-  );
-};
+export const TradeHistoryRowHeader = () => (
+  <div className={cn(HISTORY_GRID, "border-b border-gold/15 py-1.5", HUD_LABEL)}>
+    <span>When</span>
+    <span>Trader</span>
+    <span>Swap</span>
+    <span className="text-right">Lords each</span>
+  </div>
+);
 
 export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const {
@@ -44,54 +43,42 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
     return null;
   }
 
-  const price = getLordsPricePerResource(trade.event.resourceGiven, trade.event.resourceTaken);
+  const price = getLordsPricePerResource(resourceGiven, resourceTaken);
+  const tradedResourceId =
+    resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId;
   const taker = getAddressName(ContractAddress(trade.event.takerAddress), components);
-  const relativeTime = getRelativeTimeString(trade.event.eventTime);
   const fullDateTime = `${trade.event.eventTime.toLocaleDateString()} ${trade.event.eventTime.toLocaleTimeString()}`;
 
   return (
-    <div className="grid grid-cols-[1fr_1fr_1fr_2fr_1fr] gap-1 flex-grow p-1">
-      <div className="text-xs my-auto cursor-help" title={fullDateTime}>
-        {relativeTime}
-      </div>
-      <div className={`text-sm my-auto`}>{trade.type}</div>
-      <div className={`text-sm my-auto flex flex-row items-center justify-start`}>{taker}</div>
-      <div className="text-sm my-auto flex flex-row">
-        <div>{"bought"}</div>
-        <ResourceIcon resource={ResourcesIds[Number(resourceTaken.resourceId)]} size={"sm"} />
-        <div>{`${currencyIntlFormat(divideByPrecision(resourceTaken.amount), 2)} for ${currencyIntlFormat(
-          divideByPrecision(resourceGiven.amount),
-          2,
-        )}`}</div>
-        <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size={"sm"} />
-      </div>
-      <div className="text-sm my-auto flex flex-row">
-        {formatNumber(price, 8)}
-        <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size={"sm"} />
-        per
-        <ResourceIcon
-          resource={
-            ResourcesIds[
-              Number(
-                resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId,
-              )
-            ]
-          }
-          size={"sm"}
-        />
-      </div>
+    <div
+      className={cn(
+        HISTORY_GRID,
+        "h-8 border-b border-gold/10 text-[11px] tabular-nums",
+        trade.event.isYours ? "bg-blueish/10 text-gold" : "text-gold/85",
+      )}
+    >
+      <span className="text-gold/60" title={fullDateTime}>
+        {getRelativeTimeString(trade.event.eventTime)}
+      </span>
+      <span className="truncate">{taker}</span>
+      <span className="flex items-center gap-1">
+        <ResourceIcon resource={ResourcesIds[Number(resourceGiven.resourceId)]} size="xs" withTooltip={false} />
+        {currencyIntlFormat(divideByPrecision(resourceGiven.amount), 2)}
+        <span className="text-gold/50">→</span>
+        <ResourceIcon resource={ResourcesIds[Number(resourceTaken.resourceId)]} size="xs" withTooltip={false} />
+        {currencyIntlFormat(divideByPrecision(resourceTaken.amount), 2)}
+      </span>
+      <span className="flex items-center justify-end gap-1 font-semibold">
+        {formatNumber(price, 4)}
+        <ResourceIcon resource={ResourcesIds[Number(tradedResourceId)]} size="xs" withTooltip={false} />
+      </span>
     </div>
   );
 };
 
 const getLordsPricePerResource = (resourceA: Resource, resourceB: Resource): number => {
-  try {
-    const lordsResource = resourceA.resourceId === ResourcesIds.Lords ? resourceA : resourceB;
-    const otherResource = resourceA.resourceId === ResourcesIds.Lords ? resourceB : resourceA;
-
-    return Number(lordsResource.amount) / Number(otherResource.amount);
-  } catch (e) {
-    console.error(e);
-    return 0;
-  }
+  const lordsResource = resourceA.resourceId === ResourcesIds.Lords ? resourceA : resourceB;
+  const otherResource = resourceA.resourceId === ResourcesIds.Lords ? resourceB : resourceA;
+  if (Number(otherResource.amount) === 0) return 0;
+  return Number(lordsResource.amount) / Number(otherResource.amount);
 };
