@@ -25,7 +25,6 @@ thoughts/
 # launcher run-store artifacts (config/deployer/clean/launch/*-io.ts)
 .context/
 .playwright-mcp/
-**/output/playwright/
 
 # Madara lab generated state (world address, rendered torii config, run manifests)
 deploy/madara-lab/.lab/
