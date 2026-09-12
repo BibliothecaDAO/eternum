@@ -47,7 +47,9 @@ duration is set here.
 
 **Entropy is bound once per phase.** Derive each draw from the bound phase root and mine/phase identity. Claimant, batch
 composition, batch order, retries and transaction identity never change it. The same global contributor shares apply to
-every mine's draw. Claim idempotence and entropy identity must be tested together.
+every mine's draw. Fix the closed phase's contributor pool before generating/publishing its root, using the sequencing
+service's replicated binding and failover protocol. Claim retries cannot create fresh phase roots. Claim idempotence,
+entropy identity and phase-close publication order must be tested together.
 
 Bitcoin mines reveal their six neighboring biomes on discovery.
 
