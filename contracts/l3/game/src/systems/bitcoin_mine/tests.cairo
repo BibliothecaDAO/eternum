@@ -125,7 +125,6 @@ mod tests {
             hyperstructure_capacity: 1000000000000000,
             fragment_mine_capacity: 1000000000000000,
             bank_structure_capacity: 1000000000000000,
-            holysite_capacity: 1000000000000000,
             camp_capacity: 1000000000000000,
             bitcoin_mine_capacity: 1000000000000000,
         }

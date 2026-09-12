@@ -824,7 +824,6 @@ export class ClientConfigManager {
       [StructureType.FragmentMine]: 1,
       [StructureType.Hyperstructure]: 4,
       [StructureType.Bank]: 4,
-      [StructureType.HolySite]: 1,
       [StructureType.Camp]: 1,
       [StructureType.BitcoinMine]: 4,
     };

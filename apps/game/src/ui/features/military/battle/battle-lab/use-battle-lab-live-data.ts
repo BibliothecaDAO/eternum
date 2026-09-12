@@ -136,6 +136,7 @@ export const useBattleLabLiveData = (
       defender,
       totalDefenders,
       hasTarget: Boolean(target),
+      defenderAlt: alt,
     };
   }, [
     alt,

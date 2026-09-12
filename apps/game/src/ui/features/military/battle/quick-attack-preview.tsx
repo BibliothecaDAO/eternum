@@ -36,7 +36,7 @@ import { gameEntityKey } from "@/sync/game-scope";
 import {
   BiomeType,
   getDirectionBetweenAdjacentHexes,
-  getHexDistance,
+  getLayeredAttackDistance,
   getTroopAttackRange,
   RESOURCE_PRECISION,
   resources,
@@ -162,8 +162,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
   const targetDistance = useMemo(() => {
     if (!selectedHex) return Infinity;
-    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
-  }, [selectedHex, target.hex.x, target.hex.y]);
+    return getLayeredAttackDistance(
+      { ...selectedHex, alt: attacker.alt ?? false },
+      { col: target.hex.x, row: target.hex.y, alt: target.alt ?? false },
+    );
+  }, [selectedHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
 
   // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
   const eligibleStructureGuards = useMemo(
@@ -253,11 +256,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // ranged stamina/cooldown model rather than always simulating an adjacent melee.
   const combatSimulationContext = useMemo(
     () => ({
+      defenderAlt: target.alt ?? false,
       attackDistance: targetDistance,
       attackerIsStructureGuard: attackerType === AttackerType.Structure,
       defenderIsStructureGuard: isStructureTarget,
     }),
-    [targetDistance, attackerType, isStructureTarget],
+    [target.alt, targetDistance, attackerType, isStructureTarget],
   );
 
   const battleSimulation = useMemo(() => {

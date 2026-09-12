@@ -155,7 +155,6 @@ describe("ClientConfigManager rulebook getters (missing preset row is loud)", ()
         hyperstructure_capacity: 0,
         fragment_mine_capacity: 0,
         bank_structure_capacity: 0,
-        holysite_capacity: 0,
         camp_capacity: 0,
         bitcoin_mine_capacity: 0,
       },

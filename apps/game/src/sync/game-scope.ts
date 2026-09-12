@@ -68,7 +68,6 @@ export { buildingEntityKey, gameEntityKey, worldConfigKey } from "@bibliothecada
 // s2 world is per-game. Derived from manifest_appchain.json key flags and
 // pinned against it by game-scope.test.ts — fix the test, not this list.
 const S2_GLOBAL_MODELS = new Set([
-  "BiomeDiscovered",
   "GameCounter",
   "Preset",
   "PresetGameConfig",
@@ -78,8 +77,6 @@ const S2_GLOBAL_MODELS = new Set([
   "Series",
   "SeriesChestRewardState",
   // events
-  "TrophyCreation",
-  "TrophyProgression",
 ]);
 
 export const s2GlobalModelNames = (): ReadonlySet<string> =>

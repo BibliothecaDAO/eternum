@@ -12,7 +12,6 @@ handles all game transactions, state management, and contract interactions in a 
   - Guild management (create, join, leave, transfer ownership)
   - Structure management (create, destroy, upgrade, transfer)
   - Resource management (mint, pickup, send)
-  - Quest system (start, claim rewards)
 - **Contract Interactions**: Type-safe methods for all contract calls
 - **Promise Queue**: Batches and manages transaction execution for optimal performance
 

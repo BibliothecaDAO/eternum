@@ -28,7 +28,7 @@ pub mod troop_movement_systems {
     };
     use crate::models::game::GameRegistry;
     use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
-    use crate::models::map::{BiomeDiscovered, Tile, TileImpl, TileOccupier};
+    use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{
@@ -43,7 +43,6 @@ pub mod troop_movement_systems {
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::troop::{iAgentDiscoveryImpl, iExplorerImpl, iTroopImpl};
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
@@ -203,66 +202,6 @@ pub mod troop_movement_systems {
                         // refresh tile model
                         let tile_opt: TileOpt = world.read_model((game_id, next.alt, next.x, next.y));
                         tile = tile_opt.into();
-                    }
-
-                    // emit explore achievement progression
-                    AchievementTrait::progress(
-                        world, caller.into(), Tasks::EXPLORE, 1, starknet::get_block_timestamp(),
-                    );
-
-                    // emit discovery achievement achievement
-                    match explore_find {
-                        ExploreFind::None => {},
-                        ExploreFind::Hyperstructure => {
-                            AchievementTrait::progress(
-                                world,
-                                caller.into(),
-                                Tasks::HYPERSTRUCTURE_DISCOVER,
-                                1,
-                                starknet::get_block_timestamp(),
-                            );
-                        },
-                        ExploreFind::Mine => {
-                            AchievementTrait::progress(
-                                world, caller.into(), Tasks::MINE_DISCOVER, 1, starknet::get_block_timestamp(),
-                            );
-                        },
-                        ExploreFind::Agent => {
-                            AchievementTrait::progress(
-                                world, caller.into(), Tasks::AGENT_DISCOVER, 1, starknet::get_block_timestamp(),
-                            );
-                        },
-                        ExploreFind::Quest => {
-                            AchievementTrait::progress(
-                                world, caller.into(), Tasks::QUEST_DISCOVER, 1, starknet::get_block_timestamp(),
-                            );
-                        },
-                        ExploreFind::Village => {},
-                        ExploreFind::HolySite => {
-                            AchievementTrait::progress(
-                                world, caller.into(), Tasks::HOLYSITE_DISCOVER, 1, starknet::get_block_timestamp(),
-                            );
-                        },
-                        ExploreFind::Camp => {
-                            AchievementTrait::progress(
-                                world, caller.into(), Tasks::CAMP_DISCOVER, 1, starknet::get_block_timestamp(),
-                            );
-                        },
-                        ExploreFind::BitcoinMine => {},
-                    }
-
-                    // check if biome type has been discovered by player previously
-                    let biome_u8: u8 = biome.into();
-                    // Biome achievements intentionally remain wallet-global (D1/D8 exception).
-                    let mut biome_discovered: BiomeDiscovered = world.read_model((caller, biome_u8));
-                    if !biome_discovered.discovered {
-                        biome_discovered.discovered = true;
-                        world.write_model(@biome_discovered);
-
-                        // emit achievement progression
-                        AchievementTrait::progress(
-                            world, caller.into(), Tasks::BIOME_DISCOVER, 1, starknet::get_block_timestamp(),
-                        );
                     }
                 } else {
                     // ensure all tiles passed through during travel are explored
@@ -688,218 +627,6 @@ pub mod troop_movement_util_systems {
                 season_mode_on,
             )
     }
-    // Superseded by the ordered run_discovery fan-out above; retained as migration history.
-//     #[abi(embed_v0)]
-//     impl TroopMovementUtilImpl of ITroopMovementUtilSystems<ContractState> {
-//         fn find_treasure(
-//             self: @ContractState,
-//             game_id: u32,
-//             vrf_seed: u256,
-//             mut tile: Tile,
-//             caller: starknet::ContractAddress,
-//             map_config: MapConfig,
-//             troop_limit_config: TroopLimitConfig,
-//             troop_stamina_config: TroopStaminaConfig,
-//             current_tick: u64,
-//             season_mode_on: bool,
-//         ) -> (bool, ExploreFind) {
-//             // ensure caller is the troop movement systems because this changes state
-//             let mut world = self.world(DEFAULT_NS());
-//
-//             // ensure caller is the troop movement systems
-//             let (troop_movement_systems_address, _) = world.dns(@"troop_movement_systems").unwrap();
-//             assert!(
-//                 starknet::get_caller_address() == troop_movement_systems_address,
-//                 "caller must be the troop movement systems",
-//             );
-//
-//             //////////////////////////////////////
-//             /// TIME BASED GLOBAL DISCOVERY
-//             //////////////////////////////////////
-//
-//             // note that relic chests cant be found on reserved tiles. the logic for
-//             // that is handled in iRelicChestDiscoveryImpl::discover
-//             let (relic_chest_discovery_systems, _) = world.dns(@"relic_chest_discovery_systems").unwrap();
-//             let relic_chest_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                 contract_address: relic_chest_discovery_systems,
-//             };
-//             relic_chest_discovery_systems
-//                 .find_treasure(
-//                     game_id,
-//                             vrf_seed,
-//                     tile,
-//                     caller,
-//                     map_config,
-//                     troop_limit_config,
-//                     troop_stamina_config,
-//                     current_tick,
-//                     season_mode_on,
-//                 );
-//
-//             //////////////////////////////////////
-//             /// LOTTERY BASED PERSONAL DISCOVERY
-//             //////////////////////////////////////
-//
-//             // If the tile is reserved, no structure discovery can happen on it
-//             let coord: Coord = tile.into();
-//             let structure_reservation: StructureReservation = world.read_model(coord);
-//             if structure_reservation.reserved {
-//                 return (false, ExploreFind::None);
-//             }
-//
-//             let (hyperstructure_discovery_systems, _) = world.dns(@"hyperstructure_discovery_systems").unwrap();
-//             let hyperstructure_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                 contract_address: hyperstructure_discovery_systems,
-//             };
-//
-//             let (found_hyperstructure, _) = hyperstructure_discovery_systems
-//                 .find_treasure(
-//                     game_id,
-//                             vrf_seed,
-//                     tile,
-//                     starknet::get_caller_address(),
-//                     map_config,
-//                     troop_limit_config,
-//                     troop_stamina_config,
-//                     current_tick,
-//                     season_mode_on,
-//                 );
-//             if found_hyperstructure {
-//                 return (true, ExploreFind::Hyperstructure);
-//             } else {
-//                 // perform lottery to discover mine
-//                 let (mine_discovery_systems, _) = world.dns(@"mine_discovery_systems").unwrap();
-//                 let mine_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                     contract_address: mine_discovery_systems,
-//                 };
-//                 let (found_mine, _) = mine_discovery_systems
-//                     .find_treasure(
-//                         game_id,
-//                             vrf_seed,
-//                         tile,
-//                         starknet::get_caller_address(),
-//                         map_config,
-//                         troop_limit_config,
-//                         troop_stamina_config,
-//                         current_tick,
-//                         season_mode_on,
-//                     );
-//                 if found_mine {
-//                     return (true, ExploreFind::Mine);
-//                 } else {
-//                     // perform lottery to discover holy site (blitz mode only)
-//                     let (holysite_discovery_systems, _) = world.dns(@"holysite_discovery_systems").unwrap();
-//                     let holysite_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                         contract_address: holysite_discovery_systems,
-//                     };
-//                     let (found_holysite, _) = holysite_discovery_systems
-//                         .find_treasure(
-//                             game_id,
-//                             vrf_seed,
-//                             tile,
-//                             starknet::get_caller_address(),
-//                             map_config,
-//                             troop_limit_config,
-//                             troop_stamina_config,
-//                             current_tick,
-//                             season_mode_on,
-//                         );
-//                     if found_holysite {
-//                         return (true, ExploreFind::HolySite);
-//                     } else {
-//                         // perform lottery to discover bitcoin mine (Ethereal layer only)
-//                         if tile.alt {
-//                             let (bitcoin_mine_discovery_systems, _) = world
-//                                 .dns(@"bitcoin_mine_discovery_systems")
-//                                 .unwrap();
-//                             let bitcoin_mine_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                                 contract_address: bitcoin_mine_discovery_systems,
-//                             };
-//                             let (found_bitcoin_mine, _) = bitcoin_mine_discovery_systems
-//                                 .find_treasure(
-//                                     game_id,
-//                             vrf_seed,
-//                                     tile,
-//                                     starknet::get_caller_address(),
-//                                     map_config,
-//                                     troop_limit_config,
-//                                     troop_stamina_config,
-//                                     current_tick,
-//                                     season_mode_on,
-//                                 );
-//                             if found_bitcoin_mine {
-//                                 return (true, ExploreFind::BitcoinMine);
-//                             }
-//                         }
-//
-//                         // perform lottery to discover camp (blitz mode only)
-//                         let (camp_discovery_systems, _) = world.dns(@"camp_discovery_systems").unwrap();
-//                         let camp_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                             contract_address: camp_discovery_systems,
-//                         };
-//                         let (found_camp, _) = camp_discovery_systems
-//                             .find_treasure(
-//                                 game_id,
-//                             vrf_seed,
-//                                 tile,
-//                                 starknet::get_caller_address(),
-//                                 map_config,
-//                                 troop_limit_config,
-//                                 troop_stamina_config,
-//                                 current_tick,
-//                                 season_mode_on,
-//                             );
-//                         if found_camp {
-//                             return (true, ExploreFind::Camp);
-//                         } else {
-//                             // perform lottery to discover agent
-//                             let (agent_discovery_systems, _) = world.dns(@"agent_discovery_systems").unwrap();
-//                             let agent_discovery_systems = ITroopMovementUtilSystemsDispatcher {
-//                                 contract_address: agent_discovery_systems,
-//                             };
-//
-//                             let (found_agent, _) = agent_discovery_systems
-//                                 .find_treasure(
-//                                     game_id,
-//                             vrf_seed,
-//                                     tile,
-//                                     starknet::get_caller_address(),
-//                                     map_config,
-//                                     troop_limit_config,
-//                                     troop_stamina_config,
-//                                     current_tick,
-//                                     season_mode_on,
-//                                 );
-//                             if found_agent {
-//                                 return (true, ExploreFind::Agent);
-//                             } else {
-//                                 // let quest_config: QuestConfig = WorldConfigUtilImpl::get_member(
-//                                 //     world, selector!("quest_config"),
-//                                 // );
-//                                 // let quest_game_registry: QuestGameRegistry = world.read_model(VERSION);
-//                                 // let feature_toggle: QuestFeatureFlag = world.read_model(VERSION);
-//                                 // let quest_game_count = quest_game_registry.games.len();
-//                                 // if quest_game_count > 0 && feature_toggle.enabled {
-//                                 //     let quest_lottery_won: bool = iQuestDiscoveryImpl::lottery(
-//                                 //         quest_config, vrf_seed, world,
-//                                 //     );
-//                                 //     if quest_lottery_won {
-//                                 //         let (quest_system_address, _) = world.dns(@"quest_systems").unwrap();
-//                                 //         let quest_system = IQuestSystemsDispatcher {
-//                                 //             contract_address: quest_system_address,
-//                                 //         };
-//                                 //         quest_system.create_quest(tile, vrf_seed);
-//                                 //         return (true, ExploreFind::Quest);
-//                                 //     }
-//                                 // }
-//                                 return (false, ExploreFind::None);
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
 }
 
 
@@ -1018,43 +745,6 @@ pub mod mine_discovery_systems {
         }
     }
 }
-
-#[dojo::contract]
-pub mod holysite_discovery_systems {
-    use dojo::world::WorldStorageTrait;
-    use crate::constants::DEFAULT_NS;
-    use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
-    use crate::models::events::ExploreFind;
-    use crate::models::map::Tile;
-    use super::ITroopMovementUtilSystems;
-
-    #[abi(embed_v0)]
-    impl HolySiteDiscoveryImpl of ITroopMovementUtilSystems<ContractState> {
-        fn find_treasure(
-            self: @ContractState,
-            game_id: u32,
-            vrf_seed: u256,
-            mut tile: Tile,
-            caller: starknet::ContractAddress,
-            map_config: MapConfig,
-            troop_limit_config: TroopLimitConfig,
-            troop_stamina_config: TroopStaminaConfig,
-            current_tick: u64,
-            season_mode_on: bool,
-        ) -> (bool, ExploreFind) {
-            let mut world = self.world(DEFAULT_NS());
-            let (troop_movement_util_systems, _) = world.dns(@"troop_movement_util_systems").unwrap();
-            assert!(
-                starknet::get_caller_address() == troop_movement_util_systems,
-                "caller must be the troop_movement_util_systems",
-            );
-
-            // Standalone holy sites are retired; realms will own this role.
-            return (false, ExploreFind::None);
-        }
-    }
-}
-//
 
 #[dojo::contract]
 pub mod camp_discovery_systems {

@@ -113,8 +113,6 @@ function buildMapConfig(config: Config) {
     agent_discovery_fail_prob: config.exploration.agentFindFailProbability,
     camp_win_probability: config.exploration.campFindProbability,
     camp_fail_probability: config.exploration.campFindFailProbability,
-    holysite_win_probability: config.exploration.holysiteFindProbability,
-    holysite_fail_probability: config.exploration.holysiteFindFailProbability,
     bitcoin_mine_win_probability: config.exploration.bitcoinMineWinProbability,
     bitcoin_mine_fail_probability: config.exploration.bitcoinMineFailProbability,
     hyps_win_prob: config.exploration.hyperstructureWinProbAtCenter,
@@ -198,7 +196,6 @@ function buildStructureCapacityConfig(config: Config) {
     hyperstructure_capacity: config.carryCapacityGram[CapacityConfig.HyperstructureStructure],
     fragment_mine_capacity: config.carryCapacityGram[CapacityConfig.FragmentMineStructure],
     bank_structure_capacity: config.carryCapacityGram[CapacityConfig.BankStructure],
-    holysite_capacity: config.carryCapacityGram[CapacityConfig.HolySiteStructure],
     camp_capacity: config.carryCapacityGram[CapacityConfig.CampStructure],
     bitcoin_mine_capacity: config.carryCapacityGram[CapacityConfig.BitcoinMineStructure],
   };
@@ -395,7 +392,6 @@ function buildFaithConfig(config: Config) {
   return {
     enabled,
     wonder_base_fp_per_sec: config.faith?.wonder_base_fp_per_sec ?? 0,
-    holy_site_fp_per_sec: config.faith?.holy_site_fp_per_sec ?? 0,
     realm_fp_per_sec: config.faith?.realm_fp_per_sec ?? 0,
     village_fp_per_sec: config.faith?.village_fp_per_sec ?? 0,
     owner_share_percent: (config.faith?.owner_share_percent ?? 0) * 100,
@@ -410,10 +406,6 @@ function buildBitcoinMineConfig(config: Config) {
     prize_per_phase: enabled ? RESOURCE_PRECISION : 0,
     min_labor_per_contribution: enabled ? 100 * RESOURCE_PRECISION : 1,
   };
-}
-
-function buildQuestGames(config: Config) {
-  return config.questGames.map((game) => ({ address: game.address, levels: game.levels }));
 }
 
 export function buildPresetRegistration(config: Config, presetId: number): PresetRegistrationPayload {
@@ -470,10 +462,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         owner_fee_denom: config.banks.ownerFeesDenominator,
       },
       trade_config: { max_count: config.trade.maxCount },
-      quest_config: {
-        quest_discovery_prob: config.exploration.questFindProbability,
-        quest_discovery_fail_prob: config.exploration.questFindFailProbability,
-      },
+
       faith_config: buildFaithConfig(config),
       bitcoin_mine_config: buildBitcoinMineConfig(config),
       resource_bridge_config: { deposit_paused: false, withdraw_paused: false },
@@ -490,7 +479,6 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         season_pool_fee_recipient: config.bridge.season_pool_fee_recipient,
       },
       village_troop_config: { troop_delay_ticks: config.battle.delaySeconds },
-      quest_games: buildQuestGames(config),
       realm_start_resources_config: {
         resources_list_id: realmStart.id,
         resources_list_count: realmStart.count,

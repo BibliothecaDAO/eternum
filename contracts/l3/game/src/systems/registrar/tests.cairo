@@ -209,8 +209,8 @@ mod dispatcher_lifecycle {
         AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
         BlitzExplorationConfig, BlitzRegistrationConfigImpl, BlitzRegistrationGameConfig, BlitzRegistrationRulesConfig,
         BlitzSettlementConfig, BuildingConfig, ChainConfig, FaithConfig, HyperstructureConfig, HyperstructureCostConfig,
-        PresetConfig, PresetGameConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
-        SettlementConfig, SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
+        PresetConfig, PresetGameConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, SettlementConfig,
+        SpeedConfig, StartingResourcesConfig, StructureMaxLevelConfig, TickConfig, TradeConfig,
         VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageFoundResourcesConfig, VillageTroopConfig, WeightConfig,
         WorldConfigUtilImpl,
     };
@@ -228,7 +228,6 @@ mod dispatcher_lifecycle {
     use crate::systems::prize_distribution::contracts::{
         IPrizeDistributionSystemsDispatcher, IPrizeDistributionSystemsDispatcherTrait,
     };
-    use crate::systems::quest::contracts::{IQuestSystemsDispatcher, IQuestSystemsDispatcherTrait};
     use crate::systems::realm::blitz::contracts::{IBlitzRealmSystemsDispatcher, IBlitzRealmSystemsDispatcherTrait};
     use crate::systems::realm::season::contracts::IRealmSystemsDispatcherTrait;
     use crate::systems::registrar::contracts::{
@@ -276,7 +275,7 @@ mod dispatcher_lifecycle {
                 TestResource::Model("ResourceAllowance"), TestResource::Model("ResourceArrival"),
                 TestResource::Model("Wonder"), TestResource::Model("AddressName"), TestResource::Model("RNG"),
                 TestResource::Model("PlayersRankTrial"), TestResource::Model("PlayerRank"),
-                TestResource::Model("RankPrize"), TestResource::Model("RankList"), TestResource::Model("QuestLevels"),
+                TestResource::Model("RankPrize"), TestResource::Model("RankList"),
                 TestResource::Model("Hyperstructure"), TestResource::Model("HyperstructureShareholders"),
                 TestResource::Model("SeriesChestRewardState"), TestResource::Model("SharePointsCheckpoint"),
                 TestResource::Model("HyperstructureGlobals"), TestResource::Model("CompletedHyperstructure"),
@@ -288,19 +287,17 @@ mod dispatcher_lifecycle {
                 TestResource::Model("StructureBuildings"), TestResource::Model("Building"),
                 TestResource::Model("BuildingCategoryConfig"), TestResource::Model("ResourceFactoryConfig"),
                 TestResource::Model("ProductionBoostBonus"), TestResource::Model("ResourceList"),
-                TestResource::Model("QuestGameRegistry"), TestResource::Model("QuestFeatureFlag"),
                 TestResource::Contract("registrar_systems"), TestResource::Contract("hyperstructure_create_systems"),
                 TestResource::Contract("blitz_realm_systems"), TestResource::Contract("realm_systems"),
                 TestResource::Contract("realm_internal_systems"), TestResource::Contract("prize_distribution_systems"),
                 TestResource::Contract("resource_systems"), TestResource::Contract("bank_systems"),
-                TestResource::Contract("trade_systems"), TestResource::Contract("quest_systems"),
-                TestResource::Contract("season_systems"),
+                TestResource::Contract("trade_systems"), TestResource::Contract("season_systems"),
                 TestResource::Library(("structure_creation_library", "0_1_18")),
                 TestResource::Library(("rng_library", "0_1_16")), TestResource::Library(("biome_library", "0_1_13")),
                 TestResource::Event("GameCreated"), TestResource::Event("BlitzSettlementEvent"),
                 TestResource::Event("StoryEvent"), TestResource::Event("BurnDonkey"), TestResource::Event("Transfer"),
-                TestResource::Event("TrophyProgression"), TestResource::Event("LedgerResultRowReady"),
-                TestResource::Event("LedgerResultsReady"), TestResource::Event("SeasonEnded"),
+                TestResource::Event("LedgerResultRowReady"), TestResource::Event("LedgerResultsReady"),
+                TestResource::Event("SeasonEnded"),
             ]
                 .span(),
         }
@@ -481,14 +478,6 @@ mod dispatcher_lifecycle {
         let context = setup_lifecycle();
         let (address, _) = context.world.dns(@"trade_systems").unwrap();
         ITradeSystemsDispatcher { contract_address: address }.cancel_order(GAME_A, 1);
-    }
-
-    #[test]
-    #[should_panic(expected: "Eternum: feature is disabled in Blitz")]
-    fn quests_cannot_be_enabled_in_blitz() {
-        let context = setup_lifecycle();
-        let (address, _) = context.world.dns(@"quest_systems").unwrap();
-        IQuestSystemsDispatcher { contract_address: address }.enable_quests(GAME_A);
     }
 
     fn setup_eternum_game() -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
@@ -1163,11 +1152,9 @@ mod dispatcher_lifecycle {
             },
             bank_config: BankConfig { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 },
             trade_config: TradeConfig { max_count: 0 },
-            quest_config: QuestConfig { quest_discovery_prob: 0, quest_discovery_fail_prob: 0 },
             faith_config: FaithConfig {
                 enabled: false,
                 wonder_base_fp_per_sec: 0,
-                holy_site_fp_per_sec: 0,
                 realm_fp_per_sec: 0,
                 village_fp_per_sec: 0,
                 owner_share_percent: 0,
@@ -1190,7 +1177,6 @@ mod dispatcher_lifecycle {
                 season_pool_fee_recipient: Zero::zero(),
             },
             village_troop_config: VillageTroopConfig { troop_delay_ticks: 0 },
-            quest_games: [].span(),
             realm_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_start_resources_config: StartingResourcesConfig { resources_list_id: 0, resources_list_count: 0 },
             village_find_resources_config: VillageFoundResourcesConfig {

@@ -4,7 +4,6 @@ enum Subscription {
   Market = "market",
   Hyperstructure = "hyperstructure",
   Guild = "guild",
-  Quest = "quest",
 }
 
 interface SyncStore {

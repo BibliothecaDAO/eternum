@@ -5,13 +5,7 @@ import config from "./.knip.json";
 // The system-call bridge receives its provider as `any`, so TypeScript cannot
 // associate those references with the class. Derive them from its actual calls.
 function systemCallProviderMethods(): string[] {
-  const callSites = [
-    "./packages/types/src/dojo/create-system-calls.ts",
-    "./apps/game/src/sync/game-sync.ts",
-    "./config/scripts/add-quest-games.ts",
-    "./config/scripts/enable-quests.ts",
-    "./config/scripts/disable-quests.ts",
-  ];
+  const callSites = ["./packages/types/src/dojo/create-system-calls.ts", "./apps/game/src/sync/game-sync.ts"];
   const methods = new Set<string>();
   const visit = (node: ts.Node) => {
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {

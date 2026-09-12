@@ -69,7 +69,7 @@ function shouldApplyStructureAlphaCutoutFallback(material: MeshStandardMaterial)
 }
 
 function applyStructureMaterialOverrides(material: MeshStandardMaterial, modelName: string): void {
-  if (modelName.includes("Quest") || modelName.includes("Chest")) {
+  if (modelName.includes("Chest")) {
     if (shouldApplyStructureAlphaCutoutFallback(material)) {
       material.depthWrite = true;
       material.alphaTest = 0.075;

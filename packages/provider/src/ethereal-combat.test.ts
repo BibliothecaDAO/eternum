@@ -47,3 +47,23 @@ describe("ethereal combat randomness", () => {
     }
   });
 });
+
+it("keeps two queued ethereal attacks paired with separate VRF requests", async () => {
+  const provider = new EternumProvider(manifest, "http://127.0.0.1:1", "0x99", undefined, {
+    namespace: "s2",
+    gameId: 7,
+  });
+  const execute = vi
+    .spyOn(provider, "executeAndCheckTransaction")
+    .mockResolvedValue({ transaction_hash: "0x55" } as any);
+  await Promise.all([
+    provider.attack_explorer_vs_guard({ signer, explorer_id: 1, structure_id: 2, ethereal: true }),
+    provider.attack_explorer_vs_guard({ signer, explorer_id: 3, structure_id: 4, ethereal: true }),
+  ]);
+  expect(execute).toHaveBeenCalledTimes(2);
+  for (const call of execute.mock.calls) {
+    const submission = call[1] as Call[];
+    expect(submission.map((entry) => entry.entrypoint)).toEqual(["request_random", "attack_explorer_vs_guard"]);
+    expect(submission[0].calldata).toEqual([battle, 0, signer.address]);
+  }
+});

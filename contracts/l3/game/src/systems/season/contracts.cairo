@@ -13,7 +13,7 @@ pub trait ISeasonSystems<T> {
     /// # Effects:
     /// - Marks the season as ended
     /// - Records the caller as the winner by emitting a SeasonEnded event
-    /// - Grants the 'Warlord' achievement to the winner
+
     ///
     /// # Errors:
     /// - Fails if the season has not started or is already over
@@ -31,7 +31,6 @@ pub mod season_systems {
     use crate::models::game::{GameRegistryImpl, GameStatus};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
     use crate::systems::utils::share_points::settle_completed_hyperstructures;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
 
 
     #[derive(Copy, Drop, Serde)]
@@ -77,11 +76,6 @@ pub mod season_systems {
             // emit season end event
             let now = starknet::get_block_timestamp();
             world.emit_event(@SeasonEnded { game_id, winner_address: player_address, timestamp: now });
-
-            // grant win season achievement
-            AchievementTrait::progress(
-                world, player_address.into(), Tasks::WIN_GAME, 1, starknet::get_block_timestamp(),
-            );
         }
     }
 }

@@ -1,3 +1,4 @@
+import { ETHEREAL_STRIDE } from "../../../packages/types/src/constants/hex";
 import { setTimeout as sleep } from "node:timers/promises";
 import { CallData, type Call, type RpcProvider } from "starknet";
 import { tileDataToTile } from "../../../packages/types/src/utils/tile";
@@ -37,7 +38,6 @@ interface RoundTripContext extends RoundTripOptions {
 }
 
 // The contract's ethereal stride is 15 coordinates. East/west are exact inverses on either row parity.
-const ETHEREAL_STRIDE = 15;
 const SPIRE_OCCUPIER = 35;
 const OBSERVATION_TIMEOUT_MS = 30_000;
 const MAX_APPROACH_TRANSACTIONS = 256;

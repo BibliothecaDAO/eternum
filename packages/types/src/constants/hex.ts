@@ -1,3 +1,5 @@
+export const ETHEREAL_STRIDE = 15;
+
 export const biomes = {
   deep_ocean: { color: "#193E60", depth: 0.1, name: "Deep Ocean" },
   ocean: { color: "#1A6C87", depth: 0.1, name: "Ocean" },
@@ -224,3 +226,13 @@ export const getDirectionBetweenAdjacentHexes = (
   const neighbors = getNeighborHexes(from.col, from.row, Steps.One);
   return neighbors.find((n) => n.col === to.col && n.row === to.row)?.direction ?? null;
 };
+
+/** Attack distance uses movement steps; cross-layer attacks require the same coordinate. */
+export function getLayeredAttackDistance(
+  attacker: { col: number; row: number; alt: boolean },
+  defender: { col: number; row: number; alt: boolean },
+): number {
+  const distance = getHexDistance(attacker, defender);
+  if (attacker.alt !== defender.alt) return distance === 0 ? 1 : Infinity;
+  return distance / (defender.alt ? ETHEREAL_STRIDE : 1);
+}

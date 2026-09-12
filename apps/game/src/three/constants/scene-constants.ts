@@ -78,7 +78,6 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.FragmentMine]: BuildingType.ResourceAncientFragment,
   [StructureType.Hyperstructure]: BuildingType.ResourceLabor,
   [StructureType.Village]: BuildingType.ResourceLabor,
-  [StructureType.HolySite]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
   [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
 };
@@ -184,7 +183,6 @@ export function getStructureModelPaths(isBlitz: boolean): Record<StructureType, 
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.FragmentMine]: isBlitz ? [RiftModelPath] : [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.HolySite]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Castle],
     [StructureType.Camp]: [VILLAGE_MODEL_PATH],
     [StructureType.BitcoinMine]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Mine],
   };

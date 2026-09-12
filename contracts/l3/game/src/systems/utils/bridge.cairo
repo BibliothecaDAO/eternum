@@ -47,15 +47,6 @@ pub impl iBridgeImpl of iBridgeTrait {
         }
     }
 
-    fn assert_only_owner_or_realm_systems(
-        world: WorldStorage, caller: ContractAddress, structure_owner: ContractAddress,
-    ) {
-        if caller != structure_owner {
-            let (realm_systems_address, _) = world.dns(@"realm_systems").unwrap();
-            assert!(caller == realm_systems_address, "Bridge: caller is not owner or realm systems");
-        }
-    }
-
     fn assert_only_liquidity_systems(world: WorldStorage, caller: ContractAddress) {
         let (liquidity_systems_address, _) = world.dns(@"liquidity_systems").unwrap();
         assert!(caller == liquidity_systems_address, "Bridge: caller is not liquidity systems");

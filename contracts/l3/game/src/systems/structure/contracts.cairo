@@ -32,7 +32,7 @@ pub mod structure_systems {
     use crate::models::troop::TroopLimitImpl;
     use crate::models::weight::Weight;
     use crate::systems::utils::map::IMapImpl;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+
 
     #[abi(embed_v0)]
     impl StructureSystemsImpl of super::IStructureSystems<ContractState> {
@@ -118,18 +118,6 @@ pub mod structure_systems {
                     structure_metadata.has_wonder, structure_has_wonder_bonus, structure_base.level,
                 );
                 IMapImpl::occupy(ref world, ref structure_tile, tile_occupier, structure_id);
-
-                // grant realm level up achievement
-                AchievementTrait::progress(
-                    world, structure_owner.into(), Tasks::UPGRADE_REALM, 1, starknet::get_block_timestamp(),
-                );
-            }
-
-            if structure_base.category == StructureCategory::Village.into() {
-                // grant village level up achievement
-                AchievementTrait::progress(
-                    world, structure_owner.into(), Tasks::UPGRADE_VILLAGE, 1, starknet::get_block_timestamp(),
-                );
             }
 
             // emit event

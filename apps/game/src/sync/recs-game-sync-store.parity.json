@@ -227,42 +227,6 @@
       }
     },
     {
-      "hashed_keys": "0x5216c2d1da6ad4895d9aa9db47cbed96fab1933a841d16f127c30c4a82837c1",
-      "models": {
-        "QuestLevels": {
-          "game_id": "0xb",
-          "game_address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-          "levels": [
-            {
-              "target_score": "0x1a",
-              "settings_id": "0x3",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x1a",
-              "settings_id": "0x6",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x1a",
-              "settings_id": "0x4",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x33",
-              "settings_id": "0x1",
-              "time_limit": "0x15180"
-            },
-            {
-              "target_score": "0x65",
-              "settings_id": "0x5",
-              "time_limit": "0x15180"
-            }
-          ]
-        }
-      }
-    },
-    {
       "hashed_keys": "0x48a5ce5dc85a6ca7b49e545c89c377010bb673ff9f62edf1c2bcb02a4b1f9",
       "models": {
         "AddressName": {
@@ -461,8 +425,6 @@
             "agent_discovery_fail_prob": "0x64",
             "camp_win_probability": "0x5dc",
             "camp_fail_probability": "0xbd74",
-            "holysite_win_probability": "0x0",
-            "holysite_fail_probability": "0x1",
             "bitcoin_mine_win_probability": "0x0",
             "bitcoin_mine_fail_probability": "0x1",
             "hyps_win_prob": "0x0",
@@ -551,14 +513,9 @@
           "trade_config": {
             "max_count": "0x0"
           },
-          "quest_config": {
-            "quest_discovery_prob": "0x1",
-            "quest_discovery_fail_prob": "0x63"
-          },
           "faith_config": {
             "enabled": false,
             "wonder_base_fp_per_sec": "0x0",
-            "holy_site_fp_per_sec": "0x0",
             "realm_fp_per_sec": "0x0",
             "village_fp_per_sec": "0x0",
             "owner_share_percent": "0x0",
@@ -588,38 +545,6 @@
           "village_troop_config": {
             "troop_delay_ticks": "0x0"
           },
-          "quest_games": [
-            {
-              "address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-              "levels": [
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x3",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x6",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x4",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x33",
-                  "settings_id": "0x1",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x65",
-                  "settings_id": "0x5",
-                  "time_limit": "0x15180"
-                }
-              ]
-            }
-          ],
           "realm_start_resources_config": {
             "resources_list_id": "0x1",
             "resources_list_count": "0x9"
@@ -638,7 +563,6 @@
             "hyperstructure_capacity": "0xffffffffffffffff",
             "fragment_mine_capacity": "0xffffffffffffffff",
             "bank_structure_capacity": "0xffffffffffffffff",
-            "holysite_capacity": "0xffffffffffffffff",
             "camp_capacity": "0xffffffffffffffff",
             "bitcoin_mine_capacity": "0xffffffffffffffff"
           },
@@ -661,7 +585,8 @@
           "blitz_registration_rules_config": {
             "collectibles_cosmetics_max": "0x5"
           },
-          "mercenaries_name": "0x5468652056616e6775617264"
+          "mercenaries_name": "0x5468652056616e6775617264",
+          "spire_travel_essence_cost": "0x0"
         }
       }
     },
@@ -688,8 +613,6 @@
             "agent_discovery_fail_prob": "0x64",
             "camp_win_probability": "0x5dc",
             "camp_fail_probability": "0xbd74",
-            "holysite_win_probability": "0x0",
-            "holysite_fail_probability": "0x1",
             "bitcoin_mine_win_probability": "0x0",
             "bitcoin_mine_fail_probability": "0x1",
             "hyps_win_prob": "0x0",
@@ -778,14 +701,9 @@
           "trade_config": {
             "max_count": "0x0"
           },
-          "quest_config": {
-            "quest_discovery_prob": "0x1",
-            "quest_discovery_fail_prob": "0x63"
-          },
           "faith_config": {
             "enabled": false,
             "wonder_base_fp_per_sec": "0x0",
-            "holy_site_fp_per_sec": "0x0",
             "realm_fp_per_sec": "0x0",
             "village_fp_per_sec": "0x0",
             "owner_share_percent": "0x0",
@@ -815,38 +733,6 @@
           "village_troop_config": {
             "troop_delay_ticks": "0x0"
           },
-          "quest_games": [
-            {
-              "address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-              "levels": [
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x3",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x6",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x4",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x33",
-                  "settings_id": "0x1",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x65",
-                  "settings_id": "0x5",
-                  "time_limit": "0x15180"
-                }
-              ]
-            }
-          ],
           "realm_start_resources_config": {
             "resources_list_id": "0x1",
             "resources_list_count": "0x9"
@@ -865,7 +751,6 @@
             "hyperstructure_capacity": "0xffffffffffffffff",
             "fragment_mine_capacity": "0xffffffffffffffff",
             "bank_structure_capacity": "0xffffffffffffffff",
-            "holysite_capacity": "0xffffffffffffffff",
             "camp_capacity": "0xffffffffffffffff",
             "bitcoin_mine_capacity": "0xffffffffffffffff"
           },
@@ -888,7 +773,8 @@
           "blitz_registration_rules_config": {
             "collectibles_cosmetics_max": "0x5"
           },
-          "mercenaries_name": "0x5468652056616e6775617264"
+          "mercenaries_name": "0x5468652056616e6775617264",
+          "spire_travel_essence_cost": "0x0"
         }
       }
     },
@@ -915,8 +801,6 @@
             "agent_discovery_fail_prob": "0x64",
             "camp_win_probability": "0x5dc",
             "camp_fail_probability": "0xbd74",
-            "holysite_win_probability": "0x0",
-            "holysite_fail_probability": "0x1",
             "bitcoin_mine_win_probability": "0x0",
             "bitcoin_mine_fail_probability": "0x1",
             "hyps_win_prob": "0x0",
@@ -1005,14 +889,9 @@
           "trade_config": {
             "max_count": "0x0"
           },
-          "quest_config": {
-            "quest_discovery_prob": "0x1",
-            "quest_discovery_fail_prob": "0x63"
-          },
           "faith_config": {
             "enabled": false,
             "wonder_base_fp_per_sec": "0x0",
-            "holy_site_fp_per_sec": "0x0",
             "realm_fp_per_sec": "0x0",
             "village_fp_per_sec": "0x0",
             "owner_share_percent": "0x0",
@@ -1042,38 +921,6 @@
           "village_troop_config": {
             "troop_delay_ticks": "0x0"
           },
-          "quest_games": [
-            {
-              "address": "0x1e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-              "levels": [
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x3",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x6",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x1a",
-                  "settings_id": "0x4",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x33",
-                  "settings_id": "0x1",
-                  "time_limit": "0x15180"
-                },
-                {
-                  "target_score": "0x65",
-                  "settings_id": "0x5",
-                  "time_limit": "0x15180"
-                }
-              ]
-            }
-          ],
           "realm_start_resources_config": {
             "resources_list_id": "0x1",
             "resources_list_count": "0x9"
@@ -1092,7 +939,6 @@
             "hyperstructure_capacity": "0xffffffffffffffff",
             "fragment_mine_capacity": "0xffffffffffffffff",
             "bank_structure_capacity": "0xffffffffffffffff",
-            "holysite_capacity": "0xffffffffffffffff",
             "camp_capacity": "0xffffffffffffffff",
             "bitcoin_mine_capacity": "0xffffffffffffffff"
           },
@@ -1115,7 +961,8 @@
           "blitz_registration_rules_config": {
             "collectibles_cosmetics_max": "0x5"
           },
-          "mercenaries_name": "0x5468652056616e6775617264"
+          "mercenaries_name": "0x5468652056616e6775617264",
+          "spire_travel_essence_cost": "0x0"
         }
       }
     },
@@ -2689,5 +2536,6 @@
       }
     }
   ],
-  "fixturePurpose": "Captured Herald rows used to verify the manifest-generated RECS schemas and ingest coercion."
+  "fixturePurpose": "Captured Herald rows used to verify the manifest-generated RECS schemas and ingest coercion.",
+  "schemaAdaptation": "2026-09-12: removed retired holy-site, quest and achievement fields/models; added zero portal fee for captured Blitz presets."
 }

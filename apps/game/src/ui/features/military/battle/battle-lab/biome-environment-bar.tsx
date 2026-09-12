@@ -10,6 +10,7 @@ import Globe from "lucide-react/dist/esm/icons/globe";
 interface BiomeEnvironmentBarProps {
   combatSimulator: CombatSimulator;
   biome: BiomeType;
+  ethereal?: boolean;
   onSelect: (biome: BiomeType) => void;
 }
 
@@ -25,7 +26,12 @@ const formatBonus = (bonus: number) => {
 };
 
 /** Top bar of the Battle Lab: a roomy biome picker with a clear per-troop bonus row. */
-export const BiomeEnvironmentBar = ({ combatSimulator, biome, onSelect }: BiomeEnvironmentBarProps) => {
+export const BiomeEnvironmentBar = ({
+  combatSimulator,
+  biome,
+  onSelect,
+  ethereal = false,
+}: BiomeEnvironmentBarProps) => {
   return (
     <div className={cn("flex flex-col gap-3 rounded-xl px-4 py-3.5", OVERLAY_SURFACE_BASE)}>
       <div className="flex items-center gap-2">
@@ -34,17 +40,21 @@ export const BiomeEnvironmentBar = ({ combatSimulator, biome, onSelect }: BiomeE
       </div>
 
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-        <SelectBiome
-          combatSimulator={combatSimulator}
-          defaultValue={biome}
-          onSelect={(next) => next && onSelect(next as BiomeType)}
-          showTriggerBonuses={false}
-          className={cn(DROPDOWN_TRIGGER, "sm:max-w-xs")}
-        />
+        {ethereal ? (
+          <span className="text-sm text-gold/70">Ethereal — neutral terrain</span>
+        ) : (
+          <SelectBiome
+            combatSimulator={combatSimulator}
+            defaultValue={biome}
+            onSelect={(next) => next && onSelect(next as BiomeType)}
+            showTriggerBonuses={false}
+            className={cn(DROPDOWN_TRIGGER, "sm:max-w-xs")}
+          />
+        )}
 
         <div className="flex flex-1 items-center justify-around gap-2 rounded-lg border border-gold/15 bg-black/25 px-3 py-2">
           {TROOPS.map(({ type, resourceId, label }) => {
-            const bonus = configManager.getBiomeCombatBonus(type, biome);
+            const bonus = ethereal ? 1 : configManager.getBiomeCombatBonus(type, biome);
             const tone = bonus > 1 ? "text-order-brilliance" : bonus < 1 ? "text-order-giants" : "text-gold/45";
             return (
               <div key={type} className="flex items-center gap-2">

@@ -46,10 +46,6 @@ const HIGHLIGHT_LAYER_PALETTES: Record<string, HighlightLayerPalette> = {
     routeColor: 0xd3a746,
     endpointColor: 0xf0d08a,
   },
-  quest: {
-    routeColor: 0xf3df77,
-    endpointColor: 0xfff2b0,
-  },
   chest: {
     routeColor: 0xffcb4c,
     endpointColor: 0xffe49a,

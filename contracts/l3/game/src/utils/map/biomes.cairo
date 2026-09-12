@@ -105,29 +105,6 @@ impl U8IntoBiome of Into<u8, Biome> {
 }
 
 
-fn bdepth(biome: Biome) -> Fixed {
-    match biome {
-        Biome::None => FixedTrait::ZERO(),
-        Biome::DeepOcean => fc::_0_1(),
-        Biome::Ocean => fc::_0_1(),
-        Biome::Beach => fc::_0_2(),
-        Biome::Scorched => fc::_0_8(),
-        Biome::Bare => fc::_0_7(),
-        Biome::Tundra => fc::_0_6(),
-        Biome::Snow => fc::_0_5(),
-        Biome::TemperateDesert => fc::_0_4(),
-        Biome::Shrubland => fc::_0_5(),
-        Biome::Taiga => fc::_0_6(),
-        Biome::Grassland => fc::_0_4(),
-        Biome::TemperateDeciduousForest => fc::_0_5(),
-        Biome::TemperateRainForest => fc::_0_7(),
-        Biome::SubtropicalDesert => fc::_0_3(),
-        Biome::TropicalSeasonalForest => fc::_0_5(),
-        Biome::TropicalRainForest => fc::_0_6(),
-        Biome::Underground => FixedTrait::ZERO(),
-    }
-}
-
 mod LEVEL {
     use cubit::f128::types::fixed::Fixed;
     use crate::utils::fixed_constants as fc;

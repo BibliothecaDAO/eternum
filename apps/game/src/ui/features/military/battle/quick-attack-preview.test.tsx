@@ -190,7 +190,7 @@ vi.mock("@bibliothecadao/types", () => ({
     Explorer: "explorer",
     Structure: "structure",
   },
-  getHexDistance: () => mocks.targetDistance,
+  getLayeredAttackDistance: () => mocks.targetDistance,
   getTroopAttackRange: () => 1,
   GuardSlot: {
     Delta: 0,
@@ -204,7 +204,6 @@ vi.mock("@bibliothecadao/types", () => ({
     Bank: 2,
     FragmentMine: 3,
     Village: 4,
-    HolySite: 5,
     Camp: 6,
     BitcoinMine: 7,
   },

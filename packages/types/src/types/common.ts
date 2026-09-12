@@ -4,7 +4,6 @@ import {
   BiomeType,
   BuildingType,
   CapacityConfig,
-  QuestType,
   RealmLevels,
   ResourcesIds,
   ResourceTier,
@@ -69,11 +68,9 @@ export enum TileOccupier {
   ExplorerCrossbowmanT2Daydreams = 31,
   ExplorerCrossbowmanT3Daydreams = 32,
   //
-  Quest = 33,
   Chest = 34,
   Spire = 35,
   //
-  HolySite = 36,
   Camp = 37,
   BitcoinMine = 38,
   ReservedHyperstructure = 39,
@@ -168,40 +165,6 @@ export type TileOpt = {
   data: bigint;
 };
 
-export type Quest = {
-  game_token_id: number;
-  game_address: ContractAddress;
-  quest_tile_id: number;
-  explorer_id: number;
-  completed: boolean;
-};
-
-export type QuestTile = {
-  id: number;
-  game_address: ContractAddress;
-  coord: {
-    alt: boolean;
-    x: number;
-    y: number;
-  };
-  level: number;
-  resource_type: number;
-  amount: bigint;
-  capacity: number;
-  participant_count: number;
-};
-
-export type QuestLevel = {
-  game_address: ContractAddress;
-  levels: Level[];
-};
-
-export type Level = {
-  target_score: number;
-  settings_id: number;
-  time_limit: number;
-};
-
 export type TroopFoodConsumption = {
   explore_wheat_burn_amount: number;
   explore_fish_burn_amount: number;
@@ -224,11 +187,6 @@ export type RealmWithPosition = ComponentValue<ClientComponents["Structure"]["sc
   owner: ContractAddress;
   resources: ResourcesIds[];
 };
-export interface Prize {
-  id: QuestType;
-  title: string;
-}
-
 export interface Building {
   name: string;
   category: BuildingType;
@@ -476,16 +434,12 @@ export interface Config {
     agentFindFailProbability: number;
     campFindProbability: number;
     campFindFailProbability: number;
-    holysiteFindProbability: number;
-    holysiteFindFailProbability: number;
     hyperstructureWinProbAtCenter: number;
     hyperstructureFailProbAtCenter: number;
     hyperstructureFailProbIncreasePerHexDistance: number;
     hyperstructureFailProbIncreasePerHyperstructureFound: number;
     shardsMineInitialWheatBalance: number;
     shardsMineInitialFishBalance: number;
-    questFindProbability: number;
-    questFindFailProbability: number;
     relicDiscoveryIntervalSeconds: number;
     relicHexDistanceFromCenter: number;
     relicChestRelicsPerChest: number;
@@ -638,11 +592,7 @@ export interface Config {
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;
-  questGames: {
-    address: string;
-    levels: Level[];
-    overwrite: boolean;
-  }[];
+
   dev: {
     mode: {
       on: boolean;
@@ -672,7 +622,6 @@ export interface Config {
   faith?: {
     enabled: boolean;
     wonder_base_fp_per_sec: number;
-    holy_site_fp_per_sec: number;
     realm_fp_per_sec: number;
     village_fp_per_sec: number;
     owner_share_percent: number;
@@ -699,8 +648,6 @@ export type FactoryMapConfigOverrides = Partial<
     | "agentFindFailProbability"
     | "campFindProbability"
     | "campFindFailProbability"
-    | "holysiteFindProbability"
-    | "holysiteFindFailProbability"
     | "bitcoinMineWinProbability"
     | "bitcoinMineFailProbability"
     | "hyperstructureWinProbAtCenter"

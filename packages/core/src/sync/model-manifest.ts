@@ -87,8 +87,6 @@ export const GAME_SYNC_MODEL_MANIFEST: readonly GameSyncModelDefinition[] = [
   globalEntity("SeasonPrize"),
   globalEntity("GameChestReward"),
   globalEvent("SeasonEnded"),
-  globalEntity("QuestLevels"),
-  globalEntity("QuestTile"),
   globalEntity("AddressName", { s2Scope: "chain" }),
   globalEntity("PlayerRegisteredPoints"),
   globalEntity("WonderFaith"),

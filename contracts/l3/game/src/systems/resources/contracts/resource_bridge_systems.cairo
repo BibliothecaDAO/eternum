@@ -33,7 +33,7 @@ pub mod resource_bridge_systems {
     use dojo::world::WorldStorage;
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use crate::alias::ID;
-    use crate::constants::{DEFAULT_NS, ResourceTypes};
+    use crate::constants::DEFAULT_NS;
     use crate::models::config::{
         ResourceBridgeWtlConfig, ResourceRevBridgeWtlConfig, SeasonConfigImpl, WorldConfigUtilImpl,
     };
@@ -50,7 +50,6 @@ pub mod resource_bridge_systems {
     use crate::systems::utils::bridge::{BridgeTxType, iBridgeImpl};
     use crate::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use crate::systems::utils::resource::iResourceTransferImpl;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::math::{PercentageImpl, PercentageValueImpl};
 
     #[abi(embed_v0)]
@@ -64,8 +63,6 @@ pub mod resource_bridge_systems {
             client_fee_recipient: ContractAddress,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
-
-            let original_amount = amount;
 
             // ensure the bridge is open
             SeasonConfigImpl::get(world, game_id).assert_main_game_started_and_grace_period_not_elapsed();
@@ -155,20 +152,6 @@ pub mod resource_bridge_systems {
 
             // beam resources into the recipient's resource arrivals. it costs 0 donkey and time
             iResourceTransferImpl::portal_to_structure_arrivals_instant(ref world, game_id, to_structure_id, resources);
-
-            // grant lords bridge in achievement
-            if resource_bridge_token_whitelist.resource_type == ResourceTypes::LORDS {
-                let one = iBridgeImpl::one_token(token);
-                let lords_amount = original_amount / one;
-                let lords_amount_u32: u32 = lords_amount.try_into().unwrap();
-                AchievementTrait::progress(
-                    world,
-                    to_structure_owner.into(),
-                    Tasks::BRIDGE_LORDS,
-                    lords_amount_u32,
-                    starknet::get_block_timestamp(),
-                );
-            }
         }
 
         fn withdraw(

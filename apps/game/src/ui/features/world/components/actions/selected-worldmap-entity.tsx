@@ -21,7 +21,6 @@ import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
-import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { BiomeType, HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
@@ -29,7 +28,6 @@ import {
   Position,
   hasTileOccupier,
   isTileOccupierChest,
-  isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
@@ -90,7 +88,6 @@ const SelectedWorldmapEntityContent = ({
   const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
   const isStructure = isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
-  const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
   const normalizedSelectedHex = useMemo(() => {
     return new Position({ x: selectedHex.col, y: selectedHex.row }).getNormalized();
@@ -144,7 +141,6 @@ const SelectedWorldmapEntityContent = ({
 
   return (
     <div className={occupiedEntityLayoutClass}>
-      {isQuest ? coordChip : null}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
           <TileChrome title={coordsLabel ?? "Spire tile"} headerAction={headerAction}>
@@ -177,8 +173,6 @@ const SelectedWorldmapEntityContent = ({
             onSimulateBattle={handleSimulateBattle}
           />
         </div>
-      ) : isQuest ? (
-        <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
       ) : (
         <SelectedArmyTilePanel
           armyEntityId={occupierEntityId}

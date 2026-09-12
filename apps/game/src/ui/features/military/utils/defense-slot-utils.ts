@@ -20,7 +20,6 @@ export const getStructureDefenseSlotLimit = (
     case StructureType.FragmentMine:
     case StructureType.Hyperstructure:
     case StructureType.Bank:
-    case StructureType.HolySite:
     case StructureType.Camp:
     case StructureType.BitcoinMine:
       return config[category] ?? 0;

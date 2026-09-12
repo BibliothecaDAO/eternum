@@ -17,6 +17,7 @@ export interface GuardOption {
 
 /** Normalized chain snapshot consumed by the reducer in live mode. */
 export interface LiveSnapshot {
+  defenderAlt: boolean;
   biome: BiomeType;
   attackerType: "structure" | "army";
   attackerEntityId: ID;

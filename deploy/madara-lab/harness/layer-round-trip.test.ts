@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { ETHEREAL_STRIDE, getLayeredAttackDistance } from "../../../packages/types/src/constants/hex";
 import { describe, expect, it } from "bun:test";
 import type { Account, Call, RpcProvider } from "starknet";
 import { neighbor, type HarnessBot } from "./driver";
@@ -207,4 +209,19 @@ describe("Eternum layer round trip", () => {
       context.server.stop(true);
     }
   });
+});
+
+it("uses the contract movement stride for harness and client travel", () => {
+  const source = readFileSync(new URL("../../../contracts/l3/game/src/models/position.cairo", import.meta.url), "utf8");
+  const stride = source.match(/pub const REGULAR_TO_ALTERNATE_MAP_SCALE: u128 = (\d+);/);
+  expect(stride).not.toBeNull();
+  expect(ETHEREAL_STRIDE).toBe(Number(stride![1]));
+});
+
+it("measures ethereal combat range in movement steps and rejects remote cross-layer attacks", () => {
+  const origin = { col: 100, row: 100, alt: true };
+  expect(getLayeredAttackDistance(origin, { ...origin, col: 115 })).toBe(1);
+  expect(getLayeredAttackDistance(origin, { ...origin, col: 130 })).toBe(2);
+  expect(getLayeredAttackDistance(origin, { ...origin, alt: false })).toBe(1);
+  expect(getLayeredAttackDistance(origin, { ...origin, col: 115, alt: false })).toBe(Infinity);
 });

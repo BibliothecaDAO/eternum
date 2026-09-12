@@ -410,18 +410,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.update_structure_ownership(props);
   };
 
-  const start_quest = async (props: SystemProps.StartQuestProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.start_quest(props);
-  };
-
-  const claim_reward = async (props: SystemProps.ClaimRewardProps): Promise<GetTransactionReceiptResponse> => {
-    return await provider.claim_reward(props);
-  };
-
-  const get_game_count = async (props: SystemProps.GetGameCountProps) => {
-    return await provider.get_game_count(props);
-  };
-
   const transfer_structure_ownership = async (
     props: SystemProps.TransferStructureOwnershipProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -547,10 +535,6 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     edit_marketplace_order: withAuth(edit_marketplace_order),
 
     leave_guild: withAuth(leave_guild),
-
-    start_quest: withAuth(start_quest),
-    claim_reward: withAuth(claim_reward),
-    get_game_count: withAuth(get_game_count),
 
     transfer_structure_ownership: withAuth(transfer_structure_ownership),
     transfer_agent_ownership: withAuth(transfer_agent_ownership),

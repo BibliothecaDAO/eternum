@@ -161,27 +161,6 @@ export function defineContractComponents(world: World, namespace: string) {
         },
       );
     })(),
-    BiomeDiscovered: (() => {
-      return defineComponent(
-        world,
-        {
-          by_address: RecsType.BigInt,
-          biome: RecsType.Number,
-          discovered: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "BiomeDiscovered",
-            types: [
-              "ContractAddress", // by_address
-              "u8", // biome
-              "bool", // discovered
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
     BitcoinMinePhaseLabor: (() => {
       return defineComponent(
         world,
@@ -561,8 +540,6 @@ export function defineContractComponents(world: World, namespace: string) {
             agent_discovery_fail_prob: RecsType.Number,
             camp_win_probability: RecsType.Number,
             camp_fail_probability: RecsType.Number,
-            holysite_win_probability: RecsType.Number,
-            holysite_fail_probability: RecsType.Number,
             bitcoin_mine_win_probability: RecsType.Number,
             bitcoin_mine_fail_probability: RecsType.Number,
             hyps_win_prob: RecsType.Number,
@@ -587,8 +564,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // MapConfig agent_discovery_fail_prob
               "u16", // MapConfig camp_win_probability
               "u16", // MapConfig camp_fail_probability
-              "u16", // MapConfig holysite_win_probability
-              "u16", // MapConfig holysite_fail_probability
               "u16", // MapConfig bitcoin_mine_win_probability
               "u16", // MapConfig bitcoin_mine_fail_probability
               "u32", // MapConfig hyps_win_prob
@@ -1145,8 +1120,6 @@ export function defineContractComponents(world: World, namespace: string) {
             agent_discovery_fail_prob: RecsType.Number,
             camp_win_probability: RecsType.Number,
             camp_fail_probability: RecsType.Number,
-            holysite_win_probability: RecsType.Number,
-            holysite_fail_probability: RecsType.Number,
             bitcoin_mine_win_probability: RecsType.Number,
             bitcoin_mine_fail_probability: RecsType.Number,
             hyps_win_prob: RecsType.Number,
@@ -1227,11 +1200,9 @@ export function defineContractComponents(world: World, namespace: string) {
             owner_fee_denom: RecsType.Number,
           },
           trade_config: { max_count: RecsType.Number },
-          quest_config: { quest_discovery_prob: RecsType.Number, quest_discovery_fail_prob: RecsType.Number },
           faith_config: {
             enabled: RecsType.Boolean,
             wonder_base_fp_per_sec: RecsType.Number,
-            holy_site_fp_per_sec: RecsType.Number,
             realm_fp_per_sec: RecsType.Number,
             village_fp_per_sec: RecsType.Number,
             owner_share_percent: RecsType.Number,
@@ -1256,7 +1227,6 @@ export function defineContractComponents(world: World, namespace: string) {
             season_pool_fee_recipient: RecsType.BigInt,
           },
           village_troop_config: { troop_delay_ticks: RecsType.Number },
-          quest_games: RecsType.T,
           realm_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_start_resources_config: { resources_list_id: RecsType.Number, resources_list_count: RecsType.Number },
           village_find_resources_config: {
@@ -1269,7 +1239,6 @@ export function defineContractComponents(world: World, namespace: string) {
             hyperstructure_capacity: RecsType.BigInt,
             fragment_mine_capacity: RecsType.BigInt,
             bank_structure_capacity: RecsType.BigInt,
-            holysite_capacity: RecsType.BigInt,
             camp_capacity: RecsType.BigInt,
             bitcoin_mine_capacity: RecsType.BigInt,
           },
@@ -1304,8 +1273,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u16", // MapConfig agent_discovery_fail_prob
               "u16", // MapConfig camp_win_probability
               "u16", // MapConfig camp_fail_probability
-              "u16", // MapConfig holysite_win_probability
-              "u16", // MapConfig holysite_fail_probability
               "u16", // MapConfig bitcoin_mine_win_probability
               "u16", // MapConfig bitcoin_mine_fail_probability
               "u32", // MapConfig hyps_win_prob
@@ -1373,11 +1340,8 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // BankConfig owner_fee_num
               "u32", // BankConfig owner_fee_denom
               "u8", // TradeConfig max_count
-              "u16", // QuestConfig quest_discovery_prob
-              "u16", // QuestConfig quest_discovery_fail_prob
               "bool", // FaithConfig enabled
               "u16", // FaithConfig wonder_base_fp_per_sec
-              "u16", // FaithConfig holy_site_fp_per_sec
               "u16", // FaithConfig realm_fp_per_sec
               "u16", // FaithConfig village_fp_per_sec
               "u16", // FaithConfig owner_share_percent
@@ -1398,7 +1362,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "ContractAddress", // ResourceBridgeFeeSplitConfig velords_fee_recipient
               "ContractAddress", // ResourceBridgeFeeSplitConfig season_pool_fee_recipient
               "u8", // VillageTroopConfig troop_delay_ticks
-              "Span<PresetQuestGame>", // quest_games
               "u32", // StartingResourcesConfig resources_list_id
               "u8", // StartingResourcesConfig resources_list_count
               "u32", // StartingResourcesConfig resources_list_id
@@ -1410,7 +1373,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u64", // StructureCapacityConfig hyperstructure_capacity
               "u64", // StructureCapacityConfig fragment_mine_capacity
               "u64", // StructureCapacityConfig bank_structure_capacity
-              "u64", // StructureCapacityConfig holysite_capacity
               "u64", // StructureCapacityConfig camp_capacity
               "u64", // StructureCapacityConfig bitcoin_mine_capacity
               "u32", // VictoryPointsGrantConfig hyp_points_per_second
@@ -1574,154 +1536,6 @@ export function defineContractComponents(world: World, namespace: string) {
               "u32", // game_id
               "felt252", // entity_id
               "u128", // count
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    Quest: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          game_token_id: RecsType.BigInt,
-          game_address: RecsType.BigInt,
-          quest_tile_id: RecsType.Number,
-          explorer_id: RecsType.Number,
-          completed: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "Quest",
-            types: [
-              "u32", // game_id
-              "u64", // game_token_id
-              "ContractAddress", // game_address
-              "u32", // quest_tile_id
-              "u32", // explorer_id
-              "bool", // completed
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    QuestFeatureFlag: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          key: RecsType.BigInt,
-          enabled: RecsType.Boolean,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestFeatureFlag",
-            types: [
-              "u32", // game_id
-              "felt252", // key
-              "bool", // enabled
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    QuestGameRegistry: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          key: RecsType.BigInt,
-          games: RecsType.BigIntArray,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestGameRegistry",
-            types: [
-              "u32", // game_id
-              "felt252", // key
-              "Span<ContractAddress>", // games
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    QuestLevels: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          game_address: RecsType.BigInt,
-          levels: RecsType.T,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestLevels",
-            types: [
-              "u32", // game_id
-              "ContractAddress", // game_address
-              "Span<Level>", // levels
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    QuestRegistrations: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          quest_tile_id: RecsType.Number,
-          realm_or_village_id: RecsType.Number,
-          game_token_id: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestRegistrations",
-            types: [
-              "u32", // game_id
-              "u32", // quest_tile_id
-              "u32", // realm_or_village_id
-              "u64", // game_token_id
-            ],
-          } satisfies ContractComponentMetadata,
-        },
-      );
-    })(),
-    QuestTile: (() => {
-      return defineComponent(
-        world,
-        {
-          game_id: RecsType.Number,
-          id: RecsType.Number,
-          game_address: RecsType.BigInt,
-          coord: { alt: RecsType.Boolean, x: RecsType.Number, y: RecsType.Number },
-          level: RecsType.Number,
-          resource_type: RecsType.Number,
-          amount: RecsType.BigInt,
-          capacity: RecsType.Number,
-          participant_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            namespace,
-            name: "QuestTile",
-            types: [
-              "u32", // game_id
-              "u32", // id
-              "ContractAddress", // game_address
-              "bool", // Coord alt
-              "u32", // Coord x
-              "u32", // Coord y
-              "u8", // level
-              "u8", // resource_type
-              "u128", // amount
-              "u16", // capacity
-              "u16", // participant_count
             ],
           } satisfies ContractComponentMetadata,
         },
@@ -3974,68 +3788,6 @@ export function defineContractComponents(world: World, namespace: string) {
                 "u32", // sender_structure_id
                 "Span<(u8, u128)>", // resources
                 "u64", // timestamp
-              ],
-            } satisfies ContractComponentMetadata,
-          },
-        );
-      })(),
-      TrophyCreation: (() => {
-        return defineComponent(
-          world,
-          {
-            id: RecsType.BigInt,
-            hidden: RecsType.Boolean,
-            index: RecsType.Number,
-            points: RecsType.Number,
-            start: RecsType.BigInt,
-            end: RecsType.BigInt,
-            group: RecsType.BigInt,
-            icon: RecsType.BigInt,
-            title: RecsType.BigInt,
-            description: RecsType.String,
-            tasks: RecsType.T,
-            data: RecsType.String,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "TrophyCreation",
-              types: [
-                "felt252", // id
-                "bool", // hidden
-                "u8", // index
-                "u16", // points
-                "u64", // start
-                "u64", // end
-                "felt252", // group
-                "felt252", // icon
-                "felt252", // title
-                "BytesArray", // description
-                "Span<Task>", // tasks
-                "BytesArray", // data
-              ],
-            } satisfies ContractComponentMetadata,
-          },
-        );
-      })(),
-      TrophyProgression: (() => {
-        return defineComponent(
-          world,
-          {
-            player_id: RecsType.BigInt,
-            task_id: RecsType.BigInt,
-            count: RecsType.BigInt,
-            time: RecsType.BigInt,
-          },
-          {
-            metadata: {
-              namespace,
-              name: "TrophyProgression",
-              types: [
-                "felt252", // player_id
-                "felt252", // task_id
-                "u128", // count
-                "u64", // time
               ],
             } satisfies ContractComponentMetadata,
           },

@@ -16,7 +16,7 @@ import {
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ActorType, BiomeType, ContractAddress, getHexDistance, ID } from "@bibliothecadao/types";
+import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } from "@bibliothecadao/types";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { useEffect, useMemo, useState } from "react";
 
@@ -125,16 +125,20 @@ export const BattleLab = ({
   // there is no map distance, so it falls back to adjacent (range 1).
   const liveAttackDistance = useMemo(() => {
     if (mode !== "live" || !selectedHex || !target) return 1;
-    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
-  }, [mode, selectedHex, target]);
+    return getLayeredAttackDistance(
+      { ...selectedHex, alt: selected?.alt ?? false },
+      { col: target.hex.x, row: target.hex.y, alt: snapshot?.defenderAlt ?? false },
+    );
+  }, [mode, selectedHex, selected?.alt, snapshot?.defenderAlt, target]);
 
   const combatContext = useMemo(
     () => ({
+      defenderAlt: state.defenderAlt,
       attackDistance: liveAttackDistance,
       attackerIsStructureGuard: snapshot?.attackerType === "structure",
       defenderIsStructureGuard: target?.targetType === TargetType.Structure,
     }),
-    [liveAttackDistance, snapshot?.attackerType, target?.targetType],
+    [state.defenderAlt, liveAttackDistance, snapshot?.attackerType, target?.targetType],
   );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);
@@ -258,7 +262,7 @@ export const BattleLab = ({
         if (state.selectedGuardSlot === null) throw new Error("No structure guard is selected");
         await attack_guard_vs_explorer({
           signer: account,
-          ethereal: snapshot.biome === BiomeType.Underground,
+          ethereal: snapshot.defenderAlt,
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
           explorer_id: target.id || 0,
@@ -266,7 +270,7 @@ export const BattleLab = ({
       } else if (target.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
-          ethereal: snapshot.biome === BiomeType.Underground,
+          ethereal: snapshot.defenderAlt,
           aggressor_id: attackerEntityId,
           defender_id: target.id || 0,
           steal_resources: targetResources,
@@ -274,7 +278,7 @@ export const BattleLab = ({
       } else {
         await attack_explorer_vs_guard({
           signer: account,
-          ethereal: snapshot.biome === BiomeType.Underground,
+          ethereal: snapshot.defenderAlt,
           explorer_id: attackerEntityId,
           structure_id: target.id || 0,
         });
@@ -335,15 +339,24 @@ export const BattleLab = ({
         />
       ) : (
         <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-          {state.biome === BiomeType.Underground && (
+          {state.defenderAlt && (
             <p className="text-sm text-gold/70">
               Preview assumes +{CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT}% damage for each side. Each side rolls a
               d20 for +1% to +20% in the fight.
             </p>
           )}
+          <label className="flex items-center gap-2 text-sm text-gold/70">
+            <input
+              type="checkbox"
+              checked={state.defenderAlt}
+              onChange={(event) => dispatch({ type: "SET_DEFENDER_LAYER", alt: event.target.checked })}
+            />
+            Defender in ethereal layer
+          </label>
           <BiomeEnvironmentBar
             combatSimulator={combatSimulator}
-            biome={state.biome}
+            biome={state.defenderAlt ? BiomeType.Underground : state.biome}
+            ethereal={state.defenderAlt}
             onSelect={(biome) => dispatch({ type: "SET_BIOME", biome })}
           />
 

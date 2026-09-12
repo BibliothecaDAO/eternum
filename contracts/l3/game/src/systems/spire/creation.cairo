@@ -4,7 +4,7 @@ use crate::alias::ID;
 use crate::models::config::{SettlementConfig, SettlementConfigImpl, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
-use crate::models::position::{Coord, CoordImpl};
+use crate::models::position::{Coord, CoordImpl, REGULAR_TO_ALTERNATE_MAP_SCALE};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::systems::utils::map::IMapImpl;
 use crate::utils::map::biomes::Biome;
@@ -40,9 +40,10 @@ fn validate_spire_lattice(config: SettlementConfig) {
     }
     assert!(config.base_distance > 0 && config.spires_layer_distance > 0, "Eternum: invalid spire spacing");
     let spacing: u32 = config.base_distance.into() * config.spires_layer_distance.into();
-    assert!(spacing % 15 == 0, "Eternum: spire spacing must align with ethereal steps");
-    let layers: u32 = config.layer_max.into() / config.spires_layer_distance.into();
-    let capacity = 1 + 3 * layers * (layers + 1);
+    assert!(
+        spacing.into() % REGULAR_TO_ALTERNATE_MAP_SCALE == 0, "Eternum: spire spacing must align with ethereal steps",
+    );
+    let capacity = SettlementConfigImpl::spire_capacity(config);
     assert!(config.spires_max_count.into() <= capacity, "Eternum: spire count exceeds lattice");
 }
 
@@ -54,7 +55,7 @@ fn explore_if_needed(ref world: WorldStorage, game_id: u32, ref tile: Tile) {
     }
 }
 
-pub fn create_spire_at_coord(ref world: WorldStorage, game_id: u32, coord: Coord) {
+fn create_spire_at_coord(ref world: WorldStorage, game_id: u32, coord: Coord) {
     let spire_id: ID = world.dispatcher.uuid();
 
     let regular_tile_opt: TileOpt = world.read_model((game_id, false, coord.x, coord.y));

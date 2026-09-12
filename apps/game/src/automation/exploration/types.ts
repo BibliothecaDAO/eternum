@@ -8,7 +8,6 @@ export type ExplorationMapSnapshot = {
   exploredTiles: Map<number, Map<number, BiomeType>>;
   structureHexes: Map<number, Map<number, HexEntityInfo>>;
   armyHexes: Map<number, Map<number, HexEntityInfo>>;
-  questHexes: Map<number, Map<number, HexEntityInfo>>;
   chestHexes: Map<number, Map<number, HexEntityInfo>>;
 };
 

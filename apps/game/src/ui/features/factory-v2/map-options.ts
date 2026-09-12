@@ -19,8 +19,6 @@ type PairOverrideKey =
   | "agentFindFailProbability"
   | "campFindProbability"
   | "campFindFailProbability"
-  | "holysiteFindProbability"
-  | "holysiteFindFailProbability"
   | "bitcoinMineWinProbability"
   | "bitcoinMineFailProbability"
   | "hyperstructureWinProbAtCenter"
@@ -39,7 +37,6 @@ export type FactoryMoreOptionFieldId =
   | "shards"
   | "camp"
   | "agent"
-  | "holysite"
   | "bitcoinMine"
   | "hyperstructureCenter"
   | "hyperstructureRadiusMultiplier"
@@ -168,7 +165,6 @@ const EMPTY_MORE_OPTIONS_DRAFT: FactoryMoreOptionsDraft = {
   shards: "",
   camp: "",
   agent: "",
-  holysite: "",
   bitcoinMine: "",
   hyperstructureCenter: "",
   hyperstructureRadiusMultiplier: "",
@@ -240,17 +236,6 @@ const FIELD_DEFINITIONS: FactoryMoreOptionDefinition[] = [
     pairSum: PERCENTAGE_PAIR_SUM_U16,
     winKey: "agentFindProbability",
     failKey: "agentFindFailProbability",
-  },
-  {
-    id: "holysite",
-    section: "discovery",
-    modes: ["eternum"],
-    kind: "percentage-pair",
-    label: "Holy Site chance",
-    step: "0.001",
-    pairSum: PERCENTAGE_PAIR_SUM_U16,
-    winKey: "holysiteFindProbability",
-    failKey: "holysiteFindFailProbability",
   },
   {
     id: "bitcoinMine",
@@ -386,7 +371,6 @@ const buildEmptyErrors = (): FactoryMoreOptionsErrors => ({
   shards: null,
   camp: null,
   agent: null,
-  holysite: null,
   bitcoinMine: null,
   hyperstructureCenter: null,
   hyperstructureRadiusMultiplier: null,
@@ -416,8 +400,6 @@ const resolveFieldHelperText = (definition: FactoryMoreOptionDefinition, mode: F
       return "Percent chance to find a Camp.";
     case "agent":
       return "Percent chance to find an Agent.";
-    case "holysite":
-      return "Percent chance to find a Holy Site.";
     case "bitcoinMine":
       return "Percent chance to find a Bitcoin Mine.";
     case "hyperstructureCenter":

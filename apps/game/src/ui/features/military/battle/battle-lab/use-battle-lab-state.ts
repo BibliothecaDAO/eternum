@@ -9,6 +9,7 @@ interface BattleLabState {
   mode: BattleLabMode;
   attackType: AttackMode;
   biome: BiomeType;
+  defenderAlt: boolean;
   attacker: WorkingArmy;
   defender: WorkingArmy;
   /** false → live target with no defenders (claim) */
@@ -18,6 +19,7 @@ interface BattleLabState {
   /** baseline captured from chain; null in pure-sim with no chain context */
   live: {
     biome: BiomeType;
+    defenderAlt: boolean;
     attacker: WorkingArmy;
     defender: WorkingArmy;
     hasDefender: boolean;
@@ -28,6 +30,7 @@ type BattleLabAction =
   | { type: "INIT_SIM"; biome: BiomeType }
   | { type: "INIT_LIVE"; snapshot: LiveSnapshot }
   | { type: "SET_BIOME"; biome: BiomeType }
+  | { type: "SET_DEFENDER_LAYER"; alt: boolean }
   | { type: "PATCH_ATTACKER"; patch: Partial<WorkingArmy> }
   | { type: "PATCH_DEFENDER"; patch: Partial<WorkingArmy> }
   | { type: "SET_ATTACK_TYPE"; attackType: AttackMode }
@@ -70,6 +73,7 @@ const sameEditable = (a: WorkingArmy, b: WorkingArmy) =>
 const selectIsEdited = (state: BattleLabState): boolean => {
   if (!state.live) return false;
   return (
+    state.defenderAlt !== state.live.defenderAlt ||
     state.biome !== state.live.biome ||
     !sameEditable(state.attacker, state.live.attacker) ||
     !sameEditable(state.defender, state.live.defender)
@@ -95,6 +99,7 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
         mode: "sim",
         attackType: "attack",
         biome: action.biome,
+        defenderAlt: false,
         attacker: DEFAULT_ATTACKER,
         defender: DEFAULT_DEFENDER,
         hasDefender: true,
@@ -111,13 +116,17 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
         ...state,
         mode: "live",
         biome: snapshot.biome,
+        defenderAlt: snapshot.defenderAlt,
         attacker,
         defender,
         hasDefender,
         selectedGuardSlot: slot,
-        live: { biome: snapshot.biome, attacker, defender, hasDefender },
+        live: { biome: snapshot.biome, defenderAlt: snapshot.defenderAlt, attacker, defender, hasDefender },
       };
     }
+
+    case "SET_DEFENDER_LAYER":
+      return { ...state, defenderAlt: action.alt };
 
     case "SET_BIOME":
       return { ...state, biome: action.biome };
@@ -142,6 +151,7 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
       return {
         ...state,
         biome: state.live.biome,
+        defenderAlt: state.live.defenderAlt,
         attacker: state.live.attacker,
         defender: state.live.defender,
         hasDefender: state.live.hasDefender,
@@ -156,6 +166,7 @@ const reducer = (state: BattleLabState, action: BattleLabAction): BattleLabState
 const initialState = (mode: BattleLabMode, biome: BiomeType): BattleLabState => ({
   mode,
   attackType: "attack",
+  defenderAlt: false,
   biome,
   attacker: DEFAULT_ATTACKER,
   defender: DEFAULT_DEFENDER,

@@ -37,7 +37,6 @@ mod tests {
         FaithConfig {
             enabled: true,
             wonder_base_fp_per_sec: 500, // 50 * PRECISION
-            holy_site_fp_per_sec: 500, // 50 * PRECISION
             realm_fp_per_sec: 100, // 10 * PRECISION
             village_fp_per_sec: 10, // 1 * PRECISION
             owner_share_percent: 3000, // 30%
@@ -1584,7 +1583,6 @@ mod tests {
         let disabled_config = FaithConfig {
             enabled: false,
             wonder_base_fp_per_sec: 500,
-            holy_site_fp_per_sec: 500,
             realm_fp_per_sec: 100,
             village_fp_per_sec: 10,
             owner_share_percent: 3000,

@@ -148,9 +148,7 @@ pub enum ExploreFind {
     Hyperstructure,
     Mine,
     Agent,
-    Quest,
     Village,
-    HolySite,
     Camp,
     BitcoinMine,
 }

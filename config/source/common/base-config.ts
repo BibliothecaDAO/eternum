@@ -74,7 +74,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       [CapacityConfig.HyperstructureStructure]: 18446744073709551615n,
       [CapacityConfig.BankStructure]: 18446744073709551615n,
       [CapacityConfig.FragmentMineStructure]: 18446744073709551615n,
-      [CapacityConfig.HolySiteStructure]: 18446744073709551615n,
       [CapacityConfig.CampStructure]: 18446744073709551615n,
       [CapacityConfig.BitcoinMineStructure]: 18446744073709551615n,
       [CapacityConfig.Donkey]: 50 * 1000,
@@ -132,19 +131,6 @@ export function buildCommonBaseConfig(): ConfigPatch {
       within_tile_distance: WONDER_PRODUCTION_BONUS_WITHIN_TILE_DISTANCE,
       bonus_percent_num: WONDER_PRODUCTION_BONUS_PERCENT_NUM,
     },
-    questGames: [
-      {
-        address: "0x01e1c477f2ef896fd638b50caa31e3aa8f504d5c6cb3c09c99cd0b72523f07f7",
-        levels: [
-          { target_score: 26, settings_id: 3, time_limit: 86400 },
-          { target_score: 26, settings_id: 6, time_limit: 86400 },
-          { target_score: 26, settings_id: 4, time_limit: 86400 },
-          { target_score: 51, settings_id: 1, time_limit: 86400 },
-          { target_score: 101, settings_id: 5, time_limit: 86400 },
-        ],
-        overwrite: true,
-      },
-    ],
     dev: {
       mode: {
         on: false,

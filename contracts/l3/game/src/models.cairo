@@ -37,7 +37,6 @@ pub mod resource {
     }
 }
 pub mod bitcoin_mine;
-pub mod quest;
 pub mod rank;
 
 pub mod realm_allocation;

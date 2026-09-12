@@ -35,9 +35,15 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Retired quest map tiles",
+    description: "Legacy quest tiles and standalone holy sites no longer appear in game creation or map actions.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-12",
     title: "Ethereal portals and dice",
     description:
-      "Travel through seven public spires for Essence, contest guarded Bitcoin mines, and roll a d20 damage bonus in ethereal battles. Previews assume +10% for both sides.",
+      "Travel through seven public spires for Essence, contest guarded Bitcoin mines, and roll a d20 damage bonus in ethereal battles. Battle Lab lets you select the defending layer; ethereal previews assume +10% for both sides.",
     type: "feature",
   },
   {

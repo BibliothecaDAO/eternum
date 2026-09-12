@@ -107,8 +107,6 @@ pub mod registrar_systems {
     use crate::models::game::{GAME_COUNTER_ID, GameCounter, GameRegistry, GameRegistryImpl, GameStatus, Preset, Series};
     use crate::models::hyperstructure::{CompletedHyperstructureImpl, HyperstructureGlobals, SharePointsCheckpoint};
     use crate::models::position::CENTER_COL;
-    use crate::models::quest::{QuestFeatureFlag, QuestGameRegistry, QuestLevels};
-    use crate::systems::quest::constants::VERSION;
     use crate::systems::utils::blitz_profile::iBlitzProfileImpl;
     use super::{
         CreateGameParams, IHyperstructureReservationDispatcher, IHyperstructureReservationDispatcherTrait,
@@ -210,7 +208,6 @@ pub mod registrar_systems {
             world.write_model(@world_config);
             world.write_model(@map_config);
             world.write_model(@agent_config);
-            initialize_quest_config(ref world, game_id, preset_rules);
             // Blitz pre-reserves its fixed hyperstructure sites at creation; eternum
             // hyperstructures are player-built and the reservation system is blitz-gated.
             if preset_game_config.blitz_mode_on {
@@ -492,17 +489,6 @@ pub mod registrar_systems {
             min_spawn_lords_amount: preset.agent_min_spawn_lords_amount,
             max_spawn_lords_amount: preset.agent_max_spawn_lords_amount,
         }
-    }
-
-    fn initialize_quest_config(ref world: WorldStorage, game_id: u32, preset: PresetConfig) {
-        let mut game_addresses = array![];
-        for quest_game in preset.quest_games {
-            let quest_game = *quest_game;
-            game_addresses.append(quest_game.address);
-            world.write_model(@QuestLevels { game_id, game_address: quest_game.address, levels: quest_game.levels });
-        }
-        world.write_model(@QuestGameRegistry { game_id, key: VERSION, games: game_addresses.span() });
-        world.write_model(@QuestFeatureFlag { game_id, key: VERSION, enabled: true });
     }
 
     fn update_series_for_new_game(ref world: WorldStorage, params: CreateGameParams) {

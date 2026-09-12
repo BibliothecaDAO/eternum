@@ -100,8 +100,6 @@ pub mod structure_creation_library {
             if tile.occupied() && (category == StructureCategory::Realm || category == StructureCategory::Village) {
                 // ensure occupier is not a structure
                 assert!(tile.occupier_is_structure == false, "Tile is occupied by structure");
-                // ensure occupier is not a quest
-                assert!(tile.occupier_type != TileOccupier::Quest.into(), "Tile is occupied by quest");
 
                 // double check that the tile is occupied by an explorer
                 let mut explorer: ExplorerTroops = world.read_model((game_id, tile.occupier_id));
@@ -177,7 +175,6 @@ pub mod structure_creation_library {
                 StructureCategory::Hyperstructure => structure_capacity_config.hyperstructure_capacity,
                 StructureCategory::FragmentMine => structure_capacity_config.fragment_mine_capacity,
                 StructureCategory::Bank => structure_capacity_config.bank_structure_capacity,
-                StructureCategory::HolySite => structure_capacity_config.holysite_capacity,
                 StructureCategory::Camp => structure_capacity_config.camp_capacity,
                 StructureCategory::BitcoinMine => structure_capacity_config.bitcoin_mine_capacity,
             };
@@ -306,7 +303,7 @@ pub mod structure_creation_library {
             let mut village_tile: Tile = village_tile_opt.into();
             reveal_village_tile(ref world, game_id, ref village_tile);
 
-            if village_tile.occupier_is_structure || village_tile.occupier_type == TileOccupier::Quest.into() {
+            if village_tile.occupier_is_structure {
                 continue;
             }
 

@@ -68,7 +68,6 @@ export const buildExplorationSnapshot = async ({
   const exploredTiles = new Map<number, Map<number, BiomeType>>();
   const structureHexes = new Map<number, Map<number, HexEntityInfo>>();
   const armyHexes = new Map<number, Map<number, HexEntityInfo>>();
-  const questHexes = new Map<number, Map<number, HexEntityInfo>>();
   const chestHexes = new Map<number, Map<number, HexEntityInfo>>();
 
   // Automation explores the surface; layer-aware exploration is the ethereal slice, item 4.
@@ -81,9 +80,7 @@ export const buildExplorationSnapshot = async ({
     if (tile.occupierId === 0 || tile.occupierType === TileOccupier.None) return;
 
     const info = buildHexInfo(Number(tile.occupierId), 0n);
-    if (tile.occupierType === TileOccupier.Quest) {
-      setNestedValue(questHexes, normalized.x, normalized.y, info);
-    } else if (tile.occupierType === TileOccupier.Chest) {
+    if (tile.occupierType === TileOccupier.Chest) {
       setNestedValue(chestHexes, normalized.x, normalized.y, info);
     }
   });
@@ -114,7 +111,6 @@ export const buildExplorationSnapshot = async ({
     exploredTiles,
     structureHexes,
     armyHexes,
-    questHexes,
     chestHexes,
   };
 };
