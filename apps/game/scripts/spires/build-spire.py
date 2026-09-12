@@ -184,10 +184,17 @@ def build_obelisk(side, stone, teal):
             for face_index in (7,):
                 corners = [a[face_index], a[(face_index + 1) % 8], b[(face_index + 1) % 8], b[face_index]]
                 build_engraved_face(corners, side, stone, teal)
+        vertices = a + b
         faces += [tuple(range(7, -1, -1)), tuple(range(8, 16))]
+        if index == 0:
+            vertices = [(side * low[1], 0, low[0])] + b
+            faces = [(0, (i + 1) % 8 + 1, i + 1) for i in range(8)] + [tuple(range(1, 9))]
+        elif index == len(rings) - 2:
+            vertices = a + [(side * high[1], 0, high[0])]
+            faces = [(i, (i + 1) % 8, 8) for i in range(8)] + [tuple(range(7, -1, -1))]
         if side < 0:
             faces = [tuple(reversed(face)) for face in faces]
-        section = mesh("Orbiting stone", a + b, faces, stone)
+        section = mesh("Orbiting stone", vertices, faces, stone)
         section["spirePart"] = "orbit"
         modifier = section.modifiers.new("Chipped joint edges", "BEVEL")
         modifier.width = 0.009
