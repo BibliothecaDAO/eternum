@@ -47,6 +47,9 @@ interface TransactionStoreState {
   getStaleTransactionTelemetry: () => StaleTransactionTelemetry;
 }
 
+export const selectHasPendingTransactions = (state: Pick<TransactionStoreState, "transactions">): boolean =>
+  state.transactions.some((transaction) => transaction.status === "pending");
+
 export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
   transactions: [],
   isMinimized: true,

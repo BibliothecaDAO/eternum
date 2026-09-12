@@ -9,3 +9,4 @@ export * from "./shareholder-points";
 export * from "./scheduler";
 export * from "./world-spatial-projection";
 export * from "./leaderboard-activity";
+export * from "./story-event-identity";

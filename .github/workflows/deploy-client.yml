@@ -62,14 +62,43 @@ jobs:
       - name: Test deployment verification and chunk recovery
         run: |
           node --test apps/game/scripts/verify-client-deployment.test.mjs
-          pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts
+          node --test apps/game/scripts/verify-pwa-build.test.mjs
+          pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
           pnpm --dir apps/game verify:assets
+
+      - name: Build baseline for service-worker update verification
+        env:
+          VITE_PUBLIC_GAME_VERSION: pwa-check-before-${{ github.sha }}
+        run: pnpm --dir apps/game exec vite build --outDir ../../.context/pwa/lifecycle-a
 
       - name: Build client
         env:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
         run: pnpm --dir apps/game build
+
+      - name: Verify emitted offline cache and install assets
+        run: node apps/game/scripts/verify-pwa-build.mjs apps/game/dist pwa-build-check.json
+
+      - name: Upload offline cache verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-build-check
+          path: pwa-build-check.json
+
+      - name: Install browser for service-worker verification
+        run: pnpm --dir apps/game exec playwright install --with-deps chromium
+
+      - name: Verify offline recovery and service-worker updates across builds
+        run: pnpm --dir apps/game verify:pwa:lifecycle ../../.context/pwa/lifecycle-a dist
+
+      - name: Upload service-worker browser verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-lifecycle-check
+          path: apps/game/output/playwright/pwa
 
       - name: Remove public sourcemaps
         working-directory: apps/game

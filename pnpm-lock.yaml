@@ -501,6 +501,9 @@ importers:
       '@vitest/ui':
         specifier: 2.1.9
         version: 2.1.9(vitest@2.1.9)
+      acorn:
+        specifier: 8.15.0
+        version: 8.15.0
       depcheck:
         specifier: ^1.4.7
         version: 1.4.7
@@ -528,6 +531,9 @@ importers:
       meshoptimizer:
         specifier: ^1.1.1
         version: 1.1.1
+      playwright:
+        specifier: ^1.63.0
+        version: 1.63.0
       rollup-plugin-visualizer:
         specifier: ^6.0.3
         version: 6.0.5(rolldown@1.2.5)(rollup@2.79.2)
@@ -552,6 +558,9 @@ importers:
       vitest:
         specifier: 2.1.9
         version: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+      workbox-precaching:
+        specifier: 7.4.0
+        version: 7.4.0
       workbox-window:
         specifier: ^7.3.0
         version: 7.4.0
@@ -16258,6 +16267,18 @@ packages:
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
+
+  playwright@1.63.0:
+    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
+
+  playwright-core@1.63.0:
+    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+    engines: {node: '>=20'}
+    hasBin: true
+
 
 snapshots:
 
@@ -36971,3 +36992,10 @@ snapshots:
     optional: true
 
   zwitch@2.0.4: {}
+
+  playwright@1.63.0:
+    dependencies:
+      playwright-core: 1.63.0
+
+
+  playwright-core@1.63.0: {}

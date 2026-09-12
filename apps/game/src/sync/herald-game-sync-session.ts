@@ -20,6 +20,7 @@ interface CreateHeraldGameSyncSessionInput {
   entityModels: readonly string[];
   eventModels: readonly string[];
   gameId: number;
+  worldAddress: string;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onMetrics?: (metrics: GameSyncRuntimeMetrics) => void;
   onSnapshotProgress?: (progress: GameSyncSnapshotProgress) => void;
@@ -59,7 +60,7 @@ export function createHeraldGameSyncSession(input: CreateHeraldGameSyncSessionIn
       useConnectionStore.getState().setGlobalStatus("failed");
       console.error(`[GameSync] live entity apply failed: ${error.message}`);
     },
-    onEvent: acceptGameSyncStoryEvent,
+    onEvent: (event) => acceptGameSyncStoryEvent(event, input),
     onMetrics: input.onMetrics,
     onSnapshotProgress: observeSnapshotProgress,
     onTransactionEntitiesApplied: recordClientActionRecsApplied,

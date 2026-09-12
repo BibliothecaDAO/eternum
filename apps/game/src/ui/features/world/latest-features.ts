@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Install Realms",
+    description:
+      "Install Realms on your device, retry when your connection returns, and apply game updates when you are ready.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Cleaner Game Activity",
+    description:
+      "Live activity and history now share event identities, so the same event appears only once when history loads.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
     title: "Refined Realms and Clear Ownership",
     description:
       "Realm masonry grows paler and finer with each tier, with hand-laid roofs, a raised kingdom drawbridge, and full-height empire gates. Settlement supplies sit beside a clear entrance. Owned realms and villages fly green banners; all others fly red. Every realm hanging displays its order emblem. Chests are 30% smaller on the map. Game entry loads entity models as the selected world needs them.",

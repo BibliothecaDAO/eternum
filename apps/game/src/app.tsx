@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import "./index.css";
+import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
 
 const DebugThreeChunkView = lazy(() =>
   import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
@@ -52,6 +53,7 @@ const GameClientRouteShell = () => (
 function App() {
   return (
     <BrowserRouter>
+      <PwaUpdatePrompt />
       <Routes>
         <Route
           path="/lab/*"

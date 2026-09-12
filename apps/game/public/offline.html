@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F6C297" />
+    <title>Realms — Connection unavailable</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Georgia, serif;
+        background: #080d10;
+        color: #f4e6cf;
+      }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+          env(safe-area-inset-left);
+      }
+      main {
+        max-width: 30rem;
+        margin: 2rem;
+        text-align: center;
+      }
+      img {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        padding: 8px;
+        box-sizing: border-box;
+        background: #f6c297;
+      }
+      h1 {
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
+        font-weight: normal;
+      }
+      p {
+        color: #c5bba9;
+        line-height: 1.6;
+        font-family: system-ui, sans-serif;
+      }
+      button {
+        margin-top: 1rem;
+        padding: 0.85rem 1.5rem;
+        border: 1px solid #f6c297;
+        border-radius: 0.4rem;
+        background: #f6c297;
+        color: #131b1d;
+        font:
+          600 1rem system-ui,
+          sans-serif;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid white;
+        outline-offset: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/images/game-pwa-192x192.png" alt="Realms" />
+      <h1>Connection unavailable</h1>
+      <p>Realms needs an internet connection to load your game. Check your connection, then try again.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
