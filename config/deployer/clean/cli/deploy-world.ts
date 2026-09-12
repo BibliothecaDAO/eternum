@@ -6,8 +6,9 @@ import { assertProviderChain } from "@realms-world/chain";
 import { createMadaraAccount } from "../shared/madara-account";
 import { parseArgs } from "./args";
 import { loadLocalWorld, readWorldProfile } from "../world/artifacts";
-import { deployWorld } from "../world/deploy";
+import { deployWorld, isWorldSynced } from "../world/deploy";
 import { buildWorldManifest, writeWorldOutputs } from "../world/manifest";
+import { inspectWorld } from "../world/plan";
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -19,9 +20,11 @@ async function main() {
     "world-address-file",
     "world-address",
     "rpc-url",
+    "inspect",
   ]);
   for (const flag of Object.keys(args))
     if (!supported.has(flag)) throw new Error(`Unknown deployment option: --${flag}`);
+  if (args.inspect !== undefined && args.inspect !== "true") throw new Error("--inspect does not take a value");
   const root = resolve(import.meta.dir, "../../../..");
   const game = resolve(root, "contracts/l3/game");
   const profile = readWorldProfile(args.profile ?? resolve(game, "dojo_madara.toml"));
@@ -34,6 +37,12 @@ async function main() {
   const local = loadLocalWorld(args.artifacts ?? resolve(game, "target/madara"), profile, address);
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] ?? process.env.RPC_URL ?? profile.env.rpc_url });
   await assertProviderChain(provider, "madara", "RPC_URL");
+  if (args.inspect === "true") {
+    const plan = await inspectWorld(local, provider);
+    console.log(JSON.stringify({ event: "world_inspection", synced: isWorldSynced(plan), ...plan }, null, 2));
+    if (plan.blockers.length) process.exitCode = 1;
+    return;
+  }
   const account = createMadaraAccount(
     provider,
     process.env.DOJO_ACCOUNT_ADDRESS ?? profile.env.account_address,
