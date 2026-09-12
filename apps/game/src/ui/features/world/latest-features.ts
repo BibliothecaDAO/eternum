@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-13",
+    title: "Notification Settings Across Tabs",
+    description: "Changing your account notification level also updates your other open game tabs.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-13",
     title: "Install Realms Easily",
     description:
       "Use Install Realms on the home page or in Settings to install the game or see instructions for your browser.",

@@ -96,19 +96,22 @@ it("never dispatches history, unknown confirmation, provisional events, spectato
   expect(mocks.send).not.toHaveBeenCalled();
   expect(mocks.device).not.toHaveBeenCalled();
 });
-it.each(["owner", "world", "saving"])("drops pending work when %s changes before delivery", async (change) => {
-  let finish!: (value: unknown) => void;
-  mocks.device.mockReturnValue(
-    new Promise((resolve) => {
-      finish = resolve;
-    }),
-  );
-  dispatchLocalStoryNotification(event(), scope, live);
-  if (change === "owner") mocks.owner = "0x2";
-  else if (change === "world") mocks.world = { ...mocks.world, worldAddress: "0x999" };
-  else mocks.preferences.status = "saving";
-  finish({ owner: "0x1", token: "token", enabledAt: Date.now() - 10_000 });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(mocks.send).not.toHaveBeenCalled();
-});
+it.each(["owner", "world", "saving", "loading", "error"])(
+  "drops pending work when %s changes before delivery",
+  async (change) => {
+    let finish!: (value: unknown) => void;
+    mocks.device.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    dispatchLocalStoryNotification(event(), scope, live);
+    if (change === "owner") mocks.owner = "0x2";
+    else if (change === "world") mocks.world = { ...mocks.world, worldAddress: "0x999" };
+    else mocks.preferences.status = change;
+    finish({ owner: "0x1", token: "token", enabledAt: Date.now() - 10_000 });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mocks.send).not.toHaveBeenCalled();
+  },
+);

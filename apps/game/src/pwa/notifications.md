@@ -10,9 +10,12 @@ The transport's `confirmedAfterAttach` flag is true only for confirmed events ne
 socket connected. Local delivery deliberately skips initial catch-up and all events confirmed during a disconnect, even
 if the outage was brief. This avoids a notification burst after reconnect; those events remain in activity history.
 Account, gameplay recipient, preference state, game scope and permission are checked before delivery, and account/game/
-preference changes invalidate asynchronous work. Focused activity stays in the feed; a matching focused tab suppresses
-OS output from background tabs too. A browser PushSubscription suppresses local delivery so a later push transport can
-own it.
+preference changes invalidate asynchronous work. Successful account saves notify other same-origin tabs to reload the
+server-owned preference, without putting its value in browser storage. Delivery remains paused during refresh, including
+when invalidation arrives during an existing read or save. Refresh failures keep delivery paused and surface in
+Settings; focus and browser-online events also reload preferences. Focused activity stays in the feed; a matching
+focused tab suppresses OS output from background tabs too. A browser PushSubscription suppresses local delivery so a
+later push transport can own it.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
 game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Local payloads expire

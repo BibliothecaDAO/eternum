@@ -3,6 +3,7 @@ import { isNotificationLevel, type NotificationLevel } from "@bibliothecadao/not
 import { useEffect } from "react";
 import { create } from "zustand";
 
+const ACCOUNT_CHANGE_KEY = "eternum:account-notification-change:v1";
 const ANONYMOUS_KEY = "eternum:anonymous-notification-level:v1";
 type SavedPreference = { level: NotificationLevel; revision: number; owner: string | null };
 interface PreferenceState {
@@ -19,41 +20,77 @@ export const useNotificationPreferenceStore = create<PreferenceState>(() => ({
   saved: null,
   error: null,
 }));
-let operation = 0;
-let loading = false;
+type PreferenceOperation = { owner: string | null; invalidated: boolean };
+let activeOperation: PreferenceOperation | null = null;
 
-async function reload(owner: string | null): Promise<void> {
-  const store = useNotificationPreferenceStore;
-  const previous = store.getState();
-  if (previous.owner === owner && (loading || previous.status === "saving")) return;
-  const current = ++operation;
-  loading = true;
-  store.setState({ owner, status: "loading", saved: previous.owner === owner ? previous.saved : null, error: null });
-  try {
-    const saved = owner ? await identityClient.getNotificationPreferences() : readAnonymousPreference();
-    if (saved.owner !== owner) throw new Error("Your account changed. Reopen Settings to load its preferences.");
-    if (current === operation) store.setState({ status: "ready", saved, error: null });
-  } catch (error) {
-    if (current === operation) store.setState({ status: "error", error: errorMessage(error) });
-  } finally {
-    if (current === operation) loading = false;
+async function reload(owner: string | null, invalidate = false): Promise<void> {
+  if (activeOperation?.owner === owner) {
+    // An invalidation during IO must trigger a fresh read after that IO settles.
+    activeOperation.invalidated ||= invalidate;
+    return;
   }
+  await runPreferenceOperation(owner, "loading", () =>
+    owner ? identityClient.getNotificationPreferences() : readAnonymousPreference(),
+  );
 }
 
 async function save(owner: string | null, level: NotificationLevel): Promise<void> {
-  const store = useNotificationPreferenceStore;
-  const state = store.getState();
+  const state = useNotificationPreferenceStore.getState();
   if (state.owner !== owner || state.status !== "ready" || !state.saved) return;
-  const current = ++operation;
-  store.setState({ status: "saving", error: null });
+  const revision = state.saved.revision;
+  await runPreferenceOperation(owner, "saving", async () => {
+    if (!owner) return saveAnonymousPreference(level);
+    const saved = await identityClient.saveNotificationPreferences({ owner, level, revision });
+    if (saved.owner === owner) publishAccountPreferenceChange(saved);
+    return saved;
+  });
+}
+
+async function runPreferenceOperation(
+  owner: string | null,
+  status: "loading" | "saving",
+  work: () => SavedPreference | Promise<SavedPreference>,
+): Promise<void> {
+  const operation = { owner, invalidated: false };
+  activeOperation = operation;
+  const store = useNotificationPreferenceStore;
+  const previous = store.getState();
+  store.setState({ owner, status, saved: previous.owner === owner ? previous.saved : null, error: null });
   try {
-    const saved = owner
-      ? await identityClient.saveNotificationPreferences({ owner, level, revision: state.saved.revision })
-      : saveAnonymousPreference(level);
+    const saved = await work();
     if (saved.owner !== owner) throw new Error("Your account changed. Reload your preferences.");
-    if (current === operation) store.setState({ status: "ready", saved, error: null });
+    if (activeOperation === operation && !operation.invalidated) store.setState({ status: "ready", saved });
   } catch (error) {
-    if (current === operation) store.setState({ status: "error", error: errorMessage(error) });
+    if (activeOperation === operation && !operation.invalidated)
+      store.setState({ status: "error", error: errorMessage(error) });
+  } finally {
+    if (activeOperation === operation) {
+      activeOperation = null;
+      if (operation.invalidated) await reload(owner);
+    }
+  }
+}
+
+// This is an invalidation signal, never a second copy of the server-owned preference.
+function publishAccountPreferenceChange(saved: SavedPreference): void {
+  try {
+    localStorage.setItem(ACCOUNT_CHANGE_KEY, JSON.stringify({ owner: saved.owner, revision: saved.revision }));
+  } catch {
+    throw new Error(
+      "Preference saved, but other tabs could not be updated. Allow site storage and reload preferences.",
+    );
+  }
+}
+
+function isPreferenceStorageChange(event: StorageEvent, owner: string | null): boolean {
+  if (event.storageArea && event.storageArea !== localStorage) return false;
+  if (event.key === null) return true;
+  if (!owner) return event.key === ANONYMOUS_KEY;
+  if (event.key !== ACCOUNT_CHANGE_KEY || !event.newValue) return false;
+  try {
+    return JSON.parse(event.newValue)?.owner === owner;
+  } catch {
+    return false;
   }
 }
 
@@ -62,10 +99,10 @@ export function useNotificationPreferences(owner: string | null) {
   useEffect(() => {
     void reload(owner);
     const refresh = () => {
-      void reload(owner);
+      void reload(owner, true);
     };
     const storage = (event: StorageEvent) => {
-      if (!owner && (event.key === null || event.key === ANONYMOUS_KEY)) refresh();
+      if (isPreferenceStorageChange(event, owner)) refresh();
     };
     window.addEventListener("focus", refresh);
     window.addEventListener("online", refresh);
