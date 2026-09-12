@@ -14,7 +14,7 @@ import {
   resolveRealmBannerRow,
   REALM_ATLAS_COLUMNS,
   REALM_ATLAS_ROWS,
-  REALM_NEUTRAL_ROW,
+  REALM_BANNER_GROUP_SIZE,
   SETTLEMENT_RELATIONSHIP_ORDER,
   type SettlementRelationship,
 } from "./settlement-appearance";
@@ -48,7 +48,7 @@ export class SettlementModel extends InstancedModel {
     this.settlementAnimation = new SettlementAnimation(gltf.scene, this.instancedMeshes);
     this.heraldry = new InstancedBufferAttribute(
       new Float32Array(this.instancedMeshes[0].instanceMatrix.count).fill(
-        kind === "village" ? SETTLEMENT_RELATIONSHIP_ORDER.indexOf("enemy") : REALM_NEUTRAL_ROW,
+        kind === "village" ? SETTLEMENT_RELATIONSHIP_ORDER.indexOf("enemy") : resolveRealmBannerRow(undefined),
       ),
       1,
     );
@@ -98,13 +98,19 @@ export class SettlementModel extends InstancedModel {
 
   setOrderAt(index: number, orderId: number | undefined): void {
     if (this.kind !== "realm") throw new Error("Only realms have order heraldry");
-    this.heraldry.setX(index, resolveRealmBannerRow(orderId));
+    const relationship = SETTLEMENT_RELATIONSHIP_ORDER[Math.floor(this.heraldry.getX(index) / REALM_BANNER_GROUP_SIZE)];
+    this.heraldry.setX(index, resolveRealmBannerRow(orderId, relationship));
     this.heraldry.needsUpdate = true;
   }
 
   setRelationshipAt(index: number, relationship: SettlementRelationship): void {
-    if (this.kind !== "village") throw new Error("Only villages have relationship heraldry");
-    this.heraldry.setX(index, SETTLEMENT_RELATIONSHIP_ORDER.indexOf(relationship));
+    const group = SETTLEMENT_RELATIONSHIP_ORDER.indexOf(relationship);
+    if (group < 0) throw new Error(`Unknown settlement relationship: ${relationship}`);
+    const row =
+      this.kind === "village"
+        ? group
+        : (this.heraldry.getX(index) % REALM_BANNER_GROUP_SIZE) + group * REALM_BANNER_GROUP_SIZE;
+    this.heraldry.setX(index, row);
     this.heraldry.needsUpdate = true;
   }
 

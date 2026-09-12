@@ -7,6 +7,7 @@ import bpy
 from mathutils import Matrix
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from construction_finish import finish_construction
 from courtyard_props import build_brazier, build_supplies, build_barrel, build_sack
 import realm_keep as keep
 from settlement_geometry import block, beam, save_asset
@@ -17,7 +18,7 @@ from fortification_geometry import build_recessed_doorway
 def build_city():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    m = palette()
+    m = palette("city")
     build_city_keep(m)
     keep.build_enclosure(m)
     keep.build_gate(m)
@@ -28,9 +29,10 @@ def build_city():
     build_barrel(m, 0.53, -0.075)
     build_sack(m, 0.42, -0.07)
     banner(m, "City order banner", 0.575, -0.39, 1.30, span=-0.23, height=0.36)
+    finish_construction(m, "city")
     save_asset(
         "city",
-        "attached round tower, terracotta keep, two courtyard homes and outward-opening gate",
+        "attached round tower, terracotta keep, two courtyard homes and closed oak gate",
         "Runtime order heraldry and wind",
     )
 

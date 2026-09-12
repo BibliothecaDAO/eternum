@@ -350,8 +350,8 @@ export class TerrainLabInteraction {
   }
 
   private applySettlementHeraldry(model: SettlementModel, index: number): void {
-    if (model.kind === "village") model.setRelationshipAt(index, this.preview.relationship);
-    else model.setOrderAt(index, this.preview.realmOrderId);
+    model.setRelationshipAt(index, this.preview.relationship);
+    if (model.kind === "realm") model.setOrderAt(index, this.preview.realmOrderId);
   }
 
   private beginPick = (event: PointerEvent): void => {

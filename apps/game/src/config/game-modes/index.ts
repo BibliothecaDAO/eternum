@@ -8,7 +8,7 @@ import {
   StructureType,
   getResourceTiers,
 } from "@bibliothecadao/types";
-import { buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
+import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 import { resolveGameModeFromBlitzFlag } from "./resolved-mode";
 
 export type GameModeId = "eternum" | "blitz";
@@ -81,7 +81,7 @@ export interface GameModeConfig {
       fragmentMine: string;
     };
     structureModelPaths: ReturnType<typeof getStructureModelPaths>;
-    buildingModelPaths: ReturnType<typeof buildingModelPaths>;
+    buildingModelPaths: ReturnType<typeof resolveBuildingModelPaths>;
   };
 }
 
@@ -96,9 +96,18 @@ const BASE_BUILDING_EXCLUSIONS = new Set<string>([
   "Storehouse",
 ]);
 
-const BLITZ_BUILDING_EXCLUSIONS = new Set<string>(["ResourceFish", "ResourceResearch"]);
+const BLITZ_BUILDING_EXCLUSIONS = new Set<keyof typeof BuildingType>(["ResourceFish", "ResourceResearch"]);
 
 const BLITZ_UNMANAGEABLE_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Labor, ResourcesIds.Wheat]);
+
+function resolveBuildingModelPaths(isBlitz: boolean) {
+  const paths = buildingModelPaths(isBlitz);
+  const buildings: Partial<Record<BuildingType, string>> = { ...paths[BUILDINGS_GROUPS.BUILDINGS] };
+  if (isBlitz) {
+    for (const building of BLITZ_BUILDING_EXCLUSIONS) delete buildings[BuildingType[building]];
+  }
+  return { ...paths, [BUILDINGS_GROUPS.BUILDINGS]: buildings };
+}
 
 const buildStructureHelpers = (isBlitz: boolean) => ({
   getName: (structure: StructureNameInput, parentRealmContractPosition?: { col: number; row: number }) =>
@@ -168,7 +177,7 @@ const blitzConfig: GameModeConfig = {
       fragmentMine: "/images/labels/essence_rift.png",
     },
     structureModelPaths: getStructureModelPaths(true),
-    buildingModelPaths: buildingModelPaths(true),
+    buildingModelPaths: resolveBuildingModelPaths(true),
   },
 };
 
@@ -225,7 +234,7 @@ const eternumConfig: GameModeConfig = {
       fragmentMine: "/images/labels/fragment_mine.png",
     },
     structureModelPaths: getStructureModelPaths(false),
-    buildingModelPaths: buildingModelPaths(false),
+    buildingModelPaths: resolveBuildingModelPaths(false),
   },
 };
 

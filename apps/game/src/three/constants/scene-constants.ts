@@ -70,8 +70,6 @@ export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
   VILLAGE_MODEL_PATH,
 ]);
 
-export const SHARED_CHEST_MODEL_PATHS = buildUniqueAssetPaths([ChestModelPath]);
-
 export const structureTypeToBuildingType: Record<StructureType, BuildingType> = {
   [StructureType.Bank]: BuildingType.ResourceDonkey,
   [StructureType.Realm]: BuildingType.ResourceLabor,

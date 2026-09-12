@@ -475,7 +475,7 @@ def build_arcane_chest(root):
         angle = i * TAU / 3
         crystal(
             f"Orbit jewel {i}",
-            (0.70 * math.cos(angle), 0.70 * math.sin(angle), 0.62),
+            (0.49 * math.cos(angle), 0.49 * math.sin(angle), 0.434),
             (0.08, 0.07, 0.18),
             "Cyan crystal",
             orbit,

@@ -5,7 +5,6 @@ import {
   type SettlementRelationship,
 } from "../structures/settlement-appearance";
 import { VILLAGE_MODEL_PATH, isSettlementModelPath } from "../constants/scene-constants";
-import { arePlayersAllied } from "@/utils/entity-ownership";
 import { isAddressEqualToAccount } from "../utils/utils";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { PlotConstructionPicker } from "@/ui/features/settlement/construction/plot-construction-picker";
@@ -512,8 +511,7 @@ export default class HexceptionScene extends HexagonScene {
     });
     if (isSettlementModelPath(path)) {
       const appearance = new SettlementAppearance(model, meshes);
-      if (path === VILLAGE_MODEL_PATH) appearance.setRelationship("enemy");
-      else await appearance.setOrder(undefined);
+      appearance.setRelationship("enemy");
       this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
       model.userData.settlementModelPath = path;
     }
@@ -1828,18 +1826,12 @@ export default class HexceptionScene extends HexagonScene {
     const wind = this.getWeatherAtmosphereState() ?? { windX: 0, windZ: 0 };
     for (const [path, presentation] of this.settlementPresentations) {
       if (!activePaths.has(path)) continue;
-      if (path === VILLAGE_MODEL_PATH) {
-        const relationship = resolveSettlementRelationship({
-          isMine: !!structure && isAddressEqualToAccount(structure.owner),
-          isAlly:
-            !!structure &&
-            arePlayersAllied(this.dojo.components, useAccountStore.getState().account?.address, structure.owner),
-        });
-        if (relationship !== presentation.relationship) {
-          presentation.appearance.setRelationship(relationship);
-          presentation.relationship = relationship;
-        }
-      } else if (structure?.metadata.order !== presentation.orderId) {
+      const relationship = resolveSettlementRelationship(!!structure && isAddressEqualToAccount(structure.owner));
+      if (relationship !== presentation.relationship) {
+        presentation.appearance.setRelationship(relationship);
+        presentation.relationship = relationship;
+      }
+      if (path !== VILLAGE_MODEL_PATH && structure?.metadata.order !== presentation.orderId) {
         presentation.orderId = structure?.metadata.order;
         void presentation.appearance.setOrder(presentation.orderId).catch((error) => {
           console.error("[Hexception] Unable to prepare realm heraldry", error);

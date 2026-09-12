@@ -15,6 +15,7 @@ from settlement_geometry import (
     block, mesh, bake_instance_transforms, consolidate_static_materials, export_glb,
 )
 from town_architecture import palette
+from stone_textures import bake_limestone
 
 SOURCE = ROOT / ".context/ethereal-layer/spire"
 OUTPUT = ROOT / "apps/game/public/models/ethereal/spire.glb"
@@ -26,7 +27,7 @@ def build_spire():
     SOURCE.mkdir(parents=True, exist_ok=True)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     materials = palette()
-    stone = bake_limestone(materials["stone_light"])
+    stone = bake_limestone(materials["stone_light"], SOURCE)
     build_socket(stone)
     for side in [-1, 1]:
         build_obelisk(side, stone, materials["teal"])
@@ -37,73 +38,6 @@ def build_spire():
     consolidate_static_materials()
     export_glb(OUTPUT)
     write_report()
-
-
-def bake_limestone(stone):
-    """Bake mineral grain once; the game samples ordinary PBR textures."""
-    nodes = stone.node_tree.nodes
-    links = stone.node_tree.links
-    shader = nodes.get("Principled BSDF")
-    texcoord = nodes.new("ShaderNodeTexCoord")
-    grain = nodes.new("ShaderNodeTexNoise")
-    grain.inputs["Scale"].default_value = 220
-    grain.inputs["Detail"].default_value = 2
-    grain.inputs["Roughness"].default_value = 0.72
-    links.new(texcoord.outputs["UV"], grain.inputs["Vector"])
-    mineral = nodes.new("ShaderNodeTexNoise")
-    mineral.inputs["Scale"].default_value = 3
-    mineral.inputs["Detail"].default_value = 4
-    links.new(texcoord.outputs["UV"], mineral.inputs["Vector"])
-    colors = nodes.new("ShaderNodeValToRGB")
-    colors.color_ramp.elements[0].position = 0.18
-    colors.color_ramp.elements[0].color = (0.53, 0.455, 0.325, 1)
-    colors.color_ramp.elements[1].position = 0.82
-    colors.color_ramp.elements[1].color = (0.65, 0.575, 0.445, 1)
-    links.new(mineral.outputs["Fac"], colors.inputs["Fac"])
-    links.new(colors.outputs["Color"], shader.inputs["Base Color"])
-    bump = nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.15
-    bump.inputs["Distance"].default_value = 0.004
-    links.new(grain.outputs["Fac"], bump.inputs["Height"])
-    links.new(bump.outputs["Normal"], shader.inputs["Normal"])
-    bpy.ops.mesh.primitive_plane_add(size=2)
-    plane = bpy.context.object
-    plane.data.materials.append(stone)
-    scene = bpy.context.scene
-    scene.render.engine = "CYCLES"
-    scene.cycles.samples = 1
-    scene.render.bake.margin = 8
-    scene.render.bake.use_pass_direct = False
-    scene.render.bake.use_pass_indirect = False
-    textures = {}
-    for name, kind in [("limestone-color", "DIFFUSE"), ("limestone-normal", "NORMAL")]:
-        image = bpy.data.images.new(name, width=512, height=512)
-        if kind == "NORMAL":
-            image.colorspace_settings.name = "Non-Color"
-        target = nodes.new("ShaderNodeTexImage")
-        target.image = image
-        nodes.active = target
-        bpy.ops.object.bake(type=kind)
-        image.filepath_raw = str(SOURCE / (name + ".png"))
-        image.file_format = "PNG"
-        image.save()
-        textures[kind] = image
-    bpy.data.objects.remove(plane, do_unlink=True)
-    nodes.clear()
-    output = nodes.new("ShaderNodeOutputMaterial")
-    shader = nodes.new("ShaderNodeBsdfPrincipled")
-    shader.inputs["Roughness"].default_value = 0.88
-    links.new(shader.outputs["BSDF"], output.inputs["Surface"])
-    color = nodes.new("ShaderNodeTexImage")
-    color.image = textures["DIFFUSE"]
-    links.new(color.outputs["Color"], shader.inputs["Base Color"])
-    normal = nodes.new("ShaderNodeTexImage")
-    normal.image = textures["NORMAL"]
-    decode = nodes.new("ShaderNodeNormalMap")
-    links.new(normal.outputs["Color"], decode.inputs["Color"])
-    links.new(decode.outputs["Normal"], shader.inputs["Normal"])
-    stone.name = "Weathered limestone"
-    return stone
 
 
 def build_socket(stone):
