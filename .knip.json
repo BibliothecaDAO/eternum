@@ -24,8 +24,7 @@
   ],
   "ignoreWorkspaces": [
     "packages/ammv2-sdk",
-    "packages/dojo",
-    "packages/game-agent"
+    "packages/dojo"
   ],
   "workspaces": {
     ".": {

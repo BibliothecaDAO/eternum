@@ -1457,37 +1457,6 @@ importers:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
 
-  packages/game-agent:
-    dependencies:
-      '@mariozechner/pi-agent-core':
-        specifier: ^0.52.7
-        version: 0.52.12(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)
-      '@mariozechner/pi-ai':
-        specifier: ^0.52.7
-        version: 0.52.12(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)
-      '@mariozechner/pi-coding-agent':
-        specifier: ^0.52.7
-        version: 0.52.12(@modelcontextprotocol/sdk@1.27.1(zod@4.3.6))(bufferutil@4.1.0)(utf-8-validate@5.0.10)(ws@8.21.3(bufferutil@4.1.0)(utf-8-validate@5.0.10))(zod@4.3.6)
-      '@sinclair/typebox':
-        specifier: ^0.34.41
-        version: 0.34.48
-      yaml:
-        specifier: ^2.3.0
-        version: 2.8.2
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.11
-      tsup:
-        specifier: ^8.0.2
-        version: 8.5.1(@swc/core@1.15.11(@swc/helpers@0.5.18))(jiti@2.7.0)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.0
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.11)(jiti@2.7.0)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-
   packages/identity:
     dependencies:
       '@realms-world/chain':
