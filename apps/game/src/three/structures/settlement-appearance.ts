@@ -12,8 +12,7 @@ import { MaterialPool } from "../utils/material-pool";
 
 export const SETTLEMENT_RELATIONSHIPS = {
   owned: { label: "Owned · green", color: "#438b46" },
-  allied: { label: "Allied · blue", color: "#387bc1" },
-  enemy: { label: "Enemy / unowned · red", color: "#aa3028" },
+  enemy: { label: "Not owned · red", color: "#aa3028" },
 } as const;
 export type SettlementRelationship = keyof typeof SETTLEMENT_RELATIONSHIPS;
 export const SETTLEMENT_RELATIONSHIP_ORDER = Object.keys(SETTLEMENT_RELATIONSHIPS) as SettlementRelationship[];
@@ -23,19 +22,25 @@ export class SettlementAppearance {
   private readonly cloth: MeshStandardMaterial[] = [];
   private readonly banners = new Set<MeshStandardMaterial>();
   private bannerTexture: CanvasTexture | null = null;
+  private relationship: SettlementRelationship = "enemy";
+  private readonly isRealm: boolean;
+  private artwork?: HTMLImageElement;
   private revision = 0;
   private disposed = false;
 
   constructor(source: Object3D, instances: readonly Mesh[]) {
     const surfaces = new Map<string, boolean>();
+    let isRealm = false;
     source.traverse((node) => {
       if (node instanceof Mesh && (node.userData.relationshipCloth || node.userData.orderCloth)) {
+        isRealm ||= Boolean(node.userData.orderCloth);
         surfaces.set(
           node.geometry.uuid,
           node.userData.relationshipCloth === "banner" || node.userData.orderCloth === "banner",
         );
       }
     });
+    this.isRealm = isRealm;
     const pool = MaterialPool.getInstance();
     for (const instance of instances) {
       if (!surfaces.has(instance.geometry.uuid)) continue;
@@ -54,34 +59,27 @@ export class SettlementAppearance {
   setRelationship(relationship: SettlementRelationship): void {
     const appearance = SETTLEMENT_RELATIONSHIPS[relationship];
     if (!appearance) throw new Error(`Unknown settlement relationship: ${relationship}`);
+    if (this.disposed) return;
+    this.relationship = relationship;
     for (const material of this.cloth) material.color.set(appearance.color);
     if (this.banners.size === 0) return;
     this.bannerTexture ??= createBannerTexture();
-    paintVillageBanner(this.bannerTexture, appearance.color);
+    if (this.isRealm) paintOrderBanner(this.bannerTexture, appearance.color, this.artwork);
+    else paintVillageBanner(this.bannerTexture, appearance.color);
     this.applyBannerTexture();
   }
 
   async setOrder(orderId: number | undefined): Promise<void> {
     if (this.disposed) return;
     const revision = ++this.revision;
-    this.bannerTexture ??= createBannerTexture();
-    for (const material of this.cloth) material.color.set("#94a3b8");
-    const canvas = this.bannerTexture.image as HTMLCanvasElement;
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Realm banner canvas is unavailable");
-    context.fillStyle = "#94a3b8";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    this.bannerTexture.needsUpdate = true;
-    this.applyBannerTexture();
+    this.artwork = undefined;
+    this.setRelationship(this.relationship);
     if (orderId === undefined) return;
-    const row = resolveRealmBannerRow(orderId);
-    const order = orders[row];
+    const row = resolveOrderRow(orderId);
     const artwork = (await loadOrderArtwork())[row];
     if (this.disposed || revision !== this.revision) return;
-    for (const material of this.cloth) material.color.set(order.color);
-    this.bannerTexture ??= createBannerTexture();
-    paintOrderBanner(this.bannerTexture, order.color, artwork);
-    this.applyBannerTexture();
+    this.artwork = artwork;
+    this.setRelationship(this.relationship);
   }
 
   private applyBannerTexture(): void {
@@ -169,18 +167,20 @@ function drawCampHelmet(context: CanvasRenderingContext2D): void {
   context.fill();
 }
 
-function paintOrderBanner(texture: CanvasTexture, color: string, artwork: HTMLImageElement): void {
+function paintOrderBanner(texture: CanvasTexture, color: string, artwork?: HTMLImageElement): void {
   const canvas = texture.image as HTMLCanvasElement;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner canvas is unavailable");
   context.clearRect(0, 0, 256, 512);
-  const scale = 172 / Math.max(artwork.width, artwork.height);
-  const width = artwork.width * scale;
-  const height = artwork.height * scale;
-  context.drawImage(artwork, (256 - width) / 2, 205 - height / 2, width, height);
-  context.globalCompositeOperation = "source-in";
-  context.fillStyle = "#f3e5c7";
-  context.fillRect(0, 0, 256, 512);
+  if (artwork) {
+    const scale = 172 / Math.max(artwork.width, artwork.height);
+    const width = artwork.width * scale;
+    const height = artwork.height * scale;
+    context.drawImage(artwork, (256 - width) / 2, 205 - height / 2, width, height);
+    context.globalCompositeOperation = "source-in";
+    context.fillStyle = "#f3e5c7";
+    context.fillRect(0, 0, 256, 512);
+  }
   context.globalCompositeOperation = "destination-over";
   context.fillStyle = color;
   context.fillRect(0, 0, 256, 512);
@@ -197,7 +197,7 @@ function drawStampPolygon(context: CanvasRenderingContext2D, points: readonly (r
   context.fill();
 }
 
-/** Three fixed atlas rows keep each instanced village's cloth and emblem independent. */
+/** Two fixed atlas rows keep each instanced village's cloth and emblem independent. */
 export function createVillageBannerAtlas(): CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -219,21 +219,30 @@ export function createVillageBannerAtlas(): CanvasTexture {
   return atlas;
 }
 
-export function resolveSettlementRelationship(ownership: { isMine: boolean; isAlly: boolean }): SettlementRelationship {
-  return ownership.isMine ? "owned" : ownership.isAlly ? "allied" : "enemy";
+export function resolveSettlementRelationship(isMine: boolean): SettlementRelationship {
+  return isMine ? "owned" : "enemy";
 }
 
 export const REALM_ATLAS_COLUMNS = 4;
-export const REALM_NEUTRAL_ROW = orders.length;
-export const REALM_ATLAS_ROWS = Math.ceil((orders.length + 1) / REALM_ATLAS_COLUMNS);
+const REALM_NEUTRAL_ROW = orders.length;
+const REALM_GROUP_ROWS = Math.ceil((orders.length + 1) / REALM_ATLAS_COLUMNS);
+export const REALM_BANNER_GROUP_SIZE = REALM_GROUP_ROWS * REALM_ATLAS_COLUMNS;
+export const REALM_ATLAS_ROWS = REALM_GROUP_ROWS * SETTLEMENT_RELATIONSHIP_ORDER.length;
 const orderRows = new Map(orders.map((order, index) => [order.orderId, index]));
 let orderArtwork: Promise<HTMLImageElement[]> | undefined;
 
-export function resolveRealmBannerRow(orderId: number | undefined): number {
-  if (orderId === undefined) return REALM_NEUTRAL_ROW;
+function resolveOrderRow(orderId: number): number {
   const row = orderRows.get(orderId);
   if (row === undefined) throw new Error(`Unknown realm order: ${orderId}`);
   return row;
+}
+
+export function resolveRealmBannerRow(
+  orderId: number | undefined,
+  relationship: SettlementRelationship = "enemy",
+): number {
+  const row = orderId === undefined ? REALM_NEUTRAL_ROW : resolveOrderRow(orderId);
+  return row + SETTLEMENT_RELATIONSHIP_ORDER.indexOf(relationship) * REALM_BANNER_GROUP_SIZE;
 }
 
 export function createRealmBannerAtlas(): CanvasTexture {
@@ -242,9 +251,11 @@ export function createRealmBannerAtlas(): CanvasTexture {
   canvas.height = REALM_ATLAS_ROWS * 256;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner atlas canvas is unavailable");
-  // Missing snapshot metadata has its own unmarked cloth, never another order's emblem.
-  context.fillStyle = "#94a3b8";
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  // Missing order metadata leaves unmarked cloth in the current ownership color.
+  for (const [group, relationship] of SETTLEMENT_RELATIONSHIP_ORDER.entries()) {
+    context.fillStyle = SETTLEMENT_RELATIONSHIPS[relationship].color;
+    context.fillRect(0, group * REALM_GROUP_ROWS * 256, canvas.width, REALM_GROUP_ROWS * 256);
+  }
   const atlas = new CanvasTexture(canvas);
   atlas.name = "Realm order banners";
   atlas.colorSpace = SRGBColorSpace;
@@ -269,15 +280,18 @@ export async function prepareRealmBannerAtlas(atlas: CanvasTexture): Promise<voi
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner atlas canvas is unavailable");
   const stamp = createBannerTexture();
-  for (const [index, order] of orders.entries()) {
-    paintOrderBanner(stamp, order.color, images[index]);
-    context.drawImage(
-      stamp.image as HTMLCanvasElement,
-      (index % REALM_ATLAS_COLUMNS) * 128,
-      Math.floor(index / REALM_ATLAS_COLUMNS) * 256,
-      128,
-      256,
-    );
+  for (const relationship of SETTLEMENT_RELATIONSHIP_ORDER) {
+    for (const [index, order] of orders.entries()) {
+      const row = resolveRealmBannerRow(order.orderId, relationship);
+      paintOrderBanner(stamp, SETTLEMENT_RELATIONSHIPS[relationship].color, images[index]);
+      context.drawImage(
+        stamp.image as HTMLCanvasElement,
+        (row % REALM_ATLAS_COLUMNS) * 128,
+        Math.floor(row / REALM_ATLAS_COLUMNS) * 256,
+        128,
+        256,
+      );
+    }
   }
   stamp.dispose();
   atlas.needsUpdate = true;

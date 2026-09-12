@@ -5,6 +5,8 @@ import bpy
 from mathutils import Matrix
 from settlement_geometry import block, mesh, beam, material, glowing_material
 from timber_defenses import palisade
+from construction_materials import prepare_construction_materials
+from roof_tiles import build_pitched_tiles, build_radial_tiles
 from fortification_geometry import (
     build_vertical_prism,
     build_horizontal_prism,
@@ -12,13 +14,14 @@ from fortification_geometry import (
     arched_door_outline,
     build_stone_arch,
     build_door_surround,
+    build_oak_access_door,
     wall_path_outline,
     build_square_battlements,
 )
 
 
-def palette():
-    return {
+def palette(tier=None):
+    materials = {
         "stone": material("Honey limestone", (0.48, 0.43, 0.33)),
         "stone_light": material("Limestone coping", (0.65, 0.59, 0.46)),
         "stone_dark": material("Foundation stone", (0.29, 0.27, 0.22)),
@@ -42,6 +45,8 @@ def palette():
         "cloth": material("Realm order cloth", (0.35, 0.025, 0.027)),
         "canvas": material("Market linen", (0.68, 0.55, 0.33)),
     }
+
+    return prepare_construction_materials(materials, tier) if tier else materials
 
 
 def roof(m, name, x, y, width, depth, eave, ridge, finish="roof", hip=False):
@@ -72,6 +77,9 @@ def roof(m, name, x, y, width, depth, eave, ridge, finish="roof", hip=False):
 
 
 def build_roof_courses(m, name, x, y, width, depth, eave, ridge, finish, hip):
+    if "tileWear" in m[finish]:
+        build_pitched_tiles(m, name, x, y, width, depth, eave, ridge, finish, hip)
+        return
     rows = 7
     for row in range(rows):
         low, high = row / rows, (row + 1) / rows
@@ -233,6 +241,13 @@ def fence(m):
         (0.17, -0.62),
     ]
     palisade(dict(m, frame=m["timber"]), path, height=0.55, gate_height=0.65)
+    for side in [-1, 1]:
+        for plank in range(5):
+            block("Closed palisade gate", (side * (0.018 + plank * 0.032), -0.62, 0.255),
+                  (0.030, 0.025, 0.49), m["wood"], 0.001)
+        for height in [0.10, 0.40]:
+            block("Gate cross brace", (side * 0.082, -0.639, height),
+                  (0.15, 0.018, 0.025), m["timber"], 0.001)
 
 
 def ring(m, name, x, y, outer, inner, bottom, top, finish="stone_light", sides=16):
@@ -353,6 +368,8 @@ def cone_roof(m, name, x, y, radius, bottom, peak, finish, imperial=False, finia
         )
         bpy.context.object.name = name + " conical roof"
         bpy.context.object.data.materials.append(m[finish])
+        if "tileWear" in m[finish]:
+            build_radial_tiles(m, name, x, y, [(radius, bottom), (0, peak)], finish)
     if finial:
         beam(
             name + " finial",
@@ -406,6 +423,8 @@ def build_imperial_roof(m, name, x, y, radius, bottom, peak, finish):
     ]
     mesh(name + " swept roof", vertices, faces, m[finish])
     rib_profile = profile + [(0, peak)]
+    if "tileWear" in m[finish]:
+        build_radial_tiles(m, name, x, y, rib_profile, finish)
     for i in range(6):
         angle = i * math.tau / 6
         for (r1, z1), (r2, z2) in zip(rib_profile, rib_profile[1:]):
@@ -522,6 +541,10 @@ def gatehouse(m, drawbridge=False, imperial=False):
     )
     cut_masonry_opening(body, cutter)
     build_door_surround(m, "Outer gate", 0, -0.675, 0, 0.235, 0.125, 0.036, 0.048)
+    if drawbridge:
+        build_raised_drawbridge(m)
+    else:
+        build_oak_access_door(m, "Closed outer gate", 0, -0.647, 0.005, 0.235, 0.122)
     if imperial:
         block(
             "Gatehouse coping",
@@ -532,30 +555,24 @@ def gatehouse(m, drawbridge=False, imperial=False):
         )
     else:
         build_square_battlements(m, "Gatehouse", 0, -0.62, 0.66, 0.15, height, 0.035)
-    if drawbridge:
-        block(
-            "Drawbridge deck", (0, -0.728, 0.023), (0.24, 0.30, 0.018), m["wood"], 0.001
-        )
-        for sign in [-1, 1]:
-            beam(
-                "Drawbridge chain",
-                (sign * 0.114, -0.683, 0.39),
-                (sign * 0.114, -0.86, 0.035),
-                0.004,
-                m["iron"],
-                6,
-            )
-        for i in range(9):
-            block(
-                "Drawbridge plank seam",
-                (0, -0.59 - i * 0.031, 0.033),
-                (0.225, 0.002, 0.002),
-                m["timber"],
-                0,
-            )
     if imperial:
         crystal(m, "Gate refined essence", 0, -0.70, 0.45, 0.025, 0.08)
     return body
+
+
+def build_raised_drawbridge(m):
+    block("Raised drawbridge deck", (0, -0.714, 0.187), (0.29, 0.024, 0.37), m["wood"], 0.002)
+    for i in range(1, 12):
+        block("Drawbridge plank seam", (0, -0.727, i * 0.031),
+              (0.278, 0.002, 0.002), m["timber"], 0)
+    for height in [0.055, 0.30]:
+        block("Drawbridge reinforcement", (0, -0.731, height),
+              (0.27, 0.006, 0.016), m["iron"], 0.001)
+    beam("Drawbridge bottom hinge", (-0.155, -0.724, 0.018),
+         (0.155, -0.724, 0.018), 0.008, m["iron"], 8)
+    for sign in [-1, 1]:
+        beam("Retracted drawbridge chain", (sign * 0.143, -0.687, 0.41),
+             (sign * 0.133, -0.729, 0.35), 0.004, m["iron"], 6)
 
 
 def sky_bridge(m, name, center, y, width, floor, neighbors):

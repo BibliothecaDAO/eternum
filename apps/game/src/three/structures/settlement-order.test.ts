@@ -53,12 +53,13 @@ afterEach(() => {
 });
 
 describe("realm order heraldry", () => {
-  it("uses the order's actual artwork and color, and keeps the newest selection when loads overlap", async () => {
+  it("keeps the order artwork while ownership alone sets its color, and keeps the newest selection when loads overlap", async () => {
     const pending: Array<(image: HTMLImageElement) => void> = [];
     const load = vi
       .spyOn(ImageLoader.prototype, "loadAsync")
       .mockImplementation(() => new Promise((resolve) => pending.push(resolve)));
     const model = harness();
+    model.appearance.setRelationship("owned");
     const first = model.appearance.setOrder(1);
     const latest = model.appearance.setOrder(7);
     expect(load).toHaveBeenCalledTimes(orders.length);
@@ -69,9 +70,7 @@ describe("realm order heraldry", () => {
     await latest;
     const selected = model.banner.material.map;
     expect(selected?.name).toBe("Realm order heraldry");
-    expect(`#${model.trim.material.color.getHexString()}`).toBe(
-      orders.find((order) => order.orderId === 7)!.color.toLowerCase(),
-    );
+    expect(`#${model.trim.material.color.getHexString()}`).toBe("#438b46");
     expect(model.trim.material.map).toBeNull();
     await first;
     expect(model.banner.material.map).toBe(selected);

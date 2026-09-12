@@ -6,6 +6,7 @@ from pathlib import Path
 import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from construction_finish import finish_construction
 from courtyard_props import (
     build_courtyard_bench,
     build_planter,
@@ -37,8 +38,7 @@ from town_architecture import (
 def build_empire():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    m = palette()
-    m["stone"] = m["plaster_light"]
+    m = palette("empire")
     m["foliage"] = material("Imperial courtyard leaves", (0.16, 0.27, 0.075))
     palace = build_palace(m)
     towers = [
@@ -90,6 +90,7 @@ def build_empire():
             build_planter(m, sign * 0.47, y)
     build_worktable(m, -0.30, -0.18)
     banner(m, "Imperial order banner", 0.565, -0.27, 1.58, span=-0.23, height=0.37)
+    finish_construction(m, "empire")
     save_asset(
         "empire",
         "ivory palace, elevated bridges, open courtyard and teal crown",
@@ -240,18 +241,29 @@ def build_imperial_ornament(m):
 
 def build_imperial_gate(m):
     build_door_surround(m, "Imperial gateway", 0, -0.62, 0, 0.37, 0.175, 0.047, 0.15)
-    # Outward-opening leaves clear the ceremonial avenue and the central monument.
     for sign in [-1, 1]:
-        x = sign * 0.175
-        for y in [-0.71, -0.87]:
-            beam("Gate leaf stile", (x, y, 0.025), (x, y, 0.36), 0.005, m["gold"], 6)
-        for z in [0.035, 0.32]:
-            beam("Gate leaf rail", (x, -0.71, z), (x, -0.87, z), 0.005, m["gold"], 6)
-        for i in range(1, 5):
-            y = -0.71 - i * 0.032
-            beam("Gate iron spindle", (x, y, 0.035), (x, y, 0.32), 0.003, m["iron"], 6)
+        build_imperial_gate_leaf(m, sign)
     block("Gateway keystone", (0, -0.71, 0.574), (0.065, 0.038, 0.09), m["gold"], 0.005)
     crystal(m, "Gateway essence crest", 0, -0.735, 0.565, 0.022, 0.075)
+
+
+def build_imperial_gate_leaf(m, sign):
+    radius, spring, bottom, y = 0.175, 0.37, 0.006, -0.67
+    for x in [sign * radius, 0]:
+        top = spring + math.sqrt(max(0, radius * radius - x * x))
+        beam("Gate leaf stile", (x, y, bottom), (x, y, top), 0.005, m["gold"], 6)
+    for z in [0.012, 0.18, spring]:
+        beam("Gate leaf rail", (sign * radius, y, z), (0, y, z), 0.005, m["gold"], 6)
+    for i in range(1, 5):
+        x = sign * radius * i / 5
+        top = spring + math.sqrt(radius * radius - x * x)
+        beam("Full height gate spindle", (x, y, bottom), (x, y, top), 0.004, m["iron"], 6)
+    for i in range(12):
+        a, b = i * math.pi / 24, (i + 1) * math.pi / 24
+        beam("Arched gate crown",
+             (sign * radius * math.cos(a), y, spring + radius * math.sin(a)),
+             (sign * radius * math.cos(b), y, spring + radius * math.sin(b)),
+             0.005, m["gold"], 6)
 
 
 def build_gem_monument(m):

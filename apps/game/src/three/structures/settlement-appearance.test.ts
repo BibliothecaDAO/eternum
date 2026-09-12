@@ -101,11 +101,11 @@ it("clears stale local realm heraldry when metadata disappears during artwork lo
   await appearance.setOrder(undefined);
   for (const finish of finishes) finish({ width: 128, height: 128 } as HTMLImageElement);
   await first;
-  expect(trim.material.color.getHexString()).toBe("94a3b8");
+  expect(trim.material.color.getHexString()).toBe("aa3028");
   expect(context.drawImage).not.toHaveBeenCalled();
   const lastOrder = orders.at(-1)!;
   await appearance.setOrder(lastOrder.orderId);
-  expect(`#${trim.material.color.getHexString()}`.toLowerCase()).toBe(lastOrder.color.toLowerCase());
+  expect(`#${trim.material.color.getHexString()}`.toLowerCase()).toBe("#aa3028");
   expect(context.drawImage).toHaveBeenCalledOnce();
   appearance.dispose();
   for (const mesh of [banner, trim]) {

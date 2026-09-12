@@ -82,11 +82,31 @@ def save_asset(name, concept, animation):
     source = ROOT / f".context/graphics-lab/realm-progression/{name}"
     source.mkdir(parents=True, exist_ok=True)
     output.parent.mkdir(parents=True, exist_ok=True)
+    prepare_static_heraldry()
     bake_instance_transforms()
     bpy.ops.wm.save_as_mainfile(filepath=str(source / f"{name}.blend"))
     consolidate_static_materials()
-    export_glb(output)
+    export_glb(output, active_vertex_colors=True)
     write_asset_report(output, source, concept, animation)
+
+
+def prepare_static_heraldry():
+    # Each hanging needs its own full emblem before static cloth is merged into one draw.
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH" or obj.get("orderCloth") != "trim":
+            continue
+        points = [vertex.co for vertex in obj.data.vertices]
+        low = [min(point[i] for point in points) for i in range(3)]
+        size = [max(point[i] for point in points) - low[i] for i in range(3)]
+        horizontal = 0 if size[0] > size[1] else 1
+        uv = obj.data.uv_layers.active or obj.data.uv_layers.new(name="UVMap")
+        for loop in obj.data.loops:
+            point = points[loop.vertex_index]
+            uv.data[loop.index].uv = (
+                (point[horizontal] - low[horizontal]) / size[horizontal],
+                (point.z - low[2]) / size[2],
+            )
+        obj["orderCloth"] = "banner"
 
 
 def bake_instance_transforms():
@@ -125,7 +145,7 @@ def consolidate_static_materials():
         group[0].name = material_name
 
 
-def export_glb(output):
+def export_glb(output, active_vertex_colors=False):
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.export_scene.gltf(
         filepath=str(output),
@@ -133,6 +153,8 @@ def export_glb(output):
         use_selection=True,
         export_extras=True,
         export_yup=True,
+        export_vertex_color="ACTIVE" if active_vertex_colors else "MATERIAL",
+        export_all_vertex_colors=not active_vertex_colors,
     )
 
 

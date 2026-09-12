@@ -1524,8 +1524,8 @@ export class StructureManager {
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
       if (binding.model instanceof SettlementModel) {
+        binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
         if (binding.model.kind === "realm") binding.model.setOrderAt(binding.instanceIndex, structure.realmOrder);
-        else binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure));
       }
     }
     if (bindings.length > 0) {
