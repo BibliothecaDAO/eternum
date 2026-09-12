@@ -1,5 +1,7 @@
 import { createPipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
+import { updateGameEndFreeze } from "@/three/effects/game-end-freeze";
+import { GameMapMaterialLibrary } from "@/three/effects/game-map-material-library";
 import { WeatherType } from "../managers/weather-manager";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
@@ -126,6 +128,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
   setCycleProgress(progress: number): void;
+  setGameEnded(ended: boolean): void;
   setMoonEnabled(enabled: boolean): void;
   setWeather(type: WeatherType): void;
   setWeatherEvolving(enabled: boolean): void;
@@ -146,6 +149,7 @@ interface MountProceduralTerrainDebugRendererInput {
 }
 
 interface TerrainDebugRendererSurface extends RendererSurfaceLike {
+  library: GameMapMaterialLibrary;
   init(): Promise<void>;
   setAnimationLoop(callback: ((time: number) => void) | null): void;
   setClearColor(color: Color, alpha?: number): void;
@@ -161,6 +165,7 @@ interface TerrainDebugRuntime {
   atmosphere: WorldAtmosphereController;
   weather: WeatherLabRuntime;
   cycleProgress: number;
+  gameEnded: boolean;
   camera: PerspectiveCamera;
   cameraFrame: TerrainDebugCameraFrame;
   controls: MapControls;
@@ -213,6 +218,7 @@ export async function mountProceduralTerrainDebugRenderer(
     return {
       dispose: () => {
         stopAnimation();
+        updateGameEndFreeze(0, false, 0);
         resizeObserver.disconnect();
         runtime.controls.dispose();
         runtime.interaction.dispose();
@@ -230,6 +236,10 @@ export async function mountProceduralTerrainDebugRenderer(
       removeBuilding: (clearAll) => runtime.interaction.removeBuilding(clearAll),
       setPreview: (preview) => runtime.interaction.configure(preview),
       setWeatherEvolving: (enabled) => runtime.weather.setEvolving(enabled),
+      setGameEnded: (ended) => {
+        runtime.gameEnded = ended;
+        updateGameEndFreeze(0, ended, 0);
+      },
       setWeather: (type) => runtime.weather.setWeather(type),
       strike: () => runtime.weather.strike(),
       setMoonEnabled: (enabled) => {
@@ -257,8 +267,10 @@ export async function mountProceduralTerrainDebugRenderer(
 }
 
 async function createRuntime(input: MountProceduralTerrainDebugRendererInput): Promise<TerrainDebugRuntime> {
+  updateGameEndFreeze(0, false, 0);
   const Renderer = WebGPURenderer as unknown as TerrainDebugRendererConstructor;
   const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
+  renderer.library = new GameMapMaterialLibrary();
   const background = new Color(TERRAIN_DEEP_FOG_COLOR);
   configureRendererColorOutput(renderer);
   renderer.setPixelRatio(1);
@@ -392,6 +404,7 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     atmosphere,
     weather,
     cycleProgress: 50,
+    gameEnded: false,
     interaction,
     camera,
     cameraFrame,
@@ -612,15 +625,19 @@ function startAnimation(runtime: TerrainDebugRuntime): () => void {
       if (runtime.frameSamplesMs.length > 240) runtime.frameSamplesMs.shift();
     }
     previousFrameTime = time;
-    runtime.terrain.update(Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000)));
+    const deltaSeconds = Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000));
+    updateGameEndFreeze(0, runtime.gameEnded, deltaSeconds);
     runtime.controls.update();
     runtime.atmosphere.update(
       runtime.cycleProgress,
       runtime.controls.target,
       LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
     );
-    runtime.weather.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.atmosphere);
-    runtime.interaction.update(Math.min(0.05, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.weather.getWind());
+    if (!runtime.gameEnded) {
+      runtime.terrain.update(deltaSeconds);
+      runtime.weather.update(deltaSeconds, runtime.atmosphere);
+      runtime.interaction.update(deltaSeconds, runtime.weather.getWind());
+    }
     runtime.renderer.render(runtime.scene, runtime.camera);
   });
   return () => runtime.renderer.setAnimationLoop(null);

@@ -19,6 +19,8 @@ interface AnimatedSurface {
 export class SettlementAnimation {
   private readonly surfaces: AnimatedSurface[] = [];
   private seconds = 0;
+  private bannerPhase = 0;
+  private readonly clothWind = { windX: 0, windZ: 0 };
   private readonly atmosphere: SettlementAtmosphere;
 
   constructor(source: Object3D, instances: readonly Mesh[]) {
@@ -74,9 +76,10 @@ export class SettlementAnimation {
   update(delta: number, wind: Pick<WeatherState, "windX" | "windZ">): void {
     if (delta <= 0) return;
     this.seconds += delta;
+    this.advanceClothWind(delta, wind);
     this.atmosphere.update(this.seconds, wind);
     for (const surface of this.surfaces) {
-      if (surface.motion === "banner") this.waveBanner(surface, wind);
+      if (surface.motion === "banner") this.waveBanner(surface, this.clothWind);
       else if (surface.motion === "flame") this.flickerFlame(surface, wind);
       else if (surface.motion === "foliage") this.swayFoliage(surface, wind);
       else this.spinGem(surface);
@@ -111,6 +114,15 @@ export class SettlementAnimation {
     }
   }
 
+  private advanceClothWind(delta: number, wind: Pick<WeatherState, "windX" | "windZ">): void {
+    const strength = Math.max(1, Math.hypot(wind.windX, wind.windZ));
+    const response = 1 - Math.exp(-delta / 0.65);
+    this.clothWind.windX += (wind.windX / strength - this.clothWind.windX) * response;
+    this.clothWind.windZ += (wind.windZ / strength - this.clothWind.windZ) * response;
+    // Integrate phase so a gust cannot jump ahead by the elapsed duration of the session.
+    this.bannerPhase += delta * (1.6 + Math.hypot(this.clothWind.windX, this.clothWind.windZ) * 0.8);
+  }
+
   private waveBanner(surface: AnimatedSurface, wind: Pick<WeatherState, "windX" | "windZ">): void {
     const positions = surface.geometry.getAttribute("position") as BufferAttribute;
     const speed = Math.min(1, Math.hypot(wind.windX, wind.windZ));
@@ -120,8 +132,8 @@ export class SettlementAnimation {
       const y = surface.rest[i * 3 + 1];
       const z = surface.rest[i * 3 + 2];
       const free = 1 - (y - surface.minY) / surface.height;
-      const wave = Math.sin(this.seconds * (2.5 + speed * 2) - free * 5 + x * 18);
-      const ripple = Math.sin(this.seconds * 5 - free * 9 + x * 32) * 0.2;
+      const wave = Math.sin(this.bannerPhase - free * 5 + x * 18);
+      const ripple = Math.sin(this.bannerPhase * 1.8 - free * 9 + x * 32) * 0.15;
       const sway = clothScale * free * (0.012 + speed * 0.04) * (wave + ripple);
       positions.setXYZ(
         i,

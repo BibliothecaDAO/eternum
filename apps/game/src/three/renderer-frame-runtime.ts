@@ -16,6 +16,7 @@ interface RendererFrameSceneController {
   onFrameRendered?(atMs: number): void;
   isReadyToRender?(): boolean;
   setWeatherAtmosphereState(weatherState: unknown): void;
+  setAnimationsPaused?(paused: boolean): void;
   update(deltaTime: number): void;
 }
 
@@ -49,6 +50,7 @@ interface RunRendererFrameInput {
   currentTime: number;
   cycleProgress: number;
   deltaTime: number;
+  animationsPaused?: boolean;
   effectsBridgeRuntime?: Pick<
     { updateWeatherPostProcessing(weatherState?: RendererWeatherState): void },
     "updateWeatherPostProcessing"
@@ -73,6 +75,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     return false;
   }
 
+  resolvedFrame.sceneController.setAnimationsPaused?.(input.animationsPaused ?? false);
   resolvedFrame.sceneController.setWeatherAtmosphereState(weatherState);
   resolvedFrame.sceneController.update(input.deltaTime);
   // Keep the transition frame while asynchronous preparation owns the incoming scene.
@@ -101,9 +104,9 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
 }
 
 function advanceHudAndResolveWeatherState(
-  input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene">,
+  input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene" | "animationsPaused">,
 ): RendererWeatherState {
-  input.hudScene.update(input.deltaTime, input.cycleProgress);
+  if (!input.animationsPaused) input.hudScene.update(input.deltaTime, input.cycleProgress);
   return input.hudScene.getWeatherState() as RendererWeatherState;
 }
 

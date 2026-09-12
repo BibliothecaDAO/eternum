@@ -48,8 +48,7 @@ interface UIStore {
   gameStartMainAt: number | null;
   setGameStartMainAt: (seasonStartMainAt: number | null) => void;
   // season_config.dev_mode_on — when set, the chain bypasses settling/main-phase
-  // and season-end time gates (see SeasonConfigImpl). Mirror it client-side so
-  // sandbox worlds let players settle/provision/upgrade at any time.
+  // start gates (see SeasonConfigImpl). Finite end timers still close dev games.
   devModeOn: boolean;
   setDevModeOn: (devModeOn: boolean) => void;
   showBlurOverlay: boolean;

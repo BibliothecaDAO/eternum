@@ -4,6 +4,9 @@ import {
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { canIssueOrders } from "@/utils/can-issue-orders";
 import type { HexPosition } from "@bibliothecadao/types";
 import { useCallback, useState, useSyncExternalStore } from "react";
 
@@ -15,6 +18,8 @@ export const useBlitzHyperstructureCreation = ({
   enabled?: boolean;
 }) => {
   const account = useAccountStore((state) => state.account);
+  useCurrentBlockTimestamp();
+  const ordersAllowed = useUIStore(canIssueOrders);
   const [isCreating, setIsCreating] = useState(false);
   const isPending = useSyncExternalStore(
     subscribeBlitzHyperstructureCreationPending,
@@ -22,7 +27,7 @@ export const useBlitzHyperstructureCreation = ({
     () => false,
   );
 
-  const canCreate = Boolean(enabled && account && hexCoords && !isPending && !isCreating);
+  const canCreate = Boolean(ordersAllowed && enabled && account && hexCoords && !isPending && !isCreating);
 
   const createHyperstructure = useCallback(async () => {
     if (!enabled) {

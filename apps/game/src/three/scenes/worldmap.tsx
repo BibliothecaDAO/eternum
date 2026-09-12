@@ -37,7 +37,6 @@ import { BattleDirectionManager } from "@/three/managers/battle-direction-manage
 import { ChestManager } from "@/three/managers/chest-manager";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
-import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
 import {
   FrameBudgetWorkQueue,
@@ -160,7 +159,7 @@ import {
   type WorldmapHoverReconciliationSnapshot,
 } from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
+import { resolveHoverVisualPalette } from "../managers/worldmap-interaction-palette";
 import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -854,7 +853,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private selectedHexManager!: SelectedHexManager;
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
-  private selectionPulseManager!: SelectionPulseManager;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
   private readonly handleTerrainViewportResize = () => {
     // Renderer resize listeners update projection matrices during the same event dispatch.
@@ -1712,7 +1710,6 @@ export default class WorldmapScene extends WarpTravel {
       selectedHexManager: this.selectedHexManager,
       dojoComponents: this.dojo.components,
     });
-    this.selectionPulseManager = new SelectionPulseManager(this.scene, this.getTerrainSurface());
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
@@ -2276,6 +2273,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
+    if (!canIssueOrders()) return;
     if (isPendingReservedHyperstructureCreation(hexCoords)) {
       return;
     }
@@ -3130,8 +3128,7 @@ export default class WorldmapScene extends WarpTravel {
       spectator: !canIssueOrders(),
     });
     const position = getWorldPositionForHex(hex);
-    this.selectionPulseManager.showSelection(position.x, position.z, structureId);
-    this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("structure"));
+    this.selectedHexManager.setPosition(position.x, position.z);
   }
 
   private clearEvictedArmyMovementVisuals(entityId: ID): void {
@@ -3370,7 +3367,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (this.isArmyMovementActionUnavailable(selectedEntityId)) {
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
-      this.showSelectedArmyPulse(selectedEntityId);
+      this.showSelectedArmyTile(selectedEntityId);
       return true;
     }
 
@@ -3390,7 +3387,7 @@ export default class WorldmapScene extends WarpTravel {
         console.error(`[Worldmap] Army ${selectedEntityId} has no ExplorerTroops coord; suppressing action paths`);
       }
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
-      this.showSelectedArmyPulse(selectedEntityId);
+      this.showSelectedArmyTile(selectedEntityId);
       return true;
     }
 
@@ -3410,7 +3407,7 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
-    this.showSelectedArmyPulse(selectedEntityId);
+    this.showSelectedArmyTile(selectedEntityId);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     return true;
   }
@@ -3477,12 +3474,11 @@ export default class WorldmapScene extends WarpTravel {
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
   }
 
-  private showSelectedArmyPulse(selectedEntityId: ID): void {
+  private showSelectedArmyTile(selectedEntityId: ID): void {
     const armyPosition = this.getArmyDisplayPosition(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
-      this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
-      this.selectionPulseManager.applyPulsePalette(resolveSelectionPulsePalette("army"));
+      this.selectedHexManager.setPosition(worldPos.x, worldPos.z);
     } else {
       if (import.meta.env.DEV) {
         console.warn(`[Worldmap] No projected army position found for ${selectedEntityId}`);
@@ -3606,7 +3602,6 @@ export default class WorldmapScene extends WarpTravel {
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.updateEntityActionSelectedEntityId(null);
-    this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.attachWorldmapManagerLabels();
   }
@@ -7466,17 +7461,20 @@ export default class WorldmapScene extends WarpTravel {
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
     this.compactEntityLabelRenderer.updateCamera(this.camera);
-    this.spireManager.update(deltaTime);
-    runWithFrameWorkOwner("armies:update", () => this.armyManager.update(deltaTime, animationContext));
-    this.syncTerrainMovementInteractions();
-    this.proceduralTerrain.update(deltaTime);
-    this.combatPresentation?.update(deltaTime);
-    this.fxManager.update(deltaTime);
-    this.resourceFXManager.update(deltaTime);
-    this.selectionPulseManager.update(deltaTime);
-    this.selectedHexManager.update(deltaTime);
-    this.structureManager.updateAnimations(deltaTime, animationContext);
-    this.chestManager.update(deltaTime);
+    runWithFrameWorkOwner("armies:update", () =>
+      this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
+    );
+    this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
+    if (!this.animationsPaused) {
+      this.spireManager.update(deltaTime);
+      this.syncTerrainMovementInteractions();
+      this.proceduralTerrain.update(deltaTime);
+      this.combatPresentation?.update(deltaTime);
+      this.fxManager.update(deltaTime);
+      this.resourceFXManager.update(deltaTime);
+      this.selectedHexManager.update(deltaTime);
+      this.chestManager.update(deltaTime);
+    }
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
     this.runPendingHoverLabelRecoveryFrame();
@@ -7877,9 +7875,6 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     this.clearCache();
 
-    // Clean up selection pulse manager
-    this.selectionPulseManager.dispose();
-
     // Dispose hover label and selected hex managers to release Three.js resources
     this.hoverLabelManager.dispose();
     this.selectedHexManager.dispose();
@@ -8222,7 +8217,6 @@ export default class WorldmapScene extends WarpTravel {
     this.pinnedRenderAreas.clear();
     this.hydratedChunkRefreshes.clear();
     this.hydratedRefreshSuppressionAreaKeys.clear();
-    this.selectionPulseManager.hideSelection();
     this.selectedHexManager.resetPosition();
     this.armyManager.resetLayer();
     this.structureManager.resetLayer();
@@ -8408,7 +8402,6 @@ export default class WorldmapScene extends WarpTravel {
       if (nextSceneName !== SceneName.Hexception) this.state.setSelectedHex(null);
       this.state.setHoveredHex(null);
       this.highlightHexManager.highlightHexes([]);
-      this.selectionPulseManager.hideSelection();
       if (shouldResetSharedInteractionState) {
         resetWorldmapEntityActions();
       }
