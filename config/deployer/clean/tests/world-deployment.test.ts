@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { CallData, hash, type Account } from "starknet";
-import { byteArrayHash, resourceSelector } from "../world/artifacts";
+import { byteArrayHash, readWorldProfile, resourceSelector } from "../world/artifacts";
 import { deployWorld, isWorldSynced } from "../world/deploy";
 import { buildWorldManifest } from "../world/manifest";
 import { inspectWorld } from "../world/plan";
@@ -124,6 +124,20 @@ function fixture() {
 }
 
 describe("world deployment", () => {
+  test("registers the library versions used by Cairo dispatchers", () => {
+    const game = resolve(import.meta.dir, "../../../../contracts/l3/game");
+    const profile = readWorldProfile(resolve(game, "dojo_madara.toml"));
+    const versions: Record<string, string> = {};
+    for (const file of new Bun.Glob("**/*.cairo").scanSync(resolve(game, "src/system_libraries"))) {
+      const source = readFileSync(resolve(game, "src/system_libraries", file), "utf8");
+      for (const match of source.matchAll(/world\.dns\(@"([^"]+)_v([^"]+)"\)/g)) {
+        versions[`${profile.namespace.default}-${match[1]}`] = match[2]!;
+      }
+    }
+    expect(Object.keys(versions).length).toBeGreaterThan(0);
+    expect(profile.lib_versions).toEqual(versions);
+  });
+
   test("matches existing resource selectors and namespace hashing", () => {
     for (const resource of [...deployed.models, ...deployed.events, ...deployed.contracts, ...deployed.libraries]) {
       expect(

@@ -7,7 +7,7 @@ default = "s2"
 "s2-raid_library" = "0_1_0"
 "s2-rng_library" = "0_1_16"
 "s2-biome_library" = "0_1_13"
-"s2-structure_creation_library" = "0_1_19"
+"s2-structure_creation_library" = "0_1_18"
 
 [env]
 rpc_url = "http://127.0.0.1:5050"
