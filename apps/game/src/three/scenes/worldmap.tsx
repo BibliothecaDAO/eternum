@@ -3861,7 +3861,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.syncUrlChangedListenerLifecycle("setup");
     this.controls.maxDistance = WORLDMAP_CAMERA_ZOOM.maxDistance;
-    this.controls.minDistance = WORLDMAP_CAMERA_ZOOM.minDistance;
     this.lockMapControlsZoom();
     this.camera.fov = resolveWorldmapCameraFieldOfViewDegrees();
     this.camera.far = 65;
