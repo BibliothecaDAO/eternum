@@ -41,7 +41,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
     name: "Standard world",
     description: "The usual Eternum launch.",
     defaults: {
-      version: "12",
+      version: "1",
       startRule: "next_hour",
       devMode: false,
       twoPlayerMode: false,
@@ -63,7 +63,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "8",
+      version: "2",
     },
   },
   {
@@ -77,7 +77,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: false,
       twoPlayerMode: true,
       singleRealmMode: false,
-      version: "9",
+      version: "3",
     },
   },
   {
@@ -91,7 +91,7 @@ const factoryLaunchPresets: FactoryLaunchPreset[] = [
       devMode: true,
       twoPlayerMode: false,
       singleRealmMode: false,
-      version: "8",
+      version: "2",
     },
   },
 ];

@@ -109,7 +109,7 @@ describe("launch service authorization", () => {
     expect((await app.request(invalid)).status).toBe(400);
   });
 
-  test("launches a Duel on preset 9 and stores version:9", async () => {
+  test("launches a Duel on preset 3 and stores version:3", async () => {
     const { app, store } = createApp(identity(ALLOWED_ADDRESS));
     const request = launchRequest();
     request.headers.set("content-type", "application/json");
@@ -117,7 +117,7 @@ describe("launch service authorization", () => {
       body: JSON.stringify({
         environment: "madara.blitz",
         gameName: "bltz-duel-game",
-        version: "9",
+        version: "3",
         twoPlayerMode: true,
         devModeOn: false,
       }),
@@ -125,7 +125,7 @@ describe("launch service authorization", () => {
 
     expect((await app.request(duel)).status).toBe(202);
     const run = await store.find("game", "madara.blitz", "bltz-duel-game");
-    expect(run?.request.version).toBe("9");
+    expect(run?.request.version).toBe("3");
   });
 
   test("launches a real game dev-off and stores devModeOn:false", async () => {
