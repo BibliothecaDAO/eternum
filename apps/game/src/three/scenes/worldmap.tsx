@@ -1,3 +1,4 @@
+import { activeMapLayer } from "@/three/map-layer";
 import type { ReactNode } from "react";
 import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
@@ -60,6 +61,7 @@ import {
   type WorldSpatialHex,
   type TileSpatialRenderable,
   type WorldSpatialProjection,
+  projectionChangesForLayer,
 } from "@bibliothecadao/eternum/game-sync";
 import {
   gameWorkerManager,
@@ -1308,10 +1310,16 @@ export default class WorldmapScene extends WarpTravel {
 
   private bindWorldSpatialProjectionLifecycle(): void {
     this.seedStrategicMarkers();
-    const unsubscribeTiles = subscribeWorldmapTileChanges(this.worldSpatialProjection, (change, source) => {
-      this.applyProjectedTileChange(change, source);
-    });
-    const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((changes) => {
+    const unsubscribeTiles = subscribeWorldmapTileChanges(
+      this.worldSpatialProjection,
+      (change, source) => {
+        this.applyProjectedTileChange(change, source);
+      },
+      activeMapLayer,
+    );
+    const unsubscribeStructures = this.worldSpatialProjection.subscribeStructures((published) => {
+      const changes = projectionChangesForLayer(published, activeMapLayer());
+      if (changes.length === 0) return;
       this.syncProjectedStructurePathfinding(changes);
       changes.forEach(({ previous, current }) => {
         if (previous?.reserved && !current?.reserved) {
@@ -1331,7 +1339,9 @@ export default class WorldmapScene extends WarpTravel {
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
       structureComponent: this.dojo.components.Structure,
     });
-    const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((changes) => {
+    const unsubscribeArmies = this.worldSpatialProjection.subscribeArmies((published) => {
+      const changes = projectionChangesForLayer(published, activeMapLayer());
+      if (changes.length === 0) return;
       this.syncProjectedArmyPathfinding(changes);
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
@@ -1361,8 +1371,9 @@ export default class WorldmapScene extends WarpTravel {
 
   /** The far band's subjects: every structure and army in the world, coloured by owner, from the projection. */
   private seedStrategicMarkers(): void {
-    this.worldSpatialProjection.getStructures().forEach((structure) => this.writeStructureMarker(structure));
-    this.worldSpatialProjection.getArmies().forEach((army) => this.writeArmyMarker(army));
+    const layer = activeMapLayer();
+    this.worldSpatialProjection.getStructures(layer).forEach((structure) => this.writeStructureMarker(structure));
+    this.worldSpatialProjection.getArmies(layer).forEach((army) => this.writeArmyMarker(army));
     this.commitStrategicMarkers();
   }
 
@@ -1380,7 +1391,7 @@ export default class WorldmapScene extends WarpTravel {
     const structure = this.worldSpatialProjection.getStructure(entityId);
     if (!structure) return;
     this.writeStructureMarker(structure);
-    this.worldSpatialProjection.getArmies().forEach((army) => {
+    this.worldSpatialProjection.getArmies(activeMapLayer()).forEach((army) => {
       if (this.getArmyOwnerStructureId(army.entityId) === entityId) this.writeArmyMarker(army);
     });
     this.commitStrategicMarkers();
@@ -2022,7 +2033,7 @@ export default class WorldmapScene extends WarpTravel {
   private getArmyAtHex(hexCoords: HexPosition): HexEntityInfo | undefined {
     const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const renderable = this.worldSpatialProjection
-      .getArmiesAtHex({ col: contract.x, row: contract.y })
+      .getArmiesAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
       .find(({ entityId }) => {
         const pendingPosition = this.getArmyDisplayPosition(entityId);
         return pendingPosition?.col === hexCoords.col && pendingPosition.row === hexCoords.row;
@@ -2261,7 +2272,7 @@ export default class WorldmapScene extends WarpTravel {
   private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
     const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     return this.worldSpatialProjection
-      .getStructuresAtHex({ col: contractPosition.x, row: contractPosition.y })
+      .getStructuresAtHex({ alt: activeMapLayer(), col: contractPosition.x, row: contractPosition.y })
       .some((structure) => structure.reserved);
   }
 
@@ -2291,12 +2302,13 @@ export default class WorldmapScene extends WarpTravel {
     const contractHex = position.getContract();
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
     const projectedStructure = this.worldSpatialProjection
-      .getStructuresAtHex({ col: contractHex.x, row: contractHex.y })
+      .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
       .find((candidate) => !candidate.reserved);
     const structure = projectedStructure
       ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) ?? 0n }
       : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
+      alt: activeMapLayer(),
       col: contractHex.x,
       row: contractHex.y,
     })[0];
@@ -3058,7 +3070,7 @@ export default class WorldmapScene extends WarpTravel {
 
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
-      const tile = this.worldSpatialProjection.getTileAtHex(destination);
+      const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
       if (ActionPaths.getActionType(path) === ActionType.CreateArmy && (!tile || Number(tile.occupierId) !== 0)) {
         actionPaths.getPaths().delete(key);
       }
@@ -3363,7 +3375,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedChestActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getChests().forEach((chest) => {
+    this.worldSpatialProjection.getChests(activeMapLayer()).forEach((chest) => {
       const normalized = new Position({ x: chest.hexCoords.col, y: chest.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, HexEntityInfo>();
       row.set(normalized.y, { id: chest.entityId, owner: 0n });
@@ -3374,7 +3386,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedExploredTileIndex(): Map<number, Map<number, BiomeType>> {
     const index = new Map<number, Map<number, BiomeType>>();
-    this.worldSpatialProjection.getTiles().forEach((tile) => {
+    this.worldSpatialProjection.getTiles(activeMapLayer()).forEach((tile) => {
       const normalized = new Position({ x: tile.hexCoords.col, y: tile.hexCoords.row }).getNormalized();
       const row = index.get(normalized.x) ?? new Map<number, BiomeType>();
       row.set(normalized.y, requireBiomeTypeFromId(tile.biome));
@@ -3385,7 +3397,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedArmyActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getArmies().forEach(({ entityId }) => {
+    this.worldSpatialProjection.getArmies(activeMapLayer()).forEach(({ entityId }) => {
       const position = this.getArmyDisplayPosition(entityId);
       if (!position) return;
       const row = index.get(position.col) ?? new Map<number, HexEntityInfo>();
@@ -3397,7 +3409,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildProjectedStructureActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
-    this.worldSpatialProjection.getStructures().forEach((structure) => {
+    this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
       if (structure.reserved) return;
 
       const normalized = new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }).getNormalized();
@@ -3594,15 +3606,18 @@ export default class WorldmapScene extends WarpTravel {
       const contract = new Position({ x: col, y: row }).getContract();
       const hex = { col: contract.x, row: contract.y };
       return (
-        this.worldSpatialProjection.getStructuresAtHex(hex).length > 0 ||
-        this.worldSpatialProjection.getChestsAtHex(hex).length > 0
+        this.worldSpatialProjection.getStructuresAtHex({ ...hex, alt: activeMapLayer() }).length > 0 ||
+        this.worldSpatialProjection.getChestsAtHex({ ...hex, alt: activeMapLayer() }).length > 0
       );
     });
   }
 
   private isProjectedStructureHex(col: number, row: number): boolean {
     const contract = new Position({ x: col, y: row }).getContract();
-    return this.worldSpatialProjection.getStructuresAtHex({ col: contract.x, row: contract.y }).length > 0;
+    return (
+      this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
+        .length > 0
+    );
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
@@ -5584,7 +5599,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.terrainContent.capture({
       cells,
       getProjectedBiome: (col, row) => {
-        const tile = this.worldSpatialProjection.getTileAtHex({ col: col + center, row: row + center });
+        const tile = this.worldSpatialProjection.getTileAtHex({
+          alt: activeMapLayer(),
+          col: col + center,
+          row: row + center,
+        });
         return tile ? requireBiomeTypeFromId(tile.biome) : undefined;
       },
       isOccupied: (col, row) => this.isProjectedStructureHex(col, row),
@@ -6223,6 +6242,7 @@ export default class WorldmapScene extends WarpTravel {
   private toContractBounds(bounds: { minCol: number; maxCol: number; minRow: number; maxRow: number }) {
     const feltCenter = FELT_CENTER();
     return {
+      alt: activeMapLayer(),
       minCol: bounds.minCol + feltCenter,
       maxCol: bounds.maxCol + feltCenter,
       minRow: bounds.minRow + feltCenter,

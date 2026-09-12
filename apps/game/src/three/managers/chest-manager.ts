@@ -1,3 +1,4 @@
+import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
@@ -283,8 +284,9 @@ export class ChestManager {
     this.renderVisibleChests(this.currentChunkKey);
   }
 
-  public revealRelics(hexCoords: { col: number; row: number }, relics: readonly number[]): boolean {
+  public revealRelics(hex: { col: number; row: number }, relics: readonly number[]): boolean {
     if (!this.chestModel || !this.chestTransitions || !this.contentLadder.structureModels) return false;
+    const hexCoords = { ...hex, alt: activeMapLayer() };
     const tile = { hexCoords };
     const key = this.transitionKey(tile);
     const opened = this.chestTransitions.start(key, "open", this.chestPlacement(tile), this.chestModel.time);
@@ -365,6 +367,7 @@ export class ChestManager {
     const bounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkSize);
     const center = FELT_CENTER();
     return this.worldSpatialProjection.getChestsInBounds({
+      alt: activeMapLayer(),
       minCol: bounds.minCol + center,
       maxCol: bounds.maxCol + center,
       minRow: bounds.minRow + center,

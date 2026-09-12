@@ -56,6 +56,8 @@ interface UIStore {
   setShowBlurOverlay: (show: boolean) => void;
   showBlankOverlay: boolean;
   setShowBlankOverlay: (show: boolean) => void;
+  /** The map layer the scene shows: false is the surface, true the ethereal layer, as in TileOpt.alt. */
+  mapLayer: boolean;
   isSideMenuOpened: boolean;
   toggleSideMenu: () => void;
   isSoundOn: boolean;
@@ -194,6 +196,7 @@ export const useUIStore = create(
     setShowBlankOverlay: (show) => {
       set({ showBlankOverlay: show });
     },
+    mapLayer: false,
     isSideMenuOpened: true,
     toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
     isSoundOn: readLocalBool("soundEnabled", true),

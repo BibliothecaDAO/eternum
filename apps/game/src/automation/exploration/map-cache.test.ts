@@ -41,14 +41,14 @@ describe("buildExplorationSnapshot", () => {
     const worldSpatialProjection = {
       getTilesInBounds: vi.fn(() => [
         {
-          hexCoords: { col: 10, row: 10 },
+          hexCoords: { alt: false, col: 10, row: 10 },
           biome: 1,
           occupierId: 0,
           occupierType: 0,
         },
       ]),
-      getStructuresInBounds: vi.fn(() => [{ entityId: structureId, hexCoords: { col: 10, row: 11 } }]),
-      getArmiesInBounds: vi.fn(() => [{ entityId: armyId, hexCoords: { col: 11, row: 10 } }]),
+      getStructuresInBounds: vi.fn(() => [{ entityId: structureId, hexCoords: { alt: false, col: 10, row: 11 } }]),
+      getArmiesInBounds: vi.fn(() => [{ entityId: armyId, hexCoords: { alt: false, col: 11, row: 10 } }]),
     };
 
     const snapshot = await buildExplorationSnapshot({

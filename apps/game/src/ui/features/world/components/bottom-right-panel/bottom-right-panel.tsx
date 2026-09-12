@@ -766,6 +766,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
 
   const focusHex = activeRealmHex ?? cameraTargetHex;
   const focusSelectedHex = activeRealmHex ?? selectedHex;
+  const mapLayer = useUIStore((state) => state.mapLayer);
 
   useEffect(() => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
@@ -777,7 +778,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
 
     const readTiles = () => {
       setTiles(
-        projection.getTiles().map((tile) =>
+        projection.getTiles(mapLayer).map((tile) =>
           normalizeMinimapTile({
             col: tile.hexCoords.col,
             row: tile.hexCoords.row,
@@ -793,7 +794,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
 
     readTiles();
     return projection.subscribeTiles(readTiles);
-  }, []);
+  }, [mapLayer]);
 
   return (
     <PanelFrame title="Minimap" height={compact ? "clamp(180px, 35dvh, 320px)" : MINIMAP_SIZE}>

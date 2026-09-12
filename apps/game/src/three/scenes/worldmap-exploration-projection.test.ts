@@ -13,7 +13,7 @@ describe("worldmap exploration projection", () => {
     harness.writeArmy(1, 11, 7);
     harness.projection.flush();
     const onTileChange = vi.fn();
-    subscribeWorldmapTileChanges(harness.projection, onTileChange);
+    subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     harness.writeTile(12, 7);
     harness.writeArmy(1, 12, 7);
     expect(onTileChange).not.toHaveBeenCalled();
@@ -21,7 +21,7 @@ describe("worldmap exploration projection", () => {
     expect(onTileChange).toHaveBeenCalledTimes(1);
     expect(onTileChange).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "tile", previous: undefined, current: expect.anything() }),
-      { col: 11, row: 7 },
+      { alt: false, col: 11, row: 7 },
     );
   });
 
@@ -31,7 +31,7 @@ describe("worldmap exploration projection", () => {
     harness.writeArmy(1, 11, 7);
     harness.projection.flush();
     const onTileChange = vi.fn();
-    subscribeWorldmapTileChanges(harness.projection, onTileChange);
+    subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     harness.writeTile(12, 7, 3);
     harness.writeArmy(1, 12, 7);
     harness.projection.flush();
@@ -48,7 +48,7 @@ describe("worldmap exploration projection", () => {
   it("leaves the origin unspecified for snapshot creation without a previous army position", () => {
     const harness = createHarness();
     const onTileChange = vi.fn();
-    subscribeWorldmapTileChanges(harness.projection, onTileChange);
+    subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     harness.writeTile(12, 7);
     harness.writeArmy(1, 12, 7);
     harness.projection.flush();
@@ -62,7 +62,7 @@ describe("worldmap exploration projection", () => {
     harness.writeArmy(2, 12, 6);
     harness.projection.flush();
     const onTileChange = vi.fn();
-    subscribeWorldmapTileChanges(harness.projection, onTileChange);
+    subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     harness.writeTile(12, 7);
     harness.writeArmy(1, 12, 7);
     harness.writeArmy(2, 12, 7);
@@ -74,7 +74,7 @@ describe("worldmap exploration projection", () => {
   it("stops delivering tile changes when the scene unsubscribes", () => {
     const harness = createHarness();
     const onTileChange = vi.fn();
-    const unsubscribe = subscribeWorldmapTileChanges(harness.projection, onTileChange);
+    const unsubscribe = subscribeWorldmapTileChanges(harness.projection, onTileChange, () => false);
     unsubscribe();
     harness.writeTile(12, 7);
     harness.projection.flush();
