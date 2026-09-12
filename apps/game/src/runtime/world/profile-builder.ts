@@ -1,9 +1,7 @@
 import type { GameChain } from "@realms-world/chain";
 
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import { resolveWorldIdForGame } from "./game-registry";
-import { fetchHeraldGameDirectory } from "./herald-http";
-import { normalizeRpcUrl } from "./normalize";
+import { fetchHeraldGameDirectory, normalizeRpcUrl, resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
 import { saveWorldProfile } from "./store";
 import type { GameProfile, WorldProfile } from "./types";
 import { getDefaultWorld, getWorldById } from "./world-directory";

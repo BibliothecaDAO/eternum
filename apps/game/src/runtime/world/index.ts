@@ -1,6 +1,5 @@
 export * from "./types";
 export * from "./store";
-export * from "./normalize";
 export * from "./manifest-patcher";
 export * from "./profile-builder";
 export * from "./selection";

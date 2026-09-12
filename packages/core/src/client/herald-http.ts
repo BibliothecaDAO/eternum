@@ -4,7 +4,7 @@ import type {
   HeraldHistoryPage,
   HeraldLeaderboard,
   HeraldTransactionCount,
-} from "@bibliothecadao/eternum/game-sync";
+} from "../sync/herald-http-types";
 
 import type { WorldDeployment } from "./world-directory";
 

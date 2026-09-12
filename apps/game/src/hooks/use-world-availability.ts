@@ -9,8 +9,7 @@
 import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
-import { fetchHeraldGameDirectory } from "@/runtime/world/herald-http";
+import { fetchHeraldGameDirectory, resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 import type { GameChain as Chain } from "@realms-world/chain";

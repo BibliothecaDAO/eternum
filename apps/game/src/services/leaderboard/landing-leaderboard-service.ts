@@ -1,5 +1,5 @@
 import type { WorldDeployment } from "@/runtime/world/world-directory";
-import { fetchHeraldGameLeaderboard, fetchHeraldGameSnapshot } from "@/runtime/world/herald-http";
+import { fetchHeraldGameLeaderboard, fetchHeraldGameSnapshot } from "@bibliothecadao/eternum/game-client";
 import {
   calculateUnregisteredShareholderPoints,
   type HeraldGameSnapshot,

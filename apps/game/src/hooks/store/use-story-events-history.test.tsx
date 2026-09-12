@@ -5,7 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({ fetch: vi.fn(), head: 10, components: {} }));
-vi.mock("@/runtime/world/herald-http", () => ({ fetchHeraldGameHistory: state.fetch }));
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
+  fetchHeraldGameHistory: state.fetch,
+}));
 vi.mock("@/runtime/world", () => ({ getActiveWorld: () => ({ worldId: "blitz" }) }));
 vi.mock("@/runtime/world/world-directory", () => ({
   getWorldById: () => ({ id: "blitz", chain: "madara", heraldBaseUrl: "https://herald.example" }),

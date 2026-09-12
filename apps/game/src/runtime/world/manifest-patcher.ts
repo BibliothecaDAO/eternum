@@ -1,4 +1,4 @@
-import { normalizeSelector } from "./normalize";
+import { normalizeSelector } from "@bibliothecadao/eternum/game-client";
 
 type AnyManifest = any;
 

@@ -17,7 +17,10 @@ const registryMocks = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-query", () => reactQueryMocks);
 vi.mock("@/runtime/world/world-directory", () => directoryMocks);
-vi.mock("@/runtime/world/game-registry", () => registryMocks);
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
+  ...registryMocks,
+}));
 
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 import { useWorldsAvailability } from "./use-world-availability";

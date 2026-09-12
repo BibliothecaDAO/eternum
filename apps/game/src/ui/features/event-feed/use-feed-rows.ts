@@ -2,7 +2,7 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useWorldSlicesStore } from "@/hooks/store/use-world-slices-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { feltEquals } from "@/runtime/world/herald-http";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { useMemo } from "react";
 import { deriveFeedRows, type FeedRows } from "./event-feed-rows";
 import { useEventFeedStore } from "./event-feed-store";

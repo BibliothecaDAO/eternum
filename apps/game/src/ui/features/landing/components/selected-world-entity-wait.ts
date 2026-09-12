@@ -1,4 +1,4 @@
-import { resolveWorldIdForGame } from "@/runtime/world/game-registry";
+import { resolveWorldIdForGame } from "@bibliothecadao/eternum/game-client";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { buildHeraldGameStreamUrl } from "@/sync/herald-game-sync-session";
 import type { GameChain as Chain } from "@realms-world/chain";

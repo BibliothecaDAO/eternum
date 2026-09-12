@@ -27,7 +27,7 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { normalizeSelector } from "@/runtime/world/normalize";
+import { namespaceForChain, normalizeSelector } from "@bibliothecadao/eternum/game-client";
 import {
   createHeraldPreSessionReader,
   type PlayerStructure,
@@ -59,7 +59,6 @@ import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
 import { env } from "../../../../../env";
-import { namespaceForChain } from "@bibliothecadao/eternum/game-client";
 
 const DEBUG_MODAL = false;
 const SETTLEMENT_SYNC_TIMEOUT_MS = 90000;

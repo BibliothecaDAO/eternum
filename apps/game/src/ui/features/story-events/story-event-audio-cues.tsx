@@ -1,7 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import { feltEquals } from "@/runtime/world/herald-http";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { battleIdentity, involvesPlayer } from "@/ui/features/event-feed/important-feed-rows";
 import { useEffect, useRef } from "react";
 

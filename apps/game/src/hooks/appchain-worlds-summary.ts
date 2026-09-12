@@ -1,6 +1,6 @@
 import type { WorldSummary } from "@bibliothecadao/types";
 
-import { fetchHeraldGameDirectory } from "@/runtime/world/herald-http";
+import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
 import type { WorldDeployment } from "@/runtime/world/world-directory";
 
 /**

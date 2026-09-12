@@ -1,4 +1,4 @@
-import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldGameDirectoryEntry } from "../sync/herald-http-types";
 
 import { fetchHeraldGameDirectory } from "./herald-http";
 import { getDefaultWorld, getWorldById, getWorldDirectory } from "./world-directory";

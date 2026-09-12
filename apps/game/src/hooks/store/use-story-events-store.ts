@@ -1,5 +1,5 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
-import { fetchHeraldGameHistory } from "@/runtime/world/herald-http";
+import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import { getDefaultWorld, getWorldById } from "@/runtime/world/world-directory";
 import { getActiveWorld } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
