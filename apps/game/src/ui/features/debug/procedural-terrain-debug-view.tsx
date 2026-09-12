@@ -404,11 +404,11 @@ export const ProceduralTerrainDebugView = () => {
                 </select>
               </label>
             )}
-            {buildingPath === VILLAGE_MODEL_PATH && (
+            {(buildingPath === VILLAGE_MODEL_PATH || isRealmModelPath(buildingPath)) && (
               <label className="flex flex-col gap-1 text-sm">
-                Village relationship
+                Ownership
                 <select
-                  aria-label="Village relationship"
+                  aria-label="Ownership"
                   className="bg-stone-900 p-2"
                   value={preview.relationship}
                   onChange={(event) =>

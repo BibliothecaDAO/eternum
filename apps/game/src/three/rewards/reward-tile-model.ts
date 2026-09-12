@@ -19,6 +19,7 @@ import { createArcaneStoneMaterial, createRuneFlameMaterials } from "./reward-su
 import { ChestPresentation } from "./chest-presentation";
 import { RiftPresentation } from "./rift-presentation";
 import { RewardTileBatch, resolveRewardBatchKey } from "./reward-tile-batch";
+import { placedModelPhase, placedModelTime } from "../utils/placed-model-phase";
 
 /** Keeps the authored hierarchy and morph animation while batching visible reward tiles. */
 export class RewardTileModel {
@@ -66,6 +67,7 @@ export class RewardTileModel {
     const placement = this.placements.get(index) ?? new Matrix4();
     placement.copy(matrix);
     this.placements.set(index, placement);
+    this.samplePlacementPose(placement);
     this.writePose(index, placement);
   }
 
@@ -84,7 +86,7 @@ export class RewardTileModel {
     });
     for (const index of this.placements.keys()) if (index >= count) this.removeInstance(index);
     for (const mesh of this.instancedMeshes) {
-      mesh.count = count;
+      mesh.count = mesh.morphTexture && count === 1 ? 2 : count;
       mesh.visible = count > 0;
     }
   }
@@ -106,9 +108,11 @@ export class RewardTileModel {
     this.time += delta;
     if (!this.count || !this.group.visible || !this.isNearCamera(visibility)) return;
     this.energy.clock.value = this.time;
-    // Sample once per frame for all visible instances, keeping rings and spray smooth.
-    this.samplePose();
-    for (const [index, placement] of this.placements) this.writePose(index, placement);
+    if (!this.rift) this.samplePose();
+    for (const [index, placement] of this.placements) {
+      if (this.rift) this.samplePlacementPose(placement);
+      this.writePose(index, placement);
+    }
   }
 
   updatePresentation(nightAmount: number, cameraPosition?: Vector3): void {
@@ -170,9 +174,14 @@ export class RewardTileModel {
     );
     mesh.name = source.name;
     mesh.receiveShadow = true;
-    // Every reward instance uses the same sampled pose. Share its morph weights
-    // directly instead of uploading a capacity-sized copy of identical rows.
-    mesh.morphTargetInfluences = source.morphTargetInfluences;
+    if (this.rift && source.morphTargetInfluences?.length) {
+      // Allocate once before compilation; each placement owns one morph row while sharing the geometry.
+      mesh.count = Math.max(2, this.capacity);
+      mesh.setMorphAt(0, source);
+      mesh.morphTexture!.needsUpdate = true;
+    } else {
+      mesh.morphTargetInfluences = source.morphTargetInfluences;
+    }
     mesh.count = 0;
     mesh.frustumCulled = false;
     this.sources.push(source);
@@ -190,11 +199,16 @@ export class RewardTileModel {
     return material;
   }
 
-  private samplePose(): void {
-    this.mixer.setTime(this.time);
+  private samplePlacementPose(placement: Matrix4): void {
+    const phase = placedModelPhase(placement.elements[12], placement.elements[14]);
+    this.samplePose(this.rift ? placedModelTime(this.time, phase) : this.time);
+  }
+
+  private samplePose(seconds = this.time): void {
+    this.mixer.setTime(seconds);
     for (let index = 0; index < 2; index++) {
       const ring = this.pose.getObjectByName(`ArcaneSealRing${index}`);
-      if (ring) ring.rotation.y = this.time * (index === 0 ? 0.24 : -0.32);
+      if (ring) ring.rotation.y = seconds * (index === 0 ? 0.24 : -0.32);
     }
     this.pose.updateMatrixWorld(true);
   }
@@ -206,6 +220,10 @@ export class RewardTileModel {
       const source = this.sources[part];
       this.composed.multiplyMatrices(placement, source.matrixWorld);
       this.writeMatrix(mesh, index, this.composed);
+      if (mesh.morphTexture) {
+        mesh.setMorphAt(index, source);
+        mesh.morphTexture.needsUpdate = true;
+      }
     });
   }
 

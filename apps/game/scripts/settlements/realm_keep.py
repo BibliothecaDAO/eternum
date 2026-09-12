@@ -8,7 +8,6 @@ import math
 import sys
 from pathlib import Path
 import bpy
-from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from settlement_geometry import mesh, block, beam
@@ -365,31 +364,8 @@ def build_enclosure_merlons(m, path, length):
 
 def build_gate(m):
     build_gate_frame(m)
-    before = set(bpy.context.scene.objects)
     build_gate_leaves(m)
     build_gate_fittings(m)
-    open_gate_leaves(set(bpy.context.scene.objects) - before)
-
-
-def open_gate_leaves(parts):
-    for obj in parts:
-        # All pieces of each leaf rotate about the same exterior hinge.
-        center = (
-            sum(
-                (obj.matrix_world @ Vector(corner) for corner in obj.bound_box),
-                Vector(),
-            )
-            / 8
-        )
-        sign = -1 if center.x < 0 else 1
-        pivot = Vector((sign * 0.175, GATE_Y - 0.082, 0))
-        obj.location.y -= 0.068
-        turn = (
-            Matrix.Translation(pivot)
-            @ Matrix.Rotation(sign * math.radians(100), 4, "Z")
-            @ Matrix.Translation(-pivot)
-        )
-        obj.matrix_world = turn @ obj.matrix_world
 
 
 def build_gate_frame(m):

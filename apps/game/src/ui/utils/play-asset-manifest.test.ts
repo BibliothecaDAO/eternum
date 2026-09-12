@@ -44,27 +44,35 @@ describe("play-asset-manifest", () => {
     expect(DASHBOARD_SHARED_PLAY_FETCH_ASSETS).toContain(TERRAIN_GROUND_MANIFEST_PATH);
   });
 
-  it("includes shared gameplay models and the single procedural terrain prop catalog", async () => {
+  it("warms terrain while leaving entity models to the selected game's visible scene", async () => {
     const { DASHBOARD_SHARED_PLAY_MODEL_ASSETS } = await import("./play-asset-manifest");
-    const { SHARED_ARMY_MODEL_PATHS } = await import("@/three/constants/army-constants");
-    const { SHARED_BUILDING_MODEL_PATHS, SHARED_CHEST_MODEL_PATHS } = await import("@/three/constants/scene-constants");
     const { TERRAIN_PROP_CATALOG_PATH } = await import("@/three/terrain/terrain-prop-catalog");
 
-    SHARED_ARMY_MODEL_PATHS.forEach((assetPath) => {
-      expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(assetPath);
-    });
-
-    SHARED_BUILDING_MODEL_PATHS.forEach((assetPath) => {
-      expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(assetPath);
-    });
-
-    SHARED_CHEST_MODEL_PATHS.forEach((assetPath) => {
-      expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(assetPath);
-    });
     expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).toContain(TERRAIN_PROP_CATALOG_PATH);
-    expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS.some((assetPath) => /biomes|bare_2|deepOcean/.test(assetPath))).toBe(
-      false,
-    );
+    expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).not.toContain("/models/ethereal/spire.glb");
+    expect(DASHBOARD_SHARED_PLAY_MODEL_ASSETS).not.toContain("/models/reward-tiles/chest.glb");
+    expect(
+      DASHBOARD_SHARED_PLAY_MODEL_ASSETS.some((path) => /\/(settlements|units|ships|new-buildings-opt)\//.test(path)),
+    ).toBe(false);
+  });
+
+  it("keeps Blitz-only exclusions out of local model loading and spires out of Blitz", async () => {
+    const { getGameModeConfig } = await import("@/config/game-modes");
+    const { BuildingType } = await import("@bibliothecadao/types");
+    const { BUILDINGS_GROUPS } = await import("@/three/constants/scene-constants");
+    const blitz = getGameModeConfig({ modeId: "blitz" }).assets;
+    const eternum = getGameModeConfig({ modeId: "eternum" }).assets;
+    for (const type of [BuildingType.ResourceFish, BuildingType.ResourceResearch]) {
+      expect(blitz.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBeUndefined();
+      expect(eternum.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][type]).toBeDefined();
+    }
+    expect(blitz.buildingModelPaths[BUILDINGS_GROUPS.BUILDINGS][BuildingType.Storehouse]).toBeDefined();
+    const paths = [
+      ...Object.values(blitz.structureModelPaths).flat(),
+      ...Object.values(blitz.buildingModelPaths).flatMap((group) => Object.values(group)),
+    ];
+    expect(paths).not.toContain("/models/ethereal/spire.glb");
+    expect(paths).not.toContain("/models/new-buildings-opt/fishery.glb");
   });
 
   it("excludes audio, videos, cosmetics, and landing-only promo art from dashboard preloads", async () => {
