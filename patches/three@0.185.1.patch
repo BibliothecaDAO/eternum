@@ -1,3 +1,78 @@
+diff --git a/src/nodes/core/NodeBuilder.js b/src/nodes/core/NodeBuilder.js
+index be00b81ef36e1af83b0066603e616f8f1f81a115..d1014b9a10dab770ec9aa222e7bcd9b881ea9e62 100644
+--- a/src/nodes/core/NodeBuilder.js
++++ b/src/nodes/core/NodeBuilder.js
+@@ -3218,65 +3218,17 @@ class NodeBuilder {
+ 	}
+ 
+ 	/**
+-	 * Async version of build() that yields to main thread between shader stages.
++	 * Async version of build() that yields before preparing a complete shader.
+ 	 * Use this in compileAsync() to prevent blocking the main thread.
+ 	 *
+ 	 * @return {Promise<NodeBuilder>} A promise that resolves to this node builder.
+ 	 */
+ 	async buildAsync() {
+ 
+-		this.prebuild();
+-
+-		// setup() -> stage 1: create possible new nodes and/or return an output reference node
+-		// analyze()   -> stage 2: analyze nodes to possible optimization and validation
+-		// generate()  -> stage 3: generate shader
+-
+-		for ( const buildStage of defaultBuildStages ) {
+-
+-			this.setBuildStage( buildStage );
+-
+-			if ( this.context.position && this.context.position.isNode ) {
+-
+-				this.flowNodeFromShaderStage( 'vertex', this.context.position );
+-
+-			}
+-
+-			for ( const shaderStage of shaderStages ) {
+-
+-				this.setShaderStage( shaderStage );
+-
+-				const flowNodes = this.flowNodes[ shaderStage ];
+-
+-				for ( const node of flowNodes ) {
+-
+-					if ( buildStage === 'generate' ) {
+-
+-						this.flowNode( node );
+-
+-					} else {
+-
+-						node.build( this );
+-
+-					}
+-
+-				}
+-
+-				// Yield to main thread after each shader stage to prevent blocking
+-				await yieldToMain();
+-
+-			}
+-
+-		}
+-
+-		this.setBuildStage( null );
+-		this.setShaderStage( null );
+-
+-		// stage 4: build code for a specific output
+-
+-		this.buildCode();
+-		this.buildUpdateNodes();
+-
+-		return this;
++		// Yield before touching shared nodes. Rendering can synchronously build a
++		// material while we yield, so setup/analyze/generate must stay atomic.
++		await yieldToMain();
++		return this.build();
+ 
+ 	}
+ 
 diff --git a/src/renderers/common/Renderer.js b/src/renderers/common/Renderer.js
 index 8dfc2ae055ad7b9d4c00e91f7d52a39e747caebe..2ec2f4f30ab165de54bfd9a8b84bdc74f2d2eb06 100644
 --- a/src/renderers/common/Renderer.js

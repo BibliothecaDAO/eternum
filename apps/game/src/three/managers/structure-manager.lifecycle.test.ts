@@ -201,6 +201,7 @@ function createVisibleStructurePassFence() {
 
 function createStructureManagerSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
+  subject.pendingHyperstructureBuilds = new Set();
 
   const unsubscribeAccountStore = vi.fn();
   const unsubscribeVisibility = vi.fn();
@@ -315,6 +316,7 @@ function createStructureManagerSubject() {
 
 function createVisibleStructurePassSubject() {
   const subject = Object.create(StructureManager.prototype) as any;
+  subject.pendingHyperstructureBuilds = new Set();
   const visibleStructurePassFence = createVisibleStructurePassFence();
 
   subject.isDestroyed = false;
@@ -372,6 +374,7 @@ function createStructureRenderable(entityId: number, hexCoords: { col: number; r
 
 function createStructureVisibilitySubject() {
   const subject = Object.create(StructureManager.prototype) as any;
+  subject.pendingHyperstructureBuilds = new Set();
 
   subject.currentChunk = "0,0";
   subject.renderChunkSize = { width: 48, height: 48 };
@@ -435,6 +438,7 @@ describe("StructureManager structure visibility", () => {
 describe("StructureManager structure info cache", () => {
   function createCacheSubject() {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     subject.structureInfoCache = new Map();
     subject.metrics = createZeroMetrics();
     subject.updateTimedLabelTracking = vi.fn();
@@ -568,6 +572,29 @@ describe("StructureManager change-set driven visible pass", () => {
     return { subject, renderables };
   }
 
+  it("animates a visible reserved site becoming an entity, but never an initial completed snapshot", () => {
+    const { subject } = createWindowedPassSubject();
+    const current = createStructureRenderable(77, { col: 0, row: 0 });
+    subject.trackClaimedHyperstructureSites([{ kind: "structure", spatialId: current.spatialId, current }]);
+    expect(subject.pendingHyperstructureBuilds.size).toBe(0);
+    const previous = { ...current, entityId: null, reserved: true, spatialId: "reserved:0:0:0" };
+    subject.trackClaimedHyperstructureSites([
+      { kind: "structure", spatialId: previous.spatialId, previous },
+      { kind: "structure", spatialId: current.spatialId, current },
+    ]);
+    expect([...subject.pendingHyperstructureBuilds]).toEqual([77]);
+    subject.pendingHyperstructureBuilds.clear();
+    subject.trackClaimedHyperstructureSites([
+      {
+        kind: "structure",
+        spatialId: previous.spatialId,
+        previous: { ...previous, hexCoords: { col: 500, row: 500 } },
+      },
+      { kind: "structure", spatialId: current.spatialId, current },
+    ]);
+    expect(subject.pendingHyperstructureBuilds.size).toBe(0);
+  });
+
   it("resolves only the changed entity and runs no bounds query for a batch touching one of N", async () => {
     const { subject, renderables } = createWindowedPassSubject();
     const moved = { ...renderables[1], occupierType: 2 };
@@ -662,6 +689,7 @@ describe("StructureManager change-set driven visible pass", () => {
 describe("StructureManager destroy lifecycle", () => {
   it("runs a single visible-structure rebuild during chunk switches", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
 
     subject.currentChunk = "0,0";
     subject.latestTransitionToken = 0;
@@ -734,6 +762,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("stops an async visible-structure refresh from mutating after destroy", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const structureType = "Village";
     const setMatrixAt = vi.fn();
     const setCount = vi.fn();
@@ -946,6 +975,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("routes a structure component refresh to only that entity", () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const structure = { entityId: 7 };
 
     subject.structureInfoCache = new Map([[7, { entityId: 7, stale: true }]]);
@@ -963,6 +993,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("refreshes the label but skips the visible pass for a component change outside the window", () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const structure = { entityId: 7 };
 
     subject.structureInfoCache = new Map();
@@ -979,6 +1010,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("prunes a tracked label when an address-name update finds that its structure vanished", () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
 
     subject.resolveStructureInfoByEntityId = vi.fn(() => undefined);
     subject.removeStructurePresentation = vi.fn();
@@ -1141,6 +1173,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it.each([0, 3])("ignores an invalid free-slot hint at index %s without scanning the slot array", (freeSlot) => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const model = {};
     const slots = [1, 2];
 
@@ -1200,6 +1233,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("re-queues targeted deltas after a non-committing pass", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const passOptions: Array<{ refreshEntityIds: Set<number> }> = [];
 
     subject.isDestroyed = false;
@@ -1220,6 +1254,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("records deltas received while chunk authority is uncommitted", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
 
     subject.isDestroyed = false;
     subject.currentChunk = "uncommitted";
@@ -1242,6 +1277,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("upgrades a partially failed delta to a full refresh before retrying", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const passOptions: Array<{ refreshEntityIds: Set<number>; refreshExisting?: boolean }> = [];
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -1272,6 +1308,7 @@ describe("StructureManager destroy lifecycle", () => {
 
   it("queues targeted refreshes without invalidating the in-flight pass", async () => {
     const subject = Object.create(StructureManager.prototype) as any;
+    subject.pendingHyperstructureBuilds = new Set();
     const visibleStructurePassFence = createVisibleStructurePassFence();
     const inFlightSnapshot = visibleStructurePassFence.capture();
     const runVisibleStructuresUpdate = vi.fn().mockResolvedValue(undefined);

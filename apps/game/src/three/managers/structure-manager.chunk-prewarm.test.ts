@@ -161,7 +161,7 @@ function createSubject() {
 }
 
 describe("StructureManager.prewarmChunkAssets", () => {
-  it("requests only visible realm levels, required wonders, and hyperstructure stages", async () => {
+  it("requests only visible realm levels, required wonders, and the procedural hyperstructure kit", async () => {
     const subject = createSubject();
     subject.structureModels.set("Realm", new Map([[1, {}]]));
     subject.queryStructureInfosInChunk.mockReturnValue([
@@ -176,7 +176,7 @@ describe("StructureManager.prewarmChunkAssets", () => {
     expect(subject.ensureStructureModel.mock.calls).toEqual([
       ["Realm", 3],
       ["Realm", 4],
-      ["Hyperstructure", 2],
+      ["Hyperstructure", 0],
     ]);
   });
 

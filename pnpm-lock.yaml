@@ -128,7 +128,7 @@ patchedDependencies:
     hash: fbafe2385e9760ac2c5a414ddc801db85a9accc4709f27138759aad1de5efc0e
     path: patches/@cartridge__controller@0.13.16.patch
   three@0.185.1:
-    hash: 4c2e8c8c846d87eb9df0981ba244f9060ecf93cbf39fab2c400fb7379c7114d1
+    hash: 3a03099936c17806abaff71dfde0aad98e306d6ea242635ca83d12b2983d76d6
     path: patches/three@0.185.1.patch
 
 importers:
@@ -427,7 +427,7 @@ importers:
         version: 1.0.7(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))
       three:
         specifier: ^0.185.1
-        version: 0.185.1(patch_hash=4c2e8c8c846d87eb9df0981ba244f9060ecf93cbf39fab2c400fb7379c7114d1)
+        version: 0.185.1(patch_hash=3a03099936c17806abaff71dfde0aad98e306d6ea242635ca83d12b2983d76d6)
       type-fest:
         specifier: catalog:game
         version: 2.19.0
@@ -34971,7 +34971,7 @@ snapshots:
 
   three@0.174.0: {}
 
-  three@0.185.1(patch_hash=4c2e8c8c846d87eb9df0981ba244f9060ecf93cbf39fab2c400fb7379c7114d1): {}
+  three@0.185.1(patch_hash=3a03099936c17806abaff71dfde0aad98e306d6ea242635ca83d12b2983d76d6): {}
 
   timeout-abort-controller@3.0.0:
     dependencies:
