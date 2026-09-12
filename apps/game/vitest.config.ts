@@ -53,7 +53,6 @@ export default defineConfig({
       "@config-deployer": path.resolve(__dirname, "../../config/deployer"),
       "@contracts": path.resolve(__dirname, "../../contracts/utils/utils"),
       "@bibliothecadao/ammv2-sdk": path.resolve(__dirname, "../../packages/ammv2-sdk/src/index.ts"),
-      "@bibliothecadao/client": path.resolve(__dirname, "../../packages/client/src/index.ts"),
       // Subpath alias must precede the package root: alias matching is
       // prefix-based, so the root entry would otherwise swallow it.
       "@bibliothecadao/eternum/game-entity-keys": path.resolve(
