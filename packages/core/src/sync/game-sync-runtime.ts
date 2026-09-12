@@ -386,8 +386,15 @@ export class GameSyncRuntime {
         if (oldest === undefined) break;
         this.recentEventIdentities.delete(oldest);
       }
-      session.onEvent?.({ hashed_keys: event.hashed_keys, models: { [model]: value } });
-      this.ingestQueue?.enqueueEvent({ hashed_keys: event.hashed_keys, models: { [model]: value } });
+      const delivered = { hashed_keys: event.hashed_keys, models: { [model]: value } };
+      try {
+        session.onEvent?.(delivered);
+      } catch (error) {
+        // Events are ephemera: a presentation failure must not abort the diff carrying entity rows.
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[GameSync] event handler failed for ${model}: ${message}`);
+      }
+      this.ingestQueue?.enqueueEvent(delivered);
     });
   }
 

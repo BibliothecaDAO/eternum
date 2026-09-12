@@ -11,6 +11,8 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { clientDataPlugin } from "./build/client-data";
+import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
+import { createPwaReleasePlugin } from "./build/pwa-release";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
@@ -51,16 +53,26 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     });
     plugins.push(
       VitePWA({
-        selfDestroying: true,
-        devOptions: {
-          enabled: process.env.VITE_PUBLIC_CHAIN === "local",
-        },
-        workbox: {
-          maximumFileSizeToCacheInBytes: 8000000,
-          clientsClaim: true,
-          skipWaiting: false,
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
+        injectRegister: false,
+        includeManifestIcons: false,
+        injectManifest: {
+          // The plugin adds manifest.webmanifest itself; globbing it too duplicates its entry.
+          globPatterns: PWA_PRECACHE_FILES.filter((file) => file !== "manifest.webmanifest"),
+          maximumFileSizeToCacheInBytes: PWA_PRECACHE_BUDGET_BYTES,
+          sourcemap: false,
+          buildPlugins: {
+            rollup: [
+              createPwaReleasePlugin(
+                process.env.VITE_PUBLIC_GAME_VERSION || appEnv.VITE_PUBLIC_GAME_VERSION || "development",
+              ),
+            ],
+          },
         },
         manifest: {
+          id: "/",
           name: "Realms",
           short_name: "Realms",
           description: "Glory awaits for those who rule the Hex",
@@ -70,7 +82,11 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           orientation: "landscape",
           scope: "/",
           start_url: "/",
-          icons: [],
+          icons: [
+            { src: "/images/game-pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+            { src: "/images/game-pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+            { src: "/images/game-maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          ],
         },
       }) as any,
     );

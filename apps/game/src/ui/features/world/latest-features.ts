@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Install Realms",
+    description:
+      "Install Realms on your device, retry when your connection returns, and apply game updates when you are ready.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
+    title: "Cleaner Game Activity",
+    description:
+      "Live activity and history now share event identities, so the same event appears only once when history loads.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
     title: "Smoother Mobile Map Gestures",
     description:
       "Pan the world map with one finger and pinch to zoom around your fingers. Switching gestures stays steady, and interrupted touches no longer affect the next drag.",
