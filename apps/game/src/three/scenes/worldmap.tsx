@@ -2934,6 +2934,7 @@ export default class WorldmapScene extends WarpTravel {
       id: "spire-travel",
       content: (
         <SpireTravelModal
+          explorerId={selectedEntityId}
           essenceCost={configManager.getSpireTravelEssenceCost()}
           onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)}
         />

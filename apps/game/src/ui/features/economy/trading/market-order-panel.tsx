@@ -1,14 +1,17 @@
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
+import { HUD_BODY_MUTED, HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
+import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
-  getEntityIdFromKeys,
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
@@ -17,64 +20,13 @@ import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { gameEntityKey } from "@/sync/game-scope";
 
 const ONE_MONTH = 2628000;
-
-const MarketResource = memo(
-  ({
-    entityId,
-    resourceId,
-    active,
-    onClick,
-    askPrice,
-    bidPrice,
-    ammPrice,
-  }: {
-    entityId: ID;
-    resourceId: ResourcesIds;
-    active: boolean;
-    onClick: (value: number) => void;
-    askPrice: number;
-    bidPrice: number;
-    ammPrice: number;
-  }) => {
-    const currentDefaultTick = useCurrentDefaultTick();
-    const resourceManager = useResourceManager(entityId);
-
-    const balance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, currentDefaultTick]);
-
-    const resource = useMemo(() => {
-      return findResourceById(resourceId);
-    }, [resourceId]);
-
-    return (
-      <div
-        onClick={() => {
-          onClick(resourceId);
-        }}
-        className={`w-full border-gold/5 rounded-xl h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:  group ${
-          active ? "panel-gold" : ""
-        }`}
-      >
-        <div className="flex items-center gap-2 col-span-2">
-          <ResourceIcon size="sm" resource={resource?.trait || ""} withTooltip={false} />
-          <div className="truncate text-xs">{resource?.trait || ""}</div>
-          <div className="text-xs text-gold/70 group-hover:text-green">
-            [{currencyFormat(balance ? Number(balance) : 0, 0)}]
-          </div>
-        </div>
-
-        <div className="text-green  flex items-center justify-center text-xs">{formatNumber(bidPrice, 4)}</div>
-        <div className="text-red  flex items-center justify-center text-xs">{formatNumber(askPrice, 4)}</div>
-        <div className="text-blueish  flex items-center justify-center text-xs">{formatNumber(ammPrice, 4)}</div>
-      </div>
-    );
-  },
-);
+const ORDER_ROW_HEIGHT_PX = 36;
+const ORDER_GRID = "grid grid-cols-[1.2fr_1fr_1fr_auto] items-center gap-2";
+const COMPACT_NUMBER_INPUT = "h-8 rounded-md text-sm";
 
 export const MarketOrderPanel = memo(
   ({
@@ -101,7 +53,7 @@ export const MarketOrderPanel = memo(
     }, [resourceAskOffers, resourceId]);
 
     return (
-      <div className="order-book-selector grid grid-cols-2 p-4 h-full">
+      <div className="order-book-selector grid min-h-0 flex-1 grid-cols-2 gap-3 p-3">
         <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
         <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
       </div>
@@ -128,12 +80,12 @@ const VirtualizedOrderList = memo(
     const virtualizer = useVirtualizer({
       count: offers.length,
       getScrollElement: () => parentRef.current,
-      estimateSize: () => 52,
+      estimateSize: () => ORDER_ROW_HEIGHT_PX,
       overscan: 5,
     });
 
     return (
-      <div ref={parentRef} className="flex-grow overflow-y-auto h-96 relative">
+      <div ref={parentRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div
           style={{
             height: `${virtualizer.getTotalSize()}px`,
@@ -186,45 +138,43 @@ const MarketOrders = memo(
   }) => {
     const [updateBalance, setUpdateBalance] = useState(false);
 
-    const lowestPrice = useMemo(() => {
-      const price = offers.reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
-      return price === Infinity ? 0 : price;
-    }, [offers]);
+    // Asks: the cheapest one is the best buy. Bids: the highest one pays the most.
+    const bestPrice = useMemo(() => {
+      if (offers.length === 0) return 0;
+      const prices = offers.map((offer) => offer.perLords);
+      return isBuy ? Math.max(...prices) : Math.min(...prices);
+    }, [offers, isBuy]);
+    const trait = findResourceById(resourceId)?.trait ?? "";
 
     return (
-      <div className="h-full flex flex-col ">
-        {/* Market Price */}
+      <div className="flex min-h-0 flex-col gap-2">
         <div
-          className={`text-2xl flex border bg-black/30 justify-between py-2 px-4 border-gold/10 rounded-xl ${
-            !isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
-          }`}
+          className={cn(
+            "flex items-center justify-between rounded-md border px-3 py-1.5",
+            isBuy ? "border-red/30 bg-red/5" : "border-green/30 bg-green/5",
+          )}
         >
-          <div className="self-center flex">
-            <div className="flex flex-col">
-              {/* <h5 className="">{findResourceById(resourceId)?.trait || ""}</h5> */}
-              <div className="flex gap-3 self-center">
-                <ResourceIcon withTooltip={true} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
-                <div className="self-center">{formatNumber(lowestPrice, 4)}</div>
-              </div>
-            </div>
-          </div>
-          <div className="self-center">
-            {offers.length} {isBuy ? "bid" : "ask"}
-            {offers.length === 0 && " (no orders)"}
-          </div>
+          <span className="flex items-center gap-2">
+            <ResourceIcon withTooltip={false} size="sm" resource={trait} />
+            <span className={HUD_LABEL}>{isBuy ? "Sell to" : "Buy from"}</span>
+            <span className={cn(HUD_VALUE, isBuy ? "text-red" : "text-green")}>{formatNumber(bestPrice, 4)}</span>
+            <span className={HUD_CUE}>Lords each</span>
+          </span>
+          <span className={HUD_CUE}>
+            {offers.length} {isBuy ? "bids" : "asks"}
+          </span>
         </div>
 
         <div
-          className={`p-1 bg-black/30 flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
-            isBuy ? "order-buy-selector" : "order-sell-selector"
-          }`}
+          className={cn(
+            "flex min-h-0 flex-1 flex-col rounded-md border border-gold/15 bg-black/25",
+            isBuy ? "order-buy-selector" : "order-sell-selector",
+          )}
         >
           <OrderRowHeader resourceId={resourceId} isBuy={isBuy} />
-
           {offers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 text-gold/30">
-              <div className="text-sm mb-1">No {isBuy ? "buy" : "sell"} orders</div>
-              <div className="text-xs">Create one below</div>
+            <div className="flex flex-1 items-center justify-center py-8">
+              <span className={HUD_BODY_MUTED}>No {isBuy ? "buy" : "sell"} orders yet</span>
             </div>
           ) : (
             <VirtualizedOrderList
@@ -245,20 +195,19 @@ const MarketOrders = memo(
 
 const OrderRowHeader = memo(({ resourceId, isBuy }: { resourceId?: number; isBuy: boolean }) => {
   return (
-    <div className="grid grid-cols-4 gap-2 p-2 uppercase text-xs">
-      <div className="col-span-1">qty.</div>
-      <div className="col-span-1 flex justify-center">
+    <div className={cn(ORDER_GRID, "border-b border-gold/15 px-2 py-1.5", HUD_LABEL)}>
+      <span>Qty</span>
+      <span className="flex items-center justify-center gap-0.5">
         {resourceId && (
           <>
-            {" "}
-            <ResourceIcon size="xs" resource={"Lords"} />
-            per/
-            <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} />
+            <ResourceIcon size="xs" resource="Lords" withTooltip={false} />
+            <span>/</span>
+            <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} withTooltip={false} />
           </>
         )}
-      </div>
-      <div className="col-span-1 flex justify-center">{isBuy ? "gain" : "cost"}</div>
-      <div className="col-span-1 flex justify-end">Action</div>
+      </span>
+      <span className="text-center">{isBuy ? "Gain" : "Cost"}</span>
+      <span className="w-14" />
     </div>
   );
 });
@@ -404,38 +353,34 @@ const OrderRow = memo(
       }
     };
 
+    const actionLabel = isSelf ? "Cancel" : isBuy ? "Sell" : "Buy";
+
     return (
       <div
-        key={offer.tradeId}
-        className={`group flex flex-col py-1.5 px-2 hover:bg-white/15 duration-150 border-b border-gold/5 relative rounded text-sm ${
-          isSelf ? "bg-blueish/10" : "bg-white/10"
-        }`}
+        className={cn(
+          ORDER_GRID,
+          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10",
+          isSelf && "bg-blueish/10",
+        )}
+        title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}
       >
-        <div className="grid grid-cols-4 gap-2">
-          <div className={`col-span-1 flex gap-1 ${isBuy ? "text-red" : "text-green"}`}>
-            <ResourceIcon withTooltip={false} size="sm" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
-            {getsDisplay}
-          </div>
-          <div className="col-span-1 flex justify-center text-green">{formatNumber(offer.perLords, 4)}</div>
-          <div className={`col-span-1 flex justify-center gap-1 ${isBuy ? "text-green" : "text-red"}`}>
-            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
-            {currencyFormat(getTotalLords, 0)}
-          </div>
-          <div className="col-span-1 flex justify-end">
-            {!isSelf ? (
-              <Button isLoading={loading} onClick={() => setConfirmOrderModal(true)} size="xs" className="w-full">
-                {!isBuy ? "Buy" : "Sell"}
-              </Button>
-            ) : (
-              <Button onClick={() => setConfirmOrderModal(true)} variant="danger" size="xs" className="w-full">
-                {loading ? "cancelling" : "cancel"}
-              </Button>
-            )}
-          </div>
-          <div className="col-span-4 text-xxs text-gold/50 uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-            expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
-          </div>
-        </div>
+        <span className={cn("flex items-center gap-1", isBuy ? "text-red" : "text-green")}>
+          <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />
+          {getsDisplay}
+        </span>
+        <span className="text-center text-gold">{formatNumber(offer.perLords, 4)}</span>
+        <span className={cn("flex items-center justify-center gap-1", isBuy ? "text-green" : "text-red")}>
+          <ResourceIcon withTooltip={false} size="xs" resource="Lords" />
+          {currencyFormat(getTotalLords, 0)}
+        </span>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => setConfirmOrderModal(true)}
+          className={cn(HUD_PILL_BUTTON, "w-14 px-0 py-0.5 text-center", isSelf && "text-red hover:border-red/60")}
+        >
+          {loading ? "…" : actionLabel}
+        </button>
         {confirmOrderModal && (
           <ConfirmOrderPopup
             isSelf={isSelf}
@@ -703,104 +648,91 @@ const OrderCreation = memo(
       );
     }, [isBuy, createOrder, loading, setShowConfirmation]);
 
+    const trait = findResourceById(resourceId)?.trait ?? "";
+
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto border border-gold/10 bg-black/30 ${
-          isBuy
-            ? "order-create-buy-selector border-l-2 border-l-red"
-            : "order-create-sell-selector border-l-2 border-l-green"
-        }`}
+        className={cn(
+          "flex flex-col gap-2 rounded-md border border-gold/15 border-l-2 bg-black/25 px-3 py-2",
+          isBuy ? "order-create-buy-selector border-l-red" : "order-create-sell-selector border-l-green",
+        )}
       >
-        <div className="flex w-full gap-8">
-          <div className="w-1/3 gap-1 flex flex-col">
-            <div className="text-xs uppercase text-gold/50 flex gap-2">
-              <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
-              {isBuy ? "Buy" : "Sell"}
-            </div>
+        <div className="grid grid-cols-3 gap-2">
+          <OrderField
+            label={isBuy ? "Buy" : "Sell"}
+            icon={trait}
+            available={currencyFormat(Number(resourceBalance), 0)}
+          >
             <NumberInput
               value={resource}
-              className="w-full col-span-3"
-              onChange={(value) => {
-                setResource(Number(value));
-              }}
+              className={COMPACT_NUMBER_INPUT}
+              onChange={(value) => setResource(Number(value))}
               max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
             />
-
-            <div className="text-sm  text-gold/70">
-              {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
-            </div>
-          </div>
-          <div className="flex flex-col w-1/3 justify-center text-center  self-center">
-            <div className="">
-              <div className="text-xs uppercase text-gold/50 flex gap-2">
-                <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
-                per /{" "}
-                <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
-              </div>
-              <NumberInput
-                allowDecimals={true}
-                value={Number(bid)}
-                onChange={handleBidChange}
-                className="w-full"
-                max={Infinity}
-              />
-            </div>
-            <div className="text-sm  text-gold/70 flex mt-1">
-              {isBuy ? "Cost " : "Gain "}
-              {Number(bid).toFixed(0)} Lords/{findResourceById(resourceId)?.trait}
-            </div>
-          </div>
-          <div className="w-1/3 gap-1 flex flex-col">
-            <div className="text-xs uppercase text-gold/50 flex gap-2">
-              <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> {isBuy ? "Cost" : "Gain"}
-            </div>
+          </OrderField>
+          <OrderField label={`Lords / ${trait}`} icon="Lords">
+            <NumberInput
+              allowDecimals={true}
+              value={Number(bid)}
+              onChange={handleBidChange}
+              className={COMPACT_NUMBER_INPUT}
+              max={Infinity}
+            />
+          </OrderField>
+          <OrderField label={isBuy ? "Cost" : "Gain"} icon="Lords" available={currencyFormat(Number(lordsBalance), 0)}>
             <NumberInput
               value={lords}
-              className="w-full col-span-3"
-              onChange={(value) => {
-                setLords(Number(value));
-              }}
+              className={COMPACT_NUMBER_INPUT}
+              onChange={(value) => setLords(Number(value))}
               max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
             />
-
-            <div className="text-sm  text-gold/70">
-              {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.
-            </div>
-          </div>
+          </OrderField>
         </div>
-        <div className="mt-4 ml-auto text-right w-auto text-sm">
-          <div>
-            <div className="donkeys-used-selector flex justify-between gap-8">
-              <h6>Donkeys Used</h6>
-              <div className="flex gap-2">
-                {donkeysNeeded.toLocaleString()}{" "}
-                <div className="text-green text-xs self-center">
-                  [{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0).toLocaleString()} avail.]
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between">
-              <h6>Weight</h6>
-              <div className="flex gap-2">
-                <div>{orderWeightKg.toLocaleString()} kgs</div>
-              </div>
-            </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={cn("donkeys-used-selector", REQUIREMENT_CHIP, enoughDonkeys ? "text-gold" : "text-red")}
+              title="Donkeys needed / available"
+            >
+              <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
+              {donkeysNeeded.toLocaleString()} / {currencyFormat(Number(donkeyBalance), 0)}
+            </span>
+            <span className={cn(REQUIREMENT_CHIP, "text-gold/70")} title="Weight">
+              {orderWeightKg.toLocaleString()} kg
+            </span>
           </div>
-
-          <Button
-            disabled={!enoughDonkeys || !canBuy}
-            isLoading={loading}
-            className="mt-4 h-8"
+          <button
+            type="button"
+            disabled={!enoughDonkeys || !canBuy || loading}
             onClick={() => setShowConfirmation(true)}
-            size="md"
-            variant="primary"
+            className={cn(HUD_PILL_BUTTON, "border-gold/60 bg-gold/15")}
           >
-            {isBuy ? "Buy" : "Sell"} {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
-          </Button>
+            {loading ? "…" : `${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
+          </button>
         </div>
         {showConfirmation && renderConfirmationPopupCreateOrder()}
       </div>
     );
   },
+);
+
+const OrderField = ({
+  label,
+  icon,
+  available,
+  children,
+}: {
+  label: string;
+  icon: string;
+  available?: string;
+  children: ReactNode;
+}) => (
+  <div className="flex flex-col gap-1">
+    <span className={cn(HUD_LABEL, "flex items-center gap-1")}>
+      <ResourceIcon withTooltip={false} size="xs" resource={icon} />
+      {label}
+    </span>
+    {children}
+    {available !== undefined && <span className={HUD_CUE}>{available} avail.</span>}
+  </div>
 );

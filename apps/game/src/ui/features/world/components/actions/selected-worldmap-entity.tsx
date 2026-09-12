@@ -7,7 +7,6 @@ import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacen
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
-import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
@@ -16,13 +15,12 @@ import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
 } from "@/ui/features/world/components/actions/unoccupied-tile-quadrants";
-import { FaithDevotionActionPanel } from "@/ui/features/world/components/actions/faith-devotion-action-panel";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { BiomeType, HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   configManager,
   Position,
@@ -274,22 +272,9 @@ const SelectedStructureActionPanel = ({
   biome: BiomeType;
   onSimulateBattle: () => void;
 }) => {
-  const { structure, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
-  const resolvedWorldMode = useResolvedWorldGameMode();
-  const isEternumMode = resolvedWorldMode === "eternum";
-
-  const structureCategory = structure?.base?.category;
-  const isFaithEligible =
-    isEternumMode &&
-    structureCategory !== undefined &&
-    [StructureType.Realm, StructureType.Village].includes(Number(structureCategory) as StructureType);
-
+  const { isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
   if (isLoadingStructure) {
     return <div className="flex h-full items-center justify-center text-xxs text-gold/70">Loading structure...</div>;
-  }
-
-  if (isFaithEligible) {
-    return <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="compact" />;
   }
 
   return <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={onSimulateBattle} />;

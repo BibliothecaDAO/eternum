@@ -1,58 +1,61 @@
+import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
-import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useResourceManager } from "@bibliothecadao/react";
-import { findResourceById, ResourcesIds, ID } from "@bibliothecadao/types";
+import { findResourceById, ID, ResourcesIds } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
-import { SpreadIndicator } from "./spread-indicator";
 
 interface MarketResourceRowProps {
   entityId: ID;
   resourceId: ResourcesIds;
   active: boolean;
   onClick: (value: number) => void;
-  askPrice: number;
-  bidPrice: number;
+  /** Lowest ask: what buying one unit costs right now. */
+  buyPrice: number;
+  /** Highest bid: what selling one unit pays right now. */
+  sellPrice: number;
   ammPrice: number;
 }
 
+const PRICE_CLASS = "text-right text-[11px] font-semibold tabular-nums";
+
 export const MarketResourceRow = memo(
-  ({ entityId, resourceId, active, onClick, askPrice, bidPrice, ammPrice }: MarketResourceRowProps) => {
+  ({ entityId, resourceId, active, onClick, buyPrice, sellPrice, ammPrice }: MarketResourceRowProps) => {
     const currentDefaultTick = useCoarseCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
-
-    const balance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, currentDefaultTick, resourceId]);
-
-    const resource = useMemo(() => findResourceById(resourceId), [resourceId]);
-
-    const balanceNum = balance ? Number(balance) : 0;
-    const balanceColor = balanceNum > 1000 ? "text-green/70" : balanceNum > 100 ? "text-yellow/70" : "text-red/50";
+    const balance = useMemo(
+      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
+      [resourceManager, currentDefaultTick, resourceId],
+    );
+    const trait = findResourceById(resourceId)?.trait ?? "";
 
     return (
-      <div
+      <button
+        type="button"
         onClick={() => onClick(resourceId)}
-        className={`w-full rounded-lg px-1.5 py-1 cursor-pointer hover:bg-gold/10 transition-colors group ${
-          active ? "panel-gold" : ""
-        }`}
+        aria-pressed={active}
+        className={cn(
+          "grid h-8 w-full grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] items-center rounded-md border px-1.5 text-left transition-colors",
+          active ? "border-gold/60 bg-gold/10" : "border-transparent hover:bg-gold/10",
+        )}
       >
-        {/* Single row: name+balance | bid | ask | amm */}
-        <div className="grid grid-cols-5 gap-1 items-center">
-          <div className="flex items-center gap-1.5 col-span-2 min-w-0">
-            <ResourceIcon size="xs" resource={resource?.trait || ""} withTooltip={false} />
-            <span className="truncate text-xs">{resource?.trait || ""}</span>
-            <span className={`text-[10px] ${balanceColor} shrink-0`}>[{currencyFormat(balanceNum, 0)}]</span>
-          </div>
-          <div className="text-green text-xs text-center">{formatNumber(bidPrice, 4)}</div>
-          <div className="text-red text-xs text-center">{formatNumber(askPrice, 4)}</div>
-          <div className="text-blueish text-xs text-center">{formatNumber(ammPrice, 4)}</div>
-        </div>
-        {/* Spread indicator */}
-        <div className="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <SpreadIndicator bidPrice={bidPrice} askPrice={askPrice} />
-        </div>
-      </div>
+        <span className="flex min-w-0 items-center gap-1.5">
+          <ResourceIcon size="xs" resource={trait} withTooltip={false} />
+          <span className="truncate text-[11px] text-gold">{trait}</span>
+          <span className={cn(HUD_CUE, "shrink-0 tracking-normal")}>{currencyFormat(balance, 0)}</span>
+        </span>
+        <span className={cn(PRICE_CLASS, buyPrice > 0 ? "text-green" : "text-gold/30")}>
+          {formatNumber(buyPrice, 4)}
+        </span>
+        <span className={cn(PRICE_CLASS, sellPrice > 0 ? "text-red" : "text-gold/30")}>
+          {formatNumber(sellPrice, 4)}
+        </span>
+        <span className={cn(PRICE_CLASS, ammPrice > 0 ? "text-blueish" : "text-gold/30")}>
+          {formatNumber(ammPrice, 4)}
+        </span>
+      </button>
     );
   },
 );
