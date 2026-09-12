@@ -92,22 +92,27 @@ export const buildEternumSettleCalls = ({
   usernameFelt,
   gameId,
   vrfProviderAddress,
+  devRealmId,
 }: {
   realmSystemsAddress: string;
   signerAddress: string;
   usernameFelt: string;
   gameId: number;
   vrfProviderAddress?: string | null;
+  devRealmId?: number;
 }): Call[] => {
   if (!Number.isInteger(gameId) || gameId <= 0) throw new Error("A game id is required for settlement");
+  if (devRealmId !== undefined && (!Number.isInteger(devRealmId) || devRealmId < 1 || devRealmId > 8000)) {
+    throw new Error("Choose a realm number from 1 to 8000.");
+  }
   const calls: Call[] = [];
   if (hasConfiguredAddress(vrfProviderAddress)) {
     calls.push(buildRequestRandomCall({ vrfProviderAddress, blitzSystemsAddress: realmSystemsAddress, signerAddress }));
   }
   calls.push({
     contractAddress: realmSystemsAddress,
-    entrypoint: "settle",
-    calldata: CallData.compile([gameId, usernameFelt]),
+    entrypoint: devRealmId === undefined ? "settle" : "settle_dev",
+    calldata: CallData.compile(devRealmId === undefined ? [gameId, usernameFelt] : [gameId, usernameFelt, devRealmId]),
   });
   return calls;
 };

@@ -96,3 +96,28 @@ it("builds Eternum entry with only the game id and player name", () => {
   expect(calls.map((call) => call.entrypoint)).toEqual(["request_random", "settle"]);
   expect(calls[1].calldata).toEqual(["7", "291"]);
 });
+
+it("requests randomness before selected dev realm settlement", () => {
+  const calls = buildEternumSettleCalls({
+    realmSystemsAddress: "0xabc",
+    signerAddress: "0x456",
+    usernameFelt: "0x123",
+    gameId: 7,
+    vrfProviderAddress: "0x999",
+    devRealmId: 87,
+  });
+  expect(calls.map((call) => call.entrypoint)).toEqual(["request_random", "settle_dev"]);
+  expect(calls[1].calldata).toEqual(["7", "291", "87"]);
+});
+
+it.each([0, 8001, 1.5, Number.NaN])("rejects invalid dev realm number %s", (devRealmId) => {
+  expect(() =>
+    buildEternumSettleCalls({
+      realmSystemsAddress: "0xabc",
+      signerAddress: "0x456",
+      usernameFelt: "0x123",
+      gameId: 7,
+      devRealmId,
+    }),
+  ).toThrow("realm number");
+});

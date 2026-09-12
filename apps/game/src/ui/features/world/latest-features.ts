@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Eternum Portals and Dev Settlement",
+    description:
+      "Six spires reveal their access hexes on both layers. In Eternum dev games, choose a realm number to preview its name and resources, settle additional realms, and place villages without passes.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
     title: "Clean realm upgrades",
     type: "fix",
     description: "Upgrading a realm removes its previous model, including when a map refresh is interrupted.",
