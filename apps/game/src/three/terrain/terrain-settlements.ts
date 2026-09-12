@@ -35,8 +35,6 @@ function resolveStructureInfluence(structureType: StructureType): TerrainSettlem
       return { disturbanceStrength: 0.92, levelDisturbance: 0.06, levelRadius: 0.12, radiusScale: 1.04 };
     case StructureType.Village:
       return { disturbanceStrength: 0.62, levelDisturbance: 0.12, levelRadius: 0.12, radiusScale: 0.78 };
-    case StructureType.HolySite:
-      return { disturbanceStrength: 0.58, levelDisturbance: 0.08, levelRadius: 0.1, radiusScale: 0.9 };
     case StructureType.Camp:
       return { disturbanceStrength: 0.82, levelDisturbance: 0.08, levelRadius: 0.08, radiusScale: 0.88 };
     default:

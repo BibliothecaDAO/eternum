@@ -31,7 +31,6 @@ pub mod blitz_realm_systems {
         IRealmInternalSystemsDispatcher, IRealmInternalSystemsDispatcherTrait,
     };
     use crate::systems::utils::settlement::SettlementPoolImpl;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::collectibles::iCollectiblesImpl;
 
@@ -334,8 +333,6 @@ pub mod blitz_realm_systems {
                             timestamp: now,
                         },
                     );
-
-                AchievementTrait::progress(world, owner.into(), Tasks::REALM_SETTLEMENT, 1, now.into());
 
                 settlement_structure_ids.append(structure_id);
             }

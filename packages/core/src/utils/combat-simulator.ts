@@ -34,6 +34,7 @@ export interface CombatSimulationContext {
   attackDistance?: number;
   attackerBiome?: BiomeType;
   defenderBiome?: BiomeType;
+  defenderAlt?: boolean;
   attackerIsStructureGuard?: boolean;
   defenderIsStructureGuard?: boolean;
 }
@@ -55,6 +56,7 @@ export interface CombatParameters {
 }
 
 export class CombatSimulator {
+  public static readonly ETHEREAL_PREVIEW_BONUS_PERCENT = 10;
   private readonly t1DamageValue: number;
   private readonly t2DamageMultiplier: number;
   private readonly t3DamageMultiplier: number;
@@ -148,7 +150,7 @@ export class CombatSimulator {
     context: CombatSimulationContext,
   ): number {
     // Range-2 attacks ignore biome damage modifiers; mirrors the contract's _attacker_biome_damage_bonus.
-    if (this.isRangedAttack(context)) {
+    if (context.defenderAlt || this.isRangedAttack(context)) {
       return 1;
     }
 
@@ -160,6 +162,7 @@ export class CombatSimulator {
     battleBiome: BiomeType,
     context: CombatSimulationContext,
   ): number {
+    if (context.defenderAlt) return 1;
     return configManager.getBiomeCombatBonus(defender.troopType, context.defenderBiome ?? battleBiome);
   }
 
@@ -361,8 +364,19 @@ export class CombatSimulator {
         Math.pow(totalTroops, betaEff);
 
     // Apply relic modifiers
-    const attackerDamage = baseAttackerDamage * attackerDamageMultiplierRelics * defenderReductionMultiplierRelics;
-    const defenderDamage = baseDefenderDamage * defenderDamageMultiplierRelics * attackerReductionMultiplierRelics;
+    // Ethereal forecasts use the requested +10% assumption; execution rolls 1–20 independently.
+    const etherealPreviewMultiplier =
+      context.defenderAlt === true ? 1 + CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT / 100 : 1;
+    const attackerDamage =
+      etherealPreviewMultiplier *
+      baseAttackerDamage *
+      attackerDamageMultiplierRelics *
+      defenderReductionMultiplierRelics;
+    const defenderDamage =
+      etherealPreviewMultiplier *
+      baseDefenderDamage *
+      defenderDamageMultiplierRelics *
+      attackerReductionMultiplierRelics;
 
     const attackerRefundMultiplier = this.isRangedAttack(context)
       ? 0

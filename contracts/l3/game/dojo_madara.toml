@@ -7,7 +7,7 @@ default = "s2"
 "s2-raid_library" = "0_1_0"
 "s2-rng_library" = "0_1_16"
 "s2-biome_library" = "0_1_13"
-"s2-structure_creation_library" = "0_1_19"
+"s2-structure_creation_library" = "0_1_18"
 
 [env]
 rpc_url = "http://127.0.0.1:5050"
@@ -37,7 +37,6 @@ website = "https://alpha-eternum.realms.world/"
     "s2-faith_prize_systems",
     "s2-faith_systems",
     "s2-guild_systems",
-    "s2-holysite_discovery_systems",
     "s2-hyperstructure_create_systems",
     "s2-hyperstructure_discovery_systems",
     "s2-hyperstructure_systems",
@@ -48,7 +47,6 @@ website = "https://alpha-eternum.realms.world/"
     "s2-point_systems",
     "s2-prize_distribution_systems",
     "s2-production_systems",
-    "s2-quest_systems",
     "s2-realm_systems",
     "s2-realm_internal_systems",
     "s2-registrar_systems",
@@ -57,7 +55,6 @@ website = "https://alpha-eternum.realms.world/"
     "s2-resource_bridge_systems",
     "s2-resource_systems",
     "s2-season_systems",
-    "s2-spire_systems",
     "s2-structure_systems",
     "s2-swap_systems",
     "s2-trade_systems",

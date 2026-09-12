@@ -7,7 +7,6 @@ use crate::alias::ID;
 use crate::constants::WORLD_CONFIG_ID;
 use crate::models::game::{GameRegistry, GameRegistryImpl};
 use crate::models::position::{Coord, CoordImpl, Direction};
-use crate::models::quest::Level;
 use crate::models::resource::resource::TroopResourceImpl;
 use crate::systems::utils::blitz_profile::{
     OFFICIAL_60_BLITZ_PROFILE_ID, OFFICIAL_90_BLITZ_PROFILE_ID, iBlitzProfileImpl,
@@ -58,13 +57,14 @@ pub struct PresetConfig {
     pub battle_config: BattleConfig,
     pub bank_config: BankConfig,
     pub trade_config: TradeConfig,
+    // Reserved: preserve existing preset storage; the quest system is retired.
     pub quest_config: QuestConfig,
     pub faith_config: FaithConfig,
     pub bitcoin_mine_config: BitcoinMineConfig,
     pub resource_bridge_config: ResourceBridgeConfig,
     pub res_bridge_fee_split_config: ResourceBridgeFeeSplitConfig,
     pub village_troop_config: VillageTroopConfig,
-    pub quest_games: Span<PresetQuestGame>,
+    pub quest_games: Span<PresetQuestGame>, // Reserved; new presets leave this empty.
     pub realm_start_resources_config: StartingResourcesConfig,
     pub village_start_resources_config: StartingResourcesConfig,
     pub village_find_resources_config: VillageFoundResourcesConfig,
@@ -75,6 +75,7 @@ pub struct PresetConfig {
     pub artificer_config: ArtificerConfig,
     pub blitz_registration_rules_config: BlitzRegistrationRulesConfig,
     pub mercenaries_name: felt252,
+    pub spire_travel_essence_cost: u128,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -92,12 +93,6 @@ pub struct PresetGameConfig {
     pub agent_max_current_count: u16,
     pub agent_min_spawn_lords_amount: u8,
     pub agent_max_spawn_lords_amount: u8,
-}
-
-#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
-pub struct PresetQuestGame {
-    pub address: ContractAddress,
-    pub levels: Span<Level>,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -375,7 +370,7 @@ pub struct StructureCapacityConfig {
     pub hyperstructure_capacity: u64, // grams
     pub fragment_mine_capacity: u64, // grams
     pub bank_structure_capacity: u64,
-    pub holysite_capacity: u64, // grams
+    pub holysite_capacity: u64, // Reserved for stored presets.
     pub camp_capacity: u64, // grams
     pub bitcoin_mine_capacity: u64 // grams
 }
@@ -408,6 +403,7 @@ pub struct MapConfig {
     pub agent_discovery_fail_prob: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
+    // Reserved: removing these shifts the packed map config of existing games.
     pub holysite_win_probability: u16,
     pub holysite_fail_probability: u16,
     pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
@@ -424,6 +420,7 @@ pub struct MapConfig {
     pub relic_chest_relics_per_chest: u8,
 }
 
+// Serialized compatibility records only. No quest contracts, models or gameplay remain.
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct QuestConfig {
     pub quest_discovery_prob: u16,
@@ -431,10 +428,24 @@ pub struct QuestConfig {
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct PresetQuestGame {
+    pub address: ContractAddress,
+    pub levels: Span<Level>,
+}
+
+// Keep the deployed type name as well as its fields for Dojo upgrade compatibility.
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct Level {
+    pub target_score: u32,
+    pub settings_id: u32,
+    pub time_limit: u64,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
 pub struct FaithConfig {
     pub enabled: bool,
     pub wonder_base_fp_per_sec: u16,
-    pub holy_site_fp_per_sec: u16,
+    pub holy_site_fp_per_sec: u16, // Reserved; standalone holy sites are retired.
     pub realm_fp_per_sec: u16,
     pub village_fp_per_sec: u16,
     pub owner_share_percent: u16,
@@ -470,8 +481,14 @@ pub struct RealmCountConfig {
 
 #[generate_trait]
 pub impl SettlementConfigImpl of SettlementConfigTrait {
-    fn _spire_layer_number(layer_number: u32, spires_layer_distance: u8) -> u32 {
-        layer_number / spires_layer_distance.into()
+    fn max_spire_layer(self: SettlementConfig) -> u32 {
+        assert!(self.spires_layer_distance > 0, "Eternum: invalid spire spacing");
+        self.layer_max.into() / self.spires_layer_distance.into()
+    }
+
+    fn spire_capacity(self: SettlementConfig) -> u32 {
+        let layers = Self::max_spire_layer(self);
+        1 + 3 * layers * (layers + 1)
     }
 
     fn _max_point_index(layer: u32) -> u32 {
@@ -487,7 +504,7 @@ pub impl SettlementConfigImpl of SettlementConfigTrait {
 
         let mut base_distance: u32 = self.base_distance.into();
         if spire {
-            let max_spire_layer = Self::_spire_layer_number(self.layer_max.into(), self.spires_layer_distance);
+            let max_spire_layer = Self::max_spire_layer(self);
             assert!(layer <= max_spire_layer.into(), "Layer must be less than max layer for spires");
 
             // scale the map such that layer 1 of spires is
@@ -1008,18 +1025,6 @@ pub impl BlitzRegistrationConfigImpl of BlitzRegistrationConfigTrait {
     fn increase_registration_count(ref self: BlitzRegistrationConfig) {
         self.registration_count += 1;
     }
-
-    fn is_registration_open(self: BlitzRegistrationConfig, now: u32) -> bool {
-        now >= self.registration_start_at
-    }
-
-    fn collectibles_lootchest_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x201 // Blitz Rewards (s0) NFTS
-    }
-
-    fn collectibles_elitenft_attrs_raw(self: BlitzRegistrationConfig) -> u128 {
-        0x10101 // Series 0 Elite Invite NFTs
-    }
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -1175,10 +1180,6 @@ pub impl TickImpl of TickTrait {
 
     fn after(self: TickInterval, time_spent: u64) -> u64 {
         (starknet::get_block_timestamp() + time_spent) / self.interval()
-    }
-
-    fn next_tick_timestamp(self: TickInterval) -> u64 {
-        self.current() + self.interval()
     }
 
     fn convert_from_seconds(self: TickInterval, seconds: u64) -> u64 {

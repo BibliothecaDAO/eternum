@@ -1,6 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 
 export interface HeraldExplorer {
+  alt: boolean;
   explorerId: string;
   owner: string;
   stamina: number;
@@ -78,7 +79,7 @@ export class HeraldObserver {
   async waitForExplorer(
     gameId: number,
     explorerId: string,
-    previous: Pick<HeraldExplorer, "stamina" | "staminaUpdatedTick" | "x" | "y">,
+    previous: Pick<HeraldExplorer, "stamina" | "staminaUpdatedTick" | "alt" | "x" | "y">,
     acceptedBlock: number,
     timeoutMs: number,
   ): Promise<HeraldExplorer> {
@@ -181,11 +182,17 @@ const numeric = (value: unknown, field: string): number => {
   return parsed;
 };
 
+const boolean = (value: unknown, field: string): boolean => {
+  if (typeof value !== "boolean") throw new Error(`Herald ${field} must be a boolean`);
+  return value;
+};
+
 const toExplorer = (row: Record<string, unknown>): HeraldExplorer => {
   const troops = record(row.troops, "ExplorerTroops.troops");
   const stamina = record(troops.stamina, "ExplorerTroops.troops.stamina");
   const coord = record(row.coord, "ExplorerTroops.coord");
   return {
+    alt: boolean(coord.alt, "ExplorerTroops.coord.alt"),
     explorerId: entityId(row.explorer_id),
     owner: entityId(row.owner),
     stamina: numeric(stamina.amount, "ExplorerTroops.troops.stamina.amount"),
@@ -202,9 +209,10 @@ const toResource = (row: Record<string, unknown>): HeraldResource => ({
 });
 
 const explorerChanged = (
-  previous: Pick<HeraldExplorer, "stamina" | "staminaUpdatedTick" | "x" | "y">,
+  previous: Pick<HeraldExplorer, "stamina" | "staminaUpdatedTick" | "alt" | "x" | "y">,
   current: HeraldExplorer,
 ): boolean =>
+  previous.alt !== current.alt ||
   previous.x !== current.x ||
   previous.y !== current.y ||
   previous.stamina !== current.stamina ||

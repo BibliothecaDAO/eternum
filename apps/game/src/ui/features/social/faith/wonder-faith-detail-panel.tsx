@@ -115,7 +115,7 @@ export const WonderFaithDetailPanel = ({
           <span className="text-xxs text-gold/70">{wonderDetail.followerCount}</span>
         </div>
         {followers.length === 0 ? (
-          <div className="px-3 py-4 text-xs text-gold/65">No faithful Realms, Villages, or Holy Sites yet.</div>
+          <div className="px-3 py-4 text-xs text-gold/65">No faithful Realms or Villages yet.</div>
         ) : (
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="flex flex-col">

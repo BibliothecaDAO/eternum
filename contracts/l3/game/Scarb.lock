@@ -2,14 +2,6 @@
 version = 1
 
 [[package]]
-name = "achievement"
-version = "0.0.0"
-source = "git+https://github.com/cartridge-gg/arcade?rev=817a0ef#817a0efa7667cfe72cf3ecec316676cdae40637e"
-dependencies = [
- "dojo",
-]
-
-[[package]]
 name = "alexandria_data_structures"
 version = "0.5.2"
 source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
@@ -53,7 +45,6 @@ dependencies = [
 name = "eternum"
 version = "1.0.0"
 dependencies = [
- "achievement",
  "alexandria_data_structures",
  "alexandria_math",
  "cubit",

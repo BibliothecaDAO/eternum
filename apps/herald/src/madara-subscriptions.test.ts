@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MadaraSubscriptions } from "./madara-subscriptions";
 import type { ModelRegistry } from "./model-registry";
+import { WORLD_EVENT_SELECTORS } from "./world-event-decoder";
 
 class FakeWebSocket {
   public static instances: FakeWebSocket[] = [];
@@ -39,6 +40,32 @@ afterEach(() => {
 });
 
 describe("MadaraSubscriptions", () => {
+  it("filters event subscriptions to the selected World using the RPC from_address field", () => {
+    vi.stubGlobal("WebSocket", FakeWebSocket);
+    const subscriptions = new MadaraSubscriptions("ws://rpc.test", registry, {
+      onEvent: vi.fn(),
+      onFatal: vi.fn(),
+      onHead: vi.fn(),
+      onReady: vi.fn(),
+      onReceipt: vi.fn(),
+      onTransaction: vi.fn(),
+    });
+    void subscriptions.start();
+    const socket = FakeWebSocket.instances[0]!;
+    socket.onopen?.();
+    expect(socket.sent).toContainEqual({
+      id: 2,
+      jsonrpc: "2.0",
+      method: "starknet_subscribeEvents",
+      params: {
+        from_address: registry.worldAddress,
+        finality_status: "PRE_CONFIRMED",
+        keys: [Object.values(WORLD_EVENT_SELECTORS), [...registry.bySelector.keys()]],
+      },
+    });
+    subscriptions.stop();
+  });
+
   it("reconciles before accepting heads delivered during subscription setup", async () => {
     vi.stubGlobal("WebSocket", FakeWebSocket);
     const accepted: string[] = [];

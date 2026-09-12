@@ -65,8 +65,8 @@ create_realms_user() {
 }
 
 install_user_toolchain() {
-  # bun runs herald; asdf holds scarb/sozo for deploy-world.sh. Both live in the realms user's home.
-  log "bun + asdf (scarb, sozo) for the realms user"
+  # bun runs herald; asdf holds scarb for deploy-world.sh. Both live in the realms user's home.
+  log "bun + asdf (scarb) for the realms user"
   sudo -u realms -H bash -s <<'EOS'
 set -euo pipefail
 # Start in a directory realms owns: sudo keeps the caller's CWD (/root or /home/ubuntu), which realms
@@ -78,12 +78,9 @@ if [ ! -d "$HOME/.asdf" ]; then
   printf '\n. "$HOME/.asdf/asdf.sh"\nexport PATH="$HOME/.bun/bin:$PATH"\n' >> "$HOME/.bashrc"
 fi
 . "$HOME/.asdf/asdf.sh"
-# deploy-world.sh needs scarb + sozo only (Madara is the docker sequencer, not katana; torii is gone).
-# sozo is its own asdf plugin — the asdf-dojo bundle versions sozo by dojo release and has no 1.8.7.
+# deploy-world.sh uses Scarb to build and Bun to deploy.
 asdf plugin add scarb https://github.com/software-mansion/asdf-scarb.git 2>/dev/null || true
-asdf plugin add sozo  https://github.com/dojoengine/asdf-sozo.git 2>/dev/null || true
 asdf install scarb 2.13.1
-asdf install sozo 1.8.7
 EOS
 }
 

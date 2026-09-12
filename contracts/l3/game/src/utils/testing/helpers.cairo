@@ -8,7 +8,6 @@
 //! - Uses dojo_snf_test::spawn_test_world instead of dojo_cairo_test
 //! - Provides higher-level test fixtures for common battle test scenarios
 //!
-//! Note: TrophyProgression events are now supported - the event is declared via build-external-contracts.
 
 use cubit::f128::types::fixed::FixedTrait;
 use dojo::model::{ModelStorage, ModelStorageTest};
@@ -22,9 +21,8 @@ use starknet::ContractAddress;
 use crate::alias::ID;
 use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
 use crate::models::config::{
-    CapacityConfig, CombatConfigImpl, MapConfig, QuestConfig, ResourceFactoryConfig, SeasonConfig,
-    StructureCapacityConfig, TickConfig, TickImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
-    WeightConfig, WorldConfigUtilImpl,
+    CapacityConfig, CombatConfigImpl, MapConfig, ResourceFactoryConfig, SeasonConfig, StructureCapacityConfig,
+    TickConfig, TickImpl, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, WeightConfig, WorldConfigUtilImpl,
 };
 use crate::models::game::{GameRegistry, GameStatus};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
@@ -50,7 +48,6 @@ use crate::systems::combat::contracts::troop_management::{
 use crate::systems::combat::contracts::troop_movement::{
     ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait,
 };
-// use crate::systems::quest::constants::QUEST_REWARD_BASE_MULTIPLIER;
 use crate::systems::utils::realm::iRealmImpl;
 
 pub const TEST_GAME_ID: u32 = 1;
@@ -76,9 +73,9 @@ pub fn MOCK_MAP_CONFIG() -> MapConfig {
         relic_hex_dist_from_center: 10,
         relic_discovery_interval_sec: 60,
         camp_fail_probability: 1,
+        holysite_win_probability: 0,
+        holysite_fail_probability: 0,
         camp_win_probability: 0,
-        holysite_win_probability: 5000,
-        holysite_fail_probability: 5000,
         bitcoin_mine_win_probability: 200, // 2%
         bitcoin_mine_fail_probability: 9800,
     }
@@ -154,7 +151,7 @@ pub fn MOCK_STRUCTURE_CAPACITY_CONFIG() -> StructureCapacityConfig {
         hyperstructure_capacity: 1000000000000000, // grams
         fragment_mine_capacity: 1000000000000000, // grams
         bank_structure_capacity: 1000000000000000, // grams
-        holysite_capacity: 1000000000000000, // grams
+        holysite_capacity: 0,
         camp_capacity: 1000000000000000, // grams
         bitcoin_mine_capacity: 1000000000000000 // grams
     }
@@ -167,11 +164,6 @@ pub fn MOCK_WEIGHT_CONFIG(resource_type: u8) -> WeightConfig {
 pub fn MOCK_TICK_CONFIG() -> TickConfig {
     TickConfig { armies_tick_in_seconds: 1, delivery_tick_in_seconds: 1, bitcoin_phase_in_seconds: 600 }
 }
-
-pub fn MOCK_QUEST_CONFIG() -> QuestConfig {
-    QuestConfig { quest_discovery_prob: 5000, quest_discovery_fail_prob: 5000 }
-}
-
 
 // ============================================================================
 // Config Store Functions (tstore_*)
@@ -211,10 +203,6 @@ pub fn tstore_troop_stamina_config(ref world: WorldStorage, troop_stamina_config
 
 pub fn tstore_troop_damage_config(ref world: WorldStorage, troop_damage_config: TroopDamageConfig) {
     WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("troop_damage_config"), troop_damage_config);
-}
-
-pub fn tstore_quest_config(ref world: WorldStorage, config: QuestConfig) {
-    WorldConfigUtilImpl::set_member(ref world, TEST_PRESET_ID, selector!("quest_config"), config);
 }
 
 pub fn tstore_production_config(ref world: WorldStorage, resource_type: u8) {
@@ -308,7 +296,6 @@ pub fn init_config(ref world: WorldStorage) {
             .span(),
     );
     tstore_map_config(ref world, MOCK_MAP_CONFIG());
-    tstore_quest_config(ref world, MOCK_QUEST_CONFIG());
 }
 
 /// Initialize only troop-related configs (for guard/explorer tests)
@@ -333,7 +320,7 @@ pub fn init_resource_config(ref world: WorldStorage) {
 }
 
 /// Initialize minimal config for guard tests (most common test type)
-/// Skips: map_config and quest_config
+/// Skips: map_config
 pub fn init_guard_test_config(ref world: WorldStorage) {
     init_troop_config(ref world);
     init_resource_config(ref world);
@@ -428,22 +415,6 @@ pub fn tspawn_explorer(ref world: WorldStorage, owner: ID, coord: Coord) -> ID {
     world.write_model_test(@explorer);
     explorer_id
 }
-
-// pub fn tspawn_quest_tile(
-//     ref world: WorldStorage, game_address: ContractAddress, level: u8, capacity: u16, coord: Coord,
-// ) -> @QuestTile {
-//     let id = world.dispatcher.uuid();
-//     let resource_type = ResourceTypes::WHEAT;
-//     let amount = MOCK_MAP_CONFIG().reward_resource_amount.into()
-//         * QUEST_REWARD_BASE_MULTIPLIER.into()
-//         * RESOURCE_PRECISION
-//         * (level + 1).into();
-//     let quest_details = @QuestTile {
-//         id, coord, game_address, level, resource_type, amount, capacity, participant_count: 0,
-//     };
-//     world.write_model_test(quest_details);
-//     quest_details
-// }
 
 pub fn tspawn_village_explorer(ref world: WorldStorage, village_id: ID, coord: Coord) -> ID {
     let mut uuid = world.dispatcher.uuid();
@@ -605,7 +576,7 @@ pub fn namespace_def_combat() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Core config models
-            TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+            TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"), TestResource::Model("RNG"),
             TestResource::Model("GameMapConfig"), TestResource::Model("GameRegistry"),
             TestResource::Model("WeightConfig"), // Structure models
             TestResource::Model("Structure"),
@@ -613,19 +584,16 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Model("StructureBuildings"), TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
             TestResource::Model("TileOpt"),
-            TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"), // Resource models
-            TestResource::Model("Resource"), TestResource::Model("ResourceList"),
-            TestResource::Model("ResourceFactoryConfig"), // Contracts
+            TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("Resource"),
+            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"), // Contracts
             TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"), // Libraries
             TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
-            TestResource::Library(
-                ("combat_library", "0_1_14"),
-            ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
-            TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
-            TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
+            TestResource::Library(("combat_library", "0_1_14")), TestResource::Event("StoryEvent"),
+            TestResource::Event("ExplorerMoveEvent"), TestResource::Event("BattleEvent"),
         ]
             .span(),
     }
@@ -985,7 +953,7 @@ pub fn create_explorer(
 }
 
 /// Moves an explorer with proper caller mocking
-/// Note: Use explore=false to avoid TrophyProgression events
+
 pub fn move_explorer(
     ref world: WorldStorage,
     systems: CombatSystemAddresses,
@@ -1208,7 +1176,7 @@ pub fn setup_guard_battle(
 // Troop Management Test Setup Helpers
 // ============================================================================
 
-/// Namespace for troop management tests (includes quest/production models)
+/// Namespace for troop management tests (includes production models)
 pub fn namespace_def_troop_management() -> NamespaceDef {
     NamespaceDef {
         namespace: DEFAULT_NS_STR(),
@@ -1221,12 +1189,10 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Model("StructureOwnerStats"), TestResource::Model("StructureBuildings"),
             TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
-            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
-            TestResource::Model("Wonder"), // Resource models
-            TestResource::Model("Resource"),
-            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
-            // Events
-            TestResource::Event("TrophyProgression"), TestResource::Event("StoryEvent"),
+            TestResource::Model("TileOpt"), TestResource::Model("Wonder"), // Resource models
+            TestResource::Model("Resource"), TestResource::Model("ResourceList"),
+            TestResource::Model("ResourceFactoryConfig"), // Events
+            TestResource::Event("StoryEvent"),
             TestResource::Event("ExplorerMoveEvent"), // Contracts
             TestResource::Contract("troop_management_systems"),
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("realm_internal_systems"),

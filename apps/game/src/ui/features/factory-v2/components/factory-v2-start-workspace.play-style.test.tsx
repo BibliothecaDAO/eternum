@@ -87,7 +87,6 @@ const buildProps = (
     shards: null,
     camp: null,
     agent: null,
-    holysite: null,
     bitcoinMine: null,
     hyperstructureCenter: null,
     hyperstructureRadiusMultiplier: null,

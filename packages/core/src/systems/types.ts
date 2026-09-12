@@ -3,7 +3,6 @@ import {
   ContractAddress,
   HexPosition,
   ID,
-  QuestType,
   ResourcesIds,
   StructureType,
   TroopTier,
@@ -162,12 +161,6 @@ export type RealmSystemUpdate = {
   hexCoords: HexPosition;
 };
 
-export type QuestSystemUpdate = {
-  entityId: ID;
-  occupierId: ID;
-  hexCoords: HexPosition;
-};
-
 export type ChestSystemUpdate = {
   occupierId: ID;
   hexCoords: HexPosition;
@@ -177,13 +170,6 @@ export type ReservedHyperstructureTileSystemUpdate = {
   hexCoords: HexPosition;
   removed?: boolean;
 };
-
-export interface QuestData {
-  entityId: ID;
-  questType: QuestType;
-  occupierId: ID;
-  hexCoords: Position;
-}
 
 export interface ChestData {
   entityId: ID;

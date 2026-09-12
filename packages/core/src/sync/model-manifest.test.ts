@@ -13,6 +13,8 @@ describe("GAME_SYNC_MODEL_MANIFEST", () => {
     expect(names).toEqual(
       expect.arrayContaining([
         "GameRegistry",
+        "BitcoinMinePhaseLabor",
+        "BitcoinPhaseLabor",
         "Structure",
         "StructureVillageSlots",
         "Resource",

@@ -2,6 +2,7 @@ import { BiomeType } from "@bibliothecadao/types";
 
 /** One native species per biome; terrestrial species can visit neighboring land biomes. */
 const CREATURES: Readonly<Record<BiomeType, string | null>> = {
+  [BiomeType.Underground]: null,
   [BiomeType.None]: null,
   [BiomeType.DeepOcean]: "lantern-anglerfish",
   [BiomeType.Ocean]: "green-sea-turtle",

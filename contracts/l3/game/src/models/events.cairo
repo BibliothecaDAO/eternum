@@ -148,9 +148,7 @@ pub enum ExploreFind {
     Hyperstructure,
     Mine,
     Agent,
-    Quest,
     Village,
-    HolySite,
     Camp,
     BitcoinMine,
 }
@@ -217,6 +215,8 @@ pub struct BattleStory {
     pub defender_troops_lost: u128,
     pub winner_id: ID,
     pub stolen_resources: Span<(u8, u128)>,
+    pub attacker_roll: u8,
+    pub defender_roll: u8,
 }
 
 ///////////////////////////////////////////////

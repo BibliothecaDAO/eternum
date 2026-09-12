@@ -24,6 +24,7 @@ const STONE = 5;
 const SNOW = 6;
 
 const BIOME_GROUND_RECIPES: Readonly<Record<BiomeType, TerrainGroundWeights>> = Object.freeze({
+  [BiomeType.Underground]: weights(0, 0, 0, 0, 0, 1, 0, 0),
   [BiomeType.None]: weights(0, 0, 1, 0, 0, 0, 0, 0),
   [BiomeType.DeepOcean]: weights(0.1, 0, 0.5, 0, 0, 0.4, 0, 0),
   [BiomeType.Ocean]: weights(0.35, 0, 0.45, 0, 0, 0.2, 0, 0),

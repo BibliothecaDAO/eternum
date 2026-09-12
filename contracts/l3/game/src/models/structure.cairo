@@ -180,7 +180,7 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn coord(self: StructureBase) -> Coord {
-        return Coord { alt: false, x: self.coord_x, y: self.coord_y };
+        return Coord { alt: self.category == StructureCategory::BitcoinMine.into(), x: self.coord_x, y: self.coord_y };
     }
 
     fn exists(self: StructureBase) -> bool {
@@ -368,6 +368,10 @@ pub impl StructureImpl of StructureTrait {
         metadata: StructureMetadata,
     ) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
+        assert!(
+            coord.alt == (category == StructureCategory::BitcoinMine),
+            "structure category is not allowed on this layer",
+        );
         let mut structure: Structure = Default::default();
         structure.game_id = game_id;
         structure.entity_id = entity_id;
@@ -403,17 +407,14 @@ pub impl StructureImpl of StructureTrait {
                 structure.base.troop_max_explorer_count = 1;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 1 explorer
             },
-            StructureCategory::HolySite => {
-                structure.base.troop_max_explorer_count = 0;
-                structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers (same as FragmentMine)
-            },
             StructureCategory::Camp => {
                 structure.base.troop_max_explorer_count = 1;
                 structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
             StructureCategory::BitcoinMine => {
+                structure.base.level = 3;
                 structure.base.troop_max_explorer_count = 0;
-                structure.base.troop_max_guard_count = 1; // 1 guard slot for T3 defender
+                structure.base.troop_max_guard_count = 4;
             },
             _ => { panic!("invalid structure category"); },
         }
@@ -433,7 +434,6 @@ pub enum StructureCategory {
     Bank,
     FragmentMine,
     Village,
-    HolySite,
     Camp,
     BitcoinMine,
 }
@@ -447,7 +447,6 @@ pub impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
             StructureCategory::Village => 5,
-            StructureCategory::HolySite => 6,
             StructureCategory::Camp => 7,
             StructureCategory::BitcoinMine => 8,
         }
@@ -463,7 +462,6 @@ pub impl StructureCategoryIntoU8 of Into<StructureCategory, u8> {
             StructureCategory::Bank => 3,
             StructureCategory::FragmentMine => 4,
             StructureCategory::Village => 5,
-            StructureCategory::HolySite => 6,
             StructureCategory::Camp => 7,
             StructureCategory::BitcoinMine => 8,
         }
@@ -510,21 +508,6 @@ pub impl StructureResourcesImpl of StructureResourcesTrait {
         produced_resources
     }
 
-
-    fn unpack_resource_types(mut produced_resources: u128) -> Span<u8> {
-        // Iterate over each resource type
-        let mut resource_types = array![];
-        while produced_resources > 0 {
-            // extract the first 8 bits
-            let resource_type = produced_resources & Self::PACKING_MASK_SIZE().into();
-            resource_types.append(resource_type.try_into().unwrap());
-
-            // shift right by 8 bits
-            produced_resources = BitShift::shr(produced_resources, Self::PACKING_MAX_BITS_PER_RESOURCE().into());
-        }
-
-        resource_types.span()
-    }
 
     fn produces_resource(mut packed: u128, check_resource_type: u8) -> bool {
         let mut contains_resource = false;

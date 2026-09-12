@@ -24,7 +24,6 @@ import {
   getBalance,
   hasTileOccupier,
   isTileOccupierChest,
-  isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
@@ -163,10 +162,6 @@ export const MapTilePanel = () => {
     return isTileOccupierChest(occupierType);
   }, [occupierType]);
 
-  const isQuest = useMemo(() => {
-    return isTileOccupierQuest(occupierType);
-  }, [occupierType]);
-
   const tileTypeLabel = useMemo(() => {
     if (!tile) return "Hex Tile";
     if (!hasOccupier) return "Biome";
@@ -174,9 +169,8 @@ export const MapTilePanel = () => {
     if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";
     if (isChest) return "Relic Tile";
-    if (isQuest) return "Quest Tile";
     return "Army Tile";
-  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, isQuest]);
+  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest]);
 
   const panelTitle = selectedHex ? formatTilePanelTitle(tileTypeLabel, selectedHex) : "No Tile Selected";
 

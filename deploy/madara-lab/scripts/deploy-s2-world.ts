@@ -80,7 +80,7 @@ async function bootstrapRegistrar(params: {
 async function deployS2World(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
   const environmentId = resolveEnvironmentId();
-  console.log("World migration is reviewer-owned. Run: sozo build --profile madara && sozo migrate --profile madara");
+  console.log("Bootstrap the world deployed by deploy/madara-lab/scripts/deploy-world.sh.");
   assertRegistrarAvailable(environmentId);
 
   const environment = resolveDeploymentEnvironment(environmentId);

@@ -41,7 +41,6 @@ pub mod troop_raid_systems {
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iTroopImpl};
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
@@ -183,15 +182,6 @@ pub mod troop_raid_systems {
                 if explorer_aggressor_troops.count.is_zero() {
                     if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
                         iExplorerImpl::explorer_from_agent_delete(ref world, ref explorer_aggressor);
-
-                        // grant kill agent achievement
-                        AchievementTrait::progress(
-                            world,
-                            guarded_structure_owner.into(),
-                            Tasks::KILL_AGENT,
-                            1,
-                            starknet::get_block_timestamp(),
-                        );
                     } else {
                         let mut explorer_aggressor_owner_structure: StructureBase = StructureBaseStoreImpl::retrieve(
                             ref world, game_id, explorer_aggressor.owner,
@@ -275,18 +265,6 @@ pub mod troop_raid_systems {
                             @VillageRaidImmunity { game_id, village_id: structure_id, last_raided_at: current_tick },
                         );
                 }
-
-                // grant raid achievement
-                let explorer_structure_owner_address: starknet::ContractAddress = StructureOwnerStoreImpl::retrieve(
-                    ref world, game_id, explorer_aggressor.owner,
-                );
-                AchievementTrait::progress(
-                    world,
-                    explorer_structure_owner_address.into(),
-                    Tasks::SUCCESSFUL_RAID,
-                    1,
-                    starknet::get_block_timestamp(),
-                );
             }
 
             world

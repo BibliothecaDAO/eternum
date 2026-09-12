@@ -53,8 +53,6 @@ const MAP_CONFIG_OVERRIDE_LIMITS = {
   agentFindFailProbability: U16_MAX,
   campFindProbability: U16_MAX,
   campFindFailProbability: U16_MAX,
-  holysiteFindProbability: U16_MAX,
-  holysiteFindFailProbability: U16_MAX,
   bitcoinMineWinProbability: U16_MAX,
   bitcoinMineFailProbability: U16_MAX,
   hyperstructureWinProbAtCenter: HYPERSTRUCTURE_PAIR_SUM,
@@ -83,12 +81,6 @@ const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [
     label: "Camp chance",
     winKey: "campFindProbability",
     failKey: "campFindFailProbability",
-    sum: U16_MAX,
-  },
-  {
-    label: "Holy Site chance",
-    winKey: "holysiteFindProbability",
-    failKey: "holysiteFindFailProbability",
     sum: U16_MAX,
   },
   {

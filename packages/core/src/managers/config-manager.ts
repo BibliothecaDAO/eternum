@@ -512,6 +512,7 @@ export class ClientConfigManager {
     const biomeBonus = biomeBonusNum / 10_000;
 
     const biomeModifiers: Record<BiomeType, Record<TroopType, number>> = {
+      [BiomeType.Underground]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
       [BiomeType.None]: { [TroopType.Knight]: 0, [TroopType.Crossbowman]: 0, [TroopType.Paladin]: 0 },
       [BiomeType.Ocean]: {
         [TroopType.Knight]: 0,
@@ -823,9 +824,8 @@ export class ClientConfigManager {
       [StructureType.FragmentMine]: 1,
       [StructureType.Hyperstructure]: 4,
       [StructureType.Bank]: 4,
-      [StructureType.HolySite]: 1,
       [StructureType.Camp]: 1,
-      [StructureType.BitcoinMine]: 1,
+      [StructureType.BitcoinMine]: 4,
     };
   }
 
@@ -1311,6 +1311,12 @@ export class ClientConfigManager {
         bridgeCloseAfterEndSeconds: 0,
       },
     );
+  }
+
+  getSpireTravelEssenceCost(): number {
+    const cost = this.getRulebook()?.spire_travel_essence_cost;
+    if (cost === undefined) throw new Error("Spire travel fee is not synchronized");
+    return this.divideByPrecision(Number(cost));
   }
 
   getArtificerConfig() {

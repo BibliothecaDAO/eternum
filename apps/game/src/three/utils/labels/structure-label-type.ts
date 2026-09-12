@@ -31,7 +31,6 @@ const STRUCTURE_ICONS = (fragmentMineIcon: string) => ({
     [StructureType.Camp]: "/images/labels/enemy_village.png",
     [StructureType.Realm]: "/images/labels/enemy_realm.png",
     [StructureType.Hyperstructure]: "/images/labels/hyperstructure.png",
-    [StructureType.HolySite]: "/images/labels/hyperstructure.png",
     [StructureType.Bank]: `/images/resources/${ResourcesIds.Lords}.png`,
     [StructureType.FragmentMine]: fragmentMineIcon,
     [StructureType.BitcoinMine]: fragmentMineIcon,

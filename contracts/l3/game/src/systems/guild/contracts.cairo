@@ -67,7 +67,7 @@ pub mod guild_systems {
     use crate::models::config::SeasonConfigImpl;
     use crate::models::guild::{Guild, GuildMember, GuildWhitelist};
     use crate::models::structure::StructureOwnerStats;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
+
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
         fn create_guild(ref self: ContractState, game_id: u32, public: bool, name: felt252) {
@@ -92,11 +92,6 @@ pub mod guild_systems {
             guild.name = name;
             world.write_model(@guild);
             world.write_model(@GuildMember { game_id, member: caller_address, guild_id: caller_address });
-
-            // grant create or join guild achievement
-            AchievementTrait::progress(
-                world, caller_address.into(), Tasks::JOIN_TRIBE, 1, starknet::get_block_timestamp(),
-            );
         }
 
         fn join_guild(ref self: ContractState, game_id: u32, guild_id: ContractAddress) {
@@ -135,11 +130,6 @@ pub mod guild_systems {
             guild_member.guild_id = guild_id;
             world.write_model(@new_guild);
             world.write_model(@guild_member);
-
-            // grant join guild achievement
-            AchievementTrait::progress(
-                world, caller_address.into(), Tasks::JOIN_TRIBE, 1, starknet::get_block_timestamp(),
-            );
         }
 
         fn leave_guild(ref self: ContractState, game_id: u32) {

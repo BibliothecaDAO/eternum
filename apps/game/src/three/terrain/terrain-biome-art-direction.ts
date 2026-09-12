@@ -92,6 +92,7 @@ const FAMILY_DEFAULTS: Record<TerrainBiomeFamily, Omit<TerrainBiomeArtDirection,
 };
 
 export const TERRAIN_BIOME_ART_DIRECTIONS: Readonly<Record<BiomeType, TerrainBiomeArtDirection>> = Object.freeze({
+  [BiomeType.Underground]: art("cold", { ecology: { canopyCover: 0, undergrowth: 0 }, motion: { windAmplitude: 0 } }),
   [BiomeType.None]: art("open", {
     ecology: { canopyCover: 0, clearingStrength: 1, undergrowth: 0 },
     landform: { macroAmplitude: 0 },

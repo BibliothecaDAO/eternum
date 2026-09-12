@@ -6,7 +6,6 @@ export * from "./ids";
 export * from "./market";
 export * from "./misc";
 export * from "./orders";
-export * from "./quests";
 export * from "./realmLevels";
 export * from "./relics";
 export * from "./resources";

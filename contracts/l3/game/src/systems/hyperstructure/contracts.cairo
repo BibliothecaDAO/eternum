@@ -41,7 +41,7 @@ trait IHyperstructureSystems<T> {
     /// * Sets the hyperstructure as initialized
     /// * Calculates and records total resources needed for construction
     /// * Spends Earthen Shards from the hyperstructure's balance
-    /// * Triggers an achievement for hyperstructure creation
+
     fn initialize(ref self: T, game_id: u32, hyperstructure_id: ID);
 
     /// Contributes resources to a hyperstructure's construction.
@@ -70,7 +70,7 @@ trait IHyperstructureSystems<T> {
     ///   RESOURCE_PRECISION)`
     /// * Marks hyperstructure as completed if all requirements are met
     /// * Automatically sets up initial shareholding for the hyperstructure owner when completed
-    /// * Triggers achievement for hyperstructure contribution
+
     fn contribute(
         ref self: T, game_id: u32, hyperstructure_id: ID, from_structure_id: ID, contribution: Span<(u8, u128)>,
     );
@@ -124,16 +124,13 @@ trait IHyperstructureSystems<T> {
 
 #[dojo::contract]
 pub mod hyperstructure_systems {
-    use core::num::traits::Bounded;
     use core::num::traits::zero::Zero;
     use dojo::model::ModelStorage;
-    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
+    use dojo::world::WorldStorage;
     use starknet::ContractAddress;
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes};
-    use crate::models::config::{
-        HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, VictoryPointsGrantConfig, WorldConfigUtilImpl,
-    };
+    use crate::models::config::{HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::guild::GuildMember;
     use crate::models::hyperstructure::{
         CompletedHyperstructureImpl, ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl,
@@ -153,7 +150,6 @@ pub mod hyperstructure_systems {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::share_points::settle_hyperstructure_shares;
     use crate::systems::utils::structure::iStructureImpl;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
 
@@ -266,7 +262,6 @@ pub mod hyperstructure_systems {
 
             // contribute to hyperstructure
             let mut total_resource_amount_contributed_by_structure = 0;
-            let mut total_victory_points_gotten_by_structure = 0;
             let mut from_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, game_id, from_structure_id);
             for (resource_type, resource_amount) in contribution {
                 let (resource_type, resource_amount) = (*resource_type, *resource_amount);
@@ -313,7 +308,6 @@ pub mod hyperstructure_systems {
                 let generated_points = (resource_amount / RESOURCE_PRECISION)
                     * HyperstructureRequirementsImpl::get_resource_points(ref world, game_id, resource_type)
                     / (needed_contribution_amount / RESOURCE_PRECISION);
-                total_victory_points_gotten_by_structure += generated_points;
 
                 let mut player_points: PlayerRegisteredPoints = world.read_model((game_id, from_structure_owner));
                 let mut season_prize: SeasonPrize = world.read_model(game_id);
@@ -374,37 +368,6 @@ pub mod hyperstructure_systems {
                 let hyperstructure_tile_occupier = IMapImpl::get_hyperstructure_occupier(2);
                 IMapImpl::occupy(ref world, ref hyperstructure_tile, hyperstructure_tile_occupier, hyperstructure_id);
             }
-
-            // grant hyperstructure resource contribution achievement
-            let contribution_try_y32: u128 = total_resource_amount_contributed_by_structure / RESOURCE_PRECISION;
-            let max_u32: u32 = Bounded::MAX;
-            if contribution_try_y32 > max_u32.into() {
-                panic!("Contribution is too large. try contributing in batches of <= 4 billion resources");
-            }
-            let contribution_u32: u32 = contribution_try_y32.try_into().unwrap();
-            AchievementTrait::progress(
-                world,
-                from_structure_owner.into(),
-                Tasks::CONTRIBUTE_HYPERSTRUCTURE,
-                contribution_u32,
-                starknet::get_block_timestamp(),
-            );
-
-            // grant hyperstructure victory points achievement
-            let mut victory_points_for_achievement_try_y32: u128 = total_victory_points_gotten_by_structure
-                / HYPERSTRUCTURE_POINT_MULTIPLIER;
-            if victory_points_for_achievement_try_y32 > max_u32.into() {
-                // should be impossible but who knows
-                victory_points_for_achievement_try_y32 = max_u32.into();
-            }
-            let victory_points_for_achievement_u32: u32 = victory_points_for_achievement_try_y32.try_into().unwrap();
-            AchievementTrait::progress(
-                world,
-                from_structure_owner.into(),
-                Tasks::VICTORY_POINTS,
-                victory_points_for_achievement_u32,
-                starknet::get_block_timestamp(),
-            );
         }
 
         fn allocate_shares(

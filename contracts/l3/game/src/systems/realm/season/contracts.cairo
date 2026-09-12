@@ -32,7 +32,6 @@ pub mod realm_systems {
     };
     use crate::systems::utils::realm_metadata::realm_attributes;
     use crate::systems::utils::settlement::SettlementPoolImpl;
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
 
     #[abi(embed_v0)]
@@ -146,6 +145,5 @@ pub mod realm_systems {
                     timestamp: now,
                 },
             );
-        AchievementTrait::progress(world, player.into(), Tasks::REALM_SETTLEMENT, 1, now);
     }
 }

@@ -34,7 +34,6 @@ pub mod village_systems {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::village::{iVillageImpl, iVillageResourceImpl};
-    use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use super::super::super::super::models::position::CoordTrait;
 
     #[abi(embed_v0)]
@@ -144,10 +143,6 @@ pub mod village_systems {
                 village_coord,
                 BuildingCategory::ResourceLabor,
                 BuildingImpl::center(),
-            );
-
-            AchievementTrait::progress(
-                world, caller.into(), Tasks::VILLAGE_SETTLEMENT, 1, starknet::get_block_timestamp(),
             );
 
             village_id

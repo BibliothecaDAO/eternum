@@ -2,16 +2,13 @@ import {
   type ClientComponents,
   type HyperstructureResourceCostMinMax,
   type ID,
-  RESOURCE_PRECISION,
   type Resource,
-  type ResourceInputs,
   ResourcesIds,
   StructureType,
   resources,
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { ResourceManager } from "../managers";
-import { unpackValue } from "./packed-data";
 import { getIsBlitz } from "./utils";
 import { gameEntityKey } from "../managers/config-manager";
 
@@ -41,76 +38,6 @@ export const getBalance = (
     balance: resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance,
     resourceId,
   };
-};
-
-export const getQuestResources = (realmEntityId: ID, components: ClientComponents) => {
-  const structure = getComponentValue(components.Structure, gameEntityKey([BigInt(realmEntityId)]));
-  const resourcesProduced = structure ? unpackValue(structure.resources_packed) : [];
-
-  // todo: fix
-  return getStartingResources(resourcesProduced, [], []);
-};
-
-const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
-  const multipliedCosts: ResourceInputs = {};
-
-  for (const buildingType in resourceInputs) {
-    multipliedCosts[buildingType] = resourceInputs[buildingType].map((resourceInput) => ({
-      ...resourceInput,
-      amount: Math.round(resourceInput.amount * multiplier),
-    }));
-  }
-
-  return multipliedCosts;
-};
-
-export const uniqueResourceInputs = (
-  resourcesProduced: number[],
-  resourceProductionInputResources: ResourceInputs,
-): number[] => {
-  const uniqueResourceInputs: number[] = [];
-
-  for (const resourceProduced of resourcesProduced) {
-    for (const resourceInput of resourceProductionInputResources[resourceProduced]) {
-      if (!uniqueResourceInputs.includes(resourceInput.resource)) {
-        uniqueResourceInputs.push(resourceInput.resource);
-      }
-    }
-  }
-
-  return uniqueResourceInputs;
-};
-
-export const applyInputProductionFactor = (
-  questResources: ResourceInputs,
-  resourcesOnRealm: number[],
-  resourceProductionInputResources: ResourceInputs,
-): ResourceInputs => {
-  for (const resourceInput of uniqueResourceInputs(resourcesOnRealm, resourceProductionInputResources).filter(
-    (id) => id != ResourcesIds.Wheat && id != ResourcesIds.Fish,
-  )) {
-    for (const questType in questResources) {
-      questResources[questType] = questResources[questType].map((questResource) => {
-        if (questResource.resource === resourceInput) {
-          return {
-            ...questResource,
-            amount: questResource.amount * RESOURCE_PRECISION,
-          };
-        }
-        return questResource;
-      });
-    }
-  }
-  return questResources;
-};
-
-export const getStartingResources = (
-  resourcesOnRealm: number[],
-  questResources: ResourceInputs,
-  resourceProductionInputResources: ResourceInputs,
-): ResourceInputs => {
-  const QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(questResources, RESOURCE_PRECISION);
-  return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm, resourceProductionInputResources);
 };
 
 export const scaleHyperstructureConstructionCostMinMax = (

@@ -3,7 +3,7 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-type InfoLabelVariant = "ally" | "attack" | "default" | "mine" | "quest";
+type InfoLabelVariant = "ally" | "attack" | "default" | "mine";
 
 const INFO_LABEL_VARIANT_STYLES: Record<
   InfoLabelVariant,
@@ -27,10 +27,6 @@ const INFO_LABEL_VARIANT_STYLES: Record<
   mine: {
     default: LABEL_STYLES.MINE,
     hover: HOVER_STYLES.MINE,
-  },
-  quest: {
-    default: LABEL_STYLES.CHEST,
-    hover: HOVER_STYLES.CHEST,
   },
 };
 

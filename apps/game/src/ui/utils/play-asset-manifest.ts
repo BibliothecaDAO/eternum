@@ -39,7 +39,6 @@ export const DASHBOARD_SHARED_PLAY_IMAGE_ASSETS = Object.freeze([
   "/images/labels/chest.png",
   "/images/labels/hyperstructure.png",
   "/images/labels/fragment_mine.png",
-  "/images/labels/quest.png",
   "/images/labels/essence_rift.png",
   "/images/buildings/construction/archery.png",
   "/images/buildings/construction/barracks.png",

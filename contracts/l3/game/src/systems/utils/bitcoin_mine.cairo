@@ -61,8 +61,14 @@ pub impl iBitcoinMineDiscoveryImpl of iBitcoinMineDiscoveryTrait {
                 false,
             );
 
-        // Add T3 guards to structure (same tier as Ethereal Agents)
-        let slot_tiers = array![(GuardSlot::Delta, TroopTier::T3, TroopType::Paladin)].span();
+        // Four T2 garrisons make discovery a combat objective before labor can be contributed.
+        let slot_tiers = array![
+            (GuardSlot::Delta, TroopTier::T2, TroopType::Paladin),
+            (GuardSlot::Charlie, TroopTier::T2, TroopType::Knight),
+            (GuardSlot::Bravo, TroopTier::T2, TroopType::Crossbowman),
+            (GuardSlot::Alpha, TroopTier::T2, TroopType::Paladin),
+        ]
+            .span();
         let tick_config: TickInterval = TickImpl::get_tick_interval(ref world, game_id);
         iMercenariesImpl::add(
             ref world,

@@ -74,7 +74,7 @@ export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: Fol
 
 // The client streams the snapshot into its store one model page at a time and renders from the first pages that
 // carry the world's structures and explored tiles; those go first, the rest keep registry order.
-const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["Structure", "Tile"];
+const SNAPSHOT_STREAMING_PRIORITY: readonly string[] = ["TileOpt", "Structure"];
 
 export const orderSnapshotModelsForStreaming = <TDefinition extends { name: string }>(
   definitions: readonly TDefinition[],

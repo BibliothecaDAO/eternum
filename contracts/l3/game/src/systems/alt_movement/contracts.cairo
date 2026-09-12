@@ -11,17 +11,21 @@ pub mod alt_movement_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::DEFAULT_NS;
-    use crate::models::config::SeasonConfigImpl;
+    use crate::constants::{DEFAULT_NS, ResourceTypes};
+    use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
-    use crate::models::position::{Coord, CoordTrait, Direction, TravelTrait};
+    use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use crate::models::structure::StructureOwnerStoreImpl;
     use crate::models::troop::ExplorerTroops;
+    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::troop::iExplorerImpl;
 
@@ -44,13 +48,12 @@ pub mod alt_movement_systems {
             let mut current_tile: Tile = current_tile_opt.into();
             assert!(current_tile.occupier_id == explorer_id, "tile occupier should be explorer");
 
-            let spire_coord = start_coord.neighbor(spire_direction);
+            let spire_coord = start_coord.spire_neighbor(spire_direction);
             let spire_tile_opt: TileOpt = world.read_model((game_id, start_coord.alt, spire_coord.x, spire_coord.y));
             let spire_tile: Tile = spire_tile_opt.into();
             assert!(
                 spire_tile.occupier_type == TileOccupier::Spire.into(), "Eternum: explorer must be adjacent to spire",
             );
-            assert!(explorer.coord.is_adjacent(spire_coord), "Eternum: explorer must be adjacent to spire");
 
             let destination_coord = Coord { alt: !start_coord.alt, x: start_coord.x, y: start_coord.y };
             let destination_tile_opt: TileOpt = world
@@ -58,6 +61,16 @@ pub mod alt_movement_systems {
             let mut destination_tile: Tile = destination_tile_opt.into();
             assert!(destination_tile.not_occupied(), "Eternum: destination tile is occupied");
 
+            pay_portal_essence(ref world, explorer);
+
+            // An undiscovered landing tile would be invisible and impossible to travel back onto.
+            if destination_tile.not_discovered() {
+                let biome = biome_library::get_dispatcher(@world)
+                    .get_biome(
+                        world, game_id, destination_coord.alt, destination_coord.x.into(), destination_coord.y.into(),
+                    );
+                IMapImpl::explore(ref world, ref destination_tile, biome);
+            }
             IMapImpl::occupy(ref world, ref current_tile, TileOccupier::None, 0);
             let tile_occupier = IMapImpl::get_troop_occupier(
                 explorer.owner, explorer.troops.category, explorer.troops.tier,
@@ -93,5 +106,22 @@ pub mod alt_movement_systems {
                     },
                 );
         }
+    }
+    fn pay_portal_essence(ref world: WorldStorage, explorer: ExplorerTroops) {
+        let fee: u128 = WorldConfigUtilImpl::get_member(
+            world, explorer.game_id, selector!("spire_travel_essence_cost"),
+        );
+        if fee == 0 {
+            return;
+        }
+        // The explorer's home structure pays, just as it pays movement food costs.
+        let mut weight = WeightStoreImpl::retrieve(ref world, explorer.game_id, explorer.owner);
+        let unit_weight = ResourceWeightImpl::grams(ref world, explorer.game_id, ResourceTypes::ESSENCE);
+        let mut essence = SingleResourceStoreImpl::retrieve(
+            ref world, explorer.game_id, explorer.owner, ResourceTypes::ESSENCE, ref weight, unit_weight, true,
+        );
+        essence.spend(fee, ref weight, unit_weight);
+        essence.store(ref world);
+        weight.store(ref world, explorer.game_id, explorer.owner);
     }
 }

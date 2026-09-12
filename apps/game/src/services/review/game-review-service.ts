@@ -54,6 +54,7 @@ export interface GameReviewStats {
 }
 
 export interface GameReviewMapSnapshotTile {
+  alt: boolean;
   col: number;
   row: number;
   biome: number;
@@ -250,6 +251,7 @@ const buildMapSnapshot = (snapshot: HeraldGameSnapshot): GameReviewMapSnapshot =
         const tile = tileDataToTile(row.data as string | number | bigint);
         return [
           {
+            alt: tile.alt,
             col: Math.trunc(Number(tile.col)),
             row: Math.trunc(Number(tile.row)),
             biome: Math.trunc(Number(tile.biome)),
@@ -262,13 +264,13 @@ const buildMapSnapshot = (snapshot: HeraldGameSnapshot): GameReviewMapSnapshot =
         return [];
       }
     })
-    .toSorted((left, right) => left.row - right.row || left.col - right.col);
+    .toSorted((left, right) => Number(left.alt) - Number(right.alt) || left.row - right.row || left.col - right.col);
   if (tiles.length === 0) return { available: false, reason: "Map snapshot unavailable." };
 
   let biomeHash = FNV_OFFSET_BASIS;
   let occupierHash = FNV_OFFSET_BASIS;
   for (const tile of tiles) {
-    const base = `${tile.col}:${tile.row}:${tile.biome};`;
+    const base = `${Number(tile.alt)}:${tile.col}:${tile.row}:${tile.biome};`;
     biomeHash = fnv1aUpdate(biomeHash, base);
     occupierHash = fnv1aUpdate(
       occupierHash,

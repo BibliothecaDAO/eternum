@@ -1,7 +1,7 @@
 import { Account, AccountInterface, BigNumberish } from "starknet";
 import { ResourcesIds } from "../constants";
 import { BuildingType } from "../constants/structures";
-import { Level, Resource } from "./common";
+import { Resource } from "./common";
 
 export interface SystemSigner {
   signer: AccountInterface | Account;
@@ -26,11 +26,6 @@ export interface MintAndSettleTestRealmProps extends SystemSigner {
     layer: BigNumberish;
     point: BigNumberish;
   };
-}
-
-export interface SpireMakeSpiresProps extends SystemSigner {
-  count: number;
-  spiresSettledCount: number;
 }
 
 export interface BridgeDepositIntoRealmProps extends SystemSigner {
@@ -590,6 +585,8 @@ export interface GuardExplorerSwapProps extends SystemSigner {
  * Properties for explorer vs explorer attack
  */
 export interface AttackExplorerVsExplorerProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the attacking explorer */
   aggressor_id: number;
   /** ID of the defending explorer */
@@ -602,6 +599,8 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -612,6 +611,8 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
  * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
  */
 export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -628,6 +629,8 @@ export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
  * Properties for guard vs explorer attack
  */
 export interface AttackGuardVsExplorerProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the structure with attacking guard */
   structure_id: number;
   /** Guard slot of the attacking troops */
@@ -788,34 +791,6 @@ export interface EditMarketplaceOrderProps {
 
 export interface LeaveGuildProps extends SystemSigner {}
 
-export interface SetQuestGamesProps extends SystemSigner {
-  quest_games: {
-    address: string;
-    levels: Level[];
-    overwrite: boolean;
-  }[];
-}
-
-export interface StartQuestProps extends SystemSigner {
-  quest_tile_id: number;
-  explorer_id: number;
-  player_name: BigNumberish;
-  to_address: string;
-}
-
-export interface ClaimRewardProps extends SystemSigner {
-  game_token_id: number;
-  game_address: string;
-}
-
-export interface GetGameCountProps extends SystemSigner {
-  game_address: string;
-}
-
-export interface DisableQuestsProps extends SystemSigner {}
-
-export interface EnableQuestsProps extends SystemSigner {}
-
 export interface TransferStructureOwnershipProps extends SystemSigner {
   structure_id: BigNumberish;
   new_owner: BigNumberish;
@@ -853,4 +828,15 @@ export interface ApplyRelicProps extends SystemSigner {
   entity_id: BigNumberish;
   relic_resource_id: BigNumberish;
   recipient_type: BigNumberish;
+}
+
+export interface BitcoinMineContributeLaborProps extends SystemSigner {
+  mine_id: BigNumberish;
+  target_phase_id: BigNumberish;
+  labor_amount: BigNumberish;
+}
+
+export interface BitcoinMineClaimPhaseRewardProps extends SystemSigner {
+  phase_id: BigNumberish;
+  mine_ids: BigNumberish[];
 }
