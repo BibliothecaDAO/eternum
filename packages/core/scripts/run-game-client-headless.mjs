@@ -29,7 +29,7 @@
 import { readFileSync } from "node:fs";
 import { parseArgs as parseNodeArgs } from "node:util";
 
-import { createGameClient } from "@bibliothecadao/eternum";
+import { createGameClient, createGameViews } from "@bibliothecadao/eternum";
 import { buildWorldDeployment, fetchHeraldGameDirectory, worldConfigKey } from "@bibliothecadao/eternum/game-client";
 import {
   createMicrotaskGameSyncScheduler,
@@ -272,6 +272,26 @@ const countStoredEntities = (contractComponents) => {
   return entities.size;
 };
 
+/** The views see the game from one player; the first settled owner in the snapshot stands in for the smoke. */
+const sampleStructureOwner = (components) => {
+  for (const entity of components.Structure.entities()) {
+    const owner = getComponentValue(components.Structure, entity)?.owner;
+    if (owner) return owner;
+  }
+  return 0n;
+};
+
+/** The same readers the React hooks map with, run once over the hydrated RECS world. */
+const readViews = (client) => {
+  const owner = sampleStructureOwner(client.setup.components);
+  const views = createGameViews(client, owner);
+  return {
+    owner: `0x${owner.toString(16)}`,
+    structures: views.structures(owner).length,
+    realms: views.allRealms().length,
+  };
+};
+
 const bytesToMb = (bytes) => Math.round((bytes / 1024 / 1024) * 10) / 10;
 
 // Node reports maxRSS in kilobytes on every platform.
@@ -312,6 +332,7 @@ const runSmoke = async (config) => {
       ...(firstDiffMs === undefined ? {} : { firstDiffMs }),
       confirmedBlock: smoke.confirmedBlock() ?? null,
       entities: countStoredEntities(client.setup.network.contractComponents),
+      views: readViews(client),
       metrics,
       rssMb: bytesToMb(process.memoryUsage().rss),
       peakRssMb: peakRssMb(),

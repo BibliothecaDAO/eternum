@@ -1,18 +1,15 @@
-import { ResourceManager } from "@bibliothecadao/eternum";
+import { readResourceManager, resourcesOfEntityQuery } from "@bibliothecadao/eternum";
 import { ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { HasValue } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../context";
 
 export const useResourceManager = (entityId: ID) => {
-  const dojo = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
 
-  const resource = useEntityQuery([HasValue(dojo.setup.components.Resource, { entity_id: entityId })]);
+  const resource = useEntityQuery(resourcesOfEntityQuery(components, entityId));
 
-  const resourceManager = useMemo(() => {
-    return new ResourceManager(dojo.setup.components, entityId);
-  }, [entityId, resource]);
-
-  return resourceManager;
+  return useMemo(() => readResourceManager(components, entityId), [entityId, resource]);
 };

@@ -12,3 +12,4 @@ export * from "./utils/resource-arrivals";
 // last: evaluating it first would enter the managers through config-manager's own import cycle and leave
 // the barrel's manager exports partially forwarded under vitest.
 export * from "./client/game-client";
+export * from "./client/views";
