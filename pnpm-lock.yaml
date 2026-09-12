@@ -501,6 +501,9 @@ importers:
       '@vitest/ui':
         specifier: 2.1.9
         version: 2.1.9(vitest@2.1.9)
+      acorn:
+        specifier: 8.15.0
+        version: 8.15.0
       depcheck:
         specifier: ^1.4.7
         version: 1.4.7
@@ -552,6 +555,9 @@ importers:
       vitest:
         specifier: 2.1.9
         version: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+      workbox-precaching:
+        specifier: 7.4.0
+        version: 7.4.0
       workbox-window:
         specifier: ^7.3.0
         version: 7.4.0

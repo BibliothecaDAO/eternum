@@ -62,7 +62,8 @@ jobs:
       - name: Test deployment verification and chunk recovery
         run: |
           node --test apps/game/scripts/verify-client-deployment.test.mjs
-          pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts
+          node --test apps/game/scripts/verify-pwa-build.test.mjs
+          pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
           pnpm --dir apps/game verify:assets
 
       - name: Build client
@@ -70,6 +71,16 @@ jobs:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
         run: pnpm --dir apps/game build
+
+      - name: Verify emitted offline cache and install assets
+        run: node apps/game/scripts/verify-pwa-build.mjs apps/game/dist pwa-build-check.json
+
+      - name: Upload offline cache verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-build-check
+          path: pwa-build-check.json
 
       - name: Remove public sourcemaps
         working-directory: apps/game

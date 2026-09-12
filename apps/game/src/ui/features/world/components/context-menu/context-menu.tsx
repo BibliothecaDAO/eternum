@@ -32,10 +32,10 @@ export const ContextMenu = () => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
     };
-    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown, true);
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [close, menu]);

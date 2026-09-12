@@ -1,7 +1,7 @@
 /**
  * Pure touch gesture recognizer. Feed it raw touch pointer samples and it emits taps,
- * long presses and pinch scale steps. It never touches the DOM, so the
- * scene input manager and the worldmap pinch handler can each own an instance.
+ * long presses and navigation steps. One instance owns the entire touch session,
+ * so a drag or a pinch cannot also become a gameplay press.
  */
 
 const TAP_SLOP_PX = 10;
@@ -45,9 +45,19 @@ export function toTouchPointerSample(event: PointerEvent): TouchPointerSample | 
 }
 
 export type TouchGesture =
+  | { kind: "start" }
+  | { kind: "end" }
   | { kind: "tap"; x: number; y: number }
   | { kind: "long-press"; x: number; y: number }
-  | { kind: "pinch"; scale: number; centerX: number; centerY: number };
+  | { kind: "pan"; fromX: number; fromY: number; x: number; y: number }
+  | {
+      kind: "pinch";
+      scale: number;
+      centerX: number;
+      centerY: number;
+      previousCenterX: number;
+      previousCenterY: number;
+    };
 
 /** Schedules `fn` after `ms` and returns a cancel function; injectable so tests stay deterministic. */
 export type ScheduleTimer = (fn: () => void, ms: number) => () => void;
@@ -73,8 +83,6 @@ export class TouchGestureRecognizer {
   private readonly pointers = new Map<number, PointerPosition>();
   private press: PressState | null = null;
   private cancelLongPressTimer: (() => void) | null = null;
-  private pinchActive = false;
-  private previousPinchDistance: number | null = null;
 
   constructor(
     private readonly emit: (gesture: TouchGesture) => void,
@@ -99,23 +107,22 @@ export class TouchGestureRecognizer {
   }
 
   reset(): void {
+    const hadPointers = this.pointers.size > 0;
     this.clearPress();
     this.pointers.clear();
-    this.pinchActive = false;
-    this.previousPinchDistance = null;
+    if (hadPointers) this.emit({ kind: "end" });
   }
 
   private handleDown(sample: TouchPointerSample): void {
     this.pointers.set(sample.pointerId, { x: sample.x, y: sample.y });
 
     if (this.pointers.size === 1) {
+      this.emit({ kind: "start" });
       this.beginPress(sample);
       return;
     }
 
-    if (this.pointers.size === 2) {
-      this.beginPinch();
-    }
+    this.clearPress();
   }
 
   private handleMove(sample: TouchPointerSample): void {
@@ -123,13 +130,17 @@ export class TouchGestureRecognizer {
     if (!pointer) {
       return;
     }
+    const previous = { ...pointer };
+    const previousCenter = this.pointers.size === 2 ? this.pinchCenter() : null;
+    const previousDistance = this.pointers.size === 2 ? this.currentPinchDistance() : 0;
     pointer.x = sample.x;
     pointer.y = sample.y;
 
-    if (this.pinchActive) {
-      this.emitPinchStep();
+    if (this.pointers.size === 2 && previousCenter) {
+      this.emitPinchStep(previousCenter, previousDistance);
       return;
     }
+    if (this.pointers.size !== 1 || this.press?.longPressFired) return;
 
     if (this.press?.pointerId === sample.pointerId && !this.press.movedPastSlop) {
       if (distanceBetween(this.press.start, sample) > TAP_SLOP_PX) {
@@ -137,16 +148,19 @@ export class TouchGestureRecognizer {
         this.stopLongPressTimer();
       }
     }
+    if (!this.press || this.press.movedPastSlop) {
+      this.emit({ kind: "pan", fromX: previous.x, fromY: previous.y, x: sample.x, y: sample.y });
+    }
   }
 
   private handleUp(sample: TouchPointerSample): void {
+    if (!this.pointers.has(sample.pointerId)) return;
     this.pointers.delete(sample.pointerId);
 
     if (this.press?.pointerId === sample.pointerId) {
       const isTap =
         !this.press.movedPastSlop &&
         !this.press.longPressFired &&
-        !this.pinchActive &&
         distanceBetween(this.press.start, sample) <= TAP_SLOP_PX;
       this.clearPress();
       if (isTap) {
@@ -154,15 +168,11 @@ export class TouchGestureRecognizer {
       }
     }
 
-    this.endPinchWhenAllPointersLifted();
+    if (this.pointers.size === 0) this.emit({ kind: "end" });
   }
 
   private handleCancel(sample: TouchPointerSample): void {
-    this.pointers.delete(sample.pointerId);
-    if (this.press?.pointerId === sample.pointerId) {
-      this.clearPress();
-    }
-    this.endPinchWhenAllPointersLifted();
+    if (this.pointers.has(sample.pointerId)) this.reset();
   }
 
   private beginPress(sample: TouchPointerSample): void {
@@ -184,20 +194,9 @@ export class TouchGestureRecognizer {
     }, LONG_PRESS_MS);
   }
 
-  private beginPinch(): void {
-    this.clearPress();
-    this.pinchActive = true;
-    this.previousPinchDistance = this.currentPinchDistance();
-  }
-
-  private emitPinchStep(): void {
-    if (this.pointers.size < 2) {
-      return;
-    }
+  private emitPinchStep(previousCenter: PointerPosition, previousDistance: number): void {
     const distance = this.currentPinchDistance();
-    const previousDistance = this.previousPinchDistance;
-    this.previousPinchDistance = distance;
-    if (previousDistance === null || previousDistance <= 0 || distance <= 0) {
+    if (previousDistance <= 0 || distance <= 0) {
       return;
     }
     const [first, second] = this.pinchPointers();
@@ -206,18 +205,9 @@ export class TouchGestureRecognizer {
       scale: distance / previousDistance,
       centerX: (first.x + second.x) / 2,
       centerY: (first.y + second.y) / 2,
+      previousCenterX: previousCenter.x,
+      previousCenterY: previousCenter.y,
     });
-  }
-
-  private endPinchWhenAllPointersLifted(): void {
-    if (this.pointers.size === 0) {
-      this.pinchActive = false;
-      this.previousPinchDistance = null;
-      return;
-    }
-    if (this.pointers.size < 2) {
-      this.previousPinchDistance = null;
-    }
   }
 
   private clearPress(): void {
@@ -238,6 +228,11 @@ export class TouchGestureRecognizer {
   private currentPinchDistance(): number {
     const [first, second] = this.pinchPointers();
     return distanceBetween(first, second);
+  }
+
+  private pinchCenter(): PointerPosition {
+    const [first, second] = this.pinchPointers();
+    return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
   }
 }
 

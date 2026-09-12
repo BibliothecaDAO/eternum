@@ -1,4 +1,5 @@
 import type { AppStore } from "@/hooks/store/use-ui-store";
+import { getActiveWorld } from "@/runtime/world";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type SetupResult } from "@bibliothecadao/dojo";
 
@@ -17,7 +18,6 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import type { GameSyncSnapshotProgress } from "@bibliothecadao/eternum/game-sync";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
-import { env } from "../../env";
 import { gameEntityKey, getScopedGameId, isGameScoped } from "./game-scope";
 import { resolveInitialStructureSelection } from "./initial-structure-selection";
 
@@ -65,9 +65,12 @@ const createActiveGamewideSyncSession = (input: {
   setup: SetupResult;
   reportProgress: InitialSyncProgressReporter;
 }) => {
+  const world = getActiveWorld();
+  if (!world) throw new Error("Herald game sync requires an active world");
   return createHeraldGameSyncSession({
-    baseUrl: env.VITE_PUBLIC_HERALD_URL,
-    chain: env.VITE_PUBLIC_CHAIN,
+    baseUrl: world.heraldBaseUrl,
+    chain: world.chain,
+    worldAddress: world.worldAddress,
     entityModels: getEntityModels(),
     eventModels: getEventModels(),
     gameId: getScopedGameId(),

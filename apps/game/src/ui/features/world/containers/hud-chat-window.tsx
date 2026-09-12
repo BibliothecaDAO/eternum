@@ -69,10 +69,10 @@ export function HudChatWindow({ open, onOpenChange }: { open: boolean; onOpenCha
       if (open && event.target instanceof HTMLCanvasElement) onOpenChange(false);
     };
     window.addEventListener("keydown", onKeyDown, true);
-    document.addEventListener("pointerdown", onMapPointerDown);
+    document.addEventListener("pointerdown", onMapPointerDown, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
-      document.removeEventListener("pointerdown", onMapPointerDown);
+      document.removeEventListener("pointerdown", onMapPointerDown, true);
     };
   }, [initializer, onOpenChange, open]);
 

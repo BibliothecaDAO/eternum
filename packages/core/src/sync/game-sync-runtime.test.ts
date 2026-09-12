@@ -328,6 +328,25 @@ describe("GameSyncRuntime recovery", () => {
     expect([...memory.rows.values()].some((models) => "BattleEvent" in models)).toBe(false);
   });
 
+  it("keeps delivering the diff when a session event handler throws", async () => {
+    const memory = createMemoryStore();
+    const harness = createSessionHarness({ store: memory.store });
+    harness.session.onEvent = () => {
+      throw new Error("malformed story");
+    };
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => harness.emitEvent(entity("event-1", { BattleEvent: { timestamp: 100, winner: 1 } }))).not.toThrow();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(memory.events.map(({ hashed_keys }) => hashed_keys)).toEqual(["event-1"]);
+    expect(consoleError).toHaveBeenCalledOnce();
+    consoleError.mockRestore();
+  });
+
   it("applies repeat events for the same on-chain key when their timestamps differ", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({ store: memory.store });

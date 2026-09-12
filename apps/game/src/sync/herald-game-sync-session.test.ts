@@ -25,6 +25,7 @@ describe("buildHeraldGameStreamUrl", () => {
       entityModels: [],
       eventModels: [],
       gameId: 54,
+      worldAddress: "0xabc",
       onSnapshotProgress,
       setup: { network: { contractComponents: {} } } as never,
     });
@@ -54,6 +55,7 @@ it("records confirmed heads even when provisional row evidence has advanced the 
     entityModels: [],
     eventModels: [],
     gameId: 54,
+    worldAddress: "0xabc",
     setup: { network: { contractComponents: {} } } as never,
   });
   const previous = useChainTimeStore.getState();
@@ -76,6 +78,7 @@ it("a pre-confirmed clock advances the heartbeat without moving the confirmed he
     entityModels: [],
     eventModels: [],
     gameId: 54,
+    worldAddress: "0xabc",
     setup: { network: { contractComponents: {} } } as never,
   });
   const previous = useChainTimeStore.getState();

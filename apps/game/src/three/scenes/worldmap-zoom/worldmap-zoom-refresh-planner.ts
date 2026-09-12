@@ -35,8 +35,8 @@ export function planWorldmapZoomRefresh(
 
   if (!input.distanceChanged) {
     return {
-      immediateLevel: "debounced",
-      nextState: state,
+      immediateLevel: input.status === "idle" ? maxRefreshLevel(state.pendingLevel, "debounced") : "debounced",
+      nextState: input.status === "idle" ? createWorldmapZoomRefreshPlannerState() : state,
     };
   }
 
