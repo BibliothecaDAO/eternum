@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-12",
+    title: "Eternum Portals and Dev Settlement",
+    description:
+      "Six spires reveal their access hexes on both layers. In Eternum dev games, choose a realm number to preview its name and resources, settle additional realms, and place villages without passes.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-12",
     title: "Refined Realms and Clear Ownership",
     description:
       "Realm masonry grows paler and finer with each tier, with hand-laid roofs, a raised kingdom drawbridge, and full-height empire gates. Settlement supplies sit beside a clear entrance. Owned realms and villages fly green banners; all others fly red. Every realm hanging displays its order emblem. Chests are 30% smaller on the map. Game entry loads entity models as the selected world needs them.",

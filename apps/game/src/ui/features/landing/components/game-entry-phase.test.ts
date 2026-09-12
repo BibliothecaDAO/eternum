@@ -157,3 +157,52 @@ describe("game entry phase resolution", () => {
     expect(phase).toBe("settlement-waiting");
   });
 });
+
+describe("Eternum dev settlement", () => {
+  const input = {
+    bootstrapStatus: "ready" as const,
+    hasPhaseError: false,
+    isBlitzMode: false,
+    isSpectateMode: false,
+    worldMode: "eternum",
+    isCheckingWorldAvailability: false,
+    hasWorldMeta: true,
+    isEternumMode: true,
+    isLoadingEternumPrereqs: false,
+    hasVillageRevealResult: false,
+    eternumSettlementMode: "realm" as const,
+    hasVillagePass: false,
+    checksComplete: true,
+    needsSettlement: false,
+    canPlay: true,
+    isBlitzSettlementUnlocked: true,
+  };
+  it("allows another realm only for dev games", () => {
+    expect(resolveGameEntryModalPhase({ ...input, isEternumDevMode: true, isSettlingAdditionalRealm: true })).toBe(
+      "settlement",
+    );
+    expect(resolveGameEntryModalPhase({ ...input, isEternumDevMode: false, isSettlingAdditionalRealm: true })).toBe(
+      "ready",
+    );
+  });
+  it("allows village placement without a pass only for dev games", () => {
+    expect(resolveGameEntryModalPhase({ ...input, eternumSettlementMode: "village", isEternumDevMode: true })).toBe(
+      "village-placement",
+    );
+    expect(resolveGameEntryModalPhase({ ...input, eternumSettlementMode: "village", isEternumDevMode: false })).toBe(
+      "village-pass-required",
+    );
+  });
+  it("keeps settled Blitz players in the ready phase", () => {
+    expect(
+      resolveGameEntryModalPhase({
+        ...input,
+        worldMode: "blitz",
+        isEternumMode: false,
+        isBlitzMode: true,
+        isEternumDevMode: true,
+        isSettlingAdditionalRealm: true,
+      }),
+    ).toBe("ready");
+  });
+});

@@ -50,7 +50,9 @@ pub mod village_systems {
             SeasonConfigImpl::get(world, game_id).assert_settling_started_and_not_over();
 
             let caller = starknet::get_caller_address();
-            if LedgerRegistrationImpl::entry_requires_ledger(world) {
+            let blitz: bool = WorldConfigUtilImpl::get_member(world, game_id, selector!("blitz_mode_on"));
+            let dev_entry = !blitz && SeasonConfigImpl::get(world, game_id).dev_mode_on;
+            if !dev_entry && LedgerRegistrationImpl::entry_requires_ledger(world) {
                 LedgerRegistrationImpl::for_village_account(world, game_id, caller, village_pass_token_id);
             }
 

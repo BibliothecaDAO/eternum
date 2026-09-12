@@ -4,7 +4,7 @@ use crate::alias::ID;
 use crate::models::config::{SettlementConfig, SettlementConfigImpl, WorldConfigUtilImpl};
 use crate::models::map::{Tile, TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
-use crate::models::position::{Coord, CoordImpl, REGULAR_TO_ALTERNATE_MAP_SCALE};
+use crate::models::position::{Coord, CoordImpl, CoordTrait, DirectionTrait, REGULAR_TO_ALTERNATE_MAP_SCALE};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::systems::utils::map::IMapImpl;
 use crate::utils::map::biomes::Biome;
@@ -71,4 +71,17 @@ fn create_spire_at_coord(ref world: WorldStorage, game_id: u32, coord: Coord) {
 
     IMapImpl::occupy(ref world, ref regular_tile, TileOccupier::Spire, spire_id);
     IMapImpl::occupy(ref world, ref alternate_tile, TileOccupier::Spire, spire_id);
+    reveal_spire_access(ref world, game_id, coord);
+}
+
+fn reveal_spire_access(ref world: WorldStorage, game_id: u32, coord: Coord) {
+    for direction in DirectionTrait::all() {
+        // Portal access stays one coordinate away on both layers, unlike ethereal movement.
+        let access = coord.spire_neighbor(direction);
+        for alt in array![false, true] {
+            let tile: TileOpt = world.read_model((game_id, alt, access.x, access.y));
+            let mut tile: Tile = tile.into();
+            explore_if_needed(ref world, game_id, ref tile);
+        }
+    }
 }

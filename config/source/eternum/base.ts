@@ -11,7 +11,7 @@ import { eternumResourceConfig } from "./resources";
 import { eternumTroopConfig } from "./troop";
 
 const ETERNUM_SPIRES_LAYER_DISTANCE = 6;
-const ETERNUM_SPIRES_MAX_COUNT = 7;
+const ETERNUM_SPIRES_MAX_COUNT = 6;
 const ETERNUM_SPIRES_SETTLED_COUNT = 0;
 
 const eternumVillageConfig: ConfigPatch = {
