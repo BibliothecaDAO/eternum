@@ -11,6 +11,7 @@ export type { GameType };
 import blitzAppchainConfig from "../generated/blitz.appchain.json";
 import blitzMadaraConfig from "../generated/blitz.madara.json";
 import eternumAppchainConfig from "../generated/eternum.appchain.json";
+import eternumMadaraConfig from "../generated/eternum.madara.json";
 
 type NetworkConfigDocument = {
   configuration: any;
@@ -22,6 +23,7 @@ const configs: Record<GameType, Partial<Record<GameChain, NetworkConfigDocument>
     appchain: blitzAppchainConfig,
   },
   eternum: {
+    madara: eternumMadaraConfig,
     appchain: eternumAppchainConfig,
   },
 };

@@ -85,7 +85,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const ordersAllowed = useUIStore(canIssueOrders);
   const { isMapView, selectionKey } = useTileSelection();
-  const { open, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels(selectionKey);
+  const { open, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
   const { rows, pinned } = useImportantFeed();
   const unread = useUnreadFeedCount(rows, open === "log");
   const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
@@ -253,7 +253,8 @@ const EmpireColumn = () => {
 
 /**
  * Tile details follow the same rule as the desktop `BottomRightPanel`: the selected hex in map view, the selected
- * building hex in local view. The key is null with no selection and changes with every new one.
+ * building hex in local view. The key is null with no selection. Selecting a tile never opens the sheet on its own:
+ * on a phone the sheet covers the map, and the next tap or hold is usually the order for the unit just selected.
  */
 const useTileSelection = () => {
   const { isMapView } = useQuery();
@@ -271,19 +272,7 @@ const useTileSelection = () => {
   return { isMapView, selectionKey: selectionKey ?? null };
 };
 
-const useOpenDetailsOnNewSelection = (
-  selectionKey: string | null,
-  canOpen: boolean,
-  open: (tab: CompactTab) => void,
-) => {
-  const lastSelection = useRef(selectionKey);
-  useEffect(() => {
-    if (canOpen && selectionKey !== null && selectionKey !== lastSelection.current) open("details");
-    lastSelection.current = selectionKey;
-  }, [canOpen, open, selectionKey]);
-};
-
-function useCompactPanels(selectionKey: string | null) {
+function useCompactPanels() {
   const [requested, setRequested] = useState<CompactTab | null>(null);
   const openPopoverId = usePopoverStore((state) => state.openId);
   const hasWorkspace = useUIStore(
@@ -294,7 +283,6 @@ function useCompactPanels(selectionKey: string | null) {
   const hasActionSurface = openPopoverId !== null || hasWorkspace;
   const open = hasActionSurface ? null : requested;
   const navigation = useRef<HTMLElement>(null);
-  useOpenDetailsOnNewSelection(selectionKey, !hasActionSurface, setRequested);
 
   const toggle = useCallback((tab: CompactTab) => {
     dismissActionSurfaces();
