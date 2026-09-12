@@ -134,7 +134,7 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
   </section>
 );
 
-export const MapTilePanel = () => {
+const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   const tile = useTileAt(selectedHex?.col, selectedHex?.row) ?? null;
@@ -187,7 +187,7 @@ export const MapTilePanel = () => {
   );
 };
 
-export const LocalTilePanel = () => {
+const LocalTilePanel = () => {
   const { setup, account } = useDojo();
   const buildingComponent = setup.components.Building;
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -812,6 +812,19 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
 };
 
 /**
+ * The tile details follow the selection facts, not the route: a selected building hex (the local scene owns it and
+ * clears it on exit) shows the local panel, otherwise a selected world hex shows the map panel. A local click on a
+ * neighbouring world hex sets the world hex and clears the building hex, so the map panel answers it in place.
+ */
+export const useSelectedTileDetails = (): ReactNode => {
+  const selectedHex = useUIStore((state) => state.selectedHex);
+  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
+  if (selectedBuildingHex) return <LocalTilePanel />;
+  if (selectedHex) return <MapTilePanel />;
+  return null;
+};
+
+/**
  * BottomRightPanel places the minimap at left and the feed, details and chat at right.
  * Independent widgets:
  *   - RightHudColumn: persistent feed and chat, with details when a tile is selected.
@@ -819,17 +832,10 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
  * They no longer share a frame or tab strip.
  */
 export const BottomRightPanel = memo(() => {
-  const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const selectedHex = useUIStore((state) => state.selectedHex);
-  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
+  const tileDetails = useSelectedTileDetails();
 
   if (showBlankOverlay) return null;
-
-  // Tile details visibility: in map view follow the selected hex; in local
-  // (hex) view follow the selected building hex. Either source produces the
-  // same panel chrome but different content.
-  const showTileDetails = isMapView ? selectedHex !== null : selectedBuildingHex !== null;
   // Minimap + action row stay persistent in both map and local views — the
   // player wants to keep an eye on activity near their realm even while they
   // manage tiles up close.
@@ -848,7 +854,7 @@ export const BottomRightPanel = memo(() => {
           </div>
         </>
       )}
-      <RightHudColumn>{showTileDetails ? isMapView ? <MapTilePanel /> : <LocalTilePanel /> : null}</RightHudColumn>
+      <RightHudColumn>{tileDetails}</RightHudColumn>
     </>
   );
 });
