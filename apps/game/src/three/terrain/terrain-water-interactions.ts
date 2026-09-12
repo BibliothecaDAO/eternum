@@ -1,7 +1,8 @@
+import { mapAnimationTime as time } from "../effects/game-end-freeze";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { Group, InstancedBufferAttribute, Matrix4, PlaneGeometry, Quaternion, Vector3 } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
-import { attribute, color, mix, smoothstep, time, uniform, uv } from "three/tsl";
+import { attribute, color, mix, smoothstep, uniform, uv } from "three/tsl";
 import type UniformNode from "three/src/nodes/core/UniformNode.js";
 
 import { TERRAIN_WATER_LEVEL } from "./terrain-water";

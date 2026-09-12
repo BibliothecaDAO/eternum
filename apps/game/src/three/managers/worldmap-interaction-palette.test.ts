@@ -1,20 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  resolveHighlightLayerPalette,
-  resolveHoverVisualPalette,
-  resolveSelectionPulsePalette,
-} from "./worldmap-interaction-palette";
+import { resolveHighlightLayerPalette, resolveHoverVisualPalette } from "./worldmap-interaction-palette";
 
 describe("worldmap interaction palette", () => {
-  it("keeps army and structure pulse palettes distinct", () => {
-    const army = resolveSelectionPulsePalette("army");
-    const structure = resolveSelectionPulsePalette("structure");
-
-    expect(army.baseColor).not.toBe(structure.baseColor);
-    expect(army.pulseColor).not.toBe(structure.pulseColor);
-    expect(army.intensity).not.toBe(structure.intensity);
-  });
-
   it("returns contextual pink hover for actionable selected hexes", () => {
     expect(resolveHoverVisualPalette({ hasSelection: true, actionType: "explore" })).toEqual({
       baseColor: 0xff4fd8,

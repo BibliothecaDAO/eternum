@@ -75,6 +75,14 @@ export interface SceneSetupContext {
 }
 
 export abstract class HexagonScene {
+  protected animationsPaused = false;
+  private frozenCycleProgress = 0;
+
+  public setAnimationsPaused(paused: boolean): void {
+    if (paused && !this.animationsPaused) this.frozenCycleProgress = this.state.cycleProgress || 0;
+    this.animationsPaused = paused;
+  }
+
   protected scene!: Scene;
   protected interactionOverlayScene!: Scene;
   protected camera!: PerspectiveCamera;
@@ -1029,6 +1037,14 @@ export abstract class HexagonScene {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
     this.visibilityManager?.beginFrame();
+
+    if (this.animationsPaused) {
+      this.worldAtmosphereController.update(this.frozenCycleProgress, this.controls.target, { snap: true });
+      this.updateLights();
+      this.updateShadowRefresh(deltaTime);
+      PerformanceMonitor.end("scene.update");
+      return;
+    }
 
     PerformanceMonitor.begin("interactiveHexManager.update");
     this.interactiveHexManager.update(deltaTime);

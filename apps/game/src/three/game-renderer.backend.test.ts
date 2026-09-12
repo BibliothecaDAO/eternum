@@ -24,6 +24,7 @@ vi.mock("@bibliothecadao/eternum", () => {
         STAGE_3: 3,
       },
       FELT_CENTER: 0,
+      configManager: { isGameOver: () => false, getActiveGameId: () => 1 },
     } as Record<string, unknown>,
     {
       get: (target, prop) => (prop in target ? target[prop as string] : scalar),

@@ -42,6 +42,20 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-09-12",
+    title: "Map and game-end fixes",
+    description:
+      "Local zoom shows two rings of terrain. Tile details follow your view in a narrower panel, and ground outlines mark selected armies and structures. Finished games close gameplay and freeze the map, including dev games.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-12",
+    title: "Frost and calmer banners",
+    description:
+      "End-game frost coats terrain, trees, structures, armies and chests. Preview it with Freeze map in the lab. Heraldry stays clear and banners ease into gusts.",
+    type: "improvement",
+  },
+  {
+    date: "2026-09-12",
     title: "Blitz Entry Config Refresh",
     description:
       "Rejoining a game after a world update refreshes its configuration instead of using an outdated saved game.",

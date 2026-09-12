@@ -1,7 +1,8 @@
+import { mapAnimationTime as time } from "../effects/game-end-freeze";
 import { AdditiveBlending, DoubleSide, NormalBlending } from "three";
 import type { Blending } from "three";
 import { MeshBasicNodeMaterial } from "three/webgpu";
-import { attribute, color, mix, smoothstep, time, uv } from "three/tsl";
+import { attribute, color, mix, smoothstep, uv } from "three/tsl";
 
 export const WORLD_FX_PARTICLE_ATTRIBUTE = "worldFxParticle";
 

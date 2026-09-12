@@ -1,3 +1,4 @@
+import { hasGameEnded } from "@bibliothecadao/eternum/game-sync";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 
 export function resolveGameClock({
@@ -28,7 +29,7 @@ export function resolveGameClock({
     } as const;
   if (!hasFiniteSeasonEnd(endAt))
     return { phase: "live", label: "No time limit", compactLabel: "No time limit", remainingRatio: null } as const;
-  if (now >= endAt)
+  if (hasGameEnded("Live", endAt, now))
     return { phase: "finished", label: "Game finished", compactLabel: "Game finished", remainingRatio: null } as const;
   if (!Number.isFinite(armyTickSeconds) || armyTickSeconds <= 0) throw new Error("Army tick duration is unavailable");
   const startTick = Math.floor(startAt / armyTickSeconds);
