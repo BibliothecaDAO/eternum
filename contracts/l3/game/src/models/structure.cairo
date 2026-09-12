@@ -180,7 +180,7 @@ pub impl StructureBaseImpl of StructureBaseTrait {
     }
 
     fn coord(self: StructureBase) -> Coord {
-        return Coord { alt: false, x: self.coord_x, y: self.coord_y };
+        return Coord { alt: self.category == StructureCategory::BitcoinMine.into(), x: self.coord_x, y: self.coord_y };
     }
 
     fn exists(self: StructureBase) -> bool {
@@ -368,6 +368,10 @@ pub impl StructureImpl of StructureTrait {
         metadata: StructureMetadata,
     ) -> Structure {
         assert!(category != StructureCategory::None, "category cannot be none");
+        assert!(
+            coord.alt == (category == StructureCategory::BitcoinMine),
+            "structure category is not allowed on this layer",
+        );
         let mut structure: Structure = Default::default();
         structure.game_id = game_id;
         structure.entity_id = entity_id;
@@ -412,8 +416,9 @@ pub impl StructureImpl of StructureTrait {
                 structure.base.troop_max_guard_count = 1; // 1 guard, 0 explorers
             },
             StructureCategory::BitcoinMine => {
+                structure.base.level = 3;
                 structure.base.troop_max_explorer_count = 0;
-                structure.base.troop_max_guard_count = 1; // 1 guard slot for T3 defender
+                structure.base.troop_max_guard_count = 4;
             },
             _ => { panic!("invalid structure category"); },
         }

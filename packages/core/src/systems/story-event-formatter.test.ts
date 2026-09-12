@@ -180,3 +180,11 @@ describe("owner naming", () => {
     expect(unnamed.owner).toBe("0x1234…cdef");
   });
 });
+
+it("shows the confirmed d20 bonuses and tolerates older stories without rolls", () => {
+  const event = story("BattleStory", { attacker_roll: 1, defender_roll: 20 });
+  const description = buildStoryEventPresentation(event).description;
+  expect(description).toContain("Attacker d20: 1 (+1% damage)");
+  expect(description).toContain("Defender d20: 20 (+20% damage)");
+  expect(buildStoryEventPresentation(story("BattleStory", {})).description).toBeUndefined();
+});

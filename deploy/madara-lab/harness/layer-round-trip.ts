@@ -13,6 +13,7 @@ export interface LayerRoundTripEvidence {
   botId?: number;
   explorerId?: string;
   spire?: { id: number; x: number; y: number };
+  portalFee?: { homeStructureId: string; essencePerCrossing: string };
   status: "passed" | "failed";
   error?: string;
   steps: Array<{ kind: StepKind; transaction: TrackedTransaction; explorer?: Coord; exploredTile?: Coord }>;
@@ -83,6 +84,11 @@ async function prepareRoundTrip(
     .sort((a, b) => nearestSpireDistance(a.explorer, spires) - nearestSpireDistance(b.explorer, spires));
   const candidate = candidates[0];
   if (!candidate) throw new Error("No surface bot explorer is available for the round trip");
+  if (preset.spire_travel_essence_cost === undefined) throw new Error("Portal fee is missing from the preset snapshot");
+  evidence.portalFee = {
+    homeStructureId: candidate.explorer.owner,
+    essencePerCrossing: BigInt(preset.spire_travel_essence_cost as string).toString(),
+  };
   evidence.botId = candidate.bot.botId;
   evidence.explorerId = candidate.explorer.explorerId;
   return { ...options, ...candidate, evidence, observer, stamina: resolveMovementStamina(preset) };

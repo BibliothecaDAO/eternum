@@ -124,3 +124,20 @@ describe("CombatSimulator Combat v3 context", () => {
     expect(params.stamina_defense_req).toBe(40);
   });
 });
+
+describe("ethereal preview", () => {
+  it("assumes +10% outgoing damage independently for both sides", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+    const attacker = baseArmy(TroopType.Knight);
+    const defender = baseArmy(TroopType.Paladin);
+    const surface = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
+    const ethereal = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground);
+    expect(ethereal.attackerDamage).toBeCloseTo(surface.attackerDamage * 1.1);
+    expect(ethereal.defenderDamage).toBeCloseTo(surface.defenderDamage * 1.1);
+    const intoSurface = simulator.simulateBattle(0, attacker, defender, BiomeType.Underground, [], [], {
+      defenderBiome: BiomeType.Taiga,
+    });
+    expect(intoSurface.attackerDamage).toBeCloseTo(surface.attackerDamage);
+    expect(intoSurface.defenderDamage).toBeCloseTo(surface.defenderDamage);
+  });
+});

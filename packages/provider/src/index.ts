@@ -2667,6 +2667,22 @@ export class EternumProvider extends EnhancedDojoProvider {
       return await this.explorer_travel({ explorer_id, directions, signer });
     }
   }
+  private withCombatRandomness(
+    props: { signer: AccountInterface; ethereal?: boolean },
+    calls: Call | Call[],
+  ): Call | Call[] {
+    if (!props.ethereal || !isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) return calls;
+    const attacks = Array.isArray(calls) ? calls : [calls];
+    return [
+      createVrfRequestRandomCall({
+        vrfProviderAddress: this.VRF_PROVIDER_ADDRESS,
+        addressToCall: attacks[0].contractAddress,
+        source: { type: "nonce", value: props.signer.address },
+      }),
+      ...attacks,
+    ];
+  }
+
   /**
    * Attack an explorer with another explorer
    *
@@ -2693,11 +2709,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: {
+      calls: this.withCombatRandomness(props, {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
         entrypoint: "attack_explorer_vs_explorer",
         calldata,
-      },
+      }),
       transactionType: TransactionType.ATTACK_EXPLORER_VS_EXPLORER,
     });
   }
@@ -2716,11 +2732,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: {
+      calls: this.withCombatRandomness(props, {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
         entrypoint: "attack_explorer_vs_guard",
         calldata: [explorer_id, structure_id],
-      },
+      }),
       transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD,
     });
   }
@@ -2757,7 +2773,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls,
+      calls: this.withCombatRandomness(props, calls),
       transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON,
     });
   }
@@ -2777,11 +2793,11 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.promiseQueue.enqueue({
       signer,
-      calls: {
+      calls: this.withCombatRandomness(props, {
         contractAddress: getContractByName(this.manifest, `${this.namespace}-troop_battle_systems`),
         entrypoint: "attack_guard_vs_explorer",
         calldata: [structure_id, structure_guard_slot, explorer_id],
-      },
+      }),
       transactionType: TransactionType.ATTACK_GUARD_VS_EXPLORER,
     });
   }

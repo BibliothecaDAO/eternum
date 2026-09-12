@@ -2895,7 +2895,10 @@ export default class WorldmapScene extends WarpTravel {
     this.openTargetActionSurface(targetHex, {
       id: "spire-travel",
       content: (
-        <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />
+        <SpireTravelModal
+          essenceCost={configManager.getSpireTravelEssenceCost()}
+          onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)}
+        />
       ),
     });
   }

@@ -39,6 +39,8 @@ fn validate_spire_lattice(config: SettlementConfig) {
         return;
     }
     assert!(config.base_distance > 0 && config.spires_layer_distance > 0, "Eternum: invalid spire spacing");
+    let spacing: u32 = config.base_distance.into() * config.spires_layer_distance.into();
+    assert!(spacing % 15 == 0, "Eternum: spire spacing must align with ethereal steps");
     let layers: u32 = config.layer_max.into() / config.spires_layer_distance.into();
     let capacity = 1 + 3 * layers * (layers + 1);
     assert!(config.spires_max_count.into() <= capacity, "Eternum: spire count exceeds lattice");

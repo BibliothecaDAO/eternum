@@ -2,6 +2,7 @@
       "generatedFromTsFile": true,
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": {
+  "spireTravelEssenceCost": 0,
   "agent": {
     "controller_address": "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
     "max_lifetime_count": 10000,

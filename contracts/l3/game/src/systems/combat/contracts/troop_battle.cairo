@@ -168,7 +168,7 @@ pub mod troop_battle_systems {
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
-            let (updated_aggressor, updated_defender) = combat_library
+            let (updated_aggressor, updated_defender, attacker_roll, defender_roll) = combat_library
                 .troops_attack(
                     world,
                     game_id,
@@ -334,6 +334,8 @@ pub mod troop_battle_systems {
 
             // emit story events
             let battle_story = BattleStory {
+                attacker_roll,
+                defender_roll,
                 battle_type: BattleType::ExplorerVsExplorer,
                 attacker_id: explorer_aggressor.explorer_id,
                 attacker_structure: BattleStructureType {
@@ -495,7 +497,7 @@ pub mod troop_battle_systems {
             let guard_troop_count_before_attack = guard_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
-            let (updated_aggressor, updated_guard) = combat_library
+            let (updated_aggressor, updated_guard, attacker_roll, defender_roll) = combat_library
                 .troops_attack(
                     world,
                     game_id,
@@ -635,6 +637,8 @@ pub mod troop_battle_systems {
 
             // emit story events
             let battle_story = BattleStory {
+                attacker_roll,
+                defender_roll,
                 battle_type: BattleType::ExplorerVsGuard,
                 attacker_id: explorer_id,
                 attacker_structure: BattleStructureType {
@@ -770,7 +774,7 @@ pub mod troop_battle_systems {
             let structure_guard_aggressor_troop_count_before_attack = structure_guard_aggressor_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
-            let (updated_guard, updated_explorer) = combat_library
+            let (updated_guard, updated_explorer, attacker_roll, defender_roll) = combat_library
                 .troops_attack(
                     world,
                     game_id,
@@ -906,6 +910,8 @@ pub mod troop_battle_systems {
 
             // emit story events
             let battle_story = BattleStory {
+                attacker_roll,
+                defender_roll,
                 battle_type: BattleType::GuardVsExplorer,
                 attacker_id: structure_id,
                 attacker_structure: BattleStructureType {

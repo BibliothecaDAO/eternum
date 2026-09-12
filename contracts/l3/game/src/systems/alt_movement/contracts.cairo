@@ -11,15 +11,18 @@ pub mod alt_movement_systems {
     use core::num::traits::zero::Zero;
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcherTrait, WorldStorage};
     use starknet::ContractAddress;
     use crate::alias::ID;
-    use crate::constants::DEFAULT_NS;
-    use crate::models::config::SeasonConfigImpl;
+    use crate::constants::{DEFAULT_NS, ResourceTypes};
+    use crate::models::config::{SeasonConfigImpl, WorldConfigUtilImpl};
     use crate::models::events::{ExploreFind, ExplorerMoveStory, Story, StoryEvent};
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordTrait, Direction};
+    use crate::models::resource::resource::{
+        ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, WeightStoreImpl,
+    };
     use crate::models::structure::StructureOwnerStoreImpl;
     use crate::models::troop::ExplorerTroops;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
@@ -57,6 +60,8 @@ pub mod alt_movement_systems {
                 .read_model((game_id, destination_coord.alt, destination_coord.x, destination_coord.y));
             let mut destination_tile: Tile = destination_tile_opt.into();
             assert!(destination_tile.not_occupied(), "Eternum: destination tile is occupied");
+
+            pay_portal_essence(ref world, explorer);
 
             // An undiscovered landing tile would be invisible and impossible to travel back onto.
             if destination_tile.not_discovered() {
@@ -101,5 +106,22 @@ pub mod alt_movement_systems {
                     },
                 );
         }
+    }
+    fn pay_portal_essence(ref world: WorldStorage, explorer: ExplorerTroops) {
+        let fee: u128 = WorldConfigUtilImpl::get_member(
+            world, explorer.game_id, selector!("spire_travel_essence_cost"),
+        );
+        if fee == 0 {
+            return;
+        }
+        // The explorer's home structure pays, just as it pays movement food costs.
+        let mut weight = WeightStoreImpl::retrieve(ref world, explorer.game_id, explorer.owner);
+        let unit_weight = ResourceWeightImpl::grams(ref world, explorer.game_id, ResourceTypes::ESSENCE);
+        let mut essence = SingleResourceStoreImpl::retrieve(
+            ref world, explorer.game_id, explorer.owner, ResourceTypes::ESSENCE, ref weight, unit_weight, true,
+        );
+        essence.spend(fee, ref weight, unit_weight);
+        essence.store(ref world);
+        weight.store(ref world, explorer.game_id, explorer.owner);
     }
 }

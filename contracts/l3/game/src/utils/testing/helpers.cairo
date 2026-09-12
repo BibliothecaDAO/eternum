@@ -605,7 +605,7 @@ pub fn namespace_def_combat() -> NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
             // Core config models
-            TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+            TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"), TestResource::Model("RNG"),
             TestResource::Model("GameMapConfig"), TestResource::Model("GameRegistry"),
             TestResource::Model("WeightConfig"), // Structure models
             TestResource::Model("Structure"),

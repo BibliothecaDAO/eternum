@@ -518,6 +518,7 @@ export function buildPresetRegistration(config: Config, presetId: number): Prese
         collectibles_cosmetics_max: config.blitz.registration.collectible_cosmetics_max_items,
       },
       mercenaries_name: MERCENARIES_NAME_FELT,
+      spire_travel_essence_cost: BigInt(config.spireTravelEssenceCost) * BigInt(RESOURCE_PRECISION),
     },
     gameConfig: {
       preset_id: presetId,

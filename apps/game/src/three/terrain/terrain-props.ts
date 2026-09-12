@@ -86,6 +86,7 @@ const TERRAIN_PROP_PLACEMENT_LAYERS = Object.freeze(["canopy", "understory", "de
 export const PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER = 1.75;
 const GROUND_COVER_DENSITY_RATIO = 0.24;
 const BIOME_PROP_PROFILES: Readonly<Record<BiomeType, BiomePropProfile>> = {
+  [BiomeType.Underground]: profile(0),
   [BiomeType.None]: profile(0),
   [BiomeType.DeepOcean]: profile(0),
   [BiomeType.Ocean]: profile(0),

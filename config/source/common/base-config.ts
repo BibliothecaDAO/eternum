@@ -47,6 +47,7 @@ const VILLAGE_TOKEN_MINT_RECIPIENT = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ec
 
 export function buildCommonBaseConfig(): ConfigPatch {
   return {
+    spireTravelEssenceCost: 0,
     agent: {
       controller_address: AGENT_CONTROLLER_ADDRESS,
       max_lifetime_count: AGENT_MAX_LIFETIME_COUNT,

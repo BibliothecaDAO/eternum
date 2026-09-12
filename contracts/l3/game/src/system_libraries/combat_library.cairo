@@ -19,7 +19,7 @@ pub trait ICombatLibrary<T> {
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
         current_tick_interval: u64,
-    ) -> (Troops, Troops);
+    ) -> (Troops, Troops, u8, u8);
 }
 
 #[dojo::library]
@@ -29,6 +29,8 @@ mod combat_library {
     use crate::models::position::{Coord, CoordTrait, TravelTrait};
     use crate::models::troop::{CombatContext, Troops, TroopsTrait};
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
+    use crate::utils::cartridge::vrf::Source;
 
     #[abi(embed_v0)]
     pub impl CombatLibraryImpl of super::ICombatLibrary<ContractState> {
@@ -46,7 +48,7 @@ mod combat_library {
             troop_damage_config: TroopDamageConfig,
             current_tick: u64,
             current_tick_interval: u64,
-        ) -> (Troops, Troops) {
+        ) -> (Troops, Troops, u8, u8) {
             let mut world = world;
             let mut attacker_mut = attacker;
             let mut defender_mut = defender;
@@ -67,7 +69,7 @@ mod combat_library {
                     current_tick,
                     current_tick_interval,
                 );
-            (attacker_mut, defender_mut)
+            (attacker_mut, defender_mut, combat_context.attacker_roll, combat_context.defender_roll)
         }
     }
 
@@ -88,7 +90,19 @@ mod combat_library {
         let defender_biome = biome_library
             .get_biome(world, game_id, defender_coord.alt, defender_coord.x.into(), defender_coord.y.into());
 
+        let (attacker_roll, defender_roll) = if defender_coord.alt {
+            let rng = rng_library::get_dispatcher(@world);
+            let seed = rng.get_random_number(game_id, Source::Nonce(starknet::get_caller_address()), world);
+            (
+                1 + rng.get_random_in_range(seed, 1, 20).try_into().unwrap(),
+                1 + rng.get_random_in_range(seed, 2, 20).try_into().unwrap(),
+            )
+        } else {
+            (0_u8, 0_u8)
+        };
         CombatContext {
+            attacker_roll,
+            defender_roll,
             attacker_biome: defender_biome,
             defender_biome,
             attack_distance: resolve_attack_distance(attacker_coord, defender_coord),

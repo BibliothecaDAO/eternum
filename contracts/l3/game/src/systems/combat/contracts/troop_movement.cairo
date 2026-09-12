@@ -544,6 +544,23 @@ pub mod troop_movement_util_systems {
             let world = self.world(DEFAULT_NS());
             assert_troop_movement_caller(@world);
 
+            // Ethereal exploration has one discovery pool; surface lotteries must never run here.
+            if tile.alt {
+                return run_discovery(
+                    @world,
+                    @"bitcoin_mine_discovery_systems",
+                    game_id,
+                    vrf_seed,
+                    tile,
+                    caller,
+                    map_config,
+                    troop_limit_config,
+                    troop_stamina_config,
+                    current_tick,
+                    season_mode_on,
+                );
+            }
+
             let (relic_found, relic_find) = run_discovery(
                 @world,
                 @"relic_chest_discovery_systems",
@@ -599,40 +616,6 @@ pub mod troop_movement_util_systems {
             );
             if mine_found {
                 return (true, mine_find);
-            }
-
-            let (holy_site_found, holy_site_find) = run_discovery(
-                @world,
-                @"holysite_discovery_systems",
-                game_id,
-                vrf_seed,
-                tile,
-                caller,
-                map_config,
-                troop_limit_config,
-                troop_stamina_config,
-                current_tick,
-                season_mode_on,
-            );
-            if holy_site_found {
-                return (true, holy_site_find);
-            }
-
-            let (bitcoin_mine_found, bitcoin_mine_find) = run_discovery(
-                @world,
-                @"bitcoin_mine_discovery_systems",
-                game_id,
-                vrf_seed,
-                tile,
-                caller,
-                map_config,
-                troop_limit_config,
-                troop_stamina_config,
-                current_tick,
-                season_mode_on,
-            );
-            if bitcoin_mine_found {
-                return (true, bitcoin_mine_find);
             }
 
             let (camp_found, _) = run_discovery(
@@ -1043,7 +1026,6 @@ pub mod holysite_discovery_systems {
     use crate::models::config::{MapConfig, TroopLimitConfig, TroopStaminaConfig};
     use crate::models::events::ExploreFind;
     use crate::models::map::Tile;
-    use crate::systems::utils::holysite::iHolySiteDiscoveryImpl;
     use super::ITroopMovementUtilSystems;
 
     #[abi(embed_v0)]
@@ -1067,17 +1049,8 @@ pub mod holysite_discovery_systems {
                 "caller must be the troop_movement_util_systems",
             );
 
-            if !season_mode_on {
-                return (false, ExploreFind::None);
-            }
-
-            if iHolySiteDiscoveryImpl::lottery(map_config, vrf_seed, world) {
-                iHolySiteDiscoveryImpl::create(
-                    ref world, game_id, tile.into(), troop_limit_config, troop_stamina_config, vrf_seed,
-                );
-                return (true, ExploreFind::HolySite);
-            }
-            (false, ExploreFind::None)
+            // Standalone holy sites are retired; realms will own this role.
+            return (false, ExploreFind::None);
         }
     }
 }

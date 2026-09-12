@@ -55,6 +55,7 @@ export interface CombatParameters {
 }
 
 export class CombatSimulator {
+  public static readonly ETHEREAL_PREVIEW_BONUS_PERCENT = 10;
   private readonly t1DamageValue: number;
   private readonly t2DamageMultiplier: number;
   private readonly t3DamageMultiplier: number;
@@ -361,8 +362,21 @@ export class CombatSimulator {
         Math.pow(totalTroops, betaEff);
 
     // Apply relic modifiers
-    const attackerDamage = baseAttackerDamage * attackerDamageMultiplierRelics * defenderReductionMultiplierRelics;
-    const defenderDamage = baseDefenderDamage * defenderDamageMultiplierRelics * attackerReductionMultiplierRelics;
+    // Ethereal forecasts use the requested +10% assumption; execution rolls 1–20 independently.
+    const etherealPreviewMultiplier =
+      (context.defenderBiome ?? biome) === BiomeType.Underground
+        ? 1 + CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT / 100
+        : 1;
+    const attackerDamage =
+      etherealPreviewMultiplier *
+      baseAttackerDamage *
+      attackerDamageMultiplierRelics *
+      defenderReductionMultiplierRelics;
+    const defenderDamage =
+      etherealPreviewMultiplier *
+      baseDefenderDamage *
+      defenderDamageMultiplierRelics *
+      attackerReductionMultiplierRelics;
 
     const attackerRefundMultiplier = this.isRangedAttack(context)
       ? 0

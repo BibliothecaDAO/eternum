@@ -4,13 +4,16 @@ use dojo_snf_test::{
     ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, get_default_caller_address, spawn_test_world,
 };
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address};
-use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR};
+use crate::constants::{DEFAULT_NS, DEFAULT_NS_STR, RESOURCE_PRECISION, ResourceTypes};
+use crate::models::config::{WeightConfig, WorldConfigUtilImpl};
 use crate::models::game::{GameRegistry, GameStatus};
 use crate::models::map::{TileImpl, TileOccupier};
 use crate::models::map2::TileOpt;
 use crate::models::position::{Coord, CoordTrait, Direction};
+use crate::models::resource::resource::ResourceImpl;
 use crate::models::structure::Structure;
 use crate::models::troop::{ExplorerTroops, TroopTier, TroopType, Troops};
+use crate::models::weight::Weight;
 use crate::systems::alt_movement::contracts::{IAltMovementSystemsDispatcher, IAltMovementSystemsDispatcherTrait};
 use crate::systems::utils::map::IMapImpl;
 
@@ -18,10 +21,11 @@ fn setup(alt: bool, x: u32) -> (WorldStorage, IAltMovementSystemsDispatcher) {
     let namespace = NamespaceDef {
         namespace: DEFAULT_NS_STR(),
         resources: [
-            TestResource::Model("GameRegistry"), TestResource::Model("WorldConfig"),
-            TestResource::Model("PresetConfig"), TestResource::Model("ExplorerTroops"),
-            TestResource::Model("Structure"), TestResource::Model("TileOpt"), TestResource::Event("StoryEvent"),
-            TestResource::Contract("alt_movement_systems"), TestResource::Library(("biome_library", "0_1_13")),
+            TestResource::Model("Resource"), TestResource::Model("WeightConfig"), TestResource::Model("GameRegistry"),
+            TestResource::Model("WorldConfig"), TestResource::Model("PresetConfig"),
+            TestResource::Model("ExplorerTroops"), TestResource::Model("Structure"), TestResource::Model("TileOpt"),
+            TestResource::Event("StoryEvent"), TestResource::Contract("alt_movement_systems"),
+            TestResource::Library(("biome_library", "0_1_13")),
         ]
             .span(),
     };
@@ -131,4 +135,34 @@ fn cross_layer_combat_uses_the_same_spire_access_distance() {
         !IMapImpl::is_adjacent_to_spire(ref world, 7, Coord { alt: true, x: 85, y: 100 }),
         "spire access used travel stride",
     );
+}
+
+fn fund_crossings(ref world: WorldStorage, crossings: u128) {
+    let cost: u128 = 10 * RESOURCE_PRECISION;
+    WorldConfigUtilImpl::set_member(ref world, 1, selector!("spire_travel_essence_cost"), cost);
+    world.write_model_test(@WeightConfig { preset_id: 1, resource_type: ResourceTypes::ESSENCE, weight_gram: 0 });
+    ResourceImpl::initialize(ref world, 7, 5);
+    ResourceImpl::write_balance(ref world, 7, 5, ResourceTypes::ESSENCE, cost * crossings);
+    ResourceImpl::write_weight(ref world, 7, 5, Weight { capacity: 1000000, weight: 0 });
+}
+
+#[test]
+fn portal_charges_the_home_structure_on_entry_and_exit() {
+    let (mut world, travel) = setup(false, 99);
+    fund_crossings(ref world, 2);
+    travel.toggle_alternate(7, 9, Direction::East);
+    assert_eq!(ResourceImpl::read_balance(ref world, 7, 5, ResourceTypes::ESSENCE), 10 * RESOURCE_PRECISION);
+    travel.toggle_alternate(7, 9, Direction::East);
+    assert_eq!(ResourceImpl::read_balance(ref world, 7, 5, ResourceTypes::ESSENCE), 0);
+    let returned: ExplorerTroops = world.read_model((7_u32, 9_u32));
+    assert!(!returned.coord.alt, "did not return to surface");
+}
+
+#[test]
+#[should_panic(expected: "Insufficient Balance: ESSENCE")]
+fn portal_exit_requires_another_essence_payment() {
+    let (mut world, travel) = setup(false, 99);
+    fund_crossings(ref world, 1);
+    travel.toggle_alternate(7, 9, Direction::East);
+    travel.toggle_alternate(7, 9, Direction::East);
 }

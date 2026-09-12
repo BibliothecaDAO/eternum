@@ -8,6 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import {
+  BiomeType,
   DISPLAYED_SLOT_NUMBER_MAP,
   ID,
   RelicEffectWithEndTick,
@@ -45,6 +46,7 @@ export const useBattleLabLiveData = (
   enabled: boolean,
   attackerEntityId: ID,
   targetHex: { x: number; y: number },
+  alt = false,
 ): BattleLabLiveData => {
   const {
     setup: {
@@ -57,6 +59,7 @@ export const useBattleLabLiveData = (
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
     attackerEntityId,
     targetHex,
+    alt,
   );
 
   const attackerRelicIds = useMemo(() => toResourceIds(attackerRelicEffects), [attackerRelicEffects]);
@@ -66,7 +69,7 @@ export const useBattleLabLiveData = (
     if (!enabled) return null;
 
     const structure = getComponentValue(Structure, gameEntityKey([BigInt(attackerEntityId)]));
-    const biome = Biome.getBiome(targetHex.x, targetHex.y);
+    const biome = alt ? BiomeType.Underground : Biome.getBiome(targetHex.x, targetHex.y);
 
     // Attacker: structure (guard slots) vs explorer army.
     let attackerType: "structure" | "army" = "army";
@@ -135,6 +138,7 @@ export const useBattleLabLiveData = (
       hasTarget: Boolean(target),
     };
   }, [
+    alt,
     enabled,
     Structure,
     ExplorerTroops,

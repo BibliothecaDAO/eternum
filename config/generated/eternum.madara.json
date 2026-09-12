@@ -2,6 +2,7 @@
       "generatedFromTsFile": true,
       "message": "This file was generated from the composed config source and should not be edited manually",
       "configuration": {
+  "spireTravelEssenceCost": 10,
   "agent": {
     "controller_address": "0x0277eE04e3f82D4E805Ab0e2044C53fB6d61ABd00a2a7f44B78410e9b43E1344",
     "max_lifetime_count": 10000,
@@ -48,7 +49,7 @@
   },
   "settlement": {
     "center": 2147483646,
-    "base_distance": 8,
+    "base_distance": 10,
     "layers_skipped": 2,
     "layer_max": 6,
     "layer_capacity_increment": 6,
@@ -56,7 +57,7 @@
     "single_realm_mode": false,
     "two_player_mode": false,
     "spires_layer_distance": 6,
-    "spires_max_count": 1,
+    "spires_max_count": 7,
     "spires_settled_count": 0
   },
   "biomeClimate": {
@@ -141,8 +142,8 @@
     "agentFindFailProbability": 100,
     "campFindProbability": 1500,
     "campFindFailProbability": 48500,
-    "holysiteFindProbability": 500,
-    "holysiteFindFailProbability": 49500,
+    "holysiteFindProbability": 0,
+    "holysiteFindFailProbability": 50000,
     "bitcoinMineWinProbability": 200,
     "bitcoinMineFailProbability": 9800,
     "hyperstructureWinProbAtCenter": 2000,

@@ -75,6 +75,7 @@ pub struct PresetConfig {
     pub artificer_config: ArtificerConfig,
     pub blitz_registration_rules_config: BlitzRegistrationRulesConfig,
     pub mercenaries_name: felt252,
+    pub spire_travel_essence_cost: u128,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

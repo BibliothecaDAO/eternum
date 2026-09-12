@@ -49,6 +49,7 @@ function fixture(
         return [
           {
             preset_id: 1,
+            spire_travel_essence_cost: "10000000000",
             tick_config: { armies_tick_in_seconds: 60 },
             troop_stamina_config: {
               stamina_gain_per_tick: 30,

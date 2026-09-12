@@ -1285,6 +1285,7 @@ export function defineContractComponents(world: World, namespace: string) {
           artificer_config: { research_cost_for_relic: RecsType.BigInt },
           blitz_registration_rules_config: { collectibles_cosmetics_max: RecsType.Number },
           mercenaries_name: RecsType.BigInt,
+          spire_travel_essence_cost: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1422,6 +1423,7 @@ export function defineContractComponents(world: World, namespace: string) {
               "u128", // ArtificerConfig research_cost_for_relic
               "u8", // BlitzRegistrationRulesConfig collectibles_cosmetics_max
               "felt252", // mercenaries_name
+              "u128", // spire_travel_essence_cost
             ],
           } satisfies ContractComponentMetadata,
         },

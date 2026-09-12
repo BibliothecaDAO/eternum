@@ -39,7 +39,7 @@ describe("appchain registrar preset", () => {
       resourceLists: 209,
       resourceMinMaxLists: 3,
     });
-    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_113);
+    expect(buildRegisterPresetCalldata(payload)).toHaveLength(2_114);
     expect(payload.presetConfig.preset_id).toBe(1);
     expect(payload.gameConfig.preset_id).toBe(1);
     expect(payload.gameConfig.blitz_registration_config).toEqual({
@@ -146,5 +146,17 @@ describe("appchain registrar preset", () => {
     expect(() => buildCreateGameParams(capacityConfig, createGameInput)).toThrow(
       "Blitz registration_count_max must be between 1 and 96",
     );
+  });
+});
+
+describe("Eternum portal preset", () => {
+  test("places seven public portals four ethereal steps apart with a fee each way", () => {
+    const config = loadEnvironmentConfiguration("madara.eternum");
+    const payload = buildPresetRegistration(config, 12);
+    expect(config.settlement.spires_max_count).toBe(7);
+    expect(config.settlement.base_distance * config.settlement.spires_layer_distance).toBe(60);
+    expect(payload.presetConfig.spire_travel_essence_cost).toBe(10_000_000_000n);
+    expect(config.exploration.holysiteFindProbability).toBe(0);
+    expect(config.exploration.bitcoinMineWinProbability).toBeGreaterThan(0);
   });
 });

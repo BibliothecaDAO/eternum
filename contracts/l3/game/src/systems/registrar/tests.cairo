@@ -498,6 +498,12 @@ mod dispatcher_lifecycle {
     fn setup_eternum_game_with_spires(
         count: u16,
     ) -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
+        setup_eternum_game_with_spire_spacing(count, 15)
+    }
+
+    fn setup_eternum_game_with_spire_spacing(
+        count: u16, spacing: u8,
+    ) -> (LifecycleContext, crate::systems::realm::season::contracts::IRealmSystemsDispatcher) {
         let player = get_default_caller_address();
         let world = spawn_lifecycle_world();
         let registrar = registrar_dispatcher(world);
@@ -505,7 +511,7 @@ mod dispatcher_lifecycle {
         let mut rules = preset_game_config();
         rules.blitz_mode_on = false;
         rules.settlement_config.spires_max_count = count;
-        rules.settlement_config.base_distance = 1;
+        rules.settlement_config.base_distance = spacing;
         rules.settlement_config.spires_layer_distance = 1;
         rules.settlement_config.layer_max = 2;
         let mut tables = preset_side_tables();
@@ -674,10 +680,10 @@ mod dispatcher_lifecycle {
         let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
         assert_spire_pair(context.world, center.x, center.y);
         for direction in DirectionTrait::all() {
-            let coord = center.neighbor(direction);
+            let coord = center.neighbor_after_distance(direction, 15);
             assert_spire_pair(context.world, coord.x, coord.y);
         }
-        assert_spire_pair(context.world, center.x + 2, center.y);
+        assert_spire_pair(context.world, center.x + 30, center.y);
         let config: SettlementConfig = WorldConfigUtilImpl::get_member(
             context.world, GAME_A, selector!("settlement_config"),
         );
@@ -686,8 +692,32 @@ mod dispatcher_lifecycle {
             config, true, 1, 2, 0, center,
         );
         assert_spire_pair(context.world, second_ring_side.x, second_ring_side.y);
-        let beyond: TileOpt = context.world.read_model((GAME_A, false, center.x + 3, center.y));
+        let beyond: TileOpt = context.world.read_model((GAME_A, false, center.x + 45, center.y));
         assert!(beyond.data == 0, "created outside preset count");
+    }
+
+    #[test]
+    fn seven_portals_connect_each_ring_access_in_four_ethereal_steps() {
+        let (mut context, _) = setup_eternum_game_with_spire_spacing(7, 60);
+        let center = crate::models::position::CoordImpl::center(ref context.world, GAME_A);
+        for direction in DirectionTrait::all() {
+            let portal = center.neighbor_after_distance(direction, 60);
+            assert_spire_pair(context.world, portal.x, portal.y);
+            let mut access = center.neighbor(crate::models::position::Direction::West);
+            access.alt = true;
+            for _ in 0_u8..4 {
+                access = access.neighbor(direction);
+            }
+            let destination_portal = access.spire_neighbor(crate::models::position::Direction::East);
+            assert_eq!(destination_portal.x, portal.x);
+            assert_eq!(destination_portal.y, portal.y);
+        }
+    }
+
+    #[test]
+    #[should_panic(expected: "Eternum: spire spacing must align with ethereal steps")]
+    fn season_game_rejects_a_disconnected_portal_lattice() {
+        setup_eternum_game_with_spire_spacing(7, 48);
     }
 
     #[test]
@@ -723,6 +753,9 @@ mod dispatcher_lifecycle {
         assert!(alternate.occupier_type == surface.occupier_type, "alternate spire missing");
         assert!(surface.occupier_id != 0 && surface.occupier_id == alternate.occupier_id, "spire identity differs");
         assert!(surface.biome != 0 && alternate.biome != 0, "spire tiles are undiscovered");
+        let structure: crate::models::structure::Structure = world.read_model((GAME_A, surface.occupier_id));
+        assert!(structure.owner.is_zero(), "portal has an owner");
+        assert!(structure.base.troop_guard_count == 0, "portal has guards");
     }
 
     #[test]
@@ -1176,6 +1209,7 @@ mod dispatcher_lifecycle {
             artificer_config: ArtificerConfig { research_cost_for_relic: 0 },
             blitz_registration_rules_config: BlitzRegistrationRulesConfig { collectibles_cosmetics_max: 0 },
             mercenaries_name: 0,
+            spire_travel_essence_cost: 0,
         }
     }
 

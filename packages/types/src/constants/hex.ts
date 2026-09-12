@@ -19,6 +19,7 @@ export const biomes = {
 
 export enum BiomeType {
   None = "None",
+  Underground = "Underground",
   DeepOcean = "DeepOcean",
   Ocean = "Ocean",
   Beach = "Beach",
@@ -40,6 +41,7 @@ export enum BiomeType {
 // Mapping from BiomeType to numeric ID (matching Cairo contract values)
 export const BiomeTypeToId: Record<BiomeType, number> = {
   [BiomeType.None]: 0,
+  [BiomeType.Underground]: 17,
   [BiomeType.DeepOcean]: 1,
   [BiomeType.Ocean]: 2,
   [BiomeType.Beach]: 3,

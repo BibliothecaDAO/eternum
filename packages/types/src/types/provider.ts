@@ -585,6 +585,8 @@ export interface GuardExplorerSwapProps extends SystemSigner {
  * Properties for explorer vs explorer attack
  */
 export interface AttackExplorerVsExplorerProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the attacking explorer */
   aggressor_id: number;
   /** ID of the defending explorer */
@@ -597,6 +599,8 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
  * Properties for explorer vs guard attack
  */
 export interface AttackExplorerVsGuardProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -607,6 +611,8 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
  * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
  */
 export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the attacking explorer */
   explorer_id: number;
   /** ID of the structure with defending guard */
@@ -623,6 +629,8 @@ export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
  * Properties for guard vs explorer attack
  */
 export interface AttackGuardVsExplorerProps extends SystemSigner {
+  /** The defending tile is ethereal and needs a combat VRF seed. */
+  ethereal?: boolean;
   /** ID of the structure with attacking guard */
   structure_id: number;
   /** Guard slot of the attacking troops */

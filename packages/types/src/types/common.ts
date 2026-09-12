@@ -428,6 +428,7 @@ export interface BlitzExplorationReward {
 }
 
 export interface Config {
+  spireTravelEssenceCost: number;
   agent: {
     controller_address: string;
     max_lifetime_count: number;

@@ -15,11 +15,13 @@ export const CombatModal = ({
     type: ActorType;
     id: ID;
     hex: { x: number; y: number };
+    alt?: boolean;
   };
   target: {
     type: ActorType;
     id: ID;
     hex: { x: number; y: number };
+    alt?: boolean;
   };
 }) => {
   return <BattleLab mode="live" selected={selected} target={target} />;

@@ -41,6 +41,7 @@ interface EntityRef {
   type: ActorType;
   id: ID;
   hex: { x: number; y: number };
+  alt?: boolean;
 }
 
 interface BattleLabProps {
@@ -90,7 +91,7 @@ export const BattleLab = ({
 
   const { state, dispatch, isEdited } = useBattleLabState(mode, initialBiome);
   const { snapshot, target, targetResources, attackerRelicEffects, targetRelicEffects, isLoading } =
-    useBattleLabLiveData(mode === "live", attackerEntityId, targetHex);
+    useBattleLabLiveData(mode === "live", attackerEntityId, targetHex, targetRef?.alt ?? false);
 
   const [parameters, setParameters] = useState<CombatParameters>(() => configManager.getCombatConfig());
   const [showParameters, setShowParameters] = useState(false);
@@ -257,6 +258,7 @@ export const BattleLab = ({
         if (state.selectedGuardSlot === null) throw new Error("No structure guard is selected");
         await attack_guard_vs_explorer({
           signer: account,
+          ethereal: snapshot.biome === BiomeType.Underground,
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
           explorer_id: target.id || 0,
@@ -264,6 +266,7 @@ export const BattleLab = ({
       } else if (target.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
+          ethereal: snapshot.biome === BiomeType.Underground,
           aggressor_id: attackerEntityId,
           defender_id: target.id || 0,
           steal_resources: targetResources,
@@ -271,6 +274,7 @@ export const BattleLab = ({
       } else {
         await attack_explorer_vs_guard({
           signer: account,
+          ethereal: snapshot.biome === BiomeType.Underground,
           explorer_id: attackerEntityId,
           structure_id: target.id || 0,
         });
@@ -331,6 +335,12 @@ export const BattleLab = ({
         />
       ) : (
         <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
+          {state.biome === BiomeType.Underground && (
+            <p className="text-sm text-gold/70">
+              Preview assumes +{CombatSimulator.ETHEREAL_PREVIEW_BONUS_PERCENT}% damage for each side. Each side rolls a
+              d20 for +1% to +20% in the fight.
+            </p>
+          )}
           <BiomeEnvironmentBar
             combatSimulator={combatSimulator}
             biome={state.biome}

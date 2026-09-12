@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-12",
+    title: "Ethereal portals and dice",
+    description:
+      "Travel through seven public spires for Essence, contest guarded Bitcoin mines, and roll a d20 damage bonus in ethereal battles. Previews assume +10% for both sides.",
+    type: "feature",
+  },
+  {
     date: "2026-09-11",
     title: "Eternum Factory and Entry",
     description:
