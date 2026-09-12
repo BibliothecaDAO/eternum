@@ -16,9 +16,9 @@ account_address = "0x055be462e718c4166d656d11f89e341115b8bc82389c3762a10eade04fc
 private_key = "0x077e56c6dc32d40a67f6f7e6625c8dc5e570abe49c0a24e9202e4ae906abcc07"
 
 [world]
-seed = "s2_blitz_madara_lab_1"
-name = "Realms: Blitz (Madara lab)"
-description = "Fast competitive Realms games"
+seed = "realms_madara_lab_2"
+name = "Realms (Madara lab)"
+description = "Blitz and Eternum games on the Madara lab chain"
 cover_uri = "file://assets/bg.webp"
 website = "https://alpha-eternum.realms.world/"
 

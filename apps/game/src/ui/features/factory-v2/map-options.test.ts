@@ -206,7 +206,7 @@ describe("Factory V2 map options", () => {
           devMode: false,
           twoPlayerMode: false,
           singleRealmMode: false,
-          version: "8",
+          version: "2",
         },
       },
       devModeOn: false,
