@@ -21,6 +21,7 @@
     "coverage:three": "vitest run --coverage src/three",
     "compress:weather": "node ./scripts/compress-weather-textures.mjs",
     "compress:models": "node ./scripts/compress-models.mjs",
+    "optimize:spire": "node ./scripts/spires/optimize-spire.mjs",
     "optimize:reward-tiles": "node ./scripts/reward-tiles/optimize-reward-tiles.mjs",
     "optimize:fleet": "node ./scripts/fleet/optimize-fleet.mjs",
     "verify:reward-tiles": "node ./scripts/reward-tiles/verify-reward-tiles.mjs",

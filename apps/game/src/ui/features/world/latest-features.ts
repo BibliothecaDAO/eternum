@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-12",
+    title: "Spire Preview and Rift Motion",
+    description:
+      "Preview levitating spires with engraved stone and spherical essence portals in the terrain lab. Essence rifts animate independently across the map.",
+    type: "improvement",
+  },
+  {
     date: "2026-09-11",
     title: "Eternum Factory and Entry",
     description:

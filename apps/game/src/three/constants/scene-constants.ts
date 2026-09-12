@@ -282,3 +282,5 @@ export const MinesMaterialsParams: Record<number, { color: Color; emissive: Colo
     emissiveIntensity: 0.8,
   },
 };
+
+export const SPIRE_MODEL_PATH = "/models/ethereal/spire.glb";

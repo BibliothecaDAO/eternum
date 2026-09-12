@@ -3,10 +3,12 @@ import {
   ChestModelPath,
   RiftModelPath,
   VILLAGE_MODEL_PATH,
+  SPIRE_MODEL_PATH,
   isSettlementModelPath,
 } from "@/three/constants/scene-constants";
 import { SettlementModel } from "../structures/settlement-model";
 import { TERRAIN_LAB_BUILDINGS, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import { SpireModel } from "../structures/spire-model";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
 import { Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 } from "three";
@@ -113,7 +115,7 @@ export class TerrainLabInteraction {
     for (const [key, model] of this.models) {
       if (key.startsWith("/") && model.group.visible) {
         if (model instanceof RewardTileModel) model.updatePresentation(0, this.camera.position);
-        model.updateAnimations(delta);
+        model.updateAnimations(delta, { cameraPosition: this.camera.position });
       }
     }
     if (!this.army) return;
@@ -331,6 +333,7 @@ export class TerrainLabInteraction {
     capacity: number,
     name: string,
   ): InstancedModel | RewardTileModel {
+    if (path === SPIRE_MODEL_PATH) return new SpireModel(gltf, capacity);
     if (isSettlementModelPath(path))
       return new SettlementModel(gltf, capacity, path === VILLAGE_MODEL_PATH ? "village" : "realm");
     if (path === ChestModelPath || path === RiftModelPath) return new RewardTileModel(gltf, capacity);
