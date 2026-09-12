@@ -113,7 +113,7 @@ describe("bootstrapRendererStartupRuntime", () => {
       cleanupExpiredTransitions: vi.fn(() => 0),
       document,
       initializeHudScene: vi.fn(),
-      initialSceneName: "travel" as never,
+      initialSceneName: "hex" as never,
       isDestroyed: false,
       prepareScenes,
       registerCleanupInterval: vi.fn(),
@@ -123,7 +123,7 @@ describe("bootstrapRendererStartupRuntime", () => {
       warn: vi.fn(),
     });
 
-    expect(prepareScenes).toHaveBeenCalledWith("travel");
+    expect(prepareScenes).toHaveBeenCalledWith("hex");
   });
 
   it("skips startup work entirely when destruction wins the race", () => {

@@ -28,7 +28,6 @@ interface DestroyRendererRuntimeInput {
   renderer?: RendererSurfaceLike;
   routeRuntime?: RendererRouteRuntime;
   scenes: {
-    fastTravelScene?: Destroyable;
     hexceptionScene?: Destroyable;
     hudScene?: Destroyable;
     worldmapScene?: Destroyable;
@@ -73,7 +72,6 @@ function disposeRendererResources(
 
 function destroyRendererScenes(scenes: DestroyRendererRuntimeInput["scenes"]): void {
   scenes.worldmapScene?.destroy?.();
-  scenes.fastTravelScene?.destroy?.();
   scenes.hexceptionScene?.destroy?.();
   scenes.hudScene?.destroy?.();
 }

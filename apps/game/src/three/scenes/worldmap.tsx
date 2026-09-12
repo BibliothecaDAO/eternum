@@ -978,6 +978,8 @@ export default class WorldmapScene extends WarpTravel {
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
 
+  private renderedMapLayer?: boolean;
+  private layerRevision = 0;
   private storeSubscriptions: Array<() => void> = [];
 
   dojo: SetupResult;
@@ -1389,7 +1391,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private refreshStructureMarkersForEntity(entityId: ID): void {
     const structure = this.worldSpatialProjection.getStructure(entityId);
-    if (!structure) return;
+    if (!structure || structure.hexCoords.alt !== activeMapLayer()) return;
     this.writeStructureMarker(structure);
     this.worldSpatialProjection.getArmies(activeMapLayer()).forEach((army) => {
       if (this.getArmyOwnerStructureId(army.entityId) === entityId) this.writeArmyMarker(army);
@@ -3962,10 +3964,8 @@ export default class WorldmapScene extends WarpTravel {
       pinnedRenderAreas: this.pinnedRenderAreas,
       hydratedChunkRefreshes: this.hydratedChunkRefreshes,
       hydratedRefreshSuppressionAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
-      nextSceneName: nextSceneName,
       clearStreamingWork: () => this.clearStreamingWorkState(),
       clearQueuedPrefetchState: () => this.clearQueuedPrefetchState(),
-      releaseInactiveResources: () => this.clearCache(),
     });
     this.pendingArmyMovementVisualLifecycleDisposers.forEach((dispose) => dispose());
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
@@ -6685,6 +6685,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     incrementWorldmapRenderCounter("updateVisibleChunksCalls");
     const updateStartedAt = performance.now();
+    const layerRevision = this.layerRevision;
 
     try {
       await waitForChunkTransitionToSettle(
@@ -6693,6 +6694,7 @@ export default class WorldmapScene extends WarpTravel {
         { isSwitchedOff: () => this.isSwitchedOff },
       );
 
+      if (layerRevision !== this.layerRevision) return false;
       const focusPoint = this.getCameraGroundIntersection().clone();
       const triggerReason = options.triggerReason;
       const chunkDecision = resolveWarpTravelVisibleChunkDecision({
@@ -8134,6 +8136,61 @@ export default class WorldmapScene extends WarpTravel {
     this.controls.enableZoom = false;
   }
 
+  private syncMapLayer(): void {
+    const alt = activeMapLayer();
+    if (this.renderedMapLayer === alt) return;
+    this.renderedMapLayer = alt;
+    this.resetLayerStreamingState();
+    this.proceduralTerrain.setSurfacePresentation(alt ? "ethereal" : "world");
+    this.resetLayerPresentations();
+    this.seedStrategicMarkers();
+    this.syncExploredTilesFromProjection(this.worldSpatialProjection.getTiles(alt));
+    this.refreshTerrainPropOccupancy();
+    this.updateEntityActionPaths(new Map());
+    this.highlightHexManager.highlightHexes([]);
+    this.hoverLabelManager.onHexLeave();
+    this.clearTileEntityCache();
+    this.interactiveHexWindowKey = null;
+    this.state.setLoading(LoadingStateKey.ChunkTransition, false);
+    if (!this.isSwitchedOff) {
+      void Promise.all([
+        this.refreshVisualTerrainWindowFromCamera(),
+        this.updateVisibleChunks(true, { reason: "default", triggerReason: "map_layer_changed" }),
+      ]).catch((error) => {
+        console.error("[WorldmapScene] Failed to refresh map layer", error);
+      });
+    }
+  }
+
+  private resetLayerStreamingState(): void {
+    this.terrainVisibilityHealthMonitor.reset();
+    this.visualTerrainGeneration += 1;
+    this.layerRevision += 1;
+    this.chunkTransitionToken += 1;
+    this.globalChunkSwitchPromise = null;
+    this.isChunkTransitioning = false;
+    this.terrainTimeoutRecoveryAuthority = null;
+    this.exactTerrainPreparations.clear();
+    this.cancelHexGridComputation?.();
+    this.cancelHexGridComputation = undefined;
+    this.clearStreamingWorkState();
+    this.clearQueuedPrefetchState();
+    this.clearCache();
+  }
+
+  private resetLayerPresentations(): void {
+    this.pinnedRenderAreas.clear();
+    this.hydratedChunkRefreshes.clear();
+    this.hydratedRefreshSuppressionAreaKeys.clear();
+    this.selectionPulseManager.hideSelection();
+    this.selectedHexManager.resetPosition();
+    this.armyManager.resetLayer();
+    this.structureManager.resetLayer();
+    this.chestManager.resetLayer();
+    this.reservedHyperstructureManager.resetLayer();
+    this.strategicMarkers.clear();
+  }
+
   private registerStoreSubscriptions() {
     if (this.storeSubscriptions.length > 0) {
       this.logInteractionDebug("store_subscriptions_registration_skipped", {
@@ -8175,6 +8232,13 @@ export default class WorldmapScene extends WarpTravel {
         },
       ),
     );
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.mapLayer,
+        () => this.syncMapLayer(),
+      ),
+    );
+    this.syncMapLayer();
     this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();
     this.bindPersistedZoomPreferenceLifecycle();
