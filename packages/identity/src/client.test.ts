@@ -110,3 +110,29 @@ it.each([
   await reloaded.signOut();
   expect(stored.size).toBe(0);
 });
+
+it("uses credentialed identity routes for push setup and a device capability for post-logout revocation", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(async () => Response.json({ enabled: false }));
+  const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+  await client.getPushConfiguration();
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/config");
+  const id = "11111111-1111-4111-8111-111111111111";
+  const registration = {
+    owner: "0x1",
+    id,
+    token: id,
+    subscription: { endpoint: "https://web.push.apple.com/test", keys: { p256dh: "key", auth: "secret" } },
+  };
+  await client.registerPushSubscription(registration);
+  expect(fetch.mock.calls.at(-1)).toEqual([
+    "https://realms.test/api/notifications/push/subscribe",
+    expect.objectContaining({ method: "POST", credentials: "include", body: JSON.stringify(registration) }),
+  ]);
+  await client.getPushSubscriptionStatus("0x1", id);
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/status");
+  await client.sendPushTest("0x1", id, "/enter/madara/game");
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/test");
+  await client.revokePushSubscription(id, id);
+  expect(fetch.mock.calls.at(-1)?.[1]?.body).toBe(JSON.stringify({ id, token: id }));
+  expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/revoke");
+});

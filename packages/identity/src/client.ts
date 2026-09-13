@@ -1,5 +1,10 @@
 import { isLoopbackOrigin, resolveEndpoint } from "@realms-world/chain";
-import { parseNotificationPreferences, type NotificationPreferences } from "@bibliothecadao/notifications";
+import {
+  parseNotificationPreferences,
+  type NotificationPreferences,
+  type PushRegistration,
+  type PushConfiguration,
+} from "@bibliothecadao/notifications";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -113,5 +118,28 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     return parseNotificationPreferences(await readJson(response));
   };
 
-  return { getSession, signIn, signOut, updateUser, getNotificationPreferences, saveNotificationPreferences };
+  const pushUrl = new URL("../notifications/push", `${authBaseUrl}/`).toString();
+  const pushRequest = async <T>(action: string, body?: unknown): Promise<T> =>
+    readJson<T>(
+      await request(
+        `/${action}`,
+        body === undefined ? { method: "GET", cache: "no-store" } : { method: "POST", body: JSON.stringify(body) },
+        pushUrl,
+      ),
+    );
+  return {
+    getSession,
+    signIn,
+    signOut,
+    updateUser,
+    getNotificationPreferences,
+    saveNotificationPreferences,
+    getPushConfiguration: () => pushRequest<PushConfiguration>("config"),
+    registerPushSubscription: (input: PushRegistration) => pushRequest<{ id: string }>("subscribe", input),
+    getPushSubscriptionStatus: (owner: string, id: string) =>
+      pushRequest<{ registered: boolean }>("status", { owner, id }),
+    revokePushSubscription: (id: string, token: string) => pushRequest<{ revoked: boolean }>("revoke", { id, token }),
+    sendPushTest: (owner: string, id: string, target: string) =>
+      pushRequest<{ status: "accepted" }>("test", { owner, id, target }),
+  };
 };

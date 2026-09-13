@@ -14,8 +14,9 @@ preference changes invalidate asynchronous work. Successful account saves notify
 server-owned preference, without putting its value in browser storage. Delivery remains paused during refresh, including
 when invalidation arrives during an existing read or save. Refresh failures keep delivery paused and surface in
 Settings; focus and browser-online events also reload preferences. Focused activity stays in the feed; a matching
-focused tab suppresses OS output from background tabs too. A browser PushSubscription suppresses local delivery so a
-later push transport can own it.
+focused tab suppresses OS output from background tabs too. The push transport preview sends explicit tests only, so
+local game alerts continue on subscribed devices. Local and push paths share durable claims; automatic server game
+delivery remains a later milestone.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
 game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Local payloads expire
@@ -40,10 +41,12 @@ from the previous account.
 
 Claims commit before showNotification. This deliberately favors suppression of repeated alerts: a crash or OS error
 after the claim may lose a local alert, and the same ID will not retry within its lifetime. Browser acceptance is not
-proof of an OS banner. Local delivery stops when the page is frozen, discarded, or closed; server push remains
-unimplemented.
+proof of an OS banner. Local delivery stops when the page is frozen, discarded, or closed; automatic server game
+delivery remains unimplemented. See [the Web Push transport preview](../../../realms/server/web-push.md) for closed-page
+test delivery.
 
 Verification uses dispatcher, worker, policy and permission-control unit fixtures. The deploy-time browser lifecycle
 runner and its Playwright dependency have been removed to match the current deployment pipeline. Physical Android/iOS
 installation, actual OS banners, live battle notification delivery and production-origin cookie checks remain release
-gates. No VAPID keys, PushSubscription mutation, push listener, or durable server notifier is implemented here.
+gates. The transport preview adds subscriptions, a push listener and VAPID test sending; a durable game-event notifier
+is still unimplemented.

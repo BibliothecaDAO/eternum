@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-13",
+    title: "Background Notification Preview",
+    description:
+      "When enabled by the server, opt this device into background notification tests from Settings. Automatic game alerts still need an open page.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
     title: "Notification Settings Across Tabs",
     description: "Changing your account notification level also updates your other open game tabs.",
     type: "fix",

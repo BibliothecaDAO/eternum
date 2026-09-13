@@ -1,3 +1,4 @@
+import { handlePushNotifications } from "./push-notifications";
 import { auth } from "./auth";
 import { handleApiCors } from "./api-cors";
 import {
@@ -85,6 +86,7 @@ const handleGameplayAccountAction = async (request: Request, action: string): Pr
 
 const handleApiRequest = async (request: Request, url: URL, client: string): Promise<Response> => {
   try {
+    if (url.pathname.startsWith("/api/notifications/push/")) return handlePushNotifications(request, client);
     if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
     if (url.pathname === "/api/notifications/preferences") return handleNotificationPreferences(request);
 

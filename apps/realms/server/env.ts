@@ -14,6 +14,10 @@ const ServerEnv = Schema.Struct({
   VITE_PUBLIC_GAME_ORIGIN: Schema.NonEmptyString,
   GAME_RPC_URL: Schema.NonEmptyString,
   PLAYER_REGISTRY_ADDRESS: Schema.NonEmptyString,
+  WEB_PUSH_ENABLED: Schema.optional(Schema.String),
+  WEB_PUSH_VAPID_PUBLIC_KEY: Schema.optional(Schema.String),
+  WEB_PUSH_VAPID_PRIVATE_KEY: Schema.optional(Schema.String),
+  WEB_PUSH_VAPID_SUBJECT: Schema.optional(Schema.String),
   REALMS_SERVER_PORT: Schema.optional(Schema.NumberFromString),
 });
 
