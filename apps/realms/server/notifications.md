@@ -2,8 +2,10 @@
 
 The identity service stores one account notification level: `off`, `important`, `standard`, or `all`. Shared policy and
 recipient rules live in `@bibliothecadao/notifications`. Device delivery is not enabled by choosing a level. The game
-client offers a separate device opt-in for local delivery while its page runs. Subscriptions, VAPID, push delivery, and
-the durable notifier remain separate work. See `apps/game/src/pwa/notifications.md` for local behavior.
+client offers a separate device opt-in for local delivery while its page runs. The
+[Web Push transport preview](./web-push.md) adds subscriptions, VAPID, and explicit server test delivery; automatic
+game-event push and its durable notifier remain separate work. See `apps/game/src/pwa/notifications.md` for local
+behavior.
 
 The table has one schema source: `packages/db/src/schema/notifications.ts`. Apply it before deploying this API through
 the existing database workflow: `pnpm --dir packages/db push` against the intended identity database. There is no

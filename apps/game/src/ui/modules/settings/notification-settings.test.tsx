@@ -10,7 +10,11 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySession: () => ({ status: mocks.status, session: mocks.owner ? { user: { id: mocks.owner } } : null }),
-  identityClient: { getNotificationPreferences: mocks.get, saveNotificationPreferences: mocks.save },
+  identityClient: {
+    getNotificationPreferences: mocks.get,
+    saveNotificationPreferences: mocks.save,
+    getPushConfiguration: async () => ({ enabled: false }),
+  },
 }));
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => mocks.spectating }));
 import { NotificationSettings } from "./notification-settings";

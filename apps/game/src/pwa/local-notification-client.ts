@@ -18,7 +18,7 @@ export function localNotificationCapability(): string | null {
 export async function notificationWorkerRequest<T>(
   owner: string,
   action: string,
-  input: { payload?: LocalNotificationPayload; token?: string } = {},
+  input: { payload?: LocalNotificationPayload; token?: string; id?: string } = {},
 ): Promise<T> {
   const registration = await navigator.serviceWorker.getRegistration("/");
   const worker = registration?.active;

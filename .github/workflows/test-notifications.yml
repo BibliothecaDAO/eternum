@@ -60,6 +60,7 @@ jobs:
       - name: Verify API and PostgreSQL preference races
         run:
           pnpm --dir apps/realms test server/main.test.ts server/api-cors.test.ts
-          server/notification-preference-store.integration.test.ts
+          server/notification-preference-store.integration.test.ts server/push-subscription-store.integration.test.ts
+          server/push-notifications.test.ts server/web-push-sender.test.ts
       - name: Typecheck identity server
         run: pnpm --dir apps/realms typecheck

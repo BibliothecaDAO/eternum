@@ -149,6 +149,7 @@
     "vite-plugin-wasm": "^3.3.0",
     "vitest": "2.1.9",
     "workbox-precaching": "7.4.0",
-    "workbox-window": "^7.3.0"
+    "workbox-window": "^7.3.0",
+    "fake-indexeddb": "6.2.4"
   }
 }

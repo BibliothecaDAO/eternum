@@ -1,5 +1,15 @@
-import { notificationMatchesGame, parseNotificationPayload } from "@bibliothecadao/notifications";
 import {
+  notificationMatchesGame,
+  parseNotificationPayload,
+  parsePushEnvelope,
+  isPushDeviceId,
+} from "@bibliothecadao/notifications";
+import {
+  readPushNotificationDevice,
+  preparePushNotificationDevice,
+  activatePushNotificationDevice,
+  revokePushNotificationDevice,
+  forgetPushNotificationDevice,
   claimNotification,
   disableNotificationDevice,
   enableNotificationDevice,
@@ -23,6 +33,20 @@ export function installNotificationWorker(worker: ServiceWorkerGlobalScope): voi
         queued--;
       });
     queue = work.catch(() => {});
+    event.waitUntil(work);
+  });
+  worker.addEventListener("push", (event) => {
+    if (queued >= 64) return;
+    queued++;
+    const work = queue
+      .then(() => receivePushNotification(worker, event))
+      .catch(() => {
+        console.warn("push_notification_rejected");
+      })
+      .finally(() => {
+        queued--;
+      });
+    queue = work;
     event.waitUntil(work);
   });
   worker.addEventListener("notificationclick", (event) => {
@@ -53,8 +77,23 @@ async function handleNotificationMessage(
 async function runNotificationCommand(
   worker: ServiceWorkerGlobalScope,
   source: Client,
-  input: { owner: string; action: string; payload?: unknown; token?: string },
+  input: { owner: string; action: string; payload?: unknown; token?: string; id?: string },
 ) {
+  if (input.action === "push-status") return (await readPushNotificationDevice()) ?? null;
+  if (input.action === "prepare-push") return preparePushNotificationDevice(input.owner);
+  if (input.action === "revoke-push") {
+    const revoked = await revokePushNotificationDevice(input.owner);
+    for (const notification of await worker.registration.getNotifications()) {
+      if (notification.data?.owner === input.owner && notification.data?.subscriptionId) notification.close();
+    }
+    return revoked;
+  }
+  if (input.action === "activate-push" || input.action === "forget-push") {
+    if (!isPushDeviceId(input.id)) throw new Error("Invalid push registration");
+    if (input.action === "activate-push") await activatePushNotificationDevice(input.owner, input.id);
+    else await forgetPushNotificationDevice(input.owner, input.id);
+    return null;
+  }
   if (input.action === "status") {
     const device = await readNotificationDevice();
     return device?.owner === input.owner ? device : null;
@@ -74,7 +113,7 @@ async function runNotificationCommand(
   if (input.action !== "deliver" && input.action !== "test") throw new Error("Unknown notification command");
   const payload = parseNotificationPayload(input.payload, Date.now());
   if (payload.owner !== input.owner || typeof input.token !== "string") throw new Error("Notification account changed");
-  if (await worker.registration.pushManager?.getSubscription()) return "push-owned";
+  // Subscription preview sends tests only; keep local game alerts until a server notifier owns them.
   if (!notificationMatchesGame(source.url, payload.target, worker.location.origin)) return "game-changed";
   if (!(await claimNotification({ ...payload, id: `${input.owner}:${payload.id}`, token: input.token }, Date.now())))
     return "suppressed";
@@ -101,9 +140,16 @@ async function runNotificationCommand(
 
 async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unknown): Promise<void> {
   try {
-    const payload = parseNotificationPayload(value, Date.now());
-    const device = await readNotificationDevice();
+    const push =
+      value && typeof value === "object" && "subscriptionId" in value ? parsePushEnvelope(value, Date.now()) : null;
+    const payload = push?.notification ?? parseNotificationPayload(value, Date.now());
+    const device = push ? await readPushNotificationDevice() : await readNotificationDevice();
     if (device?.owner !== payload.owner) return;
+    if (
+      push &&
+      (!("state" in device && "id" in device) || device.state !== "active" || device.id !== push.subscriptionId)
+    )
+      return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
     const matching = clients.find((client) =>
       notificationMatchesGame(client.url, payload.target, worker.location.origin),
@@ -117,4 +163,33 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
   } catch {
     // A notification can outlive its payload or the account that enabled it. Invalid/expired clicks do nothing.
   }
+}
+
+async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: PushEvent): Promise<void> {
+  const text = event.data?.text();
+  if (!text || text.length > 4096) throw new Error("Invalid push payload");
+  const envelope = parsePushEnvelope(JSON.parse(text), Date.now());
+  const device = await readPushNotificationDevice();
+  if (
+    !device ||
+    device.id !== envelope.subscriptionId ||
+    device.owner !== envelope.notification.owner ||
+    device.state !== "active"
+  )
+    return;
+  const payload = envelope.notification;
+  if (
+    !(await claimNotification(
+      { ...payload, id: `${payload.owner}:${payload.id}`, token: device.token, subscriptionId: device.id },
+      Date.now(),
+    ))
+  )
+    return;
+  await worker.registration.showNotification(payload.title, {
+    body: payload.body,
+    tag: payload.id,
+    data: { ...envelope, owner: payload.owner },
+    icon: "/images/game-pwa-192x192.png",
+    badge: "/images/game-pwa-192x192.png",
+  });
 }
