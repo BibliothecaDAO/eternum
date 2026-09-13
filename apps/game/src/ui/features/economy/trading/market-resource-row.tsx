@@ -37,7 +37,7 @@ export const MarketResourceRow = memo(
         onClick={() => onClick(resourceId)}
         aria-pressed={active}
         className={cn(
-          "grid h-8 w-full grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] items-center rounded-md border px-1.5 text-left transition-colors",
+          "grid h-8 w-full grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] items-center rounded-md border px-1.5 text-left transition-colors max-lg:h-10",
           active ? "border-gold/60 bg-gold/10" : "border-transparent hover:bg-gold/10",
         )}
       >

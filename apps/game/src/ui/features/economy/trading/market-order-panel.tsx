@@ -1,4 +1,5 @@
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY_MUTED, HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
@@ -24,7 +25,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode
 import { gameEntityKey } from "@/sync/game-scope";
 
 const ONE_MONTH = 2628000;
-const ORDER_ROW_HEIGHT_PX = 36;
+/** Keep in step with the `h-9 max-lg:h-10` on `OrderRow`; the virtualizer positions rows from these numbers. */
+const ORDER_ROW_HEIGHT_PX = { desktop: 36, compact: 40 } as const;
 const ORDER_GRID = "grid grid-cols-[1.2fr_1fr_1fr_auto] items-center gap-2";
 const COMPACT_NUMBER_INPUT = "h-8 rounded-md text-sm";
 
@@ -53,7 +55,7 @@ export const MarketOrderPanel = memo(
     }, [resourceAskOffers, resourceId]);
 
     return (
-      <div className="order-book-selector grid min-h-0 flex-1 grid-cols-2 gap-3 p-3">
+      <div className="order-book-selector grid min-h-0 flex-1 grid-cols-2 gap-3 p-3 max-lg:flex-none max-lg:grid-cols-1">
         <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
         <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
       </div>
@@ -76,13 +78,17 @@ const VirtualizedOrderList = memo(
     setUpdateBalance: (value: boolean) => void;
   }) => {
     const parentRef = useRef<HTMLDivElement>(null);
+    const rowHeightPx = useOrderRowHeightPx();
 
     const virtualizer = useVirtualizer({
       count: offers.length,
       getScrollElement: () => parentRef.current,
-      estimateSize: () => ORDER_ROW_HEIGHT_PX,
+      estimateSize: () => rowHeightPx,
       overscan: 5,
     });
+
+    // The row estimate is not one of the virtualizer's memo keys, so a lane change re-measures explicitly.
+    useEffect(() => virtualizer.measure(), [virtualizer, rowHeightPx]);
 
     return (
       <div ref={parentRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -124,6 +130,9 @@ const VirtualizedOrderList = memo(
 
 VirtualizedOrderList.displayName = "VirtualizedOrderList";
 
+/** Order rows grow to a thumb-sized target on compact lanes. */
+const useOrderRowHeightPx = () => (useCompactLane() ? ORDER_ROW_HEIGHT_PX.compact : ORDER_ROW_HEIGHT_PX.desktop);
+
 const MarketOrders = memo(
   ({
     resourceId,
@@ -150,7 +159,7 @@ const MarketOrders = memo(
       <div className="flex min-h-0 flex-col gap-2">
         <div
           className={cn(
-            "flex items-center justify-between rounded-md border px-3 py-1.5",
+            "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-1.5",
             isBuy ? "border-red/30 bg-red/5" : "border-green/30 bg-green/5",
           )}
         >
@@ -167,7 +176,7 @@ const MarketOrders = memo(
 
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col rounded-md border border-gold/15 bg-black/25",
+            "flex min-h-0 flex-1 flex-col rounded-md border border-gold/15 bg-black/25 max-lg:h-64 max-lg:flex-none",
             isBuy ? "order-buy-selector" : "order-sell-selector",
           )}
         >
@@ -359,7 +368,7 @@ const OrderRow = memo(
       <div
         className={cn(
           ORDER_GRID,
-          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10",
+          "h-9 border-b border-gold/10 px-2 text-[11px] tabular-nums transition-colors hover:bg-gold/10 max-lg:h-10",
           isSelf && "bg-blueish/10",
         )}
         title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}
@@ -657,7 +666,7 @@ const OrderCreation = memo(
           isBuy ? "order-create-buy-selector border-l-red" : "order-create-sell-selector border-l-green",
         )}
       >
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 max-sm:grid-cols-1">
           <OrderField
             label={isBuy ? "Buy" : "Sell"}
             icon={trait}
@@ -688,7 +697,7 @@ const OrderCreation = memo(
             />
           </OrderField>
         </div>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <span
               className={cn("donkeys-used-selector", REQUIREMENT_CHIP, enoughDonkeys ? "text-gold" : "text-red")}

@@ -38,7 +38,7 @@ export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
         title={title}
         onClose={onCancel}
         footer={footer}
-        className="w-[480px]"
+        className="w-[480px] max-w-[calc(100vw-2rem)]"
         bodyClassName="p-4 text-center"
       >
         {children}
