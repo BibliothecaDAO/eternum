@@ -81,3 +81,15 @@ it("fails closed on provider errors, disabled sending, and untrusted stored endp
   await expect(Effect.runPromise(createWebPushSender(null, request).send(subscription, envelope))).rejects.toThrow();
   expect(request).not.toHaveBeenCalled();
 });
+
+it("classifies retryable provider failures and preserves bounded Retry-After", async () => {
+  const request = vi.fn().mockResolvedValue(new Response(null, { status: 429, headers: { "Retry-After": "90" } }));
+  const sender = createWebPushSender(config, request);
+  await expect(Effect.runPromise(sender.send(subscription, envelope))).rejects.toMatchObject({
+    _tag: "PushSendError",
+    retryable: true,
+    retryAfterSeconds: 90,
+  });
+  request.mockResolvedValue(new Response(null, { status: 403 }));
+  await expect(Effect.runPromise(sender.send(subscription, envelope))).rejects.toMatchObject({ retryable: false });
+});

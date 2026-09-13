@@ -1,3 +1,4 @@
+import { automaticPushSourceKey } from "@bibliothecadao/notifications";
 import { useEffect, useRef, useState } from "react";
 import { identityClient } from "@/hooks/context/identity-session";
 import { getActiveWorld } from "@/runtime/world";
@@ -68,7 +69,7 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
     try {
       if (action === "enable") {
         if (!config?.enabled) throw new Error("Background tests are unavailable.");
-        await enablePushNotifications(owner, config.publicKey);
+        await enablePushNotifications(owner, config.publicKey, config.automatic ?? null);
       } else if (action === "disable") {
         await disablePushNotifications(device?.owner ?? owner);
       } else {
@@ -99,18 +100,21 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
         {error}
       </p>
     ) : null;
+  const automatic = config?.enabled ? config.automatic : null;
   return (
-    <section aria-label="Background notification tests" className="space-y-2">
+    <section aria-label="Background notifications" className="space-y-2">
       <p className={HUD_BODY}>
-        Background notification tests:{" "}
+        Background notifications:{" "}
         {device?.state === "active" && device.owner === owner ? "Enabled" : device ? "Cleanup required" : "Off"}.
       </p>
       <p className={HUD_BODY}>
-        Preview: server-sent tests can arrive with the game closed. Automatic game alerts still require an open page.
+        {automatic
+          ? "Receive confirmed game activity with the game closed, using your account notification level."
+          : "Preview: server-sent tests can arrive with the game closed. Automatic game alerts still require an open page."}
       </p>
       {capability && <p className={HUD_BODY}>{capability}</p>}
       {!owner ? (
-        <p className={HUD_BODY}>Sign in to enable background tests.</p>
+        <p className={HUD_BODY}>Sign in to enable background notifications.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           <button
@@ -121,8 +125,28 @@ export function PushNotificationSettings({ owner }: { owner: string | null }) {
               void run(device ? "disable" : "enable");
             }}
           >
-            {device ? "Disable background tests" : "Enable background tests"}
+            {device
+              ? "Disable background notifications"
+              : automatic
+                ? "Enable background notifications"
+                : "Enable background tests"}
           </button>
+          {automatic &&
+            device?.state === "active" &&
+            device.owner === owner &&
+            (!device.automatic?.acknowledged ||
+              automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(automatic)) && (
+              <button
+                type="button"
+                className={HUD_PILL_BUTTON}
+                disabled={busy || !!capability}
+                onClick={() => {
+                  void run("enable");
+                }}
+              >
+                Enable game alerts
+              </button>
+            )}
           {device?.state === "active" && device.owner === owner && (
             <button
               type="button"

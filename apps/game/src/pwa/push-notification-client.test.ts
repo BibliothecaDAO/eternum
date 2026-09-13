@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   register: vi.fn(),
   revoke: vi.fn(),
   send: vi.fn(),
+  status: vi.fn(),
   worker: vi.fn(),
   permission: vi.fn(),
   subscribe: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("@/hooks/context/identity-session", () => ({
     registerPushSubscription: mocks.register,
     revokePushSubscription: mocks.revoke,
     sendPushTest: mocks.send,
+    getPushSubscriptionStatus: mocks.status,
   },
   useIdentitySessionStore: { getState: () => ({ session: mocks.owner ? { user: { id: mocks.owner } } : null }) },
 }));
@@ -39,12 +41,14 @@ beforeEach(() => {
   mocks.register.mockReset().mockResolvedValue({ id });
   mocks.revoke.mockReset().mockResolvedValue({ revoked: true });
   mocks.send.mockResolvedValue({ status: "accepted" });
+  mocks.status.mockReset().mockResolvedValue({ registered: true, automatic: null });
   mocks.permission.mockResolvedValue("granted");
   mocks.unsubscribe.mockResolvedValue(true);
   mocks.subscribe.mockImplementation(
     async () => (mocks.subscription = { toJSON: () => subscriptionJson, unsubscribe: mocks.unsubscribe }),
   );
   mocks.worker.mockImplementation(async (owner: string, action: string, input: any) => {
+    if (action === "push-capabilities") return { automaticGameAlerts: true };
     if (action === "push-status") return mocks.device;
     if (action === "prepare-push")
       return (mocks.device = { owner, id, token: id, enabledAt: Date.now(), state: "preparing" });
@@ -52,6 +56,8 @@ beforeEach(() => {
       if (!mocks.device || mocks.device.state === "revoking") throw Error("revoked");
       mocks.device.state = "active";
     }
+    if (action === "prepare-automatic") mocks.device.automatic = { ...input.source, acknowledged: false };
+    if (action === "acknowledge-automatic") mocks.device.automatic.acknowledged = true;
     if (action === "revoke-push") {
       if (mocks.device?.owner !== owner) return null;
       mocks.device.state = "revoking";
@@ -149,3 +155,35 @@ it("does not report a failed detach for an older worker with no push subscriptio
   mocks.subscription = {};
   await expect(reconcilePushAccount()).rejects.toThrow("Unknown notification command");
 });
+
+it("enables the worker before opting the server registration into game alerts", async () => {
+  const enabled: boolean[] = [];
+  mocks.register.mockImplementation(async (input) => {
+    enabled.push(input.gameAlerts === true);
+    if (input.gameAlerts) expect(mocks.device.automatic.acknowledged).toBe(false);
+    return { id };
+  });
+  await enablePushNotifications("0x1", "BAAA", { chain: "madara", worldAddress: "0x123" });
+  expect(enabled).toEqual([false, true]);
+});
+it("requires a compatible worker before upgrading a preview subscription", async () => {
+  mocks.worker.mockRejectedValue(new Error("Unknown notification command"));
+  await expect(enablePushNotifications("0x1", "BAAA", { chain: "madara", worldAddress: "0x123" })).rejects.toThrow(
+    "latest game update",
+  );
+  expect(mocks.register).not.toHaveBeenCalled();
+  expect(mocks.revoke).not.toHaveBeenCalled();
+});
+
+it.each([false, true])(
+  "recovers interrupted automatic setup after reopen (server acknowledged: %s)",
+  async (acknowledged) => {
+    const source = { chain: "madara", worldAddress: "0x123" };
+    mocks.device = { owner: "0x1", id, token: id, state: "active", automatic: { ...source, acknowledged: false } };
+    mocks.subscription = { toJSON: () => subscriptionJson, unsubscribe: mocks.unsubscribe };
+    mocks.status.mockResolvedValue({ registered: true, automatic: acknowledged ? source : null });
+    await reconcilePushAccount();
+    expect(mocks.device.automatic.acknowledged).toBe(true);
+    expect(mocks.register).toHaveBeenCalledTimes(acknowledged ? 0 : 1);
+  },
+);

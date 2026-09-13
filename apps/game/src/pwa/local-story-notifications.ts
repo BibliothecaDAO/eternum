@@ -13,8 +13,8 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import {
   includesStoryNotification,
-  logicalStoryIdentity,
-  parseNotificationPayload,
+  buildStoryNotification,
+  readNotificationStory,
   storyRecipients,
 } from "@bibliothecadao/notifications";
 import {
@@ -94,34 +94,23 @@ function isCurrentDeliveryContext(scope: StoryEventScope, expected: DeliveryCont
 }
 
 function buildEligibleNotification(value: Record<string, unknown>, scope: StoryEventScope, context: DeliveryContext) {
-  const variant = Object.entries(value.story as Record<string, unknown>);
-  if (variant.length !== 1) throw new Error("Invalid notification story variant");
-  const [story, rawPayload] = variant[0];
-  const payload = rawPayload as Record<string, unknown>;
+  const { story, payload } = readNotificationStory(value);
   if (
     !includesStoryNotification(context.preference.level, story) ||
     !storyRecipients(story, value.owner, payload).includes(`0x${BigInt(context.account).toString(16)}`)
   )
     return null;
-  const createdAt = Number(value.timestamp) * 1000;
-  if (createdAt + 120_000 <= Date.now()) return null;
-  const title = story.replace(/Story$/, "").replace(/([a-z])([A-Z])/g, "$1 $2");
-  return parseNotificationPayload(
-    {
-      version: 1,
-      owner: context.identity,
-      id: logicalStoryIdentity(storyEventIdentity(scope, value), story, value, payload),
-      title: story === "BattleStory" ? "Battle confirmed" : title,
-      body: `${context.world.name}: new confirmed activity involving you.`,
-      target: buildEntryHref({
-        chain: context.world.chain,
-        worldName: context.world.name,
-        intent: "play",
-        autoSettle: false,
-      }),
-      createdAt,
-      expiresAt: createdAt + 120_000,
-    },
-    Date.now(),
-  );
+  return buildStoryNotification({
+    sourceId: storyEventIdentity(scope, value),
+    value,
+    owner: context.identity,
+    gameName: context.world.name,
+    target: buildEntryHref({
+      chain: context.world.chain,
+      worldName: context.world.name,
+      intent: "play",
+      autoSettle: false,
+    }),
+    now: Date.now(),
+  });
 }

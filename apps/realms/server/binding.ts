@@ -1,12 +1,15 @@
-import { resolveEndpoint } from "@realms-world/chain";
+import { resolveEndpoint, expectedChainId, type GameChain } from "@realms-world/chain";
 import { Account, RpcProvider, num } from "starknet";
 import { z } from "zod";
 
 import { serverEnv } from "./env";
 
-const provider = new RpcProvider({
-  nodeUrl: resolveEndpoint(serverEnv.GAME_RPC_URL, { name: "GAME_RPC_URL", browserFacing: false }),
-});
+const createGameplayProvider = () =>
+  new RpcProvider({
+    nodeUrl: resolveEndpoint(serverEnv.GAME_RPC_URL, { name: "GAME_RPC_URL", browserFacing: false }),
+    baseFetch: (input, init) => fetch(input, { ...init, signal: AbortSignal.timeout(10_000) }),
+  });
+const provider = createGameplayProvider();
 
 const StarknetValue = z.string().regex(/^0x[0-9a-fA-F]+$/);
 export const BindGameplayAccountInput = z.object({
@@ -42,13 +45,21 @@ export const gameplayAccountOf = async (owner: string): Promise<string | null> =
   return account;
 };
 
+export async function verifyGameplayBindingChain(chain: GameChain): Promise<void> {
+  if (BigInt(await createGameplayProvider().getChainId()) !== BigInt(expectedChainId(chain)))
+    throw new Error("Notification source and gameplay registry chains differ");
+}
+
 /** The owner behind a gameplay account: PlayerRegistry.owner_of(account), null for an unbound address. */
 export const ownerOfGameplayAccount = async (account: string): Promise<string | null> => {
-  const [owner] = await provider.callContract({
-    contractAddress: serverEnv.PLAYER_REGISTRY_ADDRESS,
-    entrypoint: "owner_of",
-    calldata: [account],
-  });
+  const [owner] = await provider.callContract(
+    {
+      contractAddress: serverEnv.PLAYER_REGISTRY_ADDRESS,
+      entrypoint: "owner_of",
+      calldata: [account],
+    },
+    "latest",
+  );
   if (owner === undefined) throw new Error(`owner_of returned no value for ${account}`);
   if (BigInt(owner) === 0n) return null;
   return owner;

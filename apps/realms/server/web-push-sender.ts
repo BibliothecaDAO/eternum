@@ -1,4 +1,4 @@
-import { createECDH } from "node:crypto";
+import { createECDH, createHash } from "node:crypto";
 import { Context, Data, Effect, Layer } from "effect";
 import webpush from "web-push";
 import { parseWebPushSubscription, type PushEnvelope, type WebPushSubscription } from "@bibliothecadao/notifications";
@@ -39,7 +39,7 @@ export function createWebPushSender(
     send: (subscription: WebPushSubscription, envelope: PushEnvelope) =>
       Effect.tryPromise({
         try: async () => {
-          if (!config) throw new Error("disabled");
+          if (!config) throw new PushSendError({ retryable: false, retryAfterSeconds: 0 });
           const validated = parseWebPushSubscription(subscription);
           const ttl = Math.ceil((envelope.notification.expiresAt - Date.now()) / 1000);
           if (ttl <= 0) throw new Error("expired");
@@ -48,6 +48,7 @@ export function createWebPushSender(
             TTL: Math.min(ttl, 120),
             urgency: "normal",
             contentEncoding: "aes128gcm",
+            topic: createHash("sha256").update(envelope.notification.id).digest("base64url").slice(0, 32),
           });
           const response = await request(validated.endpoint, {
             method: "POST",
@@ -59,14 +60,26 @@ export function createWebPushSender(
           // Provider bodies/URLs may contain subscription credentials; never expose them in logs or API errors.
           await response.body?.cancel();
           if (response.status === 404 || response.status === 410) return "expired" as const;
-          if (!response.ok) throw new Error("provider_rejected");
+          if (!response.ok) {
+            const header = response.headers.get("retry-after");
+            const retryAfter = header
+              ? /^\d+$/.test(header)
+                ? Number(header)
+                : (Date.parse(header) - Date.now()) / 1000
+              : 0;
+            throw new PushSendError({
+              retryable: response.status === 408 || response.status === 429 || response.status >= 500,
+              retryAfterSeconds: Number.isFinite(retryAfter) ? Math.max(0, Math.min(120, Math.ceil(retryAfter))) : 0,
+            });
+          }
           return "accepted" as const;
         },
-        catch: () => new PushSendError(),
+        catch: (cause) =>
+          cause instanceof PushSendError ? cause : new PushSendError({ retryable: true, retryAfterSeconds: 0 }),
       }),
   };
 }
-class PushSendError extends Data.TaggedError("PushSendError")<{}> {}
+class PushSendError extends Data.TaggedError("PushSendError")<{ retryable: boolean; retryAfterSeconds: number }> {}
 export class WebPushSender extends Context.Service<WebPushSender, ReturnType<typeof createWebPushSender>>()(
   "WebPushSender",
 ) {

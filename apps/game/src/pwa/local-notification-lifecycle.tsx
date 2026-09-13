@@ -48,7 +48,7 @@ export function LocalNotificationLifecycle() {
           role="alert"
           className="fixed bottom-4 left-4 z-[200] max-w-sm rounded border border-gold/40 bg-black p-3 text-sm text-gold"
         >
-          Device notifications could not be disabled for your previous account.
+          Background notifications need attention. Reconnect or apply the latest game update, then retry.
           <button
             type="button"
             className="ml-2 underline"

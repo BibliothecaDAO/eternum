@@ -1,11 +1,15 @@
+import { resolveAutomaticNotificationConfig } from "./automatic-notifications/config";
 import { randomUUID } from "node:crypto";
 import { Data, Effect } from "effect";
 import {
+  automaticPushSourceKey,
+  parseAutomaticPushSource,
   isPushDeviceId,
   isPushOwner,
   parseNotificationPayload,
   parsePushRegistration,
 } from "@bibliothecadao/notifications";
+import { serverEnv } from "./env";
 import { auth } from "./auth";
 import { notificationJson as json, readNotificationBody } from "./notification-http";
 import { PushSubscriptionStore } from "./push-subscription-store";
@@ -31,7 +35,10 @@ function servePushRequest(request: Request, client: string) {
   return Effect.gen(function* () {
     const action = new URL(request.url).pathname.slice("/api/notifications/push/".length);
     const sender = yield* WebPushSender;
-    if (action === "config" && request.method === "GET") return json(sender.configuration());
+    if (action === "config" && request.method === "GET") {
+      const configuration = sender.configuration();
+      return json(configuration.enabled ? { ...configuration, automatic: automaticPublicSource() } : configuration);
+    }
     if (!["subscribe", "status", "revoke", "test"].includes(action)) return json({ error: "not_found" }, 404);
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     if (!limiter.allow(client)) return json({ error: "too_many_requests" }, 429);
@@ -50,11 +57,29 @@ function servePushRequest(request: Request, client: string) {
         try: () => parsePushRegistration(input),
         catch: () => new PushRequestError({ code: "invalid_subscription", status: 400 }),
       });
+      if (registration.gameAlerts) {
+        const supported = automaticPublicSource();
+        if (
+          !supported ||
+          !registration.source ||
+          automaticPushSourceKey(registration.source) !== automaticPushSourceKey(supported)
+        )
+          return json({ error: "automatic_push_disabled" }, 503);
+      }
       const result = yield* store.register(registration);
       return result === "registered" ? json({ id: registration.id }) : json({ error: `subscription_${result}` }, 409);
     }
     if (!isPushDeviceId(input.id)) return json({ error: "invalid_subscription_id" }, 400);
-    if (action === "status") return json({ registered: !!(yield* store.find(owner, input.id)) });
+    if (action === "status") {
+      const subscription = yield* store.find(owner, input.id);
+      return json({
+        registered: !!subscription,
+        automatic:
+          subscription?.gameAlertsEnabledAt && subscription.gameAlertsSource
+            ? parseAutomaticPushSource(subscription.gameAlertsSource)
+            : null,
+      });
+    }
     if (!testLimiter.allow(owner)) return json({ error: "too_many_tests" }, 429);
     const status = yield* sendPushTest(owner, input.id, input.target);
     return json({ status }, status === "expired" ? 410 : 200);
@@ -73,7 +98,7 @@ export function sendPushTest(owner: string, id: string, target: unknown) {
             id: `push-test:${randomUUID()}`,
             owner,
             title: "Realms background notification",
-            body: "This test was sent by the server. Game alerts still require an open page during this preview.",
+            body: "This test was sent by the server and can arrive with the game closed.",
             target,
             createdAt: now,
             expiresAt: now + 120_000,
@@ -120,3 +145,8 @@ function parsePushRequest(request: Request) {
   });
 }
 class PushRequestError extends Data.TaggedError("PushRequestError")<{ code: string; status: number }> {}
+
+function automaticPublicSource() {
+  const config = resolveAutomaticNotificationConfig(serverEnv);
+  return config ? { chain: config.chain, worldAddress: config.worldAddress } : null;
+}

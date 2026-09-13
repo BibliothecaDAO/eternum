@@ -1,10 +1,13 @@
 import {
+  notificationMatchesSource,
+  automaticPushSourceKey,
   notificationMatchesGame,
   parseNotificationPayload,
   parsePushEnvelope,
   isPushDeviceId,
 } from "@bibliothecadao/notifications";
 import {
+  configureAutomaticPush,
   readPushNotificationDevice,
   preparePushNotificationDevice,
   activatePushNotificationDevice,
@@ -77,8 +80,9 @@ async function handleNotificationMessage(
 async function runNotificationCommand(
   worker: ServiceWorkerGlobalScope,
   source: Client,
-  input: { owner: string; action: string; payload?: unknown; token?: string; id?: string },
+  input: { owner: string; action: string; payload?: unknown; token?: string; id?: string; source?: unknown },
 ) {
+  if (input.action === "push-capabilities") return { automaticGameAlerts: true };
   if (input.action === "push-status") return (await readPushNotificationDevice()) ?? null;
   if (input.action === "prepare-push") return preparePushNotificationDevice(input.owner);
   if (input.action === "revoke-push") {
@@ -87,6 +91,11 @@ async function runNotificationCommand(
       if (notification.data?.owner === input.owner && notification.data?.subscriptionId) notification.close();
     }
     return revoked;
+  }
+  if (input.action === "prepare-automatic" || input.action === "acknowledge-automatic") {
+    if (!isPushDeviceId(input.id)) throw new Error("Invalid automatic registration");
+    await configureAutomaticPush(input.owner, input.id, input.source, input.action === "acknowledge-automatic");
+    return null;
   }
   if (input.action === "activate-push" || input.action === "forget-push") {
     if (!isPushDeviceId(input.id)) throw new Error("Invalid push registration");
@@ -113,7 +122,16 @@ async function runNotificationCommand(
   if (input.action !== "deliver" && input.action !== "test") throw new Error("Unknown notification command");
   const payload = parseNotificationPayload(input.payload, Date.now());
   if (payload.owner !== input.owner || typeof input.token !== "string") throw new Error("Notification account changed");
-  // Subscription preview sends tests only; keep local game alerts until a server notifier owns them.
+  // Automatic push owns OS delivery on opted-in devices; the live page still renders its activity feed.
+  const automatic = await readPushNotificationDevice();
+  if (
+    input.action === "deliver" &&
+    automatic?.owner === input.owner &&
+    automatic.state === "active" &&
+    automatic.automatic?.acknowledged &&
+    notificationMatchesSource(payload, automatic.automatic)
+  )
+    return "push-owned";
   if (!notificationMatchesGame(source.url, payload.target, worker.location.origin)) return "game-changed";
   if (!(await claimNotification({ ...payload, id: `${input.owner}:${payload.id}`, token: input.token }, Date.now())))
     return "suppressed";
@@ -143,11 +161,15 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
     const push =
       value && typeof value === "object" && "subscriptionId" in value ? parsePushEnvelope(value, Date.now()) : null;
     const payload = push?.notification ?? parseNotificationPayload(value, Date.now());
-    const device = push ? await readPushNotificationDevice() : await readNotificationDevice();
+    const pushDevice = push ? await readPushNotificationDevice() : undefined;
+    const device = push ? pushDevice : await readNotificationDevice();
     if (device?.owner !== payload.owner) return;
+    if (push && (!pushDevice || pushDevice.state !== "active" || pushDevice.id !== push.subscriptionId)) return;
     if (
-      push &&
-      (!("state" in device && "id" in device) || device.state !== "active" || device.id !== push.subscriptionId)
+      push?.kind === "game" &&
+      (!pushDevice?.automatic ||
+        !push.source ||
+        automaticPushSourceKey(pushDevice.automatic) !== automaticPushSourceKey(push.source))
     )
       return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
@@ -177,10 +199,23 @@ async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: 
     device.state !== "active"
   )
     return;
+  if (
+    envelope.kind === "game" &&
+    (!device.automatic ||
+      !envelope.source ||
+      automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(envelope.source))
+  )
+    return;
   const payload = envelope.notification;
   if (
     !(await claimNotification(
-      { ...payload, id: `${payload.owner}:${payload.id}`, token: device.token, subscriptionId: device.id },
+      {
+        ...payload,
+        id: `${payload.owner}:${payload.id}`,
+        token: device.token,
+        subscriptionId: device.id,
+        automatic: envelope.kind === "game" ? envelope.source : undefined,
+      },
       Date.now(),
     ))
   )

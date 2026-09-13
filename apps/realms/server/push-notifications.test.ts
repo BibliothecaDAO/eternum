@@ -8,9 +8,27 @@ const mocks = vi.hoisted(() => ({
   expire: vi.fn(),
   send: vi.fn(),
   enabled: true,
+  automatic: false,
 }));
 vi.mock("./auth", () => ({ auth: { api: { getSession: mocks.session } } }));
-vi.mock("./env", () => ({ serverEnv: {} }));
+vi.mock("./env", async () => {
+  const { default: webpush } = await import("web-push");
+  const keys = webpush.generateVAPIDKeys();
+  return {
+    serverEnv: {
+      WEB_PUSH_ENABLED: "true",
+      WEB_PUSH_VAPID_PUBLIC_KEY: keys.publicKey,
+      WEB_PUSH_VAPID_PRIVATE_KEY: keys.privateKey,
+      WEB_PUSH_VAPID_SUBJECT: "mailto:ops@realms.party",
+      get WEB_PUSH_AUTOMATIC_ENABLED() {
+        return mocks.automatic ? "true" : "false";
+      },
+      NOTIFICATION_HERALD_URL: "https://herald.test",
+      NOTIFICATION_CHAIN: "madara",
+      NOTIFICATION_WORLD_ADDRESS: "0x123",
+    },
+  };
+});
 vi.mock("@realms-world/db/client", () => ({ db: {} }));
 import { PushSubscriptionStore } from "./push-subscription-store";
 import { WebPushSender } from "./web-push-sender";
@@ -39,6 +57,7 @@ function request(action: string, body: unknown = registration, method = "POST") 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.enabled = true;
+  mocks.automatic = false;
   mocks.session.mockResolvedValue({ user: { id: "0x1" } });
   mocks.register.mockResolvedValue("registered");
   mocks.find.mockResolvedValue({
@@ -69,7 +88,7 @@ beforeEach(() => {
 it("authenticates owner-scoped registration and status, validates input, and exposes no credentials", async () => {
   expect(await (await request("subscribe")).json()).toEqual({ id });
   expect(mocks.session).toHaveBeenCalledWith(expect.objectContaining({ query: { disableCookieCache: true } }));
-  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({ registered: true });
+  expect(await (await request("status", { owner: "0x1", id })).json()).toEqual({ registered: true, automatic: null });
   expect((await request("subscribe", { ...registration, owner: "0x2" })).status).toBe(403);
   expect(
     (
@@ -128,4 +147,16 @@ it("isolates request budgets by the socket-aware client supplied by the router",
   for (let i = 0; i < 30; i++) expect((await post("socket-a")).status).toBe(200);
   expect((await post("socket-a")).status).toBe(429);
   expect((await post("socket-b")).status).toBe(200);
+});
+
+it("exposes the configured automatic source and requires explicit matching-source consent", async () => {
+  const source = { chain: "madara", worldAddress: "0x123" };
+  const input = { ...registration, gameAlerts: true, source };
+  expect((await request("subscribe", input)).status).toBe(503);
+  mocks.automatic = true;
+  expect((await (await request("config", undefined, "GET")).json()).automatic).toEqual(source);
+  expect((await request("subscribe", input)).status).toBe(200);
+  expect(mocks.register).toHaveBeenCalledWith(input);
+  expect((await request("subscribe", { ...input, source: { ...source, worldAddress: "0x999" } })).status).toBe(503);
+  expect((await request("subscribe", { ...input, source: undefined })).status).toBe(400);
 });

@@ -73,3 +73,24 @@ it("upgrades the installed v1 database without dropping existing device state or
   ).toBe(false);
   expect(await database.preparePushNotificationDevice("0x1")).toBeDefined();
 });
+
+it("requires automatic opt-in inside the same transaction as its durable claim", async () => {
+  const device = await database.preparePushNotificationDevice("0x1");
+  await database.activatePushNotificationDevice("0x1", device.id);
+  const claim = {
+    id: "auto",
+    owner: "0x1",
+    token: device.token,
+    subscriptionId: device.id,
+    automatic: { chain: "madara" as const, worldAddress: "0x123" },
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 10000,
+  };
+  expect(await database.claimNotification(claim, Date.now())).toBe(false);
+  await database.configureAutomaticPush("0x1", device.id, { chain: "madara", worldAddress: "0x123" }, false);
+  expect(
+    await database.claimNotification({ ...claim, automatic: { chain: "madara", worldAddress: "0x999" } }, Date.now()),
+  ).toBe(false);
+  expect(await database.claimNotification(claim, Date.now())).toBe(true);
+  expect((await database.readPushNotificationDevice())?.automatic?.acknowledged).toBe(true);
+});

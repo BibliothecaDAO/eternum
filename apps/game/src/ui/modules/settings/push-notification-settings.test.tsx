@@ -51,7 +51,7 @@ it("labels the test-only milestone and enables on an explicit click", async () =
     expect(ui.container.textContent).toContain("Automatic game alerts still require an open page");
     expect(mocks.enable).not.toHaveBeenCalled();
     await ui.click("Enable background tests");
-    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key");
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", null);
   } finally {
     await ui.close();
   }
@@ -61,7 +61,7 @@ it("keeps an existing device removable when server sending is disabled", async (
   mocks.device.mockResolvedValue({ owner: "0x1", id: "id", state: "active" });
   const ui = await mount();
   try {
-    await ui.click("Disable background tests");
+    await ui.click("Disable background notifications");
     expect(mocks.disable).toHaveBeenCalledWith("0x1");
   } finally {
     await ui.close();
@@ -73,7 +73,7 @@ it("shows expired registration errors without hiding the cleanup action", async 
   const ui = await mount();
   try {
     expect(ui.container.querySelector('[role="alert"]')?.textContent).toContain("expired");
-    expect(ui.container.textContent).toContain("Disable background tests");
+    expect(ui.container.textContent).toContain("Disable background notifications");
   } finally {
     await ui.close();
   }
@@ -85,7 +85,7 @@ it("keeps local removal available when configuration cannot load offline", async
   const ui = await mount();
   try {
     expect(ui.container.querySelector('[role="alert"]')?.textContent).toBe("Offline");
-    await ui.click("Disable background tests");
+    await ui.click("Disable background notifications");
     expect(mocks.disable).toHaveBeenCalledWith("0x1");
   } finally {
     await ui.close();
@@ -106,12 +106,29 @@ it("does not let a stale focus refresh restore the device after disablement", as
       window.dispatchEvent(new Event("focus"));
     });
     mocks.device.mockResolvedValue(null);
-    await ui.click("Disable background tests");
+    await ui.click("Disable background notifications");
     await act(async () => {
       finish({ enabled: true, publicKey: "key" });
     });
     expect(ui.container.textContent).toContain("Enable background tests");
     expect(ui.container.textContent).not.toContain("Send background test");
+  } finally {
+    await ui.close();
+  }
+});
+
+it("requires explicit consent to upgrade an existing test-only registration", async () => {
+  mocks.config.mockResolvedValue({
+    enabled: true,
+    publicKey: "key",
+    automatic: { chain: "madara", worldAddress: "0x123" },
+  });
+  mocks.device.mockResolvedValue({ owner: "0x1", id: "id", state: "active", automatic: undefined });
+  const ui = await mount();
+  try {
+    expect(mocks.enable).not.toHaveBeenCalled();
+    await ui.click("Enable game alerts");
+    expect(mocks.enable).toHaveBeenCalledWith("0x1", "key", { chain: "madara", worldAddress: "0x123" });
   } finally {
     await ui.close();
   }

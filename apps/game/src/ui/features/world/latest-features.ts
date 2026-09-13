@@ -35,9 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-13",
-    title: "Background Notification Preview",
+    title: "Automatic Background Game Alerts",
     description:
-      "When enabled by the server, opt this device into background notification tests from Settings. Automatic game alerts still need an open page.",
+      "When available, enable game alerts on this device to receive confirmed activity with the game closed. Your account notification level controls which alerts arrive.",
     type: "feature",
   },
   {

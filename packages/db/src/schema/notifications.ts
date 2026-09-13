@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, integer, pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
+import { check, integer, pgTable, text, timestamp, index, jsonb, bigint } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 
 export const notificationPreferences = pgTable(
@@ -28,7 +28,44 @@ export const notificationPushSubscriptions = pgTable(
     p256dh: text("p256dh").notNull(),
     auth: text("auth").notNull(),
     revocationHash: text("revocation_hash").notNull(),
+    gameAlertsSource: text("game_alerts_source"),
+    gameAlertsEnabledAt: timestamp("game_alerts_enabled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("notification_push_owner_idx").on(table.owner)],
+);
+
+export const notificationCheckpoints = pgTable("notification_checkpoints", {
+  source: text("source").primaryKey(),
+  cursor: jsonb("cursor").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const notificationDeliveries = pgTable(
+  "notification_deliveries",
+  {
+    id: text("id").primaryKey(),
+    owner: text("owner")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    subscriptionId: text("subscription_id")
+      .notNull()
+      .references(() => notificationPushSubscriptions.id, { onDelete: "cascade" }),
+    story: text("story").notNull(),
+    notification: jsonb("notification").notNull(),
+    expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+    availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+    attempts: integer("attempts").notNull().default(0),
+    leaseToken: text("lease_token"),
+    leaseUntil: timestamp("lease_until", { withTimezone: true }),
+    outcome: text("outcome"),
+  },
+  (table) => [
+    index("notification_deliveries_due_idx")
+      .on(table.availableAt)
+      .where(sql`${table.outcome} IS NULL`),
+    index("notification_deliveries_expiry_idx").on(table.expiresAt),
+    check("notification_delivery_attempts_valid", sql`${table.attempts} >= 0`),
+  ],
 );

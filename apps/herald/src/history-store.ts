@@ -1,8 +1,19 @@
+import {
+  endOfStoryBlock,
+  parseStoryHistoryCursor,
+  type StoryHistoryCursor,
+  type HeraldStoryHistoryPage,
+} from "@bibliothecadao/eternum/game-sync";
 import { PointsLeaderboard } from "./points-leaderboard";
 import { readPointsRegistration, type HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { Pool, type PoolClient } from "pg";
 
-import type { HeraldGameSnapshot, HeraldHistoryPage, HeraldTransactionCount } from "@bibliothecadao/eternum/game-sync";
+import type {
+  HeraldGameSnapshot,
+  HeraldHistoryPage,
+  HeraldHistoryEvent,
+  HeraldTransactionCount,
+} from "@bibliothecadao/eternum/game-sync";
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
 import type { DecodedRecord, DecodedWorldEvent, RpcReceipt } from "./types";
@@ -103,6 +114,9 @@ export class HistoryStore {
       );
       CREATE INDEX IF NOT EXISTS herald_history_game_model_position
         ON herald_history_events (chain, world_address, game_id, model, block_number DESC, transaction_index DESC, event_index DESC);
+      CREATE INDEX IF NOT EXISTS herald_history_story_position
+        ON herald_history_events (chain, world_address, block_number, transaction_index, event_index)
+        WHERE model = 'StoryEvent';
       CREATE INDEX IF NOT EXISTS herald_history_story_variant
         ON herald_history_events USING GIN ((value->'story'));
       CREATE INDEX IF NOT EXISTS herald_history_game_owner_position
@@ -275,6 +289,38 @@ export class HistoryStore {
     );
     const value = result.rows[0]?.complete_through_block;
     return value === undefined ? null : Number(value);
+  }
+
+  /** Cursor consumers wait for startup backfill without distrusting or replacing the existing progress marker. */
+  public async queryStoryCursor(after: StoryHistoryCursor | null, limit: number): Promise<HeraldStoryHistoryPage> {
+    if (!this.leaderboardReady) throw new Error("Story history is not ready");
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error("Invalid story page size");
+    const head = await this.historyProgress();
+    if (head === null) throw new Error("Story history has no complete head");
+    const page = {
+      chain: this.chain,
+      world_address: this.worldAddress,
+      complete_through_block: head,
+      next_cursor: endOfStoryBlock(head),
+      items: [] as HeraldHistoryEvent[],
+    };
+    if (!after) return page;
+    const cursor = parseStoryHistoryCursor(after);
+    if (cursor.block > head) throw new Error("Story history head regressed behind the consumer");
+    const result = await this.pool.query<HeraldHistoryEvent>(
+      `SELECT block_number::float8, transaction_index, event_index, game_id::text, model, transaction_hash, value
+       FROM herald_history_events
+       WHERE chain = $1 AND world_address = $2 AND model = 'StoryEvent' AND block_number <= $3
+         AND (block_number, transaction_index, event_index) > ($4, $5, $6)
+       ORDER BY block_number, transaction_index, event_index LIMIT $7`,
+      [this.chain, this.worldAddress, head, cursor.block, cursor.transaction, cursor.event, limit + 1],
+    );
+    page.items = result.rows.slice(0, limit);
+    if (result.rows.length > limit) {
+      const last = page.items.at(-1)!;
+      page.next_cursor = { block: last.block_number, transaction: last.transaction_index, event: last.event_index };
+    }
+    return page;
   }
 
   public async queryEvents(query: HistoryQuery): Promise<HeraldHistoryPage> {

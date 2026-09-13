@@ -20,8 +20,9 @@ const snapshot: GameSnapshot = {
   ],
 };
 
-const handler = createHeraldRequestHandler({
+const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   chain: "madara",
+  worldAddress: "0x123",
   confirmedBlock: () => 12,
   chainTimestamp: () => 100,
   decodedModelCount: 50,
@@ -51,6 +52,13 @@ const handler = createHeraldRequestHandler({
   },
   metrics,
   history: {
+    queryStoryCursor: async () => ({
+      chain: "madara",
+      world_address: "0x123",
+      complete_through_block: 12,
+      next_cursor: { block: 12, transaction: 2147483647, event: 2147483647 },
+      items: [],
+    }),
     leaderboard: (gameId) => ({ game_id: gameId, entries: [] }),
     queryEvents: async (query) => ({
       complete_through_block: 12,
@@ -73,7 +81,8 @@ const handler = createHeraldRequestHandler({
     transactionCount: async (gameId) => ({ count: 9, game_id: gameId }),
   },
   undecodableEventCount: () => 2,
-});
+};
+const handler = createHeraldRequestHandler(httpState);
 
 describe("herald HTTP", () => {
   it("serves health and model-filtered game snapshots", async () => {
@@ -138,6 +147,7 @@ it("passes a battle-only history filter to the store before pagination", async (
   const queryEvents = vi.fn(async () => ({ items: [], total: 0, limit: 350, offset: 0, complete_through_block: 12 }));
   const battleHandler = createHeraldRequestHandler({
     chain: "madara",
+    worldAddress: "0x123",
     confirmedBlock: () => 12,
     chainTimestamp: () => 100,
     decodedModelCount: 0,
@@ -145,6 +155,13 @@ it("passes a battle-only history filter to the store before pagination", async (
     fold: { modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     history: {
+      queryStoryCursor: async () => ({
+        chain: "madara",
+        world_address: "0x123",
+        complete_through_block: 12,
+        next_cursor: { block: 12, transaction: 2147483647, event: 2147483647 },
+        items: [],
+      }),
       queryEvents,
       leaderboard: () => null,
       reviewSnapshot: async () => snapshot,
@@ -158,4 +175,13 @@ it("passes a battle-only history filter to the store before pagination", async (
   expect(queryEvents).toHaveBeenCalledWith(
     expect.objectContaining({ gameId: "7", model: "StoryEvent", story: "BattleStory", limit: 350, offset: 0 }),
   );
+});
+
+it("serves the bounded story cursor only when history decoding is healthy", async () => {
+  const healthy = createHeraldRequestHandler({ ...httpState, undecodableEventCount: () => 0 });
+  const endpoint = "http://herald/madara/history/story-events";
+  expect((await healthy(new Request(endpoint))).status).toBe(200);
+  expect((await healthy(new Request(endpoint + "?limit=0"))).status).toBe(400);
+  expect((await healthy(new Request(endpoint + "?after=bad"))).status).toBe(400);
+  expect((await handler(new Request(endpoint))).status).toBe(503);
 });

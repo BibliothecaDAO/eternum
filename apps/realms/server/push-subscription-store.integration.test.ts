@@ -54,6 +54,24 @@ describe.skipIf(!databaseUrl)("push subscriptions in PostgreSQL", () => {
     expect(results.filter((value) => value === "registered")).toHaveLength(9);
     expect(results.filter((value) => value === "limit")).toHaveLength(3);
   });
+  it("upgrades preview consent idempotently and resets opt-in time when the source changes", async () => {
+    expect((await run(store.find("0x1", first.id)))?.gameAlertsEnabledAt).toBeNull();
+    const upgraded = { ...first, gameAlerts: true, source: { chain: "madara" as const, worldAddress: "0x123" } };
+    await run(store.register(upgraded));
+    const active = await run(store.find("0x1", first.id));
+    expect(active?.gameAlertsSource).toBe("madara:0x123");
+    await run(store.register(first));
+    await run(store.register(upgraded));
+    expect((await run(store.find("0x1", first.id)))?.gameAlertsEnabledAt).toEqual(active?.gameAlertsEnabledAt);
+    await database.pool.query(
+      "UPDATE notification_push_subscriptions SET game_alerts_enabled_at=now()-interval '1 hour' WHERE id=$1",
+      [first.id],
+    );
+    await run(store.register({ ...upgraded, source: { chain: "madara", worldAddress: "0x999" } }));
+    const changed = await run(store.find("0x1", first.id));
+    expect(changed?.gameAlertsSource).toBe("madara:0x999");
+    expect(changed!.gameAlertsEnabledAt!.getTime()).toBeGreaterThan(Date.now() - 10000);
+  });
   it("requires the device revocation capability, isolates expiration, and cascades account deletion", async () => {
     await run(store.revoke(first.id, randomUUID()));
     expect(await run(store.find("0x1", first.id))).not.toBeNull();

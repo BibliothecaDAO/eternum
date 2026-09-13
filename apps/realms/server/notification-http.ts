@@ -1,7 +1,7 @@
 export const notificationJson = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "cache-control": "no-store" } });
 
-export async function readNotificationBody(request: Request, limit: number): Promise<string> {
+export async function readNotificationBody(request: Pick<Request, "body">, limit: number): Promise<string> {
   if (!request.body) throw new Error("missing_body");
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];

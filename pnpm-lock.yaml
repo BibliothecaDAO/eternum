@@ -787,6 +787,9 @@ importers:
 
   apps/realms:
     dependencies:
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
       web-push:
         specifier: 3.6.7
         version: 3.6.7

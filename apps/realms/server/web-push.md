@@ -1,9 +1,9 @@
-# Web Push transport preview
+# Web Push transport
 
-This milestone registers devices and sends explicit server test notifications. It does not consume Herald events or send
-automatic closed-app game alerts. Existing local game notifications continue while a game page runs, including on a
-device registered for push tests. The next milestone must connect the confirmed-history consumer and durable outbox
-before describing automatic game alerts as available with the app closed.
+This transport registers devices and supports both explicit server tests and automatic game alerts. Automatic delivery
+has its own disabled-by-default server flag and explicit per-device consent. See
+[Automatic game notifications](./automatic-notifications/README.md) for the confirmed-history consumer, durable queue,
+configuration, rollout and operational checks. Preview-only devices retain local game delivery.
 
 ## Deployment
 
@@ -11,7 +11,7 @@ Apply the `notification_push_subscriptions` declaration through `pnpm --dir pack
 database before enabling this feature. Drizzle is the only schema source. Sending defaults off and unrelated identity
 routes do not require push keys.
 
-Set these server-only variables to enable the preview:
+Set these server-only variables to enable the transport:
 
 - `WEB_PUSH_ENABLED=true`
 - `WEB_PUSH_VAPID_PUBLIC_KEY` and `WEB_PUSH_VAPID_PRIVATE_KEY`: one persistent matching P-256 VAPID key pair
@@ -27,11 +27,15 @@ registered devices have been removed.
 
 All routes live under `/api/notifications/push/`, use existing identity CORS policy and return `no-store` JSON.
 
-- `GET config`: `{enabled:false}` or `{enabled:true,publicKey}`.
+- `GET config`: `{enabled:false}` or `{enabled:true,publicKey,automatic}`; `automatic` is null or
+  `{chain,worldAddress}`.
 - `POST subscribe`: authenticated `{owner,id,token,subscription:{endpoint,keys:{p256dh,auth}}}`. UUID device ID/token
   are generated and persisted in the service worker before subscribing. Repeats are idempotent; endpoint takeover and
-  mismatched IDs/keys/tokens fail with 409. Accounts have at most ten registrations, enforced under a database lock.
-- `POST status`: authenticated `{owner,id}` → `{registered}`.
+  mismatched IDs/keys/tokens fail with 409. Optional `gameAlerts:true` plus the matching `source:{chain,worldAddress}`
+  explicitly opts into automatic delivery when the server enables it. Accounts have at most ten registrations, enforced
+  under a database lock.
+- `POST status`: authenticated `{owner,id}` → `{registered,automatic}`; the latter identifies the persisted automatic
+  source or null.
 - `POST test`: authenticated `{owner,id,target}` → `{status:"accepted"}`. Sends server-owned test text only. This is an
   explicit transport diagnostic, independent of the account's automatic notification level. At most five tests per
   account per minute; requests are bounded to 4 KiB. A 404/410 push provider result removes the expired registration.
@@ -43,8 +47,8 @@ Authenticated operations revalidate the session and require the expected owner. 
 HTTPS browser-provider hosts (Google, Mozilla, Apple and Windows); credentials, fragments and non-default ports are
 rejected. Sending revalidates stored endpoints, forbids redirects, encrypts with aes128gcm, signs with VAPID and times
 out after ten seconds. Provider responses and subscription endpoints/keys/tokens must not be logged. Acceptance is not
-proof of device receipt. Tests are not queued or automatically retried; the durable game-notification outbox is a later
-milestone.
+proof of device receipt. Tests are not queued or automatically retried; automatic game delivery uses the durable outbox
+described above.
 
 ## Device lifecycle
 

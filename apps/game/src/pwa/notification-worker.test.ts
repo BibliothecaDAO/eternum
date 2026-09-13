@@ -10,9 +10,11 @@ const database = vi.hoisted(() => ({
   pushActivate: vi.fn(),
   pushRevoke: vi.fn(),
   pushForget: vi.fn(),
+  configureAutomatic: vi.fn(),
 }));
 vi.mock("./notification-database", () => ({
   readNotificationDevice: database.read,
+  configureAutomaticPush: database.configureAutomatic,
   readPushNotificationDevice: database.pushRead,
   preparePushNotificationDevice: database.pushPrepare,
   activatePushNotificationDevice: database.pushActivate,
@@ -203,4 +205,82 @@ it("rejects expired or account-mismatched server envelopes", async () => {
   await h.push({ version: 1, subscriptionId, notification: payload });
   await h.push({ version: 1, subscriptionId, notification: { ...payload, expiresAt: 1 } });
   expect(h.registration.showNotification).not.toHaveBeenCalled();
+});
+
+it("lets automatic push own delivery without a local claim swallowing the server alert", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    token: "push-token",
+    state: "active",
+    automatic: { chain: "madara", worldAddress: "0x123", acknowledged: true },
+  });
+  h.client.focused = true;
+  h.client.visibilityState = "visible";
+  const gamePayload = { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" };
+  expect((await h.send("deliver", { payload: gamePayload })).value).toBe("push-owned");
+  expect(database.claim).not.toHaveBeenCalled();
+  await h.push({
+    version: 1,
+    kind: "game",
+    source: { chain: "madara", worldAddress: "0x123" },
+    subscriptionId,
+    notification: { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" },
+  });
+  expect(h.registration.showNotification).toHaveBeenCalledOnce();
+  expect(database.claim).toHaveBeenCalledWith(
+    expect.objectContaining({ automatic: { chain: "madara", worldAddress: "0x123" } }),
+    expect.any(Number),
+  );
+});
+it("does not deliver or open automatic alerts on a test-only device", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({ owner: "0x1", id: subscriptionId, state: "active", automatic: undefined });
+  const envelope = {
+    version: 1,
+    kind: "game",
+    source: { chain: "madara", worldAddress: "0x123" },
+    subscriptionId,
+    notification: { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" },
+  };
+  await h.push(envelope);
+  await h.click(envelope);
+  expect(h.registration.showNotification).not.toHaveBeenCalled();
+  expect(h.client.focus).not.toHaveBeenCalled();
+});
+
+it("keeps local delivery for other chains and worlds even when automatic push owns one source", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    state: "active",
+    automatic: { chain: "appchain", worldAddress: "0x123", acknowledged: true },
+  });
+  const gamePayload = { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" };
+  expect((await h.send("deliver", { payload: gamePayload })).value).toBe("shown");
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    state: "active",
+    automatic: { chain: "madara", worldAddress: "0x999", acknowledged: true },
+  });
+  expect((await h.send("deliver", { payload: gamePayload })).value).toBe("shown");
+});
+it("keeps local delivery during incomplete automatic setup", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    state: "active",
+    automatic: { chain: "madara", worldAddress: "0x123", acknowledged: false },
+  });
+  expect(
+    (
+      await h.send("deliver", {
+        payload: { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" },
+      })
+    ).value,
+  ).toBe("shown");
 });

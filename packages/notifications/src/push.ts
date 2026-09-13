@@ -1,3 +1,4 @@
+import { parseAutomaticPushSource, notificationMatchesSource, type AutomaticPushSource } from "./automatic-source";
 import { parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 
 export interface WebPushSubscription {
@@ -9,10 +10,16 @@ export interface PushRegistration {
   id: string;
   token: string;
   subscription: WebPushSubscription;
+  gameAlerts?: boolean;
+  source?: AutomaticPushSource;
 }
-export type PushConfiguration = { enabled: false } | { enabled: true; publicKey: string };
+export type PushConfiguration =
+  | { enabled: false }
+  | { enabled: true; publicKey: string; automatic?: AutomaticPushSource | null };
 export interface PushEnvelope {
   version: 1;
+  kind?: "test" | "game";
+  source?: AutomaticPushSource;
   subscriptionId: string;
   notification: LocalNotificationPayload;
 }
@@ -27,7 +34,11 @@ export function parsePushRegistration(value: unknown): PushRegistration {
   const input = record(value);
   if (!isPushOwner(input.owner) || !isPushDeviceId(input.id) || !isPushDeviceId(input.token))
     throw new Error("invalid_push_registration");
+  if (input.gameAlerts !== undefined && typeof input.gameAlerts !== "boolean")
+    throw new Error("invalid_push_registration");
   return {
+    ...(input.gameAlerts === undefined ? {} : { gameAlerts: input.gameAlerts }),
+    ...(input.gameAlerts === true ? { source: parseAutomaticPushSource(input.source) } : {}),
     owner: input.owner,
     id: input.id,
     token: input.token,
@@ -63,10 +74,16 @@ export function parseWebPushSubscription(value: unknown): WebPushSubscription {
 export function parsePushEnvelope(value: unknown, now: number): PushEnvelope {
   const input = record(value);
   if (input.version !== 1 || !isPushDeviceId(input.subscriptionId)) throw new Error("invalid_push_envelope");
+  if (input.kind !== undefined && input.kind !== "test" && input.kind !== "game") throw new Error("invalid_push_kind");
+  const notification = parseNotificationPayload(input.notification, now);
+  const source = input.kind === "game" ? parseAutomaticPushSource(input.source) : undefined;
+  if (source && !notificationMatchesSource(notification, source)) throw new Error("push_source_mismatch");
   return {
     version: 1,
+    ...(source ? { source } : {}),
+    ...(input.kind === undefined ? {} : { kind: input.kind }),
     subscriptionId: input.subscriptionId,
-    notification: parseNotificationPayload(input.notification, now),
+    notification,
   };
 }
 

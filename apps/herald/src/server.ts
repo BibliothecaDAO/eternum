@@ -156,6 +156,7 @@ const main = async (): Promise<void> => {
   await subscriptions.start();
   const http = createHeraldRequestHandler({
     chain: config.chain,
+    worldAddress: registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
     decodedModelCount: registry.bySelector.size,

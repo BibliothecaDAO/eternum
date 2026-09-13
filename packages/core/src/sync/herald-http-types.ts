@@ -46,6 +46,7 @@ export interface HeraldGameDirectoryEntry {
 
 export interface HeraldGameDirectory {
   chain: string;
+  world_address?: string;
   confirmed_block: number;
   games: HeraldGameDirectoryEntry[];
 }

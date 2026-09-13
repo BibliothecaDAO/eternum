@@ -1,3 +1,8 @@
+import {
+  automaticPushSourceKey,
+  parseAutomaticPushSource,
+  type AutomaticPushSource,
+} from "@bibliothecadao/notifications";
 export interface NotificationDevice {
   owner: string;
   token: string;
@@ -5,6 +10,7 @@ export interface NotificationDevice {
 }
 
 export interface PushNotificationDevice extends NotificationDevice {
+  automatic?: AutomaticPushSource & { acknowledged: boolean };
   id: string;
   state: "preparing" | "active" | "revoking";
 }
@@ -88,18 +94,35 @@ export const disableNotificationDevice = (owner: string): Promise<void> =>
 
 /** Claims and device checks commit atomically across tabs and overlapping worker versions. */
 export const claimNotification = (
-  input: { id: string; owner: string; token: string; createdAt: number; expiresAt: number; subscriptionId?: string },
+  input: {
+    id: string;
+    owner: string;
+    token: string;
+    createdAt: number;
+    expiresAt: number;
+    subscriptionId?: string;
+    automatic?: AutomaticPushSource;
+  },
   now: number,
 ): Promise<boolean> =>
   transaction("readwrite", async (tx) => {
-    const device = input.subscriptionId
+    const pushDevice = input.subscriptionId
       ? await result<PushNotificationDevice | undefined>(tx.objectStore("push").get("current"))
+      : undefined;
+    const device = input.subscriptionId
+      ? pushDevice
       : await result<NotificationDevice | undefined>(tx.objectStore("device").get("current"));
     if (
       input.subscriptionId &&
       (!(device && "state" in device && "id" in device) ||
         device.state !== "active" ||
         device.id !== input.subscriptionId)
+    )
+      return false;
+    if (
+      input.automatic &&
+      (!pushDevice?.automatic ||
+        automaticPushSourceKey(pushDevice.automatic) !== automaticPushSourceKey(input.automatic))
     )
       return false;
     if (
@@ -110,6 +133,13 @@ export const claimNotification = (
       input.expiresAt <= now
     )
       return false;
+    // A valid game push also proves server activation after a page closed before receiving its HTTP acknowledgement.
+    if (input.automatic && pushDevice?.automatic && !pushDevice.automatic.acknowledged)
+      await result(
+        tx
+          .objectStore("push")
+          .put({ ...pushDevice, automatic: { ...pushDevice.automatic, acknowledged: true } }, "current"),
+      );
     const deliveries = tx.objectStore("deliveries");
     await pruneExpired(deliveries, now);
     if (await result(deliveries.get(input.id))) return false;
@@ -180,4 +210,24 @@ export const forgetPushNotificationDevice = (owner: string, id: string): Promise
     const device: PushNotificationDevice | undefined = await result(store.get("current"));
     if (device?.owner === owner && device.id === id && device.state === "revoking")
       await result(store.delete("current"));
+  });
+
+export const configureAutomaticPush = (
+  owner: string,
+  id: string,
+  value: unknown,
+  acknowledged: boolean,
+): Promise<void> =>
+  transaction("readwrite", async (tx) => {
+    const store = tx.objectStore("push");
+    const device: PushNotificationDevice | undefined = await result(store.get("current"));
+    const source = parseAutomaticPushSource(value);
+    if (!device || device.owner !== owner || device.id !== id || device.state !== "active")
+      throw new Error("Push registration changed.");
+    if (
+      acknowledged &&
+      (!device.automatic || automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(source))
+    )
+      throw new Error("Automatic registration changed.");
+    await result(store.put({ ...device, automatic: { ...source, acknowledged } }, "current"));
   });

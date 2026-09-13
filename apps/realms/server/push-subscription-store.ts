@@ -3,7 +3,7 @@ import { Context, Data, Effect, Layer } from "effect";
 import { and, eq, sql } from "drizzle-orm";
 import { notificationPushSubscriptions as subscriptions } from "@realms-world/db";
 import { db, type Database } from "@realms-world/db/client";
-import type { PushRegistration } from "@bibliothecadao/notifications";
+import { automaticPushSourceKey, parseAutomaticPushSource, type PushRegistration } from "@bibliothecadao/notifications";
 
 const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 export function createPushSubscriptionStore(database: Pick<Database, "transaction" | "select" | "delete"> = db) {
@@ -38,7 +38,18 @@ async function registerSubscription(database: Pick<Database, "transaction">, inp
     const owned = await tx.select().from(subscriptions).where(eq(subscriptions.owner, input.owner));
     const existing = owned.find((row) => row.id === input.id);
     const registration = buildSubscriptionRow(input);
-    if (existing) return matchesRegistration(existing, registration) ? ("registered" as const) : ("conflict" as const);
+    if (existing) {
+      if (!matchesRegistration(existing, registration)) return "conflict" as const;
+      if (
+        input.gameAlerts &&
+        (!existing.gameAlertsEnabledAt || existing.gameAlertsSource !== registration.gameAlertsSource)
+      )
+        await tx
+          .update(subscriptions)
+          .set({ gameAlertsEnabledAt: new Date(), gameAlertsSource: registration.gameAlertsSource })
+          .where(eq(subscriptions.id, input.id));
+      return "registered" as const;
+    }
     if (owned.length >= 10) return "limit" as const;
     const rows = await tx
       .insert(subscriptions)
@@ -57,6 +68,8 @@ function buildSubscriptionRow(input: PushRegistration) {
     p256dh: input.subscription.keys.p256dh,
     auth: input.subscription.keys.auth,
     revocationHash: tokenHash(input.token),
+    gameAlertsEnabledAt: input.gameAlerts ? new Date() : null,
+    gameAlertsSource: input.gameAlerts ? automaticPushSourceKey(parseAutomaticPushSource(input.source)) : null,
   };
 }
 function matchesRegistration(
