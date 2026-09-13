@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-09-14",
+    title: "Mobile Action Menu and Market",
+    description:
+      "The Build, Production, Military, Transfer and Trade menu now appears on phones: a rail on the left in landscape and a row above the tab bar in portrait. The Market fits a phone screen and keeps your AMM tab open when you change resources. The phone order book now leads with a Buy/Sell toggle and the order form, shows the three best offers beneath it, and opens the full list on See all.",
+    type: "feature",
+  },
+  {
     date: "2026-09-13",
     title: "Background Notification Account Safety",
     description:

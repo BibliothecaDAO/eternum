@@ -96,7 +96,7 @@ export const ResourceBar = memo(
     };
 
     return (
-      <div className="resource-bar-selector w-full bg-black/30 border border-gold/15 rounded-xl p-3 flex justify-between h-28 flex-wrap">
+      <div className="resource-bar-selector w-full bg-black/30 border border-gold/15 rounded-xl p-3 flex justify-between gap-2 h-28 flex-wrap max-lg:h-auto">
         <div className="self-center">
           <NumberInput
             className="text-xl"

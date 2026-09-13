@@ -4,6 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { StoreApi, UseBoundStore } from "zustand";
 
+type LogisticsTab = "arrivals" | "transfer" | "automation" | "balances";
+
 interface TestUiState {
   leftNavigationView: LeftView;
   pendingRenameStructureEntityId: number | null;
@@ -13,9 +15,17 @@ interface TestUiState {
   isSpectating: boolean;
   selectedHex: { col: number; row: number } | null;
   selectedBuildingHex: { outerCol: number; outerRow: number; innerCol: number; innerRow: number } | null;
+  structureEntityId: number;
+  playerStructures: { entityId: number }[];
+  logisticsActiveTab: LogisticsTab;
+  setLogisticsActiveTab: (tab: LogisticsTab) => void;
+  arrivedArrivalsNumber: number;
+  pendingArrivalsNumber: number;
 }
 
 const mocks = vi.hoisted(() => ({ rows: [] as { at: number }[] }));
+/** Referenced from the hoisted store factory, so it must be hoisted too. */
+const { OWNED_STRUCTURE_ID } = vi.hoisted(() => ({ OWNED_STRUCTURE_ID: 11 }));
 vi.mock("@/hooks/store/use-ui-store", async () => {
   const { create } = await import("zustand");
   return {
@@ -28,9 +38,29 @@ vi.mock("@/hooks/store/use-ui-store", async () => {
       isSpectating: false,
       selectedHex: null,
       selectedBuildingHex: null,
+      structureEntityId: OWNED_STRUCTURE_ID,
+      playerStructures: [{ entityId: OWNED_STRUCTURE_ID }],
+      logisticsActiveTab: "arrivals",
+      setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
+      arrivedArrivalsNumber: 0,
+      pendingArrivalsNumber: 0,
     })),
   };
 });
+vi.mock("@/config/game-modes/use-game-mode-config", () => ({
+  useGameModeConfig: () => ({ ui: { showTradeMenu: true } }),
+}));
+vi.mock("@/ui/config", () => ({
+  BuildingThumbs: {
+    construction: "construction.png",
+    production: "production.png",
+    military: "military.png",
+    transfer: "transfer.png",
+    scale: "scale.png",
+  },
+}));
+vi.mock("@/ui/features/economy/trading", () => ({ MarketModal: () => <article>Market</article> }));
+vi.mock("@/ui/features/settlement", () => ({ ProductionModal: () => <article>Production</article> }));
 vi.mock("@/utils/can-issue-orders", () => ({
   canIssueOrders: (state: { isSpectating: boolean }) => !state.isSpectating,
 }));
@@ -83,9 +113,16 @@ const store = useUIStore as unknown as UseBoundStore<StoreApi<TestUiState>>;
 
 let container: HTMLDivElement;
 let root: Root;
-const tab = (label: string) => container.querySelector<HTMLButtonElement>(`nav [aria-label="${label}"]`);
+const TAB_BAR = 'nav[aria-label="HUD tabs"]';
+const ACTION_STRIP = 'nav[aria-label="Structure actions"]';
+const tab = (label: string) => container.querySelector<HTMLButtonElement>(`${TAB_BAR} [aria-label="${label}"]`);
 const tabLabels = () =>
-  [...container.querySelectorAll("nav button")].map((button) => button.getAttribute("aria-label"));
+  [...container.querySelectorAll(`${TAB_BAR} button`)].map((button) => button.getAttribute("aria-label"));
+const actionStrip = () => container.querySelector<HTMLElement>(ACTION_STRIP);
+const action = (label: string) => container.querySelector<HTMLButtonElement>(`${ACTION_STRIP} [aria-label="${label}"]`);
+const actionLabels = () =>
+  [...container.querySelectorAll(`${ACTION_STRIP} button`)].map((button) => button.getAttribute("aria-label"));
+const shell = () => container.querySelector<HTMLElement>('[aria-label="Compact HUD"]');
 const sheet = () => container.querySelector('[aria-label="HUD sheet"]');
 const sheetContent = () =>
   [...(sheet()?.querySelectorAll("article") ?? [])].map((element) => element.textContent).join("");
@@ -102,6 +139,9 @@ beforeEach(async () => {
     isSpectating: false,
     selectedHex: null,
     selectedBuildingHex: null,
+    structureEntityId: OWNED_STRUCTURE_ID,
+    arrivedArrivalsNumber: 0,
+    pendingArrivalsNumber: 0,
   });
   container = document.createElement("div");
   document.body.append(container);
@@ -117,19 +157,56 @@ afterEach(async () => {
 it("keeps all five navigation targets stable before a tile is selected", () => {
   expect(tabLabels()).toEqual(["Empire", "Map", "Log", "Chat", "Details"]);
   expect(sheet()).toBeNull();
-  expect(container.querySelector('[aria-label="Compact HUD"]')?.className).toContain("pointer-events-none");
+  expect(shell()?.className).toContain("pointer-events-none");
 });
 
 it("docks to the right edge as a column and a vertical rail in landscape, with the sheet filling the column", async () => {
   await act(async () => root.render(<CompactHud key="landscape" lane="landscape" />));
-  const shell = container.querySelector('[aria-label="Compact HUD"]')!;
-  expect(shell.className).toContain("flex-row");
-  expect(shell.className).toContain("safe-area-inset-top");
-  expect(shell.className).not.toContain("inset-x-0");
-  expect(container.querySelector("nav")?.className).toContain("flex-col");
+  expect(shell()?.className).toContain("flex-row");
+  expect(shell()?.className).toContain("safe-area-inset-top");
+  expect(shell()?.className).not.toContain("inset-x-0");
+  expect(container.querySelector(TAB_BAR)?.className).toContain("flex-col");
   await tap("Map");
   expect(sheet()?.className).toContain("flex-1");
   expect(sheet()?.className).not.toContain("max-h-[55dvh]");
+});
+
+it("offers the structure actions in a row above the tab bar in portrait, only for an owned structure", async () => {
+  expect(actionLabels()).toEqual(["Build", "Production", "Military", "Transfer", "Trade"]);
+  expect(actionStrip()?.className).toContain("pointer-events-auto");
+  expect(shell()?.contains(actionStrip())).toBe(true);
+  expect(actionStrip()?.nextElementSibling).toBe(container.querySelector(TAB_BAR));
+  expect(tabLabels()).toEqual(["Empire", "Map", "Log", "Chat", "Details"]);
+  await act(async () => store.setState({ structureEntityId: OWNED_STRUCTURE_ID + 1 }));
+  expect(actionStrip()).toBeNull();
+  await act(async () => store.setState({ structureEntityId: OWNED_STRUCTURE_ID, isSpectating: true }));
+  expect(actionStrip()).toBeNull();
+});
+
+it("docks the structure actions as their own rail on the left edge in landscape", async () => {
+  await act(async () => root.render(<CompactHud key="landscape" lane="landscape" />));
+  const rail = actionStrip()!;
+  expect(rail).not.toBe(container.querySelector(TAB_BAR));
+  expect(shell()?.contains(rail)).toBe(false);
+  expect(rail.className).toContain("left-0");
+  expect(rail.className).toContain("safe-area-inset-top");
+  expect(rail.className).toContain("flex-col");
+  expect(rail.className).toContain("overflow-y-auto");
+  expect(actionLabels()).toEqual(["Build", "Production", "Military", "Transfer", "Trade"]);
+  expect(tabLabels()).toEqual(["Empire", "Map", "Log", "Chat", "Details"]);
+});
+
+it("opens the build workspace and the market from the structure actions, replacing any open sheet", async () => {
+  await tap("Empire");
+  await act(async () => action("Build")!.click());
+  expect(store.getState().leftNavigationView).toBe(LeftView.ConstructionView);
+  expect(action("Build")?.getAttribute("aria-pressed")).toBe("true");
+  expect(sheet()).toBeNull();
+  await act(async () => action("Build")!.click());
+  expect(store.getState().leftNavigationView).toBe(LeftView.None);
+  await act(async () => action("Trade")!.click());
+  expect(usePopoverStore.getState().openId).toBe("market");
+  expect(sheet()).toBeNull();
 });
 
 it("opens one sheet at a time and closes it when the active tab is tapped again", async () => {
