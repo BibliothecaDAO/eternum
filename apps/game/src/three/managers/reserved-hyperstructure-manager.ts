@@ -1,5 +1,5 @@
 import { activeMapLayer } from "@/three/map-layer";
-import { ReservedHyperstructureModelPath } from "@/three/constants";
+import { createHyperstructureKit } from "../structures/hyperstructure-kit";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
 import {
@@ -11,7 +11,6 @@ import { type HexPosition } from "@bibliothecadao/types";
 import { Color, Material, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene } from "three";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { getWorldPositionForHex } from "../utils";
-import { gltfLoader } from "../utils/utils";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 
 const RESERVED_HYPERSTRUCTURE_CAPACITY = 128;
@@ -90,9 +89,7 @@ export class ReservedHyperstructureManager {
 
   private async loadModel(): Promise<void> {
     try {
-      const gltf = await new Promise<any>((resolve, reject) => {
-        gltfLoader.load(ReservedHyperstructureModelPath, resolve, undefined, reject);
-      });
+      const gltf = createHyperstructureKit(true);
 
       if (this.destroyed) {
         return;

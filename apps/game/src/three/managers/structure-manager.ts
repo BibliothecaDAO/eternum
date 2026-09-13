@@ -128,6 +128,9 @@ import {
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
 
+import { HyperstructureModel } from "../structures/hyperstructure-model";
+import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
+
 type StructureModel = InstancedModel | RewardTileModel;
 
 // Fixed buffer capacity per structure model — buffers never grow (StructureModel
@@ -306,6 +309,7 @@ export class StructureManager {
   private pendingVisibleStructureTransitionToken?: number;
   private previousVisibleIds: Set<ID> = new Set(); // Committed visible ownership; also drives point cleanup.
   private visibleStructureWindow?: VisibleStructureWindow;
+  private readonly pendingHyperstructureBuilds = new Set<ID>();
   // Per-entity StructureInfo; a Structure, StructureBuildings, Hyperstructure, or projection change deletes the entry.
   private readonly structureInfoCache = new Map<ID, StructureInfo>();
   private readonly metrics: StructureManagerMetrics = {
@@ -389,6 +393,7 @@ export class StructureManager {
   }
 
   private removeStructurePresentation(entityId: ID): void {
+    this.pendingHyperstructureBuilds.delete(entityId);
     const entityNumericId = Number(entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
@@ -402,6 +407,7 @@ export class StructureManager {
   }
 
   private handleStructureProjectionChanges(changes: readonly StructureSpatialProjectionChange[]): void {
+    this.trackClaimedHyperstructureSites(changes);
     changes.forEach(({ previous, current }) => {
       this.invalidateStructureInfo(previous?.entityId);
       this.invalidateStructureInfo(current?.entityId);
@@ -414,6 +420,22 @@ export class StructureManager {
     this.metrics.visibleStructureChangeSetUpdates += 1;
     if (refreshEntityIds.size > 0) {
       void this.requestVisibleStructuresRefresh({ refreshEntityIds });
+    }
+  }
+
+  private trackClaimedHyperstructureSites(changes: readonly StructureSpatialProjectionChange[]): void {
+    const bounds = this.visibleStructureWindow?.bounds;
+    if (!bounds) return;
+    const claimedSites = changes.flatMap(({ previous, current }) =>
+      previous?.reserved && !current && isWithinBounds(previous.hexCoords, bounds) ? [previous.hexCoords] : [],
+    );
+    if (claimedSites.length === 0) return;
+    for (const { previous, current } of changes) {
+      if (previous || !current || current.reserved) continue;
+      const { alt, col, row } = current.hexCoords;
+      if (claimedSites.some((site) => site.alt === alt && site.col === col && site.row === row)) {
+        this.pendingHyperstructureBuilds.add(current.entityId);
+      }
     }
   }
 
@@ -434,6 +456,7 @@ export class StructureManager {
         structureWindow.structures.set(entityId, visibleRenderable);
       } else {
         structureWindow.structures.delete(entityId);
+        this.pendingHyperstructureBuilds.delete(entityId);
       }
       if (wasVisible || visibleRenderable) touchedEntityIds.add(entityId);
     });
@@ -473,6 +496,13 @@ export class StructureManager {
       if (entityId !== undefined) this.refreshStructurePresentation(entityId);
     });
     if (hyperstructureSubscription) this.recsUnsubscribes.push(() => hyperstructureSubscription.unsubscribe());
+
+    const requirementsSubscription = this.components?.HyperstructureRequirements?.update$.subscribe(({ value }) => {
+      const [current, previous] = value;
+      const entityId = normalizeEntityId(current?.hyperstructure_id ?? previous?.hyperstructure_id);
+      if (entityId !== undefined) this.refreshStructurePresentation(entityId);
+    });
+    if (requirementsSubscription) this.recsUnsubscribes.push(() => requirementsSubscription.unsubscribe());
 
     const addressNameSubscription = this.components?.AddressName?.update$.subscribe(() => {
       // Owner names are folded into every cached record.
@@ -784,6 +814,7 @@ export class StructureManager {
     this.structureInfoCache.clear();
     this.chunkAssetPrewarmPromises.clear();
     this.visibleStructureWindow = undefined;
+    this.pendingHyperstructureBuilds.clear();
     this.visibleStructureCount = 0;
     this.pendingVisibleStructureRefreshIds.clear();
     this.pendingVisibleStructureTransitionToken = undefined;
@@ -857,6 +888,7 @@ export class StructureManager {
     this.previousVisibleIds.clear();
     this.structureInfoCache.clear();
     this.visibleStructureWindow = undefined;
+    this.pendingHyperstructureBuilds.clear();
 
     this.compactLabelRenderer.dispose();
     this.compactLabelIds.clear();
@@ -927,6 +959,7 @@ export class StructureManager {
   }
 
   private async loadStructureModel(structureType: StructureType, modelPath: string): Promise<StructureModel> {
+    if (structureType === StructureType.Hyperstructure) return new HyperstructureModel(STRUCTURE_INSTANCE_CAPACITY);
     const startedAt = performance.now();
     const gltf = await gltfLoader.loadAsync(modelPath);
     recordWorldmapRenderDuration("structureModelLoadMs", performance.now() - startedAt);
@@ -1278,6 +1311,7 @@ export class StructureManager {
   }
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
+    if (structure.structureType === StructureType.Hyperstructure) return 0;
     return structure.structureType === StructureType.Realm ? structure.level : structure.stage;
   }
 
@@ -1545,6 +1579,13 @@ export class StructureManager {
       ? this.addVisibleCosmeticStructureInstances(structure, dirtyModels)
       : this.addVisibleBaseStructureInstances(structure, dirtyModels);
     for (const binding of bindings) {
+      if (binding.model instanceof HyperstructureModel && this.components) {
+        binding.model.setConstructionAt(
+          binding.instanceIndex,
+          readHyperstructureConstruction(this.components, Number(structure.entityId)),
+          this.pendingHyperstructureBuilds.delete(structure.entityId),
+        );
+      }
       if (binding.model instanceof SettlementModel) {
         binding.model.setRelationshipAt(binding.instanceIndex, resolveSettlementRelationship(structure.isMine));
         if (binding.model.kind === "realm") binding.model.setOrderAt(binding.instanceIndex, structure.realmOrder);
@@ -1783,6 +1824,9 @@ export class StructureManager {
     this.queryStructuresInBounds(bounds).forEach((renderable) => {
       if (!renderable.reserved) structures.set(renderable.entityId, renderable);
     });
+    for (const id of this.pendingHyperstructureBuilds) {
+      if (!structures.has(id)) this.pendingHyperstructureBuilds.delete(id);
+    }
     this.visibleStructureWindow = { chunkKey, bounds, structures };
     return this.visibleStructureWindow;
   }

@@ -8,6 +8,8 @@ import {
 } from "@/three/constants/scene-constants";
 import { SettlementModel } from "../structures/settlement-model";
 import { TERRAIN_LAB_BUILDINGS, type TerrainLabBuilding } from "./terrain-lab-buildings";
+import { HyperstructureModel } from "../structures/hyperstructure-model";
+import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { SpireModel } from "../structures/spire-model";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
@@ -113,7 +115,7 @@ export class TerrainLabInteraction {
     }
     this.hover.update(delta);
     for (const [key, model] of this.models) {
-      if (key.startsWith("/") && model.group.visible) {
+      if ((key.startsWith("/") || key === HYPERSTRUCTURE_MODEL_PATH) && model.group.visible) {
         if (model instanceof RewardTileModel) model.updatePresentation(0, this.camera.position);
         model.updateAnimations(delta, { cameraPosition: this.camera.position });
       }
@@ -169,14 +171,20 @@ export class TerrainLabInteraction {
     this.pendingExploration = { prepared: revealed, source, revision, coveredFrame: false };
   }
 
-  async placeBuilding(path: string, yaw: number): Promise<void> {
+  async placeBuilding(path: string, yaw: number, hyperstructureId = 17, constructionProgress = 100): Promise<void> {
     this.cancelExplorationPreview();
     const asset = TERRAIN_LAB_BUILDINGS.find((building) => building.path === path);
     if (!asset) throw new Error(`Unknown lab building: ${path}`);
     const selected = { ...this.selected };
     const model = await this.loadModel(path, path, this.request.cells.length, asset.label);
     if (!model || this.disposed) return;
-    this.buildings.set(`${selected.col}:${selected.row}`, { ...selected, path, yaw });
+    this.buildings.set(`${selected.col}:${selected.row}`, {
+      ...selected,
+      path,
+      yaw,
+      hyperstructureId,
+      constructionProgress,
+    });
     await this.presentFixture();
   }
 
@@ -267,10 +275,16 @@ export class TerrainLabInteraction {
       const index = counts.get(building.path) ?? 0;
       model.setMatrixAt(index, this.matrix);
       if (model instanceof SettlementModel) this.applySettlementHeraldry(model, index);
+      if (model instanceof HyperstructureModel)
+        model.setConstructionAt(index, {
+          entityId: building.hyperstructureId ?? 17,
+          progress: building.constructionProgress ?? 100,
+          completed: (building.constructionProgress ?? 100) >= 100,
+        });
       counts.set(building.path, index + 1);
     }
     for (const [path, model] of this.models) {
-      if (!path.startsWith("/")) continue;
+      if (!path.startsWith("/") && path !== HYPERSTRUCTURE_MODEL_PATH) continue;
       const count = counts.get(path) ?? 0;
       model.setCount(count);
       model.group.visible = count > 0;
@@ -302,9 +316,9 @@ export class TerrainLabInteraction {
     capacity: number,
     name: string,
   ): Promise<InstancedModel | RewardTileModel | null> {
-    const gltf = await gltfLoader.loadAsync(path);
+    const gltf = path === HYPERSTRUCTURE_MODEL_PATH ? null : await gltfLoader.loadAsync(path);
     if (this.disposed) return null;
-    const model = this.createPreviewModel(gltf, path, capacity, name);
+    const model = gltf ? this.createPreviewModel(gltf, path, capacity, name) : new HyperstructureModel(capacity);
     let retained = false;
     try {
       model.setCount(1);

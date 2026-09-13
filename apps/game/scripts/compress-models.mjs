@@ -25,10 +25,6 @@ const heroModels = new Set([
   "settlements/kingdom.glb",
   "settlements/empire.glb",
   "new-buildings-opt/castle1.glb",
-  "new-buildings-opt/hyperstructure.glb",
-  "new-buildings-opt/hyperstructure_finish.glb",
-  "new-buildings-opt/hyperstructure_half.glb",
-  "new-buildings-opt/hyperstructure_init.glb",
   "new-buildings-opt/wonder.glb",
   "new-buildings-opt/wonder2.glb",
 ]);

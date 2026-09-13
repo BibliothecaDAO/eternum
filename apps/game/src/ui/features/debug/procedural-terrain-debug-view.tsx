@@ -2,6 +2,7 @@ import { orders } from "@bibliothecadao/types";
 import { WeatherLabControls } from "./weather-lab-controls";
 import { AtmosphereLabControls } from "./atmosphere-lab-controls";
 import { TERRAIN_LAB_BUILDINGS } from "@/three/debug/terrain-lab-buildings";
+import { HYPERSTRUCTURE_MODEL_PATH } from "@/three/structures/hyperstructure-design";
 import { VILLAGE_MODEL_PATH, isRealmModelPath } from "@/three/constants/scene-constants";
 import { SETTLEMENT_RELATIONSHIPS, type SettlementRelationship } from "@/three/structures/settlement-appearance";
 import { RefreshCw } from "lucide-react";
@@ -103,6 +104,8 @@ export const ProceduralTerrainDebugView = () => {
     : undefined;
   const [buildingPath, setBuildingPath] = useState(TERRAIN_LAB_BUILDINGS[0].path);
   const [buildingYaw, setBuildingYaw] = useState(0);
+  const [hyperstructureId, setHyperstructureId] = useState(17);
+  const [constructionProgress, setConstructionProgress] = useState(100);
   const [cycleProgress, setCycleProgress] = useState(50);
   const [entryEdge, setEntryEdge] = useState(0);
   const [preparingBuilding, setPreparingBuilding] = useState(false);
@@ -392,6 +395,38 @@ export const ProceduralTerrainDebugView = () => {
                 ))}
               </select>
             </label>
+            {buildingPath === HYPERSTRUCTURE_MODEL_PATH && (
+              <>
+                <label className="flex flex-col gap-1 text-sm">
+                  Hyperstructure ID
+                  <input
+                    aria-label="Hyperstructure ID"
+                    className="bg-stone-900 p-2"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={hyperstructureId}
+                    onChange={(event) => setHyperstructureId(Math.max(1, Math.floor(Number(event.target.value) || 1)))}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  Construction · {constructionProgress}%
+                  <input
+                    aria-label="Hyperstructure construction"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={constructionProgress}
+                    onChange={(event) => setConstructionProgress(Number(event.target.value))}
+                  />
+                </label>
+                <p className="text-xs text-stone-400">
+                  Place again on the selected tile to apply progress. Set 0%, place, then set 100% and place again to
+                  preview the build and activation.
+                </p>
+              </>
+            )}
             {isRealmModelPath(buildingPath) && (
               <label className="flex flex-col gap-1 text-sm">
                 Realm order
@@ -449,7 +484,12 @@ export const ProceduralTerrainDebugView = () => {
               onClick={async () => {
                 setPreparingBuilding(true);
                 try {
-                  await rendererRef.current?.placeBuilding(buildingPath, buildingYaw);
+                  await rendererRef.current?.placeBuilding(
+                    buildingPath,
+                    buildingYaw,
+                    hyperstructureId,
+                    constructionProgress,
+                  );
                 } catch (reason) {
                   setError(String(reason));
                 } finally {
