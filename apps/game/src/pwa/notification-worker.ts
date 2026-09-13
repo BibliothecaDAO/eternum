@@ -1,5 +1,18 @@
-import { notificationMatchesGame, parseNotificationPayload } from "@bibliothecadao/notifications";
 import {
+  notificationMatchesSource,
+  automaticPushSourceKey,
+  notificationMatchesGame,
+  parseNotificationPayload,
+  parsePushEnvelope,
+  isPushDeviceId,
+} from "@bibliothecadao/notifications";
+import {
+  configureAutomaticPush,
+  readPushNotificationDevice,
+  preparePushNotificationDevice,
+  activatePushNotificationDevice,
+  revokePushNotificationDevice,
+  forgetPushNotificationDevice,
   claimNotification,
   disableNotificationDevice,
   enableNotificationDevice,
@@ -23,6 +36,20 @@ export function installNotificationWorker(worker: ServiceWorkerGlobalScope): voi
         queued--;
       });
     queue = work.catch(() => {});
+    event.waitUntil(work);
+  });
+  worker.addEventListener("push", (event) => {
+    if (queued >= 64) return;
+    queued++;
+    const work = queue
+      .then(() => receivePushNotification(worker, event))
+      .catch(() => {
+        console.warn("push_notification_rejected");
+      })
+      .finally(() => {
+        queued--;
+      });
+    queue = work;
     event.waitUntil(work);
   });
   worker.addEventListener("notificationclick", (event) => {
@@ -53,8 +80,30 @@ async function handleNotificationMessage(
 async function runNotificationCommand(
   worker: ServiceWorkerGlobalScope,
   source: Client,
-  input: { owner: string; action: string; payload?: unknown; token?: string },
+  input: { owner: string; action: string; payload?: unknown; token?: string; id?: string; source?: unknown },
 ) {
+  if (input.action === "push-capabilities") return { automaticGameAlerts: true };
+  if (input.action === "push-status") return (await readPushNotificationDevice()) ?? null;
+  if (input.action === "prepare-push") return preparePushNotificationDevice(input.owner);
+  if (input.action === "revoke-push") {
+    const revoked = await revokePushNotificationDevice(input.owner, input.id);
+    for (const notification of await worker.registration.getNotifications()) {
+      if (revoked && notification.data?.owner === input.owner && notification.data?.subscriptionId === revoked.id)
+        notification.close();
+    }
+    return revoked;
+  }
+  if (input.action === "prepare-automatic" || input.action === "acknowledge-automatic") {
+    if (!isPushDeviceId(input.id)) throw new Error("Invalid automatic registration");
+    await configureAutomaticPush(input.owner, input.id, input.source, input.action === "acknowledge-automatic");
+    return null;
+  }
+  if (input.action === "activate-push" || input.action === "forget-push") {
+    if (!isPushDeviceId(input.id)) throw new Error("Invalid push registration");
+    if (input.action === "activate-push") await activatePushNotificationDevice(input.owner, input.id);
+    else await forgetPushNotificationDevice(input.owner, input.id);
+    return null;
+  }
   if (input.action === "status") {
     const device = await readNotificationDevice();
     return device?.owner === input.owner ? device : null;
@@ -74,7 +123,16 @@ async function runNotificationCommand(
   if (input.action !== "deliver" && input.action !== "test") throw new Error("Unknown notification command");
   const payload = parseNotificationPayload(input.payload, Date.now());
   if (payload.owner !== input.owner || typeof input.token !== "string") throw new Error("Notification account changed");
-  if (await worker.registration.pushManager?.getSubscription()) return "push-owned";
+  // Automatic push owns OS delivery on opted-in devices; the live page still renders its activity feed.
+  const automatic = await readPushNotificationDevice();
+  if (
+    input.action === "deliver" &&
+    automatic?.owner === input.owner &&
+    automatic.state === "active" &&
+    automatic.automatic?.acknowledged &&
+    notificationMatchesSource(payload, automatic.automatic)
+  )
+    return "push-owned";
   if (!notificationMatchesGame(source.url, payload.target, worker.location.origin)) return "game-changed";
   if (!(await claimNotification({ ...payload, id: `${input.owner}:${payload.id}`, token: input.token }, Date.now())))
     return "suppressed";
@@ -101,9 +159,20 @@ async function runNotificationCommand(
 
 async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unknown): Promise<void> {
   try {
-    const payload = parseNotificationPayload(value, Date.now());
-    const device = await readNotificationDevice();
+    const push =
+      value && typeof value === "object" && "subscriptionId" in value ? parsePushEnvelope(value, Date.now()) : null;
+    const payload = push?.notification ?? parseNotificationPayload(value, Date.now());
+    const pushDevice = push ? await readPushNotificationDevice() : undefined;
+    const device = push ? pushDevice : await readNotificationDevice();
     if (device?.owner !== payload.owner) return;
+    if (push && (!pushDevice || pushDevice.state !== "active" || pushDevice.id !== push.subscriptionId)) return;
+    if (
+      push?.kind === "game" &&
+      (!pushDevice?.automatic ||
+        !push.source ||
+        automaticPushSourceKey(pushDevice.automatic) !== automaticPushSourceKey(push.source))
+    )
+      return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
     const matching = clients.find((client) =>
       notificationMatchesGame(client.url, payload.target, worker.location.origin),
@@ -117,4 +186,46 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
   } catch {
     // A notification can outlive its payload or the account that enabled it. Invalid/expired clicks do nothing.
   }
+}
+
+async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: PushEvent): Promise<void> {
+  const text = event.data?.text();
+  if (!text || text.length > 4096) throw new Error("Invalid push payload");
+  const envelope = parsePushEnvelope(JSON.parse(text), Date.now());
+  const device = await readPushNotificationDevice();
+  if (
+    !device ||
+    device.id !== envelope.subscriptionId ||
+    device.owner !== envelope.notification.owner ||
+    device.state !== "active"
+  )
+    return;
+  if (
+    envelope.kind === "game" &&
+    (!device.automatic ||
+      !envelope.source ||
+      automaticPushSourceKey(device.automatic) !== automaticPushSourceKey(envelope.source))
+  )
+    return;
+  const payload = envelope.notification;
+  if (
+    !(await claimNotification(
+      {
+        ...payload,
+        id: `${payload.owner}:${payload.id}`,
+        token: device.token,
+        subscriptionId: device.id,
+        automatic: envelope.kind === "game" ? envelope.source : undefined,
+      },
+      Date.now(),
+    ))
+  )
+    return;
+  await worker.registration.showNotification(payload.title, {
+    body: payload.body,
+    tag: payload.id,
+    data: { ...envelope, owner: payload.owner },
+    icon: "/images/game-pwa-192x192.png",
+    badge: "/images/game-pwa-192x192.png",
+  });
 }

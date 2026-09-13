@@ -1,8 +1,25 @@
 // @vitest-environment node
 import { beforeEach, expect, it, vi } from "vitest";
-const database = vi.hoisted(() => ({ read: vi.fn(), enable: vi.fn(), disable: vi.fn(), claim: vi.fn() }));
+const database = vi.hoisted(() => ({
+  read: vi.fn(),
+  enable: vi.fn(),
+  disable: vi.fn(),
+  claim: vi.fn(),
+  pushRead: vi.fn(),
+  pushPrepare: vi.fn(),
+  pushActivate: vi.fn(),
+  pushRevoke: vi.fn(),
+  pushForget: vi.fn(),
+  configureAutomatic: vi.fn(),
+}));
 vi.mock("./notification-database", () => ({
   readNotificationDevice: database.read,
+  configureAutomaticPush: database.configureAutomatic,
+  readPushNotificationDevice: database.pushRead,
+  preparePushNotificationDevice: database.pushPrepare,
+  activatePushNotificationDevice: database.pushActivate,
+  revokePushNotificationDevice: database.pushRevoke,
+  forgetPushNotificationDevice: database.pushForget,
   enableNotificationDevice: database.enable,
   disableNotificationDevice: database.disable,
   claimNotification: database.claim,
@@ -72,12 +89,23 @@ function harness() {
     await work;
     expect(close).toHaveBeenCalledOnce();
   };
-  return { client, clients, registration, send, click };
+  const push = async (value: unknown) => {
+    let work: Promise<void> | undefined;
+    handlers.get("push")!({
+      data: { text: () => JSON.stringify(value) },
+      waitUntil: (promise: Promise<void>) => {
+        work = promise;
+      },
+    });
+    await work;
+  };
+  return { client, clients, registration, send, click, push };
 }
 beforeEach(() => {
   vi.clearAllMocks();
   database.read.mockResolvedValue({ owner: "0x1", token: "token", enabledAt: now - 1000 });
   database.claim.mockResolvedValue(true);
+  database.pushRead.mockResolvedValue(undefined);
 });
 
 it("serializes racing tabs and only displays the winning durable claim", async () => {
@@ -99,13 +127,13 @@ it("claims focused activity too, so a later blur cannot turn a duplicate into an
   expect(database.claim).toHaveBeenCalledOnce();
   expect(h.registration.showNotification).not.toHaveBeenCalled();
 });
-it("does not compete with a push subscription or send from a different game", async () => {
+it("keeps local alerts during the push-test preview but rejects a different game", async () => {
   const h = harness();
   h.registration.pushManager.getSubscription.mockResolvedValueOnce({} as never);
-  expect((await h.send()).value).toBe("push-owned");
+  expect((await h.send()).value).toBe("shown");
   h.client.url = "https://game.test/play/madara/game-2/map";
   expect((await h.send()).value).toBe("game-changed");
-  expect(database.claim).not.toHaveBeenCalled();
+  expect(database.claim).toHaveBeenCalledOnce();
 });
 it("rejects invalid payloads and owner changes before touching delivery storage", async () => {
   const h = harness();
@@ -138,4 +166,138 @@ it("disabling delivery closes only that account's displayed notifications", asyn
   expect(database.disable).toHaveBeenCalledWith("0x1");
   expect(old.close).toHaveBeenCalledOnce();
   expect(other.close).not.toHaveBeenCalled();
+});
+
+const subscriptionId = "11111111-1111-4111-8111-111111111111";
+it("receives server push with no page clients and routes its click through normal game entry", async () => {
+  const h = harness();
+  h.clients.matchAll.mockResolvedValue([]);
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    token: "push-token",
+    state: "active",
+    enabledAt: now - 1000,
+  });
+  const envelope = { version: 1, subscriptionId, notification: payload };
+  await h.push(envelope);
+  expect(h.registration.showNotification).toHaveBeenCalledOnce();
+  expect(database.claim).toHaveBeenCalledWith(
+    expect.objectContaining({ subscriptionId, token: "push-token" }),
+    expect.any(Number),
+  );
+  await h.click({ ...envelope, owner: "0x1" });
+  expect(h.clients.openWindow).toHaveBeenCalledWith("https://game.test/enter/madara/game-1");
+});
+it.each(["revoking", "preparing"])("rejects server push and clicks for a %s registration", async (state) => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({ owner: "0x1", id: subscriptionId, state });
+  const envelope = { version: 1, subscriptionId, notification: payload };
+  await h.push(envelope);
+  await h.click({ ...envelope, owner: "0x1" });
+  expect(h.registration.showNotification).not.toHaveBeenCalled();
+  expect(h.clients.openWindow).not.toHaveBeenCalled();
+  expect(h.client.focus).not.toHaveBeenCalled();
+});
+it("rejects expired or account-mismatched server envelopes", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({ owner: "0x2", id: subscriptionId, state: "active" });
+  await h.push({ version: 1, subscriptionId, notification: payload });
+  await h.push({ version: 1, subscriptionId, notification: { ...payload, expiresAt: 1 } });
+  expect(h.registration.showNotification).not.toHaveBeenCalled();
+});
+
+it("lets automatic push own delivery without a local claim swallowing the server alert", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    token: "push-token",
+    state: "active",
+    automatic: { chain: "madara", worldAddress: "0x123", acknowledged: true },
+  });
+  h.client.focused = true;
+  h.client.visibilityState = "visible";
+  const gamePayload = { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" };
+  expect((await h.send("deliver", { payload: gamePayload })).value).toBe("push-owned");
+  expect(database.claim).not.toHaveBeenCalled();
+  await h.push({
+    version: 1,
+    kind: "game",
+    source: { chain: "madara", worldAddress: "0x123" },
+    subscriptionId,
+    notification: { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" },
+  });
+  expect(h.registration.showNotification).toHaveBeenCalledOnce();
+  expect(database.claim).toHaveBeenCalledWith(
+    expect.objectContaining({ automatic: { chain: "madara", worldAddress: "0x123" } }),
+    expect.any(Number),
+  );
+});
+it("does not deliver or open automatic alerts on a test-only device", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({ owner: "0x1", id: subscriptionId, state: "active", automatic: undefined });
+  const envelope = {
+    version: 1,
+    kind: "game",
+    source: { chain: "madara", worldAddress: "0x123" },
+    subscriptionId,
+    notification: { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" },
+  };
+  await h.push(envelope);
+  await h.click(envelope);
+  expect(h.registration.showNotification).not.toHaveBeenCalled();
+  expect(h.client.focus).not.toHaveBeenCalled();
+});
+
+it("keeps local delivery for other chains and worlds even when automatic push owns one source", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    state: "active",
+    automatic: { chain: "appchain", worldAddress: "0x123", acknowledged: true },
+  });
+  const gamePayload = { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" };
+  expect((await h.send("deliver", { payload: gamePayload })).value).toBe("shown");
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    state: "active",
+    automatic: { chain: "madara", worldAddress: "0x999", acknowledged: true },
+  });
+  expect((await h.send("deliver", { payload: gamePayload })).value).toBe("shown");
+});
+it("keeps local delivery during incomplete automatic setup", async () => {
+  const h = harness();
+  database.pushRead.mockResolvedValue({
+    owner: "0x1",
+    id: subscriptionId,
+    state: "active",
+    automatic: { chain: "madara", worldAddress: "0x123", acknowledged: false },
+  });
+  expect(
+    (
+      await h.send("deliver", {
+        payload: { ...payload, id: "story:v1:madara:0x123:0x7:0xabc:logical:BattleStory:0x64" },
+      })
+    ).value,
+  ).toBe("shown");
+});
+
+it("closes only the revoked registration's notifications and ignores stale revocation", async () => {
+  const h = harness();
+  const old = { owner: "0x1", id: "11111111-1111-4111-8111-111111111111" };
+  const notifications = [
+    { data: { owner: old.owner, subscriptionId: old.id }, close: vi.fn() },
+    { data: { owner: old.owner, subscriptionId: "replacement" }, close: vi.fn() },
+    { data: { owner: "0x2", subscriptionId: old.id }, close: vi.fn() },
+  ];
+  h.registration.getNotifications.mockResolvedValue(notifications);
+  database.pushRevoke.mockResolvedValueOnce(null).mockResolvedValueOnce(old);
+  await h.send("revoke-push", { id: old.id });
+  expect(notifications.every((notification) => notification.close.mock.calls.length === 0)).toBe(true);
+  await h.send("revoke-push", { id: old.id });
+  expect(database.pushRevoke).toHaveBeenLastCalledWith(old.owner, old.id);
+  expect(notifications.map((notification) => notification.close.mock.calls.length)).toEqual([1, 0, 0]);
 });

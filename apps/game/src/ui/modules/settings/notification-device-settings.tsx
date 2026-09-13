@@ -102,7 +102,7 @@ export function NotificationDeviceSettings({
     <div className="space-y-2">
       <p className={HUD_BODY}>
         Device delivery: {deviceError ? "Unknown" : device && !capability ? "Local" : "Off"}. Local alerts need a
-        running game page; closing or suspending it stops delivery.
+        running game page. Devices opted into automatic background alerts use server delivery instead.
       </p>
       {capability && <p className={HUD_BODY}>{capability}</p>}
       {deviceError && (

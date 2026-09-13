@@ -1,3 +1,4 @@
+import { reconcilePushAccount } from "./push-notification-client";
 import { useEffect, useState } from "react";
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
@@ -9,8 +10,12 @@ export function LocalNotificationLifecycle() {
   const [detachOwner, setDetachOwner] = useState<string | null>(null);
   const detach = async (owner: string) => {
     try {
-      if ((await navigator.serviceWorker.getRegistration("/"))?.active)
+      if (
+        (await navigator.serviceWorker.getRegistration("/"))?.active &&
+        useIdentitySessionStore.getState().session?.user.id !== owner
+      )
         await notificationWorkerRequest(owner, "disable");
+      await reconcilePushAccount();
       setDetachOwner((pending) => (pending === owner ? null : pending));
     } catch (error) {
       setDetachOwner(owner);
@@ -26,6 +31,13 @@ export function LocalNotificationLifecycle() {
       }),
     [],
   );
+  useEffect(() => {
+    if (status === "loading") return;
+    void reconcilePushAccount().catch((error) => {
+      setDetachOwner(session?.user.id ?? "0x0");
+      reportNotificationDeliveryError(error);
+    });
+  }, [status, session?.user.id]);
   return (
     <>
       {status !== "loading" && (
@@ -36,12 +48,14 @@ export function LocalNotificationLifecycle() {
           role="alert"
           className="fixed bottom-4 left-4 z-[200] max-w-sm rounded border border-gold/40 bg-black p-3 text-sm text-gold"
         >
-          Device notifications could not be disabled for your previous account.
+          Background notifications need attention. Reconnect or apply the latest game update, then retry.
           <button
             type="button"
             className="ml-2 underline"
             onClick={() => {
-              void detach(detachOwner);
+              void reconcilePushAccount()
+                .then(() => detach(detachOwner))
+                .catch(reportNotificationDeliveryError);
             }}
           >
             Retry

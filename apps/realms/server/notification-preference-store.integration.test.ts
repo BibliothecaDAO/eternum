@@ -1,5 +1,4 @@
-import { randomUUID } from "node:crypto";
-import { generateDrizzleJson, generateMigration } from "drizzle-kit/api";
+import { createNotificationTestDatabase } from "./notification-test-database";
 import { notificationPreferences } from "@realms-world/db";
 import { Effect } from "effect";
 import { Pool } from "pg";
@@ -11,33 +10,16 @@ import { createNotificationPreferenceStore } from "./notification-preference-sto
 
 const databaseUrl = process.env.IDENTITY_TEST_DATABASE_URL;
 describe.skipIf(!databaseUrl)("notification preferences in PostgreSQL", () => {
-  let admin: Pool;
+  let testDatabase: Awaited<ReturnType<typeof createNotificationTestDatabase>>;
   let pool: Pool;
-  let schema: string;
   let store: ReturnType<typeof promiseStore>;
   beforeAll(async () => {
-    admin = new Pool({ connectionString: databaseUrl });
-    schema = `preferences_test_${randomUUID().replaceAll("-", "")}`;
-    await admin.query(`CREATE SCHEMA ${schema}`);
-    const url = new URL(databaseUrl!);
-    url.searchParams.set("options", `-c search_path=${schema}`);
-    pool = new Pool({ connectionString: url.toString() });
-    await pool.query('CREATE TABLE "user" (id text PRIMARY KEY)');
-    await pool.query(`INSERT INTO "user" VALUES ('0x1'), ('0x2')`);
-    const statements = await generateMigration(
-      generateDrizzleJson({}),
-      generateDrizzleJson({ notificationPreferences }),
-    );
-    for (const statement of statements) {
-      // Relocate generated references into this test's isolated namespace; the table shape comes only from Drizzle.
-      await pool.query(statement.replaceAll('"public".', `"${schema}".`));
-    }
+    testDatabase = await createNotificationTestDatabase(databaseUrl!, { notificationPreferences });
+    pool = testDatabase.pool;
     store = promiseStore(pool);
   });
   afterAll(async () => {
-    await pool?.end();
-    if (schema) await admin.query(`DROP SCHEMA ${schema} CASCADE`);
-    await admin?.end();
+    await testDatabase?.close();
   });
 
   it("defaults off, serializes racing first saves, and persists across store instances", async () => {

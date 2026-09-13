@@ -1,3 +1,5 @@
+import { automaticNotificationHealth, startAutomaticNotifications } from "./automatic-notifications/runtime";
+import { handlePushNotifications } from "./push-notifications";
 import { auth } from "./auth";
 import { handleApiCors } from "./api-cors";
 import {
@@ -85,6 +87,7 @@ const handleGameplayAccountAction = async (request: Request, action: string): Pr
 
 const handleApiRequest = async (request: Request, url: URL, client: string): Promise<Response> => {
   try {
+    if (url.pathname.startsWith("/api/notifications/push/")) return handlePushNotifications(request, client);
     if (url.pathname === "/api/auth" || url.pathname.startsWith("/api/auth/")) return auth.handler(request);
     if (url.pathname === "/api/notifications/preferences") return handleNotificationPreferences(request);
 
@@ -121,7 +124,8 @@ export async function handleRequest(request: Request, socketAddress?: string | n
   }
 
   try {
-    if (url.pathname === "/health") return json({ service: "realms-identity", success: true });
+    if (url.pathname === "/health")
+      return json({ service: "realms-identity", success: true, notifications: automaticNotificationHealth() });
     return await serveStatic(url, request.method);
   } catch (error) {
     console.error("realms-identity request failed", url.pathname, error);
@@ -133,6 +137,17 @@ if (import.meta.main) {
   const server = Bun.serve({
     port: serverEnv.REALMS_SERVER_PORT,
     fetch: (request, bunServer) => handleRequest(request, bunServer.requestIP(request)?.address),
+  });
+  const stopNotifications = startAutomaticNotifications();
+  const shutdown = async () => {
+    await stopNotifications();
+    server.stop();
+  };
+  process.once("SIGTERM", () => {
+    void shutdown();
+  });
+  process.once("SIGINT", () => {
+    void shutdown();
   });
   console.info(`realms identity server listening on :${server.port}`);
 }

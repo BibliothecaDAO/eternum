@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-09-13",
+    title: "Background Notification Account Safety",
+    description:
+      "Signing out or disabling background notifications stops this device from accepting alerts immediately, even while setup is waiting for a connection.",
+    type: "fix",
+  },
+  {
+    date: "2026-09-13",
+    title: "Automatic Background Game Alerts",
+    description:
+      "When available, enable game alerts on this device to receive confirmed activity with the game closed. Your account notification level controls which alerts arrive.",
+    type: "feature",
+  },
+  {
+    date: "2026-09-13",
     title: "Notification Settings Across Tabs",
     description: "Changing your account notification level also updates your other open game tabs.",
     type: "fix",

@@ -1,3 +1,4 @@
+import { PushNotificationSettings } from "./push-notification-settings";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
@@ -78,6 +79,7 @@ function PreferenceEditor({ owner }: { owner: string | null }) {
         owner={owner}
         preferenceReady={preferences.status === "ready" && preferences.saved?.level !== "off"}
       />
+      <PushNotificationSettings owner={owner} />
       <p className={HUD_BODY}>
         Browser permission: {permission}. Activity history and transaction errors remain visible.
       </p>
