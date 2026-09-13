@@ -116,17 +116,20 @@ const CompactMarketContent = ({ desk }: { desk: MarketDesk }) => {
     setView("trade");
   };
 
-  if (view === "picker") {
-    return (
-      <MarketResourcePicker desk={desk} onResourceSelect={pickResource} className="market-modal-selector h-full" />
-    );
-  }
-
   return (
-    <div className="market-modal-selector flex h-full min-h-0 flex-col">
-      <SelectedResourceHeader resourceId={desk.selectedResource} onChange={() => setView("picker")} />
-      <MarketTradeView desk={desk} className="min-h-0 flex-1" />
-    </div>
+    <>
+      {view === "picker" && (
+        <MarketResourcePicker desk={desk} onResourceSelect={pickResource} className="market-modal-selector h-full" />
+      )}
+      {/* Keep trading state mounted while the picker is open, including the AMM subtab and unfinished forms. */}
+      <div
+        hidden={view === "picker"}
+        className={cn("market-modal-selector h-full min-h-0 flex-col", view === "trade" && "flex")}
+      >
+        <SelectedResourceHeader resourceId={desk.selectedResource} onChange={() => setView("picker")} />
+        <MarketTradeView desk={desk} className="min-h-0 flex-1" />
+      </div>
+    </>
   );
 };
 

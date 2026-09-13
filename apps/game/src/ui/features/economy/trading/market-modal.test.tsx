@@ -50,7 +50,19 @@ vi.mock("./market-order-panel", () => ({
     <article data-resource={resourceId}>Order book</article>
   ),
 }));
-vi.mock("@/ui/features/economy/banking", () => ({ BankList: () => <article>AMM</article> }));
+vi.mock("@/ui/features/economy/banking", async () => {
+  const { BankPanel } = await import("@/ui/features/economy/banking/bank-list");
+  return { BankList: BankPanel };
+});
+vi.mock("@/ui/features/economy/banking/swap", () => ({
+  ResourceSwap: () => <article>Swap form</article>,
+}));
+vi.mock("@/ui/features/economy/banking/add-liquidity", () => ({
+  default: ({ listResourceId }: { listResourceId: number }) => (
+    <article data-resource={listResourceId}>Liquidity form</article>
+  ),
+}));
+vi.mock("@/ui/features/economy/banking/liquidity-table", () => ({ LiquidityTable: () => null }));
 vi.mock("./market-trading-history", () => ({ MarketTradingHistory: () => <article>History</article> }));
 
 import { MarketModal } from "./market-modal";
@@ -72,10 +84,13 @@ let container: HTMLDivElement;
 let root: Root;
 
 const resourceList = () => container.querySelector('[aria-label="Resource list"]');
-const orderBook = () => container.querySelector("article");
-const tabs = () => [...container.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
+const isVisible = (element: Element) => !element.closest("[hidden]");
+const orderBook = () => [...container.querySelectorAll("article")].find(isVisible) ?? null;
+const tabs = () => [...container.querySelectorAll('[role="tab"]')].filter(isVisible).map((tab) => tab.textContent);
 const button = (label: string) =>
-  [...container.querySelectorAll("button")].find((candidate) => candidate.textContent === label);
+  [...container.querySelectorAll("button")].find(
+    (candidate) => isVisible(candidate) && candidate.textContent === label,
+  );
 const tap = (label: string) => act(async () => button(label)!.click());
 
 const mount = async (lane: CompactLane | null) => {
@@ -141,6 +156,22 @@ describe("MarketModal", () => {
     await tap("AMM");
     await tap("Change");
     await tap("Stone");
-    expect(orderBook()?.textContent).toBe("AMM");
+    expect(orderBook()?.textContent).toBe("Swap form");
   });
+
+  it.each(["portrait", "landscape"] as const)(
+    "keeps the AMM Pools tab open when changing resources in %s",
+    async (lane) => {
+      await mount(lane);
+      await tap("AMM");
+      await tap("Pools");
+      expect(orderBook()?.textContent).toBe("Liquidity form");
+      await tap("Change");
+      expect(orderBook()).toBeNull();
+      await tap("Stone");
+      expect(button("Pools")?.getAttribute("aria-selected")).toBe("true");
+      expect(orderBook()?.textContent).toBe("Liquidity form");
+      expect(orderBook()?.getAttribute("data-resource")).toBe(String(ResourcesIds.Stone));
+    },
+  );
 });
