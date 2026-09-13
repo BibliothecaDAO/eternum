@@ -194,11 +194,11 @@ export const activatePushNotificationDevice = (owner: string, id: string): Promi
     await result(store.put({ ...device, state: "active" }, "current"));
   });
 
-export const revokePushNotificationDevice = (owner: string): Promise<PushNotificationDevice | null> =>
+export const revokePushNotificationDevice = (owner: string, id?: string): Promise<PushNotificationDevice | null> =>
   transaction("readwrite", async (tx) => {
     const store = tx.objectStore("push");
     const device: PushNotificationDevice | undefined = await result(store.get("current"));
-    if (!device || device.owner !== owner) return null;
+    if (!device || device.owner !== owner || (id !== undefined && device.id !== id)) return null;
     const revoked = { ...device, state: "revoking" as const };
     await result(store.put(revoked, "current"));
     return revoked;

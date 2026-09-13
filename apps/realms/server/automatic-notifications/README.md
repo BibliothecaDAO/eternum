@@ -93,7 +93,10 @@ worker shuts down with the identity process; it is not a separate unmanaged time
 Automated PostgreSQL tests cover initial attach, paired recipient fan-out, ended-game drain, restart, checkpoint-write
 rollback, concurrent claims, lease fencing, Off/revocation after enqueue, retry, permanent rejection and expiry. Herald
 integration tests cover page boundaries inside a block and preserve the existing deployed checkpoint. Client tests cover
-explicit upgrade consent, compatibility, automatic-capability claims and local/push ownership.
+explicit upgrade consent, compatibility, automatic-capability claims and local/push ownership. Additional regressions
+cover consent timestamps, queue capacity recovery, competing checkpoint commits, runtime health/shutdown and
+logout/disable while setup holds a network lock. Local revocation does not wait for that lock; remote cleanup remains
+serialized and registration-scoped. Push API requests time out after ten seconds.
 
 Before production enablement, verify a real confirmed battle on the deployed source, production identity cookies, and
 actual Android/iOS banners/clicks with the game closed. Also check Safari's visible-push behavior under

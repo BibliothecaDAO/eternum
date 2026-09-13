@@ -94,3 +94,14 @@ it("requires automatic opt-in inside the same transaction as its durable claim",
   expect(await database.claimNotification(claim, Date.now())).toBe(true);
   expect((await database.readPushNotificationDevice())?.automatic?.acknowledged).toBe(true);
 });
+
+it("ignores stale revocation and activation after the same owner registers a replacement", async () => {
+  const old = await database.preparePushNotificationDevice("0x1");
+  await database.revokePushNotificationDevice(old.owner, old.id);
+  await database.forgetPushNotificationDevice(old.owner, old.id);
+  const replacement = await database.preparePushNotificationDevice("0x1");
+  await database.activatePushNotificationDevice(replacement.owner, replacement.id);
+  expect(await database.revokePushNotificationDevice(old.owner, old.id)).toBeNull();
+  await expect(database.activatePushNotificationDevice(old.owner, old.id)).rejects.toThrow();
+  expect(await database.readPushNotificationDevice()).toMatchObject({ id: replacement.id, state: "active" });
+});

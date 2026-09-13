@@ -136,3 +136,24 @@ it("uses credentialed identity routes for push setup and a device capability for
   expect(fetch.mock.calls.at(-1)?.[1]?.body).toBe(JSON.stringify({ id, token: id }));
   expect(fetch.mock.calls.at(-1)?.[0]).toBe("https://realms.test/api/notifications/push/revoke");
 });
+
+it("bounds a stalled push request with an abort signal", async () => {
+  const controller = new AbortController();
+  const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+  try {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true });
+        }),
+    );
+    const client = createIdentityClient({ baseUrl: "https://realms.test/api/auth", fetch });
+    const request = client.getPushSubscriptionStatus("0x1", "device");
+    const rejected = expect(request).rejects.toThrow("Timed out");
+    expect(timeout).toHaveBeenCalledWith(10_000);
+    controller.abort(new Error("Timed out"));
+    await rejected;
+  } finally {
+    timeout.mockRestore();
+  }
+});

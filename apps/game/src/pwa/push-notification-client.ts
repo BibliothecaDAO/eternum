@@ -68,35 +68,64 @@ export async function enablePushNotifications(
 }
 
 export async function disablePushNotifications(owner: string): Promise<void> {
-  await navigator.locks.request(pushLock, () => revokePushDevice(owner));
+  // Revocation cannot wait behind setup's network requests: the worker must stop accepting pushes immediately.
+  const device = await revokeLocalPushDevice(owner);
+  if (device) await navigator.locks.request(pushLock, () => removeRevokedPushDevice(device));
 }
 
+const revokeLocalPushDevice = (owner: string, id?: string) =>
+  notificationWorkerRequest<PushNotificationDevice | null>(owner, "revoke-push", { id });
+
 async function revokePushDevice(owner: string): Promise<void> {
-  const device = await notificationWorkerRequest<PushNotificationDevice | null>(owner, "revoke-push");
-  if (!device) return;
+  const device = await revokeLocalPushDevice(owner);
+  if (device) await removeRevokedPushDevice(device);
+}
+
+/** Called under the registration lock; a delayed cleanup must never unsubscribe a replacement device. */
+async function removeRevokedPushDevice(device: PushNotificationDevice): Promise<void> {
   await identityClient.revokePushSubscription(device.id, device.token);
+  const current = await readPushDevice();
+  if (current?.id !== device.id || current.state !== "revoking") return;
   const registration = await requireRegistration();
   await (await registration.pushManager.getSubscription())?.unsubscribe();
-  await notificationWorkerRequest(owner, "forget-push", { id: device.id });
+  await notificationWorkerRequest(device.owner, "forget-push", { id: device.id });
 }
 
 export async function reconcilePushAccount(): Promise<void> {
   if (!("serviceWorker" in navigator) || !navigator.locks) return;
   const registration = await navigator.serviceWorker.getRegistration("/");
   if (!registration?.active) return;
+  const device = await readInstalledPushDevice(registration);
+  if (!device) return;
+  if (requiresPushRevocation(device)) {
+    const revoked = await revokeLocalPushDevice(device.owner, device.id);
+    if (revoked) await navigator.locks.request(pushLock, () => removeRevokedPushDevice(revoked));
+    return;
+  }
   await navigator.locks.request(pushLock, async () => {
-    let device: PushNotificationDevice | null;
-    try {
-      device = await readPushDevice();
-    } catch (error) {
-      // Older installed workers cannot answer push-status. With no native subscription there is no background delivery to revoke.
-      if (!(await registration.pushManager?.getSubscription())) return;
-      throw error;
-    }
-    const owner = useIdentitySessionStore.getState().session?.user.id ?? null;
-    if (device && (device.owner !== owner || device.state === "revoking")) await revokePushDevice(device.owner);
-    else if (device?.automatic && !device.automatic.acknowledged) await completeAutomaticSetup(device, registration);
+    // Another tab can replace or revoke the device while this reconciliation waits for setup to finish.
+    const current = await readPushDevice();
+    if (!current) return;
+    if (requiresPushRevocation(current)) await revokePushDevice(current.owner);
+    else if (current.automatic && !current.automatic.acknowledged) await completeAutomaticSetup(current, registration);
   });
+}
+
+function requiresPushRevocation(device: PushNotificationDevice): boolean {
+  const owner = useIdentitySessionStore.getState().session?.user.id ?? null;
+  return device.owner !== owner || device.state === "revoking";
+}
+
+async function readInstalledPushDevice(
+  registration: ServiceWorkerRegistration,
+): Promise<PushNotificationDevice | null> {
+  try {
+    return await readPushDevice();
+  } catch (error) {
+    // Older installed workers cannot answer push-status. Without a native subscription there is nothing to revoke.
+    if (!(await registration.pushManager?.getSubscription())) return null;
+    throw error;
+  }
 }
 
 export async function sendBackgroundPushTest(owner: string, target: string): Promise<void> {

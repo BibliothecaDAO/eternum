@@ -86,9 +86,10 @@ async function runNotificationCommand(
   if (input.action === "push-status") return (await readPushNotificationDevice()) ?? null;
   if (input.action === "prepare-push") return preparePushNotificationDevice(input.owner);
   if (input.action === "revoke-push") {
-    const revoked = await revokePushNotificationDevice(input.owner);
+    const revoked = await revokePushNotificationDevice(input.owner, input.id);
     for (const notification of await worker.registration.getNotifications()) {
-      if (notification.data?.owner === input.owner && notification.data?.subscriptionId) notification.close();
+      if (revoked && notification.data?.owner === input.owner && notification.data?.subscriptionId === revoked.id)
+        notification.close();
     }
     return revoked;
   }

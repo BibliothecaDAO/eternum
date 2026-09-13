@@ -51,15 +51,18 @@ beforeEach(() => {
     if (action === "push-capabilities") return { automaticGameAlerts: true };
     if (action === "push-status") return mocks.device;
     if (action === "prepare-push")
-      return (mocks.device = { owner, id, token: id, enabledAt: Date.now(), state: "preparing" });
+      return (mocks.device ??= { owner, id, token: id, enabledAt: Date.now(), state: "preparing" });
     if (action === "activate-push") {
       if (!mocks.device || mocks.device.state === "revoking") throw Error("revoked");
       mocks.device.state = "active";
     }
     if (action === "prepare-automatic") mocks.device.automatic = { ...input.source, acknowledged: false };
-    if (action === "acknowledge-automatic") mocks.device.automatic.acknowledged = true;
+    if (action === "acknowledge-automatic") {
+      if (mocks.device?.state !== "active") throw Error("revoked");
+      mocks.device.automatic.acknowledged = true;
+    }
     if (action === "revoke-push") {
-      if (mocks.device?.owner !== owner) return null;
+      if (mocks.device?.owner !== owner || (input?.id && input.id !== mocks.device.id)) return null;
       mocks.device.state = "revoking";
       return mocks.device;
     }
@@ -68,7 +71,7 @@ beforeEach(() => {
   });
   vi.stubGlobal("Notification", { permission: "default", requestPermission: mocks.permission });
   vi.stubGlobal("navigator", {
-    locks: { request: async (_: string, work: () => Promise<void>) => work() },
+    locks: { request: serializedLock() },
     serviceWorker: {
       getRegistration: async () => ({
         active: {},
@@ -187,3 +190,86 @@ it.each([false, true])(
     expect(mocks.register).toHaveBeenCalledTimes(acknowledged ? 0 : 1);
   },
 );
+
+function serializedLock() {
+  let tail = Promise.resolve();
+  return (_name: string, work: () => Promise<void>) => {
+    const next = tail.then(work);
+    tail = next.catch(() => {});
+    return next;
+  };
+}
+
+it.each(["logout", "switch", "disable"] as const)(
+  "revokes locally on %s while automatic recovery holds the network lock",
+  async (action) => {
+    const source = { chain: "madara", worldAddress: "0x123" };
+    mocks.device = { owner: "0x1", id, token: id, state: "active", automatic: { ...source, acknowledged: false } };
+    let finish!: (value: unknown) => void;
+    mocks.status.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const recovering = reconcilePushAccount();
+    const failedRecovery = expect(recovering).rejects.toThrow();
+    await vi.waitFor(() => expect(mocks.status).toHaveBeenCalledOnce());
+    if (action !== "disable") mocks.owner = action === "logout" ? null : "0x2";
+    const removal = action === "disable" ? disablePushNotifications("0x1") : reconcilePushAccount();
+    try {
+      await vi.waitFor(() => expect(mocks.device.state).toBe("revoking"));
+      expect(mocks.revoke).not.toHaveBeenCalled();
+    } finally {
+      finish({ registered: true, automatic: source });
+      await failedRecovery;
+      await removal;
+    }
+    expect(mocks.device).toBeNull();
+  },
+);
+
+it("does not activate a registration disabled while its server write is stalled", async () => {
+  let finish!: () => void;
+  mocks.register.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const setup = enablePushNotifications("0x1", "BAAA");
+  const failedSetup = expect(setup).rejects.toThrow();
+  await vi.waitFor(() => expect(mocks.register).toHaveBeenCalledOnce());
+  const removal = disablePushNotifications("0x1");
+  try {
+    await vi.waitFor(() => expect(mocks.device.state).toBe("revoking"));
+  } finally {
+    finish();
+    await failedSetup;
+    await removal;
+  }
+  expect(mocks.device).toBeNull();
+});
+
+it("does not unsubscribe a replacement when queued cleanup resumes", async () => {
+  const old = { owner: "0x1", id, token: id, state: "active" };
+  mocks.device = old;
+  let resume!: () => void;
+  navigator.locks.request = vi.fn(
+    (_name: string, work: () => Promise<void>) =>
+      new Promise<void>((resolve) => {
+        resume = () => {
+          void work().then(resolve);
+        };
+      }),
+  ) as typeof navigator.locks.request;
+  const removal = disablePushNotifications("0x1");
+  await vi.waitFor(() => expect(mocks.device.state).toBe("revoking"));
+  const replacement = { ...old, id: "22222222-2222-4222-8222-222222222222", state: "active" };
+  mocks.device = replacement;
+  resume();
+  await removal;
+  expect(mocks.revoke).toHaveBeenCalledWith(id, id);
+  expect(mocks.unsubscribe).not.toHaveBeenCalled();
+  expect(mocks.device).toBe(replacement);
+});

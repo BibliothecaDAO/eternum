@@ -124,7 +124,12 @@ export const createIdentityClient = ({ baseUrl, fetch = globalThis.fetch }: Iden
     readJson<T>(
       await request(
         `/${action}`,
-        body === undefined ? { method: "GET", cache: "no-store" } : { method: "POST", body: JSON.stringify(body) },
+        {
+          ...(body === undefined
+            ? { method: "GET", cache: "no-store" as const }
+            : { method: "POST", body: JSON.stringify(body) }),
+          signal: AbortSignal.timeout(10_000),
+        },
         pushUrl,
       ),
     );

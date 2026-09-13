@@ -284,3 +284,20 @@ it("keeps local delivery during incomplete automatic setup", async () => {
     ).value,
   ).toBe("shown");
 });
+
+it("closes only the revoked registration's notifications and ignores stale revocation", async () => {
+  const h = harness();
+  const old = { owner: "0x1", id: "11111111-1111-4111-8111-111111111111" };
+  const notifications = [
+    { data: { owner: old.owner, subscriptionId: old.id }, close: vi.fn() },
+    { data: { owner: old.owner, subscriptionId: "replacement" }, close: vi.fn() },
+    { data: { owner: "0x2", subscriptionId: old.id }, close: vi.fn() },
+  ];
+  h.registration.getNotifications.mockResolvedValue(notifications);
+  database.pushRevoke.mockResolvedValueOnce(null).mockResolvedValueOnce(old);
+  await h.send("revoke-push", { id: old.id });
+  expect(notifications.every((notification) => notification.close.mock.calls.length === 0)).toBe(true);
+  await h.send("revoke-push", { id: old.id });
+  expect(database.pushRevoke).toHaveBeenLastCalledWith(old.owner, old.id);
+  expect(notifications.map((notification) => notification.close.mock.calls.length)).toEqual([1, 0, 0]);
+});

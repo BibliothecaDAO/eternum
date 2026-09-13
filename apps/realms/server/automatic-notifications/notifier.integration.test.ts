@@ -223,7 +223,7 @@ describe.skipIf(!url)("automatic notifications through PostgreSQL", () => {
     expect(await Effect.runPromise(other.claim(source.key, now + 35000))).toEqual([]);
     expect(await Effect.runPromise(other.claim(source.key, now + 40000))).toHaveLength(1);
   });
-  it("rechecks Off and revocation after enqueue, and excludes tests-only or newly enabled devices", async () => {
+  it("rechecks Off and revocation after enqueue, and excludes tests-only devices", async () => {
     await tick();
     await Effect.runPromise(outbox.commit(source.key, endOfStoryBlock(10), endOfStoryBlock(11), [candidate()], now));
     const [lease] = await Effect.runPromise(outbox.claim(source.key, now));
@@ -238,6 +238,65 @@ describe.skipIf(!url)("automatic notifications through PostgreSQL", () => {
     await tick();
     expect(sent).not.toHaveBeenCalled();
   });
+  it("excludes events predating consent at enqueue and after renewed consent before sending", async () => {
+    await tick();
+    const event = candidate();
+    await database.pool.query("UPDATE notification_push_subscriptions SET game_alerts_enabled_at=$1", [
+      new Date(event.notification.createdAt + 1),
+    ]);
+    expect(
+      await Effect.runPromise(outbox.commit(source.key, endOfStoryBlock(10), endOfStoryBlock(11), [event], now)),
+    ).toBe(0);
+    expect(await Effect.runPromise(outbox.checkpoint(source.key))).toEqual(endOfStoryBlock(11));
+    await database.pool.query("UPDATE notification_push_subscriptions SET game_alerts_enabled_at=$1", [
+      new Date(event.notification.createdAt),
+    ]);
+    expect(
+      await Effect.runPromise(outbox.commit(source.key, endOfStoryBlock(11), endOfStoryBlock(12), [event], now)),
+    ).toBe(1);
+    const [lease] = await Effect.runPromise(outbox.claim(source.key, now));
+    expect(await Effect.runPromise(outbox.eligible(lease!, now))).not.toBeNull();
+    await database.pool.query("UPDATE notification_push_subscriptions SET game_alerts_enabled_at=$1", [
+      new Date(event.notification.createdAt + 1),
+    ]);
+    expect(await Effect.runPromise(outbox.eligible(lease!, now))).toBeNull();
+  });
+
+  it("commits a page once when independent consumers race the same checkpoint", async () => {
+    await tick();
+    const other = createNotificationOutbox(drizzle(database.pool, { schema }));
+    const results = await Promise.all(
+      [outbox, other].map((store) =>
+        Effect.runPromise(store.commit(source.key, endOfStoryBlock(10), endOfStoryBlock(11), [candidate()], now)),
+      ),
+    );
+    expect(results.sort()).toEqual([0, 1]);
+    expect((await database.pool.query("SELECT * FROM notification_deliveries")).rows).toHaveLength(1);
+    expect(await Effect.runPromise(outbox.checkpoint(source.key))).toEqual(endOfStoryBlock(11));
+  });
+
+  it("keeps the checkpoint under capacity pressure and resumes after expired rows are pruned", async () => {
+    await tick();
+    const event = candidate();
+    await database.pool.query(
+      `INSERT INTO notification_deliveries (id,owner,source,subscription_id,story,notification,expires_at)
+       SELECT 'capacity-' || n, '0x1', $1, $2, $3, $4::jsonb, $5 FROM generate_series(1,10000) n`,
+      [source.key, deviceIds[0], event.story, JSON.stringify(event.notification), now + 1],
+    );
+    const commit = () =>
+      Effect.runPromise(outbox.commit(source.key, endOfStoryBlock(10), endOfStoryBlock(11), [event], now));
+    await expect(commit()).rejects.toThrow();
+    expect(await Effect.runPromise(outbox.checkpoint(source.key))).toEqual(endOfStoryBlock(10));
+    expect(
+      (await database.pool.query("SELECT count(*)::int AS count FROM notification_deliveries")).rows[0].count,
+    ).toBe(10000);
+    now += 2;
+    expect(await Effect.runPromise(outbox.prune(now))).toBe(10000);
+    expect(await commit()).toBe(1);
+    expect(await Effect.runPromise(outbox.checkpoint(source.key))).toEqual(endOfStoryBlock(11));
+    expect(await Effect.runPromise(outbox.claim(source.key, now))).toHaveLength(1);
+  });
+
   it("retries transient provider failures with the same identity and stops after acceptance", async () => {
     await tick();
     head = 11;

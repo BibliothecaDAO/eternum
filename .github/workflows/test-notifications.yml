@@ -3,6 +3,8 @@ name: notifications
 on:
   pull_request:
     paths:
+      - "packages/core/**"
+      - "apps/herald/**"
       - "packages/notifications/**"
       - "packages/identity/**"
       - "packages/db/**"
